@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Local / generated
+.env
+.env.*
+*.log
+*.wav
+*.mp3
+build/
+Desktop/
+
+# Dictation dumps and machine-local state (never in this tree, but belt-and-suspenders)
+LocalFlow-audio/
+*.app/

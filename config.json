@@ -1,0 +1,12 @@
+{
+    "model": "mlx-community/parakeet-tdt-0.6b-v3",
+    "hotkey": "fn",
+    "min_duration_sec": 0.3,
+    "max_duration_sec": 0,
+    "append_space": true,
+    "restore_clipboard": true,
+    "input_device": null,
+    "cleanup": "llm",
+    "cleanup_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "log_transcripts": true
+}
