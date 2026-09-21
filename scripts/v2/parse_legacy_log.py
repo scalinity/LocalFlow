@@ -147,7 +147,10 @@ def band_of(n_words):
     return "201+ words"
 
 
-def parse(text):
+def _scan(text):
+    """Pairing/counting state machine under the E02 protocol. Returns the
+    raw scan state; ``parse`` aggregates it, ``iter_pairs`` exposes the
+    text-bearing pairs for the lossless importer."""
     counts = {
         "cleanup_load_failure": 0,
         "cleanup_load_success": 0,
@@ -301,8 +304,29 @@ def parse(text):
             "_cleaned": closed[2],
         })
 
-    return build_report(text, counts, audio_records, overflow_positive,
-                        zero_voiced, segments, pairs, metal_failure_lines)
+    return {
+        "counts": counts,
+        "audio_records": audio_records,
+        "overflow_positive": overflow_positive,
+        "zero_voiced": zero_voiced,
+        "segments": segments,
+        "pairs": pairs,
+        "metal_failure_lines": metal_failure_lines,
+    }
+
+
+def iter_pairs(text):
+    """Complete raw/cleaned pairs with transcript text and physical-line
+    provenance, under the same E02 pairing protocol as parse(). Consumed by
+    the lossless importer; the text stays in the private store."""
+    return _scan(text)["pairs"]
+
+
+def parse(text):
+    s = _scan(text)
+    return build_report(text, s["counts"], s["audio_records"],
+                        s["overflow_positive"], s["zero_voiced"],
+                        s["segments"], s["pairs"], s["metal_failure_lines"])
 
 
 def build_report(text, counts, audio_records, overflow_positive, zero_voiced,

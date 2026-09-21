@@ -10,6 +10,7 @@ Run: .venv/bin/python tests/test_stuck_overlay.py
 
 import pathlib
 import sys
+import tempfile
 
 import numpy as np
 
@@ -87,6 +88,14 @@ class Harness:
         # Whether this "hardware" reports fn via CGEventSourceFlagsState
         self.reports = reports
         self.phys = False  # what CGEventSourceFlagsState would report
+        # Keep the V2 store/event writer on throwaway paths so the harness
+        # never touches live user data.
+        self._tmp = tempfile.TemporaryDirectory()
+        tmp = pathlib.Path(self._tmp.name)
+        app_mod.V2_DB = tmp / "v2.db"
+        app_mod.V2_ARTIFACTS = tmp / "artifacts"
+        app_mod.V2_BACKUPS = tmp / "backups"
+        app_mod.V2_EVENTS_DIR = tmp / "events"
         d = AppDelegate.alloc().init()
         d.configure(dict(CFG))
         d.recorder = FakeRecorder(durations)
@@ -97,6 +106,16 @@ class Harness:
         self.d = d
         self.hk = hk
         app_mod.paste_text = lambda text, restore_clipboard=True: True
+
+    def job(self, text=""):
+        """A finished worker job record matching _finishWithText_'s shape."""
+        return {"job_id": None, "family_id": None, "ctx": None,
+                "failed": False, "audio": None, "stats": {}, "text": text}
+
+    def close(self):
+        self.d.store.close()
+        self.d.v2log.close()
+        self._tmp.cleanup()
 
     def press(self):
         self.phys = self.reports
@@ -122,7 +141,7 @@ def test_wedge_recovers():
     assert h.d.state == STATE_RECORDING
     h.release(delivered=False)  # macOS drops the flagsChanged
 
-    h.d._finishWithText_("hello world")  # first job pastes
+    h.d._finishWithText_("hello world", h.job())  # first job pastes
     assert h.d.overlay.visible, "bug precondition: overlay stuck visible"
     assert h.d.state == STATE_RECORDING, "bug precondition: trapped in RECORDING"
 
@@ -172,7 +191,7 @@ def test_lost_release_preserves_speech():
     assert h.d.state == STATE_PROCESSING and h.d._pending == 1, (
         "recovered dictation should be transcribed, not dropped"
     )
-    h.d._finishWithText_("the actual words")
+    h.d._finishWithText_("the actual words", h.job())
     assert h.d.state == STATE_IDLE and not h.d.overlay.visible
     print("ok  lost release preserves speech")
 

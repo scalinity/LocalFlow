@@ -230,13 +230,32 @@ def _chunk_words(words: list) -> list:
 
 
 class TranscriptCleaner:
-    def __init__(self, mode: str, model_id: str):
+    def __init__(self, mode: str, model_id: str, notifier=None, observer=None):
         self.mode = mode  # "off" | "basic" | "llm"
         self.model_id = model_id
+        # V2 hooks (M02): `notifier` routes stage status lines into the
+        # dated event log; `observer` receives the exact model input/output
+        # of every generation pass for training-evidence capture. Both are
+        # optional — with None the class behaves exactly as before.
+        self.notifier = notifier
+        self.observer = observer
         self.llm_ready = threading.Event()
         self._model = None
         self._tokenizer = None
         self._lock = threading.Lock()
+
+    def _notify(self, msg: str, level: str = "INFO"):
+        if self.notifier is not None:
+            self.notifier(msg, level)
+        else:
+            print(f"[localflow] {msg}")
+
+    def _observe(self, record: dict):
+        if self.observer is not None:
+            try:
+                self.observer(record)
+            except Exception:
+                pass  # evidence capture must never break cleanup
 
     def load(self):
         """Load the cleanup LLM (llm mode only). Failure leaves basic mode."""
@@ -246,14 +265,17 @@ class TranscriptCleaner:
             from mlx_lm import load as llm_load
 
             self._model, self._tokenizer = llm_load(self.model_id)
-            self._generate("okay so um this is a warmup test", max_tokens=24)
+            self._generate("okay so um this is a warmup test", max_tokens=24,
+                           stage="warmup")
             self.llm_ready.set()
-            print(f"[localflow] cleanup model loaded ({self.model_id.split('/')[-1]})")
+            self._notify(f"cleanup_model_loaded ({self.model_id.split('/')[-1]})")
         except Exception as e:
-            print(f"[localflow] cleanup model unavailable, using basic cleanup: {e}")
+            self._notify(
+                f"cleanup_model_unavailable, using basic cleanup: {e}", "WARNING")
 
     def _generate(self, text: str, max_tokens: int | None = None,
-                  system_prompt: str = SYSTEM_PROMPT, examples: list = EXAMPLES) -> str:
+                  system_prompt: str = SYSTEM_PROMPT, examples: list = EXAMPLES,
+                  stage: str = "cleanup") -> str:
         from mlx_lm import generate
 
         messages = [{"role": "system", "content": system_prompt}]
@@ -274,7 +296,18 @@ class TranscriptCleaner:
             max_tokens=max_tokens, verbose=False,
         )
         # Belt and suspenders for reasoning models that think anyway
-        return re.sub(r"(?s)^\s*<think>.*?</think>\s*", "", out)
+        out = re.sub(r"(?s)^\s*<think>.*?</think>\s*", "", out)
+        self._observe({
+            "kind": stage,
+            "model_id": self.model_id,
+            "input": text,
+            "system_prompt": system_prompt,
+            "examples_count": len(examples),
+            "prompt": prompt,  # the exact rendered input, byte for byte
+            "max_tokens": max_tokens,
+            "output": out,
+        })
+        return out
 
     def clean(self, text: str) -> str:
         base = basic_cleanup(text)
@@ -294,11 +327,11 @@ class TranscriptCleaner:
         try:
             with self._lock:
                 spans = self._generate(
-                    base, max_tokens=96,
+                    base, max_tokens=96, stage="corrections",
                     system_prompt=CORRECTIONS_PROMPT, examples=CORRECTION_EXAMPLES,
                 )
         except Exception as e:
-            print(f"[localflow] correction pass failed, skipping: {e}")
+            self._notify(f"correction_pass_failed, skipping: {e}", "WARNING")
             return base
 
         out = base
@@ -320,6 +353,7 @@ class TranscriptCleaner:
             applied += 1
             if applied >= 6:
                 break
+        self._observe({"kind": "corrections_applied", "applied_count": applied})
         return re.sub(r"\s{2,}", " ", out).strip()
 
     def _clean_piece(self, base: str) -> str:
@@ -327,13 +361,19 @@ class TranscriptCleaner:
             base = self._apply_corrections(base)
         try:
             with self._lock:
-                out = self._generate(base)
+                out = self._generate(base, stage="cleanup")
             out = out.strip().strip('"').strip()
             out = re.sub(r"[ \t]+\n", "\n", out)  # markdown line-break artifacts
             out = re.sub(r"\n{3,}", "\n\n", out)
-            if _plausible(out, base):
+            accepted = _plausible(out, base)
+            self._observe({"kind": "cleanup_decision", "accepted": accepted,
+                           "applied": out if accepted else base})
+            if accepted:
                 return out
-            print("[localflow] cleanup output failed sanity check, using basic pass")
+            self._notify("cleanup output failed sanity check, using basic pass",
+                         "WARNING")
         except Exception as e:
-            print(f"[localflow] cleanup failed, using basic pass: {e}")
+            self._observe({"kind": "cleanup_decision", "accepted": False,
+                           "applied": base, "error": type(e).__name__})
+            self._notify(f"cleanup failed, using basic pass: {e}", "WARNING")
         return base

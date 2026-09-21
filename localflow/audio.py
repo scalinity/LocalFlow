@@ -8,10 +8,15 @@ import sounddevice as sd
 
 
 class Recorder:
-    def __init__(self, sample_rate=16000, input_device=None, block_ms=50):
+    def __init__(self, sample_rate=16000, input_device=None, block_ms=50,
+                 notifier=None):
         self.sample_rate = sample_rate
         self.input_device = input_device
         self.blocksize = int(sample_rate * block_ms / 1000)
+        # V2 hook (M02): routes device-resolution warnings into the dated
+        # event log instead of a bare print. Optional; None keeps the
+        # previous behavior.
+        self.notifier = notifier
         # 0..1 speech level for the visualizer, updated from the audio thread
         self.level = 0.0
         # Capture diagnostics for the last recording, filled in by stop()
@@ -39,7 +44,11 @@ class Recorder:
                 and str(self.input_device).lower() in dev["name"].lower()
             ):
                 return i
-        print(f"[localflow] input device {self.input_device!r} not found, using default")
+        if self.notifier is not None:
+            self.notifier(f"input device {self.input_device!r} not found,"
+                          " using default")
+        else:
+            print(f"[localflow] input device {self.input_device!r} not found, using default")
         return None
 
     def _callback(self, indata, frames, time_info, status):

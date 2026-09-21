@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "milestone": "M02",
+  "evaluated_utc": "2026-09-21T23:25:41Z",
+  "working_directory": "/Users/danny/Documents/Tools/LocalFlow",
+  "base_commit": "4bd0187ae2445a472684c9c902c9548f58973ac6",
+  "acceptance_criteria": {
+    "M02-AC01": {
+      "statement": "Every V2 event validates the schema, includes a UTC date/time and has correlation/version fields appropriate to its stage.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/logging/test_event_writer.py::test_envelope_validity (schema_version 2, RFC 3339 ms UTC instants, unique event_ids, monotonic parent sequence, boot/session/process/worker ids, source/pipeline revisions on every record)",
+        "tests/v2/logging/test_event_writer.py::test_multiline_unicode_hostile_payloads (transcripts/hostile prefixes can never break or impersonate a record)",
+        "tests/v2/logging/test_event_writer.py::test_clock_jump_and_dst_never_negative (wall-clock jumps/DST produce no negative durations; monotonic-only elapsed)",
+        "scripts/v2/view_events.py renders the S07 human view from the same events in UTC or local display"
+      ]
+    },
+    "M02-AC02": {
+      "statement": "All 7 supplied statistics rows, 7 dictionary terms and 2 transforms survive import; repeated identical import adds zero rows.",
+      "status": "pass",
+      "evidence": [
+        "Real-data import run (scripts/v2/import_legacy.py, 2026-09-21): stats_db sha e4005289… → 7 rows from a verified SQLite backup; dictionary sha 56f2fcd1… → 7 terms; transforms sha e7eb86b1… → 2 definitions; live log sha 9f2e5b8c… (548,392 bytes) → 754 unknown-date pairs.",
+        "Re-run against identical sources: 0 rows / 0 terms / 0 definitions / 0 pairs imported (754 skipped); totals unchanged.",
+        "tests/v2/storage/test_import.py::test_idempotent_reimport, ::test_sources_never_mutated (synthetic mechanics, committed)"
+      ]
+    },
+    "M02-AC03": {
+      "statement": "Stored legacy totals remain 280 raw words, 277 cleaned words, 350.3 seconds and 11 legacy fixed words; unknown log dates do not populate dated analytics.",
+      "status": "pass",
+      "evidence": [
+        "Real store v2.db legacy_totals: (7, 280, 277, 350.3, 11), captured_utc_range 2026-07-04T21:15:42.804Z–21:38:40.276Z (original instants, not reassigned).",
+        "dated_analytics_rows = 7 despite 754 imported log pairs (unknown-date artifacts are outside the dated view; S21).",
+        "tests/v2/storage/test_import.py::test_verbatim_rows_and_totals, ::test_log_identity_and_unknown_dates"
+      ]
+    },
+    "M02-AC04": {
+      "statement": "Content-free operational export passes redaction tests; rotation never removes active capture artifacts.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/logging/test_event_writer.py::test_redacted_export_is_content_free (planted secret markers absent from the export; detail field dropped)",
+        "tests/v2/logging/test_event_writer.py::test_retention_and_unresolved_job_protection (files mentioning unresolved jobs survive pruning; the active file is never pruned; event rotation never touches the audio-debug directory)",
+        "tests/v2/logging/test_event_writer.py::test_size_rotation_and_permissions, ::test_roll_cap_deletes_oldest_first (0700/0600, numeric-suffix roll ordering)",
+        "tests/v2/training/test_collector.py::test_secret_quarantine_is_content_free (events carry no secret text)"
+      ]
+    },
+    "M02-AC05": {
+      "statement": "At least five permitted live pilot dictations produce joined evidence records with actual model inputs and observed outputs; unsupported fields are explicit, not guessed. If native access is missing this remains pending with a runnable checklist.",
+      "status": "pending_human",
+      "evidence": [
+        "Automated half delivered: tests/v2/training/test_live_pipeline.py (model-backed native Mac) proves the real Qwen cleanup pass and real Parakeet inference flow through the live collector hooks with exact rendered prompts, proposal and applied outputs captured verbatim; tests/v2/training/test_collector.py proves joined envelopes with honest missing reasons for every M02-absent field family (context/normalization/word-timing/confidence/n-best/outcome-observation → not_captured_at_stage, transform/audio-prep → not_applicable).",
+        "The five permitted live dictations require a human speaker; runnable checklist in docs/v2/handoffs/M02.md §Human verification. Model-backed evidence capture adds no extra model calls (S29.16)."
+      ]
+    },
+    "M02-AC06": {
+      "statement": "History expiry cannot silently remove training-leased content, while delete-everywhere revokes every managed copy.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/storage/test_store.py::test_history_expiry_respects_training_lease (7-day history expiry keeps a 30-day training lease; content purges only after the last lease)",
+        "tests/v2/storage/test_store.py::test_delete_everywhere (payloads purged, revisions removed, example state deleted, content-free tombstones only)",
+        "tests/v2/storage/test_store.py::test_training_buffer_expiry_and_pin (unpinned 30-day buffer evicted; pinned lease survives)"
+      ]
+    },
+    "M02-AC07": {
+      "statement": "Collection disabled/paused or a sensitive-field exclusion creates no new training payload; normal dictation remains functional. No paid service is invoked.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/training/test_collector.py::test_collection_disabled_creates_no_payload, ::test_pause_creates_no_new_payload (zero artifacts, zero examples; consent absent ⇒ disabled by construction)",
+        "tests/v2/training/test_collector.py::test_secret_quarantine_is_content_free (quarantine excludes, never publishes)",
+        "No network path exists in localflow/v2 (no HTTP client import; comparator is S30/M15 scope). Benchmark confirms the audio callback stays pure in-memory work (p95 0.004 ms)."
+      ]
+    }
+  },
+  "human_verification": [
+    {
+      "item": "Inspect one dictation in both UTC and local-time diagnostic views/export; reopen the app and verify old analytics/settings are still available.",
+      "status": "pending",
+      "steps": [
+        "Quit the installed LocalFlow.app, then start the dev pipeline: cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh",
+        "Dictate once; run: .venv/bin/python scripts/v2/view_events.py --last 20 (local display) and with --utc — the same stored instant must appear in both",
+        "Run: .venv/bin/python scripts/v2/view_events.py --export-redacted /tmp/localflow-events.jsonl and confirm no transcript text appears",
+        "Quit and restart the dev app; confirm sqlite3 v2.db 'select count(*) from legacy_dictations' still returns 7 and dictionary.json/transforms.json are untouched on disk"
+      ]
+    },
+    {
+      "item": "Enable local collection, dictate ≥5 times, mark one example, inspect its audio/stage join, pause collection, confirm the next dictation is not retained for training.",
+      "status": "pending",
+      "steps": [
+        "In the menu-bar Training submenu, enable Collect Training Evidence (opt-in; starts disabled)",
+        "Dictate at least five short utterances",
+        "Training → Mark Last Dictation Correct; Training → Exclude Last Dictation on another one",
+        "Inspect the join: sqlite3 ~/Library/Application\\ Support/LocalFlow/v2.db 'select example_id, job_id, state from training_examples' and verify jobs.artifacts join through envelope artifact_ids (audio float32 WAV under v2-artifacts/ playable, exact prompt recoverable via artifact_payload)",
+        "Training → Pause Collection; dictate once more; confirm no new training_examples row appears"
+      ]
+    }
+  ],
+  "checks": [
+    {"command": ".venv/bin/python tests/v2/test_legacy_parser.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "5/5 incl. audited-aggregate reproduction; parser refactor kept byte-compatible"},
+    {"command": ".venv/bin/python tests/v2/test_registry.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "33 requirements / 22 suites still hold (registry unchanged by M02)"},
+    {"command": ".venv/bin/python tests/v2/test_baseline_manifest.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "privacy scan incl. new tests/v2 subdirectories"},
+    {"command": ".venv/bin/python tests/v2/test_snapshot_safety.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "6/6"},
+    {"command": ".venv/bin/python tests/v2/logging/test_event_writer.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "13/13 (EV-02)"},
+    {"command": ".venv/bin/python tests/v2/storage/test_store.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "17/17 (EV-03 store)"},
+    {"command": ".venv/bin/python tests/v2/storage/test_import.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "7/7 (EV-03 import)"},
+    {"command": ".venv/bin/python tests/v2/training/test_collector.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "11/11 (EV-19 initial pack)"},
+    {"command": ".venv/bin/python tests/v2/training/test_live_pipeline.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "model-backed native Mac", "note": "2/2; real Qwen3-4B cleanup + real Parakeet on synthetic audio, offline (HF_HUB_OFFLINE)"},
+    {"command": ".venv/bin/python tests/test_stuck_overlay.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "5/5; harness re-pathed off live user data, job-record signature adapted"},
+    {"command": ".venv/bin/python tests/test_cleanup.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "model-backed native Mac", "note": "51/51, avg 0.88 s/case — cleanup behavior unchanged by the observer/notifier hooks"},
+    {"command": ".venv/bin/python scripts/v2/snapshot_user_data.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "all sources unchanged; snapshot under v2-evidence/"},
+    {"command": ".venv/bin/python scripts/v2/import_legacy.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "native Mac (live user data)", "note": "7 rows / 7 terms / 2 transforms / 754 log pairs; verified backup; re-run idempotent; consistency ok"},
+    {"command": ".venv/bin/python scripts/v2/benchmark_m02.py --real --output docs/v2/benchmarks/20260921-230202-m02/m02.json", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "native Mac + model-backed spot check", "note": "see benchmark summary below"}
+  ],
+  "benchmark_summary": {
+    "run": "docs/v2/benchmarks/20260921-230202-m02/m02.json",
+    "emit_overhead_p95_ms": 0.057,
+    "audio_callback_p95_ms": 0.004,
+    "storage_50k_insert_rate_per_sec": 3914.2,
+    "collection_paired_delta_p95_ms": 3.437,
+    "s2916_target_ms": 25,
+    "real_cleanup_spot": {"disabled_p50_ms": 915.58, "enabled_p50_ms": 898.099, "n": 3, "note": "real-model delta within run-to-run noise at n=3; the release-to-insert paired pilot with a human speaker stays pending"},
+    "notes": "Synthetic stub stages around the real collector/store for the paired measurement; no extra model calls are made to populate optional fields (S29.16)."
+  },
+  "review_loop": {
+    "review": "/review-2 (two parallel read-only reviewers: bug-hunting debugger; architecture/quality/security/data-integrity auditor)",
+    "verdict_before_address": "Request Changes — 3 criticals (corroborated across reviewers), 8 warnings, 11 suggestions after dedup",
+    "findings_addressed": [
+      "C1/C3 (corroborated): EvidenceCollector._current was set on the main thread and read on the worker — overlapping dictations mis-joined cleanup evidence. Fixed: job_started no longer binds; the worker binds via bind_current/clear_current; overlap regression test added.",
+      "C2 (corroborated): the log_transcripts persistence branch was dead code (ctx is never None) — transcripts silently stopped being retained under default config. Fixed: gated on ctx.collecting.",
+      "C1-CA1 (corroborated): prune purged retention_class='legacy' artifacts after 30 days and re-import could not restore them. Fixed: prune skips legacy; regression test.",
+      "Event writer: ValueError on a closed post-rotation file killed the writer thread (now caught + reopen-on-closed); critical spill bounded with dropped_critical counter; retention never manages another writer's pid-prefixed files; write-failure drops counted; single clock read per emit; new files created 0600 via os.open.",
+      "App wiring: store/collector calls on the hotkey and worker paths guarded so a store stall or evidence-write failure can never drop a dictation; retention pass moved off the main thread.",
+      "Envelope hygiene: no embedded transcript text (applied_sha256 only); prompt-less observations no longer mint empty model_input artifacts; cleanup_proposal join selects the main cleanup pass and excludes rejected proposals; on_failure applies secret quarantine; ASR decode params reference Transcriber constants.",
+      "Store: hot-path indexes via migration v2 (applied to the live store, backup taken); _purge_artifact commits the row before unlinking; close() tolerates a late writer op; composite atomic import ops (import_legacy_pair/import_legacy_text) close the crash window between artifact write and bookkeeping.",
+      "Importer: source identity hashed from the verified backup bytes; dictionary re-import semantics documented.",
+      "view_events: --last applied after filters; human formatting delegated to EventWriter.human_line (single S07 implementation, UTC/local toggle).",
+      "Tests added per reviewers: real-SQL unresolved_job_ids, on_failure (+quarantine), human_line UTC/local, capture_stderr content-free, torn-op rollback atomicity, migration-v2 index upgrade, interrupted-import convergence."
+    ],
+    "findings_deferred": [
+      "mark/exclude recency guard on the latest example (user-facing nuance; noted for M09 review surface)",
+      "tests/test_stuck_overlay.py Harness.close() defined but not called per test (thread/tempdir leak within the test process only)",
+      "SQLite file is created by sqlite3 with default mode then chmod'd 0600 (sub-second TOCTOU window; single-user local machine)"
+    ],
+    "findings_rejected": [],
+    "post_address_verification": "Every suite re-run green after the fixes (13+16+7+11 automated, 2/2 model-backed live pipeline, 5/5 overlay, 51/51 model-backed cleanup); real-data import re-run idempotent; live store migrated to schema v2 with backup; benchmark re-run on post-fix code."
+  },
+  "privacy": "Nothing private entered Git: committed artifacts carry hashes, counts, locators and synthetic fixtures only; tests/v2/test_baseline_manifest.py privacy scan passes over the new subdirectories; live data, backups and snapshots stay under ~/Library/Application Support/LocalFlow/ (outside Git)."
+}

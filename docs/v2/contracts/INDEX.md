@@ -11,6 +11,7 @@
 | `jobs.md` | Dictation job identity, state machine, time quality | M01 (shape), M02 (live) | S06 |
 | `events.md` | Dated event envelope (schema version 2) | M01 (shape), M02 (live) | S07 |
 | `artifacts.md` | Immutable stage artifacts, hashes, retention classes | M01 (shape), M02 (live) | S08, S29 |
+| `store.md` | SQLite store: writer discipline, identities, leases, deletion | M02 | S08, S29 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |

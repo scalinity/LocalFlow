@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "benchmark": "m02",
+  "run_id": "20260921-232447-m02",
+  "evaluated_utc": "2026-09-21T23:24:47.278Z",
+  "environment": {
+    "machine": "arm64",
+    "macos": "27.0",
+    "python": "3.14.7",
+    "runtime": {
+      "python": "3.14.7",
+      "mlx": "0.31.2",
+      "mlx-lm": "0.31.3",
+      "parakeet-mlx": "0.5.2",
+      "transformers": "5.10.4",
+      "numpy": "2.4.6",
+      "sounddevice": "0.5.5"
+    },
+    "source_revision": "4bd0187ae2445a472684c9c902c9548f58973ac6+dirty"
+  },
+  "emit_overhead": {
+    "n": 20000,
+    "emit_ms": {
+      "p50": 0.017,
+      "p95": 0.057,
+      "max": 1.421
+    },
+    "residual_drain_sec": 0.0,
+    "drain_note": "writer kept pace during emission; residual backlog drained inline",
+    "dropped": 0,
+    "degraded": false
+  },
+  "audio_callback": {
+    "calls": 2000,
+    "callback_ms": {
+      "p50": 0.003,
+      "p95": 0.004,
+      "max": 0.0325
+    },
+    "note": "pure in-memory capture path; recorder holds no store or event-writer references, so no db/logging work can ride it"
+  },
+  "storage_50k": {
+    "rows": 50000,
+    "insert_sec": 12.774,
+    "insert_rate_per_sec": 3914.2,
+    "point_read_ms_avg": 0.017,
+    "count_query_rows": 50000
+  },
+  "collection_paired": {
+    "n_per_mode": 50,
+    "disabled": {
+      "p50_ms": 0.019,
+      "p95_ms": 0.035,
+      "consistency_ok": true,
+      "incomplete_records": 0
+    },
+    "enabled": {
+      "p50_ms": 3.264,
+      "p95_ms": 3.472,
+      "consistency_ok": true,
+      "incomplete_records": 0
+    },
+    "delta_p95_ms": 3.437,
+    "s2916_target_ms": 25,
+    "note": "synthetic stub stages around the real collector/store; the release-to-insert paired pilot with real models and a human speaker remains pending human verification"
+  },
+  "real_cleanup_spot": {
+    "real_cleanup": {
+      "disabled": {
+        "p50_ms": 915.58,
+        "n": 3
+      },
+      "enabled": {
+        "p50_ms": 898.099,
+        "n": 3
+      }
+    },
+    "note": "real Qwen3-4B cleanup pass, model-backed native Mac"
+  }
+}

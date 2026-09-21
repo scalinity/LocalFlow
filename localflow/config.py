@@ -28,6 +28,15 @@ DEFAULTS = {
     # Write raw and cleaned transcripts to ~/Library/Logs/LocalFlow.log
     # (local only) so cleanup edits can be inspected and debugged
     "log_transcripts": True,
+    # V2 retention knobs (Spec S25) — visible and adjustable here; the Hub
+    # surfaces them visually from M09. Values are days unless named otherwise.
+    "events_retention_days": 14,
+    "events_cap_mib": 100,
+    "retention_transcript_days": 30,
+    "retention_audio_success_days": 7,
+    "retention_audio_failed_days": 30,
+    "retention_metadata_days": 14,
+    "training_buffer_days": 30,
 }
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
