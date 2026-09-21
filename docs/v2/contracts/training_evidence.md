@@ -1,0 +1,44 @@
+# Contract: Training evidence
+
+**Spec:** S29 · **Shape owner:** M01 · **Live owner:** M02 (live capture) · **Suites:** EV-19
+
+## Identifiers (M01 freezes these; M02 mints live records)
+
+- `example_id` — stable per logical example; mutable indexes point at
+  immutable revisions.
+- `revision_id` / `parent_revision_id` — append-only observation chain.
+- `family_id` — split unit (see `dataset_exports.md`).
+- `consent_revision_id` — collection consent state at capture time.
+- `job_id` / `attempt` / `worker_generation` — pipeline join.
+- Legacy imports: `legacy:<source-sha>:<line-range>` with
+  `time_quality: "unknown"`.
+
+## Revision envelope field families
+
+Identity/time · capture (original audio, format, sample counts, device,
+diagnostics) · audio preparation (crop offsets in original samples) ·
+recognition (model/revision/quantization/decode params, raw output) ·
+optional ASR detail (null-with-reason unless actually exposed) · context
+(frozen pre-decode snapshot, offered/accepted/ignored hints) ·
+normalization · cleanup (exact stage input, template, proposals,
+validation, applied output, fallback lineage) · transform · outcome ·
+labels · collection/export state.
+
+**Retain actual stage inputs, not hash-only references.** Unsupported or
+forbidden fields carry reasons from the controlled vocabulary
+(`unsupported_by_adapter`, `not_captured_at_stage`, `consent_disabled`,
+`source_deleted`, `unreliable_target`, `not_applicable`).
+
+## Consent and retention
+
+Collection is opt-in from M02, one persistent choice, no per-utterance
+prompts. Never-store, exclusion and delete-everywhere outrank every lease.
+Default: 30-day unreviewed buffer; reviewed/pinned examples retained until
+removed; visible soft budget. Collection consent, label verification,
+export permission and comparator upload are four different states.
+
+## M01 boundary
+
+M01 defines identifiers and null discipline only. No production collection
+layer, no database tables, no UI — those are M02. Historical outputs are
+not on-policy training data; nothing in M01 labels them as such.

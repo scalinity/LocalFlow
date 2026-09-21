@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "file_lines": 3496,
+  "launch_segments": 49,
+  "pairs": 749,
+  "timed_pairs": 477,
+  "cohorts": {
+    "loaded": 476,
+    "unavailable": 272,
+    "unknown": 1
+  },
+  "counts": {
+    "cleanup_load_failure": 21,
+    "cleanup_load_success": 27,
+    "empty_messages": 29,
+    "transcription_failure_messages": 3,
+    "metal_shared_event_failures": 3,
+    "sanity_fallback_messages": 9,
+    "warning_messages": 11,
+    "unpaired_timing": 16,
+    "unconsumed_audio_before_next_audio": 1
+  },
+  "audio_records": 498,
+  "overflow_positive": 0,
+  "zero_voiced": 10,
+  "loaded_changed": 257,
+  "loaded_lexical_changes": 107,
+  "loaded_new_sentence_breaks": 134,
+  "sum_stt": 176.6,
+  "sum_cleanup": 629.6,
+  "timing": {
+    "stt": {
+      "p50": 0.2,
+      "p95": 1.1,
+      "max": 4.2
+    },
+    "cleanup": {
+      "p50": 0.9,
+      "p95": 3.4,
+      "max": 9.0
+    },
+    "sum": {
+      "p50": 1.2,
+      "p95": 4.419999999999999,
+      "max": 12.7
+    }
+  },
+  "latency_by_words": {
+    "1-20 words": {
+      "n": 132,
+      "stt": {
+        "p50": 0.1,
+        "p95": 0.2,
+        "max": 0.5
+      },
+      "cleanup": {
+        "p50": 0.6,
+        "p95": 0.8449999999999989,
+        "max": 1.3
+      },
+      "sum": {
+        "p50": 0.7,
+        "p95": 1.0,
+        "max": 1.5
+      },
+      "changed_n": 35,
+      "added_sentence_boundaries": 9
+    },
+    "21-50 words": {
+      "n": 189,
+      "stt": {
+        "p50": 0.2,
+        "p95": 0.4,
+        "max": 0.8
+      },
+      "cleanup": {
+        "p50": 0.9,
+        "p95": 1.1,
+        "max": 1.9
+      },
+      "sum": {
+        "p50": 1.1,
+        "p95": 1.4000000000000001,
+        "max": 2.4
+      },
+      "changed_n": 81,
+      "added_sentence_boundaries": 8
+    },
+    "51-100 words": {
+      "n": 116,
+      "stt": {
+        "p50": 0.4,
+        "p95": 0.8250000000000001,
+        "max": 1.0
+      },
+      "cleanup": {
+        "p50": 1.7,
+        "p95": 2.4,
+        "max": 4.5
+      },
+      "sum": {
+        "p50": 2.1,
+        "p95": 3.0999999999999996,
+        "max": 4.9
+      },
+      "changed_n": 101,
+      "added_sentence_boundaries": 2
+    },
+    "101-200 words": {
+      "n": 32,
+      "stt": {
+        "p50": 1.1,
+        "p95": 1.7449999999999999,
+        "max": 4.2
+      },
+      "cleanup": {
+        "p50": 3.3499999999999996,
+        "p95": 4.949999999999999,
+        "max": 8.5
+      },
+      "sum": {
+        "p50": 4.35,
+        "p95": 6.384999999999999,
+        "max": 12.7
+      },
+      "changed_n": 32,
+      "added_sentence_boundaries": 0
+    },
+    "201+ words": {
+      "n": 8,
+      "stt": {
+        "p50": 2.4,
+        "p95": 3.09,
+        "max": 3.3
+      },
+      "cleanup": {
+        "p50": 6.45,
+        "p95": 8.475,
+        "max": 9.0
+      },
+      "sum": {
+        "p50": 8.75,
+        "p95": 11.155,
+        "max": 11.4
+      },
+      "changed_n": 8,
+      "added_sentence_boundaries": 0
+    }
+  },
+  "correlation_words_cleanup": 0.9488757986082987,
+  "notable_examples": [
+    {
+      "id": "E02-DOM-DELETION",
+      "cited_lines": [
+        1540,
+        1544
+      ],
+      "pair_raw_line": 1541,
+      "pair_cleaned_line": 1542,
+      "check": "react dom question loses the DOM token",
+      "located": true
+    },
+    {
+      "id": "E02-INSTRUCTION-EXECUTED",
+      "cited_lines": [
+        1690,
+        1694
+      ],
+      "pair_raw_line": 1691,
+      "pair_cleaned_line": 1692,
+      "check": "dictated editing instruction is acted on, not preserved",
+      "located": true
+    },
+    {
+      "id": "E02-REPLY-REQUEST-DELETED",
+      "cited_lines": [
+        1790,
+        1794
+      ],
+      "pair_raw_line": 1791,
+      "pair_cleaned_line": 1792,
+      "check": "direct request to write a reply disappears",
+      "located": true
+    },
+    {
+      "id": "E02-NOUN-DROPPED",
+      "cited_lines": [
+        1330,
+        1337
+      ],
+      "pair_raw_line": 1330,
+      "pair_cleaned_line": 1331,
+      "check": "noun dropped; repetition replaced by a synonym",
+      "located": true
+    },
+    {
+      "id": "E02-FRAGMENTS-1",
+      "cited_lines": [
+        948,
+        950
+      ],
+      "pair_raw_line": 948,
+      "pair_cleaned_line": 949,
+      "check": "coherent clauses become sentence fragments",
+      "located": true
+    },
+    {
+      "id": "E02-FRAGMENTS-2",
+      "cited_lines": [
+        1004,
+        1006
+      ],
+      "pair_raw_line": 1004,
+      "pair_cleaned_line": 1005,
+      "check": "coherent clauses become sentence fragments",
+      "located": true
+    },
+    {
+      "id": "E02-SLASH-GRAMMAR",
+      "cited_lines": [
+        1811,
+        1813
+      ],
+      "pair_raw_line": 1811,
+      "pair_cleaned_line": 1812,
+      "check": "spoken slash word rendered as filesystem-like syntax",
+      "located": true
+    },
+    {
+      "id": "E02-RECOVERY",
+      "cited_lines": [
+        958,
+        960
+      ],
+      "pair_raw_line": 958,
+      "pair_cleaned_line": 959,
+      "check": "plausible contextual recovery of a homophone pair",
+      "located": true
+    },
+    {
+      "id": "E02-CROSSTALK-1",
+      "cited_lines": [
+        2475,
+        2477
+      ],
+      "pair_raw_line": 2475,
+      "pair_cleaned_line": 2476,
+      "check": "raw audio text mixes unrelated commentary with instructions",
+      "located": true
+    },
+    {
+      "id": "E02-CROSSTALK-2",
+      "cited_lines": [
+        2526,
+        2533
+      ],
+      "pair_raw_line": 2526,
+      "pair_cleaned_line": 2527,
+      "check": "raw audio text mixes unrelated commentary with instructions",
+      "located": true
+    },
+    {
+      "id": "E02-METAL-FAILURES",
+      "cited_lines": [
+        3466,
+        3474
+      ],
+      "metal_failure_lines": [
+        3467,
+        3470,
+        3473
+      ],
+      "check": "three consecutive Metal shared-event inference failures",
+      "located": true
+    }
+  ],
+  "method_notes": [
+    "Counts derived from physical lines; splitlines() semantics (CR download progress counts as a line break).",
+    "Timing values are the log's rounded tenths; sums exclude queue delay and target-insertion confirmation.",
+    "Cohorts mark model readiness only after an explicit success/unavailable message within a launch segment.",
+    "Audio attribution to a pair uses the most recent unconsumed audio record; under capture/processing overlap an audio line can be attributed one dictation late (locator only, no count impact).",
+    "Transcript text is parsed in memory and never emitted."
+  ]
+}

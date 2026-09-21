@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "generated_utc": "2026-09-21T22:21:51.462070+00:00",
+  "milestone": "M01",
+  "git": {
+    "branch": "main",
+    "head_commit": "7cdd90486b23a1a86b3da00f9fdee39bfa40a8f9",
+    "clean_tree": false,
+    "dirty_entries": [
+      "M .gitignore",
+      "?? docs/",
+      "?? scripts/v2/",
+      "?? tests/v2/"
+    ],
+    "dirty_digest": "e8d52f0779b8b57a45956d558d485bb0c885fd925d15f6b53e61910885c80431",
+    "status_short": "## main...origin/main\n M .gitignore\n?? docs/\n?? scripts/v2/\n?? tests/v2/",
+    "worktrees": [
+      "/Users/danny/Documents/Tools/LocalFlow 7cdd904 [main]"
+    ],
+    "remote": "https://github.com/scalinity/LocalFlow.git"
+  },
+  "installed_bundle": {
+    "installed": true,
+    "path": "/Applications/LocalFlow.app",
+    "identity": {
+      "CFBundleIdentifier": "com.danny.localflow",
+      "CFBundleShortVersionString": "0.1.0",
+      "CFBundleVersion": "1",
+      "LSMinimumSystemVersion": "12.0"
+    },
+    "embedded_code_matches_git_head": true,
+    "divergence": null,
+    "diff_stderr": null,
+    "embedded_config": {
+      "model": "mlx-community/parakeet-tdt-0.6b-v3",
+      "hotkey": "fn",
+      "min_duration_sec": 0.3,
+      "max_duration_sec": 0,
+      "append_space": true,
+      "restore_clipboard": true,
+      "input_device": null,
+      "cleanup": "llm",
+      "cleanup_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+      "log_transcripts": true
+    },
+    "launcher": {
+      "path": "/Applications/LocalFlow.app/Contents/MacOS/LocalFlow",
+      "sha256": "4f44636c86f4d04d154c01645f93089759b0bc8ba13bb341f9210b700cc9f5f5"
+    }
+  },
+  "effective_configuration": {
+    "precedence": [
+      "explicit path",
+      "$LOCALFLOW_CONFIG",
+      "Application Support override",
+      "repo/bundled config.json"
+    ],
+    "effective": {
+      "source": "repo_config",
+      "path": "/Users/danny/Documents/Tools/LocalFlow/config.json",
+      "content": {
+        "model": "mlx-community/parakeet-tdt-0.6b-v3",
+        "hotkey": "fn",
+        "min_duration_sec": 0.3,
+        "max_duration_sec": 0,
+        "append_space": true,
+        "restore_clipboard": true,
+        "input_device": null,
+        "cleanup": "llm",
+        "cleanup_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+        "log_transcripts": true
+      }
+    },
+    "application_support_override_exists": false,
+    "note": "First match wins; unset keys fall back to DEFAULTS in localflow/config.py. Effective source: repo_config; Application Support override does not exist."
+  },
+  "models": {
+    "asr": {
+      "configured_id": "mlx-community/parakeet-tdt-0.6b-v3",
+      "configured": true,
+      "cached": true,
+      "hub_root": "/Users/danny/.cache/huggingface/hub",
+      "revision": "ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15",
+      "weights_sha256": {
+        "model.safetensors": "05e01c7f396c298cf7d23f61da7b504adeab698f0aaeafd9c82d198625464592"
+      },
+      "localai_cache": {
+        "cached": true,
+        "hub_root": "/Users/danny/Documents/LocalAI/models/hub",
+        "revision": "ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15",
+        "weights_sha256": {
+          "model.safetensors": "05e01c7f396c298cf7d23f61da7b504adeab698f0aaeafd9c82d198625464592"
+        }
+      }
+    },
+    "cleanup": {
+      "configured_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+      "configured": true,
+      "cached": true,
+      "hub_root": "/Users/danny/.cache/huggingface/hub",
+      "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+      "weights_sha256": {
+        "model.safetensors": "2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f"
+      },
+      "localai_cache": {
+        "cached": true,
+        "hub_root": "/Users/danny/Documents/LocalAI/models/hub",
+        "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+        "weights_sha256": {
+          "model.safetensors": "2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f"
+        }
+      }
+    },
+    "provenance_note": "User-stated provenance (2026-09-21): 'Local AI comes from ~/Documents/LocalAI/'. Observed: the running app has no HF_HOME/HF_HUB_CACHE override and its default cache ~/.cache/huggingface/hub holds byte-identical copies (same revisions and SHA-256) of both models, populated 2026-09-20/21 (xet download log). The LocalAI workspace holds the same revisions from 2026-06. Effective cache for the deployed app: default ~/.cache/huggingface."
+  },
+  "runtime": {
+    "python": "Python 3.14.7",
+    "packages": {
+      "mlx": "0.31.2",
+      "mlx_lm": "0.31.3",
+      "transformers": "5.10.4",
+      "numpy": "2.4.6",
+      "sounddevice": "0.5.5"
+    },
+    "chip": "Apple M5 Pro",
+    "memory_gb": 48.0,
+    "macos": "ProductName:\t\tmacOS; ProductVersion:\t\t27.0; BuildVersion:\t\t26A428",
+    "power": "Now drawing from 'Battery Power'"
+  },
+  "data": {
+    "application_support": {
+      "stats_db": {
+        "path": "/Users/danny/Library/Application Support/LocalFlow/stats.db",
+        "exists": true,
+        "sha256": "e4005289c7b9468e27db39be28e35df16fd4076c81692e13e0b086896489cb25",
+        "bytes": 20480,
+        "mtime_utc": "2026-07-04T21:38:40.277725+00:00",
+        "matches_historical": true
+      },
+      "dictionary": {
+        "path": "/Users/danny/Library/Application Support/LocalFlow/dictionary.json",
+        "exists": true,
+        "sha256": "56f2fcd135e362d4e703975f0e5d9151e624aa7899616a38c4926308940ef547",
+        "bytes": 122,
+        "mtime_utc": "2026-07-04T21:25:55.987018+00:00",
+        "matches_historical": true
+      },
+      "transforms": {
+        "path": "/Users/danny/Library/Application Support/LocalFlow/transforms.json",
+        "exists": true,
+        "sha256": "e7eb86b16a9f31d24fa3c46efca5975ff99d76508524e68b400ad8ae18baee89",
+        "bytes": 737,
+        "mtime_utc": "2026-07-04T21:08:08.721578+00:00",
+        "matches_historical": true
+      }
+    },
+    "application_support_other_entries": [
+      ".DS_Store",
+      "instance.lock",
+      "v2-evidence"
+    ],
+    "log": {
+      "path": "/Users/danny/Library/Logs/LocalFlow.log",
+      "exists": true,
+      "bytes": 547097,
+      "live_extends_historical_prefix": true,
+      "note": "live file grows with use; audited artifact is the byte prefix"
+    },
+    "recent_audio": {
+      "path": "/Users/danny/Library/Logs/LocalFlow-audio",
+      "count": 5,
+      "files": [
+        "dictation-20260921-003900-001.wav",
+        "dictation-20260921-141741-002.wav",
+        "dictation-20260921-142124-003.wav",
+        "dictation-20260921-152913-004.wav",
+        "dictation-20260921-181921-005.wav"
+      ],
+      "retention": "last 5 dictations, pruned by app.py"
+    }
+  },
+  "locally_newer_functionality_absent_from_git": {
+    "summary": "An analytics/dictionary/transform/dashboard feature set ran on 2026-07-04 (pyc mtimes 17:25\u201317:29 match App Support file mtimes 17:08\u201317:41). Its source modules were later deleted; only compiled remnants in ignored __pycache__ dirs remain. The installed bundle and Git HEAD contain none of it, so the deployed app no longer writes these files.",
+    "modules": [
+      {
+        "module": "localflow/_compat.py",
+        "pyc": "/Users/danny/Documents/Tools/LocalFlow/localflow/__pycache__/_compat.cpython-314.pyc",
+        "mtime_utc": "2026-07-04T21:29:40.796308+00:00",
+        "recovered_interface": "transformers AutoTokenizer.register compatibility shim (safe_register) \u2014 the 'str' object has no attribute '__module__' era fix."
+      },
+      {
+        "module": "localflow/profile.py",
+        "pyc": "/Users/danny/Documents/Tools/LocalFlow/localflow/__pycache__/profile.cpython-314.pyc",
+        "mtime_utc": "2026-07-04T21:25:55.953644+00:00",
+        "recovered_interface": "Local communication profile: chat-template generation over eligible history via cleanup_model, caching, eligibility rules, catchphrase."
+      },
+      {
+        "module": "localflow/stats.py",
+        "pyc": "/Users/danny/Documents/Tools/LocalFlow/localflow/__pycache__/stats.cpython-314.pyc",
+        "mtime_utc": "2026-07-04T21:25:55.954543+00:00",
+        "recovered_interface": "SQLite analytics writer/reader: dictations(ts, duration_sec, raw_text, cleaned_text, raw_words, cleaned_words, fixed_words, wpm, app_name, app_bundle, kind) + meta table, daily/streak/app_usage aggregates. Matches stats.db schema."
+      },
+      {
+        "module": "localflow/transforms.py",
+        "pyc": "/Users/danny/Documents/Tools/LocalFlow/localflow/__pycache__/transforms.cpython-314.pyc",
+        "mtime_utc": "2026-07-04T21:25:55.956508+00:00",
+        "recovered_interface": "TransformManager: selected-text transforms via clipboard copy/restore (_copy_selection/_restore/_run), hotkey keys 1/2, save/load transforms.json, DEFAULT_TRANSFORMS."
+      },
+      {
+        "module": "Desktop/dashboard.py",
+        "pyc": "/Users/danny/Documents/Tools/LocalFlow/Desktop/__pycache__/dashboard.cpython-314.pyc",
+        "mtime_utc": "2026-07-04T21:25:55.957610+00:00",
+        "recovered_interface": "Desktop Dashboard: native NSWindow + WKWebView over local files, JS bridge (userContentController messages), stats served from local SQLite, transform manager integration, snapshot support."
+      }
+    ],
+    "preservation_directive": "Treat App Support stats.db/dictionary.json/transforms.json as live user data to import and extend (M02/M05/M11); never infer the features are absent. Recover interfaces from the pyc remnants above."
+  },
+  "running_process_evidence": {
+    "processes": [
+      "danny            80184   0.0  0.5 493421616 236192   ??  S    12:38AM   0:57.39 /opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u -m localflow",
+      "danny            80183   0.0  0.0 488781392    752   ??  S    12:38AM   0:00.01 /Applications/LocalFlow.app/Contents/MacOS/LocalFlow"
+    ],
+    "log_readiness": {
+      "last_cleanup_model": "Qwen3-4B-Instruct-2507-4bit",
+      "parakeet_ready_messages": 48,
+      "cleanup_load_success_messages": 27
+    }
+  },
+  "historical_reconciliation": {
+    "log_artifact": {
+      "historical_sha256": "51e8ee707cbbe05fe8d383d10bdbb8bde2b90ea749554b3085fd113169fad6f0",
+      "historical_bytes": 544221,
+      "reproduced_by": "scripts/v2/parse_legacy_log.py (E02 protocol)",
+      "report": "docs/v2/baseline/legacy-log-reconciliation.json",
+      "pairs": 749,
+      "timed_pairs": 477,
+      "audio_records": 498,
+      "metal_shared_event_failures": 3,
+      "method_deltas": [
+        "loaded_lexical_changes 107 vs historical 108",
+        "loaded_new_sentence_breaks 134 vs historical 133"
+      ],
+      "method_delta_reason": "E02 does not pin the lexical-normalization/boundary-counting heuristics to the last detail; all acceptance-relevant counts, sums, correlation and band sizes reproduce exactly."
+    },
+    "analytics_rows": 7,
+    "dictionary_terms": 7,
+    "transform_definitions": 2
+  },
+  "unresolved": [
+    {
+      "fact": "Exact source of the analytics/dictionary/transform producers",
+      "status": "unresolved",
+      "reason": "Source .py files deleted; only .pyc remnants and their data files survive. Bytecode decompilation beyond interface recovery is not needed for the M02 import contract, which reads the data files."
+    },
+    {
+      "fact": "Producer of instance.lock in Application Support",
+      "status": "unresolved",
+      "reason": "No surviving source (Git, bundle, or pyc interface recovery) references instance.lock; inferred \u2014 not proven \u2014 to belong to the deleted Jul-4-era feature set."
+    }
+  ],
+  "private_data": {
+    "evidence_root": "/Users/danny/Library/Application Support/LocalFlow/v2-evidence",
+    "excluded_from_git": [
+      "live log",
+      "recent audio WAVs",
+      "stats.db",
+      "dictionary.json (live copy)",
+      "transforms.json (live copy)",
+      "full private snapshots under the evidence root"
+    ],
+    "committed_sanitized": [
+      "docs/v2/baseline/manifest.json (this file: hashes, paths, versions only)",
+      "docs/v2/baseline/legacy-log-reconciliation.json (counts + physical-line locators, no transcript text)"
+    ]
+  }
+}

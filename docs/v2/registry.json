@@ -1,0 +1,473 @@
+{
+  "schema_version": 1,
+  "derived_from": {
+    "spec": "docs/v2/LOCALFLOW_V2_SPEC.md",
+    "evaluation": "docs/v2/LOCALFLOW_V2_IMPLEMENTATION_AND_EVALUATION.md",
+    "method": "S05 requirement register and E08 suite catalog parsed from the current amended Markdown"
+  },
+  "counts": {
+    "requirements": 33,
+    "suites": 22,
+    "requirements_without_suite": []
+  },
+  "requirements": [
+    {
+      "id": "LF-R01",
+      "requirement": "Reconcile deployed/source/data baseline without losing existing work",
+      "owner_milestones": "M01",
+      "suites": [
+        "EV-01"
+      ]
+    },
+    {
+      "id": "LF-R02",
+      "requirement": "Dated structured logging and correlated diagnostics",
+      "owner_milestones": "M02",
+      "suites": [
+        "EV-02",
+        "EV-19"
+      ]
+    },
+    {
+      "id": "LF-R03",
+      "requirement": "Persistent jobs, immutable stage artifacts and safe legacy import",
+      "owner_milestones": "M02",
+      "suites": [
+        "EV-03",
+        "EV-19"
+      ]
+    },
+    {
+      "id": "LF-R04",
+      "requirement": "Reliable capture, hotkeys, mic switching and crash recovery",
+      "owner_milestones": "M03",
+      "suites": [
+        "EV-04"
+      ]
+    },
+    {
+      "id": "LF-R05",
+      "requirement": "Restartable inference, explicit readiness and recoverable failures",
+      "owner_milestones": "M03",
+      "suites": [
+        "EV-05"
+      ]
+    },
+    {
+      "id": "LF-R06",
+      "requirement": "Numeric, units, dates, identifiers and syntax normalization",
+      "owner_milestones": "M04",
+      "suites": [
+        "EV-06"
+      ]
+    },
+    {
+      "id": "LF-R07",
+      "requirement": "Spoken punctuation, literal escape and slash-command grammar",
+      "owner_milestones": "M04",
+      "suites": [
+        "EV-06"
+      ]
+    },
+    {
+      "id": "LF-R08",
+      "requirement": "Local scoped vocabulary, aliases, ranking and management",
+      "owner_milestones": "M05",
+      "suites": [
+        "EV-07",
+        "EV-18"
+      ]
+    },
+    {
+      "id": "LF-R09",
+      "requirement": "Fast local app/site/field context with sensitive-field exclusions",
+      "owner_milestones": "M06",
+      "suites": [
+        "EV-08",
+        "EV-18"
+      ]
+    },
+    {
+      "id": "LF-R10",
+      "requirement": "Faithful cleanup, self-corrections and document-aware formatting",
+      "owner_milestones": "M07",
+      "suites": [
+        "EV-09"
+      ]
+    },
+    {
+      "id": "LF-R11",
+      "requirement": "Protected meaning, transparent validation and safe fallback",
+      "owner_milestones": "M07",
+      "suites": [
+        "EV-09"
+      ]
+    },
+    {
+      "id": "LF-R12",
+      "requirement": "Destination-safe insertion, clipboard ownership and honest status",
+      "owner_milestones": "M08",
+      "suites": [
+        "EV-10"
+      ]
+    },
+    {
+      "id": "LF-R13",
+      "requirement": "Native Hub, history, replay, diagnostics and models UI",
+      "owner_milestones": "M09",
+      "suites": [
+        "EV-11"
+      ]
+    },
+    {
+      "id": "LF-R14",
+      "requirement": "Destination styles and explicit writing modes",
+      "owner_milestones": "M10",
+      "suites": [
+        "EV-12"
+      ]
+    },
+    {
+      "id": "LF-R15",
+      "requirement": "Plain/rich snippets and safe voice macros",
+      "owner_milestones": "M10",
+      "suites": [
+        "EV-12"
+      ]
+    },
+    {
+      "id": "LF-R16",
+      "requirement": "Developer vocabulary, IDE symbols, file tags and terminal adapters",
+      "owner_milestones": "M10",
+      "suites": [
+        "EV-12"
+      ]
+    },
+    {
+      "id": "LF-R17",
+      "requirement": "Local selected-text/custom/automatic transforms with diff and undo",
+      "owner_milestones": "M11",
+      "suites": [
+        "EV-13"
+      ]
+    },
+    {
+      "id": "LF-R18",
+      "requirement": "Requirement-preserving Prompt Engineer",
+      "owner_milestones": "M11",
+      "suites": [
+        "EV-13"
+      ]
+    },
+    {
+      "id": "LF-R19",
+      "requirement": "Local Scratchpad, versions, search and portable export",
+      "owner_milestones": "M12",
+      "suites": [
+        "EV-14"
+      ]
+    },
+    {
+      "id": "LF-R20",
+      "requirement": "Accurate existing/new analytics with independent retention",
+      "owner_milestones": "M13",
+      "suites": [
+        "EV-03",
+        "EV-15"
+      ]
+    },
+    {
+      "id": "LF-R21",
+      "requirement": "Useful local communication profile with evidence and uncertainty",
+      "owner_milestones": "M14",
+      "suites": [
+        "EV-15"
+      ]
+    },
+    {
+      "id": "LF-R22",
+      "requirement": "User-controlled correction learning and reversible personalization",
+      "owner_milestones": "M14",
+      "suites": [
+        "EV-15",
+        "EV-20"
+      ]
+    },
+    {
+      "id": "LF-R23",
+      "requirement": "Qualified model adapters, model comparison and pinned defaults",
+      "owner_milestones": "M15",
+      "suites": [
+        "EV-16",
+        "EV-22"
+      ]
+    },
+    {
+      "id": "LF-R24",
+      "requirement": "End-to-end performance and responsive UI budgets",
+      "owner_milestones": "M15",
+      "suites": [
+        "EV-16",
+        "EV-22"
+      ]
+    },
+    {
+      "id": "LF-R25",
+      "requirement": "Offline operation, private storage and deletion semantics",
+      "owner_milestones": "M16",
+      "suites": [
+        "EV-03",
+        "EV-17",
+        "EV-19",
+        "EV-21"
+      ]
+    },
+    {
+      "id": "LF-R26",
+      "requirement": "Packaging, upgrade/rollback, sleep/wake and final acceptance",
+      "owner_milestones": "M16",
+      "suites": [
+        "EV-17"
+      ]
+    },
+    {
+      "id": "LF-R27",
+      "requirement": "Existing behavior and language coverage regression protection",
+      "owner_milestones": "M16",
+      "suites": [
+        "EV-04",
+        "EV-17"
+      ]
+    },
+    {
+      "id": "LF-R28",
+      "requirement": "Fresh-session contracts, handoffs and traceable verification",
+      "owner_milestones": "M01\u2013M16",
+      "suites": [
+        "EV-01",
+        "EV-17"
+      ]
+    },
+    {
+      "id": "LF-R29",
+      "requirement": "Qualified pre-decode hint capabilities and one relevant-vocabulary selector",
+      "owner_milestones": "M05; M03 capability boundary, M06 wiring",
+      "suites": [
+        "EV-18"
+      ]
+    },
+    {
+      "id": "LF-R30",
+      "requirement": "Early live training evidence, exact provenance, consent/retention and deletion",
+      "owner_milestones": "M02; all producing stages extend",
+      "suites": [
+        "EV-19"
+      ]
+    },
+    {
+      "id": "LF-R31",
+      "requirement": "Classified corrections, representative/hard sampling and same-task preferences",
+      "owner_milestones": "M14; M08/M09/M11 observe first",
+      "suites": [
+        "EV-20"
+      ]
+    },
+    {
+      "id": "LF-R32",
+      "requirement": "Family-safe dataset splits, task-specific views and portable verified export",
+      "owner_milestones": "M14; M15/M16 qualification",
+      "suites": [
+        "EV-21"
+      ]
+    },
+    {
+      "id": "LF-R33",
+      "requirement": "Optional cloud comparator and explicit short/acoustic/context challenge evaluation",
+      "owner_milestones": "M15",
+      "suites": [
+        "EV-22"
+      ]
+    }
+  ],
+  "suites": [
+    {
+      "id": "EV-01",
+      "name": "Baseline/provenance",
+      "requirements": [
+        "LF-R01",
+        "LF-R28"
+      ]
+    },
+    {
+      "id": "EV-02",
+      "name": "Logging/time",
+      "requirements": [
+        "LF-R02"
+      ]
+    },
+    {
+      "id": "EV-03",
+      "name": "Storage/migration",
+      "requirements": [
+        "LF-R03",
+        "LF-R20",
+        "LF-R25"
+      ]
+    },
+    {
+      "id": "EV-04",
+      "name": "Capture/lifecycle",
+      "requirements": [
+        "LF-R04",
+        "LF-R27"
+      ]
+    },
+    {
+      "id": "EV-05",
+      "name": "Worker recovery",
+      "requirements": [
+        "LF-R05"
+      ]
+    },
+    {
+      "id": "EV-06",
+      "name": "Normalization",
+      "requirements": [
+        "LF-R06",
+        "LF-R07"
+      ]
+    },
+    {
+      "id": "EV-07",
+      "name": "Vocabulary",
+      "requirements": [
+        "LF-R08"
+      ]
+    },
+    {
+      "id": "EV-08",
+      "name": "Context",
+      "requirements": [
+        "LF-R09"
+      ]
+    },
+    {
+      "id": "EV-09",
+      "name": "Cleanup/fidelity",
+      "requirements": [
+        "LF-R10",
+        "LF-R11"
+      ]
+    },
+    {
+      "id": "EV-10",
+      "name": "Insertion",
+      "requirements": [
+        "LF-R12"
+      ]
+    },
+    {
+      "id": "EV-11",
+      "name": "Hub/history",
+      "requirements": [
+        "LF-R13"
+      ]
+    },
+    {
+      "id": "EV-12",
+      "name": "Profiles/developer",
+      "requirements": [
+        "LF-R14",
+        "LF-R15",
+        "LF-R16"
+      ]
+    },
+    {
+      "id": "EV-13",
+      "name": "Transforms",
+      "requirements": [
+        "LF-R17",
+        "LF-R18"
+      ]
+    },
+    {
+      "id": "EV-14",
+      "name": "Scratchpad",
+      "requirements": [
+        "LF-R19"
+      ]
+    },
+    {
+      "id": "EV-15",
+      "name": "Analytics/profile",
+      "requirements": [
+        "LF-R20",
+        "LF-R21",
+        "LF-R22"
+      ]
+    },
+    {
+      "id": "EV-16",
+      "name": "Models/performance",
+      "requirements": [
+        "LF-R23",
+        "LF-R24"
+      ]
+    },
+    {
+      "id": "EV-17",
+      "name": "Release/offline",
+      "requirements": [
+        "LF-R25",
+        "LF-R26",
+        "LF-R27",
+        "LF-R28"
+      ]
+    },
+    {
+      "id": "EV-18",
+      "name": "ASR hints/discrimination",
+      "requirements": [
+        "LF-R29",
+        "LF-R08",
+        "LF-R09"
+      ]
+    },
+    {
+      "id": "EV-19",
+      "name": "Training capture/lineage/retention",
+      "requirements": [
+        "LF-R30",
+        "LF-R02",
+        "LF-R03",
+        "LF-R25"
+      ]
+    },
+    {
+      "id": "EV-20",
+      "name": "Correction/preferences/sampling",
+      "requirements": [
+        "LF-R31",
+        "LF-R22"
+      ]
+    },
+    {
+      "id": "EV-21",
+      "name": "Dataset splits/export",
+      "requirements": [
+        "LF-R32",
+        "LF-R25"
+      ]
+    },
+    {
+      "id": "EV-22",
+      "name": "Comparator/challenge evaluation",
+      "requirements": [
+        "LF-R33",
+        "LF-R23",
+        "LF-R24"
+      ]
+    }
+  ],
+  "problems": []
+}

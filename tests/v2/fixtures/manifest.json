@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "milestone": "M01",
+  "purpose": "Reserved evaluation fixture families per Evaluation E04. M01 reserves families, IDs and sanitization states; owning milestones create the actual fixture files. Nothing here claims fixtures exist yet.",
+  "privacy": "All fixtures committed under tests/v2/fixtures/ are synthetic or sanitized; private real audio/text stays under the private evidence root and is referenced only by opaque ID + hash.",
+  "families": [
+    {
+      "family": "curated_deterministic_semantic",
+      "planned_count": 320,
+      "composition": "80 numbers/units/dates; 60 syntax/paths/skills; 40 vocabulary; 60 fidelity; 40 structure; 20 multilingual; 20 literal/quoted commands",
+      "owner_milestone": "M04-M07",
+      "status": "reserved"
+    },
+    {
+      "family": "adjudicated_real_text",
+      "planned_count": 60,
+      "composition": "stratified from the 749 legacy candidate pairs: 30 development, 10 validation, 20 held-out",
+      "owner_milestone": "M07",
+      "status": "reserved",
+      "source": "legacy corpus; requires review before any fixture is created"
+    },
+    {
+      "family": "real_audio_with_references",
+      "planned_count": 80,
+      "composition": "5 supplied private WAVs plus new reviewed recordings; >=10 quiet, 10 noise/overlap, 10 EN/ES or code-switching, 10 technical-name",
+      "owner_milestone": "M03/M15",
+      "status": "reserved",
+      "source": "private audio stays outside Git; committed fixtures are sanitized case records only"
+    },
+    {
+      "family": "short_speech_clips",
+      "planned_count": 60,
+      "composition": "30 clips 1-2 spoken words, 30 clips 3-5 words; distinct from the 80-clip family",
+      "owner_milestone": "M15",
+      "status": "reserved"
+    },
+    {
+      "family": "silence_background_negatives",
+      "planned_count": 20,
+      "composition": "separate from speech clips; hallucination/false-command measures, no zero-denominator WER",
+      "owner_milestone": "M15",
+      "status": "reserved"
+    },
+    {
+      "family": "training_evidence_pack",
+      "planned_count": 100,
+      "composition": "20 reviewed successes; 20 recognition/representation corrections; 20 mixed edits/changed intent; 10 cleanup/transform regressions; 10 uncertain/unobserved outcomes; 10 sensitive/excluded/deleted; 10 crop/retry/duplicate-family",
+      "owner_milestone": "M02",
+      "status": "reserved",
+      "plus_counterexamples": 40,
+      "counterexample_composition": "wrong-target attribution, unrelated pasted text, no-edit acceptance inference, different-input preference pairing"
+    },
+    {
+      "family": "prompt_engineer_cases",
+      "planned_count": 30,
+      "composition": "15 development, 5 validation, 10 held-out; requirement atoms enumerated",
+      "owner_milestone": "M11",
+      "status": "reserved"
+    },
+    {
+      "family": "context_target_scenarios",
+      "planned_count": 32,
+      "composition": "minimum four per each of eight destination classes",
+      "owner_milestone": "M06/M08",
+      "status": "reserved"
+    },
+    {
+      "family": "fault_concurrency_scenarios",
+      "planned_count": 24,
+      "composition": "startup, worker restart, cancellation, clipboard, disk, sleep, import",
+      "owner_milestone": "M03",
+      "status": "reserved"
+    }
+  ],
+  "test_manifest_reservation": {
+    "note": "S29.11: M01 reserves the test manifest; M14 implements versioned family assignment.",
+    "families_assigned": 0,
+    "splits": { "unassigned": "all", "train": 0, "validation": 0, "frozen_test": 0 }
+  },
+  "sanitization_rules": [
+    "No transcript text from the private log in any committed fixture without review and sanitization.",
+    "No audio bytes in Git; WAV references are opaque IDs with hashes pointing at the private evidence root.",
+    "App names from analytics rows are private usage data; sanitized fixtures replace them with synthetic names.",
+    "Synthetic fixtures are labeled origin=synthetic and never counted as reviewed real evidence."
+  ]
+}

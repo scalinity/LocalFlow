@@ -15,3 +15,17 @@ Desktop/
 # Dictation dumps and machine-local state (never in this tree, but belt-and-suspenders)
 LocalFlow-audio/
 *.app/
+
+# V2 private evidence (belt-and-suspenders; the evidence root itself lives
+# outside this repository under ~/Library/Application Support/LocalFlow/v2-evidence/)
+docs/v2/private/
+*.db
+*.sqlite
+LocalFlow.log
+LocalFlow.log.*
+v2-evidence/
+*.flac
+*.m4a
+# Note for M02: when synthetic fixture databases are wanted under
+# tests/v2/fixtures/, add a `!tests/v2/fixtures/**` negation here — the
+# global *.db rule above will otherwise exclude them silently.

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "active_milestone": "M01",
+  "status": "implemented_pending_human",
+  "status_reason": "All automatable M01 work and checks are complete; the release-to-insert latency pilot requires a human speaker and remains pending. Deployed cleanup model/readiness was established without manual interaction via the running app's own log (Qwen3-4B-Instruct-2507-4bit loaded), so no further human verification is owed for M01 itself.",
+  "source_commit": "7cdd90486b23a1a86b3da00f9fdee39bfa40a8f9",
+  "source_commit_note": "M01 artifacts were authored on top of this commit; the milestone commit that follows supersedes the dirty-tree state recorded in baseline/manifest.json.",
+  "requirements": ["LF-R01", "LF-R28"],
+  "registry": "docs/v2/registry.json",
+  "automated_results": ["docs/v2/acceptance/M01/results.json"],
+  "benchmark_runs": ["docs/v2/benchmarks/20260921-180858-m01-baseline/probe.json"],
+  "pending_human": [
+    "release-to-insert latency pilot (small spoken dictations, instrumented target) — the only M01-required benchmark that cannot run without a human speaker"
+  ],
+  "handoff": "docs/v2/handoffs/M01.md",
+  "next_milestone": "M02",
+  "next_milestone_dependency_eligible": true
+}

@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "milestone": "M01",
+  "evaluated_utc": "2026-09-21T22:40:00Z",
+  "working_directory": "/Users/danny/Documents/Tools/LocalFlow",
+  "acceptance_criteria": {
+    "M01-AC01": {
+      "statement": "The manifest reconciles each uploaded artifact with installed/source provenance or explicitly records the unresolved source location.",
+      "status": "pass",
+      "evidence": [
+        "docs/v2/baseline/manifest.json",
+        "Live stats.db / dictionary.json / transforms.json hash-match the audited artifacts exactly (e4005289…, 56f2fcd1…, e7eb86b1…); the audited log is a verified byte-prefix of the live log.",
+        "Installed /Applications/LocalFlow.app code is byte-identical to Git HEAD 7cdd904 (no divergence).",
+        "The producing source for analytics/dictionary/transforms is recorded as unresolved: source modules deleted, compiled remnants + interface recovery listed, producer era dated 2026-07-04 17:08-17:41 by file/pyc mtimes."
+      ]
+    },
+    "M01-AC02": {
+      "statement": "Log parser produces 749 pairs and 477 timed nonempty pairs for the supplied hash; 498 capture diagnostics and all three explicit Metal errors are retained.",
+      "status": "pass",
+      "evidence": [
+        "docs/v2/baseline/legacy-log-reconciliation.json",
+        "tests/v2/test_legacy_parser.py::test_historical_snapshot_reproduction (reproduces 749/477/498/3, cohorts 476/272/1, all message counts, sums 176.6/629.6, correlation 0.94888, band sizes, 11/11 notable windows) against the verified-hash snapshot.",
+        "Method deltas recorded honestly: loaded_lexical_changes 107 vs historical 108; loaded_new_sentence_breaks 134 vs historical 133 (E02 does not pin these heuristics; no acceptance-relevant count differs)."
+      ]
+    },
+    "M01-AC03": {
+      "statement": "All 33 requirements have an evaluation suite and owner milestone in the registry; private audio/log/database data is excluded from commits.",
+      "status": "pass",
+      "evidence": [
+        "docs/v2/registry.json (derived from S05/E08 by scripts/v2/build_registry.py; 33 requirements, 22 suites, zero without suite, zero without owner)",
+        "tests/v2/test_registry.py, tests/v2/test_baseline_manifest.py::test_no_private_files_in_repo_docs_or_tests",
+        "Private evidence root ~/Library/Application Support/LocalFlow/v2-evidence/ outside Git; .gitignore extended (*.db, *.sqlite, LocalFlow.log, docs/v2/private/)."
+      ]
+    },
+    "M01-AC04": {
+      "statement": "The registry maps all 33 requirements and 22 suites; early collection/outcome producers have explicit owners. Fresh M01 startup works without pre-existing STATUS.json, START_HERE.md or handoffs.",
+      "status": "pass",
+      "evidence": [
+        "registry.json counts + test_registry.py::test_early_collection_producers_have_owners (LF-R30 -> M02 first; LF-R29/31/32/33 owned).",
+        "M01 created STATUS.json, START_HERE.md, contracts/, handoffs/, acceptance/ themselves (their prior absence was expected per docs/v2/README.md section 3)."
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "legacy parser unit cases (multiline, progress-prefix, interruption, unpaired timing)",
+      "command": ".venv/bin/python tests/v2/test_legacy_parser.py",
+      "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+      "exit": 0,
+      "kind": "automated",
+      "evidence": "stdout 'all legacy parser tests passed' (5 tests incl. audited-aggregate reproduction)"
+    },
+    {
+      "name": "registry traceability",
+      "command": ".venv/bin/python tests/v2/test_registry.py",
+      "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+      "exit": 0,
+      "kind": "automated",
+      "evidence": "33 requirements / 22 suites re-derived from canonical Markdown match registry.json"
+    },
+    {
+      "name": "baseline manifest + privacy invariants",
+      "command": ".venv/bin/python tests/v2/test_baseline_manifest.py",
+      "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+      "exit": 0,
+      "kind": "automated",
+      "evidence": "manifest provenance fields; no private-bearing files under docs/ or tests/; fixtures reserved-only (726 planned, 0 claimed)"
+    },
+    {
+      "name": "snapshot safety (originals unchanged)",
+      "command": ".venv/bin/python tests/v2/test_snapshot_safety.py",
+      "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+      "exit": 0,
+      "kind": "automated",
+      "evidence": "file/sqlite snapshot round-trips; full CLI flow (main) leaves live sources byte-identical; in-repository evidence roots refused (post-/address additions)",
+      "post_address_rerun": true
+    },
+    {
+      "name": "user-data snapshot into private evidence root",
+      "command": ".venv/bin/python scripts/v2/snapshot_user_data.py",
+      "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+      "exit": 0,
+      "kind": "automated",
+      "evidence": "~/Library/Application Support/LocalFlow/v2-evidence/20260921T220117Z/snapshot-manifest.json — all sources unchanged; sqlite via backup API; historical prefix hash-verified"
+    },
+    {
+      "name": "existing watchdog regression suite",
+      "command": ".venv/bin/python tests/test_stuck_overlay.py",
+      "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+      "exit": 0,
+      "kind": "automated",
+      "evidence": "'all tests passed' (5/5 scenarios); no pre-existing failures"
+    },
+    {
+      "name": "existing cleanup suite, LLM tier (deployed Qwen3-4B)",
+      "command": ".venv/bin/python tests/test_cleanup.py",
+      "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+      "exit": 0,
+      "kind": "model-backed native Mac",
+      "evidence": "51/51 passed, total inference 47.9 s, avg 0.94 s/case; 2 cases passed via recorded sanity-check FALLBACK; confirms deployed cleanup model loads and runs on this machine"
+    },
+    {
+      "name": "existing cleanup suite, basic tier",
+      "command": ".venv/bin/python tests/test_cleanup.py --basic",
+      "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+      "exit": 1,
+      "kind": "automated",
+      "evidence": "39/51 passed",
+      "pre_existing": true,
+      "note": "Pre-existing and expected: the basic tier is regex-only and implements neither self-corrections nor list formatting; the suite is written for the LLM tier (README documents --basic as a degraded path). 12 failures are correction/formatting cases. Not caused by M01 (no production code changed)."
+    },
+    {
+      "name": "baseline stage-timing probe (Parakeet + Qwen, synthetic input)",
+      "command": ".venv/bin/python scripts/v2/baseline_probe.py",
+      "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+      "exit": 0,
+      "kind": "model-backed native Mac",
+      "evidence": "docs/v2/benchmarks/20260921-180858-m01-baseline/probe.json — Apple M5 Pro / 48 GB / macOS 27.0 / battery: ASR load 3.79 s, transcribe(3 s input) 0.44 s cold / 0.041 s warm; Qwen3-4B load 1.96 s, clean(28 words) 0.98 s. Stage-only, synthetic input, explicitly not release-to-insert."
+    },
+    {
+      "name": "deployed cleanup model / readiness (minimal human-check substitute)",
+      "command": "ps auxww + grep of ~/Library/Logs/LocalFlow.log",
+      "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+      "exit": 0,
+      "kind": "native Mac observation (no manual interaction needed)",
+      "evidence": "Installed app running (launcher PID + python -m localflow, started 2026-09-21 00:38 from /Applications); current instance's log tail shows 'model loaded.' and 'cleanup model loaded (Qwen3-4B-Instruct-2507-4bit)'. Recorded in baseline/manifest.json running_process_evidence. The M01 spec's launch-and-verify check is thereby established from runtime evidence without manual interaction; no further human verification owed for M01."
+    },
+    {
+      "name": "release-to-insert latency pilot",
+      "command": "(none — requires a human speaker and an instrumented target)",
+      "cwd": null,
+      "exit": null,
+      "kind": "human-only",
+      "status": "pending_human",
+      "reason": "An honest release-to-insert measurement needs real spoken dictation and observed insertion; a synthetic substitute would violate the spec's prohibition on substituting stage timings. Dependency: any session with the user present; earliest owning milestone that requires it for a gate is M15 (S24 budgets), so M02 is not blocked."
+    }
+  ],
+  "regression_requirements": {
+    "production_behavior_changed": false,
+    "note": "M01 touched no localflow/ production module. Verified: git diff of tracked files is empty; all changes are new untracked docs/, scripts/v2/, tests/v2/ paths plus .gitignore additions. Existing suites re-run after the review fixes: tests/test_stuck_overlay.py 5/5."
+  },
+  "review_loop": {
+    "review": "/review-2 executed (two parallel read-only reviewers: bug-hunting debugger; architecture/quality/security/data-integrity auditor). Both verdicts: Approve with Suggestions. Zero critical findings; 7 warnings and 14 suggestions total after dedup.",
+    "key_warnings": [
+      "Parser could silently drop a complete raw+cleaned pair when an unrelated record (WARNING/status) interleaved between the raw and cleaned prints, or when a log snapshot ended mid-pair (reviewer confirmed by execution on synthetic inputs; the hash-pinned audited artifact was unaffected).",
+      "Baseline-manifest generator could claim embedded-code==HEAD on a diff error (vacuous all()), crash instead of recording null-with-reason on unreadable config, and hard-code model IDs plus a static precedence note that could contradict its own computed result.",
+      "Privacy scan was extension-only: the snapshot tool's own artifact names (LocalFlow.log.full / .historical-prefix) matched no ignore rule; a two-word verbatim transcript quote sat in the committed reconciliation JSON against the never-transcript-text rule; the snapshot CLI flow was untested; the probe could crash before writing its report."
+    ],
+    "address": "All valid M01-scope findings fixed in-session: parser orphaned-raw rescue + EOF flush (audited aggregates re-verified identical afterwards); diff exit-code discrimination + stderr recorded; config reads degrade to null-with-reason; model IDs and precedence note derived from the computed effective config; .gitignore extended (LocalFlow.log.*, v2-evidence/, *.flac, *.m4a, M02 fixture-negation note); content-marker scan over docs/ added to the privacy test; snapshot CLI gains argv injection, in-repo-root refusal and nonzero exit on source mutation, with two new tests; transcript quote reworded and reconciliation JSON regenerated; probe wraps ASR in try/except and labels non-llm modes honestly; registry parsers warn on shape drift and accept 2+-digit IDs; chunked sha256; UTC run id; with-open file handles; version-probe failure reasons; instance.lock moved to unresolved with inference caveat.",
+    "deferred_to_later_milestones": [
+      "Global *.db ignore vs future synthetic fixture databases under tests/v2/fixtures/ — M02 must add a !tests/v2/fixtures/** negation when it creates them (noted in .gitignore)."
+    ],
+    "rejected_findings": [],
+    "post_address_verification": "Full re-run after fixes: tests/v2/test_legacy_parser.py 5/5 (audited aggregates reproduce), test_registry.py OK (33/22), test_baseline_manifest.py OK (incl. content-marker scan), test_snapshot_safety.py 6/6 (incl. CLI flow + refusal), tests/test_stuck_overlay.py 5/5, snapshot on live data exit 0 with all sources unchanged; registry and manifest regenerated."
+  },
+  "state": "implemented_pending_human",
+  "state_reason": "All four acceptance criteria pass on automated/native/model-backed evidence; the sole pending item is the human-only release-to-insert pilot, which no M01 acceptance criterion gates on."
+}
