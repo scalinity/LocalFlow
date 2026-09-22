@@ -18,6 +18,7 @@
 | `vocabulary.md` | Scoped dictionary entries, snapshots, HintSet/selector | M05 | S11, S30.1, S29.4 |
 | `context.md` | Bounded destination-context snapshots and providers | M06 | S12, S18, S30.1 |
 | `cleanup.md` | Faithful cleanup: contract, windows, corrections, validation, fallback | M07 | S13, S14, S29.4 |
+| `insertion.md` | Safe insertion: serialized queue, clipboard ownership, undo, S29.8 observation | M08 | S18, S12, S24, S29.8 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
@@ -76,4 +77,12 @@ milestones add fields; they must not repurpose or weaken these identifiers.
   ladder, permitted context, evidence); `context.md` gains M07's
   permitted-context definition; `training_evidence.md` and
   `vocabulary.md` gain M07 live-status notes. No frozen identifier
-  changed; the registry stays 33/22.
+  changed; the registry stays 33/22. M08 ships `insertion.md`
+  (serialized queue, the revalidation matrix consuming
+  `same_destination`, clipboard ownership generations, the method
+  matrix, readback-only confirmation, target-bound undo, retry
+  reconciliation, the S29.8 observation window, store schema v4);
+  `targets.md`'s transaction half goes live; `context.md`'s
+  `same_destination` consumer note updates; `training_evidence.md`
+  gains the M08 outcome-family status. No frozen identifier changed;
+  the registry stays 33/22.

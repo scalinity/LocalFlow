@@ -633,8 +633,11 @@ class EvidenceCollector:
         return ctx.example_id
 
     def on_insertion(self, ctx, posted: bool, chars: int):
-        """Outcome revision: V1 posts Cmd+V and cannot observe the target,
-        so success is recorded as posted_unverified (contracts/targets.md)."""
+        """Legacy outcome entry (V1 baseline semantic, pinned by the M02
+        suite): ``posted=True`` records the honest posted_unverified with
+        outcome_observation not_captured_at_stage; ``posted=False``
+        records not_attempted. Real M08 transactions go through
+        ``on_insertion_result``."""
         if not ctx.collecting or not ctx.example_id:
             return
         envelope = self.store.latest_revision(ctx.example_id) or {}
@@ -649,6 +652,88 @@ class EvidenceCollector:
         envelope["revision_id"] = None  # append a fresh revision
         self.store.append_revision(ctx.example_id, envelope,
                                    parent_revision_id=ctx.revision_1)
+
+    def on_insertion_result(self, ctx, result, observation=None):
+        """M08 outcome revision (Spec S18/S29.8): the real insertion
+        state machine plus the bounded observation's content-free
+        summary. Posted/confirmed/unknown stays independent of
+        correctness — ``correctness`` is untouched here and no-edit
+        intervals never become verified positives (M08-AC06). The
+        observation's before/after texts live in lease-governed
+        artifacts referenced by id, never in the envelope."""
+        if not ctx.collecting or not ctx.example_id:
+            return
+        envelope = self.store.latest_revision(ctx.example_id) or {}
+        envelope.setdefault("artifact_ids", {})
+        outcome = dict(envelope.get("outcome") or {})
+        outcome["correctness"] = outcome.get("correctness", "unreviewed")
+        outcome.update(result.to_envelope_block())
+        missing = dict(envelope.get("missing_reasons") or {})
+        if observation is not None:
+            # An S29.8 window is running on a certified surface: the
+            # insert-time block is interim (stop_reason fills in when
+            # the window closes — its own revision).
+            outcome["observation"] = self._observation_block(
+                observation.get("observer"))
+            missing.pop("outcome_observation", None)
+        elif result.state == "confirmed":
+            # Confirmed but no window (outcome_observation_sec = 0):
+            # observation is off by configuration, not unreliable.
+            outcome["observation"] = {"status": "observation_disabled"}
+            missing["outcome_observation"] = R_NOT_APPLICABLE
+        elif result.state == "posted_unverified":
+            # An unobserved insert on an uncertified surface: it never
+            # proved its AX reads self-consistent (S29.8's
+            # outcome_observation_unavailable).
+            outcome["observation"] = {
+                "status": "outcome_observation_unavailable"}
+            missing["outcome_observation"] = R_UNRELIABLE
+        else:
+            missing.pop("outcome_observation", None)
+        envelope["outcome"] = outcome
+        envelope["missing_reasons"] = missing
+        envelope["revision_id"] = None
+        self.store.append_revision(ctx.example_id, envelope,
+                                   parent_revision_id=ctx.revision_1)
+
+    def on_observation_closed(self, ctx, result, observer):
+        """The bounded S29.8 window ended: append the observation
+        outcome as its own revision (the observation outlives the
+        insert transaction by up to the window)."""
+        if not ctx.collecting or not ctx.example_id:
+            return
+        envelope = self.store.latest_revision(ctx.example_id) or {}
+        outcome = dict(envelope.get("outcome") or {})
+        outcome["observation"] = self._observation_block(observer)
+        missing = dict(envelope.get("missing_reasons") or {})
+        if outcome["observation"].get("recorded"):
+            missing.pop("outcome_observation", None)
+        envelope["outcome"] = outcome
+        envelope["missing_reasons"] = missing
+        envelope["revision_id"] = None
+        self.store.append_revision(ctx.example_id, envelope,
+                                   parent_revision_id=ctx.revision_1)
+
+    @staticmethod
+    def _observation_block(observer) -> dict:
+        """Content-free observation summary (ids/counts/reasons/ranges
+        only; before/after texts are lease-governed artifacts)."""
+        if observer is None:
+            return {"status": "outcome_observation_unavailable"}
+        return {
+            "status": "observed",
+            "recorded": True,
+            "observation_id": observer.observation_id,
+            "stop_reason": observer.stop_reason,
+            "edited": observer.edited,
+            "reanchors": observer.reanchors,
+            "ticks": observer.ticks,
+            "undo_candidate": observer.undo_candidate,
+            "before_artifact_id": observer.before_artifact,
+            "after_artifact_id": observer.after_artifact,
+            "no_edit_observed": (observer.stop_reason == "window_elapsed"
+                                 and not observer.edited),
+        }
 
     def on_failure(self, ctx, error_kind):
         """Pipeline exception before finalize: record what was captured with

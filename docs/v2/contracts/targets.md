@@ -12,20 +12,30 @@ surrounding-text fingerprint are completed by the bounded context
 finalize at release into `context.ContextSnapshot`
 (`contracts/context.md`). Sensitive fields are never read; browser
 origins drop query/fragment. Snapshots are evidence about a
-destination, never instructions for the cleaner. `same_destination()`
-answers the stale check insertion revalidation (M08) will call before
-granting replacement authority; the metadata cache invalidates on any
-app/focus change. The transaction half (revalidation before writing,
-clipboard ownership, one insertion queue, target-bound undo) is M08 —
-today's paste remains the V1 `posted_unverified` post.
+destination, never instructions for the cleaner.
+
+## Insertion transaction (live since M08)
+
+`same_destination()` answers the stale check insertion revalidation
+calls before granting replacement authority — consumed since M08 by
+`localflow.v2.insertion.validation.validate_target` (the identity row
+of the full matrix in `contracts/insertion.md`: identity, window,
+field, and exact-selection for the replacement case). The coordinator
+hands every finished artifact to the serialized insertion queue;
+revalidation failure routes the output to saved history with a
+clipboard copy as the one-action paste offer. Clipboard ownership
+generations, the method matrix, readback confirmation, target-bound
+undo and the S29.8 observation window are specified and tested in
+`contracts/insertion.md`.
 
 ## Insertion outcomes
 
 `confirmed` · `posted_unverified` · `saved_not_inserted` · `target_changed`
-· `failed`. A posted event is not a confirmed insertion. The current V1
-behavior posts Cmd+V and reports success without observing the target; M01
-records that as the baseline (`posted_unverified` semantics do not exist in
-V1 — its "inserted N chars" log line means "event posted").
+· `failed`. A posted event is not a confirmed insertion: `confirmed`
+requires a target readback of the owned range equal to the inserted
+text — never LocalFlow's own pasteboard. The V1 baseline recorded
+every paste as `posted_unverified` ("inserted N chars" meant "event
+posted"); the legacy collector entry preserves that semantic.
 
 ## Invariants
 

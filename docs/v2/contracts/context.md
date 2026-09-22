@@ -89,15 +89,18 @@ job — M05 AC03 preserved), and the upgraded hint set is what
 
 ## Freshness, staleness, caching
 
-Snapshots carry `captured_at_utc`/`finalized_at_utc`/`
+Snapshots carry `captured_at_utc`/`finalized_at_utc`/
 `finalize_duration_ms` and per-provider status + duration (coverage and
 skip frequency are first-class benchmark outputs, not just latency).
-`same_destination(frontmost)` answers the S12/S18 stale check future
-insertion revalidation (M08) calls before granting replacement
-authority — a pid/bundle mismatch means stale. A short-lived cache
-holds resolved origin/workspace keyed by frontmost pid plus a
-window/field signature that is re-read every capture; any change
-invalidates it (event `context.cache_invalidated`).
+`same_destination(frontmost)` answers the S12/S18 stale check
+insertion revalidation calls before granting replacement authority —
+**consumed since M08** by `localflow.v2.insertion.validation` (the
+identity row of the revalidation matrix, `contracts/insertion.md`); a
+pid/bundle mismatch means stale and routes the artifact to saved
+history. A short-lived cache holds resolved origin/workspace keyed by
+frontmost pid plus a window/field signature that is re-read every
+capture; any change invalidates it (event
+`context.cache_invalidated`).
 
 ## Degradation and diagnostics
 
@@ -152,7 +155,8 @@ mic).
 - The window-title origin fallback is heuristic and provenance-marked;
   browsers that expose no AXURL report no origin rather than a guess.
 - The jobs table has no `target_snapshot_id` column; the ids live on
-  the job dict and in the evidence context block. M08 adds what
-  insertion validation needs at its own migration.
-- No insertion revalidation runs yet (M08): `same_destination` is the
-  exposed hook, unused today.
+  the job dict and in the evidence context block, and M08's insertion
+  rows (`insertions`/`insertion_observations`, store schema v4) carry
+  them where persistence needs them.
+- Insertion revalidation is live since M08 (see above and
+  `contracts/insertion.md`).

@@ -115,6 +115,46 @@ class RecordingSupervisor:
         pass
 
 
+class StubInsertionService:
+    """Synchronous stand-in for the M08 insertion queue (shared harness):
+    settles the job inline — no threads, no system pasteboard, no AX —
+    so the pipeline suites keep their synchronous store/evidence
+    asserts. The real service and its race matrix live in
+    tests/v2/insertion/."""
+
+    def __init__(self, delegate):
+        self.d = delegate
+        self.submits = []
+
+    def submit(self, text, job, on_done, on_observation=None):
+        from localflow.v2.insertion import InsertionResult
+        self.submits.append((text, job.get("job_id"),
+                             bool(job.get("cancelled"))))
+        # Bypass on_done's AppHelper.callAfter hop (nothing is running
+        # an NSApplication loop here) and settle on the test thread,
+        # exactly as the pre-M08 inline paste did.
+        self.d._insertionDone_(InsertionResult.legacy_posted(len(text)),
+                               job)
+
+    def note_new_dictation(self):
+        pass
+
+    def note_session_locked(self):
+        pass
+
+    def note_session_unlocked(self):
+        pass
+
+    def undo_last(self):
+        return {"outcome": "nothing_to_undo"}
+
+    def paste_again(self):
+        return {"outcome": "nothing_to_paste"}
+
+    def last_result(self):
+        return None
+
+
 class Harness:
     def __init__(self, durations, cfg=None, supervisor=None):
         self._tmp = tempfile.TemporaryDirectory()
@@ -136,6 +176,7 @@ class Harness:
         hk.physically_down = lambda: True
         d.hotkey = hk
         d.supervisor = supervisor
+        d._insertion = StubInsertionService(d)
         self.d = d
         self.hk = hk
         self.phys = True

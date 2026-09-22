@@ -40,7 +40,9 @@ def test_schema_v3_tables_exist():
         con.close()
         assert {"vocabulary_entries", "vocabulary_aliases",
                 "vocabulary_history", "vocabulary_meta"} <= tables
-        assert st._schema_version() == 3
+        # Additive migrations only: M08's schema v4 (insertion tables)
+        # supersedes 3 without touching the frozen v3 vocabulary tables.
+        assert st._schema_version() >= 3
         st.close()
     print("ok  schema v3: vocabulary tables live in the single store")
 

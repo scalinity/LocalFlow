@@ -1,0 +1,41 @@
+{
+ "schema_version": 1,
+ "milestone": "M08",
+ "kind": "insertion-benchmark",
+ "measured_utc": "2026-09-22T17:12:38Z",
+ "harness": "instrumented fixture target (no model, no live app, no real pasteboard)",
+ "results": {
+  "target_verification": {
+   "n": 60,
+   "p50_ms": 0.002,
+   "p95_ms": 0.004,
+   "max_ms": 0.011
+  },
+  "insertion_ax_replacement": {
+   "n": 60,
+   "p50_ms": 0.339,
+   "p95_ms": 0.692,
+   "max_ms": 0.933,
+   "enqueue_ms": 0.004
+  },
+  "insertion_clipboard_transaction": {
+   "n": 60,
+   "p50_ms": 0.369,
+   "p95_ms": 0.625,
+   "max_ms": 1.29,
+   "enqueue_ms": 0.003
+  },
+  "ui_callback_submit_while_slow_transaction": {
+   "slow_settle_sec": 0.6,
+   "submit_ms": 0.003,
+   "rule": "no sleep/pasteboard wait/restore on the caller; pre-M08 inline paste slept 50 ms on the main thread",
+   "note": "submit is the entire UI-side cost; the pre-M08 path additionally slept 0.05 s inline and posted a 0.6 s restore thread per paste"
+  },
+  "observation_tick_reads_approx": {
+   "n": 60,
+   "p50_ms": 0.0,
+   "p95_ms": 0.0,
+   "max_ms": 0.003
+  }
+ }
+}

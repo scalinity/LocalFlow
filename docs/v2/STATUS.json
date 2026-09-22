@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
-  "active_milestone": "M07",
+  "active_milestone": "M08",
   "status": "implemented_pending_human",
-  "status_reason": "All automatable M07 work and checks passed on post-review code: the faithful cleanup V2 engine (S13 contract prompt, complete-block windows, offset-exact corrections, deterministic/heuristic validation, output-limit recovery, fallback ladder) with the EV-09 suites green (60/60 fidelity, 40/40 structure, 20/20 literal model-backed; 19 deterministic engine tests; 8 pipeline tests through the real coordinator) and the V1-vs-V2 ablation on the frozen 120-fixture corpus giving V2 115/120 vs V1 106/120 assertions with long-input stage p50 2.4 s vs 8.1 s — cleanup_implementation defaults to v2 on that evidence, V1 stays the selectable control. Every M01–M06 suite plus worker_live, live_pipeline and the V1 control (51/51) re-ran green post-review. The /review-2 → /address loop completed: the critical (protected spans were job-global, mass-rejecting every multi-window job carrying a span — flagged independently by both reviewers) and every warning were fixed in-session with regression tests; suggestions applied (per-window span scoping, reachable AC02-safe split retry, honest retry-termination labels, protected-token case-insensitivity, decimal phrase spans, seam-continued list numbering, contract accuracy, worker exception-branch test, dead code). Pending is the milestone's native human trial (long AI prompts with three constraints, multiple corrections, lists and sign-offs from Terminal.app; stage diffs; undo-cleanup) — it does not gate M08's automatable work.",
-  "source_commit": "a3d4579bebe549407b0f0f9db95c26c68f2718f26",
-  "source_commit_note": "M07 was implemented on top of this commit (the M06 close-out ORCHESTRATION.html realignment); the M07 commit follows.",
-  "requirements": ["LF-R10", "LF-R11", "LF-R28", "LF-R30"],
+  "status_reason": "All automatable M08 work and checks passed on post-review code: the serialized insertion service (one transaction queue — revalidation consuming M06's same_destination, the AX-vs-clipboard method matrix, pasteboard ownership generations with user-copy-wins restore, readback-only confirmation incl. the ambiguous-pre-existing rule, target-bound undo, paste-again reconciliation, the multi-line terminal copy-only guard that classifies the live frontmost bundle when no snapshot carried a category) plus the S29.8 bounded outcome observation (certified = readback-consistent surfaces, owned-range-only reads, re-anchoring, lease-governed before/after artifacts, all stop conditions, re-armed on wake). Suites: races 13/13, attribution 10/10, pipeline 5/5, plus every M01–M07 suite, worker_live, live_pipeline and the V1 control (51/51) re-ran green post-review. Store schema v4 (insertions + insertion_observations, additive; live db migrated). Benchmark: verification p95 0.004 ms; AX insert p95 0.69 ms; clipboard p95 0.63 ms; UI-callback submit 0.002 ms while a 0.6 s settle transaction was in flight (pre-M08 slept 50 ms inline). The /review-2 → /address loop completed: all three criticals (terminal-guard bypass without a snapshot — CA1; the one-way session-lock latch — both reviewers; clipboard-path false confirmation over pre-existing text — DB1) and every warning were fixed in-session with regression tests; suggestions applied (dead code, constants, contract drift, backup-skip warning, flake hardening). Pending is the milestone's native human trial (app-switch races, user clipboard copies during processing, undo after manual edits, two rapid dictations, terminal multi-line behavior from Terminal.app) — it does not gate M09's automatable work and doubles as the E10 destination-class certification prerequisite.",
+  "source_commit": "a8dbeda8b1a1e6ffe70ec4256b6e437a52a49a24",
+  "source_commit_note": "M08 was implemented on top of this commit (the M07 close-out ORCHESTRATION.html realignment); the M08 commit follows.",
+  "requirements": ["LF-R12", "LF-R28", "LF-R30", "LF-R31"],
   "registry": "docs/v2/registry.json",
-  "automated_results": ["docs/v2/acceptance/M07/results.json"],
-  "benchmark_runs": ["docs/v2/benchmarks/20260922-105404-m07/m07.json"],
+  "automated_results": ["docs/v2/acceptance/M08/results.json"],
+  "benchmark_runs": ["docs/v2/benchmarks/20260922-131238-m08/m08.json"],
   "pending_human": [
-    "native-m07-long-prompt-cleanup-trial"
+    "native-m08-insertion-trial"
   ],
-  "handoff": "docs/v2/handoffs/M07.md",
-  "next_milestone": "M08",
+  "handoff": "docs/v2/handoffs/M08.md",
+  "next_milestone": "M09",
   "next_milestone_dependency_eligible": true
 }

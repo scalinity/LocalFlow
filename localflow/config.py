@@ -89,6 +89,11 @@ DEFAULTS = {
     # evidence. false = no context artifact is written even with
     # collection enabled; the envelope records the redaction.
     "training_retain_context": True,
+    # M08 (Spec S29.8): the bounded post-insertion observation window in
+    # seconds — how long a certified field is watched for edits to the
+    # inserted region. An adjustable collection window, not a limit on
+    # dictation or editing; 0 disables observation.
+    "outcome_observation_sec": 30,
 }
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent

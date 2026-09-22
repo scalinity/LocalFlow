@@ -107,3 +107,20 @@ the normalization ledger), validation component outcomes and fallback
 lineage. A validator outcome is a mining signal only —
 `outcome.correctness` stays `unreviewed` and no preference is recorded
 (M07-AC06). See `contracts/cleanup.md`.
+
+## M08 live status (outcome family)
+
+The outcome field family is live: `on_insertion_result(ctx, result,
+observation=)` records the real S18 state machine (confirmed ·
+posted_unverified · target_changed · saved_not_inserted · failed) with
+method, readback, verification and clipboard disclosure — posted/
+confirmed/unknown stays independent of correctness labels, and the
+legacy `on_insertion` keeps the V1 baseline semantics the M02 suite
+pins. The S29.8 bounded observation (certified = readback-consistent
+surfaces only) writes window rows (`insertion_observations`, store
+schema v4) with stop reason, reanchors and lease-governed before/after
+range artifacts; the envelope's observation block is interim at insert
+time and finalized by `on_observation_closed`. Uncertified surfaces
+report `outcome_observation_unavailable` (`unreliable_target`);
+`no_edit_observed` never becomes a correctness label or preference
+(M08-AC05/AC06). See `contracts/insertion.md`.

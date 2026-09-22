@@ -36,12 +36,14 @@ from . import v2
 from .v2 import context as v2_context
 from .audio import Recorder
 from .hotkey import DISPLAY_NAMES, HotkeyListener, MouseTriggerListener
-from .inject import copy_text, paste_text
+from .inject import copy_text
 from .overlay import MODE_FAILED, MODE_PROCESSING, MODE_RECORDING, Overlay
 from .permissions import ensure_permissions
 from .v2 import capture_journal
 from .v2 import cleanup as v2_cleanup
+from .v2 import insertion as v2_insertion
 from .v2 import normalize as v2_normalize
+from .v2.insertion import hosts as v2_insertion_hosts
 from .v2.supervisor import WorkerFailure, WorkerSupervisor
 
 STATE_IDLE = "idle"
@@ -187,6 +189,31 @@ class AppDelegate(NSObject):
             self.v2log.emit("context.collector_unavailable",
                             level="WARNING", reason_code=type(e).__name__,
                             outcome="context_off")
+        # M08 (Spec S18): safe insertion. One serialized transaction
+        # queue owns revalidation, the clipboard ownership protocol and
+        # undo; the UI callback only ever enqueues. A construction
+        # failure degrades to copy-only with an event — dictation
+        # itself never depends on this service.
+        self._insertion = None
+        self._observers = []
+        self._starting_observation = None
+        try:
+            self._insertion = v2_insertion.InsertionService(
+                host=v2_insertion_hosts.SystemInsertionHost(),
+                pasteboard=v2_insertion_hosts.SystemPasteboard(),
+                keyboard=v2_insertion_hosts.SystemKeyboard(),
+                store=self.store, emit=self.v2log.emit,
+                restore_clipboard=bool(cfg.get("restore_clipboard", True)),
+                observation_window_sec=float(
+                    cfg.get("outcome_observation_sec", 30)),
+                on_post_begin=lambda: setattr(self, "_injecting", True),
+                on_post_end=lambda: AppHelper.callAfter(
+                    self._armInjectingClear_))
+        except Exception as e:
+            self._insertion = None
+            self.v2log.emit("insertion.service_unavailable",
+                            level="WARNING", reason_code=type(e).__name__,
+                            outcome="copy_only")
         self.overlay = None
         self.hotkey = None
         self.mouse_trigger = None
@@ -574,6 +601,10 @@ class AppDelegate(NSObject):
         self._lost_ticks = 0
         # Job first, then capture (Spec S06 ordering): the journal file and
         # every recovery record then carry the minted job identity.
+        if self._insertion is not None:
+            # S29.8 stop condition: a new dictation ends any live
+            # outcome-observation window.
+            self._insertion.note_new_dictation()
         job_id, family_id = self.store.create_job(
             kind="dictation", session_id=self.v2log.session_id,
             boot_id=self.v2log.boot_id,
@@ -880,13 +911,20 @@ class AppDelegate(NSObject):
 
     def willSleep_(self, note):
         self._abandon_capture_for_system("system_sleep")
+        if self._insertion is not None:
+            self._insertion.note_session_locked()
 
     def sessionResigned_(self, note):
         self._abandon_capture_for_system("session_locked_or_switched")
+        if self._insertion is not None:
+            self._insertion.note_session_locked()
 
     def didWake_(self, note):
         # The microphone stays off after wake until the user asks for it
-        # (Spec S09): nothing here starts a capture.
+        # (Spec S09): nothing here starts a capture. Observation,
+        # however, re-arms — a lock is a state, not a one-way event.
+        if self._insertion is not None:
+            self._insertion.note_session_unlocked()
         self.v2log.emit(
             "app.woke", level="INFO",
             outcome="mic_off" if not self.recorder.recording else "mic_on",
@@ -1423,15 +1461,13 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def _finishWithText_(self, text, job):
-        self._pending -= 1
-        if job in self._active_jobs:
-            self._active_jobs.remove(job)
         job_id, ctx = job["job_id"], job["ctx"]
         if job.get("cancelled"):
             # Cancelled mid-processing: whatever the worker returned, it
             # lost insertion authority the moment the user cancelled. The
             # coordinator is done with the wav by now, so the journal files
             # can finally go.
+            self._retire_active_job(job)
             if job_id:
                 self.v2log.emit("insertion.skipped", level="INFO",
                                 job_id=job_id,
@@ -1440,46 +1476,40 @@ class AppDelegate(NSObject):
             self._settle_state()
             return
         if job.get("failed"):
+            self._retire_active_job(job)
             self._show_failed_pill()
         elif text:
             if self.cfg["append_space"] and not text.endswith(("\n", " ")):
                 text += " "
-            # The synthetic ⌘V must not cancel a recording already in
-            # progress; the flag is cleared shortly after the event lands.
-            self._injecting = True
-            try:
-                if paste_text(text, restore_clipboard=self.cfg["restore_clipboard"]):
-                    # V1 posts Cmd+V and cannot observe the target, so the
-                    # outcome is posted_unverified (contracts/targets.md).
-                    if job_id:
-                        self.v2log.emit(
-                            "insertion.posted", level="INFO", job_id=job_id,
-                            outcome="posted_unverified",
-                            reason_code="v1_target_unobservable",
-                            detail=f"{len(text)} chars")
-                        self._job_state(job_id, "insertion_posted")
-                        self._job_state(job_id, "insertion_unverified",
-                                        reason="v1_target_unobservable")
-                    if ctx is not None:
-                        self.collector.on_insertion(ctx, True, len(text))
-                    self._delete_journal_files(job_id)
-                else:
-                    if job_id:
-                        self.v2log.emit(
-                            "insertion.saved_not_inserted", level="WARNING",
-                            job_id=job_id, outcome="saved_not_inserted",
-                            reason_code="accessibility_not_trusted",
-                            detail="transcript left on the clipboard for a"
-                                   " manual ⌘V")
-                        self._job_state(job_id, "saved_not_inserted",
-                                        reason="accessibility_not_trusted")
-                    if ctx is not None:
-                        self.collector.on_insertion(ctx, False, 0)
-            finally:
-                NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
-                    0.25, self, "clearInjecting:", None, False
-                )
+            # M08 (S18): the text branch hands off to the serialized
+            # insertion queue — the job stays active (cancel authority
+            # holds until the transaction starts) and settles in
+            # _insertionDone_ on the main thread. No AX call, pasteboard
+            # write or settle sleep ever runs on this UI callback.
+            if self._insertion is None:
+                copy_text(text)
+                if job_id:
+                    self.v2log.emit(
+                        "insertion.saved_not_inserted", level="WARNING",
+                        job_id=job_id, outcome="saved_not_inserted",
+                        reason_code="insertion_service_unavailable",
+                        detail="transcript left on the clipboard for a"
+                               " manual ⌘V")
+                    self._job_state(job_id, "saved_not_inserted",
+                                    reason="insertion_service_unavailable")
+                if ctx is not None:
+                    self.collector.on_insertion(ctx, False, 0)
+                self._settle_state()
+                return
+            self._insertion.submit(
+                text, job,
+                on_done=lambda result, j=job: AppHelper.callAfter(
+                    self._insertionDone_, result, j),
+                on_observation=lambda info, j=job: AppHelper.callAfter(
+                    self._observationStarted_, info, j))
+            return
         else:
+            self._retire_active_job(job)
             if job_id:
                 self.v2log.emit("insertion.skipped", level="INFO",
                                 job_id=job_id,
@@ -1504,6 +1534,148 @@ class AppDelegate(NSObject):
             # machine so the failure is actually visible.
             return
         self._settle_state()
+
+    @objc.python_method
+    def _retire_active_job(self, job):
+        """One job leaves the active set exactly once, in whichever
+        branch terminates it (the text branch defers this to
+        _insertionDone_ so cancel authority holds until the insertion
+        transaction starts)."""
+        self._pending -= 1
+        if job in self._active_jobs:
+            self._active_jobs.remove(job)
+
+    @objc.python_method
+    def _insertionDone_(self, result, job):
+        """The insertion transaction finished (main thread): record the
+        honest outcome state, evidence and journal policy. Confirmed and
+        posted results consumed the artifact; every other terminal state
+        keeps the recovery audio for retry."""
+        self._retire_active_job(job)
+        job_id, ctx = job["job_id"], job["ctx"]
+        if job.get("cancelled"):
+            # Cancel landed between coordinator finish and transaction
+            # start: the service refused it; authority was already gone.
+            if result.reason_code == "user_cancelled":
+                if job_id:
+                    self.v2log.emit("insertion.skipped", level="INFO",
+                                    job_id=job_id,
+                                    reason_code="user_cancelled")
+                self._delete_journal_files(job_id)
+                self._settle_state()
+                return
+            # Cancel landed MID-transaction: the insert physically ran
+            # (possibly confirmed) — record it honestly instead of
+            # discarding the evidence; the job's cancelled state stands.
+            if job_id:
+                self.v2log.emit(
+                    "insertion.cancelled_after_insert", level="WARNING",
+                    job_id=job_id, outcome=result.state,
+                    reason_code="user_cancelled_mid_transaction")
+            if ctx is not None:
+                try:
+                    self.collector.on_insertion_result(ctx, result)
+                except Exception as e:
+                    self.v2log.emit("training.capture_failed",
+                                    level="ERROR", job_id=job_id,
+                                    reason_code=type(e).__name__)
+            self._settle_state()
+            return
+        state = result.state
+        if state == "confirmed":
+            if job_id:
+                self.v2log.emit("insertion.confirmed", level="INFO",
+                                job_id=job_id, outcome="confirmed",
+                                detail=f"{result.inserted_chars} chars,"
+                                       f" method {result.method}")
+                self._job_state(job_id, "insertion_posted")
+                self._job_state(job_id, "insertion_confirmed")
+        elif state == "posted_unverified":
+            if job_id:
+                self.v2log.emit(
+                    "insertion.posted", level="INFO", job_id=job_id,
+                    outcome="posted_unverified",
+                    reason_code=result.reason_code
+                    or "readback_unavailable",
+                    detail=f"{result.inserted_chars} chars,"
+                           f" method {result.method}")
+                self._job_state(job_id, "insertion_posted")
+                self._job_state(job_id, "insertion_unverified",
+                                reason=result.reason_code
+                                or "readback_unavailable")
+        else:
+            reason = result.reason_code or state
+            if job_id:
+                event = {"target_changed": "insertion.target_changed",
+                         "saved_not_inserted": "insertion.saved_not_inserted",
+                         "failed": "insertion.failed"}[state]
+                self.v2log.emit(
+                    event, level="WARNING" if state != "target_changed"
+                    else "INFO", job_id=job_id, outcome=state,
+                    reason_code=reason)
+                self._job_state(job_id, "saved_not_inserted", reason=reason)
+        if ctx is not None:
+            # Evidence outcome revision: posted/confirmed/unknown stay
+            # independent of correctness labels (S29.8). The
+            # observation-start callback is dispatched before this one
+            # (the service fires it inside the transaction), so a
+            # started window rides the same revision; its close
+            # appends the final observation block.
+            try:
+                self.collector.on_insertion_result(
+                    ctx, result,
+                    observation=({"observer": self._starting_observation}
+                                 if self._starting_observation else None))
+            except Exception as e:
+                self.v2log.emit("training.capture_failed", level="ERROR",
+                                job_id=job_id,
+                                reason_code=type(e).__name__)
+        self._starting_observation = None
+        if state in ("confirmed", "posted_unverified"):
+            self._delete_journal_files(job_id)
+        self._settle_state()
+
+    @objc.python_method
+    def _observationStarted_(self, info, job):
+        """S29.8 window opened on a certified surface: keep the observer
+        referenced (the insert-time evidence revision picks it up) and
+        wire its close back to the evidence collector."""
+        obs = info.get("observer")
+        if obs is None:
+            return
+        self._observers.append(obs)
+        self._starting_observation = obs
+        ctx = job.get("ctx")
+        result = info.get("insertion")
+        if obs.stop_reason is not None:
+            # The window already closed before this callback ran (e.g.
+            # an instant focus loss): finish it here so the final
+            # revision is not lost to the race.
+            self._observationFinished_(obs, result, job, ctx)
+            return
+        obs.on_closed = lambda: AppHelper.callAfter(
+            self._observationFinished_, obs, result, job, ctx)
+
+    @objc.python_method
+    def _observationFinished_(self, obs, result, job, ctx):
+        if obs in self._observers:
+            self._observers.remove(obs)
+        if ctx is None:
+            return
+        try:
+            self.collector.on_observation_closed(ctx, result, obs)
+        except Exception as e:
+            self.v2log.emit("training.capture_failed", level="ERROR",
+                            job_id=job.get("job_id"),
+                            reason_code=type(e).__name__)
+
+    @objc.python_method
+    def _armInjectingClear_(self):
+        # The synthetic ⌘V events were posted from the insertion thread;
+        # clear the guard shortly after they land (same timing as the
+        # pre-M08 inline paste).
+        NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+            0.25, self, "clearInjecting:", None, False)
 
     def _show_failed_pill(self):
         try:
@@ -1592,6 +1764,8 @@ class AppDelegate(NSObject):
         for title, action in (
             ("Retry Last Failed Dictation", "retryLastFailed:"),
             ("Copy Raw Transcript of Last Failure", "copyLastRaw:"),
+            ("Undo Last Insertion", "undoLastInsertion:"),
+            ("Paste Last Result Again", "pasteLastResultAgain:"),
         ):
             item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
                 title, action, ""
@@ -1797,14 +1971,38 @@ class AppDelegate(NSObject):
         self.overlay.showWithMode_(MODE_PROCESSING)
 
     def copyLastRaw_(self, sender):
-        info = self._last_failed
-        if info is None or not info.get("raw"):
+        if self._last_failed is None or not self._last_failed.get("raw"):
             return
-        copy_text(info["raw"])
+        copy_text(self._last_failed["raw"])
         self.v2log.emit("dictation.raw_exported", level="INFO",
-                        job_id=info.get("job_id"),
+                        job_id=self._last_failed.get("job_id"),
                         reason_code="user_action",
-                        detail=f"{len(info['raw'])} chars")
+                        detail=f"{len(self._last_failed['raw'])} chars")
+
+    def undoLastResultAction_(self, outcome):
+        self.v2log.emit(
+            "insertion.undo", level="INFO", reason_code="menu_action",
+            outcome=outcome.get("outcome"))
+
+    def undoLastInsertion_(self, sender):
+        """Target-bound undo of LocalFlow's own last insertion (S18);
+        never deletes newer user edits — a stale range offers the
+        previous text on the clipboard instead. The bounded AX work
+        runs on the insertion queue thread; the menu action never
+        blocks on it."""
+        if self.state == STATE_RECORDING or self._insertion is None:
+            return
+        self._insertion.undo_last(
+            on_done=lambda outcome: AppHelper.callAfter(
+                self.undoLastResultAction_, outcome))
+
+    def pasteLastResultAgain_(self, sender):
+        """Explicit user intent (S18): reconcile the accessible text
+        first (bounded reads); only a fresh queued transaction follows
+        when the previous result is not already present."""
+        if self.state == STATE_RECORDING or self._insertion is None:
+            return
+        self._insertion.paste_again()
 
 
 def main():

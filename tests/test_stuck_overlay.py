@@ -106,7 +106,36 @@ class Harness:
         d.hotkey = hk
         self.d = d
         self.hk = hk
-        app_mod.paste_text = lambda text, restore_clipboard=True: True
+        # M08: the paste seam is the insertion service's submit; settle
+        # inline (the old paste_text patch did the same synchronously)
+        # so state-machine asserts hold without a run loop or the real
+        # pasteboard.
+        from localflow.v2.insertion import InsertionResult
+
+        class _InsertionStub:
+            def note_new_dictation(self):
+                pass
+
+            def note_session_locked(self):
+                pass
+
+            def note_session_unlocked(self):
+                pass
+
+            def undo_last(self):
+                return {"outcome": "nothing_to_undo"}
+
+            def paste_again(self):
+                return {"outcome": "nothing_to_paste"}
+
+            def last_result(self):
+                return None
+
+            def submit(self, text, job, on_done, on_observation=None):
+                d._insertionDone_(
+                    InsertionResult.legacy_posted(len(text)), job)
+
+        d._insertion = _InsertionStub()
 
     def job(self, text=""):
         """A finished worker job record matching _finishWithText_'s shape."""

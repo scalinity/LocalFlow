@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "milestone": "M08",
+  "evaluated_utc": "2026-09-22T13:35:00Z",
+  "working_directory": "/Users/danny/Documents/Tools/LocalFlow",
+  "base_commit": "a8dbeda8b1a1e6ffe70ec4256b6e437a52a49a24",
+  "environment": {
+    "python": "3.14.7 (.venv)",
+    "mlx": "0.31.2",
+    "transformers": "5.10.4",
+    "chip": "Apple M5 Pro (48 GB)",
+    "macos": "27.0",
+    "cleanup_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "asr_model": "parakeet-tdt-0.6b-v3 (MLX)",
+    "offline": "both models cached; HF_HUB_OFFLINE in the worker"
+  },
+  "requirements": ["LF-R12", "LF-R28", "LF-R30", "LF-R31"],
+  "acceptance_criteria": {
+    "M08-AC01": {
+      "statement": "No wrong-target or duplicate insertion across the full race test matrix.",
+      "status": "pass-automated (live trial pending)",
+      "evidence": "tests/v2/insertion/test_insertion_races.py 13/13 post-review: changed target (identity fail routes to saved + clipboard offer, target content unchanged), changed selection (replacement invalidated; caret move inserts), delayed paste inside settle (confirmed after consumption, restore after) and beyond settle (ownership kept, late paste still the right text), two queued results (serialized op log publish→restore→publish→restore, order preserved), cancelled retry (no transaction, no clipboard op), terminal multiline guard incl. the context-absent case (review regression), pre-existing identical text never confirms and keeps ownership (review regression). Pipeline suite drives the app-switch race through the real coordinator."
+    },
+    "M08-AC02": {
+      "statement": "A user copy during LocalFlow restoration remains intact.",
+      "status": "pass-automated (live trial pending)",
+      "evidence": "race suite: user copy during the ownership window (hook-anchored, deterministic post-review) → restore skipped (user_copy_won), user content intact at the end; rich-data case restores text/rtf/png as one item and discloses the file promise as unsupported rather than claiming it."
+    },
+    "M08-AC03": {
+      "statement": "Posted-but-unobserved output is never counted as confirmed insertion.",
+      "status": "pass-automated (live trial pending)",
+      "evidence": "race suite: partial insertion → readback 'partial' → posted_unverified; pre-existing identical text → readback 'match_ambiguous' → posted_unverified, ownership kept (review regression). Attribution suite: unreadable surface → 'unavailable' → posted_unverified + envelope outcome_observation_unavailable (unreliable_target). confirmed requires a pre-write consistency read plus an owned-range readback equal to the inserted text; the clipboard is never read as proof (E10)."
+    },
+    "M08-AC04": {
+      "statement": "Stale undo/selection does not delete newer user edits; unsupported multiline shell insertion offers preview/copy.",
+      "status": "pass-automated (live trial pending)",
+      "evidence": "attribution suite: undo of a replacement restores exactly; an edit inside the owned range degrades undo to the clipboard offer (content unchanged); race suite: terminal + multiline → saved_not_inserted/multiline_terminal_unverified with the text on the clipboard — with and without a context snapshot (review regression: the guard classifies the live frontmost bundle when no snapshot carried a category); single-line terminal inserts; a certified surface would insert (CERTIFIED_BRACKETED_SURFACES empty pending the E10 terminal trial). No synthetic Return/Backspace exists in the package."
+    },
+    "M08-AC05": {
+      "statement": "Reliable observed edits are retained with exact target/job/region attribution; unsupported surfaces report unavailable rather than capturing arbitrary typing.",
+      "status": "pass-automated (live trial pending)",
+      "evidence": "attribution suite 10/10: in-range edit → stop owned_range_edited with before/after artifacts carrying the exact job_id and range; typing outside the range re-anchors (±400 cp, deadline-bounded post-review) without attribution; selection movement is not an edit; stop reasons recorded (window_elapsed, focus_lost, field_changed, secure_field_transition, new_dictation, session_locked, target_read_failed); the session lock re-arms on wake (review regression — observation no longer dies permanently after the first sleep); uncertified surfaces never poll."
+    },
+    "M08-AC06": {
+      "statement": "No-edit intervals and confirmed pastes never automatically create verified positive training labels.",
+      "status": "pass-automated",
+      "evidence": "attribution suite: no-edit window → envelope outcome.correctness stays 'unreviewed', observation.no_edit_observed true, no preference anywhere; undo inference recorded only as weak undo_candidate; pipeline suite: confirmed insert envelope keeps correctness unreviewed."
+    }
+  },
+  "human_verification": {
+    "native-m08-insertion-trial": {
+      "status": "pending",
+      "steps": [
+        "From Terminal.app (own mic + Accessibility grants; one instance at a time): cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh",
+        "Switch apps immediately after PTT release: dictate, ⌘⇥ to another app before processing finishes — expect nothing inserted into the new app, the text left on the clipboard (one-action ⌘V), and a saved_not_inserted entry.",
+        "Copy an image (and separately rich text) while a dictation processes — expect the clipboard content intact after the insert completes.",
+        "Dictate, then manually edit inside the inserted text, then use Recovery → Undo Last Insertion — expect the edit preserved and the previous text offered on the clipboard, never deleted.",
+        "Two rapid dictations back to back — expect both texts in order with no duplicate and no interleaved clipboard corruption.",
+        "Dictate a multi-line command into Terminal — expect copy-only (no paste, no execution); a single-line command pastes.",
+        "Record steps, expected vs actual, and evidence (event log lines insertion.*)."
+      ],
+      "note": "Automatable halves are the fixture-target suites; the live trial covers real destination classes (the E10 eight) and is the prerequisite for certifying any real surface, incl. bracketed-paste terminals. Overlaps M01's release-to-insert pilot territory (M15 gate) — the pilot can run both."
+    }
+  },
+  "checks": [
+    {
+      "name": "pre-change baselines",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python <each of the 22 fast suites>",
+      "exit": 0,
+      "result": "all pass before any edit (logs /tmp/m08-baseline): 4 M01, 4 M02, 4 M03 fast, 4 M04, 4 M05, 2 M06, 2 M07 fast (engine+pipeline), stuck overlay"
+    },
+    {
+      "name": "pre-change model-backed baselines",
+      "kind": "model-backed",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/lifecycle/test_worker_live.py; tests/v2/fidelity/test_fidelity.py; tests/v2/fidelity/test_literal.py; tests/v2/structure/test_structure.py; tests/v2/training/test_live_pipeline.py; tests/test_cleanup.py",
+      "exit": 0,
+      "result": "worker_live 2/2 (8s); fidelity 60/60 (45s); literal 20/20 (13s); structure 40/40 (56s); live pipeline 2/2 (4s); V1 cleanup control 51/51 (51s)"
+    },
+    {
+      "name": "EV-10 insertion race suite",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/insertion/test_insertion_races.py",
+      "exit": 0,
+      "result": "13/13 post-review (10 pre-review + 3 review regressions: context-absent terminal guard, ambiguous pre-existing text, session-lock re-arm)"
+    },
+    {
+      "name": "EV-19/EV-20 attribution suite",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/insertion/test_insertion_attribution.py",
+      "exit": 0,
+      "result": "10/10 post-review (no-edit never a label; outside-range re-anchor; in-range edit artifacts with exact attribution; pasted-over observed; selection not an edit; stop conditions; undo-of-different-revision unattributed; undo-of-ours weakly flagged; uncertified unavailable; target-bound undo)"
+    },
+    {
+      "name": "insertion pipeline suite (real coordinator)",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/insertion/test_insertion_pipeline.py",
+      "exit": 0,
+      "result": "5/5 post-review (app switch routes to saved through the real pipeline; confirmed path settles job states + envelope + observation revision; terminal guard through the coordinator from the snapshot category; paste-again reconciliation + exact undo; cancel mid-transaction records the real outcome — review regression)"
+    },
+    {
+      "name": "post-implementation regression (fast)",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python <all 28 fast suites incl. the three new>",
+      "exit": 0,
+      "result": "all pass pre-review and re-run post-review (logs /tmp/m08-post); M05's schema assertion updated to >= 3 — the additive v4 supersedes without touching the frozen v3 vocabulary tables; the three shared-harness stubs gained note_session_unlocked with the wake re-arm"
+    },
+    {
+      "name": "post-implementation regression (model-backed)",
+      "kind": "model-backed",
+      "cwd": "repo root",
+      "command": "worker_live; fidelity; literal; structure; live pipeline; tests/test_cleanup.py",
+      "exit": 0,
+      "result": "re-ran green post-review: worker_live 2/2 (5s); fidelity 60/60 (41s); literal 20/20 (13s); structure 40/40 (51s); live pipeline 2/2 (4s); V1 control 51/51 (48s)"
+    },
+    {
+      "name": "insertion benchmark",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python scripts/v2/benchmark_m08.py docs/v2/benchmarks/20260922-131238-m08",
+      "exit": 0,
+      "result": "re-run on post-review code: target verification p50 0.002 / p95 0.004 ms; AX insertion p50 0.339 / p95 0.692 ms; clipboard transaction p50 0.369 / p95 0.625 ms (instant consumer; the 0.6 s settle bound applies to unobservable surfaces); UI-callback submit during an in-flight 0.6 s transaction 0.002 ms (pre-M08 slept 50 ms inline on the main thread); observer tick reads ≈0.0 ms (approximation: the dominant reads of one tick)"
+    },
+    {
+      "name": "live store migration v4",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": "open the live v2.db through localflow.v2.store.Store (additive migration)",
+      "exit": 0,
+      "result": "live schema 3 → 4, insertions/insertion_observations present, zero rows, legacy tables untouched. DEVIATION RECORDED: the first apply ran without backup_dir set, so no automatic pre-migration backup was taken (the migration is CREATE TABLE IF NOT EXISTS only); a labeled backup v2-post-migrate-v4-2026-09-22.db was taken immediately after under v2-evidence/backups/, and Store now emits store.migration_backup_skipped when an armed migration would run without a backup dir (review fix)"
+    },
+    {
+      "name": "fixture manifest + privacy scan",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/test_baseline_manifest.py",
+      "exit": 0,
+      "result": "clean over every new path (no new data fixtures; the fixture target is synthetic code)"
+    }
+  ],
+  "benchmark_summary": {
+    "run": "docs/v2/benchmarks/20260922-131238-m08/m08.json",
+    "harness": "instrumented fixture target — no model, no live app, no real pasteboard",
+    "ui_thread_rule": "submit() is the entire UI-side cost (0.002 ms measured while a 0.6 s settle transaction was in flight); the pre-M08 path slept 50 ms inline and posted a racing 0.6 s restore thread per paste. Post-review, undo/paste-again also run their bounded work on the queue thread.",
+    "residual_risks": "documented in contracts/insertion.md (clipboard vulnerability window between publish and target read; restore check-then-write micro-window; delayed paste beyond settle on unobservable surfaces keeps ownership instead of restoring)"
+  },
+  "review_loop": {
+    "reviewers": "two parallel read-only reviewers (bug-hunting debugger DB1; architecture/quality/security/data-integrity auditor CA1)",
+    "verdict_before_addressing": "Request Changes — 3 criticals after dedup, 10 warnings, 17 suggestions",
+    "criticals": [
+      "CA1 (unique): the multi-line terminal guard was bypassed when the job carried no context snapshot — with context disabled or PTT identity failed, newline-carrying text pasted into a shell. FIXED: the service classifies the live frontmost bundle when no snapshot carried a category; regression test (context-absent terminal).",
+      "DB1 + CA1 (corroborated): the session-lock stop signal was a one-way latch — after the first sleep/fast-user-switch every observation window died at tick 0 with a false stop reason for the rest of the process. FIXED: note_session_unlocked re-arms on didWake_, observer window wrapped in try/finally; regression test (lock → instant session_locked stop → unlock → next window runs to window_elapsed).",
+      "DB1 (unique): the clipboard path confirmed off pre-existing content — dictating text identical to what already sat at the caret returned 'match' from the first poll (no pre-write read), falsely confirmed and restored while the paste might still be pending, letting a late paste insert the restored user clipboard. FIXED: the pre-write consistency read; an early match over identical pre-existing content is match_ambiguous — never confirms, never early-restores, ownership kept; regression test."
+    ],
+    "warnings_addressed": [
+      "cancel landing mid-transaction now records the real outcome (insertion.cancelled_after_insert + envelope) instead of discarding evidence; the genuinely-refused case keeps the old path — regression test",
+      "observer close-callback race reconciled (a window that stops before the start callback is dispatched is finished inline) + try/finally so the row always closes",
+      "paste_again no longer blocks the caller on the transaction (bounded reconciliation only; the re-paste submits async, outcome repaste_submitted); undo_last runs its bounded AX work on the queue thread (menu action dispatches via callback)",
+      "AXFocusedWindow is resolved from the application element on the system host (it is an app-element attribute; the field-element query was inert in production)",
+      "an unreadable live field role degrades to unavailable (identity alone governs) instead of failing validation",
+      "the re-anchor scan is deadline-bounded inside the candidate loop (no 160 s worst-case tick on a degraded surface)",
+      "PASTE_SETTLE_SEC replaces the two re-literal 0.6s; the paste-again read cap is a named documented constant",
+      "doubled @objc.python_method decorator removed",
+      "contract drift fixed: insertion.service_unavailable and insertion.cancelled_after_insert added to the events list; the field-role unreadable rule, live-bundle guard classification, ambiguous readback and partial-restores semantics documented; restore TOCTOU micro-window added to Limitations",
+      "Store emits store.migration_backup_skipped when an armed migration would run without a backup dir (the pre-existing silent skip that bit the live v4 apply)",
+      "the user-copy race test anchors on the on_post_begin hook instead of a clock sleep (flake hardening)"
+    ],
+    "suggestions_addressed": [
+      "dead code removed (record.latest_insertion, result.SCHEMA_VERSION, service.last_result, the benchmark's unused observer)",
+      "fixture pasteboard data_for_type is first-match (matches NSPasteboard semantics) with a comment",
+      "the redundant partial predicate simplified; hosts' threading import normalized; benchmark tick section labeled an approximation; honest undo recovery values (none when no before-text); service-unavailable fallback keeps recovery audio"
+    ],
+    "deferred": [
+      "jobs table maps a failed insertion to saved_not_inserted (the jobs state machine has no insertion-failed terminal; the insertions row carries the distinction and the journal-kept policy is right) — deliberate, documented here",
+      "multi-item clipboards flatten to one item on restore (types disclosed via captured_types/restored_types/unsupported_types; per-item fidelity is cosmetic for restore purposes) — documented",
+      "paste_again's substring reconciliation is approximate by design (a short dictated phrase appearing anywhere counts as present) — documented in the contract",
+      "benchmark tick cost is an approximation of the dominant reads rather than one instrumented real tick — labeled in the artifact"
+    ],
+    "post_address_verification": "all 28 fast suites + the three insertion suites (13/10/5) re-ran green on the fixed code, plus all 6 model-backed checks (worker_live 2/2, fidelity 60/60, literal 20/20, structure 40/40, live pipeline 2/2, V1 control 51/51) and the benchmark re-run (20260922-131238-m08). No findings rejected as incorrect."
+  },
+  "privacy": "Nothing private entered Git: insertion rows and envelope blocks carry ids, ranges, counts, reason codes and pasteboard type names only; observation before/after texts are lease-governed store artifacts under the training-buffer lease; events are content-free (chars/method/reason); the benchmark JSON carries latencies and counts only; the baseline-manifest privacy scan passes over every new path; live data stays under Application Support."
+}

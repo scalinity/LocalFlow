@@ -171,8 +171,41 @@ class Harness:
         self.hk = hk
         self.phys = False
         self.pastes = []
-        app_mod.paste_text = lambda text, restore_clipboard=True: (
-            self.pastes.append(text) or True)
+        # M08: the paste seam is the insertion service's submit (the
+        # coordinator no longer calls inject.paste_text). The stub
+        # records every submission as a paste and settles inline.
+        from localflow.v2.insertion import InsertionResult
+
+        outer = self
+
+        class _InsertionStub:
+            def note_new_dictation(self):
+                pass
+
+            def note_session_locked(self):
+                pass
+
+            def note_session_unlocked(self):
+                pass
+
+            def undo_last(self):
+                return {"outcome": "nothing_to_undo"}
+
+            def paste_again(self):
+                return {"outcome": "nothing_to_paste"}
+
+            def last_result(self):
+                return None
+
+            def submit(self, text, job, on_done, on_observation=None):
+                outer.pastes.append(text)
+                # Settle inline (no AppHelper hop headless), as the
+                # pre-M08 inline paste did.
+                from localflow.v2.insertion import InsertionResult
+                outer.d._insertionDone_(
+                    InsertionResult.legacy_posted(len(text)), job)
+
+        d._insertion = _InsertionStub()
 
     def close(self):
         self.d.store.sync()

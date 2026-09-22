@@ -189,6 +189,46 @@ _MIGRATIONS[3] = [
 ]
 
 
+# M08 (Spec S18, S29.8): insertion transactions and bounded outcome
+# observations. Additive only — attribution joins through job_id; the
+# jobs table itself stays unchanged (the M06 decision: snapshot ids live
+# with the consumers that need them, here on the insertion rows).
+_MIGRATIONS[4] = [
+    """CREATE TABLE IF NOT EXISTS insertions(
+         insertion_id TEXT PRIMARY KEY,
+         job_id TEXT NOT NULL,
+         attempt INTEGER NOT NULL,
+         target_snapshot_id TEXT,
+         context_snapshot_id TEXT,
+         method TEXT NOT NULL,
+         state TEXT NOT NULL,
+         reason_code TEXT,
+         verification_json TEXT NOT NULL,
+         owned_start INTEGER,
+         owned_end INTEGER,
+         inserted_chars INTEGER NOT NULL DEFAULT 0,
+         clipboard_json TEXT,
+         created_at_utc TEXT NOT NULL)""",
+    """CREATE INDEX IF NOT EXISTS idx_insertions_job
+         ON insertions(job_id)""",
+    """CREATE TABLE IF NOT EXISTS insertion_observations(
+         observation_id TEXT PRIMARY KEY,
+         insertion_id TEXT NOT NULL,
+         job_id TEXT NOT NULL,
+         started_at_utc TEXT NOT NULL,
+         stopped_at_utc TEXT,
+         stop_reason TEXT,
+         edited INTEGER,
+         reanchors INTEGER NOT NULL DEFAULT 0,
+         ticks INTEGER NOT NULL DEFAULT 0,
+         before_artifact_id TEXT,
+         after_artifact_id TEXT,
+         meta_json TEXT)""",
+    """CREATE INDEX IF NOT EXISTS idx_insertion_observations_insertion
+         ON insertion_observations(insertion_id)""",
+]
+
+
 # ---- IEEE float32 WAV (Spec S29.5: the original capture artifact) -------
 
 def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
@@ -399,6 +439,14 @@ class Store:
                     " v2.db manually")
         if 0 < version < target and self.backup_dir is not None:
             self._backup()
+        elif 0 < version < target:
+            # Constructed without a backup_dir but with a real upgrade
+            # pending: proceed (additive DDL), but never silently —
+            # an unbacked migration of live data must be visible.
+            self.emit("store.migration_backup_skipped", level="WARNING",
+                      reason_code="no_backup_dir",
+                      detail=f"v{version}->v{target} without pre-migration"
+                             " backup")
         for v in range(version + 1, target + 1):
             try:
                 self._db.execute("BEGIN")
@@ -422,7 +470,8 @@ class Store:
                     "legacy_dictations", "training_examples", "training_revisions",
                     "consent_revisions", "artifact_leases", "deletion_tombstones",
                     "vocabulary_entries", "vocabulary_aliases",
-                    "vocabulary_history", "vocabulary_meta"}
+                    "vocabulary_history", "vocabulary_meta",
+                    "insertions", "insertion_observations"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         if version >= target and not expected <= have:
