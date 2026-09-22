@@ -19,23 +19,24 @@
                                                              "In scope"/"Out of scope"/"Regression requirements",
                                                              "Human verification", "Required benchmarks" sections
     M14-A/B/C checkpoints ................................. M14 implementation task 12 + P07 amendment note
-    STATUS figures (active M05, implemented_pending_human,
-    source_commit 9d53b4f, pending native-m05-dictionary-trial,
-    next M06 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-22 08:34 UTC at e95d152
-    commit ids 4bd0187 / 50bf457 / 95f92dd / adc872b / 9d53b4f / e95d152 ... git log --oneline at the same moment
+    STATUS figures (active M06, implemented_pending_human,
+    source_commit e9874c6, pending native-m06-destination-trial,
+    next M07 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-22 12:01 UTC at eea1bd0
+    commit ids 4bd0187 / 50bf457 / 95f92dd / adc872b / 9d53b4f / e95d152 /
+    eea1bd0 ... git log --oneline at the same moment
     review ledger (verdicts, critical counts, named criticals) ... "/review-2 → /address record" sections of
-                                                             docs/v2/handoffs/M01.md–M05.md (cross-checked against
+                                                             docs/v2/handoffs/M01.md–M06.md (cross-checked against
                                                              docs/v2/acceptance/M0*/results.json review_loop blocks)
-    pending-human-check ledger (1+4+1+1 open; M02 2/2 pass) ...... docs/v2/acceptance/M0{1,3,4,5}/results.json
+    pending-human-check ledger (1+4+1+1+1 open; M02 2/2 pass) ...... docs/v2/acceptance/M0{1,3,4,5,6}/results.json
                                                              human_verification blocks + handoffs/M02.md
                                                              "Human verification (completed 2026-09-22)" addendum
     cleanup ≈78% of recorded inference, 477 timed pairs ... LOCALFLOW_V2_MILESTONES.md P01; re-derived from
                                                              docs/v2/EVIDENCE_SUMMARY.json (629.6 s / 806.2 s = 78.1%)
-    fixture strata (80+60 M04; 40+40 M05; 320-family plan; M15
+    fixture strata (80+60 M04; 40+40 M05; 32+9 M06; 320-family plan; M15
     140+20 corpus) ........................................ tests/v2/fixtures/manifest.json, milestone test sections,
-                                                             handoffs M04/M05
+                                                             handoffs M04/M05/M06
     decisions/ empty ...................................... directory listing of docs/v2/decisions/ (0 entries, 2026-09-22)
-    installed app == 7cdd904 .............................. docs/v2/handoffs/M01.md finding 1 (unchanged by M02–M05
+    installed app == 7cdd904 .............................. docs/v2/handoffs/M01.md finding 1 (unchanged by M02–M06
                                                              handoffs: no build authorized)
   Everything not in this list (model-allocation tags, the "what can run beside
   what" conclusion, section 2's serial-chain reading) is the page's own
@@ -283,7 +284,7 @@
 <header class="masthead">
   <h1>LocalFlow V2 — orchestration overview</h1>
   <p class="lede">LocalFlow is a private, local-first macOS dictation and writing interface built around Parakeet TDT 0.6B V3 via MLX and Qwen3-4B-Instruct-2507 4-bit via MLX. V2 closes the gap with Wispr Flow while preserving local inference and training-ready data collection. This page is the dispatch board for that build: what can run next, in what company, on which model, and against what standard of proof.</p>
-  <p class="stamp">repo scalinity/LocalFlow · figures read 2026-09-22 08:34 UTC at commit e95d152 (M05 close-out) · realigned in place by milestone close-outs</p>
+  <p class="stamp">repo scalinity/LocalFlow · figures read 2026-09-22 12:01 UTC at commit eea1bd0 (M06 close-out) · realigned in place by milestone close-outs</p>
   <ul class="toc">
     <li><a href="#now">Now</a></li>
     <li><a href="#strips">Units of work</a></li>
@@ -297,16 +298,16 @@
   </ul>
 
   <div class="now" id="now">
-    <p class="verdict">What can run now: <span class="id">M06</span> — and nothing else.</p>
+    <p class="verdict">What can run now: <span class="id">M07</span> — and nothing else.</p>
     <dl class="now-grid">
-      <div><dt>Active milestone</dt><dd>M05 · implemented_pending_human</dd></div>
-      <div><dt>Source commit</dt><dd>9d53b4f — “M05 was implemented on top of this commit (M04 close-out); the M05 commit follows.”</dd></div>
-      <div><dt>Open human checks</dt><dd>native-m05-dictionary-trial (1 for M05; 7 open overall — <a href="#threads">ledger</a>)</dd></div>
-      <div><dt>Next milestone</dt><dd>M06 · next_milestone_dependency_eligible: true</dd></div>
+      <div><dt>Active milestone</dt><dd>M06 · implemented_pending_human</dd></div>
+      <div><dt>Source commit</dt><dd>e9874c6 — “M06 was implemented on top of this commit (ORCHESTRATION.html close-out); the M06 commit follows.”</dd></div>
+      <div><dt>Open human checks</dt><dd>native-m06-destination-trial (1 for M06; 8 open overall — <a href="#threads">ledger</a>)</dd></div>
+      <div><dt>Next milestone</dt><dd>M07 · next_milestone_dependency_eligible: true</dd></div>
       <div><dt>Registry</dt><dd>33 requirements LF-R01–R33 · 22 suites EV-01–EV-22 · 0 requirements without a suite <span class="src">registry.json</span></dd></div>
       <div><dt>Decision record</dt><dd>docs/v2/decisions/ is empty — no accepted spec deviations to date <span class="src">directory listing, 2026-09-22</span></dd></div>
     </dl>
-    <p class="reason">M05’s automatable work and checks passed on post-review code; the one /review-2 critical (the tuple-alias crash that blocked the Approve flow) and every warning were fixed in-session with regression tests. The pending native dictionary trial does not gate M06’s automatable work. <span class="src">STATUS.json status_reason, read 2026-09-22 08:34 UTC at e95d152</span></p>
+    <p class="reason">M06’s automatable work and checks passed on post-review code; both /review-2 criticals (the denied-browser AX read that leaked a denied destination’s origin into retained artifacts — flagged independently by both reviewers — and the collector’s global state that could finalize the previous dictation’s snapshot into a new job) and every warning were fixed in-session with regression tests. The pending native destination trial does not gate M07’s automatable work. <span class="src">STATUS.json status_reason, read 2026-09-22 12:01 UTC at eea1bd0</span></p>
     <div class="chain" aria-label="Runnable order of milestones">
       <span class="node done"><span class="mid">M01</span><span class="cmt">4bd0187</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M02</span><span class="cmt">50bf457</span></span><span class="link" aria-hidden="true">▸</span>
@@ -314,8 +315,8 @@
       <span class="node done"><span class="mid">M03</span><span class="cmt">adc872b</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M04</span><span class="cmt">9d53b4f</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M05</span><span class="cmt">e95d152</span></span><span class="link" aria-hidden="true">▸</span>
-      <span class="node eligible"><span class="mid">M06</span><span class="cmt">next</span></span><span class="link" aria-hidden="true">▸</span>
-      <span class="node"><span class="mid">M07</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node done"><span class="mid">M06</span><span class="cmt">eea1bd0</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node eligible"><span class="mid">M07</span><span class="cmt">next</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node"><span class="mid">M08</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node"><span class="mid">M09</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node"><span class="mid">M10</span></span><span class="link" aria-hidden="true">▸</span>
@@ -340,7 +341,7 @@
   <article class="strip">
     <div class="spine">
       <div class="mid">M06</div>
-      <div class="state-line"><span class="dot pending"></span> next-eligible</div>
+      <div class="state-line"><span class="dot done"></span> closed · implemented_pending_human · eea1bd0</div>
       <div class="rec">rule’s recommendation: <b>scarce authors</b>, plentiful builds fixtures</div>
     </div>
     <div class="body">
@@ -349,22 +350,22 @@
       <dl class="facts">
         <div><dt>Requirements</dt><dd><span class="id">LF-R09</span> · <span class="id">LF-R28</span> · <span class="id">LF-R29</span> · <span class="id">LF-R30</span></dd></div>
         <div><dt>Suites</dt><dd>new <span class="id">EV-08</span> · extends <span class="id">EV-18</span>, <span class="id">EV-19</span></dd></div>
-        <div><dt>Prerequisites (P02)</dt><dd>M02, M05 — both closed; dependency-eligible now per STATUS.json</dd></div>
-        <div><dt>Expected files</dt><dd>new <code>localflow/v2/context/</code>, <code>target_snapshot.py</code>, <code>tests/v2/context/</code>; existing app/hotkey wiring captures snapshots</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M02, M05 — both closed</dd></div>
+        <div><dt>Expected files</dt><dd>shipped: new <code>localflow/v2/context/</code> (snapshot/providers/collector), <code>tests/v2/context/</code> (2 suites + synthetic AX trees); app/hotkey wiring captures snapshots</dd></div>
         <div><dt>Destroys</dt><dd>nothing — plain dictation must stay available when context permission or a provider is unavailable (regression requirement)</dd></div>
-        <div><dt>Benchmark to clear</dt><dd>additional-context delay P95 ≤ 75 ms; provider coverage and skip frequency reported, not just successful-read latency</dd></div>
-        <div><dt>Human verification</dt><dd>same phrase in Gmail, Slack, an AI prompt field and Xcode; mid-sentence and selected-text snapshots</dd></div>
-        <div><dt>Unlocks</dt><dd>the workspace-scoped half of the M05 dictionary trial; insertion identity for M08</dd></div>
-        <div class="wide"><dt>Inherited pending human checks</dt><dd>none gate this work (M05 handoff); the six open M01/M03/M04 items stay recorded in their results files</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>cleared: finalize p95 0.303 ms / worst-case cut 80.4 ms vs the 75 ms budget; provider coverage 52/96 with skip frequency reported <span class="src">benchmarks/20260922-115621-m06</span></dd></div>
+        <div><dt>Human verification</dt><dd>pending as native-m06-destination-trial (Gmail, Slack, AI prompt field, Xcode; mid-sentence and selected-text snapshots)</dd></div>
+        <div><dt>Unlocks</dt><dd>the workspace-scoped half of the M05 dictionary trial (live destination awareness shipped); insertion identity for M08 (<code>same_destination</code> hook)</dd></div>
+        <div class="wide"><dt>Inherited pending human checks</dt><dd>none gated this work (M05 handoff); the open M01/M03/M04 items stay recorded in their results files</dd></div>
       </dl>
-      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M06 · P02 table · STATUS.json · handoffs/M05.md</p>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M06 · handoffs/M06.md · acceptance/M06/results.json</p>
     </div>
   </article>
 
   <article class="strip">
     <div class="spine">
       <div class="mid">M07</div>
-      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="state-line"><span class="dot pending"></span> next-eligible</div>
       <div class="rec">rule’s recommendation: <b>scarce authors contract + ablation design</b></div>
     </div>
     <div class="body">
@@ -373,7 +374,7 @@
       <dl class="facts">
         <div><dt>Requirements</dt><dd><span class="id">LF-R10</span> · <span class="id">LF-R11</span> · <span class="id">LF-R28</span> · <span class="id">LF-R30</span></dd></div>
         <div><dt>Suites</dt><dd>new <span class="id">EV-09</span> — 60 fidelity + 40 structure + 20 literal fixtures, real DOM/question/deletion examples</dd></div>
-        <div><dt>Prerequisites (P02)</dt><dd>M03, M04, M05, M06</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M03, M04, M05, M06 — all closed; dependency-eligible now per STATUS.json</dd></div>
         <div><dt>Expected files</dt><dd>existing <code>cleanup.py</code>, <code>tests/test_cleanup.py</code>; new <code>localflow/v2/cleanup/</code>, <code>validation.py</code>, <code>document_nodes.py</code>, <code>tests/v2/fidelity/</code>, <code>tests/v2/structure/</code></dd></div>
         <div><dt>Destroys</dt><dd>replaces contradictory prompt examples and the fixed 35/50-word segmentation; V1 stays as the ablation control, and an insufficient-quality result blocks promotion — the implementation is preserved behind a selectable mode (stop condition)</dd></div>
         <div><dt>Benchmark to clear</dt><dd>same-model V1-versus-V2 prompt/chunking ablation on frozen text; stage and full-pipeline latency by length, fallback rates, failed termination</dd></div>
@@ -604,7 +605,7 @@
   <div class="duo">
     <div class="panel">
       <h3>What the dependency graph permits</h3>
-      <p>With M01–M05 closed, exactly one unit is dependency-eligible: <b>M06</b> (needs M02 and M05 — both delivered). After M06 closes, <b>M07</b> (needs M03, M04, M05 and M06). From there the remaining graph is a serial chain: every adjacent pair through M16 shares a dependency edge.</p>
+      <p>With M01–M06 closed, exactly one unit is dependency-eligible: <b>M07</b> (needs M03, M04, M05 and M06 — all delivered). From there the remaining graph is a serial chain: every adjacent pair through M16 shares a dependency edge.</p>
       <p class="fact-note">Derived from the P02 table in this session — a page judgement, not a repo statement. <span class="src">LOCALFLOW_V2_MILESTONES.md P02</span></p>
     </div>
     <div class="panel">
@@ -698,7 +699,7 @@
     <p class="kicker">Why the page asks what it asks</p>
     <h2>Evidence from the record</h2>
   </div>
-  <h3>The review loop catches real bugs — eight criticals in five milestones, zero overruled</h3>
+  <h3>The review loop catches real bugs — ten criticals in six milestones, zero overruled</h3>
   <table>
     <thead><tr><th style="width:8%">Unit</th><th style="width:17%">Verdict before /address</th><th style="width:9%">Criticals</th><th>What the criticals were</th><th style="width:22%">Outcome</th></tr></thead>
     <tbody>
@@ -707,11 +708,12 @@
       <tr><td>M03</td><td class="crit">Request Changes</td><td class="num crit">1</td><td>M02’s lost-release watchdog terminated every hands-free capture about a second after it started — the feature shipped dead on reporting hardware; no test had run watchdog ticks against hands-free.</td><td>Fixed trigger-aware with a regression test; 13 warnings also fixed; benchmark re-run on the fixed code.</td></tr>
       <tr><td>M04</td><td class="crit">Request Changes</td><td class="num crit">3</td><td>Bare “hundred” after quantifiers corrupted prose (“a few hundred people” → “a few 100 people”); the “period” symbol command fired on noun compounds (“grace period” → “grace.”); the AC04 static scan passed vacuously — its path pointed at a nonexistent directory, so green meant unexamined.</td><td>All fixed; the scan now asserts it scans (non-empty, naming the seven expected modules); “no findings rejected as incorrect.”</td></tr>
       <tr><td>M05</td><td class="crit">Request Changes</td><td class="num crit">1</td><td><code>update_entry</code> crashed on the tuple-alias format its own callers (<code>approve_entry</code>, <code>import_json</code>) pass — the one-click Approve flow and alias-changing imports could never land; no suite exercised either path.</td><td>Fixed with approve/import regression tests; post-fix benchmark re-run (scoped selector retrieval 25.3 ms → 5.3 ms after the structural fix).</td></tr>
+      <tr><td>M06</td><td class="crit">Request Changes</td><td class="num crit">2</td><td>A denied app that is a <b>browser</b> was still read by the site-origin provider and its origin persisted into retained artifacts — a violation of the denied-apps-never-read absolute, flagged independently by both reviewers; and the context collector’s state was global, not per-job — a failed identity capture could finalize the previous dictation’s snapshot into a new job, and a newer dictation’s late context could be attributed to the job still processing.</td><td>Both fixed with regression tests (denied-browser zero-read/no-leak; per-job collection handles, stale-finalize refusal, one-shot downstream); every warning fixed; benchmark re-run on the fixed code.</td></tr>
     </tbody>
   </table>
-  <p class="src" style="margin-top:8px">sources: “/review-2 → /address record” sections of docs/v2/handoffs/M01.md–M05.md · review_loop blocks in docs/v2/acceptance/M0*/results.json</p>
+  <p class="src" style="margin-top:8px">sources: “/review-2 → /address record” sections of docs/v2/handoffs/M01.md–M06.md · review_loop blocks in docs/v2/acceptance/M0*/results.json</p>
 
-  <h3 style="margin-top:26px">The pending-human-check ledger — 7 open, recorded, never assumed</h3>
+  <h3 style="margin-top:26px">The pending-human-check ledger — 8 open, recorded, never assumed</h3>
   <table>
     <thead><tr><th>Check</th><th style="width:13%">Recorded in</th><th style="width:12%">Gate owner</th><th style="width:26%">Note from the record</th></tr></thead>
     <tbody>
@@ -721,13 +723,14 @@
       <tr><td>Quit/reopen mid-dictation with journal; retry the recovered item</td><td>M03 results.json</td><td>M03</td><td>Mic indicator must stay off until the next press.</td></tr>
       <tr><td>Hands-free double-tap and mouse-trigger firing</td><td>M03 results.json</td><td>M03</td><td>Construction is tested; firing is not.</td></tr>
       <tr><td>native-m04-dictation-profiles</td><td>M04 results.json</td><td>M04</td><td>Version, percentage, IP and “slash the budget” across technical and standard profiles; inspect one collected ledger.</td></tr>
-      <tr><td>native-m05-dictionary-trial</td><td>M05 results.json · STATUS.json</td><td>M05</td><td>Panel, workspace-only alias, sandbox; global-term live dictation today — the workspace-scoped live half waits for M06.</td></tr>
+      <tr><td>native-m05-dictionary-trial</td><td>M05 results.json · STATUS.json</td><td>M05</td><td>Panel, workspace-only alias, sandbox; global-term live dictation today — the workspace-scoped live half is now runnable on M06’s shipped destination awareness (folds into the M06 trial).</td></tr>
+      <tr><td>native-m06-destination-trial</td><td>M06 results.json · STATUS.json</td><td>M06</td><td>Same phrase across Gmail, Slack, an AI prompt field and Xcode; mid-sentence and selected-text snapshots; secure-field and denied-app behavior — from Terminal.app, which needs its own Accessibility grant.</td></tr>
     </tbody>
   </table>
-  <p class="fact-note" style="margin-top:8px">Closed for comparison: M02’s two human checks passed 2026-09-22 (handoff addendum; five-dictation collection pilot 5/5 joined examples; redaction re-verified against 93 distinct spoken words — zero matches). None of the seven open items gates M06’s automatable work. <span class="src">handoffs/M02.md · handoffs/M05.md</span></p>
+  <p class="fact-note" style="margin-top:8px">Closed for comparison: M02’s two human checks passed 2026-09-22 (handoff addendum; five-dictation collection pilot 5/5 joined examples; redaction re-verified against 93 distinct spoken words — zero matches). None of the eight open items gates M07’s automatable work. <span class="src">handoffs/M02.md · handoffs/M06.md</span></p>
 
   <h3 style="margin-top:26px">Privacy discipline, enforced by test</h3>
-  <p class="measure">Committed artifacts carry hashes, opaque ids, counts and line locators — never transcript text, audio bytes, database rows or credentials. Fixtures are synthetic and origin-tagged; the private evidence root (<code>~/Library/Application Support/LocalFlow/v2-evidence/</code>) stays outside Git; <code>tests/v2/test_baseline_manifest.py</code> fails the build if private-bearing file types appear under <code>docs/</code> or <code>tests/</code>. Every handoff re-states this and every acceptance scan has passed over each new path. <span class="src">contracts/INDEX.md privacy rules · handoffs M01–M05 privacy sections</span></p>
+  <p class="measure">Committed artifacts carry hashes, opaque ids, counts and line locators — never transcript text, audio bytes, database rows or credentials. Fixtures are synthetic and origin-tagged; the private evidence root (<code>~/Library/Application Support/LocalFlow/v2-evidence/</code>) stays outside Git; <code>tests/v2/test_baseline_manifest.py</code> fails the build if private-bearing file types appear under <code>docs/</code> or <code>tests/</code>. Every handoff re-states this and every acceptance scan has passed over each new path. <span class="src">contracts/INDEX.md privacy rules · handoffs M01–M06 privacy sections</span></p>
 </section>
 
 <section id="threads">
@@ -739,16 +742,16 @@
     <thead><tr><th style="width:30%">Thread</th><th style="width:16%">Owning unit</th><th>State, from the record</th></tr></thead>
     <tbody>
       <tr><td>Release-to-insert latency pilot</td><td>M15</td><td>Pending human since M01 (real speaker, instrumented target); explicitly an M15 gate, carried by every intervening handoff.</td></tr>
-      <tr><td>M03 native checks (four items)</td><td>M03</td><td>Pending with dev-runnable steps; do not gate M06 or anything else’s automatable work.</td></tr>
+      <tr><td>M03 native checks (four items)</td><td>M03</td><td>Pending with dev-runnable steps; do not gate M07 or anything else’s automatable work.</td></tr>
       <tr><td>M04 dictation-profiles trial</td><td>M04</td><td>Pending; runnable on the dev pipeline from Terminal.app.</td></tr>
-      <tr><td>M05 dictionary trial</td><td>M05</td><td>Pending; the sandbox half is runnable now, the workspace-scoped live half waits for M06.</td></tr>
-      <tr><td>Workspace-scoped dictionary live resolution</td><td>M06</td><td>Unblocked by M06’s destination awareness; the live app filters global-only until then, documented in contracts/vocabulary.md.</td></tr>
+      <tr><td>M05 dictionary trial</td><td>M05</td><td>Pending; the sandbox half is runnable now, the workspace-scoped live half folds into the M06 destination trial (destination awareness shipped at M06).</td></tr>
+      <tr><td>Workspace-scoped dictionary live resolution</td><td>M06</td><td>Shipped in M06 (eea1bd0): site/workspace/app scopes feed the live trio, finalized at release with a frozen-entry rebuild; live verification folds into the M06 destination trial. contracts/vocabulary.md “M06 wiring”.</td></tr>
       <tr><td>Installed pre-M02 app</td><td>M16</td><td>/Applications/LocalFlow.app still runs 7cdd904 code (M01 finding; no build authorized since); the rebuild decision sits with M16’s staged packaging.</td></tr>
       <tr><td>Producer-provenance unknowns</td><td>M01 (recorded)</td><td>stats/dictionary/transforms producer sources were deleted before the audited snapshot — compiled remnants only, interfaces recovered in baseline/manifest.json; the <code>instance.lock</code> producer is unproven. Recorded unresolved with reasons; the import path reads the data files, so nothing waits on it.</td></tr>
       <tr><td>Decision record</td><td>every milestone</td><td>docs/v2/decisions/ is empty (0 entries, 2026-09-22) — no accepted spec deviations; an ADR lands there the day one is accepted.</td></tr>
     </tbody>
   </table>
-  <p class="src" style="margin-top:8px">sources: handoffs/M01.md–M05.md · contracts/vocabulary.md · directory listing of docs/v2/decisions/</p>
+  <p class="src" style="margin-top:8px">sources: handoffs/M01.md–M06.md · contracts/vocabulary.md · directory listing of docs/v2/decisions/</p>
 </section>
 
 <section id="grading">
