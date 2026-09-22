@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "milestone": "M09",
+  "evaluated_utc": "2026-09-22T17:20:00Z",
+  "working_directory": "/Users/danny/Documents/Tools/LocalFlow",
+  "base_commit": "beef9c0a8f5e8f2f0c05b6e01dc0a70a5c9ae8f6",
+  "environment": {
+    "python": "3.14.7 (.venv)",
+    "mlx": "0.31.2",
+    "transformers": "5.10.4",
+    "chip": "Apple M5 Pro (48 GB)",
+    "macos": "27.0",
+    "cleanup_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "asr_model": "parakeet-tdt-0.6b-v3 (MLX)",
+    "offline": "both models cached; HF_HUB_OFFLINE in the worker"
+  },
+  "requirements": ["LF-R13", "LF-R28", "LF-R30", "LF-R31"],
+  "acceptance_criteria": {
+    "M09-AC01": {
+      "statement": "History shows source→normalized→cleaned→transformed lineage without flattening them into one ambiguous field.",
+      "status": "pass-automated (native visual pending)",
+      "evidence": "tests/v2/ui/test_history_queries.py test_lineage_distinct_stages: four distinct stage entries with their own texts (raw/normalized/applied asserted by exact value); the transform slot carries reason not_applicable_until_M11 instead of a flattened copy. The Hub renders each stage under its own header (hub.py lineage renderer, driven in the hub shell close/reopen test)."
+    },
+    "M09-AC02": {
+      "statement": "Recovery and retry buttons execute through coordinator contracts; missing audio is labeled unavailable.",
+      "status": "pass-automated (native visual pending)",
+      "evidence": "test_hub_shell.py test_hub_retry_job_paths (requeue through the shared _retry_job; already_retrying on double click; not_retryable with the state as reason; audio_unavailable with reasons), test_history_retry_button_fires (the button action reaches the coordinator through the loaded detail — review regression), test_history_queries.py test_audio_and_purged_reasons (no_audio_artifact / purged / payload_missing)."
+    },
+    "M09-AC03": {
+      "statement": "Window fits visible screen bounds; menus, focus, traffic lights and tab/keyboard navigation work.",
+      "status": "pass-automated (headless halves) — native visual checks pending",
+      "evidence": "test_window_bounds_and_min_size: frame within NSScreen.visibleFrame, min size clamped to the screen, releasedWhenClosed False. Keyboard view switching (index/next/prev) tested at state level; the sidebar table is the initial first responder. Traffic lights/focus rings/text scale/rendering are the pending human trial with screenshots requested."
+    },
+    "M09-AC04": {
+      "statement": "Closing/reopening the Hub preserves active dictation service and selection state.",
+      "status": "pass-automated (native visual pending)",
+      "evidence": "test_close_reopen_preserves_state_and_service: windowShouldClose hides only; a dictation mid-processing is unaffected; view/search/selection/detail survive reopen (asserted by exact id). test_fn_workflow_with_hub_constructed: the Fn workflow runs unchanged with the Hub present. Single instance: test_duplicate_launch_single_instance."
+    },
+    "M09-AC05": {
+      "statement": "The user can review a real captured example and save a versioned span/reference annotation; correcting one token does not verify the entire recording.",
+      "status": "pass-automated (native visual pending)",
+      "evidence": "test_training_data.py test_span_correction_is_partial (annotation coverage partial forever; outcome.correctness stays unreviewed; revision appended with parent linkage; payload in a lease-governed artifact with a content-free envelope entry; out-of-range spans refuse), test_verbatim_requires_listening_and_separates_intended (verbatim refused without listening; intended-writing marks stored separately with provenance), test_hub_shell.py test_verbatim_listen_gate_is_per_example (replaying example A never certifies a verbatim for example B — review regression)."
+    },
+    "M09-AC06": {
+      "statement": "The dataset view can inspect, exclude and delete evidence without any future training engine, provider account or placeholder controls.",
+      "status": "pass-automated (native visual pending)",
+      "evidence": "test_delete_everywhere_and_inspection_without_engine (purged artifacts, state deleted, content-free tombstones, list hides), test_persistent_pin_and_exclusion (pin survives buffer expiry; exclusion persists and restores), test_pin_scopes_away_annotation_leases (unpin never revokes review retention), test_exclude_restore_refuses_terminal_states, test_readiness_triad_honest (infrastructure/coverage/improvement separated; improvement post-V2). No M10-M13 feature appears as UI anywhere (future views refuse at state level)."
+    }
+  },
+  "human_verification": {
+    "native-m09-hub-trial": {
+      "status": "pending",
+      "steps": [
+        "From Terminal.app (own mic + Accessibility grants; one instance at a time): cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh",
+        "Menu bar → Open Hub… (⌘L): inspect all five views at normal and enlarged text/display scale — traffic lights, focus rings, sidebar selection, light/dark — screenshots requested.",
+        "History: search text/app/mode; select rows; Replay (one at a time), Copy, Paste Again into a real app, stage Diff; verify the Undated group holds the imported legacy pairs.",
+        "Keyboard: navigate the sidebar with arrows; tab through search/detail controls without a mouse.",
+        "Move/resize/relaunch: window position restores; closing leaves dictation working (dictate with the Hub closed and open); relaunching focuses the existing Hub.",
+        "Models → Training Data: replay one example, then mark another correct (verbatim must refuse without replaying THAT example); teach a span correction; pin, exclude, delete-everywhere; confirm deleted records disappear.",
+        "Diagnostics: filters, UTC toggle, job timeline for one job id, Export Redacted (bounded to the displayed window).",
+        "Record steps, expected vs actual, and evidence (screenshots + event log lines hub.*)."
+      ],
+      "note": "Automatable halves are the four tests/v2/ui suites; the live trial covers real rendering, playback and text-scale behavior the headless environment cannot."
+    }
+  },
+  "checks": [
+    {
+      "name": "pre-change baselines",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python <each of the 29 pre-M09 fast suites>",
+      "exit": 0,
+      "result": "all pass before any edit (logs /tmp/m09-baseline)"
+    },
+    {
+      "name": "pre-change model-backed baselines",
+      "kind": "model-backed",
+      "cwd": "repo root",
+      "command": "worker_live; fidelity; literal; structure; live pipeline; tests/test_cleanup.py",
+      "exit": 0,
+      "result": "worker_live 2/2 (5.9s); fidelity 60/60 (42s); literal 20/20 (12s); structure 40/40 (52s); live pipeline 2/2 (3.3s); V1 cleanup control 51/51 (47s)"
+    },
+    {
+      "name": "EV-11 history query suite",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/ui/test_history_queries.py",
+      "exit": 0,
+      "result": "11/11 post-review (grouping/Undated, text+app+mode filters with LIKE escaping and a fixed mode vocabulary, AC01 lineage, AC02 audio reasons, insertion outcome, empty history, Home counts, legacy db rows, merged-section limit, legacy pair detail)"
+    },
+    {
+      "name": "EV-19/EV-20 training inspector suite",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/ui/test_training_data.py",
+      "exit": 0,
+      "result": "12/12 post-review (AC05 partial span; per-object verbatim/intended separation; deleted audio downgrade; secure-context display; incomplete-data display; pin scoped away from annotation leases; exclude restore guards; persistent pin/exclusion; AC06 delete-everywhere; readiness triad; evidence text search; replay service over the real store)"
+    },
+    {
+      "name": "EV-11 diagnostics suite",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/ui/test_diagnostics.py",
+      "exit": 0,
+      "result": "3/3 post-review (load/filters/job timeline with unparsable-line warning; redacted export drops detail; engine/build block content-free)"
+    },
+    {
+      "name": "EV-11 hub shell suite (real coordinator)",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/ui/test_hub_shell.py",
+      "exit": 0,
+      "result": "14/14 post-review (AC03 bounds/min-size; view switching incl. refused future views; AC04 close/reopen with the dictation service live; single instance; open deferred during insertion and flushed at settle; busy flag over the REAL InsertionService with paste/open gated mid-flight; AC02 retry paths incl. no-double-requeue; History Retry button wired; repaste attribution kept; per-example verbatim listen gate; open deferred during recording; job target recorded on capture; search cancellation by generation; Fn workflow unchanged with the Hub constructed)"
+    },
+    {
+      "name": "post-implementation regression (fast)",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python <all 33 fast suites incl. the four new>",
+      "exit": 0,
+      "result": "all pass pre-review and re-ran green post-review (logs /tmp/m09-post, /tmp/m09-post2); the three shared test harnesses' insertion stubs remain valid (app-side getattr guards)"
+    },
+    {
+      "name": "post-implementation regression (model-backed)",
+      "kind": "model-backed",
+      "cwd": "repo root",
+      "command": "worker_live; fidelity; literal; structure; live pipeline; tests/test_cleanup.py",
+      "exit": 0,
+      "result": "re-ran green post-review: worker_live 2/2; fidelity 60/60; literal 20/20; structure 40/40; live pipeline 2/2; V1 control 51/51"
+    },
+    {
+      "name": "M09 benchmark",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python scripts/v2/benchmark_m09.py",
+      "exit": 0,
+      "result": "docs/v2/benchmarks/20260922-170952-m09/m09.json — 50k-row history search p95: text-hit 42.6 / text-miss 19.9 / app 17.0 / mode 29.9 / browse 40.4 ms (budget ≤200 warm; 30 runs each after warm-up, through the same HistoryQueryService.search the Hub's query thread calls); interactive shell p95 66.7 ms over 10 full construct+5-view passes (budget ≤1000); UI memory delta 28.2 MB ru_maxrss (imports exclude MLX/worker code); training inspector at 1k synthetic examples: list p95 3.1 ms, readiness p95 8.6 ms"
+    },
+    {
+      "name": "live store migration v5",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": "open the live v2.db through localflow.v2.store.Store (additive migration, pre-migration backup under v2-evidence/backups/)",
+      "exit": 0,
+      "result": "live schema 4 → 5, job_targets present with idx_jobs_captured, 10 existing jobs untouched, Store.verify() ok (no issues, no orphans)"
+    },
+    {
+      "name": "fixture manifest + privacy scan",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/test_baseline_manifest.py",
+      "exit": 0,
+      "result": "clean over every new path (no new data fixtures; all test content synthetic in-code; the benchmark's only file under docs/ is the latency/count JSON in a temp-dir-built store)"
+    }
+  ],
+  "benchmark_summary": {
+    "run": "docs/v2/benchmarks/20260922-170952-m09/m09.json",
+    "harness": "synthetic 50k-job store (100k text artifacts + job targets) in a temp dir; the search benchmark drives the production query path; the shell benchmark constructs a fresh HubController and loads all five views per run",
+    "unmeasured": "full-history redacted export size beyond the 500-event display window; inspector paths beyond 1k examples (noted in the artifact)"
+  },
+  "review_loop": {
+    "reviewers": "two parallel read-only reviewers (bug-hunting debugger DB1; architecture/quality/security/data-integrity auditor CA1)",
+    "verdict_before_addressing": "Request Changes — 3 criticals after dedup (1 corroborated by both), 9 warnings, ~20 suggestions",
+    "criticals": [
+      "CORROBORATED (DB1+CA1): the verbatim listen-gate was a single view-level flag — replaying one example's audio certified a verbatim reference for ANY selected example (fabricated listened_audio provenance, E14/S29.6). FIXED: the gate is bound to the example whose audio actually played (listened_for), reset on selection change, verified against the loaded detail before opening; regression test test_verbatim_listen_gate_is_per_example (replay A → select B → save refuses with listen_before_verbatim; replay B → saves).",
+      "DB1: the History Retry button required detail['kind'] == 'job', which job_detail never set — the button was dead for every row (AC02 unreachable from the UI; the suite had called the coordinator directly). FIXED: job_detail sets kind='job' and the button keys off job_id; regression test drives the button action through the loaded detail.",
+      "DB1: hubRetryJob's journal-root fallback could requeue the same job twice (a double click inserts the dictation twice) and retried non-retryable states silently. FIXED: already_retrying guard over active jobs + a failed_recoverable state check that reports not_retryable with the state as reason; regression tests for both."
+    ],
+    "warnings_addressed": [
+      "Hub Paste Again carried no job id — every repaste failed insertions.job_id NOT NULL and lost its attribution row (flagged by both reviewers). FIXED: hubPasteText(text, job_id) threads the row's id; a jobless legacy-row repaste records no attribution row instead of failing (service skips the record when job_id is None); regression test asserts the row lands with the job id and no record_failed events.",
+      "annotation retention leases conflated with user pins (both reviewers): an annotated example displayed as pinned and an unpin click revoked verbatim/span retention. FIXED: pin/unpin/_is_pinned scope to non-annotation artifacts; annotation payloads keep their own review-retention leases (and survive buffer expiry); regression tests.",
+      "retrying an old History job cleared _last_failed for a different failure. FIXED: cleared only when the job ids match.",
+      "diagnostics export parsed the whole event log on the main thread with no cap. FIXED: the export is bounded to the same filtered window the view displays (last=500 default) and says so.",
+      "the history load published twice with one generation check (a stale clear could clobber a newer selection). FIXED: the expiry clear re-checks the generation after publishing.",
+      "unbounded materialized IN-list for text search (parameter-limit cliff ~5× the corpus; O(matches) parse per query). FIXED: SQL subquery form; LIKE escaping asserted by test.",
+      "mode filter coupled to json.dumps spacing. FIXED: json_extract(meta_json, '$.cleanup_path') = ?.",
+      "home_summary fetched every job row and strptime'd per row. FIXED: local-day boundary computed once, compared in SQL.",
+      "the per-section limit could return ~3× the requested rows. FIXED: limit applies to the merged, ordered result."
+    ],
+    "suggestions_addressed": [
+      "undo ops now count toward InsertionService.busy (focus guard covers AX writes on the queue thread)",
+      "the AX-path repaste flushes a deferred Hub show via on_done (no ⌘V timer on that path)",
+      "Hub show/paste also deferred during active recording (a mid-capture activation would flip the destination under the release-time insert); flush at settle — regression test",
+      "hubApplyRetention persists ONLY the five retention keys merged into the existing user override (no full-config freeze of env-inherited values); the unused save_user_override helper removed",
+      "historyReplay_ surfaces the honest unavailability reason (parity with the training view); training replay surfaces playback failures",
+      "Hub inspector mutations catch Exception broadly and surface it in the detail pane (store stalls no longer escape the action handler)",
+      "engines subview reloads on selection (stale engine states); job_timeline wired into the Diagnostics view when a job filter is set; load_events emits its promised unparsable-line stderr warning",
+      "shared writer-thread INSERT helpers (insert_text_artifact_row/grant_lease_row) deduplicate the artifacts/lease SQL across Store, training_data and future M10 stages",
+      "polish: dead _spawn branch removed, _mono size param dropped, the double-set Settings note fixed, history action buttons clamped to fit the 900×620 minimum, the vacuous diagnostics assertion replaced with a real content check"
+    ],
+    "deferred": [
+      "inspector mutations stay synchronous against the store writer on the main thread (bounded by the 15 s submit timeout; errors surface in the pane) — an async mutation queue is future polish, documented in contracts/hub.md",
+      "load_events parses whole JSONL files to honor last/filters (bounded by the 100 MiB retention cap) — tail-reading optimization deferred",
+      "state.wait_for_queries joins only the newest query thread (stale results self-drop by generation) — benign, documented",
+      "examples()/readiness() scan all examples (measured 1k: 3–9 ms p95) — personal-scale by design; revisit with evidence",
+      "the delete-confirmation NSAlert is bypassed in headless/test runs (the guarded action runs directly) — noted for the native trial"
+    ],
+    "post_address_verification": "all 33 fast suites (incl. the four new M09 suites with the regression tests above) and all six model-backed checks re-ran green on the fixed code; the benchmark re-run (20260922-170952-m09) stays within every budget. No findings rejected as incorrect."
+  },
+  "privacy": "Nothing private entered Git: the committed benchmark JSON carries latencies/counts only and its synthetic store lives in a temp dir; tests are synthetic in-code (the baseline-manifest privacy scan passes over every new path); annotation payload texts are lease-governed store artifacts with content-free envelope entries; Hub events (hub.*) carry counts/char-lengths/day values only; the live store's v5 migration is additive with a pre-migration backup; live data stays under Application Support."
+}

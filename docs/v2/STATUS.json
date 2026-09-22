@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
-  "active_milestone": "M08",
+  "active_milestone": "M09",
   "status": "implemented_pending_human",
-  "status_reason": "All automatable M08 work and checks passed on post-review code: the serialized insertion service (one transaction queue — revalidation consuming M06's same_destination, the AX-vs-clipboard method matrix, pasteboard ownership generations with user-copy-wins restore, readback-only confirmation incl. the ambiguous-pre-existing rule, target-bound undo, paste-again reconciliation, the multi-line terminal copy-only guard that classifies the live frontmost bundle when no snapshot carried a category) plus the S29.8 bounded outcome observation (certified = readback-consistent surfaces, owned-range-only reads, re-anchoring, lease-governed before/after artifacts, all stop conditions, re-armed on wake). Suites: races 13/13, attribution 10/10, pipeline 5/5, plus every M01–M07 suite, worker_live, live_pipeline and the V1 control (51/51) re-ran green post-review. Store schema v4 (insertions + insertion_observations, additive; live db migrated). Benchmark: verification p95 0.004 ms; AX insert p95 0.69 ms; clipboard p95 0.63 ms; UI-callback submit 0.002 ms while a 0.6 s settle transaction was in flight (pre-M08 slept 50 ms inline). The /review-2 → /address loop completed: all three criticals (terminal-guard bypass without a snapshot — CA1; the one-way session-lock latch — both reviewers; clipboard-path false confirmation over pre-existing text — DB1) and every warning were fixed in-session with regression tests; suggestions applied (dead code, constants, contract drift, backup-skip warning, flake hardening). Pending is the milestone's native human trial (app-switch races, user clipboard copies during processing, undo after manual edits, two rapid dictations, terminal multi-line behavior from Terminal.app) — it does not gate M09's automatable work and doubles as the E10 destination-class certification prerequisite.",
-  "source_commit": "a8dbeda8b1a1e6ffe70ec4256b6e437a52a49a24",
-  "source_commit_note": "M08 was implemented on top of this commit (the M07 close-out ORCHESTRATION.html realignment); the M08 commit follows.",
-  "requirements": ["LF-R12", "LF-R28", "LF-R30", "LF-R31"],
+  "status_reason": "All automatable M09 work and checks passed on post-review code: the native Hub (Home/History/Diagnostics/Models+Training Data/Settings — one AppKit shell over a headless-testable HubState, single instance, saved frame, close≠quit with state preserved) plus the read-only history query layer (date grouping with the explicit Undated group, escaped text/app/mode search through the single-writer store, distinct source→normalized→cleaned lineage with the transform honestly absent until M11), the Models → Training Data inspector (versioned span/verbatim/intended annotations with the per-example verbatim listen gate, pin scoped away from review retention, exclude/delete-everywhere, honest readiness triad), replay (one at a time, honest unavailability), diagnostics (event stream, job timelines, redacted export), and the coordinator command surface with the focus-steal guard deferring Hub actions during recording, the ⌘V window and any in-flight insertion/undo transaction. Store schema v5 (job_targets + captured index; additive, backed up). Suites: history queries 11/11, training inspector 12/12, diagnostics 3/3, hub shell 14/14 (real coordinator), plus every M01–M08 suite, worker_live, live_pipeline and the V1 control (51/51) re-ran green post-review. Benchmark: 50k-row search p95 42.6 ms (budget 200); interactive shell p95 67 ms (budget 1000); UI memory delta 28.2 MB excluding model weights; inspector at 1k examples 3–9 ms p95. The /review-2 → /address loop completed: the corroborated verbatim listen-gate provenance leak, the dead History Retry button and the double-requeue duplicate-insertion path were fixed in-session with regression tests, and every warning was fixed or scoped (repaste attribution, pin/annotation lease separation, retry guards, bounded export, SQL subquery search, json_extract mode filter, SQL-side Home counts, merged-limit fix); deferred items are documented in results.json. Pending is the native human trial (all screens at normal/enlarged scale, keyboard navigation, replay/retry of real samples, move/resize/relaunch, one correct + one incorrect review, a narrow correction, excluded/deleted records disappearing) — it does not gate M10's automatable work.",
+  "source_commit": "beef9c0a8f5e8f2f0c05b6e01dc0a70a5c9ae8f6",
+  "source_commit_note": "M09 was implemented on top of this commit (the M08 close-out ORCHESTRATION.html realignment); the M09 commit follows.",
+  "requirements": ["LF-R13", "LF-R28", "LF-R30", "LF-R31"],
   "registry": "docs/v2/registry.json",
-  "automated_results": ["docs/v2/acceptance/M08/results.json"],
-  "benchmark_runs": ["docs/v2/benchmarks/20260922-131238-m08/m08.json"],
+  "automated_results": ["docs/v2/acceptance/M09/results.json"],
+  "benchmark_runs": ["docs/v2/benchmarks/20260922-170952-m09/m09.json"],
   "pending_human": [
-    "native-m08-insertion-trial"
+    "native-m09-hub-trial"
   ],
-  "handoff": "docs/v2/handoffs/M08.md",
-  "next_milestone": "M09",
+  "handoff": "docs/v2/handoffs/M09.md",
+  "next_milestone": "M10",
   "next_milestone_dependency_eligible": true
 }

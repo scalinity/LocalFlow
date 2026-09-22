@@ -91,3 +91,15 @@ orphan payload files.
   the connection itself stays private to this module. The torn-write
   repair path now covers the v3 vocabulary tables (all migration DDL
   re-applies idempotently).
+
+## M09 additions (schema v5; no frozen identity changed)
+
+- Migration v5 adds `job_targets(job_id PK, app_name, app_bundle,
+  recorded_at_utc)` — the dictation's destination app, Spec S08's jobs
+  "target" field, recorded once at PTT start via
+  `Store.set_job_target` — plus `idx_jobs_captured` for History's
+  date-grouped listing. A side table rather than an ALTER keeps every
+  migration statement idempotent (the torn-write repair re-applies
+  them all); see `contracts/hub.md`. The module-level
+  `insert_text_artifact_row`/`grant_lease_row` are the canonical
+  writer-thread INSERTs domain layers compose inside one op.

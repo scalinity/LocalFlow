@@ -1,0 +1,88 @@
+{
+ "milestone": "M09",
+ "generated_utc": "2026-09-22T17:09:52Z",
+ "synthetic": true,
+ "rows": {
+  "jobs": 50000,
+  "artifacts": 100000,
+  "job_targets": 50000
+ },
+ "ui_memory_excluding_model_weights": {
+  "method": "ru_maxrss (peak) delta after full Hub construction + all five view loads; imports exclude MLX/worker code; darwin reports ru_maxrss in bytes",
+  "import_baseline_mb": 66.1,
+  "peak_with_hub_mb": 94.4,
+  "hub_delta_mb": 28.2
+ },
+ "store_build_sec": 0.4,
+ "history_search_50k": {
+  "text_hit": {
+   "runs": 30,
+   "p50_ms": 42.27,
+   "p95_ms": 42.55,
+   "max_ms": 43.43,
+   "rows_returned": 200,
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "text_miss": {
+   "runs": 30,
+   "p50_ms": 19.22,
+   "p95_ms": 19.94,
+   "max_ms": 20.27,
+   "rows_returned": 0,
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "app_filter": {
+   "runs": 30,
+   "p50_ms": 16.73,
+   "p95_ms": 17.0,
+   "max_ms": 17.25,
+   "rows_returned": 200,
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "mode_filter": {
+   "runs": 30,
+   "p50_ms": 28.58,
+   "p95_ms": 29.85,
+   "max_ms": 30.96,
+   "rows_returned": 200,
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "browse_no_filters": {
+   "runs": 30,
+   "p50_ms": 38.01,
+   "p95_ms": 40.44,
+   "max_ms": 42.18,
+   "rows_returned": 200,
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  }
+ },
+ "interactive_shell": {
+  "runs": 10,
+  "p50_ms": 64.74,
+  "p95_ms": 66.66,
+  "max_ms": 66.66,
+  "budget_p95_ms": 1000.0,
+  "within_budget": true
+ },
+ "training_inspector_1k": {
+  "synthetic_examples": 1000,
+  "build_sec": 0.0,
+  "examples_list": {
+   "runs": 10,
+   "p50_ms": 3.07,
+   "p95_ms": 3.14,
+   "rows": 300
+  },
+  "readiness": {
+   "runs": 10,
+   "p50_ms": 8.36,
+   "p95_ms": 8.55
+  },
+  "note": "inspector paths measured at 1k examples; the 50k search corpus covers the History path only"
+ }
+}

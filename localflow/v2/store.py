@@ -229,6 +229,24 @@ _MIGRATIONS[4] = [
 ]
 
 
+# M09 (Spec S08 jobs "target" field / S19 History app filter): the
+# destination app a dictation targeted, recorded at PTT start when the
+# M06 identity read succeeded. A side table rather than an ALTER on
+# jobs — plain CREATE TABLE keeps every migration statement idempotent
+# (the torn-write repair path re-applies them all) and the jobs table
+# untouched (the M06 decision: consumers own what they need).
+# App names are private usage metadata (S21); they follow the job rows.
+_MIGRATIONS[5] = [
+    """CREATE TABLE IF NOT EXISTS job_targets(
+         job_id TEXT PRIMARY KEY,
+         app_name TEXT, app_bundle TEXT,
+         recorded_at_utc TEXT NOT NULL)""",
+    # History date grouping/sort walks captured time in every query.
+    """CREATE INDEX IF NOT EXISTS idx_jobs_captured
+         ON jobs(captured_at_utc)""",
+]
+
+
 # ---- IEEE float32 WAV (Spec S29.5: the original capture artifact) -------
 
 def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
@@ -471,7 +489,8 @@ class Store:
                     "consent_revisions", "artifact_leases", "deletion_tombstones",
                     "vocabulary_entries", "vocabulary_aliases",
                     "vocabulary_history", "vocabulary_meta",
-                    "insertions", "insertion_observations"}
+                    "insertions", "insertion_observations",
+                    "job_targets"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         if version >= target and not expected <= have:
@@ -588,6 +607,19 @@ class Store:
                  ids.now_utc_iso(self.now_fn()), job_id))
         self._submit(op)
 
+    def set_job_target(self, job_id, app_name, app_bundle):
+        """M09: record the dictation's destination app (History's app
+        filter/display). Written once at PTT start from the M06 identity;
+        a job with no identity read keeps no row — History then shows an
+        honest unknown rather than a guess."""
+        def op():
+            self._db.execute(
+                "INSERT OR REPLACE INTO job_targets(job_id, app_name,"
+                " app_bundle, recorded_at_utc) VALUES(?,?,?,?)",
+                (job_id, app_name, app_bundle,
+                 ids.now_utc_iso(self.now_fn())))
+        self._submit(op)
+
     def job(self, job_id):
         def op():
             cur = self._db.execute(
@@ -611,21 +643,14 @@ class Store:
                             retention_class="history", meta=None,
                             parent_artifact_id=None):
         artifact_id = ids.new_id("art")
-        payload = text if isinstance(text, str) else json.dumps(
-            text, ensure_ascii=False, indent=1)
         now = ids.now_utc_iso(self.now_fn())
 
         def op():
-            self._db.execute(
-                "INSERT INTO artifacts(artifact_id, job_id, stage,"
-                " parent_artifact_id, kind, role, content_path, content_text,"
-                " sha256, bytes, meta_json, retention_class, purged,"
-                " created_at_utc) VALUES(?,?,?,?,?,?,NULL,?,?,?,?,?,0,?)",
-                (artifact_id, job_id, stage, parent_artifact_id, kind, role,
-                 payload, ids.sha256_text(payload), len(payload.encode("utf-8")),
-                 json.dumps(meta or {}, ensure_ascii=False),
-                 retention_class, now))
-            return artifact_id
+            return insert_text_artifact_row(
+                self._db, artifact_id=artifact_id, job_id=job_id,
+                stage=stage, role=role, text=text, kind=kind,
+                retention_class=retention_class, meta=meta,
+                parent_artifact_id=parent_artifact_id, created_at_utc=now)
         self._submit(op)
         return artifact_id
 
@@ -954,14 +979,8 @@ class Store:
         now = self.now_fn()
 
         def op():
-            self._db.execute(
-                "INSERT INTO artifact_leases(lease_id, artifact_id, holder,"
-                " granted_at_utc, expires_at_utc) VALUES(?,?,?,?,?)",
-                (lease_id, artifact_id, holder,
-                 ids.now_utc_iso(now),
-                 ids.now_utc_iso(now + days * 86400) if days is not None
-                 else None))
-            return lease_id
+            grant_lease_row(self._db, artifact_id, holder, days=days,
+                            granted_at_epoch=now, lease_id=lease_id)
         self._submit(op)
         return lease_id
 
@@ -1244,3 +1263,37 @@ def _row_to_dict(row, cols):
     if row is None:
         return None
     return dict(zip(cols, row))
+
+
+# ---- shared writer-thread SQL (module-level so same-package domain
+# layers compose them INSIDE one Store.submit op without duplicating
+# the INSERT statements — the drift risk of parallel copies outlives
+# any single milestone; M10's transform artifacts will reuse these) ----
+
+def insert_text_artifact_row(conn, *, artifact_id, job_id, stage, role, text,
+                             kind="text", retention_class="history",
+                             meta=None, parent_artifact_id=None,
+                             created_at_utc):
+    payload = text if isinstance(text, str) else json.dumps(
+        text, ensure_ascii=False, indent=1)
+    conn.execute(
+        "INSERT INTO artifacts(artifact_id, job_id, stage,"
+        " parent_artifact_id, kind, role, content_path, content_text,"
+        " sha256, bytes, meta_json, retention_class, purged,"
+        " created_at_utc) VALUES(?,?,?,?,?,?,NULL,?,?,?,?,?,0,?)",
+        (artifact_id, job_id, stage, parent_artifact_id, kind, role,
+         payload, ids.sha256_text(payload), len(payload.encode("utf-8")),
+         json.dumps(meta or {}, ensure_ascii=False), retention_class,
+         created_at_utc))
+    return artifact_id
+
+
+def grant_lease_row(conn, artifact_id, holder, *, days=None,
+                    granted_at_epoch, lease_id=None):
+    conn.execute(
+        "INSERT INTO artifact_leases(lease_id, artifact_id, holder,"
+        " granted_at_utc, expires_at_utc) VALUES(?,?,?,?,?)",
+        (lease_id or ids.new_id("lease"), artifact_id, holder,
+         ids.now_utc_iso(granted_at_epoch),
+         ids.now_utc_iso(granted_at_epoch + days * 86400)
+         if days is not None else None))

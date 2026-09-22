@@ -117,6 +117,15 @@ design) it reports `already_present` and pastes nothing; otherwise a
 fresh transaction is submitted asynchronously (validated with no
 recorded snapshot: insert-on-faith under explicit intent).
 
+**History's Paste Again engine (M09):** `paste_text(text, job_id=None,
+on_done=None)` is the same reconcile-then-submit contract for
+arbitrary retained text. The job id rides along so the `insertions`
+row and any observation stay attributed; a jobless (legacy-row)
+repaste records no attribution row rather than failing the NOT NULL
+constraint. **`busy`** reports whether an insertion or undo op is
+executing on the queue thread — the coordinator's focus-steal guard
+defers Hub window actions for exactly that window (see `hub.md`).
+
 ## S29.8 bounded outcome observation (starts here, not in M14)
 
 A `confirmed` insertion proves the surface's AX reads self-consistent

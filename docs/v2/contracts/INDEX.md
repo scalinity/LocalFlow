@@ -19,6 +19,7 @@
 | `context.md` | Bounded destination-context snapshots and providers | M06 | S12, S18, S30.1 |
 | `cleanup.md` | Faithful cleanup: contract, windows, corrections, validation, fallback | M07 | S13, S14, S29.4 |
 | `insertion.md` | Safe insertion: serialized queue, clipboard ownership, undo, S29.8 observation | M08 | S18, S12, S24, S29.8 |
+| `hub.md` | Native Hub: shell/state/services split, coordinator commands, History lineage, Training Data annotations, focus guard | M09 | S19, S08, S29.6/S29.14/S29.15 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
@@ -85,4 +86,11 @@ milestones add fields; they must not repurpose or weaken these identifiers.
   `targets.md`'s transaction half goes live; `context.md`'s
   `same_destination` consumer note updates; `training_evidence.md`
   gains the M08 outcome-family status. No frozen identifier changed;
-  the registry stays 33/22.
+  the registry stays 33/22. M09 ships `hub.md` (the shell/state/
+  services split, the coordinator command surface, History's
+  distinct-stage lineage and Undated grouping, the Training Data
+  annotation semantics with the per-example verbatim listen gate and
+  pin-vs-review-retention scoping, the focus-steal guard, store schema
+  v5's `job_targets` side table); `insertion.md`'s paste-again engine
+  generalizes to `paste_text` for History repastes. No frozen
+  identifier changed; the registry stays 33/22.

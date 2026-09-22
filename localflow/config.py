@@ -99,6 +99,11 @@ DEFAULTS = {
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
+def user_override_path() -> pathlib.Path:
+    return pathlib.Path.home() / "Library" / "Application Support" / \
+        "LocalFlow" / "config.json"
+
+
 def load(path=None) -> dict:
     """First match wins: explicit path, $LOCALFLOW_CONFIG, user override
     in Application Support, then the config.json shipped next to the code."""

@@ -96,9 +96,20 @@ class InsertionService:
         self._undo_lock = threading.Lock()
         self._undo_record: Optional[dict] = None
         self._last_text: Optional[str] = None
+        # M09: an insert transaction is executing on the queue thread —
+        # the coordinator's focus-steal guard for Hub window actions.
+        self._in_flight = 0
         self._thread = threading.Thread(
             target=self._run, name="localflow-v2-insertion", daemon=True)
         self._thread.start()
+
+    @property
+    def busy(self) -> bool:
+        """True while an insertion transaction is executing — the window
+        during which a focus change could derail the paste (M09
+        regression requirement: window actions never steal focus during
+        insertion)."""
+        return self._in_flight > 0
 
     # ---- public API (called from the coordinator/UI thread) ----------
 
@@ -226,6 +237,27 @@ class InsertionService:
             text = self._last_text
         if rec is None or text is None:
             return {"outcome": "nothing_to_paste"}
+        return self._reconciled_repaste(text, rec["lease"].job_id,
+                                        attempt=rec["lease"].attempt)
+
+    def paste_text(self, text: str, job_id: str | None = None,
+                   on_done: Optional[Callable] = None) -> dict:
+        """M09 (S18/S19): the History "Paste Again" engine — the same
+        reconcile-then-submit contract as ``paste_again`` for arbitrary
+        retained text (no undo record needed). Explicit user intent
+        authorizes the re-paste; the fresh transaction still revalidates
+        with no recorded snapshot (insert-on-faith) and runs on the
+        queue thread. ``job_id`` keeps the insertion row and any
+        observation attributed (contracts/insertion.md); ``on_done``
+        (e.g. the coordinator's deferred-Hub-show flush) fires with the
+        result on the queue thread."""
+        if not text:
+            return {"outcome": "nothing_to_paste"}
+        return self._reconciled_repaste(text, job_id, on_done=on_done)
+
+    def _reconciled_repaste(self, text: str, job_id: str | None,
+                            attempt: int = 1,
+                            on_done: Optional[Callable] = None) -> dict:
         el = self.host.focused_element()
         if el is not None:
             total = self.host.number_of_characters(el)
@@ -235,18 +267,17 @@ class InsertionService:
                 if text in content:
                     self.emit(
                         "insertion.paste_again", level="INFO",
-                        job_id=rec["lease"].job_id,
+                        job_id=job_id,
                         outcome="already_present",
                         reason_code="reconciled_accessible_text")
                     return {"outcome": "already_present"}
         # Explicit intent authorizes the re-paste; a fresh transaction
         # still runs asynchronously on the queue (the target may have
         # changed since the original insert).
-        self.submit(text, {"job_id": rec["lease"].job_id,
-                           "attempt": rec["lease"].attempt},
-                    lambda _r: None)
+        self.submit(text, {"job_id": job_id, "attempt": int(attempt)},
+                    on_done or (lambda _r: None))
         self.emit("insertion.paste_again", level="INFO",
-                  job_id=rec["lease"].job_id, outcome="repaste_submitted")
+                  job_id=job_id, outcome="repaste_submitted")
         return {"outcome": "repaste_submitted"}
 
     # ---- queue thread --------------------------------------------------
@@ -254,31 +285,38 @@ class InsertionService:
     def _run(self):
         while True:
             item = self._q.get()
-            if item[0] == "undo":
-                _tag, deliver = item
+            # Undo writes AX state on this thread too — the busy flag's
+            # contract (a focus change could derail an in-flight write)
+            # covers it exactly as it covers inserts.
+            self._in_flight += 1
+            try:
+                if item[0] == "undo":
+                    _tag, deliver = item
+                    try:
+                        outcome = self._undo_now()
+                    except Exception as e:
+                        outcome = {"outcome": "undo_error",
+                                   "reason_code": type(e).__name__}
+                    deliver(outcome)
+                    continue
+                _tag, text, job, on_done, on_observation = item
                 try:
-                    outcome = self._undo_now()
+                    result = self._transaction(text, job, on_observation)
                 except Exception as e:
-                    outcome = {"outcome": "undo_error",
-                               "reason_code": type(e).__name__}
-                deliver(outcome)
-                continue
-            _tag, text, job, on_done, on_observation = item
-            try:
-                result = self._transaction(text, job, on_observation)
-            except Exception as e:
-                result = InsertionResult(
-                    insertion_id=ids.new_id("ins"),
-                    job_id=job.get("job_id"),
-                    attempt=int(job.get("attempt", 1)),
-                    state=STATE_FAILED,
-                    reason_code=f"transaction_error:{type(e).__name__}",
-                    method=METHOD_NONE,
-                    created_at_utc=ids.now_utc_iso())
-            try:
-                on_done(result)
-            except Exception:
-                pass
+                    result = InsertionResult(
+                        insertion_id=ids.new_id("ins"),
+                        job_id=job.get("job_id"),
+                        attempt=int(job.get("attempt", 1)),
+                        state=STATE_FAILED,
+                        reason_code=f"transaction_error:{type(e).__name__}",
+                        method=METHOD_NONE,
+                        created_at_utc=ids.now_utc_iso())
+                try:
+                    on_done(result)
+                except Exception:
+                    pass
+            finally:
+                self._in_flight -= 1
 
     def _transaction(self, text, job, on_observation) -> InsertionResult:
         insertion_id = ids.new_id("ins")
@@ -606,6 +644,11 @@ class InsertionService:
     def _finish(self, result: InsertionResult,
                 observation: Optional[OutcomeObserver] = None
                 ) -> InsertionResult:
+        if result.job_id is None:
+            # Nothing to attribute the row to (a jobless History re-paste
+            # of legacy content): no insertions row exists rather than a
+            # NOT NULL failure swallowed as a warning per action.
+            return result
         try:
             record.record_insertion(self.store, result)
         except Exception as e:

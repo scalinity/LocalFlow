@@ -214,6 +214,11 @@ class AppDelegate(NSObject):
             self.v2log.emit("insertion.service_unavailable",
                             level="WARNING", reason_code=type(e).__name__,
                             outcome="copy_only")
+        # M09 (Spec S19): the native Hub. Constructed lazily on first
+        # Open Hub; one controller for the process lifetime (closing
+        # only orders the window out — the menu-bar service stays).
+        self._hub = None
+        self._hub_show_pending = False
         self.overlay = None
         self.hotkey = None
         self.mouse_trigger = None
@@ -663,6 +668,16 @@ class AppDelegate(NSObject):
                     # its downstream revision is composed from this handle
                     # only (never from whatever a newer dictation started).
                     self._job["context_coll"] = self._context.begin(identity)
+                    # M09: History's app filter needs the destination on
+                    # the job row (Spec S08 jobs "target"); a store stall
+                    # here never touches the dictation.
+                    try:
+                        self.store.set_job_target(
+                            job_id, identity.app_name, identity.app_bundle)
+                    except Exception as e:
+                        self.v2log.emit("store.state_write_failed",
+                                        level="WARNING", job_id=job_id,
+                                        reason_code=type(e).__name__)
                 else:
                     # A failed identity capture must never leave the
                     # PREVIOUS job's collection active — its finalize
@@ -1699,9 +1714,14 @@ class AppDelegate(NSObject):
         else:
             self.state = STATE_IDLE
             self.overlay.hide()
+        # A Hub open request that arrived mid-transaction runs now that
+        # the pipeline has settled (no focus steal during insertion);
+        # every _insertionDone_ branch lands here.
+        self._flush_pending_hub_show()
 
     def clearInjecting_(self, timer):
         self._injecting = False
+        self._flush_pending_hub_show()
 
     # ---- menu ------------------------------------------------------------
 
@@ -1734,6 +1754,15 @@ class AppDelegate(NSObject):
         )
         self.model_menu_item.setEnabled_(False)
         menu.addItem_(self.model_menu_item)
+
+        # The Hub (Spec S19, M09): history, diagnostics, models/training
+        # data and settings in one native window; closing it never quits
+        # the menu-bar service.
+        hub_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "Open Hub…", "openHub:", "l"
+        )
+        hub_item.setTarget_(self)
+        menu.addItem_(hub_item)
 
         # Minimal training-evidence controls (Spec S29.2, M02): collection
         # is opt-in, one persistent choice; nothing is collected until the
@@ -1854,6 +1883,192 @@ class AppDelegate(NSObject):
             self.v2log.emit("vocabulary.panel_failed", level="WARNING",
                             reason_code=type(e).__name__)
 
+    # ---- Hub (Spec S19, M09) ----------------------------------------------
+
+    def openHub_(self, sender):
+        """Single-instance Hub activation. Deferred, never denied, while
+        an insertion transaction is in flight: activating a window mid-
+        transaction would flip the frontmost app under the paste (the
+        M09 regression requirement — window actions do not steal focus
+        during insertion)."""
+        if self._hub_blocks_show():
+            self._hub_show_pending = True
+            self.v2log.emit("hub.show_deferred", level="INFO",
+                            reason_code="insertion_in_flight")
+            return
+        try:
+            if self._hub is None:
+                from .v2 import ui as v2_ui
+                from .v2 import history_queries, training_data
+                self._hub = v2_ui.HubController.alloc().initWithSpec_({
+                    "store": self.store,
+                    "history_service": history_queries.HistoryQueryService(
+                        self.store),
+                    "training_service": training_data.TrainingDataService(
+                        self.store, emit=self.v2log.emit),
+                    "diagnostics_provider": self._hub_diagnostics_spec,
+                    "coordinator": self,
+                    "replay": v2_ui.ReplayService(),
+                    "capabilities": self._capability_manifest,
+                })
+            self._hub.showWindow_(sender)
+        except Exception as e:
+            self.v2log.emit("hub.open_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+
+    @objc.python_method
+    def _hub_diagnostics_spec(self):
+        return {"events_dir": V2_EVENTS_DIR,
+                "pipeline_info": self._pipeline_info(),
+                "engine_states": dict(self.supervisor.engine_state),
+                "last": 500}
+
+    @objc.python_method
+    def _hub_blocks_show(self) -> bool:
+        # getattr keeps the shared test harnesses' insertion stubs valid.
+        # Recording is included: activating the Hub mid-capture would
+        # flip the destination under the release-time insert.
+        return self.state == STATE_RECORDING or self._injecting or (
+            self._insertion is not None
+            and bool(getattr(self._insertion, "busy", False)))
+
+    @objc.python_method
+    def _flush_pending_hub_show(self):
+        if self._hub_show_pending and not self._hub_blocks_show():
+            self._hub_show_pending = False
+            self.openHub_(None)
+
+    # Coordinator command surface the Hub calls (contract hub.md): the
+    # shell owns no data logic and never writes into target apps.
+
+    @objc.python_method
+    def hubEngineStates(self):
+        return dict(self.supervisor.engine_state)
+
+    @objc.python_method
+    def hubRecoveryInfo(self):
+        return {"last_failed": self._last_failed is not None,
+                "recoverable": len(self._recoverable)}
+
+    @objc.python_method
+    def collection_state(self):
+        return self.consent.state()
+
+    @objc.python_method
+    def hubRetentionDays(self):
+        return dict(self.store.retention_days)
+
+    @objc.python_method
+    def hubCopyText(self, text):
+        copy_text(text)
+        self.v2log.emit("hub.text_copied", level="INFO",
+                        reason_code="history_action",
+                        detail=f"{len(text)} chars")
+
+    @objc.python_method
+    def hubPasteText(self, text, job_id=None):
+        """History's Paste Again: the M08 reconcile-then-submit engine
+        under explicit user intent. Refused while recording or mid-
+        transaction (never steals focus from an insert in flight). The
+        selected row's job id rides along so the insertion row and any
+        observation stay attributed (contracts/insertion.md)."""
+        if self.state == STATE_RECORDING:
+            return {"outcome": "recording"}
+        if self._hub_blocks_show():
+            return {"outcome": "insertion_in_flight"}
+        if self._insertion is None:
+            self.hubCopyText(text)
+            return {"outcome": "copy_only_no_service"}
+        paste = getattr(self._insertion, "paste_text", None)
+        if paste is None:
+            # The shared test harnesses stub _insertion without the M09
+            # entry point; production always has it.
+            self.hubCopyText(text)
+            return {"outcome": "copy_only"}
+        # The AX path fires no ⌘V guard timer, so the deferred-Hub-show
+        # flush rides the transaction's completion instead.
+        return paste(text, job_id=job_id,
+                     on_done=lambda _r: AppHelper.callAfter(
+                         self._flush_pending_hub_show))
+
+    @objc.python_method
+    def hubRetryJob(self, job_id):
+        """Retry one failed job from its History row, through the same
+        coordinator path the Recovery menu uses. Only ``failed_
+        recoverable`` jobs with live recovery audio retry — anything
+        else reports why instead of requeueing (a double click must
+        never insert the same dictation twice)."""
+        if self.state == STATE_RECORDING:
+            return {"outcome": "recording"}
+        if any(j.get("job_id") == job_id for j in self._active_jobs):
+            return {"outcome": "already_retrying"}
+        row = self.store.job(job_id) or {}
+        if row.get("state") != "failed_recoverable":
+            return {"outcome": "not_retryable",
+                    "reason": row.get("state") or "unknown_job"}
+        for info in ([self._last_failed] if self._last_failed else []) \
+                + list(self._recoverable):
+            if info and info.get("job_id") == job_id:
+                wav = pathlib.Path(info.get("wav") or "")
+                if not wav.exists():
+                    return {"outcome": "audio_unavailable",
+                            "reason": "recovery audio expired"}
+                return self._retry_job(info)
+        # Not the in-memory last-failed set: only retryable if recovery
+        # audio still exists under the journal root (contracts/store.md
+        # — it expires by mtime, and missing audio is labeled
+        # unavailable, never fabricated).
+        wav = V2_JOURNAL / f"job-{job_id}.wav"
+        if wav.exists():
+            return self._retry_job({
+                "job_id": job_id, "family_id": row.get("family_id"),
+                "wav": str(wav), "raw": None,
+                "attempt": row.get("attempt", 1) or 1})
+        return {"outcome": "audio_unavailable",
+                "reason": "no recovery audio for job"}
+
+    @objc.python_method
+    def hubSetCollection(self, new_state):
+        self.consent.set(new_state, note="hub settings")
+        self._refresh_training_menu()
+
+    @objc.python_method
+    def hubApplyRetention(self, values):
+        """Apply the five store retention knobs now and persist them to
+        the user config override. Only these five keys are written into
+        the override (merged over its existing content) — a full-config
+        freeze would silently pin values inherited from env/config
+        files on later launches."""
+        keys = ("transcript", "audio_success", "audio_failed",
+                "metadata", "training_buffer")
+        cfg_keys = ("retention_transcript_days",
+                    "retention_audio_success_days",
+                    "retention_audio_failed_days",
+                    "retention_metadata_days", "training_buffer_days")
+        for key, cfg_key, value in zip(keys, cfg_keys, values):
+            self.store.retention_days[key] = int(value)
+            self.cfg[cfg_key] = int(value)
+        try:
+            override = {}
+            path = config_mod.user_override_path()
+            try:
+                override = json.loads(path.read_text())
+            except (OSError, ValueError):
+                override = {}
+            for cfg_key, value in zip(cfg_keys, values):
+                override[cfg_key] = int(value)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(override, ensure_ascii=False,
+                                       indent=1), encoding="utf-8")
+        except Exception as e:
+            self.v2log.emit("hub.settings_write_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+            return {"outcome": "not_persisted"}
+        self.v2log.emit("hub.retention_applied", level="INFO",
+                        reason_code="settings",
+                        detail="/".join(str(v) for v in values))
+        return {"outcome": "applied"}
+
     def importDictionaryJSON_(self, sender):
         if self._vocab is None:
             return
@@ -1915,6 +2130,14 @@ class AppDelegate(NSObject):
             info = self._recoverable[-1]
         if info is None:
             return
+        self._retry_job(info)
+
+    @objc.python_method
+    def _retry_job(self, info):
+        """The one retry path (menu and the Hub's History row share it):
+        re-arm the breaker, re-read the recovery audio, re-open the
+        failed job with attempt+1 and requeue it through the
+        coordinator."""
         if self.supervisor.supervisor_state == "failed":
             # An explicit user action re-arms the breaker (M03-AC01: the
             # automatic loop stops; recovery is manual from here).
@@ -1923,14 +2146,14 @@ class AppDelegate(NSObject):
             except WorkerFailure as e:
                 self.v2log.emit("worker.manual_restart_failed", level="ERROR",
                                 reason_code=e.reason_code)
-                return
+                return {"outcome": "restart_failed"}
         try:
             _arr, _rate = v2.store.read_wav_f32(pathlib.Path(info["wav"]))
         except Exception as e:
             self.v2log.emit("dictation.retry_failed", level="ERROR",
                             job_id=info.get("job_id"),
                             reason_code=type(e).__name__)
-            return
+            return {"outcome": "audio_unavailable"}
         attempt = int(info.get("attempt", 1) or 1) + 1
         job_id = info.get("job_id")
         family_id = info.get("family_id")
@@ -1961,7 +2184,11 @@ class AppDelegate(NSObject):
                         reason_code="user_retry")
         if info in self._recoverable:
             self._recoverable.remove(info)
-        else:
+        elif (self._last_failed is not None
+              and self._last_failed.get("job_id") == info.get("job_id")):
+            # Only clear when this retry IS the last failure — retrying
+            # an older History row must not strand a different failure's
+            # recovery menu entry.
             self._last_failed = None
         self._refresh_recovery_menu()
         self._pending += 1
@@ -1969,6 +2196,7 @@ class AppDelegate(NSObject):
         self._jobs.put(job)
         self.state = STATE_PROCESSING
         self.overlay.showWithMode_(MODE_PROCESSING)
+        return {"outcome": "requeued", "job_id": job_id}
 
     def copyLastRaw_(self, sender):
         if self._last_failed is None or not self._last_failed.get("raw"):
