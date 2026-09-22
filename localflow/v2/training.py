@@ -136,6 +136,13 @@ class CaptureContext:
         # before recognition so no later correction can relabel it.
         self.context_hints = None
         self.hint_set_artifact = None
+        # M06 (S12/S29.4 context family): the bounded destination-
+        # context snapshot (pre-decode + optional downstream revision).
+        # Transient use and retention are separate: with retention off
+        # the payload is never written and the envelope says so.
+        self.context_destination = None
+        self.context_downstream = None
+        self.context_retention_disabled = False
         self.raw_artifact = None
         self.raw_text = None
         self.applied_artifact = None
@@ -152,11 +159,15 @@ class CaptureContext:
 class EvidenceCollector:
     """Live hooks around the existing ASR/cleanup pipeline (M02 task 7-8)."""
 
-    def __init__(self, store, emit, consent, pipeline_info):
+    def __init__(self, store, emit, consent, pipeline_info,
+                 retain_context=True):
         self.store = store
         self.emit = emit
         self.consent = consent
         self.pipeline_info = pipeline_info  # callable -> provenance dict
+        # M06 (S12): independent training-context retention — transient
+        # context use never implies retaining snapshot payloads.
+        self.retain_context = bool(retain_context)
         self._current = None
 
     # ---- job lifecycle ---------------------------------------------------
@@ -297,6 +308,59 @@ class EvidenceCollector:
             "disposition": disposition,
             "artifact_ids": {"hint_set": ctx.hint_set_artifact},
         }
+
+    def on_context_snapshot(self, ctx, snapshot, *, downstream=None):
+        """M06 (S12/S29.4): record the bounded destination-context
+        snapshot. The pre-decode call happens BEFORE recognition (with
+        the finalize that cut it), so late providers cannot leak into
+        the retained pre-decode payload (M06-AC05); a downstream
+        revision is stored separately and marked by stage. Retention is
+        the independent ``training_retain_context`` choice: when false,
+        no payload artifact is written even with collection enabled and
+        the envelope records the redaction (replay inputs stay honestly
+        incomplete). Store failures are swallowed — evidence must never
+        fail the dictation."""
+        if not ctx.collecting or snapshot is None or ctx.example_id:
+            return
+        block = snapshot.to_envelope_block()
+        if downstream:
+            ctx.context_downstream = block
+        else:
+            ctx.context_destination = block
+        if not self.retain_context:
+            ctx.context_retention_disabled = True
+            block["retained"] = False
+            block["retention_reason"] = "training_context_retention_disabled"
+            return
+        try:
+            art = self.store.write_text_artifact(
+                job_id=ctx.job_id,
+                stage="downstream_context" if downstream
+                else "pre_decode_context",
+                role="context_snapshot",
+                kind="context_snapshot_json",
+                retention_class="training",
+                text=json.dumps(snapshot.to_json(), ensure_ascii=False,
+                                sort_keys=True),
+                meta={"context_snapshot_id": snapshot.context_snapshot_id,
+                      "stage": snapshot.stage,
+                      "partial": snapshot.partial,
+                      "target_snapshot_id":
+                          snapshot.target.target_snapshot_id})
+            self.store.grant_lease(
+                art, "training",
+                days=self.store.retention_days["training_buffer"])
+        except Exception as e:
+            self.emit("training.capture_failed", level="ERROR",
+                      job_id=ctx.job_id, reason_code=type(e).__name__,
+                      outcome="context_snapshot_not_retained")
+            block["retained"] = False
+            block["retention_reason"] = "retention_write_failed"
+            return
+        block["retained"] = True
+        block["artifact_id"] = art
+        # (the artifact id lives in the envelope's destination block —
+        # no duplicate bookkeeping on the context)
 
     def on_cleaner_observation(self, obs: dict):
         """Sink for TranscriptCleaner.observer — exact model inputs/outputs."""
@@ -668,11 +732,37 @@ class EvidenceCollector:
             del missing["normalization"]
             artifact_ids["normalization"] = (
                 ctx.norm_text_artifact or ctx.norm_ledger_artifact)
-        # M05 (S29.4 context family): the frozen pre-decode hint block
-        # exists exactly when a hint set was offered and captured.
-        context_hints = ctx.context_hints
-        if context_hints is not None:
+        # M05/M06 (S29.4 context family): the block exists when either
+        # the frozen pre-decode hint set (M05) or the bounded
+        # destination-context snapshot (M06) was captured; the absent
+        # half carries its honest reason inside the block.
+        context_block = None
+        if ctx.context_hints is not None \
+                or ctx.context_destination is not None:
             del missing["context"]
+            context_block = dict(ctx.context_hints or {})
+            if ctx.context_hints is None:
+                context_block["hint_set"] = None
+                context_block["hint_set_missing_reason"] = R_NOT_CAPTURED
+            # The absent destination half carries its honest reason too:
+            # context disabled, capture failure or no collection — a
+            # replay consumer can distinguish "never read" from "read
+            # but not retained".
+            if ctx.context_destination is not None:
+                context_block["destination"] = ctx.context_destination
+                if ctx.context_downstream is not None:
+                    context_block["downstream"] = ctx.context_downstream
+            elif ctx.collecting:
+                context_block["destination"] = None
+                context_block["destination_missing_reason"] = (
+                    "context_disabled_or_capture_failed")
+            # Retention was declined or failed: replay inputs stay
+            # honestly incomplete instead of silently missing.
+            if ctx.context_destination is not None \
+                    and not ctx.context_destination.get("retained", False):
+                missing["context_snapshot_payload"] = (
+                    R_CONSENT if ctx.context_retention_disabled
+                    else R_NOT_CAPTURED)
         env = {
             "training_schema_version": 1,
             "example_id": ctx.example_id,
@@ -692,7 +782,7 @@ class EvidenceCollector:
             "audio_preparation": audio_preparation,
             "recognition": dict(ctx.capture_meta.get("recognition", {})),
             "normalization": normalization,
-            "context": context_hints,
+            "context": context_block,
             "cleanup": cleanup_detail,
             "artifact_ids": artifact_ids,
             "missing_reasons": missing,

@@ -2,13 +2,22 @@
 
 **Spec:** S12, S18 · **Shape owner:** M01 · **Live owner:** M06 (snapshot), M08 (transaction) · **Suites:** EV-08, EV-10
 
-## Target snapshot
+## Target snapshot (live since M06)
 
-`target_snapshot_id` (UUID) records app process identity, window identity,
-focused accessible element, selected range, a surrounding-text fingerprint
-and target capabilities. Sensitive fields are never read; browser origins
-drop query/fragment. Snapshots are evidence about a destination, never
-instructions for the cleaner.
+`target_snapshot_id` (UUID) records app process identity (bundle/pid
+via NSWorkspace, read cheaply at PTT start after the overlay — no AX on
+the hotkey path), the denied-app decision and app category; window
+identity, focused accessible element, selected range and the
+surrounding-text fingerprint are completed by the bounded context
+finalize at release into `context.ContextSnapshot`
+(`contracts/context.md`). Sensitive fields are never read; browser
+origins drop query/fragment. Snapshots are evidence about a
+destination, never instructions for the cleaner. `same_destination()`
+answers the stale check insertion revalidation (M08) will call before
+granting replacement authority; the metadata cache invalidates on any
+app/focus change. The transaction half (revalidation before writing,
+clipboard ownership, one insertion queue, target-bound undo) is M08 —
+today's paste remains the V1 `posted_unverified` post.
 
 ## Insertion outcomes
 

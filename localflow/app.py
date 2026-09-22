@@ -33,6 +33,7 @@ from PyObjCTools import AppHelper
 
 from . import config as config_mod
 from . import v2
+from .v2 import context as v2_context
 from .audio import Recorder
 from .hotkey import DISPLAY_NAMES, HotkeyListener, MouseTriggerListener
 from .inject import copy_text, paste_text
@@ -107,7 +108,8 @@ class AppDelegate(NSObject):
         self.consent = v2.training.ConsentManager(self.store, self.v2log.emit)
         self.collector = v2.training.EvidenceCollector(
             self.store, self.v2log.emit, self.consent,
-            pipeline_info=lambda: self._pipeline_info())
+            pipeline_info=lambda: self._pipeline_info(),
+            retain_context=bool(cfg.get("training_retain_context", True)))
         self.recorder = Recorder(
             sample_rate=cfg["sample_rate"], input_device=cfg["input_device"],
             notifier=lambda msg: self.v2log.emit(
@@ -149,7 +151,7 @@ class AppDelegate(NSObject):
         # failure degrades to vocabulary-off with an event — never a
         # startup crash, never a dropped dictation.
         self._vocab = None
-        self._vocab_state_rev = -1
+        self._vocab_state_key = None
         self._vocab_snapshot = None
         self._hint_selector = None
         self._dict_panel = None
@@ -166,6 +168,23 @@ class AppDelegate(NSObject):
                             outcome="vocabulary_off")
         self._norm_context = None  # per-job vocabulary context (M06 adds
         #                            destination/path fields)
+        # M06 (Spec S12): destination-aware context. Identity is read
+        # cheaply at PTT start (after the overlay), providers collect
+        # asynchronously during recording, and the finalize at release is
+        # bounded by the S12 deadline. A construction failure disables
+        # context with an event — dictation never depends on it.
+        self._context = None
+        try:
+            self._context = v2_context.ContextCollector(
+                enabled=bool(cfg.get("context_enabled", True)),
+                deadline_ms=float(cfg.get("context_deadline_ms", 75)),
+                denied_apps=cfg.get("context_denied_apps") or (),
+                emit=self.v2log.emit)
+        except Exception as e:
+            self._context = None
+            self.v2log.emit("context.collector_unavailable",
+                            level="WARNING", reason_code=type(e).__name__,
+                            outcome="context_off")
         self.overlay = None
         self.hotkey = None
         self.mouse_trigger = None
@@ -199,29 +218,34 @@ class AppDelegate(NSObject):
         self._failed_pill_timer = None
 
     @objc.python_method
-    def _vocab_job_state(self):
-        """M05: the (policy, context, hint_set) trio a job captures at
-        hotkey-down. The snapshot + policy rebuild only when the store's
-        revision counter changed; in-flight jobs hold the objects they
-        captured, so a rule edit mid-flight changes only future jobs and
-        the job keeps its vocabulary revision (AC03). The hint set is
-        selected fresh per job from the cached snapshot — frozen before
-        decoding, never rebuilt from the answer (S30.1)."""
+    def _vocab_job_state(self, scope_ctx=None):
+        """M05/M06: the (policy, context, hint_set) trio a job captures
+        at hotkey-down, scoped by the destination identity M06 read just
+        before (S12). The snapshot + policy rebuild only when the store's
+        revision counter OR the destination scope changed; in-flight jobs
+        hold the objects they captured, so a rule edit mid-flight changes
+        only future jobs and the job keeps its vocabulary revision
+        (AC03). The hint set is selected fresh per job from the cached
+        snapshot — frozen before decoding, never rebuilt from the answer
+        (S30.1)."""
         policy, context = self._norm_policy, self._norm_context
         hint_set = None
+        scope_key = None if scope_ctx is None else (
+            scope_ctx.app_bundle, scope_ctx.site_origin,
+            scope_ctx.workspace, scope_ctx.profile)
         if self._vocab is not None and policy is not None \
                 and policy.profile != "off":
             try:
                 rev = self._vocab.revision()
-                if rev != self._vocab_state_rev:
-                    snapshot = self._vocab.snapshot(None)  # M06 feeds scope
+                if (rev, scope_key) != self._vocab_state_key:
+                    snapshot = self._vocab.snapshot(scope_ctx)
                     self._norm_policy = v2_normalize.NormalizationPolicy(
                         locale=policy.locale, profile=policy.profile,
                         registered_skills=dict(snapshot.skills))
                     self._norm_context = v2_normalize.ContextSnapshot(
                         vocabulary=snapshot, source="m05_vocabulary")
                     self._vocab_snapshot = snapshot
-                    self._vocab_state_rev = rev
+                    self._vocab_state_key = (rev, scope_key)
                 policy, context = self._norm_policy, self._norm_context
                 if self._hint_selector is not None \
                         and self._vocab_snapshot is not None:
@@ -234,6 +258,64 @@ class AppDelegate(NSObject):
                                 reason_code=type(e).__name__,
                                 outcome="last_good_state")
         return policy, context, hint_set
+
+    @objc.python_method
+    def _finalize_job_context(self, job):
+        """M06 (S12): bounded context finalize at release — before the
+        job is enqueued for ASR, so everything here is pre-decode. The
+        finalized origin/workspace can widen the hotkey-down app-only
+        scope; the trio upgrade rebuilds from the job's FROZEN entry set
+        (never the store), so a mid-flight edit cannot leak into an
+        in-flight job (AC03). Failures degrade to the hotkey-down trio
+        with an event — never a dropped dictation."""
+        if self._context is None:
+            return
+        target = job.get("target")
+        try:
+            snap = self._context.finalize(
+                job_id=job.get("job_id"),
+                target_snapshot_id=target.target_snapshot_id
+                if target is not None else None)
+        except Exception as e:
+            self.v2log.emit("context.finalize_failed", level="WARNING",
+                            job_id=job.get("job_id"),
+                            reason_code=type(e).__name__,
+                            outcome="hotkey_down_scope_kept")
+            return
+        if snap is None:
+            return
+        job["context_snapshot"] = snap
+        job["target"] = snap.target
+        vocab_snapshot = getattr(job.get("norm_context"), "vocabulary",
+                                 None)
+        if vocab_snapshot is None:
+            return
+        # One snapshot, three consumers (contracts/context.md): the M04
+        # engine context gains the destination/path/identifier fields.
+        job["norm_context"] = snap.to_engine_context(vocab_snapshot)
+        if job.get("hint_set") is None \
+                or self._hint_selector is None:
+            return
+        full = snap.to_scope_context()
+        if full == snap.target.to_scope_context():
+            return  # origin/workspace never resolved: scope unchanged
+        upgraded = v2.vocabulary.VocabularySnapshot(
+            vocab_snapshot.entries, full)
+        base_policy = job.get("norm_policy") or self._norm_policy
+        if base_policy is None:
+            return
+        # Build every upgraded value first: an exception anywhere must
+        # leave the job on its hotkey-down trio, not a half-upgraded
+        # mix (review fix).
+        upgraded_policy = v2_normalize.NormalizationPolicy(
+            locale=base_policy.locale, profile=base_policy.profile,
+            registered_skills=dict(upgraded.skills))
+        upgraded_context = snap.to_engine_context(upgraded)
+        upgraded_set = self._hint_selector.select(upgraded)
+        job["norm_policy"] = upgraded_policy
+        job["norm_context"] = upgraded_context
+        job["hint_set"] = upgraded_set
+        job["scope_upgraded"] = True
 
     @objc.python_method
     def _pipeline_info(self):
@@ -534,6 +616,31 @@ class AppDelegate(NSObject):
                         outcome="hands_free" if hands_free else None)
         self.state = STATE_RECORDING
         self.overlay.showWithMode_(MODE_RECORDING)
+        # M06 (Spec S12): cheap destination identity at PTT start —
+        # AFTER the overlay (no Accessibility read ever delays visible
+        # feedback) and BEFORE the trio, so the pre-decode hint set is
+        # scoped by the real destination; the bounded provider
+        # collection then runs asynchronously while recording.
+        identity = None
+        if self._context is not None:
+            try:
+                identity = self._context.capture_identity()
+                if identity is not None:
+                    # The per-job collection handle travels with the job;
+                    # its downstream revision is composed from this handle
+                    # only (never from whatever a newer dictation started).
+                    self._job["context_coll"] = self._context.begin(identity)
+                else:
+                    # A failed identity capture must never leave the
+                    # PREVIOUS job's collection active — its finalize
+                    # could hand the old snapshot to this job.
+                    self._context.abandon()
+            except Exception as e:
+                identity = None
+                self._context.abandon()
+                self.v2log.emit("context.capture_failed", level="WARNING",
+                                job_id=job_id, reason_code=type(e).__name__,
+                                outcome="context_skipped")
         # M05: freeze the vocabulary policy/context/hint set into the job
         # (pre-decode; edits after this point affect only future jobs,
         # AC03). Runs AFTER the overlay so selector/snapshot work never
@@ -541,7 +648,11 @@ class AppDelegate(NSObject):
         try:
             self._job.update(dict(
                 zip(("norm_policy", "norm_context", "hint_set"),
-                    self._vocab_job_state())))
+                    self._vocab_job_state(
+                        identity.to_scope_context()
+                        if identity is not None else None))))
+            if identity is not None:
+                self._job["target"] = identity
         except Exception as e:
             self.v2log.emit("vocabulary.refresh_failed", level="WARNING",
                             job_id=job_id, reason_code=type(e).__name__)
@@ -653,6 +764,17 @@ class AppDelegate(NSObject):
                     "capture.dead_tail", level="WARNING", job_id=job["job_id"],
                     reason_code="no_speech_in_final_seconds",
                     detail=f"last {s['trailing_silence_sec']:.0f}s silent")
+            # M06 (S12): bounded finalize + pre-decode scope upgrade
+            # BEFORE the hint set is stored — the retained set is what
+            # was actually offered pre-decode (late context is a
+            # separate downstream revision, never merged here).
+            try:
+                self._finalize_job_context(job)
+            except Exception as e:
+                self.v2log.emit("context.finalize_failed", level="WARNING",
+                                job_id=job["job_id"],
+                                reason_code=type(e).__name__,
+                                outcome="hotkey_down_scope_kept")
             try:
                 ctx = self.collector.job_started(
                     job["job_id"], job["family_id"],
@@ -673,6 +795,29 @@ class AppDelegate(NSObject):
                 try:
                     self.collector.on_hint_set(
                         ctx, job["hint_set"], job["hint_disposition"])
+                except Exception as e:
+                    self.v2log.emit("training.capture_failed", level="ERROR",
+                                    job_id=job["job_id"],
+                                    reason_code=type(e).__name__)
+            # M06 (S30.1): the extension point is called for real on the
+            # dictation path — None under the unqualified adapter (the
+            # disposition above is the honest record), the dict with the
+            # context_snapshot_id the day an adapter qualifies.
+            if job.get("hint_set") is not None:
+                job["hint_request_fields"] = \
+                    v2.capabilities.asr_hint_request_fields(
+                        job["hint_set"], self._capability_manifest,
+                        context_snapshot_id=(
+                            job["context_snapshot"].context_snapshot_id
+                            if job.get("context_snapshot") is not None
+                            else None))
+            # M06 (S29.4 context family): the bounded destination
+            # snapshot, retained pre-decode under its own lease when
+            # training-context retention is on.
+            if ctx is not None and job.get("context_snapshot") is not None:
+                try:
+                    self.collector.on_context_snapshot(
+                        ctx, job["context_snapshot"])
                 except Exception as e:
                     self.v2log.emit("training.capture_failed", level="ERROR",
                                     job_id=job["job_id"],
@@ -992,6 +1137,23 @@ class AppDelegate(NSObject):
                                 level="WARNING", job_id=job_id,
                                 reason_code=type(e).__name__)
                 job["normalized"] = norm_text
+                # M06 (S12): late provider results become a separately
+                # identified downstream revision — composed from THIS
+                # job's collection handle (a newer dictation's late
+                # context can never be attributed to this job) and
+                # recorded as such, never relabeled pre-decode
+                # (M06-AC05).
+                if ctx is not None and self._context is not None:
+                    try:
+                        late = self._context.take_downstream(
+                            job.get("context_coll"))
+                        if late is not None:
+                            self.collector.on_context_snapshot(
+                                ctx, late, downstream=True)
+                    except Exception as e:
+                        self.v2log.emit("training.capture_failed",
+                                        level="ERROR", job_id=job_id,
+                                        reason_code=type(e).__name__)
                 self._job_state(job_id, "cleaning")
                 if raw:
                     if (self.cfg["cleanup"] == "llm"

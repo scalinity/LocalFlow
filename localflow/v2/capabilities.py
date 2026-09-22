@@ -113,20 +113,23 @@ def hint_disposition(manifest=None, hint_set=None) -> dict:
     }
 
 
-def asr_hint_request_fields(hint_set, manifest=None) -> dict | None:
+def asr_hint_request_fields(hint_set, manifest=None,
+                            context_snapshot_id=None) -> dict | None:
     """S30.1 request-field extension point: the engine-neutral fields a
     *qualified* adapter would receive. Returns None on this adapter —
     the dict is built only when the capability manifest actually
     supports contextual biasing, so no request ever pretends to carry
     hints the decoder ignored. The wiring is: qualified adapter →
     serialize these fields into the decode request; unqualified adapter
-    → None plus the logged hint_disposition above."""
+    → None plus the logged hint_disposition above. M06 feeds
+    ``context_snapshot_id`` from the frozen pre-decode
+    ``context.ContextSnapshot``."""
     manifest = manifest or asr_capability_manifest(None)
     if not manifest["capabilities"]["contextual_biasing"]["supported"]:
         return None
     return {
         "hint_set_id": hint_set.hint_set_id,
-        "context_snapshot_id": None,   # M06 feeds the context snapshot id
+        "context_snapshot_id": context_snapshot_id,
         "terms": [
             {"canonical": t.canonical, "scope": [t.scope_kind,
                                                  t.scope_value],

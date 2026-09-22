@@ -16,6 +16,7 @@
 | `capture.md` | Durable capture journal format and crash recovery | M03 | S06, S09 |
 | `normalization.md` | Typed spans, edit ledger, precedence, policies | M04 | S10, S14, S24, S29.4 |
 | `vocabulary.md` | Scoped dictionary entries, snapshots, HintSet/selector | M05 | S11, S30.1, S29.4 |
+| `context.md` | Bounded destination-context snapshots and providers | M06 | S12, S18, S30.1 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
@@ -63,3 +64,9 @@ milestones add fields; they must not repurpose or weaken these identifiers.
   vocabulary tables and a public writer-thread `submit()`, and updates
   `asr_hints.md`/`training_evidence.md`/`normalization.md` live-status
   sections; no frozen identifier changed and the registry stays 33/22.
+  M06 ships `context.md` (capture structure, the one-snapshot-three-
+  consumers wiring, sensitive-field absolutes, freshness/caching,
+  evidence retention) and takes `targets.md`'s snapshot half live;
+  `asr_hints.md`/`vocabulary.md`/`normalization.md`/
+  `training_evidence.md` gain M06 live-status sections. No frozen
+  identifier changed; the registry stays 33/22.

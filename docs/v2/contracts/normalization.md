@@ -226,8 +226,12 @@ the pre-M04 collector path), the envelope keeps the honest
 
 M05 feeds `registered_skills` (dictionary-scoped) and vocabulary terms;
 M06 feeds `ContextSnapshot` fields (destination app, path context,
-workspace identifiers). The M04 surface already accepts them; the live
-wiring lands with those milestones. No speculative field is read.
+workspace identifiers) — **live since M06**: the app's per-job context
+is built by `context.ContextSnapshot.to_engine_context` with the
+job's frozen vocabulary snapshot, so `destination_app` (bundle id),
+`path_context` (IDE/terminal/document destinations) and `identifiers`
+(spoken→canonical from the bounded nearby window, cap 64) carry real
+values; absent fields still degrade exactly as before.
 
 ## M05 live status (layer 5 fed)
 

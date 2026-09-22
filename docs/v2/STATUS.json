@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
-  "active_milestone": "M05",
+  "active_milestone": "M06",
   "status": "implemented_pending_human",
-  "status_reason": "All automatable M05 work and checks passed on post-review code (4 new vocabulary suites — 40 EV-07 owning fixtures, the E18.3 40x4 text matrix, store/pipeline/hit-selection coverage — plus every M01–M04 suite and both model-backed suites green, and the 10k-entry benchmark re-run after review fixes at selector p95 5.1 ms / normalize-with-dictionary p95 2.4 ms vs the 25 ms budget). The /review-2 → /address loop completed: the one critical (update_entry crashing on the tuple-alias format approve_entry and import_json pass — the Approve flow could never land) and every warning from both reviewers were fixed in-session with regression tests; deferred suggestions carry reasons in acceptance/M05/results.json. Pending is the milestone's native human dictionary trial (panel + alias scope behavior + live dictation with a global term; the workspace-scoped live half waits for M06 destination awareness) — it does not gate M06's automatable work.",
-  "source_commit": "9d53b4fdebcbfbdf964113af66e5d36f57250f14",
-  "source_commit_note": "M05 was implemented on top of this commit (M04 close-out); the M05 commit follows.",
-  "requirements": ["LF-R08", "LF-R28", "LF-R29"],
+  "status_reason": "All automatable M06 work and checks passed on post-review code (two new context suites — 27 EV-08 tests over synthetic AX trees covering the 8 E10 destination classes plus 9 adversarial trees, and 12 EV-18/EV-19 pipeline tests driving the real coordinator — plus every M01–M05 suite and both model-backed suites green, and the benchmark re-run after review fixes at finalize p95 0.303 ms / worst-case cut 80.4 ms vs the 75 ms S12 deadline, provider coverage 52/96 reported with skip frequency). The /review-2 → /address loop completed: both criticals (the denied-browser AX read that leaked a denied destination's origin into retained artifacts — flagged independently by both reviewers; and the collector's global state that could finalize the previous dictation's snapshot into a new job / misattribute a newer dictation's late context) and every warning were fixed in-session with regression tests; one suggestion deferred with its reason in acceptance/M06/results.json. Pending is the milestone's native human destination trial (same phrase across Gmail, Slack, an AI prompt field and Xcode; mid-sentence and selected-text snapshots; secure-field and denied-app behavior from Terminal.app, which needs its own AX grant) — it does not gate M07's automatable work.",
+  "source_commit": "e9874c62ee21d6b00d2760a991798e637ba671cf",
+  "source_commit_note": "M06 was implemented on top of this commit (ORCHESTRATION.html close-out); the M06 commit follows.",
+  "requirements": ["LF-R09", "LF-R28", "LF-R29", "LF-R30"],
   "registry": "docs/v2/registry.json",
-  "automated_results": ["docs/v2/acceptance/M05/results.json"],
-  "benchmark_runs": ["docs/v2/benchmarks/20260922-035958-m05/m05.json"],
+  "automated_results": ["docs/v2/acceptance/M06/results.json"],
+  "benchmark_runs": ["docs/v2/benchmarks/20260922-115621-m06/m06.json"],
   "pending_human": [
-    "native-m05-dictionary-trial"
+    "native-m06-destination-trial"
   ],
-  "handoff": "docs/v2/handoffs/M05.md",
-  "next_milestone": "M06",
+  "handoff": "docs/v2/handoffs/M06.md",
+  "next_milestone": "M07",
   "next_milestone_dependency_eligible": true
 }

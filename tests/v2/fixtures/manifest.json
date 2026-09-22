@@ -80,7 +80,15 @@
       "planned_count": 32,
       "composition": "minimum four per each of eight destination classes",
       "owner_milestone": "M06/M08",
-      "status": "reserved"
+      "status": "partial",
+      "m06_created": {
+        "note": "M06 created the synthetic AX-tree stratum (8 E10 destination classes x empty/mid-sentence/selected/hostile) driven through a fake AX host by tests/v2/context/test_context_snapshot.py and test_context_pipeline.py. Real-app destination trials remain the pending human check (E10); M08 extends this family with insertion races.",
+        "scenarios": 32,
+        "adversarial_trees": 9,
+        "fixture_files": [
+          "tests/v2/context/fixtures_context_targets.json"
+        ]
+      }
     },
     {
       "family": "fault_concurrency_scenarios",
@@ -108,7 +116,12 @@
   "test_manifest_reservation": {
     "note": "S29.11: M01 reserves the test manifest; M14 implements versioned family assignment.",
     "families_assigned": 0,
-    "splits": { "unassigned": "all", "train": 0, "validation": 0, "frozen_test": 0 }
+    "splits": {
+      "unassigned": "all",
+      "train": 0,
+      "validation": 0,
+      "frozen_test": 0
+    }
   },
   "sanitization_rules": [
     "No transcript text from the private log in any committed fixture without review and sanitization.",

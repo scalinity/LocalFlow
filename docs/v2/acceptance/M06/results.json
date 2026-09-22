@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "milestone": "M06",
+  "evaluated_utc": "2026-09-22T11:57:48Z",
+  "working_directory": "/Users/danny/Documents/Tools/LocalFlow",
+  "base_commit": "e9874c62ee21d6b00d2760a991798e637ba671cf",
+  "environment": {
+    "python": "3.14.7 (.venv)",
+    "machine": "Apple M5 Pro, arm64, 48 GB",
+    "macos": "27.0",
+    "models": "Parakeet TDT 0.6B v3 + Qwen3-4B-Instruct-2507 4-bit via MLX (cached offline; model-backed checks only)",
+    "pytest": "not installed — suites are standalone scripts run with .venv/bin/python",
+    "note": "Live AX reads from the ZCode-hosted dev terminal fail with kAXErrorCannotComplete (TCC attributes AX to the hosting app); all automated context tests drive the fake AX host over synthetic trees. Real-destination behavior is the pending native human trial from Terminal.app (which needs its own Accessibility grant)."
+  },
+  "requirements": ["LF-R09", "LF-R28", "LF-R29", "LF-R30"],
+  "acceptance_criteria": {
+    "M06-AC01": {
+      "status": "pass",
+      "evidence": "tests/v2/context/test_context_snapshot.py::test_ac01_secure_field_retains_no_content (secure field classified on role/subrole alone — zero content-attribute reads; CANARY value absent from snapshot JSON, envelope block and events) and ::test_context_pipeline_secure_field_pipeline (test_context_pipeline.py::test_secure_field_pipeline_retains_no_content: dictation completes, no field content in artifact, envelope or events). Retained after review: denied-browser variant (LF-CTX-A9) proves the origin provider also never reads a denied app."
+    },
+    "M06-AC02": {
+      "status": "pass",
+      "evidence": "test_context_snapshot.py::test_ac02_timeout_partial_snapshot — a 250 ms provider cuts at 75 ms + bounded slack (<135 ms asserted), snapshot partial with reason 'deadline', caller never stalls; test_context_pipeline.py::test_ac05_late_context_downstream_not_predecode drives the same cut through the real coordinator and the dictation completes. Review hardening: provider exceptions now record 'provider_failed' + an event, never a fake deadline reason."
+    },
+    "M06-AC03": {
+      "status": "pass",
+      "evidence": "App, browser-site and field identity distinguishable across all 8 E10 destination classes (test_identity_and_scope_distinguishable: 9 distinct scope keys); stale snapshots answer same_destination()=False after a focus change; the metadata cache invalidates on app change and on same-app window/tab change (test_ac03_stale_window_invalidates, test_cache_reuse_same_window, test_same_pid_window_change_invalidates_cache). Replacement authority itself is M08's consumer — same_destination is the exposed hook."
+    },
+    "M06-AC04": {
+      "status": "pass",
+      "evidence": "test_context_pipeline.py::test_ac04_hostile_nearby_text_never_reaches_cleanup — cleanup INPUT is exactly the normalized transcript with hostile nearby text present vs context fully disabled; outputs identical. Snapshot carries the hostile text as plain data fields (test_ac04_hostile_nearby_text_is_data). No context reaches any model prompt today (M07 defines permitted context)."
+    },
+    "M06-AC05": {
+      "status": "pass",
+      "evidence": "Late provider lands only as a separately-identified downstream revision (new snapshot id, stage='downstream', composed once) — pre-decode snapshot and its stored artifact never grow (test_ac02…, test_ac05…). A reference answer added to the dictionary after release never enters the frozen set or this job's recovery (test_reference_answer_added_later_never_leaks). Review hardening: downstream composes from the job's own collection handle — a newer dictation's late context can never be attributed to the job still processing."
+    },
+    "M06-AC06": {
+      "status": "pass",
+      "evidence": "Budgets: finalize p95 0.303 ms (fast providers) / worst-case cut max 80.4 ms vs the 75 ms S12 deadline; identity capture p95 0.008 ms (post-overlay, hotkey→overlay untouched); scope-upgrade rebuild 62.2 ms cold at 10,000 entries, cached per (revision, scope); pipeline delta 0.42 ms (benchmarks/20260922-115621-m06/m06.json, post-review code). Provider coverage and skip frequency reported (52/96 resolved across the 32-scenario matrix, per-provider counts in the report). Retained inputs: test_retention_redaction_vs_reconstruction — retained snapshot artifact round-trips exactly; retention off writes no payload and the envelope marks the redaction + missing_reasons.context_snapshot_payload (downstream revisions honor the knob too)."
+    },
+    "regression_ptt_usable": {
+      "status": "pass",
+      "evidence": "test_ptt_usable_without_ax (AX permission unavailable: dictation completes, identity-only partial snapshot), test_context_disabled_dictation_enabled, test_provider_exception_recorded_not_deadline, test_destination_changed_skips_content_reads, plus every M01–M05 suite re-run green."
+    }
+  },
+  "human_verification": {
+    "status": "pending",
+    "check": "native-m06-destination-trial",
+    "steps": [
+      "Grant Accessibility to Terminal.app if not already held (System Settings → Privacy & Security → Accessibility); ZCode-hosted terminals get kAXErrorCannotComplete (same TCC pattern as the mic).",
+      "Dev-run from Terminal.app: cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh (one instance at a time).",
+      "Dictate the same phrase (e.g. 'ship the mlx update at five thirty PM') into: Gmail compose, Slack, a claude.ai prompt field, and Xcode — expect identical inserted text, and context.snapshot_finalized events with providers resolving per destination class.",
+      "Mid-sentence continuation: place the cursor after 'here is the' in any compose field and dictate the rest — expect the snapshot's preceding text to capture it (inspect via the pre_decode_context artifact or events), and the inserted text to append cleanly.",
+      "Selected text: select a word, dictate — expect dictation to proceed (M08 owns replacement semantics).",
+      "Secure field: focus a password field (e.g. a login page) and dictate — expect a context.snapshot_finalized event with outcome secure_field_no_content and no field content anywhere.",
+      "Denied app: add a bundle to context_denied_apps in the dev config, dictate into it — expect outcome denied_app and zero context reads.",
+      "Record steps, expected/actual output and evidence (event ids); otherwise mark pending, never assumed passed."
+    ]
+  },
+  "checks": [
+    {"name": "M01 legacy parser", "command": ".venv/bin/python tests/v2/test_legacy_parser.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M01 registry", "command": ".venv/bin/python tests/v2/test_registry.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M01 baseline manifest", "command": ".venv/bin/python tests/v2/test_baseline_manifest.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M01 snapshot safety", "command": ".venv/bin/python tests/v2/test_snapshot_safety.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 event writer", "command": ".venv/bin/python tests/v2/logging/test_event_writer.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 store", "command": ".venv/bin/python tests/v2/storage/test_store.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 import", "command": ".venv/bin/python tests/v2/storage/test_import.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 collector", "command": ".venv/bin/python tests/v2/training/test_collector.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 worker protocol", "command": ".venv/bin/python tests/v2/lifecycle/test_worker_protocol.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 capture journal", "command": ".venv/bin/python tests/v2/lifecycle/test_capture_journal.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 audio fidelity", "command": ".venv/bin/python tests/v2/lifecycle/test_audio_fidelity.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 lifecycle", "command": ".venv/bin/python tests/v2/lifecycle/test_lifecycle.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 worker live (model-backed)", "command": ".venv/bin/python tests/v2/lifecycle/test_worker_live.py", "cwd": "repo root", "kind": "model-backed", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M04 normalize numbers", "command": ".venv/bin/python tests/v2/normalization/test_normalize_numbers.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M04 normalize syntax", "command": ".venv/bin/python tests/v2/normalization/test_normalize_syntax.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M04 short command scoring", "command": ".venv/bin/python tests/v2/normalization/test_short_command_scoring.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M04 normalization pipeline", "command": ".venv/bin/python tests/v2/normalization/test_normalization_pipeline.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M05 vocabulary matching", "command": ".venv/bin/python tests/v2/vocabulary/test_vocabulary_matching.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M05 vocabulary store", "command": ".venv/bin/python tests/v2/vocabulary/test_vocabulary_store.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M05 hint selection", "command": ".venv/bin/python tests/v2/vocabulary/test_hint_selection.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M05 vocabulary pipeline", "command": ".venv/bin/python tests/v2/vocabulary/test_vocabulary_pipeline.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M06 context snapshot (EV-08)", "command": ".venv/bin/python tests/v2/context/test_context_snapshot.py", "cwd": "repo root", "kind": "automated", "pre_change": "n/a (new)", "post_change": "pass (19 tests)", "post_review": "pass (27 tests)"},
+    {"name": "M06 context pipeline (EV-18/EV-19)", "command": ".venv/bin/python tests/v2/context/test_context_pipeline.py", "cwd": "repo root", "kind": "automated", "pre_change": "n/a (new)", "post_change": "pass (12 tests)", "post_review": "pass (12 tests)"},
+    {"name": "stuck overlay", "command": ".venv/bin/python tests/test_stuck_overlay.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "live pipeline (model-backed)", "command": ".venv/bin/python tests/v2/training/test_live_pipeline.py", "cwd": "repo root", "kind": "model-backed", "pre_change": "pass (2/2)", "post_change": "pass (2/2)", "post_review": "pass (2/2)"},
+    {"name": "cleanup (model-backed)", "command": ".venv/bin/python tests/test_cleanup.py", "cwd": "repo root", "kind": "model-backed (~50 s)", "pre_change": "pass 51/51, 45.7 s", "post_change": "pass 51/51, 44.3 s", "post_review": "pass 51/51, 47.9 s"}
+  ],
+  "benchmark_summary": {
+    "path": "docs/v2/benchmarks/20260922-115621-m06/m06.json",
+    "command": ".venv/bin/python scripts/v2/benchmark_m06.py docs/v2/benchmarks/20260922-115621-m06",
+    "kind": "automated (synthetic AX trees; no model calls, no live apps)",
+    "identity_capture_p95_ms": 0.008,
+    "finalize_fast_p95_ms": 0.303,
+    "finalize_slow_cut_max_ms": 80.399,
+    "budget_ms": 75.0,
+    "coverage_resolved_of_slots": "52/96",
+    "skip_rate": 0.4583,
+    "scope_upgrade_cold_10k_ms": 62.193,
+    "pipeline_delta_ms": 0.424,
+    "note": "Post-review code. Slow-cut = deadline + scheduling slack only; the cut provider is delivered as the downstream revision. The skip rate is the honest per-class coverage picture (messaging/terminal destinations legitimately omit site/workspace), reported per the milestone's benchmark requirement, not just latency on successful reads."
+  },
+  "review_loop": {
+    "protocol": "/review-2 (two parallel read-only reviewers: bug-hunting debugger; architecture/quality/security/data-integrity auditor) then /address",
+    "verdict_before_address": "Request Changes (unified)",
+    "findings": {"criticals": 2, "warnings": 7, "suggestions": 11},
+    "critical_detail": [
+      "C1 (flagged independently by BOTH reviewers — corroborated, highest confidence): a denied app that is a BROWSER was still read by the site-origin provider (AXFocusedUIElement + AXURL) and its origin persisted into the lease-governed snapshot artifact, violating the S12 'denied apps never read' absolute; the existing denied test used an unknown-category app and missed the leaking class.",
+      "C2 (DB1 critical; CA1's warning corroborated the downstream half): collector state was global, not per-job — a failed identity capture could finalize the PREVIOUS dictation's snapshot into the new job's evidence (field text under the wrong job), and take_downstream read whatever collection a newer dictation had started, misattributing its late context to the job still processing."
+    ],
+    "warning_detail": [
+      "envelope context block carried no reason when the destination half was absent",
+      "a raising provider was mislabeled 'deadline' with no event; downstream rows marked deadline for providers that were never late",
+      "mid-upgrade exception could leave a half-upgraded trio while the event claimed hotkey-down-scope-kept",
+      "http(s) page URLs yielded garbage workspaces and forced path_context (both reviewers)",
+      "window-title fallback invented origins from version numbers/filenames and its comment contradicted the code",
+      "providers read whatever was frontmost at read time — content could be attributed to a cmd-tabbed-away app",
+      "test gaps on the critical paths: denied browser, same-app window-change cache sentinel, window-None branch, pid-less fallback, downstream+retention-off"
+    ],
+    "addressed": [
+      "C1: denied gates on read_site_origin/read_workspace + hard-null values/window-title for denied targets in composition + denied-browser fixture LF-CTX-A9 + test asserting zero host reads and no leak into snapshot/envelope/events.",
+      "C2: begin() returns the per-job collection handle (stored on the job); finalize() refuses stale/foreign collections via target_snapshot_id; abandon() on failed identity capture; take_downstream(handle) composes once from the job's own collection (late cleared after composing); the coordinator picks up downstream only via the job's handle.",
+      "destination-absent envelope marker (destination: null + destination_missing_reason).",
+      "provider exceptions recorded as provider_failed with a context.provider_failed event; downstream compose marks absent providers not_in_revision.",
+      "locals-first scope upgrade (assign job keys only after select succeeds).",
+      "is_path_document(): only file:// or scheme-less absolute paths yield workspaces/path_context.",
+      "plausible-host check + file-extension denylist for the title fallback; comment aligned.",
+      "destination-changed check before any content read (zero reads + destination_changed omissions + event on frontmost drift mid-collection).",
+      "all listed test gaps closed (7 new snapshot-suite tests + downstream-retention-off pipeline test); explicit DEADLINE_SLACK_MS constant for the timing assertion.",
+      "suggestions: dead symbols removed (OMISSION_UNAVAILABLE/DISABLED, new_target_id/new_context_id, context_snapshot_artifact); _PARTIAL_REASONS built from the omission constants; _steps generator replaced by a plain _collect method; SystemAXHost reuses one systemwide AX element; from_json tolerant round-trip (tuple range, unknown keys); asr_hint_request_fields now called on the real dictation path (job['hint_request_fields']); metadata cache guarded under _active_lock; isinstance guards on raw role/subrole."
+    ],
+    "deferred": [
+      "DB1-S6: use a seventh envelope missing-reason value (e.g. retention_disabled) for the training_retain_context knob instead of consent_disabled — deferred because the six-value envelope vocabulary is frozen in contracts/artifacts.md and the precise 'training_context_retention_disabled' reason already lives in the destination block's retention_reason; changing the frozen vocabulary mid-milestone needs its own contract decision."
+    ],
+    "rejected_as_incorrect": [],
+    "post_address_verification": "Every suite re-run green after the fixes (23 fast suites incl. both M06 suites at 27+12 tests, worker_live 2/2, live_pipeline 2/2, cleanup 51/51 at 47.9 s) and the benchmark re-run on post-review code (this file's benchmark_summary)."
+  },
+  "privacy": "Committed artifacts carry synthetic fixtures, hashes and counts only; the envelope's context destination/downstream blocks carry ids, flags, counts and omission reasons — bundle ids, origins, workspace names, window titles and field text live only in the lease-governed snapshot artifacts (pre_decode_context/downstream_context, training lease, independent training_retain_context knob); denied apps and secure fields retain no content anywhere (canary-tested across snapshot JSON, envelope and events); context events are content-free (counts/reasons/durations); the baseline-manifest privacy scan passes over every new path; live data stays under Application Support / Logs, outside the repository."
+}

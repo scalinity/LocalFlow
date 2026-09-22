@@ -68,6 +68,22 @@ DEFAULTS = {
     # the limit are recorded as omissions with a reason, never silently
     # dropped.
     "hint_term_limit": 100,
+    # M06 (Spec S12): local destination context. Disabled = identity is
+    # never read and dictation runs exactly as before (plain, global
+    # vocabulary scope only).
+    "context_enabled": True,
+    # The bounded post-release finalize deadline in milliseconds (S12
+    # suggests 75 as the initial target; a timeout yields a partial
+    # snapshot, never a stalled dictation).
+    "context_deadline_ms": 75,
+    # App bundles for which NO context is read at all — identity records
+    # the denial, fields/text/origin/workspace stay unread.
+    "context_denied_apps": [],
+    # Independent training-context retention (S12): transient context
+    # use is separate from retaining snapshot payloads as training
+    # evidence. false = no context artifact is written even with
+    # collection enabled; the envelope records the redaction.
+    "training_retain_context": True,
 }
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent

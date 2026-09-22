@@ -143,9 +143,10 @@ skill collisions before an edit is committed.
 
 ## Limitations (documented, not hidden)
 
-- Workspace/profile/site/app scope resolution in the LIVE pipeline
-  waits for M06 destination awareness; pre-M06 only global entries
-  apply and the hint set offers global entries only.
+- Scope resolution is live since M06 for app/site/workspace
+  (`contracts/context.md`); `profile` scope still waits for a
+  writing-profile subsystem (M10) — profile-scoped entries apply only
+  in tests/the sandbox until then.
 - A lone approved wrong entry rewrites its own alias (measured in the
   EV-18 matrix: distractor flips 40/40 under distractor-only); the
   protection is same-scope masking when the true term exists — an
@@ -158,9 +159,15 @@ skill collisions before an edit is committed.
   matching (a case-preserving entry that should never touch text must
   stay unapproved/disabled).
 
-## M06 dependencies
+## M06 wiring (live since M06)
 
-M06 feeds `ScopeContext` live (frontmost app/origin/workspace) at job
-mint and the `context_snapshot_id` hint-request field; the M04
-`ContextSnapshot(destination_app, path_context, identifiers)` fields
-light up then. No speculative field is read today.
+M06 feeds `ScopeContext` live: the trio is captured at hotkey-down
+scoped by the frontmost app identity, and the bounded context finalize
+at release (≤75 ms, `contracts/context.md`) upgrades the trio when the
+resolved origin/workspace widen the scope — rebuilding from the job's
+frozen entry set (AC03 holds: no store re-read, so mid-flight edits
+change only future jobs). Site/workspace/app-scoped entries now match
+live; the hint set is selected under the upgraded scope and frozen
+pre-decode. `profile` stays unfed until a writing-profile subsystem
+exists (M10). The `context_snapshot_id` in `asr_hint_request_fields`
+is populated from the M06 snapshot under a qualified adapter.

@@ -62,3 +62,17 @@ consumes the same snapshot; its repairs are normalization ledger
 edits with rule ids, never decoder hits (AC05). Cleanup consumes
 permitted context from M07 and is not a consumer yet. M06 feeds the
 `context_snapshot_id` field and live scope context.
+
+## M06 live status
+
+`asr_hint_request_fields(hint_set, manifest, context_snapshot_id=...)`
+now carries the frozen pre-decode `context.ContextSnapshot` id under a
+qualified manifest (pinned by test with a synthetic supported manifest;
+the M05 shape stays identical, the field is no longer hard-None). The
+live adapter remains unqualified, so no request fields are built and
+the honest offered-but-ignored disposition is unchanged. The hint set
+itself is now selected under the destination scope M06 resolves: the
+finalize-time upgrade (`contracts/vocabulary.md`) widens the hotkey-down
+app-only scope when origin/workspace resolve, and the upgraded set is
+what `on_hint_set` stores before recognition. Late context never
+enters the set (AC05).

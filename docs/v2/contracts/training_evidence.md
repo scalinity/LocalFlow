@@ -74,3 +74,18 @@ attribution). Later store edits cannot alter the stored set, and a
 corrected dictionary is never relabeled as original hints (S29.11).
 When no set was offered the honest `not_captured_at_stage` reason
 stays.
+
+## M06 live status (destination context)
+
+The context family now carries the bounded destination snapshot:
+`on_context_snapshot` (pre-decode call before recognition; downstream
+revision stored separately with its stage) writes the full snapshot
+JSON as a lease-governed artifact (`pre_decode_context`/
+`downstream_context`, `role=context_snapshot`) and fills the envelope's
+`context.destination`/`context.downstream` sub-blocks — content-free
+(ids, flags, counts, omission reasons, provider statuses) per S29.14.
+Retention is the independent `training_retain_context` knob: off ⇒ no
+payload artifact even with collection enabled, `retained: false` with
+reason in the block and `missing_reasons.context_snapshot_payload`
+marking replay inputs incomplete. Secure-field snapshots retain no
+field content anywhere (M06-AC01). See `contracts/context.md`.

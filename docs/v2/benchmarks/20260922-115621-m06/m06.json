@@ -1,0 +1,73 @@
+{
+ "benchmark": "m06-context",
+ "coverage": {
+  "identity_scope_keys": 9,
+  "per_provider": {
+   "focused_field": {
+    "ok": 32,
+    "omitted": 0
+   },
+   "site_origin": {
+    "ok": 8,
+    "omitted": 24
+   },
+   "workspace": {
+    "ok": 12,
+    "omitted": 20
+   }
+  },
+  "provider_slots": 96,
+  "resolved": 52,
+  "scenarios": 32,
+  "skip_rate": 0.4583,
+  "skipped": 44
+ },
+ "finalize_fast_ms": {
+  "budget_ms": 75.0,
+  "p50": 0.193,
+  "p95": 0.303,
+  "within_budget_p95": true
+ },
+ "finalize_slow_cut_ms": {
+  "budget_ms": 75.0,
+  "max": 80.399,
+  "note": "budget + scheduling slack only; provider cut at the deadline and delivered downstream",
+  "p50": 79.123,
+  "p95": 80.315
+ },
+ "identity_capture_ms": {
+  "note": "runs after the overlay: hotkey\u2192overlay feedback is untouched by construction (M03 benchmark owns it)",
+  "p50": 0.004,
+  "p95": 0.008
+ },
+ "iterations": {
+  "finalize_fast": 60,
+  "finalize_slow_cut": 20,
+  "identity": 60
+ },
+ "method": "synthetic AX trees via tests/v2/context fixtures; fake providers; no model calls, no live apps",
+ "pipeline_delta": {
+  "context_off_ms": 79.307,
+  "context_on_ms": 79.731,
+  "delta_ms": 0.424,
+  "runs": 10
+ },
+ "scope_upgrade": {
+  "entries_10": {
+   "cache_key_check_ms": 6.5e-05,
+   "cold_rebuild_ms": 0.26,
+   "upgraded_revision_changes": true
+  },
+  "entries_1000": {
+   "cache_key_check_ms": 5.5e-05,
+   "cold_rebuild_ms": 5.479,
+   "upgraded_revision_changes": true
+  },
+  "entries_10000": {
+   "cache_key_check_ms": 7.3e-05,
+   "cold_rebuild_ms": 62.193,
+   "upgraded_revision_changes": true
+  }
+ },
+ "spec": "S12 (75 ms post-release context deadline), E10 matrix"
+}
