@@ -40,6 +40,7 @@ from .inject import copy_text, paste_text
 from .overlay import MODE_FAILED, MODE_PROCESSING, MODE_RECORDING, Overlay
 from .permissions import ensure_permissions
 from .v2 import capture_journal
+from .v2 import cleanup as v2_cleanup
 from .v2 import normalize as v2_normalize
 from .v2.supervisor import WorkerFailure, WorkerSupervisor
 
@@ -123,6 +124,7 @@ class AppDelegate(NSObject):
         self.supervisor = WorkerSupervisor(
             audio_root=V2_JOURNAL, asr_model=cfg["model"],
             cleanup_mode=cfg["cleanup"], cleanup_model=cfg["cleanup_model"],
+            cleanup_implementation=cfg.get("cleanup_implementation", "v2"),
             emit=self.v2log.emit,
             on_engine=lambda engine, state, info:
                 AppHelper.callAfter(self._setEngineStatus_, (engine, state)),
@@ -1166,9 +1168,65 @@ class AppDelegate(NSObject):
                             "cleanup",
                             float(self.cfg.get("cleanup_wait_timeout_sec",
                                                120)))
+                    # M07 (S13 permitted context): protected spans in
+                    # normalized-text coordinates, the job's frozen
+                    # scoped vocabulary and the destination profile.
+                    # Nearby text never enters (contracts/context.md).
+                    prot_spans = []
+                    try:
+                        prot_spans = v2_cleanup.protected_spans_for_cleanup(
+                            raw, norm_text,
+                            norm_result.protected
+                            if norm_result is not None else [])
+                    except Exception as e:
+                        self.v2log.emit(
+                            "cleanup.context_build_failed", level="WARNING",
+                            job_id=job_id, reason_code=type(e).__name__)
+                    vocab_snapshot = getattr(
+                        job.get("norm_context"), "vocabulary", None)
+                    vocab_pairs = []
+                    try:
+                        vocab_pairs = [
+                            (alias, t.canonical)
+                            for alias, t in vocab_snapshot.match_items()
+                        ][:40] if vocab_snapshot is not None else []
+                    except Exception as e:
+                        self.v2log.emit(
+                            "cleanup.context_build_failed", level="WARNING",
+                            job_id=job_id, reason_code=type(e).__name__)
+                    hint_set = job.get("hint_set")
+                    relevant_vocab = [
+                        t.canonical for t in hint_set.terms[:40]
+                    ] if hint_set is not None else sorted(
+                        {c for _, c in vocab_pairs})
+                    dest_profile = None
+                    snap = job.get("context_snapshot")
+                    if snap is not None and snap.target is not None:
+                        dest_profile = snap.target.category or None
+                    # The exact permitted-context payload for the S29.4
+                    # cleanup family — retained as a lease-governed
+                    # artifact (never envelope content).
+                    job["cleanup_context_payload"] = {
+                        "mode": "clean",
+                        "locale": self.cfg.get("normalization_locale",
+                                               "en-US"),
+                        "destination_profile": dest_profile,
+                        "relevant_vocabulary": relevant_vocab,
+                        "vocabulary_pairs": vocab_pairs,
+                        "structure_hints": v2_cleanup.prompts.structure_hints(
+                            dest_profile),
+                        "protected_span_texts": [
+                            norm_text[s:e] for s, e in prot_spans],
+                    }
                     res2 = self.supervisor.clean(
                         job_id=job_id, attempt=job["attempt"],
-                        raw_text=norm_text)
+                        raw_text=norm_text,
+                        protected_spans=prot_spans or None,
+                        relevant_vocabulary=relevant_vocab or None,
+                        vocabulary_pairs=vocab_pairs or None,
+                        destination_profile=dest_profile,
+                        locale=self.cfg.get("normalization_locale",
+                                            "en-US"))
                     if res2.get("retried") and job_id:
                         self._bump_attempt(job, job_id)
                     job["attempt"] = res2.get("attempt", job["attempt"])
@@ -1204,6 +1262,10 @@ class AppDelegate(NSObject):
                             ctx, text, path=cleanup_path,
                             fallback_reason=(
                                 res2.get("fallback_reason")
+                                if raw else None),
+                            v2=(res2.get("v2") if raw else None),
+                            cleanup_context=(
+                                job.get("cleanup_context_payload")
                                 if raw else None))
                         self.collector.finalize(ctx)
                     if raw and self.cfg["log_transcripts"] and not collecting:

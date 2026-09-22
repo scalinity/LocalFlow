@@ -1,0 +1,972 @@
+{
+  "schema_version": 1,
+  "family": "curated_deterministic_semantic.structure",
+  "origin": "synthetic",
+  "note": "EV-09 / M07 structure stratum: 40 owning fixtures. Assertions: items = exact list-item count in the rendered output (document_nodes parse); order = substrings that must appear in this order; intro/outro = prose that must stay OUTSIDE any list; windows = minimum expected plan_windows count (long inputs); no_fragments = no sentence broken across a seam (checked by full-word coverage). Model-backed via tests/v2/structure/test_structure.py.",
+  "sanitization": "All cases are synthetic compositions; no private log text.",
+  "cases": [
+    {
+      "case_id": "LF-STR-001",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "intro_outro",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "shopping list intro first we need milk second eggs and finally bread thats the list",
+      "items": 3,
+      "order": [
+        "milk",
+        "eggs",
+        "bread"
+      ],
+      "intro": "shopping list intro",
+      "outro": "thats the list"
+    },
+    {
+      "case_id": "LF-STR-002",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "numbered",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "two action items number one email the vendor number two update the tracker",
+      "items": 2,
+      "order": [
+        "email the vendor",
+        "update the tracker"
+      ]
+    },
+    {
+      "case_id": "LF-STR-003",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "questions",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "i have two questions number one when does the trial end and number two who owns the renewal",
+      "items": 2,
+      "order": [
+        "when does the trial end",
+        "who owns the renewal"
+      ]
+    },
+    {
+      "case_id": "LF-STR-004",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "no_fabricated_list",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "the number one reason we chose it is speed",
+      "items": 0,
+      "prose": "the number one reason"
+    },
+    {
+      "case_id": "LF-STR-005",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "no_fabricated_list",
+        "prose",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "first time visitors often miss the second floor entrance which is odd",
+      "items": 0
+    },
+    {
+      "case_id": "LF-STR-006",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "bullets",
+        "m04_structure",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "release checklist new bullet verify checksums new bullet tag the build new bullet notify the channel",
+      "min_items": 3,
+      "order": [
+        "verify checksums",
+        "tag the build",
+        "notify the channel"
+      ]
+    },
+    {
+      "case_id": "LF-STR-007",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "bullets",
+        "explicit_markdown",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "here is the agenda\n- review metrics\n- pick a date\n- assign owners\nlet me know if i missed anything",
+      "items": 3,
+      "order": [
+        "review metrics",
+        "pick a date",
+        "assign owners"
+      ],
+      "intro": "here is the agenda",
+      "outro": "missed anything"
+    },
+    {
+      "case_id": "LF-STR-008",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "numbered_markdown",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "migration steps\n1. dump the database\n2. run the schema script\n3. smoke test the app\nthat is all",
+      "items": 3,
+      "order": [
+        "dump the database",
+        "run the schema script",
+        "smoke test the app"
+      ],
+      "outro": "that is all"
+    },
+    {
+      "case_id": "LF-STR-009",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "correction_inside_item",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "three reminders number one call the dentist no wait the clinic number two renew the passport number three water the plants",
+      "items": 3,
+      "order": [
+        "clinic",
+        "renew the passport",
+        "water the plants"
+      ],
+      "forbid": [
+        "dentist"
+      ]
+    },
+    {
+      "case_id": "LF-STR-010",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "start_number",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "continuing from the doc item four finalize the budget item five book the venue item six send the invites",
+      "items": 3,
+      "order": [
+        "finalize the budget",
+        "book the venue",
+        "send the invites"
+      ]
+    },
+    {
+      "case_id": "LF-STR-011",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "split_list",
+        "windows",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "here is the long retro action list we agreed on thursday so listen carefully because every item has an owner and a deadline.\n\nnumber one fix the login flake by disabling the flaky retry assertion and backfilling a deterministic test before the next release cut. number two add tracing spans to the checkout path including the cart service the payment adapter and the receipt publisher so we can see the slow hop. number three patch the cache eviction loop that currently scans the whole ring and replace it with the indexed cursor variant from the spike branch.\n\nnumber four review the quota logic against the new pricing tiers because the free tier math changed twice this quarter and nobody updated the guard rails. number five tighten the retry policy on the webhook delivery so a slow consumer cannot occupy a worker thread for a full minute. number six document the runbook for the migration job with screenshots because the oncall rotation has three new people this month.\n\nnumber seven schedule the load test with the platform team and make sure the results land in the shared dashboard not in someones laptop. number eight close the two stale epics that keep confusing the board view and archive their branches.\n\nand finally thank the whole team for the week because none of this happens without the night shift.",
+      "items": 8,
+      "order": [
+        "fix the login flake",
+        "add tracing spans",
+        "patch the cache eviction",
+        "review the quota logic",
+        "tighten the retry policy",
+        "document the runbook",
+        "schedule the load test",
+        "close the two stale epics"
+      ],
+      "outro": "thank the whole team",
+      "windows": 2
+    },
+    {
+      "case_id": "LF-STR-012",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "windows",
+        "no_fragment",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "the onboarding essay part one. welcome to the team and thanks for joining during a busy quarter. we ship weekly and value small reversible changes. your first week is reading and pairing. your second week is a starter bug. your third week is a small feature with a buddy. ask questions early and often. the wiki is the source of truth. the staging environment is free to break. the runbook collection lives in the shared drive. part two. our review culture values kindness and precision. leave comments that you would want to receive. celebrate good docs. flag risky changes early. rotate the oncall duty fairly. keep the pager quiet by fixing recurring alerts. part three. finally remember that shipping is a team sport. slow down when the build is red. speed up when the docs are clear. ask for help before the deadline slips. and write down what you learn so the next person starts faster.",
+      "order": [
+        "welcome to the team",
+        "review culture",
+        "team sport",
+        "starts faster"
+      ]
+    },
+    {
+      "case_id": "LF-STR-013",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "windows",
+        "correction_at_seam",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "status update for the week. the indexer rewrite landed on the staging cluster. latency improved from 340 ms to 180 ms at p95. the queue depth stayed flat. two bugs came in from support. the first was a timezone off by one in the export job. the second was a duplicated webhook delivery. both are patched and covered by tests. next week we focus on the retention migration. the plan is to backfill the archive table first. then we cut over the reader. then we delete the legacy path after a quiet week. the deadline is the end of the month. we agreed the deploy window is wednesday no wait thursday morning because of the sales demo.",
+      "expect": [
+        [
+          "thursday morning"
+        ],
+        [
+          "sales demo"
+        ]
+      ],
+      "forbid": [
+        "wednesday morning"
+      ]
+    },
+    {
+      "case_id": "LF-STR-014",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "windows",
+        "last_clause",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "trip notes from the conference. day one was all workshops and i mostly attended the data modeling track. the highlights were a talk on schema evolution and a panel about consent management. day two had the keynotes. the ceo announced the offline mode beta and the audience actually cheered. between sessions i demoed our app to six people and collected feedback. day three was shorter. i packed the booth shipped the leads to the CRM and caught the evening flight home.",
+      "order": [
+        "workshops",
+        "keynotes",
+        "evening flight"
+      ],
+      "expect": [
+        [
+          "caught the evening flight"
+        ],
+        [
+          "shipped the leads"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-015",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "windows",
+        "numbers_survive",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "quarterly numbers review. revenue landed at 1.2 million against a 1.1 million plan. churn ticked up from 2% to 3% in the small tier. enterprise churn stayed at 0.5%. support volume was 4,200 tickets with a median first response of 42 minutes. the nps score moved from 41 to 47. headcount ended at 88 with 6 open roles. marketing spent 90,000 of a 95,000 budget. infra costs dropped 12% after the storage migration. cash runway is 19 months at the current burn. the board deck is due next friday and the pre read goes out monday.",
+      "expect": [
+        [
+          "1.2 million"
+        ],
+        [
+          "1.1 million"
+        ],
+        [
+          "3%"
+        ],
+        [
+          "0.5%"
+        ],
+        [
+          "4,200"
+        ],
+        [
+          "42 minutes"
+        ],
+        [
+          "47"
+        ],
+        [
+          "88"
+        ],
+        [
+          "6 open"
+        ],
+        [
+          "90,000"
+        ],
+        [
+          "95,000"
+        ],
+        [
+          "12%"
+        ],
+        [
+          "19 months"
+        ],
+        [
+          "friday"
+        ],
+        [
+          "monday"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-016",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "windows",
+        "negation_survives",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "deployment checklist for the release. verify the green pipeline on the main branch. confirm the migration backup exists in the snapshots folder. announce the window in the ops channel. do not deploy during the sales demo. do not skip the smoke suite even if the pipeline is green. keep the previous build artifact for a fast rollback. page the oncall if the error budget burns faster than 0.5% per hour. after the release watch the dashboard for 30 minutes and then close the incident channel with a summary note.",
+      "expect": [
+        [
+          "do not deploy during the sales demo"
+        ],
+        [
+          "do not skip the smoke suite"
+        ],
+        [
+          "fast rollback"
+        ],
+        [
+          "30 minutes"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-017",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "windows",
+        "questions_survive",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "open questions for the architecture review. should the gateway own rate limiting or the services themselves. is the event bus durable enough for the audit stream. what happens to in flight jobs during a rolling restart. who owns the schema registry permissions after the reorg. can we drop the legacy xml endpoint this quarter or next. how do we budget the migration freeze against the marketing launch. do we need a design doc for the cache invalidation change or is a rfc enough. the review is booked for tuesday afternoon and the doc stub is already in the drive.",
+      "expect": [
+        [
+          "rate limiting"
+        ],
+        [
+          "rolling restart"
+        ],
+        [
+          "schema registry"
+        ],
+        [
+          "xml endpoint"
+        ],
+        [
+          "tuesday afternoon"
+        ],
+        [
+          "?"
+        ],
+        [
+          "?"
+        ],
+        [
+          "?"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-018",
+      "family_id": "LF-FAMILY-STR-CODE",
+      "tags": [
+        "code_block",
+        "m04_structure",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "the config looks like this\n```\nenable_metrics equals true port equals 8080\n```\nand the defaults live in the readme",
+      "code_block": [
+        "enable_metrics",
+        "8080"
+      ]
+    },
+    {
+      "case_id": "LF-STR-019",
+      "family_id": "LF-FAMILY-STR-CODE",
+      "tags": [
+        "code_block",
+        "fenced_markdown",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "here is the failing command\n```\ncurl -s localhost:8080/health\n```\nit returns a 502 after the restart",
+      "code_block": [
+        "curl",
+        "health"
+      ],
+      "outro": "502"
+    },
+    {
+      "case_id": "LF-STR-020",
+      "family_id": "LF-FAMILY-STR-CODE",
+      "tags": [
+        "code_block",
+        "content_exact",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "snippet for the bug report\n```\nfor item in items:\n    process(item)\n```\nthe loop skips the last item",
+      "code_block": [
+        "process(item)"
+      ],
+      "outro": "skips the last item"
+    },
+    {
+      "case_id": "LF-STR-021",
+      "family_id": "LF-FAMILY-STR-PARA",
+      "tags": [
+        "paragraph_breaks",
+        "m04_structure",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "intro paragraph about the plan\n\nthe risks section covers the migration and the rollback window",
+      "paragraphs": 2,
+      "order": [
+        "intro paragraph",
+        "risks section"
+      ]
+    },
+    {
+      "case_id": "LF-STR-022",
+      "family_id": "LF-FAMILY-STR-PARA",
+      "tags": [
+        "heading",
+        "m04_structure",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "new heading two q3 goals then the body says grow weekly retention by 5% and launch the referral pilot",
+      "expect": [
+        [
+          "q3 goals"
+        ],
+        [
+          "5%"
+        ],
+        [
+          "referral"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-023",
+      "family_id": "LF-FAMILY-STR-PARA",
+      "tags": [
+        "prose_flow",
+        "no_split_per_sentence",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "the outage started at 2:00 AM with a spike in database connections. the pool exhausted within a minute and the api started returning 500s. the oncall scaled the pool and the errors cleared by 2:20 AM. the postmortem is scheduled for thursday.",
+      "paragraphs": 1,
+      "expect": [
+        [
+          "2:00 AM"
+        ],
+        [
+          "500"
+        ],
+        [
+          "2:20 AM"
+        ],
+        [
+          "thursday"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-024",
+      "family_id": "LF-FAMILY-STR-PARA",
+      "tags": [
+        "topic_shift",
+        "paragraphs",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "thanks everyone for joining the call today the recordings are in the shared drive. switching topics entirely the office plants need a watering rota before the holidays otherwise we lose the fern again.",
+      "expect": [
+        [
+          "recordings"
+        ],
+        [
+          "watering rota"
+        ],
+        [
+          "fern"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-025",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "nested_scope",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "sprint goals number one finish the settings page including the dark mode toggle and the export button number two start the notification service spike",
+      "items": 2,
+      "order": [
+        "settings page",
+        "notification service"
+      ],
+      "expect": [
+        [
+          "dark mode"
+        ],
+        [
+          "export button"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-026",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "item_count_exact",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "five principles number one safety number two honesty number three speed number four craft number five fun",
+      "items": 5,
+      "order": [
+        "safety",
+        "honesty",
+        "speed",
+        "craft",
+        "fun"
+      ]
+    },
+    {
+      "case_id": "LF-STR-027",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "no_lost_item",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "groceries apples bananas cherries dates elderberries figs grapes honey and finally ice cream",
+      "order": [
+        "apples",
+        "bananas",
+        "cherries",
+        "dates",
+        "elderberries",
+        "figs",
+        "grapes",
+        "honey",
+        "ice cream"
+      ]
+    },
+    {
+      "case_id": "LF-STR-028",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "correction_changes_count",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "two speakers confirmed number one mira number two jonas i mean priya keeps the panel at two",
+      "order": [
+        "mira",
+        "priya"
+      ],
+      "forbid": [
+        "jonas"
+      ]
+    },
+    {
+      "case_id": "LF-STR-029",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "split_list",
+        "numbering_continues",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "checklist for the production migration part one with the prep items first.\n\nitem one back up the primary database with the verified snapshot tool and store the manifest in the shared drive. item two freeze the writers by flipping the maintenance flag and confirm the queue stops draining. item three snapshot the volumes including the read replicas because the last restore missed them and cost us an hour.\n\nitem four notify the stakeholders in the launch channel with the expected window and the rollback criteria spelled out. item five open the maintenance banner on the status page with a plain language note for the users. item six begin the migration job and watch the first ten thousand rows closely before walking away.\n\nitem seven keep an eye on the queue depth and the replication lag dashboards during the whole run. item eight verify the row counts per table against the pre migration census and record the deltas.\n\nitem nine unfreeze the writers and watch the error budget for five minutes before celebrating. item ten close the banner and post the all clear message with the total downtime number.\n\nafter that the oncall hands off to the morning shift with a written summary in the runbook doc.",
+      "items": 10,
+      "order": [
+        "back up the primary database",
+        "freeze the writers",
+        "snapshot the volumes",
+        "notify the stakeholders",
+        "open the maintenance banner",
+        "begin the migration",
+        "watch the",
+        "queue depth",
+        "verify the row counts",
+        "unfreeze the writers",
+        "close the banner",
+        "total downtime"
+      ],
+      "outro": "morning shift",
+      "windows": 2
+    },
+    {
+      "case_id": "LF-STR-030",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "windows",
+        "long_prose",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "the design doc argues for a small core and the review meeting is booked for friday so here is the full reasoning with the goals first.\n\nthe first section covers the goals. we want predictable latency under 100 ms at p99 and a memory ceiling of 350 mebibytes on the reference laptop. the second section rejects the alternatives honestly. an embedded sqlite cache was too slow to invalidate across processes and the lock contention showed up immediately.\n\na shared memory ring buffer needed unsafe alignment code that failed review twice. a plain dictionary broke the memory budget during bursts and leaked under cancellation. the third section describes the chosen design. a generation based double buffer with copy on read semantics. writers flip the generation under one lock and readers never block.\n\nthe fourth section lists the risks we accept. a stalled writer can pin one generation forever and the fix is a watchdog that force flips after 5 seconds with a loud metric. the fifth section ends with the rollout plan. ship behind the cache_v2 flag with default off for two weeks. then flip the default for the beta cohort only.\n\nthen remove the old path once the dashboards stay green for a full month without a single rollback.",
+      "windows": 2,
+      "order": [
+        "small core",
+        "rejects the alternatives",
+        "chosen design",
+        "risks",
+        "rollout",
+        "cache_v2"
+      ]
+    },
+    {
+      "case_id": "LF-STR-031",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "bulleted_markdown",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "standup notes\n- fixed the flaky login test\n- opened a pr for the cache bump\n- waiting on design for the empty state\nno blockers today",
+      "items": 3,
+      "order": [
+        "flaky login test",
+        "cache bump",
+        "empty state"
+      ],
+      "outro": "no blockers"
+    },
+    {
+      "case_id": "LF-STR-032",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "semicolon_prose",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "the three options are keep the monolith split by feature or go full microservices and honestly only the first two are realistic",
+      "expect": [
+        [
+          "keep the monolith"
+        ],
+        [
+          "split by feature"
+        ],
+        [
+          "microservices"
+        ],
+        [
+          "first two"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-033",
+      "family_id": "LF-FAMILY-STR-PARA",
+      "tags": [
+        "structure",
+        "question_then_list",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "what should the agenda include number one the budget gap number two the hiring plan and can we keep it under an hour",
+      "expect": [
+        [
+          "what should the agenda"
+        ],
+        [
+          "budget gap"
+        ],
+        [
+          "hiring plan"
+        ],
+        [
+          "under an hour"
+        ],
+        [
+          "?"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-034",
+      "family_id": "LF-FAMILY-STR-CODE",
+      "tags": [
+        "code_block",
+        "flags_exact",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "the exact command for the release script\n```\n./release.sh --env prod --skip-tests\n```\nwe only skip tests on hotfixes",
+      "code_block": [
+        "--env prod",
+        "--skip-tests"
+      ],
+      "outro": "hotfixes"
+    },
+    {
+      "case_id": "LF-STR-035",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "windows",
+        "structure_across_seam",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "onboarding doc draft for the new hire starting monday with the welcome section first.\n\nwe are a small team of nine people spread across two time zones and we keep the calendar light on purpose. we value written decisions and reversible choices over heroic fixes. your buddy for the first month is ana and she owns this document.\n\ntooling section. our stack is python on the backend and swift on the mac app with a rust sidecar for the parser. the ci runs on a shared mini cluster in the office closet. the deploy is a single script with a dry run flag and a rollback hook that actually works.\n\ncommunication section. we default to the public channels and keep decisions in the decision log with dates and owners. we record demos every second friday and skip them guilt free when the week is heavy.\n\nbenefits section. the learning budget renews in january and covers books courses and one conference. the home office stipend needs one form and lands in the next payroll cycle. the wellness credit covers the gym or the bike shop or the climbing wall no questions asked.\n\nclosing section. reach out to your buddy in the first week because she schedules the intro chats for you. and remember the wiki search box is your best friend here.",
+      "windows": 2,
+      "order": [
+        "welcome section",
+        "tooling section",
+        "communication section",
+        "benefits section",
+        "closing section"
+      ]
+    },
+    {
+      "case_id": "LF-STR-036",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "windows",
+        "fillers_and_lists",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "um so the retro board first. number one the deploy froze for 40 minutes because of a stuck lock. number two the alerts fired after the users noticed. number three the rollback script had a typo in the table name. then the positives. number four the comms were calm and clear. number five the buddy system worked during the incident. and um finally the actions. number six add a lock timeout. number seven wire the alert to the deploy job. number eight dry run the rollback monthly. thats the board thanks all.",
+      "items": 8,
+      "order": [
+        "stuck lock",
+        "users noticed",
+        "table name",
+        "buddy system",
+        "lock timeout",
+        "dry run the rollback"
+      ],
+      "forbid": [
+        "um",
+        " uh "
+      ]
+    },
+    {
+      "case_id": "LF-STR-037",
+      "family_id": "LF-FAMILY-STR-PARA",
+      "tags": [
+        "structure",
+        "mixed_blocks",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "release notes draft. version 2.4.0 ships the offline mode and a faster sync. highlights\n- offline mode for the mac app\n- sync engine rewrite with delta uploads\n- 30% smaller memory footprint\nupgrade notes. the database migrates on first launch and can take a minute on old machines. downgrading after the migration is not supported.",
+      "items": 3,
+      "order": [
+        "offline mode",
+        "delta uploads",
+        "memory footprint"
+      ],
+      "expect": [
+        [
+          "2.4.0"
+        ],
+        [
+          "not supported"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-038",
+      "family_id": "LF-FAMILY-STR-LIST",
+      "tags": [
+        "list",
+        "repeated_marker_prose",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R11"
+      ],
+      "input": "she said and i quote first come first served end quote which honestly settles the debate",
+      "expect": [
+        [
+          "first come first served",
+          "first come, first served"
+        ],
+        [
+          "settles the debate"
+        ]
+      ],
+      "items": 0
+    },
+    {
+      "case_id": "LF-STR-039",
+      "family_id": "LF-FAMILY-STR-SEAM",
+      "tags": [
+        "windows",
+        "ai_prompt_long",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "prompt for the analysis agent. you are reviewing our subscription funnel for a board meeting. the data covers q2 with 48,000 signups and a 4.1% paid conversion. task one summarize the three biggest drop offs with the exact step names from the dashboard. task two estimate the revenue impact if the checkout step improved by 1.5 percentage points. constraints. do not include personal data in the summary. keep the whole answer under 300 words. use plain language because two board members are non technical. cite the dashboard widget id for every number you quote. tone. calm and factual. no exclamation marks. output format. three sections called drop offs impact and recommendation. each section at most three bullets. the recommendation must include one risk. close with the single next step you would take on monday.",
+      "expect": [
+        [
+          "48,000"
+        ],
+        [
+          "4.1%"
+        ],
+        [
+          "1.5 percentage points"
+        ],
+        [
+          "do not include personal data"
+        ],
+        [
+          "300 words"
+        ],
+        [
+          "drop offs"
+        ],
+        [
+          "recommendation"
+        ],
+        [
+          "one risk"
+        ],
+        [
+          "monday"
+        ]
+      ]
+    },
+    {
+      "case_id": "LF-STR-040",
+      "family_id": "LF-FAMILY-STR-PARA",
+      "tags": [
+        "structure",
+        "signoff_after_list",
+        "critical"
+      ],
+      "requirement_ids": [
+        "LF-R10",
+        "LF-R11"
+      ],
+      "input": "team update before the weekend number one the beta build is out with 23 fixes number two the crash rate dropped to 0.3% number three the feedback form stays open until monday thanks everyone and enjoy the weekend",
+      "items": 3,
+      "order": [
+        "beta build",
+        "23 fixes",
+        "crash rate",
+        "0.3%",
+        "feedback form"
+      ],
+      "outro": "enjoy the weekend"
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "family": "curated_deterministic_semantic.literal",
+  "origin": "synthetic",
+  "note": "EV-09 / M07 literal stratum: 20 owning fixtures. Inputs are post-normalization (the M04 literal escape already emitted its object); protected spans are passed to the engine exactly as the pipeline would (protected = verbatim strings that must survive untouched). Model-backed via tests/v2/fidelity/test_literal.py.",
+  "sanitization": "All cases are synthetic compositions; no private log text.",
+  "cases": [
+    {
+      "case_id": "LF-LIT-001", "family_id": "LF-FAMILY-LIT-ESC",
+      "tags": ["literal_escape", "symbol_word", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "the password hint is slash not a path separator",
+      "protected": ["slash"],
+      "expect": [["slash"]],
+      "forbid": ["/ not"]
+    },
+    {
+      "case_id": "LF-LIT-002", "family_id": "LF-FAMILY-LIT-ESC",
+      "tags": ["literal_escape", "number_words", "critical"],
+      "requirement_ids": ["LF-R10", "LF-R11"],
+      "input": "write exactly twelve thousand in the certificate field",
+      "protected": ["twelve thousand"],
+      "expect": [["twelve thousand"]],
+      "forbid": ["12,000", "12000"]
+    },
+    {
+      "case_id": "LF-LIT-003", "family_id": "LF-FAMILY-LIT-ESC",
+      "tags": ["literal_escape", "punctuation_word", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "the variable name is literally underscore underscore count",
+      "protected": ["underscore"],
+      "expect": [["underscore"]],
+      "forbid": ["__count"]
+    },
+    {
+      "case_id": "LF-LIT-004", "family_id": "LF-FAMILY-LIT-ESC",
+      "tags": ["literal_escape", "mixed", "critical"],
+      "requirement_ids": ["LF-R10", "LF-R11"],
+      "input": "the license plate reads x ray 4 4 7 one and the sticker expires in march",
+      "protected": ["x ray 4 4 7 one"],
+      "expect": [["x ray 4 4 7 one"], ["march"]]
+    },
+    {
+      "case_id": "LF-LIT-005", "family_id": "LF-FAMILY-LIT-QUOTE",
+      "tags": ["quoted", "repetition", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "the transcript literally said \"the the\" twice in the header",
+      "protected": ["the the"],
+      "expect": [["the the"]],
+      "forbid": ["said the twice"]
+    },
+    {
+      "case_id": "LF-LIT-006", "family_id": "LF-FAMILY-LIT-QUOTE",
+      "tags": ["quoted", "editing_instruction", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "find every occurrence of \"todo fixme\" in the log and list the files",
+      "protected": ["todo fixme"],
+      "expect": [["todo fixme"], ["list the files"]]
+    },
+    {
+      "case_id": "LF-LIT-007", "family_id": "LF-FAMILY-LIT-QUOTE",
+      "tags": ["quoted", "do_not_edit_inside", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "in the release notes write \"ship happens\" as the opening line verbatim",
+      "protected": ["ship happens"],
+      "expect": [["ship happens"]]
+    },
+    {
+      "case_id": "LF-LIT-008", "family_id": "LF-FAMILY-LIT-QUOTE",
+      "tags": ["quoted", "commands_are_content", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "the comment says \"delete the unused imports\" but keep the comment as is",
+      "protected": ["delete the unused imports"],
+      "expect": [["delete the unused imports"], ["keep the comment"]]
+    },
+    {
+      "case_id": "LF-LIT-009", "family_id": "LF-FAMILY-LIT-QUOTE",
+      "tags": ["quoted", "question", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "she asked \"why not both\" and the room laughed",
+      "protected": ["why not both"],
+      "expect": [["why not both"], ["room laughed"]]
+    },
+    {
+      "case_id": "LF-LIT-010", "family_id": "LF-FAMILY-LIT-CODE",
+      "tags": ["literal", "code_line", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "the failing assertion is assert result == none and it is on line 42",
+      "protected": ["assert result == none"],
+      "expect": [["assert result == none"], ["42"]]
+    },
+    {
+      "case_id": "LF-LIT-011", "family_id": "LF-FAMILY-LIT-CODE",
+      "tags": ["literal", "flag_sequence", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "paste git push --force-with-lease exactly into the runbook",
+      "protected": ["git push --force-with-lease"],
+      "expect": [["git push --force-with-lease"], ["runbook"]]
+    },
+    {
+      "case_id": "LF-LIT-012", "family_id": "LF-FAMILY-LIT-CODE",
+      "tags": ["literal", "path_verbatim", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "config lives at /usr/local/etc/localflow.conf and the docs mention nothing else",
+      "protected": ["/usr/local/etc/localflow.conf"],
+      "expect": [["/usr/local/etc/localflow.conf"]]
+    },
+    {
+      "case_id": "LF-LIT-013", "family_id": "LF-FAMILY-LIT-CODE",
+      "tags": ["literal", "url_verbatim", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "the status page is https://status.example.com/incidents and it updates every minute",
+      "protected": ["https://status.example.com/incidents"],
+      "expect": [["https://status.example.com/incidents"], ["every minute"]]
+    },
+    {
+      "case_id": "LF-LIT-014", "family_id": "LF-FAMILY-LIT-CODE",
+      "tags": ["literal", "email_verbatim", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "send the summary to ops@example.com before the 9 AM review",
+      "protected": ["ops@example.com"],
+      "expect": [["ops@example.com"], ["9 AM"]]
+    },
+    {
+      "case_id": "LF-LIT-015", "family_id": "LF-FAMILY-LIT-ESC",
+      "tags": ["literal_escape", "do_not_translate", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "keep the spanish phrase hasta luego in the signature block",
+      "protected": ["hasta luego"],
+      "expect": [["hasta luego"], ["signature"]]
+    },
+    {
+      "case_id": "LF-LIT-016", "family_id": "LF-FAMILY-LIT-QUOTE",
+      "tags": ["quoted", "no_synonym_inside", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "the error banner should read \"something went sideways\" word for word",
+      "protected": ["something went sideways"],
+      "expect": [["something went sideways"]]
+    },
+    {
+      "case_id": "LF-LIT-017", "family_id": "LF-FAMILY-LIT-ESC",
+      "tags": ["literal_escape", "marker_word", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "the title is literally comma splice for the grammar talk",
+      "protected": ["comma splice"],
+      "expect": [["comma splice"]],
+      "forbid": ["Splice,"]
+    },
+    {
+      "case_id": "LF-LIT-018", "family_id": "LF-FAMILY-LIT-QUOTE",
+      "tags": ["quoted", "nested_quotes", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "in the changelog write fixed the \"quote parsing\" bug",
+      "protected": ["quote parsing"],
+      "expect": [["quote parsing"], ["fixed"]]
+    },
+    {
+      "case_id": "LF-LIT-019", "family_id": "LF-FAMILY-LIT-ESC",
+      "tags": ["literal_escape", "version_words", "critical"],
+      "requirement_ids": ["LF-R10", "LF-R11"],
+      "input": "the tattoo says version one point zero and no i will not change it",
+      "protected": ["version one point zero"],
+      "expect": [["version one point zero"]],
+      "forbid": ["1.0"]
+    },
+    {
+      "case_id": "LF-LIT-020", "family_id": "LF-FAMILY-LIT-QUOTE",
+      "tags": ["quoted", "instruction_discussion", "critical"],
+      "requirement_ids": ["LF-R10"],
+      "input": "a discussion of a phrase is not an instruction so when the doc says \"delete this paragraph\" the doc keeps it",
+      "protected": ["delete this paragraph"],
+      "expect": [["delete this paragraph"], ["the doc keeps it"]]
+    }
+  ]
+}

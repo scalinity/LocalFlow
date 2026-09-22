@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "milestone": "M07",
+  "evaluated_utc": "2026-09-22T15:05:00Z",
+  "working_directory": "/Users/danny/Documents/Tools/LocalFlow",
+  "base_commit": "a3d4579bebe549407b0f0f9db95c26c68f2718f26",
+  "environment": {
+    "python": "3.14.7 (.venv)",
+    "mlx": "0.31.2",
+    "transformers": "5.10.4",
+    "chip": "Apple M5 Pro (48 GB)",
+    "macos": "27.0",
+    "cleanup_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "asr_model": "parakeet-tdt-0.6b-v3 (MLX)",
+    "offline": "both models cached; HF_HUB_OFFLINE in the worker"
+  },
+  "requirements": ["LF-R10", "LF-R11", "LF-R28", "LF-R30"],
+  "acceptance_criteria": {
+    "M07-AC01": {
+      "statement": "Every owning critical fixture passes; dictated instructions are never answered or executed in the acceptance set.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/fidelity/test_fidelity.py 60/60 (model-backed; instruction-as-data cases LF-FID-029..032 forbid answers: paris/4/execution never present, forbid_on_fallback checked on every path)",
+        "tests/v2/fidelity/test_literal.py 20/20 (model-backed; quoted editing instructions stay content LF-LIT-006/008/020)",
+        "tests/v2/structure/test_structure.py 40/40 (model-backed)"
+      ]
+    },
+    "M07-AC02": {
+      "statement": "Unvalidated correction deletion is fully rolled back on failure.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/fidelity/test_cleanup_engine.py::test_ac02_rollback_on_validation_failure (byte-exact rollback to the pre-correction source)",
+        "tests/v2/fidelity/test_cleanup_engine.py::test_output_limit_split_retry_and_incomplete_notice (retry failure rolls the whole window back to original source; sub-windows run on original source ranges)"
+      ]
+    },
+    "M07-AC03": {
+      "statement": "List ordering/count and all source-owned long-input ranges survive chunking; no truncated output is labeled complete.",
+      "status": "pass",
+      "evidence": [
+        "LF-STR-011/029/030/035 (multi-window, 206-226 words, plan_windows >= 2) assert exact item counts, full item order across seams and continued numbering — 40/40",
+        "tests/v2/fidelity/test_cleanup_engine.py::test_window_ownership_invariant (150 randomized documents: exclusive, exhaustive, verbatim ownership, whitespace-only seams)",
+        "output-limit detection via token count; llm_partial carries incomplete=true — benchmark LF-FID-055 exercised the honest incomplete path (never truncated-as-success)"
+      ]
+    },
+    "M07-AC04": {
+      "statement": "The real-text validation subset has zero critical defects; outputs needing review remain recoverable, not silently simplified.",
+      "status": "partial_automated",
+      "evidence": [
+        "Synthetic strata (the automatable half): 120/120 across the three owning suites on post-review code.",
+        "The adjudicated real-text stratum (E04 family adjudicated_real_text, 60 cases from the 749 legacy candidates) requires human review before any fixture is created — reserved in tests/v2/fixtures/manifest.json; reported as pending, never assumed."
+      ]
+    },
+    "M07-AC05": {
+      "statement": "A rejected cleanup candidate and its intact fallback are both inspectable under enabled retention, with exact input/template/context and source lineage.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/fidelity/test_cleanup_pipeline.py::test_ac05_rejected_candidate_and_fallback_inspectable (real coordinator + store: cleanup_rejected_proposal artifact beside the intact fallback; exact prompt artifacts; cleanup_context artifact)",
+        "tests/v2/fidelity/test_cleanup_pipeline.py::test_evidence_cleanup_family_v2_block (content-free v2 block: prompt version/revision, template revision, sampling, termination, window source ranges, validation outcomes)"
+      ]
+    },
+    "M07-AC06": {
+      "statement": "No candidate is assigned a gold correction or preference solely because a heuristic validator accepted/rejected it.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/fidelity/test_cleanup_pipeline.py::test_ac06_validator_outcome_never_labels (envelope outcome.correctness stays unreviewed; preferences []; state captured_unreviewed after a validator rejection)"
+      ]
+    }
+  },
+  "human_verification": {
+    "native-m07-long-prompt-cleanup-trial": {
+      "status": "pending",
+      "steps": [
+        "Dev-run from Terminal.app (cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh; one instance at a time; the terminal needs its own mic + AX grants).",
+        "Dictate a long AI prompt containing three explicit constraints (word limit, a must-mention, a do-not-mention), two self-corrections, a spoken list of 4+ items, and a sign-off.",
+        "Compare the stage diffs (raw transcript vs normalized vs cleaned) — expect corrections applied with reasons kept, list rendered with exact item count, all three constraints intact.",
+        "Dictate a second dictation with a quoted literal ('write ... verbatim') and verify the protected span survives untouched.",
+        "Try undo-cleanup recovery: the original transcript must be recoverable from history/evidence without rerunning a model.",
+        "Record steps, expected vs actual output and any evidence artifact ids."
+      ],
+      "note": "Does not gate M08's automatable work. The M06 destination trial, M05 dictionary trial and the M01/M03/M04 native items remain pending in their own results files."
+    }
+  },
+  "checks": [
+    {"name": "pre-change baselines", "kind": "automated", "cwd": "repo root", "command": "23 fast suites (M01-M06) via .venv/bin/python", "exit": 0, "result": "all pass before any edit (recorded 2026-09-22, logs /tmp/m07-baseline)"},
+    {"name": "pre-change model-backed baselines", "kind": "model-backed", "command": ".venv/bin/python tests/v2/lifecycle/test_worker_live.py; tests/v2/training/test_live_pipeline.py; tests/test_cleanup.py", "exit": 0, "result": "worker_live 2/2; live pipeline 2/2; V1 cleanup control 51/51 (47.4 s)"},
+    {"name": "M07 deterministic engine suite", "kind": "automated", "command": ".venv/bin/python tests/v2/fidelity/test_cleanup_engine.py", "exit": 0, "result": "19/19 post-review (window ownership fuzz, one-generation budget, read-only overlap, corrections offsets + spoken-order duplicates, guards, AC02 rollback, output-limit retry failure + recovery success, E09 damaged-output catalog, deterministic/heuristic labels, vocabulary authorization, contract/payload separation, protected-span mapping incl. per-window scoping + unlocatable drop, renderer numbering, honest fallback labels)"},
+    {"name": "M07 pipeline integration suite", "kind": "automated", "command": ".venv/bin/python tests/v2/fidelity/test_cleanup_pipeline.py", "exit": 0, "result": "8/8 post-review (permitted-context flow + nearby-text exclusion, destination profile from snapshot, S29.4 v2 block + context artifact, AC05, AC06, V1 selectable, worker v2 result shape, worker engine-exception basic fallback)"},
+    {"name": "EV-09 fidelity suite", "kind": "model-backed", "command": ".venv/bin/python tests/v2/fidelity/test_fidelity.py", "exit": 0, "result": "60/60 (39.8 s; 11 fallback-window jobs — safe fallbacks, assertions hold on every path)"},
+    {"name": "EV-09 structure suite", "kind": "model-backed", "command": ".venv/bin/python tests/v2/structure/test_structure.py", "exit": 0, "result": "40/40 (50.2 s; 8 fallback jobs; multi-window cases 206-226 words)"},
+    {"name": "EV-09 literal suite", "kind": "model-backed", "command": ".venv/bin/python tests/v2/fidelity/test_literal.py", "exit": 0, "result": "20/20 (11.5 s; 0 fallback jobs)"},
+    {"name": "V1-vs-V2 ablation (post-review code)", "kind": "model-backed", "command": ".venv/bin/python scripts/v2/benchmark_m07.py", "exit": 0, "result": "frozen 120-fixture corpus (sha f8106612226dbe6a): assertions v1 106/120 vs v2 115/120; stage p50 short 704 vs 635 ms, medium 992 vs 878 ms, long 4187 vs 2393 ms (long p95 6537 vs 3650 ms); failed terminations v1 0, v2 1 (LF-FID-055 honest llm_partial incomplete notice); fallback jobs v1 5 (lax plausibility) vs v2 18 (deterministic validation rejecting and shipping the safe source). Benchmark matcher is deliberately stricter (raw substring) than the suites' tolerant matcher — the suites are the acceptance authority."},
+    {"name": "post-review regression (fast)", "kind": "automated", "command": "23 M01-M06 suites + M07 deterministic + pipeline", "exit": 0, "result": "all pass"},
+    {"name": "post-review regression (model-backed)", "kind": "model-backed", "command": "worker_live; live_pipeline; tests/test_cleanup.py", "exit": 0, "result": "worker_live 2/2 (real V2 worker path incl. v2 metadata assertions); live pipeline 2/2; V1 control 51/51 (48.7 s)"},
+    {"name": "fixture manifest invariants", "kind": "automated", "command": ".venv/bin/python tests/v2/test_baseline_manifest.py", "exit": 0, "result": "m07_created block honored by the generic *_created invariant; family totals unchanged; privacy scan clean over every new path"}
+  ],
+  "benchmark_summary": {
+    "run": "docs/v2/benchmarks/20260922-105404-m07/m07.json",
+    "promotion_decision": "cleanup_implementation defaults to v2: +9 assertions over V1 on the frozen corpus with no critical semantic loss, long-input stage p50 70% lower (2.39 s vs 4.19 s; S24's 201-500-word p50 budget is 8 s), and V1 remains selectable (\"v1\") and fallback-intact.",
+    "v2_fallbacks_note": "V2's higher fallback count is the validator working as designed: candidates failing deterministic checks ship the immutable normalized source (recoverable, labeled) instead of V1's plausible-but-lossy output — the 14-case assertion gap is V1 content loss."
+  },
+  "review_loop": {
+    "reviewers": ["bug-hunting debugger", "architecture/quality/security/data-integrity auditor"],
+    "verdict_before_addressing": "Request Changes (2 reports)",
+    "criticals": [
+      {
+        "title": "protected spans were job-global, not per-window",
+        "found_by": "both reviewers (corroborated)",
+        "impact": "any multi-window dictation carrying a protected span (M04 literal/quoted zone) mass-fell-back: every window lacking the token failed protected_tokens; the corrections guard also compared window-local offsets against job-global coordinates (false positives/negatives in windows >= 2)",
+        "fix": "clean() rebases spans per window (_rebase_spans): window-local coordinates, this window's texts only, into validation, the corrections guard and the window payload",
+        "regression_tests": ["test_multi_window_with_protected_span"]
+      }
+    ],
+    "warnings_addressed": [
+      "cleanup.md corrections section rewritten to the shipped V1-line proposal format with sequential in-order offset resolution (contract accuracy)",
+      "output-limit split retry made reachable (halve-at-sentence on the ORIGINAL source range) and AC02-safe (sub-windows run on original source; failed retry rolls the whole window back) with honest termination labels (output_limit_retry_failed counts as incomplete; never 'complete' with limit hits)",
+      "worker _clean_v2 exception branch gained a test (basic fallback, honest labels)",
+      "CleanupResult.sampling.max_tokens_rule now matches the executed formula",
+      "_numeric_phrase_spans decimal handling unified with _numeric_values_in ('twelve point five' = 12.5)",
+      "seam-continued list numbering: continuation start carried in the payload and credited as legitimate marker values in validation",
+      "protected-token check is case-insensitive (sentence-boundary capitalization is authorized)",
+      "multi-window+protected, retry-recovery-success and unlocatable-span-drop tests added"
+    ],
+    "suggestions_addressed": [
+      "dead code removed (module-level template_revision, strip_think, pending_list, CorrectionProposal.to_json, unused echo_gen, no-op fence block, unused multiset ctx param, unused corrections payload dict)",
+      "vocabulary cap enforced engine-side (MAX_VOCABULARY_TERMS in clean())",
+      "worker _load resets the engine slate; worker reuses ModelRunner.engine()",
+      "offset-stable case-insensitive matching (re.IGNORECASE on the original text instead of str.lower())",
+      "context.md permitted-context surface now names the vocabulary pairs and the 40-term cap"
+    ],
+    "deferred": [
+      {
+        "item": "benchmark assertion matcher stricter than the suites' tolerant matcher",
+        "reason": "deliberate: the benchmark measures the naive raw-substring bar; the suites are the acceptance authority — difference recorded here rather than unified"
+      }
+    ],
+    "post_address_verification": "all suites + model-backed checks + the ablation benchmark re-run green on the fixed code (numbers above are post-review)"
+  },
+  "privacy": "Nothing private entered Git: fixtures are synthetic (origin-tagged); the envelope's cleanup.v2 block is content-free (ids/counts/statuses/ranges); prompts, proposals, protected texts and vocabulary terms live exclusively in lease-governed store artifacts (cleanup_input_*/cleanup_proposal/cleanup_rejected_proposal/cleanup_context) under the training buffer lease; the benchmark JSON carries latencies, counts and fixture ids only; the baseline-manifest privacy scan passes over every new path."
+}

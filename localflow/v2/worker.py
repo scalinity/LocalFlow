@@ -97,6 +97,11 @@ class Worker:
         self.cleanup_mode = "off"
         self.asr_model = None
         self._load_error = {}
+        # M07 (S13–S14): the V2 faithful-cleanup engine, selected by the
+        # load message's cleanup_implementation ("v2"); "v1" keeps the
+        # TranscriptCleaner control path unchanged.
+        self.cleanup_implementation = "v2"
+        self.cleanup_engine = None
 
     # ---- engines -----------------------------------------------------------
 
@@ -104,6 +109,11 @@ class Worker:
         self.asr_model = msg.get("asr_model")
         self.cleanup_mode = msg.get("cleanup_mode", "off")
         cleanup_model = msg.get("cleanup_model")
+        self.cleanup_implementation = msg.get("cleanup_implementation", "v2")
+        # A fresh load starts from a clean engine slate (defensive: the
+        # supervisor spawns a fresh process per load, so this only
+        # matters for direct Worker reuse in tests).
+        self.cleanup_engine = None
 
         from ..stt import Transcriber
         t = Transcriber(self.asr_model)
@@ -133,6 +143,38 @@ class Worker:
                     "engine": "asr", "state": "ready",
                     "model_id": self.asr_model})
 
+        if self.cleanup_mode == "llm" \
+                and self.cleanup_implementation == "v2":
+            from .cleanup import CleanupEngine, ModelRunner
+            _write_msg({"v": PROTOCOL_VERSION, "op": "engine",
+                        "engine": "cleanup", "state": "loading",
+                        "model_id": cleanup_model})
+            try:
+                runner = ModelRunner(cleanup_model)
+                with _capture_stderr():
+                    runner.load()
+                self.cleanup_engine = runner.engine()
+            except Exception as e:
+                # Load failure degrades to basic answers, exactly like
+                # the v1 path — the engine is failed, not the worker.
+                # The basic TranscriptCleaner is the degraded answerer so
+                # every M03 label (path "basic", cleanup_engine_failed)
+                # stays identical for both implementations.
+                self._load_error["cleanup"] = f"{type(e).__name__}"
+                _write_msg({"v": PROTOCOL_VERSION, "op": "engine",
+                            "engine": "cleanup", "state": "failed",
+                            "model_id": cleanup_model,
+                            "reason_code": _reason(e)})
+                from ..cleanup import TranscriptCleaner
+                self.cleaner = TranscriptCleaner(
+                    "basic", cleanup_model,
+                    notifier=lambda m, level="INFO": None,
+                    observer=None)
+                return
+            _write_msg({"v": PROTOCOL_VERSION, "op": "engine",
+                        "engine": "cleanup", "state": "ready",
+                        "model_id": cleanup_model})
+            return
         if self.cleanup_mode == "llm":
             from ..cleanup import TranscriptCleaner
             c = TranscriptCleaner(self.cleanup_mode, cleanup_model,
@@ -207,6 +249,9 @@ class Worker:
 
     def _clean(self, msg):
         raw_text = msg.get("raw_text") or ""
+        if self.cleanup_engine is not None:
+            self._clean_v2(msg, raw_text)
+            return
         observations = []
         # Request-scoped sink: warmup generations attach to nothing and
         # observations from one request can never leak into another job.
@@ -229,6 +274,57 @@ class Worker:
         finally:
             self.cleaner.observer = None
 
+    def _clean_v2(self, msg, raw_text):
+        """M07 faithful cleanup (S13–S14): the V2 engine with permitted
+        context (protected spans, scoped vocabulary, destination
+        profile). A load failure never reaches here (the degraded basic
+        TranscriptCleaner answers, M03-AC04 labels identical); an
+        in-flight engine exception falls back to basic honestly."""
+        from ..cleanup import basic_cleanup
+        try:
+            t0 = time.monotonic()
+            result = self.cleanup_engine.clean(
+                raw_text,
+                destination_profile=msg.get("destination_profile"),
+                locale=msg.get("locale") or "en-US",
+                relevant_vocabulary=msg.get("relevant_vocabulary") or [],
+                protected_spans=[tuple(s)
+                                 for s in msg.get("protected_spans") or []],
+                vocabulary_pairs=[tuple(p)
+                                  for p in msg.get("vocabulary_pairs") or []],
+            )
+            elapsed = round((time.monotonic() - t0) * 1000.0, 1)
+            meta = {k: v for k, v in result.to_json().items()
+                    if k not in ("text", "observations")}
+            _write_msg({
+                "v": PROTOCOL_VERSION, "op": "result", "kind": "clean",
+                "req_id": msg.get("req_id"), "job_id": msg.get("job_id"),
+                "attempt": msg.get("attempt"),
+                "generation": msg.get("generation"),
+                "text": result.text, "duration_ms": elapsed,
+                "path": result.path,
+                "fallback_reason": result.fallback_reason,
+                "observations": result.observations,
+                "v2": meta,
+            })
+        except Exception as e:
+            t0 = time.monotonic()
+            text = basic_cleanup(raw_text)
+            _write_msg({
+                "v": PROTOCOL_VERSION, "op": "result", "kind": "clean",
+                "req_id": msg.get("req_id"), "job_id": msg.get("job_id"),
+                "attempt": msg.get("attempt"),
+                "generation": msg.get("generation"),
+                "text": text,
+                "duration_ms": round((time.monotonic() - t0) * 1000.0, 1),
+                "path": "basic",
+                "fallback_reason": "cleanup_engine_failed",
+                "observations": [],
+                "v2": {"stage": "basic", "incomplete": False,
+                       "termination": {"kind": "engine_error"},
+                       "error": type(e).__name__},
+            })
+
     # ---- loop ----------------------------------------------------------------
 
     def serve(self):
@@ -250,7 +346,7 @@ class Worker:
                     else:
                         self._transcribe(msg)
                 elif op == "clean":
-                    if self.cleaner is None:
+                    if self.cleaner is None and self.cleanup_engine is None:
                         _fault(msg, "EngineNotReady",
                                "cleanup_engine_not_ready")
                     else:

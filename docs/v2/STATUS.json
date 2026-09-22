@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
-  "active_milestone": "M06",
+  "active_milestone": "M07",
   "status": "implemented_pending_human",
-  "status_reason": "All automatable M06 work and checks passed on post-review code (two new context suites — 27 EV-08 tests over synthetic AX trees covering the 8 E10 destination classes plus 9 adversarial trees, and 12 EV-18/EV-19 pipeline tests driving the real coordinator — plus every M01–M05 suite and both model-backed suites green, and the benchmark re-run after review fixes at finalize p95 0.303 ms / worst-case cut 80.4 ms vs the 75 ms S12 deadline, provider coverage 52/96 reported with skip frequency). The /review-2 → /address loop completed: both criticals (the denied-browser AX read that leaked a denied destination's origin into retained artifacts — flagged independently by both reviewers; and the collector's global state that could finalize the previous dictation's snapshot into a new job / misattribute a newer dictation's late context) and every warning were fixed in-session with regression tests; one suggestion deferred with its reason in acceptance/M06/results.json. Pending is the milestone's native human destination trial (same phrase across Gmail, Slack, an AI prompt field and Xcode; mid-sentence and selected-text snapshots; secure-field and denied-app behavior from Terminal.app, which needs its own AX grant) — it does not gate M07's automatable work.",
-  "source_commit": "e9874c62ee21d6b00d2760a991798e637ba671cf",
-  "source_commit_note": "M06 was implemented on top of this commit (ORCHESTRATION.html close-out); the M06 commit follows.",
-  "requirements": ["LF-R09", "LF-R28", "LF-R29", "LF-R30"],
+  "status_reason": "All automatable M07 work and checks passed on post-review code: the faithful cleanup V2 engine (S13 contract prompt, complete-block windows, offset-exact corrections, deterministic/heuristic validation, output-limit recovery, fallback ladder) with the EV-09 suites green (60/60 fidelity, 40/40 structure, 20/20 literal model-backed; 19 deterministic engine tests; 8 pipeline tests through the real coordinator) and the V1-vs-V2 ablation on the frozen 120-fixture corpus giving V2 115/120 vs V1 106/120 assertions with long-input stage p50 2.4 s vs 8.1 s — cleanup_implementation defaults to v2 on that evidence, V1 stays the selectable control. Every M01–M06 suite plus worker_live, live_pipeline and the V1 control (51/51) re-ran green post-review. The /review-2 → /address loop completed: the critical (protected spans were job-global, mass-rejecting every multi-window job carrying a span — flagged independently by both reviewers) and every warning were fixed in-session with regression tests; suggestions applied (per-window span scoping, reachable AC02-safe split retry, honest retry-termination labels, protected-token case-insensitivity, decimal phrase spans, seam-continued list numbering, contract accuracy, worker exception-branch test, dead code). Pending is the milestone's native human trial (long AI prompts with three constraints, multiple corrections, lists and sign-offs from Terminal.app; stage diffs; undo-cleanup) — it does not gate M08's automatable work.",
+  "source_commit": "a3d4579bebe549407b0f0f9db95c26c68f2718f26",
+  "source_commit_note": "M07 was implemented on top of this commit (the M06 close-out ORCHESTRATION.html realignment); the M07 commit follows.",
+  "requirements": ["LF-R10", "LF-R11", "LF-R28", "LF-R30"],
   "registry": "docs/v2/registry.json",
-  "automated_results": ["docs/v2/acceptance/M06/results.json"],
-  "benchmark_runs": ["docs/v2/benchmarks/20260922-115621-m06/m06.json"],
+  "automated_results": ["docs/v2/acceptance/M07/results.json"],
+  "benchmark_runs": ["docs/v2/benchmarks/20260922-105404-m07/m07.json"],
   "pending_human": [
-    "native-m06-destination-trial"
+    "native-m07-long-prompt-cleanup-trial"
   ],
-  "handoff": "docs/v2/handoffs/M06.md",
-  "next_milestone": "M07",
+  "handoff": "docs/v2/handoffs/M07.md",
+  "next_milestone": "M08",
   "next_milestone_dependency_eligible": true
 }

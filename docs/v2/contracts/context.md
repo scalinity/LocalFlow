@@ -72,10 +72,17 @@ job — M05 AC03 preserved), and the upgraded hint set is what
    recorded string; nothing is opened. Workspace is the containing
    directory name (document) or the IDE title's project segment.
 7. **Nearby text is data, never instructions**: it never enters a
-   model prompt (cleanup receives no context until M07 defines
-   permitted context); "ignore previous rules" in surrounding text
-   cannot change cleanup policy (M06-AC04). The cleanup input is
-   exactly the normalized transcript.
+   model prompt; "ignore previous rules" in surrounding text cannot
+   change cleanup behavior (M06-AC04). The cleanup input is exactly
+   the normalized transcript. **M07 permitted context (the whole
+   surface, since M07):** cleanup additionally receives the protected
+   spans from the M04 ledger (mapped into normalized-text
+   coordinates), the job's frozen scoped vocabulary canonicals
+   (bounded, ≤ 40) plus the frozen alias→canonical pairs as
+   validator-only data, and the destination profile derived from the
+   snapshot's target category — never nearby text, identifiers,
+   origins or workspaces. See `contracts/cleanup.md`; the hostile-text
+   and input-invariance tests extend unchanged.
 8. Nearby reads are bounded (`NEARBY_CHARS` = 600 around the
    selection/insertion point); identifiers are extracted only from that
    bounded window, capped (`IDENTIFIER_LIMIT` = 64).

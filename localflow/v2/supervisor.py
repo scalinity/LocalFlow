@@ -55,13 +55,18 @@ class _Pending:
 
 class WorkerSupervisor:
     def __init__(self, *, audio_root, asr_model, cleanup_mode="off",
-                 cleanup_model=None, emit=None, on_engine=None,
+                 cleanup_model=None, cleanup_implementation="v2",
+                 emit=None, on_engine=None,
                  worker_cmd=None, spawn_env=None, request_timeout=600.0,
                  ready_timeout=600.0, hello_timeout=15.0):
         self.audio_root = str(audio_root)
         self.asr_model = asr_model
         self.cleanup_mode = cleanup_mode
         self.cleanup_model = cleanup_model
+        # M07: which cleanup implementation the worker loads — "v2"
+        # (faithful cleanup, Spec S13–S14) or "v1" (the TranscriptCleaner
+        # control kept for the ablation and as selectable fallback).
+        self.cleanup_implementation = cleanup_implementation
         self.emit = emit or (lambda *a, **k: None)
         self.on_engine = on_engine or (lambda engine, state, info: None)
         self.worker_cmd = worker_cmd or [sys.executable, "-m",
@@ -142,7 +147,8 @@ class WorkerSupervisor:
             self._send({"v": PROTOCOL_VERSION, "op": "load",
                         "asr_model": self.asr_model,
                         "cleanup_mode": self.cleanup_mode,
-                        "cleanup_model": self.cleanup_model})
+                        "cleanup_model": self.cleanup_model,
+                        "cleanup_implementation": self.cleanup_implementation})
         except (OSError, ValueError) as e:
             self._record_death(f"load_send_{type(e).__name__}")
             self._kill()
@@ -330,13 +336,24 @@ class WorkerSupervisor:
             "sample_rate": sample_rate,
         })
 
-    def clean(self, *, job_id, attempt, raw_text):
+    def clean(self, *, job_id, attempt, raw_text, protected_spans=None,
+              relevant_vocabulary=None, vocabulary_pairs=None,
+              destination_profile=None, locale=None):
         # Cleanup never blocks on engine readiness: a loading/failed engine
         # answers in basic mode and says so in the result (M03-AC04). The
         # parent's "wait" policy does its own bounded wait_engine first.
-        return self._request("clean", "cleanup", {
-            "job_id": job_id, "attempt": attempt, "raw_text": raw_text,
-        }, engine_wait=0.0)
+        # M07 permitted context (additive, None-safe): protected spans in
+        # normalized-text coordinates, the frozen scoped vocabulary and
+        # the destination profile — never nearby text (contracts/context.md).
+        payload = {"job_id": job_id, "attempt": attempt, "raw_text": raw_text}
+        for key, val in (("protected_spans", protected_spans),
+                         ("relevant_vocabulary", relevant_vocabulary),
+                         ("vocabulary_pairs", vocabulary_pairs),
+                         ("destination_profile", destination_profile),
+                         ("locale", locale)):
+            if val is not None:
+                payload[key] = val
+        return self._request("clean", "cleanup", payload, engine_wait=0.0)
 
     def _request(self, op, engine, payload, _retry=True, engine_wait=None):
         # Serialize ordinary GPU jobs: one request runs at a time across

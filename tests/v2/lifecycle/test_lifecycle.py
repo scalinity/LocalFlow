@@ -124,7 +124,9 @@ class FakeSupervisor:
         out.update(self._next("transcribe"))
         return out
 
-    def clean(self, *, job_id, attempt, raw_text):
+    def clean(self, *, job_id, attempt, raw_text, **_m07_context):
+        # M07: the coordinator passes permitted-context fields; the fake
+        # ignores them.
         self.calls.append("clean")
         out = {"attempt": attempt, "generation": self.generation,
                "duration_ms": 1.0, "path": "llm", "fallback_reason": None,

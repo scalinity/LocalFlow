@@ -99,7 +99,9 @@ class RecordingSupervisor:
                 "duration_ms": 1.0, "decode_ranges": [[0, 16000]],
                 "text": self.asr_text}
 
-    def clean(self, *, job_id, attempt, raw_text):
+    def clean(self, *, job_id, attempt, raw_text, **_m07_context):
+        # M07: the coordinator passes permitted-context fields; the fake
+        # ignores them.
         self.calls.append("clean")
         self.clean_inputs.append(raw_text)
         return {"attempt": attempt, "generation": self.generation,

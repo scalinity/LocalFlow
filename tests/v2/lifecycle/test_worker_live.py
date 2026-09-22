@@ -87,12 +87,17 @@ def test_real_worker_end_to_end():
             assert out["text"] and out["text"] != raw
             assert out["observations"], "exact cleanup inputs captured"
             # The corrections stage runs first when markers are present;
-            # the main cleanup pass carries the cleanup system prompt.
+            # the main cleanup pass carries the cleanup system prompt
+            # (M07: the V2 faithful contract — updated from the V1
+            # prompt assertion when V2 became the default
+            # implementation).
             kinds = [o.get("kind") for o in out["observations"]]
+            assert "corrections" in kinds, kinds
             assert "cleanup" in kinds, kinds
             obs = next(o for o in out["observations"]
                        if o.get("kind") == "cleanup")
-            assert "clean up raw dictation transcripts" in obs["prompt"]
+            assert "faithful dictation editor" in obs["prompt"]
+            assert out["v2"]["prompt_version"].startswith("m07-")
 
             # Evidence join with real worker metadata.
             st = store.Store(pathlib.Path(td) / "v2.db")

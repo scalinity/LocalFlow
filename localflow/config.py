@@ -25,6 +25,11 @@ DEFAULTS = {
     # small local model), "basic" (instant regex filler removal), or "off"
     "cleanup": "llm",
     "cleanup_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    # M07 (Spec S13–S14): which cleanup implementation "llm" mode runs —
+    # "v2" = faithful cleanup (complete-block windows, offset-anchored
+    # corrections, validation and fallback ladder); "v1" = the original
+    # TranscriptCleaner path, kept as the ablation control and fallback.
+    "cleanup_implementation": "v2",
     # Write raw and cleaned transcripts to ~/Library/Logs/LocalFlow.log
     # (local only) so cleanup edits can be inspected and debugged
     "log_transcripts": True,

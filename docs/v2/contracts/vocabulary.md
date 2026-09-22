@@ -114,8 +114,12 @@ per revision and rebuilt only on edit.
   hint set is not an observed vocabulary hit.
 - **Post-ASR recovery:** the same snapshot drives layer-5 matching;
   applied repairs are ledger edits with rule ids, never decoder hits.
-- **Cleanup:** consumes permitted context from M07 — not a consumer
-  yet, so no disposition is recorded for it (no speculative field).
+- **Cleanup:** a permitted-context consumer since M07 — the clean op
+  receives the frozen scoped canonicals (bounded) as prompt terms and
+  the alias→canonical pairs as validator data
+  (`contracts/cleanup.md`); hint-set membership itself stays
+  pre-decode-only with its existing disposition (no speculative
+  decoder claim).
 
 ## Evidence (S29.4 context family)
 

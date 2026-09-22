@@ -127,6 +127,14 @@ class CaptureContext:
         self.decode_ranges = None      # M03: original-sample model-input map
         self.cleanup_path = None       # M03: actual path (never a mislabel)
         self.cleanup_fallback_reason = None
+        # M07 (S29.4 cleanup family): the V2 metadata block (prompt
+        # version/revision, sampling, termination, window ownership,
+        # validation summary, fallback lineage) — content-free — plus
+        # the permitted-context payload, retained as a lease-governed
+        # artifact (its vocabulary/protected texts are content-bearing).
+        self.cleanup_v2 = None
+        self.cleanup_context_payload = None
+        self.cleanup_context_artifact = None
         # M04 (S29.4 normalization family): typed edits + ledger replay
         self.normalization = None
         self.norm_text_artifact = None
@@ -473,12 +481,35 @@ class EvidenceCollector:
         }
 
     def on_cleanup_result(self, ctx, applied_text, *, path=None,
-                          fallback_reason=None):
+                          fallback_reason=None, v2=None,
+                          cleanup_context=None):
         if not ctx.collecting:
             return
         ctx.applied_text = applied_text
         ctx.cleanup_path = path
         ctx.cleanup_fallback_reason = fallback_reason
+        # M07 (S29.4 cleanup family): exact permitted context and the V2
+        # metadata ride as lease-governed artifacts / content-free blocks.
+        # A store failure is swallowed — evidence must never fail the
+        # dictation — and the block simply degrades honestly.
+        if cleanup_context is not None:
+            ctx.cleanup_context_payload = cleanup_context
+            try:
+                art = self.store.write_text_artifact(
+                    job_id=ctx.job_id, stage="cleanup",
+                    role="cleanup_context", kind="cleanup_context_json",
+                    text=json.dumps(cleanup_context, ensure_ascii=False,
+                                    sort_keys=True),
+                    retention_class="training",
+                    parent_artifact_id=ctx.norm_text_artifact
+                    or ctx.raw_artifact)
+                self.store.grant_lease(
+                    art, "training",
+                    days=self.store.retention_days["training_buffer"])
+                ctx.cleanup_context_artifact = art
+            except Exception:
+                ctx.cleanup_context_artifact = None
+        ctx.cleanup_v2 = v2
         if applied_text is not None:
             ctx.applied_artifact = self.store.write_text_artifact(
                 job_id=ctx.job_id, stage="cleanup", role="applied_output",
@@ -559,6 +590,28 @@ class EvidenceCollector:
         # llm-mode fallback to basic is recorded as basic, never "llm".
         cleanup_detail["applied_path"] = ctx.cleanup_path
         cleanup_detail["fallback_reason"] = ctx.cleanup_fallback_reason
+        # M07 (S29.4 cleanup family, EV-19): the V2 block — prompt
+        # version/revision, sampling, termination, window source-range
+        # ownership (normalized-text coordinates joined to raw through
+        # the normalization ledger's input/output spans), validation
+        # component outcomes and fallback lineage. Content-free: the
+        # permitted-context payload and every prompt/proposal live in
+        # lease-governed artifacts. A validator outcome here is a mining
+        # signal only — outcome.correctness stays unreviewed and no
+        # preference is implied (M07-AC06).
+        if ctx.cleanup_v2 is not None:
+            v2 = dict(ctx.cleanup_v2)
+            v2["context_artifact_id"] = ctx.cleanup_context_artifact
+            v2["context_retained"] = ctx.cleanup_context_artifact is not None
+            payload = ctx.cleanup_context_payload
+            if payload is not None:
+                v2["context_terms"] = len(
+                    payload.get("relevant_vocabulary") or [])
+                v2["context_protected_spans"] = len(
+                    payload.get("protected_span_texts") or [])
+                v2["context_vocabulary_pairs"] = len(
+                    payload.get("vocabulary_pairs") or [])
+            cleanup_detail["v2"] = v2
 
         ctx.example_id = self.store.upsert_example(
             job_id=ctx.job_id, family_id=ctx.family_id,

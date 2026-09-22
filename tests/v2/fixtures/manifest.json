@@ -27,6 +27,17 @@
           "tests/v2/vocabulary/fixtures_vocabulary.json"
         ],
         "negative_control_corpus_generated": 120
+      },
+      "m07_created": {
+        "note": "M07 created the EV-09 cleanup strata: 60 fidelity, 40 structure and 20 literal fixtures under tests/v2/fidelity/ and tests/v2/structure/ (the fidelity and literal strata share the fidelity directory). Inputs are synthetic post-normalization dictation; the adjudicated-real-text stratum stays reserved pending human review.",
+        "fidelity": 60,
+        "structure": 40,
+        "literal_quoted_commands": 20,
+        "fixture_files": [
+          "tests/v2/fidelity/fixtures_fidelity.json",
+          "tests/v2/structure/fixtures_structure.json",
+          "tests/v2/fidelity/fixtures_literal.json"
+        ]
       }
     },
     {

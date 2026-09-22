@@ -89,3 +89,21 @@ payload artifact even with collection enabled, `retained: false` with
 reason in the block and `missing_reasons.context_snapshot_payload`
 marking replay inputs incomplete. Secure-field snapshots retain no
 field content anywhere (M06-AC01). See `contracts/context.md`.
+
+## M07 live status (cleanup family)
+
+The S29.4 cleanup field family is now captured in full: the V2 cleanup
+result's per-pass observations (exact rendered prompts, inputs,
+proposals, token counts, limit flags, window ranges) ride the existing
+M02 prompt-dedupe artifact mechanism (rejected candidates keep their
+`cleanup_rejected_proposal` role — inspectable beside the intact
+fallback, M07-AC05); `on_cleanup_result(..., v2=, cleanup_context=)`
+writes the exact permitted-context payload as a lease-governed
+`cleanup_context` artifact (content-bearing vocabulary/protected
+texts) and fills the envelope's content-free `cleanup.v2` block:
+prompt version/revision, template revision, sampling, termination,
+window source ranges (normalized-text coordinates joined to raw via
+the normalization ledger), validation component outcomes and fallback
+lineage. A validator outcome is a mining signal only —
+`outcome.correctness` stays `unreviewed` and no preference is recorded
+(M07-AC06). See `contracts/cleanup.md`.
