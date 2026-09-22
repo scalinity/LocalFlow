@@ -10,7 +10,7 @@
   owned by another session.
 
   Figure audit — every figure on the page and the repo file it was re-derived
-  from; figures re-read 2026-09-22 13:45 UTC at 56dc4de (M08 close-out).
+  from; figures re-read 2026-09-22 17:40 UTC at d10886c (M09 close-out).
     33 requirements / 22 suites / 0 without a suite ....... docs/v2/registry.json (counts block)
     requirement -> milestone ownership, suites per strip ... docs/v2/registry.json + "ID: Mxx · Requirements" headers in
                                                              docs/v2/LOCALFLOW_V2_MILESTONES.md
@@ -19,15 +19,15 @@
                                                              "In scope"/"Out of scope"/"Regression requirements",
                                                              "Human verification", "Required benchmarks" sections
     M14-A/B/C checkpoints ................................. M14 implementation task 12 + P07 amendment note
-    STATUS figures (active M08, implemented_pending_human,
-    source_commit a8dbeda, pending native-m08-insertion-trial,
-    next M09 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-22 13:45 UTC at 56dc4de
+    STATUS figures (active M09, implemented_pending_human,
+    source_commit beef9c0, pending native-m09-hub-trial,
+    next M10 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-22 17:40 UTC at d10886c
     commit ids 4bd0187 / 50bf457 / 95f92dd / adc872b / 9d53b4f / e95d152 /
-    eea1bd0 / dc3c726 / 56dc4de ... git log --oneline at the same moment
+    eea1bd0 / dc3c726 / 56dc4de / d10886c ... git log --oneline at the same moment
     review ledger (verdicts, critical counts, named criticals) ... "/review-2 → /address record" sections of
-                                                             docs/v2/handoffs/M01.md–M08.md (cross-checked against
+                                                             docs/v2/handoffs/M01.md–M09.md (cross-checked against
                                                              docs/v2/acceptance/M0*/results.json review_loop blocks)
-    pending-human-check ledger (1+4+1+1+1+1+1 open; M02 2/2 pass) .... docs/v2/acceptance/M0{1,3,4,5,6,7,8}/results.json
+    pending-human-check ledger (1+4+1+1+1+1+1+1 open; M02 2/2 pass) .... docs/v2/acceptance/M0{1,3,4,5,6,7,8,9}/results.json
                                                              human_verification blocks + handoffs/M02.md
                                                              "Human verification (completed 2026-09-22)" addendum
     cleanup ≈78% of recorded inference, 477 timed pairs ... LOCALFLOW_V2_MILESTONES.md P01; re-derived from
@@ -284,7 +284,7 @@
 <header class="masthead">
   <h1>LocalFlow V2 — orchestration overview</h1>
   <p class="lede">LocalFlow is a private, local-first macOS dictation and writing interface built around Parakeet TDT 0.6B V3 via MLX and Qwen3-4B-Instruct-2507 4-bit via MLX. V2 closes the gap with Wispr Flow while preserving local inference and training-ready data collection. This page is the dispatch board for that build: what can run next, in what company, on which model, and against what standard of proof.</p>
-  <p class="stamp">repo scalinity/LocalFlow · figures read 2026-09-22 13:45 UTC at commit 56dc4de (M08 close-out) · realigned in place by milestone close-outs</p>
+  <p class="stamp">repo scalinity/LocalFlow · figures read 2026-09-22 17:40 UTC at commit d10886c (M09 close-out) · realigned in place by milestone close-outs</p>
   <ul class="toc">
     <li><a href="#now">Now</a></li>
     <li><a href="#strips">Units of work</a></li>
@@ -298,16 +298,16 @@
   </ul>
 
   <div class="now" id="now">
-    <p class="verdict">What can run now: <span class="id">M09</span> — and nothing else.</p>
+    <p class="verdict">What can run now: <span class="id">M10</span> — and nothing else.</p>
     <dl class="now-grid">
-      <div><dt>Active milestone</dt><dd>M08 · implemented_pending_human</dd></div>
-      <div><dt>Source commit</dt><dd>a8dbeda — “M08 was implemented on top of this commit (the M07 close-out ORCHESTRATION.html realignment); the M08 commit follows.”</dd></div>
-      <div><dt>Open human checks</dt><dd>native-m08-insertion-trial (1 for M08; 10 open overall — <a href="#threads">ledger</a>)</dd></div>
-      <div><dt>Next milestone</dt><dd>M09 · next_milestone_dependency_eligible: true</dd></div>
+      <div><dt>Active milestone</dt><dd>M09 · implemented_pending_human</dd></div>
+      <div><dt>Source commit</dt><dd>beef9c0 — “M09 was implemented on top of this commit (the M08 close-out ORCHESTRATION.html realignment); the M09 commit follows.”</dd></div>
+      <div><dt>Open human checks</dt><dd>native-m09-hub-trial (1 for M09; 11 open overall — <a href="#threads">ledger</a>)</dd></div>
+      <div><dt>Next milestone</dt><dd>M10 · next_milestone_dependency_eligible: true</dd></div>
       <div><dt>Registry</dt><dd>33 requirements LF-R01–R33 · 22 suites EV-01–EV-22 · 0 requirements without a suite <span class="src">registry.json</span></dd></div>
       <div><dt>Decision record</dt><dd>docs/v2/decisions/ is empty — no accepted spec deviations to date <span class="src">directory listing, 2026-09-22</span></dd></div>
     </dl>
-    <p class="reason">M08’s automatable work and checks passed on post-review code: the serialized insertion service (races 13/13, attribution 10/10, pipeline 5/5 through the real coordinator — the V1 inline paste and its main-thread sleep are gone, UI-callback submit measured at 0.002 ms while a 0.6 s settle transaction was in flight), readback-only confirmation with ownership-generation clipboard restore, target-bound undo, and the S29.8 bounded observation begun on readback-consistent surfaces; store schema v4 additive. Three /review-2 criticals — the terminal guard bypassed without a context snapshot, the one-way session-lock latch (both flagged or confirmed across reviewers), and clipboard-path false confirmation over pre-existing text — were fixed in-session with regression tests, as was every warning. The pending native insertion trial does not gate M09’s automatable work. <span class="src">STATUS.json status_reason + benchmarks/20260922-131238-m08, read 2026-09-22 13:45 UTC at 56dc4de</span></p>
+    <p class="reason">M09’s automatable work and checks passed on post-review code: the native Hub (one AppKit shell over a headless-testable HubState; single instance, saved frame, close ≠ quit with state preserved) with searchable date/app/mode history over the single-writer store (explicit Undated group; distinct source→normalized→cleaned lineage, transform honestly absent until M11), the Models → Training Data inspector (versioned span/verbatim/intended annotations with a per-example verbatim listen gate, pin scoped away from review retention, exclude/delete-everywhere, honest readiness triad), replay, diagnostics and a coordinator command surface whose focus-steal guard defers Hub actions during recording, the ⌘V window and in-flight insertion/undo transactions. Store schema v5 additive (job_targets). Suites: history 11/11, inspector 12/12, diagnostics 3/3, hub shell 14/14, plus every M01–M08 suite and the V1 control re-run green. Benchmarks: 50k-row search p95 42.6 ms (budget 200), shell p95 67 ms (budget 1000), UI memory 28.2 MB. The /review-2 loop’s three criticals — the verbatim provenance leak flagged by both reviewers, the dead History Retry button, the double-requeue duplicate-insertion path — were fixed in-session with regression tests, as was every warning. The pending native Hub trial does not gate M10’s automatable work. <span class="src">STATUS.json status_reason + benchmarks/20260922-170952-m09, read 2026-09-22 17:40 UTC at d10886c</span></p>
     <div class="chain" aria-label="Runnable order of milestones">
       <span class="node done"><span class="mid">M01</span><span class="cmt">4bd0187</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M02</span><span class="cmt">50bf457</span></span><span class="link" aria-hidden="true">▸</span>
@@ -318,8 +318,8 @@
       <span class="node done"><span class="mid">M06</span><span class="cmt">eea1bd0</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M07</span><span class="cmt">dc3c726</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M08</span><span class="cmt">56dc4de</span></span><span class="link" aria-hidden="true">▸</span>
-      <span class="node eligible"><span class="mid">M09</span><span class="cmt">next</span></span><span class="link" aria-hidden="true">▸</span>
-      <span class="node"><span class="mid">M10</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node done"><span class="mid">M09</span><span class="cmt">d10886c</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node eligible"><span class="mid">M10</span><span class="cmt">next</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node"><span class="mid">M11</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node"><span class="mid">M12</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node"><span class="mid">M13</span></span><span class="link" aria-hidden="true">▸</span>
@@ -411,7 +411,7 @@
   <article class="strip">
     <div class="spine">
       <div class="mid">M09</div>
-      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="state-line"><span class="dot done"></span> closed · implemented_pending_human · d10886c</div>
       <div class="rec">rule’s recommendation: <b>scarce authors the shell</b>, plentiful fills views</div>
     </div>
     <div class="body">
@@ -419,12 +419,12 @@
       <p class="oneline">A polished companion window for history, replay, recovery and engine inspection — built on stable storage contracts, not on unstable state.</p>
       <dl class="facts">
         <div><dt>Requirements</dt><dd><span class="id">LF-R13</span> · <span class="id">LF-R28</span> · <span class="id">LF-R30</span> · <span class="id">LF-R31</span></dd></div>
-        <div><dt>Suites</dt><dd>new <span class="id">EV-11</span> · <span class="id">EV-19</span>/<span class="id">EV-20</span> UI cases</dd></div>
-        <div><dt>Prerequisites (P02)</dt><dd>M02, M03, M08</dd></div>
-        <div><dt>Expected files</dt><dd>existing <code>app.py</code>, <code>overlay.py</code>, <code>permissions.py</code>; new <code>localflow/v2/ui/</code>, <code>history_queries.py</code>, <code>tests/v2/ui/</code></dd></div>
+        <div><dt>Suites</dt><dd>new <span class="id">EV-11</span> · <span class="id">EV-19</span>/<span class="id">EV-20</span> UI cases — shipped 11/12/3/14, all green post-review</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M02, M03, M08 — all closed</dd></div>
+        <div><dt>Expected files</dt><dd>shipped: new <code>localflow/v2/ui/</code> (hub/state/replay), <code>history_queries.py</code>, <code>training_data.py</code>, <code>diagnostics.py</code>, <code>tests/v2/ui/</code> (4 suites), <code>benchmark_m09.py</code>, <code>contracts/hub.md</code>; app.py gains the Open Hub menu + coordinator commands; store schema v5</dd></div>
         <div><dt>Destroys</dt><dd>nothing — closing the Hub must not quit the menu-bar service; no view owns a model or writes directly into target apps</dd></div>
-        <div><dt>Benchmark to clear</dt><dd>50,000-row history search P95 ≤ 200 ms warm; interactive shell P95 ≤ 1 s; UI memory excluding model weights</dd></div>
-        <div><dt>Human verification</dt><dd>every screen at normal and enlarged scale; replay and retry real samples; keyboard-only navigation; move, resize, relaunch</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>cleared: 50k-row search p95 42.6 ms (budget ≤200 warm, worst case across five query shapes); interactive shell p95 67 ms (budget ≤1000); UI memory delta 28.2 MB excluding model weights; inspector at 1k examples 3–9 ms p95 <span class="src">benchmarks/20260922-170952-m09</span></dd></div>
+        <div><dt>Human verification</dt><dd>pending as native-m09-hub-trial: every screen at normal and enlarged scale; replay and retry real samples; keyboard-only navigation; move, resize, relaunch — plus one correct/incorrect review and a span correction on the training surface</dd></div>
         <div class="wide"><dt>Hand-forward duty</dt><dd>the first native UI in the repo: its completion report must provide reusable UI/service patterns for M10, M12, M13 and M14 — a coordinator owns the shared shell (P02)</dd></div>
       </dl>
       <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M09 · P02 table</p>
@@ -605,7 +605,7 @@
   <div class="duo">
     <div class="panel">
       <h3>What the dependency graph permits</h3>
-      <p>With M01–M08 closed, exactly one unit is dependency-eligible: <b>M09</b> (needs M02, M03 and M08 — all delivered). From there the remaining graph is a serial chain: every adjacent pair through M16 shares a dependency edge.</p>
+      <p>With M01–M09 closed, exactly one unit is dependency-eligible: <b>M10</b> (needs M04, M05, M06, M08 and M09 — all delivered). From there the remaining graph is a serial chain: every adjacent pair through M16 shares a dependency edge.</p>
       <p class="fact-note">Derived from the P02 table in this session — a page judgement, not a repo statement. <span class="src">LOCALFLOW_V2_MILESTONES.md P02</span></p>
     </div>
     <div class="panel">
@@ -628,12 +628,12 @@
       <div class="q">
         <h4>Is there a precedent to copy?</h4>
         <p>No repo precedent for this kind of unit means the first author sets the pattern for everything after it.</p>
-        <p class="ex">In the record: M09 will ship the first native AppKit shell — no prior unit to imitate. M12’s notes editor, by contrast, composes M09’s patterns.</p>
+        <p class="ex">In the record: M09 shipped the first native AppKit shell (d10886c) — there was no prior unit to imitate. M12’s notes editor, by contrast, composes M09’s patterns.</p>
       </div>
       <div class="q">
         <h4>Will later work live inside this decision?</h4>
         <p>Contracts, schemas and precedence rules are cheap to set once and expensive to revisit after dependents exist.</p>
-        <p class="ex">In the record: M04/M05 policy precedence; M08’s insertion-authority semantics feeding M09 replay and M14 attribution; M13’s denominators reused by M14.</p>
+        <p class="ex">In the record: M04/M05 policy precedence; M08’s insertion-authority semantics now feeding M09’s replay/paste-again and later M14 attribution; M13’s denominators reused by M14.</p>
       </div>
       <div class="q">
         <h4>Can a wrong version be undone cheaply?</h4>
@@ -699,7 +699,7 @@
     <p class="kicker">Why the page asks what it asks</p>
     <h2>Evidence from the record</h2>
   </div>
-  <h3>The review loop catches real bugs — fourteen criticals in eight milestones, zero overruled</h3>
+  <h3>The review loop catches real bugs — seventeen criticals in nine milestones, zero overruled</h3>
   <table>
     <thead><tr><th style="width:8%">Unit</th><th style="width:17%">Verdict before /address</th><th style="width:9%">Criticals</th><th>What the criticals were</th><th style="width:22%">Outcome</th></tr></thead>
     <tbody>
@@ -711,11 +711,12 @@
       <tr><td>M06</td><td class="crit">Request Changes</td><td class="num crit">2</td><td>A denied app that is a <b>browser</b> was still read by the site-origin provider and its origin persisted into retained artifacts — a violation of the denied-apps-never-read absolute, flagged independently by both reviewers; and the context collector’s state was global, not per-job — a failed identity capture could finalize the previous dictation’s snapshot into a new job, and a newer dictation’s late context could be attributed to the job still processing.</td><td>Both fixed with regression tests (denied-browser zero-read/no-leak; per-job collection handles, stale-finalize refusal, one-shot downstream); every warning fixed; benchmark re-run on the fixed code.</td></tr>
       <tr><td>M07</td><td class="crit">Request Changes</td><td class="num crit">1</td><td>Protected spans were job-global, not per-window — any multi-window dictation carrying an M04 literal/quoted zone mass-fell-back (every window lacking the token failed validation), and the corrections guard compared window-local offsets against job-global coordinates; flagged independently by both reviewers.</td><td>Fixed with per-window rebasing + a multi-window protected-span regression test; every warning fixed (reachable AC02-safe split retry, honest retry labels, contract accuracy, worker exception-branch test); suites and the ablation re-run on the fixed code.</td></tr>
       <tr><td>M08</td><td class="crit">Request Changes</td><td class="num crit">3</td><td>The multi-line terminal guard was bypassed when the job carried no context snapshot — with context disabled or PTT identity failed, newline-carrying text pasted into a shell (execution in exactly the guarded scenario); the session-lock stop signal was a one-way latch, so after the first sleep every observation window died at tick 0 with a false stop reason; the clipboard path confirmed over pre-existing identical text at the caret (no pre-write read) and could restore while the paste was still pending, letting a late paste insert the restored user clipboard.</td><td>All three fixed with regression tests (context-absent guard via live frontmost classification; lock re-arms on wake; match_ambiguous never confirms and keeps ownership); every warning fixed (mid-transaction-cancel evidence, observer close race, main-thread block in undo/paste-again, app-element window reads, unreadable-role degradation, bounded re-anchor); suites, model-backed checks and the benchmark re-run on the fixed code.</td></tr>
+      <tr><td>M09</td><td class="crit">Request Changes</td><td class="num crit">3</td><td>The verbatim listen-gate was a single view-level flag — replaying one example’s audio certified a verbatim reference for any other selected example, writing fabricated <code>listened_audio</code> provenance into persistent training data (flagged independently by both reviewers); the History Retry button required a <code>kind</code> field the job detail never set, so it was dead for every row (AC02 unreachable from the UI — the suite had driven the coordinator directly); the journal-root retry fallback could requeue the same job twice, letting a double click insert the same dictation twice.</td><td>All three fixed with regression tests (the gate binds to the example whose audio actually played and resets on selection change; <code>kind</code> set and the button keyed off job_id; already-retrying and failed_recoverable-only guards); every warning fixed (repaste attribution with job ids threaded, pin scoped away from annotation retention, retry clearing the wrong last-failed, bounded redacted export, SQL-subquery search, json_extract mode match, SQL-side Home counts); suites, model-backed checks and the benchmark re-run on the fixed code.</td></tr>
     </tbody>
   </table>
-  <p class="src" style="margin-top:8px">sources: “/review-2 → /address record” sections of docs/v2/handoffs/M01.md–M08.md · review_loop blocks in docs/v2/acceptance/M0*/results.json</p>
+  <p class="src" style="margin-top:8px">sources: “/review-2 → /address record” sections of docs/v2/handoffs/M01.md–M09.md · review_loop blocks in docs/v2/acceptance/M0*/results.json</p>
 
-  <h3 style="margin-top:26px">The pending-human-check ledger — 10 open, recorded, never assumed</h3>
+  <h3 style="margin-top:26px">The pending-human-check ledger — 11 open, recorded, never assumed</h3>
   <table>
     <thead><tr><th>Check</th><th style="width:13%">Recorded in</th><th style="width:12%">Gate owner</th><th style="width:26%">Note from the record</th></tr></thead>
     <tbody>
@@ -729,9 +730,10 @@
       <tr><td>native-m06-destination-trial</td><td>M06 results.json · STATUS.json</td><td>M06</td><td>Same phrase across Gmail, Slack, an AI prompt field and Xcode; mid-sentence and selected-text snapshots; secure-field and denied-app behavior — from Terminal.app, which needs its own Accessibility grant.</td></tr>
       <tr><td>native-m07-long-prompt-cleanup-trial</td><td>M07 results.json · STATUS.json</td><td>M07</td><td>Long AI prompts with three constraints, multiple corrections, lists and sign-offs; stage diffs (raw/normalized/cleaned); a protected literal; undo-cleanup without a model rerun — from Terminal.app.</td></tr>
       <tr><td>native-m08-insertion-trial</td><td>M08 results.json · STATUS.json</td><td>M08</td><td>App switch immediately after PTT release; copy image/rich text during processing; undo after a manual edit; two rapid dictations keep order; multi-line into Terminal gets copy-only — from Terminal.app. Also the E10 destination-class certification prerequisite (real surfaces must certify before any bracketed-paste terminal inserts multi-line text).</td></tr>
+      <tr><td>native-m09-hub-trial</td><td>M09 results.json · STATUS.json</td><td>M09</td><td>All five Hub screens at normal and enlarged text/display scale (screenshots requested); keyboard-only navigation; replay and retry of real samples; move/resize/relaunch with window-position restore; one correct + one incorrect review with listening before verbatim on the right example; a narrow span correction; excluded/deleted records disappearing; Diagnostics filters and the bounded redacted export — from Terminal.app.</td></tr>
     </tbody>
   </table>
-  <p class="fact-note" style="margin-top:8px">Closed for comparison: M02’s two human checks passed 2026-09-22 (handoff addendum; five-dictation collection pilot 5/5 joined examples; redaction re-verified against 93 distinct spoken words — zero matches). None of the ten open items gates M09’s automatable work. <span class="src">handoffs/M02.md · handoffs/M06.md · handoffs/M08.md</span></p>
+  <p class="fact-note" style="margin-top:8px">Closed for comparison: M02’s two human checks passed 2026-09-22 (handoff addendum; five-dictation collection pilot 5/5 joined examples; redaction re-verified against 93 distinct spoken words — zero matches). None of the eleven open items gates M10’s automatable work. <span class="src">handoffs/M02.md · handoffs/M06.md · handoffs/M08.md · handoffs/M09.md</span></p>
 
   <h3 style="margin-top:26px">Privacy discipline, enforced by test</h3>
   <p class="measure">Committed artifacts carry hashes, opaque ids, counts and line locators — never transcript text, audio bytes, database rows or credentials. Fixtures are synthetic and origin-tagged; the private evidence root (<code>~/Library/Application Support/LocalFlow/v2-evidence/</code>) stays outside Git; <code>tests/v2/test_baseline_manifest.py</code> fails the build if private-bearing file types appear under <code>docs/</code> or <code>tests/</code>. Every handoff re-states this and every acceptance scan has passed over each new path. <span class="src">contracts/INDEX.md privacy rules · handoffs M01–M06 privacy sections</span></p>
@@ -746,18 +748,19 @@
     <thead><tr><th style="width:30%">Thread</th><th style="width:16%">Owning unit</th><th>State, from the record</th></tr></thead>
     <tbody>
       <tr><td>Release-to-insert latency pilot</td><td>M15</td><td>Pending human since M01 (real speaker, instrumented target); explicitly an M15 gate, carried by every intervening handoff.</td></tr>
-      <tr><td>M03 native checks (four items)</td><td>M03</td><td>Pending with dev-runnable steps; do not gate M09 or anything else’s automatable work.</td></tr>
+      <tr><td>M03 native checks (four items)</td><td>M03</td><td>Pending with dev-runnable steps; do not gate M10 or anything else’s automatable work.</td></tr>
       <tr><td>M04 dictation-profiles trial</td><td>M04</td><td>Pending; runnable on the dev pipeline from Terminal.app.</td></tr>
       <tr><td>M05 dictionary trial</td><td>M05</td><td>Pending; the sandbox half is runnable now, the workspace-scoped live half folds into the M06 destination trial (destination awareness shipped at M06).</td></tr>
       <tr><td>Workspace-scoped dictionary live resolution</td><td>M06</td><td>Shipped in M06 (eea1bd0): site/workspace/app scopes feed the live trio, finalized at release with a frozen-entry rebuild; live verification folds into the M06 destination trial. contracts/vocabulary.md “M06 wiring”.</td></tr>
       <tr><td>M07 long-prompt cleanup trial</td><td>M07</td><td>Pending; runnable on the dev pipeline from Terminal.app — three-constraint prompts, corrections, lists, a protected literal, undo-cleanup. The adjudicated real-text fixture stratum (E04 family) also awaits its human review. handoffs/M07.md.</td></tr>
       <tr><td>M08 insertion trial</td><td>M08</td><td>Pending; runnable on the dev pipeline from Terminal.app — app-switch races, user clipboard copies during processing, undo after manual edits, rapid dictation ordering, terminal multi-line behavior. Doubles as the E10 destination-class certification prerequisite; overlaps the M01 release-to-insert pilot territory (M15 gate). handoffs/M08.md.</td></tr>
+      <tr><td>M09 Hub trial</td><td>M09</td><td>Pending as native-m09-hub-trial (d10886c): screens at two text scales with screenshots, keyboard-only navigation, replay/retry of real samples, window-position restore, a correct/incorrect review pair, a span correction, deleted-record disappearance — the headless suites cover state and the real coordinator; rendering and playback are the live half. handoffs/M09.md.</td></tr>
       <tr><td>Installed pre-M02 app</td><td>M16</td><td>/Applications/LocalFlow.app still runs 7cdd904 code (M01 finding; no build authorized since); the rebuild decision sits with M16’s staged packaging.</td></tr>
       <tr><td>Producer-provenance unknowns</td><td>M01 (recorded)</td><td>stats/dictionary/transforms producer sources were deleted before the audited snapshot — compiled remnants only, interfaces recovered in baseline/manifest.json; the <code>instance.lock</code> producer is unproven. Recorded unresolved with reasons; the import path reads the data files, so nothing waits on it.</td></tr>
       <tr><td>Decision record</td><td>every milestone</td><td>docs/v2/decisions/ is empty (0 entries, 2026-09-22) — no accepted spec deviations; an ADR lands there the day one is accepted.</td></tr>
     </tbody>
   </table>
-  <p class="src" style="margin-top:8px">sources: handoffs/M01.md–M08.md · contracts/vocabulary.md · directory listing of docs/v2/decisions/</p>
+  <p class="src" style="margin-top:8px">sources: handoffs/M01.md–M09.md · contracts/vocabulary.md · directory listing of docs/v2/decisions/</p>
 </section>
 
 <section id="grading">
@@ -767,7 +770,7 @@
   </div>
   <ul class="bars">
     <li><b>Counts come from the registry, never hand-counted.</b> 33 requirements / 22 suites / 0 without a suite, machine-derived from the S05/E08 tables; regenerate with <code>scripts/v2/build_registry.py</code> and cross-check with <code>tests/v2/test_registry.py</code>. A hand-quoted count is a defect.</li>
-    <li><b>An unrun check is never reported as passed.</b> The START_HERE rule, held by every closed milestone (M01–M08): each unavailable human check appears in results.json as pending with exact steps — ten are open right now, and M16 cannot claim verified_complete while required checks remain.</li>
+    <li><b>An unrun check is never reported as passed.</b> The START_HERE rule, held by every closed milestone (M01–M09): each unavailable human check appears in results.json as pending with exact steps — eleven are open right now, and M16 cannot claim verified_complete while required checks remain.</li>
     <li><b>Unknowns are null with a reason.</b> The deleted producer sources and the <code>instance.lock</code> mystery are recorded unresolved in the baseline manifest rather than guessed — “recorded, not forced,” as M01 put it.</li>
     <li><b>Exact denominators, always.</b> The M05 hint matrix reports its 40 labeled bases × 4 conditions; the M04 command corpus reports 16/16 exact and 0/8 false commands; M15’s plan pins 140 clips + 20 negatives before any score is quoted. A percentage without its denominator does not ship.</li>
     <li><b>The review bar is verdict-first and fixes-forward.</b> /review-2 records its verdict before /address touches anything; criticals and warnings are fixed in-session with regression tests; deferrals carry written reasons; all eight records to date end “no findings rejected as incorrect.” Accepting a verdict without fixing, or rejecting findings as incorrect without evidence, fails the bar.</li>
