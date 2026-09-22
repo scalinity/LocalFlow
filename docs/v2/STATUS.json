@@ -1,18 +1,15 @@
 {
   "schema_version": 1,
   "active_milestone": "M02",
-  "status": "implemented_pending_human",
-  "status_reason": "All automatable M02 work and checks are complete: dated event logging (EV-02), the persistent store with lossless legacy import (EV-03), live opt-in training-evidence capture with retention leases (EV-19 initial pack), and the required benchmarks. The human verification items — the UTC/local diagnostic-view inspection, the reopen-and-check of old analytics/settings, and the five-dictation live collection pilot (enable, dictate, mark, pause) — require a human speaker and remain pending. They do not block M03 (resilient capture and restartable inference).",
+  "status": "verified_complete",
+  "status_reason": "All automatable M02 work and checks passed, and both M02 human verification checks completed successfully on 2026-09-22 (UTC/local diagnostic views, redacted-export inspection with legacy totals surviving restart; and the five-dictation live collection pilot with mark/exclude, audio/stage join inspection and pause semantics verified). M02-AC05 is therefore pass. The release-to-insert latency pilot remains pending from M01; it is an M01/M15-gate item, not an M02 obligation.",
   "source_commit": "4bd0187ae2445a472684c9c902c9548f58973ac6",
-  "source_commit_note": "M02 artifacts were authored on top of this commit; the milestone commit that follows records the completed changeset after the /review-2 + /address loop.",
+  "source_commit_note": "M02 was implemented on top of this commit at 50bf457; human verification completed afterwards and is recorded in acceptance/M02/results.json and the handoff addendum.",
   "requirements": ["LF-R02", "LF-R03", "LF-R20", "LF-R25", "LF-R28", "LF-R30"],
   "registry": "docs/v2/registry.json",
   "automated_results": ["docs/v2/acceptance/M02/results.json"],
   "benchmark_runs": ["docs/v2/benchmarks/20260921-230202-m02/m02.json"],
-  "pending_human": [
-    "inspect one dictation in both UTC and local-time diagnostic views/export, reopen the app and verify old analytics/settings survive (M02 human verification)",
-    "live collection pilot: enable collection, dictate ≥5 times, mark one example, inspect its audio/stage join, pause collection, confirm the next dictation is not retained for training (M02-AC05)"
-  ],
+  "pending_human": [],
   "handoff": "docs/v2/handoffs/M02.md",
   "next_milestone": "M03",
   "next_milestone_dependency_eligible": true
