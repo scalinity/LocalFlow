@@ -1,21 +1,18 @@
 {
   "schema_version": 1,
-  "active_milestone": "M03",
+  "active_milestone": "M04",
   "status": "implemented_pending_human",
-  "status_reason": "All automatable M03 work and checks passed on post-review code (13 automated suites incl. four new lifecycle suites, model-backed live pipeline/worker/cleanup suites, benchmarks re-run after the review fixes). The /review-2 → /address loop completed: the one critical (watchdog killing hands-free captures) and every warning from both reviewers were fixed in-session with regression tests; deferred suggestions are recorded with reasons in acceptance/M03/results.json. Pending are the milestone's native human checks (unplug/replug a microphone mid-dictation, native Fn taps during processing, quit/reopen mid-dictation with recovery inspection, native hands-free/mouse-trigger firing) — none gates M04's automatable work.",
-  "source_commit": "95f92dd1f9e288b5b83b0268794cd07b9c59dd8c",
-  "source_commit_note": "M03 was implemented on top of this commit (M02 close-out); the M03 commit follows.",
-  "requirements": ["LF-R04", "LF-R05", "LF-R27", "LF-R28", "LF-R29", "LF-R30"],
+  "status_reason": "All automatable M04 work and checks passed on post-review code (4 new normalization suites incl. the 140 owning fixtures, all M01/M02/M03 suites, both model-backed suites, benchmark re-run after review fixes at P95 4.27 ms vs the 25 ms budget). The /review-2 → /address loop completed: all 3 criticals and every warning from both reviewers were fixed in-session with regression tests (the AC04 scan was vacuous and now verifiably scans); deferred suggestions carry reasons in acceptance/M04/results.json. Pending is the milestone's native human dictation check (versions, percentages, an address, slash prose across profiles) — it does not gate M05's automatable work.",
+  "source_commit": "adc872bd0c34b4f38e9c1a5f3f99ce8b31d9c1ab",
+  "source_commit_note": "M04 was implemented on top of this commit (M03 close-out); the M04 commit follows.",
+  "requirements": ["LF-R06", "LF-R07", "LF-R28", "LF-R30"],
   "registry": "docs/v2/registry.json",
-  "automated_results": ["docs/v2/acceptance/M03/results.json"],
-  "benchmark_runs": ["docs/v2/benchmarks/20260922-011459-m03/m03.json"],
+  "automated_results": ["docs/v2/acceptance/M04/results.json"],
+  "benchmark_runs": ["docs/v2/benchmarks/20260922-012259-m04/m04.json"],
   "pending_human": [
-    "native-mic-unplug-replug-during-dictation",
-    "native-fn-taps-during-processing",
-    "native-quit-reopen-mid-dictation-recovery-inspection",
-    "native-hands-free-and-mouse-trigger-firing"
+    "native-m04-dictation-profiles"
   ],
-  "handoff": "docs/v2/handoffs/M03.md",
-  "next_milestone": "M04",
+  "handoff": "docs/v2/handoffs/M04.md",
+  "next_milestone": "M05",
   "next_milestone_dependency_eligible": true
 }

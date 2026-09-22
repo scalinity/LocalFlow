@@ -9,7 +9,17 @@
       "planned_count": 320,
       "composition": "80 numbers/units/dates; 60 syntax/paths/skills; 40 vocabulary; 60 fidelity; 40 structure; 20 multilingual; 20 literal/quoted commands",
       "owner_milestone": "M04-M07",
-      "status": "reserved"
+      "status": "partial",
+      "m04_created": {
+        "note": "M04 created its two owning strata under tests/v2/normalization/ (fixture files live there, not in this directory); counts are owned fixtures, never claimed totals for the 320-case family.",
+        "numbers_units_dates": 80,
+        "syntax_paths_skills": 60,
+        "fixture_files": [
+          "tests/v2/normalization/fixtures_numeric.json",
+          "tests/v2/normalization/fixtures_syntax.json"
+        ],
+        "short_command_text_counterparts": 24
+      }
     },
     {
       "family": "adjudicated_real_text",

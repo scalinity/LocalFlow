@@ -14,6 +14,7 @@
 | `store.md` | SQLite store: writer discipline, identities, leases, deletion | M02 | S08, S29 |
 | `worker.md` | Model-worker subprocess protocol, generations, fault policy | M03 | S06, S09 |
 | `capture.md` | Durable capture journal format and crash recovery | M03 | S06, S09 |
+| `normalization.md` | Typed spans, edit ledger, precedence, policies | M04 | S10, S14, S24, S29.4 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
@@ -50,4 +51,8 @@ milestones add fields; they must not repurpose or weaken these identifiers.
 - ADRs live in `../decisions/` when a milestone accepts a deviation; M01
   and M02 recorded none. M03 ships `worker.md`/`capture.md` as new
   contracts and extends `asr_hints.md`/`store.md` in place without
-  repurposing any frozen identifier.
+  repurposing any frozen identifier. M04 ships `normalization.md`
+  (parent-process placement, precedence/conflict rules, the documented
+  literal-escape idempotence corner) and extends
+  `training_evidence.md`'s normalization family to live capture; no
+  frozen identifier changed.

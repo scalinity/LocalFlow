@@ -42,3 +42,21 @@ export permission and comparator upload are four different states.
 M01 defines identifiers and null discipline only. No production collection
 layer, no database tables, no UI — those are M02. Historical outputs are
 not on-policy training data; nothing in M01 labels them as such.
+
+## M04 live status (normalization family)
+
+The S29.4 normalization field family is now captured live: with
+collection enabled, `EvidenceCollector.on_normalization_result` writes
+the normalized-text artifact and the full typed edit ledger (accepted
++ rejected + protected proposals, parent = the raw transcript
+artifact) as lease-governed store artifacts, and the envelope's
+`normalization` block carries the policy revision, per-edit
+ops/values/units/exact spans, counts, and the evaluated idempotence
+bool. Envelope values are typed numbers and date/time forms only —
+string-valued command classes (emails, paths, skill tokens, codes)
+keep their strings in the lease-governed ledger artifact, never in the
+envelope (S29.14). Replay reconstructs the output from the retained
+raw artifact plus the ledger (AC05). When the stage does not run
+(profile `off`, policy-load failure, or the pre-M04 collector path),
+the envelope keeps the honest `not_captured_at_stage` reason. See
+`normalization.md` for the stage contract.

@@ -55,6 +55,14 @@ DEFAULTS = {
     # M03 (Spec S09): optional hold-to-dictate on a non-primary mouse
     # button — "middle", "right", or null for none.
     "mouse_trigger": None,
+    # M04 (Spec S10): typed numeric and spoken-syntax normalization,
+    # running between ASR and cleanup. Profile "technical" converts
+    # integers/ordinals in technical contexts plus all typed forms;
+    # "standard" keeps bare integers as words; "off" skips the stage.
+    "normalization_profile": "technical",
+    # Locale drives number rendering (separators, symbols, date shape);
+    # it belongs to the job, not the machine's location (S10).
+    "normalization_locale": "en-US",
 }
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent

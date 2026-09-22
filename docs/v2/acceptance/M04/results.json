@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "milestone": "M04",
+  "evaluated_utc": "2026-09-22T05:24:00Z",
+  "working_directory": "/Users/danny/Documents/Tools/LocalFlow",
+  "base_commit": "adc872bd0c34b4f38e9c1a5f3f99ce8b31d9c1ab",
+  "environment": {
+    "python": "3.14.7 (.venv)",
+    "machine": "Apple M5 Pro 48GB, macOS 27.0",
+    "models_cached": true,
+    "offline": true
+  },
+  "acceptance_criteria": {
+    "M04-AC01": {
+      "statement": "All 140 owning numeric/syntax fixtures pass; incorrect sign, value, unit, version or skill-token changes are rejected.",
+      "status": "pass_automated",
+      "evidence": "tests/v2/normalization/test_normalize_numbers.py (80/80 exact, 16 negative controls) and test_normalize_syntax.py (60/60 exact, 18 negative controls) on post-review code; invalid octets/days/versions surface as rejected proposals with reasons (invalid_octet, invalid_day, invalid_version, unanchored_version) and are never applied; protected values carry typed value+unit evidence."
+    },
+    "M04-AC02": {
+      "statement": "Explicit literal and non-command counterexamples remain unconverted.",
+      "status": "pass_automated",
+      "evidence": "test_normalize_syntax.py::test_literal_and_noncommand_stay_unconverted plus the 34 negative-control fixtures across both files (prose guards: 'one of the reasons', 'the number one reason', 'a dash of salt', 'the period of adjustment', 'fourth period', noun compounds 'grace/trial period', quantified scales 'a few hundred people', 'slash the budget', 'the dot com era', quoted instructions)."
+    },
+    "M04-AC03": {
+      "statement": "Applying normalization twice produces identical text and no duplicate changes.",
+      "status": "pass_automated",
+      "evidence": "test_normalize_numbers.py::test_idempotence_all_fixtures and test_normalize_syntax.py::test_idempotence_all_fixtures assert f(f(x))==f(x) with an empty second ledger on all 140 fixtures. Two fixtures (LF-SYN-003, LF-SYN-005) declare idempotence_expected:false — the documented literal-escape corner (an escape emitting a bare command word/phrase re-matches its command grammar on a second full pass); is_idempotent() reports False for them honestly (test_normalize_syntax.py::test_escape_corner_reported_honestly) and the pipeline re-normalizes only raw ASR output, never normalized text."
+    },
+    "M04-AC04": {
+      "statement": "No parser path invokes a shell, sends Enter or executes a discovered skill.",
+      "status": "pass_automated",
+      "evidence": "test_normalize_syntax.py::test_no_shell_no_enter_no_skill_execution: word-boundary static scan of all 7 package modules against banned tokens (subprocess/os.system/os.popen/eval(/exec(/__import__/importlib/ctypes/os.exec/os.spawn/os.fork/pty/from subprocess/CGEvent/Quartz/open(/urllib/requests/socket/http) with a non-empty-scan guard naming the expected modules, plus module-namespace import checks and a behavioral proof that emitting /brainstorm produces text only. Review note: the original scan computed its path one level too high and passed vacuously (CA1 critical); fixed with parents[3] + the module-set assertion — verified to scan 7 files."
+    },
+    "M04-AC05": {
+      "statement": "Each normalization result can be replayed from retained input, policy and ledger; number-word-to-digit changes are scored separately from lexical ASR.",
+      "status": "pass_automated",
+      "evidence": "test_normalize_numbers.py::test_ledger_replay (all 80 fixtures replay byte-exact); test_normalization_pipeline.py::test_evidence_envelope_and_ledger_replay (ledger artifact + raw transcript artifact replay through the real store with consent enabled); scoring.separate_scores counts number-word-to-digit edits apart from other edits (test_short_command_scoring.py); span_types.NUMERIC_CLASSES drives the separate counting and training.py records number_word_to_digit_count in the envelope."
+    },
+    "M04-AC06": {
+      "statement": "Short/literal command controls cannot convert ordinary slash prose into an unintended registered token.",
+      "status": "pass_automated",
+      "evidence": "test_normalize_syntax.py::test_slash_prose_never_converts ('slash the budget', 'slash brainstorms', 'budget slash spending', 'slash brainstorming ideas', 'we should slash costs and brainstorm' with a populated registry) and test_short_command_scoring.py (false-command rate 0/8 on non-command controls)."
+    }
+  },
+  "human_verification": [
+    {
+      "id": "native-m04-dictation-profiles",
+      "kind": "native-Mac human-only",
+      "status": "pending",
+      "steps": "From Terminal.app run ./run.sh (dev pipeline). In the technical profile dictate: a version ('version one point two six point four'), a percentage ('twelve percent'), an address ('one ninety two dot one sixty eight dot one dot ten'), a registered-skill phrase once M05 registers one (until then any slash phrase must stay literal), and the prose phrase 'slash the budget'. Expected: version 1.26.4, 12%, 192.168.1.10, literal slash prose. Then switch normalization_profile to 'standard' and confirm bare integers stay words while percentages still convert. Inspect one collected example's normalization ledger via the store."
+    }
+  ],
+  "checks": [
+    {"name": "M01 legacy parser", "command": ".venv/bin/python tests/v2/test_legacy_parser.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M01 registry", "command": ".venv/bin/python tests/v2/test_registry.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M01 baseline manifest (incl. privacy scan)", "command": ".venv/bin/python tests/v2/test_baseline_manifest.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass (all-reserved invariant)", "post_change": "pass (honest-status invariant; updated by M04 as the first fixture-creating milestone)", "post_review": "pass (generic *_created blocks)"},
+    {"name": "M01 snapshot safety", "command": ".venv/bin/python tests/v2/test_snapshot_safety.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 event writer", "command": ".venv/bin/python tests/v2/logging/test_event_writer.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 store", "command": ".venv/bin/python tests/v2/storage/test_store.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 import", "command": ".venv/bin/python tests/v2/storage/test_import.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 collector", "command": ".venv/bin/python tests/v2/training/test_collector.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 worker protocol", "command": ".venv/bin/python tests/v2/lifecycle/test_worker_protocol.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 capture journal", "command": ".venv/bin/python tests/v2/lifecycle/test_capture_journal.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 audio fidelity", "command": ".venv/bin/python tests/v2/lifecycle/test_audio_fidelity.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 lifecycle (app level)", "command": ".venv/bin/python tests/v2/lifecycle/test_lifecycle.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "stuck overlay", "command": ".venv/bin/python tests/test_stuck_overlay.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M04 numeric suite (EV-06)", "command": ".venv/bin/python tests/v2/normalization/test_normalize_numbers.py", "cwd": "repo root", "kind": "automated", "post_change": "pass", "post_review": "pass (9 tests incl. review regressions)"},
+    {"name": "M04 syntax suite (EV-06)", "command": ".venv/bin/python tests/v2/normalization/test_normalize_syntax.py", "cwd": "repo root", "kind": "automated", "post_change": "pass", "post_review": "pass (11 tests; AC04 scan verified non-vacuous after review)"},
+    {"name": "M04 short-command scoring (E18.4 text)", "command": ".venv/bin/python tests/v2/normalization/test_short_command_scoring.py", "cwd": "repo root", "kind": "automated", "post_change": "pass", "post_review": "pass"},
+    {"name": "M04 pipeline integration", "command": ".venv/bin/python tests/v2/normalization/test_normalization_pipeline.py", "cwd": "repo root", "kind": "automated", "post_change": "pass", "post_review": "pass"},
+    {"name": "live pipeline (model-backed)", "command": ".venv/bin/python tests/v2/training/test_live_pipeline.py", "cwd": "repo root", "kind": "model-backed", "pre_change": "pass 2/2", "post_change": "pass 2/2", "post_review": "pass 2/2 (real Parakeet/Qwen, offline)"},
+    {"name": "cleanup tier (model-backed)", "command": ".venv/bin/python tests/test_cleanup.py", "cwd": "repo root", "kind": "model-backed", "pre_change": "pass 51/51 (46.3s)", "post_change": "pass 51/51 (44.8s)", "post_review": "pass 51/51 (48.1s)"},
+    {"name": "M04 benchmark", "command": ".venv/bin/python scripts/v2/benchmark_m04.py --out docs/v2/benchmarks", "cwd": "repo root", "kind": "automated (no model call)", "post_change": "long_500 p95 4.77ms", "post_review": "long_500 p95 4.27ms; long_500_plain p95 3.42ms (target <=25ms)"}
+  ],
+  "benchmark_summary": {
+    "run": "docs/v2/benchmarks/20260922-012259-m04/m04.json",
+    "target": "P95 <= 25 ms for a 500-word input (S24), no model call",
+    "short_p95_ms": 0.222,
+    "medium_p95_ms": 1.071,
+    "long_500_p95_ms": 4.273,
+    "long_500_plain_p95_ms": 3.418,
+    "model_call": false
+  },
+  "review_loop": {
+    "review": "/review-2 (two parallel read-only reviewers: bug-hunting debugger; architecture/quality/security/data-integrity auditor) over the M04 changeset vs adc872b",
+    "verdict_before_address": "Request Changes",
+    "findings_before_address": {"critical": 3, "warnings": 7, "suggestions": 16},
+    "findings_addressed": [
+      "C1 (DB1, corroborated class): bare 'hundred' after quantifiers corrupted prose on the default profile ('a few hundred people' → 'a few 100 people', 'some hundred dollars' → 'some $100') — quantifier guard added in grammar_integer and centrally in _quantity_before; regression test test_quantified_scale_is_prose.",
+      "C2 (DB1): 'period' symbol command fired on noun compounds ('grace period' → 'grace.') — blocker_prev guard mechanism + list added (incl. copulas); regression test test_symbol_noun_compounds_stay_prose.",
+      "C3 (CA1): the AC04 static scan computed its package path one level too high (tests/localflow/... nonexistent) and passed vacuously, masked by policy.py's 'open(' — path fixed to parents[3], policy loader switched to Path.read_text, non-empty-scan assertion naming the 7 expected modules added; verified the scan now actually scans.",
+      "W1: app.py policy-fallback could itself raise on a corrupt policy file, crashing startup — fallback is now None + guarded call sites + honest pipeline_info omission.",
+      "W2: unanchored time grammar converted ordinal speech ('chapter five thirty two' → 'chapter 5:32') — time grammar now gated on utterance-initial position or a time preposition; regression test.",
+      "W3: AC04 banned-token gaps (eval/exec/__import__/importlib/ctypes/os.exec/os.spawn/os.fork/pty/from-subprocess) — list extended with word-boundary matching so 'pty' does not hit 'empty'.",
+      "W4: is_idempotent evaluated without the pass-1 context and read a private attr; evaluation failure left an unexplained null — context now passed through, public idempotence accessor added, idempotent_reason recorded (null-with-reason).",
+      "W5: envelope per-edit values carried transcript-derived PII strings (emails, paths, skill tokens) that would outlive the leased artifacts — envelope values now restricted to typed numeric/date/time classes (_VALUE_SAFE_CLASSES); string-valued classes keep their strings in the ledger artifact only.",
+      "W6: manifest count invariant validated keys by string coincidence and hardcoded m04_created — now generic over *_created blocks with every int count asserted positive.",
+      "W7: dead code removed (identical _quantity_before branches, 'if True:' in grammar_date, no-op if/else in training._envelope).",
+      "S1: from_config now raises on unknown profile/locale so app.py logs normalization.policy_invalid and degrades explicitly (never silent re-direction).",
+      "S3: 'through' and 'comma' added to the integer stop set ('items one through five' stays words).",
+      "S9: policy_revision hashes canonical policy-file content, not the revision string — edited tables can never share a revision id.",
+      "S10: same-span ambiguity now triggers on differing outputs regardless of class, matching the contract comment.",
+      "S11: 'port' anchor moved from a hardcoded literal into the profile (port_anchors).",
+      "S12: duplicated year-consumption block extracted into _optional_year.",
+      "S13: test scaffolding leftovers removed (dead states list, unused patch bindings, unasserted category counter).",
+      "S14: benchmark gains a 500-word plain-prose (no-match) size exercising the pure-scan path.",
+      "S15: training_evidence.md insertion had split the M01 section's closing sentence — restored; M04 section updated with the value-policy.",
+      "S16: fixture email switched from a plausibly-real address to the synthetic danny@localflow.dev form.",
+      "CA1-W3 (immutability): policy tables/maps are now MappingProxyType views; post-construction mutation cannot silently change behavior under a stale revision."
+    ],
+    "findings_deferred": [
+      "DB1-S4: numbers with quote glyphs glued to the word ('\"twelve' tokens) stay unconverted while spaced quotes convert — safe direction, no corruption; revisit with M07 cleanup interplay.",
+      "DB1-S5: a single oversize version component without any 'point' (e.g. 'version two thousand') produces no review proposal — without a 'point' it is not version-shaped and the integer grammar leaves it as words; no contract obligation to flag.",
+      "DB1-S6: the unknown-skill review suggestion is inert in production until M05 registers skills — the grammar, fixtures and preview API exercise it; the live registry arrives with M05 by design.",
+      "DB1-S7: consecutive block commands ('new bullet new bullet item') leave one trailing space — rare corner; fixing it would complicate block edge rules for no fixture-relevant case.",
+      "CA1-S8: ContextSnapshot.destination_app/path_context stay as the documented minimal M06 interface (milestone task: document required fields without speculative implementation); nothing reads them."
+    ],
+    "findings_rejected": [],
+    "post_address_verification": "All 17 fast suites + 2 model-backed suites + benchmark re-run green on post-review code; the previously vacuous AC04 scan verified to scan all 7 package modules."
+  },
+  "privacy": "Committed artifacts carry synthetic fixtures, hashes and counts only; the baseline-manifest privacy scan passes over every new path; envelope values restricted to typed numerics so no transcript-derived strings outlive artifact leases; live events remain content-free."
+}

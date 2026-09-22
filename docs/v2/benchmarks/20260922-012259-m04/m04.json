@@ -1,0 +1,46 @@
+{
+  "benchmark": "m04_normalization",
+  "target": "P95 <= 25 ms for a 500-word input, no model call",
+  "policy_revision": "m04:96d108944a57",
+  "model_call": false,
+  "environment": {
+    "python": "3.14.7",
+    "machine": "arm64",
+    "system": "Darwin",
+    "macos": "27.0"
+  },
+  "sizes": {
+    "short": {
+      "words": 23,
+      "chars": 129,
+      "iterations": 300,
+      "p50_ms": 0.201,
+      "p95_ms": 0.222,
+      "max_ms": 0.334
+    },
+    "medium": {
+      "words": 124,
+      "chars": 658,
+      "iterations": 100,
+      "p50_ms": 1.017,
+      "p95_ms": 1.071,
+      "max_ms": 1.098
+    },
+    "long_500": {
+      "words": 502,
+      "chars": 2760,
+      "iterations": 40,
+      "p50_ms": 4.187,
+      "p95_ms": 4.273,
+      "max_ms": 4.301
+    },
+    "long_500_plain": {
+      "words": 504,
+      "chars": 3149,
+      "iterations": 40,
+      "p50_ms": 3.286,
+      "p95_ms": 3.418,
+      "max_ms": 3.438
+    }
+  }
+}

@@ -87,12 +87,29 @@ def test_no_private_files_in_repo_docs_or_tests():
 def test_fixture_manifest_reserved_only():
     fm = json.loads((ROOT / "tests/v2/fixtures/manifest.json").read_text())
     assert fm["test_manifest_reservation"]["families_assigned"] == 0
+    allowed = {"reserved", "partial", "complete"}
     for fam in fm["families"]:
-        assert fam["status"] == "reserved", fam["family"]
+        assert fam["status"] in allowed, fam["family"]
         assert fam["planned_count"] > 0 and fam["owner_milestone"]
+        if fam["status"] != "reserved":
+            # A family with created fixtures must carry one or more
+            # <milestone>_created blocks; every count inside them is
+            # positive and auditable — never silent (M04 first
+            # exercised this for its two strata).
+            created = {k: v for k, v in fam.items()
+                       if k.endswith("_created")}
+            assert created, fam["family"]
+            for key, block in created.items():
+                assert isinstance(block, dict), (fam["family"], key)
+                counted = {k: v for k, v in block.items()
+                           if isinstance(v, int)}
+                assert counted, (fam["family"], key)
+                for name, val in counted.items():
+                    assert val > 0, (fam["family"], key, name)
     total = sum(f["planned_count"] for f in fm["families"])
     assert total == 320 + 60 + 80 + 60 + 20 + 100 + 30 + 32 + 24, total
-    print(f"ok  fixture families reserved ({total} planned cases, none claimed)")
+    print(f"ok  fixture families honest ({total} planned; created strata "
+          f"carry owners and counts)")
 
 
 if __name__ == "__main__":

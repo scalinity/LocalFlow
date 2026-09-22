@@ -38,6 +38,7 @@ from .inject import copy_text, paste_text
 from .overlay import MODE_FAILED, MODE_PROCESSING, MODE_RECORDING, Overlay
 from .permissions import ensure_permissions
 from .v2 import capture_journal
+from .v2 import normalize as v2_normalize
 from .v2.supervisor import WorkerFailure, WorkerSupervisor
 
 STATE_IDLE = "idle"
@@ -127,6 +128,21 @@ class AppDelegate(NSObject):
         self._capability_manifest = v2.capabilities.asr_capability_manifest(
             cfg["model"], model_revision=self._asr_revision,
             runtime=v2.training.runtime_versions())
+        # M04 (Spec S10): typed normalization runs in THIS parent process
+        # on the coordinator thread — it is deterministic, model-free
+        # code, so the worker subprocess (whose whole point is isolating
+        # Metal/MLX faults, Spec S06) gains no new protocol op for it.
+        # A bad knob or unreadable policy file degrades to stage-off with
+        # an event — never a startup crash, never silent re-direction.
+        self._norm_policy = None
+        try:
+            self._norm_policy = v2_normalize.NormalizationPolicy.from_config(
+                cfg)
+        except Exception as e:
+            self.v2log.emit("normalization.policy_invalid", level="WARNING",
+                            reason_code=type(e).__name__,
+                            outcome="stage_disabled")
+        self._norm_context = None  # M06 feeds destination/path context
         self.overlay = None
         self.hotkey = None
         self.mouse_trigger = None
@@ -171,6 +187,12 @@ class AppDelegate(NSObject):
                        "cleanup": self.cfg["cleanup_model"],
                        "cleanup_revision": clean_rev},
             "runtime": v2.training.runtime_versions(),
+            # M04: the normalization policy revision that produced each
+            # example's typed edits (S29.4 normalization field family).
+            # Absent when the policy failed to load (stage off).
+            **({"normalization_policy_revision":
+                self._norm_policy.policy_revision}
+               if self._norm_policy is not None else {}),
         }
 
     # ---- lifecycle ----------------------------------------------------
@@ -827,6 +849,46 @@ class AppDelegate(NSObject):
                     self.v2log.emit("training.capture_failed", level="ERROR",
                                     job_id=job_id,
                                     reason_code=type(e).__name__)
+                # M04 (Spec S10): typed normalization between ASR and
+                # cleanup, in this process (deterministic, model-free).
+                # A normalization bug must never drop a dictation: any
+                # exception passes the raw transcript through.
+                norm_text = raw
+                norm_result = None
+                if raw and self._norm_policy is not None \
+                        and self._norm_policy.profile != "off":
+                    self._job_state(job_id, "normalizing")
+                    tn = time.monotonic()
+                    try:
+                        norm_result = v2_normalize.normalize(
+                            raw, self._norm_policy, self._norm_context)
+                        norm_text = norm_result.text
+                    except Exception as e:
+                        self.v2log.emit(
+                            "normalization.failed", level="WARNING",
+                            job_id=job_id, reason_code=type(e).__name__,
+                            outcome="raw_passthrough")
+                    self.v2log.emit(
+                        "stage.completed", level="INFO", job_id=job_id,
+                        attempt=job["attempt"], stage="normalizing",
+                        duration_ms=round(
+                            (time.monotonic() - tn) * 1000, 2),
+                        outcome=(None if norm_result is None else
+                                 f"edits:{len(norm_result.edits)}"
+                                 f"/rejected:{len(norm_result.rejected)}"),
+                        detail=(None if norm_result is None else
+                                norm_result.policy_revision))
+                    try:
+                        if ctx is not None and norm_result is not None:
+                            self.collector.on_normalization_result(
+                                ctx, norm_result, source_text=raw,
+                                policy=self._norm_policy,
+                                context=self._norm_context)
+                    except Exception as e:
+                        self.v2log.emit("training.capture_failed",
+                                        level="ERROR", job_id=job_id,
+                                        reason_code=type(e).__name__)
+                job["normalized"] = norm_text
                 self._job_state(job_id, "cleaning")
                 if raw:
                     if (self.cfg["cleanup"] == "llm"
@@ -840,7 +902,8 @@ class AppDelegate(NSObject):
                             float(self.cfg.get("cleanup_wait_timeout_sec",
                                                120)))
                     res2 = self.supervisor.clean(
-                        job_id=job_id, attempt=job["attempt"], raw_text=raw)
+                        job_id=job_id, attempt=job["attempt"],
+                        raw_text=norm_text)
                     if res2.get("retried") and job_id:
                         self._bump_attempt(job, job_id)
                     job["attempt"] = res2.get("attempt", job["attempt"])

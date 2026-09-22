@@ -14,6 +14,7 @@ job/family/example/revision IDs. Fields the current pipeline cannot honestly
 supply carry reasons from the controlled vocabulary, never guesses.
 """
 
+import json
 import re
 
 from . import ids
@@ -27,6 +28,23 @@ R_CONSENT = "consent_disabled"
 R_DELETED = "source_deleted"
 R_UNRELIABLE = "unreliable_target"
 R_NOT_APPLICABLE = "not_applicable"
+
+# Envelope value policy for normalization edits (M04): only typed
+# numbers and date/time forms ride in the envelope. String-valued
+# command classes (skill tokens, paths, emails, domains, identifiers,
+# codes, phones, IPs, versions, dotfiles) carry transcript-derived
+# strings — those stay in the lease-governed ledger artifact (S29.14
+# retention hygiene).
+_VALUE_SAFE_CLASSES = frozenset({
+    "integer", "anchored_integer", "unit_number", "decimal", "percent",
+    "percentage_points", "currency", "time", "date", "port", "dimension",
+})
+
+
+def _envelope_value(edit):
+    if edit.cls not in _VALUE_SAFE_CLASSES or edit.value is None:
+        return None
+    return str(edit.value)
 
 SECRET_PATTERNS = [
     re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -109,6 +127,10 @@ class CaptureContext:
         self.decode_ranges = None      # M03: original-sample model-input map
         self.cleanup_path = None       # M03: actual path (never a mislabel)
         self.cleanup_fallback_reason = None
+        # M04 (S29.4 normalization family): typed edits + ledger replay
+        self.normalization = None
+        self.norm_text_artifact = None
+        self.norm_ledger_artifact = None
         self.raw_artifact = None
         self.raw_text = None
         self.applied_artifact = None
@@ -233,6 +255,95 @@ class EvidenceCollector:
         if ctx is None or not ctx.collecting:
             return
         ctx.cleanup_observations.append(obs)
+
+    def on_normalization_result(self, ctx, result, source_text=None,
+                                policy=None, context=None):
+        """M04 (S29.4): retain the normalized text and the full typed edit
+        ledger (accepted AND rejected proposals) as store artifacts, and
+        keep the content-free summary for the envelope. The envelope
+        carries spans/values/ops/counts — never transcript payloads that
+        outlive retention; replay pulls the text from these artifacts.
+        A store failure is swallowed: evidence must never fail the stage."""
+        if not ctx.collecting or result is None or ctx.example_id:
+            return
+        try:
+            src = source_text if source_text is not None else ""
+            if result.text != src:
+                ctx.norm_text_artifact = self.store.write_text_artifact(
+                    job_id=ctx.job_id, stage="normalization",
+                    role="normalized_text", text=result.text,
+                    retention_class="training",
+                    parent_artifact_id=ctx.raw_artifact,
+                    meta={"policy_revision": result.policy_revision})
+                self.store.grant_lease(
+                    ctx.norm_text_artifact, "training",
+                    days=self.store.retention_days["training_buffer"])
+            ctx.norm_ledger_artifact = self.store.write_text_artifact(
+                job_id=ctx.job_id, stage="normalization",
+                role="normalization_ledger",
+                text=json.dumps(result.to_json(), ensure_ascii=False,
+                                sort_keys=True),
+                kind="ledger_json", retention_class="training",
+                parent_artifact_id=ctx.raw_artifact,
+                meta={"policy_revision": result.policy_revision,
+                      "edits": len(result.edits),
+                      "rejected": len(result.rejected)})
+            self.store.grant_lease(
+                ctx.norm_ledger_artifact, "training",
+                days=self.store.retention_days["training_buffer"])
+        except Exception:
+            return
+        # Idempotence evaluated at capture time when the policy object is
+        # available (S29.4: "idempotence result when evaluated") — the
+        # honest bool, including the documented escape corner. The second
+        # pass uses the SAME context as the first; a failed evaluation is
+        # null-with-reason, never a guessed false.
+        idem_reason = "not_evaluated"
+        if policy is not None:
+            try:
+                result.is_idempotent(policy, context)
+                idem_reason = None
+            except Exception:
+                idem_reason = "evaluation_failed"
+        # Envelope values: typed numbers/dates only. String-valued
+        # command classes (emails, paths, skill tokens, codes…) carry
+        # transcript-derived text in their value; those strings live in
+        # the lease-governed ledger artifact, never in the envelope
+        # (retention hygiene, S29.14).
+        ctx.normalization = {
+            "policy_revision": result.policy_revision,
+            "edits_count": len(result.edits),
+            "rejected_count": len(result.rejected),
+            "protected_count": len(result.protected),
+            "number_word_to_digit_count": result.number_word_to_digit_count,
+            "idempotent": result.idempotence,
+            **({"idempotent_reason": idem_reason}
+               if idem_reason else {}),
+            "class_counts": result.class_counts(),
+            # Per-edit typed evidence: ops, values, units and exact
+            # source/output spans — the strings live in the ledger
+            # artifact, not the envelope (retention hygiene, S29.14).
+            "edits": [
+                {"cls": e.cls, "op": e.op,
+                 "input_span": e.input_span.as_pair(),
+                 "output_span": e.output_span.as_pair(),
+                 "value": (_envelope_value(e)),
+                 "unit": e.unit, "layer": e.layer,
+                 "reason": e.reason}
+                for e in result.edits
+            ],
+            "rejected": [
+                {"cls": r.cls, "op": r.op, "span": r.span.as_pair(),
+                 "reason": r.reason,
+                 "unit": r.unit}
+                for r in result.rejected
+            ],
+            "protected": [p.to_json() for p in result.protected],
+            "artifact_ids": {
+                "normalized_text": ctx.norm_text_artifact,
+                "ledger": ctx.norm_ledger_artifact,
+            },
+        }
 
     def on_cleanup_result(self, ctx, applied_text, *, path=None,
                           fallback_reason=None):
@@ -444,7 +555,7 @@ class EvidenceCollector:
             model_revision=(policy.get("models") or {}).get("asr_revision"),
             runtime=(policy.get("runtime") or {}))
         missing = {
-            "normalization": R_NOT_CAPTURED,        # M04
+            "normalization": R_NOT_CAPTURED,        # M04 when stage skipped
             "context": R_NOT_CAPTURED,              # M06
             "asr_word_timestamps": caps.missing_reason_for(
                 "word_timestamps", manifest),
@@ -487,6 +598,13 @@ class EvidenceCollector:
         else:
             audio_preparation = None
             missing["audio_preparation"] = R_NOT_CAPTURED
+        # M04 (S29.4): the normalization family exists exactly when the
+        # stage ran; otherwise the honest missing reason stays.
+        normalization = ctx.normalization
+        if normalization is not None:
+            del missing["normalization"]
+            artifact_ids["normalization"] = (
+                ctx.norm_text_artifact or ctx.norm_ledger_artifact)
         env = {
             "training_schema_version": 1,
             "example_id": ctx.example_id,
@@ -505,6 +623,7 @@ class EvidenceCollector:
             "capture": capture,
             "audio_preparation": audio_preparation,
             "recognition": dict(ctx.capture_meta.get("recognition", {})),
+            "normalization": normalization,
             "cleanup": cleanup_detail,
             "artifact_ids": artifact_ids,
             "missing_reasons": missing,
