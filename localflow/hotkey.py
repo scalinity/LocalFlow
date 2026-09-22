@@ -9,6 +9,10 @@ from AppKit import (
     NSEvent,
     NSEventMaskFlagsChanged,
     NSEventMaskKeyDown,
+    NSEventMaskOtherMouseDown,
+    NSEventMaskOtherMouseUp,
+    NSEventMaskRightMouseDown,
+    NSEventMaskRightMouseUp,
     NSEventModifierFlagCommand,
     NSEventModifierFlagFunction,
     NSEventModifierFlagOption,
@@ -90,3 +94,59 @@ class HotkeyListener:
         # (e.g. fn+arrow), not dictation — let the app cancel.
         if self.held:
             self.on_other_key()
+
+
+class MouseTriggerListener:
+    """Configurable hold-to-dictate on a non-primary mouse button (S09,
+    M03 task 4). ``button`` is "middle" (button 2) or "right" (button 1);
+    the primary button is deliberately not offered. Same press/release
+    contract as HotkeyListener."""
+
+    BUTTONS = {
+        "middle": (2, NSEventMaskOtherMouseDown, NSEventMaskOtherMouseUp),
+        "right": (1, NSEventMaskRightMouseDown, NSEventMaskRightMouseUp),
+    }
+
+    def __init__(self, button, on_press, on_release):
+        if button not in self.BUTTONS:
+            raise ValueError(f"unknown mouse button {button!r}; use one of"
+                             f" {list(self.BUTTONS)}")
+        self.button = button
+        self.button_number, down_mask, up_mask = self.BUTTONS[button]
+        self.on_press = on_press
+        self.on_release = on_release
+        self.held = False
+        self._monitors = []
+
+    def start(self):
+        for mask, handler in (
+                (self.BUTTONS[self.button][1], self._down),
+                (self.BUTTONS[self.button][2], self._up)):
+            self._monitors.append(
+                NSEvent.addGlobalMonitorForEventsMatchingMask_handler_(
+                    mask, handler))
+
+    def stop(self):
+        for m in self._monitors:
+            NSEvent.removeMonitor_(m)
+        self._monitors = []
+
+    def physically_down(self):
+        """Live hardware state of the button (bitmask of pressed buttons),
+        so a lost mouse-up can be recovered by the same watchdog
+        discipline as the hotkey."""
+        try:
+            return bool(NSEvent.pressedMouseButtons()
+                        & (1 << self.button_number))
+        except Exception:
+            return False
+
+    def _down(self, event):
+        if event.buttonNumber() == self.button_number and not self.held:
+            self.held = True
+            self.on_press()
+
+    def _up(self, event):
+        if event.buttonNumber() == self.button_number and self.held:
+            self.held = False
+            self.on_release()

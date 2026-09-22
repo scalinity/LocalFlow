@@ -37,6 +37,24 @@ DEFAULTS = {
     "retention_audio_failed_days": 30,
     "retention_metadata_days": 14,
     "training_buffer_days": 30,
+    # M03 (Spec S09): crash-resilient capture. The audio callback journals
+    # blocks off-thread so a crash mid-dictation recovers every complete
+    # block. false = memory-only capture; crash recovery is then honestly
+    # disabled for those dictations, not secretly persisted.
+    "capture_journal": True,
+    # M03 (Spec S09 engine lifecycle): what a dictation does while the
+    # cleanup engine is still loading — "basic" inserts the basic-pass text
+    # now (recorded as basic, never as LLM-cleaned); "wait" holds the job
+    # until the engine is ready or fails (bounded by cleanup_wait_timeout_sec).
+    "cleanup_not_ready_policy": "basic",
+    "cleanup_wait_timeout_sec": 120,
+    # M03 (Spec S09): optional hands-free dictation. "double_tap" = a quick
+    # double-tap of the hold key starts continuous capture; the next tap
+    # ends it. "off" keeps hold-to-talk exactly as before.
+    "hands_free": "off",
+    # M03 (Spec S09): optional hold-to-dictate on a non-primary mouse
+    # button — "middle", "right", or null for none.
+    "mouse_trigger": None,
 }
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent

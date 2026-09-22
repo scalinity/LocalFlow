@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "milestone": "M03",
+  "evaluated_utc": "2026-09-22T02:30:00Z",
+  "working_directory": "/Users/danny/Documents/Tools/LocalFlow",
+  "base_commit": "95f92dd1f9e288b5b83b0268794cd07b9c59dd8c",
+  "acceptance_criteria": {
+    "M03-AC01": {
+      "statement": "Injected worker faults preserve audio and recover through one new worker attempt; a second fault produces a recoverable failure, not an infinite restart loop.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/lifecycle/test_worker_protocol.py::test_injected_fault_recovers_once — injected Metal fault → fresh worker (generation 2) → retry succeeds with attempt 2; input wav untouched; exactly 2 spawns",
+        "tests/v2/lifecycle/test_worker_protocol.py::test_second_fault_is_recoverable_not_looping — second fault raises WorkerFailure; spawn count stays 2",
+        "tests/v2/lifecycle/test_worker_protocol.py::test_circuit_breaker_fails_fast — 3 consecutive deaths trip the breaker; fail-fast spawns nothing; manual restart() re-arms and the fresh worker answers",
+        "tests/v2/lifecycle/test_worker_live.py — real worker, real models, offline: kill -9 → fresh generation with full model reload → correct result (2.0 s page-cache-warm)",
+        "tests/v2/lifecycle/test_lifecycle.py::test_worker_fault_makes_recoverable_item — coordinator failure path keeps the wav, marks failed_recoverable, registers the Recovery-menu item, pastes nothing",
+        "tests/v2/lifecycle/test_lifecycle.py::test_retry_reopens_failed_job_with_new_attempt — failed job reopens queued/attempt 2 and completes to insertion_unverified",
+        "Audio preservation: the capture journal + parent-owned worker wav survive every fault path (contracts/capture.md); engine-load failure fails fast without any respawn loop (test_engine_failure_fails_fast_without_respawn_loop)"
+      ]
+    },
+    "M03-AC02": {
+      "statement": "A result from an old worker generation cannot insert or double-count usage.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/lifecycle/test_worker_protocol.py::test_stale_generation_result_discarded — unsolicited old-request result discarded with event; the live request is satisfied only by its own answer",
+        "tests/v2/lifecycle/test_worker_protocol.py::test_stale_generation_echo_resolves_as_fault — a live req_id echoing generation-1 is discarded as stale_generation and resolves as a fault; the retried request (attempt 2) succeeds",
+        "tests/v2/lifecycle/test_worker_protocol.py::test_worker_cannot_request_insertion — no insertion op exists in the protocol; unknown worker→parent ops are ignored (S06 by construction)",
+        "tests/v2/lifecycle/test_lifecycle.py::test_cancel_during_processing_blocks_late_insert — cancellation removes insertion authority immediately; the late result never pastes, cancelled is terminal, no second paste on re-delivery",
+        "Store discipline: update_job_state discards stale/regressing transitions; terminal finality holds with exactly one deliberate exception (failed_recoverable→queued with retry=True)"
+      ]
+    },
+    "M03-AC03": {
+      "statement": "Crash recovery restores all completed persisted audio blocks and exposes incomplete-tail status.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/lifecycle/test_capture_journal.py::test_round_trip_bit_exact — finalize→reconstruct is bit-exact float32",
+        "tests/v2/lifecycle/test_capture_journal.py::test_crash_reconstruction_incomplete_tail — torn tail (mid-payload and at-boundary) drops exactly the torn record; complete blocks recovered verbatim",
+        "tests/v2/lifecycle/test_lifecycle.py::test_crash_recovery_scan — a crashed journal becomes a failed_recoverable item with all complete blocks written to the recovery wav, torn_bytes reported, blk swept",
+        "Startup scan also re-opens finalized-but-unresolved wavs from previous boots (boot-id filtered so live dictations are never touched) and drops below-minimum crash residue as cancelled",
+        "Journal integrity: disk pressure and queue floods degrade with counted drops and never take the in-memory capture path down (test_disk_pressure_degrades_not_discards, test_bounded_queue_under_flood, test_handoff_does_no_disk_work)"
+      ]
+    },
+    "M03-AC04": {
+      "statement": "Readiness races never label basic output as LLM-cleaned; idle/wake leaves microphone inactive.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/lifecycle/test_lifecycle.py::test_sleep_ends_capture_recoverable_wake_leaves_mic_off — sleep ends capture into a recoverable item; wake does not reopen the mic (start-count unchanged)",
+        "tests/v2/lifecycle/test_lifecycle.py::test_lock_ends_capture_recoverable — session resign/lock behaves the same",
+        "tests/v2/lifecycle/test_worker_protocol.py::test_cleanup_engine_not_ready_reports_basic_honestly — failed cleanup engine answers path=basic with fallback_reason, never 'llm'",
+        "tests/v2/lifecycle/test_worker_protocol.py::test_cleanup_wait_and_engine_wait_override — the wait policy is bounded by the caller's timeout and clean() never blocks on a loading engine",
+        "tests/v2/lifecycle/test_lifecycle.py::test_pipeline_through_worker_protocol_honest_path — end-to-end coordinator pass records the basic path in events and the envelope; the cleaning stage event carries the cleanup model_id only when path=='llm'",
+        "Worker engine honesty: TranscriptCleaner.load() swallowing a model error is surfaced as engine state 'failed' (not 'ready'); evidence envelope cleanup.applied_path mirrors the real path (tests/v2/training/test_collector.py)"
+      ]
+    },
+    "M03-AC05": {
+      "statement": "Original and transformed audio are distinguishable and correctly hashed; every model-input sample range maps to its parent or explicitly reports a discontinuity.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/lifecycle/test_audio_fidelity.py::test_float32_round_trip_original — original artifact is bit-exact float32 with exact format metadata, lossless",
+        "tests/v2/lifecycle/test_audio_fidelity.py::test_pcm16_export_labeled_derivative — PCM16 requires a parent, is labeled lossless:false / quantized_from_dtype / distinct kind and sha256",
+        "tests/v2/lifecycle/test_audio_fidelity.py::test_decode_ranges_bound_and_joined — decode ranges are original-sample half-open bounds joined to the parent artifact",
+        "tests/v2/lifecycle/test_audio_fidelity.py::test_discontinuities_reported — journal drops and incomplete tails surface as explicit discontinuities in audio_preparation",
+        "tests/v2/lifecycle/test_audio_fidelity.py::test_audio_write_failure_reported_honestly — a failed audio write yields not_captured_at_stage reasons and no dangling join (Store.verify extension)",
+        "tests/v2/lifecycle/test_worker_live.py — real Parakeet decode ranges [[0, N]] recorded with worker generation in the envelope"
+      ]
+    },
+    "M03-AC06": {
+      "statement": "Unsupported contextual biasing/confidence is never fabricated; evidence survives fault recovery without joining another job's audio.",
+      "status": "pass",
+      "evidence": [
+        "tests/v2/lifecycle/test_audio_fidelity.py::test_capability_manifest_conservative — all eight capability booleans False with reasons+evidence; biasing/key-terms disabled_until_qualified; hint disposition ignored with reason",
+        "tests/v2/lifecycle/test_audio_fidelity.py::test_envelope_optional_fields_null_with_reason — asr_confidence/n_best/token_logprobs/word_timestamps carry unsupported_by_adapter (controlled vocabulary); worker generation recorded",
+        "Evidence isolation: the worker's observer is request-scoped and the collector binds per job on the single FIFO coordinator (tests/v2/training/test_collector.py::test_binding_isolation_under_overlap still green); fault-recovered jobs record on_failure envelopes without touching other jobs' artifacts"
+      ]
+    }
+  },
+  "human_verification": [
+    {
+      "item": "Unplug/replug a microphone during dictation; verify the captured speech is preserved with a recorded discontinuity and capture continues cleanly after replug.",
+      "status": "pending",
+      "steps": [
+        "cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh (Terminal-launched, which holds the mic grant)",
+        "Hold fn, speak a few words, unplug the USB/Bluetooth input mid-utterance",
+        "Expect: the dictation finishes with the speech captured before the loss, a capture.device_loss WARNING in .venv/bin/python scripts/v2/view_events.py --last 20, and device_discontinuity in the evidence envelope",
+        "Replug; hold fn and dictate again — capture must work on the restored/default device"
+      ]
+    },
+    {
+      "item": "Perform Fn taps during processing (native hardware check of the lost-release watchdog and dictation-during-processing overlap).",
+      "status": "pending",
+      "steps": [
+        "Dictate a longer utterance; while the pill is in processing mode, tap fn once or twice",
+        "Expect: no stuck overlay, no wedge; a new dictation may start; view_events shows hotkey.release_lost recovery only when a release was genuinely lost"
+      ]
+    },
+    {
+      "item": "Quit/reopen the app mid-dictation with capture journal enabled; inspect recovered output and the mic indicator.",
+      "status": "pending",
+      "steps": [
+        "Hold fn, speak for a few seconds, then kill the app (Cmd+Q or kill) before releasing",
+        "Relaunch: expect a capture.recovered_after_crash WARNING with block/sample/torn-byte counts and a Recovery → Retry Last Failed Dictation item",
+        "Retry it: the recovered audio transcribes and inserts; verify the mic indicator is off after launch until the next hotkey press"
+      ]
+    },
+    {
+      "item": "Native hands-free double-tap and non-primary mouse trigger firing.",
+      "status": "pending",
+      "steps": [
+        "Set \"hands_free\": \"double_tap\" in the user config, restart the dev app, double-tap fn: capture must continue after release and end on the next tap",
+        "Set \"mouse_trigger\": \"middle\" and verify hold-middle-button dictation with release-to-insert"
+      ]
+    }
+  ],
+  "checks": [
+    {"command": ".venv/bin/python tests/v2/test_legacy_parser.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "5/5 pre-change baseline and post-change"},
+    {"command": ".venv/bin/python tests/v2/test_registry.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "33 requirements / 22 suites unchanged by M03"},
+    {"command": ".venv/bin/python tests/v2/test_baseline_manifest.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "privacy scan incl. tests/v2/lifecycle/"},
+    {"command": ".venv/bin/python tests/v2/test_snapshot_safety.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "green before and after"},
+    {"command": ".venv/bin/python tests/v2/logging/test_event_writer.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "13/13 (EV-02); worker_generation override added without envelope regressions"},
+    {"command": ".venv/bin/python tests/v2/storage/test_store.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "17/17 (EV-03) incl. pcm16 derivative, attempt bump, retry re-open"},
+    {"command": ".venv/bin/python tests/v2/storage/test_import.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "7/7; legacy import untouched by M03"},
+    {"command": ".venv/bin/python tests/v2/training/test_collector.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "11/11 (EV-19); asr_confidence reason updated to unsupported_by_adapter per the M03 capability manifest (documented assertion change)"},
+    {"command": ".venv/bin/python tests/v2/lifecycle/test_worker_protocol.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "11/11 (EV-05): protocol, injected faults, breaker, stale discard (both flavors), cleanup wait, FIFO, no-insertion, engine failure, honest basic path"},
+    {"command": ".venv/bin/python tests/v2/lifecycle/test_capture_journal.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "6/6 (EV-04): bit-exact round trip, torn tails, disk pressure, bounded queue, callback purity, discard"},
+    {"command": ".venv/bin/python tests/v2/lifecycle/test_audio_fidelity.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "7/7 (EV-18/EV-19 producer subset): float32 round trip, pcm16 derivative, crop bounds, discontinuities, manifest, honest nulls, write-failure honesty"},
+    {"command": ".venv/bin/python tests/v2/lifecycle/test_lifecycle.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "13/13 (EV-04/05 app level): sleep/wake, lock, device loss, cancel (authority + wav deferral), retry guard, honest path, fault item, crash scan, retry attempt 2, hands-free (incl. watchdog regression), defaults, mouse config"},
+    {"command": ".venv/bin/python tests/test_stuck_overlay.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "automated", "note": "5/5; harness additionally repaths V2_JOURNAL off live data (updated legacy test)"},
+    {"command": ".venv/bin/python tests/v2/training/test_live_pipeline.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "model-backed native Mac", "note": "2/2; re-run green post-review"},
+    {"command": ".venv/bin/python tests/v2/lifecycle/test_worker_live.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "model-backed native Mac", "note": "2/2; real worker subprocess, offline; ASR 63-64 ms on 1 s synthetic audio; kill -9 → fresh generation with real reload in 2.0 s"},
+    {"command": ".venv/bin/python tests/test_cleanup.py", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "model-backed native Mac", "note": "51/51, avg 0.88-1.01 s — cleanup behavior unchanged by the path-tracking additions"},
+    {"command": ".venv/bin/python scripts/v2/benchmark_m03.py --real --output docs/v2/benchmarks/20260922-011459-m03/m03.json", "cwd": "/Users/danny/Documents/Tools/LocalFlow", "exit": 0, "kind": "native Mac + model-backed", "note": "re-run on post-review code; see benchmark_summary"}
+  ],
+  "benchmark_summary": {
+    "run": "docs/v2/benchmarks/20260922-011459-m03/m03.json",
+    "hotkey_to_overlay_p95_ms": 0.195,
+    "hotkey_target_p95_ms": 50.0,
+    "hotkey_passes": true,
+    "hotkey_note": "journal enabled; lazy file creation keeps the hotkey path free of disk/model/DB work",
+    "capture_queue": {"flood_blocks": 3000, "max_depth_observed": 256, "bound": 256, "stayed_bounded": true, "handoff_max_ms": 0.004, "dropped": 2744, "written": 256},
+    "worker_fake_restart_ms": [57.0, 55.6, 55.3],
+    "worker_real": {"load_to_engines_sec": 2.35, "first_transcribe_ms": 64.0, "kill9_restart_to_result_sec": 2.05, "rss_bytes_idle": 2739175424, "rss_bytes_restarted": 2750513152, "conditions": "offline (HF_HUB_OFFLINE=1), page-cache-warm models; rss = ps -o rss of the worker process"}
+  },
+  "review_loop": {
+    "review": "/review-2 (two parallel read-only reviewers: bug-hunting debugger; architecture/quality/security/data-integrity auditor)",
+    "verdict_before_address": "Request Changes — 1 critical (DB1), 7 warnings (DB1), 6 warnings (CA1), 20 suggestions after dedup",
+    "findings_addressed": [
+      "CRITICAL (DB1, corroborated design area): the M02 lost-release watchdog terminated every hands-free capture ~1 s after start. Fixed: the watchdog ignores hands-free captures and polls the trigger that started the capture (hotkey or mouse); regression test test_hands_free_double_tap now runs watchdog ticks.",
+      "DB1-W2 / CA1-W1 (corroborated): the startup recovery scan could terminal-corrupt a live session's jobs. Fixed: the unresolved-job loop skips jobs carrying the current boot_id.",
+      "DB1-W3: check-then-act spawn could double-spawn workers (launch warm-up vs first request). Fixed: _spawn_lock held across check-and-spawn in ensure_running and restart().",
+      "CA1-W2: engine messages lacked the generation guard hello has. Fixed: late engine messages from a dying generation are ignored.",
+      "DB1-W4: cancelling during processing unlinked the in-flight worker wav (faulting a healthy worker and burning its retry). Fixed: deletion deferred to _finishWithText_'s cancelled branch; fault handlers route cancelled jobs to the cancellation path instead of registering recoverable items. Regression tests added.",
+      "DB1-W5 / CA1-W4 (half): cleanup 'basic' policy still blocked on engine load (internal 600 s wait). Fixed: clean() uses engine_wait=0 — the worker answers basic honestly; the 'wait' policy's bounded wait_engine is now the only wait. Test added.",
+      "DB1-W6: cleanup engine reported 'ready' after a swallowed model-load failure. Fixed: worker checks TranscriptCleaner.load_failed and emits engine state 'failed' with reason cleanup_engine_failed.",
+      "DB1-W7: mouse/hotkey cross-talk and no lost-release recovery for mouse captures. Fixed: startDictation/finishDictation are trigger-source aware; MouseTriggerListener gained physically_down() via NSEvent.pressedMouseButtons; the watchdog clears the owning listener's held state.",
+      "CA1-W3: fault-event details carried raw stderr tail lines and the tail survived respawns. Fixed: _stderr_tail cleared per generation; _fault_detail is a content-free digest (line/byte counts + traceback flag).",
+      "CA1-W5: envelope mislabeled a failed audio write as consent_disabled and verify() missed dangling decode ranges. Fixed: on_audio records audio_write_failed and swallows store failures (evidence never fails dictation); envelope reasons and audio_preparation are honest; Store.verify requires a missing-reason for range blocks without a parent. Test added.",
+      "CA1-W6: failed_recoverable was written for jobs with nothing recoverable. Fixed: mic-open failure and wav-write failures now record failed_unrecoverable (state vocabulary already had it).",
+      "Suggestions applied: TAP_SEC dead constant removed; journal header carries captured_at/time_quality; journal writer uses a write-all loop; reader-EOF resolves pendings unconditionally; recovery drops below-min crash residue; cleanup_emptied_output distinct reason; cleaning state written for non-collecting jobs too; \\Z regex anchor; HF_HUB_OFFLINE forced (not setdefault); dead CaptureJournal.delete_files and unreachable except removed; PCM16 readback scale 32767; redundant degraded_notice event removed; time-import shadow fixed; retryLastFailed_ guarded during recording and clears only the retried entry; tautological test assertion replaced; staleecho/wait tests added.",
+      "Tests added per reviewers: hands-free watchdog regression, retry guard, cancel wav deferral, stale-generation echo, cleanup wait/engine_wait, audio write-failure honesty."
+    ],
+    "findings_deferred": [
+      "CA1-S3: framing constants (4-byte BE length, 64 MiB cap) duplicated in worker.py and supervisor.py — intentional: separate processes and IO layers; sharing would couple the protocol definition across the IPC boundary for two literals.",
+      "CA1-S11: audio write amplification (journal blk + worker wav + store artifact + optional PCM16 debug ≈ 3-4 transient copies) — accepted for M03 (each has a distinct role; journal copies deleted eagerly); hardlink optimization noted for a future milestone if it ever matters on this machine.",
+      "CA1-S12: collector.job_started (consent snapshot) stays on the release path rather than the coordinator thread — the training contract requires consent-at-capture-time; the local single-writer store answers in well under the S24 budget (hotkey p95 measured at 0.2 ms including this path).",
+      "DB1-S8 (micro): supervisor._consecutive_deaths incremented outside _state_lock — a single int under the GIL; noted."
+    ],
+    "findings_rejected": [],
+    "post_address_verification": "All 13 automated suites re-run green; model-backed live pipeline 2/2, live worker 2/2 (kill -9 restart 2.0 s), cleanup 51/51; benchmark re-run on post-review code (hotkey p95 passes, queue bounded at 256, real load 2.35 s, kill9 2.05 s, RSS stable)."
+  },
+  "privacy": "Nothing private entered Git: events stay content-free (fault details are now digests by mechanism, not just capped); committed artifacts carry hashes, counts and synthetic fixtures only; tests/v2/test_baseline_manifest.py privacy scan passes over the new directories; journals/wavs/recovery audio live under ~/Library/Application Support/LocalFlow/v2-journal/ (0700/0600) outside the repository, and every test/benchmark harness repaths those roots into tempdirs.",
+  "regression_requirements": "PTT cancellation, clipboard fallback and FIFO processing verified green (test_stuck_overlay 5/5, lifecycle suites); no new always-on microphone behavior (wake handler starts nothing; hands-free and mouse triggers are opt-in config, default off)."
+}

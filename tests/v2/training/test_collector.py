@@ -110,11 +110,14 @@ def test_enabled_lineage_and_exact_inputs():
     prompt_art = env["cleanup"]["passes"][0]["prompt_artifact_id"]
     assert st.artifact_payload(prompt_art) == "<rendered prompt for hello world there>"
     assert st.artifact_payload(arts["source_text"]) == "hello world there"
-    # Missing-field reasons use the controlled vocabulary.
+    # Missing-field reasons use the controlled vocabulary. M03 narrowed
+    # the optional-ASR reasons: the capability manifest declares the
+    # adapter does not expose them, so "unsupported_by_adapter" is the
+    # honest value (was "not_captured_at_stage" in M02).
     mr = env["missing_reasons"]
     assert mr["normalization"] == "not_captured_at_stage"
     assert mr["context"] == "not_captured_at_stage"
-    assert mr["asr_confidence"] == "not_captured_at_stage"
+    assert mr["asr_confidence"] == "unsupported_by_adapter"
     assert mr["transform"] == "not_applicable"
     # Capture metadata with sample-exact audio facts.
     audio_meta = json.loads(

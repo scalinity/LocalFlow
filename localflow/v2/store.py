@@ -152,6 +152,24 @@ def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
         int(sample_rate) * 4, 4, 32,
         b"data", len(data),
     )
+    _write_wav(path, header, data)
+
+
+def write_wav_pcm16(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
+    """Quantized PCM16 WAV — a derivative export, never lossless (S29.5)."""
+    data = (np.clip(np.asarray(samples), -1.0, 1.0) * 32767).astype(
+        "<i2").tobytes()
+    header = struct.pack(
+        "<4sI4s4sIHHIIHH4sI",
+        b"RIFF", 36 + len(data), b"WAVE",
+        b"fmt ", 16, 1, 1, int(sample_rate),
+        int(sample_rate) * 2, 2, 16,
+        b"data", len(data),
+    )
+    _write_wav(path, header, data)
+
+
+def _write_wav(path: pathlib.Path, header: bytes, data: bytes):
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "wb") as f:
         f.write(header)
@@ -159,16 +177,42 @@ def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
     os.chmod(path, 0o600)
 
 
+_WAV_HEADER = struct.Struct("<4sI4s4sIHHIIHH4sI")
+
+
 def read_wav_f32(path: pathlib.Path) -> tuple[np.ndarray, int]:
     with open(path, "rb") as f:
         raw = f.read()
     (riff, _size, wave, fmt, _fmt_size, audio_format, channels, rate,
-     _byte_rate, _block_align, bits, _mark, data_size) = struct.unpack(
-        "<4sI4s4sIHHIIHH4sI", raw[:44])
+     _byte_rate, _block_align, bits, _mark, data_size) = _WAV_HEADER.unpack(
+        raw[:44])
     if (riff, wave, fmt, audio_format, channels, bits) != (
             b"RIFF", b"WAVE", b"fmt ", 3, 1, 32):
         raise ValueError("not a mono float32 WAV")
     return (np.frombuffer(raw[44:44 + data_size], dtype="<f4").copy(), rate)
+
+
+def read_wav(path: pathlib.Path) -> tuple[np.ndarray, int]:
+    """Read either stored WAV flavor: float32 originals or PCM16 derivatives
+    (returned as float32 in [-1, 1] — the quantization is already baked in
+    and is recorded on the artifact, not hidden by re-expanding bits)."""
+    with open(path, "rb") as f:
+        raw = f.read()
+    (riff, _size, wave, fmt, _fmt_size, audio_format, channels, rate,
+     _byte_rate, _block_align, bits, _mark, data_size) = _WAV_HEADER.unpack(
+        raw[:44])
+    if (riff, wave, fmt, channels) != (b"RIFF", b"WAVE", b"fmt ", 1):
+        raise ValueError("not a mono WAV")
+    if audio_format == 3 and bits == 32:
+        return (np.frombuffer(raw[44:44 + data_size], dtype="<f4").copy(),
+                rate)
+    if audio_format == 1 and bits == 16:
+        # Scale by the same 32767 the writer used, so a derivative reads
+        # back as exactly its quantized self (no phantom rescale).
+        return (np.frombuffer(raw[44:44 + data_size], dtype="<i2").astype(
+            np.float32) / 32767.0, rate)
+    raise ValueError(f"unsupported WAV flavor: format={audio_format}"
+                     f" bits={bits}")
 
 
 def _iso_to_epoch(iso: str) -> float | None:
@@ -377,8 +421,13 @@ class Store:
         self._submit(op)
         return job_id, family_id
 
-    def update_job_state(self, job_id, state, reason=None):
-        """Idempotent transition; stale/regressing states are discarded."""
+    def update_job_state(self, job_id, state, reason=None, *, retry=False):
+        """Idempotent transition; stale/regressing states are discarded.
+        A terminal state is final for stale-result purposes — the one
+        deliberate exception is an explicit retry re-opening a
+        ``failed_recoverable`` job to ``queued`` (contracts/jobs.md: a retry
+        increments the attempt and keeps the job_id), which must be passed
+        explicitly."""
         now = ids.now_utc_iso(self.now_fn())
 
         def op():
@@ -390,14 +439,28 @@ class Store:
             if current == state:
                 return True
             if current in TERMINAL_STATES:
-                return False  # exactly one logical terminal outcome (E12)
-            if _STATE_ORDER.get(state, 100) < _STATE_ORDER.get(current, 100):
+                if retry and current == "failed_recoverable" \
+                        and state == "queued":
+                    pass  # the deliberate retry re-open (contracts/jobs.md)
+                else:
+                    return False  # exactly one logical terminal outcome (E12)
+            elif _STATE_ORDER.get(state, 100) < _STATE_ORDER.get(current, 100):
                 return False  # stale result discarded, never appended
             self._db.execute(
                 "UPDATE jobs SET state=?, state_reason=?, updated_at_utc=?"
                 " WHERE job_id=?", (state, reason, now, job_id))
             return True
         return bool(self._submit(op, wait=True))
+
+    def bump_job_attempt(self, job_id):
+        """A retry of the same audio increments the attempt, keeping the
+        job_id (contracts/jobs.md)."""
+        def op():
+            self._db.execute(
+                "UPDATE jobs SET attempt=attempt+1, updated_at_utc=?"
+                " WHERE job_id=?",
+                (ids.now_utc_iso(self.now_fn()), job_id))
+        self._submit(op)
 
     def set_job_audio(self, job_id, artifact_id):
         def op():
@@ -459,23 +522,39 @@ class Store:
 
     def write_audio_artifact(self, *, job_id, stage, samples, sample_rate,
                              role="original_audio", retention_class="training",
-                             meta=None, parent_artifact_id=None):
-        """Persist the original float32 capture losslessly (S29.5) and record
-        exact format/sample-count metadata. Runs on the inference worker
-        thread after capture completes — never on the audio callback."""
+                             meta=None, parent_artifact_id=None,
+                             dtype="float32"):
+        """Persist audio losslessly as float32 (S29.5) — or, when
+        dtype="pcm16", as an explicitly-labeled quantized DERIVATIVE which
+        must name its parent. Runs on the inference worker thread after
+        capture completes — never on the audio callback."""
+        if dtype not in ("float32", "pcm16"):
+            raise ValueError(f"unknown audio dtype {dtype!r}")
+        if dtype == "pcm16" and not parent_artifact_id:
+            raise ValueError("pcm16 audio is a derivative and requires"
+                             " parent_artifact_id (S29.5: quantization must"
+                             " not be labeled lossless)")
         artifact_id = ids.new_id("art")
         rel = f"{artifact_id}.wav"
         path = self.artifacts_dir / rel
-        write_wav_f32(path, samples, sample_rate)
+        if dtype == "float32":
+            write_wav_f32(path, samples, sample_rate)
+        else:
+            write_wav_pcm16(path, samples, sample_rate)
         data_hash = ids.sha256_bytes(path.read_bytes())
         meta = dict(meta or {})
         sample_count = int(np.asarray(samples).size)
         meta.update({
-            "format": "wav_ieee_float32", "dtype": "float32",
+            "format": ("wav_ieee_float32" if dtype == "float32"
+                       else "wav_pcm16"),
+            "dtype": dtype,
             "sample_rate": int(sample_rate), "channels": 1,
             "sample_count": sample_count,
             "duration_sec": sample_count / float(sample_rate),
+            "lossless": dtype == "float32",
         })
+        if dtype == "pcm16":
+            meta["quantized_from_dtype"] = "float32"
         now = ids.now_utc_iso(self.now_fn())
 
         def op():
@@ -485,7 +564,8 @@ class Store:
                 " sha256, bytes, meta_json, retention_class, purged,"
                 " created_at_utc) VALUES(?,?,?,?,?,?,?,NULL,?,?,?,?,0,?)",
                 (artifact_id, job_id, stage, parent_artifact_id,
-                 "audio_wav_f32", role, rel, data_hash, path.stat().st_size,
+                 "audio_wav_f32" if dtype == "float32" else "audio_wav_pcm16",
+                 role, rel, data_hash, path.stat().st_size,
                  json.dumps(meta, ensure_ascii=False), retention_class, now))
             return artifact_id
         self._submit(op)
@@ -505,7 +585,7 @@ class Store:
         if art is None or art["purged"]:
             return None
         if art["content_path"]:
-            arr, _rate = read_wav_f32(self.artifacts_dir / art["content_path"])
+            arr, _rate = read_wav(self.artifacts_dir / art["content_path"])
             return arr
         return art["content_text"]
 
@@ -995,6 +1075,13 @@ class Store:
                             issues.append(
                                 f"revision {rev_id} references missing artifact"
                                 f" {aid} without a missing-reason")
+                prep = env.get("audio_preparation") or {}
+                if prep and not prep.get("artifact_id"):
+                    reasons = env.get("missing_reasons") or {}
+                    if "audio_preparation" not in reasons:
+                        issues.append(
+                            f"revision {rev_id} has decode ranges with no"
+                            " parent audio artifact and no missing-reason")
             for (lease_id, aid) in self._db.execute(
                     "SELECT lease_id, artifact_id FROM"
                     " artifact_leases").fetchall():

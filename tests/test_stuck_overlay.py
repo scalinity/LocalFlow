@@ -96,6 +96,7 @@ class Harness:
         app_mod.V2_ARTIFACTS = tmp / "artifacts"
         app_mod.V2_BACKUPS = tmp / "backups"
         app_mod.V2_EVENTS_DIR = tmp / "events"
+        app_mod.V2_JOURNAL = tmp / "journal"  # M03: journal off live data
         d = AppDelegate.alloc().init()
         d.configure(dict(CFG))
         d.recorder = FakeRecorder(durations)

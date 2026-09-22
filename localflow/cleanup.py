@@ -243,6 +243,15 @@ class TranscriptCleaner:
         self._model = None
         self._tokenizer = None
         self._lock = threading.Lock()
+        # M03 (S09/M03-AC04): which path actually produced the last clean()
+        # output — "raw" | "basic" | "llm" | "llm_fallback_basic" — with a
+        # reason whenever the configured LLM pass did not run. Callers use
+        # this to label events/evidence; basic output is never reported as
+        # LLM-cleaned.
+        self.last_path = "raw"
+        self.last_fallback_reason = None
+        self.load_failed = False
+        self._piece_fallback = False
 
     def _notify(self, msg: str, level: str = "INFO"):
         if self.notifier is not None:
@@ -270,6 +279,7 @@ class TranscriptCleaner:
             self.llm_ready.set()
             self._notify(f"cleanup_model_loaded ({self.model_id.split('/')[-1]})")
         except Exception as e:
+            self.load_failed = True
             self._notify(
                 f"cleanup_model_unavailable, using basic cleanup: {e}", "WARNING")
 
@@ -312,15 +322,32 @@ class TranscriptCleaner:
     def clean(self, text: str) -> str:
         base = basic_cleanup(text)
         if self.mode == "off":
+            self.last_path = "raw"
+            self.last_fallback_reason = None
             return text
         if self.mode != "llm" or not self.llm_ready.is_set() or not base:
+            self.last_path = "basic"
+            self.last_fallback_reason = (
+                "cleanup_engine_failed" if (self.mode == "llm"
+                                            and self.load_failed)
+                else "cleanup_not_ready" if (self.mode == "llm"
+                                             and not self.llm_ready.is_set())
+                else None)
             return base
+        self.last_fallback_reason = None
         words = base.split()
+        self._piece_fallback = False
         if len(words) <= CHUNK_MAX:
-            return self._clean_piece(base)
-        pieces = [self._clean_piece(p) for p in _chunk_words(words)]
-        out = " ".join(p.strip() for p in pieces if p.strip())
-        return re.sub(r"[ \t]{2,}", " ", out)
+            out = self._clean_piece(base)
+        else:
+            out = " ".join(p.strip() for p in
+                           (self._clean_piece(p) for p in _chunk_words(words))
+                           if p.strip())
+            out = re.sub(r"[ \t]{2,}", " ", out)
+        self.last_path = "llm_fallback_basic" if self._piece_fallback else "llm"
+        if self._piece_fallback:
+            self.last_fallback_reason = "piece_failed_checks"
+        return out
 
     def _apply_corrections(self, base: str) -> str:
         """Stage A: delete correction spans named by the model, verbatim."""
@@ -376,4 +403,5 @@ class TranscriptCleaner:
             self._observe({"kind": "cleanup_decision", "accepted": False,
                            "applied": base, "error": type(e).__name__})
             self._notify(f"cleanup failed, using basic pass: {e}", "WARNING")
+        self._piece_fallback = True
         return base

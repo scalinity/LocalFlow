@@ -32,6 +32,7 @@ FPS = 30.0
 
 MODE_RECORDING = "recording"
 MODE_PROCESSING = "processing"
+MODE_FAILED = "failed"  # M03: a dictation failed after retry; recovery actions live in the menu
 
 
 class PillView(NSView):
@@ -69,7 +70,10 @@ class PillView(NSView):
         for i in range(N_BARS):
             # Center-weighted envelope like the Wispr pill
             env = 0.38 + 0.62 * math.exp(-(((i - c) / (0.40 * N_BARS)) ** 2) * 3.0)
-            if self._mode == MODE_PROCESSING:
+            if self._mode == MODE_FAILED:
+                # Flat, subdued: the dictation is recoverable from the menu
+                target = BAR_MIN + (BAR_MAX - BAR_MIN) * 0.22 * env
+            elif self._mode == MODE_PROCESSING:
                 # Gentle traveling shimmer while transcribing
                 wob = 0.5 + 0.5 * math.sin(self._t * 6.0 - i * 0.75)
                 target = BAR_MIN + (BAR_MAX - BAR_MIN) * 0.30 * env * wob
@@ -104,7 +108,11 @@ class PillView(NSView):
         total = N_BARS * BAR_W + (N_BARS - 1) * BAR_GAP
         x = (b.size.width - total) / 2.0
         cy = b.size.height / 2.0
-        NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.95).setFill()
+        if self._mode == MODE_FAILED:
+            NSColor.colorWithCalibratedRed_green_blue_alpha_(
+                0.85, 0.28, 0.28, 0.95).setFill()
+        else:
+            NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.95).setFill()
         for h in self._heights:
             r = NSMakeRect(x, cy - h / 2.0, BAR_W, h)
             NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(

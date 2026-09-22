@@ -90,7 +90,8 @@ class CaptureContext:
     """Per-job collector state (worker-thread only in the V1 pipeline)."""
 
     def __init__(self, job_id, family_id, *, captured_at_utc, timezone,
-                 utc_offset_minutes, consent_revision_id, policy):
+                 utc_offset_minutes, consent_revision_id, policy,
+                 attempt=1, worker_generation=None):
         self.job_id = job_id
         self.family_id = family_id
         self.captured_at_utc = captured_at_utc
@@ -99,8 +100,15 @@ class CaptureContext:
         self.consent_revision_id = consent_revision_id
         self.policy = policy  # pipeline/config provenance snapshot
         self.collecting = policy is not None
+        self.attempt = attempt
+        self.worker_generation = worker_generation
         self.audio_artifact = None
+        self.audio_write_failed = False  # M03: consent was on but the
+        # payload write failed — a different missing reason than consent
         self.capture_meta = {}
+        self.decode_ranges = None      # M03: original-sample model-input map
+        self.cleanup_path = None       # M03: actual path (never a mislabel)
+        self.cleanup_fallback_reason = None
         self.raw_artifact = None
         self.raw_text = None
         self.applied_artifact = None
@@ -127,7 +135,7 @@ class EvidenceCollector:
     # ---- job lifecycle ---------------------------------------------------
 
     def job_started(self, job_id, family_id, *, captured_at_utc, timezone,
-                    utc_offset_minutes):
+                    utc_offset_minutes, attempt=1):
         """Snapshot consent at capture time; a mid-job consent change never
         retroactively adds or removes this job's evidence. Does NOT bind the
         observation sink — the worker thread does that via bind_current, so
@@ -143,7 +151,7 @@ class EvidenceCollector:
         ctx = CaptureContext(
             job_id, family_id, captured_at_utc=captured_at_utc,
             timezone=timezone, utc_offset_minutes=utc_offset_minutes,
-            consent_revision_id=consent_id, policy=policy)
+            consent_revision_id=consent_id, policy=policy, attempt=attempt)
         return ctx
 
     def bind_current(self, ctx):
@@ -157,20 +165,29 @@ class EvidenceCollector:
         self._current = None
 
     def on_audio(self, ctx, samples, sample_rate, recorder_stats):
-        """Attach the completed audio buffer before model execution."""
+        """Attach the completed audio buffer before model execution. A
+        store/disk failure is recorded on the context (audio_write_failed)
+        and swallowed: evidence capture must never fail the dictation, and
+        the envelope reports the write failure honestly instead of
+        mislabeling it as consent-disabled."""
         if not ctx.collecting:
             return None
         stats = dict(ctx.capture_meta.get("capture") or {})
         stats.update({k: v for k, v in (recorder_stats or {}).items()
                       if v is not None})
-        art = self.store.write_audio_artifact(
-            job_id=ctx.job_id, stage="capture", samples=samples,
-            sample_rate=sample_rate, role="original_audio",
-            retention_class="training",
-            meta={"device": stats.get("device"),
-                  "overflow_blocks": stats.get("overflow_blocks"),
-                  "voiced_pct": stats.get("voiced_pct"),
-                  "trailing_silence_sec": stats.get("trailing_silence_sec")})
+        try:
+            art = self.store.write_audio_artifact(
+                job_id=ctx.job_id, stage="capture", samples=samples,
+                sample_rate=sample_rate, role="original_audio",
+                retention_class="training",
+                meta={"device": stats.get("device"),
+                      "overflow_blocks": stats.get("overflow_blocks"),
+                      "voiced_pct": stats.get("voiced_pct"),
+                      "trailing_silence_sec": stats.get(
+                          "trailing_silence_sec")})
+        except Exception:
+            ctx.audio_write_failed = True
+            return None
         ctx.audio_artifact = art
         self.store.grant_lease(art, "training",
                                days=self.store.retention_days["training_buffer"])
@@ -180,10 +197,14 @@ class EvidenceCollector:
         return art
 
     def on_asr_result(self, ctx, raw_text, *, model_id, model_revision,
-                      stage_duration_ms):
+                      stage_duration_ms, worker_generation=None,
+                      decode_ranges=None, capabilities=None,
+                      hint_disposition=None):
         if not ctx.collecting:
             return
         ctx.raw_text = raw_text
+        ctx.worker_generation = worker_generation
+        ctx.decode_ranges = decode_ranges
         if raw_text is not None:
             # An empty ASR output is a real observation; record it verbatim.
             ctx.raw_artifact = self.store.write_text_artifact(
@@ -195,10 +216,14 @@ class EvidenceCollector:
         from ..stt import Transcriber
         ctx.capture_meta["recognition"] = {
             "model_id": model_id, "model_revision": model_revision,
+            "worker_generation": worker_generation,
             "runtime": runtime_versions(),
             "decode": {"chunk_sec": Transcriber.CHUNK_SEC,
                        "overlap_sec": Transcriber.OVERLAP_SEC,
                        "method": "logmel_direct"},
+            "decode_ranges": decode_ranges,
+            "capabilities": capabilities,
+            "hint_disposition": hint_disposition,
             "stage_duration_ms": stage_duration_ms,
         }
 
@@ -209,15 +234,20 @@ class EvidenceCollector:
             return
         ctx.cleanup_observations.append(obs)
 
-    def on_cleanup_result(self, ctx, applied_text):
+    def on_cleanup_result(self, ctx, applied_text, *, path=None,
+                          fallback_reason=None):
         if not ctx.collecting:
             return
         ctx.applied_text = applied_text
+        ctx.cleanup_path = path
+        ctx.cleanup_fallback_reason = fallback_reason
         if applied_text is not None:
             ctx.applied_artifact = self.store.write_text_artifact(
                 job_id=ctx.job_id, stage="cleanup", role="applied_output",
                 text=applied_text, retention_class="training",
-                parent_artifact_id=ctx.raw_artifact)
+                parent_artifact_id=ctx.raw_artifact,
+                meta={"cleanup_path": path,
+                      "fallback_reason": fallback_reason})
             self.store.grant_lease(
                 ctx.applied_artifact, "training",
                 days=self.store.retention_days["training_buffer"])
@@ -287,6 +317,10 @@ class EvidenceCollector:
                     if decision.get("applied") is not None else None),
                 "error": decision.get("error"),
             }
+        # M03-AC04: which path actually produced the applied text — an
+        # llm-mode fallback to basic is recorded as basic, never "llm".
+        cleanup_detail["applied_path"] = ctx.cleanup_path
+        cleanup_detail["fallback_reason"] = ctx.cleanup_fallback_reason
 
         ctx.example_id = self.store.upsert_example(
             job_id=ctx.job_id, family_id=ctx.family_id,
@@ -404,25 +438,63 @@ class EvidenceCollector:
                  and p.get("proposal_artifact_id")), None),
             "applied_output": ctx.applied_artifact,
         }
+        from . import capabilities as caps
+        manifest = caps.asr_capability_manifest(
+            (policy.get("models") or {}).get("asr"),
+            model_revision=(policy.get("models") or {}).get("asr_revision"),
+            runtime=(policy.get("runtime") or {}))
         missing = {
-            "audio_preparation": R_NOT_APPLICABLE,  # fed directly, no crops
             "normalization": R_NOT_CAPTURED,        # M04
             "context": R_NOT_CAPTURED,              # M06
-            "asr_word_timestamps": R_NOT_CAPTURED,
-            "asr_confidence": R_NOT_CAPTURED,
-            "asr_n_best": R_NOT_CAPTURED,
-            "asr_token_logprobs": R_NOT_CAPTURED,
+            "asr_word_timestamps": caps.missing_reason_for(
+                "word_timestamps", manifest),
+            "asr_confidence": caps.missing_reason_for(
+                "word_confidence", manifest),
+            "asr_n_best": caps.missing_reason_for("n_best", manifest),
+            "asr_token_logprobs": caps.missing_reason_for(
+                "token_log_probs", manifest),
             "transform": R_NOT_APPLICABLE,
         }
         if ctx.audio_artifact is None:
-            missing["original_audio"] = R_CONSENT
+            missing["original_audio"] = (
+                R_NOT_CAPTURED if ctx.audio_write_failed else R_CONSENT)
+        # M03 (S29.5/M03-AC05): model-input ranges map to the parent audio
+        # in original samples, or the join is reported as a discontinuity.
+        capture = dict(ctx.capture_meta.get("capture", {}))
+        discontinuities = []
+        if capture.get("journal_dropped_blocks"):
+            discontinuities.append(
+                {"kind": "journal_queue_drop",
+                 "blocks": capture.get("journal_dropped_blocks"),
+                 "sample_span": "unknown_between_complete_blocks",
+                 "source": "capture_journal"})
+        if capture.get("device_discontinuity"):
+            discontinuities.append(dict(capture["device_discontinuity"]))
+        if capture.get("incomplete_tail"):
+            discontinuities.append(
+                {"kind": "incomplete_tail",
+                 "torn_bytes": capture.get("journal_torn_bytes")})
+        if ctx.decode_ranges is not None and ctx.audio_artifact is not None:
+            audio_preparation = {
+                "source": "original_audio",
+                "artifact_id": ctx.audio_artifact,
+                "sample_rate": capture.get("sample_rate"),
+                "resampling": "none",
+                "decode_ranges": ctx.decode_ranges,
+                "range_units": "original_samples_half_open",
+                "discontinuities": discontinuities,
+            }
+        else:
+            audio_preparation = None
+            missing["audio_preparation"] = R_NOT_CAPTURED
         env = {
             "training_schema_version": 1,
             "example_id": ctx.example_id,
             "revision_id": None,
             "job_id": ctx.job_id,
             "family_id": ctx.family_id,
-            "attempt": 1,
+            "attempt": ctx.attempt,
+            "worker_generation": ctx.worker_generation,
             "origin": "live_capture",
             "task_kind": "dictation",
             "captured_at_utc": ctx.captured_at_utc,
@@ -430,7 +502,8 @@ class EvidenceCollector:
             "timezone": ctx.timezone,
             "utc_offset_minutes": ctx.utc_offset_minutes,
             "consent_revision_id": ctx.consent_revision_id,
-            "capture": dict(ctx.capture_meta.get("capture", {})),
+            "capture": capture,
+            "audio_preparation": audio_preparation,
             "recognition": dict(ctx.capture_meta.get("recognition", {})),
             "cleanup": cleanup_detail,
             "artifact_ids": artifact_ids,
@@ -456,5 +529,10 @@ class EvidenceCollector:
             "trailing_silence_sec": (recorder_stats or {}).get(
                 "trailing_silence_sec"),
             "overflow_blocks": (recorder_stats or {}).get("overflow_blocks"),
+            "journal_dropped_blocks": (recorder_stats or {}).get(
+                "journal_dropped_blocks"),
+            "incomplete_tail": (recorder_stats or {}).get("incomplete_tail"),
+            "device_discontinuity": (recorder_stats or {}).get(
+                "device_discontinuity"),
             "audio_format": "wav_ieee_float32",
         }

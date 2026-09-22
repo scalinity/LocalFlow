@@ -27,3 +27,18 @@ hints is explicit and logged; hints are never concatenated into the audio
 transcript and called acoustic context support. Membership in a hint set
 is not an observed vocabulary hit; a post-ASR dictionary repair is never
 recorded as a decoder hit.
+
+## M03 live status
+
+`localflow/v2/capabilities.py` ships the manifest
+(`asr_capability_manifest`, revision `m03-conservative-v1`): all eight
+booleans are `False` with per-field reasons and evidence
+(`disabled_until_qualified` for contextual biasing/key terms;
+`unsupported_by_adapter` for language hints, confidence, n-best, token
+log-probs and independent ITN; `not_exposed_on_dictation_path` for word
+timestamps, which parakeet_mlx produces internally for long-audio merging
+but the dictation path does not return). `hint_disposition()` records the
+no-selector status: 0 offered, ignored with reason. The evidence envelope
+carries the manifest's capability block and this disposition, and its
+optional-ASR missing reasons use `unsupported_by_adapter` (not a
+fabricated value, never zero).

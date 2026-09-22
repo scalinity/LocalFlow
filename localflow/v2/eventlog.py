@@ -118,9 +118,11 @@ class EventWriter:
     def emit(self, event, level="INFO", *, job_id=None, attempt=None, stage=None,
              outcome=None, reason_code=None, detail=None, duration_ms=None,
              model_id=None, model_revision=None, config_hash=None,
-             prompt_hash=None, artifact_ids=None):
+             prompt_hash=None, artifact_ids=None, worker_generation=None):
         """Queue one event. Never blocks on disk; returns False when a
-        non-critical event was dropped under queue pressure."""
+        non-critical event was dropped under queue pressure.
+        ``worker_generation`` overrides the writer's own generation for
+        events about a specific worker restart (S07 field family)."""
         now = self.now_fn()  # single read: timestamp and offset agree
         rec = {
             "schema_version": SCHEMA_VERSION,
@@ -129,6 +131,9 @@ class EventWriter:
             "timezone": ids.local_zone_name(),
             "utc_offset_minutes": ids.utc_offset_minutes(now),
             **self._base_kwargs,
+            "worker_generation": (worker_generation
+                                  if worker_generation is not None
+                                  else self.worker_generation),
             "sequence": None,  # assigned by the writer thread
             "job_id": job_id, "attempt": attempt, "stage": stage,
             "event": event, "level": level, "outcome": outcome,

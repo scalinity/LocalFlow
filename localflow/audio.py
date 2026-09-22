@@ -32,6 +32,15 @@ class Recorder:
         self._blocks = 0
         self._voiced_blocks = 0
         self._silent_run = 0
+        # M03: per-dictation capture journal (set by the app before start;
+        # None keeps the pre-M03 memory-only behavior). The callback only
+        # enqueues into it — never disk work on the audio thread.
+        self.journal = None
+        self.callback_error = None
+        self._device_index = None
+        # M03: a capture discontinuity (device loss) recorded by the app
+        # watchdog; stop() folds it into stats so it survives the rebuild.
+        self.discontinuity = None
 
     def _resolve_device(self):
         if self.input_device is None:
@@ -52,10 +61,18 @@ class Recorder:
         return None
 
     def _callback(self, indata, frames, time_info, status):
-        if status and status.input_overflow:
-            # PortAudio dropped mic frames — that stretch of speech is gone
-            self._overflow_blocks += 1
-        data = indata[:, 0].copy()
+        try:
+            if status and status.input_overflow:
+                # PortAudio dropped mic frames — that stretch of speech is gone
+                self._overflow_blocks += 1
+            data = indata[:, 0].copy()
+            if self.journal is not None:
+                self.journal.handoff_block(data)  # bounded, non-blocking
+        except Exception as e:  # device loss mid-callback must not kill the
+            # PortAudio thread silently: record it; the app watchdog ends
+            # capture at its next tick, preserving everything so far.
+            self.callback_error = type(e).__name__
+            return
         with self._lock:
             self._frames.append(data)
         rms = float(np.sqrt(np.mean(np.square(data))))
@@ -90,12 +107,15 @@ class Recorder:
         self._blocks = 0
         self._voiced_blocks = 0
         self._silent_run = 0
+        self.callback_error = None
+        device = self._resolve_device()
+        self._device_index = device
         self._stream = sd.InputStream(
             samplerate=self.sample_rate,
             channels=1,
             dtype="float32",
             blocksize=self.blocksize,
-            device=self._resolve_device(),
+            device=device,
             latency="high",
             callback=self._callback,
         )
@@ -114,6 +134,8 @@ class Recorder:
         self.level = 0.0
         with self._lock:
             frames, self._frames = self._frames, []
+        journal, self.journal = self.journal, None
+        journal_stats = journal.finalize() if journal is not None else {}
         buf = np.concatenate(frames) if frames else np.zeros(0, dtype=np.float32)
         block_sec = self.blocksize / self.sample_rate
         self.stats = {
@@ -122,9 +144,41 @@ class Recorder:
             "overflow_blocks": self._overflow_blocks,
             "voiced_pct": 100.0 * self._voiced_blocks / self._blocks if self._blocks else 0.0,
             "trailing_silence_sec": self._silent_run * block_sec,
+            "journal_dropped_blocks": journal_stats.get("queue_dropped", 0),
+            "journal_degraded": journal_stats.get("degraded", False),
+            "incomplete_tail": journal_stats.get("finalized") is False,
         }
+        if self.discontinuity is not None:
+            self.stats["device_discontinuity"] = self.discontinuity
+            self.discontinuity = None
         return buf
 
     @property
     def recording(self):
         return self._stream is not None
+
+    def capture_health(self) -> dict:
+        """Device/callback health for the app watchdog (M03 task 5): a dead
+        stream, a captured callback exception, or an input device that
+        vanished from the system while recording. Reported, never guessed —
+        the caller decides how to end the capture."""
+        if self._stream is None:
+            return {"ok": True}
+        try:
+            active = bool(self._stream.active)
+        except Exception:
+            active = False
+        device_gone = False
+        if self._device_index is not None:
+            try:
+                dev = sd.query_devices(self._device_index)
+                device_gone = dev["max_input_channels"] < 1
+            except Exception:
+                device_gone = True  # index no longer exists
+        return {
+            "ok": active and self.callback_error is None and not device_gone,
+            "stream_active": active,
+            "callback_error": self.callback_error,
+            "device_gone": device_gone,
+            "device": self.device_name,
+        }

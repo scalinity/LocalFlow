@@ -1,12 +1,18 @@
 """LocalFlow V2: dated observability, persistent store, training evidence.
 
-M02 introduces this package. It layers on the existing V1 pipeline without
-changing dictation behavior: `eventlog` writes the dated JSONL event stream
+M02 introduced this package: `eventlog` writes the dated JSONL event stream
 (Spec S07), `store` owns the single-writer SQLite database and its artifacts
 (Spec S08/S29), `importer` performs the lossless legacy import, and
 `training` implements the opt-in evidence collector (Spec S29.1-S29.4).
-`importer` is deliberately not imported here: it reaches into scripts/
-(which the app bundle does not ship) and only the import CLI/tests use it.
+
+M03 adds the resilient capture/inference layer (Spec S06/S09):
+`capture_journal` persists audio blocks off the callback for crash
+recovery, `capabilities` publishes the conservative ASR manifest (S30.1),
+and `supervisor` owns the fresh model-worker subprocess. The worker entry
+point itself (`worker`) is deliberately not imported here: it runs only as
+`python -m localflow.v2.worker` in its own process, and `importer` stays
+out because it reaches into scripts/ (app bundle does not ship it).
 """
 
-from . import ids, eventlog, store, training  # noqa: F401
+from . import (capabilities, capture_journal, eventlog, ids, store,  # noqa: F401
+               supervisor, training)

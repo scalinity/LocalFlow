@@ -40,14 +40,23 @@ class Transcriber:
         self.load_error = None
         self._model = None
         self._lock = threading.Lock()
+        # M03 (S29.5): the original-sample ranges actually decoded for the
+        # last transcribe() call — [[start, end], ...], half-open, exact.
+        self.last_decode_ranges = None
 
-    def load(self):
+    def load(self, on_phase=None):
+        """on_phase("loading"|"warming") lets a caller report engine
+        lifecycle states (Spec S09) while load() stays one call."""
         try:
             import mlx.core as mx
             from parakeet_mlx import from_pretrained
             from parakeet_mlx.audio import get_logmel
 
+            if on_phase is not None:
+                on_phase("loading")
             model = from_pretrained(self.model_id)
+            if on_phase is not None:
+                on_phase("warming")
             # Warm up on half a second of silence so Metal kernels compile
             # now, not on the first real dictation.
             silence = mx.zeros(int(0.5 * model.preprocessor_config.sample_rate))
@@ -70,6 +79,7 @@ class Transcriber:
         if self._model is None:
             raise RuntimeError(f"model not loaded: {self.load_error}")
         if audio.size == 0:
+            self.last_decode_ranges = []
             return ""
 
         import mlx.core as mx
@@ -81,6 +91,7 @@ class Transcriber:
 
         with self._lock:
             if audio.size / cfg.sample_rate <= self.CHUNK_SEC * 1.5:
+                self.last_decode_ranges = [[0, int(audio.size)]]
                 mel = get_logmel(mx.array(audio), cfg)
                 return model.generate(mel)[0].text.strip()
             return self._transcribe_chunked(model, cfg, audio).strip()
@@ -99,10 +110,12 @@ class Transcriber:
         chunk = int(self.CHUNK_SEC * cfg.sample_rate)
         overlap = int(self.OVERLAP_SEC * cfg.sample_rate)
         all_tokens = []
+        ranges = []
         for start in range(0, len(audio), chunk - overlap):
             end = min(start + chunk, len(audio))
             if end - start < cfg.hop_length:
                 break
+            ranges.append([int(start), int(end)])
             mel = get_logmel(mx.array(audio[start:end]), cfg)
             result = model.generate(mel)[0]
             offset = start / cfg.sample_rate
@@ -121,5 +134,6 @@ class Transcriber:
                     all_tokens = merge_longest_common_subsequence(
                         all_tokens, result.tokens, overlap_duration=self.OVERLAP_SEC
                     )
+        self.last_decode_ranges = ranges
         sentences = tokens_to_sentences(all_tokens, DecodingConfig().sentence)
         return sentences_to_result(sentences).text

@@ -60,3 +60,20 @@ The event writer's unresolved-job callback is `Store.unresolved_job_ids`
 `artifact_ids` must resolve to artifact rows or carry a
 `missing_reasons` entry; `Store.verify()` enforces this and reports
 orphan payload files.
+
+## M03 additions (fields only; no frozen identity changed)
+
+- `write_audio_artifact(dtype="pcm16")` writes a quantized derivative
+  that **requires `parent_artifact_id`** and is marked `lossless: false`,
+  `quantized_from_dtype: float32` (S29.5: quantization is never labeled
+  lossless; kind `audio_wav_pcm16` vs `audio_wav_f32`).
+- `bump_job_attempt(job_id)` increments a job's attempt for a retry that
+  keeps the `job_id` (contracts/jobs.md).
+- `update_job_state(..., retry=True)` allows exactly one terminal-state
+  re-open — `failed_recoverable` → `queued` — for the deliberate recovery
+  retry; every other transition out of a terminal state stays discarded
+  (E12: exactly one logical terminal outcome per stale-result race).
+- Recovery audio under the journal root (`v2-journal/job-<id>.wav`) is a
+  parent-owned file, not a store artifact; it is not lease-governed and
+  expires by mtime with the audio-failed retention knob (contracts/
+  capture.md).

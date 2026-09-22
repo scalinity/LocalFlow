@@ -1,0 +1,54 @@
+{
+ "run_utc": "2026-09-22T01:39:17Z",
+ "machine": {
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "python": "3.14.7"
+ },
+ "hotkey_ack": {
+  "n": 200,
+  "hotkey_to_overlay_ms": {
+   "p50": 0.112,
+   "p95": 0.132,
+   "max": 0.215
+  },
+  "target_p95_ms": 50.0,
+  "passes_p95": true,
+  "journal_enabled": true
+ },
+ "capture_queue": {
+  "flood_blocks": 3000,
+  "handoff_ms": {
+   "p50": 0.0,
+   "p95": 0.0,
+   "max": 0.005
+  },
+  "max_queue_depth_observed": 256,
+  "queue_bound": 256,
+  "stayed_bounded": true,
+  "queue_dropped": 2744,
+  "blocks_written": 256
+ },
+ "worker_fake": {
+  "restarts": 3,
+  "spawn_to_result_ms": [
+   59.3,
+   58.3,
+   57.1
+  ],
+  "note": "fake worker: protocol + spawn overhead only"
+ },
+ "worker_real": {
+  "engines": {
+   "asr": "ready",
+   "cleanup": "ready"
+  },
+  "load_to_engines_sec": 2.35,
+  "worker_rss_bytes_idle": 2727723008,
+  "first_transcribe_ms": 62.9,
+  "worker_rss_bytes_after_asr": 2727936000,
+  "kill9_restart_to_result_sec": 2.05,
+  "worker_rss_bytes_restarted": 2726395904,
+  "conditions": "offline (HF_HUB_OFFLINE=1), page-cache-warm models",
+  "rss_definition": "ps -o rss (resident size) of the worker process"
+ }
+}

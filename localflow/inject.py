@@ -16,6 +16,13 @@ def _set_clipboard(text: str):
     pb.setString_forType_(text, NSPasteboardTypeString)
 
 
+def copy_text(text: str) -> bool:
+    """Leave text on the clipboard for a manual insert (M03 recovery
+    action: raw-export of a failed dictation). No synthetic keystroke."""
+    _set_clipboard(text)
+    return True
+
+
 def paste_text(text: str, restore_clipboard: bool = True) -> bool:
     """Paste text at the cursor. Returns True if the Cmd+V was posted.
 
