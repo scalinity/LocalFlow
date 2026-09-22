@@ -74,13 +74,14 @@ class Proposal:
     join: str = JOIN_WORD
     reason: Optional[str] = None
     review: bool = False    # surface as a review suggestion, never applied
+    rule_id: Optional[str] = None  # M05: approving vocabulary entry id
 
     def to_edit(self, output_span: Span) -> "EditRecord":
         return EditRecord(
             cls=self.cls, op=self.op, input_span=self.span,
             output_span=output_span, input_text=self.input_text,
             output_text=self.output_text, value=self.value, unit=self.unit,
-            layer=self.layer, reason=self.reason)
+            layer=self.layer, reason=self.reason, rule_id=self.rule_id)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -97,6 +98,7 @@ class EditRecord:
     unit: Optional[str]
     layer: int
     reason: Optional[str]
+    rule_id: Optional[str] = None  # approving rule for vocabulary edits
 
     def to_json(self) -> dict:
         return {
@@ -106,6 +108,7 @@ class EditRecord:
             "input_text": self.input_text, "output_text": self.output_text,
             "value": _value_json(self.value), "unit": self.unit,
             "layer": self.layer, "reason": self.reason,
+            "rule_id": self.rule_id,
         }
 
     @staticmethod
@@ -116,7 +119,7 @@ class EditRecord:
             output_span=Span(*d["output_span"]),
             input_text=d["input_text"], output_text=d["output_text"],
             value=d["value"], unit=d.get("unit"), layer=d.get("layer", 4),
-            reason=d.get("reason"))
+            reason=d.get("reason"), rule_id=d.get("rule_id"))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -132,6 +135,7 @@ class RejectedProposal:
     unit: Optional[str]
     reason: str            # e.g. overlap_conflict, ambiguous_same_span,
                            # invalid_value, unknown_skill, protected_span
+    rule_id: Optional[str] = None
 
     def to_json(self) -> dict:
         return {
@@ -139,7 +143,7 @@ class RejectedProposal:
             "input_text": self.input_text,
             "output_text": self.output_text,
             "value": _value_json(self.value), "unit": self.unit,
-            "reason": self.reason,
+            "reason": self.reason, "rule_id": self.rule_id,
         }
 
 

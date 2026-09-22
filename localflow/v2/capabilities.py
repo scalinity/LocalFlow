@@ -85,18 +85,54 @@ def missing_reason_for(field: str, manifest=None) -> str:
         "not_captured_at_stage"
 
 
-def hint_disposition(manifest=None) -> dict:
-    """What happens to an offered hint set under this manifest (S30.1)."""
+def hint_disposition(manifest=None, hint_set=None) -> dict:
+    """What happens to an offered hint set under this manifest (S30.1).
+
+    With M05 a real HintSet can be offered; on this adapter contextual
+    biasing stays disabled, so the honest disposition is offered-but-
+    ignored — never a fabricated acceptance and never terms silently
+    concatenated onto the transcript."""
     manifest = manifest or asr_capability_manifest(None)
     caps = manifest["capabilities"]
     biasing_off = not caps["contextual_biasing"]["supported"]
+    offered = len(hint_set.terms) if hint_set is not None else 0
     return {
-        "offered_terms": 0,  # no selector ships before M05/M06
+        "offered_terms": offered,
         "accepted_terms": 0,
-        "ignored": biasing_off,
+        "ignored": bool(biasing_off and offered),
         "ignored_reason": ("disabled_until_qualified"
-                           if biasing_off else "unsupported_by_adapter"),
-        "note": "no Relevant Vocabulary Selector exists yet (M05/M06);"
-                " pre-decode biasing stays disabled until qualified and is"
-                " never emulated by concatenating terms onto the transcript",
+                           if biasing_off else "unsupported_by_adapter")
+        if offered else None,
+        "hint_set_id": getattr(hint_set, "hint_set_id", None),
+        "vocabulary_revision": getattr(hint_set, "vocabulary_revision",
+                                       None),
+        "note": "pre-decode biasing stays disabled until qualified and is"
+                " never emulated by concatenating terms onto the"
+                " transcript; a post-ASR dictionary repair is recorded as"
+                " normalization, never as a decoder hit",
+    }
+
+
+def asr_hint_request_fields(hint_set, manifest=None) -> dict | None:
+    """S30.1 request-field extension point: the engine-neutral fields a
+    *qualified* adapter would receive. Returns None on this adapter —
+    the dict is built only when the capability manifest actually
+    supports contextual biasing, so no request ever pretends to carry
+    hints the decoder ignored. The wiring is: qualified adapter →
+    serialize these fields into the decode request; unqualified adapter
+    → None plus the logged hint_disposition above."""
+    manifest = manifest or asr_capability_manifest(None)
+    if not manifest["capabilities"]["contextual_biasing"]["supported"]:
+        return None
+    return {
+        "hint_set_id": hint_set.hint_set_id,
+        "context_snapshot_id": None,   # M06 feeds the context snapshot id
+        "terms": [
+            {"canonical": t.canonical, "scope": [t.scope_kind,
+                                                 t.scope_value],
+             "source": t.source, "score": list(t.score)}
+            for t in hint_set.terms],
+        "language_hint": None,         # language_hint is separately
+                                       # qualified; None until then
+        "term_limit": hint_set.term_limit,
     }

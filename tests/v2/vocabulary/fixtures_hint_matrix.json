@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "milestone": "M05",
+  "family": "hint_discrimination_matrix",
+  "origin": "synthetic",
+  "sanitization": "All entries, sentences and distractors are synthetic; no transcript text from the private log.",
+  "note": "E18.3 text-side controlled matrix: 8 targets x 5 sentence templates = 40 labeled bases; each base is run under the four primary hint conditions (none, true-only, true+similar-distractor, distractor-only) plus the wrong-workspace control, with mangled (recovery) and correct (flip) text variants. All variants of a target share one family. Acoustic conclusions require M15 audio; nothing here claims acoustic improvement.",
+  "templates": [
+    "deploy the {X} service now",
+    "I use {X} every morning",
+    "the {X} docs are open",
+    "let us try {X} tomorrow",
+    "ask {X} about the build"
+  ],
+  "targets": [
+    {"target_id": "claude-code", "family_id": "fam-hm-claude-code", "canonical": "Claude Code", "mangled": "clod code", "distractor_canonical": "Cloud Code", "distractor_alias": "claude code"},
+    {"target_id": "claude", "family_id": "fam-hm-claude", "canonical": "Claude", "mangled": "clod", "distractor_canonical": "Clawed", "distractor_alias": "claude"},
+    {"target_id": "pyobjc", "family_id": "fam-hm-pyobjc", "canonical": "PyObjC", "mangled": "py obj c", "distractor_canonical": "PieObjC", "distractor_alias": "pyobjc"},
+    {"target_id": "qwen", "family_id": "fam-hm-qwen", "canonical": "Qwen", "mangled": "queen", "distractor_canonical": "Quinn", "distractor_alias": "qwen"},
+    {"target_id": "localflow", "family_id": "fam-hm-localflow", "canonical": "LocalFlow", "mangled": "local flow", "distractor_canonical": "LocaleFlow", "distractor_alias": "localflow"},
+    {"target_id": "wispr", "family_id": "fam-hm-wispr", "canonical": "Wispr Flow", "mangled": "whisper flow", "distractor_canonical": "Wisper Flow", "distractor_alias": "wispr flow"},
+    {"target_id": "parakeet", "family_id": "fam-hm-parakeet", "canonical": "Parakeet", "mangled": "para kite", "distractor_canonical": "Paraglide", "distractor_alias": "parakeet"},
+    {"target_id": "macbook", "family_id": "fam-hm-macbook", "canonical": "MacBook", "mangled": "mac book", "distractor_canonical": "Mack Book", "distractor_alias": "macbook"}
+  ]
+}

@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
-  "active_milestone": "M04",
+  "active_milestone": "M05",
   "status": "implemented_pending_human",
-  "status_reason": "All automatable M04 work and checks passed on post-review code (4 new normalization suites incl. the 140 owning fixtures, all M01/M02/M03 suites, both model-backed suites, benchmark re-run after review fixes at P95 4.27 ms vs the 25 ms budget). The /review-2 → /address loop completed: all 3 criticals and every warning from both reviewers were fixed in-session with regression tests (the AC04 scan was vacuous and now verifiably scans); deferred suggestions carry reasons in acceptance/M04/results.json. Pending is the milestone's native human dictation check (versions, percentages, an address, slash prose across profiles) — it does not gate M05's automatable work.",
-  "source_commit": "adc872bd0c34b4f38e9c1a5f3f99ce8b31d9c1ab",
-  "source_commit_note": "M04 was implemented on top of this commit (M03 close-out); the M04 commit follows.",
-  "requirements": ["LF-R06", "LF-R07", "LF-R28", "LF-R30"],
+  "status_reason": "All automatable M05 work and checks passed on post-review code (4 new vocabulary suites — 40 EV-07 owning fixtures, the E18.3 40x4 text matrix, store/pipeline/hit-selection coverage — plus every M01–M04 suite and both model-backed suites green, and the 10k-entry benchmark re-run after review fixes at selector p95 5.1 ms / normalize-with-dictionary p95 2.4 ms vs the 25 ms budget). The /review-2 → /address loop completed: the one critical (update_entry crashing on the tuple-alias format approve_entry and import_json pass — the Approve flow could never land) and every warning from both reviewers were fixed in-session with regression tests; deferred suggestions carry reasons in acceptance/M05/results.json. Pending is the milestone's native human dictionary trial (panel + alias scope behavior + live dictation with a global term; the workspace-scoped live half waits for M06 destination awareness) — it does not gate M06's automatable work.",
+  "source_commit": "9d53b4fdebcbfbdf964113af66e5d36f57250f14",
+  "source_commit_note": "M05 was implemented on top of this commit (M04 close-out); the M05 commit follows.",
+  "requirements": ["LF-R08", "LF-R28", "LF-R29"],
   "registry": "docs/v2/registry.json",
-  "automated_results": ["docs/v2/acceptance/M04/results.json"],
-  "benchmark_runs": ["docs/v2/benchmarks/20260922-012259-m04/m04.json"],
+  "automated_results": ["docs/v2/acceptance/M05/results.json"],
+  "benchmark_runs": ["docs/v2/benchmarks/20260922-035958-m05/m05.json"],
   "pending_human": [
-    "native-m04-dictation-profiles"
+    "native-m05-dictionary-trial"
   ],
-  "handoff": "docs/v2/handoffs/M04.md",
-  "next_milestone": "M05",
+  "handoff": "docs/v2/handoffs/M05.md",
+  "next_milestone": "M06",
   "next_milestone_dependency_eligible": true
 }

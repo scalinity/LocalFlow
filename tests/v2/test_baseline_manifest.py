@@ -107,7 +107,7 @@ def test_fixture_manifest_reserved_only():
                 for name, val in counted.items():
                     assert val > 0, (fam["family"], key, name)
     total = sum(f["planned_count"] for f in fm["families"])
-    assert total == 320 + 60 + 80 + 60 + 20 + 100 + 30 + 32 + 24, total
+    assert total == 320 + 60 + 80 + 60 + 20 + 100 + 30 + 32 + 24 + 40, total
     print(f"ok  fixture families honest ({total} planned; created strata "
           f"carry owners and counts)")
 

@@ -128,7 +128,12 @@ def test_real_worker_end_to_end():
                 assert prep["decode_ranges"] == [[0, 16000]]
                 assert prep["artifact_id"] == env["artifact_ids"][
                     "original_audio"]
-                assert env["recognition"]["hint_disposition"]["ignored"]
+                # M05 semantics: this collector-only path offers no hint
+                # set, so nothing is ignored (ignored False, reason null).
+                hd = env["recognition"]["hint_disposition"]
+                assert hd["offered_terms"] == 0
+                assert hd["ignored"] is False and \
+                    hd["ignored_reason"] is None
                 assert env["missing_reasons"]["asr_confidence"] == \
                     "unsupported_by_adapter"
                 assert st.verify()["ok"]

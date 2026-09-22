@@ -228,3 +228,16 @@ M05 feeds `registered_skills` (dictionary-scoped) and vocabulary terms;
 M06 feeds `ContextSnapshot` fields (destination app, path context,
 workspace identifiers). The M04 surface already accepts them; the live
 wiring lands with those milestones. No speculative field is read.
+
+## M05 live status (layer 5 fed)
+
+Dictionary vocabulary now feeds layer 5: `ContextSnapshot.vocabulary`
+carries the immutable `VocabularySnapshot`, `grammar_vocabulary`
+proposes scoped-alias edits with `rule_id` attribution, and
+dictionary-scoped skills populate `registered_skills` at policy
+construction (the previously inert unknown-skill suggestions now
+resolve through the dictionary). Edit/Proposal/Rejected records carry
+an optional `rule_id` (additive; JSON round-trips). Layer-5 token
+matching now anchors on token cores so edge punctuation survives —
+`grammar_identifiers` received the same fix. See
+`contracts/vocabulary.md` for the full matching contract.

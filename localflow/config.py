@@ -63,6 +63,11 @@ DEFAULTS = {
     # Locale drives number rendering (separators, symbols, date shape);
     # it belongs to the job, not the machine's location (S10).
     "normalization_locale": "en-US",
+    # M05 (Spec S11/S30.1): the Relevant Vocabulary Selector's term
+    # budget — the bounded subset offered in one HintSet. Entries beyond
+    # the limit are recorded as omissions with a reason, never silently
+    # dropped.
+    "hint_term_limit": 100,
 }
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent

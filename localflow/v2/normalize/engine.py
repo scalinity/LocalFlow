@@ -95,7 +95,7 @@ def _reject(p: Proposal, reason: str) -> RejectedProposal:
     return RejectedProposal(cls=p.cls, op=p.op, span=p.span,
                             input_text=p.input_text,
                             output_text=p.output_text, value=p.value,
-                            unit=p.unit, reason=reason)
+                            unit=p.unit, reason=reason, rule_id=p.rule_id)
 
 
 def normalize(text: str, policy: NormalizationPolicy,
@@ -122,6 +122,7 @@ def normalize(text: str, policy: NormalizationPolicy,
     for grammar in syn_mod.ALL_SYNTAX_GRAMMARS:
         proposals.extend(grammar(host))
     proposals.extend(syn_mod.grammar_identifiers(host))
+    proposals.extend(syn_mod.grammar_vocabulary(host))
 
     # Review suggestions never apply (unknown skills, invalid values…).
     rejected: list[RejectedProposal] = [
@@ -287,7 +288,8 @@ def _make_edit(host, p: Proposal, eff_start: int, eff_end: int) -> EditRecord:
         cls=p.cls, op=p.op,
         input_span=Span(eff_start, eff_end), output_span=Span(0, 0),
         input_text=input_text, output_text=output_text,
-        value=p.value, unit=p.unit, layer=p.layer, reason=p.reason)
+        value=p.value, unit=p.unit, layer=p.layer, reason=p.reason,
+        rule_id=p.rule_id)
 
 
 def _apply(text: str, applied: list[_AppliedEdit]) -> str:
@@ -307,7 +309,7 @@ def _apply(text: str, applied: list[_AppliedEdit]) -> str:
             input_text=ae.edit.input_text,
             output_text=ae.edit.output_text, value=ae.edit.value,
             unit=ae.edit.unit, layer=ae.edit.layer,
-            reason=ae.edit.reason)
+            reason=ae.edit.reason, rule_id=ae.edit.rule_id)
         delta += len(ae.edit.output_text) \
             - (ae.eff_end - ae.eff_start)
     return out

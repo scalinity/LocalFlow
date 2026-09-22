@@ -8,6 +8,7 @@ Capture blocks journal to disk off the audio callback
 complete block with an honest incomplete-tail flag.
 """
 
+import json
 import os
 import pathlib
 import queue
@@ -142,7 +143,29 @@ class AppDelegate(NSObject):
             self.v2log.emit("normalization.policy_invalid", level="WARNING",
                             reason_code=type(e).__name__,
                             outcome="stage_disabled")
-        self._norm_context = None  # M06 feeds destination/path context
+        # M05 (Spec S11/S30.1): the scoped dictionary and the Relevant
+        # Vocabulary Selector. Legacy terms are adopted and the Claude
+        # coding suggestions seeded once (both idempotent). A store
+        # failure degrades to vocabulary-off with an event — never a
+        # startup crash, never a dropped dictation.
+        self._vocab = None
+        self._vocab_state_rev = -1
+        self._vocab_snapshot = None
+        self._hint_selector = None
+        self._dict_panel = None
+        try:
+            self._vocab = v2.vocabulary_store.VocabularyStore(self.store)
+            self._vocab.seed_from_legacy_artifacts()
+            self._vocab.seed_suggested_coding_terms()
+            self._hint_selector = v2.vocabulary.RelevantVocabularySelector(
+                max_terms=int(cfg.get("hint_term_limit", 100)))
+        except Exception as e:
+            self._vocab = None
+            self.v2log.emit("vocabulary.store_unavailable", level="WARNING",
+                            reason_code=type(e).__name__,
+                            outcome="vocabulary_off")
+        self._norm_context = None  # per-job vocabulary context (M06 adds
+        #                            destination/path fields)
         self.overlay = None
         self.hotkey = None
         self.mouse_trigger = None
@@ -174,6 +197,43 @@ class AppDelegate(NSObject):
         self._watchdog_armed = False
         self._lost_ticks = 0
         self._failed_pill_timer = None
+
+    @objc.python_method
+    def _vocab_job_state(self):
+        """M05: the (policy, context, hint_set) trio a job captures at
+        hotkey-down. The snapshot + policy rebuild only when the store's
+        revision counter changed; in-flight jobs hold the objects they
+        captured, so a rule edit mid-flight changes only future jobs and
+        the job keeps its vocabulary revision (AC03). The hint set is
+        selected fresh per job from the cached snapshot — frozen before
+        decoding, never rebuilt from the answer (S30.1)."""
+        policy, context = self._norm_policy, self._norm_context
+        hint_set = None
+        if self._vocab is not None and policy is not None \
+                and policy.profile != "off":
+            try:
+                rev = self._vocab.revision()
+                if rev != self._vocab_state_rev:
+                    snapshot = self._vocab.snapshot(None)  # M06 feeds scope
+                    self._norm_policy = v2_normalize.NormalizationPolicy(
+                        locale=policy.locale, profile=policy.profile,
+                        registered_skills=dict(snapshot.skills))
+                    self._norm_context = v2_normalize.ContextSnapshot(
+                        vocabulary=snapshot, source="m05_vocabulary")
+                    self._vocab_snapshot = snapshot
+                    self._vocab_state_rev = rev
+                policy, context = self._norm_policy, self._norm_context
+                if self._hint_selector is not None \
+                        and self._vocab_snapshot is not None:
+                    hint_set = self._hint_selector.select(
+                        self._vocab_snapshot)
+            except Exception as e:
+                # A vocabulary failure must never disable normalization:
+                # keep the last good state and say so.
+                self.v2log.emit("vocabulary.refresh_failed", level="WARNING",
+                                reason_code=type(e).__name__,
+                                outcome="last_good_state")
+        return policy, context, hint_set
 
     @objc.python_method
     def _pipeline_info(self):
@@ -474,6 +534,17 @@ class AppDelegate(NSObject):
                         outcome="hands_free" if hands_free else None)
         self.state = STATE_RECORDING
         self.overlay.showWithMode_(MODE_RECORDING)
+        # M05: freeze the vocabulary policy/context/hint set into the job
+        # (pre-decode; edits after this point affect only future jobs,
+        # AC03). Runs AFTER the overlay so selector/snapshot work never
+        # delays the hotkey-down visible feedback (S06/S24).
+        try:
+            self._job.update(dict(
+                zip(("norm_policy", "norm_context", "hint_set"),
+                    self._vocab_job_state())))
+        except Exception as e:
+            self.v2log.emit("vocabulary.refresh_failed", level="WARNING",
+                            job_id=job_id, reason_code=type(e).__name__)
         if hands_free or float(self.cfg["max_duration_sec"]) > 0:
             cap = (float(self.cfg["max_duration_sec"])
                    if float(self.cfg["max_duration_sec"]) > 0 else 3600.0)
@@ -593,6 +664,19 @@ class AppDelegate(NSObject):
                                 job_id=job["job_id"],
                                 reason_code=type(e).__name__)
                 ctx = None
+            # M05 (S30.1): the hint set was frozen at hotkey-down; store
+            # it with its disposition BEFORE recognition so the retained
+            # set is what was actually offered pre-decode.
+            if ctx is not None and job.get("hint_set") is not None:
+                job["hint_disposition"] = v2.capabilities.hint_disposition(
+                    self._capability_manifest, job["hint_set"])
+                try:
+                    self.collector.on_hint_set(
+                        ctx, job["hint_set"], job["hint_disposition"])
+                except Exception as e:
+                    self.v2log.emit("training.capture_failed", level="ERROR",
+                                    job_id=job["job_id"],
+                                    reason_code=type(e).__name__)
             job.update({"audio": audio, "stats": s, "ctx": ctx,
                         "failed": False, "cancelled": False, "attempt": 1,
                         "raw": None, "wav": None})
@@ -843,8 +927,10 @@ class AppDelegate(NSObject):
                             decode_ranges=res.get("decode_ranges"),
                             capabilities=self._capability_manifest[
                                 "capabilities"],
-                            hint_disposition=v2.capabilities.hint_disposition(
-                                self._capability_manifest))
+                            hint_disposition=job.get("hint_disposition")
+                            or v2.capabilities.hint_disposition(
+                                self._capability_manifest,
+                                job.get("hint_set")))
                 except Exception as e:
                     self.v2log.emit("training.capture_failed", level="ERROR",
                                     job_id=job_id,
@@ -852,16 +938,20 @@ class AppDelegate(NSObject):
                 # M04 (Spec S10): typed normalization between ASR and
                 # cleanup, in this process (deterministic, model-free).
                 # A normalization bug must never drop a dictation: any
-                # exception passes the raw transcript through.
+                # exception passes the raw transcript through. The job's
+                # own captured policy/context are used (M05 AC03: an
+                # in-flight job keeps its vocabulary revision).
+                norm_policy = job.get("norm_policy") or self._norm_policy
+                norm_context = job.get("norm_context") or self._norm_context
                 norm_text = raw
                 norm_result = None
-                if raw and self._norm_policy is not None \
-                        and self._norm_policy.profile != "off":
+                if raw and norm_policy is not None \
+                        and norm_policy.profile != "off":
                     self._job_state(job_id, "normalizing")
                     tn = time.monotonic()
                     try:
                         norm_result = v2_normalize.normalize(
-                            raw, self._norm_policy, self._norm_context)
+                            raw, norm_policy, norm_context)
                         norm_text = norm_result.text
                     except Exception as e:
                         self.v2log.emit(
@@ -882,12 +972,25 @@ class AppDelegate(NSObject):
                         if ctx is not None and norm_result is not None:
                             self.collector.on_normalization_result(
                                 ctx, norm_result, source_text=raw,
-                                policy=self._norm_policy,
-                                context=self._norm_context)
+                                policy=norm_policy,
+                                context=norm_context)
                     except Exception as e:
                         self.v2log.emit("training.capture_failed",
                                         level="ERROR", job_id=job_id,
                                         reason_code=type(e).__name__)
+                    # M05 (task 5): only applied approved matches count as
+                    # usage hits; suggestions never reached the engine.
+                    vocab_rules = [e.rule_id for e in norm_result.edits
+                                   if e.cls == "vocabulary" and e.rule_id] \
+                        if norm_result is not None else []
+                    if vocab_rules and self._vocab is not None:
+                        try:
+                            self._vocab.record_hits(vocab_rules)
+                        except Exception as e:
+                            self.v2log.emit(
+                                "vocabulary.hit_write_failed",
+                                level="WARNING", job_id=job_id,
+                                reason_code=type(e).__name__)
                 job["normalized"] = norm_text
                 self._job_state(job_id, "cleaning")
                 if raw:
@@ -1279,6 +1382,26 @@ class AppDelegate(NSObject):
         menu.addItem_(recovery_item)
         self._refresh_recovery_menu()
 
+        # Dictionary management (Spec S11, M05): the management panel
+        # (search, aliases, scopes, approval, conflict preview, phrase
+        # sandbox) plus bulk JSON import/export.
+        dictionary = NSMenu.alloc().init()
+        for title, action in (
+            ("Dictionary…", "openDictionaryPanel:"),
+            ("Import Dictionary JSON…", "importDictionaryJSON:"),
+            ("Export Dictionary JSON…", "exportDictionaryJSON:"),
+        ):
+            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+                title, action, ""
+            )
+            item.setTarget_(self)
+            dictionary.addItem_(item)
+        dictionary_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "Dictionary", None, ""
+        )
+        dictionary_item.setSubmenu_(dictionary)
+        menu.addItem_(dictionary_item)
+
         menu.addItem_(NSMenuItem.separatorItem())
         quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
             "Quit LocalFlow", "terminate:", "q"
@@ -1316,6 +1439,64 @@ class AppDelegate(NSObject):
 
     def markLastCorrect_(self, sender):
         self.collector.mark_last_correct()
+
+    # ---- Dictionary management (Spec S11, M05) ---------------------------
+
+    def openDictionaryPanel_(self, sender):
+        if self._vocab is None:
+            return
+        try:
+            if self._dict_panel is None:
+                from .v2 import dictionary_panel
+                self._dict_panel = \
+                    dictionary_panel.DictionaryPanelController.alloc(
+                    ).initWithVocabularyStore_(self._vocab)
+            self._dict_panel.showWindow_(sender)
+        except Exception as e:
+            self.v2log.emit("vocabulary.panel_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+
+    def importDictionaryJSON_(self, sender):
+        if self._vocab is None:
+            return
+        from AppKit import NSOpenPanel
+        panel = NSOpenPanel.openPanel()
+        panel.setAllowedFileTypes_(["json"])
+        panel.setCanChooseDirectories_(False)
+        if panel.runModal() != 1 or panel.URLs() is None or not panel.URLs():
+            return
+        path = panel.URLs()[0].path()
+        try:
+            result = self._vocab.import_json(path)
+            self.v2log.emit(
+                "vocabulary.imported", level="INFO",
+                detail=f"created {result['created']}, updated"
+                       f" {result['updated']}, unchanged"
+                       f" {result['unchanged']}")
+        except Exception as e:
+            self.v2log.emit("vocabulary.import_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+
+    def exportDictionaryJSON_(self, sender):
+        if self._vocab is None:
+            return
+        from AppKit import NSSavePanel
+        panel = NSSavePanel.savePanel()
+        panel.setAllowedFileTypes_(["json"])
+        if panel.runModal() != 1 or panel.URL() is None:
+            return
+        path = panel.URL().path()
+        try:
+            doc = self._vocab.export_json()
+            pathlib.Path(path).write_text(
+                json.dumps(doc, ensure_ascii=False, indent=1),
+                encoding="utf-8")
+            self.v2log.emit(
+                "vocabulary.exported", level="INFO",
+                detail=f"{len(doc['entries'])} entries")
+        except Exception as e:
+            self.v2log.emit("vocabulary.export_failed", level="WARNING",
+                            reason_code=type(e).__name__)
 
     @objc.python_method
     def _refresh_recovery_menu(self):

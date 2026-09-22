@@ -396,8 +396,9 @@ def grammar_domain_email(host):
 
 
 # ---------------------------------------------------------------------------
-# Layer 5: context-supported identifiers (M05/M06-fed; absent context
-# means no proposal — casing conventions are never invented).
+# Layer 5: context-supported vocabulary (M05 dictionary snapshot) and
+# context-fed identifiers (M06-fed; absent context means no proposal —
+# casing conventions are never invented).
 # ---------------------------------------------------------------------------
 
 def grammar_identifiers(host):
@@ -413,12 +414,72 @@ def grammar_identifiers(host):
             if seq != words or not all(tk.is_word for tk in
                                        host.tokens[i:i + n]):
                 continue
-            span = Span(host.tokens[i].start, host.tokens[i + n - 1].end)
+            # Match token cores so edge punctuation survives (same rule
+            # as grammar_vocabulary).
+            toks = host.tokens[i:i + n]
+            raw = host.text[toks[0].start:toks[-1].end]
+            lead = len(raw) - len(raw.lstrip(".,;:!?\"'“”«»()"))
+            trail = len(raw) - len(raw.rstrip(".,;:!?\"'“”«»()"))
+            span = Span(toks[0].start + lead, toks[-1].end - trail)
             yield Proposal(
                 layer=5, cls="identifier", op="context_identifier",
                 span=span, input_text=_text_of(host, span),
                 output_text=mapping[phrase], value=mapping[phrase],
                 unit="identifier", join=JOIN_WORD)
+
+
+def grammar_vocabulary(host):
+    """Scoped dictionary terms (S11): approved aliases → canonical, token
+    boundaries only, never substrings. The snapshot already applied scope
+    filtering and conflict masking; each proposal carries the approving
+    entry id (AC04 attribution). An already-canonical span emits nothing
+    and claims the span, so a shorter overlapping alias cannot rewrite
+    inside it on a later pass (idempotence shield). Sits at layer 5:
+    literals, protected syntax, skill intent and the typed grammar all
+    outrank it. Position-driven lookup by the alias's first word keeps
+    this O(tokens × candidates) instead of O(aliases × tokens)."""
+    snapshot = getattr(host.context, "vocabulary", None) \
+        if host.context else None
+    if snapshot is None:
+        return
+    by_first = snapshot.by_first_word()
+    claimed: list[Span] = []
+    tokens = host.tokens
+    for i, tok in enumerate(tokens):
+        candidates = by_first.get(tok.word)
+        if not candidates or not tok.is_word:
+            continue
+        for alias, target in candidates:
+            words = alias.split()
+            n = len(words)
+            if i + n > len(tokens):
+                continue
+            seq = tokens[i:i + n]
+            if [t.word for t in seq] != words or not all(
+                    t.is_word for t in seq):
+                continue
+            # Match the token CORES: edge punctuation attached to a raw
+            # token ("code,") is not part of the phrase and must survive.
+            raw = host.text[seq[0].start:seq[-1].end]
+            lead = len(raw) - len(raw.lstrip(".,;:!?\"'“”«»()"))
+            trail = len(raw) - len(raw.rstrip(".,;:!?\"'“”«»()"))
+            span = Span(seq[0].start + lead, seq[-1].end - trail)
+            text = host.text[span.start:span.end]
+            if text == target.canonical:
+                # Already canonical: no edit — but CLAIM the span so a
+                # shorter overlapping alias cannot rewrite inside it on
+                # a later pass ("Status Page" must not drift to "Status
+                # Pager"). Candidates iterate longest-first per position.
+                claimed.append(span)
+                continue
+            if any(span.overlaps(c) for c in claimed):
+                continue
+            yield Proposal(
+                layer=5, cls="vocabulary", op="scoped_alias",
+                span=span, input_text=text,
+                output_text=target.canonical, value=target.canonical,
+                unit="term", join=JOIN_WORD,
+                reason=target.verification, rule_id=target.entry_id)
 
 
 ALL_SYNTAX_GRAMMARS = (
@@ -432,7 +493,9 @@ ALL_SYNTAX_GRAMMARS = (
 )
 
 # Command-shaped classes blocked inside quote zones (numbers still
-# convert inside quotes).
+# convert inside quotes). Vocabulary is blocked there too: a quoted
+# literal is content (S11 "do not replace … a quoted literal").
 COMMAND_CLASSES = frozenset({
     "skill", "symbol", "markdown", "flag", "path", "domain", "email",
+    "vocabulary",
 })

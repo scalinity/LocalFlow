@@ -15,6 +15,7 @@
 | `worker.md` | Model-worker subprocess protocol, generations, fault policy | M03 | S06, S09 |
 | `capture.md` | Durable capture journal format and crash recovery | M03 | S06, S09 |
 | `normalization.md` | Typed spans, edit ledger, precedence, policies | M04 | S10, S14, S24, S29.4 |
+| `vocabulary.md` | Scoped dictionary entries, snapshots, HintSet/selector | M05 | S11, S30.1, S29.4 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
@@ -55,4 +56,10 @@ milestones add fields; they must not repurpose or weaken these identifiers.
   (parent-process placement, precedence/conflict rules, the documented
   literal-escape idempotence corner) and extends
   `training_evidence.md`'s normalization family to live capture; no
-  frozen identifier changed.
+  frozen identifier changed. M05 ships `vocabulary.md` (entry model,
+  scope precedence and conflict masking, the immutable snapshot feeding
+  layer 5, the selector and frozen HintSet, evidence and the
+  management surface), extends `store.md` with the additive schema-v3
+  vocabulary tables and a public writer-thread `submit()`, and updates
+  `asr_hints.md`/`training_evidence.md`/`normalization.md` live-status
+  sections; no frozen identifier changed and the registry stays 33/22.

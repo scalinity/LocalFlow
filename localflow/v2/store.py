@@ -139,6 +139,55 @@ _MIGRATIONS[2] = [
          ON imports(source_kind)""",
 ]
 
+# M05 (Spec S08 vocabulary table, S11): versioned canonical/alias records.
+# Additive only — no existing table or frozen identity changes; the
+# legacy dictionary artifacts imported by M02 stay untouched and seed
+# these rows (vocabulary_store.seed_legacy_terms).
+_MIGRATIONS[3] = [
+    """CREATE TABLE IF NOT EXISTS vocabulary_entries(
+         entry_id TEXT PRIMARY KEY,
+         canonical TEXT NOT NULL,
+         language TEXT,
+         kind TEXT NOT NULL DEFAULT 'term',
+         matching_mode TEXT NOT NULL DEFAULT 'phrase',
+         scope_kind TEXT NOT NULL DEFAULT 'global',
+         scope_value TEXT,
+         priority INTEGER NOT NULL DEFAULT 0,
+         pinned INTEGER NOT NULL DEFAULT 0,
+         usage_count INTEGER NOT NULL DEFAULT 0,
+         last_used_utc TEXT,
+         origin TEXT NOT NULL DEFAULT 'user',
+         enabled INTEGER NOT NULL DEFAULT 1,
+         approved INTEGER NOT NULL DEFAULT 0,
+         verification TEXT NOT NULL DEFAULT 'suggested',
+         revision INTEGER NOT NULL DEFAULT 1,
+         created_at_utc TEXT NOT NULL,
+         updated_at_utc TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS vocabulary_aliases(
+         entry_id TEXT NOT NULL,
+         alias TEXT NOT NULL,
+         language TEXT,
+         approved INTEGER NOT NULL DEFAULT 1,
+         PRIMARY KEY(entry_id, alias))""",
+    """CREATE TABLE IF NOT EXISTS vocabulary_history(
+         history_id INTEGER PRIMARY KEY AUTOINCREMENT,
+         entry_id TEXT NOT NULL,
+         revision INTEGER NOT NULL,
+         action TEXT NOT NULL,
+         change_json TEXT NOT NULL,
+         created_at_utc TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS vocabulary_meta(
+         key TEXT PRIMARY KEY, value TEXT NOT NULL)""",
+    """CREATE INDEX IF NOT EXISTS idx_vocabulary_aliases_entry
+         ON vocabulary_aliases(entry_id)""",
+    # One canonical spelling per scope, case-insensitively — "Servo"
+    # and "servo" in the same scope would otherwise coexist as rows and
+    # mask each other's lowered alias keys in every snapshot.
+    """CREATE UNIQUE INDEX IF NOT EXISTS idx_vocabulary_canonical_scope
+         ON vocabulary_entries(canonical COLLATE NOCASE, scope_kind,
+                                IFNULL(scope_value, ''))""",
+]
+
 
 # ---- IEEE float32 WAV (Spec S29.5: the original capture artifact) -------
 
@@ -304,6 +353,14 @@ class Store:
         """Barrier: all previously queued mutations have committed."""
         self._submit(lambda: None, wait=True, timeout=timeout)
 
+    def submit(self, fn, wait=True, timeout=15.0):
+        """Run ``fn(connection)`` on the writer thread — the sanctioned
+        entry point for same-package domain layers (M05
+        vocabulary_store) so they honor the single-writer discipline
+        while the connection itself stays private to this module."""
+        return self._submit(lambda: fn(self._db), wait=wait,
+                            timeout=timeout)
+
     def close(self, timeout=5.0):
         try:
             self.sync(timeout)
@@ -363,12 +420,15 @@ class Store:
         # (all DDL is IF NOT EXISTS / idempotent) when tables are missing.
         expected = {"schema_meta", "jobs", "artifacts", "imports", "import_runs",
                     "legacy_dictations", "training_examples", "training_revisions",
-                    "consent_revisions", "artifact_leases", "deletion_tombstones"}
+                    "consent_revisions", "artifact_leases", "deletion_tombstones",
+                    "vocabulary_entries", "vocabulary_aliases",
+                    "vocabulary_history", "vocabulary_meta"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         if version >= target and not expected <= have:
-            for stmt in _MIGRATIONS[1]:
-                self._db.execute(stmt)
+            for v_repair in range(1, target + 1):
+                for stmt in _MIGRATIONS[v_repair]:
+                    self._db.execute(stmt)
             self._db.commit()
             self.emit("store.schema_repaired", level="WARNING",
                       reason_code="missing_tables")

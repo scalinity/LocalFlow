@@ -131,6 +131,11 @@ class CaptureContext:
         self.normalization = None
         self.norm_text_artifact = None
         self.norm_ledger_artifact = None
+        # M05 (S30.1/S29.4 context family): the frozen pre-decode hint
+        # set — offered/accepted/ignored with omission reasons, stored
+        # before recognition so no later correction can relabel it.
+        self.context_hints = None
+        self.hint_set_artifact = None
         self.raw_artifact = None
         self.raw_text = None
         self.applied_artifact = None
@@ -249,6 +254,50 @@ class EvidenceCollector:
             "stage_duration_ms": stage_duration_ms,
         }
 
+    def on_hint_set(self, ctx, hint_set, disposition):
+        """M05 (S30.1/S29.4 context family): retain the frozen pre-decode
+        hint set as a lease-governed artifact and record the offered/
+        accepted/ignored disposition in the envelope. Called BEFORE
+        recognition so the stored set is what was actually offered — a
+        dictionary corrected after the fact is never rewritten into
+        "original hints" (S29.11). A store failure is swallowed."""
+        if not ctx.collecting or hint_set is None or ctx.example_id:
+            return
+        try:
+            ctx.hint_set_artifact = self.store.write_text_artifact(
+                job_id=ctx.job_id, stage="pre_decode",
+                role="hint_set", kind="hint_set_json",
+                retention_class="training",
+                text=json.dumps(hint_set.to_json(), ensure_ascii=False,
+                                sort_keys=True),
+                meta={"hint_set_id": hint_set.hint_set_id,
+                      "selector_revision": hint_set.selector_revision,
+                      "terms": len(hint_set.terms),
+                      "omitted": len(hint_set.omitted)})
+            self.store.grant_lease(
+                ctx.hint_set_artifact, "training",
+                days=self.store.retention_days["training_buffer"])
+        except Exception as e:
+            # The envelope degrades honestly (context stays in
+            # missing_reasons), but the degradation must be observable —
+            # the app's surrounding guard cannot fire through this
+            # swallow, so the event comes from here.
+            self.emit("training.capture_failed", level="ERROR",
+                      job_id=ctx.job_id, reason_code=type(e).__name__,
+                      outcome="hint_set_not_retained")
+            return
+        ctx.context_hints = {
+            "hint_set_id": hint_set.hint_set_id,
+            "selector_revision": hint_set.selector_revision,
+            "vocabulary_revision": hint_set.vocabulary_revision,
+            "offered_terms": len(hint_set.terms),
+            "omitted_terms": len(hint_set.omitted),
+            "omission_reasons": sorted({o["reason"]
+                                        for o in hint_set.omitted}),
+            "disposition": disposition,
+            "artifact_ids": {"hint_set": ctx.hint_set_artifact},
+        }
+
     def on_cleaner_observation(self, obs: dict):
         """Sink for TranscriptCleaner.observer — exact model inputs/outputs."""
         ctx = self._current
@@ -305,6 +354,19 @@ class EvidenceCollector:
                 idem_reason = None
             except Exception:
                 idem_reason = "evaluation_failed"
+        # M05: vocabulary provenance — which snapshot revision the job
+        # retained (AC03) and which approved rules produced edits (AC04
+        # attribution). rule ids are opaque entry ids, not content.
+        vocabulary_block = None
+        vocab_snapshot = getattr(context, "vocabulary", None) \
+            if context is not None else None
+        if vocab_snapshot is not None:
+            vocabulary_block = {
+                "revision": getattr(vocab_snapshot, "revision", None),
+                "applied_rule_ids": [
+                    e.rule_id for e in result.edits
+                    if e.cls == "vocabulary" and e.rule_id],
+            }
         # Envelope values: typed numbers/dates only. String-valued
         # command classes (emails, paths, skill tokens, codes…) carry
         # transcript-derived text in their value; those strings live in
@@ -312,6 +374,7 @@ class EvidenceCollector:
         # (retention hygiene, S29.14).
         ctx.normalization = {
             "policy_revision": result.policy_revision,
+            "vocabulary": vocabulary_block,
             "edits_count": len(result.edits),
             "rejected_count": len(result.rejected),
             "protected_count": len(result.protected),
@@ -605,6 +668,11 @@ class EvidenceCollector:
             del missing["normalization"]
             artifact_ids["normalization"] = (
                 ctx.norm_text_artifact or ctx.norm_ledger_artifact)
+        # M05 (S29.4 context family): the frozen pre-decode hint block
+        # exists exactly when a hint set was offered and captured.
+        context_hints = ctx.context_hints
+        if context_hints is not None:
+            del missing["context"]
         env = {
             "training_schema_version": 1,
             "example_id": ctx.example_id,
@@ -624,6 +692,7 @@ class EvidenceCollector:
             "audio_preparation": audio_preparation,
             "recognition": dict(ctx.capture_meta.get("recognition", {})),
             "normalization": normalization,
+            "context": context_hints,
             "cleanup": cleanup_detail,
             "artifact_ids": artifact_ids,
             "missing_reasons": missing,

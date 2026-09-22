@@ -1,6 +1,6 @@
 # Contract: ASR hint sets (capability-qualified)
 
-**Spec:** S30.1 · **Shape owner:** M01 · **Live owner:** M03 (capability boundary), M05/M06 (wiring) · **Suites:** EV-18
+**Spec:** S30.1 · **Shape owner:** M01 · **Live owner:** M03 (capability boundary), M05 (selector/wiring), M06 (context snapshot) · **Suites:** EV-18
 
 ## HintSet (immutable)
 
@@ -42,3 +42,23 @@ no-selector status: 0 offered, ignored with reason. The evidence envelope
 carries the manifest's capability block and this disposition, and its
 optional-ASR missing reasons use `unsupported_by_adapter` (not a
 fabricated value, never zero).
+
+## M05 live status
+
+The Relevant Vocabulary Selector ships: `localflow.v2.vocabulary`
+builds frozen HintSets from the scoped dictionary snapshot
+(`contracts/vocabulary.md`), captured per job at hotkey-down (after
+the overlay shows, so selector work never delays visible feedback)
+and stored pre-decode when collection is enabled.
+`hint_disposition(manifest, hint_set)` now reports the real offered
+count with `accepted_terms: 0` and `ignored: true`
+(`disabled_until_qualified`) — with **zero offered terms nothing is
+ignored** (`ignored` false, reason null); the note still states the
+boundary. `asr_hint_request_fields(hint_set, manifest)` is the
+adapter extension point and returns `None` until an adapter +
+checkpoint + runtime is separately qualified — no request ever
+pretends to carry hints the decoder ignored. Post-ASR recovery
+consumes the same snapshot; its repairs are normalization ledger
+edits with rule ids, never decoder hits (AC05). Cleanup consumes
+permitted context from M07 and is not a consumer yet. M06 feeds the
+`context_snapshot_id` field and live scope context.

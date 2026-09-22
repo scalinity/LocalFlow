@@ -12,7 +12,12 @@ and `supervisor` owns the fresh model-worker subprocess. The worker entry
 point itself (`worker`) is deliberately not imported here: it runs only as
 `python -m localflow.v2.worker` in its own process, and `importer` stays
 out because it reaches into scripts/ (app bundle does not ship it).
+
+M05 adds the scoped-vocabulary layer (Spec S11/S30.1): `vocabulary`
+(entries, immutable snapshots, the Relevant Vocabulary Selector and its
+frozen HintSet, sandbox/conflict-preview APIs) and `vocabulary_store`
+(the dictionary tables inside the single-writer store).
 """
 
 from . import (capabilities, capture_journal, eventlog, ids, store,  # noqa: F401
-               supervisor, training)
+               supervisor, training, vocabulary, vocabulary_store)

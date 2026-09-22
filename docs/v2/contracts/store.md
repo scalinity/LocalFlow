@@ -77,3 +77,17 @@ orphan payload files.
   parent-owned file, not a store artifact; it is not lease-governed and
   expires by mtime with the audio-failed retention knob (contracts/
   capture.md).
+
+## M05 additions (schema v3; no frozen identity changed)
+
+- Migration v3 adds the vocabulary tables (entries, aliases,
+  append-only `vocabulary_history`, `vocabulary_meta` state counter,
+  plus a case-insensitive one-canonical-per-scope unique index) —
+  additive DDL only, safe on the live v2 database; see
+  `contracts/vocabulary.md` for semantics.
+- `Store.submit(fn, wait=True)` runs ``fn(connection)`` on the writer
+  thread — the sanctioned entry point for same-package domain layers
+  (`vocabulary_store`) so they honor the single-writer discipline while
+  the connection itself stays private to this module. The torn-write
+  repair path now covers the v3 vocabulary tables (all migration DDL
+  re-applies idempotently).

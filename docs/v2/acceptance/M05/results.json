@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "milestone": "M05",
+  "evaluated_utc": "2026-09-22T08:02:02Z",
+  "working_directory": "/Users/danny/Documents/Tools/LocalFlow",
+  "base_commit": "9d53b4fdebcbfbdf964113af66e5d36f57250f14",
+  "environment": {
+    "python": "3.14.7 (.venv)",
+    "machine": "Apple M5 Pro, arm64, 48 GB",
+    "macos": "27.0",
+    "models": "Parakeet TDT 0.6B v3 + Qwen3-4B-Instruct-2507 4-bit via MLX (cached offline; model-backed checks only)",
+    "pytest": "not installed — suites are standalone scripts run with .venv/bin/python"
+  },
+  "acceptance_criteria": {
+    "M05-AC01": {
+      "status": "pass",
+      "evidence": "tests/v2/vocabulary/test_vocabulary_store.py: 7 legacy terms adopted from legacy artifacts (and via seed_legacy_terms), reopen preserves spelling/scope/origin/verification, re-seed idempotent, JSON round trip preserves settings, usage never fabricated by files"
+    },
+    "M05-AC02": {
+      "status": "pass",
+      "evidence": "tests/v2/vocabulary/test_vocabulary_matching.py: all 40 owning fixtures exact (13 negative controls), including SEED-13/14 cloud/Claude mixed-context counterexamples (LF-VOC-030/038/039/040)"
+    },
+    "M05-AC03": {
+      "status": "pass",
+      "evidence": "Store-level: snapshot immutability + revision separation (test_snapshot_immutability_and_ac03, test_snapshot_immutability_real_check). Live: test_vocabulary_pipeline.py test_ac03_live_midflight_edit — trio captured at hotkey-down, mid-flight disable changes only the next job"
+    },
+    "M05-AC04": {
+      "status": "pass",
+      "evidence": "test_applied_edits_attributable_to_approved_rules — every applied vocabulary edit carries the approved entry's rule_id and verification label; suggested entries never apply; envelope normalization.vocabulary carries revision + applied rule ids (pipeline suite)"
+    },
+    "M05-AC05": {
+      "status": "pass",
+      "evidence": "test_hint_set_feeds_all_supported_consumers + test_unsupported_adapter_stays_honest + test_request_fields_shape_pinned_for_qualified_adapter: one HintSet feeds pre-decode (offered-but-ignored, disabled_until_qualified, request fields None until qualified) and post-ASR recovery (ledger edits with rule ids, never decoder hits); cleanup is not a consumer until M07 — no speculative field written"
+    },
+    "M05-AC06": {
+      "status": "pass",
+      "evidence": "test_matrix_conditions — E18.3 text matrix 40 labeled bases x 4 conditions x mangled/correct variants: recovery 40/40 (true) and 40/40 (true+distractor), false substitutions 0, flips 0 when the true term exists (same-scope masking), lone-wrong-entry flips 40/40 measured and never hidden; no acoustic claim anywhere (text-only)"
+    }
+  },
+  "human_verification": {
+    "status": "pending",
+    "check": "native-m05-dictionary-trial",
+    "steps": [
+      "Dev-run from Terminal.app (cd PROJECT_ROOT && ./run.sh; one instance at a time — ZCode-hosted terminals get silent mic captures under macOS TCC).",
+      "Menu bar → Dictionary…: confirm the panel lists the adopted legacy terms (Qwen, MLX, Parakeet, LocalFlow, Wispr Flow, PyObjC, MacBook) and the two unapproved suggested entries (Claude, Claude Code — profile 'coding', labeled suggested).",
+      "Add a workspace-only Claude alias: canonical 'Claude', alias 'clod', scope workspace = your coding workspace's name; approve it. In the panel's Test field run 'use clod code for the cloud deployment' — expect 'use Claude Code for the cloud deployment' only after also adding the Claude Code alias, or the single-word alias result otherwise; 'cloud deployment' must never change.",
+      "Sandbox scope check pre-M06: the same alias under a workspace scope shows as suggested-but-needs-context in a global-context sandbox; live dictation applies global-scope entries only until M06 wires destination awareness (documented limitation, contracts/vocabulary.md).",
+      "Live dictation trial: dictate a sentence containing a global approved term (e.g. 'mlx') plus the words 'cloud' and 'twelve percent' — expect 'MLX', untouched 'cloud', and '12%'.",
+      "Disable the alias (panel → select entry → Disable/Enable), dictate again, confirm the behavior reverts; re-enable to restore.",
+      "Record steps, expected vs actual output, and evidence (event log lines / panel screenshots stay outside Git)."
+    ],
+    "note": "The workspace-scoped LIVE half of the milestone's specified trial waits for M06 destination awareness (the app filters with no scope context until then); the sandbox half and global-scope live half are runnable now. Never mark passed without execution."
+  },
+  "checks": [
+    {"name": "M01 legacy parser", "command": ".venv/bin/python tests/v2/test_legacy_parser.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M01 registry", "command": ".venv/bin/python tests/v2/test_registry.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M01 baseline manifest", "command": ".venv/bin/python tests/v2/test_baseline_manifest.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M01 snapshot safety", "command": ".venv/bin/python tests/v2/test_snapshot_safety.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 event writer", "command": ".venv/bin/python tests/v2/logging/test_event_writer.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 store", "command": ".venv/bin/python tests/v2/storage/test_store.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass (schema pinned at v2; updated to max(_MIGRATIONS) with M05's v3)", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 import", "command": ".venv/bin/python tests/v2/storage/test_import.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M02 collector", "command": ".venv/bin/python tests/v2/training/test_collector.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 worker protocol", "command": ".venv/bin/python tests/v2/lifecycle/test_worker_protocol.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 capture journal", "command": ".venv/bin/python tests/v2/lifecycle/test_capture_journal.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 audio fidelity (incl. capability manifest + envelope)", "command": ".venv/bin/python tests/v2/lifecycle/test_audio_fidelity.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass after updating two assertions to M05's honest zero-offered disposition semantics (ignored False/reason null when nothing offered)", "post_review": "pass"},
+    {"name": "M03 lifecycle", "command": ".venv/bin/python tests/v2/lifecycle/test_lifecycle.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M03 worker live (extra, model-backed)", "command": ".venv/bin/python tests/v2/lifecycle/test_worker_live.py", "cwd": "repo root", "kind": "model-backed", "pre_change": "pass", "post_change": "would-fail (stale hint-disposition assertion found by review DB1-W1); assertion updated", "post_review": "pass"},
+    {"name": "M04 normalize numbers", "command": ".venv/bin/python tests/v2/normalization/test_normalize_numbers.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M04 normalize syntax", "command": ".venv/bin/python tests/v2/normalization/test_normalize_syntax.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M04 short command scoring", "command": ".venv/bin/python tests/v2/normalization/test_short_command_scoring.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M04 normalization pipeline", "command": ".venv/bin/python tests/v2/normalization/test_normalization_pipeline.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "M05 vocabulary matching (EV-07, 40 fixtures + 120-phrase negative corpus)", "command": ".venv/bin/python tests/v2/vocabulary/test_vocabulary_matching.py", "cwd": "repo root", "kind": "automated", "pre_change": "not applicable (new)", "post_change": "pass", "post_review": "pass (gained scope-labeled sandbox + 4-kind conflict-preview tests)"},
+    {"name": "M05 vocabulary store (EV-03/EV-07 store half, AC01/AC03)", "command": ".venv/bin/python tests/v2/vocabulary/test_vocabulary_store.py", "cwd": "repo root", "kind": "automated", "pre_change": "not applicable (new)", "post_change": "pass", "post_review": "pass (gained 8 review-driven regression tests incl. the approve/import tuple-alias critical)"},
+    {"name": "M05 hint selection (EV-18, matrix + provenance + leakage)", "command": ".venv/bin/python tests/v2/vocabulary/test_hint_selection.py", "cwd": "repo root", "kind": "automated", "pre_change": "not applicable (new)", "post_change": "pass", "post_review": "pass (gained qualified-adapter request-shape pinning)"},
+    {"name": "M05 vocabulary pipeline (real coordinator + evidence + panel smoke)", "command": ".venv/bin/python tests/v2/vocabulary/test_vocabulary_pipeline.py", "cwd": "repo root", "kind": "automated (native AppKit construction smoke inside)", "pre_change": "not applicable (new)", "post_change": "pass", "post_review": "pass"},
+    {"name": "Stuck overlay", "command": ".venv/bin/python tests/test_stuck_overlay.py", "cwd": "repo root", "kind": "automated", "pre_change": "pass", "post_change": "pass", "post_review": "pass"},
+    {"name": "Live pipeline (model-backed)", "command": ".venv/bin/python tests/v2/training/test_live_pipeline.py", "cwd": "repo root", "kind": "model-backed", "pre_change": "pass (2/2)", "post_change": "pass (2/2)", "post_review": "pass (2/2)"},
+    {"name": "Cleanup (model-backed)", "command": ".venv/bin/python tests/test_cleanup.py", "cwd": "repo root", "kind": "model-backed", "pre_change": "pass (51/51, 44.8 s)", "post_change": "pass (51/51, 48.5 s)", "post_review": "pass (51/51, 44.9 s)"},
+    {"name": "M05 benchmark (10,000 entries)", "command": ".venv/bin/python scripts/v2/benchmark_m05.py --out docs/v2/benchmarks", "cwd": "repo root", "kind": "automated benchmark", "pre_change": "not applicable (new)", "post_change": "pass (warm p95 12.1 ms pre-review; scoped p95 crossed to 25.3 ms on one post-review run)", "post_review": "pass — selector ranking precomputed at snapshot construction: warm p95 5.142 ms, scoped p95 5.332 ms, normalize-with-dictionary p95 2.413 ms (500-word prose), all vs the 25 ms budget; prompt subset 100 offered / 9400 omitted (budget_limit); report docs/v2/benchmarks/20260922-035958-m05/m05.json"}
+  ],
+  "benchmark_summary": {
+    "run": "docs/v2/benchmarks/20260922-035958-m05/m05.json",
+    "retrieval_warm_p95_ms": 5.142,
+    "retrieval_scoped_p95_ms": 5.332,
+    "normalize_hot_path_p95_ms": 2.413,
+    "cold_snapshot_p95_ms": 126.938,
+    "cold_snapshot_note": "informational; cached per vocabulary revision, rebuilt only on edit (usage hits excluded from invalidation by design)",
+    "prompt_subset": {"offered": 100, "omitted": 9400, "reason": "budget_limit", "limit_knob": "hint_term_limit (default 100)"}
+  },
+  "review_loop": {
+    "protocol": "/review-2 (two parallel read-only reviewers: bug-hunting debugger; architecture/quality/security/data-integrity auditor) then /address",
+    "verdict_before_address": "Request Changes (unified)",
+    "findings": {
+      "criticals": 1,
+      "warnings": 7,
+      "suggestions": 14
+    },
+    "critical_detail": [
+      "DB1-C1: update_entry crashed on the (alias, approved) tuple format its own callers approve_entry and import_json pass — the Approve flow and alias-changing imports could never land (AttributeError before any write)."
+    ],
+    "warning_detail": [
+      "DB1-W1: hint_disposition semantic flip left a stale assertion in tests/v2/lifecycle/test_worker_live.py (suite not in the required list; would fail whenever run).",
+      "DB1-W2 + CA1-W1 (corroborated): aliases-only updates never bumped the entry revision column — history revisions diverged and repeated.",
+      "DB1-W3: sandbox suggestions ignored scope — the panel advertised rewrites that could not fire pre-M06.",
+      "DB1-W4: alias rows persisted the pre-update language on combined language+aliases updates.",
+      "CA1-W2: every applied hit invalidated the cached snapshot (usage inside the revision hash + meta bump) — ~120 ms main-thread rebuild per dictation at 10k-entry scale.",
+      "CA1-W3: grammar_vocabulary was O(aliases x tokens) and unmeasured on the dictation path; match_items re-sorted per normalize() call.",
+      "CA1-W4: duplicate-canonical rejections flowed through the store error channel carrying dictionary content into event detail.",
+      "CA1-W5: untested public API (delete_entry, set_scope, approve_entry, aliases-only update, 3 of 4 conflict-preview kinds) plus a vacuous immutability assertion."
+    ],
+    "addressed": [
+      "Critical: update_entry/_normalize_alias_items accept str | (text, approved) tuples | Alias; regression tests for approve_entry (entry + all aliases + matching begins) and differing-alias imports.",
+      "test_worker_live assertion updated to the new disposition semantics (zero offered => nothing ignored).",
+      "Any real change (columns OR aliases) versions the entry; empty updates are no-ops that append nothing; None for non-nullable fields rejected loudly; alias rows take the updated language.",
+      "Sandbox suggestions carry in_scope + scope labels; the panel prints '(needs <scope> context active)'; suggestions never shown inside quoted literals (sandbox now uses the engine tokenizer).",
+      "record_hits no longer bumps the state counter and the snapshot revision hash excludes usage stats — an applied hit never forces a rebuild; ranking sees the last-edited snapshot (documented).",
+      "Engine matching is position-driven through a first-word alias index with the ranked order and match order precomputed at snapshot construction; the benchmark gained a normalize-with-dictionary hot-path measurement.",
+      "Duplicate-canonical probe runs on the caller thread with a content-free message; a NOCASE one-canonical-per-scope unique index backstops it; import_json keys case-insensitively.",
+      "Tests added for delete/set_scope/approve/aliases-only/language+aliases/case-variant duplicates/torn-write repair of v3 tables/real snapshot immutability/all four preview kinds/qualified-adapter request shape.",
+      "Store.submit now passes the connection (fn(db)) so _db stays module-private; the repair path re-applies all migration DDL and covers the v3 tables.",
+      "Skill-conflict records carry entry ids like alias conflicts; panel refresh/sandbox guarded with user-visible errors; on_hint_set emits a failure event instead of a silent swallow.",
+      "One address-loop fix of our own: a scoped-retrieval benchmark run crossed the 25 ms gate (25.3 ms) on machine noise — fixed structurally by precomputing ranking at snapshot construction (5.3 ms p95 after)."
+    ],
+    "deferred": [
+      "Deep-freezing HintSet.scope/conflicts/omitted containers (to_json copies on read; all consumers in-repo — discipline documented in contracts/vocabulary.md).",
+      "A single shared edge-punctuation helper across engine/vocabulary (the sandbox now uses the engine tokenizer outright; the two grammar sites share the same inline constant — cosmetic dedup only).",
+      "Selector ranking freshness: recency/frequency see the last-edited snapshot because usage no longer invalidates it (trade-off taken deliberately to keep hits off the rebuild path; recorded in contracts/vocabulary.md)."
+    ],
+    "rejected_as_incorrect": [],
+    "post_address_verification": "All 21 automated suites + test_worker_live + both model-backed suites re-run green; benchmark re-run on the fixed code with all gates passing."
+  },
+  "privacy": "Committed artifacts carry synthetic fixtures, hashes and counts only; the envelope's context/vocabulary blocks carry ids, revisions and counts (no terms — the frozen hint set's terms live in a lease-governed store artifact); duplicate-rejection events carry no dictionary content; the baseline-manifest privacy scan passes over every new path; the store error channel never sees canonical spellings."
+}

@@ -192,9 +192,12 @@ def test_capability_manifest_conservative():
     assert caps["key_terms"]["reason"] == "disabled_until_qualified"
     assert manifest["model_revision"] == "ed2b7e8c"
     hd = capabilities.hint_disposition(manifest)
-    assert hd["ignored"] is True
-    assert hd["ignored_reason"] == "disabled_until_qualified"
+    # M05 semantics: with nothing offered there is nothing to ignore —
+    # `ignored` is False and the reason is null, never a fabricated
+    # ignore. Offering a set under this manifest flips it honestly.
     assert hd["offered_terms"] == 0
+    assert hd["ignored"] is False and hd["ignored_reason"] is None
+    assert "stays disabled until qualified" in hd["note"]
     # Unknown is not supported, and unsupported is not fabricated as null.
     assert capabilities.missing_reason_for("word_confidence", manifest) \
         == "unsupported_by_adapter"
@@ -219,8 +222,12 @@ def test_envelope_optional_fields_null_with_reason():
         assert mr[field] == "unsupported_by_adapter", field
     rec_meta = env["recognition"]
     assert rec_meta["worker_generation"] == 3
-    assert rec_meta["hint_disposition"]["ignored"] is True
-    assert "note" in rec_meta["hint_disposition"]
+    # No hint set offered on this collector-only path: nothing ignored,
+    # zero offered, honest note (M05 semantics).
+    hd = rec_meta["hint_disposition"]
+    assert hd["offered_terms"] == 0 and hd["ignored"] is False \
+        and hd["ignored_reason"] is None
+    assert "note" in hd
     assert env["worker_generation"] == 3 and env["attempt"] == 1
     st.close()
     print("ok  envelope: nulls with reasons, worker generation recorded")

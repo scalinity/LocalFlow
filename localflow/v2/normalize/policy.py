@@ -125,12 +125,26 @@ class ContextSnapshot:
     path_context: the destination expects filesystem paths (M06)
     identifiers: spoken form → canonical identifier (M05 dictionary /
         M06 workspace terms; absent = never invent casing)
+    vocabulary: the M05 VocabularySnapshot (scope-filtered, immutable)
+        feeding layer-5 context-supported vocabulary. Typed loosely to
+        keep the normalize package free of a store dependency; anything
+        with ``match_items()`` and ``skills`` satisfies it.
     """
 
     destination_app: Optional[str] = None
     path_context: bool = False
     identifiers: Optional[dict[str, str]] = None
+    vocabulary: Optional[object] = None
     source: str = "m04_default"
 
     def to_json(self) -> dict:
-        return dataclasses.asdict(self)
+        return {
+            "destination_app": self.destination_app,
+            "path_context": self.path_context,
+            "identifiers": dict(self.identifiers)
+            if self.identifiers else None,
+            "vocabulary_revision": getattr(
+                self.vocabulary, "revision", None)
+            if self.vocabulary is not None else None,
+            "source": self.source,
+        }

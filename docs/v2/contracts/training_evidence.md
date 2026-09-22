@@ -60,3 +60,17 @@ raw artifact plus the ledger (AC05). When the stage does not run
 (profile `off`, policy-load failure, or the pre-M04 collector path),
 the envelope keeps the honest `not_captured_at_stage` reason. See
 `normalization.md` for the stage contract.
+
+## M05 live status (context family)
+
+The S29.4 context field family is now captured live: with collection
+enabled, `EvidenceCollector.on_hint_set` — called BEFORE recognition —
+writes the frozen pre-decode HintSet as a lease-governed artifact and
+fills the envelope's `context` block (hint-set id, selector and
+vocabulary revisions, offered/omitted counts, omission reasons,
+disposition; counts and ids only). The normalization block gains a
+`vocabulary` sub-block (snapshot revision + applied rule ids — AC03/AC04
+attribution). Later store edits cannot alter the stored set, and a
+corrected dictionary is never relabeled as original hints (S29.11).
+When no set was offered the honest `not_captured_at_stage` reason
+stays.

@@ -371,7 +371,10 @@ def test_migration_v2_adds_indexes():
         idx = {r[0] for r in con.execute(
             "SELECT name FROM sqlite_master WHERE type='index'")}
         con.close()
-        assert version == "2"
+        # Fresh store reaches the latest schema (v1 → v2 indexes → v3
+        # vocabulary tables, M05); the exact number advances with the
+        # migration set.
+        assert version == str(max(store_mod._MIGRATIONS))
         assert {"idx_artifact_leases_artifact", "idx_artifacts_job",
                 "idx_training_revisions_example",
                 "idx_imports_kind"} <= idx

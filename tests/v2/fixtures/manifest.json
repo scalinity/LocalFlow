@@ -19,6 +19,14 @@
           "tests/v2/normalization/fixtures_syntax.json"
         ],
         "short_command_text_counterparts": 24
+      },
+      "m05_created": {
+        "note": "M05 created the vocabulary stratum of this family (40 owning fixtures incl. 13 negative controls, plus a 120-phrase generated-in-test negative corpus with its denominator reported by the suite).",
+        "vocabulary": 40,
+        "fixture_files": [
+          "tests/v2/vocabulary/fixtures_vocabulary.json"
+        ],
+        "negative_control_corpus_generated": 120
       }
     },
     {
@@ -80,6 +88,21 @@
       "composition": "startup, worker restart, cancellation, clipboard, disk, sleep, import",
       "owner_milestone": "M03",
       "status": "reserved"
+    },
+    {
+      "family": "hint_discrimination_matrix",
+      "planned_count": 40,
+      "composition": "E18.3 text-side controlled matrix: 40 labeled base utterances x four primary hint conditions (none/true/true+distractor/distractor-only) with mangled+correct variants per family; audio counterparts belong to the M15 clip families",
+      "owner_milestone": "M05",
+      "status": "partial",
+      "m05_created": {
+        "note": "M05 created the text-side matrix (8 synthetic targets x 5 templates); recovery, false-substitution and distractor-flip rates reported with exact denominators by tests/v2/vocabulary/test_hint_selection.py. No acoustic claim.",
+        "labeled_bases": 40,
+        "conditions_per_base": 4,
+        "fixture_files": [
+          "tests/v2/vocabulary/fixtures_hint_matrix.json"
+        ]
+      }
     }
   ],
   "test_manifest_reservation": {
