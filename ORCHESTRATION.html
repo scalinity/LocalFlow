@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<!--
+  LocalFlow V2 — Orchestration overview
+  =====================================
+  Single self-contained page: no external requests, no scripts, inline CSS only.
+  Maintained per the Orchestration Overview rules in ~/.zcode/AGENTS.md:
+  milestone close-outs realign strip states, ledger rows and the NOW panel in
+  place; the page is never rebuilt, and it is left untouched (with the intended
+  change noted in the session handoff) while it is uncommitted or concurrently
+  owned by another session.
+
+  Figure audit — every figure on the page and the repo file it was re-derived
+  from in this session (2026-09-22 08:34 UTC, HEAD e95d152):
+    33 requirements / 22 suites / 0 without a suite ....... docs/v2/registry.json (counts block)
+    requirement -> milestone ownership, suites per strip ... docs/v2/registry.json + "ID: Mxx · Requirements" headers in
+                                                             docs/v2/LOCALFLOW_V2_MILESTONES.md
+    prerequisites per strip ............................... LOCALFLOW_V2_MILESTONES.md P02 dependency table
+    expected files / destroys / human checks / benchmarks . each milestone's own "Likely files/modules affected",
+                                                             "In scope"/"Out of scope"/"Regression requirements",
+                                                             "Human verification", "Required benchmarks" sections
+    M14-A/B/C checkpoints ................................. M14 implementation task 12 + P07 amendment note
+    STATUS figures (active M05, implemented_pending_human,
+    source_commit 9d53b4f, pending native-m05-dictionary-trial,
+    next M06 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-22 08:34 UTC at e95d152
+    commit ids 4bd0187 / 50bf457 / 95f92dd / adc872b / 9d53b4f / e95d152 ... git log --oneline at the same moment
+    review ledger (verdicts, critical counts, named criticals) ... "/review-2 → /address record" sections of
+                                                             docs/v2/handoffs/M01.md–M05.md (cross-checked against
+                                                             docs/v2/acceptance/M0*/results.json review_loop blocks)
+    pending-human-check ledger (1+4+1+1 open; M02 2/2 pass) ...... docs/v2/acceptance/M0{1,3,4,5}/results.json
+                                                             human_verification blocks + handoffs/M02.md
+                                                             "Human verification (completed 2026-09-22)" addendum
+    cleanup ≈78% of recorded inference, 477 timed pairs ... LOCALFLOW_V2_MILESTONES.md P01; re-derived from
+                                                             docs/v2/EVIDENCE_SUMMARY.json (629.6 s / 806.2 s = 78.1%)
+    fixture strata (80+60 M04; 40+40 M05; 320-family plan; M15
+    140+20 corpus) ........................................ tests/v2/fixtures/manifest.json, milestone test sections,
+                                                             handoffs M04/M05
+    decisions/ empty ...................................... directory listing of docs/v2/decisions/ (0 entries, 2026-09-22)
+    installed app == 7cdd904 .............................. docs/v2/handoffs/M01.md finding 1 (unchanged by M02–M05
+                                                             handoffs: no build authorized)
+  Everything not in this list (model-allocation tags, the "what can run beside
+  what" conclusion, section 2's serial-chain reading) is the page's own
+  judgement and is marked as such where it appears.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LocalFlow V2 — Orchestration overview</title>
+<style>
+  :root {
+    --paper: #f5f5f2;
+    --panel: #fbfbf9;
+    --ink: #212426;
+    --muted: #6b7076;
+    --rule: #d8d7d1;
+    --rule-strong: #b9b8b0;
+    --oxide: #a63b28;
+    --oxide-soft: rgba(166, 59, 40, 0.09);
+    --ok: #3d6b4f;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #17191b;
+      --panel: #1d2023;
+      --ink: #e6e5e1;
+      --muted: #9aa0a4;
+      --rule: #2e3236;
+      --rule-strong: #43484d;
+      --oxide: #e0705a;
+      --oxide-soft: rgba(224, 112, 90, 0.13);
+      --ok: #7fb596;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 72px; }
+  .measure { max-width: 72ch; }
+  p { margin: 0 0 0.9em; }
+  a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--rule-strong); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--ink); }
+  code, .id {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    letter-spacing: 0.01em;
+  }
+  .src {
+    display: inline-block;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  h1 { font-size: 30px; line-height: 1.14; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 6px; }
+  h2 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 4px; }
+  h3 { font-size: 16px; font-weight: 590; margin: 0 0 8px; }
+  .lede { color: var(--muted); font-size: 15.5px; max-width: 72ch; margin: 0 0 14px; }
+  section { margin-top: 56px; }
+  .sec-head { border-top: 2px solid var(--rule-strong); padding-top: 14px; margin-bottom: 16px; }
+  .sec-head .kicker { font-size: 13px; color: var(--muted); margin: 0 0 2px; }
+
+  /* header */
+  header.masthead { padding-top: 40px; }
+  .stamp { font-size: 12.5px; color: var(--muted); font-family: var(--mono); margin: 10px 0 0; }
+  .toc { margin: 18px 0 0; padding: 0; list-style: none; font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .toc a { text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* now panel */
+  .now {
+    margin-top: 26px;
+    border: 1px solid var(--rule-strong);
+    border-left: 4px solid var(--oxide);
+    border-radius: 8px;
+    background: var(--panel);
+    padding: 18px 20px 14px;
+  }
+  .now .verdict { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 10px; }
+  .now .verdict .id { color: var(--oxide); }
+  .now-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 36px; margin: 0; }
+  .now-grid > div { display: flex; gap: 10px; padding: 4px 0; border-top: 1px solid var(--rule); font-size: 14.5px; }
+  .now-grid dt { flex: 0 0 168px; color: var(--muted); margin: 0; }
+  .now-grid dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .now .reason { font-size: 14px; color: var(--ink); max-width: 78ch; margin: 12px 0 2px; }
+
+  /* chain rail */
+  .chain { display: flex; flex-wrap: wrap; gap: 8px 6px; align-items: center; margin-top: 14px; }
+  .node {
+    display: inline-flex; align-items: baseline; gap: 7px;
+    border: 1px solid var(--rule-strong); border-radius: 6px;
+    padding: 4px 10px; font-size: 13.5px; background: var(--paper);
+  }
+  .node .mid { font-weight: 640; }
+  .node .cmt { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .node.done { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .node.done .cmt { color: var(--paper); opacity: 0.72; }
+  .node.active { border-color: var(--oxide); box-shadow: inset 0 0 0 1px var(--oxide); }
+  .node.active .mid { color: var(--oxide); }
+  .node.eligible { border-style: dashed; border-color: var(--oxide); }
+  .node.eligible .mid { color: var(--oxide); }
+  .node.ckpt { border-style: dotted; }
+  .link { color: var(--muted); font-size: 12px; padding: 0 2px; }
+  .chain-key { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+
+  /* state glyphs */
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: 1px; }
+  .dot.done { background: var(--ok); }
+  .dot.pending { background: transparent; border: 2px solid var(--oxide); width: 7px; height: 7px; }
+  .dot.open { background: transparent; border: 2px solid var(--rule-strong); width: 7px; height: 7px; }
+
+  /* strips */
+  .strip {
+    border-top: 1px solid var(--rule-strong);
+    display: grid;
+    grid-template-columns: 200px 1fr;
+  }
+  .strip:last-of-type { border-bottom: 1px solid var(--rule-strong); }
+  .spine { padding: 18px 18px 18px 0; border-right: 1px solid var(--rule); }
+  .spine .mid { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
+  .spine .state-line { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+  .spine .commit { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 8px; overflow-wrap: anywhere; }
+  .spine .rec { margin-top: 14px; }
+  .body { padding: 18px 0 20px 20px; min-width: 0; }
+  .body .title { font-size: 17px; font-weight: 640; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .body .oneline { color: var(--muted); font-size: 14.5px; margin: 0 0 12px; max-width: 74ch; }
+  .facts {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0 30px; margin: 0;
+  }
+  .facts > div { padding: 7px 0; border-top: 1px solid var(--rule); font-size: 14px; min-width: 0; }
+  .facts dt { font-size: 12px; color: var(--muted); margin: 0 0 2px; }
+  .facts dd { margin: 0; overflow-wrap: anywhere; }
+  .facts .wide { grid-column: 1 / -1; }
+  .substrip {
+    margin: 14px 0 4px; border: 1px solid var(--rule); border-radius: 6px;
+    padding: 10px 14px 8px; background: var(--panel);
+  }
+  .substrip h4 { margin: 0 0 4px; font-size: 13.5px; font-weight: 640; }
+  .substrip p { font-size: 13.5px; margin: 0 0 6px; }
+
+  /* chips */
+  .rec {
+    display: inline-block; font-size: 11.5px; color: var(--ink);
+    border: 1px dashed var(--rule-strong); border-radius: 4px;
+    padding: 1px 7px; background: transparent; max-width: 100%;
+  }
+  .rec b { font-weight: 640; }
+  .tag {
+    display: inline-block; font-size: 11.5px; font-family: var(--mono);
+    border: 1px solid var(--rule-strong); border-radius: 4px;
+    padding: 1px 7px; color: var(--muted); white-space: nowrap;
+  }
+  .fact-note { font-size: 13.5px; color: var(--muted); }
+
+  /* two-column judgement panels */
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .panel { border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--panel); padding: 16px 18px 10px; }
+  .panel h3 { font-size: 15.5px; }
+
+  /* model rule chart */
+  .rulechart { border: 1px solid var(--rule-strong); border-radius: 8px; background: var(--panel); padding: 20px 20px 12px; }
+  .qs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .q { border-top: 3px solid var(--ink); padding-top: 10px; }
+  .q h4 { margin: 0 0 6px; font-size: 15px; font-weight: 640; }
+  .q p { font-size: 13.5px; margin: 0 0 6px; }
+  .q .ex { font-size: 12.5px; color: var(--muted); }
+  .verdictline {
+    margin-top: 18px; border-top: 1px solid var(--rule); padding-top: 14px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; font-size: 14px;
+  }
+  .verdictline .v b { display: block; font-size: 15px; }
+
+  /* loop */
+  .loop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 18px; counter-reset: step; }
+  .step { border-top: 1px solid var(--rule-strong); padding-top: 8px; position: relative; font-size: 14px; min-width: 0; }
+  .step::before {
+    counter-increment: step; content: counter(step, decimal-leading-zero);
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    display: block; margin-bottom: 2px;
+  }
+  .step b { font-weight: 640; }
+  .loopback {
+    margin-top: 14px; border: 1px dashed var(--rule-strong); border-radius: 6px;
+    padding: 8px 14px; font-size: 13.5px; color: var(--muted);
+  }
+
+  /* reflowable tables */
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 590; border-bottom: 2px solid var(--rule-strong); padding: 6px 14px 6px 0; vertical-align: bottom; }
+  td { border-bottom: 1px solid var(--rule); padding: 9px 14px 9px 0; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-family: var(--mono); white-space: nowrap; }
+  .crit { color: var(--oxide); font-weight: 640; }
+  @media (max-width: 720px) {
+    table thead { display: none; }
+    table, tbody, tr, td { display: block; }
+    tr { border: 1px solid var(--rule); border-radius: 6px; padding: 8px 12px; margin: 10px 0; background: var(--panel); }
+    td { border-bottom: none; padding: 3px 0; }
+    td[data-label]::before { content: attr(data-label) " · "; color: var(--muted); font-size: 11.5px; font-family: var(--mono); }
+  }
+
+  /* grading bars */
+  .bars { list-style: none; margin: 0; padding: 0; }
+  .bars li { border-top: 1px solid var(--rule); padding: 12px 0; max-width: 78ch; font-size: 14.5px; }
+  .bars li:first-child { border-top: none; }
+  .bars b { font-weight: 640; }
+  .must { color: var(--oxide); font-weight: 640; }
+
+  .footer {
+    margin-top: 60px; border-top: 2px solid var(--rule-strong); padding-top: 14px;
+    font-size: 13px; color: var(--muted); max-width: 84ch;
+  }
+
+  @media (max-width: 860px) {
+    .facts { grid-template-columns: 1fr; }
+    .duo { grid-template-columns: 1fr; }
+    .qs { grid-template-columns: 1fr; }
+    .verdictline { grid-template-columns: 1fr; }
+    .loop { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 700px) {
+    .strip { grid-template-columns: 1fr; }
+    .spine { border-right: none; border-bottom: 1px solid var(--rule); padding: 14px 0 12px; }
+    .spine .rec { margin-top: 8px; }
+    .body { padding: 14px 0 18px; }
+    .now-grid { grid-template-columns: 1fr; }
+    .now-grid dt { flex-basis: 132px; }
+    h1 { font-size: 25px; }
+    .loop { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <h1>LocalFlow V2 — orchestration overview</h1>
+  <p class="lede">LocalFlow is a private, local-first macOS dictation and writing interface built around Parakeet TDT 0.6B V3 via MLX and Qwen3-4B-Instruct-2507 4-bit via MLX. V2 closes the gap with Wispr Flow while preserving local inference and training-ready data collection. This page is the dispatch board for that build: what can run next, in what company, on which model, and against what standard of proof.</p>
+  <p class="stamp">repo scalinity/LocalFlow · figures read 2026-09-22 08:34 UTC at commit e95d152 (M05 close-out) · realigned in place by milestone close-outs</p>
+  <ul class="toc">
+    <li><a href="#now">Now</a></li>
+    <li><a href="#strips">Units of work</a></li>
+    <li><a href="#beside">Running beside</a></li>
+    <li><a href="#model">Model rule</a></li>
+    <li><a href="#loop">Session loop</a></li>
+    <li><a href="#handover">Handover anatomy</a></li>
+    <li><a href="#evidence">Evidence</a></li>
+    <li><a href="#threads">Open threads</a></li>
+    <li><a href="#grading">Grading</a></li>
+  </ul>
+
+  <div class="now" id="now">
+    <p class="verdict">What can run now: <span class="id">M06</span> — and nothing else.</p>
+    <dl class="now-grid">
+      <div><dt>Active milestone</dt><dd>M05 · implemented_pending_human</dd></div>
+      <div><dt>Source commit</dt><dd>9d53b4f — “M05 was implemented on top of this commit (M04 close-out); the M05 commit follows.”</dd></div>
+      <div><dt>Open human checks</dt><dd>native-m05-dictionary-trial (1 for M05; 7 open overall — <a href="#threads">ledger</a>)</dd></div>
+      <div><dt>Next milestone</dt><dd>M06 · next_milestone_dependency_eligible: true</dd></div>
+      <div><dt>Registry</dt><dd>33 requirements LF-R01–R33 · 22 suites EV-01–EV-22 · 0 requirements without a suite <span class="src">registry.json</span></dd></div>
+      <div><dt>Decision record</dt><dd>docs/v2/decisions/ is empty — no accepted spec deviations to date <span class="src">directory listing, 2026-09-22</span></dd></div>
+    </dl>
+    <p class="reason">M05’s automatable work and checks passed on post-review code; the one /review-2 critical (the tuple-alias crash that blocked the Approve flow) and every warning were fixed in-session with regression tests. The pending native dictionary trial does not gate M06’s automatable work. <span class="src">STATUS.json status_reason, read 2026-09-22 08:34 UTC at e95d152</span></p>
+    <div class="chain" aria-label="Runnable order of milestones">
+      <span class="node done"><span class="mid">M01</span><span class="cmt">4bd0187</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node done"><span class="mid">M02</span><span class="cmt">50bf457</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node done"><span class="mid">M02 verify</span><span class="cmt">95f92dd</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node done"><span class="mid">M03</span><span class="cmt">adc872b</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node done"><span class="mid">M04</span><span class="cmt">9d53b4f</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node done"><span class="mid">M05</span><span class="cmt">e95d152</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node eligible"><span class="mid">M06</span><span class="cmt">next</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node"><span class="mid">M07</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node"><span class="mid">M08</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node"><span class="mid">M09</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node"><span class="mid">M10</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node"><span class="mid">M11</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node"><span class="mid">M12</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node"><span class="mid">M13</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node ckpt"><span class="mid">M14</span><span class="cmt">A·B·C</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node"><span class="mid">M15</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node"><span class="mid">M16</span></span>
+    </div>
+    <p class="chain-key">Filled: closed and committed (commit ids from <code>git log</code>, one commit per milestone). Dashed: dependency-eligible now. Dotted: M14 runs as three resumable checkpoints under one milestone id. <span class="src">LOCALFLOW_V2_MILESTONES.md P02 · git log</span></p>
+  </div>
+</header>
+
+<section id="strips">
+  <div class="sec-head">
+    <p class="kicker">One strip per remaining unit, in runnable order</p>
+    <h2>Units of work — M06 through M16</h2>
+    <p class="lede">Every fact below is drawn from the named section of the milestones document or the registry; the source line sits at the end of each strip. The dashed chip is the model-allocation rule’s recommendation, not a repo fact — this repository records no per-unit model history (see <a href="#model">the rule</a>).</p>
+  </div>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M06</div>
+      <div class="state-line"><span class="dot pending"></span> next-eligible</div>
+      <div class="rec">rule’s recommendation: <b>scarce authors</b>, plentiful builds fixtures</div>
+    </div>
+    <div class="body">
+      <h3 class="title">Local context snapshots and destination awareness</h3>
+      <p class="oneline">The pipeline knows the intended app, field and available relevant text — without making dictation depend on a slow screen reader.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R09</span> · <span class="id">LF-R28</span> · <span class="id">LF-R29</span> · <span class="id">LF-R30</span></dd></div>
+        <div><dt>Suites</dt><dd>new <span class="id">EV-08</span> · extends <span class="id">EV-18</span>, <span class="id">EV-19</span></dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M02, M05 — both closed; dependency-eligible now per STATUS.json</dd></div>
+        <div><dt>Expected files</dt><dd>new <code>localflow/v2/context/</code>, <code>target_snapshot.py</code>, <code>tests/v2/context/</code>; existing app/hotkey wiring captures snapshots</dd></div>
+        <div><dt>Destroys</dt><dd>nothing — plain dictation must stay available when context permission or a provider is unavailable (regression requirement)</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>additional-context delay P95 ≤ 75 ms; provider coverage and skip frequency reported, not just successful-read latency</dd></div>
+        <div><dt>Human verification</dt><dd>same phrase in Gmail, Slack, an AI prompt field and Xcode; mid-sentence and selected-text snapshots</dd></div>
+        <div><dt>Unlocks</dt><dd>the workspace-scoped half of the M05 dictionary trial; insertion identity for M08</dd></div>
+        <div class="wide"><dt>Inherited pending human checks</dt><dd>none gate this work (M05 handoff); the six open M01/M03/M04 items stay recorded in their results files</dd></div>
+      </dl>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M06 · P02 table · STATUS.json · handoffs/M05.md</p>
+    </div>
+  </article>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M07</div>
+      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="rec">rule’s recommendation: <b>scarce authors contract + ablation design</b></div>
+    </div>
+    <div class="body">
+      <h3 class="title">Faithful cleanup and document-aware formatting</h3>
+      <p class="oneline">Clean mode preserves requests and meaning, handles self-corrections, and formats complete prompts without artificial chunk fragments.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R10</span> · <span class="id">LF-R11</span> · <span class="id">LF-R28</span> · <span class="id">LF-R30</span></dd></div>
+        <div><dt>Suites</dt><dd>new <span class="id">EV-09</span> — 60 fidelity + 40 structure + 20 literal fixtures, real DOM/question/deletion examples</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M03, M04, M05, M06</dd></div>
+        <div><dt>Expected files</dt><dd>existing <code>cleanup.py</code>, <code>tests/test_cleanup.py</code>; new <code>localflow/v2/cleanup/</code>, <code>validation.py</code>, <code>document_nodes.py</code>, <code>tests/v2/fidelity/</code>, <code>tests/v2/structure/</code></dd></div>
+        <div><dt>Destroys</dt><dd>replaces contradictory prompt examples and the fixed 35/50-word segmentation; V1 stays as the ablation control, and an insufficient-quality result blocks promotion — the implementation is preserved behind a selectable mode (stop condition)</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>same-model V1-versus-V2 prompt/chunking ablation on frozen text; stage and full-pipeline latency by length, fallback rates, failed termination</dd></div>
+        <div><dt>Human verification</dt><dd>dictate long AI prompts with three constraints, multiple corrections, lists and sign-offs; compare stage diffs; try undo-cleanup</dd></div>
+        <div class="wide"><dt>Why it matters</dt><dd>P01’s motivating evidence: cleanup took about 78% of recorded inference duration across 477 timed pairs — the strongest observed regressions sit downstream of ASR <span class="src">P01 · EVIDENCE_SUMMARY.json (629.6/806.2 s)</span></dd></div>
+      </dl>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M07 · P02 table · P01</p>
+    </div>
+  </article>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M08</div>
+      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="rec">rule’s recommendation: <b>scarce authors authority semantics</b></div>
+    </div>
+    <div class="body">
+      <h3 class="title">Safe insertion, clipboard transactions and recovery undo</h3>
+      <p class="oneline">Finished text lands only in the intended field, never overwrites a new clipboard copy, and carries honest insertion status.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R12</span> · <span class="id">LF-R28</span> · <span class="id">LF-R30</span> · <span class="id">LF-R31</span></dd></div>
+        <div><dt>Suites</dt><dd>new <span class="id">EV-10</span> · <span class="id">EV-19</span>/<span class="id">EV-20</span> attribution cases</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M02, M06, M07</dd></div>
+        <div><dt>Expected files</dt><dd>existing <code>inject.py</code>, <code>app.py</code>; new <code>localflow/v2/insertion/</code>, <code>target_lease.py</code>, <code>tests/v2/insertion/</code>, a test-target fixture app</dd></div>
+        <div><dt>Destroys</dt><dd>supersedes V1’s unobservable paste (recorded as posted_unverified) with typed outcomes — confirmed / posted_unverified / target_changed / saved_not_inserted / failed; plain-text paste and manual-clipboard fallback remain; no automated Enter is added</dd></div>
+        <div><dt>Begins now</dt><dd>S29.8 bounded outcome observation on certified fields — the raw material M14 curates; explicitly not deferred to M14</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>insertion overhead and target-verification latency measured separately; no 50 ms sleep or delayed restore on the UI thread</dd></div>
+        <div><dt>Human verification</dt><dd>switch apps immediately after PTT release; copy during processing; undo after a manual edit; two rapid dictations keep order</dd></div>
+      </dl>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M08 · P02 table</p>
+    </div>
+  </article>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M09</div>
+      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="rec">rule’s recommendation: <b>scarce authors the shell</b>, plentiful fills views</div>
+    </div>
+    <div class="body">
+      <h3 class="title">Native Hub, searchable history and diagnostics</h3>
+      <p class="oneline">A polished companion window for history, replay, recovery and engine inspection — built on stable storage contracts, not on unstable state.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R13</span> · <span class="id">LF-R28</span> · <span class="id">LF-R30</span> · <span class="id">LF-R31</span></dd></div>
+        <div><dt>Suites</dt><dd>new <span class="id">EV-11</span> · <span class="id">EV-19</span>/<span class="id">EV-20</span> UI cases</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M02, M03, M08</dd></div>
+        <div><dt>Expected files</dt><dd>existing <code>app.py</code>, <code>overlay.py</code>, <code>permissions.py</code>; new <code>localflow/v2/ui/</code>, <code>history_queries.py</code>, <code>tests/v2/ui/</code></dd></div>
+        <div><dt>Destroys</dt><dd>nothing — closing the Hub must not quit the menu-bar service; no view owns a model or writes directly into target apps</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>50,000-row history search P95 ≤ 200 ms warm; interactive shell P95 ≤ 1 s; UI memory excluding model weights</dd></div>
+        <div><dt>Human verification</dt><dd>every screen at normal and enlarged scale; replay and retry real samples; keyboard-only navigation; move, resize, relaunch</dd></div>
+        <div class="wide"><dt>Hand-forward duty</dt><dd>the first native UI in the repo: its completion report must provide reusable UI/service patterns for M10, M12, M13 and M14 — a coordinator owns the shared shell (P02)</dd></div>
+      </dl>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M09 · P02 table</p>
+    </div>
+  </article>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M10</div>
+      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="rec">rule’s recommendation: plentiful builds, <b>scarce reviews the precedence contract</b></div>
+    </div>
+    <div class="body">
+      <h3 class="title">Styles, snippets and developer workflows</h3>
+      <p class="oneline">Writing behavior follows explicit app/profile rules, reusable snippets work, and developer syntax integrates with certified IDE and CLI surfaces.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R14</span> · <span class="id">LF-R15</span> · <span class="id">LF-R16</span> · <span class="id">LF-R28</span> · <span class="id">LF-R30</span></dd></div>
+        <div><dt>Suites</dt><dd>new <span class="id">EV-12</span> · <span class="id">EV-19</span> producer fixtures</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M04, M05, M06, M08, M09</dd></div>
+        <div><dt>Expected files</dt><dd>new <code>localflow/v2/profiles.py</code>, <code>snippets.py</code>, <code>developer/</code>, <code>ui/styles.py</code>, <code>ui/snippets.py</code>, <code>tests/v2/profiles/</code>, <code>tests/v2/developer/</code>; extends vocabulary/context/insertion services</dd></div>
+        <div><dt>Contract decision</dt><dd>per-job override &gt; destination rule &gt; category default &gt; global default; modes constrain permissible edits; file tags are actions, not merely text</dd></div>
+        <div><dt>Destroys</dt><dd>nothing — plain dictation remains available without IDE extensions; vocabulary and snippet rules compose by spans</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>policy/snippet matching ≤ 25 ms P95 on a 500-word input; adapter overhead reported separately</dd></div>
+        <div><dt>Human verification</dt><dd>same phrase in messaging, email and coding; a rich snippet; a registered skill by dictation; a real IDE file chip; terminal multiline behavior</dd></div>
+      </dl>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M10 · P02 table</p>
+    </div>
+  </article>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M11</div>
+      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="rec">rule’s recommendation: <b>scarce authors coverage semantics</b>, plentiful builds UI</div>
+    </div>
+    <div class="body">
+      <h3 class="title">Transforms and requirement-preserving Prompt Engineer</h3>
+      <p class="oneline">Deliberate local rewriting of selected or dictated text, with customization, review and preserved requirements.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R17</span> · <span class="id">LF-R18</span> · <span class="id">LF-R28</span> · <span class="id">LF-R30</span> · <span class="id">LF-R31</span></dd></div>
+        <div><dt>Suites</dt><dd>new <span class="id">EV-13</span> — all 30 Prompt Engineer cases</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M07, M08, M09, M10</dd></div>
+        <div><dt>Expected files</dt><dd>existing transforms.json producer discovered in M01; new <code>localflow/v2/transforms/</code>, <code>ui/transforms.py</code>, <code>tests/v2/transforms/</code>, <code>scripts/v2/evaluate_text.py</code></dd></div>
+        <div><dt>Destroys</dt><dd>nothing — old definitions imported as preserved revisions; customizations are never erased</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>500-word transform P95 ≤ 15 s; UI progress acknowledgment ≤ 50 ms; dictation delay while transform inference is active</dd></div>
+        <div><dt>Human verification</dt><dd>Prompt Engineer on a real prompt; inspect the diff for every requirement; retry and undo; a custom transform with a writing sample</dd></div>
+        <div class="wide"><dt>Hand-forward duty</dt><dd>same-task preference validity (retry-original vs transform-of-result) is settled here and inherited by M14’s preference curation</dd></div>
+      </dl>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M11 · P02 table</p>
+    </div>
+  </article>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M12</div>
+      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="rec">rule’s recommendation: <b>plentiful throughout</b></div>
+    </div>
+    <div class="body">
+      <h3 class="title">Scratchpad and local writing versions</h3>
+      <p class="oneline">A reliable local note workspace — a native destination for dictation, transforms and recoverable drafts.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R19</span> · <span class="id">LF-R28</span> · <span class="id">LF-R30</span></dd></div>
+        <div><dt>Suites</dt><dd>new <span class="id">EV-14</span> · <span class="id">EV-19</span>/<span class="id">EV-20</span> producer cases</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M09, M11</dd></div>
+        <div><dt>Expected files</dt><dd>new <code>localflow/v2/notes.py</code>, <code>ui/scratchpad.py</code>, <code>note_export.py</code>, <code>tests/v2/notes/</code>; reuses document_nodes, store and transforms</dd></div>
+        <div><dt>Destroys</dt><dd>nothing — note revisions are immutable and parent-linked; a transform creates a version, never an untracked overwrite</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>warm note open P95 ≤ 200 ms for a 10,000-word fixture; editor stays responsive while saving and searching</dd></div>
+        <div><dt>Human verification</dt><dd>dictate a note, add a list and image; transform a selection; quit, reopen, restore an earlier version; export and inspect Markdown</dd></div>
+        <div class="wide"><dt>Watch item</dt><dd>note revisions must not double-count dictated words in analytics (M13) or create false ASR examples (M14) — M12’s completion report must document eligibility</dd></div>
+      </dl>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M12 · P02 table</p>
+    </div>
+  </article>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M13</div>
+      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="rec">rule’s recommendation: <b>scarce authors metric definitions</b>, plentiful builds graphs</div>
+    </div>
+    <div class="body">
+      <h3 class="title">Accurate local analytics and usage insights</h3>
+      <p class="oneline">Existing analytics become a clear, correct Insights product with meaningful quality and latency measures — an extension of existing data, not a counter reset.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R20</span> · <span class="id">LF-R28</span> · <span class="id">LF-R30</span></dd></div>
+        <div><dt>Suites</dt><dd><span class="id">EV-15</span> analytics portion (shared suite; M14 owns the personalization portion) · extends <span class="id">EV-03</span> (registry-owned for LF-R20)</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M02, M09, M10, M11, M12</dd></div>
+        <div><dt>Expected files</dt><dd>existing analytics producer/table found in M01; new <code>localflow/v2/analytics/</code>, <code>ui/insights.py</code>, <code>tests/v2/analytics/</code></dd></div>
+        <div><dt>Destroys</dt><dd>nothing — counters migrate without semantic relabeling; legacy_fixed_words stays separate; an unknown legacy formula stays labeled legacy rather than guessed (stop condition)</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>50,000-job aggregate/filter queries P95 ≤ 200 ms warm; scheduled aggregation must not disturb live dictation</dd></div>
+        <div><dt>Human verification</dt><dd>dashboard totals against a small hand-counted day; replay/retry; expire a transcript and inspect aggregate history</dd></div>
+        <div class="wide"><dt>Hand-forward duty</dt><dd>dataset-readiness query definitions and denominators are authored here and reused by M14 — never inferring correctness from absence of edits</dd></div>
+      </dl>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M13 · P02 table</p>
+    </div>
+  </article>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M14</div>
+      <div class="state-line"><span class="dot open"></span> not started · three checkpoints</div>
+      <div class="rec">rule’s recommendation: <b>scarce authors each checkpoint’s contracts</b>, plentiful implements</div>
+    </div>
+    <div class="body">
+      <h3 class="title">Correction learning and Your Voice profile</h3>
+      <p class="oneline">User-approved correction learning and an evidence-linked communication profile — plus curation of observed evidence into a task-specific, exportable personal dataset. No training now.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R21</span> · <span class="id">LF-R22</span> · <span class="id">LF-R28</span> · <span class="id">LF-R31</span> · <span class="id">LF-R32</span></dd></div>
+        <div><dt>Suites</dt><dd><span class="id">EV-15</span> personalization portion · new <span class="id">EV-20</span>, <span class="id">EV-21</span> · <span class="id">EV-19</span> integrations</dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M05, M09, M11, M13</dd></div>
+        <div><dt>Fixtures</dt><dd>100-record pack + 40 attribution negatives; family-leakage, exposure, export/deletion-race and offline-reconstruction cases</dd></div>
+        <div><dt>Expected files</dt><dd>new <code>localflow/v2/learning.py</code>, <code>profile.py</code>, <code>ui/your_voice.py</code>, <code>tests/v2/personalization/</code>; proposed <code>training/{curation,classify,sampling,splits,export}.py</code>, <code>ui/training_data.py</code>, <code>scripts/v2/{export_dataset,validate_dataset}.py</code>, <code>tests/v2/training/</code> — extends M02’s real collector, never replaces it</dd></div>
+        <div><dt>Destroys</dt><dd>nothing — no weight updates, no online rollout training, no cloud upload; only approved rules affect dictation; deletion propagates everywhere</dd></div>
+        <div><dt>Human verification</dt><dd>teach a narrow correction and test a cloud counterexample; inspect a profile card’s examples and delete one supporting item; review positive, mixed-edit and changed-intent cases; export selected examples</dd></div>
+        <div class="wide"><dt>Scale note</dt><dd>P07 places the amendment’s largest scope concentration here (with M02, M08/M09, M15): storage/retention, outcome review, curation/export — the checkpoints exist to contain session size</dd></div>
+      </dl>
+      <div class="substrip"><h4>M14-A — labels and review</h4><p>Classification axes with abstention; partial grafts marked weak; representative and hard-example review streams; verified positives kept separate from unreviewed cases.</p></div>
+      <div class="substrip"><h4>M14-B — sampling, preferences, splits</h4><p>Same-task preference validation with tie/neither states; family grouping; versioned train/validation/frozen-test assignments; exposure handling.</p></div>
+      <div class="substrip"><h4>M14-C — export, readiness, profile integration</h4><p>Portable JSONL/audio/artifact task exports and a standalone validator; recheck revocation/deletion before atomic completion; complete Training Data UI; dataset-readiness statement for M15.</p></div>
+      <p class="fact-note">A fresh session may resume a checkpoint under the same milestone id; handoff and STATUS are updated after each checkpoint. <span class="src">§M14 task 12 · P07</span></p>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M14 · P02 table · P07</p>
+    </div>
+  </article>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M15</div>
+      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="rec">rule’s recommendation: <b>scarce authors harness + holds the decision</b>, plentiful executes runs</div>
+    </div>
+    <div class="body">
+      <h3 class="title">Model qualification and end-to-end performance</h3>
+      <p class="oneline">Selected local models and the complete pipeline get measured quality, compatibility, memory and latency on the reference Mac.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R23</span> · <span class="id">LF-R24</span> · <span class="id">LF-R28</span> · <span class="id">LF-R29</span> · <span class="id">LF-R32</span> · <span class="id">LF-R33</span></dd></div>
+        <div><dt>Suites</dt><dd>new <span class="id">EV-16</span>, <span class="id">EV-22</span> · re-runs all critical <span class="id">EV-06/07/09/13</span> · <span class="id">EV-18</span>–<span class="id">EV-22</span></dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M03, M07, M08, M11, M13, M14</dd></div>
+        <div><dt>Expected files</dt><dd>existing stt/cleanup adapters; new <code>localflow/v2/model_registry.py</code>, <code>model_adapters/</code>, <code>scripts/v2/evaluate_audio.py</code>, <code>evaluate_text.py</code>, <code>benchmark.py</code>, <code>docs/v2/benchmarks/</code></dd></div>
+        <div><dt>Destroys</dt><dd>changes a default manifest only behind explicit promotion gates, with rollback preserved; an inconclusive comparison retains the existing default</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>≥ 30 unique cases per latency band × 5 warm runs; ten cached cold processes; 140 referenced speech clips + 20 negatives; the 60-short/80-diverse corpus; frozen held-out text/transform cases — failures and intervals reported</dd></div>
+        <div><dt>Human verification</dt><dd>blind comparison of real dictation/transforms including proper nouns, noisy/quiet speech, Spanish and long prompts; approve any changed default; listen to disputed short/name/noisy cases before assigning references</dd></div>
+        <div class="wide"><dt>Thread it owns</dt><dd>the M01 release-to-insert latency pilot (human speaker + instrumented target) is an M15 gate — recorded pending since M01, never assumed</dd></div>
+      </dl>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M15 · P02 table · handoffs/M01.md</p>
+    </div>
+  </article>
+
+  <article class="strip">
+    <div class="spine">
+      <div class="mid">M16</div>
+      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="rec">rule’s recommendation: <b>scarce designs the swap</b>, plentiful executes the matrix</div>
+    </div>
+    <div class="body">
+      <h3 class="title">Integration, offline packaging and V2 acceptance</h3>
+      <p class="oneline">A versioned V2 bundle ready for daily use, with complete traceable acceptance and a recoverable V1 path.</p>
+      <dl class="facts">
+        <div><dt>Requirements</dt><dd><span class="id">LF-R25</span> · <span class="id">LF-R26</span> · <span class="id">LF-R27</span> · <span class="id">LF-R28</span> · <span class="id">LF-R30</span> · <span class="id">LF-R31</span> · <span class="id">LF-R32</span> · <span class="id">LF-R33</span></dd></div>
+        <div><dt>Suites</dt><dd>new <span class="id">EV-17</span> · registry-owned <span class="id">EV-01</span>, <span class="id">EV-03</span>, <span class="id">EV-04</span>, <span class="id">EV-19</span>, <span class="id">EV-21</span> · the complete <span class="id">EV-01</span>–<span class="id">EV-22</span> registry re-run · gate <span class="id">G10</span></dd></div>
+        <div><dt>Prerequisites (P02)</dt><dd>M01 through M15 — all of them</dd></div>
+        <div><dt>Expected files</dt><dd>existing <code>scripts/build_app.sh</code>, README, app launcher; new <code>scripts/v2/verify_release.py</code>, release manifest, upgrade/rollback tests, <code>docs/v2/acceptance/</code></dd></div>
+        <div><dt>Destroys</dt><dd>the one true replace step — staged build/validate/swap retires the installed pre-M02 app (the pending rebuild decision lands here); rollback must never destroy V2-only data</dd></div>
+        <div><dt>Benchmark to clear</dt><dd>reference latency/memory gates re-run on the actual packaged bundle, compared with M15 and the V1 baseline; 500-job soak with memory trend and recovery counts</dd></div>
+        <div><dt>Human verification</dt><dd>the full packaged-app checklist plus three days of normal use; release cannot be verified complete while required human checks remain (P03)</dd></div>
+        <div class="wide"><dt>Closing obligation</dt><dd>every LF-R01–R33 must show passing required evidence with no open critical defect (M16-AC01) — the pending-check ledger closes here or the status says implemented_pending_human, honestly</dd></div>
+      </dl>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M16 · P02 table · P03 status semantics</p>
+    </div>
+  </article>
+</section>
+
+<section id="beside">
+  <div class="sec-head">
+    <p class="kicker">Dependency-eligible is not the same as should-run</p>
+    <h2>What may run beside what</h2>
+  </div>
+  <div class="duo">
+    <div class="panel">
+      <h3>What the dependency graph permits</h3>
+      <p>With M01–M05 closed, exactly one unit is dependency-eligible: <b>M06</b> (needs M02 and M05 — both delivered). After M06 closes, <b>M07</b> (needs M03, M04, M05 and M06). From there the remaining graph is a serial chain: every adjacent pair through M16 shares a dependency edge.</p>
+      <p class="fact-note">Derived from the P02 table in this session — a page judgement, not a repo statement. <span class="src">LOCALFLOW_V2_MILESTONES.md P02</span></p>
+    </div>
+    <div class="panel">
+      <h3>What sequence and file overlap allow</h3>
+      <p>The repo’s own parallelism precedent is P02’s note: “M04 can be developed alongside M03 after M02 because its pure interfaces do not require live model execution.” Two units, one shared completed prerequisite, disjoint files (lifecycle suites vs a pure normalize package), no shared migration. That window has passed — nothing left pairs that way.</p>
+      <p>Standing rules: a coordinator owns shared-schema and contract changes; two sessions must not edit the same database migration or shared UI shell. Other parallel work requires revising the dependency table explicitly plus separate worktrees with stable storage contracts — optional, not a goal. M14’s A/B/C are checkpoints inside one milestone, never parallel units.</p>
+      <p class="fact-note">Quoted and applied from P02 itself. <span class="src">LOCALFLOW_V2_MILESTONES.md P02</span></p>
+    </div>
+  </div>
+</section>
+
+<section id="model">
+  <div class="sec-head">
+    <p class="kicker">Marginal value, never importance</p>
+    <h2>The model-allocation rule</h2>
+    <p class="lede">Two models exist in practice: the <b>scarce</b> model (the quota-limited strong one) and the <b>plentiful</b> model (fast and cheap). The scarce model goes where its marginal value is highest — not where the work is most important. This repository records no per-unit model history, so every dashed chip on the strips above is this chart’s recommendation, never a repo fact.</p>
+  </div>
+  <div class="rulechart">
+    <div class="qs">
+      <div class="q">
+        <h4>Is there a precedent to copy?</h4>
+        <p>No repo precedent for this kind of unit means the first author sets the pattern for everything after it.</p>
+        <p class="ex">In the record: M09 will ship the first native AppKit shell — no prior unit to imitate. M12’s notes editor, by contrast, composes M09’s patterns.</p>
+      </div>
+      <div class="q">
+        <h4>Will later work live inside this decision?</h4>
+        <p>Contracts, schemas and precedence rules are cheap to set once and expensive to revisit after dependents exist.</p>
+        <p class="ex">In the record: M04/M05 policy precedence; M08’s insertion-authority semantics feeding M09 replay and M14 attribution; M13’s denominators reused by M14.</p>
+      </div>
+      <div class="q">
+        <h4>Can a wrong version be undone cheaply?</h4>
+        <p>A step that cannot be reversed — or that replaces the only working copy of something — justifies the scarce model up front.</p>
+        <p class="ex">In the record: M16’s staged swap retires the installed pre-M02 app, the only deployed copy; M15 changes default models only behind promotion gates.</p>
+      </div>
+    </div>
+    <div class="verdictline">
+      <div class="v"><b>Any yes above → scarce authors</b>The scarce model writes that contract, harness or decision; the plentiful model builds everything around it.</div>
+      <div class="v"><b>All no → plentiful authors</b>Fixture bulk, view implementation, run execution, checklist work — even when the unit as a whole is critical (M16’s acceptance matrix).</div>
+      <div class="v"><b>Near the line → scarce reviews</b>Where a unit sits between the two, the plentiful model authors and the scarce model reviews the diff — that is how the quota stretches.</div>
+    </div>
+  </div>
+  <p class="lede" style="margin-top:14px">The evidence that review is worth spending scarce-model attention on: five closed milestones, eight review criticals, every one of them real and every one fixed in-session — see <a href="#evidence">the record below</a>.</p>
+</section>
+
+<section id="loop">
+  <div class="sec-head">
+    <p class="kicker">One milestone, one fresh session</p>
+    <h2>The per-unit session loop</h2>
+    <p class="lede">Every closed milestone followed this loop; the handoffs record it explicitly, including the one deliberate adaptation (the /address per-fix commit cadence became one close-out commit, no push, per each kickoff’s constraints).</p>
+  </div>
+  <div class="loop">
+    <div class="step"><b>Fresh session, pasted kickoff.</b> The P06 template names one milestone id and nothing else; it needs no prior conversation.</div>
+    <div class="step"><b>Startup order.</b> STATUS.json, then the milestone section and its listed spec/evaluation sections, then the contract index and prerequisite handoffs — not the whole repository.</div>
+    <div class="step"><b>Baseline first.</b> Branch, base commit, local modifications confirmed; owning tests run before any edit; pre-existing failures recorded separately.</div>
+    <div class="step"><b>Implement the approved scope only.</b> A short execution checklist with requirement and suite ids; nothing speculative.</div>
+    <div class="step"><b>Run required tests and benchmarks.</b> Commands, environment, dates, exit codes and result paths recorded; a mock never substitutes for a native or model benchmark.</div>
+    <div class="step"><b>/review-2.</b> Two parallel read-only reviewers — a bug-hunting debugger and an architecture/quality/security/data-integrity auditor — deliver a verdict before anything is touched.</div>
+    <div class="step"><b>/address.</b> Criticals and warnings fixed in-session with regression tests; deferred suggestions carry written reasons in results.json.</div>
+    <div class="step"><b>Re-run on post-review code.</b> Every suite, the model-backed checks and the benchmark, on the fixed code — never on the pre-review state.</div>
+    <div class="step"><b>Close-out artifacts.</b> Handoff Mxx.md, acceptance results.json, contract index updates, STATUS.json — all written from actual work, dirty trees recorded honestly.</div>
+    <div class="step"><b>One commit, no push.</b> The milestone lands as a single close-out commit; pending human checks stay pending with exact steps.</div>
+    <div class="step"><b>Next kickoff printed last.</b> The handoff ends with the next eligible milestone’s copyable prompt — the loop’s actual output.</div>
+  </div>
+  <div class="loopback">…and the next session pastes that kickoff into a fresh context. Stop conditions from P04 apply throughout: completion of assigned scope is the normal stop point; a failing test is implementation work, not a reason to lower the bar; pending human verification is not permission to abandon remaining automatable work.</div>
+  <p class="lede" style="margin-top:16px"><b>The completion-report contract</b> (P03 — the close-out checklist every handoff must satisfy): scope and requirement ids; final branch/base/current commit; actual files changed; decisions and contracts; commands and tests with results; benchmark environment and measurements; acceptance item status; human checks pending/completed; known limitations; unresolved issues; spec deviations; rollback instructions; private-data handling; notes plus the next kickoff. Reports distinguish implementation, automated verification, native verification and user approval — 600–1,000 words plus linked structured output, never pasted logs. <span class="src">LOCALFLOW_V2_MILESTONES.md P03</span></p>
+</section>
+
+<section id="handover">
+  <div class="sec-head">
+    <p class="kicker">What a kickoff prompt carries</p>
+    <h2>Anatomy of the handover prompt</h2>
+    <p class="lede">The repo’s own copyable template is P06 (“Implement LocalFlow V2 milestone &lt;Mxx&gt; only.”). Mapped onto the seven slots every handover must fill:</p>
+  </div>
+  <table>
+    <thead><tr><th style="width:23%">Slot</th><th>What this repo puts in it</th></tr></thead>
+    <tbody>
+      <tr><td>Identity and scope</td><td>The one-line project description that never changes, plus “milestone &lt;Mxx&gt; only” — the P06 opening line.</td></tr>
+      <tr><td>What else is in flight</td><td>Owned paths, branch policy, and the explicit refusal: “Stop at the assigned milestone boundary” — no successor starts merely because tokens remain.</td></tr>
+      <tr><td>Startup order</td><td>START_HERE’s read order, then the milestone’s listed spec/evaluation sections, contracts, prerequisite handoffs, then source inspection and baseline tests (P03’s protocol).</td></tr>
+      <tr><td>What to settle rather than inherit</td><td>The milestone’s open design decisions, named — e.g. M05’s kickoff settled “how the dictionary feeds the policy”, recorded in its handoff as a settled decision with its reason.</td></tr>
+      <tr><td>Constraints</td><td>Preserve analytics/dictionary/transforms and the Parakeet+Qwen baseline; no implicit training or cloud uploads; no default-model change without evaluation evidence; never mark unavailable human checks as passed.</td></tr>
+      <tr><td>Verification</td><td>Commands, result kinds (automated / model-backed native / human), exact denominators, honest pending with steps.</td></tr>
+      <tr><td>Numbered close-out, ending with the next kickoff</td><td>Diff review → handoff → acceptance results → status/contract updates → the next eligible milestone’s kickoff prompt, printed last, copy-ready.</td></tr>
+    </tbody>
+  </table>
+  <p class="src" style="margin-top:8px">sources: LOCALFLOW_V2_MILESTONES.md P06 · P03 startup protocol · handoffs/M05.md</p>
+</section>
+
+<section id="evidence">
+  <div class="sec-head">
+    <p class="kicker">Why the page asks what it asks</p>
+    <h2>Evidence from the record</h2>
+  </div>
+  <h3>The review loop catches real bugs — eight criticals in five milestones, zero overruled</h3>
+  <table>
+    <thead><tr><th style="width:8%">Unit</th><th style="width:17%">Verdict before /address</th><th style="width:9%">Criticals</th><th>What the criticals were</th><th style="width:22%">Outcome</th></tr></thead>
+    <tbody>
+      <tr><td>M01</td><td>Approve with Suggestions</td><td class="num">0</td><td>— (warnings included a parser that could drop a complete pair when an unrelated record interleaved, and a manifest that could claim a bundle match on a diff error; a two-word verbatim transcript quote was found in committed JSON and removed)</td><td>Every warning and suggestion addressed; “no findings rejected as incorrect.”</td></tr>
+      <tr><td>M02</td><td class="crit">Request Changes</td><td class="num crit">3</td><td>Cleanup-evidence mis-join — the observation sink was set on the main thread and read on the worker, corrupting evidence under supported overlapping dictations; the <code>log_transcripts</code> branch was dead code, so transcripts were silently unretained under default config; daily retention would have destroyed the lossless legacy import after 30 days.</td><td>All fixed in-session with regression tests; import re-verified idempotent; “no findings rejected as incorrect.”</td></tr>
+      <tr><td>M03</td><td class="crit">Request Changes</td><td class="num crit">1</td><td>M02’s lost-release watchdog terminated every hands-free capture about a second after it started — the feature shipped dead on reporting hardware; no test had run watchdog ticks against hands-free.</td><td>Fixed trigger-aware with a regression test; 13 warnings also fixed; benchmark re-run on the fixed code.</td></tr>
+      <tr><td>M04</td><td class="crit">Request Changes</td><td class="num crit">3</td><td>Bare “hundred” after quantifiers corrupted prose (“a few hundred people” → “a few 100 people”); the “period” symbol command fired on noun compounds (“grace period” → “grace.”); the AC04 static scan passed vacuously — its path pointed at a nonexistent directory, so green meant unexamined.</td><td>All fixed; the scan now asserts it scans (non-empty, naming the seven expected modules); “no findings rejected as incorrect.”</td></tr>
+      <tr><td>M05</td><td class="crit">Request Changes</td><td class="num crit">1</td><td><code>update_entry</code> crashed on the tuple-alias format its own callers (<code>approve_entry</code>, <code>import_json</code>) pass — the one-click Approve flow and alias-changing imports could never land; no suite exercised either path.</td><td>Fixed with approve/import regression tests; post-fix benchmark re-run (scoped selector retrieval 25.3 ms → 5.3 ms after the structural fix).</td></tr>
+    </tbody>
+  </table>
+  <p class="src" style="margin-top:8px">sources: “/review-2 → /address record” sections of docs/v2/handoffs/M01.md–M05.md · review_loop blocks in docs/v2/acceptance/M0*/results.json</p>
+
+  <h3 style="margin-top:26px">The pending-human-check ledger — 7 open, recorded, never assumed</h3>
+  <table>
+    <thead><tr><th>Check</th><th style="width:13%">Recorded in</th><th style="width:12%">Gate owner</th><th style="width:26%">Note from the record</th></tr></thead>
+    <tbody>
+      <tr><td>Release-to-insert latency pilot</td><td>M01 results.json</td><td>M15 (gate)</td><td>Needs a real speaker and an instrumented target; pending since M01, carried honestly by every later handoff.</td></tr>
+      <tr><td>Mic unplug/replug mid-dictation</td><td>M03 results.json</td><td>M03</td><td>Native device-loss path; dev-runnable steps recorded.</td></tr>
+      <tr><td>Fn taps during processing (watchdog + overlap)</td><td>M03 results.json</td><td>M03</td><td>Real hardware only.</td></tr>
+      <tr><td>Quit/reopen mid-dictation with journal; retry the recovered item</td><td>M03 results.json</td><td>M03</td><td>Mic indicator must stay off until the next press.</td></tr>
+      <tr><td>Hands-free double-tap and mouse-trigger firing</td><td>M03 results.json</td><td>M03</td><td>Construction is tested; firing is not.</td></tr>
+      <tr><td>native-m04-dictation-profiles</td><td>M04 results.json</td><td>M04</td><td>Version, percentage, IP and “slash the budget” across technical and standard profiles; inspect one collected ledger.</td></tr>
+      <tr><td>native-m05-dictionary-trial</td><td>M05 results.json · STATUS.json</td><td>M05</td><td>Panel, workspace-only alias, sandbox; global-term live dictation today — the workspace-scoped live half waits for M06.</td></tr>
+    </tbody>
+  </table>
+  <p class="fact-note" style="margin-top:8px">Closed for comparison: M02’s two human checks passed 2026-09-22 (handoff addendum; five-dictation collection pilot 5/5 joined examples; redaction re-verified against 93 distinct spoken words — zero matches). None of the seven open items gates M06’s automatable work. <span class="src">handoffs/M02.md · handoffs/M05.md</span></p>
+
+  <h3 style="margin-top:26px">Privacy discipline, enforced by test</h3>
+  <p class="measure">Committed artifacts carry hashes, opaque ids, counts and line locators — never transcript text, audio bytes, database rows or credentials. Fixtures are synthetic and origin-tagged; the private evidence root (<code>~/Library/Application Support/LocalFlow/v2-evidence/</code>) stays outside Git; <code>tests/v2/test_baseline_manifest.py</code> fails the build if private-bearing file types appear under <code>docs/</code> or <code>tests/</code>. Every handoff re-states this and every acceptance scan has passed over each new path. <span class="src">contracts/INDEX.md privacy rules · handoffs M01–M05 privacy sections</span></p>
+</section>
+
+<section id="threads">
+  <div class="sec-head">
+    <p class="kicker">Who owns what nobody is building right now</p>
+    <h2>Open threads</h2>
+  </div>
+  <table>
+    <thead><tr><th style="width:30%">Thread</th><th style="width:16%">Owning unit</th><th>State, from the record</th></tr></thead>
+    <tbody>
+      <tr><td>Release-to-insert latency pilot</td><td>M15</td><td>Pending human since M01 (real speaker, instrumented target); explicitly an M15 gate, carried by every intervening handoff.</td></tr>
+      <tr><td>M03 native checks (four items)</td><td>M03</td><td>Pending with dev-runnable steps; do not gate M06 or anything else’s automatable work.</td></tr>
+      <tr><td>M04 dictation-profiles trial</td><td>M04</td><td>Pending; runnable on the dev pipeline from Terminal.app.</td></tr>
+      <tr><td>M05 dictionary trial</td><td>M05</td><td>Pending; the sandbox half is runnable now, the workspace-scoped live half waits for M06.</td></tr>
+      <tr><td>Workspace-scoped dictionary live resolution</td><td>M06</td><td>Unblocked by M06’s destination awareness; the live app filters global-only until then, documented in contracts/vocabulary.md.</td></tr>
+      <tr><td>Installed pre-M02 app</td><td>M16</td><td>/Applications/LocalFlow.app still runs 7cdd904 code (M01 finding; no build authorized since); the rebuild decision sits with M16’s staged packaging.</td></tr>
+      <tr><td>Producer-provenance unknowns</td><td>M01 (recorded)</td><td>stats/dictionary/transforms producer sources were deleted before the audited snapshot — compiled remnants only, interfaces recovered in baseline/manifest.json; the <code>instance.lock</code> producer is unproven. Recorded unresolved with reasons; the import path reads the data files, so nothing waits on it.</td></tr>
+      <tr><td>Decision record</td><td>every milestone</td><td>docs/v2/decisions/ is empty (0 entries, 2026-09-22) — no accepted spec deviations; an ADR lands there the day one is accepted.</td></tr>
+    </tbody>
+  </table>
+  <p class="src" style="margin-top:8px">sources: handoffs/M01.md–M05.md · contracts/vocabulary.md · directory listing of docs/v2/decisions/</p>
+</section>
+
+<section id="grading">
+  <div class="sec-head">
+    <p class="kicker">The bar a new session’s output must meet</p>
+    <h2>Grading a new model against the standard already set</h2>
+  </div>
+  <ul class="bars">
+    <li><b>Counts come from the registry, never hand-counted.</b> 33 requirements / 22 suites / 0 without a suite, machine-derived from the S05/E08 tables; regenerate with <code>scripts/v2/build_registry.py</code> and cross-check with <code>tests/v2/test_registry.py</code>. A hand-quoted count is a defect.</li>
+    <li><b>An unrun check is never reported as passed.</b> The START_HERE rule, held five-for-five: every unavailable human check appears in results.json as pending with exact steps — seven are open right now, and M16 cannot claim verified_complete while required checks remain.</li>
+    <li><b>Unknowns are null with a reason.</b> The deleted producer sources and the <code>instance.lock</code> mystery are recorded unresolved in the baseline manifest rather than guessed — “recorded, not forced,” as M01 put it.</li>
+    <li><b>Exact denominators, always.</b> The M05 hint matrix reports its 40 labeled bases × 4 conditions; the M04 command corpus reports 16/16 exact and 0/8 false commands; M15’s plan pins 140 clips + 20 negatives before any score is quoted. A percentage without its denominator does not ship.</li>
+    <li><b>The review bar is verdict-first and fixes-forward.</b> /review-2 records its verdict before /address touches anything; criticals and warnings are fixed in-session with regression tests; deferrals carry written reasons; all five records to date end “no findings rejected as incorrect.” Accepting a verdict without fixing, or rejecting findings as incorrect without evidence, fails the bar.</li>
+    <li><b>Report kinds stay separated.</b> Implementation, automated verification, native verification and user approval are distinct claims (P03) — “model-backed native Mac” and “human-approved” are never blended into one word like “tested”.</li>
+  </ul>
+</section>
+
+<div class="footer">
+  <p><b>Maintenance.</b> Milestone close-outs realign this page in place — strip states, ledger rows, the NOW panel and the chain rail — against the project’s own record (STATUS.json, handoffs, acceptance results), never against session memory. While the page is uncommitted or concurrently owned by another session, close-outs leave it untouched and record the intended change in their handoff instead. Figures were last read 2026-09-22 08:34 UTC at commit e95d152; the full source-to-figure audit lives in the HTML comment at the top of this file.</p>
+</div>
+
+</div>
+</body>
+</html>
