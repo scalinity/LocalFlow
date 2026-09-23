@@ -355,6 +355,66 @@ _MIGRATIONS[7] = [
 ]
 
 
+# M12 (Spec S20/S08, contracts/scratchpad.md): the Scratchpad note
+# workspace. Notes point at an append-only, parent-linked revision chain
+# (a transform creates a version, never an untracked overwrite);
+# attachments are local image files under a managed 0700 directory;
+# note_evidence_links track which training examples a note's revisions
+# have been observed against so note deletion can close those
+# references (S29.8/S29.14). Additive only, no frozen identity changes.
+_MIGRATIONS[8] = [
+    """CREATE TABLE IF NOT EXISTS notes(
+         note_id TEXT PRIMARY KEY,
+         title TEXT NOT NULL DEFAULT '',
+         pinned INTEGER NOT NULL DEFAULT 0,
+         current_revision_id TEXT,
+         dirty_at_utc TEXT,
+         created_at_utc TEXT NOT NULL,
+         updated_at_utc TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS note_revisions(
+         revision_id TEXT PRIMARY KEY,
+         note_id TEXT NOT NULL,
+         parent_revision_id TEXT,
+         origin TEXT NOT NULL,
+         trigger_kind TEXT NOT NULL DEFAULT 'explicit',
+         content_text TEXT NOT NULL,
+         content_sha256 TEXT NOT NULL,
+         word_count INTEGER NOT NULL DEFAULT 0,
+         source_job_id TEXT,
+         task_key TEXT,
+         transform_id TEXT,
+         transform_revision INTEGER,
+         restore_of TEXT,
+         spans_json TEXT NOT NULL DEFAULT '[]',
+         meta_json TEXT NOT NULL DEFAULT '{}',
+         purged INTEGER NOT NULL DEFAULT 0,
+         created_at_utc TEXT NOT NULL)""",
+    """CREATE INDEX IF NOT EXISTS idx_note_revisions_note
+         ON note_revisions(note_id)""",
+    """CREATE TABLE IF NOT EXISTS note_attachments(
+         attachment_id TEXT PRIMARY KEY,
+         note_id TEXT NOT NULL,
+         kind TEXT NOT NULL DEFAULT 'image',
+         mime TEXT,
+         filename TEXT,
+         bytes INTEGER NOT NULL DEFAULT 0,
+         sha256 TEXT NOT NULL,
+         content_path TEXT,
+         purged INTEGER NOT NULL DEFAULT 0,
+         created_at_utc TEXT NOT NULL)""",
+    """CREATE INDEX IF NOT EXISTS idx_note_attachments_note
+         ON note_attachments(note_id)""",
+    """CREATE TABLE IF NOT EXISTS note_evidence_links(
+         note_id TEXT NOT NULL,
+         example_id TEXT NOT NULL,
+         job_id TEXT,
+         first_seen_utc TEXT NOT NULL,
+         closed_utc TEXT,
+         close_reason TEXT,
+         PRIMARY KEY(note_id, example_id))""",
+]
+
+
 # ---- IEEE float32 WAV (Spec S29.5: the original capture artifact) -------
 
 def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
@@ -501,6 +561,11 @@ class Store:
                 result_q.put((out, err))
 
     def _submit(self, fn, wait=False, timeout=15.0):
+        if self._stop and not self._thread.is_alive():
+            # The writer is gone (close completed); waiting would hang
+            # for the full timeout on a queue nobody drains — fail
+            # fast with the honest error instead.
+            raise RuntimeError("store is closed")
         result_q = queue.Queue(maxsize=1) if wait else None
         with self._cond:
             self._queue.append((fn, result_q))
@@ -601,7 +666,8 @@ class Store:
                     "job_targets", "style_rules", "snippets",
                     "profiles_meta", "transforms", "transform_revisions",
                     "transform_meta", "transform_candidates",
-                    "preference_observations"}
+                    "preference_observations", "notes", "note_revisions",
+                    "note_attachments", "note_evidence_links"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         if version >= target and not expected <= have:

@@ -158,3 +158,21 @@ live in the schema-v7 `transform_candidates`/
 `contracts/preferences.md`); the automatic dictation path records
 candidates only — an automatic application is not a preference
 judgment (S29.10).
+
+## M12 live status (note family)
+
+The S29.8 note-revision observations are live: with collection
+enabled, `EvidenceCollector.on_note_revision` (called by `NoteStore`
+AFTER its writer op returns) appends content-free `notes` block
+entries to the affected examples' envelopes — a dictation/transform
+arrival's source job, plus every open `note_evidence_links` example
+for typed edits that touched an attributed region and for restores.
+Entries carry ids/origins/counts with `asr_example: false` and
+`evidence_status: reliable_target_observation`, bounded at 32; note
+TEXT never enters an envelope. No example is ever minted and no
+correctness label is ever granted — repeated saved versions of one
+dictation are revisions, not new dictations (M12-AC05; M13/M14 join
+through `note_evidence_links` + `source_job_id`). Note deletion
+closes the links and appends a final `note_deleted` observation;
+links whose example died elsewhere close as `example_unavailable`.
+See `contracts/scratchpad.md`.

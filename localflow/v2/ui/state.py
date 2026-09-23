@@ -18,7 +18,7 @@ from __future__ import annotations
 import threading
 
 VIEWS = ("home", "history", "styles", "snippets", "transforms",
-         "diagnostics", "models", "settings")
+         "scratchpad", "diagnostics", "models", "settings")
 
 VIEW_TITLES = {
     "home": "Home",
@@ -26,6 +26,7 @@ VIEW_TITLES = {
     "styles": "Styles",
     "snippets": "Snippets",
     "transforms": "Transforms",
+    "scratchpad": "Scratchpad",
     "diagnostics": "Diagnostics",
     "models": "Models",
     "settings": "Settings",
@@ -36,19 +37,21 @@ class HubState:
     def __init__(self, history_service, training_service=None,
                  diagnostics_provider=None, coordinator=None,
                  styles_service=None, snippets_service=None,
-                 transforms_service=None):
+                 transforms_service=None, notes_service=None):
         """``diagnostics_provider()`` returns a dict with events_dir and
         whatever filters the shell set; ``coordinator`` is the app
         delegate's command surface (engine states, pipeline info,
         recovery, paste/retry commands, M10 effective-profile/preview).
-        ``styles_service``/``snippets_service``/``transforms_service``
-        are the M10/M11 stores (the training_service pattern: read/CRUD
-        through the service, never a second store connection)."""
+        ``styles_service``/``snippets_service``/``transforms_service``/
+        ``notes_service`` are the M10–M12 stores (the training_service
+        pattern: read/CRUD through the service, never a second store
+        connection)."""
         self.history_service = history_service
         self.training_service = training_service
         self.styles_service = styles_service
         self.snippets_service = snippets_service
         self.transforms_service = transforms_service
+        self.notes_service = notes_service
         self.diagnostics_provider = diagnostics_provider \
             or (lambda: {"events_dir": None})
         self.coordinator = coordinator
@@ -74,6 +77,10 @@ class HubState:
             state.update({"subview": "engines"})
         if view in ("styles", "snippets", "transforms"):
             state.update({"selected_id": None, "preview": None})
+        if view == "scratchpad":
+            state.update({"selected_id": None, "open_ids": [],
+                          "versions": [], "attachments": [],
+                          "unsaved_tail_risk": None})
         return state
 
     def select_view(self, view):
@@ -301,6 +308,83 @@ class HubState:
                              data={"transforms": rows,
                                    "shortcut_conflicts": conflicts})
 
+    # ---- Scratchpad (M12, Spec S20) --------------------------------------
+
+    def set_scratchpad_search(self, text):
+        self.views["scratchpad"]["search"] = text
+        self.reload_scratchpad()
+
+    def select_scratchpad_note(self, note_id):
+        view = self.views["scratchpad"]
+        if note_id is not None and note_id not in view["open_ids"]:
+            view["open_ids"] = (view["open_ids"] + [note_id])[-8:]
+        view["selected_id"] = note_id
+        self._spawn(self._load_scratchpad_both)
+
+    def close_scratchpad_tab(self, note_id):
+        view = self.views["scratchpad"]
+        open_ids = [i for i in view["open_ids"] if i != note_id]
+        view["open_ids"] = open_ids
+        if view["selected_id"] == note_id:
+            view["selected_id"] = open_ids[-1] if open_ids else None
+            # The editor must not stay bound to the closed note: load
+            # the newly selected tab's detail (or clear it honestly).
+            self._spawn(self._load_scratchpad_detail)
+        else:
+            self._publish()
+
+    def reload_scratchpad(self):
+        self._spawn(self._load_scratchpad_both)
+
+    def _load_scratchpad_both(self, generation):
+        """One loader for list + detail (select/reload paths): the list
+        load and the detail load share a generation, so a select can
+        never supersede (and silently drop) the list refresh — the note
+        that was just created actually appears in the table."""
+        self._load_scratchpad(generation)
+        if generation == self._generation:
+            self._load_scratchpad_detail(generation)
+
+    def _load_scratchpad(self, generation):
+        if self.notes_service is None:
+            self._publish_locked("scratchpad",
+                                 error="notes_unavailable", loading=False)
+            return
+        view = self.views["scratchpad"]
+        text = view["search"].strip()
+        try:
+            notes = (self.notes_service.search(text) if text
+                     else self.notes_service.notes())
+        except Exception as e:
+            self._publish_locked("scratchpad", error=type(e).__name__,
+                                 loading=False)
+            return
+        if generation != self._generation:
+            return
+        self._publish_locked("scratchpad", error=None, loading=False,
+                             data={"notes": notes})
+
+    def _load_scratchpad_detail(self, generation):
+        if self.notes_service is None:
+            return
+        note_id = self.views["scratchpad"]["selected_id"]
+        if note_id is None:
+            self._publish_locked("scratchpad", detail=None)
+            return
+        try:
+            detail = self.notes_service.open_note(note_id)
+        except Exception as e:
+            self._publish_locked("scratchpad", error=type(e).__name__)
+            return
+        if generation != self._generation:
+            return
+        if detail is None:
+            # Deleted elsewhere: clear honestly, never a stale editor.
+            self._publish_locked("scratchpad", selected_id=None,
+                                 detail=None)
+            return
+        self._publish_locked("scratchpad", detail=detail)
+
     # ---- Diagnostics --------------------------------------------------------
 
     def set_diagnostics_filters(self, job=None, level=None, utc=None):
@@ -390,6 +474,8 @@ class HubState:
             self.reload_snippets()
         elif view == "transforms":
             self.reload_transforms()
+        elif view == "scratchpad":
+            self.reload_scratchpad()
         elif view == "diagnostics":
             self._spawn(self._load_diagnostics)
         elif view == "models":

@@ -125,3 +125,17 @@ orphan payload files.
   the same op; the same-task invariant enforced at write time). All
   access through `TransformStore` over `Store.submit`; the torn-write
   repair path covers the v7 tables.
+
+## M12 additions (schema v8; no frozen identity changed)
+
+- Migration v8 adds the Scratchpad tables (see
+  `contracts/scratchpad.md`): `notes` (mutable header: derived title,
+  pin, current revision pointer, the unsaved-tail-risk marker) +
+  `note_revisions` (append-only parent-linked; origin/trigger,
+  dictation/transform attribution, word-origin spans) +
+  `note_attachments` (managed image payloads under `v2-notes/`) +
+  `note_evidence_links` (note↔training-example references with closure
+  state — note deletion closes them). All access through `NoteStore`
+  over `Store.submit`; the torn-write repair path covers the v8
+  tables. Post-close submits now fail fast (`store is closed`)
+  instead of hanging on the dead writer.

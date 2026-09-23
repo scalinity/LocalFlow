@@ -127,16 +127,19 @@ def test_view_switching_and_keyboard_paths():
         hub.state.next_view()
         assert hub.state.selected_view == "transforms"  # M11 view
         hub.state.next_view()
+        assert hub.state.selected_view == "scratchpad"  # M12 view
+        hub.state.next_view()
         assert hub.state.selected_view == "diagnostics"
         hub.state.next_view(step=-1)
-        assert hub.state.selected_view == "transforms"
+        assert hub.state.selected_view == "scratchpad"
         hub.state.select_view("models")
+        assert hub.state.views["models"]["subview"] == "engines"
         hub.state.select_models_subview("training")
         assert hub.state.views["models"]["subview"] == "training"
-        hub.state.select_view_by_index(7)
+        hub.state.select_view_by_index(8)
         assert hub.state.selected_view == "settings"
         try:
-            hub.state.select_view("scratchpad")
+            hub.state.select_view("insights")
             raise AssertionError("future view accepted")
         except ValueError:
             pass
@@ -420,7 +423,8 @@ def test_verbatim_listen_gate_is_per_example():
                     "correctness": "unreviewed"},
                 "annotations": [], "state": "captured_unreviewed"})
             ids.append(ex)
-        hub._select_view_index(6)  # builds Models incl. the training pane
+        from localflow.v2.ui.state import VIEWS
+        hub._select_view_index(VIEWS.index("models"))  # builds the pane
         hub.state.select_models_subview("training")
         hub.state.wait_for_queries()
         # Replay example A; then select B and try to save a verbatim for

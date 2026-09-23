@@ -1,0 +1,80 @@
+{
+  "milestone": "M12",
+  "requirements": ["LF-R19", "LF-R28", "LF-R30"],
+  "suite": "EV-14",
+  "status": "implemented_pending_human",
+  "environment": {
+    "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+    "python": "3.14.7 (.venv)",
+    "mlx": "0.31.2",
+    "transformers": "5.10.4",
+    "machine": "Apple M5 Pro 48GB, macOS 27.0",
+    "models": {
+      "asr": "mlx-community/parakeet-tdt-0.6b-v3",
+      "cleanup_transform": "mlx-community/Qwen3-4B-Instruct-2507-4bit"
+    },
+    "note": "no model or checkpoint change; the Scratchpad adds no model work — note transforms run on the cleanup engine's model through the M11 engine, exactly as selection transforms do"
+  },
+  "pre_change_baselines": {
+    "kind": "automated + model-backed",
+    "command": ".venv/bin/python <suite>",
+    "result": "40 fast suites + 6 model-backed suites green before any M12 change: M01 (legacy_parser, registry, baseline_manifest, snapshot_safety), M02 (event_writer, store, import, collector), M03 (worker_protocol, capture_journal, audio_fidelity, lifecycle, worker_live 2/2), M04 (4 normalization), M05 (4 vocabulary), M06 (2 context), M07 (cleanup_engine, cleanup_pipeline, fidelity 60/60, literal 20/20, structure 40/40), M08 (3 insertion), M09 (4 ui), M10 (5 profiles/developer), M11 (3 fast transforms + PE cases 30/30 model-backed), stuck_overlay, live_pipeline 2/2, V1 cleanup control 51/51 (50.6s)"
+  },
+  "checks": [
+    {"id": "note-store", "kind": "automated",
+     "command": ".venv/bin/python tests/v2/notes/test_note_store.py",
+     "exit": 0, "result": "7/7 — v8 migration additive/idempotent over a genuine v7 database (built from the real v1–v7 DDL) with a pre-migration backup and torn-write repair of the dropped v8 tables; revisions immutable/parent-linked with origin+trigger gating; AC02 restore copies forward (restore_of recorded, the superseded revision stays readable, foreign restores refuse); AC01 reopen restores the last persisted version and names the tail risk (dirty marker armed on first edit, cleared by the next revision); attachments in 0700/0600 managed storage with deletion purging row+file; pinning sorts ahead, LIKE metacharacters stay literals in search, deletion blanks revision payloads + tombstones; word-origin spans rebase through edits and stop at the first touched word"},
+    {"id": "note-editor", "kind": "automated",
+     "command": ".venv/bin/python tests/v2/notes/test_note_editor.py",
+     "exit": 0, "result": "4/4 — debounce arms the dirty marker once and autosave vs explicit differ by trigger; dictated/transform arrivals flush immediately with job/task attribution; four racing flush threads produce a strictly parent-ordered chain with no duplicate (parent, content) revisions (EV-14 concurrent autosave); a closed model refuses edits and flushes"},
+    {"id": "note-export", "kind": "automated",
+     "command": ".venv/bin/python tests/v2/notes/test_note_export.py",
+     "exit": 0, "result": "4/4 — AC03 markdown preserves headings/paragraphs/lists/code/links/unicode with a stable document_nodes round trip and portable attachment copies; plain text reports image attachments as unsupported with the marker kept verbatim (never silently dropped) and a purged payload reports honestly in markdown too; a failed export retains the source note byte-identical and cleans its partial files; unknown formats refuse; AC04 content/search/export run with sockets disabled"},
+    {"id": "note-evidence", "kind": "automated",
+     "command": ".venv/bin/python tests/v2/notes/test_note_evidence.py",
+     "exit": 0, "result": "5/5 — EV-19/EV-20 producer cases: an attributed arrival links its example with a content-free note_region_arrival observation (note text provably absent from the envelope JSON); five repeated saves plus typed edits add zero examples and zero observations (AC05); a typed edit touching the dictated region records a local correction observation (asr_example false, correctness stays unreviewed) and a restore records its own kind; note deletion closes note_evidence_links, purges attachment + revision payloads and appends the final note_deleted observation while the example itself survives; consent off collects nothing and the product still works"},
+    {"id": "scratchpad-hub", "kind": "automated (real coordinator)",
+     "command": ".venv/bin/python tests/v2/notes/test_scratchpad_hub.py",
+     "exit": 0, "result": "10/10 — the 9-view Hub with the scratchpad state triple; a note-bound dictation through the real coordinator lands at the PTT-time anchor as an immediate dictated revision with job attribution (insertion_confirmed/scratchpad_note) and the external queue is never touched (pastes list empty); the closed-note fallback routes to saved_not_inserted/note_closed_during_dictation with no external paste; the production BUTTON path (picker + scratchpadTransform_) runs the whole-note transform whose accept REPLACES the content exactly, records the task identity and the transform_note candidate kind, and a changed region refuses (note_range_changed); restore rebinds the editor so the next edit builds on the restored text; tab close rebinds/clears and note switching flushes the debounce tail; Save-to-Scratchpad creates the transform note; History copy reads applied→cleaned→raw fallbacks, move applies delete-everywhere and legacy moves degrade honestly to copy; quick-open works immediately and defers behind the focus-steal guard during insertion with the intent carried to the flush; export round-trips and failure retains"},
+    {"id": "post-address-suite", "kind": "automated + model-backed",
+     "command": ".venv/bin/python <every M01–M11 suite>",
+     "exit": 0, "result": "39 earlier fast suites + 6 model-backed checks green on the post-review code: worker_live 2/2, fidelity 60/60, literal 20/20, structure 40/40, PE cases 30/30 (zero silent losses), live pipeline 2/2, V1 control 51/51 (49.9 s); hub shell 15/15 over the 9-view Hub; registry 33/22; privacy scan clean"},
+    {"id": "benchmark", "kind": "automated",
+     "command": ".venv/bin/python scripts/v2/benchmark_m12.py --out docs/v2/benchmarks/20260923-033704-m12",
+     "exit": 0, "result": "warm 10,000-word note open p95 0.094 s / median 0.066 s (budget ≤0.2); editor acknowledgment during concurrent save+search max 1.225 ms (budget ≤50); autosave flush p95 0.339 ms; 200-note search p95 0.176 ms — synthetic fixtures, latencies/counts only"},
+    {"id": "live-migration", "kind": "automated (live store)",
+     "command": ".venv/bin/python /tmp/m12_migrate_live.py",
+     "exit": 0, "result": "live v2.db migrated 7→8 with the pre-migration backup under v2-evidence/backups/; verify() ok with zero issues; 10 jobs, 7 legacy rows and 5 transform definitions intact"}
+  ],
+  "acceptance_criteria": {
+    "M12-AC01": {"status": "automated_pass",
+      "evidence": ["note-store (tail-risk marker)", "note-editor (debounce arming/clearing)",
+                   "scratchpad-hub (reopen restores)"],
+      "note": "the banner's visual read is part of the pending native trial"},
+    "M12-AC02": {"status": "automated_pass",
+      "evidence": ["note-store (restore copies forward, nothing discarded)",
+                   "scratchpad-hub (restore rebinds the editor; edits build on the restore)"]},
+    "M12-AC03": {"status": "automated_pass",
+      "evidence": ["note-export (structure round trip, unsupported reported, failure retains)",
+                   "scratchpad-hub (export command round trip)"],
+      "note": "inspecting exported Markdown in a real editor is part of the pending trial"},
+    "M12-AC04": {"status": "automated_pass",
+      "evidence": ["note-export (sockets disabled)"],
+      "note": "all note operations are local-disk + SQLite + the local transform engine by construction; no network code path exists in the new modules"},
+    "M12-AC05": {"status": "automated_pass",
+      "evidence": ["note-evidence (repeated revisions duplicate nothing; typed never dictated; deletion closes evidence references)",
+                   "note-store (spans stop honestly)"]}
+  },
+  "human_verification": {
+    "id": "native-m12-scratchpad-trial",
+    "status": "pending",
+    "steps": "From Terminal.app (cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh), one instance: (1) Quick Open Scratchpad — one action opens the Hub on the Scratchpad view with a fresh note focused; (2) dictate a paragraph with the editor focused (the pill runs; text lands at the caret as a dictated revision — History shows the dictation attributed to the note); (3) add a list and a code block by typing, watch autosave create revisions (word count in the status line), press Snapshot for an explicit version; (4) add an image (Add Image… — the managed file lands under Application Support/LocalFlow/v2-notes/); (5) select a sentence and run a transform from the picker (accept replaces the selection; then run one with nothing selected — accept REPLACES the whole note); (6) type, quit the app mid-burst without waiting, relaunch, reopen the note — the ⚠ tail-risk banner names when editing started and the last saved word count; (7) restore an earlier version from the popup (the editor shows it; the current version stays in the list); (8) from History, Copy a row to Scratchpad and Move another (the moved job's payloads purge); (9) export Markdown and plain text and inspect both (images copied beside the .md; plain text lists the image as unsupported); (10) screenshots at normal and enlarged text scale. Expected: every step above; actual: pending."
+  },
+  "review_loop": {
+    "skill": "/review-2 (two parallel read-only reviewers: bug-hunting debugger; architecture/quality/security/data-integrity auditor) → /address",
+    "verdict_before_addressing": "Request Changes — 4 criticals after dedup (the button-path trio corroborated by both reviewers: NSRange attribute misuse in selected_text; the hub calling tfRunNoteTransform with wrong arity and no definition picker; whole-note accept inserting at the caret instead of replacing; restore never rebinding the editor — all in the AppKit binding layer the headless tests bypass), 13 warnings, ~14 suggestions",
+    "addressed": "All four criticals fixed with regression tests driven through the production paths (the picker + button action; whole-note range (0, len) coerced at the coordinator too; the refresh rebinds whenever the persisted revision moves under a clean editor). Every warning fixed: select/reload share one loader generation (the just-created note actually appears); tab close rebinds or clears the editor and switching notes flushes the outgoing buffer; a no-change flush clears the tail-risk marker; scratchpad_receive enforces the PTT-time note binding and delivers at the captured anchor; hubSaveHistoryRow falls back applied→cleaned→raw; the revision_count column misalignment; the versions list bounded at 200 with an honest truncated flag (storage growth documented as a limitation — coalescing would violate the append-only contract here). Suggestions applied: the shared _conn_append_revision/_conn_latest helpers replace the duplicated envelope SQL; stale evidence links close as example_unavailable; closed stores fail fast instead of hanging; notes_meta and editor_origin (dead schema/state) cut; attachment insert-failure unlink; marker alt-text sanitizing; slugged export names; export flushes the debounce tail; partial-export cleanup; pending attribution restored on flush failure; transform_note task kind; objc.python_method decorators. Deferred with reasons: mid-word span placement stays a documented heuristic; two arrivals in one debounce window merge under the second origin (sub-second window, both texts persist). No findings rejected as incorrect.",
+    "post_address": "All 44 fast suites, all six model-backed checks, the V1 control (51/51) and the benchmark re-ran green on the fixed code. The /review-2 stale-callback hang (a deferred Hub refresh executing against a closed harness's store) was root-caused to the test harness and closed with the harness-side discard_pending plus the store's fail-fast guard.",
+    "cadence_note": "The /address per-fix-commit cadence was adapted to this repo's milestone protocol: one close-out commit, no push — per the kickoff's explicit constraints."
+  }
+}

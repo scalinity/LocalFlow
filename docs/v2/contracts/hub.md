@@ -8,14 +8,14 @@ tests/v2/ui/test_training_data.py + test_hub_shell.py)
 `replay.ReplayService`) plus the read/query services
 `localflow.v2.history_queries`, `localflow.v2.training_data` and
 `localflow.v2.diagnostics` deliver the S19 companion window: Home /
-History / Styles / Snippets / Transforms / Diagnostics / Models (+
-Training Data subview) / Settings. The M10 Styles and Snippets views
-and the M11 Transforms view follow the same
-`_build_/_refresh_/_load_` triple over their stores (rule/snippet/
-definition CRUD is synchronous against the store writer on the main
-thread, the documented training-service limitation); future views
-(Scratchpad, Insights) refuse at state level until they exist — the
-M09 rule, unchanged.
+History / Styles / Snippets / Transforms / Scratchpad / Diagnostics /
+Models (+ Training Data subview) / Settings. The M10 Styles and
+Snippets views, the M11 Transforms view and the M12 Scratchpad view
+follow the same `_build_/_refresh_/_load_` triple over their stores
+(rule/snippet/definition/note CRUD is synchronous against the store
+writer on the main thread, the documented training-service
+limitation); future views (Insights) refuse at state level until they
+exist — the M09 rule, unchanged.
 
 ## Architecture contract (frozen for M10–M13)
 
@@ -32,9 +32,13 @@ M09 rule, unchanged.
   `hubSetCollection`, `hubApplyRetention`, `_hub_diagnostics_spec`.
   M10 adds `hubEffectiveProfile`, `hubSetNextJobMode`,
   `hubPreviewPhrase` and `hubSnippetCollisionPreview` (live-process
-  state the services cannot see); the M10/M11 stores ride the spec as
-  `styles_service`/`snippets_service`/`transforms_service` (the
-  training_service pattern).
+  state the services cannot see); the M10/M11/M12 stores ride the
+  spec as `styles_service`/`snippets_service`/`transforms_service`/
+  `notes_service` (the training_service pattern).
+  M12 adds the note commands `hubNoteDeleted`, `hubExportNote`,
+  `hubSaveHistoryRow` and `quickOpenScratchpad_` (the quick-open
+  action, behind the same focus-steal guard as Open Hub with the
+  deferred intent carried to the settle flush).
   Later milestones add commands; they never bypass this surface.
 - **Query discipline.** `HistoryQueryService`/`TrainingDataService`/
   diagnostics reads are read-only ops through `Store.submit` (the

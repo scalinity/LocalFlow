@@ -1,0 +1,32 @@
+{
+ "editor_ack_during_io": {
+  "budget_ms": 50.0,
+  "cases": 50,
+  "max_ms": 1.225,
+  "p95_ms": 1.161,
+  "pass": true
+ },
+ "io_latency": {
+  "autosave_flush": {
+   "cases": 20,
+   "median_ms": 0.282,
+   "p95_ms": 0.339
+  },
+  "search_200_notes": {
+   "cases": 20,
+   "median_ms": 0.152,
+   "p95_ms": 0.176
+  }
+ },
+ "kind": "m12-benchmarks",
+ "overall_pass": true,
+ "synthetic": true,
+ "warm_note_open": {
+  "budget_ms": 200.0,
+  "cases": 30,
+  "median_ms": 0.06,
+  "p95_ms": 0.094,
+  "pass": true,
+  "words": 11250
+ }
+}

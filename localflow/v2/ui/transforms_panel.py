@@ -4,8 +4,9 @@ The review surface for selected-text transforms: an intelligible
 block/word diff with the review issues' original clauses kept beside
 it, and the actions S16 names — accept (replacement through the M08
 queue with revalidation), copy, retry-original, apply-another,
-transform-of-result, and a save-to-Scratchpad control that is honestly
-unavailable until M12 (no dead button, no placeholder feature).
+transform-of-result, and save-to-Scratchpad (M12: the output becomes a
+new note with its task identity recorded). A NOTE-scope capture (M12)
+accepts into the Scratchpad editor instead of the external queue.
 
 The panel is NON-ACTIVATING: opening it never makes LocalFlow the
 frontmost app, because accept-time revalidation compares the live
@@ -41,7 +42,7 @@ _ACTIONS = (
     ("Retry Original", "panelRetry:", True, 108.0, 0),
     ("Apply Another…", "panelApplyOther:", True, 118.0, 0),
     ("Transform Output…", "panelTransformResult:", True, 138.0, 1),
-    ("Save to Scratchpad (arrives in M12)", None, False, 250.0, 1),
+    ("Save to Scratchpad", "panelSaveToScratchpad:", True, 148.0, 1),
 )
 
 
@@ -191,3 +192,13 @@ class TransformPreviewPanel(NSObject):
         self.panel.orderOut_(None)
         self.coordinator.tfTransformOfResult(
             st["result"], st["capture"], other)
+
+    def panelSaveToScratchpad_(self, sender):
+        """M12: the transform output becomes a new Scratchpad note
+        (origin=transform, task identity recorded). The panel closes —
+        the note, not the selection, receives the output."""
+        st = self._state
+        if st["result"] is None or st["defn"] is None:
+            return
+        self.panel.orderOut_(None)
+        self.coordinator.tfSaveToScratchpad(st["result"], st["defn"])

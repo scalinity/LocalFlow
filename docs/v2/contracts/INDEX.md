@@ -22,6 +22,7 @@
 | `hub.md` | Native Hub: shell/state/services split, coordinator commands, History lineage, Training Data annotations, focus guard | M09 | S19, S08, S29.6/S29.14/S29.15 |
 | `profiles.md` | Styles/modes resolution, snippets, developer skills/file tags/surfaces, M10 provenance | M10 | S15, S17, S10, S29.4, S24 |
 | `transforms.md` | Transform definitions/revisions, execution + task identity, Prompt Engineer atoms/coverage, the two surfaces, auto-apply, preferences | M11 | S15, S16, S13, S18, S29.4, S29.10 |
+| `scratchpad.md` | Notes/tabs, immutable parent-linked revisions with origin/trigger, attachments, the internal dictation destination, note-scope transforms, export, evidence boundaries | M12 | S20, S08, S19, S29.8 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
@@ -116,4 +117,17 @@ milestones add fields; they must not repurpose or weaken these identifiers.
   takes the frozen transform registry (all six modes executable;
   auto-apply is the opt-in gate with honest reasons); `preferences.md`
   goes live for transform preferences. No frozen identifier changed;
-  the registry stays 33/22.
+  the registry stays 33/22. M12 ships
+  `scratchpad.md` (the note workspace: immutable parent-linked
+  revisions with origin/trigger tags, managed image attachments,
+  the internal dictation destination that never touches the M08
+  queue, note-scope transforms through the M11 engine with the
+  picker + whole-note-replace semantics, History copy/move,
+  Markdown/plain export through the document_nodes renderer, and
+  the S29.8 note evidence family with the never-duplicate/
+  never-relabel boundary); `store.md` gains the v8 section;
+  `hub.md` takes the 9-view list + notes_service + the new
+  coordinator commands; `training_evidence.md` records the note
+  family live status; `transforms.md`'s Save-to-Scratchpad goes
+  live. The repair set covers the v8 tables. No frozen identifier
+  changed; the registry stays 33/22.

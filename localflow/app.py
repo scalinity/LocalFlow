@@ -40,6 +40,8 @@ from .v2 import profiles_store as v2_profiles_store
 from .v2 import snippets_store as v2_snippets_store
 from .v2 import transforms as v2_transforms
 from .v2 import transforms_store as v2_transforms_store
+from .v2 import notes as v2_notes
+from .v2 import note_export as v2_note_export
 from .v2 import snippets as v2_snippets
 from .v2.developer import file_tags as v2_file_tags
 from .v2.developer import skills as v2_skills
@@ -224,6 +226,19 @@ class AppDelegate(NSObject):
             self.v2log.emit("transforms.store_unavailable",
                             level="WARNING", reason_code=type(e).__name__,
                             outcome="transforms_off")
+        # M12 (Spec S20): the Scratchpad note workspace. A note-store
+        # failure degrades to the Scratchpad view reporting
+        # notes_unavailable — dictation never depends on it.
+        self._notes_store = None
+        try:
+            self._notes_store = v2_notes.NoteStore(
+                self.store,
+                on_evidence=self.collector.on_note_revision)
+        except Exception as e:
+            self._notes_store = None
+            self.v2log.emit("notes.store_unavailable", level="WARNING",
+                            reason_code=type(e).__name__,
+                            outcome="scratchpad_off")
         try:
             self._styles = v2_profiles_store.StyleRuleStore(self.store)
             self._snip_store = v2_snippets_store.SnippetStore(self.store)
@@ -282,6 +297,7 @@ class AppDelegate(NSObject):
         # only orders the window out — the menu-bar service stays).
         self._hub = None
         self._hub_show_pending = False
+        self._hub_pending_action = None
         self.overlay = None
         self.hotkey = None
         self.mouse_trigger = None
@@ -938,11 +954,16 @@ class AppDelegate(NSObject):
             try:
                 if self._tf_store is not None:
                     # Display order ranks candidates WITHIN the task
-                    # (S29.10), not results across the process.
+                    # (S29.10), not results across the process. A note-
+                    # scope capture is its own task kind (truthful
+                    # provenance, never labeled a selection transform).
                     order = len(self._tf_store.candidates_for_task(
                         result.job.task_key())) + 1
                     candidate_id = self._tf_store.record_candidate(
-                        result, task_kind="transform_selection",
+                        result, task_kind=(
+                            "transform_note"
+                            if (capture or {}).get("note") is not None
+                            else "transform_selection"),
                         source_artifact_text=capture["source"],
                         output_artifact_text=result.output,
                         model_id=self.cfg.get("cleanup_model"),
@@ -969,7 +990,9 @@ class AppDelegate(NSObject):
         """Accept: replace the captured selection through the M08
         queue — revalidation first (a changed selection is never
         overwritten, M11-AC03; target_changed routes to the copy
-        offer). The explicit accept is the preference observation."""
+        offer). The explicit accept is the preference observation. A
+        NOTE-scope capture (M12) applies in the Scratchpad editor
+        instead — the external queue is never involved."""
         if candidate_id and result.job is not None \
                 and self._tf_store is not None:
             try:
@@ -982,6 +1005,9 @@ class AppDelegate(NSObject):
                 self.v2log.emit("transforms.record_failed",
                                 level="WARNING",
                                 reason_code=type(e).__name__)
+        if capture.get("note") is not None:
+            self.tfApplyNoteTransform(result, capture)
+            return
         self._insertion.submit(
             result.output,
             {"job_id": None, "attempt": 1,
@@ -1112,6 +1138,240 @@ class AppDelegate(NSObject):
                 path=v2_transforms.PATH_FALLBACK_ORIGINAL,
                 reason=f"transform_refused:{res['refused'][:60]}")
         return self._m11_result_from_message(job, res)
+
+    # ---- M12: the Scratchpad coordinator commands (Spec S20) -----------
+
+    @objc.python_method
+    def tfRunNoteTransform(self, transform_id, source, range_, note):
+        """Note-scope transform (S20): the note's selection — or the
+        whole note when nothing is selected — under the M11 engine,
+        with visible scope. The capture is note-bound; accept applies
+        in the editor and the M08 external queue is never involved (a
+        note transform never overwrites an external target)."""
+        if self._tf_pipeline_busy():
+            self.v2log.emit("transforms.busy", level="INFO",
+                            reason_code="pipeline_active")
+            return
+        snapshot = self._transforms_snapshot()
+        defn = snapshot.by_id(transform_id) if snapshot is not None else None
+        if defn is None:
+            self.v2log.emit("transforms.unavailable", level="WARNING",
+                            reason_code="definition_missing")
+            return
+        if not source or not source.strip():
+            self.v2log.emit("transforms.selection_unavailable",
+                            level="INFO", reason_code="empty_note")
+            return
+        self._tf_active = {"transform_id": transform_id, "note": note}
+        self.overlay.showWithMode_(MODE_TRANSFORMING)
+        # No range = the whole note: accept REPLACES the note's full
+        # content (an insertion at the caret would leave the original
+        # beside its own transformation — S20's whole-note scope).
+        rng = tuple(range_) if range_ else (0, len(source))
+        capture = {"source": source, "range": rng,
+                   "snapshot": None, "note": note}
+
+        def work():
+            result = self._m11_run_transform(
+                defn, source, source_kind="note", selection=capture["range"])
+            AppHelper.callAfter(self._tfShowResult_, result, capture, defn)
+        self._tf_spawn(work)
+
+    @objc.python_method
+    def tfApplyNoteTransform(self, result, capture):
+        """Note-scope accept: replace the captured range in the
+        Scratchpad editor; the revision records the M11 task identity
+        (origin=transform). Revalidation first — the captured source
+        must still match at the range, else the copy offer (a changed
+        note region is never blindly overwritten, the M08 discipline
+        applied to the internal destination)."""
+        applied = False
+        reason = None
+        try:
+            if self._hub is not None:
+                applied, reason = \
+                    self._hub.scratchpad_apply_transform(result, capture)
+        except Exception as e:
+            reason = type(e).__name__
+        if applied:
+            self.v2log.emit("notes.transform_applied", level="INFO",
+                            outcome=result.path,
+                            detail=f"{len(result.output)} chars")
+        else:
+            copy_text(result.output)
+            self.v2log.emit("notes.transform_target_lost", level="INFO",
+                            reason_code=reason or "note_range_changed",
+                            outcome="copy_offered")
+        self._settle_state()
+
+    @objc.python_method
+    def tfSaveToScratchpad(self, result, defn):
+        """The M11 preview panel's Save-to-Scratchpad, live in M12: the
+        transform output becomes a NEW note whose first revision
+        carries the task identity (origin=transform)."""
+        if self._notes_store is None:
+            self.v2log.emit("notes.store_unavailable", level="WARNING",
+                            reason_code="scratchpad_off")
+            return
+        job = result.job
+        try:
+            out = self._notes_store.create_note(
+                result.output, origin=v2_notes.ORIGIN_TRANSFORM,
+                source_job_id=job.parent_job_id if job is not None else None,
+                task_key=job.task_key() if job is not None else None,
+                transform_id=job.transform_id if job is not None else None,
+                transform_revision=(job.transform_revision
+                                    if job is not None else None),
+                title=defn.name)
+        except Exception as e:
+            self.v2log.emit("notes.note_create_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+            return
+        self.v2log.emit(
+            "notes.note_created", level="INFO",
+            detail=f"note={out['note_id']} origin=transform"
+                   f" {len(result.output)} chars")
+        if self._hub is not None:
+            try:
+                self._hub.scratchpad_note_created(out["note_id"])
+            except Exception:
+                pass
+
+    @objc.python_method
+    def hubNoteDeleted(self, payload):
+        """Deletion propagates to evidence references: the collector
+        closes the linked examples' note observations (S29.14,
+        M12-AC05)."""
+        try:
+            self.collector.on_note_deleted(payload)
+        except Exception as e:
+            self.v2log.emit("training.note_capture_failed",
+                            level="WARNING", reason_code=type(e).__name__)
+        self.v2log.emit(
+            "notes.deleted", level="INFO",
+            detail=f"note={(payload or {}).get('note_id')}"
+                   f" attachments="
+                   f"{(payload or {}).get('purged_attachments', 0)}")
+
+    @objc.python_method
+    def hubExportNote(self, note_id, path, fmt):
+        """Export one note (Markdown/plain). A failed export retains
+        the source note untouched — export is a read-only projection."""
+        if self._notes_store is None:
+            return {"ok": False, "reason": "notes_unavailable",
+                    "unsupported": []}
+        if fmt not in v2_note_export.FORMATS:
+            return {"ok": False, "reason": "unknown_format",
+                    "unsupported": []}
+        note = self._notes_store.open_note(note_id)
+        if note is None:
+            return {"ok": False, "reason": "note_missing",
+                    "unsupported": []}
+        report = v2_note_export.write_export(
+            path, note, self._notes_store, fmt)
+        self.v2log.emit(
+            "notes.export_done" if report.get("ok")
+            else "notes.export_failed",
+            level="INFO" if report.get("ok") else "WARNING",
+            reason_code=report.get("reason"),
+            detail=f"note={note_id} fmt={fmt}"
+                   f" bytes={report.get('bytes', 0)}"
+                   f" unsupported={len(report.get('unsupported') or [])}")
+        return report
+
+    @objc.python_method
+    def hubSaveHistoryRow(self, kind, row_id, move=False):
+        """Explicit copy/move from History into the Scratchpad (S20).
+        Copy creates a note from the row's retained final text (origin
+        dictated, source job attributed when a V2 example exists).
+        Move additionally applies the explicit deletion contract to the
+        V2 job (delete-everywhere). Legacy rows have no deletion
+        target — a move degrades honestly to copy (legacy history is
+        lossless by contract)."""
+        if self._notes_store is None:
+            return {"outcome": "notes_unavailable"}
+        text = None
+        source_job = None
+        if kind == "job":
+            def read(db):
+                # The retained FINAL text: applied output first, then
+                # the cleaned/raw artifacts (a saved_not_inserted job
+                # keeps its text there — exactly what a user rescues
+                # into a note).
+                for role in ("applied_output", "cleaned_transcript",
+                             "raw_transcript"):
+                    row = db.execute(
+                        "SELECT content_text FROM artifacts WHERE job_id=?"
+                        " AND role=? AND purged=0"
+                        " ORDER BY rowid DESC LIMIT 1",
+                        (row_id, role)).fetchone()
+                    if row is not None:
+                        return row
+                return None
+            row = self.store.submit(read)
+            text = row[0] if row else None
+            source_job = row_id if text else None
+        else:
+            def read_legacy(db):
+                return db.execute(
+                    "SELECT COALESCE(cleaned_text, raw_text) FROM"
+                    " legacy_dictations WHERE id=?",
+                    (int(row_id),)).fetchone()
+            row = self.store.submit(read_legacy)
+            text = row[0] if row else None
+        if not text:
+            return {"outcome": "no_retained_text"}
+        try:
+            out = self._notes_store.create_note(
+                text,
+                origin=(v2_notes.ORIGIN_DICTATED if kind == "job"
+                        else v2_notes.ORIGIN_TYPED),
+                source_job_id=source_job)
+        except Exception as e:
+            self.v2log.emit("notes.note_create_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+            return {"outcome": "create_failed"}
+        outcome = "copied"
+        if move:
+            if kind == "job":
+                try:
+                    self.store.delete_everywhere(
+                        "job", row_id, reason="moved_to_scratchpad")
+                    outcome = "moved"
+                except Exception as e:
+                    self.v2log.emit("notes.move_failed", level="WARNING",
+                                    reason_code=type(e).__name__)
+                    outcome = "move_failed_note_copied"
+            else:
+                outcome = "move_degrades_to_copy_legacy"
+        self.v2log.emit("notes.note_created", level="INFO",
+                        detail=f"note={out['note_id']}"
+                               f" from_history={kind} {outcome}")
+        if self._hub is not None:
+            try:
+                self._hub.scratchpad_note_created(out["note_id"])
+            except Exception:
+                pass
+        return {"outcome": outcome, "note_id": out["note_id"]}
+
+    def quickOpenScratchpad_(self, sender):
+        """Quick-open (S20): Hub + Scratchpad view + a fresh note in one
+        action, deferred by the focus-steal guard exactly like Open Hub
+        — quick-open must never steal the external insertion target
+        (M12 regression requirement)."""
+        if self._hub_blocks_show():
+            self._hub_show_pending = True
+            self._hub_pending_action = "scratchpad"
+            self.v2log.emit("hub.show_deferred", level="INFO",
+                            reason_code="insertion_in_flight")
+            return
+        self.openHub_(None)
+        if self._hub is not None:
+            try:
+                self._hub.scratchpad_quick_open()
+            except Exception as e:
+                self.v2log.emit("notes.quick_open_failed", level="WARNING",
+                                reason_code=type(e).__name__)
 
     @objc.python_method
     def _set_mode_menu(self, wp):
@@ -1514,6 +1774,24 @@ class AppDelegate(NSObject):
             "journal": journal,
             "hands_free": hands_free,
         }
+        # M12 (Spec S20): a dictation started with the Scratchpad
+        # editor focused is NOTE-BOUND — an internal destination. The
+        # insertion point is captured here, at PTT start, exactly as
+        # the M08 discipline captures a selection at request time; the
+        # anchor promised at hotkey-down is the anchor that receives.
+        if self._hub is not None:
+            try:
+                if self._hub.scratchpad_editor_active():
+                    self._job["note_target"] = {
+                        "note_id": self._hub.editor.note_id,
+                        "insertion_point":
+                            self._hub.editor.insertion_point()}
+                    self.v2log.emit(
+                        "notes.dictation_bound", level="INFO",
+                        job_id=job_id,
+                        detail=f"note={self._job['note_target']['note_id']}")
+            except Exception:
+                pass  # a Hub probe failure must never touch capture
         if hands_free:
             # Releases no longer finish this capture; only a new tap, a
             # cancel, or the duration cap does (Spec S09).
@@ -2493,6 +2771,65 @@ class AppDelegate(NSObject):
         elif text:
             if self.cfg["append_space"] and not text.endswith(("\n", " ")):
                 text += " "
+            # M12 (Spec S20): a note-bound dictation delivers into the
+            # Scratchpad editor — an internal destination. The M08
+            # external queue is never involved, so a note dictation can
+            # never overwrite an external target; if the note closed
+            # mid-dictation the text routes to the clipboard offer,
+            # never a paste into whatever app is now focused.
+            note_target = job.get("note_target")
+            if note_target is not None:
+                delivered = False
+                try:
+                    delivered = (
+                        self._hub is not None
+                        and self._hub.scratchpad_receive(text, job))
+                except Exception as e:
+                    self.v2log.emit("notes.receive_failed",
+                                    level="WARNING", job_id=job_id,
+                                    reason_code=type(e).__name__)
+                self._retire_active_job(job)
+                if delivered:
+                    if job_id:
+                        self.v2log.emit(
+                            "notes.dictation_inserted", level="INFO",
+                            job_id=job_id,
+                            detail=f"note={note_target['note_id']}"
+                                   f" {len(text)} chars")
+                        self._job_state(job_id, "insertion_posted")
+                        self._job_state(job_id, "insertion_confirmed",
+                                        reason="scratchpad_note")
+                    if ctx is not None:
+                        try:
+                            self.collector.on_insertion(ctx, True,
+                                                        len(text))
+                        except Exception as e:
+                            self.v2log.emit(
+                                "training.capture_failed", level="ERROR",
+                                job_id=job_id,
+                                reason_code=type(e).__name__)
+                else:
+                    copy_text(text)
+                    if job_id:
+                        self.v2log.emit(
+                            "insertion.saved_not_inserted", level="WARNING",
+                            job_id=job_id, outcome="saved_not_inserted",
+                            reason_code="note_closed_during_dictation",
+                            detail="transcript left on the clipboard for"
+                                   " a manual ⌘V")
+                        self._job_state(job_id, "saved_not_inserted",
+                                        reason="note_closed_during_dictation")
+                    if ctx is not None:
+                        try:
+                            self.collector.on_insertion(ctx, False, 0)
+                        except Exception as e:
+                            self.v2log.emit(
+                                "training.capture_failed", level="ERROR",
+                                job_id=job_id,
+                                reason_code=type(e).__name__)
+                self._delete_journal_files(job_id)
+                self._settle_state()
+                return
             # M08 (S18): the text branch hands off to the serialized
             # insertion queue — the job stays active (cancel authority
             # holds until the transaction starts) and settles in
@@ -2787,6 +3124,17 @@ class AppDelegate(NSObject):
         hub_item.setTarget_(self)
         menu.addItem_(hub_item)
 
+        # M12 (Spec S20): quick-open — Hub + Scratchpad + a fresh note
+        # in one action, behind the same focus-steal guard as Open Hub
+        # (a quick-open must never steal the external insertion
+        # target). The key equivalent is the menu's own; a global
+        # hotkey grab stays out (the S16 binding discipline).
+        scratchpad_item = NSMenuItem.alloc()\
+            .initWithTitle_action_keyEquivalent_(
+                "Quick Open Scratchpad", "quickOpenScratchpad_", "n")
+        scratchpad_item.setTarget_(self)
+        menu.addItem_(scratchpad_item)
+
         # Minimal training-evidence controls (Spec S29.2, M02): collection
         # is opt-in, one persistent choice; nothing is collected until the
         # user turns it on here.
@@ -2952,6 +3300,7 @@ class AppDelegate(NSObject):
                     "styles_service": self._styles,
                     "snippets_service": self._snip_store,
                     "transforms_service": self._tf_store,
+                    "notes_service": self._notes_store,
                     "diagnostics_provider": self._hub_diagnostics_spec,
                     "coordinator": self,
                     "replay": v2_ui.ReplayService(),
@@ -2982,7 +3331,16 @@ class AppDelegate(NSObject):
     def _flush_pending_hub_show(self):
         if self._hub_show_pending and not self._hub_blocks_show():
             self._hub_show_pending = False
+            action = self._hub_pending_action
+            self._hub_pending_action = None
             self.openHub_(None)
+            if action == "scratchpad" and self._hub is not None:
+                try:
+                    self._hub.scratchpad_quick_open()
+                except Exception as e:
+                    self.v2log.emit("notes.quick_open_failed",
+                                    level="WARNING",
+                                    reason_code=type(e).__name__)
 
     # Coordinator command surface the Hub calls (contract hub.md): the
     # shell owns no data logic and never writes into target apps.

@@ -847,6 +847,146 @@ class EvidenceCollector:
         self.store.append_revision(ctx.example_id, envelope,
                                    parent_revision_id=ctx.revision_1)
 
+    # ---- M12: the Scratchpad note family (S20/S29.8) --------------------
+
+    _NOTE_STATES_SKIP = ("deleted", "expired", "quarantined_sensitive")
+    _NOTE_OBSERVATIONS_MAX = 32
+
+    def on_note_revision(self, event: dict):
+        """M12 (S20): one Scratchpad revision observation, appended to
+        the affected examples' envelopes — content-free (ids, origins,
+        counts; never note text). A revision event is a reliable LOCAL
+        observation (S29.8 ``reliable_target_observation``), never an
+        ASR example: no new example is minted, no verbatim/correctness
+        label is granted, and typed additions are recorded as typed —
+        never as dictated speech (M12-AC05). Affected examples: the
+        arrival's source job (dictated/transform revisions) plus every
+        open ``note_evidence_links`` example (typed edits/restores
+        observed against regions that earlier carried their dictation).
+        Requires collection consent, like every producer here."""
+        try:
+            self._on_note_revision(event)
+        except Exception as e:
+            self.emit("training.note_capture_failed", level="WARNING",
+                      reason_code=type(e).__name__)
+
+    def _on_note_revision(self, event: dict):
+        if self.consent.state() != "enabled":
+            return
+        note_id = event.get("note_id")
+        if not note_id:
+            return
+        from . import training_data as td  # the shared writer-op helpers
+        # (imported here: training_data reads training at module doc
+        # level only — no cycle).
+
+        def op(db):
+            targets = {}
+            if event.get("source_job_id"):
+                row = db.execute(
+                    "SELECT example_id, state FROM training_examples"
+                    " WHERE job_id=? ORDER BY rowid DESC LIMIT 1",
+                    (event["source_job_id"],)).fetchone()
+                if row is not None and row[1] not in self._NOTE_STATES_SKIP:
+                    targets[row[0]] = row[1]
+            stale = []
+            for ex_id, state in db.execute(
+                    "SELECT e.example_id, e.state FROM note_evidence_links l"
+                    " JOIN training_examples e ON e.example_id = l.example_id"
+                    " WHERE l.note_id=? AND l.closed_utc IS NULL",
+                    (note_id,)).fetchall():
+                if state not in self._NOTE_STATES_SKIP:
+                    targets[ex_id] = state
+                else:
+                    stale.append(ex_id)
+            now = ids.now_utc_iso()
+            # Links whose example was deleted/expired elsewhere close —
+            # they must not accumulate as forever-open references.
+            for ex_id in stale:
+                db.execute(
+                    "UPDATE note_evidence_links SET closed_utc=?,"
+                    " close_reason='example_unavailable' WHERE note_id=?"
+                    " AND example_id=? AND closed_utc IS NULL",
+                    (now, note_id, ex_id))
+            if not targets:
+                return 0
+            observation = {
+                "kind": event.get("kind"),
+                "note_id": note_id,
+                "note_revision_id": event.get("revision_id"),
+                "origin": event.get("origin"),
+                "trigger": event.get("trigger"),
+                "source_job_id": event.get("source_job_id"),
+                "task_key": event.get("task_key"),
+                "transform_id": event.get("transform_id"),
+                "transform_revision": event.get("transform_revision"),
+                "restore_of": event.get("restore_of"),
+                "word_count": event.get("word_count"),
+                "edited_spans": event.get("edited_spans") or [],
+                "asr_example": False,
+                "evidence_status": "reliable_target_observation",
+            }
+            appended = 0
+            for ex_id in targets:
+                env, parent_rev = td._conn_latest(db, ex_id)
+                if env is None:
+                    continue
+                notes = list(env.get("notes") or [])
+                notes.append(dict(observation, observed_at_utc=now))
+                env["notes"] = notes[-self._NOTE_OBSERVATIONS_MAX:]
+                td._conn_append_revision(db, ex_id, env, parent_rev)
+                db.execute(
+                    "INSERT OR IGNORE INTO note_evidence_links(note_id,"
+                    " example_id, job_id, first_seen_utc) VALUES(?,?,?,?)",
+                    (note_id, ex_id, event.get("source_job_id"), now))
+                appended += 1
+            return appended
+        n = self.store.submit(op)
+        if n:
+            self.emit("training.note_revision_recorded", level="INFO",
+                      reason_code=event.get("kind"),
+                      detail=f"origin={event.get('origin')}"
+                             f" examples={n}")
+
+    def on_note_deleted(self, payload: dict):
+        """M12 (S20/S29.14): note deletion closes its evidence
+        references — one final content-free ``note_deleted`` observation
+        per linked example (the links themselves were closed inside the
+        deletion op). Mined note text is purged with the note; the
+        observations remain as the content-free record."""
+        try:
+            closed = payload.get("closed_examples") or []
+            if not closed or self.consent.state() != "enabled":
+                return
+            from . import training_data as td
+
+            def op(db):
+                now = ids.now_utc_iso()
+                appended = 0
+                for item in closed:
+                    ex_id = item.get("example_id")
+                    env, parent_rev = td._conn_latest(db, ex_id)
+                    if env is None:
+                        continue
+                    notes = list(env.get("notes") or [])
+                    notes.append({
+                        "kind": "note_deleted",
+                        "note_id": payload.get("note_id"),
+                        "asr_example": False,
+                        "observed_at_utc": now,
+                    })
+                    env["notes"] = notes[-self._NOTE_OBSERVATIONS_MAX:]
+                    td._conn_append_revision(db, ex_id, env, parent_rev)
+                    appended += 1
+                return appended
+            n = self.store.submit(op)
+            if n:
+                self.emit("training.note_deleted_recorded", level="INFO",
+                          detail=f"examples={n}")
+        except Exception as e:
+            self.emit("training.note_capture_failed", level="WARNING",
+                      reason_code=type(e).__name__)
+
     @staticmethod
     def _observation_block(observer) -> dict:
         """Content-free observation summary (ids/counts/reasons/ranges

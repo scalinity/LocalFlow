@@ -179,6 +179,8 @@ class Harness:
         outer = self
 
         class _InsertionStub:
+            busy = False  # the M08/M11/M12 guards read it directly
+
             def note_new_dictation(self):
                 pass
 

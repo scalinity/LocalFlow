@@ -93,8 +93,11 @@ zero silent losses.
   offer), **copy**, **retry-original**, **apply-another** (the source
   again under another definition) and **transform-of-result**; undo of
   an accepted replacement is the M08 target-bound undo (Recovery menu)
-  — this panel never builds a second undo engine. Save-to-Scratchpad
-  is honestly labeled as arriving with M12 (no dead button).
+  — this panel never builds a second undo engine. Since M12,
+  **save-to-Scratchpad** is live (the output becomes a new note with
+  its task identity recorded), and a NOTE-scope capture (the
+  Scratchpad's picker — selection or whole note) accepts into the
+  editor instead of the external queue (contracts/scratchpad.md).
 - **Automatic application (the dictation path):** a resolved
   transform-backed mode whose bound definition opted in
   (`auto_apply`, default **off** — M11-AC04) transforms the **Clean
