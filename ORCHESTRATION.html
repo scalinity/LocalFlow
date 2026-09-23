@@ -19,16 +19,16 @@
                                                              "In scope"/"Out of scope"/"Regression requirements",
                                                              "Human verification", "Required benchmarks" sections
     M14-A/B/C checkpoints ................................. M14 implementation task 12 + P07 amendment note
-    STATUS figures (active M11, implemented_pending_human,
-    source_commit 6e52328, pending native-m11-transform-trial,
-    next M12 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-23 05:34 UTC at f2137ef
+    STATUS figures (active M12, implemented_pending_human,
+    source_commit 96d387f, pending native-m12-scratchpad-trial,
+    next M13 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-23 06:00 UTC at d2ef224
     commit ids 4bd0187 / 50bf457 / 95f92dd / adc872b / 9d53b4f / e95d152 /
     eea1bd0 / dc3c726 / 56dc4de / d10886c / 7e2a0b4 / f2137ef ... git log --oneline at the same moment
     review ledger (verdicts, critical counts, named criticals) ... "/review-2 → /address record" sections of
                                                              docs/v2/handoffs/M01.md–M11.md (cross-checked against
                                                              docs/v2/acceptance/M0*/results.json review_loop blocks
                                                              + docs/v2/acceptance/M11/results.json)
-    pending-human-check ledger (1+4+1+1+1+1+1+1+1+1+1 open; M02 2/2 pass) .... docs/v2/acceptance/M0{1,3,4,5,6,7,8,9}/results.json
+    pending-human-check ledger (1+4+1+1+1+1+1+1+1+1+1+1 open; M02 2/2 pass) .... docs/v2/acceptance/M0{1,3,4,5,6,7,8,9,10,11,12}/results.json
                                                              + docs/v2/acceptance/M1{0,1}/results.json human_verification
                                                              blocks + handoffs/M02.md
                                                              "Human verification (completed 2026-09-22)" addendum
@@ -300,16 +300,16 @@
   </ul>
 
   <div class="now" id="now">
-    <p class="verdict">What can run now: <span class="id">M12</span> — and nothing else.</p>
+    <p class="verdict">What can run now: <span class="id">M13</span> — and nothing else.</p>
     <dl class="now-grid">
-      <div><dt>Active milestone</dt><dd>M11 · implemented_pending_human</dd></div>
-      <div><dt>Source commit</dt><dd>6e52328 — “M11 was implemented on top of this commit (the M10 close-out ORCHESTRATION.html realignment); the M11 commit follows.”</dd></div>
-      <div><dt>Open human checks</dt><dd>native-m11-transform-trial (1 for M11; 13 open overall — <a href="#threads">ledger</a>)</dd></div>
-      <div><dt>Next milestone</dt><dd>M12 · next_milestone_dependency_eligible: true</dd></div>
+      <div><dt>Active milestone</dt><dd>M12 · implemented_pending_human</dd></div>
+      <div><dt>Source commit</dt><dd>96d387f — “M12 was implemented on top of this commit (the M11 close-out ORCHESTRATION.html realignment); the M12 commit follows.”</dd></div>
+      <div><dt>Open human checks</dt><dd>native-m12-scratchpad-trial (1 for M12; 14 open overall — <a href="#threads">ledger</a>)</dd></div>
+      <div><dt>Next milestone</dt><dd>M13 · next_milestone_dependency_eligible: true</dd></div>
       <div><dt>Registry</dt><dd>33 requirements LF-R01–R33 · 22 suites EV-01–EV-22 · 0 requirements without a suite <span class="src">registry.json</span></dd></div>
       <div><dt>Decision record</dt><dd>docs/v2/decisions/ is empty — no accepted spec deviations to date <span class="src">directory listing, 2026-09-22</span></dd></div>
     </dl>
-    <p class="reason">M11’s automatable work and checks passed on post-review code: transform definitions with append-only preserved revisions (the two uploaded V1 definitions materialized frozen from the M02 legacy artifacts — prompt verbatim, keys recorded never bound, edits refused), a worker transform op running one bounded greedy generation on the cleanup engine’s model (GPU-serialized with dictations; no model change), task identity that never pairs changed inputs as preferences (the store refuses cross-task judgments at write time), the deterministic requirement-atom map degrading uncertain requirements to review with the original clauses kept (never silently dropped, never auto-applied), selected-text execution through the revalidated M08 insertion queue with a non-activating preview panel, opt-in per-definition auto-apply over the retained Clean artifact (all six S15 modes executable with honest gate reasons), schema v7 preference tables, the S29.4 transform evidence family and the Hub Transforms view (VIEWS 8). Suites: definitions 8/8, engine 8/8, pipeline 10/10 through the real coordinator and real InsertionService, Prompt Engineer cases 30/30 model-backed (28 applied + 2 honestly flagged — zero silent losses), hub shell 15/15, plus every M01–M10 suite, all six model-backed checks and the V1 control (51/51). Benchmark: 504-word transform p95 0.708 s (budget 15), UI acknowledgment 0.026 ms warm / 0.069 ms snapshot rebuild (budget 50), dictation delay behind an in-flight transform 0.649 s (recorded). The /review-2 loop’s two criticals — the preview panel constructed with a dead PyObjC class call, and unguarded transform threads that could wedge the feature permanently (both flagged by both reviewers) — were fixed in-session with regression tests, as was every warning. The pending native transform trial does not gate M12’s automatable work. <span class="src">STATUS.json status_reason + benchmarks/20260923-013025-m11, read 2026-09-23 05:34 UTC at f2137ef</span></p>
+    <p class="reason">M12’s automatable work and checks passed on post-review code: the note workspace at schema v8 (immutable parent-linked revisions with origin/trigger tags; AC01’s tail-risk marker; AC02’s copy-forward restore with editor rebind), managed image attachments in 0700/0600 private storage, pinning + escaped local search, the Scratchpad Hub view (VIEWS 8→9 through the M09 triple, tab strip, versions popup, transform picker), dictation into the note as an INTERNAL destination (PTT-time note+anchor binding enforced at delivery; the M08 external queue never involved; a closed/changed note routes to saved_not_inserted), note-scope transforms through the M11 engine with whole-note REPLACE semantics and changed-region revalidation, the preview panel’s Save-to-Scratchpad live, History copy/move (delete-everywhere on job move; legacy degrades honestly), Markdown/plain export through the document_nodes renderer with unsupported-element reporting, and the S29.8 note evidence family (content-free observations behind consent; repeated revisions never mint examples or duplicate dictated-word counts; typed never labeled dictated). Suites: notes store 7/7, editor 4/4, export 4/4, evidence 5/5, scratchpad hub 10/10 through the real coordinator, plus every M01–M11 suite, all six model-backed checks and the V1 control (51/51). Benchmark: warm 10,000-word note open p95 0.094 s (budget 0.2); editor acknowledgment during save+search max 1.2 ms (budget 50). The /review-2 loop’s four criticals — all in the AppKit binding layer the headless suites could not reach (the Transform… button path broken three ways: NSRange attribute misuse, wrong arity with no picker, whole-note accept inserting instead of replacing; restore never rebinding the editor) — were fixed in-session with regression tests driven through the production paths, as was every warning. The pending native Scratchpad trial does not gate M13’s automatable work. <span class="src">STATUS.json status_reason + benchmarks/20260923-033704-m12, read 2026-09-23 06:00 UTC at d2ef224</span></p>
     <div class="chain" aria-label="Runnable order of milestones">
       <span class="node done"><span class="mid">M01</span><span class="cmt">4bd0187</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M02</span><span class="cmt">50bf457</span></span><span class="link" aria-hidden="true">▸</span>
@@ -323,8 +323,8 @@
       <span class="node done"><span class="mid">M09</span><span class="cmt">d10886c</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M10</span><span class="cmt">7e2a0b4</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M11</span><span class="cmt">f2137ef</span></span><span class="link" aria-hidden="true">▸</span>
-      <span class="node eligible"><span class="mid">M12</span><span class="cmt">next</span></span><span class="link" aria-hidden="true">▸</span>
-      <span class="node"><span class="mid">M13</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node done"><span class="mid">M12</span><span class="cmt">d2ef224</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node eligible"><span class="mid">M13</span><span class="cmt">next</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node ckpt"><span class="mid">M14</span><span class="cmt">A·B·C</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node"><span class="mid">M15</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node"><span class="mid">M16</span></span>
@@ -483,7 +483,7 @@
   <article class="strip">
     <div class="spine">
       <div class="mid">M12</div>
-      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="state-line"><span class="dot done"></span> closed · implemented_pending_human · d2ef224</div>
       <div class="rec">rule’s recommendation: <b>plentiful throughout</b></div>
     </div>
     <div class="body">
@@ -496,10 +496,10 @@
         <div><dt>Expected files</dt><dd>new <code>localflow/v2/notes.py</code>, <code>ui/scratchpad.py</code>, <code>note_export.py</code>, <code>tests/v2/notes/</code>; reuses document_nodes, store and transforms</dd></div>
         <div><dt>Destroys</dt><dd>nothing — note revisions are immutable and parent-linked; a transform creates a version, never an untracked overwrite</dd></div>
         <div><dt>Benchmark to clear</dt><dd>warm note open P95 ≤ 200 ms for a 10,000-word fixture; editor stays responsive while saving and searching</dd></div>
-        <div><dt>Human verification</dt><dd>dictate a note, add a list and image; transform a selection; quit, reopen, restore an earlier version; export and inspect Markdown</dd></div>
-        <div class="wide"><dt>Watch item</dt><dd>note revisions must not double-count dictated words in analytics (M13) or create false ASR examples (M14) — M12’s completion report must document eligibility</dd></div>
+        <div><dt>Human verification</dt><dd>pending as native-m12-scratchpad-trial: quick-open; dictation into the editor (attribution visible in History); typed list/code + autosave + Snapshot; an image attachment; a selection transform AND a whole-note transform (accept replaces); quit mid-burst, reopen to the ⚠ tail-risk banner; restore an earlier version; History copy + move; export inspection — from Terminal.app, screenshots at two text scales</dd></div>
+        <div class="wide"><dt>Watch item</dt><dd>resolved: the eligibility boundary is documented (contracts/scratchpad.md + the M12 handoff) — dictations count once through jobs, note revisions join via source_job_id/note_evidence_links, typed content is never ASR data; M13/M14 inherit the rule</dd></div>
       </dl>
-      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M12 · P02 table</p>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M12 · P02 table · handoffs/M12.md · acceptance/M12/results.json</p>
     </div>
   </article>
 
@@ -608,7 +608,7 @@
   <div class="duo">
     <div class="panel">
       <h3>What the dependency graph permits</h3>
-      <p>With M01–M11 closed, exactly one unit is dependency-eligible: <b>M12</b> (needs M09 and M11 — both delivered). From there the remaining graph is a serial chain: every adjacent pair through M16 shares a dependency edge.</p>
+      <p>With M01–M12 closed, exactly one unit is dependency-eligible: <b>M13</b> (needs M02, M09, M10, M11, M12 — all delivered). From there the remaining graph is a serial chain: every adjacent pair through M16 shares a dependency edge.</p>
       <p class="fact-note">Derived from the P02 table in this session — a page judgement, not a repo statement. <span class="src">LOCALFLOW_V2_MILESTONES.md P02</span></p>
     </div>
     <div class="panel">
@@ -650,7 +650,7 @@
       <div class="v"><b>Near the line → scarce reviews</b>Where a unit sits between the two, the plentiful model authors and the scarce model reviews the diff — that is how the quota stretches.</div>
     </div>
   </div>
-  <p class="lede" style="margin-top:14px">The evidence that review is worth spending scarce-model attention on: eleven closed milestones, twenty-one review criticals, every one of them real and every one fixed in-session — see <a href="#evidence">the record below</a>.</p>
+  <p class="lede" style="margin-top:14px">The evidence that review is worth spending scarce-model attention on: twelve closed milestones, twenty-five review criticals, every one of them real and every one fixed in-session — see <a href="#evidence">the record below</a>.</p>
 </section>
 
 <section id="loop">
@@ -702,7 +702,7 @@
     <p class="kicker">Why the page asks what it asks</p>
     <h2>Evidence from the record</h2>
   </div>
-  <h3>The review loop catches real bugs — twenty-one criticals in eleven milestones, zero overruled</h3>
+  <h3>The review loop catches real bugs — twenty-five criticals in twelve milestones, zero overruled</h3>
   <table>
     <thead><tr><th style="width:8%">Unit</th><th style="width:17%">Verdict before /address</th><th style="width:9%">Criticals</th><th>What the criticals were</th><th style="width:22%">Outcome</th></tr></thead>
     <tbody>
@@ -717,11 +717,12 @@
       <tr><td>M09</td><td class="crit">Request Changes</td><td class="num crit">3</td><td>The verbatim listen-gate was a single view-level flag — replaying one example’s audio certified a verbatim reference for any other selected example, writing fabricated <code>listened_audio</code> provenance into persistent training data (flagged independently by both reviewers); the History Retry button required a <code>kind</code> field the job detail never set, so it was dead for every row (AC02 unreachable from the UI — the suite had driven the coordinator directly); the journal-root retry fallback could requeue the same job twice, letting a double click insert the same dictation twice.</td><td>All three fixed with regression tests (the gate binds to the example whose audio actually played and resets on selection change; <code>kind</code> set and the button keyed off job_id; already-retrying and failed_recoverable-only guards); every warning fixed (repaste attribution with job ids threaded, pin scoped away from annotation retention, retry clearing the wrong last-failed, bounded redacted export, SQL-subquery search, json_extract mode match, SQL-side Home counts); suites, model-backed checks and the benchmark re-run on the fixed code.</td></tr>
       <tr><td>M10</td><td class="crit">Request Changes</td><td class="num crit">2</td><td><code>HubController</code> never passed the M10 services into <code>HubState</code>, so both new Hub views were permanently “unavailable” in production while every suite stayed green (the test harness omitted the keys too); the M06 finalize scope upgrade rebuilt the job’s normalization policy from dictionary skills alone, silently dropping the frozen manifest skills on every site/workspace-resolving destination — the ai_prompt case exactly — while the evidence envelope still claimed the registry (AC03 break with contradictory provenance; flagged by both reviewers).</td><td>Both fixed with regression tests (the services wired and the shared harness now carries them, plus a headless CRUD test over both views; <code>_finalized_policy</code> is the single owner of any upgraded policy’s skill set); every warning fixed (spaced-placeholder substitution, the structurally-dead stale-workspace flag, finalize-only rules never reaching normalization, profile-scoped vocabulary liveness at the freeze, file-resolution complexity and the unbounded reference run); suites, model-backed checks and the benchmark re-run on the fixed code (file resolve 3.1→0.011 ms).</td></tr>
       <tr><td>M11</td><td class="crit">Request Changes</td><td class="num crit">2</td><td>The transform preview panel was constructed with a direct PyObjC class call that raises TypeError — the panel could never open, so the entire accept/copy/retry review surface was dead while every suite stayed green (the tests drove the coordinator action directly: the M10 dead-UI class one layer up); the transform work threads were unguarded — an oversized selection raised at job construction and a worker fault on the retry path escaped, either wedging the in-flight marker permanently and locking out all transforms until restart (flagged by both reviewers).</td><td>Both fixed with regression tests (the panel constructs through <code>_tfShowResult_</code> via <code>alloc().init_panel</code>; the request helpers are total, every work() runs through a guarded spawner whose failure path still clears the marker, and a 20k-char selection refuses without wedging); every warning fixed (the shared busy guard on panel actions, the non-activating panel so accept-time revalidation never races its own activation, the (location, length) tuple convention, Transform Output wired as the distinct command, the total dictation executor, the worker refusal channel, the v7 repair set, per-row legacy skip, id-AND-mode built-in binding, per-task display order, the gate reason in the envelope, the honest UI benchmark); suites, the 30 PE cases, model-backed checks and the benchmark re-run on the fixed code.</td></tr>
+      <tr><td>M12</td><td class="crit">Request Changes</td><td class="num crit">4</td><td>All four in the AppKit binding layer the headless suites legitimately could not reach: the Scratchpad’s Transform… button was dead two ways at once — <code>NSRange.location/.length</code> are integer attributes, not methods, and the hub called the coordinator with the wrong arity and no definition picker at all; a whole-note transform accept INSERTED at the caret instead of replacing the note, persisting the original beside its own transformation as an origin=transform revision; restore never rebound the editor, so the next keystroke silently reverted it (all flagged by both reviewers).</td><td>All four fixed with regression tests driven through the production paths (the picker + button action end-to-end; (0, len) whole-note ranges coerced at the coordinator as defense in depth; the refresh rebinds whenever the persisted revision moves under a clean editor); every warning fixed (stale list after create, tab-close editor binding, the false AC01 marker on a no-change flush, the unenforced PTT note binding — now anchored to the hotkey-down capture, the History text fallback chain, the revision_count misalignment, the unbounded versions list); the review’s stale-callback hang root-caused to the test harness and closed; suites, model-backed checks and the benchmark re-run on the fixed code.</td></tr>
     </tbody>
   </table>
   <p class="src" style="margin-top:8px">sources: “/review-2 → /address record” sections of docs/v2/handoffs/M01.md–M11.md · review_loop blocks in docs/v2/acceptance/M0*/results.json + docs/v2/acceptance/M11/results.json</p>
 
-  <h3 style="margin-top:26px">The pending-human-check ledger — 13 open, recorded, never assumed</h3>
+  <h3 style="margin-top:26px">The pending-human-check ledger — 14 open, recorded, never assumed</h3>
   <table>
     <thead><tr><th>Check</th><th style="width:13%">Recorded in</th><th style="width:12%">Gate owner</th><th style="width:26%">Note from the record</th></tr></thead>
     <tbody>
@@ -738,9 +739,10 @@
       <tr><td>native-m09-hub-trial</td><td>M09 results.json · STATUS.json</td><td>M09</td><td>All five Hub screens at normal and enlarged text/display scale (screenshots requested); keyboard-only navigation; replay and retry of real samples; move/resize/relaunch with window-position restore; one correct + one incorrect review with listening before verbatim on the right example; a narrow span correction; excluded/deleted records disappearing; Diagnostics filters and the bounded redacted export — from Terminal.app.</td></tr>
       <tr><td>native-m10-developer-trial</td><td>M10 results.json · STATUS.json</td><td>M10</td><td>Same phrase across messaging, email and coding (effective-mode line + Hub panel switch by destination); a raw-mode Terminal rule then its deletion; a placeholder snippet through the Hub editor with the collision preview; a configured real skill manifest via “slash &lt;skill&gt;”; “attach file &lt;open document&gt;” on an uncertified surface (resolved filename, explicit no-attachment); a multi-line snippet into Terminal (copy-only); one collected example’s profile block + skill-registry artifact — from Terminal.app.</td></tr>
       <tr><td>native-m11-transform-trial</td><td>M11 results.json · STATUS.json</td><td>M11</td><td>A real draft prompt through Prompt Engineer (pill stage, non-focus-stealing panel, per-atom diff inspection, REVIEW items with original wording); accept then target-bound undo; Retry Original / Apply Another / Transform Output; a custom transform with a writing sample + auto-apply under a custom-mode rule (Clean retained in History’s cleaned stage); the legacy rows verified as preserved revisions — from Terminal.app, screenshots at two text scales.</td></tr>
+      <tr><td>native-m12-scratchpad-trial</td><td>M12 results.json · STATUS.json</td><td>M12</td><td>Quick Open Scratchpad; dictate into the editor (attribution visible in History); typed list/code + autosave + Snapshot; an image attachment; a selection transform AND a whole-note transform (accept replaces); quit mid-burst, reopen to the ⚠ tail-risk banner; restore an earlier version; History copy + move (the moved job’s payloads purge); export Markdown and plain text and inspect both — from Terminal.app, screenshots at two text scales.</td></tr>
     </tbody>
   </table>
-  <p class="fact-note" style="margin-top:8px">Closed for comparison: M02’s two human checks passed 2026-09-22 (handoff addendum; five-dictation collection pilot 5/5 joined examples; redaction re-verified against 93 distinct spoken words — zero matches). None of the thirteen open items gates M12’s automatable work. <span class="src">handoffs/M02.md · handoffs/M06.md · handoffs/M08.md · handoffs/M09.md · handoffs/M10.md · handoffs/M11.md</span></p>
+  <p class="fact-note" style="margin-top:8px">Closed for comparison: M02’s two human checks passed 2026-09-22 (handoff addendum; five-dictation collection pilot 5/5 joined examples; redaction re-verified against 93 distinct spoken words — zero matches). None of the fourteen open items gates M13’s automatable work. <span class="src">handoffs/M02.md · handoffs/M06.md · handoffs/M08.md · handoffs/M09.md · handoffs/M10.md · handoffs/M11.md · handoffs/M12.md</span></p>
 
   <h3 style="margin-top:26px">Privacy discipline, enforced by test</h3>
   <p class="measure">Committed artifacts carry hashes, opaque ids, counts and line locators — never transcript text, audio bytes, database rows or credentials. Fixtures are synthetic and origin-tagged; the private evidence root (<code>~/Library/Application Support/LocalFlow/v2-evidence/</code>) stays outside Git; <code>tests/v2/test_baseline_manifest.py</code> fails the build if private-bearing file types appear under <code>docs/</code> or <code>tests/</code>. Every handoff re-states this and every acceptance scan has passed over each new path. <span class="src">contracts/INDEX.md privacy rules · handoffs M01–M06 privacy sections</span></p>
@@ -755,7 +757,7 @@
     <thead><tr><th style="width:30%">Thread</th><th style="width:16%">Owning unit</th><th>State, from the record</th></tr></thead>
     <tbody>
       <tr><td>Release-to-insert latency pilot</td><td>M15</td><td>Pending human since M01 (real speaker, instrumented target); explicitly an M15 gate, carried by every intervening handoff.</td></tr>
-      <tr><td>M03 native checks (four items)</td><td>M03</td><td>Pending with dev-runnable steps; do not gate M12 or anything else’s automatable work.</td></tr>
+      <tr><td>M03 native checks (four items)</td><td>M03</td><td>Pending with dev-runnable steps; do not gate M13 or anything else’s automatable work.</td></tr>
       <tr><td>M04 dictation-profiles trial</td><td>M04</td><td>Pending; runnable on the dev pipeline from Terminal.app.</td></tr>
       <tr><td>M05 dictionary trial</td><td>M05</td><td>Pending; the sandbox half is runnable now, the workspace-scoped live half folds into the M06 destination trial (destination awareness shipped at M06).</td></tr>
       <tr><td>Workspace-scoped dictionary live resolution</td><td>M06</td><td>Shipped in M06 (eea1bd0): site/workspace/app scopes feed the live trio, finalized at release with a frozen-entry rebuild; live verification folds into the M06 destination trial. contracts/vocabulary.md “M06 wiring”.</td></tr>
@@ -779,7 +781,7 @@
   </div>
   <ul class="bars">
     <li><b>Counts come from the registry, never hand-counted.</b> 33 requirements / 22 suites / 0 without a suite, machine-derived from the S05/E08 tables; regenerate with <code>scripts/v2/build_registry.py</code> and cross-check with <code>tests/v2/test_registry.py</code>. A hand-quoted count is a defect.</li>
-    <li><b>An unrun check is never reported as passed.</b> The START_HERE rule, held by every closed milestone (M01–M11): each unavailable human check appears in results.json as pending with exact steps — thirteen are open right now, and M16 cannot claim verified_complete while required checks remain.</li>
+    <li><b>An unrun check is never reported as passed.</b> The START_HERE rule, held by every closed milestone (M01–M12): each unavailable human check appears in results.json as pending with exact steps — fourteen are open right now, and M16 cannot claim verified_complete while required checks remain.</li>
     <li><b>Unknowns are null with a reason.</b> The deleted producer sources and the <code>instance.lock</code> mystery are recorded unresolved in the baseline manifest rather than guessed — “recorded, not forced,” as M01 put it.</li>
     <li><b>Exact denominators, always.</b> The M05 hint matrix reports its 40 labeled bases × 4 conditions; the M04 command corpus reports 16/16 exact and 0/8 false commands; M15’s plan pins 140 clips + 20 negatives before any score is quoted. A percentage without its denominator does not ship.</li>
     <li><b>The review bar is verdict-first and fixes-forward.</b> /review-2 records its verdict before /address touches anything; criticals and warnings are fixed in-session with regression tests; deferrals carry written reasons; all eleven records to date end “no findings rejected as incorrect.” Accepting a verdict without fixing, or rejecting findings as incorrect without evidence, fails the bar.</li>
@@ -788,7 +790,7 @@
 </section>
 
 <div class="footer">
-  <p><b>Maintenance.</b> Milestone close-outs realign this page in place — strip states, ledger rows, the NOW panel and the chain rail — against the project’s own record (STATUS.json, handoffs, acceptance results), never against session memory. While the page is uncommitted or concurrently owned by another session, close-outs leave it untouched and record the intended change in their handoff instead. Figures were last read 2026-09-23 05:34 UTC at commit f2137ef; the full source-to-figure audit lives in the HTML comment at the top of this file.</p>
+  <p><b>Maintenance.</b> Milestone close-outs realign this page in place — strip states, ledger rows, the NOW panel and the chain rail — against the project’s own record (STATUS.json, handoffs, acceptance results), never against session memory. While the page is uncommitted or concurrently owned by another session, close-outs leave it untouched and record the intended change in their handoff instead. Figures were last read 2026-09-23 06:00 UTC at commit d2ef224; the full source-to-figure audit lives in the HTML comment at the top of this file.</p>
 </div>
 
 </div>
