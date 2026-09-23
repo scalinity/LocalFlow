@@ -38,13 +38,16 @@ from .v2 import context as v2_context
 from .v2 import profiles as v2_profiles
 from .v2 import profiles_store as v2_profiles_store
 from .v2 import snippets_store as v2_snippets_store
+from .v2 import transforms as v2_transforms
+from .v2 import transforms_store as v2_transforms_store
 from .v2 import snippets as v2_snippets
 from .v2.developer import file_tags as v2_file_tags
 from .v2.developer import skills as v2_skills
 from .audio import Recorder
 from .hotkey import DISPLAY_NAMES, HotkeyListener, MouseTriggerListener
 from .inject import copy_text
-from .overlay import MODE_FAILED, MODE_PROCESSING, MODE_RECORDING, Overlay
+from .overlay import MODE_FAILED, MODE_PROCESSING, MODE_RECORDING, \
+    MODE_TRANSFORMING, Overlay
 from .permissions import ensure_permissions
 from .v2 import capture_journal
 from .v2 import cleanup as v2_cleanup
@@ -201,6 +204,26 @@ class AppDelegate(NSObject):
         self._last_skill_workspace = None  # stale-workspace provenance
         self._last_ws_skills = False    # last finalized set had ws skills
         self._next_job_mode = None  # the S15 one-job override
+        # M11 (Spec S16): transform definitions and executors. The
+        # store seeds the built-ins and materializes the legacy V1
+        # definitions as preserved revisions once; failures degrade to
+        # transforms-off with an event — dictation never depends on
+        # this service (transform-backed modes then resolve with the
+        # honest auto-apply-disabled fallback: Clean).
+        self._tf_store = None
+        self._tf_snapshot = None
+        self._tf_state_key = None
+        self._tf_panel = None       # the M11 transform preview panel
+        self._tf_active = None      # in-flight selection transform state
+        try:
+            self._tf_store = v2_transforms_store.TransformStore(self.store)
+            self._tf_store.seed_built_ins()
+            self._tf_store.materialize_legacy()
+        except Exception as e:
+            self._tf_store = None
+            self.v2log.emit("transforms.store_unavailable",
+                            level="WARNING", reason_code=type(e).__name__,
+                            outcome="transforms_off")
         try:
             self._styles = v2_profiles_store.StyleRuleStore(self.store)
             self._snip_store = v2_snippets_store.SnippetStore(self.store)
@@ -405,6 +428,21 @@ class AppDelegate(NSObject):
         return m10["skills"]
 
     @objc.python_method
+    def _transforms_snapshot(self):
+        """The frozen transform registry for one job (the M10
+        snippet-snapshot pattern): cached on the store's state counter
+        so a mid-flight edit changes only future jobs. None when the
+        transform store is unavailable."""
+        if self._tf_store is None:
+            return None
+        rev = self._tf_store.revision()
+        if rev != self._tf_state_key:
+            self._tf_snapshot = v2_transforms.TransformSnapshot(
+                self._tf_store.definitions())
+            self._tf_state_key = rev
+        return self._tf_snapshot
+
+    @objc.python_method
     def _m10_freeze(self, dest):
         """Freeze the M10 per-job state at hotkey-down: the style rule
         set, the resolved writing profile (S15 precedence), the snippet
@@ -426,7 +464,9 @@ class AppDelegate(NSObject):
                                 outcome="last_good_state")
                 rules = list(self._style_rules)
         m10["rules"] = rules
-        m10["wp"] = v2_profiles.resolve(m10["override"], rules, dest)
+        m10["transforms"] = self._transforms_snapshot()
+        m10["wp"] = v2_profiles.resolve(m10["override"], rules, dest,
+                                        transforms=m10["transforms"])
         if self._snip_store is not None:
             try:
                 rev = self._snip_store.revision()
@@ -488,7 +528,8 @@ class AppDelegate(NSObject):
                 snap.target.category, snap.target.app_bundle,
                 snap.site_origin))
         m10["wp"] = v2_profiles.resolve(m10["override"], m10["rules"],
-                                        dest)
+                                        dest,
+                                        transforms=m10.get("transforms"))
         m10["norm_profile"] = (
             m10["wp"].number_policy
             if m10["wp"].number_policy != "inherit" else None)
@@ -605,6 +646,473 @@ class AppDelegate(NSObject):
         self._last_wp = m10["wp"]
         self._set_mode_menu(m10["wp"])
 
+    # ---- M11: transforms (Spec S16) --------------------------------------
+
+    @objc.python_method
+    def _m11_run_transform(self, defn, source, *, source_kind,
+                           parent_job_id=None, attempt=1,
+                           selection=None):
+        """Run one transform on the worker's cleanup model and rebuild
+        the ``TransformResult`` parent-side. TOTAL: a failed request —
+        including an oversized source refused at job construction —
+        returns the honest fallback-original result, never a raised
+        exception into the dictation or selection paths (an exception
+        escaping the selection work() would wedge ``_tf_active``
+        forever)."""
+        try:
+            job = v2_transforms.job_for_definition(
+                defn, source, source_kind=source_kind,
+                parent_job_id=parent_job_id, selection=selection,
+                locale=self.cfg.get("normalization_locale", "en-US"))
+            res = self.supervisor.transform(
+                job_id=parent_job_id, attempt=attempt,
+                transform_id=job.transform_id,
+                transform_revision=job.transform_revision,
+                prompt_revision=job.prompt_revision, mode=job.mode,
+                source=job.source, source_kind=source_kind,
+                instructions=job.instructions,
+                examples_revision=job.examples_revision,
+                examples=job.examples,
+                locale=self.cfg.get("normalization_locale", "en-US"))
+        except ValueError as e:
+            # The honest oversized-source refusal (S16), surfaced
+            # through the same fallback channel as a worker fault.
+            return v2_transforms.TransformResult(
+                job=None, output=source,
+                path=v2_transforms.PATH_FALLBACK_ORIGINAL,
+                reason=f"transform_refused:{str(e)[:60]}")
+        except Exception as e:
+            reason = getattr(e, "reason_code", None) or type(e).__name__
+            return v2_transforms.TransformResult(
+                job=None, output=source,
+                path=v2_transforms.PATH_FALLBACK_ORIGINAL,
+                reason=f"transform_request_failed:{reason}")
+        if res.get("refused"):
+            return v2_transforms.TransformResult(
+                job=None, output=source,
+                path=v2_transforms.PATH_FALLBACK_ORIGINAL,
+                reason=f"transform_refused:{res['refused'][:60]}")
+        return self._m11_result_from_message(job, res)
+
+    @staticmethod
+    @objc.python_method
+    def _m11_result_from_message(job, res):
+        """Rebuild the worker's TransformResult from its message."""
+        from .v2.transforms import atoms as tf_atoms
+        from .v2.transforms import engine as tf_engine
+        coverage = tuple(
+            tf_atoms.Coverage(
+                atom=tf_atoms.Atom(
+                    kind=c.get("kind", ""),
+                    excerpt=c.get("kept_excerpt", ""),
+                    anchors=tuple(c.get("anchors", ())),
+                    start=c.get("source_start", 0),
+                    end=c.get("source_end", 0)),
+                status=c.get("status", "missing"),
+                output_start=c.get("output_start"),
+                output_end=c.get("output_end"),
+                evidence=c.get("evidence", ""))
+            for c in res.get("coverage") or [])
+        meta = res.get("result") or {}
+        return tf_engine.TransformResult(
+            job=job, output=res.get("output") or job.source,
+            path=meta.get("path", tf_engine.PATH_FALLBACK_ORIGINAL),
+            reason=meta.get("reason"),
+            coverage=coverage,
+            coverage_summary=meta.get("coverage"),
+            diff_stats=meta.get("diff"),
+            review_excerpts=tuple(res.get("review_excerpts") or ()),
+            output_tokens=meta.get("output_tokens", 0),
+            limit_hit=bool(meta.get("limit_hit")),
+            duration_ms=meta.get("duration_ms", 0.0),
+            prompt=res.get("prompt") or "")
+
+    @objc.python_method
+    def _m11_apply_transform(self, job, clean_text, ctx):
+        """The dictation-path executor (worker thread): transform the
+        CLEAN artifact before insertion when the resolved mode's bound
+        definition opted in. The Clean text stays the cleanup family's
+        applied output; the transform writes its own stage artifacts
+        through the evidence collector. Returns the text to insert —
+        TOTAL: any unexpected failure returns the Clean text with the
+        recorded reason, so finalize and the history writes for the
+        Clean artifact can never be skipped by a transform fault."""
+        job_id = job.get("job_id")
+        m10 = job.get("m10") or {}
+        wp, snapshot = m10.get("wp"), m10.get("transforms")
+        if wp is None or snapshot is None:
+            return clean_text
+        defn, reason = snapshot.auto_apply_decision(
+            wp.mode, wp.profile_name, wp.category)
+        if reason is not None:
+            job["transform_note"] = reason
+            if ctx is not None:
+                self.collector.note_transform_gate(ctx, reason)
+            self.v2log.emit("transforms.not_applied", level="INFO",
+                            job_id=job_id, reason_code=reason)
+            return clean_text
+        try:
+            result = self._m11_run_transform(
+                defn, clean_text, source_kind="dictation",
+                parent_job_id=job_id, attempt=job.get("attempt", 1))
+        except Exception as e:
+            # _m11_run_transform is total; this guards the impossible.
+            result = None
+            reason = f"transform_executor_error:{type(e).__name__}"
+            job["transform_note"] = reason
+            if ctx is not None:
+                self.collector.note_transform_gate(ctx, reason)
+            self.v2log.emit("transforms.request_failed", level="WARNING",
+                            job_id=job_id, reason_code=type(e).__name__)
+            return clean_text
+        job["transform_result"] = result
+        applied = result.path == v2_transforms.PATH_APPLIED
+        try:
+            if ctx is not None and result.job is not None:
+                self.collector.on_transform_result(ctx, result,
+                                                   applied=applied)
+        except Exception as e:
+            self.v2log.emit("training.capture_failed", level="ERROR",
+                            job_id=job_id, reason_code=type(e).__name__)
+        if result.job is not None:
+            try:
+                if self._tf_store is not None:
+                    # Dictation-path candidates reference no payload
+                    # artifacts here: the collector retains the exact
+                    # texts lease-governed (below), so the rows stay
+                    # id/hash-only by design.
+                    self._tf_store.record_candidate(
+                        result, task_kind="dictation_auto_apply",
+                        model_id=self.cfg.get("cleanup_model"))
+                    if applied:
+                        self._tf_store.record_hits([defn.transform_id])
+            except Exception as e:
+                self.v2log.emit("transforms.record_failed",
+                                level="WARNING", job_id=job_id,
+                                reason_code=type(e).__name__)
+        self.v2log.emit(
+            "stage.completed", level="INFO", job_id=job_id,
+            attempt=job.get("attempt", 1), stage="transforming",
+            duration_ms=result.duration_ms, outcome=result.path,
+            reason_code=result.reason,
+            model_id=self.cfg.get("cleanup_model"))
+        if not applied:
+            # Uncertain coverage or a failed generation: the Clean
+            # artifact inserts; the transform proposal stays recorded
+            # for review — never silently dropped constraints.
+            job["transform_note"] = result.reason
+            if ctx is not None:
+                self.collector.note_transform_gate(ctx, result.reason)
+            return clean_text
+        return result.output
+
+    @objc.python_method
+    def _m11_capture_selection(self):
+        """Capture the focused selection for a selected-text transform
+        (S16): source selection, range and a snapshot-shaped target
+        identity the M08 revalidation consumes at accept time. Runs on
+        the transform thread — bounded AX reads never touch the UI
+        callback."""
+        if self._insertion is None:
+            return None, "insertion_service_unavailable"
+        host = self._insertion.host
+        fm = host.frontmost()
+        if not fm:
+            return None, "no_frontmost_application"
+        bundle = fm.get("bundle")
+        if bundle and bundle in (self.cfg.get("context_denied_apps")
+                                 or ()):
+            return None, "app_denied"
+        el = host.focused_element()
+        if el is None:
+            return None, "no_focused_element"
+        rng = None
+        raw_range = host.attribute(el, "AXSelectedTextRange")
+        try:
+            if isinstance(raw_range, tuple):
+                # The repo convention (providers._as_range): a plain
+                # tuple is (location, length), never (start, end).
+                rng = (int(raw_range[0]),
+                       int(raw_range[0]) + int(raw_range[1]))
+            elif raw_range is not None:
+                rng = (int(raw_range.location),
+                       int(raw_range.location) + int(raw_range.length))
+        except (AttributeError, TypeError, ValueError):
+            rng = None
+        text = None
+        if rng is not None and rng[1] > rng[0]:
+            text = host.string_for_range(
+                el, rng[0], rng[1] - rng[0])
+        if not text or not text.strip():
+            return None, "no_selection"
+        role = host.attribute(el, "AXRole")
+        from .v2 import ids as v2_ids_m11
+        from .v2.context.snapshot import (ContextSnapshot, FieldContext,
+                                          TargetSnapshot)
+        from .v2.context.providers import categorize
+        target = TargetSnapshot(
+            target_snapshot_id=v2_ids_m11.new_id("tgt"),
+            app_bundle=bundle, app_name=fm.get("name"),
+            app_pid=fm.get("pid"),
+            category=categorize(bundle) if bundle else "unknown",
+            captured_at_utc=v2_ids_m11.now_utc_iso())
+        field = FieldContext(
+            role=str(role) if role else None,
+            classification="text", selected_text=text,
+            selected_range=tuple(rng))
+        snap = ContextSnapshot(
+            context_snapshot_id=v2_ids_m11.new_id("ctx"),
+            stage="transform_selection", target=target, field=field,
+            captured_at_utc=v2_ids_m11.now_utc_iso())
+        return {"source": text, "range": tuple(rng), "snapshot": snap,
+                "target": target}, None
+
+    def runTransform_(self, sender):
+        """Status-menu action: transform the current selection with the
+        chosen definition. The pill acknowledges immediately (S24);
+        capture + generation run off the UI callback."""
+        transform_id = sender.representedObject()
+        if self._tf_pipeline_busy():
+            self.v2log.emit("transforms.busy", level="INFO",
+                            reason_code="pipeline_active")
+            return
+        snapshot = self._transforms_snapshot()
+        defn = snapshot.by_id(transform_id) if snapshot is not None else None
+        if defn is None:
+            self.v2log.emit("transforms.unavailable", level="WARNING",
+                            reason_code="definition_missing")
+            return
+        self._tf_active = {"transform_id": transform_id}
+        self.overlay.showWithMode_(MODE_TRANSFORMING)
+
+        def work():
+            capture, reason = self._m11_capture_selection()
+            result = None
+            if capture is None:
+                self.v2log.emit("transforms.selection_unavailable",
+                                level="INFO", reason_code=reason)
+            else:
+                result = self._m11_run_transform(
+                    defn, capture["source"], source_kind="selection",
+                    selection=capture["range"])
+            AppHelper.callAfter(
+                self._tfShowResult_, result, capture, defn)
+        self._tf_spawn(work)
+
+    @objc.python_method
+    def _tf_pipeline_busy(self):
+        """The one guard every transform entry shares: never while a
+        dictation records/processes, another transform runs, or an
+        insertion transaction is in flight (the pill belongs to the
+        pipeline)."""
+        return self.state != STATE_IDLE or self._tf_active is not None \
+            or (self._insertion is not None and self._insertion.busy)
+
+    @objc.python_method
+    def _tf_spawn(self, work):
+        """Run one transform work() on its daemon thread. The wrapper
+        is total: whatever escapes, ``_tfShowResult_`` still runs on
+        the main thread and clears ``_tf_active`` (an unguarded death
+        would wedge every future transform until restart)."""
+        def guarded():
+            try:
+                work()
+            except Exception as e:
+                self.v2log.emit("transforms.request_failed",
+                                level="WARNING",
+                                reason_code=type(e).__name__)
+                AppHelper.callAfter(self._tfShowResult_, None, None, None)
+        threading.Thread(target=guarded, daemon=True,
+                         name="localflow-transform").start()
+
+    @objc.python_method
+    def _tfShowResult_(self, result, capture, defn):
+        """Main thread: the transform finished — record the candidate
+        and open the preview panel (or clear the pill honestly)."""
+        self._tf_active = None
+        if result is None or capture is None or defn is None:
+            self._settle_state()
+            return
+        candidate_id = None
+        if result.job is not None:
+            try:
+                if self._tf_store is not None:
+                    # Display order ranks candidates WITHIN the task
+                    # (S29.10), not results across the process.
+                    order = len(self._tf_store.candidates_for_task(
+                        result.job.task_key())) + 1
+                    candidate_id = self._tf_store.record_candidate(
+                        result, task_kind="transform_selection",
+                        source_artifact_text=capture["source"],
+                        output_artifact_text=result.output,
+                        model_id=self.cfg.get("cleanup_model"),
+                        display_order=order)
+            except Exception as e:
+                self.v2log.emit("transforms.record_failed",
+                                level="WARNING",
+                                reason_code=type(e).__name__)
+        self._settle_state()
+        try:
+            if self._tf_panel is None:
+                from .v2.ui.transforms_panel import TransformPreviewPanel
+                self._tf_panel = TransformPreviewPanel.alloc()\
+                    .init_panel(self)
+            self._tf_panel.show(result, capture, defn, candidate_id)
+        except Exception as e:
+            self.v2log.emit("transforms.panel_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+
+    # Panel actions (called by the preview panel on the main thread).
+
+    @objc.python_method
+    def tfAcceptTransform(self, result, capture, candidate_id):
+        """Accept: replace the captured selection through the M08
+        queue — revalidation first (a changed selection is never
+        overwritten, M11-AC03; target_changed routes to the copy
+        offer). The explicit accept is the preference observation."""
+        if candidate_id and result.job is not None \
+                and self._tf_store is not None:
+            try:
+                self._tf_store.record_observation(
+                    task_key=result.job.task_key(),
+                    candidate_id=candidate_id, judgment="accept",
+                    provenance="user_action",
+                    source_event_id="transforms.accept")
+            except Exception as e:
+                self.v2log.emit("transforms.record_failed",
+                                level="WARNING",
+                                reason_code=type(e).__name__)
+        self._insertion.submit(
+            result.output,
+            {"job_id": None, "attempt": 1,
+             "context_snapshot": capture["snapshot"]},
+            on_done=lambda r, j=None: AppHelper.callAfter(
+                self._tfInsertDone_, r))
+        self.v2log.emit("transforms.accepted", level="INFO",
+                        outcome=result.path)
+
+    @objc.python_method
+    def _tfInsertDone_(self, insertion_result):
+        state = getattr(insertion_result, "state", None) or \
+            insertion_result.get("state")
+        reason = getattr(insertion_result, "reason_code", None) or \
+            insertion_result.get("reason_code")
+        self.v2log.emit("transforms.insertion_done", level="INFO",
+                        outcome=state, reason_code=reason)
+        self._settle_state()
+
+    @objc.python_method
+    def tfCopyTransform(self, result):
+        copy_text(result.output)
+        self.v2log.emit("transforms.copied", level="INFO")
+
+    @objc.python_method
+    def tfRetryOriginal(self, result, capture, defn, candidate_id):
+        """Retry-original: the SAME task, fresh attempt (S16 task 7) —
+        the new candidate joins the task key and may be compared."""
+        if result.job is None:
+            return  # a refused job has no task to retry
+        if self._tf_pipeline_busy():
+            self.v2log.emit("transforms.busy", level="INFO",
+                            reason_code="pipeline_active")
+            return
+        if candidate_id and self._tf_store is not None:
+            try:
+                self._tf_store.record_observation(
+                    task_key=result.job.task_key(),
+                    candidate_id=candidate_id, judgment="reject",
+                    provenance="user_action",
+                    reason_code="retry_original",
+                    source_event_id="transforms.retry")
+            except Exception as e:
+                self.v2log.emit("transforms.record_failed",
+                                level="WARNING",
+                                reason_code=type(e).__name__)
+        self._tf_active = {"transform_id": defn.transform_id}
+        self.overlay.showWithMode_(MODE_TRANSFORMING)
+        job = v2_transforms.retry_original(result.job)
+
+        def work():
+            res = self._m11_run_job(job)
+            AppHelper.callAfter(self._tfShowResult_, res, capture, defn)
+        self._tf_spawn(work)
+
+    @objc.python_method
+    def tfApplyAnother(self, result, capture, defn, other_id):
+        """Apply-another-transform: transforms the SOURCE again under a
+        different definition (a new task when the mode/instruction
+        differs — never a same-input pair by construction)."""
+        if self._tf_pipeline_busy():
+            self.v2log.emit("transforms.busy", level="INFO",
+                            reason_code="pipeline_active")
+            return
+        snapshot = self._transforms_snapshot()
+        other = snapshot.by_id(other_id) if snapshot is not None else None
+        if other is None:
+            return
+        self._tf_active = {"transform_id": other_id}
+        self.overlay.showWithMode_(MODE_TRANSFORMING)
+
+        def work():
+            res = self._m11_run_transform(
+                other, capture["source"], source_kind="selection",
+                selection=capture["range"])
+            AppHelper.callAfter(self._tfShowResult_, res, capture, other)
+        self._tf_spawn(work)
+
+    @objc.python_method
+    def tfTransformOfResult(self, result, capture, defn_id):
+        """Transform-the-result: the previous output becomes the source
+        (a different task, never a preference pair with the original)."""
+        if self._tf_pipeline_busy():
+            self.v2log.emit("transforms.busy", level="INFO",
+                            reason_code="pipeline_active")
+            return
+        snapshot = self._transforms_snapshot()
+        defn = snapshot.by_id(defn_id) if snapshot is not None else None
+        if defn is None:
+            return
+        self._tf_active = {"transform_id": defn_id}
+        self.overlay.showWithMode_(MODE_TRANSFORMING)
+        new_capture = dict(capture)
+        new_capture["source"] = result.output
+        new_capture["range"] = None
+
+        def work():
+            res = self._m11_run_transform(
+                defn, result.output, source_kind="result")
+            AppHelper.callAfter(self._tfShowResult_, res, new_capture,
+                                defn)
+        self._tf_spawn(work)
+
+    @objc.python_method
+    def _m11_run_job(self, job):
+        """Re-run an existing TransformJob (retry-original path). TOTAL:
+        a worker fault degrades to the honest fallback result, never an
+        exception into the transform thread."""
+        try:
+            res = self.supervisor.transform(
+                job_id=job.parent_job_id, attempt=1,
+                transform_id=job.transform_id,
+                transform_revision=job.transform_revision,
+                prompt_revision=job.prompt_revision, mode=job.mode,
+                source=job.source, source_kind=job.source_kind,
+                instructions=job.instructions,
+                examples_revision=job.examples_revision,
+                examples=job.examples, locale=job.locale)
+        except Exception as e:
+            reason = getattr(e, "reason_code", None) or type(e).__name__
+            return v2_transforms.TransformResult(
+                job=job, output=job.source,
+                path=v2_transforms.PATH_FALLBACK_ORIGINAL,
+                reason=f"transform_request_failed:{reason}")
+        if res.get("refused"):
+            return v2_transforms.TransformResult(
+                job=job, output=job.source,
+                path=v2_transforms.PATH_FALLBACK_ORIGINAL,
+                reason=f"transform_refused:{res['refused'][:60]}")
+        return self._m11_result_from_message(job, res)
+
     @objc.python_method
     def _set_mode_menu(self, wp):
         """The S15 quick-menu exposure: the effective mode/profile for
@@ -615,7 +1123,12 @@ class AppDelegate(NSObject):
         mode = {"raw": "Raw", "clean": "Clean"}.get(
             wp.effective_mode, wp.effective_mode)
         if wp.mode != wp.effective_mode:
-            mode += f" (asked {wp.mode}, needs transforms)"
+            reason = (wp.fallback_reason or "").split(":", 1)
+            why = {"transform_auto_apply_disabled":
+                   "auto-apply off", "transform_not_bound":
+                   "no bound transform"}.get(
+                reason[0] if reason else "", "not applied")
+            mode += f" (asked {wp.mode}, {why})"
         profile = wp.profile_name or "default"
         source = wp.source.replace("rule:", "rule: ")
         self.mode_menu_item.setTitle_(
@@ -1759,20 +2272,65 @@ class AppDelegate(NSObject):
                             cleanup_context=(
                                 job.get("cleanup_context_payload")
                                 if raw else None))
+                    # M11 (S16): the transform executor — the CLEAN
+                    # artifact is already recorded above (retained,
+                    # AC04); the transform runs before insertion and
+                    # before finalize so its evidence rides the same
+                    # revision. The insert text becomes the transform
+                    # output only when validated (path applied).
+                    clean_text = text
+                    if wp is not None and wp.mode not in ("raw", "clean"):
+                        if self.cfg["cleanup"] == "llm":
+                            text = self._m11_apply_transform(
+                                job, clean_text, ctx)
+                        else:
+                            # No LLM cleanup pass, no Clean intermediate
+                            # to retain (S16) — the transform is honestly
+                            # not run rather than rewriting an
+                            # unretained base.
+                            job["transform_note"] = \
+                                "transform_requires_cleanup"
+                            if ctx is not None:
+                                self.collector.note_transform_gate(
+                                    ctx, "transform_requires_cleanup")
+                            self.v2log.emit(
+                                "transforms.not_applied", level="INFO",
+                                job_id=job_id,
+                                reason_code="transform_requires_cleanup")
+                    if ctx is not None:
                         self.collector.finalize(ctx)
                     if raw and self.cfg["log_transcripts"] and not collecting:
                         # Collection disabled: the user's existing transcript
                         # logging choice still keeps text in the private
-                        # store under a history lease (Spec S07).
+                        # store under a history lease (Spec S07). The
+                        # cleanup stage's applied output is the CLEAN
+                        # text even when a transform follows.
                         self.store.write_text_artifact(
                             job_id=job_id, stage="asr", role="raw_transcript",
                             text=raw, retention_class="history")
-                        if text is not None:
+                        if clean_text is not None:
                             self.store.write_text_artifact(
                                 job_id=job_id, stage="cleanup",
-                                role="applied_output", text=text,
+                                role="applied_output", text=clean_text,
                                 retention_class="history",
                                 meta={"cleanup_path": cleanup_path})
+                    # M11: a dictation transform applied pre-insertion
+                    # keeps its own History stage artifact (the Clean
+                    # output above stays the cleanup stage's output).
+                    tf_result = job.get("transform_result")
+                    if tf_result is not None \
+                            and tf_result.path == v2_transforms.PATH_APPLIED \
+                            and not collecting \
+                            and self.cfg["log_transcripts"]:
+                        self.store.write_text_artifact(
+                            job_id=job_id, stage="transform",
+                            role="transform_output",
+                            text=tf_result.output,
+                            retention_class="history",
+                            meta={"transform_id":
+                                  tf_result.job.transform_id,
+                                  "transform_revision":
+                                  tf_result.job.transform_revision})
                     self._job_state(job_id, "ready_to_insert")
                     self.store.sync()
                 except Exception as e:
@@ -2274,6 +2832,18 @@ class AppDelegate(NSObject):
         menu.addItem_(recovery_item)
         self._refresh_recovery_menu()
 
+        # M11 (Spec S16): explicit selected-text transforms. The
+        # submenu rebuilds on open (menuNeedsUpdate_) so store edits in
+        # the Hub surface without a restart; key equivalents are the
+        # definitions' registered single-char shortcuts (collision-
+        # checked at write time; the legacy keys 1/2 are never bound).
+        self.transforms_menu = NSMenu.alloc().init()
+        self.transforms_menu.setDelegate_(self)
+        transforms_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "Transforms", None, "")
+        transforms_item.setSubmenu_(self.transforms_menu)
+        menu.addItem_(transforms_item)
+
         # Dictionary management (Spec S11, M05): the management panel
         # (search, aliases, scopes, approval, conflict preview, phrase
         # sandbox) plus bulk JSON import/export.
@@ -2381,6 +2951,7 @@ class AppDelegate(NSObject):
                         self.store, emit=self.v2log.emit),
                     "styles_service": self._styles,
                     "snippets_service": self._snip_store,
+                    "transforms_service": self._tf_store,
                     "diagnostics_provider": self._hub_diagnostics_spec,
                     "coordinator": self,
                     "replay": v2_ui.ReplayService(),
@@ -2708,6 +3279,30 @@ class AppDelegate(NSObject):
         if raw_item is not None:
             raw_item.setEnabled_(
                 bool(self._last_failed and self._last_failed.get("raw")))
+
+    def menuNeedsUpdate_(self, menu):
+        """Rebuild the Transforms submenu on open so Hub edits surface
+        without a restart (definitions, enabled state, shortcuts)."""
+        if menu is not self.transforms_menu:
+            return
+        menu.removeAllItems()
+        snapshot = self._transforms_snapshot()
+        defs = list(snapshot.definitions) if snapshot is not None else []
+        if not defs:
+            hint = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+                "No transforms configured (Hub → Transforms)", None, "")
+            hint.setEnabled_(False)
+            menu.addItem_(hint)
+            return
+        for d in defs:
+            title = f"{d.name} ({d.mode})"
+            if d.origin == "legacy":
+                title += " — legacy"
+            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+                title, "runTransform:", d.shortcut or "")
+            item.setTarget_(self)
+            item.setRepresentedObject_(d.transform_id)
+            menu.addItem_(item)
 
     def retryLastFailed_(self, sender):
         if self.state == STATE_RECORDING:

@@ -215,10 +215,10 @@ class HistoryQueryService:
              created) in conn.execute(
                 "SELECT artifact_id, role, stage, purged, content_text,"
                 " meta_json, content_path, created_at_utc FROM artifacts"
-                " WHERE job_id=? AND role IN (?,?,?,?,?) ORDER BY rowid",
+                " WHERE job_id=? AND role IN (?,?,?,?,?,?) ORDER BY rowid",
                 (job_id, "raw_transcript", "normalized_text",
                  "applied_output", "original_audio",
-                 "cleaned_transcript")).fetchall():
+                 "cleaned_transcript", "transform_output")).fetchall():
             entry = {"artifact_id": aid, "stage": stage, "purged": bool(purged),
                      "created_at_utc": created}
             if role == "original_audio":
@@ -287,11 +287,13 @@ class HistoryQueryService:
                  "artifact": normalized},
                 {"stage": "cleaned", "label": "Cleaned (applied output)",
                  "artifact": applied},
-                # Transforms are M11; the slot is honest absence, never a
-                # flattened copy of the cleaned text.
+                # M11: the transform stage is real — an artifact when a
+                # transform ran on this job, honest absence otherwise
+                # (never a flattened copy of the cleaned text).
                 {"stage": "transformed", "label": "Transformed",
-                 "artifact": None,
-                 "reason": "not_applicable_until_M11"},
+                 "artifact": arts.get("transform_output"),
+                 "reason": None if arts.get("transform_output")
+                 else "not_applicable"},
             ]
             if audio is None:
                 detail["audio"] = {"available": False,

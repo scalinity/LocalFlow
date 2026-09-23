@@ -102,6 +102,11 @@ class Worker:
         # TranscriptCleaner control path unchanged.
         self.cleanup_implementation = "v2"
         self.cleanup_engine = None
+        # M11 (S16): the cleanup engine's raw generation/render pair —
+        # a transform runs one bounded local generation on the SAME
+        # loaded model (no second engine, no model change).
+        self._cleanup_generate = None
+        self._cleanup_render = None
 
     # ---- engines -----------------------------------------------------------
 
@@ -154,6 +159,8 @@ class Worker:
                 with _capture_stderr():
                     runner.load()
                 self.cleanup_engine = runner.engine()
+                self._cleanup_generate = runner.generate_fn()
+                self._cleanup_render = runner.render
             except Exception as e:
                 # Load failure degrades to basic answers, exactly like
                 # the v1 path — the engine is failed, not the worker.
@@ -325,6 +332,57 @@ class Worker:
                        "error": type(e).__name__},
             })
 
+    def _transform(self, msg):
+        """M11 (S16): one bounded transform generation on the loaded
+        cleanup model. The parent validates coverage and decides
+        application — this side only renders the prompt (contract
+        system message + few-shot + structured payload, built in the
+        transforms package) and runs the generation with recorded
+        sampling."""
+        from .transforms import engine as tf_engine
+        try:
+            job = tf_engine.TransformJob(
+                transform_id=msg.get("transform_id") or "",
+                transform_revision=int(msg.get("transform_revision") or 1),
+                prompt_revision=msg.get("prompt_revision") or "",
+                mode=msg.get("mode") or "custom",
+                source=msg.get("source") or "",
+                source_kind=msg.get("source_kind") or "selection",
+                instructions=msg.get("instructions") or "",
+                examples_revision=msg.get("examples_revision") or "",
+                examples=tuple(
+                    tuple(ex) for ex in msg.get("examples") or []),
+                locale=msg.get("locale") or "en-US")
+            result = tf_engine.run_transform(
+                job, self._cleanup_generate, self._cleanup_render)
+        except ValueError as e:
+            # e.g. an oversized selection refused honestly (S16) —
+            # reported as a refusal, not a fault.
+            _write_msg({
+                "v": PROTOCOL_VERSION, "op": "result",
+                "kind": "transform", "req_id": msg.get("req_id"),
+                "job_id": msg.get("job_id"),
+                "attempt": msg.get("attempt"),
+                "generation": msg.get("generation"),
+                "refused": str(e)[:160],
+            })
+            return
+        _write_msg({
+            "v": PROTOCOL_VERSION, "op": "result",
+            "kind": "transform", "req_id": msg.get("req_id"),
+            "job_id": msg.get("job_id"), "attempt": msg.get("attempt"),
+            "generation": msg.get("generation"),
+            "result": result.to_json(),
+            "output": result.output,
+            "coverage": [c.to_json() for c in result.coverage],
+            "review_excerpts": list(result.review_excerpts),
+            "task_manifest": result.job.task_manifest(),
+            # Content-bearing: the exact rendered prompt rides the
+            # message only so the parent can retain it as a
+            # lease-governed artifact (never an envelope field).
+            "prompt": result.prompt,
+        })
+
     # ---- loop ----------------------------------------------------------------
 
     def serve(self):
@@ -351,6 +409,12 @@ class Worker:
                                "cleanup_engine_not_ready")
                     else:
                         self._clean(msg)
+                elif op == "transform":
+                    if self._cleanup_generate is None:
+                        _fault(msg, "EngineNotReady",
+                               "cleanup_engine_not_ready")
+                    else:
+                        self._transform(msg)
                 else:
                     _fault(msg, "ProtocolError", "unknown_op")
             except ProtocolError as e:

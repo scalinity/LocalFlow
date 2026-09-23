@@ -355,6 +355,27 @@ class WorkerSupervisor:
                 payload[key] = val
         return self._request("clean", "cleanup", payload, engine_wait=0.0)
 
+    def transform(self, *, job_id=None, attempt=1, transform_id,
+                  transform_revision, prompt_revision, mode, source,
+                  source_kind="selection", instructions="",
+                  examples_revision="", examples=(), locale=None):
+        """M11 (S16): one bounded transform generation on the cleanup
+        engine's model. Serialized with every other GPU request (a
+        concurrent dictation's ASR waits its turn — recorded, never
+        starved). Coverage validation happens in the worker's engine."""
+        payload = {"job_id": job_id, "attempt": attempt,
+                   "transform_id": transform_id,
+                   "transform_revision": transform_revision,
+                   "prompt_revision": prompt_revision, "mode": mode,
+                   "source": source, "source_kind": source_kind,
+                   "instructions": instructions,
+                   "examples_revision": examples_revision,
+                   "examples": [list(ex) for ex in examples]}
+        if locale is not None:
+            payload["locale"] = locale
+        return self._request("transform", "cleanup", payload,
+                             engine_wait=0.0)
+
     def _request(self, op, engine, payload, _retry=True, engine_wait=None):
         # Serialize ordinary GPU jobs: one request runs at a time across
         # all callers; queued work waits here (Spec S06).

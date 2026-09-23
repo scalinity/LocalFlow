@@ -14,10 +14,11 @@ Modes constrain **what may change**; styles specify how authorized
 content is represented. A style rule can never expand the S13 cleanup
 contract's permitted edits — ``raw`` (no normalization, no cleanup) is
 the only narrowing the mode system performs on the live pipeline; the
-remaining S15 modes (polish/concise/prompt_engineer/custom) are
-transform-backed and resolve honestly as not-yet-executable with a
-fallback to Clean until M11 ships their executors. Nothing here invents
-a tone control or an automatic personality switch (S15).
+transform-backed modes (polish/concise/prompt_engineer/custom)
+execute through the M11 transform engine when the bound definition
+opts in to auto-apply, and otherwise resolve honestly to Clean with a
+recorded reason. Nothing here invents a tone control or an automatic
+personality switch (S15).
 """
 
 from __future__ import annotations
@@ -29,12 +30,15 @@ from typing import Optional
 
 SCHEMA_VERSION = 1
 
-# The six S15 writing modes. Only raw/clean have live executors on the
-# M10 pipeline; the transform-backed modes resolve with an honest
-# fallback rather than silently behaving like something else.
+# The six S15 writing modes. M11 ships the transform executors: every
+# mode is executable. Raw/clean execute on the dictation pipeline
+# directly; the transform-backed modes execute through the M11
+# transform engine when the bound definition opts in to auto-apply
+# (M11-AC04 — opt-in per transform definition, never silent), and an
+# opted-out or unbound mode falls back to Clean with an honest reason.
 MODES = ("raw", "clean", "polish", "concise", "prompt_engineer",
          "custom")
-EXECUTABLE_MODES = ("raw", "clean")
+EXECUTABLE_MODES = MODES
 
 # S15 destination categories (the writing categories, finer than the
 # M06 app categories): personal/work messaging share the messaging
@@ -211,7 +215,8 @@ def _rule_matches(rule: StyleRule, dest: Destination) -> bool:
 
 
 def resolve(job_override: Optional[str], rules, dest: Destination,
-            *, default_number_policy: str = "inherit") -> WritingProfile:
+            *, default_number_policy: str = "inherit",
+            transforms=None) -> WritingProfile:
     """Resolve the effective writing profile (S15 precedence):
 
     per-job override → explicit destination rule (workspace > site >
@@ -221,14 +226,18 @@ def resolve(job_override: Optional[str], rules, dest: Destination,
 
     Clean is the default everywhere: with no override and no matching
     rule the pipeline behaves exactly as shipped in M03–M09. A
-    requested mode without a live executor falls back to Clean with the
-    honest ``fallback_reason`` — never a silent behavior change."""
+    transform-backed mode executes through the M11 engine when its
+    bound definition opted in to auto-apply (``transforms`` — the
+    frozen ``TransformSnapshot``); anything else falls back to Clean
+    with the honest ``fallback_reason`` — never a silent behavior
+    change."""
     revision = rules_revision(rules)
     dest_category = dest.category
     override = job_override if job_override in MODES else None
     if override is not None:
         return _finish(override, "job_override", None, dest_category,
-                       revision, default_number_policy)
+                       revision, default_number_policy,
+                       transforms=transforms)
     # Explicit destination rules, narrowest scope first; ties break by
     # rule id so resolution is deterministic. Global/category rules are
     # NOT destination rules — they configure the default steps below.
@@ -242,7 +251,8 @@ def resolve(job_override: Optional[str], rules, dest: Destination,
         rule = matching[0]
         return _finish(rule.mode, f"rule:{rule.scope_kind}",
                        rule.rule_id, dest_category, revision,
-                       rule.number_policy, rule.profile_name)
+                       rule.number_policy, rule.profile_name,
+                       transforms=transforms)
     # Category default: a category-scoped rule for this category, else
     # the built-in Clean (S15's table).
     cat_rules = sorted(
@@ -254,7 +264,7 @@ def resolve(job_override: Optional[str], rules, dest: Destination,
         rule = cat_rules[0]
         return _finish(rule.mode, "rule:category", rule.rule_id,
                        dest_category, revision, rule.number_policy,
-                       rule.profile_name)
+                       rule.profile_name, transforms=transforms)
     if dest_category is not None:
         return _finish("clean", "category_default", None, dest_category,
                        revision, default_number_policy)
@@ -266,16 +276,26 @@ def resolve(job_override: Optional[str], rules, dest: Destination,
         rule = glob[0]
         return _finish(rule.mode, "rule:global", rule.rule_id,
                        dest_category, revision, rule.number_policy,
-                       rule.profile_name)
+                       rule.profile_name, transforms=transforms)
     return _finish("clean", "global_default", None, dest_category,
                    revision, default_number_policy)
 
 
 def _finish(mode: str, source: str, rule_id, category, revision,
-            number_policy: str, profile_name=None) -> WritingProfile:
-    effective = mode if mode in EXECUTABLE_MODES else "clean"
-    fallback = None if effective == mode else \
-        f"mode_not_executable_until_M11:{mode}"
+            number_policy: str, profile_name=None,
+            transforms=None) -> WritingProfile:
+    effective, fallback = mode, None
+    if mode not in ("raw", "clean"):
+        # A transform-backed mode: executable through the M11 engine
+        # when the bound definition opted in to auto-apply for this
+        # profile (M11-AC04). Without a registry the honest default is
+        # the opt-out fallback — the built-ins ship auto-apply off.
+        reason = f"transform_auto_apply_disabled:{mode}"
+        if transforms is not None:
+            _, reason = transforms.auto_apply_decision(
+                mode, profile_name or category, category)
+        effective = mode if reason is None else "clean"
+        fallback = reason if reason is not None else None
     return WritingProfile(
         mode=mode, effective_mode=effective, source=source,
         rule_id=rule_id, category=category,

@@ -1,0 +1,35 @@
+{
+ "dictation_delay_with_transform": {
+  "asr_model": "mlx-community/parakeet-tdt-0.6b-v3",
+  "cleanup_model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "dictation_delay_s": 0.649,
+  "note": "the transform generation holds the supervisor's serialized GPU lock; the queued dictation's ASR waits its turn (S06) \u2014 recorded, never starved",
+  "transcribe_queued_s": 0.704,
+  "transcribe_solo_s": 0.055,
+  "transform_duration_s": 0.764
+ },
+ "kind": "model-backed",
+ "pass": true,
+ "schema": "m11-benchmark/1",
+ "transform_500w": {
+  "budget_p95_s": 15.0,
+  "cases": 5,
+  "input_words": 504,
+  "max_s": 0.708,
+  "p50_s": 0.69,
+  "p95_s": 0.708,
+  "pass": true
+ },
+ "ui_acknowledgment": {
+  "budget_ms": 50.0,
+  "note": "guards + snapshot state-counter check + overlay dispatch (immediate callAfter, stand-in overlay; AppKit window animation excluded \u2014 headless)",
+  "pass": true,
+  "repeats": 200,
+  "snapshot_rebuild_ms": 0.0689,
+  "warm": {
+   "max_ms": 0.026,
+   "p50_ms": 0.013,
+   "p95_ms": 0.0168
+  }
+ }
+}

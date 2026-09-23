@@ -8,12 +8,13 @@ tests/v2/ui/test_training_data.py + test_hub_shell.py)
 `replay.ReplayService`) plus the read/query services
 `localflow.v2.history_queries`, `localflow.v2.training_data` and
 `localflow.v2.diagnostics` deliver the S19 companion window: Home /
-History / Styles / Snippets / Diagnostics / Models (+ Training Data
-subview) / Settings. The M10 Styles and Snippets views follow the same
-`_build_/_refresh_/_load_` triple over the M10 stores (rule/snippet
-CRUD is synchronous against the store writer on the main thread, the
-documented training-service limitation); future views (Transforms,
-Scratchpad, Insights) refuse at state level until they exist — the
+History / Styles / Snippets / Transforms / Diagnostics / Models (+
+Training Data subview) / Settings. The M10 Styles and Snippets views
+and the M11 Transforms view follow the same
+`_build_/_refresh_/_load_` triple over their stores (rule/snippet/
+definition CRUD is synchronous against the store writer on the main
+thread, the documented training-service limitation); future views
+(Scratchpad, Insights) refuse at state level until they exist — the
 M09 rule, unchanged.
 
 ## Architecture contract (frozen for M10–M13)
@@ -31,8 +32,9 @@ M09 rule, unchanged.
   `hubSetCollection`, `hubApplyRetention`, `_hub_diagnostics_spec`.
   M10 adds `hubEffectiveProfile`, `hubSetNextJobMode`,
   `hubPreviewPhrase` and `hubSnippetCollisionPreview` (live-process
-  state the services cannot see); the M10 stores ride the spec as
-  `styles_service`/`snippets_service` (the training_service pattern).
+  state the services cannot see); the M10/M11 stores ride the spec as
+  `styles_service`/`snippets_service`/`transforms_service` (the
+  training_service pattern).
   Later milestones add commands; they never bypass this surface.
 - **Query discipline.** `HistoryQueryService`/`TrainingDataService`/
   diagnostics reads are read-only ops through `Store.submit` (the
@@ -81,8 +83,9 @@ M09 rule, unchanged.
   `json_extract`; the value comes from the fixed `MODES` vocabulary).
   The limit applies to the merged result.
 - **Lineage is four distinct stages** — source → normalized → cleaned
-  → transformed (M09-AC01). An absent stage carries a reason
-  (`not_applicable_until_M11` for the transform slot); nothing
+  → transformed (M09-AC01). An absent stage carries a reason (the
+  transform slot resolves from `transform_output` artifacts since
+  M11, else the honest `not_applicable`); nothing
   flattens stages into one field. Missing audio reports
   `no_audio_artifact` / `purged` / `payload_missing`; replay never
   fabricates a substitute (M09-AC02).

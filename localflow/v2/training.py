@@ -155,6 +155,14 @@ class CaptureContext:
         # frozen pre-decode developer registries (skill manifests).
         self.profile = None
         self.skill_registry_artifact = None
+        # M11 (S16/S29.4 transform family): the dictation transform's
+        # content-free block + its lease-governed input/output/prompt
+        # artifacts (the transform's source is the cleanup family's
+        # applied output — parent chain keeps the lineage), plus the
+        # honest gate reason when a requested transform did not run.
+        self.transform_block = None
+        self.transform_gate_reason = None
+        self.transform_artifacts = {}
         self.raw_artifact = None
         self.raw_text = None
         self.applied_artifact = None
@@ -585,6 +593,67 @@ class EvidenceCollector:
                 ctx.applied_artifact, "training",
                 days=self.store.retention_days["training_buffer"])
 
+    def note_transform_gate(self, ctx, reason: str):
+        """M11: the honest reason a requested transform did not run
+        (auto-apply off, unbound, untargeted, cleanup off, uncertain
+        coverage) — rides the envelope's transform slot when no block
+        exists (never a silent Clean)."""
+        if not ctx.collecting or ctx.example_id:
+            return
+        if ctx.transform_block is None:
+            ctx.transform_gate_reason = reason
+
+    def on_transform_result(self, ctx, result, *, applied: bool):
+        """M11 (S16/S29.4 transform family): retain the transform's
+        exact input/output/prompt as lease-governed artifacts and fill
+        the envelope's content-free ``transform`` block — transform id
+        and revision, prompt revision, task key, path, coverage counts.
+        The dictation path records no preference (S29.10: an automatic
+        application is not a judgment); explicit accept/reject/tie/undo
+        observations ride the transforms store's selection path."""
+        if not ctx.collecting or ctx.example_id:
+            return
+        try:
+            art_ids = {}
+            days = self.store.retention_days["training_buffer"]
+            if result.prompt:
+                art_ids["prompt"] = self.store.write_text_artifact(
+                    job_id=ctx.job_id, stage="transform",
+                    role="transform_prompt", text=result.prompt,
+                    kind="model_input", retention_class="training",
+                    parent_artifact_id=ctx.applied_artifact,
+                    meta={"transform_id": result.job.transform_id,
+                          "prompt_revision": result.job.prompt_revision})
+                self.store.grant_lease(art_ids["prompt"], "training",
+                                       days=days)
+            art_ids["output"] = self.store.write_text_artifact(
+                job_id=ctx.job_id, stage="transform",
+                role="transform_output", text=result.output,
+                retention_class="training",
+                parent_artifact_id=ctx.applied_artifact,
+                meta={"transform_id": result.job.transform_id,
+                      "path": result.path})
+            self.store.grant_lease(art_ids["output"], "training",
+                                   days=days)
+            ctx.transform_artifacts = art_ids
+        except Exception:
+            ctx.transform_artifacts = {}
+        ctx.transform_block = {
+            "transform_id": result.job.transform_id,
+            "transform_revision": result.job.transform_revision,
+            "prompt_revision": result.job.prompt_revision,
+            "mode": result.job.mode,
+            "task_key": result.job.task_key(),
+            "path": result.path,
+            "reason": result.reason,
+            "applied": bool(applied),
+            "output_tokens": result.output_tokens,
+            "duration_ms": result.duration_ms,
+            "coverage": result.coverage_summary,
+            "source_stage": "cleanup_applied_output",
+            "artifact_ids": dict(ctx.transform_artifacts),
+        }
+
     def finalize(self, ctx):
         """After cleanup: mint the example and revision 1 with the full
         field-family envelope and honest missing reasons."""
@@ -895,6 +964,20 @@ class EvidenceCollector:
                 "token_log_probs", manifest),
             "transform": R_NOT_APPLICABLE,
         }
+        # M11 (S16): the transform slot is real. No transform requested
+        # (raw/clean mode) ⇒ honestly not applicable; requested and a
+        # block exists ⇒ the block carries it; requested without a
+        # block ⇒ the recorded reason (auto-apply off, unbound mode, or
+        # a store failure — never a silent Clean).
+        transform_block = ctx.transform_block
+        if transform_block is not None:
+            del missing["transform"]
+        elif (ctx.profile or {}).get("mode") in (
+                "polish", "concise", "prompt_engineer", "custom"):
+            missing["transform"] = (
+                ctx.transform_gate_reason
+                or (ctx.profile or {}).get("fallback_reason")
+                or "transform_not_run")
         if ctx.audio_artifact is None:
             missing["original_audio"] = (
                 R_NOT_CAPTURED if ctx.audio_write_failed else R_CONSENT)
@@ -989,6 +1072,7 @@ class EvidenceCollector:
             "context": context_block,
             "profile": ctx.profile,
             "cleanup": cleanup_detail,
+            "transform": transform_block,
             "artifact_ids": artifact_ids,
             "missing_reasons": missing,
             "outcome": {"insertion": "not_attempted",

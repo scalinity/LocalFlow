@@ -130,18 +130,61 @@ def test_transform_modes_fall_back_honestly():
             category="email"))
         assert wp.mode == mode and wp.effective_mode == "clean", wp
         assert wp.fallback_reason == \
-            f"mode_not_executable_until_M11:{mode}", wp
+            f"transform_auto_apply_disabled:{mode}", wp
         assert not wp.executable
     wp = profiles.resolve("raw", [], profiles.Destination())
     assert wp.executable and wp.fallback_reason is None
-    # A rule may configure a transform mode; it still runs Clean today
-    # and says so (never a silent behavior change).
+    # A rule may configure a transform mode; without the definition's
+    # auto-apply opt-in it still runs Clean and says so (never a silent
+    # behavior change) — M11-AC04.
     wp = profiles.resolve(None, [R("p", scope="category", value="email",
                                    mode="polish")],
                           profiles.Destination(category="email"))
     assert wp.source == "rule:category"
     assert wp.effective_mode == "clean" and wp.fallback_reason
     print("ok  transform-backed modes: honest fallback to Clean")
+
+
+def test_transform_mode_executes_on_opt_in():
+    """M11: a transform-backed mode whose bound definition opted in to
+    auto-apply (and targets the profile) resolves executable; the gate
+    reasons distinguish opt-out, unbound and untargeted."""
+    from localflow.v2 import transforms as v2_transforms
+    opt_in = [v2_transforms.TransformDefinition(
+        transform_id="builtin:polish", name="Polish", mode="polish",
+        auto_apply=True)]
+    snap = v2_transforms.TransformSnapshot(opt_in)
+    wp = profiles.resolve(None, [R("p", scope="category", value="email",
+                                   mode="polish")],
+                          profiles.Destination(category="email"),
+                          transforms=snap)
+    assert wp.mode == "polish" and wp.effective_mode == "polish", wp
+    assert wp.fallback_reason is None and wp.executable
+    # Targeted profiles: an opt-in definition that excludes this
+    # profile stays Clean with the untargeted reason.
+    targeted = [v2_transforms.TransformDefinition(
+        transform_id="builtin:polish", name="Polish", mode="polish",
+        auto_apply=True, target_profiles=("coding",))]
+    snap2 = v2_transforms.TransformSnapshot(targeted)
+    wp = profiles.resolve(None, [R("p", scope="category", value="email",
+                                   mode="polish")],
+                          profiles.Destination(category="email"),
+                          transforms=snap2)
+    assert wp.effective_mode == "clean"
+    assert wp.fallback_reason == \
+        "transform_profile_not_targeted:email", wp
+    # Custom with two auto-applicable definitions is ambiguous (never
+    # guessed): the unbound reason.
+    two = [v2_transforms.TransformDefinition(
+        transform_id="c1", name="C1", mode="custom", auto_apply=True),
+        v2_transforms.TransformDefinition(
+            transform_id="c2", name="C2", mode="custom", auto_apply=True)]
+    snap3 = v2_transforms.TransformSnapshot(two)
+    wp = profiles.resolve("custom", [], profiles.Destination(),
+                          transforms=snap3)
+    assert wp.effective_mode == "clean"
+    assert wp.fallback_reason == "transform_not_bound:custom", wp
+    print("ok  M11 opt-in: transform modes execute; gates are honest")
 
 
 def test_rule_validation_and_revision():
@@ -235,6 +278,7 @@ def main():
     test_wrong_workspace_rule_does_not_apply()
     test_category_derivation()
     test_transform_modes_fall_back_honestly()
+    test_transform_mode_executes_on_opt_in()
     test_rule_validation_and_revision()
     test_style_store_crud_and_invalidation()
     test_casual_style_never_loosens_cleanup_contract()

@@ -139,3 +139,22 @@ workspace flag — content-free). The normalization block gains
 text is distinguishable from acoustic speech in every export;
 snippet-expanded examples keep the M09 per-example verbatim listen
 gate (M10-AC05). See `contracts/profiles.md`.
+
+## M11 live status (transform family)
+
+The S29.4 transform field family is live: `on_transform_result` —
+called on the dictation path after `on_cleanup_result` and before
+`finalize`, so the block rides the same revision — retains the exact
+rendered prompt and the transform output as lease-governed artifacts
+(`transform_prompt`/`transform_output`, parent = the cleanup family's
+applied artifact) and fills the envelope's content-free `transform`
+block (transform id/revision, prompt revision, task key, path, reason,
+applied flag, coverage counts, tokens, duration, artifact ids). With
+no transform requested the slot's missing reason is `not_applicable`;
+a requested-but-not-run transform carries its gate reason — never a
+silent Clean. Same-task preference candidates and explicit judgments
+live in the schema-v7 `transform_candidates`/
+`preference_observations` tables (see `contracts/transforms.md` and
+`contracts/preferences.md`); the automatic dictation path records
+candidates only — an automatic application is not a preference
+judgment (S29.10).

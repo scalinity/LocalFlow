@@ -132,7 +132,8 @@ class HubController(NSObject):
             diagnostics_provider=spec.get("diagnostics_provider"),
             coordinator=self.coordinator,
             styles_service=spec.get("styles_service"),
-            snippets_service=spec.get("snippets_service"))
+            snippets_service=spec.get("snippets_service"),
+            transforms_service=spec.get("transforms_service"))
         self.state.on_update = self._state_updated
         self._built_views = {}
         self._history_flat = []  # group markers + rows, in table order
@@ -272,6 +273,10 @@ class HubController(NSObject):
             rows = (self.state.views["snippets"].get("data")
                     or {}).get("snippets") or []
             return len(rows)
+        if table is getattr(self, "transforms_table", None):
+            rows = (self.state.views["transforms"].get("data")
+                    or {}).get("transforms") or []
+            return len(rows)
         return len(VIEWS)
 
     def tableView_objectValueForTableColumn_row_(self, table, col, row):
@@ -308,6 +313,16 @@ class HubController(NSObject):
             if col.identifier() == "kind":
                 return r["kind"] + ("" if r.get("enabled") else " · off")
             return r["trigger"]
+        if table is getattr(self, "transforms_table", None):
+            rows = (self.state.views["transforms"].get("data")
+                    or {}).get("transforms") or []
+            r = rows[int(row)]
+            if col.identifier() == "mode":
+                auto = "auto-apply" if r.get("auto_apply") else "manual"
+                return (f"{r['mode']} · {auto}"
+                        + ("" if r.get("enabled") else " · off"))
+            return r["name"] + (" (legacy)" if r.get("origin") == "legacy"
+                                else "")
         return VIEW_TITLES[VIEWS[int(row)]]
 
     def tableView_shouldSelectRow_(self, table, row):
@@ -351,6 +366,15 @@ class HubController(NSObject):
                 self.state.views["snippets"]["selected_id"] = \
                     s["snippet_id"]
                 self._fill_snippet_editor(s)
+        elif table is getattr(self, "transforms_table", None):
+            row = self.transforms_table.selectedRow()
+            rows = (self.state.views["transforms"].get("data")
+                    or {}).get("transforms") or []
+            if 0 <= row < len(rows):
+                t = rows[row]
+                self.state.views["transforms"]["selected_id"] = \
+                    t["transform_id"]
+                self._fill_transform_editor(t)
         elif table is self.sidebar:
             row = self.sidebar.selectedRow()
             if row >= 0:
@@ -585,9 +609,10 @@ class HubController(NSObject):
                       self.styles_table)
         tsc.setAutoresizingMask_(2)
         v.addSubview_(tsc)
-        # Rule editor (right column): the live S15 rule dimensions only —
-        # the transform-backed modes arrive with M11 and are not offered
-        # as if they ran today.
+        # Rule editor (right column): the live S15 rule dimensions. The
+        # transform-backed modes (M11) select their transform; a mode
+        # whose definition has not opted in to auto-apply resolves to
+        # Clean with the honest reason shown in the status line.
         x = cw * 0.38
         self.style_name = NSTextField.alloc().initWithFrame_(
             NSMakeRect(x + 70, ch - 54, 220, 22))
@@ -607,7 +632,9 @@ class HubController(NSObject):
         v.addSubview_(self.style_scope_value)
         self.style_mode = NSPopUpButton.alloc().initWithFrame_(
             NSMakeRect(x + 70, ch - 110, 130, 24))
-        self.style_mode.addItemsWithTitles_(["clean", "raw"])
+        self.style_mode.addItemsWithTitles_(
+            ["clean", "raw", "polish", "concise", "prompt_engineer",
+             "custom"])
         v.addSubview_(_label(NSMakeRect(x, ch - 107, 60, 18), "Mode:"))
         v.addSubview_(self.style_mode)
         self.style_numbers = NSPopUpButton.alloc().initWithFrame_(
@@ -940,6 +967,206 @@ class HubController(NSObject):
                 "No snippets. Add one: a spoken trigger, exact content"
                 " ({{placeholders}} fill from the utterance after the"
                 " trigger, split on the spoken word 'comma').")
+
+    # ---- Transforms (M11, Spec S16) ----------------------------------------
+
+    @objc.python_method
+    def _build_transforms_view(self):
+        v = NSView.alloc().init()
+        cw = self.content.bounds().size.width
+        ch = self.content.bounds().size.height
+        self.transforms_status = _label(
+            NSMakeRect(8, ch - 24, cw - 16, 18), "")
+        v.addSubview_(self.transforms_status)
+        self.transforms_table = NSTableView.alloc().initWithFrame_(
+            NSMakeRect(0, 0, cw * 0.34, 10))
+        for ident, width in (("name", 170.0), ("mode", 130.0)):
+            c = NSTableColumn.alloc().initWithIdentifier_(ident)
+            c.setWidth_(width)
+            self.transforms_table.addTableColumn_(c)
+        self.transforms_table.setDataSource_(self)
+        self.transforms_table.setDelegate_(self)
+        tsc = _scroll(NSMakeRect(8, 150, cw * 0.36, ch - 180),
+                      self.transforms_table)
+        tsc.setAutoresizingMask_(2)
+        v.addSubview_(tsc)
+        # Definition editor (right column). Legacy rows are preserved
+        # revisions — selectable/readable, never editable (AC01).
+        x = cw * 0.38
+        self.tf_name = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(x + 70, ch - 54, 220, 22))
+        self.tf_name.setPlaceholderString_("transform name")
+        v.addSubview_(_label(NSMakeRect(x, ch - 51, 60, 18), "Name:"))
+        v.addSubview_(self.tf_name)
+        self.tf_mode = NSPopUpButton.alloc().initWithFrame_(
+            NSMakeRect(x + 70, ch - 82, 150, 24))
+        self.tf_mode.addItemsWithTitles_(
+            ["custom", "polish", "concise", "prompt_engineer"])
+        v.addSubview_(_label(NSMakeRect(x, ch - 79, 60, 18), "Mode:"))
+        v.addSubview_(self.tf_mode)
+        self.tf_auto = NSButton.buttonWithTitle_target_action_(
+            "Auto-apply before insertion (opt-in)", self,
+            None)
+        self.tf_auto.setButtonType_(4)  # NSSwitchButton
+        self.tf_auto.setFrame_(NSMakeRect(x + 230, ch - 84, 240, 22))
+        v.addSubview_(self.tf_auto)
+        self.tf_shortcut = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(x + 70, ch - 110, 44, 22))
+        self.tf_shortcut.setPlaceholderString_("key")
+        v.addSubview_(_label(
+            NSMakeRect(x, ch - 107, 60, 18), "Shortcut:"))
+        v.addSubview_(self.tf_shortcut)
+        self.tf_targets = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(x + 196, ch - 110, 240, 22))
+        self.tf_targets.setPlaceholderString_(
+            "target profiles (comma, empty = all)")
+        v.addSubview_(_label(
+            NSMakeRect(x + 122, ch - 107, 72, 18), "Profiles:"))
+        v.addSubview_(self.tf_targets)
+        self.tf_prompt = _textview(NSMakeRect(0, 0, cw - x - 16, 96))
+        pc = _scroll(NSMakeRect(x, 152, cw - x - 16, 96), self.tf_prompt)
+        pc.setAutoresizingMask_(2 | 16)
+        v.addSubview_(pc)
+        v.addSubview_(_label(
+            NSMakeRect(x, 252, cw - x - 16, 18),
+            "Custom instruction (custom mode; built-ins use their"
+            " frozen contract):"))
+        for i, (title, action) in enumerate((
+                ("Add", "transformsAdd:"),
+                ("Update", "transformsUpdate:"),
+                ("Enable/Disable", "transformsToggle:"))):
+            v.addSubview_(_button(title, self, action,
+                                  NSMakeRect(x + i * 130, 118, 124, 24)))
+        self.transforms_detail = _textview(
+            NSMakeRect(0, 0, cw - x - 16, 80))
+        tdc = _scroll(NSMakeRect(x, 8, cw - x - 16, 78),
+                      self.transforms_detail)
+        tdc.setAutoresizingMask_(2 | 16)
+        v.addSubview_(tdc)
+        return v
+
+    def transformsAdd_(self, sender):
+        self._transform_write("add")
+
+    def transformsUpdate_(self, sender):
+        self._transform_write("update")
+
+    @objc.python_method
+    def _transform_write(self, action):
+        svc = self.spec.get("transforms_service")
+        if svc is None:
+            self.transforms_status.setStringValue_(
+                "transforms unavailable")
+            return
+        name = self.tf_name.stringValue() or ""
+        mode = self.tf_mode.titleOfSelectedItem() or "custom"
+        shortcut = self.tf_shortcut.stringValue() or None
+        targets = [t.strip() for t in
+                   (self.tf_targets.stringValue() or "").split(",")
+                   if t.strip()]
+        prompt = self.tf_prompt.string() or ""
+        try:
+            if action == "add":
+                svc.add_transform(
+                    name=name, mode=mode, prompt=prompt,
+                    shortcut=shortcut, target_profiles=targets,
+                    auto_apply=bool(self.tf_auto.state()))
+            else:
+                transform_id = self.state.views["transforms"].get(
+                    "selected_id")
+                if not transform_id:
+                    self.transforms_status.setStringValue_(
+                        "select a transform to update")
+                    return
+                svc.update_transform(
+                    transform_id, name=name, mode=mode, prompt=prompt,
+                    shortcut=shortcut, target_profiles=targets,
+                    auto_apply=bool(self.tf_auto.state()))
+        except (ValueError, KeyError) as e:
+            self.transforms_status.setStringValue_(f"not saved: {e}")
+            return
+        except Exception as e:
+            self.transforms_status.setStringValue_(
+                f"not saved: {type(e).__name__}")
+            return
+        self.state.reload_transforms()
+
+    def transformsToggle_(self, sender):
+        svc = self.spec.get("transforms_service")
+        transform_id = self.state.views["transforms"].get("selected_id")
+        data = (self.state.views["transforms"].get("data") or {})
+        if svc is None or not transform_id:
+            return
+        enabled = next(
+            (t.get("enabled") for t in data.get("transforms", ())
+             if t.get("transform_id") == transform_id), True)
+        try:
+            svc.set_enabled(transform_id, not enabled)
+        except Exception as e:
+            self.transforms_status.setStringValue_(
+                f"not toggled: {type(e).__name__}")
+            return
+        self.state.reload_transforms()
+
+    @objc.python_method
+    def _fill_transform_editor(self, t):
+        self.tf_name.setStringValue_(t.get("name") or "")
+        self.tf_mode.selectItemWithTitle_(t.get("mode") or "custom")
+        self.tf_shortcut.setStringValue_(t.get("shortcut") or "")
+        self.tf_targets.setStringValue_(
+            ", ".join(t.get("target_profiles") or ()))
+        self.tf_auto.setState_(1 if t.get("auto_apply") else 0)
+        legacy = t.get("origin") == "legacy"
+        builtin = t.get("origin") == "builtin"
+        editable = not legacy
+        for ctrl in (self.tf_name, self.tf_mode, self.tf_shortcut,
+                     self.tf_targets, self.tf_auto, self.tf_prompt):
+            ctrl.setEnabled_(editable)
+        # A built-in IS its mode (polish/concise/prompt_engineer bind
+        # by id+mode): the mode stays fixed so a Hub edit can never
+        # silently unbind or cross-bind the mode executors.
+        self.tf_mode.setEnabled_(editable and not builtin)
+        self.tf_prompt.setString_(
+            (t.get("prompt") or
+             ("(built-in frozen contract — see Transforms contract)"
+              if builtin else "")) if editable else (t.get("prompt") or ""))
+        detail = [
+            f"{t.get('transform_id')} · revision {t.get('revision')}"
+            f" · prompt {t.get('prompt_revision')}"]
+        if legacy:
+            detail.append(
+                "Preserved legacy revision (M11-AC01): prompt kept"
+                " verbatim; edits create a custom transform instead.")
+            if t.get("legacy_key"):
+                detail.append(
+                    f"legacy key {t['legacy_key']!r} recorded, never"
+                    " bound as a shortcut")
+        self.transforms_detail.setString_("\n".join(detail))
+
+    @objc.python_method
+    def _refresh_transforms_view(self):
+        view = self.state.views["transforms"]
+        data = view.get("data")
+        if view.get("error"):
+            self.transforms_status.setStringValue_(
+                f"transforms unavailable ({view['error']})")
+            self.transforms_table.reloadData()
+            return
+        self.transforms_table.reloadData()
+        conflicts = (data or {}).get("shortcut_conflicts") or []
+        if conflicts:
+            self.transforms_status.setStringValue_(
+                f"shortcut collisions: "
+                + ", ".join(c["shortcut"] for c in conflicts))
+        elif not data or not data.get("transforms"):
+            self.transforms_detail.setString_(
+                "No transform definitions. Built-ins seed on first run;"
+                " Add creates a custom transform (instruction + optional"
+                " writing samples via JSON import). Auto-apply is"
+                " opt-in per definition (M11-AC04).")
+        else:
+            self.transforms_status.setStringValue_(
+                f"{len(data['transforms'])} definitions")
 
     # ---- Diagnostics ----------------------------------------------------------------
 

@@ -1,0 +1,127 @@
+{
+  "milestone": "M11",
+  "requirements": ["LF-R17", "LF-R18", "LF-R28", "LF-R30", "LF-R31"],
+  "suite": "EV-13",
+  "status": "implemented_pending_human",
+  "environment": {
+    "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+    "python": "3.14.7 (.venv)",
+    "mlx": "0.31.2",
+    "transformers": "5.10.4",
+    "machine": "Apple M5 Pro 48GB, macOS 27.0",
+    "models": {
+      "asr": "mlx-community/parakeet-tdt-0.6b-v3",
+      "cleanup_transform": "mlx-community/Qwen3-4B-Instruct-2507-4bit"
+    },
+    "note": "no model or checkpoint change; transforms run one bounded greedy generation on the cleanup engine's loaded model in the worker subprocess"
+  },
+  "pre_change_baselines": {
+    "kind": "automated + model-backed",
+    "command": ".venv/bin/python <suite>",
+    "result": "36 fast suites + 6 model-backed suites all green before any M11 change: M01 (legacy_parser, registry, baseline_manifest, snapshot_safety), M02 (event_writer, store, import, collector), M03 (worker_protocol, capture_journal, audio_fidelity, lifecycle, worker_live 2/2), M04 (4 normalization), M05 (4 vocabulary), M06 (2 context), M07 (cleanup_engine, cleanup_pipeline, fidelity 60/60, literal 20/20, structure 40/40), M08 (3 insertion), M09 (4 ui), M10 (5 profiles/developer), stuck_overlay, live_pipeline 2/2, V1 cleanup control 51/51 (48.9s)"
+  },
+  "checks": [
+    {"id": "definitions-store", "kind": "automated",
+     "command": ".venv/bin/python tests/v2/transforms/test_transform_definitions.py",
+     "exit": 0, "result": "8/8 — built-ins seed idempotently (auto-apply default off); edits append preserved revisions, delete = disable, never erased; the two uploaded V1 definitions materialize from the M02 legacy artifacts frozen (prompt verbatim, key recorded never bound, edits refused); shortcut collisions detected case-insensitively; the auto-apply decision matrix (opt-in / target profiles / unbound / disabled); built-in binding is id-AND-mode with the store refusing a built-in mode change and no-op updates appending nothing; malformed legacy rows skip without disabling the service"},
+    {"id": "engine-atoms", "kind": "automated",
+     "command": ".venv/bin/python tests/v2/transforms/test_transform_engine.py",
+     "exit": 0, "result": "8/8 — task identity (retry-original same task; transform-of-result / changed source / instructions / prompt revision are different tasks); atom extraction finds the S16 example + quoted/link spans; three-valued coverage with uncertain = review; run_transform paths applied / needs_review (original clauses kept) / fallback_original (engine failure, output limit, empty); every mode guards links and quoted spans verbatim; contract/payload separation with versioned prompts (the uploaded V1 wording absent); word/block diff surfaces; oversized source refused honestly"},
+    {"id": "pipeline", "kind": "automated (real coordinator + real InsertionService over the fixture target)",
+     "command": ".venv/bin/python tests/v2/transforms/test_transform_pipeline.py",
+     "exit": 0, "result": "10/10 — AC04 auto-apply transforms the Clean artifact pre-insertion with Clean retained as the cleanup applied_output and the transform in its own stage artifact; opt-out runs Clean with the reason in the menu line + envelope; uncertain coverage keeps Clean and records the proposal + candidate without a judgment; selection accept replaces through the revalidated M08 queue; AC03 changed selection preserved (target_changed, copy offer, zero insertion rows); AC05 same-task pairs only with undo/accept distinct and cross-task refusal; the worker transform op through the real supervisor + fake worker subprocess; review-C1 regression (panel constructs via alloc/init_panel through _tfShowResult_); review-C2 regression (oversized selection refuses with no _tf_active wedge); cleanup-off records the transform_requires_cleanup gate reason"},
+    {"id": "prompt-engineer-cases", "kind": "model-backed",
+     "command": ".venv/bin/python tests/v2/transforms/test_prompt_engineer_cases.py",
+     "exit": 0, "result": "30/30 (15 dev / 5 validation / 10 held-out): 28 applied with every enumerated anchor surviving and no hidden added task; 2 honestly flagged needs_review with the original clauses kept — zero silent requirement losses; total inference 58.0s"},
+    {"id": "regression-fast-battery", "kind": "automated",
+     "command": ".venv/bin/python <each of the 36 pre-existing fast suites>",
+     "exit": 0, "result": "all green post-implementation and again post-address (VIEWS 7→8, the modes-resolution pins and the lineage reason updated with M11's live behavior; scratchpad/insights still refuse at state level)"},
+    {"id": "regression-model-backed", "kind": "model-backed",
+     "command": ".venv/bin/python tests/v2/lifecycle/test_worker_live.py tests/v2/training/test_live_pipeline.py tests/v2/fidelity/test_fidelity.py tests/v2/fidelity/test_literal.py tests/v2/structure/test_structure.py tests/test_cleanup.py",
+     "exit": 0, "result": "worker_live 2/2, live_pipeline 2/2, fidelity 60/60, literal 20/20, structure 40/40, V1 control 51/51 (48.8s) — green post-implementation and again post-address"},
+    {"id": "benchmark", "kind": "model-backed",
+     "command": ".venv/bin/python scripts/v2/benchmark_m11.py --out docs/v2/benchmarks/20260923-013025-m11",
+     "exit": 0, "result": "504-word transform p95 0.708s (budget 15s); UI acknowledgment warm max 0.026ms + snapshot rebuild 0.069ms (budget 50ms); dictation delay behind an in-flight transform 0.649s (real worker, serialized GPU lock — recorded, never starved)"},
+    {"id": "live-store-migration", "kind": "automated (live data)",
+     "command": ".venv/bin/python - (Store open over ~/Library/Application Support/LocalFlow/v2.db with pre-migration backup)",
+     "exit": 0, "result": "schema 6→7 additive with backup under v2-evidence/backups; verify() clean; built-ins seeded 3; both legacy definitions materialized (legacy:transform:1/2:e7eb86b1); jobs (10) and legacy_dictations (7) untouched"},
+    {"id": "privacy-scan", "kind": "automated",
+     "command": ".venv/bin/python tests/v2/test_baseline_manifest.py",
+     "exit": 0, "result": "clean over every new path; fixtures synthetic; benchmark JSONs content-free; envelope transform block ids/counts/reasons only"}
+  ],
+  "acceptance": {
+    "M11-AC01": {"status": "pass",
+      "evidence": ["definitions-store (frozen legacy revisions, edits refused, never erased)",
+                   "live-store-migration (both uploaded definitions materialized in the live store)"]},
+    "M11-AC02": {"status": "pass",
+      "evidence": ["prompt-engineer-cases (30/30, zero silent losses; forbidden-add markers absent)",
+                   "engine-atoms (uncertain/missing degrade to review with original clauses kept; never auto-applied)"]},
+    "M11-AC03": {"status": "pass (automated half)",
+      "evidence": ["pipeline: changed selection preserved through the real InsertionService (revalidation failed, copy offer, no overwrite)"],
+      "pending": "native half rides the human trial"},
+    "M11-AC04": {"status": "pass",
+      "evidence": ["pipeline: opt-in default off + auto-apply path retaining the Clean applied_output artifact; retry_original re-runs the frozen job revision (engine suite)"]},
+    "M11-AC05": {"status": "pass",
+      "evidence": ["pipeline + engine: task_key over mode/source/instructions/examples/prompt_revision; write-time cross-task refusal; candidates only on the automatic path"]},
+    "regression": {"status": "pass",
+      "evidence": ["zero rules + no opt-in = exact M03–M10 behavior (profiles suite + all M01–M10 suites green)",
+                   "shortcuts are optional single-character menu equivalents, never global grabs — no international-keyboard impact; unicode preservation pinned by PE-DEV-015 (\"Buenos días\")"]}
+  },
+  "review_loop": {
+    "method": "/review-2: two parallel read-only reviewers (bug-hunting debugger; architecture/quality/security/data-integrity auditor) over the uncommitted M11 changeset",
+    "verdict_before": "Request Changes — 2 criticals (corroborated by both reviewers), 12 warnings, ~13 suggestions after dedup",
+    "criticals_fixed": [
+      "the preview panel was constructed with a direct PyObjC class call (TypeError — the panel could never open; the M10 C1 dead-UI class one layer up): fixed to TransformPreviewPanel.alloc().init_panel(self) with a pipeline regression constructing it through _tfShowResult_",
+      "unguarded transform work threads could wedge _tf_active forever (an oversized selection raised at job construction; a WorkerFailure on the retry path escaped _m11_run_job): _m11_run_transform is now total (ValueError → transform_refused fallback with a None job handled end-to-end), _m11_run_job guards the request, and every work() runs through a guarded _tf_spawn whose finally-path always reaches _tfShowResult_ — regression test drives runTransform_ over a 20k-char selection and asserts no wedge"
+    ],
+    "warnings_fixed": [
+      "panel actions now share runTransform_'s busy guard (no overlay clobber mid-dictation, no double generation)",
+      "the panel is non-activating (orderFrontRegardless) so opening it never flips the frontmost app under its own accept-time revalidation",
+      "AXSelectedTextRange tuple parsing follows the repo (location, length) convention",
+      "transform-of-result is wired as a panel action (Transform Output…) — the documented distinct command, with the task-key inequality pinned",
+      "the dictation executor is total and its own try: a transform fault can never skip finalize/history for the Clean artifact",
+      "the worker builds the TransformJob inside its try (the oversized refusal reports as a refusal, not a fault)",
+      "the v7 tables joined the torn-write repair set (contract claim now true)",
+      "materialize_legacy skips malformed rows per-row (one bad row can no longer disable the transforms service at startup)",
+      "for_mode binds a built-in only while its row still carries that mode, and the store refuses a built-in mode change",
+      "_tf_results dropped (unbounded retention + wrong display-order semantics); display order now ranks candidates within the task",
+      "the requested-but-not-run gate reason reaches the envelope (note_transform_gate), including transform_requires_cleanup",
+      "the UI-acknowledgment benchmark now measures the real synchronous work (guards + snapshot state-counter check + dispatch, plus the uncached snapshot rebuild) instead of a no-op closure"
+    ],
+    "suggestions_applied": [
+      "anchors serialize in Coverage.to_json (lossless parent-side round-trip)",
+      "task_key folds prompt_revision (an edited contract never pairs candidates across the change)",
+      "update_transform reads the next revision inside the writer op and no-op updates append nothing",
+      "sentence-span offsets corrected (leading whitespace) and the dead group-conditional removed",
+      "single-word anchors match on word boundaries (a dropped 'not' can no longer hide inside 'annotated')",
+      "changed_source annotation Optional[str]; the dictation candidate call documents its id-only rows; the panel renders the word diff inline for short sources"
+    ],
+    "rejected": "none",
+    "deferred": "none",
+    "post_address": "all 39 fast suites, the 30 PE cases (30/30), all six model-backed checks and the benchmark re-ran green on the fixed code"
+  },
+  "pending_human": [
+    {
+      "id": "native-m11-transform-trial",
+      "steps": [
+        "From Terminal.app (cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh), select a real draft prompt in a real destination",
+        "Status menu → Transforms → Prompt Engineer; verify the pill shows the transforming stage and the preview panel opens WITHOUT stealing focus",
+        "Inspect the diff against every requirement in the draft (counts, negations, quoted spans, links); note any missing atom and confirm it appears in the REVIEW section with its original wording",
+        "Accept; verify the selection is replaced; then Recovery → Undo Last Insertion and verify the target-bound undo restores it",
+        "Retry Original once; Apply Another… with Concise; Transform Output… with Polish",
+        "Hub → Transforms: create a custom transform with a writing sample (a (before, after) pair via the editor), enable auto-apply, dictate in a destination whose rule selects custom, and verify the Clean artifact stays in History's cleaned stage",
+        "Verify the legacy Polish / Prompt Engineer rows show as preserved revisions with their prompts verbatim"
+      ],
+      "expected": "requirement atoms survive or surface as REVIEW items; a changed selection is never overwritten; the legacy definitions remain available; screenshots of the panel at normal and enlarged text scale",
+      "kind": "human-only"
+    }
+  ],
+  "limitations": [
+    "the atom extractor is deterministic and conservative (English anchors; a multilingual extractor is future work if evidence demands it)",
+    "coverage 'uncertain' uses order-free content-word evidence (>= 3/4) — honest hedging, never a guessed pass",
+    "selection capture requires Accessibility trust and a readable focused field; denied apps refuse honestly",
+    "a transform generation queues behind / holds the serialized GPU lock (measured 0.649 s behind a 504-word transform) — recorded, never starved",
+    "the preview panel's visual pass (layout, focus, text scale) is the pending native trial",
+    "the installed /Applications app still runs pre-M02 code (no build authorized); M11 exists in dev runs and tests"
+  ]
+}

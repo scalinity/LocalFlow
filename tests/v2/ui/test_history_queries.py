@@ -135,9 +135,31 @@ def test_lineage_distinct_stages():
                          "Fix issue 22."], texts
         tf = detail["lineage"][3]
         assert tf["artifact"] is None and tf["reason"] == \
-            "not_applicable_until_M11"
+            "not_applicable"
         assert detail["app"] is None  # no identity read recorded
         print("ok  AC01: lineage stages distinct, transform honestly absent")
+
+
+def test_lineage_transform_stage_resolves():
+    """M11: a job with a transform_output artifact resolves the
+    transformed stage from it (the cleaned stage keeps the Clean
+    text — never a flattened copy)."""
+    with Env() as e:
+        j1 = e.add_job("2026-09-22T10:00:00.000Z",
+                       raw="fix issue twenty two",
+                       normalized="fix issue 22",
+                       cleaned="Fix issue 22.")
+        e.store.write_text_artifact(
+            job_id=j1, stage="transform", role="transform_output",
+            text="Fix issue 22. (polished)", retention_class="history",
+            meta={"transform_id": "builtin:polish"})
+        detail = e.svc.job_detail(j1)
+        stages = {s["stage"]: s for s in detail["lineage"]}
+        assert stages["cleaned"]["artifact"]["text"] == "Fix issue 22."
+        tf = stages["transformed"]
+        assert tf["artifact"] is not None and tf["reason"] is None
+        assert tf["artifact"]["text"] == "Fix issue 22. (polished)"
+        print("ok  M11: transform stage resolves from its artifact")
 
 
 def test_audio_and_purged_reasons():
@@ -270,6 +292,7 @@ if __name__ == "__main__":
     test_grouping_and_undated()
     test_text_app_mode_filters()
     test_lineage_distinct_stages()
+    test_lineage_transform_stage_resolves()
     test_audio_and_purged_reasons()
     test_insertion_outcome_in_detail()
     test_empty_history()

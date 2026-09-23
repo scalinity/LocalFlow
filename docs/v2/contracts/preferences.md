@@ -20,6 +20,20 @@ source event IDs.
 4. Fallback output vs the rejected proposal is a valid pair only when both
    were shown as candidates for the same input.
 
+## M11 live status (transform preferences)
+
+Transform candidates record the exact task manifest (task key over
+mode + source + instructions + examples revision, source/instruction
+hashes, transform/prompt revisions, display order) with source/output
+texts in lease-governed artifacts inside the same writer op; explicit
+`accept|reject|undo|prefer_a|prefer_b|tie|neither|uncertain`
+observations join candidates **only under one task key** — the store
+refuses cross-task pairs at write time (M11-AC05). Retry-original
+joins the task; transform-of-result and changed-source retries are
+different tasks by construction. The dictation auto-apply path
+records candidates only — an automatic application is not a judgment.
+No preference-training algorithm exists (S16 deliverable boundary).
+
 ## Baseline status (M01)
 
 None exist. Historical retries in the legacy log are NOT preference pairs

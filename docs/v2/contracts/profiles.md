@@ -21,12 +21,17 @@ frozen per job pre-decode, and none of it executes anything.
   rules and no override the pipeline behaves exactly as shipped in
   M03–M09.
 - **Modes:** the six S15 names (`raw · clean · polish · concise ·
-  prompt_engineer · custom`). Only `raw` and `clean` have live
-  executors; a rule or override selecting a transform-backed mode
-  resolves with `effective_mode: clean` and the honest
-  `fallback_reason: mode_not_executable_until_M11:<mode>` — never a
-  silent behavior change. Raw mode skips normalization and cleanup
-  entirely (original ASR text; the recorded cleanup path is `raw`).
+  prompt_engineer · custom`). All six are executable since M11: raw
+  and clean on the dictation pipeline, the transform-backed four
+  through the M11 transform engine when their bound definition opted
+  in to auto-apply (M11-AC04) — a mode without the opt-in (or with an
+  unbound/ambiguous custom definition) resolves
+  `effective_mode: clean` with the honest `fallback_reason`
+  (`transform_auto_apply_disabled:<mode>` /
+  `transform_profile_not_targeted:<profile>` /
+  `transform_not_bound:<mode>`) — never a silent behavior change.
+  Raw mode skips normalization and cleanup entirely (original ASR
+  text; the recorded cleanup path is `raw`).
 - **Style attributes live in M10:** mode and number policy
   (`inherit | technical | standard` — the winning rule's policy
   overrides the config default for that job's normalization).
@@ -189,8 +194,9 @@ store rows (Hub-managed), not config.
 
 ## Limitations (documented, not hidden)
 
-- Transform-backed modes fall back to Clean until M11 ships executors
-  (the fallback is visible in the menu line and the envelope).
+- A transform-backed mode without its definition's auto-apply opt-in
+  inserts Clean with the visible reason (the executor exists; the
+  opt-in is the definition's — see `contracts/transforms.md`).
 - Snippet slot values are spoken WORD tokens; a digit/symbol token
   ends the continuation run (numbers are spoken as words and normalize
   after the span is claimed). Multi-slot fills are best dictated as

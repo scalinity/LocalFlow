@@ -33,6 +33,7 @@ FPS = 30.0
 MODE_RECORDING = "recording"
 MODE_PROCESSING = "processing"
 MODE_FAILED = "failed"  # M03: a dictation failed after retry; recovery actions live in the menu
+MODE_TRANSFORMING = "transforming"  # M11: a selected-text transform generation is running (S19 named stage)
 
 
 class PillView(NSView):
@@ -73,8 +74,8 @@ class PillView(NSView):
             if self._mode == MODE_FAILED:
                 # Flat, subdued: the dictation is recoverable from the menu
                 target = BAR_MIN + (BAR_MAX - BAR_MIN) * 0.22 * env
-            elif self._mode == MODE_PROCESSING:
-                # Gentle traveling shimmer while transcribing
+            elif self._mode in (MODE_PROCESSING, MODE_TRANSFORMING):
+                # Gentle traveling shimmer while transcribing/transforming
                 wob = 0.5 + 0.5 * math.sin(self._t * 6.0 - i * 0.75)
                 target = BAR_MIN + (BAR_MAX - BAR_MIN) * 0.30 * env * wob
             else:

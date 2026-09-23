@@ -21,6 +21,7 @@
 | `insertion.md` | Safe insertion: serialized queue, clipboard ownership, undo, S29.8 observation | M08 | S18, S12, S24, S29.8 |
 | `hub.md` | Native Hub: shell/state/services split, coordinator commands, History lineage, Training Data annotations, focus guard | M09 | S19, S08, S29.6/S29.14/S29.15 |
 | `profiles.md` | Styles/modes resolution, snippets, developer skills/file tags/surfaces, M10 provenance | M10 | S15, S17, S10, S29.4, S24 |
+| `transforms.md` | Transform definitions/revisions, execution + task identity, Prompt Engineer atoms/coverage, the two surfaces, auto-apply, preferences | M11 | S15, S16, S13, S18, S29.4, S29.10 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
@@ -105,3 +106,14 @@ milestones add fields; they must not repurpose or weaken these identifiers.
   same-layer ambiguity still rejects all); the Hub gains the Styles
   and Snippets views through the M09 `_build_/_refresh_/_load_`
   triple. No frozen identifier changed; the registry stays 33/22.
+  M11 ships `transforms.md` (versioned definitions with append-only
+  preserved revisions, the legacy V1 definitions materialized frozen,
+  the execution engine with task identity and retry semantics, the
+  Prompt Engineer's deterministic atom/coverage map with the
+  never-silently-dropped rule, the selected-text and auto-apply
+  surfaces, store schema v7's candidate/observation tables with the
+  write-time same-task invariant); `profiles.md`'s mode resolution
+  takes the frozen transform registry (all six modes executable;
+  auto-apply is the opt-in gate with honest reasons); `preferences.md`
+  goes live for transform preferences. No frozen identifier changed;
+  the registry stays 33/22.

@@ -78,11 +78,12 @@ def make_hub(d, tmp):
         "coordinator": d,
         "replay": ReplayService(sound_factory=lambda b: FakeSound()),
         "capabilities": d._capability_manifest,
-        # M10: the production wiring — the Styles/Snippets views ride
-        # the real stores (review C1: omitting them left the views
-        # permanently "unavailable" while every suite stayed green).
+        # M10/M11: the production wiring — the Styles/Snippets/Transforms
+        # views ride the real stores (review C1: omitting them left the
+        # views permanently "unavailable" while every suite stayed green).
         "styles_service": d._styles,
         "snippets_service": d._snip_store,
+        "transforms_service": d._tf_store,
     })
     hub.state.wait_for_queries()
     return hub
@@ -124,16 +125,18 @@ def test_view_switching_and_keyboard_paths():
         hub.state.next_view()
         assert hub.state.selected_view == "snippets"
         hub.state.next_view()
+        assert hub.state.selected_view == "transforms"  # M11 view
+        hub.state.next_view()
         assert hub.state.selected_view == "diagnostics"
         hub.state.next_view(step=-1)
-        assert hub.state.selected_view == "snippets"
+        assert hub.state.selected_view == "transforms"
         hub.state.select_view("models")
         hub.state.select_models_subview("training")
         assert hub.state.views["models"]["subview"] == "training"
-        hub.state.select_view_by_index(6)
+        hub.state.select_view_by_index(7)
         assert hub.state.selected_view == "settings"
         try:
-            hub.state.select_view("transforms")
+            hub.state.select_view("scratchpad")
             raise AssertionError("future view accepted")
         except ValueError:
             pass
@@ -417,7 +420,7 @@ def test_verbatim_listen_gate_is_per_example():
                     "correctness": "unreviewed"},
                 "annotations": [], "state": "captured_unreviewed"})
             ids.append(ex)
-        hub._select_view_index(5)  # builds Models incl. the training pane
+        hub._select_view_index(6)  # builds Models incl. the training pane
         hub.state.select_models_subview("training")
         hub.state.wait_for_queries()
         # Replay example A; then select B and try to save a verbatim for

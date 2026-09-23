@@ -93,7 +93,7 @@ def main():
                             "cleanup_load_error" if cleanup == "failed"
                             else None)
             continue
-        if op not in ("transcribe", "clean"):
+        if op not in ("transcribe", "clean", "transform"):
             _write_msg({"v": PROTOCOL_VERSION, "op": "fault",
                         "req_id": msg.get("req_id"),
                         "stage": op, "error_type": "ProtocolError",
@@ -162,6 +162,28 @@ def main():
                  "prompt": f"<fake prompt {text}>", "max_tokens": 8,
                  "output": text.upper()} for _ in range(int(extras.get(
                      "obs", "1")))]
+        if op == "transform":
+            # M11: the result envelope the coordinator rebuilds the
+            # TransformResult from. path/reason ride `|` extras.
+            out["output"] = text
+            out["coverage"] = []
+            out["review_excerpts"] = []
+            out["task_manifest"] = {
+                "task_key": extras.get("task", "ttask:fake"),
+                "mode": msg.get("mode") or "custom",
+                "source_kind": msg.get("source_kind") or "selection"}
+            out["result"] = {
+                "path": extras.get("path", "applied"),
+                "reason": extras.get("reason"),
+                "output_tokens": 32, "limit_hit": False,
+                "duration_ms": 0.5,
+                "coverage": {"atoms": 0, "covered": 0, "uncertain": 0,
+                             "missing": 0},
+                "diff": {"source_words": 1, "output_words": 1,
+                         "kept_words": 0, "deleted_words": 1,
+                         "inserted_words": 1}}
+            out["prompt"] = f"<fake transform prompt {text}>"
+            del out["text"]
         _write_msg(out)
 
 

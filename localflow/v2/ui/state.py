@@ -17,14 +17,15 @@ from __future__ import annotations
 
 import threading
 
-VIEWS = ("home", "history", "styles", "snippets", "diagnostics",
-         "models", "settings")
+VIEWS = ("home", "history", "styles", "snippets", "transforms",
+         "diagnostics", "models", "settings")
 
 VIEW_TITLES = {
     "home": "Home",
     "history": "History",
     "styles": "Styles",
     "snippets": "Snippets",
+    "transforms": "Transforms",
     "diagnostics": "Diagnostics",
     "models": "Models",
     "settings": "Settings",
@@ -34,18 +35,20 @@ VIEW_TITLES = {
 class HubState:
     def __init__(self, history_service, training_service=None,
                  diagnostics_provider=None, coordinator=None,
-                 styles_service=None, snippets_service=None):
+                 styles_service=None, snippets_service=None,
+                 transforms_service=None):
         """``diagnostics_provider()`` returns a dict with events_dir and
         whatever filters the shell set; ``coordinator`` is the app
         delegate's command surface (engine states, pipeline info,
         recovery, paste/retry commands, M10 effective-profile/preview).
-        ``styles_service``/``snippets_service`` are the M10 stores (the
-        training_service pattern: read/CRUD through the service, never
-        a second store connection)."""
+        ``styles_service``/``snippets_service``/``transforms_service``
+        are the M10/M11 stores (the training_service pattern: read/CRUD
+        through the service, never a second store connection)."""
         self.history_service = history_service
         self.training_service = training_service
         self.styles_service = styles_service
         self.snippets_service = snippets_service
+        self.transforms_service = transforms_service
         self.diagnostics_provider = diagnostics_provider \
             or (lambda: {"events_dir": None})
         self.coordinator = coordinator
@@ -69,7 +72,7 @@ class HubState:
                           "level_filter": None})
         if view == "models":
             state.update({"subview": "engines"})
-        if view in ("styles", "snippets"):
+        if view in ("styles", "snippets", "transforms"):
             state.update({"selected_id": None, "preview": None})
         return state
 
@@ -270,6 +273,34 @@ class HubState:
         self.views[view]["preview"] = preview
         self._publish()
 
+    # ---- Transforms (M11, Spec S16) --------------------------------------
+
+    def reload_transforms(self):
+        self._spawn(self._load_transforms)
+
+    def _load_transforms(self, generation):
+        if self.transforms_service is None:
+            self._publish_locked("transforms",
+                                 error="transforms_unavailable",
+                                 loading=False)
+            return
+        try:
+            from .. import transforms as transforms_mod
+            stored = self.transforms_service.definitions()
+            rows = [d.to_json() for d in stored]
+            snapshot = transforms_mod.TransformSnapshot(stored)
+            conflicts = transforms_mod.shortcut_conflicts(
+                snapshot.definitions)
+        except Exception as e:
+            self._publish_locked("transforms", error=type(e).__name__,
+                                 loading=False)
+            return
+        if generation != self._generation:
+            return
+        self._publish_locked("transforms", error=None, loading=False,
+                             data={"transforms": rows,
+                                   "shortcut_conflicts": conflicts})
+
     # ---- Diagnostics --------------------------------------------------------
 
     def set_diagnostics_filters(self, job=None, level=None, utc=None):
@@ -357,6 +388,8 @@ class HubState:
             self.reload_styles()
         elif view == "snippets":
             self.reload_snippets()
+        elif view == "transforms":
+            self.reload_transforms()
         elif view == "diagnostics":
             self._spawn(self._load_diagnostics)
         elif view == "models":

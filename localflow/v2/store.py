@@ -289,6 +289,72 @@ _MIGRATIONS[6] = [
 ]
 
 
+# M11 (Spec S16/S29.10, contracts/transforms.md): transform
+# definitions with append-only revisions (an old definition is never
+# erased), same-task candidates and explicit preference observations.
+# Rows carry hashes/ids/counts only — source and output texts live in
+# lease-governed artifacts written inside the same writer op.
+_MIGRATIONS[7] = [
+    """CREATE TABLE IF NOT EXISTS transforms(
+         transform_id TEXT PRIMARY KEY,
+         name TEXT NOT NULL,
+         mode TEXT NOT NULL,
+         origin TEXT NOT NULL DEFAULT 'user',
+         description TEXT NOT NULL DEFAULT '',
+         prompt TEXT NOT NULL DEFAULT '',
+         edit_types_json TEXT NOT NULL DEFAULT '[]',
+         examples_json TEXT NOT NULL DEFAULT '[]',
+         shortcut TEXT,
+         target_profiles_json TEXT NOT NULL DEFAULT '[]',
+         auto_apply INTEGER NOT NULL DEFAULT 0,
+         enabled INTEGER NOT NULL DEFAULT 1,
+         revision INTEGER NOT NULL DEFAULT 1,
+         usage_count INTEGER NOT NULL DEFAULT 0,
+         source_locator TEXT,
+         legacy_key TEXT,
+         created_at_utc TEXT NOT NULL,
+         updated_at_utc TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS transform_revisions(
+         transform_id TEXT NOT NULL,
+         revision INTEGER NOT NULL,
+         definition_json TEXT NOT NULL,
+         created_at_utc TEXT NOT NULL,
+         PRIMARY KEY(transform_id, revision))""",
+    """CREATE TABLE IF NOT EXISTS transform_meta(
+         key TEXT PRIMARY KEY, value TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS transform_candidates(
+         candidate_id TEXT PRIMARY KEY,
+         task_key TEXT NOT NULL,
+         task_kind TEXT NOT NULL,
+         transform_id TEXT NOT NULL,
+         transform_revision INTEGER NOT NULL,
+         prompt_revision TEXT NOT NULL,
+         source_sha256 TEXT NOT NULL,
+         instructions_sha256 TEXT NOT NULL,
+         examples_revision TEXT,
+         source_artifact_id TEXT,
+         output_artifact_id TEXT,
+         path TEXT NOT NULL,
+         display_order INTEGER NOT NULL DEFAULT 0,
+         model_id TEXT,
+         created_at_utc TEXT NOT NULL)""",
+    """CREATE INDEX IF NOT EXISTS idx_transform_candidates_task
+         ON transform_candidates(task_key)""",
+    """CREATE TABLE IF NOT EXISTS preference_observations(
+         observation_id TEXT PRIMARY KEY,
+         task_key TEXT NOT NULL,
+         candidate_id TEXT NOT NULL,
+         candidate_b_id TEXT,
+         judgment TEXT NOT NULL,
+         provenance TEXT NOT NULL,
+         reason_code TEXT,
+         source_event_id TEXT,
+         created_at_utc TEXT NOT NULL)""",
+    """CREATE INDEX IF NOT EXISTS idx_preference_observations_task
+         ON preference_observations(task_key)""",
+]
+
+
 # ---- IEEE float32 WAV (Spec S29.5: the original capture artifact) -------
 
 def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
@@ -533,7 +599,9 @@ class Store:
                     "vocabulary_history", "vocabulary_meta",
                     "insertions", "insertion_observations",
                     "job_targets", "style_rules", "snippets",
-                    "profiles_meta"}
+                    "profiles_meta", "transforms", "transform_revisions",
+                    "transform_meta", "transform_candidates",
+                    "preference_observations"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         if version >= target and not expected <= have:

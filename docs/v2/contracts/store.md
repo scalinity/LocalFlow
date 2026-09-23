@@ -113,3 +113,15 @@ orphan payload files.
   pattern). All M10 access goes through `StyleRuleStore` /
   `SnippetStore` over `Store.submit`; usage hits never bump the state
   counters. The torn-write repair path covers the v6 tables.
+
+## M11 additions (schema v7; no frozen identity changed)
+
+- Migration v7 adds the transform tables (see
+  `contracts/transforms.md`): `transforms` (versioned rows) +
+  `transform_revisions` (append-only preserved revisions — an old
+  definition is never erased) + `transform_meta` (the state-counter
+  pattern) + `transform_candidates`/`preference_observations` (S29.10;
+  rows content-free, texts in lease-governed artifacts written inside
+  the same op; the same-task invariant enforced at write time). All
+  access through `TransformStore` over `Store.submit`; the torn-write
+  repair path covers the v7 tables.
