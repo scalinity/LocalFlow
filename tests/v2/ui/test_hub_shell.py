@@ -78,6 +78,11 @@ def make_hub(d, tmp):
         "coordinator": d,
         "replay": ReplayService(sound_factory=lambda b: FakeSound()),
         "capabilities": d._capability_manifest,
+        # M10: the production wiring — the Styles/Snippets views ride
+        # the real stores (review C1: omitting them left the views
+        # permanently "unavailable" while every suite stayed green).
+        "styles_service": d._styles,
+        "snippets_service": d._snip_store,
     })
     hub.state.wait_for_queries()
     return hub
@@ -115,16 +120,20 @@ def test_view_switching_and_keyboard_paths():
         hub.state.select_view_by_index(1)
         assert hub.state.selected_view == "history"
         hub.state.next_view()
+        assert hub.state.selected_view == "styles"  # M10 views are real
+        hub.state.next_view()
+        assert hub.state.selected_view == "snippets"
+        hub.state.next_view()
         assert hub.state.selected_view == "diagnostics"
         hub.state.next_view(step=-1)
-        assert hub.state.selected_view == "history"
+        assert hub.state.selected_view == "snippets"
         hub.state.select_view("models")
         hub.state.select_models_subview("training")
         assert hub.state.views["models"]["subview"] == "training"
-        hub.state.select_view_by_index(4)
+        hub.state.select_view_by_index(6)
         assert hub.state.selected_view == "settings"
         try:
-            hub.state.select_view("snippets")
+            hub.state.select_view("transforms")
             raise AssertionError("future view accepted")
         except ValueError:
             pass
@@ -408,7 +417,7 @@ def test_verbatim_listen_gate_is_per_example():
                     "correctness": "unreviewed"},
                 "annotations": [], "state": "captured_unreviewed"})
             ids.append(ex)
-        hub._select_view_index(3)  # builds Models incl. the training pane
+        hub._select_view_index(5)  # builds Models incl. the training pane
         hub.state.select_models_subview("training")
         hub.state.wait_for_queries()
         # Replay example A; then select B and try to save a verbatim for
@@ -529,6 +538,70 @@ def test_fn_workflow_with_hub_constructed():
     print("ok  Fn workflow unchanged with the Hub constructed")
 
 
+def test_styles_and_snippets_views_real_services():
+    """M10 (review C1 regression): the Hub wires the real M10 services
+    into HubState — both views build headless, list real rows and a
+    full add → list → toggle → delete cycle lands through the
+    controller actions."""
+    h = Harness(durations=[1.0])
+    try:
+        hub = make_hub(h.d, h.tmp)
+        # Styles: build + CRUD through the controller actions.
+        hub._select_view_index(2)  # builds the Styles view
+        hub.state.select_view("styles")
+        hub.state.wait_for_queries()
+        hub.style_name.setStringValue_("Terminal raw")
+        hub.style_scope.selectItemWithTitle_("app")
+        hub.style_scope_value.setStringValue_("com.apple.Terminal")
+        hub.style_mode.selectItemWithTitle_("raw")
+        hub.stylesAdd_(None)
+        hub.state.reload_styles()
+        hub.state.wait_for_queries()
+        rules = hub.state.views["styles"]["data"]["rules"]
+        assert len(rules) == 1 and rules[0]["mode"] == "raw", rules
+        rid = rules[0]["rule_id"]
+        hub.state.views["styles"]["selected_id"] = rid
+        hub.stylesToggle_(None)
+        hub.state.reload_styles()
+        hub.state.wait_for_queries()
+        rules = hub.state.views["styles"]["data"]["rules"]
+        assert rules[0]["enabled"] is False, rules
+        hub.stylesDelete_(None)
+        hub.state.reload_styles()
+        hub.state.wait_for_queries()
+        assert hub.state.views["styles"]["data"]["rules"] == []
+        # The effective-profile panel answers through the coordinator.
+        eff = h.d.hubEffectiveProfile()
+        assert eff["styles_available"] and eff["modes"]
+        # Snippets: build + CRUD + a collision preview.
+        hub._select_view_index(3)  # builds the Snippets view
+        hub.state.select_view("snippets")
+        hub.state.wait_for_queries()
+        hub.snip_trigger.setStringValue_("sign off")
+        hub.snip_name.setStringValue_("Sign-off")
+        hub.snip_content.setString_("Best,\\n{{name}}")
+        hub.snippetsAdd_(None)
+        hub.state.reload_snippets()
+        hub.state.wait_for_queries()
+        rows = hub.state.views["snippets"]["data"]["snippets"]
+        assert len(rows) == 1 and rows[0]["kind"] == "plain", rows
+        sid = rows[0]["snippet_id"]
+        hub.state.views["snippets"]["selected_id"] = sid
+        hub.snippetsDelete_(None)
+        hub.state.reload_snippets()
+        hub.state.wait_for_queries()
+        assert hub.state.views["snippets"]["data"]["snippets"] == []
+        # The duplicate-trigger probe surfaces through the action.
+        hub.snip_trigger.setStringValue_("anything")
+        hub.snippetsAdd_(None)
+        hub.snip_trigger.setStringValue_("anything")
+        hub.snippetsAdd_(None)
+        assert "not saved" in hub.snippets_status.stringValue()
+    finally:
+        h.close()
+    print("ok  M10 Styles/Snippets views: real services, CRUD cycles")
+
+
 if __name__ == "__main__":
     test_window_bounds_and_min_size()
     test_view_switching_and_keyboard_paths()
@@ -544,4 +617,5 @@ if __name__ == "__main__":
     test_job_target_recorded_on_capture()
     test_search_cancellation_by_generation()
     test_fn_workflow_with_hub_constructed()
+    test_styles_and_snippets_views_real_services()
     print("all hub shell tests passed")

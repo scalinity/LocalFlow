@@ -151,6 +151,10 @@ class CaptureContext:
         self.context_destination = None
         self.context_downstream = None
         self.context_retention_disabled = False
+        # M10 (S15/S17/S29.4): the resolved writing profile + the
+        # frozen pre-decode developer registries (skill manifests).
+        self.profile = None
+        self.skill_registry_artifact = None
         self.raw_artifact = None
         self.raw_text = None
         self.applied_artifact = None
@@ -370,6 +374,46 @@ class EvidenceCollector:
         # (the artifact id lives in the envelope's destination block —
         # no duplicate bookkeeping on the context)
 
+    def on_writing_profile(self, ctx, profile, skill_registry=None):
+        """M10 (S15/S17/S29.4): retain the resolved writing profile
+        (content-free block: mode, source rule id, category, revisions,
+        fallback reason) and the frozen pre-decode skill registry as a
+        lease-governed artifact — skill names and manifest paths are
+        the user's local configuration, not envelope content. Called
+        BEFORE recognition so a later rule/skill edit can never
+        relabel what this job actually ran under. Store failures are
+        swallowed: evidence must never fail the dictation."""
+        if not ctx.collecting or profile is None or ctx.example_id:
+            return
+        block = dict(profile)
+        if skill_registry is not None:
+            reg = skill_registry.to_json()
+            block["skill_registry_revision"] = reg["revision"]
+            block["manifest_skills"] = reg["manifest_skills"]
+            block["dictionary_skill_aliases"] = reg[
+                "dictionary_skill_aliases"]
+            block["skill_alias_conflicts"] = len(reg["conflicts"])
+            block["stale_workspace"] = reg["stale_workspace"]
+            try:
+                art = self.store.write_text_artifact(
+                    job_id=ctx.job_id, stage="pre_decode",
+                    role="skill_registry", kind="skill_registry_json",
+                    retention_class="training",
+                    text=json.dumps(reg, ensure_ascii=False,
+                                    sort_keys=True),
+                    meta={"revision": reg["revision"],
+                          "manifest_skills": reg["manifest_skills"]})
+                self.store.grant_lease(
+                    art, "training",
+                    days=self.store.retention_days["training_buffer"])
+                ctx.skill_registry_artifact = art
+                block["skill_registry_artifact_id"] = art
+            except Exception as e:
+                self.emit("training.capture_failed", level="ERROR",
+                          job_id=ctx.job_id, reason_code=type(e).__name__,
+                          outcome="skill_registry_not_retained")
+        ctx.profile = block
+
     def on_cleaner_observation(self, obs: dict):
         """Sink for TranscriptCleaner.observer — exact model inputs/outputs."""
         ctx = self._current
@@ -439,6 +483,25 @@ class EvidenceCollector:
                     e.rule_id for e in result.edits
                     if e.cls == "vocabulary" and e.rule_id],
             }
+        # M10: snippet-expansion provenance — which rules expanded and
+        # how many generated spans the applied text carries. Generated
+        # text is never an acoustic reference (M10-AC05); the counts
+        # and opaque ids travel, the content stays in the ledger
+        # artifact's spans.
+        snippet_rule_ids = sorted({e.rule_id for e in result.edits
+                                   if e.cls == "snippet" and e.rule_id})
+        snippet_block = None
+        if snippet_rule_ids:
+            snippet_snapshot = getattr(context, "snippets", None) \
+                if context is not None else None
+            snippet_block = {
+                "registry_revision": getattr(
+                    snippet_snapshot, "revision", None)
+                if snippet_snapshot is not None else None,
+                "expansions": sum(1 for e in result.edits
+                                  if e.cls == "snippet"),
+                "rule_ids": snippet_rule_ids,
+            }
         # Envelope values: typed numbers/dates only. String-valued
         # command classes (emails, paths, skill tokens, codes…) carry
         # transcript-derived text in their value; those strings live in
@@ -447,6 +510,7 @@ class EvidenceCollector:
         ctx.normalization = {
             "policy_revision": result.policy_revision,
             "vocabulary": vocabulary_block,
+            "snippets": snippet_block,
             "edits_count": len(result.edits),
             "rejected_count": len(result.rejected),
             "protected_count": len(result.protected),
@@ -870,6 +934,8 @@ class EvidenceCollector:
             del missing["normalization"]
             artifact_ids["normalization"] = (
                 ctx.norm_text_artifact or ctx.norm_ledger_artifact)
+        if ctx.skill_registry_artifact is not None:
+            artifact_ids["skill_registry"] = ctx.skill_registry_artifact
         # M05/M06 (S29.4 context family): the block exists when either
         # the frozen pre-decode hint set (M05) or the bounded
         # destination-context snapshot (M06) was captured; the absent
@@ -921,6 +987,7 @@ class EvidenceCollector:
             "recognition": dict(ctx.capture_meta.get("recognition", {})),
             "normalization": normalization,
             "context": context_block,
+            "profile": ctx.profile,
             "cleanup": cleanup_detail,
             "artifact_ids": artifact_ids,
             "missing_reasons": missing,

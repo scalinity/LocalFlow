@@ -10,6 +10,7 @@ character", "a dash of salt") stay prose.
 
 from __future__ import annotations
 
+from ..snippets import expand, split_slots
 from .span_types import (
     JOIN_ATTACH_LEFT,
     JOIN_ATTACH_RIGHT,
@@ -171,6 +172,126 @@ def grammar_skills(host):
                     span=span, input_text=_text_of(host, span),
                     output_text=f"/{nxt}", value=nxt, unit="skill_token",
                     reason="unknown_skill", review=True)
+
+
+def grammar_snippets(host):
+    """Registered snippet intent (S17, M10): an explicit spoken trigger
+    expands to its exact stored content, placeholders filled from the
+    continuation words (split on the spoken separator). Layer 3 — the
+    literal escape and quote zones still outrank/block it, and a
+    trigger colliding with a registered skill on the same span loses
+    to the same-span ambiguity rule (both stay literal). A placeholder
+    continuation longer than ``_SNIPPET_SLOT_WORD_CAP`` words reads as
+    prose, not intent: no expansion, words stay literal."""
+    snapshot = getattr(host.context, "snippets", None) \
+        if host.context else None
+    if snapshot is None:
+        return
+    by_first = snapshot.by_first_word()
+    tokens = host.tokens
+    for i, tok in enumerate(tokens):
+        candidates = by_first.get(tok.word)
+        if not candidates or not tok.is_word:
+            continue
+        for trig, snippet in candidates:
+            words = trig.split()
+            n = len(words)
+            seq = tokens[i:i + n]
+            if [t.word for t in seq] != words or not all(
+                    t.is_word for t in seq):
+                continue
+            placeholders = snippet.placeholders
+            if not placeholders:
+                span = Span(tok.start, tokens[i + n - 1].end)
+                yield Proposal(
+                    layer=3, cls="snippet", op="snippet_expansion",
+                    span=span, input_text=_text_of(host, span),
+                    output_text=expand(snippet),
+                    value=snippet.snippet_id, unit="snippet",
+                    join=JOIN_WORD, rule_id=snippet.snippet_id)
+                break
+            # Slot continuation: the maximal word-token run after the
+            # trigger, to the end of the utterance. Values keep their
+            # spoken casing (the token's raw form, edge punctuation
+            # stripped) — a signature slot must not decapitalize a name.
+            j = i + n
+            while j < len(tokens) and tokens[j].is_word:
+                j += 1
+            cont = [(t.raw.strip(".,;:!?\"'“”«»()") or t.word)
+                    for t in tokens[i + n:j]]
+            if len(cont) > _SNIPPET_SLOT_WORD_CAP:
+                break
+            span = Span(tok.start, tokens[j - 1].end)
+            values = split_slots(cont, len(placeholders))
+            yield Proposal(
+                layer=3, cls="snippet", op="snippet_expansion",
+                span=span, input_text=_text_of(host, span),
+                output_text=expand(snippet, values),
+                value=snippet.snippet_id, unit="snippet",
+                join=JOIN_WORD, rule_id=snippet.snippet_id)
+            break
+
+
+def grammar_file_tags(host):
+    """Explicit file tags (S17, M10): ``attach file <spoken name>``
+    resolves against the destination's known files and inserts the
+    resolved literal filename — consuming only the words the reference
+    matched, so trailing prose survives. A resolution is never
+    invented: ambiguous or unresolved references stay literal with a
+    retained review suggestion. Layer 3; the attachment ACTION half (a
+    real file chip) belongs to a certified surface adapter, not to
+    text normalization."""
+    resolver = getattr(host.context, "file_resolver", None) \
+        if host.context else None
+    tokens = host.tokens
+    for i, tok in enumerate(tokens):
+        if tok.word != "attach" or not tok.is_word:
+            continue
+        if _word_at(host, i + 1) != "file":
+            continue
+        j = i + 2
+        while j < len(tokens) and tokens[j].is_word \
+                and j - (i + 2) < _FILE_REF_WORD_CAP:
+            j += 1
+        span_end = tokens[j - 1].end if j > i + 2 else tokens[i + 1].end
+        span = Span(tok.start, span_end)
+        spoken = [t.word for t in tokens[i + 2:j]]
+        if not spoken or resolver is None:
+            yield Proposal(
+                layer=3, cls="file_tag", op="attach_file",
+                span=span, input_text=_text_of(host, span),
+                output_text=_text_of(host, span), value=None,
+                unit="filename", join=JOIN_WORD,
+                reason="unresolved_file_reference", review=True)
+            continue
+        res = resolver.resolve(spoken)
+        if res.status == "resolved":
+            end = tokens[i + 2 + res.matched_words - 1].end \
+                if res.matched_words else tokens[i + 1].end
+            span = Span(tok.start, end)
+            yield Proposal(
+                layer=3, cls="file_tag", op="attach_file",
+                span=span, input_text=_text_of(host, span),
+                output_text=res.filename, value=res.filename,
+                unit="filename", join=JOIN_WORD,
+                reason="exact_match")
+        else:
+            yield Proposal(
+                layer=3, cls="file_tag", op="attach_file",
+                span=span, input_text=_text_of(host, span),
+                output_text=_text_of(host, span), value=None,
+                unit="filename", join=JOIN_WORD,
+                reason=f"{res.status}_file_reference", review=True)
+
+
+# A placeholder continuation beyond this many words reads as prose that
+# happens to start with a trigger, not slot values (documented bound).
+_SNIPPET_SLOT_WORD_CAP = 24
+
+# A file reference beyond this many words reads as prose after the
+# action phrase, not a spoken filename (bounds the resolver's prefix
+# walk; documentated alongside the snippet cap).
+_FILE_REF_WORD_CAP = 12
 
 
 # ---------------------------------------------------------------------------
@@ -484,6 +605,8 @@ def grammar_vocabulary(host):
 
 ALL_SYNTAX_GRAMMARS = (
     grammar_skills,
+    grammar_snippets,
+    grammar_file_tags,
     grammar_symbols,
     grammar_markdown,
     grammar_flags,
@@ -496,6 +619,6 @@ ALL_SYNTAX_GRAMMARS = (
 # convert inside quotes). Vocabulary is blocked there too: a quoted
 # literal is content (S11 "do not replace … a quoted literal").
 COMMAND_CLASSES = frozenset({
-    "skill", "symbol", "markdown", "flag", "path", "domain", "email",
-    "vocabulary",
+    "skill", "snippet", "file_tag", "symbol", "markdown", "flag",
+    "path", "domain", "email", "vocabulary",
 })

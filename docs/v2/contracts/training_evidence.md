@@ -124,3 +124,18 @@ time and finalized by `on_observation_closed`. Uncertified surfaces
 report `outcome_observation_unavailable` (`unreliable_target`);
 `no_edit_observed` never becomes a correctness label or preference
 (M08-AC05/AC06). See `contracts/insertion.md`.
+
+## M10 live status (profile family)
+
+The M10 provenance is live: `on_writing_profile` — called pre-decode
+beside `on_hint_set`, after the finalize re-resolution — writes the
+frozen skill registry as a lease-governed `skill_registry` artifact
+(names/paths are local configuration, never envelope content) and
+fills the envelope's `profile` block (mode, effective mode, source +
+rule id, category, profile name, number policy, style revision,
+fallback reason, skill-registry revision/counts/conflicts, stale-
+workspace flag — content-free). The normalization block gains
+`snippets` (registry revision, expansion count, rule ids) so generated
+text is distinguishable from acoustic speech in every export;
+snippet-expanded examples keep the M09 per-example verbatim listen
+gate (M10-AC05). See `contracts/profiles.md`.

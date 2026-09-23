@@ -129,12 +129,21 @@ class ContextSnapshot:
         feeding layer-5 context-supported vocabulary. Typed loosely to
         keep the normalize package free of a store dependency; anything
         with ``match_items()`` and ``skills`` satisfies it.
+    snippets: the M10 SnippetSnapshot (frozen per job) feeding layer-3
+        registered snippet intent. Typed loosely the same way
+        (``by_first_word()`` is all the grammar reads).
+    file_resolver: the M10 developer file-tag resolver (``resolve(
+        words)`` returning a status-bearing record); None = "attach
+        file …" references surface as review suggestions, never
+        rewrites.
     """
 
     destination_app: Optional[str] = None
     path_context: bool = False
     identifiers: Optional[dict[str, str]] = None
     vocabulary: Optional[object] = None
+    snippets: Optional[object] = None
+    file_resolver: Optional[object] = None
     source: str = "m04_default"
 
     def to_json(self) -> dict:
@@ -146,5 +155,8 @@ class ContextSnapshot:
             "vocabulary_revision": getattr(
                 self.vocabulary, "revision", None)
             if self.vocabulary is not None else None,
+            "snippets_revision": getattr(
+                self.snippets, "revision", None)
+            if self.snippets is not None else None,
             "source": self.source,
         }

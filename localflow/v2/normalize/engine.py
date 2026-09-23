@@ -163,15 +163,32 @@ def normalize(text: str, policy: NormalizationPolicy,
 
     # Exact-same-span proposals from different grammars: identical output
     # means the grammars agree — keep one deterministically (prefer the
-    # unit-bearing record, then class name). Different outputs are
-    # ambiguous: reject every one rather than pick by order.
+    # unit-bearing record, then class name). Different outputs at the
+    # SAME layer are ambiguous: reject every one rather than pick by
+    # order. Different outputs ACROSS layers are what the S10 precedence
+    # chain exists to decide: the higher-precedence layer wins and the
+    # lower proposal is rejected (M10: a snippet trigger over a
+    # same-span dictionary alias composes instead of annihilating both).
     by_span: dict[tuple, list[Proposal]] = {}
     for p in candidates:
         by_span.setdefault((p.span.start, p.span.end), []).append(p)
     same_span_keep: dict[tuple, Proposal] = {}
     for k, ps in by_span.items():
         outputs = {p.output_text for p in ps}
+        if len(outputs) > 1 and len({p.layer for p in ps}) > 1:
+            # Lower layer number = higher precedence (layer 1 is the
+            # literal escape).
+            top = min(p.layer for p in ps)
+            superseded = [p for p in ps if p.layer > top]
+            ps = [p for p in ps if p.layer == top]
+            outputs = {p.output_text for p in ps}
+        else:
+            superseded = []
+        for p in superseded:
+            rejected.append(_reject(p, "lower_layer_same_span"))
         if len(outputs) > 1:
+            # Only the surviving same-layer set: the superseded
+            # proposals are already rejected once above.
             for p in ps:
                 rejected.append(_reject(p, "ambiguous_same_span"))
         else:

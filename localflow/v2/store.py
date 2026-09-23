@@ -247,6 +247,48 @@ _MIGRATIONS[5] = [
 ]
 
 
+# M10 (Spec S15/S17, contracts/profiles.md): destination style rules
+# and versioned snippets — user-configured rows the Hub edits through
+# the single writer (the M05 vocabulary pattern: versioned rows plus a
+# monotonic state counter for snapshot invalidation; no ALTERs).
+# Trigger/scope columns are configuration content, not usage data.
+_MIGRATIONS[6] = [
+    """CREATE TABLE IF NOT EXISTS style_rules(
+         rule_id TEXT PRIMARY KEY,
+         name TEXT NOT NULL,
+         scope_kind TEXT NOT NULL,
+         scope_value TEXT,
+         mode TEXT NOT NULL,
+         number_policy TEXT NOT NULL DEFAULT 'inherit',
+         profile_name TEXT,
+         enabled INTEGER NOT NULL DEFAULT 1,
+         revision INTEGER NOT NULL DEFAULT 1,
+         created_at_utc TEXT NOT NULL,
+         updated_at_utc TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS snippets(
+         snippet_id TEXT PRIMARY KEY,
+         trigger TEXT NOT NULL,
+         name TEXT NOT NULL,
+         kind TEXT NOT NULL DEFAULT 'plain',
+         content TEXT NOT NULL,
+         content_rtf TEXT,
+         allow_rewrite INTEGER NOT NULL DEFAULT 0,
+         enabled INTEGER NOT NULL DEFAULT 1,
+         revision INTEGER NOT NULL DEFAULT 1,
+         usage_count INTEGER NOT NULL DEFAULT 0,
+         last_used_utc TEXT,
+         created_at_utc TEXT NOT NULL,
+         updated_at_utc TEXT NOT NULL)""",
+    # One-canonical-trigger: two enabled snippets sharing a trigger
+    # would be ambiguous at match time (the snapshot masks both); the
+    # unique index keeps the stored set unambiguous at the source.
+    """CREATE UNIQUE INDEX IF NOT EXISTS idx_snippets_trigger
+         ON snippets(trigger COLLATE NOCASE)""",
+    """CREATE TABLE IF NOT EXISTS profiles_meta(
+         key TEXT PRIMARY KEY, value TEXT NOT NULL)""",
+]
+
+
 # ---- IEEE float32 WAV (Spec S29.5: the original capture artifact) -------
 
 def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
@@ -490,7 +532,8 @@ class Store:
                     "vocabulary_entries", "vocabulary_aliases",
                     "vocabulary_history", "vocabulary_meta",
                     "insertions", "insertion_observations",
-                    "job_targets"}
+                    "job_targets", "style_rules", "snippets",
+                    "profiles_meta"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         if version >= target and not expected <= have:

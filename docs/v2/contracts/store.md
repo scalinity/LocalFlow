@@ -103,3 +103,13 @@ orphan payload files.
   them all); see `contracts/hub.md`. The module-level
   `insert_text_artifact_row`/`grant_lease_row` are the canonical
   writer-thread INSERTs domain layers compose inside one op.
+
+## M10 additions (schema v6; no frozen identity changed)
+
+- Migration v6 adds the M10 configuration tables (see
+  `contracts/profiles.md`): `style_rules` + `snippets` (versioned rows,
+  a NOCASE unique trigger index) and `profiles_meta` (two monotonic
+  state counters for snapshot invalidation — the M05 vocabulary-meta
+  pattern). All M10 access goes through `StyleRuleStore` /
+  `SnippetStore` over `Store.submit`; usage hits never bump the state
+  counters. The torn-write repair path covers the v6 tables.

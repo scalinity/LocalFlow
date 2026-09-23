@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "milestone": "M10",
+  "evaluated_utc": "2026-09-22T20:10:00Z",
+  "working_directory": "/Users/danny/Documents/Tools/LocalFlow",
+  "base_commit": "fe312a6fce166d46c3e33f2b6457c240adf2fac7",
+  "environment": {
+    "python": "3.14.7 (.venv)",
+    "macos": "27.0",
+    "machine": "Apple M5 Pro 48GB",
+    "models": "mlx-community/parakeet-tdt-0.6b-v3 · mlx-community/Qwen3-4B-Instruct-2507-4bit (both cached offline)",
+    "mlx": "0.31.2",
+    "transformers": "5.10.4",
+    "installed_app": "unchanged pre-M02 code (no build authorized); M10 exists in dev runs and tests"
+  },
+  "requirements": ["LF-R14", "LF-R15", "LF-R16", "LF-R28", "LF-R30"],
+  "acceptance_criteria": {
+    "M10-AC01_casual_style_never_deletes_constraint": {
+      "status": "pass (automated)",
+      "evidence": "tests/v2/profiles/test_style_resolution.py::test_casual_style_never_loosens_cleanup_contract — the frozen M07 validator rejects a constraint-dropping candidate under every resolved style (global/category/casual rules); a value-preserving representation change still passes. No style attribute can expand the S13 permitted edits (none exists)."
+    },
+    "M10-AC02_snippet_exact_stored_content": {
+      "status": "pass (automated)",
+      "evidence": "tests/v2/profiles/test_snippets.py::test_exact_stored_content_and_placeholders + test_protection_spans_for_later_stages (byte-exact expansion incl. the spaced {{ name }} form, protection unless allow_rewrite); tests/v2/profiles/test_profiles_pipeline.py::test_snippet_expansion_and_protection_through_pipeline (exact content through the REAL pipeline with protection spans reaching cleanup)."
+    },
+    "M10-AC03_registered_skills_render_exactly": {
+      "status": "pass (automated)",
+      "evidence": "tests/v2/developer/test_skills.py::test_registered_skills_render_exactly_unknown_invoke_nothing (manifest skill exact token, hyphen-name spoken form, unknown stays literal with review suggestion); tests/v2/profiles/test_profiles_pipeline.py::test_scope_upgrade_keeps_manifest_skills (the M06 scope-upgrade path keeps manifest skills — review C2 regression) + test_degraded_vocabulary_keeps_manifest_skills; nothing in the developer package executes anything (source-pinned in test_developer_resolution)."
+    },
+    "M10-AC04_attachment_only_after_certified_readback": {
+      "status": "pass (automated half; certified readback pending the native trial)",
+      "evidence": "tests/v2/developer/test_developer_resolution.py::test_attachment_plan_and_ac04 — attachment_plan returns a real file chip ONLY for a surface in CERTIFIED_FILE_CHIP_SURFACES (empty until certified by readback); every other surface keeps the resolved literal filename with attachment_created=false + reason. The certified readback itself is the pending human trial (real Cursor/Windsurf chip)."
+    },
+    "M10-AC05_generated_text_never_verbatim_without_review": {
+      "status": "pass (automated)",
+      "evidence": "tests/v2/profiles/test_profiles_pipeline.py::test_ac05_verbatim_gate_on_snippet_example — a snippet-expanded example's envelope carries normalization.snippets provenance and the M09 per-example listen gate still refuses an unlistened verbatim; the envelope's profile block records mode/style revisions so profile-transformed text is distinguishable."
+    }
+  },
+  "human_verification": {
+    "native-m10-developer-trial": {
+      "status": "pending",
+      "steps": "From Terminal.app (dev run via ./run.sh, one instance at a time; the AX/mic TCC grants from M06/M03 apply): (1) same phrase in Messages, Mail and VS Code — confirm the effective line in the status menu (Mode: Clean · profile …) and the Hub Styles view's effective panel switch by destination; (2) create a raw-mode app rule for Terminal and dictate — original text, no cleanup; delete the rule and confirm Clean returns; (3) record a snippet with a placeholder in the Hub Snippets view (trigger, content, Collisions preview) and dictate it — exact content incl. multi-line; (4) configure skill_manifest_paths to a real local manifest and dictate 'slash <skill>' — exact token; (5) say 'attach file <the open document>' in an uncertified surface — resolved filename, and the result/event says no attachment was created; (6) multi-line snippet into Terminal — copy-only offer (no execution); (7) inspect one collected example's Training Data profile block + skill-registry artifact. Record steps/expected/actual with screenshots."
+    },
+    "previously_pending": "native-m09-hub-trial, native-m08-insertion-trial, native-m07-long-prompt-trial, native-m06-destination-trial, native-m05-dictionary-trial, M03/M04 native items, M01 release-to-insert pilot — unchanged in their own results files; none gates M11's automatable work. The M09 hub trial's keyboard/screen coverage now includes the Styles/Snippets sidebar rows."
+  },
+  "checks": [
+    {
+      "name": "pre-change baselines",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python <each of the 29 pre-M10 fast suites>",
+      "exit": 0,
+      "result": "all pass before any edit"
+    },
+    {
+      "name": "pre-change model-backed baselines",
+      "kind": "model-backed",
+      "cwd": "repo root",
+      "command": "worker_live; cleanup_engine; cleanup_pipeline; fidelity; literal; structure; live_pipeline; tests/test_cleanup.py",
+      "exit": 0,
+      "result": "worker_live 2/2; cleanup engine/pipeline green; fidelity 60/60; literal 20/20; structure 40/40; live pipeline 2/2; V1 cleanup control 51/51 (44.6s)"
+    },
+    {
+      "name": "post-implementation fast matrix",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python <all 35 fast suites incl. the five new M10 suites>",
+      "exit": 0,
+      "result": "35/35 pass (style resolution 8, snippets 9, profiles pipeline 8-at-the-time, skills 6, developer resolution 6, hub shell 14-at-the-time, plus every M01–M09 suite)"
+    },
+    {
+      "name": "post-implementation model-backed matrix",
+      "kind": "model-backed",
+      "cwd": "repo root",
+      "command": "worker_live; cleanup_engine; cleanup_pipeline; fidelity; literal; structure; live_pipeline; tests/test_cleanup.py",
+      "exit": 0,
+      "result": "all green (fidelity 60/60, literal 20/20, structure 40/40, live 2/2, V1 control 51/51 in 45.6s) — the layer-3 engine extension and the precedence-aware same-span rule changed no M04–M07 outcome"
+    },
+    {
+      "name": "post-address fast matrix",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python <all 35 fast suites>",
+      "exit": 0,
+      "result": "35/35 pass on the review-fixed code (profiles pipeline now 13 tests, hub shell 15)"
+    },
+    {
+      "name": "post-address model-backed matrix",
+      "kind": "model-backed",
+      "cwd": "repo root",
+      "command": "worker_live; cleanup_engine; cleanup_pipeline; fidelity; literal; structure; live_pipeline; tests/test_cleanup.py",
+      "exit": 0,
+      "result": "all green post-address (recorded in the handoff; V1 control 51/51)"
+    },
+    {
+      "name": "registry",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/test_registry.py",
+      "exit": 0,
+      "result": "33 requirements / 22 suites, all owned and covered — unchanged"
+    },
+    {
+      "name": "privacy scan",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python tests/v2/test_baseline_manifest.py",
+      "exit": 0,
+      "result": "no private-bearing files under docs/ or tests/; fixture families honest; every new path passes"
+    },
+    {
+      "name": "benchmark",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": ".venv/bin/python scripts/v2/benchmark_m10.py docs/v2/benchmarks/<run>-m10",
+      "exit": 0,
+      "result": "policy/snippet matching on a 500-word input under a fully populated state (200 rules, 300 snippets, 50 skills, 500 files): hits p95 3.35 ms · plain-prose control p95 3.17 ms vs the ≤25 ms budget; adapter overhead reported separately — style resolve 0.21 ms, snippet snapshot 0.43 ms, skill registry 0.09 ms, workspace listing 0.46 ms, file-resolve hit 0.01 ms (post-review 3.1→0.01 ms via precomputed match maps). Post-address run: docs/v2/benchmarks/20260922-194237-m10/m10.json (hits p95 3.51 ms)."
+    },
+    {
+      "name": "store schema v6 migration",
+      "kind": "automated",
+      "cwd": "repo root",
+      "command": "covered by tests/v2/storage/test_store.py (migration-set-relative) + tests/v2/profiles/test_style_resolution.py::test_style_store_crud_and_invalidation + test_snippets.py::test_store_roundtrip_versions_and_rich_payload",
+      "exit": 0,
+      "result": "fresh stores reach v6; style_rules/snippets/profiles_meta present; idempotence + torn-write repair inherit the generic store tests (repair set updated with the v6 tables)"
+    },
+    {
+      "name": "native checks",
+      "kind": "native-Mac",
+      "cwd": "n/a",
+      "command": "dev-run trial from Terminal.app (see human_verification)",
+      "exit": null,
+      "result": "pending — native-m10-developer-trial; not reported as passed"
+    }
+  ],
+  "benchmark_summary": {
+    "budget_ms": 25.0,
+    "matching_p95_ms": {"hits": 3.51, "plain_500": 3.31},
+    "adapter_overhead_p95_ms": {
+      "style_resolve_200_rules": 0.207,
+      "snippet_snapshot_300": 0.443,
+      "skill_registry_50": 0.086,
+      "workspace_listing_500_files": 0.477,
+      "file_resolve_hit": 0.011
+    },
+    "runs": [
+      "docs/v2/benchmarks/20260922-191751-m10/m10.json",
+      "docs/v2/benchmarks/20260922-194237-m10/m10.json"
+    ]
+  },
+  "review_loop": {
+    "reviewers": "two parallel read-only reviewers (bug-hunting debugger; architecture/quality/security/data-integrity auditor) over the uncommitted M10 changeset",
+    "verdict_before_addressing": "Request Changes",
+    "criticals": [
+      "C1 (DB1): HubController never passed styles_service/snippets_service into HubState — the Styles/Snippets views were permanently 'unavailable' in production while the write buttons worked (both suites green because make_hub omitted the keys). Fixed: the services are wired through initWithSpec_; the shared make_hub now carries them and a new hub_shell test builds both views headless with a full add/toggle/delete cycle.",
+      "C2 (DB1, corroborated by CA1 as W1): the M06 finalize scope upgrade rebuilt the job's normalization policy from dictionary skills alone, silently dropping the frozen manifest skills on every site/workspace-resolving destination (ai_prompt exactly) while the envelope still claimed the registry — AC03 break with contradictory provenance. Fixed: _finalized_policy is the single owner of the upgraded policy's skill set (one SkillRegistry merging manifest + widened-scope dictionary skills, under the style-derived profile); regression test drives a scope-upgraded job with a manifest skill."
+    ],
+    "warnings_addressed": [
+      "spaced {{ name }} placeholders declared by the regex but never substituted by expand (AC02 silent wrong expansion) — expand now substitutes both forms via per-name patterns",
+      "stale_workspace was structurally always False (the predicate read freeze-time global-only records) — tracked against the last FINALIZED registry's workspace-scoped records; regression test switches workspaces across two jobs",
+      "finalize-only rules (site/category) changed the envelope but never the job's normalization (number policy) — _m10_re_resolve runs inside the finalize before the scope upgrade and _m10_finalize_upgrade rebuilds the policy on profile drift; regression test with a site-scoped standard-numbers rule",
+      "profile-scoped vocabulary was live only for app/global rules (the freeze-time Destination had no category; the widened scope carried no profile) — the freeze derives the writing category from the PTT identity and the widened scope carries the resolved profile name; regression test approves the seeded Claude Code entry and rewrites in the IDE destination",
+      "file-tag resolution was O(k²·m) with per-step Path construction and an unbounded reference run — precomputed lowered full-path/basename maps (resolve p95 3.1→0.01 ms) and a 12-word reference cap; regression test with a long ramble",
+      "missing tests for the new critical paths — added: hub views CRUD (C1), scope-upgrade + manifest skills (C2), stale flag, finalize-only rule, profile-scoped vocabulary, degraded-vocabulary skills-only branch, spaced placeholders, file-ref cap"
+    ],
+    "suggestions_addressed": [
+      "engine same-span rule double-rejected superseded proposals (inflated rejected_count) — the ambiguity loop now iterates only the surviving same-layer set",
+      "dead code removed (StyleRule.from_json, Destination.to_json)",
+      "skills docstring aligned with behavior (the revision hash reads raw bytes; only identity parsing is bounded)",
+      "surfaces reads CERTIFIED_BRACKETED_SURFACES as a live module attribute (a future certification rebinding cannot leave the table stale)",
+      "_load_snippets reads the snippet set once per reload",
+      "hubEffectiveProfile falls back to the last resolved profile between jobs"
+    ],
+    "deferred": [
+      "trigger-uniqueness TOCTOU between the caller-thread probe and the write op (unreachable today: one writer, serialized ops; folding the probe into the op would make the invariant atomic if a second writer ever appears)",
+      "per-job double skill discovery when workspace dirs are configured (harmless at measured costs; a two-slot cache would remove it)",
+      "RTF clipboard-flavor publishing for rich snippets (documented limitation; the insertion surface stays plain-text)",
+      "envelope profile_name classification sentence added to the contract rather than a schema change (names are configuration identity, like model names)"
+    ],
+    "post_address_verification": "35/35 fast suites + all six model-backed checks re-ran green on the fixed code; the benchmark re-ran post-address (hits p95 3.51 ms ≤ 25 ms; resolve p95 0.011 ms). No findings rejected as incorrect."
+  },
+  "privacy": "Nothing private entered Git: the committed benchmark JSONs carry latencies/counts only (synthetic state in temp dirs); tests are synthetic in-code (origin-tagged fixture discipline unchanged); style rules/snippets are user configuration in the live store, never in events (event detail carries reason codes and mode enums only); skill names/manifest paths live exclusively in the lease-governed skill_registry artifact with counts/revisions in the content-free envelope block; the workspace file listing is names-only, local, and never persisted outside lease-governed artifacts; the baseline-manifest privacy scan passes over every new path; live data stays under Application Support."
+}

@@ -17,11 +17,14 @@ from __future__ import annotations
 
 import threading
 
-VIEWS = ("home", "history", "diagnostics", "models", "settings")
+VIEWS = ("home", "history", "styles", "snippets", "diagnostics",
+         "models", "settings")
 
 VIEW_TITLES = {
     "home": "Home",
     "history": "History",
+    "styles": "Styles",
+    "snippets": "Snippets",
     "diagnostics": "Diagnostics",
     "models": "Models",
     "settings": "Settings",
@@ -30,13 +33,19 @@ VIEW_TITLES = {
 
 class HubState:
     def __init__(self, history_service, training_service=None,
-                 diagnostics_provider=None, coordinator=None):
+                 diagnostics_provider=None, coordinator=None,
+                 styles_service=None, snippets_service=None):
         """``diagnostics_provider()`` returns a dict with events_dir and
         whatever filters the shell set; ``coordinator`` is the app
         delegate's command surface (engine states, pipeline info,
-        recovery, paste/retry commands)."""
+        recovery, paste/retry commands, M10 effective-profile/preview).
+        ``styles_service``/``snippets_service`` are the M10 stores (the
+        training_service pattern: read/CRUD through the service, never
+        a second store connection)."""
         self.history_service = history_service
         self.training_service = training_service
+        self.styles_service = styles_service
+        self.snippets_service = snippets_service
         self.diagnostics_provider = diagnostics_provider \
             or (lambda: {"events_dir": None})
         self.coordinator = coordinator
@@ -60,6 +69,8 @@ class HubState:
                           "level_filter": None})
         if view == "models":
             state.update({"subview": "engines"})
+        if view in ("styles", "snippets"):
+            state.update({"selected_id": None, "preview": None})
         return state
 
     def select_view(self, view):
@@ -204,6 +215,61 @@ class HubState:
             return
         self._publish_locked("models", detail=detail)
 
+    # ---- Styles / Snippets (M10, Spec S15/S17) --------------------------
+
+    def reload_styles(self):
+        self._spawn(self._load_styles)
+
+    def _load_styles(self, generation):
+        if self.styles_service is None:
+            self._publish_locked("styles", error="styles_unavailable",
+                                 loading=False)
+            return
+        try:
+            rules = [r.to_json() for r in self.styles_service.rules()]
+            effective = self.coordinator.hubEffectiveProfile() \
+                if self.coordinator is not None else None
+        except Exception as e:
+            self._publish_locked("styles", error=type(e).__name__,
+                                 loading=False)
+            return
+        if generation != self._generation:
+            return
+        self._publish_locked("styles", error=None, loading=False,
+                             data={"rules": rules,
+                                   "effective": effective})
+
+    def reload_snippets(self):
+        self._spawn(self._load_snippets)
+
+    def _load_snippets(self, generation):
+        if self.snippets_service is None:
+            self._publish_locked("snippets", error="snippets_unavailable",
+                                 loading=False)
+            return
+        try:
+            from .. import snippets as snippets_mod
+            stored = self.snippets_service.snippets()  # one read
+            rows = [s.to_json() for s in stored]
+            # The frozen registry view the engine would build now —
+            # masked duplicate triggers surface here, exactly as they
+            # would behave at dictation time.
+            snapshot = snippets_mod.SnippetSnapshot(stored)
+            conflicts = list(snapshot.conflicts)
+        except Exception as e:
+            self._publish_locked("snippets", error=type(e).__name__,
+                                 loading=False)
+            return
+        if generation != self._generation:
+            return
+        self._publish_locked("snippets", error=None, loading=False,
+                             data={"snippets": rows,
+                                   "conflicts": conflicts})
+
+    def set_developer_preview(self, view, preview):
+        self.views[view]["preview"] = preview
+        self._publish()
+
     # ---- Diagnostics --------------------------------------------------------
 
     def set_diagnostics_filters(self, job=None, level=None, utc=None):
@@ -287,6 +353,10 @@ class HubState:
                 self._spawn(self._load_history_detail)
             else:
                 self.reload_history()
+        elif view == "styles":
+            self.reload_styles()
+        elif view == "snippets":
+            self.reload_snippets()
         elif view == "diagnostics":
             self._spawn(self._load_diagnostics)
         elif view == "models":

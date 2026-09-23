@@ -146,9 +146,11 @@ mic).
 
 ## Limitations (documented, not hidden)
 
-- `profile` scope stays unfed live — no writing-profile subsystem
-  exists before M10; profile-scoped entries apply only in tests/the
-  sandbox until then.
+- `profile` scope is fed since M10: the app's per-job freeze widens
+  the ScopeContext with the resolved writing-profile name (see
+  `contracts/profiles.md`); the snapshot's own `to_scope_context()`
+  still leaves it None (the profile is resolution state, not context
+  observation).
 - Identifier resolution is the bounded nearby-window only; a full
   visible-symbol provider would need the optional IDE/browser
   extension channel (S12) — not shipped, nothing speculates it.

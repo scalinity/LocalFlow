@@ -8,7 +8,13 @@ tests/v2/ui/test_training_data.py + test_hub_shell.py)
 `replay.ReplayService`) plus the read/query services
 `localflow.v2.history_queries`, `localflow.v2.training_data` and
 `localflow.v2.diagnostics` deliver the S19 companion window: Home /
-History / Diagnostics / Models (+ Training Data subview) / Settings.
+History / Styles / Snippets / Diagnostics / Models (+ Training Data
+subview) / Settings. The M10 Styles and Snippets views follow the same
+`_build_/_refresh_/_load_` triple over the M10 stores (rule/snippet
+CRUD is synchronous against the store writer on the main thread, the
+documented training-service limitation); future views (Transforms,
+Scratchpad, Insights) refuse at state level until they exist — the
+M09 rule, unchanged.
 
 ## Architecture contract (frozen for M10–M13)
 
@@ -23,6 +29,10 @@ History / Diagnostics / Models (+ Training Data subview) / Settings.
   `collection_state`, `hubRetentionDays`, `hubCopyText`,
   `hubPasteText(text, job_id)`, `hubRetryJob(job_id)`,
   `hubSetCollection`, `hubApplyRetention`, `_hub_diagnostics_spec`.
+  M10 adds `hubEffectiveProfile`, `hubSetNextJobMode`,
+  `hubPreviewPhrase` and `hubSnippetCollisionPreview` (live-process
+  state the services cannot see); the M10 stores ride the spec as
+  `styles_service`/`snippets_service` (the training_service pattern).
   Later milestones add commands; they never bypass this surface.
 - **Query discipline.** `HistoryQueryService`/`TrainingDataService`/
   diagnostics reads are read-only ops through `Store.submit` (the

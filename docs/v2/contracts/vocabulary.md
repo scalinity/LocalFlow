@@ -148,9 +148,10 @@ skill collisions before an edit is committed.
 ## Limitations (documented, not hidden)
 
 - Scope resolution is live since M06 for app/site/workspace
-  (`contracts/context.md`); `profile` scope still waits for a
-  writing-profile subsystem (M10) — profile-scoped entries apply only
-  in tests/the sandbox until then.
+  (`contracts/context.md`); `profile` scope is fed since M10 (the
+  resolved writing-profile name widens the ScopeContext — see
+  `contracts/profiles.md`), so profile-scoped entries apply in their
+  destinations live.
 - A lone approved wrong entry rewrites its own alias (measured in the
   EV-18 matrix: distractor flips 40/40 under distractor-only); the
   protection is same-scope masking when the true term exists — an
@@ -162,6 +163,10 @@ skill collisions before an edit is committed.
   canonical alias, so an entry can not opt out of its own canonical
   matching (a case-preserving entry that should never touch text must
   stay unapproved/disabled).
+- Since M10, a snippet trigger outranks a same-span dictionary alias
+  (snippet intent is layer 3, vocabulary layer 5 — the engine's
+  same-span rule is precedence-aware); `preview_conflicts` in
+  `snippets.py` surfaces this before a snippet edit lands.
 
 ## M06 wiring (live since M06)
 

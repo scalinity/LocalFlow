@@ -1,0 +1,52 @@
+{
+ "adapter_overhead_separate": {
+  "file_resolve_hit": {
+   "p50_ms": 0.008,
+   "p95_ms": 0.011
+  },
+  "skill_registry_50": {
+   "p50_ms": 0.082,
+   "p95_ms": 0.088
+  },
+  "snippet_snapshot_300": {
+   "p50_ms": 0.443,
+   "p95_ms": 0.487
+  },
+  "style_resolve_200_rules": {
+   "p50_ms": 0.214,
+   "p95_ms": 0.231
+  },
+  "workspace_listing_500_files": {
+   "p50_ms": 0.436,
+   "p95_ms": 0.453
+  }
+ },
+ "benchmark": "m10",
+ "budget_ms": 25.0,
+ "environment": {
+  "machine": "reference Mac (Apple M5 Pro 48GB)",
+  "python": "3.14.7",
+  "synthetic_state": {
+   "manifest_skills": 50,
+   "snippets": 300,
+   "style_rules": 200,
+   "workspace_files": 500
+  }
+ },
+ "policy_snippet_matching": {
+  "hits": {
+   "max_ms": 3.55,
+   "p50_ms": 3.391,
+   "p95_ms": 3.508,
+   "runs": 40,
+   "within_budget": true
+  },
+  "plain_500": {
+   "max_ms": 3.32,
+   "p50_ms": 3.215,
+   "p95_ms": 3.308,
+   "runs": 40,
+   "within_budget": true
+  }
+ }
+}

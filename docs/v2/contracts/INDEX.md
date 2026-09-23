@@ -20,6 +20,7 @@
 | `cleanup.md` | Faithful cleanup: contract, windows, corrections, validation, fallback | M07 | S13, S14, S29.4 |
 | `insertion.md` | Safe insertion: serialized queue, clipboard ownership, undo, S29.8 observation | M08 | S18, S12, S24, S29.8 |
 | `hub.md` | Native Hub: shell/state/services split, coordinator commands, History lineage, Training Data annotations, focus guard | M09 | S19, S08, S29.6/S29.14/S29.15 |
+| `profiles.md` | Styles/modes resolution, snippets, developer skills/file tags/surfaces, M10 provenance | M10 | S15, S17, S10, S29.4, S24 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
@@ -93,4 +94,14 @@ milestones add fields; they must not repurpose or weaken these identifiers.
   pin-vs-review-retention scoping, the focus-steal guard, store schema
   v5's `job_targets` side table); `insertion.md`'s paste-again engine
   generalizes to `paste_text` for History repastes. No frozen
-  identifier changed; the registry stays 33/22.
+  identifier changed; the registry stays 33/22. M10 ships `profiles.md`
+  (the S15 precedence chain, writing categories, snippet
+  triggers/placeholders/protection, manifest skill discovery with
+  stale-workspace invalidation, exact file-tag resolution with the
+  honest uncertified-surface fallback, the surface compatibility
+  table, store schema v6, the M10 provenance blocks); the normalize
+  engine's same-span rule becomes precedence-aware (the
+  higher-precedence layer wins a cross-layer same-span conflict;
+  same-layer ambiguity still rejects all); the Hub gains the Styles
+  and Snippets views through the M09 `_build_/_refresh_/_load_`
+  triple. No frozen identifier changed; the registry stays 33/22.

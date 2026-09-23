@@ -94,6 +94,21 @@ DEFAULTS = {
     # inserted region. An adjustable collection window, not a limit on
     # dictation or editing; 0 disables observation.
     "outcome_observation_sec": 30,
+    # M10 (Spec S15/S17): explicitly configured local skill manifests —
+    # files (JSON manifests) or directories (one level of <skill>/
+    # SKILL.md, frontmatter identity only). Nothing is scanned beyond
+    # these paths, and no skill ever executes during discovery.
+    "skill_manifest_paths": [],
+    # Workspace-RELATIVE skill directories (e.g. ".claude/skills"),
+    # resolved against the active document's directory when a job's
+    # context resolves one. Empty = no workspace manifests are read.
+    "workspace_skill_dirs": [],
+    # M10 (Spec S17): the strictly bounded, name-only listing of the
+    # active document's directory that lets "attach file <name>"
+    # resolve exact filenames (depth 2, cap 500, hidden entries
+    # skipped, no content reads). false = file references surface as
+    # review suggestions instead of resolving.
+    "developer_workspace_listing": True,
 }
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent

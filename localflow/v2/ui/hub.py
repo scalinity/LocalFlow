@@ -130,7 +130,9 @@ class HubController(NSObject):
             spec["history_service"],
             training_service=spec.get("training_service"),
             diagnostics_provider=spec.get("diagnostics_provider"),
-            coordinator=self.coordinator)
+            coordinator=self.coordinator,
+            styles_service=spec.get("styles_service"),
+            snippets_service=spec.get("snippets_service"))
         self.state.on_update = self._state_updated
         self._built_views = {}
         self._history_flat = []  # group markers + rows, in table order
@@ -175,7 +177,7 @@ class HubController(NSObject):
         self.window.setContentView_(content)
 
         # Sidebar source list: keyboard arrows move selection; the
-        # coordinator's ⌘1..⌘5 menu equivalents land on the same state.
+        # coordinator's ⌘1..⌘7 menu equivalents land on the same state.
         self.sidebar = NSTableView.alloc().initWithFrame_(
             NSMakeRect(0, 0, SIDEBAR_WIDTH,
                        content.bounds().size.height))
@@ -262,6 +264,14 @@ class HubController(NSObject):
             rows = (self.state.views["models"].get("data")
                     or {}).get("examples") or []
             return len(rows)
+        if table is getattr(self, "styles_table", None):
+            rows = (self.state.views["styles"].get("data")
+                    or {}).get("rules") or []
+            return len(rows)
+        if table is getattr(self, "snippets_table", None):
+            rows = (self.state.views["snippets"].get("data")
+                    or {}).get("snippets") or []
+            return len(rows)
         return len(VIEWS)
 
     def tableView_objectValueForTableColumn_row_(self, table, col, row):
@@ -282,6 +292,22 @@ class HubController(NSObject):
                 return f"{r['example_id'][:20]} {stamp}"
             audio = "yes" if r["audio"].get("available") else "no"
             return f"{r['state']} · {r['correctness']} · audio {audio}"
+        if table is getattr(self, "styles_table", None):
+            rows = (self.state.views["styles"].get("data")
+                    or {}).get("rules") or []
+            r = rows[int(row)]
+            if col.identifier() == "mode":
+                return f"{r['mode']} · {r['number_policy']}" \
+                    + ("" if r.get("enabled") else " · off")
+            return f"{r['name']} ({r['scope'][0]}" \
+                + (f": {r['scope'][1]}" if r["scope"][1] else "") + ")"
+        if table is getattr(self, "snippets_table", None):
+            rows = (self.state.views["snippets"].get("data")
+                    or {}).get("snippets") or []
+            r = rows[int(row)]
+            if col.identifier() == "kind":
+                return r["kind"] + ("" if r.get("enabled") else " · off")
+            return r["trigger"]
         return VIEW_TITLES[VIEWS[int(row)]]
 
     def tableView_shouldSelectRow_(self, table, row):
@@ -307,10 +333,46 @@ class HubController(NSObject):
             if 0 <= row < len(rows):
                 self.state.select_training_example(
                     rows[row]["example_id"])
+        elif table is getattr(self, "styles_table", None):
+            row = self.styles_table.selectedRow()
+            rows = (self.state.views["styles"].get("data")
+                    or {}).get("rules") or []
+            if 0 <= row < len(rows):
+                r = rows[row]
+                self.state.views["styles"]["selected_id"] = \
+                    r["rule_id"]
+                self._fill_style_editor(r)
+        elif table is getattr(self, "snippets_table", None):
+            row = self.snippets_table.selectedRow()
+            rows = (self.state.views["snippets"].get("data")
+                    or {}).get("snippets") or []
+            if 0 <= row < len(rows):
+                s = rows[row]
+                self.state.views["snippets"]["selected_id"] = \
+                    s["snippet_id"]
+                self._fill_snippet_editor(s)
         elif table is self.sidebar:
             row = self.sidebar.selectedRow()
             if row >= 0:
                 self._select_view_index(int(row))
+
+    @objc.python_method
+    def _fill_style_editor(self, r):
+        self.style_name.setStringValue_(r.get("name") or "")
+        scope = (r.get("scope") or ["global", None])
+        self.style_scope.selectItemWithTitle_(scope[0])
+        self.style_scope_value.setStringValue_(scope[1] or "")
+        self.style_mode.selectItemWithTitle_(r.get("mode") or "clean")
+        self.style_numbers.selectItemWithTitle_(
+            r.get("number_policy") or "inherit")
+
+    @objc.python_method
+    def _fill_snippet_editor(self, s):
+        self.snip_trigger.setStringValue_(s.get("trigger") or "")
+        self.snip_name.setStringValue_(s.get("name") or "")
+        self.snip_kind.selectItemWithTitle_(s.get("kind") or "plain")
+        self.snip_rewrite.setState_(1 if s.get("allow_rewrite") else 0)
+        self.snip_content.setString_(s.get("content") or "")
 
     # ---- History view -----------------------------------------------------------
 
@@ -501,6 +563,383 @@ class HubController(NSObject):
         else:
             self.history_detail.setString_(
                 self._render_history_detail(view.get("detail")))
+
+    # ---- Styles (M10, Spec S15) -------------------------------------------
+
+    @objc.python_method
+    def _build_styles_view(self):
+        v = NSView.alloc().init()
+        cw = self.content.bounds().size.width
+        ch = self.content.bounds().size.height
+        self.styles_status = _label(NSMakeRect(8, ch - 24, cw - 16, 18), "")
+        v.addSubview_(self.styles_status)
+        self.styles_table = NSTableView.alloc().initWithFrame_(
+            NSMakeRect(0, 0, cw * 0.34, 10))
+        for ident, width in (("rule", 150.0), ("mode", 90.0)):
+            c = NSTableColumn.alloc().initWithIdentifier_(ident)
+            c.setWidth_(width)
+            self.styles_table.addTableColumn_(c)
+        self.styles_table.setDataSource_(self)
+        self.styles_table.setDelegate_(self)
+        tsc = _scroll(NSMakeRect(8, 150, cw * 0.36, ch - 180),
+                      self.styles_table)
+        tsc.setAutoresizingMask_(2)
+        v.addSubview_(tsc)
+        # Rule editor (right column): the live S15 rule dimensions only —
+        # the transform-backed modes arrive with M11 and are not offered
+        # as if they ran today.
+        x = cw * 0.38
+        self.style_name = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(x + 70, ch - 54, 220, 22))
+        self.style_name.setPlaceholderString_("rule name")
+        v.addSubview_(_label(NSMakeRect(x, ch - 51, 60, 18), "Name:"))
+        v.addSubview_(self.style_name)
+        self.style_scope = NSPopUpButton.alloc().initWithFrame_(
+            NSMakeRect(x + 70, ch - 82, 130, 24))
+        self.style_scope.addItemsWithTitles_(
+            ["global", "category", "app", "site", "workspace"])
+        v.addSubview_(_label(NSMakeRect(x, ch - 79, 60, 18), "Scope:"))
+        v.addSubview_(self.style_scope)
+        self.style_scope_value = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(x + 208, ch - 82, 200, 22))
+        self.style_scope_value.setPlaceholderString_(
+            "bundle / origin / workspace / category")
+        v.addSubview_(self.style_scope_value)
+        self.style_mode = NSPopUpButton.alloc().initWithFrame_(
+            NSMakeRect(x + 70, ch - 110, 130, 24))
+        self.style_mode.addItemsWithTitles_(["clean", "raw"])
+        v.addSubview_(_label(NSMakeRect(x, ch - 107, 60, 18), "Mode:"))
+        v.addSubview_(self.style_mode)
+        self.style_numbers = NSPopUpButton.alloc().initWithFrame_(
+            NSMakeRect(x + 208, ch - 110, 130, 24))
+        self.style_numbers.addItemsWithTitles_(
+            ["inherit", "technical", "standard"])
+        v.addSubview_(_label(NSMakeRect(x + 140, ch - 107, 66, 18),
+                             "Numbers:"))
+        v.addSubview_(self.style_numbers)
+        for i, (title, action) in enumerate((
+                ("Add", "stylesAdd:"),
+                ("Update", "stylesUpdate:"),
+                ("Delete", "stylesDelete:"),
+                ("Enable/Disable", "stylesToggle:"))):
+            v.addSubview_(_button(title, self, action,
+                                  NSMakeRect(x + i * 130, 118, 124, 24)))
+        # The phrase sandbox: what the current registries + the resolved
+        # style's policy would do to a phrase (S15 sample output).
+        self.style_phrase = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(x, 88, cw - x - 130, 22))
+        self.style_phrase.setPlaceholderString_("test a phrase")
+        v.addSubview_(self.style_phrase)
+        v.addSubview_(_button("Preview", self, "stylesPreview:",
+                              NSMakeRect(cw - 116, 87, 108, 24)))
+        self.styles_detail = _textview(NSMakeRect(0, 0, cw - x - 16, 80))
+        sdc = _scroll(NSMakeRect(x, 8, cw - x - 16, 78), self.styles_detail)
+        sdc.setAutoresizingMask_(2 | 16)
+        v.addSubview_(sdc)
+        return v
+
+    def stylesAdd_(self, sender):
+        self._style_write("add")
+
+    def stylesUpdate_(self, sender):
+        self._style_write("update")
+
+    @objc.python_method
+    def _style_write(self, action):
+        svc = self.spec.get("styles_service")
+        if svc is None:
+            self.styles_status.setStringValue_("styles unavailable")
+            return
+        name = self.style_name.stringValue() or ""
+        scope = self.style_scope.titleOfSelectedItem() or "global"
+        scope_value = self.style_scope_value.stringValue() or None
+        mode = self.style_mode.titleOfSelectedItem() or "clean"
+        numbers = self.style_numbers.titleOfSelectedItem() or "inherit"
+        try:
+            if action == "add":
+                svc.add_rule(name=name, scope_kind=scope,
+                             scope_value=scope_value, mode=mode,
+                             number_policy=numbers)
+            else:
+                rule_id = self.state.views["styles"].get("selected_id")
+                if not rule_id:
+                    self.styles_status.setStringValue_(
+                        "select a rule to update")
+                    return
+                svc.update_rule(rule_id, name=name, scope_kind=scope,
+                                scope_value=scope_value, mode=mode,
+                                number_policy=numbers)
+        except (ValueError, KeyError) as e:
+            self.styles_status.setStringValue_(f"not saved: {e}")
+            return
+        except Exception as e:
+            self.styles_status.setStringValue_(
+                f"not saved: {type(e).__name__}")
+            return
+        self.state.reload_styles()
+
+    def stylesDelete_(self, sender):
+        svc = self.spec.get("styles_service")
+        rule_id = self.state.views["styles"].get("selected_id")
+        if svc is None or not rule_id:
+            return
+        try:
+            svc.delete_rule(rule_id)
+        except Exception as e:
+            self.styles_status.setStringValue_(
+                f"not deleted: {type(e).__name__}")
+            return
+        self.state.reload_styles()
+
+    def stylesToggle_(self, sender):
+        svc = self.spec.get("styles_service")
+        rule_id = self.state.views["styles"].get("selected_id")
+        data = (self.state.views["styles"].get("data") or {})
+        if svc is None or not rule_id:
+            return
+        enabled = next((r.get("enabled") for r in data.get("rules", ())
+                        if r.get("rule_id") == rule_id), True)
+        try:
+            svc.set_enabled(rule_id, not enabled)
+        except Exception as e:
+            self.styles_status.setStringValue_(
+                f"not toggled: {type(e).__name__}")
+            return
+        self.state.reload_styles()
+
+    def stylesPreview_(self, sender):
+        text = self.style_phrase.stringValue() or ""
+        if self.coordinator is None:
+            return
+        out = self.coordinator.hubPreviewPhrase(text)
+        self.state.set_developer_preview("styles", out)
+        self._render_styles_preview(out)
+
+    @objc.python_method
+    def _render_styles_preview(self, out):
+        if not out:
+            return
+        if out.get("error"):
+            self.styles_detail.setString_(
+                f"preview failed: {out['error']}")
+            return
+        lines = [f"→ {out.get('output')}", ""]
+        for e in out.get("edits") or []:
+            lines.append(f"edit: {e['before']!r} → {e['after']!r}"
+                         f"  ({e['cls']})")
+        for r in out.get("rejected") or []:
+            lines.append(f"kept literal: {r['before']!r}  ({r['reason']})")
+        self.styles_detail.setString_("\n".join(lines))
+
+    @objc.python_method
+    def _refresh_styles_view(self):
+        view = self.state.views["styles"]
+        data = view.get("data")
+        if view.get("error"):
+            self.styles_status.setStringValue_(
+                f"styles unavailable ({view['error']})")
+            self.styles_table.reloadData()
+            return
+        self.styles_table.reloadData()
+        eff = (data or {}).get("effective") or {}
+        profile = eff.get("profile") or {}
+        if profile:
+            fallback = profile.get("fallback_reason")
+            self.styles_status.setStringValue_(
+                f"Effective: {profile.get('effective_mode')} ·"
+                f" profile {profile.get('profile_name') or 'default'} ·"
+                f" {profile.get('source')}"
+                + (f" — {fallback}" if fallback else ""))
+        else:
+            self.styles_status.setStringValue_(
+                "Effective profile appears after the next dictation."
+                if not (data or {}).get("rules")
+                else "Rules below; effective profile after a dictation.")
+        preview = view.get("preview")
+        if preview:
+            self._render_styles_preview(preview)
+        elif not data or not data.get("rules"):
+            self.styles_detail.setString_(
+                "No style rules. Add one: a scope (category, app bundle,"
+                " site origin or workspace), a mode (clean/raw) and a"
+                " number policy. Resolution: next-job override →"
+                " destination rule → category default → global default.")
+
+    # ---- Snippets (M10, Spec S17) ------------------------------------------
+
+    @objc.python_method
+    def _build_snippets_view(self):
+        v = NSView.alloc().init()
+        cw = self.content.bounds().size.width
+        ch = self.content.bounds().size.height
+        self.snippets_status = _label(NSMakeRect(8, ch - 24, cw - 16, 18),
+                                      "")
+        v.addSubview_(self.snippets_status)
+        self.snippets_table = NSTableView.alloc().initWithFrame_(
+            NSMakeRect(0, 0, cw * 0.3, 10))
+        for ident, width in (("trigger", 130.0), ("kind", 90.0)):
+            c = NSTableColumn.alloc().initWithIdentifier_(ident)
+            c.setWidth_(width)
+            self.snippets_table.addTableColumn_(c)
+        self.snippets_table.setDataSource_(self)
+        self.snippets_table.setDelegate_(self)
+        tsc = _scroll(NSMakeRect(8, 150, cw * 0.32, ch - 180),
+                      self.snippets_table)
+        tsc.setAutoresizingMask_(2)
+        v.addSubview_(tsc)
+        x = cw * 0.34
+        self.snip_trigger = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(x + 70, ch - 54, 220, 22))
+        self.snip_trigger.setPlaceholderString_("spoken trigger")
+        v.addSubview_(_label(NSMakeRect(x, ch - 51, 60, 18), "Trigger:"))
+        v.addSubview_(self.snip_trigger)
+        self.snip_name = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(x + 300, ch - 54, 160, 22))
+        self.snip_name.setPlaceholderString_("name")
+        v.addSubview_(self.snip_name)
+        self.snip_kind = NSPopUpButton.alloc().initWithFrame_(
+            NSMakeRect(x + 70, ch - 82, 130, 24))
+        self.snip_kind.addItemsWithTitles_(
+            ["plain", "rich", "url", "signature", "code", "prompt"])
+        v.addSubview_(_label(NSMakeRect(x, ch - 79, 60, 18), "Kind:"))
+        v.addSubview_(self.snip_kind)
+        self.snip_rewrite = NSButton.alloc().init()
+        self.snip_rewrite.setButtonType_(NSSwitchButton)
+        self.snip_rewrite.setTitle_("allow later rewriting")
+        self.snip_rewrite.setFrame_(NSMakeRect(x + 210, ch - 84, 220, 22))
+        v.addSubview_(self.snip_rewrite)
+        self.snip_content = NSTextView.alloc().initWithFrame_(
+            NSMakeRect(0, 0, cw - x - 16, 60))
+        self.snip_content.setFont_(_mono())
+        scc = _scroll(NSMakeRect(x, 148, cw - x - 16, 62),
+                      self.snip_content)
+        scc.setAutoresizingMask_(2 | 16)
+        v.addSubview_(scc)
+        for i, (title, action) in enumerate((
+                ("Add", "snippetsAdd:"),
+                ("Update", "snippetsUpdate:"),
+                ("Delete", "snippetsDelete:"),
+                ("Enable/Disable", "snippetsToggle:"),
+                ("Collisions", "snippetsCollisions:"))):
+            v.addSubview_(_button(title, self, action,
+                                  NSMakeRect(x + i * 120, 116, 114, 24)))
+        self.snippets_detail = _textview(NSMakeRect(0, 0, cw - x - 16, 96))
+        ndc = _scroll(NSMakeRect(x, 8, cw - x - 16, 104),
+                      self.snippets_detail)
+        ndc.setAutoresizingMask_(2 | 16)
+        v.addSubview_(ndc)
+        return v
+
+    def snippetsAdd_(self, sender):
+        self._snippet_write("add")
+
+    def snippetsUpdate_(self, sender):
+        self._snippet_write("update")
+
+    @objc.python_method
+    def _snippet_write(self, action):
+        svc = self.spec.get("snippets_service")
+        if svc is None:
+            self.snippets_status.setStringValue_("snippets unavailable")
+            return
+        trigger = self.snip_trigger.stringValue() or ""
+        name = self.snip_name.stringValue() or ""
+        kind = self.snip_kind.titleOfSelectedItem() or "plain"
+        content = self.snip_content.string() or ""
+        allow = bool(self.snip_rewrite.state())
+        try:
+            if action == "add":
+                svc.add_snippet(trigger=trigger, name=name or trigger,
+                                content=content, kind=kind,
+                                allow_rewrite=allow)
+            else:
+                sid = self.state.views["snippets"].get("selected_id")
+                if not sid:
+                    self.snippets_status.setStringValue_(
+                        "select a snippet to update")
+                    return
+                svc.update_snippet(sid, trigger=trigger,
+                                   name=name or trigger, kind=kind,
+                                   content=content, allow_rewrite=allow)
+        except (ValueError, KeyError) as e:
+            self.snippets_status.setStringValue_(f"not saved: {e}")
+            return
+        except Exception as e:
+            self.snippets_status.setStringValue_(
+                f"not saved: {type(e).__name__}")
+            return
+        self.state.reload_snippets()
+
+    def snippetsDelete_(self, sender):
+        svc = self.spec.get("snippets_service")
+        sid = self.state.views["snippets"].get("selected_id")
+        if svc is None or not sid:
+            return
+        try:
+            svc.delete_snippet(sid)
+        except Exception as e:
+            self.snippets_status.setStringValue_(
+                f"not deleted: {type(e).__name__}")
+            return
+        self.state.reload_snippets()
+
+    def snippetsToggle_(self, sender):
+        svc = self.spec.get("snippets_service")
+        sid = self.state.views["snippets"].get("selected_id")
+        data = (self.state.views["snippets"].get("data") or {})
+        if svc is None or not sid:
+            return
+        enabled = next((s.get("enabled")
+                        for s in data.get("snippets", ())
+                        if s.get("snippet_id") == sid), True)
+        try:
+            svc.set_enabled(sid, not enabled)
+        except Exception as e:
+            self.snippets_status.setStringValue_(
+                f"not toggled: {type(e).__name__}")
+            return
+        self.state.reload_snippets()
+
+    def snippetsCollisions_(self, sender):
+        """Preview this trigger against dictionary aliases and
+        registered skills before saving (S17) — through the
+        coordinator, which owns the live registries."""
+        trigger = self.snip_trigger.stringValue() or ""
+        if not trigger or self.coordinator is None:
+            return
+        out = self.coordinator.hubSnippetCollisionPreview(trigger) \
+            if hasattr(self.coordinator, "hubSnippetCollisionPreview") \
+            else []
+        lines = []
+        for c in out:
+            lines.append(f"{c['kind']}: {c['detail']}")
+        self.snippets_detail.setString_(
+            "\n".join(lines) or "no collisions for this trigger")
+
+    @objc.python_method
+    def _refresh_snippets_view(self):
+        view = self.state.views["snippets"]
+        data = view.get("data")
+        self.snippets_table.reloadData()
+        if view.get("error"):
+            self.snippets_status.setStringValue_(
+                f"snippets unavailable ({view['error']})")
+            return
+        rows = (data or {}).get("snippets") or []
+        conflicts = (data or {}).get("conflicts") or []
+        self.snippets_status.setStringValue_(
+            f"{len(rows)} snippets"
+            + (f" · {len(conflicts)} masked trigger conflict(s)"
+               if conflicts else ""))
+        if conflicts:
+            self.snippets_detail.setString_("\n".join(
+                f"masked: {c['trigger']} ({c['reason']})"
+                for c in conflicts))
+        elif not rows:
+            self.snippets_detail.setString_(
+                "No snippets. Add one: a spoken trigger, exact content"
+                " ({{placeholders}} fill from the utterance after the"
+                " trigger, split on the spoken word 'comma').")
 
     # ---- Diagnostics ----------------------------------------------------------------
 

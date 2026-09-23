@@ -245,3 +245,18 @@ an optional `rule_id` (additive; JSON round-trips). Layer-5 token
 matching now anchors on token cores so edge punctuation survives —
 `grammar_identifiers` received the same fix. See
 `contracts/vocabulary.md` for the full matching contract.
+
+## M10 live status (layer 3 extended)
+
+Layer 3 "registered snippet/skill intent" is fully populated
+(`contracts/profiles.md`): `grammar_snippets` expands frozen snippet
+triggers (exact stored content, utterance-filled placeholders) and
+`grammar_file_tags` resolves explicit "attach file …" references
+against the destination's known files; manifest-sourced skills join
+dictionary skills in `registered_skills`. The same-span conflict rule
+is precedence-aware as of M10: differing outputs ACROSS layers resolve
+by precedence (the loser is retained as `lower_layer_same_span`);
+differing outputs at one layer still reject as `ambiguous_same_span`.
+Generated output spans (snippet expansions, resolved filenames) carry
+separate normalized-coordinate protection into cleanup
+(`snippets.protected_output_spans`).
