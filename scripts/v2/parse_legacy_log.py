@@ -18,16 +18,45 @@ Protocol (Evaluation E02):
 - Transcript text is parsed in memory for change statistics but never
   written to the output.
 
+Two derivations (M01 remediation, M01-AUDIT-08):
+- ``PAYLOAD_DERIVATION`` (faithful extraction, consumed by the importer):
+  the exact payload after the app's own print framing (``" raw:     "`` /
+  ``" cleaned: "``), continuation lines verbatim with their original line
+  terminators — indentation, blank lines and trailing whitespace kept.
+- ``STATS_DERIVATION`` (the historical heuristic view): each line stripped,
+  blank continuation lines dropped. The E02 descriptive heuristics
+  (changed/lexical/boundary counts) keep using it so the audited
+  aggregates stay reproducible; they are triage proxies, not accuracy.
+
+A pair is ``complete`` only when a later runtime record closes its cleaned
+payload; a pair flushed at end-of-file may still be growing (M01-AUDIT-07).
+
+Known structural limitation (M01-AUDIT-17): the legacy log has no escaping,
+so transcript text that itself contains the runtime prefix, or stderr
+output interleaved into a multi-line payload, is indistinguishable from a
+real record/continuation. The parser does not guess; the ambiguity is
+documented and pinned by tests.
+
 Usage:
     .venv/bin/python scripts/v2/parse_legacy_log.py --log PATH [--output PATH]
 """
 
 import argparse
+import codecs
+import hashlib
 import json
 import math
 import re
 
 PREFIX = "[localflow]"
+REPORT_SCHEMA_VERSION = 2
+PAYLOAD_DERIVATION = "e02-exact-payload-v2"
+STATS_DERIVATION = "e02-stripped-lines-v1"
+AUDITED_SHA256 = "51e8ee707cbbe05fe8d383d10bdbb8bde2b90ea749554b3085fd113169fad6f0"
+# The app's own framing (localflow/app.py at 7cdd904):
+#   print(f"[localflow] raw:     {raw}") / print(f"[localflow] cleaned: {text}")
+RAW_FRAME = " raw:     "
+CLEANED_FRAME = " cleaned: "
 
 TIMING_RE = re.compile(
     r"timing: stt ([0-9.]+)s, cleanup ([0-9.]+)s"
@@ -64,7 +93,7 @@ NOTABLE_WINDOWS = [
      "check": "raw audio text mixes unrelated commentary with instructions"},
     {"id": "E02-METAL-FAILURES", "lines": [3466, 3474],
      "check": "three consecutive Metal shared-event inference failures",
-     "expect": "metal_failures"},
+     "expect": "metal_failures", "expect_count": 3},
 ]
 
 
@@ -74,47 +103,83 @@ def physical_lines(text):
         yield n, line
 
 
+def decode_log_bytes(data: bytes):
+    """UTF-8 decode that reports its own uncertainty: the text (invalid
+    sequences replaced with U+FFFD, exactly like errors="replace") and how
+    many sequences were replaced."""
+    try:
+        return data.decode("utf-8"), {"encoding": "utf-8", "strict": True,
+                                      "replaced_sequences": 0}
+    except UnicodeDecodeError:
+        pass
+    count = [0]
+
+    def handler(err):
+        count[0] += 1
+        return "\ufffd", err.end
+    codecs.register_error("localflow_count_replace", handler)
+    text = data.decode("utf-8", "localflow_count_replace")
+    return text, {"encoding": "utf-8", "strict": False,
+                  "replaced_sequences": count[0],
+                  "note": "invalid UTF-8 replaced with U+FFFD; payloads "
+                          "containing U+FFFD are flagged decode_uncertain"}
+
+
+def _exact_first(line, idx, frame, key):
+    """Exact payload on the record line, and whether the framing matched."""
+    after = line[idx + len(PREFIX):]
+    if after.startswith(frame):
+        return after[len(frame):], "exact"
+    body = after.strip()
+    return body[len(key) + 1:].lstrip(), "nonstandard"
+
+
+def _classify(body):
+    """(key, legacy stripped payload) for the text after the prefix."""
+    if body.startswith("audio:"):
+        return "audio", body
+    if body.startswith("raw:"):
+        return "raw", body[len("raw:"):].strip()
+    if body.startswith("cleaned:"):
+        return "cleaned", body[len("cleaned:"):].strip()
+    if body.startswith("timing:"):
+        return "timing", body
+    if body.startswith("inserted "):
+        return "inserted", body
+    if body == "model loaded.":
+        return "model_ready", body
+    if body.startswith("cleanup model loaded"):
+        return "cleanup_loaded", body
+    if body.startswith("cleanup model unavailable"):
+        return "cleanup_unavailable", body
+    if body.startswith("transcription failed"):
+        return "transcription_failed", body
+    if body.startswith("empty transcription"):
+        return "empty", body
+    if "failed sanity check" in body:
+        return "sanity_fallback", body
+    if body.startswith("WARNING"):
+        return "warning", body
+    if body.startswith("ready — hold"):
+        return "launch", body
+    return "other", body
+
+
 def records(text):
     """Yield (line_no, key, payload) for every runtime record.
 
     A physical line carries a record when the runtime prefix appears in it;
     anything before the prefix (e.g. a carriage-return download-progress
-    fragment) is ignored so progress output cannot hide a record.
+    fragment) is ignored so progress output cannot hide a record. Payloads
+    here are the legacy stripped view (STATS_DERIVATION).
     """
     for n, line in physical_lines(text):
         idx = line.find(PREFIX)
         if idx < 0:
             yield (n, "continuation", line)
             continue
-        body = line[idx + len(PREFIX):].strip()
-        if body.startswith("audio:"):
-            yield (n, "audio", body)
-        elif body.startswith("raw:"):
-            yield (n, "raw", body[len("raw:"):].strip())
-        elif body.startswith("cleaned:"):
-            yield (n, "cleaned", body[len("cleaned:"):].strip())
-        elif body.startswith("timing:"):
-            yield (n, "timing", body)
-        elif body.startswith("inserted "):
-            yield (n, "inserted", body)
-        elif body == "model loaded.":
-            yield (n, "model_ready", body)
-        elif body.startswith("cleanup model loaded"):
-            yield (n, "cleanup_loaded", body)
-        elif body.startswith("cleanup model unavailable"):
-            yield (n, "cleanup_unavailable", body)
-        elif body.startswith("transcription failed"):
-            yield (n, "transcription_failed", body)
-        elif body.startswith("empty transcription"):
-            yield (n, "empty", body)
-        elif "failed sanity check" in body:
-            yield (n, "sanity_fallback", body)
-        elif body.startswith("WARNING"):
-            yield (n, "warning", body)
-        elif body.startswith("ready — hold"):
-            yield (n, "launch", body)
-        else:
-            yield (n, "other", body)
+        key, payload = _classify(line[idx + len(PREFIX):].strip())
+        yield (n, key, payload)
 
 
 def percentile(values, q):
@@ -161,6 +226,8 @@ def _scan(text):
         "warning_messages": 0,
         "unpaired_timing": 0,
         "unconsumed_audio_before_next_audio": 0,
+        "malformed_timing_records": 0,
+        "timing_detached_after_posted_insertion": 0,
     }
     audio_records = 0
     overflow_positive = 0
@@ -169,56 +236,92 @@ def _scan(text):
     cleanup_state = None  # None | "loaded" | "unavailable" within a segment
     metal_failure_lines = []
 
-    pairs = []  # sanitized pair records (line locators + stats, no text)
-    pending_raw = None       # (line_no, text)
-    pending_payload = None   # ("raw"|"cleaned", line_no, [chunks])
+    pairs = []  # pair records (line locators + stats; text keys are private)
+    pending_raw = None       # payload dict of a closed raw awaiting cleaned
+    pending_payload = None   # open raw/cleaned payload being extended
     pending_audio = None     # last audio record not yet attached to a raw
     attachable = None        # index into pairs: pair eligible for timing/inserted
+    provisional = None       # pair whose timing arrived AFTER its insertion
+
+    # Exact line terminators, aligned with splitlines() numbering.
+    terminators = [ln[len(ln.rstrip("\r\n\x0b\x0c\x1c\x1d\x1e\x85\u2028\u2029")):]
+                   for ln in text.splitlines(keepends=True)]
+
+    def open_payload(kind, n, line, stats_first):
+        idx = line.find(PREFIX)
+        frame = RAW_FRAME if kind == "raw" else CLEANED_FRAME
+        exact, framing = _exact_first(line, idx, frame, kind)
+        return {"kind": kind, "line": n, "last_line": n,
+                "stats": [stats_first], "exact": [exact], "framing": framing,
+                "progress_fragment_before_prefix": idx > 0}
+
+    def extend(n, line):
+        p = pending_payload
+        p["exact"].append(terminators[p["last_line"] - 1] + line)
+        p["last_line"] = n
+        if line.strip():
+            p["stats"].append(line.strip())
 
     def close_payload():
         nonlocal pending_payload
-        if pending_payload is None:
-            return None
-        kind, line_no, chunks = pending_payload
+        p = pending_payload
         pending_payload = None
-        return (kind, line_no, "\n".join(chunks))
+        if p is not None:
+            p["text_exact"] = "".join(p["exact"])
+            p["text_stats"] = "\n".join(p["stats"])
+        return p
 
-    for n, key, payload in records(text):
-        # Continuation lines extend an open raw/cleaned payload.
-        if key == "continuation":
-            if pending_payload is not None and payload.strip():
-                pending_payload[2].append(payload.strip())
+    def complete_pair(raw, cleaned, complete):
+        pairs.append({
+            "raw_line": raw["line"],
+            "cleaned_line": cleaned["line"],
+            "raw_lines": [raw["line"], raw["last_line"]],
+            "cleaned_lines": [cleaned["line"], cleaned["last_line"]],
+            "segment": segments,
+            "cleanup_state": cleanup_state,
+            "audio": pending_audio,
+            "raw_words": len(raw["text_stats"].split()),
+            "timing": None,
+            "inserted_chars": None,
+            "complete": complete,
+            "payload_derivation": PAYLOAD_DERIVATION,
+            "framing": {"raw": raw["framing"], "cleaned": cleaned["framing"]},
+            "decode_uncertain": ("\ufffd" in raw["text_exact"]
+                                 or "\ufffd" in cleaned["text_exact"]),
+            "_raw": raw["text_stats"],
+            "_cleaned": cleaned["text_stats"],
+            "_raw_exact": raw["text_exact"],
+            "_cleaned_exact": cleaned["text_exact"],
+        })
+
+    for n, line in physical_lines(text):
+        idx = line.find(PREFIX)
+        if idx < 0:
+            # Continuation lines extend an open raw/cleaned payload.
+            if pending_payload is not None:
+                extend(n, line)
             continue
+        key, payload = _classify(line[idx + len(PREFIX):].strip())
 
         closed = close_payload()
 
         # A raw payload closed by an unrelated interleaved record (WARNING,
         # status debug, ...) stays resumable: its cleaned line may still
         # follow, so promote it to pending_raw in the common path.
-        if closed and closed[0] == "raw":
-            pending_raw = (closed[1], closed[2])
+        if closed and closed["kind"] == "raw":
+            pending_raw = closed
 
         # A just-closed cleaned payload completes the pair held in
         # pending_raw. This runs before dispatching the current record so
         # the timing that follows the cleaned line can attach to the pair.
-        if closed and closed[0] == "cleaned" and pending_raw is not None:
-            raw_line, raw_text = pending_raw
-            pairs.append({
-                "raw_line": raw_line,
-                "cleaned_line": closed[1],
-                "segment": segments,
-                "cleanup_state": cleanup_state,
-                "audio": pending_audio,
-                "raw_words": len(raw_text.split()),
-                "timing": None,
-                "inserted_chars": None,
-                "_raw": raw_text,
-                "_cleaned": closed[2],
-            })
+        if closed and closed["kind"] == "cleaned" and pending_raw is not None:
+            complete_pair(pending_raw, closed, complete=True)
             attachable = len(pairs) - 1
             pending_raw = None
             pending_audio = None
 
+        if key in ("launch", "cleaned"):
+            provisional = None
         if key == "launch":
             segments += 1
             cleanup_state = None
@@ -243,19 +346,34 @@ def _scan(text):
                 counts["unconsumed_audio_before_next_audio"] += 1
             pending_audio = {"line": n, "parsed": bool(m)}
         elif key == "raw":
-            pending_payload = ["raw", n, [payload]]
+            pending_payload = open_payload("raw", n, line, payload)
             attachable = None
+            provisional = None
         elif key == "cleaned":
-            if pending_raw is None:
-                # cleaned without a raw (should not happen in this format)
-                pending_payload = ["cleaned", n, [payload]]
-                continue
-            pending_payload = ["cleaned", n, [payload]]
+            # (a cleaned without a raw cannot complete a pair; it is kept
+            # open only so its continuation lines are not misread)
+            pending_payload = open_payload("cleaned", n, line, payload)
         elif key == "timing":
             m = TIMING_RE.search(payload)
-            if m and attachable is not None and pairs[attachable]["timing"] is None:
-                pairs[attachable]["timing"] = {
-                    "stt": float(m.group(1)), "cleanup": float(m.group(2))}
+            parsed = None
+            if m:
+                try:
+                    parsed = {"stt": float(m.group(1)),
+                              "cleanup": float(m.group(2))}
+                except ValueError:
+                    counts["malformed_timing_records"] += 1
+            provisional = None
+            if parsed and attachable is not None \
+                    and pairs[attachable]["timing"] is None:
+                pairs[attachable]["timing"] = parsed
+                # The app prints a job's timing BEFORE its paste is posted,
+                # so a timing that reaches a pair only after that pair's
+                # posted insertion is suspect: if the next worker-side
+                # outcome is an empty transcription, the timing was that
+                # empty dictation's (M01-AUDIT-13). Kept provisional until
+                # any later worker record or insertion confirms it.
+                if pairs[attachable]["inserted_chars"] is not None:
+                    provisional = attachable
             else:
                 counts["unpaired_timing"] += 1
             # An unpaired timing belongs to an empty/failed dictation that
@@ -265,7 +383,9 @@ def _scan(text):
             m = INSERTED_RE.search(payload)
             if attachable is not None and m:
                 pairs[attachable]["inserted_chars"] = int(m.group(1))
+            provisional = None
         elif key == "transcription_failed":
+            provisional = None
             counts["transcription_failure_messages"] += 1
             if "shared event" in payload.lower():
                 counts["metal_shared_event_failures"] += 1
@@ -275,6 +395,11 @@ def _scan(text):
             attachable = None
         elif key == "empty":
             counts["empty_messages"] += 1
+            if provisional is not None:
+                pairs[provisional]["timing"] = None
+                counts["unpaired_timing"] += 1
+                counts["timing_detached_after_posted_insertion"] += 1
+                provisional = None
             pending_raw = None
             pending_audio = None
             attachable = None
@@ -282,27 +407,14 @@ def _scan(text):
             counts["sanity_fallback_messages"] += 1
         elif key == "warning":
             counts["warning_messages"] += 1
-        elif key == "model_ready":
-            pass
 
-    # A log truncated mid-pair (e.g. a live-log snapshot taken between the
-    # raw and cleaned prints) still holds its final payload: flush it so the
-    # pair is not silently dropped.
+    # A log truncated mid-pair (e.g. a live-log snapshot taken while the
+    # cleaned payload was still being written) still holds its final
+    # payload: flush it so the pair is counted, but mark it incomplete —
+    # its text may continue in a later version of the file (M01-AUDIT-07).
     closed = close_payload()
-    if closed and closed[0] == "cleaned" and pending_raw is not None:
-        raw_line, raw_text = pending_raw
-        pairs.append({
-            "raw_line": raw_line,
-            "cleaned_line": closed[1],
-            "segment": segments,
-            "cleanup_state": cleanup_state,
-            "audio": pending_audio,
-            "raw_words": len(raw_text.split()),
-            "timing": None,
-            "inserted_chars": None,
-            "_raw": raw_text,
-            "_cleaned": closed[2],
-        })
+    if closed and closed["kind"] == "cleaned" and pending_raw is not None:
+        complete_pair(pending_raw, closed, complete=False)
 
     return {
         "counts": counts,
@@ -316,21 +428,38 @@ def _scan(text):
 
 
 def iter_pairs(text):
-    """Complete raw/cleaned pairs with transcript text and physical-line
-    provenance, under the same E02 pairing protocol as parse(). Consumed by
-    the lossless importer; the text stays in the private store."""
+    """Raw/cleaned pairs with transcript text and physical-line provenance,
+    under the same E02 pairing protocol as parse(). Consumed by the
+    lossless importer; the text stays in the private store.
+
+    Private keys: ``_raw_exact``/``_cleaned_exact`` (PAYLOAD_DERIVATION —
+    what an importer must store) and ``_raw``/``_cleaned`` (the legacy
+    stripped STATS_DERIVATION view). ``complete`` is False for a pair
+    flushed at end-of-file that no later record closed."""
     return _scan(text)["pairs"]
 
 
-def parse(text):
+def parse(text, source=None):
+    """Aggregate report. ``source`` binds it to the bytes it was derived
+    from: {"sha256", "bytes", "decode"}. Without a binding (or for any
+    other source than the audited artifact) the cited regression windows
+    are NOT evaluated — their line numbers only mean something in the
+    audited file."""
     s = _scan(text)
     return build_report(text, s["counts"], s["audio_records"],
                         s["overflow_positive"], s["zero_voiced"],
-                        s["segments"], s["pairs"], s["metal_failure_lines"])
+                        s["segments"], s["pairs"], s["metal_failure_lines"],
+                        source=source)
+
+
+def parse_bytes(data: bytes):
+    text, decode = decode_log_bytes(data)
+    return parse(text, source={"sha256": hashlib.sha256(data).hexdigest(),
+                               "bytes": len(data), "decode": decode})
 
 
 def build_report(text, counts, audio_records, overflow_positive, zero_voiced,
-                 segments, pairs, metal_failure_lines):
+                 segments, pairs, metal_failure_lines, source=None):
     cohort = {"loaded": 0, "unavailable": 0, "unknown": 0}
     timed = []
     for p in pairs:
@@ -392,40 +521,70 @@ def build_report(text, counts, audio_records, overflow_positive, zero_voiced,
     else:
         corr = None
 
-    # Notable regression windows, verified by locating a complete pair — or,
-    # for the Metal-failure window, the explicit failure records — inside
-    # each cited physical-line range.
+    # Notable regression windows. LOCATION ONLY — finding a complete pair
+    # (or the explicit failure records) inside a cited physical-line range
+    # of the audited artifact is not semantic verification of what the
+    # window demonstrates. Windows are evaluated only when the report is
+    # bound to the audited source hash (M01-AUDIT-11).
+    bound = bool(source and source.get("sha256"))
+    audited = bound and source["sha256"] == AUDITED_SHA256
     notable = []
     for w in NOTABLE_WINDOWS:
+        rec = {"id": w["id"], "cited_lines": w["lines"], "check": w["check"],
+               "semantic_verification": "not_performed"}
+        if not audited:
+            rec.update(located=None, status=(
+                "not_evaluated_source_mismatch" if bound
+                else "not_evaluated_unbound_source"))
+            notable.append(rec)
+            continue
         if w.get("expect") == "metal_failures":
             hits = [ln for ln in metal_failure_lines
                     if w["lines"][0] <= ln <= w["lines"][1]]
-            notable.append({
-                "id": w["id"],
-                "cited_lines": w["lines"],
-                "metal_failure_lines": hits,
-                "check": w["check"],
-                "located": len(hits) == counts["metal_shared_event_failures"],
-            })
+            rec.update(metal_failure_lines=hits,
+                       located=len(hits) == w["expect_count"]
+                       and len(hits) == counts["metal_shared_event_failures"],
+                       status="evaluated")
+            notable.append(rec)
             continue
         hit = next((p for p in pairs
                     if w["lines"][0] <= p["raw_line"] <= w["lines"][1]), None)
-        notable.append({
-            "id": w["id"],
-            "cited_lines": w["lines"],
-            "pair_raw_line": hit["raw_line"] if hit else None,
-            "pair_cleaned_line": hit["cleaned_line"] if hit else None,
-            "check": w["check"],
-            "located": hit is not None,
-        })
+        rec.update(pair_raw_line=hit["raw_line"] if hit else None,
+                   pair_cleaned_line=hit["cleaned_line"] if hit else None,
+                   located=hit is not None, status="evaluated")
+        notable.append(rec)
 
     # Strip private text before emitting.
     for p in pairs:
-        p.pop("_raw")
-        p.pop("_cleaned")
+        for k in ("_raw", "_cleaned", "_raw_exact", "_cleaned_exact"):
+            p.pop(k, None)
 
     return {
-        "schema_version": 1,
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "source": {
+            "sha256": source.get("sha256") if source else None,
+            "bytes": source.get("bytes") if source else None,
+            "decode": source.get("decode") if source else None,
+            "matches_audited_artifact": audited if bound else None,
+            "reason": None if bound else "report not bound to source bytes",
+        },
+        "parser": {
+            "script": "scripts/v2/parse_legacy_log.py",
+            "report_schema_version": REPORT_SCHEMA_VERSION,
+            "payload_derivation": PAYLOAD_DERIVATION,
+            "stats_derivation": STATS_DERIVATION,
+        },
+        "eof_incomplete_pairs": sum(1 for p in pairs if not p["complete"]),
+        "decode_uncertain_pairs": sum(1 for p in pairs if p["decode_uncertain"]),
+        "heuristic_fields": {
+            "fields": ["loaded_changed", "loaded_lexical_changes",
+                       "loaded_new_sentence_breaks",
+                       "latency_by_words.*.changed_n",
+                       "latency_by_words.*.added_sentence_boundaries"],
+            "derivation": STATS_DERIVATION,
+            "note": "descriptive triage proxies over the stripped legacy "
+                    "view; not accuracy metrics and not edit ground truth",
+        },
         "file_lines": len(text.splitlines()),
         "launch_segments": segments,
         "pairs": len(pairs),
@@ -456,6 +615,12 @@ def build_report(text, counts, audio_records, overflow_positive, zero_voiced,
             "can be attributed one dictation late (locator only, no count "
             "impact).",
             "Transcript text is parsed in memory and never emitted.",
+            "A timing that reaches a pair only after that pair's posted "
+            "insertion is detached (counted unpaired) when the next "
+            "worker-side outcome is an empty transcription (M01 "
+            "remediation; neutral on well-formed legacy sequences).",
+            "Notable windows are located only against the audited source "
+            "hash; location is not semantic verification.",
         ],
     }
 
@@ -465,9 +630,9 @@ def main():
     ap.add_argument("--log", required=True)
     ap.add_argument("--output")
     args = ap.parse_args()
-    with open(args.log, encoding="utf-8", errors="replace") as f:
-        text = f.read()
-    report = parse(text)
+    with open(args.log, "rb") as f:
+        data = f.read()
+    report = parse_bytes(data)
     out = json.dumps(report, indent=2) + "\n"
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
