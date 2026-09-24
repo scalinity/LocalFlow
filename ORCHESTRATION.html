@@ -10,7 +10,7 @@
   owned by another session.
 
   Figure audit — every figure on the page and the repo file it was re-derived
-  from; figures re-read 2026-09-24 04:35 UTC at 15984ba (M14 close-out).
+  from; figures re-read 2026-09-24 05:11 UTC at e8c4e73 (M14 close-out and its limitation follow-up).
     33 requirements / 22 suites / 0 without a suite ....... docs/v2/registry.json (counts block)
     requirement -> milestone ownership, suites per strip ... docs/v2/registry.json + "ID: Mxx · Requirements" headers in
                                                              docs/v2/LOCALFLOW_V2_MILESTONES.md
@@ -21,10 +21,10 @@
     M14-A/B/C checkpoints ................................. M14 implementation task 12 + P07 amendment note
     STATUS figures (active M14, implemented_pending_human,
     source_commit 5e90489, pending native-m14-learning-profile-dataset-trial,
-    next M15 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-24 04:35 UTC at 15984ba
+    next M15 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-24 05:11 UTC at e8c4e73
     commit ids 4bd0187 / 50bf457 / 95f92dd / adc872b / 9d53b4f / e95d152 /
     eea1bd0 / dc3c726 / 56dc4de / d10886c / 7e2a0b4 / f2137ef / d2ef224 /
-    f24b3d5 / 15984ba ...................................... git log --oneline at the same moment
+    f24b3d5 / 15984ba / e8c4e73 ............................ git log --oneline at the same moment
     review ledger (verdicts, critical counts, named criticals) ... "/review-2 → /address record" sections of
                                                              docs/v2/handoffs/M01.md–M14.md (cross-checked against
                                                              docs/v2/acceptance/M0*/results.json review_loop blocks
@@ -288,7 +288,7 @@
 <header class="masthead">
   <h1>LocalFlow V2 — orchestration overview</h1>
   <p class="lede">LocalFlow is a private, local-first macOS dictation and writing interface built around Parakeet TDT 0.6B V3 via MLX and Qwen3-4B-Instruct-2507 4-bit via MLX. V2 closes the gap with Wispr Flow while preserving local inference and training-ready data collection. This page is the dispatch board for that build: what can run next, in what company, on which model, and against what standard of proof.</p>
-  <p class="stamp">repo scalinity/LocalFlow · figures read 2026-09-24 04:35 UTC at commit 15984ba (M14 close-out) · realigned in place by milestone close-outs</p>
+  <p class="stamp">repo scalinity/LocalFlow · figures read 2026-09-24 05:11 UTC at commit e8c4e73 (M14 close-out) · realigned in place by milestone close-outs</p>
   <ul class="toc">
     <li><a href="#now">Now</a></li>
     <li><a href="#strips">Units of work</a></li>
@@ -311,7 +311,7 @@
       <div><dt>Registry</dt><dd>33 requirements LF-R01–R33 · 22 suites EV-01–EV-22 · 0 requirements without a suite <span class="src">registry.json</span></dd></div>
       <div><dt>Decision record</dt><dd>docs/v2/decisions/ is empty — no accepted spec deviations to date <span class="src">directory listing, 2026-09-22</span></dd></div>
     </dl>
-    <p class="reason">M14’s automatable work and checks passed on post-review code, across all three checkpoints (M14-A labels/review, M14-B sampling/preferences/splits, M14-C export/readiness/profile) recorded in one handoff: store schema v10 (additive); correction learning from explicit teach, certified M08 edit windows and single-dictation note edits, with the S29.7 multi-axis classifier abstaining honestly and rule suggestions only for ASR-origin recognition errors; approval that composes with M05 entries, checks counterexamples in the rule’s own scope and records its plan before any vocabulary write so undo reverses exactly what it did; versioned labels, source-anchored partial grafts and one ASR promotion gate that refuses non-live evidence; a seeded 10% review stream with explicit/hard/supplemental/late-trigger strata; same-task pair review (latest judgment wins); versioned family splits with a 10-family floor and permanent forward-only exposure; a portable five-view export (consistent snapshot, streamed hash-verified audio, finalize recheck, never replacing a user’s folder) with a hardened offline validator; Your Voice built only from eligible raw speech, cards citing their own evidence, snapshots cleared on deletion or expiry, and nothing reaching the dictation pipeline. Deletion and expiry reach job-keyed and note-sourced candidates; rows carry offsets, not words. The /review-2 loop’s three criticals (deletion/retention propagation; transcript words in rows plus a lease that pinned whole jobs; labels resurrecting quarantined evidence) and all twenty further findings were addressed in-session with regression tests. Suites: 62/62 on the final code incl. every model-backed suite and the V1 control 51/51. Benchmark at 10k examples: worst dictation write wait 45 ms during profile compute, 1 ms during mining, 50.6 ms during export; export 746 MB/s, audio adding 0.3 MB peak memory. Live data sits below every floor (6 examples, 0 observations, 0 labels, 0 pairs) — the valid measured-only state M15’s live pilot starts from. The live store stays at v9 until the next dev run migrates it with its backup. The pending native trial does not gate M15’s automatable work. <span class="src">STATUS.json status_reason + benchmarks/20260924-003129-m14, read 2026-09-24 04:35 UTC at 15984ba</span></p>
+    <p class="reason">M14’s automatable work and checks passed on post-review code, across all three checkpoints (M14-A labels/review, M14-B sampling/preferences/splits, M14-C export/readiness/profile) recorded in one handoff: store schema v10 (additive); correction learning from explicit teach, certified M08 edit windows and single-dictation note edits, with the S29.7 multi-axis classifier abstaining honestly and rule suggestions only for ASR-origin recognition errors; approval that composes with M05 entries, checks counterexamples in the rule’s own scope and records its plan before any vocabulary write so undo reverses exactly what it did; versioned labels, source-anchored partial grafts and one ASR promotion gate that refuses non-live evidence; a seeded 10% review stream with explicit/hard/supplemental/late-trigger strata; same-task pair review (latest judgment wins); versioned family splits with a 10-family floor and permanent forward-only exposure; a portable five-view export (consistent snapshot, streamed hash-verified audio, finalize recheck, never replacing a user’s folder) with a hardened offline validator; Your Voice built only from eligible raw speech, cards citing their own evidence, snapshots cleared on deletion or expiry, and nothing reaching the dictation pipeline. Deletion and expiry reach job-keyed and note-sourced candidates; rows carry offsets, not words. The /review-2 loop’s three criticals (deletion/retention propagation; transcript words in rows plus a lease that pinned whole jobs; labels resurrecting quarantined evidence) and all twenty further findings were addressed in-session with regression tests. Suites: 62/62 on the final code incl. every model-backed suite and the V1 control 51/51. Benchmark at 10k examples: worst dictation write wait 54 ms during profile compute, 1 ms during mining, 50.3 ms during export; export 715 MB/s, audio adding 0.3 MB peak memory; the idle profile pass decides from counters alone (p95 38 ms). Live data sits below every floor (6 examples, 0 observations, 0 labels, 0 pairs) — the valid measured-only state M15’s live pilot starts from. The live store stays at v9 until the next dev run migrates it with its backup. The pending native trial does not gate M15’s automatable work. <span class="src">STATUS.json status_reason + benchmarks/20260924-010937-m14, read 2026-09-24 05:11 UTC at e8c4e73</span></p>
     <div class="chain" aria-label="Runnable order of milestones">
       <span class="node done"><span class="mid">M01</span><span class="cmt">4bd0187</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M02</span><span class="cmt">50bf457</span></span><span class="link" aria-hidden="true">▸</span>
@@ -798,7 +798,7 @@
 </section>
 
 <div class="footer">
-  <p><b>Maintenance.</b> Milestone close-outs realign this page in place — strip states, ledger rows, the NOW panel and the chain rail — against the project’s own record (STATUS.json, handoffs, acceptance results), never against session memory. While the page is uncommitted or concurrently owned by another session, close-outs leave it untouched and record the intended change in their handoff instead. Figures were last read 2026-09-24 04:35 UTC at commit 15984ba; the full source-to-figure audit lives in the HTML comment at the top of this file.</p>
+  <p><b>Maintenance.</b> Milestone close-outs realign this page in place — strip states, ledger rows, the NOW panel and the chain rail — against the project’s own record (STATUS.json, handoffs, acceptance results), never against session memory. While the page is uncommitted or concurrently owned by another session, close-outs leave it untouched and record the intended change in their handoff instead. Figures were last read 2026-09-24 05:11 UTC at commit e8c4e73; the full source-to-figure audit lives in the HTML comment at the top of this file.</p>
 </div>
 
 </div>
