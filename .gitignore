@@ -29,3 +29,6 @@ v2-evidence/
 # Note for M02: when synthetic fixture databases are wanted under
 # tests/v2/fixtures/, add a `!tests/v2/fixtures/**` negation here — the
 # global *.db rule above will otherwise exclude them silently.
+
+# Audit input documents: local review material, kept out of the repository
+docs/LocalFlow_M07_Read_Only_Audit_d3d3e4b.md
