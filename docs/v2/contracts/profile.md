@@ -40,8 +40,11 @@ per utterance, frequent 2–3-word phrases (counted once per example,
 with up to five supporting example ids each), corrections by kind (each
 eligible example's CURRENT reviewed label — the latest revision; an
 abstained latest revision counts as none), dictionary-hit dictations
-and the approved terms with recorded use, app and mode usage, and the
-**local** hour of each dictation from usage facts (the fact's recorded
+and the approved terms with recorded use, spoken self-corrections the
+cleanup stage detected (over the dictations whose cleanup recorded the
+count — unknown is not zero), requested transforms (explicit runs and
+auto-applied dictation transforms separately), app and mode usage, and
+the **local** hour of each dictation from usage facts (the fact's recorded
 UTC offset; dictations with no offset are counted in `hours_unknown`,
 never bucketed by UTC). App names are private usage metadata: store and
 local UI only.
@@ -89,7 +92,11 @@ every card example (role `card_example`).
   default 30; 0 disables) never starts while recording, while a job is
   pending, during the synthetic-paste window or an insertion/undo
   transaction; it runs `compute(only_if_changed=True)`, which adds NO
-  snapshot when the evidence signature matches the current one.
+  snapshot when nothing changed. It decides first from an input
+  signature built from counters only (revisions, example states,
+  purges, labels, exclusions, usage, vocabulary) — no transcript is
+  read; when those moved but the eligible evidence did not, one read
+  confirms it and the new input signature is remembered.
 - **Deletion (M14-AC03)**: delete-everywhere invalidates every snapshot
   that drew on the example (`source_deleted`) and clears its measured
   JSON and cards — phrases derived from deleted speech never outlive
@@ -126,18 +133,15 @@ idle pass — Generate still works).
 
 ## Limitations (documented, not hidden)
 
-- Three card rules exist; "requested output structures" and playful
-  archetypes (S22's optional cards) are not synthesized — no rule
-  without evidence to cite.
+- Three card rules exist; playful archetypes (S22's optional cards)
+  are not synthesized — no rule without evidence to cite.
 - Background speech is excluded only where a review label flags it; no
   automatic detector exists.
-- The idle pass's unchanged-evidence check still reads the eligible
-  history (chunked) to compute its signature.
 
-## Performance (measured, benchmarks/20260924-003129-m14)
+## Performance (measured, benchmarks/20260924-010937-m14)
 
-10,000 eligible dictations (284,990 words): compute p95 300 ms in
+10,000 eligible dictations (284,990 words): compute p95 313 ms in
 250-example read chunks plus one write op; a dictation's store write
-waits at most 45 ms during it (15 probes); Python peak 41.5 MB. The
-idle pass over unchanged evidence costs p95 299 ms (the chunked read
-that computes the signature) and writes nothing.
+waits at most 54 ms during it (16 probes); Python peak 41.4 MB. The
+idle pass over unchanged evidence costs p95 38 ms — counters only, no
+transcript read — and writes nothing.

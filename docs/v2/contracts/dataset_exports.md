@@ -105,11 +105,13 @@ are listed in `manifest.excluded` with content-free reasons.
 **Build discipline** (S29.13): selection and content resolve in one
 snapshot op; the graph is written into `.<name>.building` beside the
 destination; audio is copied and hashed by streaming (never read into
-RAM); before the atomic rename one recheck op confirms the deletion
-epoch (tombstone count) is unchanged, consent is still enabled and
-every exported example is still live — otherwise the build aborts and
-nothing is labeled complete. The manifest records that
-`deletion_epoch`, a content fingerprint over the semantic records
+RAM); before the atomic rename one recheck op confirms consent is
+still enabled, every exported example is still live and none of the
+artifacts the build read has been purged (deleted or expired) —
+otherwise the build aborts and nothing is labeled complete. A deletion
+elsewhere in the store does not concern the dataset and does not abort
+it. The manifest records the store's `deletion_epoch` (tombstone count)
+at the snapshot, a content fingerprint over the semantic records
 (export ids/times excluded — identical revisions reproduce identical
 fingerprints) and every version. The destination is replaced only when
 it is absent, an empty folder or an earlier LocalFlow export holding
@@ -122,7 +124,7 @@ unexpected error — which also removes the staging folder).
 
 The selection runs in ONE writer op on purpose: S29.13 requires a
 consistent source snapshot, and the op is that snapshot (measured: a
-dictation write waits at most 50.6 ms behind it at 10,000 examples;
+dictation write waits at most 50.3 ms behind it at 10,000 examples;
 export is a user action, never idle work).
 
 **The validator** (no store, no network, any working directory)
@@ -142,11 +144,6 @@ Export is local only: a dataset directory is never uploaded anywhere
 
 ## Limitations (documented, not hidden)
 
-- The finalize recheck compares the store's whole deletion epoch, so
-  ANY delete-everywhere during a build — even of an unselected example
-  — aborts it; the build is simply rerun. Conservative by design: a
-  build never has to decide whether a concurrent deletion touched its
-  selection.
 - `mark_exposed` carries the previous assignment version forward;
   families that arrived after that version join only through the next
   `assign`.
@@ -156,13 +153,13 @@ Export is local only: a dataset directory is never uploaded anywhere
 - Synthetic fixtures prove the export mechanics; a live pilot over real
   retained jobs is M15's (E19.5).
 
-## Performance (measured, benchmarks/20260924-003129-m14)
+## Performance (measured, benchmarks/20260924-010937-m14)
 
 Synthetic store: 10,000 examples, 400 retained 10-second float32 WAVs
 (256 MB). Export of the ASR + cleanup views (800 rows, 257 MB on disk):
-344 ms, 746 MB/s, 2,325 rows/s; Python peak 40.2 MB against a
+359 ms, 715 MB/s, 2,228 rows/s; Python peak 40.2 MB against a
 text-only control's 39.9 MB — the 256 MB of audio adds 0.3 MB (streamed
-copy and hash). A dictation's store write waits at most 50.6 ms during
-the build (38 probes). Offline validation of the dataset: 107 ms, 3.7 MB
-peak. Split assignment 62 ms (a dictation write waits ≤ 54 ms);
+copy and hash). A dictation's store write waits at most 50.3 ms during
+the build (40 probes). Offline validation of the dataset: 111 ms, 3.7 MB
+peak. Split assignment 56 ms (a dictation write waits ≤ 48 ms);
 contamination check 29 ms (≤ 22 ms).

@@ -62,11 +62,13 @@ teach action; never every later manual rewrite):
   dismissed and teaches nothing.
 - **M12 note edits**: consecutive typed revisions of a note whose
   changed words intersect a surviving `dictated` span (both measured
-  in whitespace words, the spans' own unit). Spans record word ranges,
-  not which dictation produced them, so a note holding more than one
-  linked dictation is never mined — attribution stops where it becomes
-  unreliable (S29.8) — and an edit with no resolvable dictation job is
-  skipped.
+  in whitespace words, the spans' own unit). A dictated span records
+  the job that produced it, so in a note holding several dictations
+  the edit is attributed to the one whose span it touched. An edit
+  touching two dictations' spans, or a span written before spans
+  carried their job in a note with more than one linked dictation,
+  stays unattributed — attribution stops where it becomes unreliable
+  (S29.8) — and an edit with no resolvable dictation job is skipped.
 
 User rewrites and changed intent are recorded as `dismissed`
 (examined, never re-suggested). A job with several triggers yields one
@@ -266,15 +268,13 @@ Real classification accuracy needs real reviewed observations (below).
   observations reviewed with explicit intent/audio checks, split
   30/10/20 — has not happened, so suggestions stay visibly unverified
   and every approval is an explicit choice.
-- A note holding more than one dictation contributes no candidates
-  (its spans do not say which dictation they came from).
 - `sampling.refresh()` and the review queue scan all examples in one
   writer op (measured below).
 
-## Performance (measured, benchmarks/20260924-003129-m14)
+## Performance (measured, benchmarks/20260924-010937-m14)
 
-At 10,000 examples: mining 1,000 observations takes 583 ms in one short
-op per observation — a dictation's store write waits at most 1 ms (74
-probes); sampling refresh 98 ms as one op (a dictation write waits
-≤ 91 ms — a Hub action, never idle work); the review queue loads in
+At 10,000 examples: mining 1,000 observations takes 595 ms in one short
+op per observation — a dictation's store write waits at most 1 ms (76
+probes); sampling refresh 101 ms as one op (a dictation write waits
+≤ 93 ms — a Hub action, never idle work); the review queue loads in
 6 ms.

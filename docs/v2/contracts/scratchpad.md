@@ -37,8 +37,11 @@ Markdown/plain export and quick-open. It is not a word processor.
   shows the ⚠ banner — the marker identifies the RISK; unsaved content
   itself is never fabricated.
 - **Region provenance (S29.8):** revisions carry word-offset origin
-  spans (`dictated`/`transform`). A span survives only while edits
-  leave every covered word untouched (word-diff rebase); an edit
+  spans (`dictated`/`transform`) — `[start, end, origin]`, plus the
+  producing job id for a dictated span, which rides along through
+  every rebase (spans written before that carry three elements). A
+  span survives only while edits leave every covered word untouched
+  (word-diff rebase); an edit
   touching it drops it and records a content-free `edited_spans` entry
   — attribution stops where it becomes unreliable. Typed additions
   never create attributed spans (M12-AC05).

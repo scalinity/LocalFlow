@@ -1,0 +1,88 @@
+{
+ "environment": {
+  "machine": "arm64",
+  "macos": "27.0",
+  "processor": "arm",
+  "python": "3.14.7"
+ },
+ "generated_utc": "2026-09-24T05:09:45Z",
+ "milestone": "M14",
+ "results": {
+  "export": {
+   "asr_rows": 400,
+   "audio_added_peak_mb": 0.3,
+   "audio_bytes_exported": 256017600,
+   "build_ms": 359.1,
+   "cleanup_rows": 400,
+   "dataset_bytes": 256775843,
+   "examples": 800,
+   "examples_per_s": 2228.0,
+   "max_dictation_write_delay_ms": 50.3,
+   "note": "the export holds the writer only for its snapshot and finalize-recheck ops; audio copy, hashing and writing run outside the writer",
+   "probes": 40,
+   "python_peak_mb": 40.2,
+   "text_only_control_peak_mb": 39.9,
+   "throughput_mb_per_s": 715.1,
+   "views": [
+    "asr_supervised",
+    "cleanup_supervised"
+   ]
+  },
+  "process_max_rss_mb": 160.3,
+  "profile_compute": {
+   "eligible_examples": 10000,
+   "eligible_words": 284990,
+   "max_ms": 312.66,
+   "n": 7,
+   "note": "on demand (Generate) or the idle pass; chunked reads + one short write op",
+   "p50_ms": 305.92,
+   "p95_ms": 312.66,
+   "python_peak_mb": 41.4
+  },
+  "profile_idle_skip": {
+   "max_ms": 38.06,
+   "n": 7,
+   "note": "idle pass over unchanged evidence: eligibility scan + signature, no snapshot written",
+   "p50_ms": 28.86,
+   "p95_ms": 38.06
+  },
+  "validate": {
+   "ms": 110.6,
+   "python_peak_mb": 3.7,
+   "valid": true
+  },
+  "writer_occupancy": {
+   "contamination_check": {
+    "max_dictation_write_delay_ms": 21.9,
+    "operation_ms": 29.1,
+    "probes": 1
+   },
+   "mining": {
+    "max_dictation_write_delay_ms": 1.0,
+    "operation_ms": 594.8,
+    "probes": 76
+   },
+   "profile_compute": {
+    "max_dictation_write_delay_ms": 53.7,
+    "operation_ms": 323.2,
+    "probes": 16
+   },
+   "review_queue": {
+    "max_dictation_write_delay_ms": 0.4,
+    "operation_ms": 5.7,
+    "probes": 1
+   },
+   "sampling_refresh": {
+    "max_dictation_write_delay_ms": 93.3,
+    "operation_ms": 100.5,
+    "probes": 1
+   },
+   "split_assign": {
+    "max_dictation_write_delay_ms": 48.3,
+    "operation_ms": 55.6,
+    "probes": 1
+   }
+  }
+ },
+ "store": "synthetic 10000 examples, 400 x 10s float32 WAVs (temp dir; never committed)"
+}

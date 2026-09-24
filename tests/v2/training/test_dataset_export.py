@@ -592,7 +592,65 @@ def test_export_hardening():
                 pass
 
 
+def test_finalize_recheck_is_about_the_selection():
+    """A deletion elsewhere in the store during a build does not abort
+    it; a purge (retention or deletion) of an artifact the build
+    exported does — the recheck is about this dataset's inputs."""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = pathlib.Path(td)
+        s = make_store(tmp)
+        try:
+            pack, sp = prepare(s)
+            ex = export_mod.DatasetExporter(s, emit=lambda *a, **k: None)
+            real_sums = export_mod._write_sums
+            unrelated = pack["by_category"]["uncertain"][0]
+
+            def sums_then_delete_unrelated(root):
+                s.delete_everywhere("example", unrelated,
+                                    reason="user_request")
+                real_sums(root)
+            export_mod._write_sums = sums_then_delete_unrelated
+            try:
+                out = ex.build(tmp / "ds-a",
+                               task_views=("cleanup_supervised",))
+            finally:
+                export_mod._write_sums = real_sums
+            assert out["state"] == "complete"
+            rows = _read_jsonl(tmp / "ds-a" / "examples.jsonl")
+            assert unrelated not in {r["example_id"] for r in rows}
+            victim = rows[0]["example_id"]
+            applied = s.submit(lambda c: c.execute(
+                "SELECT json_extract(envelope_json,"
+                " '$.artifact_ids.applied_output') FROM"
+                " training_revisions WHERE example_id=? ORDER BY rowid"
+                " DESC LIMIT 1", (victim,)).fetchone()[0])
+
+            def sums_then_purge_input(root):
+                s.submit(lambda c: c.execute(
+                    "UPDATE artifacts SET purged=1, content_text=NULL"
+                    " WHERE artifact_id=?", (applied,)))
+                real_sums(root)
+            export_mod._write_sums = sums_then_purge_input
+            try:
+                ex.build(tmp / "ds-b", task_views=("cleanup_supervised",))
+                raise AssertionError("an export completed after one of"
+                                     " its inputs was purged")
+            except export_mod.ExportError as e:
+                assert "aborted" in str(e)
+            finally:
+                export_mod._write_sums = real_sums
+            assert not (tmp / "ds-b").exists()
+            print("ok  finalize recheck: unrelated deletions do not abort;"
+                  " a purged exported input does")
+        finally:
+            try:
+                s.close()
+            except Exception:
+                pass
+
+
 if __name__ == "__main__":
+    test_finalize_recheck_is_about_the_selection()
     test_export_hardening()
     test_round_trip_and_determinism()
     test_negative_battery()

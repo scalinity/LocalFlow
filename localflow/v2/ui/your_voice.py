@@ -105,6 +105,10 @@ class YourVoicePane:
                   "Technical terms: "
                   + ", ".join(measured.get("technical_terms") or []),
                   "Modes: " + json_dumps(measured.get("modes")),
+                  "Self-corrections: "
+                  + _self_corrections(measured.get("self_corrections")),
+                  "Requested transforms: "
+                  + json_dumps(measured.get("requested_transforms")),
                   "", "Interpretive cards:"]
         cards = profile.get("cards") or []
         if not cards:
@@ -117,6 +121,13 @@ class YourVoicePane:
             lines.append(f"    evidence: "
                          f"{', '.join(card['evidence_example_ids'])}")
         self.text.setString_("\n".join(lines))
+
+
+def _self_corrections(sc) -> str:
+    if not sc or not sc.get("denominator"):
+        return "— (no dictation recorded the count yet)"
+    return (f"{sc['dictations_with']} of {sc['denominator']} dictations"
+            f" ({sc['applied']} corrections)")
 
 
 def json_dumps(value) -> str:

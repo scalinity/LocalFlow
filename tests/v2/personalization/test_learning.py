@@ -737,7 +737,65 @@ def test_review_queue_rows():
             s.close()
 
 
+def test_note_edits_attributed_by_span_job():
+    """Dictated spans record their job (through the real NoteStore), so
+    an edit in a note holding two dictations is attributed to the one
+    it touched; an edit touching both dictations stays unattributed."""
+    from localflow.v2 import notes as notes_mod
+    with tempfile.TemporaryDirectory() as td:
+        tmp = pathlib.Path(td)
+        s = make_store(tmp)
+        try:
+            vs, ls = services(s)
+            ns = notes_mod.NoteStore(s)
+            ex1, job1 = add_job_with_text(s, "alpha clod", "alpha clod")
+            ex2, job2 = add_job_with_text(s, "beta mlx docs",
+                                          "beta mlx docs")
+
+            def two_dictation_note(first, second):
+                nid = ns.create_note(first, origin=notes_mod.ORIGIN_DICTATED,
+                                     source_job_id=job1)["note_id"]
+                ns.append_revision(
+                    nid, f"{first} {second}",
+                    origin=notes_mod.ORIGIN_DICTATED,
+                    trigger=notes_mod.TRIGGER_SYSTEM, source_job_id=job2,
+                    inserted_at_chars=len(first) + 1,
+                    inserted_text=second)
+                now = "2026-09-23T10:00:00.000Z"
+                for ex, job in ((ex1, job1), (ex2, job2)):
+                    s.submit(lambda c, ex=ex, job=job: c.execute(
+                        "INSERT INTO note_evidence_links(note_id,"
+                        " example_id, job_id, first_seen_utc)"
+                        " VALUES(?,?,?,?)", (nid, ex, job, now)))
+                return nid
+
+            nid = two_dictation_note("alpha clod", "beta mlx docs")
+            spans = ns.open_note(nid)["revision"]["spans"]
+            assert sorted(sp[3] for sp in spans) == sorted([job1, job2]), spans
+            ns.append_revision(nid, "alpha clod beta MLX docs",
+                               origin=notes_mod.ORIGIN_TYPED,
+                               trigger=notes_mod.TRIGGER_AUTOSAVE)
+            ls.mine_observation_candidates()
+            cands = [c for c in ls.candidates()
+                     if c["source"] == "note_revision"]
+            assert len(cands) == 1 and cands[0]["job_id"] == job2 and \
+                cands[0]["example_id"] == ex2, cands
+            # One edit across both dictations: no attribution.
+            nid2 = two_dictation_note("gamma clod", "delta mlx docs")
+            ns.append_revision(nid2, "gamma Claude delta mlx notes",
+                               origin=notes_mod.ORIGIN_TYPED,
+                               trigger=notes_mod.TRIGGER_AUTOSAVE)
+            ls.mine_observation_candidates()
+            assert len([c for c in ls.candidates()
+                        if c["source"] == "note_revision"]) == 1
+            print("ok  note edits attributed to the dictation whose span"
+                  " they touch; an edit across two dictations is not")
+        finally:
+            s.close()
+
+
 if __name__ == "__main__":
+    test_note_edits_attributed_by_span_job()
     test_review_queue_rows()
     test_deletion_expiry_and_row_content()
     test_migration_v10_additive_with_backup_and_repair()

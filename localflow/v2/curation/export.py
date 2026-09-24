@@ -235,6 +235,7 @@ class DatasetExporter:
                             "example_id": ex_id, "family_id": fam,
                             "split": part, "exposed": exposed,
                             "audio_artifact": audio,
+                            "inputs": [audio["id"], vref["id"]],
                             "verbatim_text": vref["text"],
                             "verbatim_annotation_id":
                                 verbatim["annotation_id"],
@@ -267,6 +268,7 @@ class DatasetExporter:
                             graft_rows.append({
                                 "example_id": ex_id, "family_id": fam,
                                 "split": part, "exposed": exposed,
+                                "inputs": [graft["id"], audio_aid],
                                 "graft_text": payload["grafted_text"],
                                 "coverage": payload["coverage"],
                                 "reference_quality": "weak_partial",
@@ -303,6 +305,7 @@ class DatasetExporter:
                 continue
             cleanup = env.get("cleanup") or {}
             prompts = []
+            prompt_ids = []
             prompts_missing = None
             for p in cleanup.get("passes") or []:
                 art = _conn_artifact(conn, p.get("prompt_artifact_id"))
@@ -310,6 +313,7 @@ class DatasetExporter:
                     prompts_missing = "prompt_artifact_unavailable"
                     continue
                 prompts.append(art["text"])
+                prompt_ids.append(art["id"])
             if not cleanup.get("passes"):
                 prompts_missing = "no_model_pass_recorded"
             fam, part, exposed = sel["memberships"][ex_id]
@@ -317,6 +321,8 @@ class DatasetExporter:
                 "example_id": ex_id, "family_id": fam, "split": part,
                 "exposed": exposed,
                 "source_text": source["text"],
+                "inputs": [source["id"], applied["id"],
+                           norm["id"] if norm else None, *prompt_ids],
                 "input_text": (norm["text"] if norm is not None
                                and norm["role"] == "normalized_text"
                                else source["text"]),
@@ -364,6 +370,7 @@ class DatasetExporter:
             rows.append({
                 "task_key": task_key,
                 "transform_id": cand[0], "transform_revision": cand[1],
+                "inputs": [cand[3], cand[4]],
                 "prompt_revision": cand[2],
                 "transform_definition": json.loads(definition[0]),
                 "source_text": source["text"],
@@ -417,6 +424,7 @@ class DatasetExporter:
             rows.append({
                 "task_key": task_key,
                 "judgment": judgment,
+                "inputs": [by_id[cand_a][5], by_id[cand_b][5]],
                 "input_source_sha256": a[1],
                 "instructions_sha256": a[2],
                 "examples_revision": a[3],
@@ -469,8 +477,8 @@ class DatasetExporter:
                 " DESC").fetchone()
             return row[0] if row else "disabled"
 
-        # The deletion epoch this build starts from: every tombstone
-        # that appears before finalize aborts the export.
+        # The store's deletion epoch (tombstone count) when the build
+        # read its snapshot — recorded in the manifest.
         baseline_tombstones = None
 
         def snapshot_op(conn):
@@ -680,8 +688,8 @@ class DatasetExporter:
                                  " transcript excerpts (E19.5)",
                 "content_fingerprint": fingerprint,
                 # The store's deletion epoch (tombstone count) the build
-                # started from — the finalize recheck refuses if it
-                # moved. Manifest-level: it is not part of any record.
+                # read from — provenance for later comparison.
+                # Manifest-level: it is not part of any record.
                 "deletion_epoch": baseline_tombstones,
                 "files": ["examples.jsonl", "references.jsonl",
                           "preferences.jsonl", "README.md"],
@@ -700,16 +708,25 @@ class DatasetExporter:
                 json.dumps(manifest, ensure_ascii=False, indent=1,
                            sort_keys=True), encoding="utf-8")
             _write_sums(staging)
-            # --- finalize recheck: revocation/deletion during the
-            # build aborts; nothing is left labeled complete.
+            # --- finalize recheck: revocation, or deletion/expiry of
+            # anything this build exported, aborts it; nothing is left
+            # labeled complete. A deletion elsewhere in the store does
+            # not concern this dataset and does not abort it.
+            inputs = sorted({aid for key in ("asr", "grafts", "cleanup",
+                                             "transforms", "preferences")
+                             for row in snap[key]
+                             for aid in row.get("inputs") or () if aid})
+
             def recheck_op(conn):
-                now_tombs = conn.execute(
-                    "SELECT COUNT(*) FROM deletion_tombstones"
-                ).fetchone()[0]
-                if now_tombs != baseline_tombstones:
-                    return False
                 if _consent_in(conn) != "enabled":
                     return False
+                for i in range(0, len(inputs), 500):
+                    chunk = inputs[i:i + 500]
+                    if conn.execute(
+                            "SELECT 1 FROM artifacts WHERE purged=1 AND"
+                            f" artifact_id IN ({','.join('?' * len(chunk))})"
+                            " LIMIT 1", chunk).fetchone():
+                        return False
                 for ex in examples:
                     ex_id = ex.get("example_id")
                     if not ex_id:

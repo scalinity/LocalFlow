@@ -119,15 +119,22 @@ def rebase_spans(parent_text: str, parent_spans: list, new_text: str):
         if all(w in mapping for w in covered):
             shift = mapping[s] - s
             if all(mapping[w] == w + shift for w in covered):
-                surviving.append([s + shift, e + shift, origin])
+                # Extra elements (the producing job) ride along.
+                surviving.append([s + shift, e + shift, origin,
+                                  *span[3:]])
                 continue
         edited.append({"origin": origin, "words_before": e - s})
     return surviving, edited
 
 
-def insert_span(spans, start_word, n_words, origin):
-    """A fresh attributed region (dictation/transform output)."""
-    spans.append([start_word, start_word + n_words, origin])
+def insert_span(spans, start_word, n_words, origin, job_id=None):
+    """A fresh attributed region (dictation/transform output). A
+    dictated region records the job that produced it, so a later edit
+    in a note holding several dictations is attributable to one."""
+    span = [start_word, start_word + n_words, origin]
+    if job_id:
+        span.append(job_id)
+    spans.append(span)
 
 
 class NoteStore:
@@ -559,12 +566,14 @@ class NoteStore:
                         start_word = len(
                             parent_content[:inserted_at_chars or 0].split())
                         insert_span(spans, start_word,
-                                    word_count(inserted_text), origin)
+                                    word_count(inserted_text), origin,
+                                    job_id=source_job_id)
                     elif not parent_content:
                         # A note CREATED from attributed text (History
                         # copy, Save-to-Scratchpad): the whole content
                         # is the attributed region.
-                        insert_span(spans, 0, word_count(content), origin)
+                        insert_span(spans, 0, word_count(content), origin,
+                                    job_id=source_job_id)
             meta = {"edited_spans": edited} if edited else {}
             db.execute(
                 "INSERT INTO note_revisions(revision_id, note_id,"

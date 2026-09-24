@@ -25,7 +25,7 @@ def make_store(tmp):
 
 
 def add_example(s, i, raw, *, family=None, origin="live_capture",
-                snippets=False, state="captured_unreviewed"):
+                snippets=False, state="captured_unreviewed", cleanup=None):
     job, fam = s.create_job(family_id=family)
     raw_aid = s.write_text_artifact(
         job_id=job, stage="asr", role="raw_transcript", text=raw,
@@ -38,6 +38,8 @@ def add_example(s, i, raw, *, family=None, origin="live_capture",
            "annotations": [], "missing_reasons": {}}
     if snippets:
         env["normalization"] = {"snippets": {"expansions": 1}}
+    if cleanup is not None:
+        env["cleanup"] = cleanup
     if state != "captured_unreviewed":
         s.submit(lambda c, ex=ex, st=state: c.execute(
             "UPDATE training_examples SET state=? WHERE example_id=?",
@@ -350,7 +352,87 @@ def test_quarantine_excluded_and_invalidation_reasons():
             s.close()
 
 
+def test_idle_skip_reads_no_text():
+    """The idle pass decides "unchanged" from counters alone; a change
+    that does not touch the evidence costs one read and is remembered;
+    a real evidence change still recomputes."""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = pathlib.Path(td)
+        s = make_store(tmp)
+        try:
+            for i in range(12):
+                add_example(s, i, f"steady river sound {i}")
+            ps = profile.ProfileService(s, emit=lambda *a, **k: None,
+                                        min_words=10)
+            first = ps.compute(only_if_changed=True)
+            real_eligible = ps._eligible
+            reads = []
+
+            def counting_eligible(labels):
+                reads.append(1)
+                return real_eligible(labels)
+            ps._eligible = counting_eligible
+            assert ps.compute(only_if_changed=True).get("skipped")
+            assert not reads, "an unchanged tick read transcript text"
+            # Metadata moves (an excluded example arrives) but the
+            # evidence does not: one read, a skip, then cheap again.
+            add_example(s, 50, "not part of the profile",
+                        state="excluded")
+            assert ps.compute(only_if_changed=True).get("skipped")
+            assert len(reads) == 1
+            assert ps.compute(only_if_changed=True).get("skipped")
+            assert len(reads) == 1
+            # Real evidence change: recompute.
+            add_example(s, 60, "a new eligible dictation")
+            again = ps.compute(only_if_changed=True)
+            assert not again.get("skipped") and \
+                again["snapshot_id"] != first["snapshot_id"]
+            print("ok  idle skip decides from counters without reading"
+                  " text; metadata-only changes are remembered")
+        finally:
+            s.close()
+
+
+def test_self_corrections_and_requested_transforms():
+    """S22's self-correction and requested-output views: counted only
+    where the cleanup recorded the count (unknown is not zero), and
+    transform requests split explicit vs auto-applied."""
+    from localflow.v2.analytics import AnalyticsStore
+    with tempfile.TemporaryDirectory() as td:
+        tmp = pathlib.Path(td)
+        s = make_store(tmp)
+        try:
+            add_example(s, 1, "send it no wait tomorrow", cleanup={
+                "v2": {"corrections": {"applied": 2, "rejected": 0}}})
+            add_example(s, 2, "plain dictation here", cleanup={
+                "v2": {"corrections": {"applied": 0, "rejected": 0}}})
+            add_example(s, 3, "older job without the count")
+            a = AnalyticsStore(s, reporting_timezone="UTC")
+            a.record_transform_fact(
+                transform_id="builtin:polish", task_key="tk-1",
+                path="applied", source_kind="selection",
+                source_words=10, output_words=9)
+            a.record_dictation_fact(
+                job_id="job-auto", activity_at_utc="2026-09-20T10:00:00Z",
+                raw_words=5, final_words=5,
+                transform_id="builtin:prompt_engineer")
+            m = profile.ProfileService(
+                s, emit=lambda *a, **k: None).compute()["measured"]
+            sc = m["self_corrections"]
+            assert (sc["dictations_with"], sc["applied"],
+                    sc["denominator"]) == (1, 2, 2), sc
+            assert m["requested_transforms"] == {
+                "explicit": {"builtin:polish": 1},
+                "auto_applied": {"builtin:prompt_engineer": 1}}, m
+            print("ok  self-corrections over dictations that recorded"
+                  " them; requested transforms explicit vs auto")
+        finally:
+            s.close()
+
+
 if __name__ == "__main__":
+    test_self_corrections_and_requested_transforms()
+    test_idle_skip_reads_no_text()
     test_quarantine_excluded_and_invalidation_reasons()
     test_card_evidence_exclusions_hours_and_idle_skip()
     test_deleted_evidence_leaves_no_derived_text()

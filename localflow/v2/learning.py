@@ -189,10 +189,12 @@ class LearningService:
         give the before/after; the changed word range must intersect a
         surviving ``dictated`` span — edits elsewhere in the note are
         the user's own writing, never evidence about the dictation.
-        Spans record word ranges, not which dictation they came from,
-        so a note holding more than one linked dictation cannot
-        attribute an edit to a single job: such notes are skipped
-        (attribution stops where it becomes unreliable, S29.8)."""
+        A dictated span records the job that produced it, so the edit
+        is attributed to that dictation — in a note holding several.
+        An edit touching spans of two dictations, or a span written
+        before spans carried their job (in a note with more than one
+        linked dictation), stays unattributed: attribution stops where
+        it becomes unreliable (S29.8)."""
         mined_ids = {r[0] for r in conn.execute(
             "SELECT observation_id FROM learning_candidates WHERE"
             " observation_id IS NOT NULL").fetchall()}
@@ -204,9 +206,6 @@ class LearningService:
                 " ORDER BY rowid DESC").fetchall():
             by_note.setdefault(note_id, set()).add((example_id, job_id))
         for note_id, links in list(by_note.items())[:limit]:
-            if len(links) != 1:
-                continue
-            example_id, job_id = next(iter(links))
             revs = conn.execute(
                 "SELECT revision_id, content_text, spans_json, origin"
                 " FROM note_revisions WHERE note_id=? AND purged=0"
@@ -222,15 +221,15 @@ class LearningService:
                     " ".join(prev_words), " ".join(cur_words))
                 if not regions:
                     continue
-                dictated = [tuple(s[:3]) for s in json.loads(prev[2])
+                # (start, end, job) per dictated span; job is None for a
+                # span written before spans carried their dictation.
+                dictated = [(int(s[0]), int(s[1]),
+                             s[3] if len(s) > 3 else None)
+                            for s in json.loads(prev[2])
                             if len(s) >= 3 and s[2] == "dictated"]
                 if not dictated:
                     continue
-                # Word-index the changed regions against the span
-                # offsets: a region covers word positions; compare by
-                # reconstructing the region's word range from the
-                # before-text word list.
-                hit = False
+                hit_jobs = set()
                 before_joined = " ".join(prev_words)
                 for region in regions:
                     # Region spans are code-point offsets into the
@@ -238,14 +237,20 @@ class LearningService:
                     # indices, so both ends count whitespace words.
                     w1 = len(before_joined[:region["start"]].split())
                     w2 = len(before_joined[:region["end"]].split())
-                    for s, e, _origin in dictated:
-                        if w1 < e and s < w2:
-                            hit = True
-                            break
-                    if hit:
-                        break
-                if not hit:
-                    continue
+                    hit_jobs |= {job for s, e, job in dictated
+                                 if w1 < e and s < w2}
+                if not hit_jobs:
+                    continue  # the user's own writing
+                if None in hit_jobs:
+                    if hit_jobs != {None} or len(links) != 1:
+                        continue  # unrecorded span among several
+                    example_id, job_id = next(iter(links))
+                elif len(hit_jobs) == 1:
+                    job_id = next(iter(hit_jobs))
+                    example_id = next(
+                        (ex for ex, j in links if j == job_id), None)
+                else:
+                    continue  # the edit touches two dictations
                 example_row = conn.execute(
                     "SELECT example_id FROM training_examples WHERE"
                     " job_id=? ORDER BY rowid DESC LIMIT 1",

@@ -201,6 +201,38 @@ class ProfileService:
             out.append((ex_id, env, text))
         return out, excluded
 
+    def _input_signature(self, conn) -> str:
+        """A cheap fingerprint of everything that can change a profile
+        — revisions, example states, purges, labels, exclusions, usage,
+        vocabulary, the floor and algorithm — read from counters and
+        maxima only, never from transcript text."""
+        parts = [
+            list(conn.execute(
+                "SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM"
+                " training_revisions").fetchone()),
+            [list(r) for r in conn.execute(
+                "SELECT state, COUNT(*), COALESCE(MAX(updated_at_utc), '')"
+                " FROM training_examples GROUP BY state ORDER BY state"
+            ).fetchall()],
+            conn.execute("SELECT COUNT(*) FROM artifacts WHERE purged=1"
+                         ).fetchone()[0],
+            list(conn.execute(
+                "SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM"
+                " correction_labels").fetchone()),
+            conn.execute("SELECT COUNT(*) FROM profile_evidence WHERE"
+                         " included=0").fetchone()[0],
+            list(conn.execute(
+                "SELECT COUNT(*), TOTAL(raw_words),"
+                " COALESCE(MAX(activity_at_utc), ''),"
+                " COALESCE(MAX(created_at_utc), '') FROM usage_facts"
+                " WHERE kind='dictation'").fetchone()),
+            list(conn.execute(
+                "SELECT COUNT(*), TOTAL(usage_count), TOTAL(revision)"
+                " FROM vocabulary_entries WHERE approved=1 AND"
+                " enabled=1").fetchone()),
+            self.min_words, ALGORITHM_VERSION]
+        return ids.sha256_text(json.dumps(parts, sort_keys=True))
+
     def _excluded_evidence(self, conn) -> set[str]:
         """Durable evidence exclusions carried forward by example id."""
         return {r[0] for r in conn.execute(
@@ -234,6 +266,17 @@ class ProfileService:
 
     def _compute_once(self, only_if_changed: bool) -> dict:
         self.store.submit(_scrub_dead_evidence)
+        quick = self.store.submit(self._input_signature)
+        if only_if_changed:
+            last = self.store.submit(lambda conn: conn.execute(
+                "SELECT snapshot_id, state, measured_json FROM"
+                " profile_snapshots ORDER BY rowid DESC LIMIT 1"
+            ).fetchone())
+            if last and last[1] == "current" and json.loads(
+                    last[2]).get("input_signature") == quick:
+                # Nothing that feeds the profile has changed since the
+                # current snapshot: decided without reading any text.
+                return {"skipped": True, "snapshot_id": last[0]}
         labels = self.store.submit(_latest_labels)
         user_excluded = self.store.submit(self._excluded_evidence)
         candidates, excluded = self._eligible(labels)
@@ -273,6 +316,21 @@ class ProfileService:
             if kind:
                 label_examples.setdefault(kind, []).append(ex)
         label_kinds = {k: len(v) for k, v in label_examples.items()}
+        # Spoken self-corrections ("no wait, I mean …") the cleanup stage
+        # detected — counted only over dictations whose cleanup recorded
+        # the count (older or V1-path jobs are not zero, just unknown).
+        with_count = [((env.get("cleanup") or {}).get("v2") or {})
+                      .get("corrections") for _e, env, _t in eligible]
+        with_count = [c for c in with_count if isinstance(c, dict)]
+        self_corrections = {
+            "dictations_with": sum(1 for c in with_count
+                                   if c.get("applied")),
+            "applied": sum(int(c.get("applied") or 0)
+                           for c in with_count),
+            "denominator": len(with_count),
+            "definition": "eligible dictations whose cleanup detected at"
+                          " least one spoken self-correction, over those"
+                          " whose cleanup recorded the count"}
         vocab_examples = sorted(
             ex for ex, env, _t in eligible
             if ((env.get("normalization") or {}).get("vocabulary")
@@ -317,6 +375,13 @@ class ProfileService:
                 ).fetchone()
                 if last and last[1] == "current" and json.loads(
                         last[2]).get("evidence_signature") == signature:
+                    # Store metadata moved but the evidence did not:
+                    # remember the new metadata so the next idle tick
+                    # decides without reading (bookkeeping, not content).
+                    conn.execute(
+                        "UPDATE profile_snapshots SET measured_json="
+                        "json_set(measured_json, '$.input_signature', ?)"
+                        " WHERE snapshot_id=?", (quick, last[0]))
                     return {"skipped": True, "snapshot_id": last[0]}
             hits = conn.execute(
                 "SELECT COUNT(*) FROM usage_facts WHERE"
@@ -346,6 +411,18 @@ class ProfileService:
                 "SELECT mode, COUNT(*) FROM usage_facts WHERE"
                 " kind='dictation' AND mode IS NOT NULL GROUP BY"
                 " mode").fetchall())
+            # Requested output structures: which transforms the user
+            # asks for — explicit runs and auto-applied dictation
+            # transforms counted separately (usage facts, M13).
+            requested = {"explicit": dict(conn.execute(
+                "SELECT transform_id, COUNT(*) FROM usage_facts WHERE"
+                " kind='transform' AND transform_id IS NOT NULL GROUP BY"
+                " transform_id ORDER BY COUNT(*) DESC LIMIT 10"
+            ).fetchall()), "auto_applied": dict(conn.execute(
+                "SELECT transform_id, COUNT(*) FROM usage_facts WHERE"
+                " kind='dictation' AND transform_id IS NOT NULL GROUP BY"
+                " transform_id ORDER BY COUNT(*) DESC LIMIT 10"
+            ).fetchall())}
             note = None if enough else (
                 f"measured totals only — {words_total} eligible words"
                 f" over {len(eligible)} dictations is below the"
@@ -374,11 +451,14 @@ class ProfileService:
                              " are counted in hours_unknown",
                 "hours_unknown": hours_unknown,
                 "modes": mode_counts,
+                "self_corrections": self_corrections,
+                "requested_transforms": requested,
                 "sources": {
                     "speech": "eligible live examples' raw transcripts",
                     "usage": "usage facts (M13) — every dictation"},
                 "min_words_threshold": self.min_words,
                 "evidence_signature": signature,
+                "input_signature": quick,
                 "interpretive_note": note,
             }
             cards = []
