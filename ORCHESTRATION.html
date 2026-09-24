@@ -10,7 +10,7 @@
   owned by another session.
 
   Figure audit — every figure on the page and the repo file it was re-derived
-  from; figures re-read 2026-09-24 01:10 UTC at f24b3d5 (M13 close-out).
+  from; figures re-read 2026-09-24 04:35 UTC at 15984ba (M14 close-out).
     33 requirements / 22 suites / 0 without a suite ....... docs/v2/registry.json (counts block)
     requirement -> milestone ownership, suites per strip ... docs/v2/registry.json + "ID: Mxx · Requirements" headers in
                                                              docs/v2/LOCALFLOW_V2_MILESTONES.md
@@ -19,17 +19,18 @@
                                                              "In scope"/"Out of scope"/"Regression requirements",
                                                              "Human verification", "Required benchmarks" sections
     M14-A/B/C checkpoints ................................. M14 implementation task 12 + P07 amendment note
-    STATUS figures (active M13, implemented_pending_human,
-    source_commit d291a4b, pending native-m13-insights-trial,
-    next M14 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-24 01:10 UTC at f24b3d5
+    STATUS figures (active M14, implemented_pending_human,
+    source_commit 5e90489, pending native-m14-learning-profile-dataset-trial,
+    next M15 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-24 04:35 UTC at 15984ba
     commit ids 4bd0187 / 50bf457 / 95f92dd / adc872b / 9d53b4f / e95d152 /
     eea1bd0 / dc3c726 / 56dc4de / d10886c / 7e2a0b4 / f2137ef / d2ef224 /
-    f24b3d5 ................................................ git log --oneline at the same moment
+    f24b3d5 / 15984ba ...................................... git log --oneline at the same moment
     review ledger (verdicts, critical counts, named criticals) ... "/review-2 → /address record" sections of
-                                                             docs/v2/handoffs/M01.md–M12.md (cross-checked against
+                                                             docs/v2/handoffs/M01.md–M14.md (cross-checked against
                                                              docs/v2/acceptance/M0*/results.json review_loop blocks
-                                                             + docs/v2/acceptance/M12/results.json)
-    pending-human-check ledger (1+4+1+1+1+1+1+1+1+1+1+1+1 open; M02 2/2 pass) .... docs/v2/acceptance/M0{1,3,4,5,6,7,8,9,10,11,12,13}/results.json
+                                                             + docs/v2/acceptance/M1{2,3,4}/results.json)
+    pending-human-check ledger (M01 1 + M03 4 + M04–M14 1 each = 16 open; M02 2/2 pass) .. docs/v2/acceptance/M0{1,3,4,5,6,7,8,9}/results.json
+                                                             + docs/v2/acceptance/M1{2,3,4}/results.json
                                                              + docs/v2/acceptance/M1{0,1}/results.json human_verification
                                                              blocks + handoffs/M02.md
                                                              "Human verification (completed 2026-09-22)" addendum
@@ -287,7 +288,7 @@
 <header class="masthead">
   <h1>LocalFlow V2 — orchestration overview</h1>
   <p class="lede">LocalFlow is a private, local-first macOS dictation and writing interface built around Parakeet TDT 0.6B V3 via MLX and Qwen3-4B-Instruct-2507 4-bit via MLX. V2 closes the gap with Wispr Flow while preserving local inference and training-ready data collection. This page is the dispatch board for that build: what can run next, in what company, on which model, and against what standard of proof.</p>
-  <p class="stamp">repo scalinity/LocalFlow · figures read 2026-09-23 05:34 UTC at commit f2137ef (M11 close-out) · realigned in place by milestone close-outs</p>
+  <p class="stamp">repo scalinity/LocalFlow · figures read 2026-09-24 04:35 UTC at commit 15984ba (M14 close-out) · realigned in place by milestone close-outs</p>
   <ul class="toc">
     <li><a href="#now">Now</a></li>
     <li><a href="#strips">Units of work</a></li>
@@ -301,16 +302,16 @@
   </ul>
 
   <div class="now" id="now">
-    <p class="verdict">What can run now: <span class="id">M14</span> — and nothing else.</p>
+    <p class="verdict">What can run now: <span class="id">M15</span> — and nothing else.</p>
     <dl class="now-grid">
-      <div><dt>Active milestone</dt><dd>M13 · implemented_pending_human</dd></div>
-      <div><dt>Source commit</dt><dd>d291a4b — “M13 was implemented on top of this commit (the M12 close-out ORCHESTRATION.html realignment); the M13 commit follows.”</dd></div>
-      <div><dt>Open human checks</dt><dd>native-m13-insights-trial (1 for M13; 15 open overall — <a href="#threads">ledger</a>)</dd></div>
-      <div><dt>Next milestone</dt><dd>M14 · next_milestone_dependency_eligible: true</dd></div>
+      <div><dt>Active milestone</dt><dd>M14 · implemented_pending_human</dd></div>
+      <div><dt>Source commit</dt><dd>5e90489 — “M14 was implemented on top of this commit (the M13 close-out ORCHESTRATION.html realignment); the M14 commit follows.”</dd></div>
+      <div><dt>Open human checks</dt><dd>native-m14-learning-profile-dataset-trial (1 for M14; 16 open overall — <a href="#threads">ledger</a>)</dd></div>
+      <div><dt>Next milestone</dt><dd>M15 · next_milestone_dependency_eligible: true</dd></div>
       <div><dt>Registry</dt><dd>33 requirements LF-R01–R33 · 22 suites EV-01–EV-22 · 0 requirements without a suite <span class="src">registry.json</span></dd></div>
       <div><dt>Decision record</dt><dd>docs/v2/decisions/ is empty — no accepted spec deviations to date <span class="src">directory listing, 2026-09-22</span></dd></div>
     </dl>
-    <p class="reason">M13’s automatable work and checks passed on post-review code: usage analytics at store schema v9 (one usage_facts row per logical dictation — a retry reaching a terminal outcome REPLACES it and recomputes or deletes the departed day’s aggregate; explicit transforms and re-pastes are separate activity kinds; the dictation-path auto-apply transform rides the dictation’s own row; facts carry their own app/duration/word/mode/latency copies so usage survives content retention; unknown instants refused; DST-correct day buckets in the config-selected reporting zone), terminal-path fact writes through the real coordinator on every branch (guarded so analytics faults never disturb dictation; retry jobs keep their original capture instant/zone/app from the store rows), versioned daily aggregates always recomputed from facts inside the same writer op, the Insights Hub view (VIEWS 9→10: cohort filters, weighted WPM with its denominator over the same text-producing cohort, sample-aware latency percentiles with n, per-app/per-mode breakdowns, the Undated count, the imported-legacy line and the AC04 definitions footer), retention and delete controls (the new usage knob’s expiry pass; prune_metadata now enforcing the M02 metadata knob with facts surviving; Settings’ confirmed delete-all-usage; History’s per-job delete-usage with legacy refusing), and the E19.4 readiness aggregates (five distinct outcome classes as counts-never-rates; honest join coverage a dangling audio id lowers). The seven imported legacy rows reconcile unchanged (280/277 words, 350.3 s, fixed 11 — the unknown legacy wpm formula stays labeled legacy). Suites: usage store 11/11, insights service 6/6, insights hub 7/7 through the real coordinator, training data 13/13, hub shell 15/15 over the 10-view Hub, plus the full 54-suite set with all six model-backed checks and the V1 control (51/51). Benchmark: 50k synthetic facts — every Insights query p95 ≤ 58.5 ms warm (budget 200); the fact write on the busiest day p95 1.04 ms. Live store migrated 8→9 with a pre-migration backup. The /review-2 loop’s two corroborated criticals (a cross-day retry leaving the departed day’s aggregate stale; the retry path dropping capture-instant/app provenance behind a fabricated-instant fallback) and every warning were fixed in-session with regression tests (cross-day retry + a fact/aggregate invariant). The pending native Insights trial does not gate M14’s automatable work. <span class="src">STATUS.json status_reason + benchmarks/20260924-005000-m13, read 2026-09-24 01:10 UTC at f24b3d5</span></p>
+    <p class="reason">M14’s automatable work and checks passed on post-review code, across all three checkpoints (M14-A labels/review, M14-B sampling/preferences/splits, M14-C export/readiness/profile) recorded in one handoff: store schema v10 (additive); correction learning from explicit teach, certified M08 edit windows and single-dictation note edits, with the S29.7 multi-axis classifier abstaining honestly and rule suggestions only for ASR-origin recognition errors; approval that composes with M05 entries, checks counterexamples in the rule’s own scope and records its plan before any vocabulary write so undo reverses exactly what it did; versioned labels, source-anchored partial grafts and one ASR promotion gate that refuses non-live evidence; a seeded 10% review stream with explicit/hard/supplemental/late-trigger strata; same-task pair review (latest judgment wins); versioned family splits with a 10-family floor and permanent forward-only exposure; a portable five-view export (consistent snapshot, streamed hash-verified audio, finalize recheck, never replacing a user’s folder) with a hardened offline validator; Your Voice built only from eligible raw speech, cards citing their own evidence, snapshots cleared on deletion or expiry, and nothing reaching the dictation pipeline. Deletion and expiry reach job-keyed and note-sourced candidates; rows carry offsets, not words. The /review-2 loop’s three criticals (deletion/retention propagation; transcript words in rows plus a lease that pinned whole jobs; labels resurrecting quarantined evidence) and all twenty further findings were addressed in-session with regression tests. Suites: 62/62 on the final code incl. every model-backed suite and the V1 control 51/51. Benchmark at 10k examples: worst dictation write wait 45 ms during profile compute, 1 ms during mining, 50.6 ms during export; export 746 MB/s, audio adding 0.3 MB peak memory. Live data sits below every floor (6 examples, 0 observations, 0 labels, 0 pairs) — the valid measured-only state M15’s live pilot starts from. The live store stays at v9 until the next dev run migrates it with its backup. The pending native trial does not gate M15’s automatable work. <span class="src">STATUS.json status_reason + benchmarks/20260924-003129-m14, read 2026-09-24 04:35 UTC at 15984ba</span></p>
     <div class="chain" aria-label="Runnable order of milestones">
       <span class="node done"><span class="mid">M01</span><span class="cmt">4bd0187</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M02</span><span class="cmt">50bf457</span></span><span class="link" aria-hidden="true">▸</span>
@@ -326,11 +327,11 @@
       <span class="node done"><span class="mid">M11</span><span class="cmt">f2137ef</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M12</span><span class="cmt">d2ef224</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node done"><span class="mid">M13</span><span class="cmt">f24b3d5</span></span><span class="link" aria-hidden="true">▸</span>
-      <span class="node eligible"><span class="mid">M14</span><span class="cmt">next</span></span><span class="link" aria-hidden="true">▸</span>
-      <span class="node"><span class="mid">M15</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node done"><span class="mid">M14</span><span class="cmt">15984ba</span></span><span class="link" aria-hidden="true">▸</span>
+      <span class="node eligible"><span class="mid">M15</span><span class="cmt">next</span></span><span class="link" aria-hidden="true">▸</span>
       <span class="node"><span class="mid">M16</span></span>
     </div>
-    <p class="chain-key">Filled: closed and committed (commit ids from <code>git log</code>, one commit per milestone). Dashed: dependency-eligible now. Dotted: M14 runs as three resumable checkpoints under one milestone id. <span class="src">LOCALFLOW_V2_MILESTONES.md P02 · git log</span></p>
+    <p class="chain-key">Filled: closed and committed (commit ids from <code>git log</code>, one commit per milestone). Dashed: dependency-eligible now. M14’s three checkpoints closed together under one milestone id. <span class="src">LOCALFLOW_V2_MILESTONES.md P02 · git log</span></p>
   </div>
 </header>
 
@@ -530,7 +531,7 @@
   <article class="strip">
     <div class="spine">
       <div class="mid">M14</div>
-      <div class="state-line"><span class="dot open"></span> not started · three checkpoints</div>
+      <div class="state-line"><span class="dot done"></span> closed · implemented_pending_human · 15984ba</div>
       <div class="rec">rule’s recommendation: <b>scarce authors each checkpoint’s contracts</b>, plentiful implements</div>
     </div>
     <div class="body">
@@ -541,7 +542,7 @@
         <div><dt>Suites</dt><dd><span class="id">EV-15</span> personalization portion · new <span class="id">EV-20</span>, <span class="id">EV-21</span> · <span class="id">EV-19</span> integrations</dd></div>
         <div><dt>Prerequisites (P02)</dt><dd>M05, M09, M11, M13</dd></div>
         <div><dt>Fixtures</dt><dd>100-record pack + 40 attribution negatives; family-leakage, exposure, export/deletion-race and offline-reconstruction cases</dd></div>
-        <div><dt>Expected files</dt><dd>new <code>localflow/v2/learning.py</code>, <code>profile.py</code>, <code>ui/your_voice.py</code>, <code>tests/v2/personalization/</code>; proposed <code>training/{curation,classify,sampling,splits,export}.py</code>, <code>ui/training_data.py</code>, <code>scripts/v2/{export_dataset,validate_dataset}.py</code>, <code>tests/v2/training/</code> — extends M02’s real collector, never replaces it</dd></div>
+        <div><dt>Expected files</dt><dd>new <code>localflow/v2/learning.py</code>, <code>profile.py</code>, <code>ui/your_voice.py</code>, <code>tests/v2/personalization/</code>; proposed <code>training/{curation,classify,sampling,splits,export}.py</code>, <code>ui/training_data.py</code>, <code>scripts/v2/{export_dataset,validate_dataset}.py</code>, <code>tests/v2/training/</code> — extends M02’s real collector, never replaces it; delivered as <code>localflow/v2/curation/</code> (a <code>training/</code> package would shadow the M02 collector module), the Training Data tabs living in <code>ui/hub.py</code></dd></div>
         <div><dt>Destroys</dt><dd>nothing — no weight updates, no online rollout training, no cloud upload; only approved rules affect dictation; deletion propagates everywhere</dd></div>
         <div><dt>Human verification</dt><dd>teach a narrow correction and test a cloud counterexample; inspect a profile card’s examples and delete one supporting item; review positive, mixed-edit and changed-intent cases; export selected examples</dd></div>
         <div class="wide"><dt>Scale note</dt><dd>P07 places the amendment’s largest scope concentration here (with M02, M08/M09, M15): storage/retention, outcome review, curation/export — the checkpoints exist to contain session size</dd></div>
@@ -549,15 +550,15 @@
       <div class="substrip"><h4>M14-A — labels and review</h4><p>Classification axes with abstention; partial grafts marked weak; representative and hard-example review streams; verified positives kept separate from unreviewed cases.</p></div>
       <div class="substrip"><h4>M14-B — sampling, preferences, splits</h4><p>Same-task preference validation with tie/neither states; family grouping; versioned train/validation/frozen-test assignments; exposure handling.</p></div>
       <div class="substrip"><h4>M14-C — export, readiness, profile integration</h4><p>Portable JSONL/audio/artifact task exports and a standalone validator; recheck revocation/deletion before atomic completion; complete Training Data UI; dataset-readiness statement for M15.</p></div>
-      <p class="fact-note">A fresh session may resume a checkpoint under the same milestone id; handoff and STATUS are updated after each checkpoint. <span class="src">§M14 task 12 · P07</span></p>
-      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M14 · P02 table · P07</p>
+      <p class="fact-note">Delivered: the three checkpoints closed together and are recorded in one handoff (M14-AC10). Hand-forward to M15: the export and offline validator, exact live label coverage (0 labels, 0 preference pairs, splits unassigned below the 10-family floor), model input/output sizes and eligibility settings, and the planned live pilot — no “RL-ready” claim. <span class="src">handoffs/M14.md · acceptance/M14/results.json</span></p>
+      <p class="src">sources: LOCALFLOW_V2_MILESTONES.md §M14 · P02 table · P07 · handoffs/M14.md</p>
     </div>
   </article>
 
   <article class="strip">
     <div class="spine">
       <div class="mid">M15</div>
-      <div class="state-line"><span class="dot open"></span> not started</div>
+      <div class="state-line"><span class="dot open"></span> not started · dependency-eligible now</div>
       <div class="rec">rule’s recommendation: <b>scarce authors harness + holds the decision</b>, plentiful executes runs</div>
     </div>
     <div class="body">
@@ -609,13 +610,13 @@
   <div class="duo">
     <div class="panel">
       <h3>What the dependency graph permits</h3>
-      <p>With M01–M13 closed, exactly one unit is dependency-eligible: <b>M14</b> (needs M05, M09, M11, M13 — all delivered). From there the remaining graph is a serial chain: every adjacent pair through M16 shares a dependency edge.</p>
+      <p>With M01–M14 closed, exactly one unit is dependency-eligible: <b>M15</b> (needs M03, M07, M08, M11, M13, M14 — all delivered). M16 depends on every milestone including M15, so nothing may run beside M15.</p>
       <p class="fact-note">Derived from the P02 table in this session — a page judgement, not a repo statement. <span class="src">LOCALFLOW_V2_MILESTONES.md P02</span></p>
     </div>
     <div class="panel">
       <h3>What sequence and file overlap allow</h3>
       <p>The repo’s own parallelism precedent is P02’s note: “M04 can be developed alongside M03 after M02 because its pure interfaces do not require live model execution.” Two units, one shared completed prerequisite, disjoint files (lifecycle suites vs a pure normalize package), no shared migration. That window has passed — nothing left pairs that way.</p>
-      <p>Standing rules: a coordinator owns shared-schema and contract changes; two sessions must not edit the same database migration or shared UI shell. Other parallel work requires revising the dependency table explicitly plus separate worktrees with stable storage contracts — optional, not a goal. M14’s A/B/C are checkpoints inside one milestone, never parallel units.</p>
+      <p>Standing rules: a coordinator owns shared-schema and contract changes; two sessions must not edit the same database migration or shared UI shell. Other parallel work requires revising the dependency table explicitly plus separate worktrees with stable storage contracts — optional, not a goal. Checkpoints inside one milestone (M14’s A/B/C were the precedent) are never parallel units.</p>
       <p class="fact-note">Quoted and applied from P02 itself. <span class="src">LOCALFLOW_V2_MILESTONES.md P02</span></p>
     </div>
   </div>
@@ -703,7 +704,7 @@
     <p class="kicker">Why the page asks what it asks</p>
     <h2>Evidence from the record</h2>
   </div>
-  <h3>The review loop catches real bugs — twenty-seven criticals in thirteen milestones, zero overruled</h3>
+  <h3>The review loop catches real bugs — thirty criticals in fourteen milestones, zero overruled</h3>
   <table>
     <thead><tr><th style="width:8%">Unit</th><th style="width:17%">Verdict before /address</th><th style="width:9%">Criticals</th><th>What the criticals were</th><th style="width:22%">Outcome</th></tr></thead>
     <tbody>
@@ -720,11 +721,12 @@
       <tr><td>M11</td><td class="crit">Request Changes</td><td class="num crit">2</td><td>The transform preview panel was constructed with a direct PyObjC class call that raises TypeError — the panel could never open, so the entire accept/copy/retry review surface was dead while every suite stayed green (the tests drove the coordinator action directly: the M10 dead-UI class one layer up); the transform work threads were unguarded — an oversized selection raised at job construction and a worker fault on the retry path escaped, either wedging the in-flight marker permanently and locking out all transforms until restart (flagged by both reviewers).</td><td>Both fixed with regression tests (the panel constructs through <code>_tfShowResult_</code> via <code>alloc().init_panel</code>; the request helpers are total, every work() runs through a guarded spawner whose failure path still clears the marker, and a 20k-char selection refuses without wedging); every warning fixed (the shared busy guard on panel actions, the non-activating panel so accept-time revalidation never races its own activation, the (location, length) tuple convention, Transform Output wired as the distinct command, the total dictation executor, the worker refusal channel, the v7 repair set, per-row legacy skip, id-AND-mode built-in binding, per-task display order, the gate reason in the envelope, the honest UI benchmark); suites, the 30 PE cases, model-backed checks and the benchmark re-run on the fixed code.</td></tr>
       <tr><td>M12</td><td class="crit">Request Changes</td><td class="num crit">4</td><td>All four in the AppKit binding layer the headless suites legitimately could not reach: the Scratchpad’s Transform… button was dead two ways at once — <code>NSRange.location/.length</code> are integer attributes, not methods, and the hub called the coordinator with the wrong arity and no definition picker at all; a whole-note transform accept INSERTED at the caret instead of replacing the note, persisting the original beside its own transformation as an origin=transform revision; restore never rebound the editor, so the next keystroke silently reverted it (all flagged by both reviewers).</td><td>All four fixed with regression tests driven through the production paths (the picker + button action end-to-end; (0, len) whole-note ranges coerced at the coordinator as defense in depth; the refresh rebinds whenever the persisted revision moves under a clean editor); every warning fixed (stale list after create, tab-close editor binding, the false AC01 marker on a no-change flush, the unenforced PTT note binding — now anchored to the hotkey-down capture, the History text fallback chain, the revision_count misalignment, the unbounded versions list); the review’s stale-callback hang root-caused to the test harness and closed; suites, model-backed checks and the benchmark re-run on the fixed code.</td></tr>
       <tr><td>M13</td><td class="crit">Request Changes</td><td class="num crit">2</td><td>Both corroborated and reproduced by the two reviewers: a retry completing on another local day replaced the usage fact but recomputed only the NEW day’s aggregate — the departed day kept a phantom row forever (fact/aggregate desync at the milestone’s core deliverable); and the retry path dropped the job’s capture instant, zone and destination app, while the terminal seam’s <code>or now()</code> fallback parked the fact on the retry-completion day — a fabricated instant against the contract’s own refusal rule.</td><td>Both fixed with regression tests (the retry job dict reads its provenance from the store rows; the fallback is gone; the fact write recomputes or deletes the departed day in the same op — plus a cross-day retry test and a general fact/aggregate invariant); every warning fixed (WPM denominator summed seconds over the whole cohort while its jobs-count covered text-producing jobs — one cohort per number now; exact-audio-join coverage was tautological — the denominator now counts every envelope-named audio id; capture completeness over live examples; null nearing-expiry; contract event drift; date-fragile fixtures; the readiness suite gap); suites and the benchmark re-run on the fixed code.</td></tr>
+      <tr><td>M14</td><td class="crit">Request Changes</td><td class="num crit">3</td><td>Deleted content outlived its source: propagation was keyed by example, so a teach made with collection off stayed approvable after Delete Everywhere, and deleting a note never reached candidates whose payload held the whole note; transcript words sat in candidate rows and every mined candidate took a never-expiring lease that pinned its whole job past the unreviewed buffer; and recording a label moved any example to <code>annotated</code>, resurrecting quarantined or expired evidence into the export and the ASR gate.</td><td>All three fixed with regression tests (job-keyed propagation through deletion, expiry and note deletion; offsets-only rows and region-only note payloads; buffer leases for machine-mined payloads; labels and teach refuse non-live evidence); all twenty further findings addressed — one by measurement (the export snapshot stays one op, as S29.13 requires) — and 62 suites plus the benchmark re-run on the fixed code.</td></tr>
     </tbody>
   </table>
-  <p class="src" style="margin-top:8px">sources: “/review-2 → /address record” sections of docs/v2/handoffs/M01.md–M13.md · review_loop blocks in docs/v2/acceptance/M0*/results.json + docs/v2/acceptance/M13/results.json</p>
+  <p class="src" style="margin-top:8px">sources: “/review-2 → /address record” sections of docs/v2/handoffs/M01.md–M14.md · review_loop blocks in docs/v2/acceptance/M0*/results.json + docs/v2/acceptance/M1{3,4}/results.json</p>
 
-  <h3 style="margin-top:26px">The pending-human-check ledger — 15 open, recorded, never assumed</h3>
+  <h3 style="margin-top:26px">The pending-human-check ledger — 16 open, recorded, never assumed</h3>
   <table>
     <thead><tr><th>Check</th><th style="width:13%">Recorded in</th><th style="width:12%">Gate owner</th><th style="width:26%">Note from the record</th></tr></thead>
     <tbody>
@@ -743,9 +745,10 @@
       <tr><td>native-m11-transform-trial</td><td>M11 results.json · STATUS.json</td><td>M11</td><td>A real draft prompt through Prompt Engineer (pill stage, non-focus-stealing panel, per-atom diff inspection, REVIEW items with original wording); accept then target-bound undo; Retry Original / Apply Another / Transform Output; a custom transform with a writing sample + auto-apply under a custom-mode rule (Clean retained in History’s cleaned stage); the legacy rows verified as preserved revisions — from Terminal.app, screenshots at two text scales.</td></tr>
       <tr><td>native-m12-scratchpad-trial</td><td>M12 results.json · STATUS.json</td><td>M12</td><td>Quick Open Scratchpad; dictate into the editor (attribution visible in History); typed list/code + autosave + Snapshot; an image attachment; a selection transform AND a whole-note transform (accept replaces); quit mid-burst, reopen to the ⚠ tail-risk banner; restore an earlier version; History copy + move (the moved job’s payloads purge); export Markdown and plain text and inspect both — from Terminal.app, screenshots at two text scales.</td></tr>
       <tr><td>native-m13-insights-trial</td><td>M13 results.json · STATUS.json</td><td>M13</td><td>Dictate a few short phrases across two destination apps; open Hub → Insights and check summary/daily/per-app/per-mode numbers against a hand count for today; ranges and filters; latency lines carry n=; retry one failed dictation from History and confirm today’s totals do not double; Delete Usage on one History row; Settings’ usage retention apply; a transcript-expired day whose graphs keep the words — from Terminal.app, screenshots at two text scales.</td></tr>
+      <tr><td>native-m14-learning-profile-dataset-trial</td><td>M14 results.json · STATUS.json</td><td>M14</td><td>First dev run: confirm the 9→10 migration and its backup; teach a “Claude” correction in a coding app, approve the narrow rule, test a cloud counterexample; inspect a Your Voice card’s evidence, exclude one example, delete a supporting dictation; review positive, mixed-edit and changed-intent cases and reject an ambiguous one; compare same-input outputs; assign splits, export to a new folder, validate, delete a source and re-export; read the dataset README and listen to exported audio before any sharing — from Terminal.app, screenshots at two text scales.</td></tr>
     </tbody>
   </table>
-  <p class="fact-note" style="margin-top:8px">Closed for comparison: M02’s two human checks passed 2026-09-22 (handoff addendum; five-dictation collection pilot 5/5 joined examples; redaction re-verified against 93 distinct spoken words — zero matches). None of the fifteen open items gates M14’s automatable work. <span class="src">handoffs/M02.md · handoffs/M06.md · handoffs/M08.md · handoffs/M09.md · handoffs/M10.md · handoffs/M11.md · handoffs/M12.md · handoffs/M13.md</span></p>
+  <p class="fact-note" style="margin-top:8px">Closed for comparison: M02’s two human checks passed 2026-09-22 (handoff addendum; five-dictation collection pilot 5/5 joined examples; redaction re-verified against 93 distinct spoken words — zero matches). None of the sixteen open items gates M15’s automatable work. <span class="src">handoffs/M02.md · handoffs/M06.md · handoffs/M08.md · handoffs/M09.md · handoffs/M10.md · handoffs/M11.md · handoffs/M12.md · handoffs/M13.md · handoffs/M14.md</span></p>
 
   <h3 style="margin-top:26px">Privacy discipline, enforced by test</h3>
   <p class="measure">Committed artifacts carry hashes, opaque ids, counts and line locators — never transcript text, audio bytes, database rows or credentials. Fixtures are synthetic and origin-tagged; the private evidence root (<code>~/Library/Application Support/LocalFlow/v2-evidence/</code>) stays outside Git; <code>tests/v2/test_baseline_manifest.py</code> fails the build if private-bearing file types appear under <code>docs/</code> or <code>tests/</code>. Every handoff re-states this and every acceptance scan has passed over each new path. <span class="src">contracts/INDEX.md privacy rules · handoffs M01–M06 privacy sections</span></p>
@@ -760,7 +763,7 @@
     <thead><tr><th style="width:30%">Thread</th><th style="width:16%">Owning unit</th><th>State, from the record</th></tr></thead>
     <tbody>
       <tr><td>Release-to-insert latency pilot</td><td>M15</td><td>Pending human since M01 (real speaker, instrumented target); explicitly an M15 gate, carried by every intervening handoff.</td></tr>
-      <tr><td>M03 native checks (four items)</td><td>M03</td><td>Pending with dev-runnable steps; do not gate M14 or anything else’s automatable work.</td></tr>
+      <tr><td>M03 native checks (four items)</td><td>M03</td><td>Pending with dev-runnable steps; do not gate M15 or anything else’s automatable work.</td></tr>
       <tr><td>M04 dictation-profiles trial</td><td>M04</td><td>Pending; runnable on the dev pipeline from Terminal.app.</td></tr>
       <tr><td>M05 dictionary trial</td><td>M05</td><td>Pending; the sandbox half is runnable now, the workspace-scoped live half folds into the M06 destination trial (destination awareness shipped at M06).</td></tr>
       <tr><td>Workspace-scoped dictionary live resolution</td><td>M06</td><td>Shipped in M06 (eea1bd0): site/workspace/app scopes feed the live trio, finalized at release with a frozen-entry rebuild; live verification folds into the M06 destination trial. contracts/vocabulary.md “M06 wiring”.</td></tr>
@@ -770,12 +773,13 @@
       <tr><td>M10 developer trial</td><td>M10</td><td>Pending as native-m10-developer-trial (7e2a0b4): the destination sweep with the effective-mode line, a raw rule, a placeholder snippet, a real skill manifest, the attach-file fallback on an uncertified surface, a multi-line terminal snippet, one evidence inspection — the state/wiring halves are covered headless; live behavior and any real-surface certification are the native half (a certified file chip or bracketed-paste surface would populate the empty enforcement sets). handoffs/M10.md.</td></tr>
       <tr><td>M11 transform trial</td><td>M11</td><td>Pending as native-m11-transform-trial (f2137ef): a real prompt through Prompt Engineer with per-atom diff inspection and REVIEW items, accept + target-bound undo, retry/apply-another/transform-output, a custom transform with a writing sample + auto-apply, the legacy rows as preserved revisions — the state/wiring halves are covered headless (incl. the changed-selection race through the real InsertionService); rendering and live-generation behavior are the native half. handoffs/M11.md.</td></tr>
       <tr><td>M13 Insights trial</td><td>M13</td><td>Pending as native-m13-insights-trial (f24b3d): totals against a hand-counted day across two apps, ranges/filters, latency n= labels, a History retry that does not double today’s numbers, Delete Usage recomputing the graphs, retention independence after transcript expiry — the store/query/coordinator halves are covered headless; the rendered read at two text scales is the native half. handoffs/M13.md.</td></tr>
+      <tr><td>M14 learning/profile/dataset trial</td><td>M14</td><td>Pending as native-m14-learning-profile-dataset-trial (15984ba): the first dev run migrates the live store 9→10 with its backup; the teach→approve→counterexample rule loop, profile evidence exclusion and deletion, review labels, same-input comparison, and a real export validated offline — the service, store and coordinator halves are covered headless; the live-data half starts from 6 examples and zero labels. handoffs/M14.md.</td></tr>
       <tr><td>Installed pre-M02 app</td><td>M16</td><td>/Applications/LocalFlow.app still runs 7cdd904 code (M01 finding; no build authorized since); the rebuild decision sits with M16’s staged packaging.</td></tr>
       <tr><td>Producer-provenance unknowns</td><td>M01 (recorded)</td><td>stats/dictionary/transforms producer sources were deleted before the audited snapshot — compiled remnants only, interfaces recovered in baseline/manifest.json; the <code>instance.lock</code> producer is unproven. Recorded unresolved with reasons; the import path reads the data files, so nothing waits on it.</td></tr>
       <tr><td>Decision record</td><td>every milestone</td><td>docs/v2/decisions/ is empty (0 entries, 2026-09-22) — no accepted spec deviations; an ADR lands there the day one is accepted.</td></tr>
     </tbody>
   </table>
-  <p class="src" style="margin-top:8px">sources: handoffs/M01.md–M13.md · contracts/vocabulary.md · directory listing of docs/v2/decisions/</p>
+  <p class="src" style="margin-top:8px">sources: handoffs/M01.md–M14.md · contracts/vocabulary.md · directory listing of docs/v2/decisions/</p>
 </section>
 
 <section id="grading">
@@ -785,16 +789,16 @@
   </div>
   <ul class="bars">
     <li><b>Counts come from the registry, never hand-counted.</b> 33 requirements / 22 suites / 0 without a suite, machine-derived from the S05/E08 tables; regenerate with <code>scripts/v2/build_registry.py</code> and cross-check with <code>tests/v2/test_registry.py</code>. A hand-quoted count is a defect.</li>
-    <li><b>An unrun check is never reported as passed.</b> The START_HERE rule, held by every closed milestone (M01–M13): each unavailable human check appears in results.json as pending with exact steps — fifteen are open right now, and M16 cannot claim verified_complete while required checks remain.</li>
+    <li><b>An unrun check is never reported as passed.</b> The START_HERE rule, held by every closed milestone (M01–M14): each unavailable human check appears in results.json as pending with exact steps — sixteen are open right now, and M16 cannot claim verified_complete while required checks remain.</li>
     <li><b>Unknowns are null with a reason.</b> The deleted producer sources and the <code>instance.lock</code> mystery are recorded unresolved in the baseline manifest rather than guessed — “recorded, not forced,” as M01 put it.</li>
     <li><b>Exact denominators, always.</b> The M05 hint matrix reports its 40 labeled bases × 4 conditions; the M04 command corpus reports 16/16 exact and 0/8 false commands; M15’s plan pins 140 clips + 20 negatives before any score is quoted. A percentage without its denominator does not ship.</li>
-    <li><b>The review bar is verdict-first and fixes-forward.</b> /review-2 records its verdict before /address touches anything; criticals and warnings are fixed in-session with regression tests; deferrals carry written reasons; all twelve records to date end “no findings rejected as incorrect.” Accepting a verdict without fixing, or rejecting findings as incorrect without evidence, fails the bar.</li>
+    <li><b>The review bar is verdict-first and fixes-forward.</b> /review-2 records its verdict before /address touches anything; criticals and warnings are fixed in-session with regression tests; deferrals carry written reasons; all fourteen records to date end “no findings rejected as incorrect.” Accepting a verdict without fixing, or rejecting findings as incorrect without evidence, fails the bar.</li>
     <li><b>Report kinds stay separated.</b> Implementation, automated verification, native verification and user approval are distinct claims (P03) — “model-backed native Mac” and “human-approved” are never blended into one word like “tested”.</li>
   </ul>
 </section>
 
 <div class="footer">
-  <p><b>Maintenance.</b> Milestone close-outs realign this page in place — strip states, ledger rows, the NOW panel and the chain rail — against the project’s own record (STATUS.json, handoffs, acceptance results), never against session memory. While the page is uncommitted or concurrently owned by another session, close-outs leave it untouched and record the intended change in their handoff instead. Figures were last read 2026-09-24 01:10 UTC at commit f24b3d5; the full source-to-figure audit lives in the HTML comment at the top of this file.</p>
+  <p><b>Maintenance.</b> Milestone close-outs realign this page in place — strip states, ledger rows, the NOW panel and the chain rail — against the project’s own record (STATUS.json, handoffs, acceptance results), never against session memory. While the page is uncommitted or concurrently owned by another session, close-outs leave it untouched and record the intended change in their handoff instead. Figures were last read 2026-09-24 04:35 UTC at commit 15984ba; the full source-to-figure audit lives in the HTML comment at the top of this file.</p>
 </div>
 
 </div>
