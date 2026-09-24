@@ -9,9 +9,12 @@ changed source/instructions/examples are DIFFERENT tasks — never
 preference pairs (S29.10).
 
 Validation never silently discards an uncertain requirement: the
-Prompt Engineer's atom map degrades the result to ``needs_review``
-(original clauses surfaced, never applied automatically), and every
-kind guards quoted spans, links and technical tokens verbatim.
+requirement gate (``atoms.coverage_map``) degrades the result to
+``needs_review`` (original clauses surfaced, never applied
+automatically). Prompt Engineer runs the full gate, Polish and
+Concise the operator/invention gate, and every kind — Custom included
+— guards quoted spans, links, paths and identifiers verbatim. The
+result records the validator revision that decided it.
 """
 
 from __future__ import annotations
@@ -135,10 +138,12 @@ class TransformResult:
     duration_ms: float = 0.0
     template_revision: Optional[str] = None
     prompt: str = ""               # exact rendered prompt (evidence only)
+    validator_revision: Optional[str] = None  # the gate that decided
 
     def to_json(self) -> dict:
         return {
             "path": self.path, "reason": self.reason,
+            "validator_revision": self.validator_revision,
             "task_key": self.job.task_key() if self.job else None,
             "transform_id": self.job.transform_id if self.job else None,
             "transform_revision": (self.job.transform_revision
@@ -168,14 +173,14 @@ def _strip_think(text: str) -> str:
 
 
 def _exact_carry_atoms(source: str) -> list[tf_atoms.Atom]:
-    return [a for a in tf_atoms.extract_atoms(source)
-            if a.kind in (tf_atoms.QUOTED, tf_atoms.LINK)]
+    return tf_atoms.extract_atoms(source, mode="custom")
 
 
 def validate_common(source: str, output: str) -> list[dict]:
-    """The every-kind fidelity guard: quoted spans, URLs and technical
-    tokens carry verbatim (an authorized rephrase never rewrites an
-    identifier), and an empty output is never a result."""
+    """The every-kind fidelity guard: quoted/backtick/fenced spans,
+    URLs, paths and identifiers carry verbatim (an authorized rephrase
+    never rewrites an identifier), and an empty output is never a
+    result."""
     issues = []
     if not output.strip():
         issues.append({"kind": "empty_output", "excerpt": ""})
@@ -184,6 +189,15 @@ def validate_common(source: str, output: str) -> list[dict]:
         if cov.status != "covered":
             issues.append({"kind": atom.kind, "excerpt": atom.excerpt})
     return issues
+
+
+def _dedupe(items) -> tuple:
+    seen, out = set(), []
+    for x in items:
+        if x and x not in seen:
+            seen.add(x)
+            out.append(x)
+    return tuple(out)
 
 
 def run_transform(job: TransformJob, generate: Callable,
@@ -232,17 +246,11 @@ def run_transform(job: TransformJob, generate: Callable,
                 "output_tokens", 0), prompt=prompt,
             duration_ms=duration_ms)
 
-    issues = validate_common(job.source, output)
-    coverage: tuple = ()
-    summary = None
-    if job.mode == "prompt_engineer":
-        coverage = tuple(tf_atoms.coverage_map(job.source, output))
-        summary = tf_atoms.coverage_summary(list(coverage))
-        for c in coverage:
-            if c.review_issue:
-                issues.append({"kind": c.atom.kind,
-                               "excerpt": c.atom.excerpt})
-    excerpts = tuple(i["excerpt"] for i in issues if i["excerpt"])
+    coverage = tuple(tf_atoms.coverage_map(job.source, output,
+                                           mode=job.mode))
+    summary = tf_atoms.coverage_summary(coverage)
+    excerpts = _dedupe(c.atom.excerpt for c in coverage if c.review_issue)
+    issues = [c for c in coverage if c.review_issue]
     diff = diffview.diff_stats(job.source, output)
     if issues:
         return TransformResult(
@@ -251,12 +259,14 @@ def run_transform(job: TransformJob, generate: Callable,
             coverage=coverage, coverage_summary=summary,
             review_excerpts=excerpts,
             output_tokens=gen.get("output_tokens", 0), prompt=prompt,
-            duration_ms=duration_ms, diff_stats=diff)
+            duration_ms=duration_ms, diff_stats=diff,
+            validator_revision=tf_atoms.VALIDATOR_REVISION)
     return TransformResult(
         job=job, output=output, path=PATH_APPLIED,
         coverage=coverage, coverage_summary=summary,
         output_tokens=gen.get("output_tokens", 0), prompt=prompt,
-        duration_ms=duration_ms, diff_stats=diff)
+        duration_ms=duration_ms, diff_stats=diff,
+        validator_revision=tf_atoms.VALIDATOR_REVISION)
 
 
 def job_for_definition(defn: TransformDefinition, source: str, *,
@@ -286,3 +296,52 @@ def result_json_for_store(result: TransformResult) -> str:
          "coverage": [c.to_json() for c in result.coverage],
          "review_excerpts": list(result.review_excerpts)},
         ensure_ascii=False, sort_keys=True)
+
+
+def decision_json(result: TransformResult) -> str:
+    """The transform decision record (content-bearing, lease-governed):
+    what the gate decided and why — path, reason, validator revision,
+    the full coverage map and the review excerpts the user was shown.
+    Retained beside the output so automated review status and a later
+    human judgment stay distinguishable."""
+    return json.dumps(
+        {"path": result.path, "reason": result.reason,
+         "validator_revision": result.validator_revision,
+         "task_key": result.job.task_key() if result.job else None,
+         "coverage_summary": result.coverage_summary,
+         "coverage": [c.to_json() for c in result.coverage],
+         "review_excerpts": list(result.review_excerpts)},
+        ensure_ascii=False, sort_keys=True)
+
+
+def result_from_message(job: TransformJob, msg: dict) -> TransformResult:
+    """Rebuild the worker's TransformResult parent-side from its
+    protocol message (the coordinator's rebuild)."""
+    coverage = tuple(
+        tf_atoms.Coverage(
+            atom=tf_atoms.Atom(
+                kind=c.get("kind", ""),
+                excerpt=c.get("kept_excerpt", ""),
+                anchors=tuple(c.get("anchors", ())),
+                start=c.get("source_start", 0),
+                end=c.get("source_end", 0),
+                ops=tuple(c.get("ops", ()))),
+            status=c.get("status", "missing"),
+            output_start=c.get("output_start"),
+            output_end=c.get("output_end"),
+            evidence=c.get("evidence", ""))
+        for c in msg.get("coverage") or [])
+    meta = msg.get("result") or {}
+    return TransformResult(
+        job=job, output=msg.get("output") or job.source,
+        path=meta.get("path", PATH_FALLBACK_ORIGINAL),
+        reason=meta.get("reason"),
+        coverage=coverage,
+        coverage_summary=meta.get("coverage"),
+        diff_stats=meta.get("diff"),
+        review_excerpts=tuple(msg.get("review_excerpts") or ()),
+        output_tokens=meta.get("output_tokens", 0),
+        limit_hit=bool(meta.get("limit_hit")),
+        duration_ms=meta.get("duration_ms", 0.0),
+        prompt=msg.get("prompt") or "",
+        validator_revision=meta.get("validator_revision"))

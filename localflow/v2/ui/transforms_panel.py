@@ -46,6 +46,23 @@ _ACTIONS = (
 )
 
 
+BUTTON_GAP = 8.0
+BUTTON_H = 28.0
+
+
+def action_frames(actions=_ACTIONS):
+    """(x, y, w, h) for every action: buttons in a row sit side by side
+    from the left margin with a fixed gap (the widest row, 76+62+108+118
+    plus gaps = 388 pt, fits the 460-pt minimum width)."""
+    frames = []
+    next_x = {}
+    for _title, _action, _enabled, w, row in actions:
+        x = next_x.get(row, 12.0)
+        frames.append((x, 62.0 - row * 34.0, w, BUTTON_H))
+        next_x[row] = x + w + BUTTON_GAP
+    return frames
+
+
 class TransformPreviewPanel(NSObject):
     """One lazily-constructed panel per process; ``show`` refreshes it
     for the latest result. All calls land on the main thread."""
@@ -78,11 +95,12 @@ class TransformPreviewPanel(NSObject):
         self.scroll.setAutoresizingMask_(2 | 16)  # w+h flexible
         content.addSubview_(self.scroll)
         self._buttons = {}
-        for title, action, enabled, w, row in _ACTIONS:
+        for (title, action, enabled, _w, _row), (x, y, w, h) in zip(
+                _ACTIONS, action_frames()):
             btn = NSButton.buttonWithTitle_target_action_(
                 title, self if action else None, action)
             btn.setEnabled_(enabled)
-            btn.setFrame_(NSMakeRect(12.0, 62.0 - row * 34.0, w, 28.0))
+            btn.setFrame_(NSMakeRect(x, y, w, h))
             content.addSubview_(btn)
             self._buttons[action or title] = btn
         self._other_menu = None

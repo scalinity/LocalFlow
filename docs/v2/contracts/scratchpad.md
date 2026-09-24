@@ -126,10 +126,20 @@ terms and spans cleared.
   selection, or the WHOLE NOTE (range `(0, len)` — accept REPLACES the
   note's content); through the M11 engine (`source_kind="note"`,
   task identity frozen; candidates carry `task_kind=
-  transform_note`). Accept revalidates the captured source still sits
-  at the range (`note_range_changed` → the copy offer — a changed
-  region is never blindly overwritten); the applied revision records
-  the task identity. The preview panel's Save-to-Scratchpad (honestly
+  transform_note`, with `note_id`/`note_revision_id` on the source
+  artifact). The capture holds an immutable **destination** —
+  `{note_id, revision_id, range, text}`, the range in code points of
+  the note's content (the editor converts AppKit's UTF-16 `NSRange`
+  with `notes.utf16_range_to_codepoints`, so an emoji before the
+  selection never shifts the region). Accept revalidates it with
+  `notes.note_destination_check`: the open note must be the captured
+  note (`note_changed`) and the captured text must still sit at the
+  range (`note_range_changed`); either refusal routes to the copy
+  offer — another note or a changed region is never written. A
+  chained Transform Output keeps the original destination: its accept
+  replaces the originally authorized region or refuses, never inserts
+  at the current caret. The applied revision records the task
+  identity. The preview panel's Save-to-Scratchpad (honestly
   disabled in M11) is live: the output becomes a NEW note (origin=
   transform, task identity recorded).
 - **History copy/move:** `hubSaveHistoryRow` creates a note from a
@@ -187,6 +197,11 @@ focus rings) are the pending human trial.
   contract forbids silent rewrites here.
 - Two attributed arrivals inside one debounce window merge under the
   second's origin (sub-second window; both texts persist, one span).
+- `ScratchpadEditor.insertion_point()` (the dictation-into-note
+  anchor) still returns the raw UTF-16 `NSRange` location; with a
+  non-BMP character (an emoji) before the caret a dictated arrival
+  lands that many characters early. Transform selections are
+  converted; the dictation anchor is not yet.
 - Mid-word caret insertions place the attributed span at the enclosing
   word boundary (a documented heuristic; spans are evidence hints).
 - No global quick-open hotkey (the menu action + its key equivalent

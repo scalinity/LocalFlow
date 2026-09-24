@@ -635,6 +635,19 @@ class EvidenceCollector:
                       "path": result.path})
             self.store.grant_lease(art_ids["output"], "training",
                                    days=days)
+            # The decision record: what the gate decided and why (path,
+            # validator revision, full coverage map, review excerpts).
+            from .transforms import engine as tf_engine
+            art_ids["decision"] = self.store.write_text_artifact(
+                job_id=ctx.job_id, stage="transform",
+                role="transform_decision",
+                text=tf_engine.decision_json(result),
+                kind="transform_decision_json", retention_class="training",
+                parent_artifact_id=art_ids["output"],
+                meta={"transform_id": result.job.transform_id,
+                      "path": result.path})
+            self.store.grant_lease(art_ids["decision"], "training",
+                                   days=days)
             ctx.transform_artifacts = art_ids
         except Exception:
             ctx.transform_artifacts = {}
@@ -650,6 +663,7 @@ class EvidenceCollector:
             "output_tokens": result.output_tokens,
             "duration_ms": result.duration_ms,
             "coverage": result.coverage_summary,
+            "validator_revision": result.validator_revision,
             "source_stage": "cleanup_applied_output",
             "artifact_ids": dict(ctx.transform_artifacts),
         }

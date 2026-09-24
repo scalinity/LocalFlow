@@ -371,11 +371,28 @@ class TransformStore:
                          model_id: Optional[str] = None,
                          display_order: int = 0,
                          parent_artifact_id: Optional[str] = None,
-                         lease_days: Optional[int] = None
+                         lease_days: Optional[int] = None,
+                         collecting: Optional[bool] = None,
+                         source_meta: Optional[dict] = None,
+                         retry_of: Optional[str] = None
                          ) -> Optional[str]:
-        """Record one candidate with its exact task inputs. Source and
-        output texts are lease-governed artifacts written inside the
-        SAME writer op as the row (the M09 annotation pattern)."""
+        """Record one candidate with its exact task inputs — only under
+        training-collection consent (S29.2). ``collecting=None`` reads
+        the consent state INSIDE the writer op, so a revocation while
+        the generation ran is honoured; the dictation path passes the
+        consent it captured at job start (True/False). Returns None and
+        writes nothing when collection is off.
+
+        Source and output texts are lease-governed artifacts written in
+        the SAME writer op as the row (the M09 annotation pattern). With
+        an output artifact, its children retain the exact rendered
+        prompt (``transform_prompt``) and the decision record
+        (``transform_decision``: path, validator revision, coverage map,
+        review excerpts). ``source_meta`` adds destination lineage to
+        the source artifact (note id / revision); ``retry_of`` names the
+        candidate a Retry Original re-ran (lineage, not a judgment)."""
+        if collecting is False:
+            return None
         manifest = result.job.task_manifest()
         candidate_id = ids.new_id("tcand")
         src_art = out_art = None
@@ -384,32 +401,52 @@ class TransformStore:
         days = lease_days if lease_days is not None \
             else self.store.retention_days["training_buffer"]
 
+        def text_art(db, role, text, meta, parent, kind="text"):
+            art = insert_text_artifact_row(
+                db, artifact_id=ids.new_id("art"),
+                job_id=result.job.parent_job_id, stage="transform",
+                role=role, text=text, kind=kind,
+                retention_class="training", meta=meta,
+                parent_artifact_id=parent, created_at_utc=now)
+            grant_lease_row(db, art, "training", days=days,
+                            granted_at_epoch=now_epoch)
+            return art
+
         def op(db):
             nonlocal src_art, out_art
+            if collecting is None:
+                row = db.execute(
+                    "SELECT state FROM consent_revisions ORDER BY rowid"
+                    " DESC LIMIT 1").fetchone()
+                if (row[0] if row else "disabled") != "enabled":
+                    return None
             if source_artifact_text is not None:
-                src_art = insert_text_artifact_row(
-                    db, artifact_id=ids.new_id("art"),
-                    job_id=result.job.parent_job_id, stage="transform",
-                    role="transform_source", text=source_artifact_text,
-                    kind="text", retention_class="training",
-                    meta={"task_key": manifest["task_key"],
-                          "source_kind": manifest["source_kind"]},
-                    parent_artifact_id=parent_artifact_id,
-                    created_at_utc=now)
-                grant_lease_row(db, src_art, "training", days=days,
-                                granted_at_epoch=now_epoch)
+                meta = {"task_key": manifest["task_key"],
+                        "source_kind": manifest["source_kind"]}
+                meta.update(source_meta or {})
+                src_art = text_art(db, "transform_source",
+                                   source_artifact_text, meta,
+                                   parent_artifact_id)
             if output_artifact_text is not None:
-                out_art = insert_text_artifact_row(
-                    db, artifact_id=ids.new_id("art"),
-                    job_id=result.job.parent_job_id, stage="transform",
-                    role="transform_output", text=output_artifact_text,
-                    kind="text", retention_class="training",
-                    meta={"task_key": manifest["task_key"],
+                meta = {"task_key": manifest["task_key"],
+                        "path": result.path,
+                        "validator_revision": result.validator_revision}
+                if retry_of:
+                    meta["retry_of"] = retry_of
+                out_art = text_art(db, "transform_output",
+                                   output_artifact_text, meta,
+                                   parent_artifact_id)
+                if result.prompt:
+                    text_art(db, "transform_prompt", result.prompt,
+                             {"task_key": manifest["task_key"],
+                              "prompt_revision":
+                                  manifest["prompt_revision"]},
+                             out_art, kind="model_input")
+                text_art(db, "transform_decision",
+                         tf.engine.decision_json(result),
+                         {"task_key": manifest["task_key"],
                           "path": result.path},
-                    parent_artifact_id=parent_artifact_id,
-                    created_at_utc=now)
-                grant_lease_row(db, out_art, "training", days=days,
-                                granted_at_epoch=now_epoch)
+                         out_art, kind="transform_decision_json")
             db.execute(
                 "INSERT INTO transform_candidates(candidate_id, task_key,"
                 " task_kind, transform_id, transform_revision,"
