@@ -84,6 +84,9 @@ def make_hub(d, tmp):
         "styles_service": d._styles,
         "snippets_service": d._snip_store,
         "transforms_service": d._tf_store,
+        # M13: the Insights view rides the real analytics services the
+        # coordinator built in configure() (the same lesson).
+        "insights_service": d._insights,
     })
     hub.state.wait_for_queries()
     return hub
@@ -129,18 +132,22 @@ def test_view_switching_and_keyboard_paths():
         hub.state.next_view()
         assert hub.state.selected_view == "scratchpad"  # M12 view
         hub.state.next_view()
+        assert hub.state.selected_view == "insights"  # M13 view
+        hub.state.next_view()
         assert hub.state.selected_view == "diagnostics"
         hub.state.next_view(step=-1)
-        assert hub.state.selected_view == "scratchpad"
+        assert hub.state.selected_view == "insights"
         hub.state.select_view("models")
         assert hub.state.views["models"]["subview"] == "engines"
         hub.state.select_models_subview("training")
         assert hub.state.views["models"]["subview"] == "training"
-        hub.state.select_view_by_index(8)
+        hub.state.select_view_by_index(9)
         assert hub.state.selected_view == "settings"
         try:
-            hub.state.select_view("insights")
-            raise AssertionError("future view accepted")
+            # Every S19 view exists as of M13; the refusal rule itself
+            # still holds for anything unregistered.
+            hub.state.select_view("dictionary_panel")
+            raise AssertionError("unregistered view accepted")
         except ValueError:
             pass
     finally:

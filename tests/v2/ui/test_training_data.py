@@ -374,6 +374,67 @@ def test_readiness_triad_honest():
               " improvement (improvement: post-V2)")
 
 
+def test_readiness_aggregates_m13():
+    """M13's E19.4 aggregates: the five outcome classes stay DISTINCT
+    (AC05), every metric carries a denominator, the join coverage can
+    actually fall below 100%, and not-available stays explicit — never
+    a fabricated number or rate."""
+    with Env() as e:
+        ex1 = e.add_example()                 # audio + unreviewed
+        ex2 = e.add_example(with_audio=False)  # no audio, unreviewed
+        # A verified positive and a verified failure (intended marks).
+        e.svc.mark_intended(ex1, True)
+        e.svc.mark_intended(ex2, False)
+        # An excluded example leaves the capture-completeness base but
+        # stays its own class.
+        e.svc.exclude(ex2)
+        r = e.svc.readiness()
+        balance = r["outcome_balance"]
+        assert set(balance) == {"unreviewed", "verified_positive",
+                                "verified_failure", "unobserved",
+                                "excluded", "note"}
+        assert balance["verified_positive"] == 1
+        assert balance["verified_failure"] == 1
+        assert balance["excluded"] == 1
+        assert "never rates" in balance["note"]  # no population WER
+        m = r["readiness_metrics"]
+        # Denominators present and honest.
+        assert m["capture_completeness"]["denominator"] == 1  # live only
+        assert m["exact_audio_join_coverage"]["denominator"] == 1
+        assert m["exact_audio_join_coverage"]["joined"] == 1
+        assert "definition" in m["exact_audio_join_coverage"]
+        # A dangling audio id (envelope names an id with no row) lowers
+        # the join coverage — never a tautological 100%.
+        import json as _json
+        def _dangle(db):
+            db.execute(
+                "UPDATE training_revisions SET envelope_json=? WHERE"
+                " example_id=(SELECT example_id FROM training_revisions"
+                " ORDER BY rowid DESC LIMIT 1)",
+                (_json.dumps({
+                    "example_id": "ex-dangle", "job_id": "job-dangle",
+                    "family_id": "fam-dangle",
+                    "artifact_ids": {"original_audio":
+                                     "art-does-not-exist"},
+                    "outcome": {"correctness": "unreviewed"}}),))
+        e.store.submit(_dangle)
+        r2 = e.svc.readiness()
+        j = r2["readiness_metrics"]["exact_audio_join_coverage"]
+        assert j["denominator"] == 2 and j["joined"] == 1, j
+        # Task eligibility: separate definitions, never merged.
+        for key in ("asr_supervised", "cleanup_supervised",
+                    "transform_supervised", "preference_pairs"):
+            assert "definition" in m["task_eligibility"][key]
+        # Not-available stays explicit; nearing-expiry is null, not 0.
+        na = m["not_available"]
+        assert na["split_contamination"] == "not_available_until_m14"
+        assert na["comparator_coverage"] == "not_available_until_m15"
+        assert na["population_wer"] == "no_references_no_population_claims"
+        assert m["retention_health"]["nearing_expiry"] is None
+        print("ok  M13 readiness aggregates: five classes, denominators,"
+              " honest join coverage, explicit not-available")
+
+
 def test_examples_text_search():
     with Env() as e:
         e.add_example(raw="alpha synthetic", applied="Alpha synthetic.")

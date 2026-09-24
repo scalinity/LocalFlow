@@ -125,11 +125,18 @@ def test_repeated_revisions_no_duplicates():
             assert len(obs) == 1, \
                 f"repeated/typed revisions spammed observations: {obs}"
             # The word counts of the note never feed usage analytics:
-            # no usage_facts/daily aggregates exist for notes at all.
+            # the M13 usage tables exist since schema v9, but note
+            # revisions never write a single row into them (M13-AC02 —
+            # a dictation counts once through its job; note text never
+            # feeds word counts).
             assert s.submit(lambda db: db.execute(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table'"
                 " AND name IN ('usage_facts','daily_aggregates')"
-            ).fetchone())[0] == 0  # M13 owns those tables
+            ).fetchone())[0] == 2  # both shipped at v9 (M13)
+            assert s.submit(lambda db: db.execute(
+                "SELECT (SELECT COUNT(*) FROM usage_facts) +"
+                " (SELECT COUNT(*) FROM daily_aggregates)"
+            ).fetchone())[0] == 0
             # Typed additions carry no source_job_id and no dictated
             # span: the last revision's spans are exactly the dictated
             # region.

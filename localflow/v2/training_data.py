@@ -577,7 +577,15 @@ class TrainingDataService:
         """Honest readiness counts, separating infrastructure ready /
         dataset coverage / observed model improvement. Nothing is
         fabricated to populate a screen: every number is a store fact,
-        and 'observed model improvement' stays explicitly post-V2."""
+        and 'observed model improvement' stays explicitly post-V2.
+
+        M13 adds the E19.4-style aggregates (task 6): each with its
+        denominator, the outcome classes kept DISTINCT (unreviewed /
+        verified positive / verified failure / unobserved / excluded —
+        M13-AC05), and no correctness ever inferred from absence of
+        edits. Counts are counts: a verified-failure tally is never
+        divided into a population error rate (hard-mined samples are
+        not population WER, and no mining exists until M14)."""
         def op(conn):
             by_state = {}
             for st, n in conn.execute(
@@ -585,47 +593,126 @@ class TrainingDataService:
                     " BY state").fetchall():
                 by_state[st] = n
             verbatim = intended = spans = 0
-            unreviewed_outcomes = verified_correct = 0
+            verified_correct = verified_incorrect = 0
+            unreviewed_outcomes = unobserved_outcomes = 0
             audio_count = 0
+            audio_referenced = 0
             audio_seconds = 0.0
+            complete_examples = 0
+            live_examples = 0
             training_bytes = 0
+            families = set()
+            sessions = set()
+            live_example_states = ("captured_unreviewed",
+                                   "review_candidate", "annotated",
+                                   "ambiguous", "quarantined_sensitive")
             latest = conn.execute(
                 "SELECT example_id, envelope_json FROM"
                 " training_revisions WHERE rowid IN (SELECT MAX(rowid)"
                 " FROM training_revisions GROUP BY example_id)").fetchall()
+            state_rows = dict(conn.execute(
+                "SELECT example_id, state FROM training_examples"
+            ).fetchall())
             for _ex_id, payload in latest:
                 env = json.loads(payload)
+                if env.get("family_id"):
+                    families.add(env["family_id"])
+                if env.get("session_id"):
+                    sessions.add(env["session_id"])
+                if state_rows.get(_ex_id) in live_example_states:
+                    live_examples += 1
                 anns = env.get("annotations") or []
-                if any(a.get("kind") == "verbatim_reference"
-                       and a.get("listened_audio") for a in anns):
+                has_verbatim = any(
+                    a.get("kind") == "verbatim_reference"
+                    and a.get("listened_audio") for a in anns)
+                has_span = any(a.get("kind") == "span_correction"
+                               for a in anns)
+                if has_verbatim:
                     verbatim += 1
-                if any(a.get("kind") == "span_correction" for a in anns):
+                if has_span:
                     spans += 1
                 outcome = env.get("outcome") or {}
-                if outcome.get("correctness") in ("correct", "incorrect"):
+                correctness = outcome.get("correctness")
+                if correctness == "correct":
                     intended += 1
-                    if outcome.get("correctness") == "correct":
-                        verified_correct += 1
+                    verified_correct += 1
+                elif correctness == "incorrect":
+                    intended += 1
+                    verified_incorrect += 1
+                elif outcome.get("observation", {}).get("status") == \
+                        "observed":
+                    # An observed edit window closed without a label:
+                    # an observation, never a verdict (S29.8).
+                    unobserved_outcomes += 1
                 else:
                     unreviewed_outcomes += 1
-                audio_id = (env.get("artifact_ids")
-                            or {}).get("original_audio")
+                arts = env.get("artifact_ids") or {}
+                missing = env.get("missing_reasons") or {}
+                audio_id = arts.get("original_audio")
+                audio_ok = False
                 if audio_id:
+                    # Join denominator: every envelope that NAMES an
+                    # audio artifact — resolvable or not — so a dangling
+                    # id can actually surface (never a tautological
+                    # 100%).
+                    audio_referenced += 1
                     arow = conn.execute(
                         "SELECT purged, meta_json FROM artifacts"
                         " WHERE artifact_id=?", (audio_id,)).fetchone()
                     if arow and not arow[0]:
                         audio_count += 1
+                        audio_ok = True
                         try:
                             audio_seconds += float(
                                 json.loads(arow[1] or "{}").get(
                                     "duration_sec") or 0.0)
                         except (ValueError, TypeError):
                             pass
+                source_ok = bool(arts.get("source_text")) or \
+                    "source_text" in missing
+                applied_ok = bool(arts.get("applied_output")) or \
+                    "applied_output" in missing
+                if audio_ok and source_ok and applied_ok:
+                    complete_examples += 1
             for (nbytes,) in conn.execute(
                     "SELECT bytes FROM artifacts WHERE purged=0 AND"
                     " retention_class='training'").fetchall():
                 training_bytes += nbytes or 0
+            excluded = by_state.get("excluded", 0)
+            quarantined = by_state.get("quarantined_sensitive", 0)
+            deleted = by_state.get("deleted", 0)
+            expired = by_state.get("expired", 0)
+            # Task eligibility (S29.12's minimum evidence, each with its
+            # own definition — reported separately, never merged).
+            task_eligibility = {
+                "asr_supervised": {
+                    "count": verbatim,
+                    "definition": "retained audio + audio-reviewed"
+                                  " verbatim reference",
+                },
+                "cleanup_supervised": {
+                    "count": intended,
+                    "definition": "exact stage input retained + explicit"
+                                  " intended-writing mark",
+                },
+                "transform_supervised": {
+                    "count": conn.execute(
+                        "SELECT COUNT(DISTINCT task_key) FROM"
+                        " transform_candidates").fetchone()[0],
+                    "definition": "distinct transform tasks with retained"
+                                  " candidates (reviewed targets are"
+                                  " M14's review queue)",
+                },
+                "preference_pairs": {
+                    "count": conn.execute(
+                        "SELECT COUNT(DISTINCT task_key) FROM"
+                        " preference_observations WHERE judgment IN"
+                        " ('prefer_a','prefer_b','tie','neither')"
+                    ).fetchone()[0],
+                    "definition": "distinct tasks with an explicit"
+                                  " comparable judgment",
+                },
+            }
             return {
                 "examples_by_state": by_state,
                 # The inspector itself is the functional M09 deliverable
@@ -639,6 +726,71 @@ class TrainingDataService:
                     "span_annotations": spans,
                     "unreviewed_outcomes": unreviewed_outcomes,
                     "explicitly_correct": verified_correct,
+                },
+                # M13-AC05: the five outcome classes stay distinct —
+                # counts only, never rates over a population.
+                "outcome_balance": {
+                    "unreviewed": unreviewed_outcomes,
+                    "verified_positive": verified_correct,
+                    "verified_failure": verified_incorrect,
+                    "unobserved": unobserved_outcomes,
+                    "excluded": excluded,
+                    "note": "counts, not rates — no population error"
+                            " rate is derivable without a sampling"
+                            " design (S29.9)",
+                },
+                "readiness_metrics": {
+                    "capture_completeness": {
+                        "complete": complete_examples,
+                        "denominator": live_examples,
+                        "definition": "live (non-excluded/deleted/"
+                                      "expired) examples whose required"
+                                      " families are present or carry an"
+                                      " explicit missing reason",
+                    },
+                    "exact_audio_join_coverage": {
+                        "joined": audio_count,
+                        "denominator": audio_referenced,
+                        "definition": "envelopes naming an original_audio"
+                                      " id whose artifact row resolves"
+                                      " unpurged — a dangling id lowers"
+                                      " this",
+                    },
+                    "verbatim_reference_coverage": {
+                        "examples": verbatim,
+                        "denominator": audio_count,
+                        "seconds_note": "per-span reviewed seconds are"
+                                        " not tracked yet; example-level"
+                                        " coverage only",
+                    },
+                    "task_eligibility": task_eligibility,
+                    "diversity": {
+                        "unique_families": len(families),
+                        "unique_sessions": len(sessions),
+                        "scope": "single-speaker personalization"
+                                 " (S29.11)",
+                    },
+                    "retention_health": {
+                        "storage_bytes": training_bytes,
+                        "retained_audio_examples": audio_count,
+                        "nearing_expiry": None,
+                        "nearing_expiry_note": "per-example expiry"
+                                               " countdowns arrive with"
+                                               " the M14 review queues —"
+                                               " uncomputed is null,"
+                                               " never a fake zero",
+                        "excluded": excluded,
+                        "quarantined": quarantined,
+                        "deleted": deleted,
+                        "expired": expired,
+                    },
+                    "not_available": {
+                        "split_contamination": "not_available_until_m14",
+                        "comparator_coverage": "not_available_until_m15",
+                        "export_integrity": "not_available_until_m14",
+                        "population_wer": "no_references_no_population"
+                                          "_claims",
+                    },
                 },
                 "observed_model_improvement": None,
                 "observed_model_improvement_reason": "post_v2_training_only",

@@ -126,6 +126,22 @@ orphan payload files.
   access through `TransformStore` over `Store.submit`; the torn-write
   repair path covers the v7 tables.
 
+## M13 additions (schema v9; no frozen identity changed)
+
+- Migration v9 adds the usage analytics tables (see
+  `contracts/analytics.md`): `usage_facts` (one dictation row per
+  logical job under a partial unique index — a retry reaching a
+  terminal outcome REPLACES it; separate `transform`/`repaste`
+  activity rows) + `daily_aggregates` (versioned, always recomputed
+  from the facts inside the same writer op as the fact write) + day/
+  activity indexes. The torn-write repair path covers the v9 tables.
+  The `retention_days` map gains the independent `usage` knob.
+- `prune_metadata` enforces the M02 `metadata` knob (deferred to M13
+  by hub.md): terminal job rows delete once every content retention
+  has expired past the window and no live training example pins them —
+  `job_targets`/`insertions`/`insertion_observations` go with the row;
+  usage facts never do (M13-AC03).
+
 ## M12 additions (schema v8; no frozen identity changed)
 
 - Migration v8 adds the Scratchpad tables (see

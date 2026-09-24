@@ -42,6 +42,15 @@ DEFAULTS = {
     "retention_audio_failed_days": 30,
     "retention_metadata_days": 14,
     "training_buffer_days": 30,
+    # M13 (Spec S21): usage analytics retention — usage facts and daily
+    # aggregates expire on their own schedule, independent of transcript
+    # and audio retention (deleting expired text never empties usage
+    # graphs unless usage was explicitly deleted).
+    "retention_usage_days": 365,
+    # M13 (Spec S21): the reporting timezone for day boundaries — an
+    # IANA name; empty means the system's local zone. Changing it
+    # re-buckets every usage day at next launch.
+    "analytics_timezone": "",
     # M03 (Spec S09): crash-resilient capture. The audio callback journals
     # blocks off-thread so a crash mid-dictation recovers every complete
     # block. false = memory-only capture; crash recovery is then honestly

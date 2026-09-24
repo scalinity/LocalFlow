@@ -18,7 +18,7 @@ from __future__ import annotations
 import threading
 
 VIEWS = ("home", "history", "styles", "snippets", "transforms",
-         "scratchpad", "diagnostics", "models", "settings")
+         "scratchpad", "insights", "diagnostics", "models", "settings")
 
 VIEW_TITLES = {
     "home": "Home",
@@ -27,31 +27,37 @@ VIEW_TITLES = {
     "snippets": "Snippets",
     "transforms": "Transforms",
     "scratchpad": "Scratchpad",
+    "insights": "Insights",
     "diagnostics": "Diagnostics",
     "models": "Models",
     "settings": "Settings",
 }
+
+# The Insights range selector's fixed choices (days; None = all time).
+INSIGHT_RANGES = (7, 30, 90, None)
 
 
 class HubState:
     def __init__(self, history_service, training_service=None,
                  diagnostics_provider=None, coordinator=None,
                  styles_service=None, snippets_service=None,
-                 transforms_service=None, notes_service=None):
+                 transforms_service=None, notes_service=None,
+                 insights_service=None):
         """``diagnostics_provider()`` returns a dict with events_dir and
         whatever filters the shell set; ``coordinator`` is the app
         delegate's command surface (engine states, pipeline info,
         recovery, paste/retry commands, M10 effective-profile/preview).
         ``styles_service``/``snippets_service``/``transforms_service``/
-        ``notes_service`` are the M10–M12 stores (the training_service
-        pattern: read/CRUD through the service, never a second store
-        connection)."""
+        ``notes_service``/``insights_service`` are the M10–M13 stores
+        (the training_service pattern: read/CRUD through the service,
+        never a second store connection)."""
         self.history_service = history_service
         self.training_service = training_service
         self.styles_service = styles_service
         self.snippets_service = snippets_service
         self.transforms_service = transforms_service
         self.notes_service = notes_service
+        self.insights_service = insights_service
         self.diagnostics_provider = diagnostics_provider \
             or (lambda: {"events_dir": None})
         self.coordinator = coordinator
@@ -81,6 +87,8 @@ class HubState:
             state.update({"selected_id": None, "open_ids": [],
                           "versions": [], "attachments": [],
                           "unsaved_tail_risk": None})
+        if view == "insights":
+            state.update({"range": 30, "app": None, "mode": None})
         return state
 
     def select_view(self, view):
@@ -385,6 +393,61 @@ class HubState:
             return
         self._publish_locked("scratchpad", detail=detail)
 
+    # ---- Insights (M13, Spec S21) ----------------------------------------
+
+    def set_insights_filters(self, range_days=None, app=..., mode=...):
+        """Cohort filters (``...`` leaves a field unchanged). ``app``/
+        ``mode`` of None clear the filter; ``range_days`` comes from
+        INSIGHT_RANGES."""
+        view = self.views["insights"]
+        if range_days is not ...:
+            if range_days is not None and range_days not in INSIGHT_RANGES:
+                raise ValueError(f"unknown range {range_days!r}")
+            view["range"] = range_days
+        if app is not ...:
+            view["app"] = app or None
+        if mode is not ...:
+            view["mode"] = mode or None
+        self.reload_insights()
+
+    def reload_insights(self):
+        self._spawn(self._load_insights)
+
+    def _load_insights(self, generation):
+        if self.insights_service is None:
+            self._publish_locked("insights",
+                                 error="insights_unavailable",
+                                 loading=False)
+            return
+        view = self.views["insights"]
+        days, app, mode = view["range"], view["app"], view["mode"]
+        try:
+            summary = self.insights_service.summary(
+                days=days, app=app, mode=mode)
+            daily = self.insights_service.daily(
+                days=days, app=app, mode=mode)
+            per_app = ([] if app else self.insights_service.per_app(
+                days=days))
+            per_mode = ([] if mode else self.insights_service.per_mode(
+                days=days))
+            undated = self.insights_service.undated_count()
+            legacy = self.insights_service.legacy_summary()
+            apps = self.insights_service.apps_available()
+            modes = self.insights_service.modes_available()
+        except Exception as e:
+            self._publish_locked("insights", error=type(e).__name__,
+                                 loading=False)
+            return
+        if generation != self._generation:
+            return
+        self._publish_locked("insights", error=None, loading=False,
+                             data={"summary": summary, "daily": daily,
+                                   "per_app": per_app,
+                                   "per_mode": per_mode,
+                                   "undated": undated,
+                                   "legacy": legacy,
+                                   "apps": apps, "modes": modes})
+
     # ---- Diagnostics --------------------------------------------------------
 
     def set_diagnostics_filters(self, job=None, level=None, utc=None):
@@ -453,6 +516,12 @@ class HubState:
                 "collection_state": self.coordinator.collection_state(),
                 "retention": dict(getattr(
                     self.coordinator, "hubRetentionDays", lambda: {})()),
+                # M13: the usage-analytics block (retention knob +
+                # reporting zone) — present when the coordinator exposes
+                # the command, absent under a stubbed harness.
+                "usage": (self.coordinator.hubUsageInfo()
+                          if hasattr(self.coordinator,
+                                     "hubUsageInfo") else None),
             }
         self._publish_locked("settings", error=None, loading=False,
                              data=data)
@@ -476,6 +545,8 @@ class HubState:
             self.reload_transforms()
         elif view == "scratchpad":
             self.reload_scratchpad()
+        elif view == "insights":
+            self.reload_insights()
         elif view == "diagnostics":
             self._spawn(self._load_diagnostics)
         elif view == "models":

@@ -1,0 +1,137 @@
+{
+  "milestone": "M13",
+  "requirements": ["LF-R20", "LF-R28", "LF-R30"],
+  "suite": "EV-15 analytics portion + EV-13 metric honesty + EV-19 readiness aggregates",
+  "status": "implemented_pending_human",
+  "environment": {
+    "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+    "python": "3.14.7 (.venv)",
+    "mlx": "0.31.2",
+    "transformers": "5.10.4",
+    "machine": "Apple M5 Pro 48GB, macOS 27.0",
+    "models": {
+      "asr": "mlx-community/parakeet-tdt-0.6b-v3",
+      "cleanup_transform": "mlx-community/Qwen3-4B-Instruct-2507-4bit"
+    },
+    "note": "no model or checkpoint change; analytics is store/SQL/AppKit work with no model calls. Schema v9 migrated the live store 8->9 with a pre-migration backup (v2-evidence/backups/v2-pre-migrate-2026-09-24T004627.331Z.db); verify() clean; 10 jobs / 7 legacy rows / 5 transforms intact; the legacy summary reconciles the audited figures exactly (7 rows, 280/277 words, 350.3 s, fixed 11, instants 2026-07-04T21:15:42.804Z-21:38:40.276Z) and 754 undated log pairs count into no dated view. An idle dev run left from the M12 session (pid 51919, 0% CPU for 30+ h) held the live writer; it was terminated with SIGTERM (its shutdown path) before the migration - relaunch with ./run.sh."
+  },
+  "pre_change_baselines": {
+    "kind": "automated + model-backed",
+    "command": ".venv/bin/python <suite>",
+    "result": "All 51 pre-M13 suites green on the clean tree (d291a4b): 4 M01, 4 M02, 5 M03 (worker_live model-backed), 4 M04, 4 M05, 2 M06, 5 M07 (3 model-backed), 3 M08, 4 M09, 5 M10, 4 M11 (PE cases model-backed 60 s), 5 M12, stuck_overlay, live_pipeline (model-backed) and the V1 control tests/test_cleanup.py 51/51 (50 s). Two note suites (test_note_store, test_note_evidence) failed in the background pass ONLY because the schema-v9 edit landed mid-run; both re-ran green against the stashed-clean tree (their assertions anticipated v9 - 'M13 owns those tables') and were updated as M13-owned expectations."
+  },
+  "checks": [
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/analytics/test_usage_store.py",
+      "cwd": "repo root",
+      "result": "PASS (11 checks): v9 migration additive over a real v8 db with backup + torn-write repair; one-dictation-once with retry-replace and transform/re-paste as separate kinds; unknown instants refused; DST spring-forward/fall-back day boundaries; cross-day retry moves the fact and fixes/deletes the departed day's aggregate; the fact/aggregate invariant under writes, retries, deletions and expiry; AC03 (text prune keeps usage; explicit deletion and the usage knob remove it); versioned recompute + zone change re-buckets + one-zone-at-a-time; seven-row legacy reconciliation unchanged and separate; delete-all-usage removes counters only; metadata pruning keeps usage with live-example/content pins",
+      "evidence": "/tmp run transcript; suite is the committed record"
+    },
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/analytics/test_insights_service.py",
+      "cwd": "repo root",
+      "result": "PASS (6 checks): weighted WPM 65.5 (not the 90 row-average) with the denominator over the SAME text-producing cohort (a cancelled job's seconds change neither); sample-aware nearest-rank percentiles with n and failed jobs staying in the cohort; cohort filters with honestly-absent activity kinds; daily rows bucket by reporting zone; legacy/undated lines separate; empty store reports zeros and nulls"
+    },
+    {
+      "kind": "automated (native-Mac headless, real coordinator)",
+      "command": ".venv/bin/python tests/v2/analytics/test_insights_hub.py",
+      "cwd": "repo root",
+      "result": "PASS (7 checks) through the REAL pipeline: the confirmed-path fact (app/mode/cleanup path/asr+cleanup+end-to-end timings) with its aggregate; cancelled and saved-not-inserted outcomes honest; hubPasteText records a re-paste activity row without moving dictated words; the explicit-transform fact at the coordinator seam; the Insights view over the real services (AC04 labels rendered) + usage commands; History delete-usage (V2 deletes, legacy refuses); analytics faults never disturb dictation (None and raising stores)"
+    },
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/ui/test_training_data.py",
+      "cwd": "repo root",
+      "result": "PASS (13 checks: the M09 twelve + test_readiness_aggregates_m13 - five distinct outcome classes with verified positive/failure/excluded counts, denominators present, a dangling audio id lowers join coverage below 100%, task-eligibility definitions, not-available explicit, nearing-expiry null)"
+    },
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/ui/test_hub_shell.py",
+      "cwd": "repo root",
+      "result": "PASS (15 checks over the 10-view Hub; the future-view refusal now uses an unregistered name - every S19 view is real as of M13)"
+    },
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/notes/test_note_store.py, test_note_evidence.py, test_scratchpad_hub.py",
+      "cwd": "repo root",
+      "result": "PASS (M12 suites updated for v9: the migration test targets the current ladder head; the evidence suite now asserts the usage tables EXIST and stay empty for note revisions - the M12-AC05 boundary strengthened; scratchpad hub takes the 10-view sidebar)"
+    },
+    {
+      "kind": "regression (all earlier suites)",
+      "command": "full set: 4 M01 + 4 M02 + 5 M03 + 4 M04 + 4 M05 + 2 M06 + 5 M07 + 3 M08 + 4 M09 + 5 M10 + 4 M11 + 5 M12 + 3 M13 + stuck_overlay + live_pipeline + cleanup_v1",
+      "cwd": "repo root",
+      "result": "54/54 exit 0 post-address (model-backed: worker_live 5 s, cleanup_engine/pipeline, fidelity 44 s, structure 54 s, PE cases 60 s, live_pipeline 4 s, V1 control cleanup_v1 51/51 in 50 s); registry 33/22; baseline-manifest privacy scan clean"
+    },
+    {
+      "kind": "automated benchmark",
+      "command": ".venv/bin/python scripts/v2/benchmark_m13.py docs/v2/benchmarks/20260924-005000-m13",
+      "cwd": "repo root",
+      "result": "50,000 synthetic facts (40k dictations/23 days, 5k transforms, 5k re-pastes): summary_30d p95 3.4 ms, summary_all 58.5 ms, summary_filtered 0.56 ms, daily 0.17 ms, per_app/per_mode 0.13 ms, legacy_summary 0.02 ms - budget 200 ms warm, all within; fact write on the busiest day (1,870 facts) p95 1.04 ms (the dictation terminal-path addition; aggregation runs inside the fact write - no separate scheduled job)",
+      "evidence": "docs/v2/benchmarks/20260924-005000-m13/m13.json"
+    },
+    {
+      "kind": "live-store migration",
+      "command": ".venv/bin/python (one-off store open + verify, transcript in handoff)",
+      "cwd": "repo root",
+      "result": "v8 -> v9 additive with pre-migration backup; verify() ok; all rows intact; legacy summary reconciles the audited totals"
+    }
+  ],
+  "acceptance_criteria": {
+    "M13-AC01": {
+      "status": "automated_pass",
+      "evidence": [
+        "tests/v2/analytics/test_usage_store.py::test_legacy_seven_row_reconciliation (rows byte-identical after all M13 machinery; totals 280/277/350.3/11; no usage facts minted for legacy; delete_usage refuses legacy ids)",
+        "live-store check: legacy_summary() over the real store returns the audited figures"
+      ],
+      "note": "the rows stay in legacy_dictations, read in place - never copied into usage_facts, never relabeled"
+    },
+    "M13-AC02": {
+      "status": "automated_pass",
+      "evidence": [
+        "test_usage_store.py::test_one_dictation_counts_once_retry_replaces (one row, attempt 2, after a failed-then-retried sequence)",
+        "test_insights_hub.py::test_repaste_command_records_activity_not_words (real hubPasteText; dictated words unchanged)",
+        "test_insights_hub.py::test_explicit_transform_fact_at_coordinator_seam (transform fact separate; no dictation fact minted)",
+        "cross-day retry regression + fact/aggregate invariant (post-review)"
+      ]
+    },
+    "M13-AC03": {
+      "status": "automated_pass",
+      "evidence": [
+        "test_usage_store.py::test_text_prune_does_not_empty_usage_and_expiry_does (transcript expiry keeps the graphs; the explicit per-job control and the usage knob remove exactly the usage)",
+        "test_usage_store.py::test_prune_metadata_keeps_usage_and_guards_examples (job rows pruned, facts survive with their own copies; live examples and retained content pin rows)",
+        "test_usage_store.py::test_delete_all_usage_removes_only_usage (content/jobs untouched)"
+      ]
+    },
+    "M13-AC04": {
+      "status": "automated_pass",
+      "evidence": [
+        "test_insights_service.py::test_weighted_wpm_not_row_average (weighted formula, one cohort for number and denominator)",
+        "test_insights_hub.py::test_insights_view_over_real_services (the rendered Definitions label WPM/legacy edits/model edits/reference-based accuracy distinctly)",
+        "legacy fixed_words stays under its legacy label; no accuracy or WER is shown anywhere"
+      ],
+      "note": "the definitions' visual read at text scale is part of the pending native trial"
+    },
+    "M13-AC05": {
+      "status": "automated_pass",
+      "evidence": [
+        "tests/v2/ui/test_training_data.py::test_readiness_aggregates_m13 (five distinct classes; counts never rates; population WER explicitly not derivable)",
+        "usage analytics and readiness remain separate definitions throughout"
+      ]
+    }
+  },
+  "human_verification": {
+    "id": "native-m13-insights-trial",
+    "status": "pending",
+    "steps": "From Terminal.app (cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh): dictate a few short phrases across two destination apps, open Hub > Insights and check the summary/daily/per-app/per-mode numbers against a hand count for today; set the range/filters; check latency lines carry n=; retry one failed dictation from History and confirm today's totals do not double; Delete Usage on one History row and watch the graphs recompute; Settings > usage retention apply; expire a transcript (or wait out retention) and confirm the graphs keep the words; screenshots at normal and enlarged text scale."
+  },
+  "review_loop": {
+    "skill": "/review-2 (two parallel read-only reviewers: bug-hunting debugger; architecture/quality/security/data-integrity auditor)",
+    "verdict_before_addressing": "Request Changes - 2 criticals after dedup, both corroborated: (1) a retry completing on another local day left the departed day's daily_aggregates row stale (fact/aggregate desync, reproduced by both reviewers); (2) the retry path dropped captured_at_utc/timezone/app provenance and the terminal seam's 'or now()' fallback parked the fact on the retry day (a fabricated instant against the contract's refusal rule). Warnings: WPM denominator summed seconds over the whole cohort while its jobs-count covered text-producing jobs only (AC04); exact_audio_join_coverage was tautological (joined incremented under the same condition as the denominator); capture_completeness counted excluded/deleted/expired examples in its denominator; nearing_expiry was a hardcoded 0; three emitted events missing from the contract list; date-fragile test fixtures (7-day windows over pinned 2026-09 instants); the readiness aggregates shipped without their cited suite assertions.",
+    "addressed": "Both criticals fixed with regression tests (the retry job dict carries the store rows' capture instant/zone/app; no instant fallback remains - the refusal rule now holds end to end; record_dictation_fact recomputes or deletes the departed day inside the same op; cross-day retry test + a general fact/aggregate invariant test added). Every warning fixed: WPM seconds now sum over the same text-producing cohort (whole-cohort minutes stay a separately labeled field); join coverage counts every envelope-named audio id as its denominator (a dangling id now lowers it - pinned by test); capture completeness denominates over live examples with a definition string; nearing_expiry is null with its note; the three events joined the contract list; fixtures widened to 3650-day windows; test_readiness_aggregates_m13 added to the cited suite. Suggestions applied: created_at_utc excluded from the retry upsert; daily()/summary() transform counts aligned (dead filter removed); the launch drift check also compares the aggregate algorithm version; local_day_for accepts the seconds-form instant; rebuild's zone assignment moved inside the writer op; the one-dictation-one-fact boundary (discard-short, abandoned captures, crash-recovered retries) documented in the contract. No findings rejected as incorrect; none deferred.",
+    "post_address": "All 54 suites re-ran green on the fixed code (55-line transcript: every suite exit 0, model-backed included, V1 control 51/51 in 50 s) and the benchmark re-ran on the fixed code (all queries p95 <= 58.5 ms vs the 200 ms budget; fact write p95 1.04 ms).",
+    "cadence_note": "The /address per-fix-commit cadence was adapted to this repo's milestone protocol: one close-out commit, no push - per the kickoff's constraints."
+  },
+  "privacy": "Nothing private entered Git: analytics rows carry app names only inside the live store (private usage metadata per S21); every committed fixture is synthetic (Synth Notes/Synth Code/Synth Editor, synthetic legacy rows shaped to the public audited totals); events are content-free ids/reasons/counts; the benchmark JSON carries latencies/counts over a temp-dir store; the baseline-manifest privacy scan passes over every new path; the live v9 migration is additive with its backup under v2-evidence/backups/ (outside Git)."
+}

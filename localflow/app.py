@@ -118,7 +118,48 @@ class AppDelegate(NSObject):
             "audio_failed": int(cfg.get("retention_audio_failed_days", 30)),
             "metadata": int(cfg.get("retention_metadata_days", 14)),
             "training_buffer": int(cfg.get("training_buffer_days", 30)),
+            "usage": int(cfg.get("retention_usage_days", 365)),
         }
+        # M13 (Spec S08/S21, contracts/analytics.md): usage analytics —
+        # dated facts over the single-writer store, independent of
+        # training consent (usage metadata, not evidence). Guarded like
+        # every other service: an analytics failure never touches the
+        # dictation path.
+        self._analytics = None
+        self._insights = None
+        try:
+            self._analytics = v2.analytics.AnalyticsStore(
+                self.store, emit=self.v2log.emit,
+                reporting_timezone=v2.analytics.resolve_reporting_zone(
+                    cfg.get("analytics_timezone") or None))
+            self._insights = v2.analytics.InsightsQueryService(
+                self.store, self._analytics)
+        except Exception as e:
+            self.v2log.emit("analytics.store_unavailable", level="WARNING",
+                            reason_code=type(e).__name__,
+                            outcome="analytics_off")
+        try:
+            # A changed analytics_timezone (or an aggregate table left
+            # at an older algorithm version) re-buckets every fact's
+            # day and rebuilds the aggregates at launch (versioned
+            # recomputation) — day boundaries follow the selected
+            # reporting zone (S21), and the table holds exactly one
+            # zone/version's arithmetic.
+            if self._analytics is not None:
+                stored_zone, stored_version = self.store.submit(
+                    lambda db: (
+                        db.execute("SELECT DISTINCT reporting_timezone"
+                                   " FROM usage_facts LIMIT 1").fetchone(),
+                        db.execute("SELECT MAX(algorithm_version) FROM"
+                                   " daily_aggregates").fetchone()))
+                if (stored_zone and stored_zone[0] !=
+                        self._analytics.reporting_timezone) or \
+                        (stored_version and stored_version[0] !=
+                            v2.analytics.ALGORITHM_VERSION):
+                    self._analytics.rebuild_aggregates()
+        except Exception as e:
+            self.v2log.emit("analytics.zone_rebuild_failed",
+                            level="WARNING", reason_code=type(e).__name__)
         self.v2log.unresolved_jobs_fn = self.store.unresolved_job_ids
         self.consent = v2.training.ConsentManager(self.store, self.v2log.emit)
         self.collector = v2.training.EvidenceCollector(
@@ -949,6 +990,27 @@ class AppDelegate(NSObject):
         if result is None or capture is None or defn is None:
             self._settle_state()
             return
+        # M13 usage fact: an explicit (selection/note-scope) transform
+        # run is its own activity kind — never a dictation word. The
+        # dictation auto-apply path does not pass through here; its
+        # transform rides the dictation's own fact. A refusal
+        # (job is None) never ran a generation and records nothing.
+        if self._analytics is not None and result.job is not None:
+            try:
+                self._analytics.record_transform_fact(
+                    transform_id=result.job.transform_id,
+                    task_key=result.job.task_key(),
+                    path=result.path,
+                    source_kind=("note"
+                                 if (capture or {}).get("note") is not None
+                                 else "selection"),
+                    source_words=v2.analytics.word_count(
+                        capture.get("source")),
+                    output_words=v2.analytics.word_count(result.output),
+                    duration_ms=result.duration_ms)
+            except Exception as e:
+                self.v2log.emit("usage.record_failed", level="WARNING",
+                                reason_code=type(e).__name__)
         candidate_id = None
         if result.job is not None:
             try:
@@ -1590,6 +1652,12 @@ class AppDelegate(NSObject):
             self.store.sweep_orphans()
             self.store.prune()
             self.store.prune_training()
+            # M13: the usage knob's own expiry (facts and aggregates,
+            # independent of text retention) and the M02 metadata knob's
+            # job-row pruning, deferred to this milestone (hub.md).
+            if self._analytics is not None:
+                self._analytics.expire_usage()
+            self.store.prune_metadata()
             self._sweep_journal_root()
         except Exception as e:
             self.v2log.emit("store.retention_failed", level="ERROR",
@@ -1814,6 +1882,10 @@ class AppDelegate(NSObject):
                     # its downstream revision is composed from this handle
                     # only (never from whatever a newer dictation started).
                     self._job["context_coll"] = self._context.begin(identity)
+                    # M13: the usage fact's own app copy (facts survive
+                    # job-row pruning — AC03).
+                    self._job["app_name"] = identity.app_name
+                    self._job["app_bundle"] = identity.app_bundle
                     # M09: History's app filter needs the destination on
                     # the job row (Spec S08 jobs "target"); a store stall
                     # here never touches the dictation.
@@ -1905,6 +1977,11 @@ class AppDelegate(NSObject):
                 self.v2log.emit("capture.cancelled", level="INFO",
                                 job_id=job["job_id"],
                                 reason_code="user_cancelled")
+                # M13: this branch terminates the job without ever
+                # reaching _finishWithText_ — the fact is written here
+                # (capture duration unknown at this seam: no stats yet,
+                # so duration_sec stays null, never invented).
+                self._record_dictation_usage(job, "cancelled")
                 self._delete_journal_files(job["job_id"])
             self.state = STATE_IDLE
             self._settle_state()
@@ -2064,6 +2141,11 @@ class AppDelegate(NSObject):
             job.update({"audio": audio, "stats": s, "ctx": ctx,
                         "failed": False, "cancelled": False, "attempt": 1,
                         "raw": None, "wav": None})
+            # M13 (E06 end-to-end latency): the parent's monotonic
+            # release instant — end_to_end_ms is measured against this
+            # when the terminal insertion outcome lands (PTT release to
+            # target-confirmed text, never a cross-process clock).
+            job["released_mono"] = time.monotonic()
             self._job_state(job["job_id"], "queued")
             try:
                 self.store.set_job_released(job["job_id"])
@@ -2299,6 +2381,7 @@ class AppDelegate(NSObject):
                 raw = res.get("text") or ""
                 job["raw"] = raw
                 asr_ms = res.get("duration_ms")
+                job["asr_ms"] = asr_ms  # M13 usage fact stage timing
                 self.v2log.emit(
                     "stage.completed", level="INFO", job_id=job_id,
                     attempt=job["attempt"], stage="transcribing",
@@ -2380,6 +2463,7 @@ class AppDelegate(NSObject):
                     vocab_rules = [e.rule_id for e in norm_result.edits
                                    if e.cls == "vocabulary" and e.rule_id] \
                         if norm_result is not None else []
+                    job["vocab_hits"] = len(vocab_rules)  # M13 usage fact
                     if vocab_rules and self._vocab is not None:
                         try:
                             self._vocab.record_hits(vocab_rules)
@@ -2393,6 +2477,7 @@ class AppDelegate(NSObject):
                     snippet_rules = [e.rule_id for e in norm_result.edits
                                      if e.cls == "snippet" and e.rule_id] \
                         if norm_result is not None else []
+                    job["snippet_hits"] = len(snippet_rules)  # M13 fact
                     if snippet_rules and self._snip_store is not None:
                         try:
                             self._snip_store.record_hits(snippet_rules)
@@ -2538,6 +2623,11 @@ class AppDelegate(NSObject):
                         self.cfg["cleanup"] == "off" or mode_is_raw) \
                         else "basic_empty_input"
                     res2 = {}  # no cleanup pass ran; nothing to report
+                # M13 usage facts: the pipeline's own stage observations
+                # ride the job dict to the terminal-state writer.
+                job["cleanup_ms"] = res2.get("duration_ms")
+                job["cleanup_path"] = cleanup_path
+                job["fallback_reason"] = res2.get("fallback_reason")
                 try:
                     collecting = ctx is not None and ctx.collecting
                     if ctx is not None:
@@ -2762,15 +2852,18 @@ class AppDelegate(NSObject):
                 self.v2log.emit("insertion.skipped", level="INFO",
                                 job_id=job_id,
                                 reason_code="user_cancelled")
+            self._record_dictation_usage(job, "cancelled")
             self._delete_journal_files(job_id)
             self._settle_state()
             return
         if job.get("failed"):
             self._retire_active_job(job)
+            self._record_dictation_usage(job, "failed")
             self._show_failed_pill()
         elif text:
             if self.cfg["append_space"] and not text.endswith(("\n", " ")):
                 text += " "
+            job["final_text"] = text  # the usage fact's final words
             # M12 (Spec S20): a note-bound dictation delivers into the
             # Scratchpad editor — an internal destination. The M08
             # external queue is never involved, so a note dictation can
@@ -2799,6 +2892,11 @@ class AppDelegate(NSObject):
                         self._job_state(job_id, "insertion_posted")
                         self._job_state(job_id, "insertion_confirmed",
                                         reason="scratchpad_note")
+                    # The internal destination is still ONE logical
+                    # dictation (M13-AC02): one fact, outcome confirmed.
+                    self._record_dictation_usage(
+                        job, "confirmed", text, end_to_end=True,
+                        meta={"destination": "scratchpad_note"})
                     if ctx is not None:
                         try:
                             self.collector.on_insertion(ctx, True,
@@ -2819,6 +2917,9 @@ class AppDelegate(NSObject):
                                    " a manual ⌘V")
                         self._job_state(job_id, "saved_not_inserted",
                                         reason="note_closed_during_dictation")
+                    self._record_dictation_usage(
+                        job, "saved_not_inserted", text,
+                        meta={"reason": "note_closed_during_dictation"})
                     if ctx is not None:
                         try:
                             self.collector.on_insertion(ctx, False, 0)
@@ -2846,6 +2947,9 @@ class AppDelegate(NSObject):
                                " manual ⌘V")
                     self._job_state(job_id, "saved_not_inserted",
                                     reason="insertion_service_unavailable")
+                self._record_dictation_usage(
+                    job, "saved_not_inserted", text,
+                    meta={"reason": "insertion_service_unavailable"})
                 if ctx is not None:
                     self.collector.on_insertion(ctx, False, 0)
                 self._settle_state()
@@ -2860,16 +2964,18 @@ class AppDelegate(NSObject):
         else:
             self._retire_active_job(job)
             if job_id:
+                reason = ("cleanup_emptied_output"
+                          if job.get("raw") else "empty_transcription")
                 self.v2log.emit("insertion.skipped", level="INFO",
                                 job_id=job_id,
-                                reason_code=(
-                                    "cleanup_emptied_output"
-                                    if job.get("raw")
-                                    else "empty_transcription"))
+                                reason_code=reason)
                 self._job_state(job_id, "saved_not_inserted",
-                                reason="cleanup_emptied_output"
-                                if job.get("raw")
-                                else "empty_transcription")
+                                reason=reason)
+                # An empty transcription is an honest zero-word fact —
+                # it still counts as one logical dictation attempt.
+                self._record_dictation_usage(
+                    job, "saved_not_inserted", text or "",
+                    meta={"reason": reason})
             if ctx is not None:
                 try:
                     self.collector.on_insertion(ctx, False, 0)
@@ -2883,6 +2989,77 @@ class AppDelegate(NSObject):
             # machine so the failure is actually visible.
             return
         self._settle_state()
+
+    @objc.python_method
+    def _record_dictation_usage(self, job, outcome, final_text=None,
+                                *, meta=None, end_to_end=False):
+        """M13: write the job's usage fact at its terminal outcome
+        (Spec S08/S21, contracts/analytics.md). One fact per logical
+        dictation — the store upserts on job_id, so a retry reaching a
+        terminal outcome again REPLACES the row (M13-AC02: retries and
+        replays never increment dictated words twice). Guarded: an
+        analytics failure never disturbs the dictation path."""
+        if self._analytics is None:
+            return
+        job_id = job.get("job_id")
+        if not job_id:
+            return
+        try:
+            m10 = job.get("m10") or {}
+            wp = m10.get("wp")
+            tf = job.get("transform_result")
+            tf_job = getattr(tf, "job", None) if tf is not None else None
+            released = job.get("released_mono")
+            e2e = None
+            if end_to_end and released is not None:
+                # Parent-monotonic PTT release → terminal outcome (E06:
+                # end-to-end; stage timings stay separate).
+                e2e = round((time.monotonic() - released) * 1000.0, 1)
+            stats = job.get("stats") or {}
+            captured = job.get("captured_at_utc")
+            raw = job.get("raw")
+            # Words: the acoustic original and what actually shipped.
+            # Cancelled/failed jobs keep final None — unknown, never 0.
+            final_words = None
+            if outcome in ("confirmed", "posted_unverified",
+                           "saved_not_inserted"):
+                final_words = v2.analytics.word_count(final_text)
+            # No instant fallback: a job without a capture instant is
+            # refused by the store (never parked on a fabricated today).
+            self._analytics.record_dictation_fact(
+                job_id=job_id,
+                activity_at_utc=captured,
+                timezone=job.get("timezone"),
+                utc_offset_minutes=job.get("utc_offset_minutes"),
+                time_quality="known" if captured else "unknown",
+                duration_sec=stats.get("duration_sec"),
+                raw_words=v2.analytics.word_count(raw),
+                final_words=final_words,
+                cleanup_path=job.get("cleanup_path"),
+                fallback_reason=job.get("fallback_reason"),
+                mode=(wp.effective_mode if wp is not None else "clean"),
+                profile_name=(wp.profile_name if wp is not None else None),
+                app_name=job.get("app_name"),
+                app_bundle=job.get("app_bundle"),
+                insertion_outcome=outcome,
+                asr_ms=job.get("asr_ms"),
+                cleanup_ms=job.get("cleanup_ms"),
+                transform_ms=(getattr(tf, "duration_ms", None)
+                              if tf is not None else None),
+                end_to_end_ms=e2e,
+                dictionary_hits=job.get("vocab_hits") or 0,
+                snippet_hits=job.get("snippet_hits") or 0,
+                transform_id=(getattr(tf_job, "transform_id", None)
+                              if tf_job is not None else None),
+                task_key=(tf_job.task_key() if tf_job is not None
+                          and hasattr(tf_job, "task_key") else None),
+                transform_path=(getattr(tf, "path", None)
+                                if tf is not None else None),
+                attempt=job.get("attempt", 1),
+                meta=meta)
+        except Exception as e:
+            self.v2log.emit("usage.record_failed", level="WARNING",
+                            job_id=job_id, reason_code=type(e).__name__)
 
     @objc.python_method
     def _retire_active_job(self, job):
@@ -2910,6 +3087,7 @@ class AppDelegate(NSObject):
                     self.v2log.emit("insertion.skipped", level="INFO",
                                     job_id=job_id,
                                     reason_code="user_cancelled")
+                self._record_dictation_usage(job, "cancelled")
                 self._delete_journal_files(job_id)
                 self._settle_state()
                 return
@@ -2921,6 +3099,9 @@ class AppDelegate(NSObject):
                     "insertion.cancelled_after_insert", level="WARNING",
                     job_id=job_id, outcome=result.state,
                     reason_code="user_cancelled_mid_transaction")
+                self._record_dictation_usage(
+                    job, "cancelled",
+                    meta={"after_insert_state": result.state})
             if ctx is not None:
                 try:
                     self.collector.on_insertion_result(ctx, result)
@@ -2939,6 +3120,10 @@ class AppDelegate(NSObject):
                                        f" method {result.method}")
                 self._job_state(job_id, "insertion_posted")
                 self._job_state(job_id, "insertion_confirmed")
+            self._record_dictation_usage(
+                job, "confirmed", job.get("final_text"),
+                end_to_end=True,
+                meta={"method": result.method})
         elif state == "posted_unverified":
             if job_id:
                 self.v2log.emit(
@@ -2952,6 +3137,14 @@ class AppDelegate(NSObject):
                 self._job_state(job_id, "insertion_unverified",
                                 reason=result.reason_code
                                 or "readback_unavailable")
+            # Posted but unverified: the end-to-end clock stops at the
+            # terminal outcome, with the unverified reason in meta —
+            # never presented as target-confirmed latency (E06).
+            self._record_dictation_usage(
+                job, "posted_unverified", job.get("final_text"),
+                end_to_end=True,
+                meta={"reason": result.reason_code
+                      or "readback_unavailable"})
         else:
             reason = result.reason_code or state
             if job_id:
@@ -2963,6 +3156,9 @@ class AppDelegate(NSObject):
                     else "INFO", job_id=job_id, outcome=state,
                     reason_code=reason)
                 self._job_state(job_id, "saved_not_inserted", reason=reason)
+            self._record_dictation_usage(
+                job, "saved_not_inserted", job.get("final_text"),
+                meta={"insertion_state": state, "reason": reason})
         if ctx is not None:
             # Evidence outcome revision: posted/confirmed/unknown stay
             # independent of correctness labels (S29.8). The
@@ -3301,6 +3497,7 @@ class AppDelegate(NSObject):
                     "snippets_service": self._snip_store,
                     "transforms_service": self._tf_store,
                     "notes_service": self._notes_store,
+                    "insights_service": self._insights,
                     "diagnostics_provider": self._hub_diagnostics_spec,
                     "coordinator": self,
                     "replay": v2_ui.ReplayService(),
@@ -3391,9 +3588,21 @@ class AppDelegate(NSObject):
             return {"outcome": "copy_only"}
         # The AX path fires no ⌘V guard timer, so the deferred-Hub-show
         # flush rides the transaction's completion instead.
-        return paste(text, job_id=job_id,
-                     on_done=lambda _r: AppHelper.callAfter(
-                         self._flush_pending_hub_show))
+        def _repaste_done(r, _job_id=job_id):
+            # M13: a re-paste is its own activity row — never a second
+            # dictation word count (M13-AC02). Guarded like every
+            # analytics write.
+            if self._analytics is not None:
+                try:
+                    self._analytics.record_repaste_fact(
+                        job_id=_job_id,
+                        meta={"state": getattr(r, "state", None)})
+                except Exception as e:
+                    self.v2log.emit("usage.record_failed",
+                                    level="WARNING",
+                                    reason_code=type(e).__name__)
+            AppHelper.callAfter(self._flush_pending_hub_show)
+        return paste(text, job_id=job_id, on_done=_repaste_done)
 
     @objc.python_method
     def hubRetryJob(self, job_id):
@@ -3719,6 +3928,26 @@ class AppDelegate(NSObject):
                          len(_arr) / float(self.cfg["sample_rate"]),
                          "voiced_pct": None, "trailing_silence_sec": None,
                          "overflow_blocks": None}}
+        # M13: the retry is the SAME logical dictation — its usage fact
+        # keeps the ORIGINAL capture instant, observed zone and
+        # destination app from the store rows (a retry completing on
+        # another day must not move the dictation there, and an absent
+        # instant stays absent — the refusal rule, never a fabricated
+        # 'now').
+        try:
+            row = self.store.job(job_id) or {}
+            tgt = self.store.submit(lambda db: db.execute(
+                "SELECT app_name, app_bundle FROM job_targets WHERE"
+                " job_id=?", (job_id,)).fetchone()) or (None, None)
+            job.update({"captured_at_utc": row.get("captured_at_utc"),
+                        "timezone": row.get("timezone"),
+                        "utc_offset_minutes":
+                            row.get("utc_offset_minutes"),
+                        "app_name": tgt[0], "app_bundle": tgt[1]})
+        except Exception as e:
+            self.v2log.emit("usage.retry_provenance_unavailable",
+                            level="WARNING", job_id=job_id,
+                            reason_code=type(e).__name__)
         self.v2log.emit("dictation.retry_started", level="INFO",
                         job_id=job_id, attempt=attempt,
                         reason_code="user_retry")
@@ -3771,6 +4000,82 @@ class AppDelegate(NSObject):
         if self.state == STATE_RECORDING or self._insertion is None:
             return
         self._insertion.paste_again()
+
+    # ---- M13 usage analytics commands (Hub coordinator surface) -----------
+
+    @objc.python_method
+    def hubUsageInfo(self):
+        """The Settings/Insights usage block: retention knob value and
+        the active reporting timezone (S21)."""
+        return {
+            "usage_retention_days": self.store.retention_days.get(
+                "usage", 365),
+            "reporting_timezone": (self._analytics.reporting_timezone
+                                   if self._analytics else None),
+            "available": self._analytics is not None,
+        }
+
+    @objc.python_method
+    def hubApplyUsageRetention(self, days):
+        """Apply the usage retention knob now and persist it to the user
+        override (the single-key discipline of hubApplyRetention)."""
+        try:
+            days = max(1, int(days))
+        except (ValueError, TypeError):
+            return {"outcome": "invalid_days"}
+        self.store.retention_days["usage"] = days
+        self.cfg["retention_usage_days"] = days
+        try:
+            override = {}
+            path = config_mod.user_override_path()
+            try:
+                override = json.loads(path.read_text())
+            except (OSError, ValueError):
+                override = {}
+            override["retention_usage_days"] = days
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(override, ensure_ascii=False,
+                                       indent=1), encoding="utf-8")
+        except Exception as e:
+            self.v2log.emit("hub.settings_write_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+            return {"outcome": "not_persisted"}
+        self.v2log.emit("hub.usage_retention_applied", level="INFO",
+                        reason_code="settings", detail=f"{days}d")
+        return {"outcome": "applied", "days": days}
+
+    @objc.python_method
+    def hubDeleteAllUsage(self):
+        """The explicit 'delete all usage data' control (S21): facts and
+        aggregates only — transcripts, audio, jobs and training
+        evidence are untouched (delete-content vs delete-usage)."""
+        if self._analytics is None:
+            return {"outcome": "unavailable"}
+        try:
+            return {"outcome": "deleted",
+                    **self._analytics.delete_all_usage()}
+        except Exception as e:
+            self.v2log.emit("usage.delete_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+            return {"outcome": "failed"}
+
+    @objc.python_method
+    def hubDeleteUsageForJob(self, job_id):
+        """The explicit 'delete associated usage' action for one job.
+        Legacy imported rows are the lossless history contract — they
+        carry no deletable usage facts and refuse honestly."""
+        if not job_id or not str(job_id).startswith("job-"):
+            return {"outcome": "not_a_v2_job",
+                    "reason": "legacy_rows_have_no_deletable_usage"}
+        if self._analytics is None:
+            return {"outcome": "unavailable"}
+        try:
+            return {"outcome": "deleted",
+                    **self._analytics.delete_usage_for_job(job_id)}
+        except Exception as e:
+            self.v2log.emit("usage.delete_failed", level="WARNING",
+                            job_id=job_id, reason_code=type(e).__name__)
+            return {"outcome": "failed"}
 
 
 def main():

@@ -23,6 +23,7 @@
 | `profiles.md` | Styles/modes resolution, snippets, developer skills/file tags/surfaces, M10 provenance | M10 | S15, S17, S10, S29.4, S24 |
 | `transforms.md` | Transform definitions/revisions, execution + task identity, Prompt Engineer atoms/coverage, the two surfaces, auto-apply, preferences | M11 | S15, S16, S13, S18, S29.4, S29.10 |
 | `scratchpad.md` | Notes/tabs, immutable parent-linked revisions with origin/trigger, attachments, the internal dictation destination, note-scope transforms, export, evidence boundaries | M12 | S20, S08, S19, S29.8 |
+| `analytics.md` | Usage facts (one per logical dictation), versioned daily aggregates, reporting-timezone day buckets, metric labels/denominators, usage retention + delete controls, the Insights view, readiness aggregates | M13 | S08, S21, S19, E06, E13, S29.15 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
@@ -130,4 +131,16 @@ milestones add fields; they must not repurpose or weaken these identifiers.
   coordinator commands; `training_evidence.md` records the note
   family live status; `transforms.md`'s Save-to-Scratchpad goes
   live. The repair set covers the v8 tables. No frozen identifier
-  changed; the registry stays 33/22.
+  changed; the registry stays 33/22. M13 ships `analytics.md`
+  (usage facts — one per logical dictation with retry-replace,
+  separate transform/re-paste activity kinds, versioned daily
+  aggregates always recomputed from facts, reporting-timezone day
+  buckets with DST-correct conversion, the E06 metric labels with
+  denominators, the usage retention knob + the explicit
+  delete-content ≠ delete-usage controls, the Insights Hub view
+  through the M09 triple, and the E19.4 readiness aggregates with
+  five distinct outcome classes); `store.md` gains the v9 section +
+  `prune_metadata` (the M02 metadata knob enforced); `hub.md` takes
+  the 10-view list, insights_service and the usage commands. The
+  repair set covers the v9 tables. No frozen identifier changed; the
+  registry stays 33/22.

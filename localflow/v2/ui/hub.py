@@ -31,6 +31,9 @@ import json
 import objc
 import Foundation
 from AppKit import (
+    NSAlert,
+    NSAlertFirstButtonReturn,
+    NSAlertStyleWarning,
     NSApp,
     NSBackingStoreBuffered,
     NSButton,
@@ -134,7 +137,8 @@ class HubController(NSObject):
             styles_service=spec.get("styles_service"),
             snippets_service=spec.get("snippets_service"),
             transforms_service=spec.get("transforms_service"),
-            notes_service=spec.get("notes_service"))
+            notes_service=spec.get("notes_service"),
+            insights_service=spec.get("insights_service"))
         self.state.on_update = self._state_updated
         self._built_views = {}
         self._history_flat = []  # group markers + rows, in table order
@@ -282,6 +286,10 @@ class HubController(NSObject):
             rows = (self.state.views["scratchpad"].get("data")
                     or {}).get("notes") or []
             return len(rows)
+        if table is getattr(self, "insights_table", None):
+            rows = (self.state.views["insights"].get("data")
+                    or {}).get("daily") or []
+            return len(rows)
         return len(VIEWS)
 
     def tableView_objectValueForTableColumn_row_(self, table, col, row):
@@ -335,6 +343,23 @@ class HubController(NSObject):
             if col.identifier() == "words":
                 return str(r.get("word_count", 0))
             return r.get("title") or "untitled"
+        if table is getattr(self, "insights_table", None):
+            rows = (self.state.views["insights"].get("data")
+                    or {}).get("daily") or []
+            r = rows[int(row)]
+            key = col.identifier()
+            if key == "day":
+                return r["day"]
+            if key == "dict":
+                return str(r["dictations"])
+            if key == "words":
+                return str(r["final_words"])
+            if key == "min":
+                return f"{r['capture_seconds'] / 60.0:.1f}"
+            if key == "tf":
+                return "–" if r.get("transforms") is None else str(
+                    r["transforms"])
+            return str(r["fallbacks"])
         return VIEW_TITLES[VIEWS[int(row)]]
 
     def tableView_shouldSelectRow_(self, table, row):
@@ -460,7 +485,8 @@ class HubController(NSObject):
                 ("Retry", "historyRetry:"),
                 ("Diff", "historyDiff:"),
                 ("Save→Scratchpad", "historyToScratchpad:"),
-                ("Move→Scratchpad", "historyMoveToScratchpad:"))
+                ("Move→Scratchpad", "historyMoveToScratchpad:"),
+                ("Delete Usage", "historyDeleteUsage:"))
         bw = min(130.0, (avail - (len(buttons) - 1) * 8) / len(buttons))
         for i, (title, action) in enumerate(buttons):
             v.addSubview_(_button(title, self, action,
@@ -507,6 +533,27 @@ class HubController(NSObject):
         if detail and detail.get("job_id") \
                 and self.coordinator is not None:
             self.coordinator.hubRetryJob(detail["job_id"])
+
+    def historyDeleteUsage_(self, sender):
+        """M13 (S21/M13-AC03): the explicit 'delete associated usage'
+        control for one V2 job — counters only, never content. Legacy
+        rows refuse honestly (the lossless import carries no deletable
+        usage facts)."""
+        detail = self.state.views["history"].get("detail") or {}
+        if self.coordinator is None or \
+                not hasattr(self.coordinator, "hubDeleteUsageForJob"):
+            return
+        out = self.coordinator.hubDeleteUsageForJob(detail.get("job_id"))
+        note = {"deleted": "usage for this dictation deleted — graphs"
+                           " recomputed",
+                "not_a_v2_job": "legacy rows carry no deletable usage"
+                                " facts (lossless import)",
+                "unavailable": "usage analytics unavailable",
+                "failed": "usage deletion failed — see Diagnostics"}
+        self.history_detail.setString_(
+            (self._render_history_detail(detail) or "")
+            + "\n\n" + note.get(out.get("outcome"), "usage deletion"
+                                " returned " + str(out.get("outcome"))))
 
     def historyToScratchpad_(self, sender):
         self._history_to_scratchpad(move=False)
@@ -2064,6 +2111,232 @@ class HubController(NSObject):
                      f" (latest {chain[-1]['revision_id'] if chain else None})")
         return "\n".join(lines)
 
+    # ---- Insights (M13, Spec S21) ------------------------------------------
+
+    @objc.python_method
+    def _build_insights_view(self):
+        from .state import INSIGHT_RANGES
+        self._insight_ranges = INSIGHT_RANGES
+        v = NSView.alloc().init()
+        cw = self.content.bounds().size.width
+        ch = self.content.bounds().size.height
+        y = ch - 28
+        self.insights_status = _label(NSMakeRect(8, y + 3, 360, 18), "")
+        v.addSubview_(self.insights_status)
+        x = cw - 470
+        for i, days in enumerate(INSIGHT_RANGES):
+            title = "All" if days is None else f"{days}d"
+            b = _button(title, self, "insightsRange:",
+                        NSMakeRect(x, y, 52, 22))
+            b.setTag_(i)
+            v.addSubview_(b)
+            x += 56
+        v.addSubview_(_label(NSMakeRect(x, y + 3, 32, 18), "App:"))
+        x += 36
+        self.insights_app = NSPopUpButton.alloc().initWithFrame_pullsDown_(
+            NSMakeRect(x, y, 140, 24), False)
+        self.insights_app.setTarget_(self)
+        self.insights_app.setAction_("insightsAppChanged:")
+        v.addSubview_(self.insights_app)
+        x += 146
+        v.addSubview_(_label(NSMakeRect(x, y + 3, 40, 18), "Mode:"))
+        x += 44
+        self.insights_mode = NSPopUpButton.alloc()\
+            .initWithFrame_pullsDown_(NSMakeRect(x, y, 110, 24), False)
+        self.insights_mode.setTarget_(self)
+        self.insights_mode.setAction_("insightsModeChanged:")
+        v.addSubview_(self.insights_mode)
+        # Summary block (cards + breakdowns + definitions), then the
+        # dated table (the accessible daily graph — virtualized rows).
+        table_h = (ch - 60) * 0.42
+        summary_h = ch - 56 - table_h - 34
+        self.insights_text = _textview(NSMakeRect(0, 0, 100, 100))
+        sc = _scroll(NSMakeRect(8, ch - 44 - summary_h, cw - 16,
+                                summary_h), self.insights_text)
+        sc.setAutoresizingMask_(18 | 16)
+        v.addSubview_(sc)
+        self.insights_table = NSTableView.alloc().initWithFrame_(
+            NSMakeRect(0, 0, cw - 16, table_h))
+        for key, title, width in (("day", "Day", 96), ("dict", "Dictations",
+                                                       90),
+                                  ("words", "Words", 90),
+                                  ("min", "Minutes", 80),
+                                  ("tf", "Transforms", 96),
+                                  ("fb", "Fallbacks", 84)):
+            col = NSTableColumn.alloc().initWithIdentifier_(key)
+            col.headerCell().setTitle_(title)
+            col.setWidth_(width)
+            self.insights_table.addTableColumn_(col)
+        self.insights_table.setDataSource_(self)
+        tsc = _scroll(NSMakeRect(8, 26, cw - 16, table_h),
+                      self.insights_table)
+        tsc.setAutoresizingMask_(18 | 16)
+        v.addSubview_(tsc)
+        v.addSubview_(_button("Reload", self, "insightsReload:",
+                              NSMakeRect(cw - 96, y - 27, 88, 22)))
+        return v
+
+    def insightsRange_(self, sender):
+        self.state.set_insights_filters(
+            range_days=self._insight_ranges[int(sender.tag())])
+
+    def insightsReload_(self, sender):
+        self.state.reload_insights()
+
+    def insightsAppChanged_(self, sender):
+        if getattr(self, "_insights_building", False):
+            return
+        item = sender.selectedItem()
+        self.state.set_insights_filters(
+            app=(item.representedObject() if item else None))
+
+    def insightsModeChanged_(self, sender):
+        if getattr(self, "_insights_building", False):
+            return
+        item = sender.selectedItem()
+        self.state.set_insights_filters(
+            mode=(item.representedObject() if item else None))
+
+    @objc.python_method
+    def _refresh_insights_view(self):
+        view = self.state.views["insights"]
+        data = view.get("data")
+        if view.get("error") or not data:
+            self.insights_status.setStringValue_(
+                f"Insights unavailable ({view.get('error') or 'loading'}).")
+            return
+        s = data.get("summary") or {}
+        cohort = s.get("cohort") or {}
+        self.insights_status.setStringValue_(
+            f"Zone {s.get('reporting_timezone')} · algorithm v"
+            f"{s.get('algorithm_version')}")
+        self.insights_text.setString_(self._insights_summary_text(data))
+        self._refresh_insights_popups(data)
+        self.insights_table.reloadData()
+
+    @objc.python_method
+    def _refresh_insights_popups(self, data):
+        self._insights_building = True
+        try:
+            for popup, items, current, all_label in (
+                    (self.insights_app, data.get("apps") or [],
+                     (self.state.views["insights"].get("app")),
+                     "All apps"),
+                    (self.insights_mode, data.get("modes") or [],
+                     (self.state.views["insights"].get("mode")),
+                     "All modes")):
+                popup.removeAllItems()
+                popup.addItemWithTitle_(all_label)
+                popup.lastItem().setRepresentedObject_(None)
+                for value in items:
+                    popup.addItemWithTitle_(str(value))
+                    popup.lastItem().setRepresentedObject_(value)
+                idx = 0
+                if current:
+                    titles = [popup.itemTitleAtIndex_(i)
+                              for i in range(popup.numberOfItems())]
+                    if str(current) in titles:
+                        idx = titles.index(str(current))
+                popup.selectItemAtIndex_(idx)
+        finally:
+            self._insights_building = False
+
+    @staticmethod
+    def _fmt_ms(value):
+        return "–" if value is None else f"{value:.0f} ms"
+
+    @objc.python_method
+    def _insights_summary_text(self, data) -> str:
+        s = data.get("summary") or {}
+        out = s.get("outcomes") or {}
+        lat = s.get("latency") or {}
+        den = s.get("wpm_denominator") or {}
+        lines = []
+        rng = s.get("cohort", {}).get("days")
+        rng_label = "all time" if rng is None else f"last {rng} days"
+        lines.append(f"Usage — {rng_label}"
+                     + (f" · app {s['cohort']['app']}"
+                        if s.get("cohort", {}).get("app") else "")
+                     + (f" · mode {s['cohort']['mode']}"
+                        if s.get("cohort", {}).get("mode") else ""))
+        lines.append(
+            f"Dictations: {s.get('dictations', 0)}"
+            f" ({s.get('dictations_with_text', 0)} produced text"
+            f" · {out.get('confirmed', 0)} confirmed"
+            f" · {out.get('posted_unverified', 0)} posted-unverified"
+            f" · {out.get('saved_not_inserted', 0)} saved"
+            f" · {out.get('cancelled', 0)} cancelled"
+            f" · {out.get('failed', 0)} failed)")
+        lines.append(
+            f"Words: {s.get('raw_words', 0)} raw → {s.get('final_words', 0)}"
+            f" final · capture {s.get('capture_seconds', 0) / 60.0:.1f} min")
+        wpm = s.get("wpm")
+        lines.append(
+            f"Full-capture WPM: {wpm if wpm is not None else 'n/a'}"
+            f"  (60 × {den.get('words', 0)} final words ÷"
+            f" {den.get('capture_seconds', 0)} s over"
+            f" {den.get('jobs', 0)} jobs — weighted, not row-average)")
+        fr = s.get("fallback_rate")
+        lines.append(
+            f"Fallback jobs: {s.get('fallback_jobs', 0)}"
+            + (f" ({fr:.0%} of {s.get('dictations', 0)})"
+               if fr is not None else "")
+            + f" · dictionary hits {s.get('dictionary_hits', 0)}"
+            f" · snippet hits {s.get('snippet_hits', 0)}")
+        tf = s.get("transforms")
+        if tf is None:
+            lines.append(
+                "Explicit transforms: n/a under a cohort filter —"
+                " transform runs carry no destination app or mode")
+        else:
+            lines.append(
+                f"Explicit transforms: {tf}"
+                f" ({s.get('transform_words', 0)} source words)"
+                f" · re-pastes {s.get('repastes')}")
+        for key, label in (("asr", "ASR (stage)"),
+                           ("cleanup", "Cleanup (stage)"),
+                           ("transform", "Transform (stage)"),
+                           ("end_to_end", "End-to-end (release→outcome)")):
+            block = lat.get(key) or {}
+            lines.append(
+                f"Latency {label}: p50 {self._fmt_ms(block.get('p50'))}"
+                f" · p95 {self._fmt_ms(block.get('p95'))}"
+                f" · n={block.get('n', 0)} of {s.get('dictations', 0)}"
+                " cohort (failures stay counted)")
+        for row in (data.get("per_app") or [])[:8]:
+            lines.append(f"  {row['app']}: {row['dictations']} dictations"
+                         f" · {row['final_words']} words"
+                         f" · {row['capture_seconds'] / 60.0:.1f} min")
+        for row in (data.get("per_mode") or [])[:6]:
+            lines.append(f"  mode {row['mode']}: {row['dictations']}"
+                         f" dictations · {row['final_words']} words")
+        legacy = data.get("legacy")
+        if legacy:
+            lines.append(
+                f"Imported legacy history: {legacy['rows']} dictations"
+                f" · {legacy['raw_words']} raw /"
+                f" {legacy['cleaned_words']} cleaned words"
+                f" · {legacy['capture_seconds']} s capture"
+                f" · fixed words {legacy['legacy_fixed_words']}"
+                " (legacy formula — not a V2 metric)")
+        if data.get("undated"):
+            lines.append(
+                f"Undated history: {data['undated']} legacy log pairs"
+                " (unknown dates — never in dated views)")
+        lines += [
+            "",
+            "Definitions",
+            "WPM — 60 × sum(final words) ÷ sum(capture seconds) over the"
+            " cohort's text-producing jobs; denominators shown above.",
+            "Legacy edits — the imported fixed-words count; its formula"
+            " is unknown and stays labeled legacy (never reused).",
+            "Model edits — pipeline word changes (raw → final word"
+            " counts); a change rate, never a correctness claim.",
+            "Reference-based accuracy — requires reviewed references;"
+            " none exist yet, so no accuracy or WER is shown here.",
+        ]
+        return "\n".join(lines)
+
     # ---- Home -------------------------------------------------------------------------------
 
     @objc.python_method
@@ -2145,10 +2418,30 @@ class HubController(NSObject):
         v.addSubview_(_button("Apply Retention", self,
                               "settingsApplyRetention:",
                               NSMakeRect(640, y - 1, 140, 24)))
+        # M13 (Spec S21): usage analytics retention — its own control,
+        # independent of the text/audio knobs above (deleting expired
+        # text never empties usage graphs), plus the explicit
+        # delete-all-usage action.
+        y -= 40
+        v.addSubview_(_label(
+            NSMakeRect(8, y + 3, 330, 34),
+            "Usage data (Insights) retention days — independent of text"
+            " retention:"))
+        self.usage_retention_field = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(344, y, 56, 22))
+        v.addSubview_(self.usage_retention_field)
+        v.addSubview_(_button("Apply Usage", self,
+                              "settingsApplyUsage:",
+                              NSMakeRect(410, y - 1, 110, 24)))
+        v.addSubview_(_button("Delete All Usage…", self,
+                              "settingsDeleteUsage:",
+                              NSMakeRect(528, y - 1, 160, 24)))
         note = _label(NSMakeRect(8, y - 40, cw - 16, 60),
                       "Store retention applies immediately. Event-log"
                       " retention takes effect at next launch. Models,"
-                      " hotkey and capture behavior live in config.json.")
+                      " hotkey and capture behavior live in config.json."
+                      " Usage deletion removes counters only — never"
+                      " transcripts or audio.")
         v.addSubview_(note)
         return v
 
@@ -2180,6 +2473,40 @@ class HubController(NSObject):
             self.coordinator.hubApplyRetention(values)
         self.state.reload_current()
 
+    def settingsApplyUsage_(self, sender):
+        if self.coordinator is None or \
+                not hasattr(self.coordinator, "hubApplyUsageRetention"):
+            return
+        try:
+            days = max(1, int(self.usage_retention_field.stringValue()))
+        except (ValueError, TypeError):
+            self.settings_text.setStringValue_(
+                "usage retention must be whole days")
+            return
+        self.coordinator.hubApplyUsageRetention(days)
+        self.state.reload_current()
+
+    def settingsDeleteUsage_(self, sender):
+        """The explicit delete-all-usage control (S21): counters and
+        aggregates only. Confirmation is AppKit's standard alert; a
+        headless run proceeds through the coordinator command."""
+        if self.coordinator is None or \
+                not hasattr(self.coordinator, "hubDeleteAllUsage"):
+            return
+        alert = NSAlert.alloc().init()
+        alert.setMessageText_("Delete all usage data?")
+        alert.setInformativeText_(
+            "Insights counters and daily aggregates are removed."
+            " Transcripts, audio, jobs and training evidence are"
+            " untouched. This cannot be undone.")
+        alert.setAlertStyle_(NSAlertStyleWarning)
+        alert.addButtonWithTitle_("Delete Usage Data")
+        alert.addButtonWithTitle_("Cancel")
+        if alert.runModal() != NSAlertFirstButtonReturn:
+            return
+        self.coordinator.hubDeleteAllUsage()
+        self.state.reload_current()
+
     @objc.python_method
     def _refresh_settings_view(self):
         view = self.state.views["settings"]
@@ -2192,3 +2519,7 @@ class HubController(NSObject):
         for f, key in zip(self.retention_fields, keys):
             if not f.stringValue():
                 f.setStringValue_(str(ret.get(key, "")))
+        usage = data.get("usage") or {}
+        if usage and not self.usage_retention_field.stringValue():
+            self.usage_retention_field.setStringValue_(
+                str(usage.get("usage_retention_days", "")))

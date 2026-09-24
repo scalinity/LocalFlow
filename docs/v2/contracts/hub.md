@@ -8,14 +8,15 @@ tests/v2/ui/test_training_data.py + test_hub_shell.py)
 `replay.ReplayService`) plus the read/query services
 `localflow.v2.history_queries`, `localflow.v2.training_data` and
 `localflow.v2.diagnostics` deliver the S19 companion window: Home /
-History / Styles / Snippets / Transforms / Scratchpad / Diagnostics /
-Models (+ Training Data subview) / Settings. The M10 Styles and
-Snippets views, the M11 Transforms view and the M12 Scratchpad view
-follow the same `_build_/_refresh_/_load_` triple over their stores
-(rule/snippet/definition/note CRUD is synchronous against the store
-writer on the main thread, the documented training-service
-limitation); future views (Insights) refuse at state level until they
-exist — the M09 rule, unchanged.
+History / Styles / Snippets / Transforms / Scratchpad / Insights /
+Diagnostics / Models (+ Training Data subview) / Settings. The M10
+Styles and Snippets views, the M11 Transforms view, the M12 Scratchpad
+view and the M13 Insights view follow the same `_build_/_refresh_/
+_load_` triple over their stores (rule/snippet/definition/note CRUD is
+synchronous against the store writer on the main thread, the
+documented training-service limitation); future views refuse at state
+level until they exist — the M09 rule, unchanged (with all S19 views
+live as of M13, the refusal check uses any unregistered name).
 
 ## Architecture contract (frozen for M10–M13)
 
@@ -39,6 +40,11 @@ exist — the M09 rule, unchanged.
   `hubSaveHistoryRow` and `quickOpenScratchpad_` (the quick-open
   action, behind the same focus-steal guard as Open Hub with the
   deferred intent carried to the settle flush).
+  M13 adds the usage commands `hubUsageInfo`,
+  `hubApplyUsageRetention`, `hubDeleteAllUsage` and
+  `hubDeleteUsageForJob` (contracts/analytics.md; the Insights view
+  rides the spec as `insights_service`, the training_service
+  pattern).
   Later milestones add commands; they never bypass this surface.
 - **Query discipline.** `HistoryQueryService`/`TrainingDataService`/
   diagnostics reads are read-only ops through `Store.submit` (the
@@ -172,7 +178,9 @@ pending human trial with screenshots requested.
 - `examples()`/`readiness()` scan all examples (measured 1k: list p95
   3.1 ms, readiness p95 8.6 ms — benchmarks/…-m09). Personal-scale by
   design; revisit only with evidence.
-- Home shows job counts and last dictation only — words/WPM analytics
-  are M13's `usage_facts`; nothing fabricates them.
+- Home shows job counts and last dictation only — words/WPM live in
+  the M13 Insights view (`contracts/analytics.md`); Home fabricates
+  nothing.
 - Job-row metadata pruning (`retention_metadata_days`), deferred since
-  M02, remains deferred (now explicitly to M13's analytics work).
+  M02, is enforced from M13 by `Store.prune_metadata`
+  (contracts/store.md v9).

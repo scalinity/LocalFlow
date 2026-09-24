@@ -46,7 +46,7 @@ for _s in TERMINAL_STATES:
 
 RETENTION_DAYS_DEFAULTS = {
     "transcript": 30, "audio_success": 7, "audio_failed": 30,
-    "metadata": 14, "training_buffer": 30,
+    "metadata": 14, "training_buffer": 30, "usage": 365,
 }
 
 _MIGRATIONS: dict[int, list[str]] = {
@@ -414,6 +414,75 @@ _MIGRATIONS[8] = [
          PRIMARY KEY(note_id, example_id))""",
 ]
 
+# M13 (Spec S08 usage_facts/daily_aggregates, S21, contracts/analytics.md):
+# dated usage facts — one row per logical dictation job (a retry replaces,
+# never duplicates) plus separate transform/repaste activity rows — and
+# versioned daily aggregates recomputed from those facts. The rows carry
+# their own copies of app/duration/word facts so usage survives job-row
+# metadata pruning and transcript expiry (M13-AC03: aggregate retention
+# is independent of text retention). App names are private usage
+# metadata (S21): store-side only, never in committed artifacts.
+_MIGRATIONS[9] = [
+    """CREATE TABLE IF NOT EXISTS usage_facts(
+         fact_id TEXT PRIMARY KEY,
+         kind TEXT NOT NULL,
+         job_id TEXT,
+         activity_at_utc TEXT NOT NULL,
+         time_quality TEXT NOT NULL DEFAULT 'known',
+         timezone TEXT, utc_offset_minutes INTEGER,
+         day_local TEXT NOT NULL,
+         reporting_timezone TEXT NOT NULL,
+         algorithm_version INTEGER NOT NULL,
+         duration_sec REAL,
+         raw_words INTEGER, final_words INTEGER,
+         cleanup_path TEXT, fallback_reason TEXT,
+         mode TEXT, profile_name TEXT,
+         app_name TEXT, app_bundle TEXT,
+         insertion_outcome TEXT,
+         asr_ms REAL, cleanup_ms REAL, transform_ms REAL,
+         end_to_end_ms REAL,
+         dictionary_hits INTEGER NOT NULL DEFAULT 0,
+         snippet_hits INTEGER NOT NULL DEFAULT 0,
+         transform_id TEXT, task_key TEXT, transform_path TEXT,
+         source_kind TEXT, source_words INTEGER, output_words INTEGER,
+         attempt INTEGER,
+         word_count_version TEXT,
+         meta_json TEXT NOT NULL DEFAULT '{}',
+         created_at_utc TEXT NOT NULL)""",
+    # One fact per logical dictation: a retry that reaches a terminal
+    # state again REPLACES the row (ON CONFLICT DO UPDATE) instead of
+    # adding a second one (M13-AC02).
+    """CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_facts_job
+         ON usage_facts(job_id) WHERE kind='dictation'""",
+    """CREATE INDEX IF NOT EXISTS idx_usage_facts_day
+         ON usage_facts(day_local, kind)""",
+    """CREATE INDEX IF NOT EXISTS idx_usage_facts_activity
+         ON usage_facts(activity_at_utc)""",
+    """CREATE TABLE IF NOT EXISTS daily_aggregates(
+         day_local TEXT NOT NULL,
+         reporting_timezone TEXT NOT NULL,
+         algorithm_version INTEGER NOT NULL,
+         dictations INTEGER NOT NULL DEFAULT 0,
+         dictations_with_text INTEGER NOT NULL DEFAULT 0,
+         insertion_confirmed INTEGER NOT NULL DEFAULT 0,
+         insertion_unverified INTEGER NOT NULL DEFAULT 0,
+         saved_not_inserted INTEGER NOT NULL DEFAULT 0,
+         cancelled INTEGER NOT NULL DEFAULT 0,
+         failed INTEGER NOT NULL DEFAULT 0,
+         raw_words INTEGER NOT NULL DEFAULT 0,
+         final_words INTEGER NOT NULL DEFAULT 0,
+         capture_seconds REAL NOT NULL DEFAULT 0,
+         fallback_jobs INTEGER NOT NULL DEFAULT 0,
+         dictionary_hits INTEGER NOT NULL DEFAULT 0,
+         snippet_hits INTEGER NOT NULL DEFAULT 0,
+         transforms INTEGER NOT NULL DEFAULT 0,
+         transform_words INTEGER NOT NULL DEFAULT 0,
+         repastes INTEGER NOT NULL DEFAULT 0,
+         computed_at_utc TEXT NOT NULL,
+         PRIMARY KEY(day_local, reporting_timezone,
+                     algorithm_version))""",
+]
+
 
 # ---- IEEE float32 WAV (Spec S29.5: the original capture artifact) -------
 
@@ -667,7 +736,8 @@ class Store:
                     "profiles_meta", "transforms", "transform_revisions",
                     "transform_meta", "transform_candidates",
                     "preference_observations", "notes", "note_revisions",
-                    "note_attachments", "note_evidence_links"}
+                    "note_attachments", "note_evidence_links",
+                    "usage_facts", "daily_aggregates"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         if version >= target and not expected <= have:
@@ -1259,6 +1329,60 @@ class Store:
                      "training_buffer_expired", now_iso))
                 expired += 1
             return {"expired": expired}
+        return self._submit(op, wait=True)
+
+    def prune_metadata(self, now=None):
+        """Job-row metadata pruning (the M02 ``metadata`` knob, enforced
+        from M13): delete terminal jobs past the metadata window whose
+        content is already gone (no unpurged artifact, no live training
+        example). Usage facts are NOT deleted — aggregate retention is
+        independent of text and job-row retention (S21, M13-AC03), which
+        is why usage_facts carries its own app/duration/word copies.
+        Effective pruning therefore starts once every content retention
+        (transcript/audio) has expired past the metadata window, not
+        before."""
+        now = now if now is not None else self.now_fn()
+
+        def op():
+            now_iso = ids.now_utc_iso(now)
+            placeholders = ",".join("?" * len(TERMINAL_STATES))
+            live_example_states = ("captured_unreviewed",
+                                   "review_candidate", "annotated",
+                                   "ambiguous", "quarantined_sensitive")
+            deleted = 0
+            rows = self._db.execute(
+                f"SELECT job_id, updated_at_utc FROM jobs WHERE state IN"
+                f" ({placeholders})",
+                tuple(TERMINAL_STATES)).fetchall()
+            for job_id, updated in rows:
+                updated_t = _iso_to_epoch(updated)
+                if updated_t is None or (now - updated_t) < \
+                        self.retention_days["metadata"] * 86400:
+                    continue
+                if self._db.execute(
+                        "SELECT 1 FROM artifacts WHERE job_id=? AND purged=0"
+                        " LIMIT 1", (job_id,)).fetchone():
+                    continue  # content still retained — the row stays
+                if self._db.execute(
+                    "SELECT 1 FROM training_examples WHERE job_id=? AND"
+                    " state IN (?,?,?,?,?) LIMIT 1",
+                        (job_id, *live_example_states)).fetchone():
+                    continue  # a live example still references the job
+                self._db.execute(
+                    "DELETE FROM insertion_observations WHERE job_id=?",
+                    (job_id,))
+                self._db.execute(
+                    "DELETE FROM insertions WHERE job_id=?", (job_id,))
+                self._db.execute(
+                    "DELETE FROM job_targets WHERE job_id=?", (job_id,))
+                self._db.execute(
+                    "DELETE FROM jobs WHERE job_id=?", (job_id,))
+                deleted += 1
+            if deleted:
+                self.emit("store.metadata_pruned", level="INFO",
+                          reason_code="retention_pass",
+                          detail=f"jobs={deleted}")
+            return {"jobs_deleted": deleted}
         return self._submit(op, wait=True)
 
     def delete_everywhere(self, target_kind, target_id, reason="user_request"):

@@ -142,7 +142,8 @@ def test_scratchpad_view_builds_and_loads(after):
     h = Harness(durations=[1.0], supervisor=TFSupervisor())
     try:
         hub = make_hub(h)
-        assert "scratchpad" in VIEWS and len(VIEWS) == 9
+        # M13 added Insights: the sidebar is 10 views now.
+        assert "scratchpad" in VIEWS and len(VIEWS) == 10
         hub._select_view_index(VIEWS.index("scratchpad"))
         hub.state.wait_for_queries()
         after.flush()

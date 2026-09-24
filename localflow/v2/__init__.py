@@ -19,5 +19,5 @@ frozen HintSet, sandbox/conflict-preview APIs) and `vocabulary_store`
 (the dictionary tables inside the single-writer store).
 """
 
-from . import (capabilities, capture_journal, eventlog, ids, store,  # noqa: F401
-               supervisor, training, vocabulary, vocabulary_store)
+from . import (analytics, capabilities, capture_journal, eventlog, ids,  # noqa: F401
+               store, supervisor, training, vocabulary, vocabulary_store)

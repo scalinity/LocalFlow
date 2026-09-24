@@ -53,9 +53,12 @@ def test_migration_v8_additive_and_repair():
         backup_before = tmp / "backups"
         s = make_store(tmp, backup_dir=backup_before)
         try:
+            # The ladder now ends at M13's v9 (usage analytics); the v8
+            # Scratchpad tables still arrive additively on the way.
             assert s.submit(lambda db: db.execute(
                 "SELECT value FROM schema_meta WHERE"
-                " key='schema_version'").fetchone())[0] == "8"
+                " key='schema_version'").fetchone())[0] == \
+                str(max(store_mod._MIGRATIONS))
             for table in ("notes", "note_revisions", "note_attachments",
                           "note_evidence_links"):
                 assert s.submit(lambda db, t=table: db.execute(
@@ -86,7 +89,8 @@ def test_migration_v8_additive_and_repair():
             try:
                 assert s2.submit(lambda db: db.execute(
                     "SELECT value FROM schema_meta WHERE"
-                    " key='schema_version'").fetchone())[0] == "8"
+                    " key='schema_version'").fetchone())[0] == \
+                    str(max(store_mod._MIGRATIONS))
                 assert s2.submit(lambda db: db.execute(
                     "SELECT COUNT(*) FROM transforms").fetchone())[0] == 1
             finally:
