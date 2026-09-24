@@ -27,17 +27,21 @@ KIND_TRANSFORMS = "transforms_json"
 KIND_LOG = "legacy_log"
 
 
-def _iter_pairs(text):
-    """E02 pairing protocol from the M01 parser. Imported lazily: the
-    parser lives in scripts/ (not bundled into the app), and only the
-    import CLI/tests — never the running app — reach this path."""
+def _parser():
+    """The M01 E02 parser. Imported lazily: the parser lives in scripts/
+    (not bundled into the app), and only the import CLI/tests — never the
+    running app — reach this path."""
     import importlib
 
     root = pathlib.Path(__file__).resolve().parent.parent.parent
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
-    mod = importlib.import_module("scripts.v2.parse_legacy_log")
-    return mod.iter_pairs(text)
+    return importlib.import_module("scripts.v2.parse_legacy_log")
+
+
+def _iter_pairs(text):
+    """E02 pairing protocol from the M01 parser."""
+    return _parser().iter_pairs(text)
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -166,9 +170,17 @@ class LegacyImporter:
         path = pathlib.Path(path)
         data = path.read_bytes()  # single read of an append-only file
         data_hash = sha256_bytes(data)
-        text = data.decode("utf-8", errors="replace")
+        parser = _parser()
+        text, decode = parser.decode_log_bytes(data)
 
+        # M01 remediation (M01-AUDIT-07): only pairs that were COMPLETE in
+        # the verified prefix count as already imported. A pair flushed at
+        # the prefix's end-of-file may have grown since; it is imported now
+        # from the completed bytes. If a pre-remediation importer already
+        # stored that truncated tail, the completed pair records which
+        # identity it completes (the old artifact stays immutable).
         skip_pairs = set()
+        prior_partial = {}
         prefix_sha = None
         for prev_sha, prev_len in sorted(
                 self.store.import_run_bytes(KIND_LOG).items(),
@@ -176,17 +188,29 @@ class LegacyImporter:
             if prev_len <= len(data) and \
                     sha256_bytes(data[:prev_len]) == prev_sha:
                 prefix_sha = prev_sha
-                prefix_text = data[:prev_len].decode("utf-8", errors="replace")
-                skip_pairs = {(p["raw_line"], p["cleaned_line"])
-                              for p in _iter_pairs(prefix_text)}
+                prefix_text, _ = parser.decode_log_bytes(data[:prev_len])
+                for p in _iter_pairs(prefix_text):
+                    key = (p["raw_line"], p["cleaned_line"])
+                    if p.get("complete", True):
+                        skip_pairs.add(key)
+                    elif self.store.has_import(
+                            KIND_LOG, prev_sha,
+                            f"lines:{key[0]}-{key[1]}"):
+                        prior_partial[key] = \
+                            f"legacy:{prev_sha}:{key[0]}-{key[1]}"
                 break
 
-        imported = skipped = 0
+        imported = skipped = deferred = 0
         for pair in _iter_pairs(text):
             line_range = f"{pair['raw_line']}-{pair['cleaned_line']}"
             locator = f"lines:{line_range}"
-            if (pair["raw_line"], pair["cleaned_line"]) in skip_pairs:
+            key = (pair["raw_line"], pair["cleaned_line"])
+            if key in skip_pairs:
                 skipped += 1
+                continue
+            if not pair.get("complete", True):
+                # Still-growing tail: imported once it is complete.
+                deferred += 1
                 continue
             identity = f"legacy:{data_hash}:{line_range}"
             base_meta = {
@@ -194,14 +218,25 @@ class LegacyImporter:
                 "segment": pair["segment"],
                 "cleanup_state": pair["cleanup_state"],
                 "time_quality": "unknown",
+                "payload_derivation": pair.get("payload_derivation"),
             }
+            if pair.get("decode_uncertain"):
+                base_meta["decode_uncertain"] = True
+            if key in prior_partial:
+                base_meta["completes_prior_partial_identity"] = \
+                    prior_partial[key]
             # Candidate audio association from the E02 heuristic;
             # explicitly unverified — never a claimed join.
             result = self.store.import_legacy_pair(
-                raw_text=pair["_raw"], cleaned_text=pair["_cleaned"],
-                raw_meta={**base_meta, "physical_lines": [pair["raw_line"]]},
+                raw_text=pair.get("_raw_exact", pair["_raw"]),
+                cleaned_text=pair.get("_cleaned_exact", pair["_cleaned"]),
+                raw_meta={**base_meta, "physical_lines": [pair["raw_line"]],
+                          "physical_line_span": pair.get("raw_lines"),
+                          "framing": (pair.get("framing") or {}).get("raw")},
                 cleaned_meta={
                     **base_meta, "physical_lines": [pair["cleaned_line"]],
+                    "physical_line_span": pair.get("cleaned_lines"),
+                    "framing": (pair.get("framing") or {}).get("cleaned"),
                     "timing": pair["timing"],
                     "inserted_chars": pair["inserted_chars"],
                     "candidate_audio_line_unverified":
@@ -214,8 +249,16 @@ class LegacyImporter:
         self.store.sync()
         self.store.record_import_run(
             KIND_LOG, data_hash, len(data), path, imported, skipped,
-            note=f"prefix_reconciled={prefix_sha or 'none'}")
+            note=f"prefix_reconciled={prefix_sha or 'none'};"
+                 f" deferred_incomplete={deferred};"
+                 f" payload_derivation={parser.PAYLOAD_DERIVATION};"
+                 f" decode_replaced={decode['replaced_sequences']}")
         return {"source": str(path), "sha256": data_hash,
                 "bytes": len(data), "pairs_imported": imported,
                 "pairs_skipped": skipped,
+                "pairs_deferred_incomplete": deferred,
+                "prior_partial_tails_completed": len(
+                    [k for k in prior_partial if k not in skip_pairs]),
+                "decode": decode,
+                "payload_derivation": parser.PAYLOAD_DERIVATION,
                 "prefix_reconciled": prefix_sha or None}
