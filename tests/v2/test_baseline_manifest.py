@@ -22,12 +22,18 @@ PRIVATE_EXTENSIONS = {".db", ".wav", ".mp3", ".flac", ".m4a", ".log", ".sqlite"}
 TRANSCRIPT_MARKERS = (b"[localflow] raw:", b"[localflow] cleaned:")
 
 
-def test_manifest_provenance_fields():
-    # These assertions pin THIS machine's current baseline (installed app
-    # present, com.danny.localflow, Apple Silicon). If the deployment
-    # changes deliberately, regenerate the manifest and update these
-    # expectations together.
+def test_historical_manifest_record_is_frozen():
+    # FROZEN HISTORICAL DOCUMENT CHECK (M01 remediation, M01-AUDIT-15).
+    # These assertions pin the September 21 observations recorded in
+    # docs/v2/baseline/manifest.json (schema 1). They verify that the
+    # committed historical record is intact — NOT that any machine is in
+    # this state today, and NOT that the generator is correct. Producer
+    # correctness is tested independently with synthetic fixtures in
+    # tests/v2/test_baseline_manifest_producers.py; current-state runs
+    # are written to docs/v2/baseline/runs/<run-id>/ and never here.
     m = json.loads(MANIFEST.read_text())
+    assert m["schema_version"] == 1
+    assert m["generated_utc"].startswith("2026-09-21"), m["generated_utc"]
     assert m["milestone"] == "M01"
     g = m["git"]
     assert g["head_commit"] and len(g["head_commit"]) >= 40
@@ -59,7 +65,7 @@ def test_manifest_provenance_fields():
     # Unresolved facts carry reasons.
     for u in m["unresolved"]:
         assert u["status"] == "unresolved" and u["reason"]
-    print("ok  baseline manifest provenance fields")
+    print("ok  frozen 2026-09-21 baseline record intact (historical, not current)")
 
 
 def test_no_private_files_in_repo_docs_or_tests():
@@ -113,7 +119,7 @@ def test_fixture_manifest_reserved_only():
 
 
 if __name__ == "__main__":
-    test_manifest_provenance_fields()
+    test_historical_manifest_record_is_frozen()
     test_no_private_files_in_repo_docs_or_tests()
     test_fixture_manifest_reserved_only()
     print("all baseline manifest tests passed")
