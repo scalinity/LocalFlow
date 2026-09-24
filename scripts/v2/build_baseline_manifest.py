@@ -376,12 +376,28 @@ def resolve_config(explicit=None, env_value=None, user_override=None,
     return cfg, candidates, winner
 
 
+def load_defaults_from(config_py: pathlib.Path):
+    """DEFAULTS of the localflow/config.py a launch context actually runs
+    (the installed bundle embeds its own, possibly older, copy)."""
+    import importlib.util
+    try:
+        spec = importlib.util.spec_from_file_location(
+            f"_lf_config_{abs(hash(str(config_py)))}", config_py)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return dict(mod.DEFAULTS), None
+    except Exception as e:  # absent/unparseable bundle config.py
+        return None, f"{type(e).__name__}: {e}"
+
+
 def effective_config_record(context, *, explicit=None, env_value=None,
                             env_observation=None, user_override=None,
-                            bundled=None):
+                            bundled=None, defaults=None,
+                            defaults_source="repository localflow/config.py"):
+    defaults = dict(lf_config.DEFAULTS if defaults is None else defaults)
     cfg, candidates, winner = resolve_config(explicit, env_value,
-                                             user_override, bundled)
-    rec = {"context": context,
+                                             user_override, bundled, defaults)
+    rec = {"context": context, "defaults_source": defaults_source,
            "env_LOCALFLOW_CONFIG": env_observation,
            "candidates": candidates,
            "winner": winner,
@@ -399,7 +415,7 @@ def effective_config_record(context, *, explicit=None, env_value=None,
             effective_values={k: cfg.get(k) for k in SAFE_CONFIG_KEYS},
             effective_config_sha256=canonical_sha256(cfg),
             overridden_keys=sorted(k for k in cfg
-                                   if cfg[k] != lf_config.DEFAULTS.get(k, object())),
+                                   if cfg[k] != defaults.get(k, object())),
             reason=None)
     return rec, cfg
 
@@ -765,12 +781,19 @@ def build(*, root=None, app=None, env=None, hash_model_files=True):
             la_obs[name] = obs
             if val:
                 la_env[name] = val
+        resources = pathlib.Path(bundle["path"]) / "Contents" / "Resources"
+        app_defaults, why = load_defaults_from(
+            resources / "localflow" / "config.py")
         app_ctx, app_cfg = effective_config_record(
             "installed_app (LaunchServices; launchd user environment)",
             env_value=la_env.get("LOCALFLOW_CONFIG"),
             env_observation=la_obs["LOCALFLOW_CONFIG"],
             user_override=lf_config.user_override_path(),
-            bundled=pathlib.Path(bundle["path"]) / "Contents" / "Resources" / "config.json")
+            bundled=resources / "config.json",
+            defaults=app_defaults,
+            defaults_source="installed bundle localflow/config.py"
+            if app_defaults is not None else
+            f"repository localflow/config.py (bundle defaults unreadable: {why})")
         app_ctx["launchd_environment_observations"] = la_obs
         contexts["installed_app"] = app_ctx
         models["installed_app"] = models_record(app_cfg, la_env,

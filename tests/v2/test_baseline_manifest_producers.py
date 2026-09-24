@@ -320,6 +320,47 @@ def test_config_malformed_unreadable_and_non_object():
     print("ok  malformed -> defaults(+error); list -> runtime raises; values private")
 
 
+@case
+def test_installed_app_context_uses_the_bundles_own_defaults():
+    with tempfile.TemporaryDirectory() as td:
+        td = pathlib.Path(td)
+        r = make_repo(td)
+        app = make_bundle(td / "b", {"a.py": "A = 1\n"})
+        res = app / "Contents" / "Resources"
+        (res / "config.json").write_text('{"hotkey": "right_option"}')
+        # An older embedded config.py: different defaults, no
+        # cleanup_implementation key at all.
+        (res / "localflow" / "config.py").write_text(
+            'DEFAULTS = {"model": "org/old-asr", "cleanup": "basic",\n'
+            '            "cleanup_model": "org/old-llm", "hotkey": "fn"}\n')
+        home = td / "home"
+        home.mkdir()
+        saved = {k: os.environ.get(k) for k in ("HOME", "PATH")}
+        bin_dir = td / "bin"
+        bin_dir.mkdir()
+        (bin_dir / "launchctl").write_text("#!/bin/sh\nexit 0\n")
+        (bin_dir / "launchctl").chmod(0o755)
+        os.environ["HOME"] = str(home)
+        os.environ["PATH"] = f"{bin_dir}:{saved['PATH']}"
+        try:
+            m = bm.build(root=r, app=app, env={}, hash_model_files=False)
+        finally:
+            for k, v in saved.items():
+                os.environ[k] = v
+        ctx = m["effective_configuration"]["contexts"]["installed_app"]
+        assert ctx["defaults_source"] == "installed bundle localflow/config.py"
+        assert ctx["effective_values"] == {
+            "model": "org/old-asr", "cleanup": "basic",
+            "cleanup_model": "org/old-llm", "cleanup_implementation": None,
+            "hotkey": "right_option"}, ctx["effective_values"]
+        assert ctx["overridden_keys"] == ["hotkey"]
+        assert m["models"]["installed_app"]["asr"]["configured_id"] == "org/old-asr"
+        repo_ctx = m["effective_configuration"]["contexts"]["repo_run"]
+        assert repo_ctx["effective_values"]["cleanup_implementation"] == \
+            lf_config.DEFAULTS["cleanup_implementation"]
+    print("ok  installed-app context resolves with the bundle's own DEFAULTS")
+
+
 # ---- M01-AUDIT-04: models and interpreters ------------------------------------
 
 def make_hub(base, model_id, rev="rev1", *, config=True, weights=b"W" * 32,
