@@ -450,12 +450,42 @@ class NoteStore:
             db.execute(
                 "UPDATE note_revisions SET content_text='', purged=1"
                 " WHERE note_id=?", (note_id,))
+            now = ids.now_utc_iso()
+            # M14 (S29.14): learning candidates mined from this note's
+            # edits lose their payload (the edited words) and, when
+            # still open, go stale — deleted note text never survives
+            # in a suggestion.
+            revs = ("SELECT revision_id FROM note_revisions WHERE"
+                    " note_id=?")
+            for (aid,) in db.execute(
+                    "SELECT after_artifact_id FROM learning_candidates"
+                    " WHERE source='note_revision' AND after_artifact_id"
+                    f" IS NOT NULL AND observation_id IN ({revs})",
+                    (note_id,)).fetchall():
+                db.execute(
+                    "UPDATE artifact_leases SET revoked_at_utc=? WHERE"
+                    " artifact_id=? AND revoked_at_utc IS NULL", (now, aid))
+                db.execute(
+                    "UPDATE artifacts SET content_text=NULL,"
+                    " content_path=NULL, purged=1 WHERE artifact_id=?",
+                    (aid,))
+            db.execute(
+                "UPDATE learning_candidates SET status='stale',"
+                " proposed_alias=NULL, proposed_canonical=NULL,"
+                " changed_spans_json='[]', updated_at_utc=? WHERE"
+                " source='note_revision' AND status IN ('pending',"
+                f"'suppressed','dismissed') AND observation_id IN ({revs})",
+                (now, note_id))
+            db.execute(
+                "UPDATE learning_candidates SET changed_spans_json='[]',"
+                " updated_at_utc=? WHERE source='note_revision' AND status"
+                f" IN ('approved','rejected') AND observation_id IN ({revs})",
+                (now, note_id))
             closed = [
                 {"example_id": r[0], "job_id": r[1]} for r in db.execute(
                     "SELECT example_id, job_id FROM note_evidence_links"
                     " WHERE note_id=? AND closed_utc IS NULL",
                     (note_id,)).fetchall()]
-            now = ids.now_utc_iso()
             db.execute(
                 "UPDATE note_evidence_links SET closed_utc=?,"
                 " close_reason='note_deleted' WHERE note_id=? AND"

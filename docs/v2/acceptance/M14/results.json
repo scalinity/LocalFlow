@@ -1,0 +1,117 @@
+{
+  "milestone": "M14",
+  "requirements": ["LF-R21", "LF-R22", "LF-R28", "LF-R31", "LF-R32"],
+  "suite": "EV-15 personalization portion + EV-20 correction/preference quality + EV-21 split/export qualification + EV-19 integrations (E19.1 fixture pack)",
+  "status": "implemented_pending_human",
+  "environment": {
+    "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+    "python": "3.14.7 (.venv)",
+    "mlx": "0.31.2",
+    "transformers": "5.10.4",
+    "machine": "Apple M5 Pro 48GB, macOS 27.0",
+    "models": {
+      "asr": "mlx-community/parakeet-tdt-0.6b-v3",
+      "cleanup_transform": "mlx-community/Qwen3-4B-Instruct-2507-4bit"
+    },
+    "note": "no model or checkpoint change; M14 is store/SQL/AppKit work with no model calls, no network and no microphone access (grep over every new module and the coordinator diff: no urllib/requests/socket/sounddevice/AVAudio/URL). The live store (~/Library/Application Support/LocalFlow/v2.db) is still at schema v9: it migrates 9->10 additively on the next dev run with the automatic pre-migration backup (see human_verification)."
+  },
+  "pre_change_baselines": {
+    "kind": "automated",
+    "command": ".venv/bin/python <suite>",
+    "result": "Inherited-tree baseline at session start (the M14 work already present, uncommitted, on 5e90489): the 7 M14 suites plus test_hub_shell, test_training_data, test_usage_store and test_store - 11/11 exit 0. The clean-tree 5e90489 baseline (50 fast + 5 model-backed suites, V1 control 51/51) was run by the implementing session and exists only in its transcript; it is not re-recorded here.",
+    "evidence": "session transcript"
+  },
+  "checks": [
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/personalization/test_learning.py",
+      "cwd": "repo root",
+      "result": "PASS (10 checks): the review queue carries candidate ids, shows job-only teaches, never re-shows a rejected pair; deletion/expiry reach job-keyed and note-sourced candidates, rows content-free (offsets + axes), mined observations never pin their job past the buffer, labels/teach refuse quarantined evidence, graft spans must index the source, refusals are ValueErrors; v10 migration additive with backup and repair; AC01 pending/rejected/suppressed never change output; counterexample refusal; teach refusals + deletion stales candidates and drops labels; one candidate per observation; counterexamples checked in the rule's own (app) scope; approval composes with the user's existing entry (alias_added), undo reverses only that, undo->re-approve, a disabled user entry is never re-activated, an interrupted approval resumes its plan; negation flips never suggest, excluded examples teach nothing, two-dictation notes stay unattributed, teach works without a training example"
+    },
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/personalization/test_profile.py",
+      "cwd": "repo root",
+      "result": "PASS (7 checks): quarantined speech never feeds the profile and invalidation reasons name what happened; cards cite their supporting examples (a correction card cites the labeled dictations), background-flagged and verbatim-repeated speech excluded, local hours from the recorded offset, the idle pass adds no snapshot over unchanged evidence; deletion clears derived phrases/cards from every snapshot that used the example and a deletion landing mid-read restarts the computation; measured views from eligible evidence only; below-threshold measured-only with the honest note; deletion invalidation + durable exclusion + snapshots as records; AC04 no injection path"
+    },
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/training/test_classification.py",
+      "cwd": "repo root",
+      "result": "PASS (7 checks) over the 100-record synthetic pack + 40 negatives: axes per ground truth; graft mechanics incl. Unicode offsets and refusal of overlaps; no negative promoted; suggestion gate 5/5 = 1.0 on the fixture (mechanics only - not real accuracy, E19.3); append-only label revisions with axis validation; stage attribution under the real keys (normalization/cleanup/unknown; a ledger-valued normalization slot = unchanged text); the case-only reliability gate and contraction negation flips abstain"
+    },
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/training/test_sampling.py",
+      "cwd": "repo root",
+      "result": "PASS (3 checks): deterministic seeded stream reproduces after a ledger wipe; explicit (4) / hard-trigger (7) strata over 30 examples with null probabilities, representative rows at the known 0.2; one inclusion per example per policy; late triggers (a later incorrect mark, a taught correction) get exactly one late decision in the explicit stratum and never a redraw; the configured percent is the service default"
+    },
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/training/test_splits.py",
+      "cwd": "repo root",
+      "result": "PASS (4 checks): versioned family assignment, injected leakage detected; exposure forward-only in a new version with the regression tag, a later re-assignment keeps the exposed family out of frozen_test, a family absent for one version keeps its exposure, unknown families refuse; tags never change partitions; the 10-family honesty floor; late hint artifacts flagged as contamination"
+    },
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/training/test_dataset_export.py",
+      "cwd": "repo root",
+      "result": "PASS (5 checks): hardening (an earlier export the user added files to is never replaced; hostile datasets reported not raised; symlinks flagged; consent refusal recorded; non-folder staging refused; an unexpected failure leaves no staging and a failed record); round trip - identical fingerprints across two builds, offline validation via scripts/v2/validate_dataset.py from an empty cwd with the store closed; negative battery (tamper, unsupported schema, unsafe sums path, deleted original, consent revoked mid-export -> nothing written, cross-input pair, split leakage, graft-as-gold); audio-deleted text-only downgrade; safety/semantics (a user folder is never replaced, prefer_b exports B and the latest judgment wins, sums completeness, exact cleanup input with an honest prompt gap, transform definition exported, deletion epoch manifest-level, exposed development families export while exposed-frozen, stale-family and damaged-audio builds refuse)"
+    },
+    {
+      "kind": "automated (native-Mac headless, real coordinator)",
+      "command": ".venv/bin/python tests/v2/ui/test_training_review_hub.py",
+      "cwd": "repo root",
+      "result": "PASS (6 checks) through the real coordinator's services: Approve (a counterexample flip refused and shown), Reject, Record Label, Assign and Export through the pane with refusals readable on the tab on screen; the four Training Data tabs load real data and mining mints candidates (off the main thread); sampling draw and pair judgments incl. uncertain, cross-task refusal; Your Voice subview, Generate off the main thread and a failed generation shown; History teach; the idle scheduler yields while recording and asks for only-if-changed"
+    },
+    {
+      "kind": "automated",
+      "command": ".venv/bin/python tests/v2/ui/test_training_data.py",
+      "cwd": "repo root",
+      "result": "PASS (M09 checks + the readiness aggregates): split contamination 'not_available_no_assignment' before any assignment, export integrity 'not_available_no_export', nearing-expiry an int, verbatim coverage in reviewed seconds (1.0 of 1.0 retained) with its definition"
+    },
+    {
+      "kind": "regression (all suites, fast + model-backed)",
+      "command": ".venv/bin/python <each of the 62 test_*.py files under tests/>",
+      "cwd": "repo root",
+      "result": "62/62 exit 0 on the final code (post-address): model-backed worker_live 5 s, fidelity 40 s, structure 50 s, prompt-engineer cases 54 s, live_pipeline 4 s, cleanup engine/pipeline; the V1 control tests/test_cleanup.py 51/51 in 46 s; test_registry (33/22) and the baseline-manifest privacy scan green. The same 62 also ran green once before the review loop.",
+      "evidence": "session transcript (per-suite exit codes and seconds)"
+    },
+    {
+      "kind": "automated benchmark",
+      "command": ".venv/bin/python scripts/v2/benchmark_m14.py docs/v2/benchmarks/20260924-003129-m14",
+      "cwd": "repo root",
+      "result": "10,000 synthetic examples + 400 x 10 s WAVs (256 MB): profile compute p95 300 ms (chunked), worst dictation-write wait during it 45 ms over 15 probes, peak 41.5 MB; idle skip p95 299 ms, no snapshot written; mining 1,000 observations 583 ms, worst wait 1 ms over 74 probes; sampling refresh 98 ms (one op, wait <= 91 ms); split assign 62 ms (<= 54 ms); export 257 MB in 344 ms (746 MB/s), peak 40.2 MB vs 39.9 MB text-only control (audio adds 0.3 MB), worst wait 50.6 ms over 38 probes; offline validation 107 ms",
+      "evidence": "docs/v2/benchmarks/20260924-003129-m14/m14.json"
+    }
+  ],
+  "acceptance_criteria": {
+    "M14-AC01": {"status": "automated_pass", "evidence": ["test_learning.py::test_unapproved_rejected_never_change_output (sandbox output identical with pending/rejected/suppressed candidates)", "test_learning.py::test_app_scoped_counterexample_is_checked_in_scope", "test_learning.py::test_approval_composes_with_existing_entries_and_undo"]},
+    "M14-AC02": {"status": "automated_pass", "evidence": ["test_profile.py::test_measured_views_and_cards", "test_profile.py::test_card_evidence_exclusions_hours_and_idle_skip (cards cite supporting examples)", "test_profile.py::test_quarantine_excluded_and_invalidation_reasons"]},
+    "M14-AC03": {"status": "automated_pass", "evidence": ["test_profile.py::test_deleted_evidence_leaves_no_derived_text (every snapshot cleared; mid-read deletion restarts)", "test_profile.py::test_deletion_and_exclusion_propagation", "test_learning.py::test_deletion_expiry_and_row_content (job-keyed and note-sourced candidates stale; payloads purged)"]},
+    "M14-AC04": {"status": "automated_pass", "evidence": ["test_profile.py::test_no_profile_injection (engine output identical with a current snapshot; no pipeline module imports the profile)"]},
+    "M14-AC05": {"status": "automated_pass", "evidence": ["test_classification.py::test_negatives_never_promoted (40 negatives)", "test_classification.py::test_suggestion_gate_precision (changed intent never suggested)", "test_learning.py::test_deletion_expiry_and_row_content (labels refuse quarantined evidence - no resurrection into the ASR gate)"], "note": "real classification accuracy is unqualified until >= 60 real observations are reviewed (E19.3)"},
+    "M14-AC06": {"status": "automated_pass", "evidence": ["test_sampling.py (all three: strata kept separate, recorded probabilities/reasons, one inclusion per example, late triggers)"]},
+    "M14-AC07": {"status": "automated_pass", "evidence": ["test_dataset_export.py::test_negative_battery (cross-input pair, graft-as-gold refused)", "test_dataset_export.py::test_export_safety_and_semantics (prefer_b direction, latest judgment)", "test_classification.py::test_graft_mechanics (coverage_kind partial)"]},
+    "M14-AC08": {"status": "automated_pass", "evidence": ["test_splits.py (versioning, exposure forward-only and permanent, tags independent, leakage detected)", "test_dataset_export.py (split leakage, exposed-frozen and stale-family refusals)"]},
+    "M14-AC09": {"status": "automated_pass", "evidence": ["test_dataset_export.py::test_round_trip_and_determinism (offline validation, empty cwd, store closed)", "test_dataset_export.py::test_negative_battery (deleted/revoked content omitted or aborts)", "test_dataset_export.py::test_export_hardening"], "note": "E19.5 minimum pack met by the synthetic fixture (>= 20 audio/reference, >= 20 cleanup, 6 preference pairs incl. short/numeric/mixed/EN-ES/rejected/audio-deleted); synthetic content proves mechanics only - M15 runs the live pilot"},
+    "M14-AC10": {"status": "automated_pass", "evidence": ["docs/v2/handoffs/M14.md (one coherent report covering checkpoints M14-A/B/C with explicit classification limits and insufficient-label states)"]}
+  },
+  "human_verification": {
+    "id": "native-m14-learning-profile-dataset-trial",
+    "status": "pending",
+    "steps": "From Terminal.app (cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh), one instance only. First run: confirm the live store migrated 9->10 and that a new v2-pre-migrate-*.db exists under ~/Library/Application Support/LocalFlow/v2-evidence/backups/. (1) Correct 'Claude' in one coding-app dictation via History > Teach; in Models > Training Data > Review approve the narrow rule, then try a counterexample such as 'cloud deployment' - approval refused if it would flip; dictate the phrase again and confirm the rule applies only in that app. (2) Insights > Your Voice > Generate; open a card's evidence ids, Exclude one, confirm the snapshot invalidates and regeneration omits it; delete one supporting dictation everywhere and confirm no card or phrase keeps it. (3) Review a positive, a mixed edit and a changed-intent case; record an 'ambiguous' label on an unclear one. (4) Compare two same-input transform outputs (prefer A / B / tie / neither / uncertain). (5) Splits > Assign; Export selected views to a NEW folder; Validate; delete one source example and re-export - its rows disappear. (6) Read the dataset README and listen to exported audio / inspect context before any external sharing. Screenshots at normal and enlarged text scale."
+  },
+  "semantic_review": {
+    "by": "the continuing session, before the review loop",
+    "summary": "Audit of the inherited M14 implementation found and repaired, each with a regression test: the exporter deleted any existing folder given as its destination; a prefer_b judgment exported the rejected candidate as chosen and the first (not latest) judgment per pair; the Hub's action wrapper took no keyword arguments, so Approve/Reject/Label/Export failed on every click and errors landed in a hidden view; re-assigning splits hashed exposed families back into frozen_test and the exporter excluded exposed development families from any export including frozen_test; approval failed for canonicals already in the dictionary and after undo; the counterexample sandbox ignored the rule's scope (vacuous for app-scoped rules); contraction negations were invisible; stage attribution looked up the wrong keys and read the normalization ledger JSON as text; case-only re-casing bypassed the reliability gate; note mining attributed edits in multi-dictation notes to an arbitrary job; excluded examples mined; teach needed a training example; late sampling triggers never reached review and the explicit stratum was never produced; review_sample_percent was unread; the idle profile pass minted a snapshot every 30 minutes forever; cards cited arbitrary examples; hours were UTC; repeated-verbatim/background speech fed the profile; invalidated snapshots kept phrases from deleted speech; exports hashed whole files in RAM and never verified copied audio; the cleanup view's input was the raw text; stale family assignments, dead deletion_epoch literals and a consent bypass parameter; the mining scan limit applied before filtering; the profile compute and mining held the writer for ~235 ms (now chunked: worst dictation wait 45 ms / 1 ms); the export CLI migrated without a backup; the uncertain pair judgment was missing from the Hub; verbatim coverage in reviewed seconds was unreported."
+  },
+  "review_loop": {
+    "skill": "/review-2 (two parallel read-only reviewers on Fable: a bug-hunting debugger; an architecture/quality/performance/security/data-integrity auditor)",
+    "verdict_before_addressing": "Request Changes - 3 criticals: (1, corroborated) deleted note/job content survived in learning candidates - propagation was example-keyed, missing job-only teaches, and note deletion never reached note-sourced candidates whose payload held the whole note; (2) transcript words in candidate rows (changed_spans_json, classification regions) and graft_json, plus a never-expiring training lease on every mined candidate that pinned the whole job past the unreviewed buffer; (3) record_label moved any example to annotated, resurrecting quarantined/expired evidence into export and the ASR gate. 10 warnings, 10 suggestions.",
+    "addressed": "All 3 criticals fixed with regression tests: job-keyed stale+clear in delete_everywhere and prune_training, note deletion purges candidate payloads and stales open candidates in its own op, note payloads keep only changed regions, rows carry offsets and axes only (a further leak found while fixing: classification_json carried region words), graft_json dropped, mined payloads take the buffer lease (teach stays reviewed/retained), labels and teach refuse non-trainable examples. Warnings: previous-export replacement only when every file is listed in its own sums; validator reports hostile JSON/non-string/traversal paths and symlinks instead of raising; approval records its plan before any vocabulary write and marks conditionally; quarantined examples out of the profile; one set of example-state constants and one artifact-text helper in store.py; tests for every new branch; contracts corrected; graft spans must index the source text; suppressed rows out of the queue (and job-only teaches now appear, a second latent gap); refusals raised after the op. Suggestions: consent refusal recorded; Generate failures shown; Export/Mine/Generate off the main thread; queue rows carry candidate_id; staging must be a leftover build folder; any failure removes staging and records failure; note-span intersection in one tokenizer; exposure read across all prior versions; scrub reasons name the evidence state. One suggestion decided without code change: the export selection stays one writer op because S29.13 requires a consistent source snapshot (measured worst dictation wait 50.6 ms at 10k examples, a user action). Nothing rejected as incorrect.",
+    "post_address": "62/62 suites green on the final code (model-backed included; V1 control 51/51 in 46 s); the benchmark re-ran on the final code (docs/v2/benchmarks/20260924-003129-m14/m14.json).",
+    "cadence_note": "The /address per-fix commit+push cadence was adapted to this repo's milestone protocol: one close-out commit staged by name, no push."
+  },
+  "privacy": "Nothing private entered Git: every M14 fixture is synthetic (tests/v2/training/evidence_pack.py, Synth App names, example.com hosts); rows are ids/hashes/counts/offsets (candidate rows also name proposed rule terms) with observed words only in lease-governed artifacts inside the store; events carry ids/reasons/counts; the benchmark JSON holds timings/sizes over a temp-dir store; the baseline-manifest privacy scan passes; exports are written only to a user-chosen local folder, never uploaded."
+}

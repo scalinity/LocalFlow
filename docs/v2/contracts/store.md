@@ -155,3 +155,35 @@ orphan payload files.
   over `Store.submit`; the torn-write repair path covers the v8
   tables. Post-close submits now fail fast (`store is closed`)
   instead of hanging on the dead writer.
+
+## M14 additions (schema v10; no frozen identity changed)
+
+- Migration v10 adds the curation and personalization tables (see
+  `contracts/learning.md`, `contracts/profile.md`,
+  `contracts/dataset_exports.md`): `learning_candidates` (with the
+  `vocabulary_action` an approval took) + `correction_labels`
+  (append-only per-example revisions, graft artifact ids) +
+  `sampling_decisions` + `split_assignments`/`training_memberships`
+  (versioned, exposure-tracked) + `example_tags` + `profile_snapshots`/
+  `profile_evidence` + `export_manifests`, with their indexes. Rows are
+  ids/hashes/counts/offsets (a candidate row also names its proposed
+  rule terms); observed words and graft payloads live only in
+  lease-governed artifacts written inside the same writer op. New id
+  prefixes: `cand-`, `lbl-`, `smp-`, `prof-`, `export-`. The torn-write
+  repair path covers the v10 tables.
+- `delete_everywhere` propagates in the same op: the JOB's open
+  learning candidates go `stale` with rule terms and spans cleared
+  (candidates are job-keyed — a teach with collection off has no
+  example; payloads are job artifacts and are purged with them), the
+  example's correction labels are deleted, and every profile snapshot
+  that drew on it is invalidated with its measured JSON and cards
+  cleared; its evidence links go. `prune_training` expiry propagates
+  to candidates and labels the same way. A mined candidate's payload
+  lease follows the unreviewed buffer, so it never pins a job; a
+  taught candidate's (reviewed) payload is retained until removed.
+- M14 services use `Store.submit` with connection-level helpers inside
+  ops (`review.verified_asr_eligible_in`, the split version read, the
+  exporter's inline consent read) — a nested `Store` call inside an op
+  would deadlock the writer. A refusal found inside an op returns as
+  data and is raised after the op (an in-op raise surfaces wrapped as
+  `RuntimeError`).

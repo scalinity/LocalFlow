@@ -38,3 +38,20 @@ No preference-training algorithm exists (S16 deliverable boundary).
 
 None exist. Historical retries in the legacy log are NOT preference pairs
 (new audio each time).
+
+## M14 live status (pair review and export)
+
+The Review tab lists every task key with at least two retained
+candidates (`ReviewService.preference_pairs`) and records explicit
+`prefer_a`/`prefer_b`/`tie`/`neither`/`uncertain` judgments through
+`TransformStore.record_observation` — the M11 write-time same-task
+invariant is the enforcement, and a cross-task judgment refuses. The
+pair is stored in the order shown: `candidate_id` is A,
+`candidate_b_id` is B, and `prefer_a`/`prefer_b` name the winner by
+slot. Judgments append; the latest comparable judgment on a pair is its
+current one. accept/reject/undo stay single-candidate observations,
+never pair judgments. The exporter re-verifies the shared task key AND
+the conditional input hashes (source, instructions, examples revision)
+before any pair leaves the machine, and exports both outputs with their
+display order (contracts/dataset_exports.md). No preference-training
+algorithm exists.

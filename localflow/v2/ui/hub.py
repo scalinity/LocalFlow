@@ -138,7 +138,14 @@ class HubController(NSObject):
             snippets_service=spec.get("snippets_service"),
             transforms_service=spec.get("transforms_service"),
             notes_service=spec.get("notes_service"),
-            insights_service=spec.get("insights_service"))
+            insights_service=spec.get("insights_service"),
+            learning_service=spec.get("learning_service"),
+            review_service=spec.get("review_service"),
+            sampling_service=spec.get("sampling_service"),
+            splits_service=spec.get("splits_service"),
+            profile_service=spec.get("profile_service"),
+            export_service=spec.get("export_service"),
+            transforms_store=spec.get("transforms_store"))
         self.state.on_update = self._state_updated
         self._built_views = {}
         self._history_flat = []  # group markers + rows, in table order
@@ -456,6 +463,17 @@ class HubController(NSObject):
         v.addSubview_(self.history_search)
         v.addSubview_(_button("Reload", self, "historyReload:",
                               NSMakeRect(274, ch - 29, 90, 24)))
+        # M14 (S22/S29.2): explicit "teach correction" for the selected
+        # V2 job — the corrected text's minimal changed spans become a
+        # LearningCandidate (Suggestion review happens in Models →
+        # Training Data → Review).
+        self.teach_field = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(372, ch - 28, 300, 24))
+        self.teach_field.setPlaceholderString_(
+            "corrected text — teach correction for the selected job")
+        v.addSubview_(self.teach_field)
+        v.addSubview_(_button("Teach", self, "historyTeach:",
+                              NSMakeRect(678, ch - 29, 84, 24)))
         self.history_table = NSTableView.alloc().initWithFrame_(
             NSMakeRect(0, 0, cw * 0.42, 10))
         for ident, width in (("when", 100.0), ("what", 300.0)):
@@ -533,6 +551,33 @@ class HubController(NSObject):
         if detail and detail.get("job_id") \
                 and self.coordinator is not None:
             self.coordinator.hubRetryJob(detail["job_id"])
+
+    def historyTeach_(self, sender):
+        """M14 (S22): explicit teach-correction. The submitted text is
+        diffed against the selected job's retained final text; a
+        reliable bounded correction becomes a pending LearningCandidate
+        (an unchanged or whole-rewrite submission refuses with the
+        reason — never a fabricated correction)."""
+        detail = self.state.views["history"].get("detail") or {}
+        learning = self.spec.get("learning_service")
+        corrected = (self.teach_field.stringValue() or "").strip()
+        job_id = detail.get("job_id")
+        if learning is None or not corrected or not job_id:
+            return
+        try:
+            out = learning.teach_correction(job_id, corrected)
+            note = (f"candidate {out['candidate_id'][:20]}… created"
+                    f" ({out['status']})"
+                    + (f" — suggested: {out['suggestion']['alias']} →"
+                       f" {out['suggestion']['canonical']}"
+                       if out.get("suggestion") else
+                       " — spans recorded for review"))
+        except ValueError as e:
+            note = f"teach correction refused: {e}"
+        except Exception as e:
+            note = f"teach correction failed: {type(e).__name__}"
+        self.history_detail.setString_(
+            (self._render_history_detail(detail) or "") + f"\n\n{note}")
 
     def historyDeleteUsage_(self, sender):
         """M13 (S21/M13-AC03): the explicit 'delete associated usage'
@@ -1818,12 +1863,27 @@ class HubController(NSObject):
     @objc.python_method
     def _build_training_pane(self, cw, ch):
         p = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, cw, ch))
+        self._training_evidence_views = []
+        # M14 (S29.15): the Training Data pane's sections — evidence
+        # (the M09 inspector), review (queue + classification),
+        # splits, export — one surface, four tabs.
+        self.training_tab_buttons = []
+        x = 260
+        for i, title in enumerate(("Evidence", "Review", "Splits",
+                                   "Export")):
+            b = _button(title, self, "trainingTab:",
+                        NSMakeRect(x, ch - 28, 84, 22))
+            b.setTag_(i)
+            self.training_tab_buttons.append(b)
+            p.addSubview_(b)
+            x += 88
         self.training_search = NSSearchField.alloc().initWithFrame_(
             NSMakeRect(8, ch - 28, 240, 24))
         self.training_search.setTarget_(self)
         self.training_search.setAction_("trainingSearchChanged:")
         self.training_search.setPlaceholderString_("Search evidence")
         p.addSubview_(self.training_search)
+        self._training_evidence_views.append(self.training_search)
         self.training_table = NSTableView.alloc().initWithFrame_(
             NSMakeRect(0, 0, cw * 0.4, 10))
         for ident, width in (("ex", 190.0), ("st", 170.0)):
@@ -1836,31 +1896,41 @@ class HubController(NSObject):
                       self.training_table)
         tsc.setAutoresizingMask_(18)
         p.addSubview_(tsc)
+        self._training_evidence_views.append(tsc)
         self.training_detail = _textview(NSMakeRect(0, 0, cw * 0.5, 100))
         dsc = _scroll(NSMakeRect(cw * 0.44, 150, cw * 0.56 - 8, ch - 182),
                       self.training_detail)
         dsc.setAutoresizingMask_(18 | 16)
         p.addSubview_(dsc)
+        self._training_evidence_views.append(dsc)
         self.training_ready = _label(NSMakeRect(8, ch - 56, cw - 16, 20),
-                                      "")
+                                     "")
         p.addSubview_(self.training_ready)
+        self._training_evidence_views.append(self.training_ready)
         for i, (title, action) in enumerate((
                 ("Mark Correct", "trainingMarkCorrect:"),
                 ("Mark Incorrect", "trainingMarkIncorrect:"),
                 ("Pin/Unpin", "trainingPin:"),
                 ("Exclude/Include", "trainingExclude:"),
                 ("Delete Everywhere", "trainingDelete:"))):
-            p.addSubview_(_button(title, self, action,
-                                  NSMakeRect(8 + i * 150, 118, 144, 24)))
+            b = _button(title, self, action,
+                        NSMakeRect(8 + i * 150, 118, 144, 24))
+            p.addSubview_(b)
+            self._training_evidence_views.append(b)
         p.addSubview_(_label(NSMakeRect(8, 92, 150, 18),
                              "Verbatim (replay first):"))
         self.verbatim_field = NSTextField.alloc().initWithFrame_(
             NSMakeRect(160, 90, 300, 22))
         p.addSubview_(self.verbatim_field)
-        p.addSubview_(_button("Save Verbatim", self, "trainingVerbatim:",
-                              NSMakeRect(468, 89, 130, 24)))
-        p.addSubview_(_button("Replay Audio", self, "trainingReplay:",
-                              NSMakeRect(606, 89, 120, 24)))
+        self._training_evidence_views.append(self.verbatim_field)
+        b = _button("Save Verbatim", self, "trainingVerbatim:",
+                    NSMakeRect(468, 89, 130, 24))
+        p.addSubview_(b)
+        self._training_evidence_views.append(b)
+        b = _button("Replay Audio", self, "trainingReplay:",
+                    NSMakeRect(606, 89, 120, 24))
+        p.addSubview_(b)
+        self._training_evidence_views.append(b)
         p.addSubview_(_label(NSMakeRect(8, 64, 150, 18),
                              "Span correction:"))
         self.span_start = NSTextField.alloc().initWithFrame_(
@@ -1879,9 +1949,149 @@ class HubController(NSObject):
         for sub in (self.span_start, self.span_end, self.span_stage,
                     self.span_corrected):
             p.addSubview_(sub)
-        p.addSubview_(_button("Save Span", self, "trainingSpan:",
-                              NSMakeRect(650, 61, 110, 24)))
+            self._training_evidence_views.append(sub)
+        b = _button("Save Span", self, "trainingSpan:",
+                    NSMakeRect(650, 61, 110, 24))
+        p.addSubview_(b)
+        self._training_evidence_views.append(b)
+        self._build_training_review_pane(p, cw, ch)
+        self._build_training_splits_pane(p, cw, ch)
+        self._build_training_export_pane(p, cw, ch)
         return p
+
+    # ---- Training Data: Review / Splits / Export (M14) ----------------------
+
+    def trainingTab_(self, sender):
+        from .state import TRAINING_TABS
+        self.state.select_training_tab(TRAINING_TABS[int(sender.tag())])
+
+    def _build_training_review_pane(self, p, cw, ch):
+        self.review_pane = NSView.alloc().initWithFrame_(
+            NSMakeRect(0, 0, cw, ch - 34))
+        self.review_pane.setAutoresizingMask_(18 | 16)
+        self.review_status = _label(NSMakeRect(8, ch - 58, cw - 16, 20),
+                                    "")
+        self.review_pane.addSubview_(self.review_status)
+        self.review_text = _textview(NSMakeRect(0, 0, cw - 16, 100))
+        sc = _scroll(NSMakeRect(8, 108, cw - 16, ch - 172),
+                     self.review_text)
+        sc.setAutoresizingMask_(18 | 16)
+        self.review_pane.addSubview_(sc)
+        b = _button("Draw Sample", self, "reviewSample:",
+                    NSMakeRect(8, 78, 110, 24))
+        self.review_pane.addSubview_(b)
+        b = _button("Mine Candidates", self, "reviewMine:",
+                    NSMakeRect(124, 78, 130, 24))
+        self.review_pane.addSubview_(b)
+        p.addSubview_(self.review_pane)
+        # Candidate decision row: the selected queue row's candidate
+        # approves (through the vocabulary store) or rejects.
+        self.review_counter = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(260, 76, 300, 22))
+        self.review_counter.setPlaceholderString_(
+            "counterexample phrase (optional)")
+        self.review_pane.addSubview_(self.review_counter)
+        b = _button("Approve Cand.", self, "reviewApprove:",
+                    NSMakeRect(568, 77, 118, 24))
+        self.review_pane.addSubview_(b)
+        b = _button("Reject Cand.", self, "reviewReject:",
+                    NSMakeRect(692, 77, 110, 24))
+        self.review_pane.addSubview_(b)
+        # Label row: record a reviewed classification on the selected
+        # example (the evidence list selection drives it).
+        self.review_kind = NSPopUpButton.alloc().initWithFrame_(
+            NSMakeRect(8, 46, 190, 24))
+        from ..curation.classify import AXIS_EDIT_KINDS
+        self.review_kind.addItemsWithTitles_(list(AXIS_EDIT_KINDS))
+        self.review_pane.addSubview_(self.review_kind)
+        self.review_example = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(204, 46, 240, 22))
+        self.review_example.setPlaceholderString_("example id")
+        self.review_pane.addSubview_(self.review_example)
+        b = _button("Record Label", self, "reviewLabel:",
+                    NSMakeRect(452, 47, 118, 24))
+        self.review_pane.addSubview_(b)
+        b = _button("Pair: prefer A", self, "reviewPairA:",
+                    NSMakeRect(8, 16, 110, 24))
+        self.review_pane.addSubview_(b)
+        b = _button("prefer B", self, "reviewPairB:",
+                    NSMakeRect(122, 16, 90, 24))
+        self.review_pane.addSubview_(b)
+        b = _button("tie", self, "reviewPairTie:",
+                    NSMakeRect(216, 16, 60, 24))
+        self.review_pane.addSubview_(b)
+        b = _button("neither", self, "reviewPairNeither:",
+                    NSMakeRect(280, 16, 84, 24))
+        self.review_pane.addSubview_(b)
+        b = _button("uncertain", self, "reviewPairUncertain:",
+                    NSMakeRect(368, 16, 90, 24))
+        self.review_pane.addSubview_(b)
+        self.review_pair_task = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(462, 14, 200, 22))
+        self.review_pair_task.setPlaceholderString_("preference task key")
+        self.review_pane.addSubview_(self.review_pair_task)
+
+    def _build_training_splits_pane(self, p, cw, ch):
+        self.splits_pane = NSView.alloc().initWithFrame_(
+            NSMakeRect(0, 0, cw, ch - 34))
+        self.splits_pane.setAutoresizingMask_(18 | 16)
+        self.splits_status = _label(NSMakeRect(8, ch - 58, cw - 16, 20),
+                                    "")
+        self.splits_pane.addSubview_(self.splits_status)
+        self.splits_text = _textview(NSMakeRect(0, 0, cw - 16, 100))
+        sc = _scroll(NSMakeRect(8, 64, cw - 16, ch - 128),
+                     self.splits_text)
+        sc.setAutoresizingMask_(18 | 16)
+        self.splits_pane.addSubview_(sc)
+        b = _button("Assign (new version)", self, "splitsAssign:",
+                    NSMakeRect(8, 32, 160, 24))
+        self.splits_pane.addSubview_(b)
+        self.splits_family = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(176, 32, 220, 22))
+        self.splits_family.setPlaceholderString_("family id to expose")
+        self.splits_pane.addSubview_(self.splits_family)
+        b = _button("Mark Exposed", self, "splitsExpose:",
+                    NSMakeRect(402, 33, 118, 24))
+        self.splits_pane.addSubview_(b)
+        p.addSubview_(self.splits_pane)
+
+    def _build_training_export_pane(self, p, cw, ch):
+        self.export_pane = NSView.alloc().initWithFrame_(
+            NSMakeRect(0, 0, cw, ch - 34))
+        self.export_pane.setAutoresizingMask_(18 | 16)
+        self.export_status = _label(NSMakeRect(8, ch - 58, cw - 16, 20),
+                                    "")
+        self.export_pane.addSubview_(self.export_status)
+        self.export_text = _textview(NSMakeRect(0, 0, cw - 16, 100))
+        sc = _scroll(NSMakeRect(8, 92, cw - 16, ch - 156),
+                     self.export_text)
+        sc.setAutoresizingMask_(18 | 16)
+        self.export_pane.addSubview_(sc)
+        self.export_checks = {}
+        for i, view in enumerate(("asr_supervised", "cleanup_supervised",
+                                  "preference_pairs",
+                                  "asr_span_graft_weak",
+                                  "transform_supervised")):
+            from AppKit import NSButtonTypeSwitch
+            cb = NSButton.alloc().initWithFrame_(
+                NSMakeRect(8 + i * 190, 60, 186, 22))
+            cb.setButtonType_(NSButtonTypeSwitch)
+            cb.setTitle_(view)
+            cb.setState_(1 if i < 3 else 0)
+            self.export_checks[view] = cb
+            self.export_pane.addSubview_(cb)
+        self.export_dest = NSTextField.alloc().initWithFrame_(
+            NSMakeRect(8, 30, 460, 22))
+        self.export_dest.setPlaceholderString_(
+            "export destination directory")
+        self.export_pane.addSubview_(self.export_dest)
+        b = _button("Export", self, "exportRun:",
+                    NSMakeRect(476, 31, 90, 24))
+        self.export_pane.addSubview_(b)
+        b = _button("Validate", self, "exportValidate:",
+                    NSMakeRect(572, 31, 96, 24))
+        self.export_pane.addSubview_(b)
+        p.addSubview_(self.export_pane)
 
     def trainingSearchChanged_(self, sender):
         self.state.set_training_search(sender.stringValue() or "")
@@ -1890,14 +2100,42 @@ class HubController(NSObject):
     def _selected_example_id(self):
         return self.state.views["models"].get("selected_id")
 
-    def _training_action(self, fn, *args):
-        """Run one inspector mutation; store stalls surface as text
-        instead of escaping the action handler."""
+    @objc.python_method
+    def _in_background(self, work, done):
+        """Run a long curation action (export, mining, generation) off
+        the AppKit main thread so the Hub stays responsive; ``done(out,
+        err)`` runs back on the main thread. The services' writes go
+        through the store's writer like any other caller."""
+        import threading
+
+        def run():
+            try:
+                out, err = work(), None
+            except Exception as e:
+                out, err = None, e
+            AppHelper.callAfter(done, out, err)
+        threading.Thread(target=run, daemon=True,
+                         name="localflow-hub-work").start()
+
+    def _training_action(self, fn, *args, **kwargs):
+        """Run one inspector/curation mutation; failures and refusals
+        surface as text in the section on screen (the Training Data
+        tab showing, or Your Voice) instead of escaping the action
+        handler. Service refusal messages are content-free ids and
+        reasons, so the reason is shown with the type."""
         try:
-            return fn(*args)
+            return fn(*args, **kwargs)
         except Exception as e:
-            self.training_detail.setString_(
-                f"action failed: {type(e).__name__}")
+            view = self.training_detail
+            if self.state.selected_view == "insights":
+                view = self.voice_pane.text
+            else:
+                tab = self.state.views["models"].get("training_tab")
+                view = {"review": getattr(self, "review_text", view),
+                        "splits": getattr(self, "splits_text", view),
+                        "export": getattr(self, "export_text", view)
+                        }.get(tab, view)
+            view.setString_(f"action failed: {type(e).__name__}: {e}")
             return None
 
     def trainingMarkCorrect_(self, sender):
@@ -2026,6 +2264,189 @@ class HubController(NSObject):
             return
         self.state.select_training_example(ex)
 
+    # ---- Training Data M14 actions -------------------------------------------
+
+    def reviewSample_(self, sender):
+        svc = self.spec.get("sampling_service")
+        if svc is None:
+            return
+        out = self._training_action(svc.refresh)
+        if out is not None:
+            self.state.select_training_tab("review")
+
+    def reviewMine_(self, sender):
+        svc = self.spec.get("learning_service")
+        if svc is None:
+            return
+        self.review_text.setString_("mining observations…")
+
+        def done(_out, err):
+            if err is not None:
+                self.review_text.setString_(
+                    f"action failed: {type(err).__name__}: {err}")
+                return
+            self.state.select_training_tab("review")
+        self._in_background(svc.mine_observation_candidates, done)
+
+    def _selected_queue_row(self):
+        view = self.state.views["models"]
+        rows = ((view.get("data") or {}).get("queue")) or []
+        sel = view.get("selected_id")
+        if sel:
+            for row in rows:
+                if row.get("example_id") == sel:
+                    return row
+        return rows[0] if rows else None
+
+    def reviewApprove_(self, sender):
+        learning = self.spec.get("learning_service")
+        row = self._selected_queue_row()
+        counter = (self.review_counter.stringValue() or "").strip()
+        if learning is None or row is None:
+            return
+        if not row.get("candidate_id"):
+            self.review_text.setString_(
+                "no pending candidate for the selected queue row")
+            return
+        out = self._training_action(
+            learning.approve, row["candidate_id"],
+            counterexamples=((counter,) if counter else ()))
+        if out is None:
+            return  # the refusal reason stays on screen
+        if out.get("flips"):
+            self.review_text.setString_(
+                "approval REFUSED — the rule would flip the"
+                " counterexample:\n"
+                + "\n".join(f"  {f['phrase']} → {f['applied']}"
+                            for f in out["flips"]))
+            return
+        self.state.select_training_tab("review")
+
+    def reviewReject_(self, sender):
+        learning = self.spec.get("learning_service")
+        row = self._selected_queue_row()
+        if learning is None or row is None:
+            return
+        if not row.get("candidate_id"):
+            self.review_text.setString_(
+                "no pending candidate for the selected queue row")
+            return
+        if self._training_action(learning.reject,
+                                 row["candidate_id"]) is None:
+            return
+        self.state.select_training_tab("review")
+
+    def reviewLabel_(self, sender):
+        review = self.spec.get("review_service")
+        ex = (self.review_example.stringValue() or "").strip() \
+            or self._selected_example_id()
+        if review is None or not ex:
+            return
+        kind = self.review_kind.titleOfSelectedItem() or "unknown"
+        out = self._training_action(
+            review.record_label, ex, edit_kind=kind)
+        if out is not None:
+            self.state.select_training_tab("review")
+
+    def _review_pair_judgment(self, judgment):
+        review = self.spec.get("review_service")
+        tf_store = self.spec.get("transforms_store")
+        task = (self.review_pair_task.stringValue() or "").strip()
+        if review is None or tf_store is None or not task:
+            return
+        pairs = self._training_action(review.preference_pairs) or []
+        pair = next((p for p in pairs if p["task_key"] == task), None)
+        if pair is None or len(pair["candidates"]) < 2:
+            self.review_text.setString_(
+                f"no same-task candidate pair found for {task}")
+            return
+        a, b = (pair["candidates"][0]["candidate_id"],
+                pair["candidates"][1]["candidate_id"])
+        self._training_action(
+            review.record_pair_judgment, tf_store, task, a, b, judgment)
+        self.state.select_training_tab("review")
+
+    def reviewPairA_(self, sender):
+        self._review_pair_judgment("prefer_a")
+
+    def reviewPairB_(self, sender):
+        self._review_pair_judgment("prefer_b")
+
+    def reviewPairTie_(self, sender):
+        self._review_pair_judgment("tie")
+
+    def reviewPairNeither_(self, sender):
+        self._review_pair_judgment("neither")
+
+    def reviewPairUncertain_(self, sender):
+        self._review_pair_judgment("uncertain")
+
+    def splitsAssign_(self, sender):
+        svc = self.spec.get("splits_service")
+        if svc is not None and \
+                self._training_action(svc.assign) is not None:
+            self.state.select_training_tab("splits")
+
+    def splitsExpose_(self, sender):
+        svc = self.spec.get("splits_service")
+        family = (self.splits_family.stringValue() or "").strip()
+        if svc is not None and family and self._training_action(
+                svc.mark_exposed, [family],
+                "inspected_during_tuning") is not None:
+            self.state.select_training_tab("splits")
+
+    def exportRun_(self, sender):
+        svc = self.spec.get("export_service")
+        if svc is None:
+            return
+        views = [v for v, cb in self.export_checks.items()
+                 if cb.state()]
+        dest = (self.export_dest.stringValue() or "").strip()
+        if not dest or not views:
+            self.export_text.setString_(
+                "choose at least one task view and a destination"
+                " directory")
+            return
+        self.export_text.setString_("exporting…")
+
+        def done(out, err):
+            if err is not None:
+                # The refusal reason stays on screen (no reload over it).
+                self.export_text.setString_(
+                    f"action failed: {type(err).__name__}: {err}")
+                return
+            counts = json.dumps(out.get("counts") or {}, sort_keys=True)
+            self.export_text.setString_(
+                f"export {out['state']} · {out['export_id']}\n"
+                f"counts: {counts}\nfingerprint:"
+                f" {(out.get('fingerprint') or '')[:16]}…")
+            self.state.reload_training()
+        self._in_background(
+            lambda: svc.build(dest, task_views=views), done)
+
+    def exportValidate_(self, sender):
+        from ..curation.export import validate_dataset
+        dest = (self.export_dest.stringValue() or "").strip()
+        if not dest:
+            return
+        report = self._training_action(validate_dataset, dest)
+        if report is not None:
+            self.export_text.setString_(
+                f"valid: {report['valid']}\n"
+                + ("\n".join(report["issues"])
+                   if report["issues"] else "all checks passed"))
+
+    @objc.python_method
+    def _apply_training_tab(self, tab):
+        for v in self._training_evidence_views:
+            v.setHidden_(tab != "evidence")
+        self.review_pane.setHidden_(tab != "review")
+        self.splits_pane.setHidden_(tab != "splits")
+        self.export_pane.setHidden_(tab != "export")
+        from .state import TRAINING_TABS
+        for i, b in enumerate(self.training_tab_buttons):
+            b.setEnabled_(TRAINING_TABS[i] != tab)
+
     @objc.python_method
     def _refresh_models_view(self):
         view = self.state.views["models"]
@@ -2035,19 +2456,27 @@ class HubController(NSObject):
         self.models_tabs.setSelectedSegment_(1 if is_training else 0)
         if is_training:
             data = view.get("data") or {}
-            rows = data.get("examples") or []
-            self.training_table.reloadData()
+            tab = data.get("training_tab") or "evidence"
+            self._apply_training_tab(tab)
             ready = data.get("readiness") or {}
             cov = ready.get("dataset_coverage") or {}
             self.training_ready.setStringValue_(
-                f"{len(rows)} examples · audio "
+                f"{len(data.get('examples') or [])} examples · audio "
                 f"{cov.get('retained_audio_examples')} · verbatim "
                 f"{cov.get('verbatim_reviewed_examples')} · spans "
                 f"{cov.get('span_annotations')} · unreviewed "
                 f"{cov.get('unreviewed_outcomes')} · storage "
                 f"{(ready.get('storage_bytes') or 0) // 1024} KiB")
-            self.training_detail.setString_(
-                self._render_training_detail(view.get("detail")))
+            if tab == "review":
+                self._refresh_review_pane(data)
+            elif tab == "splits":
+                self._refresh_splits_pane(data)
+            elif tab == "export":
+                self._refresh_export_pane(data)
+            else:
+                self.training_table.reloadData()
+                self.training_detail.setString_(
+                    self._render_training_detail(view.get("detail")))
         else:
             block = (view.get("data") or {}).get("engine") or {}
             lines = ["— engines / build —"]
@@ -2063,6 +2492,84 @@ class HubController(NSObject):
             else:
                 self.models_text.setString_(
                     "Engine states load when the view opens.")
+
+    @objc.python_method
+    def _refresh_review_pane(self, data):
+        queue = data.get("queue") or []
+        coverage = data.get("coverage") or {}
+        strata = json.dumps(coverage.get("by_stratum") or {},
+                            sort_keys=True)
+        self.review_status.setStringValue_(
+            f"{len(queue)} review rows · strata {strata}")
+        lines = ["— review queue —"]
+        for row in queue[:60]:
+            cls = row.get("classification") or {}
+            sug = row.get("suggestion")
+            lines.append(
+                f"{row['example_id'] or row['job_id']}  [{row['kind']}"
+                f"{'/' + row['candidate_status'] if row.get('candidate_status') else ''}]"
+                f"  axes: {cls.get('edit_kind')}"
+                f" {cls.get('origin_stages')}"
+                f"{' abstain' if cls.get('abstained') else ''}"
+                + (f"  suggest: {sug['alias']} → {sug['canonical']}"
+                   if sug else "")
+                + ("  [labeled]" if row.get("labeled") else ""))
+        pairs = data.get("preference_pairs") or []
+        if pairs:
+            lines.append("\n— same-task candidate pairs —")
+            for pair in pairs[:20]:
+                lines.append(
+                    f"{pair['task_key'][:20]}… candidates"
+                    f" {len(pair['candidates'])} · judgment: "
+                    f"{pair.get('comparable_judgment') or 'unreviewed'}")
+        self.review_text.setString_("\n".join(lines))
+
+    @objc.python_method
+    def _refresh_splits_pane(self, data):
+        summary = data.get("summary") or {}
+        if not summary.get("assignment_version"):
+            self.splits_status.setStringValue_("No assignment yet")
+            self.splits_text.setString_(
+                "No families are assigned. Assign creates a versioned"
+                " 80/10/10 family-level split (unassigned below the"
+                " minimum family count, with the reason).")
+            return
+        self.splits_status.setStringValue_(
+            f"v{summary['assignment_version']} · {summary['policy']}"
+            f" · {summary['families']} families · exposed"
+            f" {summary.get('exposed_families', 0)}")
+        cont = data.get("contamination") or {}
+        lines = ["— families —"]
+        for fam in (data.get("families") or [])[:60]:
+            lines.append(f"{fam['family_id']}  {fam['partition']}"
+                         f"  ×{fam['examples']}"
+                         + ("  EXPOSED" if fam["exposed"] else ""))
+        lines.append("\n— contamination —")
+        lines.append(json.dumps(cont, sort_keys=True, indent=1))
+        self.splits_text.setString_("\n".join(lines))
+
+    @objc.python_method
+    def _refresh_export_pane(self, data):
+        last = data.get("last_export")
+        if not last:
+            self.export_status.setStringValue_("No export run yet")
+            self.export_text.setString_(
+                "Choose task views and a destination directory, then"
+                " Export. The dataset builds into a staging directory"
+                " and finalizes atomically; Validate runs the"
+                " standalone validator over the written files.")
+            return
+        self.export_status.setStringValue_(
+            f"last export {last['state']} ·"
+            f" {(last.get('finalized_at_utc') or '')[:19]}")
+        self.export_text.setString_(
+            f"export {last['export_id']}\nstate {last['state']}"
+            f" · views {', '.join(last.get('task_views') or [])}\n"
+            f"examples {last.get('examples_count')} · excluded"
+            f" {last.get('excluded_count')}\nfingerprint"
+            f" {(last.get('fingerprint') or '')[:16]}…"
+            + (f"\nerror {last.get('error')}" if last.get("error")
+               else ""))
 
     @objc.python_method
     def _render_training_detail(self, detail):
@@ -2116,12 +2623,24 @@ class HubController(NSObject):
     @objc.python_method
     def _build_insights_view(self):
         from .state import INSIGHT_RANGES
+        from .your_voice import YourVoicePane
         self._insight_ranges = INSIGHT_RANGES
         v = NSView.alloc().init()
         cw = self.content.bounds().size.width
         ch = self.content.bounds().size.height
         y = ch - 28
-        self.insights_status = _label(NSMakeRect(8, y + 3, 360, 18), "")
+        # M14 (S19's surface table): Usage metrics and the Your Voice
+        # communication profile are the Insights view's two sections.
+        self.insights_subview_buttons = []
+        for i, (title, action) in enumerate((
+                ("Usage", "insightsSubview:"),
+                ("Your Voice", "insightsSubview:"))):
+            b = _button(title, self, action, NSMakeRect(8 + i * 108, y,
+                                                        100, 22))
+            b.setTag_(i)
+            self.insights_subview_buttons.append(b)
+            v.addSubview_(b)
+        self.insights_status = _label(NSMakeRect(220, y + 3, 240, 18), "")
         v.addSubview_(self.insights_status)
         x = cw - 470
         for i, days in enumerate(INSIGHT_RANGES):
@@ -2174,7 +2693,21 @@ class HubController(NSObject):
         v.addSubview_(tsc)
         v.addSubview_(_button("Reload", self, "insightsReload:",
                               NSMakeRect(cw - 96, y - 27, 88, 22)))
+        self._usage_views = [self.insights_text, sc, tsc,
+                             self.insights_table]
+        for extra in v.subviews():
+            if extra not in self._usage_views and extra not in \
+                    self.insights_subview_buttons \
+                    and extra is not self.insights_status:
+                self._usage_views.append(extra)
+        self.voice_pane = YourVoicePane(self, cw, ch - 30)
+        self.voice_pane.view.setAutoresizingMask_(18 | 16)
+        v.addSubview_(self.voice_pane.view)
         return v
+
+    def insightsSubview_(self, sender):
+        self.state.select_insights_subview(
+            "usage" if int(sender.tag()) == 0 else "voice")
 
     def insightsRange_(self, sender):
         self.state.set_insights_filters(
@@ -2205,6 +2738,15 @@ class HubController(NSObject):
             self.insights_status.setStringValue_(
                 f"Insights unavailable ({view.get('error') or 'loading'}).")
             return
+        subview = data.get("subview", "usage")
+        for i, b in enumerate(self.insights_subview_buttons):
+            b.setEnabled_((i == 0) != (subview == "usage"))
+        for uv in self._usage_views:
+            uv.setHidden_(subview != "usage")
+        self.voice_pane.view.setHidden_(subview != "voice")
+        if subview == "voice":
+            self.voice_pane.refresh(data)
+            return
         s = data.get("summary") or {}
         cohort = s.get("cohort") or {}
         self.insights_status.setStringValue_(
@@ -2213,6 +2755,34 @@ class HubController(NSObject):
         self.insights_text.setString_(self._insights_summary_text(data))
         self._refresh_insights_popups(data)
         self.insights_table.reloadData()
+
+    # ---- Your Voice actions (M14, S22) ----------------------------------------
+
+    def voiceGenerate_(self, sender):
+        """On-demand profile generation (S22), off the main thread; a
+        failure is shown in the pane, never swallowed."""
+        profile = self.spec.get("profile_service")
+        if profile is None:
+            return
+
+        def done(_out, err):
+            if err is not None:
+                self.voice_pane.text.setString_(
+                    f"generation failed: {type(err).__name__}: {err}")
+                return
+            self.state.reload_insights()
+        self._in_background(profile.compute, done)
+
+    def voiceExcludeEvidence_(self, sender):
+        profile = self.spec.get("profile_service")
+        current = self._training_action(
+            profile.current) if profile is not None else None
+        ex = (self.voice_pane.exclude_field.stringValue() or "").strip()
+        if profile is None or not current or not ex:
+            return
+        self._training_action(profile.exclude_evidence,
+                              current["snapshot_id"], ex)
+        self.state.reload_insights()
 
     @objc.python_method
     def _refresh_insights_popups(self, data):

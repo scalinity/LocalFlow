@@ -24,6 +24,8 @@
 | `transforms.md` | Transform definitions/revisions, execution + task identity, Prompt Engineer atoms/coverage, the two surfaces, auto-apply, preferences | M11 | S15, S16, S13, S18, S29.4, S29.10 |
 | `scratchpad.md` | Notes/tabs, immutable parent-linked revisions with origin/trigger, attachments, the internal dictation destination, note-scope transforms, export, evidence boundaries | M12 | S20, S08, S19, S29.8 |
 | `analytics.md` | Usage facts (one per logical dictation), versioned daily aggregates, reporting-timezone day buckets, metric labels/denominators, usage retention + delete controls, the Insights view, readiness aggregates | M13 | S08, S21, S19, E06, E13, S29.15 |
+| `learning.md` | Correction learning (candidates, the S29.7 classifier, the suggestion gate, approval/undo composing with M05, rejection suppression), review labels and grafts, the ASR promotion gate, review sampling | M14 | S22, S11, S29.6–S29.9, E13, E19.3–E19.4 |
+| `profile.md` | Your Voice: eligible evidence, measured views, evidence-linked interpretive cards, snapshots as records, deletion clearing, idle generation, no injection | M14 | S22, S25, S29.14, E13 |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
@@ -143,4 +145,23 @@ milestones add fields; they must not repurpose or weaken these identifiers.
   `prune_metadata` (the M02 metadata knob enforced); `hub.md` takes
   the 10-view list, insights_service and the usage commands. The
   repair set covers the v9 tables. No frozen identifier changed; the
-  registry stays 33/22.
+  registry stays 33/22. M14 ships `learning.md` (the learning
+  candidate and its three producers, the S29.7 multi-axis classifier
+  with abstention and the negation/case gates, the asr-origin-only
+  suggestion gate, approval that composes with M05 entries and records
+  the action undo reverses, scoped counterexamples, permanent
+  rejection, versioned labels and partial grafts, the shared ASR
+  promotion gate, the sampling strata with late triggers) and
+  `profile.md` (eligible-evidence measured views, cards citing their
+  supporting examples, snapshots as records with deletion clearing and
+  the unchanged-evidence idle skip, no injection); `dataset_exports.md`
+  goes live for versioned family splits, exposure, the five task views
+  and the offline validator; `preferences.md` records pair review;
+  `training_evidence.md` records curation; `store.md` gains the v10
+  section; `hub.md` takes the Training Data tabs, the Your Voice
+  subview and History's Teach action; `analytics.md`'s verbatim-seconds
+  and profile limitations state the M14 design. The curation package is
+  `localflow/v2/curation/` (a `training/` package would shadow the M02
+  collector module). The repair set covers the v10 tables. No frozen
+  identifier changed; the registry stays 33/22; no ADR — no spec
+  deviation accepted.

@@ -204,8 +204,10 @@ text scale) are the pending human trial with the Hub pass.
 - `summary` counts transform/re-paste kinds only in the UNFILTERED view
   (activity rows carry no app/mode) — filtered views show them as
   not-applicable, never a borrowed number.
-- Per-span reviewed seconds for verbatim coverage arrive with M14's
-  review queues; readiness reports example-level coverage with the
-  reason.
-- Communication-profile cards are M14 (S22); the Insights view shows
-  measured usage only.
+- Verbatim coverage counts reviewed audio seconds only for
+  audio-reviewed verbatim references (each covers its whole clip);
+  span corrections are text offsets with no audio alignment (S29.5) and
+  add no reviewed seconds.
+- The Usage subview shows measured usage; the communication profile is
+  the separate Your Voice subview (contracts/profile.md), which reads
+  usage facts for app and local-hour patterns but never writes them.

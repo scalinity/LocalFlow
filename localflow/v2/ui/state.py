@@ -36,13 +36,20 @@ VIEW_TITLES = {
 # The Insights range selector's fixed choices (days; None = all time).
 INSIGHT_RANGES = (7, 30, 90, None)
 
+# The Training Data pane's M14 sections (S29.15: mining, classified
+# review, split selection and portable export on the same surface).
+TRAINING_TABS = ("evidence", "review", "splits", "export")
+
 
 class HubState:
     def __init__(self, history_service, training_service=None,
                  diagnostics_provider=None, coordinator=None,
                  styles_service=None, snippets_service=None,
                  transforms_service=None, notes_service=None,
-                 insights_service=None):
+                 insights_service=None, learning_service=None,
+                 review_service=None, sampling_service=None,
+                 splits_service=None, profile_service=None,
+                 export_service=None, transforms_store=None):
         """``diagnostics_provider()`` returns a dict with events_dir and
         whatever filters the shell set; ``coordinator`` is the app
         delegate's command surface (engine states, pipeline info,
@@ -50,7 +57,10 @@ class HubState:
         ``styles_service``/``snippets_service``/``transforms_service``/
         ``notes_service``/``insights_service`` are the M10–M13 stores
         (the training_service pattern: read/CRUD through the service,
-        never a second store connection)."""
+        never a second store connection). The M14 services
+        (``learning``/``review``/``sampling``/``splits``/``profile``/
+        ``export`` + ``transforms_store`` for pair judgments) follow
+        the same pattern; absent services degrade honestly per view."""
         self.history_service = history_service
         self.training_service = training_service
         self.styles_service = styles_service
@@ -58,6 +68,13 @@ class HubState:
         self.transforms_service = transforms_service
         self.notes_service = notes_service
         self.insights_service = insights_service
+        self.learning_service = learning_service
+        self.review_service = review_service
+        self.sampling_service = sampling_service
+        self.splits_service = splits_service
+        self.profile_service = profile_service
+        self.export_service = export_service
+        self.transforms_store = transforms_store
         self.diagnostics_provider = diagnostics_provider \
             or (lambda: {"events_dir": None})
         self.coordinator = coordinator
@@ -80,7 +97,8 @@ class HubState:
             state.update({"utc": False, "job_filter": "",
                           "level_filter": None})
         if view == "models":
-            state.update({"subview": "engines"})
+            state.update({"subview": "engines",
+                          "training_tab": "evidence"})
         if view in ("styles", "snippets", "transforms"):
             state.update({"selected_id": None, "preview": None})
         if view == "scratchpad":
@@ -88,7 +106,8 @@ class HubState:
                           "versions": [], "attachments": [],
                           "unsaved_tail_risk": None})
         if view == "insights":
-            state.update({"range": 30, "app": None, "mode": None})
+            state.update({"range": 30, "app": None, "mode": None,
+                          "subview": "usage"})
         return state
 
     def select_view(self, view):
@@ -183,6 +202,14 @@ class HubState:
         self.reload_current()
         self._publish()
 
+    def select_training_tab(self, tab):
+        """The Training Data pane's M14 sections (S29.15)."""
+        if tab not in TRAINING_TABS:
+            raise ValueError(f"unknown training tab {tab!r}")
+        self.views["models"]["training_tab"] = tab
+        self.reload_training()
+        self._publish()
+
     def set_training_search(self, text):
         self.views["models"]["search"] = text
         self.reload_training()
@@ -202,9 +229,16 @@ class HubState:
         if self.training_service is None:
             return
         view = self.views["models"]
-        text = view["search"].strip() or None
+        tab = view.get("training_tab", "evidence")
         try:
-            rows = self.training_service.examples(text=text)
+            if tab == "evidence":
+                data = self._load_training_evidence()
+            elif tab == "review":
+                data = self._load_training_review()
+            elif tab == "splits":
+                data = self._load_training_splits()
+            else:
+                data = self._load_training_export()
             readiness = self.training_service.readiness(
                 consent_state=(self.coordinator.collection_state()
                                if self.coordinator else None))
@@ -215,8 +249,43 @@ class HubState:
         if generation != self._generation:
             return
         self._publish_locked("models", error=None, loading=False,
-                             data={"examples": rows,
-                                   "readiness": readiness})
+                             data={**data, "readiness": readiness,
+                                   "training_tab": tab})
+
+    def _load_training_evidence(self):
+        view = self.views["models"]
+        text = view["search"].strip() or None
+        return {"examples": self.training_service.examples(text=text)}
+
+    def _load_training_review(self):
+        """The review queue (learning candidates + sampled examples),
+        the sampling coverage report and the same-task preference
+        pairs awaiting judgment (S29.9/S29.10)."""
+        data = {"queue": [], "coverage": None, "preference_pairs": []}
+        if self.review_service is not None:
+            data["queue"] = self.review_service.queue()
+        if self.sampling_service is not None:
+            data["coverage"] = self.sampling_service.coverage()
+        if self.review_service is not None:
+            data["preference_pairs"] = \
+                self.review_service.preference_pairs()
+        return data
+
+    def _load_training_splits(self):
+        data = {"summary": None, "families": [], "contamination": None}
+        if self.splits_service is not None:
+            data["summary"] = self.splits_service.summary()
+            data["families"] = self.splits_service.family_report()
+            data["contamination"] = self.splits_service.contamination()
+        return data
+
+    def _load_training_export(self):
+        data = {"last_export": None, "views": ()}
+        if self.export_service is not None:
+            data["last_export"] = self.export_service.last_export()
+        from ..curation.export import TASK_VIEWS
+        data["views"] = tuple(TASK_VIEWS)
+        return data
 
     def _load_training_detail(self, generation):
         if self.training_service is None:
@@ -410,6 +479,16 @@ class HubState:
             view["mode"] = mode or None
         self.reload_insights()
 
+    def select_insights_subview(self, subview):
+        """Usage (M13 metrics) or Your Voice (M14 profile, S22) — the
+        S19 surface table puts the communication profile under
+        Insights."""
+        if subview not in ("usage", "voice"):
+            raise ValueError(f"unknown insights subview {subview!r}")
+        self.views["insights"]["subview"] = subview
+        self.reload_insights()
+        self._publish()
+
     def reload_insights(self):
         self._spawn(self._load_insights)
 
@@ -422,18 +501,33 @@ class HubState:
         view = self.views["insights"]
         days, app, mode = view["range"], view["app"], view["mode"]
         try:
-            summary = self.insights_service.summary(
-                days=days, app=app, mode=mode)
-            daily = self.insights_service.daily(
-                days=days, app=app, mode=mode)
-            per_app = ([] if app else self.insights_service.per_app(
-                days=days))
-            per_mode = ([] if mode else self.insights_service.per_mode(
-                days=days))
-            undated = self.insights_service.undated_count()
-            legacy = self.insights_service.legacy_summary()
-            apps = self.insights_service.apps_available()
-            modes = self.insights_service.modes_available()
+            data = {"subview": view.get("subview", "usage")}
+            if data["subview"] == "voice":
+                # Your Voice (S22): the current profile snapshot —
+                # honest measured totals; the state machine surfaces
+                # invalidated/absent snapshots instead of stale cards.
+                if self.profile_service is not None:
+                    data["profile"] = self.profile_service.current()
+                else:
+                    data["profile"] = None
+                    data["profile_reason"] = "profile_service_unavailable"
+            else:
+                summary = self.insights_service.summary(
+                    days=days, app=app, mode=mode)
+                daily = self.insights_service.daily(
+                    days=days, app=app, mode=mode)
+                per_app = ([] if app else self.insights_service.per_app(
+                    days=days))
+                per_mode = ([] if mode else self.insights_service.per_mode(
+                    days=days))
+                undated = self.insights_service.undated_count()
+                legacy = self.insights_service.legacy_summary()
+                apps = self.insights_service.apps_available()
+                modes = self.insights_service.modes_available()
+                data.update({"summary": summary, "daily": daily,
+                             "per_app": per_app, "per_mode": per_mode,
+                             "undated": undated, "legacy": legacy,
+                             "apps": apps, "modes": modes})
         except Exception as e:
             self._publish_locked("insights", error=type(e).__name__,
                                  loading=False)
@@ -441,12 +535,7 @@ class HubState:
         if generation != self._generation:
             return
         self._publish_locked("insights", error=None, loading=False,
-                             data={"summary": summary, "daily": daily,
-                                   "per_app": per_app,
-                                   "per_mode": per_mode,
-                                   "undated": undated,
-                                   "legacy": legacy,
-                                   "apps": apps, "modes": modes})
+                             data=data)
 
     # ---- Diagnostics --------------------------------------------------------
 

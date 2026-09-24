@@ -118,6 +118,19 @@ DEFAULTS = {
     # skipped, no content reads). false = file references surface as
     # review suggestions instead of resolving.
     "developer_workspace_listing": True,
+    # M14 (Spec S22): the eligible-words floor before interpretive
+    # profile cards render — below it, measured totals only (the S22
+    # initial default, a floor for interpretation, not validity).
+    "profile_min_words": 2000,
+    # M14 (Spec S22): idle profile regeneration interval in minutes; 0
+    # disables idle generation (on-demand from the Hub still works).
+    # The scheduler never runs while a dictation, insertion or worker
+    # job is in flight — profile work yields to dictation.
+    "profile_idle_minutes": 30,
+    # M14 (Spec S29.9): the seeded representative review stream's
+    # Bernoulli percent over eligible jobs. The seed/policy are
+    # recorded with every sampling decision.
+    "review_sample_percent": 10,
 }
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent

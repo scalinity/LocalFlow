@@ -484,6 +484,129 @@ _MIGRATIONS[9] = [
 ]
 
 
+# M14 (Spec S22/S29.7-S29.13, contracts/learning.md + dataset_exports.md):
+# correction-learning candidates, versioned correction labels, sampling
+# decisions, family split assignments (versioned, exposure-tracked) with
+# tags kept separate from partitions, profile snapshots with deletable
+# evidence links, and export manifests. Rows carry ids/hashes/counts
+# only — before/after texts and graft payloads live in lease-governed
+# artifacts written inside the same writer op. Additive only; no frozen
+# identity changes.
+_MIGRATIONS[10] = [
+    """CREATE TABLE IF NOT EXISTS learning_candidates(
+         candidate_id TEXT PRIMARY KEY,
+         example_id TEXT,
+         job_id TEXT NOT NULL,
+         source TEXT NOT NULL,
+         observation_id TEXT,
+         before_artifact_id TEXT,
+         after_artifact_id TEXT,
+         changed_spans_json TEXT NOT NULL DEFAULT '[]',
+         proposed_alias TEXT,
+         proposed_canonical TEXT,
+         proposed_scope_kind TEXT NOT NULL DEFAULT 'global',
+         proposed_scope_value TEXT,
+         status TEXT NOT NULL DEFAULT 'pending',
+         decided_at_utc TEXT,
+         rejection_reason TEXT,
+         vocabulary_entry_id TEXT,
+         vocabulary_action TEXT,
+         counterexample_json TEXT,
+         classification_json TEXT NOT NULL DEFAULT '{}',
+         created_at_utc TEXT NOT NULL,
+         updated_at_utc TEXT NOT NULL)""",
+    """CREATE INDEX IF NOT EXISTS idx_learning_candidates_job
+         ON learning_candidates(job_id)""",
+    """CREATE INDEX IF NOT EXISTS idx_learning_candidates_status
+         ON learning_candidates(status)""",
+    """CREATE TABLE IF NOT EXISTS correction_labels(
+         label_id TEXT PRIMARY KEY,
+         example_id TEXT NOT NULL,
+         candidate_id TEXT,
+         revision INTEGER NOT NULL,
+         origin_stages_json TEXT NOT NULL DEFAULT '[]',
+         edit_kind TEXT NOT NULL,
+         domains_json TEXT NOT NULL DEFAULT '[]',
+         pipeline_effect TEXT NOT NULL DEFAULT 'unknown',
+         evidence_status TEXT NOT NULL,
+         reviewer TEXT NOT NULL,
+         abstained INTEGER NOT NULL DEFAULT 0,
+         graft_artifact_id TEXT,
+         notes TEXT,
+         created_at_utc TEXT NOT NULL)""",
+    """CREATE INDEX IF NOT EXISTS idx_correction_labels_example
+         ON correction_labels(example_id)""",
+    """CREATE TABLE IF NOT EXISTS sampling_decisions(
+         decision_id TEXT PRIMARY KEY,
+         policy TEXT NOT NULL,
+         seed TEXT NOT NULL,
+         example_id TEXT NOT NULL,
+         job_id TEXT,
+         stratum TEXT NOT NULL,
+         inclusion_reason TEXT NOT NULL,
+         inclusion_probability REAL,
+         population_hash TEXT,
+         event_seq INTEGER,
+         created_at_utc TEXT NOT NULL)""",
+    """CREATE INDEX IF NOT EXISTS idx_sampling_decisions_example
+         ON sampling_decisions(example_id)""",
+    """CREATE TABLE IF NOT EXISTS split_assignments(
+         assignment_version INTEGER PRIMARY KEY,
+         policy TEXT NOT NULL,
+         seed TEXT NOT NULL,
+         family_count INTEGER NOT NULL,
+         created_at_utc TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS training_memberships(
+         example_id TEXT NOT NULL,
+         family_id TEXT NOT NULL,
+         assignment_version INTEGER NOT NULL,
+         partition TEXT NOT NULL,
+         exposed INTEGER NOT NULL DEFAULT 0,
+         exposed_reason TEXT,
+         created_at_utc TEXT NOT NULL,
+         PRIMARY KEY(example_id, assignment_version))""",
+    """CREATE INDEX IF NOT EXISTS idx_training_memberships_family
+         ON training_memberships(family_id, assignment_version)""",
+    """CREATE TABLE IF NOT EXISTS example_tags(
+         example_id TEXT NOT NULL,
+         tag TEXT NOT NULL,
+         created_at_utc TEXT NOT NULL,
+         PRIMARY KEY(example_id, tag))""",
+    """CREATE TABLE IF NOT EXISTS profile_snapshots(
+         snapshot_id TEXT PRIMARY KEY,
+         algorithm_version INTEGER NOT NULL,
+         computed_at_utc TEXT NOT NULL,
+         eligible_words INTEGER NOT NULL,
+         measured_json TEXT NOT NULL,
+         cards_json TEXT NOT NULL,
+         state TEXT NOT NULL DEFAULT 'current',
+         invalidated_reason TEXT,
+         source_example_count INTEGER NOT NULL,
+         coverage_from_utc TEXT,
+         coverage_to_utc TEXT)""",
+    """CREATE TABLE IF NOT EXISTS profile_evidence(
+         snapshot_id TEXT NOT NULL,
+         example_id TEXT NOT NULL,
+         card_id TEXT NOT NULL,
+         role TEXT NOT NULL,
+         included INTEGER NOT NULL DEFAULT 1,
+         excluded_at_utc TEXT,
+         PRIMARY KEY(snapshot_id, example_id, card_id))""",
+    """CREATE TABLE IF NOT EXISTS export_manifests(
+         export_id TEXT PRIMARY KEY,
+         state TEXT NOT NULL,
+         task_views_json TEXT NOT NULL,
+         manifest_json TEXT,
+         destination TEXT,
+         fingerprint TEXT,
+         examples_count INTEGER,
+         excluded_count INTEGER,
+         error TEXT,
+         created_at_utc TEXT NOT NULL,
+         finalized_at_utc TEXT)""",
+]
+
+
 # ---- IEEE float32 WAV (Spec S29.5: the original capture artifact) -------
 
 def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
@@ -737,7 +860,12 @@ class Store:
                     "transform_meta", "transform_candidates",
                     "preference_observations", "notes", "note_revisions",
                     "note_attachments", "note_evidence_links",
-                    "usage_facts", "daily_aggregates"}
+                    "usage_facts", "daily_aggregates",
+                    "learning_candidates", "correction_labels",
+                    "sampling_decisions", "split_assignments",
+                    "training_memberships", "example_tags",
+                    "profile_snapshots", "profile_evidence",
+                    "export_manifests"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         if version >= target and not expected <= have:
@@ -1322,6 +1450,12 @@ class Store:
                 self._db.execute(
                     "UPDATE training_examples SET state='expired',"
                     " updated_at_utc=? WHERE example_id=?", (now_iso, ex_id))
+                # M14: expiry propagates like deletion — no open
+                # suggestion or label outlives the evidence it came from.
+                self._stale_candidates(job_id, now_iso)
+                self._db.execute(
+                    "DELETE FROM correction_labels WHERE example_id=?",
+                    (ex_id,))
                 self._db.execute(
                     "INSERT INTO deletion_tombstones(tombstone_id, target_kind,"
                     " target_id, reason, created_at_utc) VALUES(?,?,?,?,?)",
@@ -1346,9 +1480,7 @@ class Store:
         def op():
             now_iso = ids.now_utc_iso(now)
             placeholders = ",".join("?" * len(TERMINAL_STATES))
-            live_example_states = ("captured_unreviewed",
-                                   "review_candidate", "annotated",
-                                   "ambiguous", "quarantined_sensitive")
+            live_example_states = LIVE_EXAMPLE_STATES
             deleted = 0
             rows = self._db.execute(
                 f"SELECT job_id, updated_at_utc FROM jobs WHERE state IN"
@@ -1408,8 +1540,8 @@ class Store:
                     if self._purge_artifact(aid):
                         purged_artifacts.append(aid)
                 for (ex_id,) in self._db.execute(
-                        "SELECT example_id FROM training_examples WHERE"
-                        " job_id=?", (job_id,)).fetchall():
+                    "SELECT example_id FROM training_examples WHERE"
+                    " job_id=?", (job_id,)).fetchall():
                     self._db.execute(
                         "DELETE FROM training_revisions WHERE example_id=?",
                         (ex_id,))
@@ -1422,6 +1554,30 @@ class Store:
                         " target_kind, target_id, reason, created_at_utc)"
                         " VALUES(?,?,?,?,?)",
                         (ids.new_id("tomb"), "example", ex_id, reason, now_iso))
+                    # M14 (S29.14/S22): derived labels go with the
+                    # content they describe.
+                    self._db.execute(
+                        "DELETE FROM correction_labels WHERE example_id=?",
+                        (ex_id,))
+                    # Every snapshot that drew on the example loses its
+                    # text-bearing content (phrases, cards), not only
+                    # the current one: deletion overrides the
+                    # snapshot-as-record rule (S29.14).
+                    self._db.execute(
+                        "UPDATE profile_snapshots SET"
+                        " state='invalidated',"
+                        " invalidated_reason='source_deleted',"
+                        " measured_json='{}', cards_json='[]' WHERE"
+                        " snapshot_id IN (SELECT snapshot_id FROM"
+                        " profile_evidence WHERE example_id=?)",
+                        (ex_id,))
+                    self._db.execute(
+                        "DELETE FROM profile_evidence WHERE example_id=?",
+                        (ex_id,))
+                # Candidates are keyed by JOB: a teach with collection
+                # off has no example row, and its payload artifact was
+                # purged with the job's artifacts above.
+                self._stale_candidates(job_id, now_iso)
             for aid in purged_artifacts:
                 self._db.execute(
                     "INSERT INTO deletion_tombstones(tombstone_id, target_kind,"
@@ -1431,6 +1587,24 @@ class Store:
                       reason_code=reason, job_id=job_id)
             return {"purged_artifacts": len(purged_artifacts)}
         return self._submit(op, wait=True)
+
+    def _stale_candidates(self, job_id, now_iso):
+        """M14 (S29.14, M14-AC03): a job's evidence died (deleted or
+        expired) — its open learning candidates go stale (never
+        approvable) and lose their rule terms and spans. Rejected rows
+        keep their rule terms: a rejection is the user's own decision
+        that the pair must never be suggested again (S11); approved
+        rows keep theirs — the rule already lives in the dictionary."""
+        self._db.execute(
+            "UPDATE learning_candidates SET status='stale',"
+            " proposed_alias=NULL, proposed_canonical=NULL,"
+            " changed_spans_json='[]', updated_at_utc=? WHERE job_id=?"
+            " AND status IN ('pending','suppressed','dismissed','stale')",
+            (now_iso, job_id))
+        self._db.execute(
+            "UPDATE learning_candidates SET changed_spans_json='[]',"
+            " updated_at_utc=? WHERE job_id=? AND status IN"
+            " ('approved','rejected')", (now_iso, job_id))
 
     def _revoke_leases(self, artifact_id):
         self._db.execute(
@@ -1570,6 +1744,29 @@ def _row_to_dict(row, cols):
 # layers compose them INSIDE one Store.submit op without duplicating
 # the INSERT statements — the drift risk of parallel copies outlives
 # any single milestone; M10's transform artifacts will reuse these) ----
+
+# Training-example states (S29.3). LIVE: the example exists and its
+# evidence is retained. TRAINABLE: live and not quarantined — suspected
+# secrets are excluded from training, export and derived statistics
+# (S29.14) while staying reviewable so the deletion choice can be made.
+LIVE_EXAMPLE_STATES = ("captured_unreviewed", "review_candidate",
+                       "annotated", "ambiguous", "quarantined_sensitive")
+TRAINABLE_STATES = ("captured_unreviewed", "review_candidate",
+                    "annotated", "ambiguous")
+
+
+def conn_artifact_text(conn, artifact_id):
+    """A text artifact's content inside a writer op, or None when absent
+    or purged."""
+    if not artifact_id:
+        return None
+    row = conn.execute(
+        "SELECT content_text, purged FROM artifacts WHERE artifact_id=?",
+        (artifact_id,)).fetchone()
+    if row is None or row[1] or row[0] is None:
+        return None
+    return row[0]
+
 
 def insert_text_artifact_row(conn, *, artifact_id, job_id, stage, role, text,
                              kind="text", retention_class="history",

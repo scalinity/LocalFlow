@@ -382,6 +382,9 @@ def test_readiness_aggregates_m13():
     with Env() as e:
         ex1 = e.add_example()                 # audio + unreviewed
         ex2 = e.add_example(with_audio=False)  # no audio, unreviewed
+        # ex1's 1.0 s clip gets an audio-reviewed verbatim reference.
+        e.svc.set_verbatim(ex1, "synthetic verbatim words",
+                           listened_audio=True)
         # A verified positive and a verified failure (intended marks).
         e.svc.mark_intended(ex1, True)
         e.svc.mark_intended(ex2, False)
@@ -403,6 +406,12 @@ def test_readiness_aggregates_m13():
         assert m["exact_audio_join_coverage"]["denominator"] == 1
         assert m["exact_audio_join_coverage"]["joined"] == 1
         assert "definition" in m["exact_audio_join_coverage"]
+        # Verbatim coverage in reviewed SECONDS over retained seconds.
+        v = m["verbatim_reference_coverage"]
+        assert v["examples"] == 1 and v["denominator"] == 1
+        assert v["reviewed_seconds"] == 1.0 and \
+            v["retained_seconds"] == 1.0, v
+        assert "no audio alignment" in v["seconds_definition"]
         # A dangling audio id (envelope names an id with no row) lowers
         # the join coverage — never a tautological 100%.
         import json as _json
@@ -425,14 +434,17 @@ def test_readiness_aggregates_m13():
         for key in ("asr_supervised", "cleanup_supervised",
                     "transform_supervised", "preference_pairs"):
             assert "definition" in m["task_eligibility"][key]
-        # Not-available stays explicit; nearing-expiry is null, not 0.
+        # Not-available stays explicit; M14 fills the two slots it
+        # owned (split contamination, export integrity) and computes
+        # nearing-expiry for real — an int count, never a fabricated 0.
         na = m["not_available"]
-        assert na["split_contamination"] == "not_available_until_m14"
         assert na["comparator_coverage"] == "not_available_until_m15"
         assert na["population_wer"] == "no_references_no_population_claims"
-        assert m["retention_health"]["nearing_expiry"] is None
+        assert m["split_contamination"] == "not_available_no_assignment"
+        assert m["export_integrity"] == "not_available_no_export"
+        assert isinstance(m["retention_health"]["nearing_expiry"], int)
         print("ok  M13 readiness aggregates: five classes, denominators,"
-              " honest join coverage, explicit not-available")
+              " honest join coverage; M14 slots filled")
 
 
 def test_examples_text_search():

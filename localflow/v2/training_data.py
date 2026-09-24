@@ -39,7 +39,8 @@ import json
 import time
 
 from . import ids
-from .store import grant_lease_row, insert_text_artifact_row
+from .store import (LIVE_EXAMPLE_STATES, grant_lease_row,
+                    insert_text_artifact_row)
 
 EXAMPLE_STATES = ("captured_unreviewed", "review_candidate", "annotated",
                   "ambiguous", "quarantined_sensitive", "excluded",
@@ -598,14 +599,13 @@ class TrainingDataService:
             audio_count = 0
             audio_referenced = 0
             audio_seconds = 0.0
+            verbatim_seconds = 0.0
             complete_examples = 0
             live_examples = 0
             training_bytes = 0
             families = set()
             sessions = set()
-            live_example_states = ("captured_unreviewed",
-                                   "review_candidate", "annotated",
-                                   "ambiguous", "quarantined_sensitive")
+            live_example_states = LIVE_EXAMPLE_STATES
             latest = conn.execute(
                 "SELECT example_id, envelope_json FROM"
                 " training_revisions WHERE rowid IN (SELECT MAX(rowid)"
@@ -663,11 +663,15 @@ class TrainingDataService:
                         audio_count += 1
                         audio_ok = True
                         try:
-                            audio_seconds += float(
-                                json.loads(arow[1] or "{}").get(
-                                    "duration_sec") or 0.0)
+                            clip = float(json.loads(arow[1] or "{}").get(
+                                "duration_sec") or 0.0)
                         except (ValueError, TypeError):
-                            pass
+                            clip = 0.0
+                        audio_seconds += clip
+                        if has_verbatim:
+                            # A verbatim reference covers the whole
+                            # clip (coverage "full").
+                            verbatim_seconds += clip
                 source_ok = bool(arts.get("source_text")) or \
                     "source_text" in missing
                 applied_ok = bool(arts.get("applied_output")) or \
@@ -682,6 +686,64 @@ class TrainingDataService:
             quarantined = by_state.get("quarantined_sensitive", 0)
             deleted = by_state.get("deleted", 0)
             expired = by_state.get("expired", 0)
+            # M14: real split-contamination and export-integrity
+            # aggregates (computed inline — a nested service call would
+            # deadlock the writer) and the per-example expiry
+            # countdowns the M13 note promised.
+            split_version = conn.execute(
+                "SELECT COALESCE(MAX(assignment_version), 0) FROM"
+                " split_assignments").fetchone()[0]
+            if split_version:
+                spanning = conn.execute(
+                    "SELECT COUNT(*) FROM (SELECT family_id FROM"
+                    " training_memberships WHERE assignment_version=?"
+                    " GROUP BY family_id HAVING COUNT(DISTINCT"
+                    " partition) > 1)", (split_version,)).fetchone()[0]
+                exposed_frozen = conn.execute(
+                    "SELECT COUNT(DISTINCT family_id) FROM"
+                    " training_memberships WHERE assignment_version=?"
+                    " AND exposed=1 AND partition='frozen_test'",
+                    (split_version,)).fetchone()[0]
+                split_contamination = {
+                    "assignment_version": split_version,
+                    "families_spanning_partitions": spanning,
+                    "exposed_frozen_families": exposed_frozen,
+                    "definition": "families spanning partitions within"
+                                  " one version and exposed families"
+                                  " still frozen (S29.11)",
+                }
+            else:
+                split_contamination = "not_available_no_assignment"
+            export_row = conn.execute(
+                "SELECT state, examples_count, excluded_count,"
+                " fingerprint, finalized_at_utc FROM export_manifests"
+                " ORDER BY rowid DESC LIMIT 1").fetchone()
+            if export_row:
+                export_integrity = {
+                    "last_state": export_row[0],
+                    "last_examples": export_row[1],
+                    "last_excluded": export_row[2],
+                    "last_fingerprint": export_row[3],
+                    "finalized_at_utc": export_row[4],
+                    "note": "hash/lineage validation of the written"
+                            " files runs in the standalone validator"
+                            " (scripts/v2/validate_dataset.py)",
+                }
+            else:
+                export_integrity = "not_available_no_export"
+            cutoff = time.time() + 3 * 86400
+            cutoff_iso = ids.now_utc_iso(cutoff)
+            now_iso = ids.now_utc_iso()
+            placeholders = ",".join("?" * len(live_example_states))
+            nearing = conn.execute(
+                "SELECT COUNT(DISTINCT e.example_id) FROM"
+                " training_examples e JOIN artifacts a ON"
+                " a.job_id=e.job_id JOIN artifact_leases l ON"
+                " l.artifact_id=a.artifact_id WHERE e.state IN"
+                f" ({placeholders}) AND l.holder='training' AND"
+                " l.revoked_at_utc IS NULL AND l.expires_at_utc IS NOT"
+                " NULL AND l.expires_at_utc <= ?",
+                (*live_example_states, cutoff_iso)).fetchone()[0]
             # Task eligibility (S29.12's minimum evidence, each with its
             # own definition — reported separately, never merged).
             task_eligibility = {
@@ -759,11 +821,20 @@ class TrainingDataService:
                     "verbatim_reference_coverage": {
                         "examples": verbatim,
                         "denominator": audio_count,
-                        "seconds_note": "per-span reviewed seconds are"
-                                        " not tracked yet; example-level"
-                                        " coverage only",
+                        "reviewed_seconds": round(verbatim_seconds, 1),
+                        "retained_seconds": round(audio_seconds, 1),
+                        "seconds_definition": "audio-reviewed verbatim"
+                                              " references cover their"
+                                              " whole retained clip;"
+                                              " span corrections are"
+                                              " text offsets with no"
+                                              " audio alignment (S29.5)"
+                                              " and add no reviewed"
+                                              " seconds",
                     },
                     "task_eligibility": task_eligibility,
+                    "split_contamination": split_contamination,
+                    "export_integrity": export_integrity,
                     "diversity": {
                         "unique_families": len(families),
                         "unique_sessions": len(sessions),
@@ -773,21 +844,18 @@ class TrainingDataService:
                     "retention_health": {
                         "storage_bytes": training_bytes,
                         "retained_audio_examples": audio_count,
-                        "nearing_expiry": None,
-                        "nearing_expiry_note": "per-example expiry"
-                                               " countdowns arrive with"
-                                               " the M14 review queues —"
-                                               " uncomputed is null,"
-                                               " never a fake zero",
+                        "nearing_expiry": nearing,
+                        "nearing_expiry_note": "live examples with a"
+                                               " training lease expiring"
+                                               " within 3 days",
                         "excluded": excluded,
                         "quarantined": quarantined,
                         "deleted": deleted,
                         "expired": expired,
                     },
                     "not_available": {
-                        "split_contamination": "not_available_until_m14",
-                        "comparator_coverage": "not_available_until_m15",
-                        "export_integrity": "not_available_until_m14",
+                        "comparator_coverage":
+                            "not_available_until_m15",
                         "population_wer": "no_references_no_population"
                                           "_claims",
                     },

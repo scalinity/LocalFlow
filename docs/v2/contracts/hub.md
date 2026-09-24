@@ -8,8 +8,9 @@ tests/v2/ui/test_training_data.py + test_hub_shell.py)
 `replay.ReplayService`) plus the read/query services
 `localflow.v2.history_queries`, `localflow.v2.training_data` and
 `localflow.v2.diagnostics` deliver the S19 companion window: Home /
-History / Styles / Snippets / Transforms / Scratchpad / Insights /
-Diagnostics / Models (+ Training Data subview) / Settings. The M10
+History / Styles / Snippets / Transforms / Scratchpad / Insights (Usage
++ Your Voice subviews) / Diagnostics / Models (+ Training Data subview
+with Evidence / Review / Splits / Export tabs) / Settings. The M10
 Styles and Snippets views, the M11 Transforms view, the M12 Scratchpad
 view and the M13 Insights view follow the same `_build_/_refresh_/
 _load_` triple over their stores (rule/snippet/definition/note CRUD is
@@ -45,6 +46,12 @@ live as of M13, the refusal check uses any unregistered name).
   `hubDeleteUsageForJob` (contracts/analytics.md; the Insights view
   rides the spec as `insights_service`, the training_service
   pattern).
+  M14 adds no coordinator command: its services ride the spec as
+  `learning_service`/`review_service`/`sampling_service`/
+  `splits_service`/`profile_service`/`export_service` plus
+  `transforms_store` for pair judgments (the training_service
+  pattern); the idle profile pass (`profileIdlePass_`) is internal to
+  the coordinator (contracts/profile.md).
   Later milestones add commands; they never bypass this surface.
 - **Query discipline.** `HistoryQueryService`/`TrainingDataService`/
   diagnostics reads are read-only ops through `Store.submit` (the
@@ -144,6 +151,34 @@ live as of M13, the refusal check uses any unregistered name).
   control exists anywhere on the surface (M09-AC06).
 - Readiness separates `infrastructure_ready` / `dataset_coverage` /
   `observed_model_improvement` (explicitly post-V2, never fabricated).
+- **The M14 tabs** (`HubState.select_training_tab`; the pane's
+  `_build_/_refresh_/_load_` data per tab over the real services):
+  **Evidence** is the inspector above, unchanged. **Review** shows the
+  review queue with machine-suggested axes, sampling coverage and the
+  same-task pairs awaiting judgment; actions: Draw Sample, Mine
+  Candidates, Approve (with an optional counterexample phrase —
+  a would-flip rule is refused with the flip shown), Reject, record a
+  label (edit-kind popup), and pair judgments prefer A / prefer B /
+  tie / neither / uncertain (contracts/learning.md,
+  contracts/preferences.md). **Splits** shows
+  the version summary, family table and contamination report; actions:
+  Assign, Mark Exposed. **Export** shows per-view checkboxes, a
+  destination field and the last export's state; actions: Export,
+  Validate (contracts/dataset_exports.md). A refusal or failure is
+  written, with its content-free reason, to the text area of the tab
+  on screen, and the tab is not reloaded over it. Approve/Reject act
+  on the queue row's own `candidate_id`. The long actions — Export,
+  Mine Candidates and Your Voice → Generate — run on a background
+  thread (the Hub stays responsive during a multi-GB export) and
+  report back on the main thread through `AppHelper.callAfter`.
+- **History → Teach** (S22/S29.2): the corrected text for the selected
+  job becomes an explicit learning candidate; refusals
+  (`unchanged_output`, `not_target_bound_correction`,
+  `no_retained_final_text`) show beside the detail.
+- **Insights → Your Voice** renders the current profile snapshot —
+  absent, invalidated (reason only, never its stale numbers) or
+  current (measured block, cards with their evidence ids and coverage)
+  — with Generate and Exclude-evidence actions (contracts/profile.md).
 
 ## Store schema v5 (additive)
 

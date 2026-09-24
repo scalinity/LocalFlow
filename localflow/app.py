@@ -280,6 +280,48 @@ class AppDelegate(NSObject):
             self.v2log.emit("notes.store_unavailable", level="WARNING",
                             reason_code=type(e).__name__,
                             outcome="scratchpad_off")
+        # M14 (Spec S22/S29.7–S29.13): correction learning, curation and
+        # the Your Voice profile. All store-backed services degrade to
+        # None with an event — dictation never depends on any of them,
+        # and nothing here runs on the dictation path (mining, sampling,
+        # splits, export and profile generation are on-demand/idle).
+        self._learning = None
+        self._review = None
+        self._sampling = None
+        self._splits = None
+        self._profile = None
+        self._exporter = None
+        try:
+            from localflow.v2 import learning as v2_learning
+            from localflow.v2 import profile as v2_profile
+            from localflow.v2.curation import export as v2_export
+            from localflow.v2.curation import review as v2_review
+            from localflow.v2.curation import sampling as v2_sampling
+            from localflow.v2.curation import splits as v2_splits
+            self._learning = v2_learning.LearningService(
+                self.store, emit=self.v2log.emit,
+                vocabulary=self._vocab)
+            self._review = v2_review.ReviewService(
+                self.store, emit=self.v2log.emit)
+            self._sampling = v2_sampling.SamplingService(
+                self.store, emit=self.v2log.emit,
+                percent=float(cfg.get("review_sample_percent", 10)))
+            self._splits = v2_splits.SplitService(
+                self.store, emit=self.v2log.emit)
+            self._profile = v2_profile.ProfileService(
+                self.store, emit=self.v2log.emit,
+                min_words=int(cfg.get("profile_min_words", 2000)))
+            self._exporter = v2_export.DatasetExporter(
+                self.store, emit=self.v2log.emit)
+            self._profile_idle_minutes = int(
+                cfg.get("profile_idle_minutes", 30))
+        except Exception as e:
+            self._learning = self._review = self._sampling = None
+            self._splits = self._profile = self._exporter = None
+            self._profile_idle_minutes = 0
+            self.v2log.emit("learning.services_unavailable",
+                            level="WARNING", reason_code=type(e).__name__,
+                            outcome="m14_curation_off")
         try:
             self._styles = v2_profiles_store.StyleRuleStore(self.store)
             self._snip_store = v2_snippets_store.SnippetStore(self.store)
@@ -1621,6 +1663,18 @@ class AppDelegate(NSObject):
             86400.0, self, "retentionPass:", None, True
         )
 
+        # M14 (Spec S22): idle profile regeneration — on demand/idle
+        # only, always yielding to dictation. The timer checks the
+        # pipeline state before every run; a recording, an in-flight
+        # job or an insertion transaction defers to the next tick.
+        # profile_idle_minutes = 0 disables idle generation entirely
+        # (the Hub's Generate button still works on demand).
+        if getattr(self, "_profile_idle_minutes", 0) > 0:
+            interval = self._profile_idle_minutes * 60.0
+            NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+                interval, self, "profileIdlePass:", None, True
+            )
+
         key = DISPLAY_NAMES[self.cfg["hotkey"]]
         self.v2log.emit(
             "app.ready", level="INFO", reason_code="shell_interactive",
@@ -1645,6 +1699,37 @@ class AppDelegate(NSObject):
         # Retention queries can be slow with a large store; never let them
         # stall the main thread (the store serializes them on its writer).
         threading.Thread(target=self._retention_pass, daemon=True).start()
+
+    def profileIdlePass_(self, timer):
+        """M14 (S22): the idle profile tick. Yield-first: any pipeline
+        activity (recording, an unfinished job, an insertion/undo in
+        flight) skips this tick — profile work never delays dictation.
+        The compute itself runs on a daemon thread (it is one bounded
+        store op)."""
+        try:
+            if self.state == STATE_RECORDING or self._pending > 0 \
+                    or self._injecting or (
+                        self._insertion is not None
+                        and bool(getattr(self._insertion, "busy", False))):
+                return
+            if self._profile is None:
+                return
+            threading.Thread(target=self._profile_idle_compute,
+                             daemon=True,
+                             name="localflow-profile-idle").start()
+        except Exception as e:
+            self.v2log.emit("profile.idle_failed", level="WARNING",
+                            reason_code=type(e).__name__)
+
+    @objc.python_method
+    def _profile_idle_compute(self):
+        try:
+            # Snapshots are records: an idle tick over unchanged
+            # evidence adds none.
+            self._profile.compute(only_if_changed=True)
+        except Exception as e:
+            self.v2log.emit("profile.idle_failed", level="WARNING",
+                            reason_code=type(e).__name__)
 
     @objc.python_method
     def _retention_pass(self):
@@ -3498,6 +3583,13 @@ class AppDelegate(NSObject):
                     "transforms_service": self._tf_store,
                     "notes_service": self._notes_store,
                     "insights_service": self._insights,
+                    "learning_service": self._learning,
+                    "review_service": self._review,
+                    "sampling_service": self._sampling,
+                    "splits_service": self._splits,
+                    "profile_service": self._profile,
+                    "export_service": self._exporter,
+                    "transforms_store": self._tf_store,
                     "diagnostics_provider": self._hub_diagnostics_spec,
                     "coordinator": self,
                     "replay": v2_ui.ReplayService(),

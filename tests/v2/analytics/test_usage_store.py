@@ -76,8 +76,11 @@ def test_migration_v9_additive_with_backup_and_repair():
         try:
             assert s.submit(lambda db: db.execute(
                 "SELECT value FROM schema_meta WHERE"
-                " key='schema_version'").fetchone())[0] == "9"
-            for table in ("usage_facts", "daily_aggregates"):
+                " key='schema_version'").fetchone())[0] == "10"
+            for table in ("usage_facts", "daily_aggregates",
+                           "learning_candidates",
+                           "training_memberships",
+                           "export_manifests"):
                 assert s.submit(lambda db, t=table: db.execute(
                     "SELECT 1 FROM sqlite_master WHERE type='table'"
                     f" AND name=?", (t,)).fetchone()), table

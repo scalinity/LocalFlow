@@ -176,3 +176,20 @@ through `note_evidence_links` + `source_job_id`). Note deletion
 closes the links and appends a final `note_deleted` observation;
 links whose example died elsewhere close as `example_unavailable`.
 See `contracts/scratchpad.md`.
+
+## M14 live status (curation)
+
+M14 curates what M02–M12 captured; it adds no capture hook and never
+reconstructs history. Examples move `captured_unreviewed →
+review_candidate` when sampling includes them and `→ annotated` when a
+non-abstained review label lands; label revisions, grafts, sampling
+decisions, family memberships and tags live in their own schema-v10
+tables beside the envelopes (contracts/learning.md,
+contracts/dataset_exports.md). Validator outcomes, confirmed pastes and
+`no_edit_observed` windows stay observations — sampling can bring them
+to review, but no path turns them into a correctness label, a positive
+or a preference. Readiness now reports split contamination, the last
+export's state, examples with a training lease expiring within 3 days,
+and verbatim coverage in reviewed audio seconds over retained seconds
+(a verbatim reference covers its whole clip; span corrections have no
+audio alignment and add no seconds).

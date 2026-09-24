@@ -69,7 +69,10 @@ missing payload honestly, never silently drops the marker.
 content (origins/counts/hashes stay as the content-free record),
 removes the note row and writes a `note` tombstone; the returned
 closure payload feeds `EvidenceCollector.on_note_deleted` so deletion
-propagates to evidence references (below).
+propagates to evidence references (below). In the same op, learning
+candidates mined from the note's edits (contracts/learning.md) lose
+their payload artifact and, when still open, go stale with their rule
+terms and spans cleared.
 
 ## Evidence (S29.8/S29.14 — the note family)
 
