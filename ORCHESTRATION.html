@@ -10,7 +10,11 @@
   owned by another session.
 
   Figure audit — every figure on the page and the repo file it was re-derived
-  from; figures re-read 2026-09-24 05:11 UTC at e8c4e73 (M14 close-out and its limitation follow-up).
+  from; figures re-read 2026-09-24 05:11 UTC at e8c4e73 (M14 close-out and its limitation follow-up);
+  M07 remediation figures, the should-run order and the two new open-thread rows read
+  2026-09-24 06:41 UTC at 52edc47 from docs/v2/handoffs/M07.md "Remediation — 2026-09-24",
+  docs/v2/acceptance/M07/results.json remediation_2026_09_24 and
+  docs/v2/benchmarks/20260924-061027-m07-remediation/m07_remediation.json.
     33 requirements / 22 suites / 0 without a suite ....... docs/v2/registry.json (counts block)
     requirement -> milestone ownership, suites per strip ... docs/v2/registry.json + "ID: Mxx · Requirements" headers in
                                                              docs/v2/LOCALFLOW_V2_MILESTONES.md
@@ -24,7 +28,7 @@
     next M15 dependency-eligible) ......................... docs/v2/STATUS.json, read 2026-09-24 05:11 UTC at e8c4e73
     commit ids 4bd0187 / 50bf457 / 95f92dd / adc872b / 9d53b4f / e95d152 /
     eea1bd0 / dc3c726 / 56dc4de / d10886c / 7e2a0b4 / f2137ef / d2ef224 /
-    f24b3d5 / 15984ba / e8c4e73 ............................ git log --oneline at the same moment
+    f24b3d5 / 15984ba / e8c4e73 / 52edc47 .................. git log --oneline at the same moment
     review ledger (verdicts, critical counts, named criticals) ... "/review-2 → /address record" sections of
                                                              docs/v2/handoffs/M01.md–M14.md (cross-checked against
                                                              docs/v2/acceptance/M0*/results.json review_loop blocks
@@ -302,7 +306,7 @@
   </ul>
 
   <div class="now" id="now">
-    <p class="verdict">What can run now: <span class="id">M15</span> — and nothing else.</p>
+    <p class="verdict">What can run now: <span class="id">M15</span> is the only dependency-eligible milestone — but the M07 audit orders a read-only full <span class="id">M11</span> audit before M15 qualification; M07’s remediation is done (52edc47).</p>
     <dl class="now-grid">
       <div><dt>Active milestone</dt><dd>M14 · implemented_pending_human</dd></div>
       <div><dt>Source commit</dt><dd>5e90489 — “M14 was implemented on top of this commit (the M13 close-out ORCHESTRATION.html realignment); the M14 commit follows.”</dd></div>
@@ -618,6 +622,7 @@
       <p>The repo’s own parallelism precedent is P02’s note: “M04 can be developed alongside M03 after M02 because its pure interfaces do not require live model execution.” Two units, one shared completed prerequisite, disjoint files (lifecycle suites vs a pure normalize package), no shared migration. That window has passed — nothing left pairs that way.</p>
       <p>Standing rules: a coordinator owns shared-schema and contract changes; two sessions must not edit the same database migration or shared UI shell. Other parallel work requires revising the dependency table explicitly plus separate worktrees with stable storage contracts — optional, not a goal. Checkpoints inside one milestone (M14’s A/B/C were the precedent) are never parallel units.</p>
       <p class="fact-note">Quoted and applied from P02 itself. <span class="src">LOCALFLOW_V2_MILESTONES.md P02</span></p>
+      <p>Should-run order: the 2026-09-24 M07 read-only audit (verdict C) asked for M07 repair before the full M11 audit and before M15 qualification. The M07 remediation closed its twelve findings (52edc47), so the next unit is the read-only full M11 audit, then M15. The audit is review work, not a P02 milestone; it edits nothing and so pairs with nothing that writes. <span class="src">handoffs/M07.md “Remediation — 2026-09-24” · acceptance/M07/results.json remediation_2026_09_24</span></p>
     </div>
   </div>
 </section>
@@ -768,6 +773,8 @@
       <tr><td>M05 dictionary trial</td><td>M05</td><td>Pending; the sandbox half is runnable now, the workspace-scoped live half folds into the M06 destination trial (destination awareness shipped at M06).</td></tr>
       <tr><td>Workspace-scoped dictionary live resolution</td><td>M06</td><td>Shipped in M06 (eea1bd0): site/workspace/app scopes feed the live trio, finalized at release with a frozen-entry rebuild; live verification folds into the M06 destination trial. contracts/vocabulary.md “M06 wiring”.</td></tr>
       <tr><td>M07 long-prompt cleanup trial</td><td>M07</td><td>Pending; runnable on the dev pipeline from Terminal.app — three-constraint prompts, corrections, lists, a protected literal, undo-cleanup. The adjudicated real-text fixture stratum (E04 family) also awaits its human review. handoffs/M07.md.</td></tr>
+      <tr><td>M07 audit remediation residuals</td><td>M07</td><td>All 12 audit findings confirmed and repaired at 52edc47 (36 remediation regressions; 63/63 suites; model-path outcomes on the frozen corpus unchanged: fidelity 49/60, literal 20/20, structure 32/40). Open: model incidence of the adversarial outputs, the lexical validator’s limits, known fail-safe false rejections (contractions, summed number words, dictated emails), no-safe-cut long inputs. handoffs/M07.md “Remediation — 2026-09-24”.</td></tr>
+      <tr><td>Full M11 audit (read-only)</td><td>M11</td><td>Ordered by the M07 audit before M15 qualification; not started. The M07 remediation checked only that M11’s transform source is the final Clean artifact.</td></tr>
       <tr><td>M08 insertion trial</td><td>M08</td><td>Pending; runnable on the dev pipeline from Terminal.app — app-switch races, user clipboard copies during processing, undo after manual edits, rapid dictation ordering, terminal multi-line behavior. Doubles as the E10 destination-class certification prerequisite; overlaps the M01 release-to-insert pilot territory (M15 gate). handoffs/M08.md.</td></tr>
       <tr><td>M09 Hub trial</td><td>M09</td><td>Pending as native-m09-hub-trial (d10886c): screens at two text scales with screenshots, keyboard-only navigation, replay/retry of real samples, window-position restore, a correct/incorrect review pair, a span correction, deleted-record disappearance — the headless suites cover state and the real coordinator; rendering and playback are the live half. The keyboard/screen pass now also covers the M10 Styles/Snippets sidebar rows. handoffs/M09.md.</td></tr>
       <tr><td>M10 developer trial</td><td>M10</td><td>Pending as native-m10-developer-trial (7e2a0b4): the destination sweep with the effective-mode line, a raw rule, a placeholder snippet, a real skill manifest, the attach-file fallback on an uncertified surface, a multi-line terminal snippet, one evidence inspection — the state/wiring halves are covered headless; live behavior and any real-surface certification are the native half (a certified file chip or bracketed-paste surface would populate the empty enforcement sets). handoffs/M10.md.</td></tr>
@@ -798,7 +805,7 @@
 </section>
 
 <div class="footer">
-  <p><b>Maintenance.</b> Milestone close-outs realign this page in place — strip states, ledger rows, the NOW panel and the chain rail — against the project’s own record (STATUS.json, handoffs, acceptance results), never against session memory. While the page is uncommitted or concurrently owned by another session, close-outs leave it untouched and record the intended change in their handoff instead. Figures were last read 2026-09-24 05:11 UTC at commit e8c4e73; the full source-to-figure audit lives in the HTML comment at the top of this file.</p>
+  <p><b>Maintenance.</b> Milestone close-outs realign this page in place — strip states, ledger rows, the NOW panel and the chain rail — against the project’s own record (STATUS.json, handoffs, acceptance results), never against session memory. While the page is uncommitted or concurrently owned by another session, close-outs leave it untouched and record the intended change in their handoff instead. Figures were last read 2026-09-24 05:11 UTC at commit e8c4e73 (M07 remediation rows 06:41 UTC at 52edc47); the full source-to-figure audit lives in the HTML comment at the top of this file.</p>
 </div>
 
 </div>
