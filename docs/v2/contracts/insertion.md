@@ -41,6 +41,20 @@ read as the owned-range anchor. `target_changed` routes the artifact
 to saved history with the text left on the clipboard as the one-action
 paste offer; nothing is inserted into the newly focused destination.
 
+**Strict replacement** (`job["strict_replacement"]`, set only by an
+accepted selected-text transform — contracts/transforms.md). Replacing
+text the user reviewed needs positive proof, so every `unavailable` in
+the matrix refuses: the window title must be recorded at capture and
+read back equal; the role must read back equal; the recorded non-empty
+selection must read back with the same range and text; and the bounded
+text recorded on either side of it (`FieldContext.preceding_text` /
+`following_text`, up to 200 characters, captured by
+`insertion/selection.py`) must read back unchanged — a second document
+in the same app can match title, role, range and text. The verdicts
+ride the verification JSON as `surroundings` and `strict`; a refusal
+is `target_changed` with the copy offer. Plain dictation (no flag)
+keeps the permissive matrix above unchanged.
+
 `TargetLease` is the granted authority token; a cancelled job never
 receives one (the service refuses the transaction with
 `saved_not_inserted/user_cancelled` and touches nothing).
@@ -157,6 +171,14 @@ ticks, before/after artifact ids) — all writes through `Store.submit`
 (writer-thread discipline). Observed-range texts are lease-governed
 artifacts; rows and envelope blocks are content-free. The jobs table
 is unchanged (attribution joins through `job_id`).
+
+**Transform accepts are attributed to their candidate:** an accepted
+selected-text transform submits with `job_id` = its transform
+candidate id (`tcand-…`), so its `insertions` row (and any observation
+rows) join the reviewed candidate. There is no `jobs` row for that id,
+so the dictation metadata-retention pass never prunes it; the row is
+content-free. With collection consent off there is no candidate and
+the accept writes no row (the jobless repaste pattern).
 
 ## Evidence (S29.4 outcome family)
 

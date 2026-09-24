@@ -1,0 +1,266 @@
+{
+ "suite": "tests/v2/transforms/test_transform_remediation.py",
+ "passed": 37,
+ "total": 37,
+ "cases": [
+  {
+   "case": "f01_unrepresented_requirements_not_applied",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f01_same_losses_under_polish_and_concise",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f02_polarity_ordering_hedge_quantity",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f02_negative_control_recognized_comparator",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f02_wrong_occurrence_and_argument_swaps",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f02_governed_words_and_soft_conditions",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f03_coverage_serializes_every_status",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f03_real_worker_round_trip_nonempty_coverage",
+   "layer": "worker",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f03_real_worker_fallbacks_still_answer",
+   "layer": "worker",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f04_case_distinct_literals_stay_distinct",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f04_technical_tokens_carry_verbatim",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f04_literals_allow_surrounding_prose_edits",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f05_oracle_never_reports_fallback_as_applied",
+   "layer": "oracle",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f05_oracle_fixture_relations",
+   "layer": "oracle",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f05_oracle_checks_review_addresses_the_loss",
+   "layer": "oracle",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f06_strict_replacement_requires_positive_proof",
+   "layer": "insertion",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f06_plain_dictation_contract_unchanged",
+   "layer": "insertion",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f06_capture_classifies_before_reading",
+   "layer": "helper",
+   "new_interface": true,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f06_capture_records_window_and_surroundings",
+   "layer": "helper",
+   "new_interface": true,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f07_note_destination_identity_and_region",
+   "layer": "helper",
+   "new_interface": true,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f07_utf16_offsets_convert",
+   "layer": "helper",
+   "new_interface": true,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f08_store_candidate_respects_collection_consent",
+   "layer": "store",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f08_dictation_candidate_follows_captured_consent",
+   "layer": "store",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f09_selected_candidate_retains_prompt_and_decision",
+   "layer": "store",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f09_note_candidate_records_destination_revision",
+   "layer": "store",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f09_dictation_decision_map_retained",
+   "layer": "store",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f10_retry_lineage_recorded_on_the_new_candidate",
+   "layer": "store",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f11_action_frames_do_not_overlap",
+   "layer": "helper",
+   "new_interface": true,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f12_unchanged_quoted_literal_applies",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "pc_faithful_reorganizations_apply",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "pc_fixture_faithful_outputs_apply_and_mutations_never_escape",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "tg01_dense_ten_requirement_prompt",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "tg01_nested_exception_and_compound_clauses",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "tg02_modality_and_speech_act_changes",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "tg01_near_limit_source_and_truncation",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "tg07_conflicting_requirements_surface",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "tg_task_identity_inputs_pinned",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  }
+ ]
+}

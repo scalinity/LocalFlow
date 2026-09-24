@@ -1476,9 +1476,9 @@ class HubController(NSObject):
             source = self.editor.current_content()
             rng = (0, len(source))  # whole-note scope: accept replaces
         else:
-            sel = self.editor.text.selectedRange()
-            rng = (int(sel.location),
-                   int(sel.location) + int(sel.length))
+            # NSRange counts UTF-16 units; the captured range is in the
+            # content's code points (what acceptance slices).
+            rng = self.editor.selected_range()
         coordinator.tfRunNoteTransform(
             defn.transform_id, source, rng,
             {"note_id": self.editor.note_id,
@@ -1696,19 +1696,27 @@ class HubController(NSObject):
 
     @objc.python_method
     def scratchpad_apply_transform(self, result, capture):
-        """Note-scope transform accept: revalidate the captured source
-        still sits at the captured range (a changed region is never
-        blindly overwritten), then replace it with the output. Returns
-        (applied, reason)."""
-        from ..notes import ORIGIN_TRANSFORM
+        """Note-scope transform accept: revalidate the captured
+        destination — the SAME note, and its captured text still at the
+        captured range (a changed region or another open note is never
+        written) — then replace exactly that region. A chained
+        Transform Output carries the original destination unchanged.
+        Returns (applied, reason)."""
+        from ..notes import ORIGIN_TRANSFORM, note_destination_check
         editor = getattr(self, "editor", None)
         if editor is None or editor.model is None:
             return False, "note_not_open"
-        rng = capture.get("range")
-        if rng is not None:
-            current = editor.current_content()
-            if current[int(rng[0]):int(rng[1])] != capture.get("source"):
-                return False, "note_range_changed"
+        dest = capture.get("destination")
+        if dest is None and capture.get("range") is not None:
+            # A capture recorded before destinations existed.
+            dest = {"note_id": (capture.get("note") or {}).get("note_id"),
+                    "range": capture.get("range"),
+                    "text": capture.get("source")}
+        ok, reason = note_destination_check(
+            dest, editor.note_id, editor.current_content())
+        if not ok:
+            return False, reason
+        rng = tuple(dest["range"])
         job = result.job
         ok = editor.receive(
             result.output, origin=ORIGIN_TRANSFORM,

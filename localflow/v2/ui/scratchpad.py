@@ -161,11 +161,21 @@ class ScratchpadEditor(NSObject):
         return int(sel.location)
 
     @objc.python_method
+    def selected_range(self):
+        """The selection as a half-open CODE-POINT range over the
+        editor's content (NSRange counts UTF-16 units; an emoji before
+        the selection would otherwise shift the slice)."""
+        from ..notes import utf16_range_to_codepoints
+        sel = self.text.selectedRange()
+        return utf16_range_to_codepoints(
+            str(self.text.string()), int(sel.location), int(sel.length))
+
+    @objc.python_method
     def selected_text(self):
         sel = self.text.selectedRange()
         if sel.length > 0:
-            return (self.text.string()[int(sel.location):
-                                       int(sel.location) + int(sel.length)])
+            s, e = self.selected_range()
+            return str(self.text.string())[s:e]
         return None
 
     @objc.python_method

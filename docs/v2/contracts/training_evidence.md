@@ -158,17 +158,32 @@ called on the dictation path after `on_cleanup_result` and before
 `finalize`, so the block rides the same revision — retains the exact
 rendered prompt and the transform output as lease-governed artifacts
 (`transform_prompt`/`transform_output`, parent = the cleanup family's
-applied artifact) and fills the envelope's content-free `transform`
+applied artifact), plus the `transform_decision` record (child of the
+output: path, reason, validator revision, task key, full coverage map,
+review excerpts), and fills the envelope's content-free `transform`
 block (transform id/revision, prompt revision, task key, path, reason,
-applied flag, coverage counts, tokens, duration, artifact ids). With
-no transform requested the slot's missing reason is `not_applicable`;
-a requested-but-not-run transform carries its gate reason — never a
-silent Clean. Same-task preference candidates and explicit judgments
-live in the schema-v7 `transform_candidates`/
+applied flag, coverage counts, validator revision, tokens, duration,
+artifact ids). With no transform requested the slot's missing reason
+is `not_applicable`; a requested-but-not-run transform carries its
+gate reason — never a silent Clean. Same-task preference candidates
+and explicit judgments live in the schema-v7 `transform_candidates`/
 `preference_observations` tables (see `contracts/transforms.md` and
 `contracts/preferences.md`); the automatic dictation path records
 candidates only — an automatic application is not a preference
 judgment (S29.10).
+
+Transform candidates are training evidence and follow collection
+consent like every other producer: the dictation path writes its
+candidate row only when the job captured `enabled` at start
+(`ctx.collecting`); the selected-text and note previews write theirs
+only when the consent state read inside the store's writer op is
+`enabled`, so revoking collection while a generation runs is honoured.
+With collection off the transform still runs and previews normally;
+nothing is recorded. Records written before this rule are not
+retroactively consented, deleted or re-labelled; on the reference Mac
+there were none (a read-only count on 2026-09-24 found zero
+`transform_candidates`, zero `preference_observations` and zero
+`transform%` artifacts).
 
 ## M12 live status (note family)
 

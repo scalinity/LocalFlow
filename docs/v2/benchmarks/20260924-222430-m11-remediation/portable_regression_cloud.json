@@ -1,0 +1,405 @@
+{
+ "what": "every tests/**/test_*.py, one process each, Linux cloud container (Python 3.13.x, numpy only; no PyObjC, no MLX, no Parakeet), inherited code (git worktree of 1ee8e44 plus the new remediation test file) versus the repaired tree, 2026-09-24",
+ "command": "for f in $(find tests -name 'test_*.py' | grep -v __pycache__ | sort); do timeout 240 .venv/bin/python \"$f\"; echo \"$? $f\"; done",
+ "summary": {
+  "pass": 42,
+  "not_portable:pyobjc": 16,
+  "not_portable:mlx_or_parakeet": 7
+ },
+ "status_changes": [
+  "tests/v2/transforms/test_transform_remediation.py",
+  "tests/v2/transforms/test_transform_remediation_native.py"
+ ],
+ "files": [
+  {
+   "file": "tests/test_cleanup.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:mlx_or_parakeet"
+  },
+  {
+   "file": "tests/test_stuck_overlay.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/analytics/test_insights_hub.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/analytics/test_insights_service.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/analytics/test_usage_store.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/context/test_context_pipeline.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/context/test_context_snapshot.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/developer/test_developer_resolution.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/developer/test_skills.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/fidelity/test_cleanup_engine.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/fidelity/test_cleanup_pipeline.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/fidelity/test_cleanup_remediation.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/fidelity/test_fidelity.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:mlx_or_parakeet"
+  },
+  {
+   "file": "tests/v2/fidelity/test_literal.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:mlx_or_parakeet"
+  },
+  {
+   "file": "tests/v2/insertion/test_insertion_attribution.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/insertion/test_insertion_pipeline.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/insertion/test_insertion_races.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/lifecycle/test_audio_fidelity.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/lifecycle/test_capture_journal.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/lifecycle/test_lifecycle.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/lifecycle/test_worker_live.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:mlx_or_parakeet"
+  },
+  {
+   "file": "tests/v2/lifecycle/test_worker_protocol.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/logging/test_event_writer.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/normalization/test_normalization_pipeline.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/normalization/test_normalize_numbers.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/normalization/test_normalize_syntax.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/normalization/test_short_command_scoring.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/notes/test_note_editor.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/notes/test_note_evidence.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/notes/test_note_export.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/notes/test_note_store.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/notes/test_scratchpad_hub.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/personalization/test_learning.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/personalization/test_profile.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/profiles/test_profiles_pipeline.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/profiles/test_snippets.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/profiles/test_style_resolution.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/storage/test_import.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/storage/test_store.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/structure/test_structure.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:mlx_or_parakeet"
+  },
+  {
+   "file": "tests/v2/test_baseline_manifest.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/test_legacy_parser.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/test_registry.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/test_snapshot_safety.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/training/test_classification.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/training/test_collector.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/training/test_dataset_export.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/training/test_live_pipeline.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:mlx_or_parakeet"
+  },
+  {
+   "file": "tests/v2/training/test_sampling.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/training/test_splits.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/transforms/test_prompt_engineer_cases.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:mlx_or_parakeet"
+  },
+  {
+   "file": "tests/v2/transforms/test_transform_definitions.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/transforms/test_transform_engine.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/transforms/test_transform_pipeline.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/transforms/test_transform_remediation.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/transforms/test_transform_remediation_native.py",
+   "exit_inherited_1ee8e44": null,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/ui/test_diagnostics.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/ui/test_history_queries.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/ui/test_hub_shell.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/ui/test_training_data.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/ui/test_training_review_hub.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/vocabulary/test_hint_selection.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/vocabulary/test_vocabulary_matching.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  },
+  {
+   "file": "tests/v2/vocabulary/test_vocabulary_pipeline.py",
+   "exit_inherited_1ee8e44": 1,
+   "exit_post_repair": 1,
+   "classification": "not_portable:pyobjc"
+  },
+  {
+   "file": "tests/v2/vocabulary/test_vocabulary_store.py",
+   "exit_inherited_1ee8e44": 0,
+   "exit_post_repair": 0,
+   "classification": "pass"
+  }
+ ]
+}

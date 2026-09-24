@@ -79,6 +79,43 @@ def derive_title(content: str) -> str:
     return ""
 
 
+def utf16_range_to_codepoints(text: str, location: int,
+                              length: int) -> tuple[int, int]:
+    """Convert an AppKit ``NSRange`` (UTF-16 code units) over ``text``
+    to a half-open Python code-point range. A character outside the
+    Basic Multilingual Plane (an emoji) is two UTF-16 units but one
+    Python character, so slicing a Python string with raw NSRange
+    offsets addresses the wrong text."""
+    def to_cp(units: int) -> int:
+        seen = 0
+        for i, ch in enumerate(text):
+            if seen >= units:
+                return i
+            seen += 2 if ord(ch) > 0xFFFF else 1
+        return len(text)
+    start = to_cp(int(location))
+    return start, to_cp(int(location) + int(length))
+
+
+def note_destination_check(dest, open_note_id, content):
+    """Scratchpad transform acceptance authority (S20/S16): the output
+    may replace only the region it was generated for — the SAME note
+    and the SAME text at the captured code-point range. ``dest`` is
+    the immutable destination captured with the transform request
+    (``note_id``, ``revision_id``, ``range``, ``text``); a chained
+    Transform Output keeps it unchanged. Returns ``(ok, reason)``."""
+    if not dest or dest.get("range") is None:
+        return False, "no_destination"
+    if open_note_id is None:
+        return False, "note_not_open"
+    if dest.get("note_id") != open_note_id:
+        return False, "note_changed"
+    s, e = (int(x) for x in dest["range"])
+    if content is None or content[s:e] != dest.get("text"):
+        return False, "note_range_changed"
+    return True, None
+
+
 def attachment_ids(content: str) -> list[str]:
     """Attachment ids referenced by the content's inline markers."""
     return [m[1] for m in _ATTACHMENT_RE.findall(content)]
