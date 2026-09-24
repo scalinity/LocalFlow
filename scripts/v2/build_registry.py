@@ -22,77 +22,101 @@ REQ_ROW = re.compile(r"^\|\s*(LF-R\d{2,})\s*\|(.*?)\|(.*?)\|\s*$")
 SUITE_ROW = re.compile(r"^\|\s*(EV-\d{2,})\s+([^|]+)\|([^|]*)\|([^|]*)\|\s*$")
 
 
-def spec_requirements():
-    """Requirement rows from the S05 register: id -> (requirement, owners)."""
+def _read_catalog(path, label, problems):
+    try:
+        return pathlib.Path(path).read_text()
+    except OSError as e:
+        problems.append(f"{label} catalog unreadable: {path} "
+                        f"({type(e).__name__})")
+        return None
+
+
+def spec_requirements(path=None, problems=None):
+    """Requirement rows from the S05 register: id -> (requirement, owners).
+
+    Structural problems (missing/unreadable catalog, missing section, empty
+    register, duplicate IDs, malformed rows) are appended to ``problems``
+    when a list is given — never silently dropped (M01-AUDIT-10)."""
+    problems = [] if problems is None else problems
     out = {}
-    in_register = False
-    skipped = []
-    for line in SPEC.read_text().splitlines():
+    text = _read_catalog(path or SPEC, "S05 requirement", problems)
+    if text is None:
+        return out
+    in_register = found = False
+    for line in text.splitlines():
         if line.startswith("## S05."):
-            in_register = True
+            in_register = found = True
             continue
         if in_register and line.startswith("## S06."):
             break
         if in_register and line.startswith("|"):
             m = REQ_ROW.match(line)
             if m:
-                out[m.group(1)] = {
+                rid = m.group(1)
+                if rid in out:
+                    problems.append(f"duplicate requirement row {rid}")
+                    continue
+                owners = m.group(3).strip()
+                if not m.group(2).strip() or not owners:
+                    problems.append(f"{rid} row has an empty requirement "
+                                    f"or owner cell")
+                out[rid] = {
                     "requirement": m.group(2).strip(),
-                    "owner_milestones": m.group(3).strip(),
+                    "owner_milestones": owners,
                 }
             elif "LF-R" in line:
-                skipped.append(line.strip())
-    if skipped:
-        print(f"WARNING: {len(skipped)} S05 table row(s) did not match the "
-              f"expected shape — format drift or a new ID width; inspect:",
-              file=sys.stderr)
-        for s in skipped[:5]:
-            print(f"  {s[:120]}", file=sys.stderr)
+                problems.append(f"malformed S05 row: {line.strip()[:100]}")
+    if not found:
+        problems.append("S05 requirement register section not found")
+    elif not out:
+        problems.append("S05 requirement register is empty")
     return out
 
 
-def eval_suites():
+def eval_suites(path=None, problems=None):
     """Suite rows from the E08 catalog: id -> (name, requirement ids)."""
+    problems = [] if problems is None else problems
     out = {}
-    in_catalog = False
-    skipped = []
-    for line in EVAL.read_text().splitlines():
+    text = _read_catalog(path or EVAL, "E08 suite", problems)
+    if text is None:
+        return out
+    in_catalog = found = False
+    for line in text.splitlines():
         if line.startswith("## E08."):
-            in_catalog = True
+            in_catalog = found = True
             continue
         if in_catalog and line.startswith("## E09."):
             break
         if in_catalog and line.startswith("|"):
             m = SUITE_ROW.match(line)
             if m:
+                sid = m.group(1)
+                if sid in out:
+                    problems.append(f"duplicate suite row {sid}")
+                    continue
                 reqs = re.findall(r"LF-R\d{2,}", m.group(4))
-                out[m.group(1)] = {"name": m.group(2).strip(), "requirements": reqs}
+                if re.search(r"LF-R(?!\d{2,})", m.group(4)):
+                    problems.append(f"{sid} lists a malformed requirement ID")
+                out[sid] = {"name": m.group(2).strip(), "requirements": reqs}
             elif "EV-" in line:
-                skipped.append(line.strip())
-    if skipped:
-        print(f"WARNING: {len(skipped)} E08 table row(s) did not match the "
-              f"expected shape — inspect:", file=sys.stderr)
-        for s in skipped[:5]:
-            print(f"  {s[:120]}", file=sys.stderr)
+                problems.append(f"malformed E08 row: {line.strip()[:100]}")
+    if not found:
+        problems.append("E08 suite catalog section not found")
+    elif not out:
+        problems.append("E08 suite catalog is empty")
     return out
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--output", type=pathlib.Path,
-                    default=ROOT / "docs/v2/registry.json")
-    args = ap.parse_args()
-
-    reqs = spec_requirements()
-    suites = eval_suites()
-
+def derive(spec_path=None, eval_path=None):
+    """(requirements, suites, reverse edges, problems) from the catalogs."""
+    problems = []
+    reqs = spec_requirements(spec_path, problems)
+    suites = eval_suites(eval_path, problems)
     req_to_suites = {rid: [] for rid in reqs}
     for sid, s in suites.items():
         for rid in s["requirements"]:
             if rid in req_to_suites:
                 req_to_suites[rid].append(sid)
-
-    problems = []
     for rid, s in req_to_suites.items():
         if not s:
             problems.append(f"{rid} has no evaluation suite")
@@ -102,6 +126,16 @@ def main():
         for rid in s["requirements"]:
             if rid not in reqs:
                 problems.append(f"{sid} references unknown {rid}")
+    return reqs, suites, req_to_suites, problems
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--output", type=pathlib.Path,
+                    default=ROOT / "docs/v2/registry.json")
+    args = ap.parse_args(argv)
+
+    reqs, suites, req_to_suites, problems = derive()
 
     registry = {
         "schema_version": 1,
@@ -136,6 +170,9 @@ def main():
     args.output.write_text(json.dumps(registry, indent=2) + "\n")
     print(f"requirements: {len(reqs)}  suites: {len(suites)}")
     print(f"problems: {problems or 'none'}")
+    if problems:
+        print("ERROR: registry derivation found problems; exit 1",
+              file=sys.stderr)
     print(f"wrote {args.output}")
     return 1 if problems else 0
 

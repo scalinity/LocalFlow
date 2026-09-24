@@ -16,7 +16,8 @@
         "syntax_paths_skills": 60,
         "fixture_files": [
           "tests/v2/normalization/fixtures_numeric.json",
-          "tests/v2/normalization/fixtures_syntax.json"
+          "tests/v2/normalization/fixtures_syntax.json",
+          "tests/v2/normalization/short_command_corpus.json"
         ],
         "short_command_text_counterparts": 24
       },
@@ -84,7 +85,17 @@
       "planned_count": 30,
       "composition": "15 development, 5 validation, 10 held-out; requirement atoms enumerated",
       "owner_milestone": "M11",
-      "status": "reserved"
+      "status": "complete",
+      "m11_created": {
+        "note": "Reconciled by the M01 remediation (M01-AUDIT-16) from the file M11 committed (handoffs/M11.md: 30 synthetic cases). The dev/validation/held-out labels are M11's case-level acceptance split from E04, carried in the file itself — not an S29.11 family assignment (test_manifest_reservation.families_assigned stays 0) and not a claim about any dataset family. Origin: stated synthetic in the file's note (the file has no origin field).",
+        "cases": 30,
+        "dev": 15,
+        "validation": 5,
+        "held_out": 10,
+        "fixture_files": [
+          "tests/v2/transforms/fixtures_prompt_engineer.json"
+        ]
+      }
     },
     {
       "family": "context_target_scenarios",

@@ -26,6 +26,15 @@ LocalFlow.log.*
 v2-evidence/
 *.flac
 *.m4a
+# M01 remediation (M01-AUDIT-14): SQLite companions, renamed backups and
+# unpublished snapshot runs. Content signatures are enforced by
+# tests/v2/test_baseline_manifest.py regardless of filename.
+*.sqlite3
+*.db-wal
+*.db-shm
+*.db-journal
+*.db.bak
+*.partial/
 # Note for M02: when synthetic fixture databases are wanted under
 # tests/v2/fixtures/, add a `!tests/v2/fixtures/**` negation here — the
 # global *.db rule above will otherwise exclude them silently.
