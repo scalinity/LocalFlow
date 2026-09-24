@@ -770,7 +770,7 @@ def build(*, root=None, app=None, env=None, hash_model_files=True):
             env_value=la_env.get("LOCALFLOW_CONFIG"),
             env_observation=la_obs["LOCALFLOW_CONFIG"],
             user_override=lf_config.user_override_path(),
-            bundled=pathlib.Path(app or APP) / "Contents" / "Resources" / "config.json")
+            bundled=pathlib.Path(bundle["path"]) / "Contents" / "Resources" / "config.json")
         app_ctx["launchd_environment_observations"] = la_obs
         contexts["installed_app"] = app_ctx
         models["installed_app"] = models_record(app_cfg, la_env,
@@ -839,8 +839,19 @@ def main(argv=None):
                     help=f"default: {RUNS_DIR}/<run-id>/manifest.json")
     ap.add_argument("--skip-model-hashes", action="store_true",
                     help="record model file names without hashing contents")
+    ap.add_argument("--repo-root", type=pathlib.Path,
+                    help="describe this checkout instead of the one holding "
+                         "the script (e.g. run the repaired generator from a "
+                         "verification worktree against your main checkout)")
+    ap.add_argument("--app", type=pathlib.Path,
+                    help=f"installed bundle to inspect (default {APP}; "
+                         "build_app.sh falls back to ~/Applications)")
     args = ap.parse_args(argv)
-    manifest = build(hash_model_files=not args.skip_model_hashes)
+    root = args.repo_root.resolve() if args.repo_root else ROOT
+    manifest = build(root=root, app=args.app,
+                     hash_model_files=not args.skip_model_hashes)
+    manifest["generator"]["script_checkout"] = str(ROOT)
+    manifest["generator"]["described_checkout"] = str(root)
     out = args.output or default_output()
     write_manifest(manifest, out)
     print(f"wrote {out}")
