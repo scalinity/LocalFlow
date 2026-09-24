@@ -135,5 +135,46 @@
     ],
     "post_address_verification": "all suites + model-backed checks + the ablation benchmark re-run green on the fixed code (numbers above are post-review)"
   },
+  "remediation_2026_09_24": {
+    "input": "docs/LocalFlow_M07_Read_Only_Audit_d3d3e4b.md (read-only static audit at d3d3e4b, verdict C; 8 HIGH / 3 MEDIUM / 1 TEST GAP; no tests or generations run by the audit)",
+    "base_commit": "6593bf332f34033efa3d28e82644ae99db70122c",
+    "boundary": "no audited M07 file changed between d3d3e4b and 6593bf3 (git diff --stat: only M14 files)",
+    "reproduction": "every finding reproduced on unmodified code before production changes: scratch probe, then tests/v2/fidelity/test_cleanup_remediation.py run pre-change at 2026-09-24T05:51:47Z — 22/24 cases failed (the 2 passes are preservation controls); the pipeline echo fake returned the first few-shot example for a canary source",
+    "findings": {
+      "01": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_01_polarity_scope_inventions", "test_01_compound_negation_number_conditional", "test_r5_scope_merge_across_line_break", "test_r11_interjector_only_at_phrase_start"]},
+      "02": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_02_typed_numbers", "test_02_corrected_away_value_passes", "test_r7_comma_grouping_is_checked", "test_r8_operator_symbols_and_questions"]},
+      "03": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_03_vocabulary_scoped"]},
+      "04": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_04_false_correction_cannot_redefine_reference", "test_04_guard_reasons", "test_04_truncated_correction_batch_not_applied", "test_04_compound_correction_model_name_and_list", "test_r1_single_word_marker_needs_parallel_values", "test_r2_corrected_away_value_cannot_return"]},
+      "05": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_05_protection_exact_and_multiplicity", "test_05_occurrence_mapping_uses_ledger", "test_r4_protected_occurrence_not_merely_text", "test_cleanup_engine.test_protected_span_mapping_never_drops"]},
+      "06": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_06_identity_and_fallback_preserve_final", "test_06_protected_list_not_renumbered", "test_r3_render_never_changes_a_bound_value", "test_r9_quotes_in_the_text_are_kept", "test_r10_window_seams_use_the_source_separator"]},
+      "07": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_07_protected_long_literal_never_cut", "test_07_forced_limit_without_safe_cut_preserves_source", "test_07_oversized_code_block_not_split", "test_07_overlap_copy_not_duplicated", "test_07_unique_final_requirement_near_limit"]},
+      "08": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_08_engine_exception_keeps_protected_text", "test_08_load_failure_keeps_protected_text", "test_cleanup_pipeline.test_worker_v2_engine_exception_keeps_normalized_input"]},
+      "09": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_09_retry_child_protection_coordinates"]},
+      "10": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_10_standalone_actually"]},
+      "11": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_11_decision_statuses_and_counts", "test_11_split_recovery_keeps_child_lineage_and_revisions", "test_r12_split_retry_counts_and_incomplete_flag", "test_cleanup_pipeline.test_evidence_round_trip_accept", "test_cleanup_pipeline.test_evidence_round_trip_reject_and_correction_rollback", "test_cleanup_pipeline.test_evidence_round_trip_split_recovery"]},
+      "12": {"verdict": "confirmed", "status": "repaired", "regressions": ["test_cleanup_pipeline.test_echo_fake_answers_the_job_not_an_example", "happy-path assertions in test_permitted_context_flows_and_nearby_text_stays_out / test_evidence_cleanup_family_v2_block", "model-path vs fallback-rescued counts printed by test_fidelity / test_literal / test_structure"]}
+    },
+    "refuted": [],
+    "independent_review": "a read-only reviewer of the first repair confirmed 12 further issues by fake-generator probes; all fixed and pinned as test_r1..test_r12 (see handoffs/M07.md 'Remediation — 2026-09-24')",
+    "checks": [
+      {"kind": "deterministic", "command": ".venv/bin/python tests/v2/fidelity/test_cleanup_remediation.py", "exit": 0, "result": "36/36 on the final code (pre-change: 22/24 of the first 24 cases failed)"},
+      {"kind": "deterministic", "command": ".venv/bin/python tests/v2/fidelity/test_cleanup_engine.py", "exit": 0, "result": "19/19 (three tests rewritten: the silent-drop mapping test and the two retry tests that passed only through the forced midpoint cut)"},
+      {"kind": "deterministic", "command": ".venv/bin/python tests/v2/fidelity/test_cleanup_pipeline.py", "exit": 0, "result": "13/13 (echo fake fixed; canary, three evidence round trips, M11 source compatibility added)"},
+      {"kind": "regression (all suites, fast + model-backed)", "command": ".venv/bin/python <each of the 63 test_*.py files under tests/>", "result": "63/63 exit 0 on the final code, 2026-09-24T06:34:17Z..06:38:59Z: incl. model-backed V1 control tests/test_cleanup.py 51/51 (44.6 s), worker_live, live pipeline, prompt-engineer 30/30, fidelity 60/60 (model-path 49, fallback-rescued 11), literal 20/20 (20, 0), structure 40/40 (32, 8), remediation 36/36"},
+      {"kind": "model-backed measurement", "command": ".venv/bin/python scripts/v2/measure_m07_cases.py <repo_root> <out.json>", "result": "docs/v2/benchmarks/20260924-061027-m07-remediation/m07_remediation.json — model-path passes pre -> post: fidelity 49 -> 49 (fallback-rescued 11 -> 11), literal 20 -> 20 (0 -> 0), structure 32 -> 32 (8 -> 8); every case keeps its path; LF-FID-010 gains a second fallback reason; p50/p95 within noise"}
+    ],
+    "compatibility": {
+      "M11": "the transform source is the engine's final Clean artifact, never a rejected or pre-render candidate (test_m11_transform_source_is_final_clean_artifact); no M11 code changed",
+      "M14": "prompts/proposals keep their artifacts and roles; cleanup.passes[].prompt_artifact_id unchanged; correctness unreviewed, no preferences, supervised eligibility unchanged (test_dataset_export.py green); v2.corrections.applied now counts only kept corrections on records with decision_schema m07-decisions-2 — older records unchanged"
+    },
+    "open": [
+      "model incidence of the adversarial outputs unmeasured (gates proven by injected generators; frozen corpus unchanged)",
+      "lexical validator: a scope change preserving words, operators, numbers and boundaries is not caught",
+      "known fail-safe false rejections: contractions, summed number-word phrases, dictated emails, dropped list connectives, corrections removing a negation/hedge",
+      "frequency of no-safe-cut long inputs hitting the output limit on real dictation unmeasured",
+      "model-backed structure fixtures still count items with the production parser (independent exact-text nesting/start/code checks are deterministic)"
+    ],
+    "human_verification": "native-m07-long-prompt-cleanup-trial and the adjudicated real-text stratum remain pending — not performed"
+  },
   "privacy": "Nothing private entered Git: fixtures are synthetic (origin-tagged); the envelope's cleanup.v2 block is content-free (ids/counts/statuses/ranges); prompts, proposals, protected texts and vocabulary terms live exclusively in lease-governed store artifacts (cleanup_input_*/cleanup_proposal/cleanup_rejected_proposal/cleanup_context) under the training buffer lease; the benchmark JSON carries latencies, counts and fixture ids only; the baseline-manifest privacy scan passes over every new path."
 }

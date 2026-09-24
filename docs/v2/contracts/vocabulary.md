@@ -117,7 +117,10 @@ per revision and rebuilt only on edit.
 - **Cleanup:** a permitted-context consumer since M07 — the clean op
   receives the frozen scoped canonicals (bounded) as prompt terms and
   the alias→canonical pairs as validator data
-  (`contracts/cleanup.md`); hint-set membership itself stays
+  (`contracts/cleanup.md`). A pair authorizes only a matched alias
+  occurrence in the cleanup source replaced by its canonical — never a
+  global license to drop the alias's words or to add the canonical
+  elsewhere. Hint-set membership itself stays
   pre-decode-only with its existing disposition (no speculative
   decoder claim).
 

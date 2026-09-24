@@ -144,6 +144,7 @@ def main():
     runner.load()
     engine = runner.engine()
     passed, failed, fallbacks = 0, [], 0
+    rescued = 0      # passed only because the fallback kept the source
     t0 = time.monotonic()
     for case in cases:
         failures, res = run_case(engine, case)
@@ -155,9 +156,13 @@ def main():
                   f"[path={res.path} reason={res.fallback_reason}]")
         else:
             passed += 1
+            rescued += res.path != "llm"
     elapsed = time.monotonic() - t0
     print(f"{passed}/{len(cases)} passed, {fallbacks} fallback jobs, "
           f"total {elapsed:.1f}s")
+    # Safety-fallback scoring stays separate from cleanup success.
+    print(f"model-path passes {passed - rescued}/{len(cases)}, "
+          f"fallback-rescued passes {rescued}")
     if failed:
         for cid, failures in failed:
             print(f"  {cid}: {failures}")

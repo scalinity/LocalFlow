@@ -72,6 +72,7 @@ def main():
     passed, failed = 0, []
     t0 = time.monotonic()
     fallbacks = 0
+    rescued = 0      # passed only because the fallback kept the source
     for case in cases:
         protected = []
         for needle in case.get("protected", []):
@@ -88,9 +89,13 @@ def main():
                   f"[path={res.path} reason={res.fallback_reason}]")
         else:
             passed += 1
+            rescued += res.path != "llm"
     elapsed = time.monotonic() - t0
     print(f"{passed}/{len(cases)} passed, {fallbacks} fallback-window jobs"
           f", total {elapsed:.1f}s")
+    # Safety-fallback scoring stays separate from cleanup success.
+    print(f"model-path passes {passed - rescued}/{len(cases)}, "
+          f"fallback-rescued passes {rescued}")
     if failed:
         for cid, failures, path, reason in failed:
             print(f"  {cid}: {failures} path={path} reason={reason}")

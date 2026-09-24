@@ -2608,18 +2608,28 @@ class AppDelegate(NSObject):
                     # M10 adds the GENERATED spans (snippet expansions
                     # and resolved filenames) — output-coordinate spans
                     # the cleanup must keep verbatim (S17 protection).
+                    # Spans are (start, end, kind): dictated literals map
+                    # through the normalization ledger; generated spans
+                    # are exact ("generated"). Protection that cannot be
+                    # built means cleanup would run unprotected — the job
+                    # abstains from model cleanup instead.
                     prot_spans = []
+                    protection_failed = False
                     try:
                         prot_spans = v2_cleanup.protected_spans_for_cleanup(
                             raw, norm_text,
                             norm_result.protected
+                            if norm_result is not None else [],
+                            norm_result.edits
                             if norm_result is not None else [])
                         if norm_result is not None:
                             prot_spans.extend(
+                                (s, e, "generated") for s, e in
                                 v2_snippets.protected_output_spans(
                                     norm_result,
                                     m10.get("snippet_snapshot")))
                     except Exception as e:
+                        protection_failed = True
                         self.v2log.emit(
                             "cleanup.context_build_failed", level="WARNING",
                             job_id=job_id, reason_code=type(e).__name__)
@@ -2664,17 +2674,30 @@ class AppDelegate(NSObject):
                         "structure_hints": v2_cleanup.prompts.structure_hints(
                             dest_profile),
                         "protected_span_texts": [
-                            norm_text[s:e] for s, e in prot_spans],
+                            norm_text[s:e] for s, e, _k in prot_spans],
+                        "protected_span_kinds": [
+                            k for _s, _e, k in prot_spans],
                     }
-                    res2 = self.supervisor.clean(
-                        job_id=job_id, attempt=job["attempt"],
-                        raw_text=norm_text,
-                        protected_spans=prot_spans or None,
-                        relevant_vocabulary=relevant_vocab or None,
-                        vocabulary_pairs=vocab_pairs or None,
-                        destination_profile=dest_profile,
-                        locale=self.cfg.get("normalization_locale",
-                                            "en-US"))
+                    if protection_failed:
+                        res2 = {
+                            "attempt": job["attempt"], "text": norm_text,
+                            "path": "llm_fallback_normalized",
+                            "fallback_reason": "protection_unmapped",
+                            "duration_ms": 0.0, "observations": [],
+                            "v2": {"stage": "normalized",
+                                   "incomplete": False,
+                                   "termination": {
+                                       "kind": "protection_unmapped"}}}
+                    else:
+                        res2 = self.supervisor.clean(
+                            job_id=job_id, attempt=job["attempt"],
+                            raw_text=norm_text,
+                            protected_spans=prot_spans or None,
+                            relevant_vocabulary=relevant_vocab or None,
+                            vocabulary_pairs=vocab_pairs or None,
+                            destination_profile=dest_profile,
+                            locale=self.cfg.get("normalization_locale",
+                                                "en-US"))
                     if res2.get("retried") and job_id:
                         self._bump_attempt(job, job_id)
                     job["attempt"] = res2.get("attempt", job["attempt"])

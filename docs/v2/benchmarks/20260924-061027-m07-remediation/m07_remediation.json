@@ -1,0 +1,2248 @@
+{
+  "run": "20260924-061027-m07-remediation",
+  "purpose": "M07 remediation (audit 2026-09-24 at d3d3e4b): per-case model outcomes on the frozen EV-09 corpus, pre-change code (HEAD 6593bf3 exported with git archive) vs the remediated code, same machine and process order. Model success (path llm and fixture passed) is reported separately from fallback-rescued passes.",
+  "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+  "template_revision": "tmpl:c5f099f02e34",
+  "measured_utc": {
+    "pre": "2026-09-24T06:06:17Z",
+    "post": "2026-09-24T06:32:20Z"
+  },
+  "command": ".venv/bin/python scripts/v2/measure_m07_cases.py <repo_root> <out.json> (pre: repo_root = git archive export of 6593bf3 with its own harnesses; post: this checkout)",
+  "summary": {
+    "pre": {
+      "fidelity": {
+        "cases": 60,
+        "passed": 60,
+        "model_path_passes": 49,
+        "fallback_rescued": 11,
+        "fallback_jobs": 11,
+        "latency_ms": {
+          "p50": 568.2,
+          "p95": 825.2
+        }
+      },
+      "literal": {
+        "cases": 20,
+        "passed": 20,
+        "model_path_passes": 20,
+        "fallback_rescued": 0,
+        "fallback_jobs": 0,
+        "latency_ms": {
+          "p50": 540.8,
+          "p95": 583.5
+        }
+      },
+      "structure": {
+        "cases": 40,
+        "passed": 40,
+        "model_path_passes": 32,
+        "fallback_rescued": 8,
+        "fallback_jobs": 8,
+        "latency_ms": {
+          "p50": 724.3,
+          "p95": 3342.5
+        }
+      }
+    },
+    "post": {
+      "fidelity": {
+        "cases": 60,
+        "passed": 60,
+        "model_path_passes": 49,
+        "fallback_rescued": 11,
+        "fallback_jobs": 11,
+        "latency_ms": {
+          "p50": 564.9,
+          "p95": 819.9
+        }
+      },
+      "literal": {
+        "cases": 20,
+        "passed": 20,
+        "model_path_passes": 20,
+        "fallback_rescued": 0,
+        "fallback_jobs": 0,
+        "latency_ms": {
+          "p50": 536.3,
+          "p95": 594.0
+        }
+      },
+      "structure": {
+        "cases": 40,
+        "passed": 40,
+        "model_path_passes": 32,
+        "fallback_rescued": 8,
+        "fallback_jobs": 8,
+        "latency_ms": {
+          "p50": 713.8,
+          "p95": 3337.4
+        }
+      }
+    }
+  },
+  "changed_cases": "LF-FID-010 only: a coverage fallback before and after; post-change it also fails numeric_values. Interim runs during the remediation flipped LF-STR-022 (q3 rendered Q3), LF-STR-009 (spoken-list marker whose first content word a correction removed) and LF-STR-036 (sentence-final marker turned into a list intro) to fallbacks; each was a false rejection, fixed and pinned as a control before this run.",
+  "pre": [
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-001",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 751.5,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-002",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 825.2,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-003",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 731.2,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-004",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 754.1,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-005",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 726.9,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-006",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 766.5,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-007",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 785.6,
+      "words": 17
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-008",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1013.9,
+      "words": 27
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-009",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 806.1,
+      "words": 19
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-010",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 888.0,
+      "words": 22
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-011",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,negation_coverage",
+      "passed": true,
+      "ms": 752.8,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-012",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,negation_coverage",
+      "passed": true,
+      "ms": 708.4,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-013",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 525.1,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-014",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 463.7,
+      "words": 7
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-015",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 575.3,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-016",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 563.1,
+      "words": 15
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-017",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 445.1,
+      "words": 5
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-018",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,negation_coverage",
+      "passed": true,
+      "ms": 465.1,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-019",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 467.3,
+      "words": 5
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-020",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 580.3,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-021",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 461.8,
+      "words": 6
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-022",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 521.2,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-023",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 552.6,
+      "words": 14
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-024",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 592.7,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-025",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 443.1,
+      "words": 4
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-026",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 762.7,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-027",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 546.3,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-028",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 494.4,
+      "words": 10
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-029",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 514.2,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-030",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 562.9,
+      "words": 15
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-031",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 607.1,
+      "words": 17
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-032",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 575.9,
+      "words": 15
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-033",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 536.0,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-034",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 527.0,
+      "words": 9
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-035",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 553.0,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-036",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 653.3,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-037",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 547.7,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-038",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 595.7,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-039",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 563.0,
+      "words": 14
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-040",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 551.4,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-041",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 593.8,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-042",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 582.8,
+      "words": 10
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-043",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 574.0,
+      "words": 10
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-044",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 536.7,
+      "words": 10
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-045",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 506.9,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-046",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 606.5,
+      "words": 19
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-047",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 511.7,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-048",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 568.2,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-049",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 528.7,
+      "words": 7
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-050",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,novelty",
+      "passed": true,
+      "ms": 750.1,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-051",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 543.3,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-052",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 535.1,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-053",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 683.9,
+      "words": 21
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-054",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 634.7,
+      "words": 17
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-055",
+      "path": "llm_partial",
+      "fallback_reason": "output_limit",
+      "passed": true,
+      "ms": 3844.0,
+      "words": 18
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-056",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 570.9,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-057",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 500.0,
+      "words": 9
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-058",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 485.7,
+      "words": 9
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-059",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 543.7,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-060",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 452.6,
+      "words": 5
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-001",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 495.1,
+      "words": 9
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-002",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 482.9,
+      "words": 8
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-003",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 482.4,
+      "words": 8
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-004",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 583.5,
+      "words": 16
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-005",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 522.7,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-006",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 570.2,
+      "words": 13
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-007",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 578.4,
+      "words": 12
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-008",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 551.3,
+      "words": 13
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-009",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 505.3,
+      "words": 9
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-010",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 566.0,
+      "words": 14
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-011",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 529.4,
+      "words": 8
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-012",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 556.7,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-013",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 556.7,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-014",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 534.4,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-015",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 532.5,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-016",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 534.6,
+      "words": 11
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-017",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 504.0,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-018",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 540.8,
+      "words": 9
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-019",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 562.0,
+      "words": 14
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-020",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 640.9,
+      "words": 21
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-001",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 637.4,
+      "words": 15
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-002",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 566.8,
+      "words": 13
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-003",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 606.9,
+      "words": 18
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-004",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 484.3,
+      "words": 9
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-005",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 524.7,
+      "words": 12
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-006",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 524.3,
+      "words": 16
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-007",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 651.5,
+      "words": 21
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-008",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 652.2,
+      "words": 19
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-009",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 881.9,
+      "words": 21
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-010",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 701.8,
+      "words": 19
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-011",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 3531.1,
+      "words": 226
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-012",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 2288.2,
+      "words": 156
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-013",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 2102.7,
+      "words": 117
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-014",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1391.9,
+      "words": 81
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-015",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 2009.1,
+      "words": 96
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-016",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1647.7,
+      "words": 89
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-017",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1665.2,
+      "words": 99
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-018",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 693.9,
+      "words": 20
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-019",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 724.3,
+      "words": 17
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-020",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:novelty",
+      "passed": true,
+      "ms": 654.5,
+      "words": 18
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-021",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:structure",
+      "passed": true,
+      "ms": 562.7,
+      "words": 15
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-022",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 649.2,
+      "words": 19
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-023",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1031.3,
+      "words": 42
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-024",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 793.7,
+      "words": 33
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-025",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 701.4,
+      "words": 24
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-026",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 641.0,
+      "words": 17
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-027",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 654.2,
+      "words": 13
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-028",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 831.2,
+      "words": 17
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-029",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 3342.5,
+      "words": 206
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-030",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 3288.8,
+      "words": 209
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-031",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 773.6,
+      "words": 27
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-032",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 686.0,
+      "words": 22
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-033",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 679.0,
+      "words": 23
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-034",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 704.4,
+      "words": 19
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-035",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 3371.9,
+      "words": 221
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-036",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1615.7,
+      "words": 92
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-037",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1175.5,
+      "words": 56
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-038",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 624.4,
+      "words": 16
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-039",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,numeric_values,negation_coverage,novelty",
+      "passed": true,
+      "ms": 3323.2,
+      "words": 134
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-040",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 894.8,
+      "words": 38
+    }
+  ],
+  "post": [
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-001",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 747.2,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-002",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 819.9,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-003",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 724.2,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-004",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 749.6,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-005",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 723.6,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-006",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 771.2,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-007",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 781.2,
+      "words": 17
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-008",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1003.0,
+      "words": 27
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-009",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 804.6,
+      "words": 19
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-010",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,numeric_values",
+      "passed": true,
+      "ms": 882.9,
+      "words": 22
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-011",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,negation_coverage",
+      "passed": true,
+      "ms": 743.4,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-012",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,negation_coverage",
+      "passed": true,
+      "ms": 707.0,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-013",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 523.1,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-014",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 463.1,
+      "words": 7
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-015",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 579.5,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-016",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 558.0,
+      "words": 15
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-017",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 450.4,
+      "words": 5
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-018",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,negation_coverage",
+      "passed": true,
+      "ms": 458.3,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-019",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 444.9,
+      "words": 5
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-020",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 564.0,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-021",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 464.3,
+      "words": 6
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-022",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 521.1,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-023",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 553.3,
+      "words": 14
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-024",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 590.8,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-025",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 656.2,
+      "words": 4
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-026",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 748.4,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-027",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 544.7,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-028",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 486.2,
+      "words": 10
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-029",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 523.0,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-030",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 562.0,
+      "words": 15
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-031",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 605.9,
+      "words": 17
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-032",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 574.6,
+      "words": 15
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-033",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 540.5,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-034",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 532.6,
+      "words": 9
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-035",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 553.3,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-036",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 660.4,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-037",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 548.6,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-038",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 584.5,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-039",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 553.9,
+      "words": 14
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-040",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 545.1,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-041",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 584.8,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-042",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 576.0,
+      "words": 10
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-043",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 574.8,
+      "words": 10
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-044",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 535.0,
+      "words": 10
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-045",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 505.8,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-046",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 605.7,
+      "words": 19
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-047",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 512.1,
+      "words": 12
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-048",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 564.9,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-049",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 515.5,
+      "words": 7
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-050",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,novelty",
+      "passed": true,
+      "ms": 738.9,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-051",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 534.9,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-052",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 545.0,
+      "words": 11
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-053",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 696.7,
+      "words": 21
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-054",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 634.9,
+      "words": 17
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-055",
+      "path": "llm_partial",
+      "fallback_reason": "output_limit",
+      "passed": true,
+      "ms": 1875.9,
+      "words": 18
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-056",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 566.2,
+      "words": 16
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-057",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 486.0,
+      "words": 9
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-058",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 485.5,
+      "words": 9
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-059",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 534.1,
+      "words": 13
+    },
+    {
+      "suite": "fidelity",
+      "case_id": "LF-FID-060",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 452.5,
+      "words": 5
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-001",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 494.0,
+      "words": 9
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-002",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 476.6,
+      "words": 8
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-003",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 482.8,
+      "words": 8
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-004",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 594.0,
+      "words": 16
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-005",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 524.5,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-006",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 562.5,
+      "words": 13
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-007",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 555.4,
+      "words": 12
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-008",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 549.6,
+      "words": 13
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-009",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 511.9,
+      "words": 9
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-010",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 565.1,
+      "words": 14
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-011",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 527.5,
+      "words": 8
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-012",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 555.6,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-013",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 556.3,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-014",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 527.1,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-015",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 527.9,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-016",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 525.1,
+      "words": 11
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-017",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 506.4,
+      "words": 10
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-018",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 536.3,
+      "words": 9
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-019",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 564.7,
+      "words": 14
+    },
+    {
+      "suite": "literal",
+      "case_id": "LF-LIT-020",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 631.7,
+      "words": 21
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-001",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 638.4,
+      "words": 15
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-002",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 571.5,
+      "words": 13
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-003",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 606.1,
+      "words": 18
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-004",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 486.2,
+      "words": 9
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-005",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 534.4,
+      "words": 12
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-006",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 532.7,
+      "words": 16
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-007",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 652.5,
+      "words": 21
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-008",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 654.3,
+      "words": 19
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-009",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 869.6,
+      "words": 21
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-010",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 702.0,
+      "words": 19
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-011",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 3529.7,
+      "words": 226
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-012",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 2290.3,
+      "words": 156
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-013",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 2111.9,
+      "words": 117
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-014",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1632.8,
+      "words": 81
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-015",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 2014.8,
+      "words": 96
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-016",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1647.7,
+      "words": 89
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-017",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1670.2,
+      "words": 99
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-018",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 683.5,
+      "words": 20
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-019",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 713.8,
+      "words": 17
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-020",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:novelty",
+      "passed": true,
+      "ms": 656.0,
+      "words": 18
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-021",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:structure",
+      "passed": true,
+      "ms": 556.3,
+      "words": 15
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-022",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 655.9,
+      "words": 19
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-023",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1033.4,
+      "words": 42
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-024",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 800.0,
+      "words": 33
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-025",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 705.2,
+      "words": 24
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-026",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 628.2,
+      "words": 17
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-027",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 662.8,
+      "words": 13
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-028",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 830.4,
+      "words": 17
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-029",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 3337.4,
+      "words": 206
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-030",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 3307.4,
+      "words": 209
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-031",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 776.6,
+      "words": 27
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-032",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage",
+      "passed": true,
+      "ms": 679.3,
+      "words": 22
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-033",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 680.5,
+      "words": 23
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-034",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 703.2,
+      "words": 19
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-035",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 3656.8,
+      "words": 221
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-036",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1601.9,
+      "words": 92
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-037",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 1180.1,
+      "words": 56
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-038",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 636.8,
+      "words": 16
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-039",
+      "path": "llm_fallback_normalized",
+      "fallback_reason": "validation_rejected:coverage,numeric_values,negation_coverage,novelty",
+      "passed": true,
+      "ms": 3322.5,
+      "words": 134
+    },
+    {
+      "suite": "structure",
+      "case_id": "LF-STR-040",
+      "path": "llm",
+      "fallback_reason": null,
+      "passed": true,
+      "ms": 894.9,
+      "words": 38
+    }
+  ]
+}

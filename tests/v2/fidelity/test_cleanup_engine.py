@@ -189,8 +189,9 @@ def test_output_limit_split_retry_and_incomplete_notice():
     still fails rolls the whole window back to source with an explicit
     incomplete notice — never the truncated output, never unvalidated
     corrections (S13/AC02)."""
-    text = ("sentence one about shipping. " * 3 + "alpha beta gamma. "
-            + "tail words here. ") * 12
+    # Capitalized sentences give the retry safe seams to split at.
+    text = ("Sentence one about shipping. " * 3 + "Alpha beta gamma. "
+            + "Tail words here. ") * 12
     calls = {"n": 0}
 
     def gen(prompt, max_tokens):
@@ -215,10 +216,13 @@ def test_output_limit_split_retry_and_incomplete_notice():
 
 def test_output_limit_retry_recovery_success():
     """When the halves validate, the window is clean — assembled from
-    the two validated halves, no incomplete notice."""
+    the two validated halves, no incomplete notice. The halves split at
+    a safe sentence seam ("... block. Second half ..."); a range with no
+    safe seam is never force-cut (remediation test_07)."""
     text = ("first half sentence one. first half sentence two. "
-            + "filler words to grow the block. " * 12) \
-        + " second half sentence one. second half sentence two."
+            + "filler words to grow the block. " * 6) \
+        + " Second half sentence one. second half sentence two. " \
+        + "more filler words close the block. " * 6
     calls = {"n": 0}
 
     def gen(prompt, max_tokens):
@@ -272,23 +276,30 @@ def test_multi_window_with_protected_span():
           " windows validate")
 
 
-def test_unlocatable_protected_span_dropped():
-    """A protected span whose text cannot be located in the normalized
-    text is dropped (honest degradation), not misapplied."""
+def test_protected_span_mapping_never_drops():
+    """Protection maps through the ledger and never silently drops: a
+    quote whose words normalization rewrote stays protected over its
+    normalized form, and a span the ledger cannot describe raises (the
+    coordinator then abstains from model cleanup)."""
     from localflow.v2.cleanup import protected_spans_for_cleanup
+    from localflow.v2.normalize import NormalizationPolicy, normalize
     from localflow.v2.normalize.span_types import ProtectedSpan, Span
-    raw = "write the word slash here"
-    normalized = "slash here"
-    spans = protected_spans_for_cleanup(
-        raw, normalized,
-        [ProtectedSpan(Span(0, 20), "literal_escape")])   # covers whole
-    # "write the word slash here" is not in the normalized text → [].
-    assert spans == []
-    # Out-of-range raw span is dropped too.
-    spans2 = protected_spans_for_cleanup(
-        raw, normalized, [ProtectedSpan(Span(99, 120), "quoted")])
-    assert spans2 == []
-    print("ok  unlocatable/out-of-range protected spans drop honestly")
+    raw = 'she said "ship twenty items" to me'
+    res = normalize(raw, NormalizationPolicy(locale="en-US",
+                                             profile="technical"))
+    spans = protected_spans_for_cleanup(raw, res.text, res.protected,
+                                        res.edits)
+    assert [res.text[s:e] for s, e, _k in spans] == ["ship 20 items"], \
+        spans
+    try:
+        protected_spans_for_cleanup(
+            raw, res.text, [ProtectedSpan(Span(99, 120), "quoted")],
+            res.edits)
+        raise AssertionError("out-of-range span must not be dropped")
+    except ValueError:
+        pass
+    print("ok  protected spans map through the ledger; unmappable spans "
+          "fail loudly, never drop")
 
 
 def test_validator_damaged_outputs_e09():
@@ -416,16 +427,17 @@ def test_read_only_overlap_marked_not_repeated():
 
 
 def test_protected_span_mapping():
-    from localflow.v2.normalize.span_types import ProtectedSpan, Span
+    from localflow.v2.normalize import NormalizationPolicy, normalize
     raw = 'write the word slash and "the the" stays'
-    normalized = 'slash and "the the" stays'
-    q = raw.index('"the the"')
-    protected = [ProtectedSpan(Span(15, 20), "literal_escape"),
-                 ProtectedSpan(Span(q, q + 9), "quoted")]
-    spans = protected_spans_for_cleanup(raw, normalized, protected)
-    texts = [normalized[s:e] for s, e in spans]
-    assert texts == ["slash", '"the the"'], texts
-    print("ok  protected spans map raw→normalized by verbatim search")
+    res = normalize(raw, NormalizationPolicy(locale="en-US",
+                                             profile="technical"))
+    assert res.text == 'slash and "the the" stays', res.text
+    spans = protected_spans_for_cleanup(raw, res.text, res.protected,
+                                        res.edits)
+    texts = [(res.text[s:e], k) for s, e, k in spans]
+    assert texts == [("slash", "literal_escape"), ("the the", "quoted")], \
+        texts
+    print("ok  protected spans map raw→normalized through the ledger")
 
 
 def test_list_renderer_controls_numbering():
@@ -474,7 +486,7 @@ def main():
     test_output_limit_split_retry_and_incomplete_notice()
     test_output_limit_retry_recovery_success()
     test_multi_window_with_protected_span()
-    test_unlocatable_protected_span_dropped()
+    test_protected_span_mapping_never_drops()
     test_validator_damaged_outputs_e09()
     test_deterministic_vs_heuristic_labels()
     test_vocabulary_authorized_substitution()

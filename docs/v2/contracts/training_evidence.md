@@ -108,6 +108,17 @@ lineage. A validator outcome is a mining signal only —
 `outcome.correctness` stays `unreviewed` and no preference is recorded
 (M07-AC06). See `contracts/cleanup.md`.
 
+Decision evidence (`decision_schema: "m07-decisions-2"`): each
+`cleanup.passes` entry also carries its pass identity (`pass_id`,
+`parent_pass_id`, `depth`), `window_range`, termination (`max_tokens`,
+`output_tokens`, `limit_hit`) and `status`; `cleanup.decisions` lists
+every window/retry decision content-free; the full manifest (correction
+proposals with provisional/selected/rolled-back status, validation
+reports with findings) is the lease-governed `cleanup_decisions`
+artifact referenced by `cleanup.v2.decisions_artifact_id`, under the
+same training-buffer retention as the prompts it references. Older
+records keep their shape — absent keys mean not captured.
+
 ## M08 live status (outcome family)
 
 The outcome field family is live: `on_insertion_result(ctx, result,

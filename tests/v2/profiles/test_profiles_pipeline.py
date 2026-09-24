@@ -397,8 +397,10 @@ def test_snippet_expansion_and_protection_through_pipeline():
         spans = sup.clean_kwargs.get("protected_spans") or []
         assert spans, "no protected spans reached cleanup"
         norm_text = job["normalized"]
-        protected_text = [norm_text[s:e] for s, e in spans]
-        assert any("Best," in t for t in protected_text), protected_text
+        # Spans are (start, end, kind); generated text is exact.
+        protected_text = [(norm_text[s:e], kind) for s, e, kind in spans]
+        assert any("Best," in t and kind == "generated"
+                   for t, kind in protected_text), protected_text
         # Usage recorded as statistics (one hit, state counter quiet).
         def usage(db):
             return db.execute(

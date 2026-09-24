@@ -146,6 +146,91 @@ def renumber(doc: Document, *, continue_groups: bool = True) -> Document:
     return out
 
 
+_ORDERED_LINE_RE = re.compile(r"^(\s*)(\d+)([.)])\s")
+_BULLET_LINE_RE = re.compile(r"^(\s*)[-*•]\s")
+
+
+def _renumber_lines(text: str, continue_from: int | None = None
+                    ) -> tuple[str, int | None, list[int]]:
+    """Line-level renumbering: only the digits of ordered-list markers
+    change; indentation, nesting, bullets, blank lines, fence info and
+    code bytes stay exactly as given. Each indentation level numbers
+    contiguously from its run's first declared number (a deeper run
+    restarts under each parent item; a bullet or prose line ends the
+    run) — or, for an ordered list that opens the text, from
+    ``continue_from`` (a list split at a window seam). Returns (text,
+    next top-level number when the text ends inside an ordered list,
+    else None, the start number of every ordered run in order)."""
+    lines = text.split("\n")
+    out = []
+    starts: list[int] = []
+    counters: dict[int, int] = {}
+    base = None
+    in_fence = False
+    opening = continue_from
+    for i, line in enumerate(lines):
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
+            counters, base, opening = {}, None, None
+            out.append(line)
+            continue
+        if in_fence:
+            out.append(line)
+            continue
+        mo = _ORDERED_LINE_RE.match(line)
+        mb = _BULLET_LINE_RE.match(line)
+        if line.strip() and not mo:
+            opening = None
+        if mo:
+            ind = len(mo.group(1))
+            if base is None:
+                base = ind
+            for k in [k for k in counters if k > ind]:
+                del counters[k]
+            if opening is not None and ind == base and ind not in counters:
+                counters[ind] = opening
+            opening = None
+            if ind not in counters:
+                starts.append(int(mo.group(2)))
+            n = counters.get(ind, int(mo.group(2)))
+            counters[ind] = n + 1
+            line = line[:mo.start(2)] + str(n) + line[mo.end(2):]
+        elif mb:
+            ind = len(mb.group(1))
+            if base is None:
+                base = ind
+            for k in [k for k in counters if k >= ind]:
+                del counters[k]
+        elif not line.strip():
+            nxt = lines[i + 1] if i + 1 < len(lines) else ""
+            if not (_ORDERED_LINE_RE.match(nxt)
+                    or _BULLET_LINE_RE.match(nxt)):
+                counters, base = {}, None
+        else:
+            counters, base = {}, None
+        out.append(line)
+    nxt_num = counters.get(base) if base is not None else None
+    return "\n".join(out), nxt_num, starts
+
+
+def renumber_text(text: str, continue_from: int | None = None) -> str:
+    """The renderer's numbering control applied losslessly (see
+    ``_renumber_lines``): "1. 2. 4." becomes "1. 2. 3." and a list split
+    at a window seam numbers as one run."""
+    return _renumber_lines(text, continue_from)[0]
+
+
+def list_run_starts(text: str) -> list[int]:
+    """The declared start number of every ordered-list run, in order."""
+    return _renumber_lines(text)[2]
+
+
+def next_list_number(text: str) -> int | None:
+    """The next top-level number if the text ends inside an ordered list
+    (windows split mid-list continue numbering across the seam)."""
+    return _renumber_lines(text)[1]
+
+
 def continue_list_number(doc: Document) -> int | None:
     """The next number if the document ends inside an ordered list group
     (windows split mid-list continue numbering across the seam)."""

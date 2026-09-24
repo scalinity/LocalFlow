@@ -68,7 +68,8 @@ class ModelRunner:
         worker and the model-backed suites use the same construction)."""
         from .engine import CleanupEngine
         return CleanupEngine(self.generate_fn(), model_id=self.model_id,
-                             notifier=notifier, render_fn=self.render)
+                             notifier=notifier, render_fn=self.render,
+                             template_revision=self.template_revision)
 
     def generate_fn(self):
         from mlx_lm.generate import stream_generate

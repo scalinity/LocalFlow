@@ -102,6 +102,9 @@ class Worker:
         # TranscriptCleaner control path unchanged.
         self.cleanup_implementation = "v2"
         self.cleanup_engine = None
+        # A failed V2 load answers with the unchanged normalized input
+        # (the last preserved artifact), never a protection-blind pass.
+        self._v2_load_failed = False
         # M11 (S16): the cleanup engine's raw generation/render pair —
         # a transform runs one bounded local generation on the SAME
         # loaded model (no second engine, no model change).
@@ -119,6 +122,7 @@ class Worker:
         # supervisor spawns a fresh process per load, so this only
         # matters for direct Worker reuse in tests).
         self.cleanup_engine = None
+        self._v2_load_failed = False
 
         from ..stt import Transcriber
         t = Transcriber(self.asr_model)
@@ -162,21 +166,18 @@ class Worker:
                 self._cleanup_generate = runner.generate_fn()
                 self._cleanup_render = runner.render
             except Exception as e:
-                # Load failure degrades to basic answers, exactly like
-                # the v1 path — the engine is failed, not the worker.
-                # The basic TranscriptCleaner is the degraded answerer so
-                # every M03 label (path "basic", cleanup_engine_failed)
-                # stays identical for both implementations.
+                # Load failure degrades — the engine is failed, not the
+                # worker. The degraded answer is the unchanged normalized
+                # input with the honest cleanup_engine_failed reason: the
+                # basic regex pass would strip fillers inside protected
+                # literals and code ('Keep "um" literal.' → 'Keep ""
+                # literal.'). The v1 path keeps its own basic fallback.
                 self._load_error["cleanup"] = f"{type(e).__name__}"
                 _write_msg({"v": PROTOCOL_VERSION, "op": "engine",
                             "engine": "cleanup", "state": "failed",
                             "model_id": cleanup_model,
                             "reason_code": _reason(e)})
-                from ..cleanup import TranscriptCleaner
-                self.cleaner = TranscriptCleaner(
-                    "basic", cleanup_model,
-                    notifier=lambda m, level="INFO": None,
-                    observer=None)
+                self._v2_load_failed = True
                 return
             _write_msg({"v": PROTOCOL_VERSION, "op": "engine",
                         "engine": "cleanup", "state": "ready",
@@ -259,6 +260,9 @@ class Worker:
         if self.cleanup_engine is not None:
             self._clean_v2(msg, raw_text)
             return
+        if self._v2_load_failed:
+            self._v2_unchanged(msg, raw_text, "load_failed", None)
+            return
         observations = []
         # Request-scoped sink: warmup generations attach to nothing and
         # observations from one request can never leak into another job.
@@ -281,13 +285,29 @@ class Worker:
         finally:
             self.cleaner.observer = None
 
+    def _v2_unchanged(self, msg, raw_text, kind, error):
+        """The V2 failure answer: the normalized input exactly as
+        received — protected literals, quotes and code bytes included —
+        labeled honestly (never "llm")."""
+        _write_msg({
+            "v": PROTOCOL_VERSION, "op": "result", "kind": "clean",
+            "req_id": msg.get("req_id"), "job_id": msg.get("job_id"),
+            "attempt": msg.get("attempt"),
+            "generation": msg.get("generation"),
+            "text": raw_text, "duration_ms": 0.0,
+            "path": "llm_fallback_normalized",
+            "fallback_reason": "cleanup_engine_failed",
+            "observations": [],
+            "v2": {"stage": "normalized", "incomplete": False,
+                   "termination": {"kind": "engine_error"},
+                   "failure": kind, "error": error},
+        })
+
     def _clean_v2(self, msg, raw_text):
         """M07 faithful cleanup (S13–S14): the V2 engine with permitted
         context (protected spans, scoped vocabulary, destination
-        profile). A load failure never reaches here (the degraded basic
-        TranscriptCleaner answers, M03-AC04 labels identical); an
-        in-flight engine exception falls back to basic honestly."""
-        from ..cleanup import basic_cleanup
+        profile). A load failure answers through ``_v2_unchanged``; so
+        does an in-flight engine exception."""
         try:
             t0 = time.monotonic()
             result = self.cleanup_engine.clean(
@@ -315,22 +335,8 @@ class Worker:
                 "v2": meta,
             })
         except Exception as e:
-            t0 = time.monotonic()
-            text = basic_cleanup(raw_text)
-            _write_msg({
-                "v": PROTOCOL_VERSION, "op": "result", "kind": "clean",
-                "req_id": msg.get("req_id"), "job_id": msg.get("job_id"),
-                "attempt": msg.get("attempt"),
-                "generation": msg.get("generation"),
-                "text": text,
-                "duration_ms": round((time.monotonic() - t0) * 1000.0, 1),
-                "path": "basic",
-                "fallback_reason": "cleanup_engine_failed",
-                "observations": [],
-                "v2": {"stage": "basic", "incomplete": False,
-                       "termination": {"kind": "engine_error"},
-                       "error": type(e).__name__},
-            })
+            self._v2_unchanged(msg, raw_text, "in_flight",
+                               type(e).__name__)
 
     def _transform(self, msg):
         """M11 (S16): one bounded transform generation on the loaded
@@ -404,7 +410,8 @@ class Worker:
                     else:
                         self._transcribe(msg)
                 elif op == "clean":
-                    if self.cleaner is None and self.cleanup_engine is None:
+                    if self.cleaner is None and self.cleanup_engine is None \
+                            and not self._v2_load_failed:
                         _fault(msg, "EngineNotReady",
                                "cleanup_engine_not_ready")
                     else:

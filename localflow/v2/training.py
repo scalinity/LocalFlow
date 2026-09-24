@@ -700,6 +700,8 @@ class EvidenceCollector:
                 self.store.grant_lease(
                     proposal_art, "training",
                     days=self.store.retention_days["training_buffer"])
+            obs["_proposal_artifact_id"] = proposal_art
+            obs["_prompt_artifact_id"] = prompt_art
             cleanup_detail["passes"].append({
                 "kind": obs.get("kind"),
                 "input_sha256": ids.sha256_text(obs.get("input") or ""),
@@ -708,9 +710,21 @@ class EvidenceCollector:
                 "accepted": obs.get("accepted"),
                 "applied_sha256": (ids.sha256_text(obs["applied"])
                                    if obs.get("applied") is not None else None),
+                # M07 remediation (decision schema m07-decisions-2):
+                # content-free pass identity, range and termination.
+                # Absent keys on older records mean "not captured".
+                "pass_id": obs.get("pass_id"),
+                "parent_pass_id": obs.get("parent_pass_id"),
+                "depth": obs.get("depth"),
+                "window_range": obs.get("window_range"),
+                "max_tokens": obs.get("max_tokens"),
+                "output_tokens": obs.get("output_tokens"),
+                "limit_hit": obs.get("limit_hit"),
+                "status": obs.get("status"),
             })
-        decision = next((o for o in reversed(ctx.cleanup_observations)
-                         if o.get("kind") == "cleanup_decision"), None)
+        decisions = [o for o in ctx.cleanup_observations
+                     if o.get("kind") == "cleanup_decision"]
+        decision = decisions[-1] if decisions else None
         if decision is not None:
             cleanup_detail["decision"] = {
                 "accepted": decision.get("accepted"),
@@ -719,6 +733,61 @@ class EvidenceCollector:
                     if decision.get("applied") is not None else None),
                 "error": decision.get("error"),
             }
+            # Every window/retry decision, content-free (the last one
+            # above stays for older readers).
+            cleanup_detail["decisions"] = [{
+                "pass_id": d.get("pass_id"),
+                "stage": d.get("stage"),
+                "depth": d.get("depth"),
+                "window_range": d.get("window_range"),
+                "accepted": d.get("accepted"),
+                "status": d.get("status"),
+                "failed_components": [
+                    c["name"] for c in
+                    (d.get("validation") or {}).get("components", [])
+                    if c.get("kind") == "deterministic"
+                    and c.get("status") == "fail"],
+                "applied_sha256": (ids.sha256_text(d["applied"])
+                                   if d.get("applied") is not None
+                                   else None),
+            } for d in decisions]
+        # The complete decision manifest — every pass, correction
+        # proposal and validation report with its findings, and each
+        # candidate's provisional/selected/rolled-back status — is
+        # content-bearing, so it is a lease-governed artifact referenced
+        # from the envelope, never envelope content (S29.14). Prompts and
+        # outputs are referenced by their own artifact ids, not copied.
+        manifest_art = None
+        if any("pass_id" in o for o in ctx.cleanup_observations):
+            manifest = {
+                "schema": (ctx.cleanup_v2 or {}).get("decision_schema"),
+                "records": [
+                    {k: v for k, v in o.items()
+                     if k not in ("prompt", "system_prompt", "input",
+                                  "output")
+                     and not k.startswith("_")}
+                    | ({"input_sha256": ids.sha256_text(o["input"])}
+                       if o.get("input") is not None else {})
+                    | ({"prompt_artifact_id": o["_prompt_artifact_id"],
+                        "proposal_artifact_id":
+                            o.get("_proposal_artifact_id")}
+                       if o.get("_prompt_artifact_id") else {})
+                    for o in ctx.cleanup_observations],
+            }
+            try:
+                manifest_art = self.store.write_text_artifact(
+                    job_id=ctx.job_id, stage="cleanup",
+                    role="cleanup_decisions", kind="cleanup_decisions_json",
+                    text=json.dumps(manifest, ensure_ascii=False,
+                                    sort_keys=True, default=str),
+                    retention_class="training",
+                    parent_artifact_id=ctx.norm_text_artifact
+                    or ctx.raw_artifact)
+                self.store.grant_lease(
+                    manifest_art, "training",
+                    days=self.store.retention_days["training_buffer"])
+            except Exception:
+                manifest_art = None
         # M03-AC04: which path actually produced the applied text — an
         # llm-mode fallback to basic is recorded as basic, never "llm".
         cleanup_detail["applied_path"] = ctx.cleanup_path
@@ -736,6 +805,8 @@ class EvidenceCollector:
             v2 = dict(ctx.cleanup_v2)
             v2["context_artifact_id"] = ctx.cleanup_context_artifact
             v2["context_retained"] = ctx.cleanup_context_artifact is not None
+            v2["decisions_artifact_id"] = manifest_art
+            v2["decisions_retained"] = manifest_art is not None
             payload = ctx.cleanup_context_payload
             if payload is not None:
                 v2["context_terms"] = len(
@@ -1080,10 +1151,15 @@ class EvidenceCollector:
             # input; the corrections pass has its own artifact in
             # cleanup.passes (both used to share this join ambiguously). A
             # rejected proposal stays in passes with its rejected role.
+            # With pass status recorded, only a SELECTED whole-window
+            # candidate is the cleanup proposal (a truncated, rolled-back
+            # or half-window retry candidate never is).
             "cleanup_proposal": next(
                 (p["proposal_artifact_id"] for p in cleanup_detail["passes"]
                  if p.get("kind") == "cleanup"
                  and p.get("accepted") is not False
+                 and p.get("status") in (None, "selected")
+                 and not p.get("depth")
                  and p.get("proposal_artifact_id")), None),
             "applied_output": ctx.applied_artifact,
         }
