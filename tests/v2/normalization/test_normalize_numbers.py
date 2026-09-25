@@ -21,6 +21,9 @@ from localflow.v2.normalize import (  # noqa: E402
     normalize,
 )
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import typed_oracle  # noqa: E402
+
 HERE = pathlib.Path(__file__).resolve().parent
 FIXTURES = json.loads((HERE / "fixtures_numeric.json").read_text())
 
@@ -65,6 +68,42 @@ def test_all_fixtures_exact():
           f"({n_neg} negative controls hold)")
 
 
+# The ONLY fixtures allowed to declare idempotence_expected=false: none
+# in the numeric stratum (the documented escape corners live in the
+# syntax fixtures). A new flag must be added here with its reason — a
+# flag cannot silently exempt an ordinary case (M04-AUDIT-18).
+IDEMPOTENCE_EXCEPTIONS: dict = {}
+
+
+def test_idempotence_exception_inventory():
+    flagged = {c["case_id"] for c in FIXTURES["cases"]
+               if c.get("idempotence_expected") is False}
+    assert flagged == set(IDEMPOTENCE_EXCEPTIONS), \
+        f"undeclared idempotence exceptions: {flagged ^ set(IDEMPOTENCE_EXCEPTIONS)}"
+    print(f"ok  idempotence exception inventory: exactly "
+          f"{len(IDEMPOTENCE_EXCEPTIONS)} declared")
+
+
+def test_typed_semantics_independent_oracle():
+    """M04-AUDIT-18: every fixture's protected_values checked against
+    the typed ledger with independent arithmetic (Decimal equality,
+    ordered components, 24-hour clock) plus ledger-sign == rendered-sign
+    on every numeric edit."""
+    failures = []
+    checked = 0
+    for case in FIXTURES["cases"]:
+        pol = _policy_for(case["context"])
+        res = normalize(case["input_text"], pol, _snap_for(case["context"]))
+        probs = typed_oracle.check(case, res)
+        checked += len(case.get("protected_values", []))
+        if probs:
+            failures.append((case["case_id"], probs))
+    assert not failures, failures
+    assert checked >= 60, checked
+    print(f"ok  typed semantics: {checked} protected values independently "
+          "verified; ledger signs match rendered signs")
+
+
 def test_idempotence_all_fixtures():
     """M04-AC03: normalize(normalize(x)) == normalize(x) with an empty
     second ledger — asserted per fixture unless the fixture itself
@@ -72,6 +111,7 @@ def test_idempotence_all_fixtures():
     failures = []
     for case in FIXTURES["cases"]:
         if case.get("idempotence_expected") is False:
+            assert case["case_id"] in IDEMPOTENCE_EXCEPTIONS
             continue
         pol = _policy_for(case["context"])
         first = normalize(case["input_text"], pol,
@@ -185,11 +225,16 @@ def test_quantified_scale_is_prose():
 
 def test_time_requires_time_context():
     """Review regression (W2): an hour+minute word pair without a time
-    preposition is ordinal/count context, not a clock."""
+    preposition is ordinal/count context, not a clock. The oracle is
+    semantic (M04-AUDIT-18): no time-class edit and the words kept —
+    not merely the absence of one forbidden substring."""
     pol = NormalizationPolicy()
-    for text in ("chapter five thirty two", "question five thirty"):
+    for text in ("chapter five thirty two", "question five thirty",
+                 "three fifteen minute breaks", "one twenty minute session"):
         res = normalize(text, pol)
-        assert "5:3" not in res.text, (text, res.text)
+        assert not [e for e in res.edits if e.cls == "time"], \
+            (text, res.text)
+        assert res.text == text, (text, res.text)
     assert normalize("the meeting is at five thirty", pol).text == \
         "the meeting is at 5:30"
     print("ok  time grammar gated on time context ('at five thirty')")
@@ -198,6 +243,8 @@ def test_time_requires_time_context():
 def main():
     test_fixture_counts()
     test_all_fixtures_exact()
+    test_typed_semantics_independent_oracle()
+    test_idempotence_exception_inventory()
     test_idempotence_all_fixtures()
     test_ledger_replay()
     test_typed_values_and_units()

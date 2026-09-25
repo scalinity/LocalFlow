@@ -25,6 +25,9 @@ from localflow.v2.normalize import (  # noqa: E402
 )
 
 HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import typed_oracle  # noqa: E402
+
 FIXTURES = json.loads((HERE / "fixtures_syntax.json").read_text())
 PKG = pathlib.Path(
     __file__).resolve().parents[3] / "localflow" / "v2" / "normalize"
@@ -82,12 +85,57 @@ def test_literal_and_noncommand_stay_unconverted():
           "review suggestion retained")
 
 
+# The complete, fixed inventory of documented second-pass exceptions
+# (M04-AUDIT-18): an escape that emits a bare command word re-matches its
+# command on a second pass. Each must ACTUALLY be non-idempotent — a
+# flag can neither be added silently nor hide a case that is stable.
+IDEMPOTENCE_EXCEPTIONS = {
+    "LF-SYN-003": "escape emits the bare command word 'comma'",
+    "LF-SYN-005": "escape emits the bare command words 'new line'",
+}
+
+
+def test_idempotence_exception_inventory():
+    flagged = {c["case_id"] for c in FIXTURES["cases"]
+               if c.get("idempotence_expected") is False}
+    assert flagged == set(IDEMPOTENCE_EXCEPTIONS), \
+        flagged ^ set(IDEMPOTENCE_EXCEPTIONS)
+    for case in FIXTURES["cases"]:
+        if case["case_id"] in IDEMPOTENCE_EXCEPTIONS:
+            pol = _policy_for(case["context"])
+            res = normalize(case["input_text"], pol,
+                            _snap_for(case["context"]))
+            assert res.is_idempotent(pol, _snap_for(case["context"])) \
+                is False, f"{case['case_id']} is stable: drop its flag"
+    print(f"ok  idempotence exception inventory: exactly "
+          f"{len(IDEMPOTENCE_EXCEPTIONS)} declared, each really unstable")
+
+
+def test_typed_semantics_independent_oracle():
+    """M04-AUDIT-18: protected_values checked against the typed ledger
+    independently (see typed_oracle)."""
+    failures = []
+    checked = 0
+    for case in FIXTURES["cases"]:
+        pol = _policy_for(case["context"])
+        res = normalize(case["input_text"], pol, _snap_for(case["context"]))
+        probs = typed_oracle.check(case, res)
+        checked += len(case.get("protected_values", []))
+        if probs:
+            failures.append((case["case_id"], probs))
+    assert not failures, failures
+    assert checked >= 30, checked
+    print(f"ok  typed semantics: {checked} protected values independently "
+          "verified")
+
+
 def test_idempotence_all_fixtures():
     """M04-AC03 on the syntax stratum (LF-SYN-003 declares the corner)."""
     failures = []
     corners = 0
     for case in FIXTURES["cases"]:
         if case.get("idempotence_expected") is False:
+            assert case["case_id"] in IDEMPOTENCE_EXCEPTIONS
             corners += 1
             continue
         pol = _policy_for(case["context"])
@@ -114,34 +162,95 @@ def test_escape_corner_reported_honestly():
     print("ok  escape corner: is_idempotent() reports False honestly")
 
 
+# The reviewed normalization source boundary (M04-AUDIT-19): every .py
+# file under the package, RECURSIVELY, plus the one external
+# collaborator it imports. A file that joins the boundary without
+# review fails the population check; an import of anything outside the
+# allowlist fails the AST check, whatever alias it hides behind.
+BOUNDARY_FILES = {
+    "__init__.py", "engine.py", "numbers.py", "syntax.py", "policy.py",
+    "scoring.py", "span_types.py",
+}
+COLLABORATORS = {"snippets"}   # relative imports leaving the package
+ALLOWED_IMPORTS = {
+    "__future__", "bisect", "dataclasses", "decimal", "hashlib", "json",
+    "pathlib", "re", "time", "types", "typing",
+}
+FORBIDDEN_CALLS = {"eval", "exec", "compile", "__import__", "open",
+                   "breakpoint", "input"}          # bare builtins
+FORBIDDEN_ATTR_CALLS = {"system", "popen", "Popen", "fork", "urlopen",
+                        "check_output", "check_call", "spawnv", "spawnl",
+                        "execv", "execl", "execvp", "startfile"}
+
+
+def scan_boundary(pkg: pathlib.Path) -> list:
+    """AST scan of the normalization boundary. Returns problems (empty =
+    clean). Comments and string literals are never code, so a docstring
+    that says "never spawns a subprocess" is not a finding; an aliased
+    import or a dynamic getattr is."""
+    import ast
+    problems = []
+    files = sorted(pkg.rglob("*.py"))
+    names = {p.relative_to(pkg).as_posix() for p in files}
+    if names != BOUNDARY_FILES:
+        problems.append(("population", sorted(names ^ BOUNDARY_FILES)))
+    collab = pkg.parent / "snippets.py"
+    if collab.exists():
+        files.append(collab)
+    for py in files:
+        tree = ast.parse(py.read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for a in node.names:
+                    root = a.name.split(".")[0]
+                    if root not in ALLOWED_IMPORTS:
+                        problems.append((py.name, "import", a.name))
+            elif isinstance(node, ast.ImportFrom):
+                if node.level == 0:
+                    root = (node.module or "").split(".")[0]
+                    if root not in ALLOWED_IMPORTS:
+                        problems.append((py.name, "import", node.module))
+                elif node.level >= 2 or (py.parent != pkg
+                                         and node.level >= 1
+                                         and py != collab):
+                    mod = (node.module or "").split(".")[0]
+                    if py.parent == pkg and mod not in COLLABORATORS:
+                        problems.append((py.name, "relative", node.module))
+                    elif py.parent != pkg and py != collab:
+                        problems.append((py.name, "relative", node.module))
+            elif isinstance(node, ast.Call):
+                f = node.func
+                name = f.id if isinstance(f, ast.Name) else (
+                    f.attr if isinstance(f, ast.Attribute) else None)
+                if isinstance(f, ast.Name) and name in FORBIDDEN_CALLS:
+                    problems.append((py.name, "call", name))
+                if isinstance(f, ast.Attribute) \
+                        and name in FORBIDDEN_ATTR_CALLS:
+                    problems.append((py.name, "attr_call", name))
+                if name in ("getattr", "setattr") and len(node.args) >= 2 \
+                        and not isinstance(node.args[1], ast.Constant):
+                    problems.append((py.name, "dynamic_attr", name))
+    return problems
+
+
 def test_no_shell_no_enter_no_skill_execution():
     """M04-AC04: the parser package is pure text — no process spawning,
     dynamic execution, keyboard/event APIs, network or file-handle
-    escapes. Static scan of every module in the package plus an
-    import-boundary check."""
-    banned = ("subprocess", "os.system", "os.popen", "popen", "system(",
-              "eval(", "exec(", "__import__", "importlib", "ctypes",
-              "os.exec", "os.spawn", "os.fork", "pty",
-              "from subprocess", "from os import",
-              "CGEvent", "keyPost", "keyCode", "CoreGraphics",
-              "Quartz", "launch", "open(", "urllib", "requests",
-              "socket", "http")
-    files = sorted(PKG.glob("*.py"))
-    # A path typo must never silently turn this scan into a no-op: the
-    # expected modules must actually be present and scanned.
-    assert {p.name for p in files} >= {
-        "__init__.py", "engine.py", "numbers.py", "syntax.py",
-        "policy.py", "scoring.py", "span_types.py"}, files
-    for py in files:
+    escapes. AST scan of EVERY module under the package (recursive)
+    plus its declared collaborator, a fixed reviewed population, and
+    an import-boundary check (M04-AUDIT-19)."""
+    problems = scan_boundary(PKG)
+    assert not problems, problems
+    banned = ("CGEvent", "keyPost", "keyCode", "CoreGraphics", "Quartz",
+              "NSEvent", "AppKit")
+    for py in sorted(PKG.rglob("*.py")):
         src = py.read_text()
         for tok in banned:
-            # Word-boundary match: "pty" must not hit "empty", etc.
-            pattern = r"\b" + re.escape(tok)
-            assert not re.search(pattern, src), \
+            assert not re.search(r"\b" + re.escape(tok), src), \
                 f"{py.name} contains {tok!r}"
     import localflow.v2.normalize as n_pkg
     banned_mods = ("subprocess", "socket", "urllib.request", "requests",
-                   "ctypes", "importlib")
+                   "ctypes", "importlib", "os")
     for mod in (n_pkg, n_pkg.engine, n_pkg.policy, n_pkg.numbers,
                 n_pkg.syntax, n_pkg.scoring, n_pkg.span_types):
         refs = {k: getattr(v, "__name__", None)
@@ -154,7 +263,9 @@ def test_no_shell_no_enter_no_skill_execution():
     res = normalize("slash brainstorm", skills)
     assert res.text == "/brainstorm" and len(res.edits) == 1
     assert res.edits[0].cls == "skill" and not res.rejected
-    print("ok  AC04: no shell/Enter/skill-execution path (static + runtime)")
+    print(f"ok  AC04: no shell/Enter/skill-execution path (AST scan of "
+          f"{len(BOUNDARY_FILES)} modules + {len(COLLABORATORS)} "
+          "collaborator; runtime)")
 
 
 def test_slash_prose_never_converts():
@@ -229,7 +340,9 @@ def test_protected_spans_recorded():
 def main():
     test_fixture_counts()
     test_all_fixtures_exact()
+    test_typed_semantics_independent_oracle()
     test_literal_and_noncommand_stay_unconverted()
+    test_idempotence_exception_inventory()
     test_idempotence_all_fixtures()
     test_escape_corner_reported_honestly()
     test_no_shell_no_enter_no_skill_execution()

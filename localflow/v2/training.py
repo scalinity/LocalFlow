@@ -225,6 +225,7 @@ class CaptureContext:
         self.cleanup_context_artifact = None
         # M04 (S29.4 normalization family): typed edits + ledger replay
         self.normalization = None
+        self.normalization_missing_reason = None  # M04-AUDIT-16
         self.norm_text_artifact = None
         self.norm_ledger_artifact = None
         # M05 (S30.1/S29.4 context family): the frozen pre-decode hint
@@ -563,15 +564,26 @@ class EvidenceCollector:
         ctx.cleanup_observations.append(obs)
 
     def on_normalization_result(self, ctx, result, source_text=None,
-                                policy=None, context=None):
+                                policy=None, context=None,
+                                policy_source=None):
         """M04 (S29.4): retain the normalized text and the full typed edit
         ledger (accepted AND rejected proposals) as store artifacts, and
         keep the content-free summary for the envelope. The envelope
         carries spans/values/ops/counts — never transcript payloads that
         outlive retention; replay pulls the text from these artifacts.
-        A store failure is swallowed: evidence must never fail the stage."""
+
+        A store failure never fails the stage (dictation continues with
+        the normalized text), but it is never silent either
+        (M04-AUDIT-16): the failing publication step is emitted as a
+        content-free ``training.capture_failed`` event, the envelope's
+        normalization slot carries the distinct missing reason
+        ``retention_write_failed`` (the stage RAN; its evidence was not
+        retained — not "not captured"), and no partial artifact
+        reference survives into the envelope, so nothing downstream
+        treats a half-published ledger as replayable."""
         if not ctx.collecting or result is None or ctx.example_id:
             return
+        step = "normalized_text_write"
         try:
             src = source_text if source_text is not None else ""
             if result.text != src:
@@ -581,9 +593,11 @@ class EvidenceCollector:
                     retention_class="training",
                     parent_artifact_id=ctx.raw_artifact,
                     meta={"policy_revision": result.policy_revision})
+                step = "normalized_text_lease"
                 self.store.grant_lease(
                     ctx.norm_text_artifact, "training",
                     days=self.store.retention_days["training_buffer"])
+            step = "ledger_write"
             ctx.norm_ledger_artifact = self.store.write_text_artifact(
                 job_id=ctx.job_id, stage="normalization",
                 role="normalization_ledger",
@@ -594,10 +608,20 @@ class EvidenceCollector:
                 meta={"policy_revision": result.policy_revision,
                       "edits": len(result.edits),
                       "rejected": len(result.rejected)})
+            step = "ledger_lease"
             self.store.grant_lease(
                 ctx.norm_ledger_artifact, "training",
                 days=self.store.retention_days["training_buffer"])
-        except Exception:
+        except Exception as e:
+            # An unleased artifact is purge-eligible under the M02
+            # retention rules; the envelope must not reference it.
+            ctx.norm_text_artifact = None
+            ctx.norm_ledger_artifact = None
+            ctx.normalization_missing_reason = "retention_write_failed"
+            self.emit("training.capture_failed", level="ERROR",
+                      job_id=ctx.job_id, reason_code=type(e).__name__,
+                      stage="normalization", detail=step,
+                      outcome="normalization_not_retained")
             return
         # Idempotence evaluated at capture time when the policy object is
         # available (S29.4: "idempotence result when evaluated") — the
@@ -659,6 +683,10 @@ class EvidenceCollector:
             "idempotent": result.idempotence,
             **({"idempotent_reason": idem_reason}
                if idem_reason else {}),
+            # Which snapshot produced the edits: the job's own captured
+            # policy, or a clearly identified new snapshot for a job
+            # that captured none (a retry of retained audio).
+            **({"policy_source": policy_source} if policy_source else {}),
             "class_counts": result.class_counts(),
             # Per-edit typed evidence: ops, values, units and exact
             # source/output spans — the strings live in the ledger
@@ -1476,6 +1504,11 @@ class EvidenceCollector:
         # M04 (S29.4): the normalization family exists exactly when the
         # stage ran; otherwise the honest missing reason stays.
         normalization = ctx.normalization
+        if normalization is None and getattr(
+                ctx, "normalization_missing_reason", None):
+            # The stage ran but its evidence was not retained
+            # (M04-AUDIT-16) — distinct from a skipped stage.
+            missing["normalization"] = ctx.normalization_missing_reason
         if normalization is not None:
             del missing["normalization"]
             artifact_ids["normalization"] = (

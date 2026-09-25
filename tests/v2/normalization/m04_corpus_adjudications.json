@@ -1,0 +1,298 @@
+{
+ "schema_version": 1,
+ "about": "Explicit adjudications for the audit corpus's intent_invariant and design_adjudication cases (M04 remediation). Each entry names a predicate in test_m04_audit_corpus.py. decision=residual_ambiguity marks a case the deterministic grammar cannot resolve without lexical semantics (design D2); it is reported, never counted as a pass.",
+ "cases": {
+  "M04-C0002": {
+   "decision": "residual_ambiguity",
+   "reason": "mid-clause punctuation name followed by a word after a transitive verb: surface-identical to the supported command position ('hello comma how are you' LF-SYN-025, 'cat notes dot txt pipe grep today' LF-SYN-035). Deciding that the next word is a compound-noun head needs part-of-speech knowledge a deterministic grammar does not have (design D2); the clause-start, determiner and lexical guards cover the other variants of this family. Escape: 'write the word period'."
+  },
+  "M04-C0009": {
+   "decision": "residual_ambiguity",
+   "reason": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  "M04-C0010": {
+   "decision": "residual_ambiguity",
+   "reason": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  "M04-C0011": {
+   "decision": "residual_ambiguity",
+   "reason": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  "M04-C0012": {
+   "decision": "residual_ambiguity",
+   "reason": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  "M04-C0030": {
+   "decision": "residual_ambiguity",
+   "reason": "mid-clause punctuation name followed by a word after a transitive verb: surface-identical to the supported command position ('hello comma how are you' LF-SYN-025, 'cat notes dot txt pipe grep today' LF-SYN-035). Deciding that the next word is a compound-noun head needs part-of-speech knowledge a deterministic grammar does not have (design D2); the clause-start, determiner and lexical guards cover the other variants of this family. Escape: 'write the word period'."
+  },
+  "M04-C0034": {
+   "decision": "residual_ambiguity",
+   "reason": "mid-clause punctuation name followed by a word after a transitive verb: surface-identical to the supported command position ('hello comma how are you' LF-SYN-025, 'cat notes dot txt pipe grep today' LF-SYN-035). Deciding that the next word is a compound-noun head needs part-of-speech knowledge a deterministic grammar does not have (design D2); the clause-start, determiner and lexical guards cover the other variants of this family. Escape: 'write the word period'."
+  },
+  "M04-C0114": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0115": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0118": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0119": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0122": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0123": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0126": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0127": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0130": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0131": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0134": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0135": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0138": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0139": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0142": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0143": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0146": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0147": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0150": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0151": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0154": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0155": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0158": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0159": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0162": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0163": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0166": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0167": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0170": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0171": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0174": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0175": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0178": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0179": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0182": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0183": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "ordinary-prose wrapper variant: every word is prose and no grammar owns it; the whole input must survive unchanged"
+  },
+  "M04-C0295": {
+   "decision": "residual_ambiguity",
+   "reason": "utterance-initial 'slash <exact registered alias>' is the accepted command form ('slash brainstorm' → '/brainstorm', LF-SYN-015 / SC-01). With 'costs' registered as a skill, 'slash costs' is surface-identical; the repair removes the verb-context readings (REGISTRY-03/-05 now literal) but cannot infer intent here without lexical semantics (design D2)."
+  },
+  "M04-C0301": {
+   "decision": "adjudicated",
+   "predicate": "not_merged_comma",
+   "reason": "the comma is a structural barrier: 'twenty' stays a separate word (no following noun) and 'five percent' may convert on its own side; never 25%"
+  },
+  "M04-C0302": {
+   "decision": "adjudicated",
+   "predicate": "not_merged_sentence",
+   "reason": "the sentence period is a structural barrier: two quantities, never 105%; the period itself survives"
+  },
+  "M04-C0314": {
+   "decision": "adjudicated",
+   "predicate": "no_time_count_duration",
+   "reason": "count + duration: a clock time needs time evidence (an anchor word or a spoken meridiem) and never precedes a duration unit; juxtaposed number words stay words rather than become ambiguous adjacent digits"
+  },
+  "M04-C0315": {
+   "decision": "adjudicated",
+   "predicate": "no_time_count_duration",
+   "reason": "as C0314"
+  },
+  "M04-C0329": {
+   "decision": "adjudicated",
+   "predicate": "code_fence_preserved",
+   "reason": "already-written code: text between backtick fences (and inline backticks) is protected existing syntax (layer 2) — nothing inside is normalized"
+  },
+  "M04-C0332": {
+   "decision": "adjudicated",
+   "predicate": "email_case_preserved",
+   "reason": "spoken email components keep the user's spelling: the local part is case-significant, so 'UserName' is never lower-cased; whole literal also acceptable"
+  },
+  "M04-C0357": {
+   "decision": "adjudicated",
+   "predicate": "invalid_calendar_literal",
+   "reason": "narrow calendar check adopted: a day beyond the month's maximum (Feb 29) is flagged invalid_day, never rendered"
+  },
+  "M04-C0358": {
+   "decision": "adjudicated",
+   "predicate": "invalid_calendar_literal",
+   "reason": "narrow calendar check adopted: Feb 29 with an explicit non-leap year is flagged invalid_date, never rendered"
+  },
+  "M04-C0359": {
+   "decision": "adjudicated",
+   "predicate": "feb29_no_year",
+   "reason": "no year spoken: Feb 29 is a possible date; rendered without inventing a year, value 02-29 (not calendar-certified against a year)"
+  },
+  "M04-C0360": {
+   "decision": "adjudicated",
+   "predicate": "feb29_leap",
+   "reason": "explicit leap year: valid, rendered with the year"
+  },
+  "M04-C0361": {
+   "decision": "adjudicated",
+   "predicate": "year_whole",
+   "reason": "bare year speech without a date is not converted (existing year-speak guard); whole literal"
+  },
+  "M04-C0362": {
+   "decision": "adjudicated",
+   "predicate": "year_whole",
+   "reason": "as C0361"
+  },
+  "M04-C0364": {
+   "decision": "adjudicated",
+   "predicate": "subtraction_operands",
+   "reason": "no arithmetic grammar exists; operands must not be partially digitized ('5 minus three') or re-signed ('-3'): whole literal"
+  },
+  "M04-C0365": {
+   "decision": "adjudicated",
+   "predicate": "range_endpoints",
+   "reason": "endpoints and the through relation preserved; whole literal is the current outcome"
+  },
+  "M04-C0367": {
+   "decision": "adjudicated",
+   "predicate": "literal",
+   "reason": "no anchor and no meridiem: not a clock time, not a code (codes need an anchor), not a count — whole literal"
+  },
+  "M04-C0368": {
+   "decision": "adjudicated",
+   "predicate": "period_command_after_word",
+   "reason": "'literally' is not a supported escape (only 'write the word(s)/phrase'); 'period' after a word at the end of an utterance is the ordinary command position, so 'literally.' is the declared behaviour — the supported escape remains 'write the word period'"
+  }
+ }
+}

@@ -41,7 +41,11 @@
       "percent_rendering": "tight",
       "currency_before": true,
       "date_rendering": "month_day",
-      "phone_groups": [3, 3, 4]
+      "phone_groups": [3, 3, 4],
+      "ambiguous_month_words": ["may", "march", "august"],
+      "date_previous_words": ["on", "by", "until", "till", "since", "from",
+                              "before", "after", "through", "of", "in",
+                              "due", "next", "last"]
     },
     "es-ES": {
       "units": {"cero": 0, "uno": 1, "una": 1, "dos": 2, "tres": 3,
@@ -154,6 +158,10 @@
         "guarded_names": ["period", "full stop", "colon", "hyphen",
                           "comma", "semicolon", "pipe"],
         "article_words": ["a", "an", "the", "one", "some", "this"],
+        "determiner_words": ["a", "an", "the", "this", "that", "these",
+                             "those", "each", "every", "any", "my",
+                             "your", "his", "her", "its", "our",
+                             "their"],
         "blocker_next": ["of"],
         "blocker_prev": ["of", "is", "was", "are", "grace", "trial",
                          "notice", "payback", "cooling", "warming",
@@ -199,6 +207,13 @@
         "grams": "g", "gram": "g",
         "kilograms": "kg", "kilogram": "kg"
       },
+      "slash_verb_context": ["will", "would", "should", "shall", "can",
+                             "could", "may", "might", "must", "to", "i",
+                             "we", "you", "they", "he", "she", "it", "do",
+                             "does", "did", "don't", "doesn't", "didn't",
+                             "not", "never", "let's", "we'll", "i'll",
+                             "you'll", "they'll", "we'd", "i'd", "we're",
+                             "they're", "you're"],
       "escape_patterns": ["write the word", "write the words",
                           "write the phrase"],
       "path_anchors": ["path", "file", "folder", "directory"],
