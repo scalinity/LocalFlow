@@ -1,0 +1,1102 @@
+{
+ "schema_version": 1,
+ "tool": "scripts/v2/m04_corpus_report.py",
+ "code_root_sha": "1c9d981b1505b6cd975ce6e701e0382c6db96c78",
+ "oracle_checkout_sha": "d31245f49614699c46288d5fa40157ee5a80c996",
+ "python": "3.13.12",
+ "evaluated_utc": "2026-09-25T07:45:11Z",
+ "exposure": "development evidence: consulted during the M04 remediation; not an unseen holdout; variants share families and are not independent samples",
+ "totals": {
+  "fail": 70,
+  "residual": 8,
+  "pass": 290
+ },
+ "cases": 368,
+ "families_total": 171,
+ "families_with_fail": 43,
+ "families_with_residual": 5,
+ "by_role": {
+  "adversarial_probe": {
+   "fail": 28,
+   "pass": 16
+  },
+  "design_probe": {
+   "fail": 3,
+   "pass": 3
+  },
+  "false_positive_control": {
+   "fail": 39,
+   "residual": 8,
+   "pass": 201
+  },
+  "negative_control": {
+   "pass": 2
+  },
+  "positive_control": {
+   "pass": 50
+  },
+  "profile_relation": {
+   "pass": 18
+  }
+ },
+ "by_oracle": {
+  "design_adjudication": {
+   "fail": 3,
+   "pass": 3
+  },
+  "exact_preserving_boundary": {
+   "fail": 2
+  },
+  "exact_supported_control": {
+   "pass": 50
+  },
+  "intent_invariant": {
+   "pass": 31,
+   "fail": 15
+  },
+  "literal_exact": {
+   "fail": 32,
+   "residual": 8,
+   "pass": 177
+  },
+  "literal_payload_or_whole_refusal": {
+   "fail": 2
+  },
+  "profile_contract": {
+   "pass": 18
+  },
+  "structured_or_literal": {
+   "pass": 5,
+   "fail": 4
+  },
+  "whole_literal_or_review": {
+   "fail": 12,
+   "pass": 6
+  }
+ },
+ "by_finding": {
+  "(none)": {
+   "pass": 223,
+   "fail": 19
+  },
+  "M04-AUDIT-01": {
+   "pass": 7,
+   "fail": 2,
+   "residual": 1
+  },
+  "M04-AUDIT-02": {
+   "fail": 4
+  },
+  "M04-AUDIT-03": {
+   "pass": 3
+  },
+  "M04-AUDIT-04": {
+   "fail": 5,
+   "pass": 3
+  },
+  "M04-AUDIT-05": {
+   "fail": 4,
+   "pass": 2
+  },
+  "M04-AUDIT-06": {
+   "fail": 3
+  },
+  "M04-AUDIT-07": {
+   "fail": 2,
+   "pass": 1
+  },
+  "M04-AUDIT-08": {
+   "fail": 4,
+   "pass": 7
+  },
+  "M04-AUDIT-09": {
+   "fail": 21,
+   "residual": 7,
+   "pass": 44
+  },
+  "M04-AUDIT-10": {
+   "fail": 3
+  },
+  "M04-AUDIT-11": {
+   "fail": 3
+  }
+ },
+ "non_pass": [
+  {
+   "case_id": "M04-C0001",
+   "family_id": "PROSE-001",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "period drama",
+   "output": ". drama",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0002",
+   "family_id": "PROSE-001",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed period drama",
+   "output": "we discussed. drama",
+   "status": "residual",
+   "detail": "mid-clause punctuation name followed by a word after a transitive verb: surface-identical to the supported command position ('hello comma how are you' LF-SYN-025, 'cat notes dot txt pipe grep today' LF-SYN-035). Deciding that the next word is a compound-noun head needs part-of-speech knowledge a deterministic grammar does not have (design D2); the clause-start, determiner and lexical guards cover the other variants of this family. Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0003",
+   "family_id": "PROSE-001",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "period drama yesterday",
+   "output": ". drama yesterday",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0004",
+   "family_id": "PROSE-001",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "period drama",
+   "output": ". drama",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0009",
+   "family_id": "PROSE-003",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "time period",
+   "output": "time.",
+   "status": "residual",
+   "detail": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0010",
+   "family_id": "PROSE-003",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed time period",
+   "output": "we discussed time.",
+   "status": "residual",
+   "detail": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0011",
+   "family_id": "PROSE-003",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "time period yesterday",
+   "output": "time. yesterday",
+   "status": "residual",
+   "detail": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0012",
+   "family_id": "PROSE-003",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "time period",
+   "output": "time.",
+   "status": "residual",
+   "detail": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0029",
+   "family_id": "PROSE-008",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "colon cancer",
+   "output": ": cancer",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0030",
+   "family_id": "PROSE-008",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed colon cancer",
+   "output": "we discussed: cancer",
+   "status": "residual",
+   "detail": "mid-clause punctuation name followed by a word after a transitive verb: surface-identical to the supported command position ('hello comma how are you' LF-SYN-025, 'cat notes dot txt pipe grep today' LF-SYN-035). Deciding that the next word is a compound-noun head needs part-of-speech knowledge a deterministic grammar does not have (design D2); the clause-start, determiner and lexical guards cover the other variants of this family. Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0031",
+   "family_id": "PROSE-008",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "colon cancer yesterday",
+   "output": ": cancer yesterday",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0032",
+   "family_id": "PROSE-008",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "colon cancer",
+   "output": ": cancer",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0033",
+   "family_id": "PROSE-009",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "pipe tobacco",
+   "output": "| tobacco",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0034",
+   "family_id": "PROSE-009",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed pipe tobacco",
+   "output": "we discussed | tobacco",
+   "status": "residual",
+   "detail": "mid-clause punctuation name followed by a word after a transitive verb: surface-identical to the supported command position ('hello comma how are you' LF-SYN-025, 'cat notes dot txt pipe grep today' LF-SYN-035). Deciding that the next word is a compound-noun head needs part-of-speech knowledge a deterministic grammar does not have (design D2); the clause-start, determiner and lexical guards cover the other variants of this family. Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0035",
+   "family_id": "PROSE-009",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "pipe tobacco yesterday",
+   "output": "| tobacco yesterday",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0036",
+   "family_id": "PROSE-009",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "pipe tobacco",
+   "output": "| tobacco",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0037",
+   "family_id": "PROSE-010",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "a question mark",
+   "output": "a?",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0038",
+   "family_id": "PROSE-010",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed a question mark",
+   "output": "we discussed a?",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0039",
+   "family_id": "PROSE-010",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "a question mark yesterday",
+   "output": "a? yesterday",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0040",
+   "family_id": "PROSE-010",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "a question mark",
+   "output": "a?",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0041",
+   "family_id": "PROSE-011",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "the forward slash character",
+   "output": "the / character",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0042",
+   "family_id": "PROSE-011",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed the forward slash character",
+   "output": "we discussed the / character",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0043",
+   "family_id": "PROSE-011",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "the forward slash character yesterday",
+   "output": "the / character yesterday",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0044",
+   "family_id": "PROSE-011",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "the forward slash character",
+   "output": "the / character",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0045",
+   "family_id": "PROSE-012",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "an exclamation mark",
+   "output": "an!",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0046",
+   "family_id": "PROSE-012",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed an exclamation mark",
+   "output": "we discussed an!",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0047",
+   "family_id": "PROSE-012",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "an exclamation mark yesterday",
+   "output": "an! yesterday",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0048",
+   "family_id": "PROSE-012",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "an exclamation mark",
+   "output": "an!",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0149",
+   "family_id": "PROSE-038",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [],
+   "input": "this may first require approval",
+   "output": "this May 1 require approval",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0150",
+   "family_id": "PROSE-038",
+   "role": "false_positive_control",
+   "oracle": "intent_invariant",
+   "finding_ids": [],
+   "input": "we discussed this may first require approval",
+   "output": "we discussed this May 1 require approval",
+   "status": "fail",
+   "detail": "literal"
+  },
+  {
+   "case_id": "M04-C0151",
+   "family_id": "PROSE-038",
+   "role": "false_positive_control",
+   "oracle": "intent_invariant",
+   "finding_ids": [],
+   "input": "this may first require approval yesterday",
+   "output": "this May 1 require approval yesterday",
+   "status": "fail",
+   "detail": "literal"
+  },
+  {
+   "case_id": "M04-C0152",
+   "family_id": "PROSE-038",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [],
+   "input": "this may first require approval",
+   "output": "this May 1 require approval",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0153",
+   "family_id": "PROSE-039",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [],
+   "input": "we may first need a review",
+   "output": "we May 1 need a review",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0154",
+   "family_id": "PROSE-039",
+   "role": "false_positive_control",
+   "oracle": "intent_invariant",
+   "finding_ids": [],
+   "input": "we discussed we may first need a review",
+   "output": "we discussed we May 1 need a review",
+   "status": "fail",
+   "detail": "literal"
+  },
+  {
+   "case_id": "M04-C0155",
+   "family_id": "PROSE-039",
+   "role": "false_positive_control",
+   "oracle": "intent_invariant",
+   "finding_ids": [],
+   "input": "we may first need a review yesterday",
+   "output": "we May 1 need a review yesterday",
+   "status": "fail",
+   "detail": "literal"
+  },
+  {
+   "case_id": "M04-C0156",
+   "family_id": "PROSE-039",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [],
+   "input": "we may first need a review",
+   "output": "we May 1 need a review",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0165",
+   "family_id": "PROSE-042",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [],
+   "input": "chapter five thirty two",
+   "output": "chapter 5 thirty two",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0166",
+   "family_id": "PROSE-042",
+   "role": "false_positive_control",
+   "oracle": "intent_invariant",
+   "finding_ids": [],
+   "input": "we discussed chapter five thirty two",
+   "output": "we discussed chapter 5 thirty two",
+   "status": "fail",
+   "detail": "literal"
+  },
+  {
+   "case_id": "M04-C0167",
+   "family_id": "PROSE-042",
+   "role": "false_positive_control",
+   "oracle": "intent_invariant",
+   "finding_ids": [],
+   "input": "chapter five thirty two yesterday",
+   "output": "chapter 5 32 yesterday",
+   "status": "fail",
+   "detail": "literal"
+  },
+  {
+   "case_id": "M04-C0168",
+   "family_id": "PROSE-042",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [],
+   "input": "chapter five thirty two",
+   "output": "chapter 5 thirty two",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0169",
+   "family_id": "PROSE-043",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [],
+   "input": "section five thirty",
+   "output": "section 5 thirty",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0170",
+   "family_id": "PROSE-043",
+   "role": "false_positive_control",
+   "oracle": "intent_invariant",
+   "finding_ids": [],
+   "input": "we discussed section five thirty",
+   "output": "we discussed section 5 thirty",
+   "status": "fail",
+   "detail": "literal"
+  },
+  {
+   "case_id": "M04-C0171",
+   "family_id": "PROSE-043",
+   "role": "false_positive_control",
+   "oracle": "intent_invariant",
+   "finding_ids": [],
+   "input": "section five thirty yesterday",
+   "output": "section 5 30 yesterday",
+   "status": "fail",
+   "detail": "literal"
+  },
+  {
+   "case_id": "M04-C0172",
+   "family_id": "PROSE-043",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [],
+   "input": "section five thirty",
+   "output": "section 5 thirty",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0293",
+   "family_id": "REGISTRY-03",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-01"
+   ],
+   "input": "we should slash code review time",
+   "output": "we should /code-review time",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0295",
+   "family_id": "REGISTRY-04",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-01"
+   ],
+   "input": "slash costs",
+   "output": "/costs",
+   "status": "residual",
+   "detail": "utterance-initial 'slash <exact registered alias>' is the accepted command form ('slash brainstorm' → '/brainstorm', LF-SYN-015 / SC-01). With 'costs' registered as a skill, 'slash costs' is surface-identical; the repair removes the verb-context readings (REGISTRY-03/-05 now literal) but cannot infer intent here without lexical semantics (design D2)."
+  },
+  {
+   "case_id": "M04-C0297",
+   "family_id": "REGISTRY-05",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-01"
+   ],
+   "input": "we should slash costs",
+   "output": "we should /costs",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0299",
+   "family_id": "CHALLENGE-001",
+   "role": "adversarial_probe",
+   "oracle": "exact_preserving_boundary",
+   "finding_ids": [
+    "M04-AUDIT-02"
+   ],
+   "input": "twelve percent.",
+   "output": "12%",
+   "status": "fail",
+   "detail": "exact_preserving_boundary"
+  },
+  {
+   "case_id": "M04-C0300",
+   "family_id": "CHALLENGE-002",
+   "role": "adversarial_probe",
+   "oracle": "exact_preserving_boundary",
+   "finding_ids": [
+    "M04-AUDIT-02"
+   ],
+   "input": "twelve dollars, please",
+   "output": "$12 please",
+   "status": "fail",
+   "detail": "exact_preserving_boundary"
+  },
+  {
+   "case_id": "M04-C0301",
+   "family_id": "CHALLENGE-003",
+   "role": "adversarial_probe",
+   "oracle": "intent_invariant",
+   "finding_ids": [
+    "M04-AUDIT-02"
+   ],
+   "input": "twenty, five percent",
+   "output": "25%",
+   "status": "fail",
+   "detail": "not_merged_comma"
+  },
+  {
+   "case_id": "M04-C0302",
+   "family_id": "CHALLENGE-004",
+   "role": "adversarial_probe",
+   "oracle": "intent_invariant",
+   "finding_ids": [
+    "M04-AUDIT-02"
+   ],
+   "input": "one hundred. five percent",
+   "output": "105%",
+   "status": "fail",
+   "detail": "not_merged_sentence"
+  },
+  {
+   "case_id": "M04-C0306",
+   "family_id": "CHALLENGE-008",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-04"
+   ],
+   "input": "zero hundred dollars",
+   "output": "$100",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0307",
+   "family_id": "CHALLENGE-009",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-04"
+   ],
+   "input": "zero thousand dollars",
+   "output": "$1000",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0308",
+   "family_id": "CHALLENGE-010",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-04"
+   ],
+   "input": "one thousand million dollars",
+   "output": "$1,001,000",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0309",
+   "family_id": "CHALLENGE-011",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-04"
+   ],
+   "input": "one million million dollars",
+   "output": "$2,000,000",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0310",
+   "family_id": "CHALLENGE-012",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-04"
+   ],
+   "input": "a few hundred thousand dollars",
+   "output": "a few $100,000",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0311",
+   "family_id": "CHALLENGE-013",
+   "role": "adversarial_probe",
+   "oracle": "structured_or_literal",
+   "finding_ids": [
+    "M04-AUDIT-05"
+   ],
+   "input": "step negative five",
+   "output": "step -5",
+   "status": "fail",
+   "detail": "ledger_sign_mismatch"
+  },
+  {
+   "case_id": "M04-C0312",
+   "family_id": "CHALLENGE-014",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-05"
+   ],
+   "input": "port negative eighty",
+   "output": "port -80",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0313",
+   "family_id": "CHALLENGE-015",
+   "role": "adversarial_probe",
+   "oracle": "structured_or_literal",
+   "finding_ids": [
+    "M04-AUDIT-05"
+   ],
+   "input": "ten by minus twenty centimeters",
+   "output": "10 × -20 cm",
+   "status": "fail",
+   "detail": "components"
+  },
+  {
+   "case_id": "M04-C0314",
+   "family_id": "CHALLENGE-016",
+   "role": "adversarial_probe",
+   "oracle": "intent_invariant",
+   "finding_ids": [
+    "M04-AUDIT-06"
+   ],
+   "input": "three fifteen minute breaks",
+   "output": "3:15 minute breaks",
+   "status": "fail",
+   "detail": "no_time_count_duration"
+  },
+  {
+   "case_id": "M04-C0315",
+   "family_id": "CHALLENGE-017",
+   "role": "adversarial_probe",
+   "oracle": "intent_invariant",
+   "finding_ids": [
+    "M04-AUDIT-06"
+   ],
+   "input": "one twenty minute session",
+   "output": "1:20 minute session",
+   "status": "fail",
+   "detail": "no_time_count_duration"
+  },
+  {
+   "case_id": "M04-C0316",
+   "family_id": "CHALLENGE-018",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-06"
+   ],
+   "input": "five thirty people",
+   "output": "5:30 people",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0317",
+   "family_id": "CHALLENGE-019",
+   "role": "adversarial_probe",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-07"
+   ],
+   "input": "this may first require approval",
+   "output": "this May 1 require approval",
+   "status": "fail",
+   "detail": "literal_exact"
+  },
+  {
+   "case_id": "M04-C0318",
+   "family_id": "CHALLENGE-020",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-07"
+   ],
+   "input": "March thirty second",
+   "output": "March 30 second",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0320",
+   "family_id": "CHALLENGE-022",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-08"
+   ],
+   "input": "one point twenty six point four",
+   "output": "one point 26.4",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0321",
+   "family_id": "CHALLENGE-023",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-08"
+   ],
+   "input": "one dot two dot three dot four dot five",
+   "output": "1 dot 2.3.4.5",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0322",
+   "family_id": "CHALLENGE-024",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-08"
+   ],
+   "input": "one dot two dot three",
+   "output": "1 dot 2 dot three",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0324",
+   "family_id": "CHALLENGE-026",
+   "role": "adversarial_probe",
+   "oracle": "structured_or_literal",
+   "finding_ids": [
+    "M04-AUDIT-08"
+   ],
+   "input": "point five percent",
+   "output": "point 5%",
+   "status": "fail",
+   "detail": "forbidden 'point 5%'"
+  },
+  {
+   "case_id": "M04-C0327",
+   "family_id": "CHALLENGE-029",
+   "role": "adversarial_probe",
+   "oracle": "literal_payload_or_whole_refusal",
+   "finding_ids": [
+    "M04-AUDIT-10"
+   ],
+   "input": "write the phrase alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha period",
+   "output": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha.",
+   "status": "fail",
+   "detail": "literal_payload_or_whole_refusal"
+  },
+  {
+   "case_id": "M04-C0328",
+   "family_id": "CHALLENGE-030",
+   "role": "adversarial_probe",
+   "oracle": "literal_payload_or_whole_refusal",
+   "finding_ids": [
+    "M04-AUDIT-10"
+   ],
+   "input": "write the phrase please write the word comma",
+   "output": "please comma",
+   "status": "fail",
+   "detail": "literal_payload_or_whole_refusal"
+  },
+  {
+   "case_id": "M04-C0329",
+   "family_id": "CHALLENGE-031",
+   "role": "adversarial_probe",
+   "oracle": "intent_invariant",
+   "finding_ids": [
+    "M04-AUDIT-10"
+   ],
+   "input": "```\ntwelve percent\n```",
+   "output": "```\n12%\n```",
+   "status": "fail",
+   "detail": "code_fence_preserved"
+  },
+  {
+   "case_id": "M04-C0330",
+   "family_id": "CHALLENGE-032",
+   "role": "adversarial_probe",
+   "oracle": "structured_or_literal",
+   "finding_ids": [
+    "M04-AUDIT-11"
+   ],
+   "input": "path slash Users slash Ada slash MyProject",
+   "output": "/users/ada/myproject",
+   "status": "fail",
+   "detail": "exact_structured"
+  },
+  {
+   "case_id": "M04-C0331",
+   "family_id": "CHALLENGE-033",
+   "role": "adversarial_probe",
+   "oracle": "whole_literal_or_review",
+   "finding_ids": [
+    "M04-AUDIT-11"
+   ],
+   "input": "path slash Users slash Ada slash build2",
+   "output": "/users/ada slash build2",
+   "status": "fail",
+   "detail": "whole_literal_or_review"
+  },
+  {
+   "case_id": "M04-C0332",
+   "family_id": "CHALLENGE-034",
+   "role": "adversarial_probe",
+   "oracle": "intent_invariant",
+   "finding_ids": [
+    "M04-AUDIT-11"
+   ],
+   "input": "UserName at example dot com",
+   "output": "username@example.com",
+   "status": "fail",
+   "detail": "email_case_preserved"
+  },
+  {
+   "case_id": "M04-C0357",
+   "family_id": "ADDITIONAL-005",
+   "role": "design_probe",
+   "oracle": "design_adjudication",
+   "finding_ids": [],
+   "input": "February thirty first",
+   "output": "February 31",
+   "status": "fail",
+   "detail": "invalid_calendar_literal"
+  },
+  {
+   "case_id": "M04-C0358",
+   "family_id": "ADDITIONAL-006",
+   "role": "design_probe",
+   "oracle": "design_adjudication",
+   "finding_ids": [],
+   "input": "February twenty ninth twenty twenty five",
+   "output": "February 29, 2025",
+   "status": "fail",
+   "detail": "invalid_calendar_literal"
+  },
+  {
+   "case_id": "M04-C0364",
+   "family_id": "ADDITIONAL-012",
+   "role": "adversarial_probe",
+   "oracle": "intent_invariant",
+   "finding_ids": [
+    "M04-AUDIT-05"
+   ],
+   "input": "five minus three",
+   "output": "5 minus three",
+   "status": "fail",
+   "detail": "subtraction_operands"
+  },
+  {
+   "case_id": "M04-C0367",
+   "family_id": "ADDITIONAL-015",
+   "role": "design_probe",
+   "oracle": "design_adjudication",
+   "finding_ids": [],
+   "input": "one oh five",
+   "output": "1:05",
+   "status": "fail",
+   "detail": "literal"
+  }
+ ]
+}
