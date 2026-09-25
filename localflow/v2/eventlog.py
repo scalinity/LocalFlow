@@ -73,7 +73,15 @@ class EventWriter:
         self.dropped_low = 0
         self.dropped_normal = 0
         self.dropped_critical = 0
+        self.dropped_after_close = 0
         self.critical_retries = 0
+        # M02-AUDIT-15: admission closes at the START of close(); an emit
+        # after that is refused (False + counter), never silently queued
+        # for a writer that is going away.
+        self._accepting = True
+        # M02-AUDIT-13: rolls kept past KEEP_ROLLS only because they carry
+        # unresolved-job evidence (visible in stats()).
+        self.protected_rolls_kept = 0
         self.degraded = False
         self._degrade_reason = None
         self._stderr = sys.stderr  # bound now: a stderr capture must not
@@ -146,6 +154,9 @@ class EventWriter:
         prio = _LEVEL_NAMES.get(level, NORMAL)
         queued_mono = self.mono_fn()
         with self._qcond:
+            if not self._accepting:
+                self.dropped_after_close += 1
+                return False
             pending = sum(len(q) for q in self._queues) + len(self._spill)
             if pending >= QUEUE_BOUND:
                 if prio == LOW:
@@ -178,6 +189,8 @@ class EventWriter:
             "pending": pending, "dropped_low": self.dropped_low,
             "dropped_normal": self.dropped_normal,
             "dropped_critical": self.dropped_critical,
+            "dropped_after_close": self.dropped_after_close,
+            "protected_rolls_kept": self.protected_rolls_kept,
             "degraded": self.degraded,
             "degrade_reason": reason, "critical_retries": self.critical_retries,
             "boot_id": self.boot_id, "session_id": self.session_id,
@@ -193,12 +206,20 @@ class EventWriter:
                     return False
         return True
 
-    def close(self, timeout=5.0):
-        self.flush(timeout)
+    def close(self, timeout=5.0) -> dict:
+        """Close admission, drain what was accepted, stop. Returns
+        {drained, pending} — honest when the drain did not finish."""
         with self._qcond:
+            self._accepting = False
+        drained = self.flush(timeout)
+        with self._qcond:
+            pending = sum(len(q) for q in self._queues) + len(self._spill)
             self._stop = True
             self._qcond.notify_all()
         self._thread.join(timeout=timeout)
+        if self._thread.is_alive():
+            # Never close the file under a live writer.
+            return {"drained": False, "pending": pending}
         if self._file is not None:
             try:
                 self._file.close()
@@ -212,6 +233,8 @@ class EventWriter:
             except OSError:
                 pass
             self._lock_fd = None
+        return {"drained": bool(drained) and pending == 0,
+                "pending": pending}
 
     # ---- writer thread -------------------------------------------------
 
@@ -332,10 +355,43 @@ class EventWriter:
             (p for p in self.log_dir.glob(f"{self._file_name}.*")
              if p.name.rsplit(".", 1)[-1].isdigit()),
             key=lambda p: int(p.name.rsplit(".", 1)[-1]))
+        # M02-AUDIT-13: the roll cap is a removal path like age/size
+        # retention and applies the same unresolved-job protection. A
+        # protected roll is kept even past KEEP_ROLLS (counted in
+        # stats()); it becomes removable once its jobs resolve.
+        unresolved = None
+        kept = 0
         for extra in rolls[:-KEEP_ROLLS]:
+            if unresolved is None:
+                unresolved = self._unresolved()
+            if self._mentions(extra, unresolved):
+                kept += 1
+                continue
             extra.unlink(missing_ok=True)
+        self.protected_rolls_kept = kept
         self._file = None  # reopened by _ensure_file on the next write
         self._file_bytes = 0
+
+    def _unresolved(self) -> set:
+        try:
+            return set(self.unresolved_jobs_fn())
+        except Exception:
+            # Unknown protection state: protect everything rather than
+            # delete possibly-needed evidence.
+            return {None}
+
+    @staticmethod
+    def _mentions(path, unresolved) -> bool:
+        """The ONE protection predicate every removal path uses."""
+        if not unresolved:
+            return False
+        if None in unresolved:
+            return True
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return True
+        return any(j in text for j in unresolved)
 
     def apply_retention_now(self):
         """Run age/cap pruning immediately (also called hourly by the
@@ -373,11 +429,9 @@ class EventWriter:
                 if p.stat().st_mtime > cutoff and total <= self.cap_bytes:
                     continue
                 if unresolved is None:
-                    unresolved = set(self.unresolved_jobs_fn())
-                if unresolved:
-                    text = p.read_text(encoding="utf-8", errors="replace")
-                    if any(j in text for j in unresolved):
-                        continue  # crash/recovery metadata stays
+                    unresolved = self._unresolved()
+                if self._mentions(p, unresolved):
+                    continue  # crash/recovery metadata stays
                 total -= p.stat().st_size
                 p.unlink(missing_ok=True)
             except OSError:

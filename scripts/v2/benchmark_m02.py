@@ -11,6 +11,21 @@ honest labels, never a claim about another machine):
    This is NOT the release-to-insert pilot — that needs a human speaker and
    stays pending; no extra model calls are made here.
 
+M02 remediation (M02-AUDIT-17): the collection benchmark binds each job's
+context exactly as the app's worker does (bind_current before the cleanup
+observations, clear_current after) and REFUSES to report an overhead
+figure unless every expected stage population exists — per enabled
+round: one original_audio, raw_transcript, cleanup model_input (the
+rendered prompt), cleanup_proposal and applied_output artifact, one
+example and two revisions (publication + outcome); per disabled round:
+none of them. A missing or empty population raises
+BenchmarkPopulationError and the CLI exits 2 with ``certified: false``.
+Timing scope is explicit in the report: the timed region runs from the
+first collector hook through the ACKNOWLEDGED publication and outcome
+commits (finalize and on_insertion wait for the writer), i.e. committed
+end-to-end collector cost around stubbed stages — not enqueue latency and
+not release-to-insert.
+
 Usage:
     .venv/bin/python scripts/v2/benchmark_m02.py [--output PATH] [--real]
 """
@@ -30,6 +45,69 @@ import numpy as np
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent))
 
 from localflow.v2 import eventlog, ids, store, training  # noqa: E402
+
+
+class BenchmarkPopulationError(RuntimeError):
+    """The measured path did not produce the evidence it claims to cost."""
+
+
+COLLECTION_TIMING_SCOPE = (
+    "first collector hook through acknowledged publication and outcome"
+    " commits (committed end-to-end collector cost around stubbed stages;"
+    " not enqueue latency; not release-to-insert)")
+
+EXPECTED_ROLES = ("original_audio", "raw_transcript", "cleanup_input_cleanup",
+                  "cleanup_proposal", "applied_output")
+
+
+def collection_populations(st) -> dict:
+    """Independent SQL counts of what the benchmark actually persisted."""
+    import sqlite3
+    con = sqlite3.connect(st.db_path)
+    try:
+        roles = dict(con.execute(
+            "SELECT role, COUNT(*) FROM artifacts WHERE purged=0 GROUP BY"
+            " role").fetchall())
+        return {
+            "artifacts_by_role": {r: roles.get(r, 0) for r in EXPECTED_ROLES},
+            "model_input_artifacts": con.execute(
+                "SELECT COUNT(*) FROM artifacts WHERE kind='model_input'"
+                ).fetchone()[0],
+            "examples": con.execute(
+                "SELECT COUNT(*) FROM training_examples").fetchone()[0],
+            "revisions": con.execute(
+                "SELECT COUNT(*) FROM training_revisions").fetchone()[0],
+            "incomplete_publications": con.execute(
+                "SELECT COUNT(*) FROM training_revisions WHERE"
+                " json_extract(envelope_json, '$.completeness.complete')=0"
+                ).fetchone()[0],
+        }
+    finally:
+        con.close()
+
+
+def check_populations(mode, n, pops):
+    """Refuse to certify: every expected population, exactly."""
+    problems = []
+    if mode == "enabled":
+        for role in EXPECTED_ROLES:
+            if pops["artifacts_by_role"][role] != n:
+                problems.append(f"{role}={pops['artifacts_by_role'][role]}"
+                                f" expected {n}")
+        if pops["examples"] != n:
+            problems.append(f"examples={pops['examples']} expected {n}")
+        if pops["revisions"] != 2 * n:
+            problems.append(f"revisions={pops['revisions']} expected {2 * n}")
+        if pops["incomplete_publications"]:
+            problems.append("incomplete publications present")
+    else:
+        if any(pops["artifacts_by_role"].values()) or pops["examples"] \
+                or pops["revisions"]:
+            problems.append("disabled mode persisted evidence")
+    if n <= 0:
+        problems.append("empty measured population")
+    if problems:
+        raise BenchmarkPopulationError(f"{mode}: " + "; ".join(problems))
 
 
 def pct(values, q):
@@ -118,7 +196,10 @@ def bench_storage(n=50000):
     }
 
 
-def bench_collection_paired(n=50):
+def bench_collection_paired(n=50, bind=True):
+    """``bind=False`` is a fault-injection switch for the benchmark's own
+    regression test: it reproduces the pre-remediation unbound observer
+    and must make the benchmark refuse (BenchmarkPopulationError)."""
     rng = np.random.default_rng(1)
     audio = (rng.random(16000) * 0.1 - 0.05).astype(np.float32)
 
@@ -135,6 +216,8 @@ def bench_collection_paired(n=50):
         collector.on_asr_result(ctx, "synthetic raw text for bench",
                                 model_id="bench-asr", model_revision=None,
                                 stage_duration_ms=1.0)
+        if bind:
+            collector.bind_current(ctx)  # as the app's worker does
         collector.on_cleaner_observation({
             "kind": "cleanup", "model_id": "bench-llm",
             "input": "synthetic raw text for bench",
@@ -144,6 +227,7 @@ def bench_collection_paired(n=50):
         collector.on_cleaner_observation({"kind": "cleanup_decision",
                                           "accepted": True,
                                           "applied": "Synthetic raw text for bench."})
+        collector.clear_current()
         collector.on_cleanup_result(ctx, "Synthetic raw text for bench.")
         collector.finalize(ctx)
         collector.on_insertion(ctx, True, 27)
@@ -164,15 +248,25 @@ def bench_collection_paired(n=50):
                 run_round(st, consent, collector)
                 lat.append((time.perf_counter() - t0) * 1000.0)
             st.sync()
-            ver = st.verify()
+            ver = st.verify(deep=True)
+            pops = collection_populations(st)
+            st.close()
+            check_populations(mode, n, pops)
+            if not ver["ok"]:
+                raise BenchmarkPopulationError(
+                    f"{mode}: store verification failed"
+                    f" ({len(ver['issues'])} issues)")
             results[mode] = {
                 "p50_ms": pct(lat, 0.5), "p95_ms": pct(lat, 0.95),
                 "consistency_ok": ver["ok"],
                 "incomplete_records": len(ver["issues"]),
+                "populations": pops,
+                "timed_rounds": len(lat),
             }
-            st.close()
     delta_p95 = round(results["enabled"]["p95_ms"] - results["disabled"]["p95_ms"], 3)
     return {
+        "certified": True,
+        "timing_scope": COLLECTION_TIMING_SCOPE,
         "n_per_mode": n,
         "disabled": results["disabled"],
         "enabled": results["enabled"],
@@ -208,17 +302,27 @@ def bench_real_cleanup(n=3):
                     utc_offset_minutes=None)
                 t0 = time.perf_counter()
                 cleaner.observer = collector.on_cleaner_observation
+                collector.bind_current(ctx)  # as the app's worker does
                 cleaned = cleaner.clean(
                     "um i think maybe we should um push the demo to next"
                     " week no wait the week after because uh the vendor quote"
                     " is not ready")
                 lat.append((time.perf_counter() - t0) * 1000.0)
+                collector.clear_current()
                 collector.on_cleanup_result(ctx, cleaned)
                 collector.finalize(ctx)
             st.sync()
-            out[mode] = {"p50_ms": pct(lat, 0.5), "n": n}
+            prompts = collection_populations(st)["model_input_artifacts"]
+            if mode == "enabled" and prompts < n:
+                raise BenchmarkPopulationError(
+                    f"real cleanup: {prompts} rendered prompts retained for"
+                    f" {n} enabled jobs")
+            out[mode] = {"p50_ms": pct(lat, 0.5), "n": n,
+                         "model_input_artifacts": prompts}
         st.close()
     return {"real_cleanup": out,
+            "timing_scope": "the real cleanup model pass only; collector"
+                            " persistence is outside the timed region",
             "note": "real Qwen3-4B cleanup pass, model-backed native Mac"}
 
 
@@ -245,17 +349,23 @@ def main(argv=None) -> int:
         "emit_overhead": bench_emit(),
         "audio_callback": bench_audio_callback(),
         "storage_50k": bench_storage(),
-        "collection_paired": bench_collection_paired(),
     }
-    if args.real:
-        report["real_cleanup_spot"] = bench_real_cleanup()
+    status = 0
+    try:
+        report["collection_paired"] = bench_collection_paired()
+        if args.real:
+            report["real_cleanup_spot"] = bench_real_cleanup()
+    except BenchmarkPopulationError as e:
+        report["collection_paired"] = {"certified": False,
+                                       "refusal": str(e)}
+        status = 2
 
     out = json.dumps(report, indent=2) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(out)
     print(out)
-    return 0
+    return status
 
 
 if __name__ == "__main__":

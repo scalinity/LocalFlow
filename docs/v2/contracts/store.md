@@ -187,3 +187,91 @@ orphan payload files.
   would deadlock the writer. A refusal found inside an op returns as
   data and is raised after the op (an in-op raise surfaces wrapped as
   `RuntimeError`).
+
+## M02 remediation (schema v11; no frozen identity changed)
+
+Owner M02; findings M02-AUDIT-01…20 (`docs/v2/acceptance/M02/remediation/`).
+
+- **Deletion barrier.** Migration v11 adds `job_deletions(job_id PK,
+  reason, deleted_at_utc)` — content-free. `delete_everywhere` records
+  the job in the same op; every evidence write (`insert_text_artifact_row`,
+  `write_audio_artifact`, `grant_lease_row`, `upsert_example`,
+  `publish_example`, `append_revision`, `update_latest_revision`,
+  `conn_append_revision`) raises `JobDeletedError` inside its op, so a
+  late producer can never recreate deleted content. A `deleted` example
+  state is final (`set_example_state` never leaves it). Deletion/tombstone
+  reasons are codes (`[a-z0-9_]{1,64}`), never caller free text.
+- **Durable purge intents.** `purge_intents` (v11) records every payload
+  file a committed purge must remove. `_purge_artifact` never unlinks:
+  the row change + intent commit together, the writer unlinks only
+  after that commit, and an intent stays pending (attempts + errno code)
+  until the file is gone — retried by `reconcile_purges()`, by
+  `sweep_orphans()` and at every `Store` open. A rollback therefore
+  leaves a live row with intact bytes; a crash after commit is finished
+  at the next open. The sweep never moves pending deletion work into
+  `orphans/`; an intent also removes the same managed name from
+  `orphans/` (files a pre-remediation sweep parked there).
+- **Job-scoped payload copies.** `register_job_payload_dir(dir,
+  pattern)` declares copies the store does not index; the app registers
+  the transcript-logging debug directory (`dictation-<stamp>-<seq>-<job
+  id>.wav`, `localflow/v2/debug_audio.py`) and the recovery journal
+  (`job-<job id>.*`). Ownership is by name pattern only — legacy
+  timestamp-only debug files have no known owner and are left to their
+  unchanged rotation.
+- **Honest deletion result.** `delete_everywhere` returns
+  `{purged_artifacts, payload_files, pending_purges, complete}` and emits
+  `training.deleted_everywhere` with outcome `complete`/`purge_pending`
+  AFTER the commit and the unlink attempt.
+- **Atomic publication.** `publish_example` is one op: deletion barrier,
+  a check that every artifact the envelope references (top-level and
+  nested) committed for this job, the example row in its FINAL initial
+  state (`quarantined_sensitive` when the scanner flagged it), revision 1
+  and the latest pointer. Uncommitted references are nulled with
+  `not_captured_at_stage` and listed in the envelope's content-free
+  `completeness` block. `update_latest_revision(example_id, mutate)`
+  reads the current latest, mutates and appends with the real parent in
+  one op (no stale snapshot can drop an intervening annotation).
+- **Acknowledgment and timeouts.** `sync()` is an execution barrier, not
+  proof that earlier fire-and-forget ops succeeded; completeness comes
+  from `publish_example`. A waited call's `TimeoutError` does NOT cancel
+  the op — it may still commit; callers pre-allocate ids to find it.
+- **Leases.** `grant_lease_row` refuses an artifact that never
+  committed, was purged, or belongs to a deleted job. `prune_training`
+  expires only the TRAINING interest (training leases with an expiry);
+  a history/recovery lease or a pin keeps the payload until the shared
+  live-lease predicate says no interest remains; non-training-class
+  artifacts stay with `prune`. `prune` keeps the job artifacts of
+  examples in `REVIEWED_RETAINED_STATES` (`annotated`) — reviewed
+  evidence is retained until removed (S29.14); exclusion, expiry and
+  deletion release it.
+- **Attempt fence.** `update_job_state(..., expected_attempt=N)` discards
+  a transition from a writer still on another attempt (unfenced calls
+  are unchanged).
+- **Verification.** `verify()` checks every referenced artifact (nested
+  included) exists and belongs to the envelope's job, revision
+  parent/pointer consistency, pending purges, and accepts valid
+  delete-everywhere tombstones. `verify(deep=True)` also re-reads every
+  live payload (existence, size, sha256). `artifact_payload(...,
+  verify=True)` refuses a hash mismatch. Downstream exporter checks stay
+  independent and stronger for their own purpose.
+- **Lifecycle.** `lifecycle` ∈ open/closing/closed; admission closes at
+  the start of `close()`, accepted ops drain, and `close()` returns
+  `{drained, pending_ops, writer_alive}` — a stalled writer is reported,
+  never closed underneath. The app drains the store then the event
+  writer on quit.
+- **Schema repair.** A newer schema version is refused untouched. At the
+  current version, a missing table whose dependents survive (see
+  `_CORE_DEPENDENTS`) is corruption: a `v2-pre-repair-*.db` backup is
+  taken and the open is refused; additive tables without dependents and
+  missing indexes are re-created (idempotent DDL, `store.schema_repaired`).
+- **Imports.** `start_import_run`/`finish_import_run` record a log run's
+  byte snapshot BEFORE its first pair commits (`note` `status=started`
+  until completed), so an interrupted run still reconciles as a verified
+  prefix. `import_legacy_stats_row` couples a stats row and its
+  bookkeeping in one op; a reused legacy id with identical content is the
+  same entity, with different content a `legacy_stats_row_conflict`
+  artifact preserves it losslessly and the import reports it.
+- **Retention knobs.** `localflow.config.retention_policy` validates the
+  day knobs (integral, 1…36500); an invalid value falls back to its
+  default and is reported (`config.retention_invalid`), never a crash or
+  a zero/negative window.

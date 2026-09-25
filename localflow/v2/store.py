@@ -16,6 +16,7 @@ immutability, purges payloads and leaves only content-free tombstones.
 
 import collections
 import datetime as dt
+import errno
 import json
 import os
 import pathlib
@@ -607,6 +608,145 @@ _MIGRATIONS[10] = [
 ]
 
 
+# M02 remediation (M02-AUDIT-01/02/04): a durable, content-free job
+# deletion barrier and durable payload-purge intents. Additive only.
+# ``job_deletions`` is checked inside every evidence publication op, so a
+# producer that resumes after delete-everywhere cannot recreate content;
+# ``purge_intents`` records every payload file a committed purge still
+# has to remove — the unlink happens only AFTER the SQL commit and the
+# intent stays pending (retried on reconcile and at every open) until the
+# file is actually gone. SQL cannot roll back an unlink, so the file is
+# never touched before the row change is durable.
+_MIGRATIONS[11] = [
+    """CREATE TABLE IF NOT EXISTS job_deletions(
+         job_id TEXT PRIMARY KEY,
+         reason TEXT NOT NULL,
+         deleted_at_utc TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS purge_intents(
+         intent_id TEXT PRIMARY KEY,
+         artifact_id TEXT,
+         job_id TEXT,
+         root TEXT NOT NULL,
+         path TEXT NOT NULL,
+         reason TEXT NOT NULL,
+         created_at_utc TEXT NOT NULL,
+         attempts INTEGER NOT NULL DEFAULT 0,
+         last_error TEXT,
+         completed_at_utc TEXT)""",
+    """CREATE INDEX IF NOT EXISTS idx_purge_intents_open
+         ON purge_intents(completed_at_utc)""",
+]
+
+# Tables whose loss at the current schema version is corruption, not a
+# torn additive migration, whenever rows that depend on them survive
+# (M02-AUDIT-18). Each maps to queries that detect such surviving
+# dependents; the queries only touch tables that must then exist.
+_CORE_DEPENDENTS = {
+    "jobs": ("SELECT 1 FROM artifacts WHERE job_id LIKE 'job-%' LIMIT 1",
+             "SELECT 1 FROM training_examples LIMIT 1"),
+    "artifacts": ("SELECT 1 FROM artifact_leases LIMIT 1",
+                  "SELECT 1 FROM training_revisions LIMIT 1",
+                  "SELECT 1 FROM imports LIMIT 1"),
+    "training_examples": ("SELECT 1 FROM training_revisions LIMIT 1",),
+    "training_revisions": ("SELECT 1 FROM training_examples WHERE"
+                           " latest_revision_id IS NOT NULL LIMIT 1",),
+    "artifact_leases": ("SELECT 1 FROM artifacts WHERE purged=0 AND"
+                        " retention_class='training' LIMIT 1",),
+    "consent_revisions": ("SELECT 1 FROM training_examples WHERE"
+                          " consent_revision_id IS NOT NULL LIMIT 1",),
+    "imports": ("SELECT 1 FROM artifacts WHERE retention_class='legacy'"
+                " LIMIT 1", "SELECT 1 FROM legacy_dictations LIMIT 1"),
+    "import_runs": ("SELECT 1 FROM imports WHERE source_kind='legacy_log'"
+                    " LIMIT 1",),
+    "legacy_dictations": ("SELECT 1 FROM imports WHERE"
+                          " source_kind='stats_db' LIMIT 1",),
+    "deletion_tombstones": ("SELECT 1 FROM training_examples WHERE"
+                            " state='deleted' LIMIT 1",),
+    "job_deletions": ("SELECT 1 FROM deletion_tombstones LIMIT 1",),
+    "purge_intents": ("SELECT 1 FROM artifacts WHERE purged=1 LIMIT 1",),
+}
+
+
+class JobDeletedError(RuntimeError):
+    """An evidence write for a job (or example) that delete-everywhere
+    already removed. Content-free by construction: the message names no
+    id, so it is safe in last_errors and store.write_failed events."""
+
+
+_REASON_TOKEN = __import__("re").compile(r"^[a-z0-9_]{1,64}$")
+
+
+def safe_reason(reason) -> str:
+    """Tombstone/deletion reasons are codes, never caller free text."""
+    return reason if isinstance(reason, str) and _REASON_TOKEN.match(
+        reason) else "unspecified"
+
+
+def conn_job_deleted(conn, job_id) -> bool:
+    if not job_id:
+        return False
+    return conn.execute("SELECT 1 FROM job_deletions WHERE job_id=?",
+                        (job_id,)).fetchone() is not None
+
+
+def conn_assert_job_writable(conn, job_id):
+    """The deletion barrier (M02-AUDIT-01): raise inside the writer op, so
+    the whole op rolls back and nothing is recreated for a deleted job."""
+    if conn_job_deleted(conn, job_id):
+        raise JobDeletedError("evidence write refused: job was deleted")
+
+
+def conn_assert_example_writable(conn, example_id):
+    row = conn.execute(
+        "SELECT job_id, state FROM training_examples WHERE example_id=?",
+        (example_id,)).fetchone()
+    if row is None:
+        raise LookupError("evidence write refused: example not found")
+    if row[1] == "deleted":
+        raise JobDeletedError("evidence write refused: example was deleted")
+    conn_assert_job_writable(conn, row[0])
+    return row[0]
+
+
+_ARTIFACT_ID = __import__("re").compile(r"^art-[0-9a-f]{32}$")
+
+
+def iter_artifact_refs(obj, path="", _ref_slot=False):
+    """Every artifact id an envelope references, with its JSON path —
+    top-level artifact_ids and nested prompt/proposal/audio-preparation
+    references alike (M02-AUDIT-05/14). A reference is any string in an
+    ``*artifact_id`` slot or an ``*artifact_ids`` mapping/list, plus any
+    string shaped exactly like a minted artifact id."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == "completeness":
+                continue
+            slot = isinstance(k, str) and (k.endswith("artifact_id")
+                                           or k.endswith("artifact_ids"))
+            yield from iter_artifact_refs(
+                v, f"{path}.{k}" if path else k, _ref_slot or slot)
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            yield from iter_artifact_refs(v, f"{path}[{i}]", _ref_slot)
+    elif isinstance(obj, str) and obj and (
+            _ref_slot or _ARTIFACT_ID.match(obj)):
+        yield path, obj
+
+
+def _set_path(obj, path, value):
+    """Replace one reference found by iter_artifact_refs."""
+    import re as _re
+    parts = _re.findall(r"[^.\[\]]+|\[\d+\]", path)
+    cur = obj
+    for p in parts[:-1]:
+        cur = cur[int(p[1:-1])] if p.startswith("[") else cur[p]
+    last = parts[-1]
+    if last.startswith("["):
+        cur[int(last[1:-1])] = value
+    else:
+        cur[last] = value
+
+
 # ---- IEEE float32 WAV (Spec S29.5: the original capture artifact) -------
 
 def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
@@ -707,6 +847,19 @@ class Store:
         self._queue: collections.deque = collections.deque()
         self._cond = threading.Condition()
         self._stop = False
+        # M02-AUDIT-15: explicit lifecycle. Admission closes at the START
+        # of close() ("closing"); accepted work drains; the connection is
+        # closed only once the writer thread has actually exited.
+        self.lifecycle = "open"
+        self._executing = False
+        self.close_status = None
+        # M02-AUDIT-02/04: set by an op that recorded purge intents; the
+        # writer drains them only after that op's commit.
+        self._purge_pending = False
+        # Job-scoped payload directories outside the artifacts dir (the
+        # app's transcript-logging debug copies, recovery journal) that
+        # delete-everywhere must also clear: (directory, job_id -> glob).
+        self._job_payload_dirs = []
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
         try:
@@ -715,11 +868,18 @@ class Store:
         except OSError:
             pass
         self._db = sqlite3.connect(self.db_path, check_same_thread=False)
-        self._migrate()
+        try:
+            self._migrate()
+        except Exception:
+            self._db.close()
+            raise
         try:
             os.chmod(self.db_path, 0o600)
         except OSError:
             pass
+        # A crash between a purge commit and its unlink leaves the intent
+        # pending; finish that deletion work before anything else runs.
+        self._drain_purge_intents()
         self._thread = threading.Thread(
             target=self._run, name="localflow-v2-store", daemon=True)
         self._thread.start()
@@ -734,32 +894,50 @@ class Store:
                 if self._stop and not self._queue:
                     return
                 fn, result_q = self._queue.popleft()
+                self._executing = True
             try:
-                out = fn()
-                err = None
-                # One commit per operation keeps multi-statement ops (prune,
-                # delete-everywhere, migration-style batches) atomic.
-                self._db.commit()
-            except Exception as e:  # surfaced via last_errors, never crashes
-                out, err = None, f"{type(e).__name__}: {e}"
-                self.last_errors.append(err)
+                self._purge_pending = False
                 try:
-                    self._db.rollback()
-                except sqlite3.DatabaseError:
-                    pass
-                self.emit("store.write_failed", level="ERROR",
-                          reason_code="store_error", detail=err[:200])
-            if result_q is not None:
-                result_q.put((out, err))
+                    out = fn()
+                    err = None
+                    # One commit per operation keeps multi-statement ops
+                    # (prune, delete-everywhere, migration-style batches)
+                    # atomic.
+                    self._db.commit()
+                except Exception as e:  # surfaced, never crashes
+                    out, err = None, f"{type(e).__name__}: {e}"
+                    self.last_errors.append(err)
+                    try:
+                        self._db.rollback()
+                    except sqlite3.DatabaseError:
+                        pass
+                    # The op's purge intents rolled back with it: their
+                    # files are still referenced by live rows, untouched.
+                    self._purge_pending = False
+                    self.emit("store.write_failed", level="ERROR",
+                              reason_code="store_error", detail=err[:200])
+                if self._purge_pending:
+                    # Only now is the purge durable; remove the files.
+                    self._purge_pending = False
+                    self._drain_purge_intents()
+                if result_q is not None:
+                    result_q.put((out, err))
+            finally:
+                with self._cond:
+                    self._executing = False
+                    self._cond.notify_all()
 
     def _submit(self, fn, wait=False, timeout=15.0):
-        if self._stop and not self._thread.is_alive():
-            # The writer is gone (close completed); waiting would hang
-            # for the full timeout on a queue nobody drains — fail
-            # fast with the honest error instead.
-            raise RuntimeError("store is closed")
+        """Queue one op. ``timeout`` bounds only the CALLER's wait: a
+        TimeoutError does not cancel the op, which stays queued and may
+        still commit later (M02-AUDIT-15/05) — callers that need to know
+        pre-allocate their ids and re-read."""
         result_q = queue.Queue(maxsize=1) if wait else None
         with self._cond:
+            if self.lifecycle != "open":
+                # Admission is closed from the first moment of close():
+                # nothing is accepted that the drain might not cover.
+                raise RuntimeError(f"store is {self.lifecycle}")
             self._queue.append((fn, result_q))
             self._cond.notify()
         if not wait:
@@ -773,7 +951,10 @@ class Store:
         return out
 
     def sync(self, timeout=15.0):
-        """Barrier: all previously queued mutations have committed."""
+        """Barrier: all previously queued mutations have been EXECUTED.
+        A barrier does not report whether an earlier fire-and-forget op
+        failed — evidence completeness is established by the publishing
+        op itself (``publish_example``), never by sync() returning."""
         self._submit(lambda: None, wait=True, timeout=timeout)
 
     def submit(self, fn, wait=True, timeout=15.0):
@@ -784,25 +965,48 @@ class Store:
         return self._submit(lambda: fn(self._db), wait=wait,
                             timeout=timeout)
 
-    def close(self, timeout=5.0):
-        try:
-            self.sync(timeout)
-        except (TimeoutError, RuntimeError):
-            pass
+    def close(self, timeout=5.0) -> dict:
+        """Close admission, drain accepted work, then stop. Returns an
+        honest status: ``drained`` is False (with the count of accepted
+        ops still pending) when the writer did not finish within
+        ``timeout`` — the connection is then left open for the live
+        writer instead of being closed under it (M02-AUDIT-15)."""
+        deadline = time.monotonic() + timeout
         with self._cond:
+            if self.lifecycle == "closed":
+                return self.close_status
+            self.lifecycle = "closing"
+            while (self._queue or self._executing) \
+                    and time.monotonic() < deadline:
+                self._cond.wait(max(0.01, deadline - time.monotonic()))
+            pending = len(self._queue) + (1 if self._executing else 0)
             self._stop = True
             self._cond.notify_all()
-        self._thread.join(timeout=timeout)
-        try:
-            self._db.close()
-        except sqlite3.DatabaseError:
-            pass  # a writer op still finishing after a join timeout
+        self._thread.join(timeout=max(0.0, deadline - time.monotonic()))
+        alive = self._thread.is_alive()
+        if not alive:
+            try:
+                self._db.close()
+            except sqlite3.DatabaseError:
+                pass
+        self.lifecycle = "closed"
+        self.close_status = {"drained": pending == 0 and not alive,
+                             "pending_ops": pending,
+                             "writer_alive": alive}
+        return self.close_status
 
     # ---- migration -------------------------------------------------------
 
     def _migrate(self):
         version = self._schema_version()
         target = max(_MIGRATIONS)
+        if version > target:
+            # A newer build wrote this store: its tables may carry
+            # meanings this code cannot honor. Refuse, untouched
+            # (M02-AUDIT-18).
+            raise RuntimeError(
+                f"store schema v{version} is newer than this build"
+                f" supports (v{target}); refusing to open it")
         # A present-but-malformed core table is corruption, not a torn
         # migration: checked FIRST, because later migrations (indexes)
         # reference these tables and would crash opaquely. Idempotent DDL
@@ -848,7 +1052,11 @@ class Store:
             self.emit("store.migrated", level="INFO",
                       reason_code=f"store_schema_v{v}")
         # Repair path for a torn external write: re-apply every statement
-        # (all DDL is IF NOT EXISTS / idempotent) when tables are missing.
+        # (all DDL is IF NOT EXISTS / idempotent) when tables or indexes
+        # are missing — but only when that repair is SAFE. A missing core
+        # table whose dependent rows survive is corruption: recreating it
+        # empty would present the lost relationships as a healthy empty
+        # store (M02-AUDIT-18). That case is backed up and refused.
         expected = {"schema_meta", "jobs", "artifacts", "imports", "import_runs",
                     "legacy_dictations", "training_examples", "training_revisions",
                     "consent_revisions", "artifact_leases", "deletion_tombstones",
@@ -865,16 +1073,47 @@ class Store:
                     "sampling_decisions", "split_assignments",
                     "training_memberships", "example_tags",
                     "profile_snapshots", "profile_evidence",
-                    "export_manifests"}
+                    "export_manifests", "job_deletions", "purge_intents"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
-        if version >= target and not expected <= have:
+        expected_idx = {m.group(1) for stmts in _MIGRATIONS.values()
+                        for s in stmts for m in [__import__("re").search(
+                            r"CREATE (?:UNIQUE )?INDEX IF NOT EXISTS (\w+)",
+                            s)] if m}
+        have_idx = {r[0] for r in self._db.execute(
+            "SELECT name FROM sqlite_master WHERE type='index'")}
+        missing_tables = expected - have
+        missing_idx = expected_idx - have_idx
+        if version >= target and (missing_tables or missing_idx):
+            corrupt = []
+            for table in sorted(missing_tables & set(_CORE_DEPENDENTS)):
+                for probe in _CORE_DEPENDENTS[table]:
+                    try:
+                        if self._db.execute(probe).fetchone():
+                            corrupt.append(table)
+                            break
+                    except sqlite3.DatabaseError:
+                        continue  # the dependent table is gone too
+            if self.backup_dir is not None:
+                self._backup(label="pre-repair")
+            if corrupt:
+                self.emit("store.schema_corrupt", level="ERROR",
+                          reason_code="missing_core_table_with_dependents",
+                          detail=",".join(corrupt))
+                raise RuntimeError(
+                    "store schema corrupt: core table(s) "
+                    f"{', '.join(corrupt)} missing while dependent rows"
+                    " remain; refusing to recreate them empty — restore"
+                    " from backup")
             for v_repair in range(1, target + 1):
                 for stmt in _MIGRATIONS[v_repair]:
                     self._db.execute(stmt)
             self._db.commit()
             self.emit("store.schema_repaired", level="WARNING",
-                      reason_code="missing_tables")
+                      reason_code=("missing_tables" if missing_tables
+                                   else "missing_indexes"),
+                      detail=f"tables={len(missing_tables)}"
+                             f" indexes={len(missing_idx)}")
 
     def _schema_version(self) -> int:
         try:
@@ -885,9 +1124,9 @@ class Store:
         except sqlite3.DatabaseError:
             return 0
 
-    def _backup(self):
+    def _backup(self, label="pre-migrate"):
         stamp = ids.now_utc_iso(self.now_fn()).replace(":", "")
-        dst = self.backup_dir / f"v2-pre-migrate-{stamp}.db"
+        dst = self.backup_dir / f"v2-{label}-{stamp}.db"
         dst.parent.mkdir(parents=True, exist_ok=True)
         target = sqlite3.connect(dst)
         try:
@@ -924,21 +1163,28 @@ class Store:
         self._submit(op)
         return job_id, family_id
 
-    def update_job_state(self, job_id, state, reason=None, *, retry=False):
+    def update_job_state(self, job_id, state, reason=None, *, retry=False,
+                         expected_attempt=None):
         """Idempotent transition; stale/regressing states are discarded.
         A terminal state is final for stale-result purposes — the one
         deliberate exception is an explicit retry re-opening a
         ``failed_recoverable`` job to ``queued`` (contracts/jobs.md: a retry
         increments the attempt and keeps the job_id), which must be passed
-        explicitly."""
+        explicitly. ``expected_attempt`` (optional) fences the transition:
+        a writer that still believes in an older attempt is discarded
+        instead of settling the re-opened job (M02-AUDIT-09)."""
         now = ids.now_utc_iso(self.now_fn())
 
         def op():
             row = self._db.execute(
-                "SELECT state FROM jobs WHERE job_id=?", (job_id,)).fetchone()
+                "SELECT state, attempt FROM jobs WHERE job_id=?",
+                (job_id,)).fetchone()
             if row is None:
                 return False
             current = row[0]
+            if expected_attempt is not None \
+                    and int(row[1]) != int(expected_attempt):
+                return False  # stale attempt: never settles a newer one
             if current == state:
                 return True
             if current in TERMINAL_STATES:
@@ -1067,6 +1313,15 @@ class Store:
         now = ids.now_utc_iso(self.now_fn())
 
         def op():
+            if conn_job_deleted(self._db, job_id):
+                # The staged file is referenced by no row: removing it is
+                # safe whether or not anything commits.
+                try:
+                    path.unlink(missing_ok=True)
+                except OSError:
+                    pass
+                raise JobDeletedError(
+                    "evidence write refused: job was deleted")
             self._db.execute(
                 "INSERT INTO artifacts(artifact_id, job_id, stage,"
                 " parent_artifact_id, kind, role, content_path, content_text,"
@@ -1088,14 +1343,24 @@ class Store:
             return _row_to_dict(row, [c[0] for c in cur.description])
         return self._submit(op, wait=True)
 
-    def artifact_payload(self, artifact_id):
-        """Read back retained content: text str, audio ndarray, or None."""
+    def artifact_payload(self, artifact_id, verify=False):
+        """Read back retained content: text str, audio ndarray, or None.
+        ``verify=True`` checks the payload bytes against the recorded
+        sha256 first and raises ValueError on a mismatch (M02-AUDIT-14);
+        the default keeps the historical read-only behavior."""
         art = self.artifact(artifact_id)
         if art is None or art["purged"]:
             return None
         if art["content_path"]:
-            arr, _rate = read_wav(self.artifacts_dir / art["content_path"])
+            path = self.artifacts_dir / art["content_path"]
+            if verify and ids.sha256_bytes(path.read_bytes()) \
+                    != art["sha256"]:
+                raise ValueError("artifact payload hash mismatch")
+            arr, _rate = read_wav(path)
             return arr
+        if verify and art["content_text"] is not None \
+                and ids.sha256_text(art["content_text"]) != art["sha256"]:
+            raise ValueError("artifact payload hash mismatch")
         return art["content_text"]
 
     def artifact_count(self):
@@ -1211,6 +1476,107 @@ class Store:
         self._submit(op)
         return run_id
 
+    def start_import_run(self, kind, sha, source_bytes, source_path):
+        """Durably record a run's source snapshot (hash + byte length)
+        BEFORE any of its records commit (M02-AUDIT-10). A run interrupted
+        after committing some pairs then still identifies its bytes as a
+        verified prefix of a later, grown source; ``finish_import_run``
+        fills in the counts. An unfinished run keeps note
+        ``status=started``."""
+        run_id = ids.new_id("import")
+
+        def op():
+            self._db.execute(
+                "INSERT INTO import_runs(run_id, source_kind, source_sha256,"
+                " source_bytes, source_path, imported_records, skipped_records,"
+                " imported_at_utc, note) VALUES(?,?,?,?,?,0,0,?,?)",
+                (run_id, kind, sha, source_bytes, str(source_path),
+                 ids.now_utc_iso(self.now_fn()), "status=started"))
+        self._submit(op, wait=True)
+        return run_id
+
+    def finish_import_run(self, run_id, imported, skipped, note=None):
+        def op():
+            self._db.execute(
+                "UPDATE import_runs SET imported_records=?, skipped_records=?,"
+                " imported_at_utc=?, note=? WHERE run_id=?",
+                (imported, skipped, ids.now_utc_iso(self.now_fn()),
+                 "status=completed" + (f"; {note}" if note else ""), run_id))
+        self._submit(op, wait=True)
+        return run_id
+
+    def import_legacy_stats_row(self, row, source_sha, locator):
+        """Atomically import ONE legacy stats row plus its bookkeeping
+        (M02-AUDIT-11). ``legacy_dictations.id`` is the original
+        producer's id, global across sources, so a second source reusing
+        an id is reconciled explicitly, never ``INSERT OR IGNORE``d:
+
+        - same id, identical content → the same entity; bookkeeping points
+          at the existing row (``duplicate_identical``);
+        - same id, different content → a conflict: the source row is kept
+          losslessly as a ``legacy`` conflict artifact (outside the dated
+          legacy totals) and reported (``conflict``);
+        - otherwise the row is inserted (``imported``).
+
+        Bookkeeping commits only together with its data. Returns the
+        outcome string, or ``skipped`` when this locator was imported."""
+        ts = float(row["ts"])
+        captured = ids.now_utc_iso(ts)
+        cols = ("id", "ts", "duration_sec", "raw_text", "cleaned_text",
+                "raw_words", "cleaned_words", "fixed_words", "wpm",
+                "app_name", "app_bundle", "kind")
+        values = tuple(ts if c == "ts" else row[c] for c in cols)
+        now = ids.now_utc_iso(self.now_fn())
+
+        def op():
+            if self._db.execute(
+                    "SELECT 1 FROM imports WHERE source_kind='stats_db' AND"
+                    " source_sha256=? AND source_locator=?",
+                    (source_sha, locator)).fetchone():
+                return "skipped"
+            existing = self._db.execute(
+                f"SELECT {', '.join(cols)} FROM legacy_dictations WHERE id=?",
+                (row["id"],)).fetchone()
+            if existing is None:
+                self._db.execute(
+                    "INSERT INTO legacy_dictations(id, ts,"
+                    " captured_at_utc, duration_sec, raw_text, cleaned_text,"
+                    " raw_words, cleaned_words, fixed_words, wpm, app_name,"
+                    " app_bundle, kind, imported_from_sha256)"
+                    " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (row["id"], ts, captured, *values[2:], source_sha))
+                outcome, imported_id = "imported", \
+                    f"legacy_dictations:{row['id']}"
+            elif tuple(existing) == values:
+                outcome, imported_id = "duplicate_identical", \
+                    f"legacy_dictations:{row['id']}"
+            else:
+                artifact_id = ids.new_id("art")
+                payload = json.dumps(dict(zip(cols, values)),
+                                     ensure_ascii=False, sort_keys=True)
+                self._db.execute(
+                    "INSERT INTO artifacts(artifact_id, job_id, stage,"
+                    " parent_artifact_id, kind, role, content_path,"
+                    " content_text, sha256, bytes, meta_json,"
+                    " retention_class, purged, created_at_utc)"
+                    " VALUES(?,NULL,'import',NULL,?,?,NULL,?,?,?,?,"
+                    "'legacy',0,?)",
+                    (artifact_id, "legacy_stats_row_conflict",
+                     "legacy_stats_row_conflict", payload,
+                     ids.sha256_text(payload),
+                     len(payload.encode("utf-8")),
+                     json.dumps({"conflicts_with_legacy_id": row["id"],
+                                 "source_sha256": source_sha,
+                                 "time_quality": "known"}), now))
+                outcome, imported_id = "conflict", artifact_id
+            self._db.execute(
+                "INSERT INTO imports(source_kind, source_sha256,"
+                " source_locator, imported_id, imported_at_utc, time_quality)"
+                " VALUES('stats_db',?,?,?,?,'known')",
+                (source_sha, locator, imported_id, now))
+            return outcome
+        return self._submit(op, wait=True)
+
     def import_run_bytes(self, kind) -> dict:
         """Map each imported source hash to its byte length (for prefix
         reconciliation of append-only sources like the legacy log)."""
@@ -1259,6 +1625,7 @@ class Store:
         now = ids.now_utc_iso(self.now_fn())
 
         def op():
+            conn_assert_job_writable(self._db, job_id)
             self._db.execute(
                 "INSERT OR IGNORE INTO training_examples(example_id, job_id,"
                 " family_id, consent_revision_id, collection_policy, state,"
@@ -1270,12 +1637,93 @@ class Store:
         return example_id
 
     def set_example_state(self, example_id, state):
+        # 'deleted' is final: no later state change resurrects a
+        # delete-everywhere tombstone (M02-AUDIT-01).
         def op():
             self._db.execute(
                 "UPDATE training_examples SET state=?, updated_at_utc=?"
-                " WHERE example_id=?",
+                " WHERE example_id=? AND state != 'deleted'",
                 (state, ids.now_utc_iso(self.now_fn()), example_id))
         self._submit(op)
+
+    def publish_example(self, *, job_id, family_id, envelope,
+                        consent_revision_id=None, collection_policy=None,
+                        quarantined=False, example_id=None, timeout=15.0):
+        """ONE writer op publishing a live example: the example row in its
+        FINAL initial state (``quarantined_sensitive`` from the first
+        visible moment when the scanner flagged it — M02-AUDIT-03), its
+        revision 1 and the latest pointer, after the deletion barrier and
+        a check that every artifact the envelope references actually
+        committed for this job (M02-AUDIT-05). An uncommitted reference
+        is nulled with ``not_captured_at_stage`` and listed in the
+        envelope's content-free ``completeness`` block — evidence is
+        never called complete because ids were allocated. Waits for the
+        commit; a TimeoutError does not cancel the op (the pre-allocated
+        ``example_id`` identifies it if it commits later). Returns
+        {example_id, revision_id, state, complete, uncommitted}."""
+        example_id = example_id or ids.new_id("ex")
+        revision_id = ids.new_id("rev")
+        now = ids.now_utc_iso(self.now_fn())
+        state = "quarantined_sensitive" if quarantined \
+            else "captured_unreviewed"
+
+        def op():
+            conn_assert_job_writable(self._db, job_id)
+            env = json.loads(json.dumps(envelope, default=str))
+            env["example_id"] = example_id
+            env["revision_id"] = revision_id
+            env["parent_revision_id"] = None
+            env["state"] = state
+            missing = dict(env.get("missing_reasons") or {})
+            uncommitted = []
+            for path, aid in list(iter_artifact_refs(env)):
+                row = self._db.execute(
+                    "SELECT job_id, purged FROM artifacts WHERE"
+                    " artifact_id=?", (aid,)).fetchone()
+                if row is not None and row[0] == job_id and not row[1]:
+                    continue
+                _set_path(env, path, None)
+                uncommitted.append(path)
+                key = path[len("artifact_ids."):] \
+                    if path.startswith("artifact_ids.") else path
+                missing.setdefault(key, "not_captured_at_stage")
+            env["missing_reasons"] = missing
+            env["completeness"] = {"complete": not uncommitted,
+                                   "uncommitted_references": uncommitted}
+            self._db.execute(
+                "INSERT INTO training_examples(example_id, job_id,"
+                " family_id, consent_revision_id, collection_policy, state,"
+                " created_at_utc, updated_at_utc) VALUES(?,?,?,?,?,?,?,?)",
+                (example_id, job_id, family_id, consent_revision_id,
+                 collection_policy, state, now, now))
+            conn_append_revision(self._db, example_id, env, None,
+                                 revision_id=revision_id, now=now)
+            return {"example_id": example_id, "revision_id": revision_id,
+                    "state": state, "complete": not uncommitted,
+                    "uncommitted": uncommitted}
+        return self._submit(op, wait=True, timeout=timeout)
+
+    def update_latest_revision(self, example_id, mutate, timeout=15.0):
+        """Read the CURRENT latest revision, apply ``mutate(envelope) ->
+        envelope`` and append the result as its child — all inside one
+        writer op, so an annotation or observation that lands meanwhile
+        is never overwritten by a stale snapshot and the parent is the
+        revision actually extended (M02-AUDIT-08). ``mutate`` runs on the
+        writer thread and must not call the store. Deleted examples are
+        refused. Returns the new revision id (None when mutate declines)."""
+        def op():
+            conn_assert_example_writable(self._db, example_id)
+            row = self._db.execute(
+                "SELECT envelope_json, revision_id FROM training_revisions"
+                " WHERE example_id=? ORDER BY rowid DESC LIMIT 1",
+                (example_id,)).fetchone()
+            if row is None:
+                raise LookupError("example has no revision to extend")
+            env = mutate(json.loads(row[0]))
+            if env is None:
+                return None
+            return conn_append_revision(self._db, example_id, env, row[1])
+        return self._submit(op, wait=True, timeout=timeout)
 
     def append_revision(self, example_id, envelope: dict, parent_revision_id=None):
         revision_id = envelope.get("revision_id") or ids.new_id("rev")
@@ -1286,6 +1734,7 @@ class Store:
         now = ids.now_utc_iso(self.now_fn())
 
         def op():
+            conn_assert_example_writable(self._db, example_id)
             self._db.execute(
                 "INSERT INTO training_revisions(revision_id, example_id,"
                 " parent_revision_id, created_at_utc, envelope_json,"
@@ -1346,6 +1795,15 @@ class Store:
             " ORDER BY rowid DESC"
         ).fetchone() or (None,))[0], wait=True)
 
+    def consent_snapshot(self):
+        """(state, consent_revision_id) from ONE read of the latest
+        revision — never a state from one revision paired with the id of
+        another (M02-AUDIT-06). No revision reads as disabled."""
+        return self._submit(lambda: tuple(self._db.execute(
+            "SELECT state, consent_revision_id FROM consent_revisions"
+            " ORDER BY rowid DESC LIMIT 1").fetchone()
+            or ("disabled", None)), wait=True)
+
     # ---- leases, retention, deletion ------------------------------------------
 
     def grant_lease(self, artifact_id, holder, days=None):
@@ -1377,8 +1835,17 @@ class Store:
             unresolved = set(r[0] for r in self._db.execute(
                 f"SELECT job_id FROM jobs WHERE state NOT IN ({placeholders})",
                 tuple(TERMINAL_STATES)))
+            # S29.14: reviewed examples are retained until explicitly
+            # removed — their evidence is not aged out with the
+            # unreviewed buffer (M02-AUDIT-16). Exclusion, expiry and
+            # deletion leave REVIEWED_RETAINED_STATES and release this.
+            marks = ",".join("?" * len(REVIEWED_RETAINED_STATES))
+            reviewed = set(r[0] for r in self._db.execute(
+                "SELECT job_id FROM training_examples WHERE state IN"
+                f" ({marks})", REVIEWED_RETAINED_STATES))
             purged = 0
             kept_by_lease = 0
+            kept_reviewed = 0
             for (artifact_id, job_id, rclass, content_path, created) in \
                     self._db.execute(
                         "SELECT artifact_id, job_id, retention_class,"
@@ -1391,6 +1858,9 @@ class Store:
                     # the imports bookkeeping survives pruning.
                     continue
                 if job_id and job_id in unresolved:
+                    continue
+                if job_id and job_id in reviewed:
+                    kept_reviewed += 1
                     continue
                 if self._live_lease_count(artifact_id, now_iso):
                     kept_by_lease += 1
@@ -1410,12 +1880,14 @@ class Store:
                 created_t = _iso_to_epoch(created)
                 if created_t is None or (now - created_t) < days * 86400:
                     continue
-                if self._purge_artifact(artifact_id):
+                if self._purge_artifact(artifact_id, reason="retention"):
                     purged += 1
             self.emit("store.prune", level="INFO",
                       reason_code="retention_pass",
-                      detail=f"purged={purged} kept_by_lease={kept_by_lease}")
-            return {"purged": purged, "kept_by_lease": kept_by_lease}
+                      detail=f"purged={purged} kept_by_lease={kept_by_lease}"
+                             f" kept_reviewed={kept_reviewed}")
+            return {"purged": purged, "kept_by_lease": kept_by_lease,
+                    "kept_reviewed": kept_reviewed}
         return self._submit(op, wait=True)
 
     def prune_training(self, now=None):
@@ -1426,6 +1898,7 @@ class Store:
         def op():
             now_iso = ids.now_utc_iso(now)
             expired = 0
+            kept_other = 0
             rows = self._db.execute(
                 "SELECT example_id, job_id, created_at_utc FROM"
                 " training_examples WHERE state IN ('captured_unreviewed',"
@@ -1442,11 +1915,27 @@ class Store:
                     " l.expires_at_utc IS NULL", (job_id,)).fetchone()
                 if pinned:
                     continue
-                for (aid,) in self._db.execute(
-                        "SELECT artifact_id FROM artifacts WHERE job_id=?",
+                # M02-AUDIT-07: only the TRAINING interest expires here.
+                # A history/recovery lease (or a pin) on the same artifact
+                # is an independent interest: the payload survives until
+                # the shared live-lease predicate says no interest is
+                # left. Non-training-class artifacts stay with the
+                # generic history policy (prune).
+                for (aid, rclass) in self._db.execute(
+                        "SELECT artifact_id, retention_class FROM artifacts"
+                        " WHERE job_id=? AND purged=0",
                         (job_id,)).fetchall():
-                    self._revoke_leases(aid)
-                    self._purge_artifact(aid)
+                    self._db.execute(
+                        "UPDATE artifact_leases SET revoked_at_utc=? WHERE"
+                        " artifact_id=? AND holder='training' AND"
+                        " revoked_at_utc IS NULL AND expires_at_utc IS NOT"
+                        " NULL", (now_iso, aid))
+                    if rclass != "training":
+                        continue
+                    if self._live_lease_count(aid, now_iso):
+                        kept_other += 1
+                        continue
+                    self._purge_artifact(aid, reason="training_expiry")
                 self._db.execute(
                     "UPDATE training_examples SET state='expired',"
                     " updated_at_utc=? WHERE example_id=?", (now_iso, ex_id))
@@ -1462,7 +1951,8 @@ class Store:
                     (ids.new_id("tomb"), "example", ex_id,
                      "training_buffer_expired", now_iso))
                 expired += 1
-            return {"expired": expired}
+            return {"expired": expired,
+                    "kept_by_other_interest": kept_other}
         return self._submit(op, wait=True)
 
     def prune_metadata(self, now=None):
@@ -1520,7 +2010,18 @@ class Store:
     def delete_everywhere(self, target_kind, target_id, reason="user_request"):
         """Revoke every lease, purge every managed payload and derived record,
         leave only content-free tombstones (S29.14). Overrides immutability.
-        target_kind ∈ {'example', 'job'}."""
+        target_kind ∈ {'example', 'job'}.
+
+        M02 remediation: the job is recorded in ``job_deletions`` inside
+        the same op — a durable barrier every later evidence write checks
+        (M02-AUDIT-01); payload files (the artifacts plus any registered
+        job-scoped copies: the transcript-logging debug WAV, recovery
+        journal audio) become durable purge intents removed only after
+        the commit (M02-AUDIT-02/04). The result says honestly whether
+        every file is gone: ``complete`` is False while any intent is
+        still pending (it is retried by ``reconcile_purges`` and at
+        every open)."""
+        reason = safe_reason(reason)
 
         def op():
             now_iso = ids.now_utc_iso(self.now_fn())
@@ -1532,13 +2033,28 @@ class Store:
             else:
                 job_id = target_id
             purged_artifacts = []
+            intents = []
             if job_id:
+                self._db.execute(
+                    "INSERT OR IGNORE INTO job_deletions(job_id, reason,"
+                    " deleted_at_utc) VALUES(?,?,?)",
+                    (job_id, reason, now_iso))
                 for (aid,) in self._db.execute(
                         "SELECT artifact_id FROM artifacts WHERE job_id=?",
                         (job_id,)).fetchall():
                     self._revoke_leases(aid)
-                    if self._purge_artifact(aid):
+                    if self._purge_artifact(aid, reason="deleted",
+                                            intents=intents):
                         purged_artifacts.append(aid)
+                for directory, pattern in self._job_payload_dirs:
+                    try:
+                        found = sorted(pathlib.Path(directory).glob(
+                            pattern(job_id)))
+                    except OSError:
+                        found = []
+                    for p in found:
+                        intents.append(self._record_purge_intent(
+                            None, job_id, "abs", str(p), "deleted"))
                 for (ex_id,) in self._db.execute(
                     "SELECT example_id FROM training_examples WHERE"
                     " job_id=?", (job_id,)).fetchall():
@@ -1583,9 +2099,111 @@ class Store:
                     "INSERT INTO deletion_tombstones(tombstone_id, target_kind,"
                     " target_id, reason, created_at_utc) VALUES(?,?,?,?,?)",
                     (ids.new_id("tomb"), "artifact", aid, reason, now_iso))
-            self.emit("training.deleted_everywhere", level="INFO",
-                      reason_code=reason, job_id=job_id)
-            return {"purged_artifacts": len(purged_artifacts)}
+            return {"job_id": job_id,
+                    "purged_artifacts": len(purged_artifacts),
+                    "intents": intents}
+        out = self._submit(op, wait=True)
+        # The writer drained the intents right after the commit; report
+        # what is actually still on disk, never the plan.
+        intents = out.pop("intents")
+        pending = self.pending_purges(intents) if intents else 0
+        out["payload_files"] = len(intents)
+        out["pending_purges"] = pending
+        out["complete"] = pending == 0
+        self.emit("training.deleted_everywhere", level="INFO",
+                  reason_code=reason, job_id=out.pop("job_id"),
+                  outcome="complete" if pending == 0 else "purge_pending",
+                  detail=f"files={len(intents)} pending={pending}")
+        return out
+
+    def register_job_payload_dir(self, directory, pattern):
+        """Declare a directory holding JOB-SCOPED payload copies the store
+        does not index (``pattern(job_id)`` → glob, which must match only
+        that job's files). delete-everywhere then removes them through the
+        same durable purge intents (M02-AUDIT-02). Ownership is by name
+        pattern, never guessed from content or age."""
+        self._job_payload_dirs.append((pathlib.Path(directory), pattern))
+
+    def _record_purge_intent(self, artifact_id, job_id, root, path, reason):
+        intent_id = ids.new_id("purge")
+        self._db.execute(
+            "INSERT INTO purge_intents(intent_id, artifact_id, job_id, root,"
+            " path, reason, created_at_utc) VALUES(?,?,?,?,?,?,?)",
+            (intent_id, artifact_id, job_id, root, path, reason,
+             ids.now_utc_iso(self.now_fn())))
+        self._purge_pending = True
+        return intent_id
+
+    def _intent_paths(self, root, path):
+        if root == "artifacts":
+            # A payload the pre-remediation sweep moved to orphans/ is
+            # the same managed file under the same unique name.
+            return [self.artifacts_dir / path,
+                    self.artifacts_dir / "orphans" / path]
+        return [pathlib.Path(path)]
+
+    def _drain_purge_intents(self):
+        """Writer-thread (or pre-thread) only: attempt every pending purge
+        intent. A removed or already-absent file completes its intent; a
+        failure keeps it pending with an errno code (content-free) and an
+        attempt count. Never raises."""
+        try:
+            rows = self._db.execute(
+                "SELECT intent_id, root, path FROM purge_intents WHERE"
+                " completed_at_utc IS NULL").fetchall()
+        except sqlite3.DatabaseError:
+            return
+        if not rows:
+            return
+        now_iso = ids.now_utc_iso(self.now_fn())
+        failed = 0
+        try:
+            for intent_id, root, path in rows:
+                err = None
+                for p in self._intent_paths(root, path):
+                    try:
+                        p.unlink(missing_ok=True)
+                    except OSError as e:
+                        err = errno.errorcode.get(e.errno, "OSError") \
+                            if e.errno else type(e).__name__
+                if err is None:
+                    self._db.execute(
+                        "UPDATE purge_intents SET completed_at_utc=?,"
+                        " attempts=attempts+1, last_error=NULL WHERE"
+                        " intent_id=?", (now_iso, intent_id))
+                else:
+                    failed += 1
+                    self._db.execute(
+                        "UPDATE purge_intents SET attempts=attempts+1,"
+                        " last_error=? WHERE intent_id=?", (err, intent_id))
+            self._db.commit()
+        except sqlite3.DatabaseError:
+            try:
+                self._db.rollback()
+            except sqlite3.DatabaseError:
+                pass
+            return
+        if failed:
+            self.emit("store.purge_pending", level="ERROR",
+                      reason_code="payload_unlink_failed",
+                      detail=f"pending={failed}")
+
+    def reconcile_purges(self) -> int:
+        """Retry every pending purge intent now; returns how many remain."""
+        self._submit(self._drain_purge_intents, wait=True)
+        return self.pending_purges()
+
+    def pending_purges(self, intent_ids=None) -> int:
+        def op():
+            if intent_ids is None:
+                return self._db.execute(
+                    "SELECT COUNT(*) FROM purge_intents WHERE"
+                    " completed_at_utc IS NULL").fetchone()[0]
+            marks = ",".join("?" * len(intent_ids))
+            return self._db.execute(
+                "SELECT COUNT(*) FROM purge_intents WHERE completed_at_utc"
+                f" IS NULL AND intent_id IN ({marks})",
+                tuple(intent_ids)).fetchone()[0]
         return self._submit(op, wait=True)
 
     def _stale_candidates(self, job_id, now_iso):
@@ -1612,24 +2230,27 @@ class Store:
             " AND revoked_at_utc IS NULL",
             (ids.now_utc_iso(self.now_fn()), artifact_id))
 
-    def _purge_artifact(self, artifact_id) -> bool:
+    def _purge_artifact(self, artifact_id, reason="purge",
+                        intents=None) -> bool:
         row = self._db.execute(
-            "SELECT content_path FROM artifacts WHERE artifact_id=? AND"
-            " purged=0", (artifact_id,)).fetchone()
+            "SELECT content_path, job_id FROM artifacts WHERE artifact_id=?"
+            " AND purged=0", (artifact_id,)).fetchone()
         if row is None:
             return False
-        # Commit the row change first; unlink afterwards. If the op fails
-        # between the two, the database consistently says purged and the
-        # leftover file becomes an orphan the sweep quarantines — never a
-        # live row pointing at a deleted file.
+        # M02-AUDIT-04: the file is NOT touched here. The row change and a
+        # durable purge intent commit together; the writer unlinks only
+        # after that commit and keeps the intent pending until the file
+        # is really gone (M02-AUDIT-02). A rollback therefore leaves a
+        # live row with its payload intact, and a crash after the commit
+        # leaves a pending intent that the next open finishes.
         self._db.execute(
             "UPDATE artifacts SET content_text=NULL, content_path=NULL,"
             " purged=1 WHERE artifact_id=?", (artifact_id,))
         if row[0]:
-            try:
-                (self.artifacts_dir / row[0]).unlink(missing_ok=True)
-            except OSError:
-                pass
+            intent = self._record_purge_intent(
+                artifact_id, row[1], "artifacts", row[0], reason)
+            if intents is not None:
+                intents.append(intent)
         return True
 
     def tombstones(self):
@@ -1640,8 +2261,22 @@ class Store:
 
     # ---- consistency -----------------------------------------------------
 
-    def verify(self):
-        """Content-free consistency report over jobs/artifacts/evidence."""
+    def verify(self, deep=False):
+        """Content-free consistency report over jobs/artifacts/evidence.
+
+        Structural checks (always): core tables; live examples have a
+        revision (a delete-everywhere tombstone legitimately has none);
+        the latest pointer names the example's newest revision and every
+        parent is a revision of the same example; EVERY artifact an
+        envelope references — top-level and nested (prompt/proposal,
+        audio preparation, stage blocks) — exists, belongs to the
+        envelope's job, unless a missing-reason covers it (a purged row
+        is a legitimate retention outcome, not corruption); leases name
+        existing artifacts; unfinished purge intents are reported.
+
+        ``deep=True`` additionally re-reads every live payload: a file
+        must exist with the recorded size and sha256, inline text must
+        match its sha256 (M02-AUDIT-14). Reports, never repairs."""
 
         def op():
             issues = []
@@ -1652,35 +2287,65 @@ class Store:
                 "SELECT name FROM sqlite_master WHERE type='table'")}
             if not expected_tables <= have:
                 issues.append("missing core tables")
-            for (ex_id,) in self._db.execute(
-                    "SELECT example_id FROM training_examples").fetchall():
-                n = self._db.execute(
-                    "SELECT COUNT(*) FROM training_revisions WHERE example_id=?",
-                    (ex_id,)).fetchone()[0]
-                if n == 0:
-                    issues.append(f"example {ex_id} has no revision")
-            for (rev_id, payload) in self._db.execute(
-                    "SELECT revision_id, envelope_json FROM"
+            examples = {r[0]: (r[1], r[2], r[3]) for r in self._db.execute(
+                "SELECT example_id, job_id, state, latest_revision_id FROM"
+                " training_examples").fetchall()}
+            revs_by_ex = {}
+            for ex_id, rev_id, parent in self._db.execute(
+                    "SELECT example_id, revision_id, parent_revision_id FROM"
+                    " training_revisions ORDER BY rowid").fetchall():
+                revs_by_ex.setdefault(ex_id, []).append((rev_id, parent))
+            for ex_id, (job_id, state, latest) in examples.items():
+                revs = revs_by_ex.get(ex_id, [])
+                if not revs:
+                    if state != "deleted":
+                        issues.append(f"example {ex_id} has no revision")
+                    continue
+                if latest != revs[-1][0]:
+                    issues.append(f"example {ex_id} latest pointer is not"
+                                  " its newest revision")
+                own = {r for r, _p in revs}
+                for rev_id, parent in revs[1:]:
+                    if parent is not None and parent not in own:
+                        issues.append(f"revision {rev_id} parent is not a"
+                                      " revision of its example")
+            for ex_id in revs_by_ex:
+                if ex_id not in examples:
+                    issues.append(f"revisions for unknown example {ex_id}")
+            for (rev_id, ex_id, payload) in self._db.execute(
+                    "SELECT revision_id, example_id, envelope_json FROM"
                     " training_revisions").fetchall():
                 try:
                     env = json.loads(payload)
                 except json.JSONDecodeError:
                     issues.append(f"revision {rev_id} envelope unparsable")
                     continue
-                for key, aid in (env.get("artifact_ids") or {}).items():
-                    if aid is None:
+                reasons = env.get("missing_reasons") or {}
+                ex = examples.get(ex_id)
+                job_id = env.get("job_id") or (ex[0] if ex else None)
+                for path, aid in iter_artifact_refs(env):
+                    key = path[len("artifact_ids."):] \
+                        if path.startswith("artifact_ids.") else path
+                    if key in reasons:
                         continue
-                    if not self._db.execute(
-                            "SELECT 1 FROM artifacts WHERE artifact_id=?",
-                            (aid,)).fetchone():
-                        reasons = env.get("missing_reasons") or {}
-                        if key not in reasons:
-                            issues.append(
-                                f"revision {rev_id} references missing artifact"
-                                f" {aid} without a missing-reason")
+                    row = self._db.execute(
+                        "SELECT job_id, purged FROM artifacts WHERE"
+                        " artifact_id=?", (aid,)).fetchone()
+                    if row is None:
+                        issues.append(
+                            f"revision {rev_id} references missing artifact"
+                            f" {aid} without a missing-reason")
+                    elif job_id and row[0] and row[0] != job_id:
+                        issues.append(
+                            f"revision {rev_id} references artifact {aid}"
+                            " owned by another job")
+                    # A PURGED referenced artifact is not an issue: the
+                    # content-free row stays, and retention legitimately
+                    # removes payloads under live examples (E19.5's
+                    # audio-deleted text-only case, which the exporter
+                    # handles by eligibility).
                 prep = env.get("audio_preparation") or {}
                 if prep and not prep.get("artifact_id"):
-                    reasons = env.get("missing_reasons") or {}
                     if "audio_preparation" not in reasons:
                         issues.append(
                             f"revision {rev_id} has decode ranges with no"
@@ -1692,28 +2357,69 @@ class Store:
                         "SELECT 1 FROM artifacts WHERE artifact_id=?",
                         (aid,)).fetchone():
                     issues.append(f"lease {lease_id} on missing artifact {aid}")
+            pending = self._db.execute(
+                "SELECT COUNT(*) FROM purge_intents WHERE completed_at_utc"
+                " IS NULL").fetchone()[0]
+            if pending:
+                issues.append(f"{pending} payload purge(s) still pending")
+            payload_issues = []
+            if deep:
+                for aid, path, text, sha, size in self._db.execute(
+                        "SELECT artifact_id, content_path, content_text,"
+                        " sha256, bytes FROM artifacts WHERE purged=0"
+                        ).fetchall():
+                    if path:
+                        p = self.artifacts_dir / path
+                        try:
+                            data = p.read_bytes()
+                        except OSError:
+                            payload_issues.append(
+                                f"artifact {aid} payload file missing")
+                            continue
+                        if size is not None and len(data) != size:
+                            payload_issues.append(
+                                f"artifact {aid} payload size mismatch")
+                        elif ids.sha256_bytes(data) != sha:
+                            payload_issues.append(
+                                f"artifact {aid} payload hash mismatch")
+                    elif text is not None and ids.sha256_text(text) != sha:
+                        payload_issues.append(
+                            f"artifact {aid} text hash mismatch")
+                issues.extend(payload_issues)
             orphan_files = self._orphan_files()
             return {"ok": not issues and not orphan_files,
-                    "issues": issues, "orphan_files": orphan_files}
-        return self._submit(op, wait=True)
+                    "issues": issues, "orphan_files": orphan_files,
+                    "pending_purges": pending, "deep": bool(deep)}
+        return self._submit(op, wait=True, timeout=120.0 if deep else 15.0)
+
+    def _managed_payload_names(self):
+        """Names of files the store still owns: live payloads plus files a
+        pending purge intent has yet to remove (never orphans)."""
+        known = {r[0] for r in self._db.execute(
+            "SELECT content_path FROM artifacts WHERE content_path"
+            " IS NOT NULL")}
+        known |= {r[0] for r in self._db.execute(
+            "SELECT path FROM purge_intents WHERE root='artifacts' AND"
+            " completed_at_utc IS NULL")}
+        return known
 
     def _orphan_files(self):
-        known = {r[0] for r in self._db.execute(
-            "SELECT content_path FROM artifacts WHERE content_path IS NOT NULL")}
+        known = self._managed_payload_names()
         return [p.name for p in self.artifacts_dir.glob("*.wav")
                 if p.name not in known]
 
     def sweep_orphans(self, grace_sec=3600):
         """Crash between payload write and record commit (E19.2): files with
         no database row move to orphans/ once past the in-flight grace
-        period instead of being silently deleted."""
+        period instead of being silently deleted. A file with a pending
+        purge intent is NOT an orphan — it is deletion work, retried here
+        first and never parked in orphans/ (M02-AUDIT-02)."""
 
         def op():
+            self._drain_purge_intents()
             now = self.now_fn()
             moved = []
-            known = {r[0] for r in self._db.execute(
-                "SELECT content_path FROM artifacts WHERE content_path"
-                " IS NOT NULL")}
+            known = self._managed_payload_names()
             for p in self.artifacts_dir.glob("*.wav"):
                 if p.name in known:
                     continue
@@ -1753,6 +2459,35 @@ LIVE_EXAMPLE_STATES = ("captured_unreviewed", "review_candidate",
                        "annotated", "ambiguous", "quarantined_sensitive")
 TRAINABLE_STATES = ("captured_unreviewed", "review_candidate",
                     "annotated", "ambiguous")
+# Reviewed examples retained until explicitly removed (S29.14): their job
+# artifacts are exempt from age-based pruning while the example stays in
+# one of these states (M02-AUDIT-16). Exclusion/expiry/deletion leave it.
+REVIEWED_RETAINED_STATES = ("annotated",)
+
+
+def conn_append_revision(conn, example_id, env, parent_revision_id, *,
+                         revision_id=None, now=None):
+    """The one writer-thread revision append: refuses deleted examples/
+    jobs (M02-AUDIT-01), stores the envelope with its real parent and
+    moves the latest pointer in the same transaction."""
+    conn_assert_example_writable(conn, example_id)
+    revision_id = revision_id or ids.new_id("rev")
+    env = dict(env)
+    env["revision_id"] = revision_id
+    env["parent_revision_id"] = parent_revision_id
+    payload = json.dumps(env, ensure_ascii=False, sort_keys=True)
+    now = now or ids.now_utc_iso()
+    conn.execute(
+        "INSERT INTO training_revisions(revision_id, example_id,"
+        " parent_revision_id, created_at_utc, envelope_json,"
+        " content_sha256) VALUES(?,?,?,?,?,?)",
+        (revision_id, example_id, parent_revision_id, now, payload,
+         ids.sha256_text(payload)))
+    conn.execute(
+        "UPDATE training_examples SET latest_revision_id=?,"
+        " updated_at_utc=? WHERE example_id=?",
+        (revision_id, now, example_id))
+    return revision_id
 
 
 def conn_artifact_text(conn, artifact_id):
@@ -1772,6 +2507,7 @@ def insert_text_artifact_row(conn, *, artifact_id, job_id, stage, role, text,
                              kind="text", retention_class="history",
                              meta=None, parent_artifact_id=None,
                              created_at_utc):
+    conn_assert_job_writable(conn, job_id)  # M02-AUDIT-01 barrier
     payload = text if isinstance(text, str) else json.dumps(
         text, ensure_ascii=False, indent=1)
     conn.execute(
@@ -1788,6 +2524,16 @@ def insert_text_artifact_row(conn, *, artifact_id, job_id, stage, role, text,
 
 def grant_lease_row(conn, artifact_id, holder, *, days=None,
                     granted_at_epoch, lease_id=None):
+    # A lease names a retained payload: none on an artifact that never
+    # committed (its async insert failed — M02-AUDIT-05), was purged, or
+    # belongs to a deleted job (M02-AUDIT-01).
+    art = conn.execute("SELECT job_id, purged FROM artifacts WHERE"
+                       " artifact_id=?", (artifact_id,)).fetchone()
+    if art is None:
+        raise LookupError("lease refused: artifact not committed")
+    if art[1]:
+        raise JobDeletedError("lease refused: artifact already purged")
+    conn_assert_job_writable(conn, art[0])
     conn.execute(
         "INSERT INTO artifact_leases(lease_id, artifact_id, holder,"
         " granted_at_utc, expires_at_utc) VALUES(?,?,?,?,?)",

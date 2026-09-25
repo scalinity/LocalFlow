@@ -17,7 +17,6 @@ import signal
 import threading
 import time
 
-import numpy as np
 import objc
 from AppKit import (
     NSApplication,
@@ -52,6 +51,7 @@ from .overlay import MODE_FAILED, MODE_PROCESSING, MODE_RECORDING, \
     MODE_TRANSFORMING, Overlay
 from .permissions import ensure_permissions
 from .v2 import capture_journal
+from .v2 import debug_audio as v2_debug_audio
 from .v2 import cleanup as v2_cleanup
 from .v2 import insertion as v2_insertion
 from .v2 import normalize as v2_normalize
@@ -105,21 +105,30 @@ class AppDelegate(NSObject):
         # V2 observability + store (Spec S07/S08). The event writer and the
         # single-writer store own their own background threads; nothing here
         # touches the audio callback.
+        # M02-AUDIT-19: retention knobs pass one validation layer — an
+        # invalid value falls back to its default and is reported, never
+        # a startup crash or a destructive (zero/negative) window.
+        event_policy, event_problems = config_mod.event_retention_policy(cfg)
         self.v2log = v2.eventlog.EventWriter(
             V2_EVENTS_DIR,
-            retention_days=int(cfg.get("events_retention_days", 14)),
-            cap_bytes=int(cfg.get("events_cap_mib", 100)) * 1024 * 1024)
+            retention_days=event_policy["events_retention_days"],
+            cap_bytes=event_policy["events_cap_mib"] * 1024 * 1024)
         self.store = v2.store.Store(
             V2_DB, artifacts_dir=V2_ARTIFACTS, backup_dir=V2_BACKUPS,
             emit=self.v2log.emit)
-        self.store.retention_days = {
-            "transcript": int(cfg.get("retention_transcript_days", 30)),
-            "audio_success": int(cfg.get("retention_audio_success_days", 7)),
-            "audio_failed": int(cfg.get("retention_audio_failed_days", 30)),
-            "metadata": int(cfg.get("retention_metadata_days", 14)),
-            "training_buffer": int(cfg.get("training_buffer_days", 30)),
-            "usage": int(cfg.get("retention_usage_days", 365)),
-        }
+        retention, problems = config_mod.retention_policy(cfg)
+        self.store.retention_days = retention
+        for key, reason in event_problems + problems:
+            self.v2log.emit("config.retention_invalid", level="WARNING",
+                            reason_code=reason, outcome="default_used",
+                            detail=key)
+        # M02-AUDIT-02: job-scoped payload copies outside v2-artifacts
+        # that delete-everywhere must also remove — the transcript-
+        # logging debug WAV (named by job) and the recovery journal.
+        self.store.register_job_payload_dir(
+            AUDIO_DEBUG_DIR, v2_debug_audio.job_pattern)
+        self.store.register_job_payload_dir(
+            V2_JOURNAL, lambda job_id: f"job-{job_id}.*")
         # M13 (Spec S08/S21, contracts/analytics.md): usage analytics —
         # dated facts over the single-writer store, independent of
         # training consent (usage metadata, not evidence). Guarded like
@@ -162,6 +171,12 @@ class AppDelegate(NSObject):
                             level="WARNING", reason_code=type(e).__name__)
         self.v2log.unresolved_jobs_fn = self.store.unresolved_job_ids
         self.consent = v2.training.ConsentManager(self.store, self.v2log.emit)
+        try:
+            # Prime the capture-boundary snapshot once, off the hotkey path.
+            self.consent.snapshot_now(point="startup")
+        except Exception as e:
+            self.v2log.emit("training.consent_snapshot_failed",
+                            level="WARNING", reason_code=type(e).__name__)
         self.collector = v2.training.EvidenceCollector(
             self.store, self.v2log.emit, self.consent,
             pipeline_info=lambda: self._pipeline_info(),
@@ -1694,6 +1709,34 @@ class AppDelegate(NSObject):
             self.supervisor.shutdown(timeout=2.0)
         except Exception:
             pass
+        self._shutdown_persistence()
+
+    @objc.python_method
+    def _shutdown_persistence(self, timeout=3.0):
+        """M02-AUDIT-15: orderly quit for the M02 writers. Producers are
+        already stopped (the supervisor above); the store then closes
+        admission and drains its accepted ops, the outcome is recorded as
+        an event, and only then does the event writer close (its own
+        admission first, then its drain). Bounded: a stalled writer is
+        reported (pending count), never closed underneath."""
+        status = None
+        try:
+            status = self.store.close(timeout=timeout)
+        except Exception as e:
+            self.v2log.emit("store.close_failed", level="ERROR",
+                            reason_code=type(e).__name__)
+        if status is not None:
+            self.v2log.emit(
+                "app.shutdown", level="INFO" if status.get("drained")
+                else "ERROR",
+                outcome="drained" if status.get("drained")
+                else "store_drain_incomplete",
+                reason_code="application_will_terminate",
+                detail=f"pending_ops={status.get('pending_ops')}")
+        try:
+            self.v2log.close(timeout=timeout)
+        except Exception:
+            pass
 
     def retentionPass_(self, timer):
         # Retention queries can be slow with a large store; never let them
@@ -1899,6 +1942,20 @@ class AppDelegate(NSObject):
             utc_offset_minutes=v2.ids.utc_offset_minutes(),
             state="capturing", source_revision=v2.ids.source_revision(),
             pipeline_revision=v2.ids.PIPELINE_REVISION)
+        # M02-AUDIT-06: the collection-consent decision is taken HERE, at
+        # push-to-talk down — the capture boundary consent_revision_id is
+        # defined against — as one coherent (state, revision) pair. A
+        # consent change during the capture neither adds nor removes
+        # this job's evidence (capture-snapshot policy).
+        try:
+            consent_snapshot = self.consent.capture_snapshot()
+        except Exception as e:
+            consent_snapshot = v2.training.ConsentSnapshot(
+                "disabled", None, "ptt_down_unavailable")
+            self.v2log.emit("training.consent_snapshot_failed",
+                            level="WARNING", job_id=job_id,
+                            reason_code=type(e).__name__,
+                            outcome="not_collected")
         journal = None
         try:
             if self.cfg.get("capture_journal", True):
@@ -1926,6 +1983,7 @@ class AppDelegate(NSObject):
             "utc_offset_minutes": v2.ids.utc_offset_minutes(),
             "journal": journal,
             "hands_free": hands_free,
+            "consent": consent_snapshot,
         }
         # M12 (Spec S20): a dictation started with the Scratchpad
         # editor focused is NOTE-BOUND — an internal destination. The
@@ -2168,7 +2226,8 @@ class AppDelegate(NSObject):
                     job["job_id"], job["family_id"],
                     captured_at_utc=job["captured_at_utc"],
                     timezone=job["timezone"],
-                    utc_offset_minutes=job["utc_offset_minutes"])
+                    utc_offset_minutes=job["utc_offset_minutes"],
+                    consent_snapshot=job.get("consent"))
             except Exception as e:
                 self.v2log.emit("training.capture_failed", level="ERROR",
                                 job_id=job["job_id"],
@@ -2421,7 +2480,7 @@ class AppDelegate(NSObject):
             text = ""
             try:
                 if self.cfg["log_transcripts"]:
-                    self._dump_audio(audio)
+                    self._dump_audio(audio, job_id)
                 self._job_state(job_id, "transcribing")
                 # Evidence/store work is guarded separately: a capture or
                 # disk problem must never fail an otherwise successful
@@ -2461,6 +2520,12 @@ class AppDelegate(NSObject):
                 if res.get("retried") and job_id:
                     self._bump_attempt(job, job_id)
                 job["attempt"] = res.get("attempt", job["attempt"])
+                # M02-AUDIT-09: the evidence context follows the job's
+                # actual attempt; the ASR worker generation is recorded
+                # for the ASR stage only.
+                self.collector.note_attempt(
+                    ctx, job["attempt"], stage="asr",
+                    worker_generation=res.get("generation"))
                 if job.get("cancelled"):
                     raise _JobCancelled()
                 raw = res.get("text") or ""
@@ -2701,6 +2766,9 @@ class AppDelegate(NSObject):
                     if res2.get("retried") and job_id:
                         self._bump_attempt(job, job_id)
                     job["attempt"] = res2.get("attempt", job["attempt"])
+                    self.collector.note_attempt(
+                        ctx, job["attempt"], stage="cleanup",
+                        worker_generation=res2.get("generation"))
                     if job.get("cancelled"):
                         raise _JobCancelled()
                     text = res2.get("text") or ""
@@ -2928,21 +2996,14 @@ class AppDelegate(NSObject):
                             job_id=job_id, reason_code=type(e).__name__)
 
     @objc.python_method
-    def _dump_audio(self, audio):
+    def _dump_audio(self, audio, job_id=None):
+        # M02-AUDIT-02: the debug copy is named by its job so
+        # delete-everywhere (registered in configure) removes it too.
         try:
-            import wave
-            AUDIO_DEBUG_DIR.mkdir(parents=True, exist_ok=True)
             self._dump_seq += 1
-            stamp = time.strftime("%Y%m%d-%H%M%S") + f"-{self._dump_seq:03d}"
-            with wave.open(str(AUDIO_DEBUG_DIR / f"dictation-{stamp}.wav"), "wb") as w:
-                w.setnchannels(1)
-                w.setsampwidth(2)
-                w.setframerate(int(self.cfg["sample_rate"]))
-                w.writeframes(
-                    (np.clip(audio, -1.0, 1.0) * 32767).astype("<i2").tobytes()
-                )
-            for old in sorted(AUDIO_DEBUG_DIR.glob("dictation-*.wav"))[:-AUDIO_DEBUG_KEEP]:
-                old.unlink()
+            v2_debug_audio.write_debug_copy(
+                AUDIO_DEBUG_DIR, job_id, audio, int(self.cfg["sample_rate"]),
+                keep=AUDIO_DEBUG_KEEP, seq=self._dump_seq)
         except Exception as e:
             self.v2log.emit("capture.debug_audio_failed", level="WARNING",
                             reason_code=type(e).__name__)
@@ -3885,6 +3946,15 @@ class AppDelegate(NSObject):
                     "retention_audio_success_days",
                     "retention_audio_failed_days",
                     "retention_metadata_days", "training_buffer_days")
+        # M02-AUDIT-19: the same validation as startup; an invalid knob
+        # changes nothing (no destructive zero/negative window).
+        checked = [config_mod.validate_retention_value(k, v)
+                   for k, v in zip(cfg_keys, values)]
+        if any(v is None for v in checked):
+            self.v2log.emit("hub.retention_rejected", level="WARNING",
+                            reason_code="out_of_range_or_not_integer")
+            return {"outcome": "invalid"}
+        values = checked
         for key, cfg_key, value in zip(keys, cfg_keys, values):
             self.store.retention_days[key] = int(value)
             self.cfg[cfg_key] = int(value)
@@ -4026,12 +4096,16 @@ class AppDelegate(NSObject):
             self._job_state(job_id, "queued", reason="user_retry",
                             retry=True)
         try:
+            # M02-AUDIT-06: a retry re-processes an OLD capture — it uses
+            # that capture's permission (and only while collection is
+            # enabled now), never today's consent attached retroactively.
             ctx = self.collector.job_started(
                 job_id, family_id,
                 captured_at_utc=v2.ids.now_utc_iso(),
                 timezone=v2.ids.local_zone_name(),
                 utc_offset_minutes=v2.ids.utc_offset_minutes(),
-                attempt=attempt)
+                attempt=attempt,
+                consent_snapshot=self.collector.retry_snapshot(job_id))
         except Exception:
             ctx = None
         job = {"job_id": job_id, "family_id": family_id, "ctx": ctx,
@@ -4134,9 +4208,9 @@ class AppDelegate(NSObject):
     def hubApplyUsageRetention(self, days):
         """Apply the usage retention knob now and persist it to the user
         override (the single-key discipline of hubApplyRetention)."""
-        try:
-            days = max(1, int(days))
-        except (ValueError, TypeError):
+        days = config_mod.validate_retention_value(
+            "retention_usage_days", days)  # M02-AUDIT-19 bounds
+        if days is None:
             return {"outcome": "invalid_days"}
         self.store.retention_days["usage"] = days
         self.cfg["retention_usage_days"] = days

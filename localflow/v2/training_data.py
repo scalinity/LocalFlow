@@ -39,8 +39,8 @@ import json
 import time
 
 from . import ids
-from .store import (LIVE_EXAMPLE_STATES, grant_lease_row,
-                    insert_text_artifact_row)
+from .store import (LIVE_EXAMPLE_STATES, conn_append_revision,
+                    grant_lease_row, insert_text_artifact_row)
 
 EXAMPLE_STATES = ("captured_unreviewed", "review_candidate", "annotated",
                   "ambiguous", "quarantined_sensitive", "excluded",
@@ -75,23 +75,34 @@ def _conn_write_text_artifact(conn, *, job_id, stage, role, text,
 
 
 def _conn_append_revision(conn, example_id, env, parent_revision_id):
-    revision_id = ids.new_id("rev")
-    env = dict(env)
-    env["revision_id"] = revision_id
-    env["parent_revision_id"] = parent_revision_id
-    payload = json.dumps(env, ensure_ascii=False, sort_keys=True)
-    now = ids.now_utc_iso()
+    # M02 remediation: the store's one guarded append (refuses a deleted
+    # example or job — no late annotation recreates deleted evidence).
+    return conn_append_revision(conn, example_id, env, parent_revision_id)
+
+
+def conn_mark_intended(conn, example_id, correct: bool):
+    """The ONE intended-writing judgment op (M02-AUDIT-16): the Hub's
+    Mark Intended and the menu's legacy "Mark Last Dictation Correct"
+    both land here — same provenance
+    (``user_explicit_intended_writing``: the user judged the output as
+    the writing they intended, never an acoustic/verbatim claim) and the
+    same reviewed lifecycle (``annotated``, retained until removed). An
+    excluded, expired, quarantined or deleted example keeps its state:
+    a mark never silently re-includes evidence the user excluded."""
+    env, rev = _conn_latest(conn, example_id)
+    if env is None:
+        raise ValueError(f"no revision for example {example_id}")
+    outcome = dict(env.get("outcome") or {})
+    outcome["correctness"] = "correct" if correct else "incorrect"
+    outcome["correctness_provenance"] = "user_explicit_intended_writing"
+    env["outcome"] = outcome
+    new_rev = _conn_append_revision(conn, example_id, env, rev)
     conn.execute(
-        "INSERT INTO training_revisions(revision_id, example_id,"
-        " parent_revision_id, created_at_utc, envelope_json,"
-        " content_sha256) VALUES(?,?,?,?,?,?)",
-        (revision_id, example_id, parent_revision_id, now, payload,
-         ids.sha256_text(payload)))
-    conn.execute(
-        "UPDATE training_examples SET latest_revision_id=?,"
-        " updated_at_utc=? WHERE example_id=?",
-        (revision_id, now, example_id))
-    return revision_id
+        "UPDATE training_examples SET state='annotated',"
+        " updated_at_utc=? WHERE example_id=? AND state NOT IN"
+        " ('deleted','expired','quarantined_sensitive','excluded')",
+        (ids.now_utc_iso(), example_id))
+    return new_rev
 
 
 def _conn_latest(conn, example_id):
@@ -330,21 +341,7 @@ class TrainingDataService:
         intention-only. Never flips a verbatim reference."""
 
         def op(conn):
-            env, rev = _conn_latest(conn, example_id)
-            if env is None:
-                raise ValueError(f"no revision for example {example_id}")
-            outcome = dict(env.get("outcome") or {})
-            outcome["correctness"] = "correct" if correct else "incorrect"
-            outcome["correctness_provenance"] = \
-                "user_explicit_intended_writing"
-            env["outcome"] = outcome
-            new_rev = _conn_append_revision(conn, example_id, env, rev)
-            conn.execute(
-                "UPDATE training_examples SET state='annotated',"
-                " updated_at_utc=? WHERE example_id=? AND state NOT IN"
-                " ('deleted','expired','quarantined_sensitive')",
-                (ids.now_utc_iso(), example_id))
-            return new_rev
+            return conn_mark_intended(conn, example_id, correct)
         out = self.store.submit(op)
         self.emit("training.annotation_recorded", level="INFO",
                   reason_code="mark_intended",

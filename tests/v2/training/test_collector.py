@@ -235,7 +235,13 @@ def test_exclude_and_mark_actions():
     assert collector.mark_last_correct()
     env = st.latest_revision(ex)
     assert env["outcome"]["correctness"] == "correct"
-    assert env["outcome"]["correctness_provenance"] == "user_explicit"
+    # M02 remediation (M02-AUDIT-16): the menu mark is the same
+    # intended-writing judgment as the Hub's Mark Intended — one
+    # provenance and the reviewed ('annotated') lifecycle. Was the
+    # ambiguous "user_explicit" before the remediation.
+    assert env["outcome"]["correctness_provenance"] == \
+        "user_explicit_intended_writing"
+    assert st.example_for_job(ctx.job_id)[1] == "annotated"
     assert collector.exclude_last()
     assert st.example_for_job(ctx.job_id)[1] == "excluded"
     st.close()
