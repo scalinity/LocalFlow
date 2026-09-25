@@ -1,0 +1,1985 @@
+{
+ "a16_rerun_note": "a16 was re-run with the scripted-clock harness (timing neutralized) after the first run showed the base benchmark failing its timing gate on this container even unmodified, which confounded the exit code; the first-run record is replaced by this one.",
+ "code_root_sha": "267d1c25910328f72afff7096eb2a442e96a5174",
+ "evaluated_utc": "2026-09-25T23:03:32Z",
+ "findings": {
+  "a01": {
+   "crossed_separators": {
+    "!": "Claude Code",
+    ",": "Claude Code",
+    ".": "Claude Code",
+    ":": "Claude Code",
+    ";": "Claude Code",
+    "?": "Claude Code",
+    "CR": "Claude Code",
+    "CRLF": "Claude Code",
+    "FF": "Claude Code",
+    "LF": "Claude Code",
+    "LS": "Claude Code",
+    "NEL": "Claude Code",
+    "PS": "Claude Code",
+    "VT": "Claude Code"
+   },
+   "negatives": {
+    "!": {
+     "input": "clod! code",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod! code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        10
+       ]
+      }
+     ]
+    },
+    ",": {
+     "input": "clod, code",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod, code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        10
+       ]
+      }
+     ]
+    },
+    ".": {
+     "input": "clod. code",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod. code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        10
+       ]
+      }
+     ]
+    },
+    ":": {
+     "input": "clod: code",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod: code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        10
+       ]
+      }
+     ]
+    },
+    ";": {
+     "input": "clod; code",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod; code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        10
+       ]
+      }
+     ]
+    },
+    "?": {
+     "input": "clod? code",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod? code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        10
+       ]
+      }
+     ]
+    },
+    "CR": {
+     "input": "clod\rcode",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod\rcode",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        9
+       ]
+      }
+     ]
+    },
+    "CRLF": {
+     "input": "clod\r\ncode",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod\r\ncode",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        10
+       ]
+      }
+     ]
+    },
+    "FF": {
+     "input": "clod\fcode",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod\fcode",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        9
+       ]
+      }
+     ]
+    },
+    "LF": {
+     "input": "clod\ncode",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod\ncode",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        9
+       ]
+      }
+     ]
+    },
+    "LS": {
+     "input": "clod code",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        9
+       ]
+      }
+     ]
+    },
+    "NEL": {
+     "input": "clodcode",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clodcode",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        9
+       ]
+      }
+     ]
+    },
+    "PS": {
+     "input": "clod code",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        9
+       ]
+      }
+     ]
+    },
+    "VT": {
+     "input": "clod\u000bcode",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod\u000bcode",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        9
+       ]
+      }
+     ]
+    }
+   },
+   "positives": {
+    "clod\tcode": {
+     "input": "clod\tcode",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod\tcode",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        9
+       ]
+      }
+     ]
+    },
+    "clod  code": {
+     "input": "clod  code",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod  code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        10
+       ]
+      }
+     ]
+    },
+    "clod code,": {
+     "input": "clod code,",
+     "other_edits": [],
+     "output": "Claude Code,",
+     "vocab_edits": [
+      {
+       "input": "clod code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        9
+       ]
+      }
+     ]
+    },
+    "clod code": {
+     "input": "clod code",
+     "other_edits": [],
+     "output": "Claude Code",
+     "vocab_edits": [
+      {
+       "input": "clod code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        0,
+        9
+       ]
+      }
+     ]
+    },
+    "use clod code today": {
+     "input": "use clod code today",
+     "other_edits": [],
+     "output": "use Claude Code today",
+     "vocab_edits": [
+      {
+       "input": "clod code",
+       "output": "Claude Code",
+       "rule_id": "E-CC",
+       "span": [
+        4,
+        13
+       ]
+      }
+     ]
+    }
+   },
+   "positives_hold": true,
+   "reproduced": true,
+   "seconds": 0.03
+  },
+  "a02": {
+   "control_holds": true,
+   "control_workspace_upgrade": {
+    "cleanup_input": "ask WorkspaceName now",
+    "cleanup_relevant_vocabulary": [
+     "WorkspaceName",
+     "GlobalName"
+    ],
+    "cleanup_vocabulary_pairs": [
+     [
+      "clod",
+      "WorkspaceName"
+     ],
+     [
+      "globalname",
+      "GlobalName"
+     ],
+     [
+      "workspacename",
+      "WorkspaceName"
+     ]
+    ],
+    "finished": true,
+    "inserted_text": "ask WorkspaceName now"
+   },
+   "cross_job_leak": true,
+   "job_a_app_A": {
+    "cleanup_input": "ask Claude now",
+    "cleanup_relevant_vocabulary": [
+     "Claude"
+    ],
+    "cleanup_vocabulary_pairs": [
+     [
+      "claude",
+      "Claude"
+     ],
+     [
+      "clod",
+      "Claude"
+     ]
+    ],
+    "finished": true,
+    "inserted_text": "ask Claude now"
+   },
+   "job_b_app_B_refresh_failed": {
+    "cleanup_input": "ask Claude now",
+    "cleanup_relevant_vocabulary": [
+     "Claude"
+    ],
+    "cleanup_vocabulary_pairs": [
+     [
+      "claude",
+      "Claude"
+     ],
+     [
+      "clod",
+      "Claude"
+     ]
+    ],
+    "finished": true,
+    "inserted_text": "ask Claude now"
+   },
+   "job_c_app_B_after_recovery": {
+    "cleanup_input": "ask clod now",
+    "cleanup_relevant_vocabulary": [],
+    "cleanup_vocabulary_pairs": [],
+    "finished": true,
+    "inserted_text": "ask clod now"
+   },
+   "refresh_failed_events": [
+    "last_good_state"
+   ],
+   "reproduced": true,
+   "seconds": 0.37,
+   "selector_failed_workspace_upgrade": {
+    "cleanup_input": "ask GlobalName now",
+    "cleanup_relevant_vocabulary": [
+     "GlobalName"
+    ],
+    "cleanup_vocabulary_pairs": [
+     [
+      "clod",
+      "GlobalName"
+     ],
+     [
+      "globalname",
+      "GlobalName"
+     ]
+    ],
+    "finished": true,
+    "inserted_text": "ask GlobalName now"
+   },
+   "selector_failure_blocked_upgrade": true,
+   "wiring": "real AppDelegate startDictation/finishDictation → _vocab_job_state → _finalize_job_context → coordinator _worker (declared shims)"
+  },
+  "a02b": {
+   "job_a_app_A": {
+    "cleanup_input": "ask Claude now",
+    "cleanup_relevant_vocabulary": [
+     "Claude"
+    ],
+    "cleanup_vocabulary_pairs": [
+     [
+      "claude",
+      "Claude"
+     ],
+     [
+      "clod",
+      "Claude"
+     ]
+    ],
+    "finished": true,
+    "inserted_text": "ask Claude now"
+   },
+   "job_b_capture_failed": {
+    "cleanup_input": "ask Claude now",
+    "cleanup_relevant_vocabulary": [],
+    "cleanup_vocabulary_pairs": [],
+    "finished": true,
+    "inserted_text": "ask Claude now"
+   },
+   "reproduced": true,
+   "seconds": 0.11
+  },
+  "a03": {
+   "left_overlap": {
+    "pass1": {
+     "input": "red status page",
+     "other_edits": [],
+     "output": "red Status Page",
+     "vocab_edits": [
+      {
+       "input": "status page",
+       "output": "Status Page",
+       "rule_id": "E-A",
+       "span": [
+        4,
+        15
+       ]
+      }
+     ]
+    },
+    "pass2": {
+     "input": "red Status Page",
+     "other_edits": [],
+     "output": "Orange Page",
+     "vocab_edits": [
+      {
+       "input": "red Status",
+       "output": "Orange",
+       "rule_id": "E-B",
+       "span": [
+        0,
+        10
+       ]
+      }
+     ]
+    }
+   },
+   "positive_red_status": {
+    "input": "red status",
+    "other_edits": [],
+    "output": "Orange",
+    "vocab_edits": [
+     {
+      "input": "red status",
+      "output": "Orange",
+      "rule_id": "E-B",
+      "span": [
+       0,
+       10
+      ]
+     }
+    ]
+   },
+   "reproduced": true,
+   "right_overlap_control": {
+    "pass1": {
+     "input": "status page view",
+     "other_edits": [],
+     "output": "Status Page view",
+     "vocab_edits": [
+      {
+       "input": "status page",
+       "output": "Status Page",
+       "rule_id": "E-A",
+       "span": [
+        0,
+        11
+       ]
+      }
+     ]
+    },
+    "pass2": {
+     "input": "Status Page view",
+     "other_edits": [],
+     "output": "Status Page view",
+     "vocab_edits": []
+    }
+   },
+   "second_pass_drift": true,
+   "seconds": 0.01
+  },
+  "a04": {
+   "accepted_mutations": [
+    "rebind_scope_ctx",
+    "rebind_match_index",
+    "rebind_revision",
+    "mutate_conflict_dict"
+   ],
+   "attempts": {
+    "caller_alias_list_append": {
+     "before": "ask klod now",
+     "entry_aliases_type": "list",
+     "rescoped_output": "ask Claude now"
+    },
+    "mutate_conflict_dict": "accepted",
+    "mutate_to_json_skills": "accepted",
+    "rebind_match_index": "accepted",
+    "rebind_revision": "accepted",
+    "rebind_scope_ctx": "accepted"
+   },
+   "caller_alias_mutation_changed_rescope": true,
+   "reproduced": true,
+   "revision_after": "m05:x",
+   "revision_before": "m05:66d7e10c6e07",
+   "seconds": 0.0,
+   "serialization_changed": true
+  },
+  "a05": {
+   "after": {
+    "created_utc": "2026-09-25T00:00:00Z",
+    "hint_set_id": "m05hs:8a93b701de96",
+    "omitted": [
+     {
+      "canonical": "Gamma",
+      "entry_id": "E-C",
+      "reason": "other"
+     }
+    ],
+    "schema_version": 1,
+    "scope": {
+     "app_bundle": "z",
+     "profile": null,
+     "site_origin": null,
+     "workspace": "y"
+    },
+    "selector_revision": "m05-rank-v1",
+    "term_limit": 2,
+    "terms": [
+     {
+      "canonical": "Alpha",
+      "entry_id": "E-A",
+      "scope": [
+       "global",
+       null
+      ],
+      "score": [
+       0,
+       0,
+       "",
+       0,
+       0
+      ],
+      "source": "user"
+     },
+     {
+      "canonical": "Beta",
+      "entry_id": "E-B",
+      "scope": [
+       "global",
+       null
+      ],
+      "score": [
+       0,
+       0,
+       "",
+       0,
+       0
+      ],
+      "source": "user"
+     }
+    ],
+    "vocabulary_revision": "m05:4a8028cd5f71"
+   },
+   "attempts": {
+    "omitted_reason": "accepted",
+    "rebind_terms": "rejected:FrozenInstanceError",
+    "scope_item": "accepted",
+    "to_json_scope": "accepted"
+   },
+   "bytes_changed_same_id": true,
+   "id": "m05hs:8a93b701de96",
+   "reproduced": true,
+   "seconds": 0.0
+  },
+  "a06": {
+   "approve_alias_race": {
+    "aliases": [
+     [
+      "clod",
+      1
+     ]
+    ],
+    "callers": {
+     "L": [
+      "ok",
+      2
+     ],
+     "P": [
+      "ok",
+      3
+     ]
+    },
+    "history": [
+     [
+      1,
+      "created"
+     ],
+     [
+      2,
+      "updated"
+     ],
+     [
+      3,
+      "updated"
+     ]
+    ],
+    "turnstile_timeouts": 0
+   },
+   "approve_lost_concurrent_alias": true,
+   "duplicate_next_revision": true,
+   "independent_edits": {
+    "callers": {
+     "A": [
+      "ok",
+      2
+     ],
+     "B": [
+      "ok",
+      2
+     ]
+    },
+    "history": [
+     [
+      1,
+      "created"
+     ],
+     [
+      2,
+      "updated"
+     ],
+     [
+      2,
+      "updated"
+     ]
+    ],
+    "turnstile_timeouts": 0
+   },
+   "invalid_scope_committed": true,
+   "orphan_after_delete": true,
+   "reproduced": true,
+   "scope_race": {
+    "callers": {
+     "A": [
+      "error",
+      "RuntimeError"
+     ],
+     "B": [
+      "error",
+      "RuntimeError"
+     ]
+    },
+    "history": [
+     [
+      1,
+      "created"
+     ],
+     [
+      2,
+      "updated"
+     ],
+     [
+      2,
+      "updated"
+     ]
+    ],
+    "row": [
+     [
+      "workspace",
+      null,
+      2
+     ]
+    ],
+    "snapshot_builds": "snapshot_failed:RuntimeError",
+    "turnstile_timeouts": 0
+   },
+   "seconds": 0.12,
+   "update_delete_race": {
+    "alias_rows": [
+     [
+      "clod"
+     ],
+     [
+      "klod"
+     ]
+    ],
+    "callers": {
+     "D": [
+      "ok",
+      null
+     ],
+     "U": [
+      "error",
+      "AssertionError"
+     ]
+    },
+    "entry_rows": [
+     [
+      0
+     ]
+    ],
+    "history": [
+     [
+      1,
+      "created"
+     ],
+     [
+      2,
+      "deleted"
+     ],
+     [
+      2,
+      "updated"
+     ]
+    ],
+    "turnstile_timeouts": 0
+   }
+  },
+  "a07": {
+   "import_cells": {
+    "alias.approved=\"false\"": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "alias.approved=\"true\"": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "alias.approved=0": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        false
+       ]
+      ]
+     ]
+    },
+    "alias.approved=1": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "alias.approved=[]": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        false
+       ]
+      ]
+     ]
+    },
+    "alias.approved=null": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        false
+       ]
+      ]
+     ]
+    },
+    "alias.approved={}": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        false
+       ]
+      ]
+     ]
+    },
+    "approved=\"false\"": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "approved=\"true\"": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "approved=0": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       false,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "approved=1": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "approved=[]": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       false,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "approved=null": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       false,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "approved={}": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       false,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "enabled=\"false\"": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "enabled=\"true\"": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "enabled=0": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       false,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "enabled=1": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "enabled=[]": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       false,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "enabled=null": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       false,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "enabled={}": {
+     "import": "ok",
+     "output": "ask clod now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       false,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "pinned=\"false\"": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       true,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "pinned=\"true\"": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       true,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "pinned=0": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "pinned=1": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       true,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "pinned=[]": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "pinned=null": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    },
+    "pinned={}": {
+     "import": "ok",
+     "output": "ask Claude now",
+     "store_revision_changed": true,
+     "stored": [
+      [
+       true,
+       true,
+       false,
+       [
+        true
+       ]
+      ]
+     ]
+    }
+   },
+   "malformed_accepted": [
+    "approved=\"false\"",
+    "approved=\"true\"",
+    "approved=0",
+    "approved=1",
+    "approved=null",
+    "approved=[]",
+    "approved={}",
+    "enabled=\"false\"",
+    "enabled=\"true\"",
+    "enabled=0",
+    "enabled=1",
+    "enabled=null",
+    "enabled=[]",
+    "enabled={}",
+    "pinned=\"false\"",
+    "pinned=\"true\"",
+    "pinned=0",
+    "pinned=1",
+    "pinned=null",
+    "pinned=[]",
+    "pinned={}",
+    "alias.approved=\"false\"",
+    "alias.approved=\"true\"",
+    "alias.approved=0",
+    "alias.approved=1",
+    "alias.approved=null",
+    "alias.approved=[]",
+    "alias.approved={}"
+   ],
+   "reproduced": true,
+   "seconds": 0.74,
+   "string_false_became_approval": true,
+   "update_api_string_false": {
+    "accepted": true,
+    "approved_stored": true
+   }
+  },
+  "a08": {
+   "approved_after": {
+    "Alpha": true,
+    "Beta": false
+   },
+   "approved_wrong_entry": true,
+   "entry_ids": {
+    "Alpha": "vocab-e88956929c564686a56b91fff5719c83",
+    "Beta": "vocab-af02d8e5474347a0b199cdc1ea56671b"
+   },
+   "reproduced": true,
+   "seconds": 0.03,
+   "selected_message": "selected: Beta (global:-)",
+   "wiring": "DictionaryPanelController Python logic under the declared shims with recorded stand-in fields"
+  },
+  "a09": {
+   "app_path": {
+    "edits": [
+     {
+      "cls": "skill",
+      "rule_id": null
+     }
+    ],
+    "inserted_text": "/code-review"
+   },
+   "edits": [
+    {
+     "cls": "skill",
+     "output": "/code-review",
+     "reason": null,
+     "rule_id": null
+    }
+   ],
+   "registry": {
+    "conflicts": [],
+    "dictionary_skill_aliases": 2,
+    "manifest_skills": 0,
+    "records": [],
+    "registered_aliases": 2,
+    "revision": "m10skill:9299b8bfbf1b",
+    "stale_workspace": false
+   },
+   "reproduced": true,
+   "seconds": 0.07,
+   "skill_rule_id_missing": true,
+   "text": "/code-review"
+  },
+  "a10": {
+   "repeat_import_churn": true,
+   "reproduced": true,
+   "runs": [
+    {
+     "entry_revision": 1,
+     "history": 1,
+     "result": [
+      "ok",
+      {
+       "created": 1,
+       "unchanged": 0,
+       "updated": 0
+      }
+     ],
+     "snapshot_revision": "m05:c1ec5cea6f6c",
+     "store_revision": 1
+    },
+    {
+     "entry_revision": 2,
+     "history": 2,
+     "result": [
+      "ok",
+      {
+       "created": 0,
+       "unchanged": 0,
+       "updated": 1
+      }
+     ],
+     "snapshot_revision": "m05:3b3a895113ad",
+     "store_revision": 2
+    },
+    {
+     "entry_revision": 3,
+     "history": 3,
+     "result": [
+      "ok",
+      {
+       "created": 0,
+       "unchanged": 0,
+       "updated": 1
+      }
+     ],
+     "snapshot_revision": "m05:b1c6bd546629",
+     "store_revision": 3
+    }
+   ],
+   "seconds": 0.03
+  },
+  "a11": {
+   "cases": {
+    "duplicate_new_case_variant": {
+     "result": [
+      "error",
+      "ValueError"
+     ],
+     "rows_after": [
+      [
+       "Claude",
+       [
+        "clod"
+       ]
+      ]
+     ],
+     "store_revision_delta": 1
+    },
+    "duplicate_new_same_case": {
+     "result": [
+      "error",
+      "ValueError"
+     ],
+     "rows_after": [
+      [
+       "Claude",
+       [
+        "clod"
+       ]
+      ]
+     ],
+     "store_revision_delta": 1
+    },
+    "unicode_case_pair": {
+     "result": [
+      "ok",
+      {
+       "created": 2,
+       "unchanged": 0,
+       "updated": 0
+      }
+     ],
+     "rows_after": [
+      [
+       "Éclair",
+       [
+        "eclair"
+       ]
+      ],
+      [
+       "éclair",
+       [
+        "ekler"
+       ]
+      ]
+     ],
+     "store_revision_delta": 2
+    }
+   },
+   "partial_commit_behind_error": true,
+   "reproduced": true,
+   "seconds": 0.08
+  },
+  "a12": {
+   "explicit_alias_language_import": {
+    "exported_aliases": [
+     {
+      "alias": "clod",
+      "approved": true,
+      "language": "en"
+     }
+    ]
+   },
+   "explicit_alias_override_lost": true,
+   "inherited_alias_language_drift": true,
+   "language_only_update": {
+    "aliases_after": [
+     [
+      "clod",
+      "en"
+     ]
+    ],
+    "aliases_before": [
+     [
+      "clod",
+      "en"
+     ]
+    ],
+    "entry_language": "es"
+   },
+   "reproduced": true,
+   "seconds": 0.05
+  },
+  "a13": {
+   "panel_scope": {
+    "panel_mentions_scope": false,
+    "panel_output_line": "→ ask clod now",
+    "scoped_sandbox_output": "ask WorkspaceName now"
+   },
+   "panel_tests_global_only_unlabeled": true,
+   "preview_reports_inactive_mask": true,
+   "preview_vs_committed": {
+    "active_same_scope": {
+     "committed_output": "ask clod now",
+     "preview": [
+      {
+       "alias": "clod",
+       "detail": "same alias, different canonical in the same scope masks both until one is rescoped or disabled",
+       "kind": "same_scope_mask",
+       "other_entry_id": "E-OLD"
+      }
+     ]
+    },
+    "disabled_same_scope": {
+     "committed_output": "ask Claude now",
+     "preview": [
+      {
+       "alias": "clod",
+       "detail": "same alias, different canonical in the same scope masks both until one is rescoped or disabled",
+       "kind": "same_scope_mask",
+       "other_entry_id": "E-OLD"
+      }
+     ]
+    },
+    "term_vs_skill_same_scope": {
+     "committed_output": "ask Claude now",
+     "preview": [
+      {
+       "alias": "clod",
+       "detail": "same alias, different canonical in the same scope masks both until one is rescoped or disabled",
+       "kind": "same_scope_mask",
+       "other_entry_id": "E-OLD"
+      },
+      {
+       "alias": "clod",
+       "detail": "registered skill intent outranks vocabulary on the same span",
+       "kind": "skill_wins",
+       "other_entry_id": "E-OLD"
+      }
+     ]
+    },
+    "unapproved_same_scope": {
+     "committed_output": "ask Claude now",
+     "preview": [
+      {
+       "alias": "clod",
+       "detail": "same alias, different canonical in the same scope masks both until one is rescoped or disabled",
+       "kind": "same_scope_mask",
+       "other_entry_id": "E-OLD"
+      }
+     ]
+    }
+   },
+   "reproduced": true,
+   "seconds": 0.04,
+   "suggestion_claims_protected_rewrite": true,
+   "suggestions_vs_engine": {
+    "```text\nclod code\n```": {
+     "after_approval_vocab_edits": [],
+     "suggested": [
+      "clod code"
+     ]
+    },
+    "say \" clod code \" now": {
+     "after_approval_vocab_edits": [],
+     "suggested": [
+      "clod code"
+     ]
+    },
+    "write the phrase clod code": {
+     "after_approval_vocab_edits": [],
+     "suggested": [
+      "clod code"
+     ]
+    }
+   }
+  },
+  "a14": {
+   "generic_non_capture": true,
+   "injections": {
+    "lease": {
+     "context_block": {},
+     "events": [
+      [
+       "training.capture_failed",
+       "hint_set_not_retained"
+      ]
+     ],
+     "missing_reasons": {
+      "asr_confidence": "unsupported_by_adapter",
+      "asr_n_best": "unsupported_by_adapter",
+      "asr_token_logprobs": "unsupported_by_adapter",
+      "asr_word_timestamps": "unsupported_by_adapter",
+      "audio_preparation": "not_captured_at_stage",
+      "context": "not_captured_at_stage",
+      "normalization": "not_captured_at_stage",
+      "original_audio": "consent_disabled",
+      "transform": "not_applicable"
+     }
+    },
+    "write": {
+     "context_block": {},
+     "events": [
+      [
+       "training.capture_failed",
+       "hint_set_not_retained"
+      ]
+     ],
+     "missing_reasons": {
+      "asr_confidence": "unsupported_by_adapter",
+      "asr_n_best": "unsupported_by_adapter",
+      "asr_token_logprobs": "unsupported_by_adapter",
+      "asr_word_timestamps": "unsupported_by_adapter",
+      "audio_preparation": "not_captured_at_stage",
+      "context": "not_captured_at_stage",
+      "normalization": "not_captured_at_stage",
+      "original_audio": "consent_disabled",
+      "transform": "not_applicable"
+     }
+    }
+   },
+   "reproduced": true,
+   "seconds": 0.06
+  },
+  "a15": {
+   "note": "test gap: exact scope / alias approval / entry revision of a deleted applied rule from retained artifacts alone",
+   "recovered": {
+    "alias_approval": null,
+    "alias_occurrence": "zeeta",
+    "entry_revision": null,
+    "hint_set_terms_contain_rule": false,
+    "rule_id_in_ledger": true,
+    "scope_kind_value": null,
+    "snapshot_revision_in_envelope": true,
+    "verification": "explicit"
+   },
+   "reproduced": true,
+   "retained_roles": [
+    "applied_output",
+    "hint_set",
+    "normalization_ledger",
+    "normalized_text",
+    "raw_transcript"
+   ],
+   "seconds": 0.05,
+   "unrecoverable": [
+    "scope_kind_value",
+    "alias_approval",
+    "entry_revision"
+   ]
+  },
+  "a16": {
+   "accepted_invalid_work": [
+    "identity_matcher",
+    "wrong_scope_selector",
+    "skip_every_fourth_edit"
+   ],
+   "clock": "scripted (timing neutralized)",
+   "control_exit": 0,
+   "mutations": {
+    "identity_matcher": {
+     "exit": 0,
+     "seconds": 39.9,
+     "stderr_tail": [],
+     "stdout_tail": [
+      "entries            : 10000 (built in 0.0s)",
+      "cold_snapshot      : p50    0.003 ms  p95    0.003 ms  (informational; cached per revision)",
+      "warm_retrieval     : p50    0.001 ms  p95    0.001 ms  [ok vs 25 ms]",
+      "scoped_retrieval   : p50    0.001 ms  p95    0.001 ms",
+      "normalize_hot_path : p50    0.003 ms  p95    0.003 ms  (500-word prose, 10k-entry dictionary)",
+      "prompt subset      : 100 offered, 9400 omitted (budget_limit; limit 100)"
+     ]
+    },
+    "skip_every_fourth_edit": {
+     "exit": 0,
+     "seconds": 39.4,
+     "stderr_tail": [],
+     "stdout_tail": [
+      "entries            : 10000 (built in 0.0s)",
+      "cold_snapshot      : p50    0.003 ms  p95    0.003 ms  (informational; cached per revision)",
+      "warm_retrieval     : p50    0.001 ms  p95    0.001 ms  [ok vs 25 ms]",
+      "scoped_retrieval   : p50    0.001 ms  p95    0.001 ms",
+      "normalize_hot_path : p50    0.003 ms  p95    0.003 ms  (500-word prose, 10k-entry dictionary)",
+      "prompt subset      : 100 offered, 9400 omitted (budget_limit; limit 100)"
+     ]
+    },
+    "unmodified_control": {
+     "exit": 0,
+     "seconds": 41.5,
+     "stderr_tail": [],
+     "stdout_tail": [
+      "entries            : 10000 (built in 0.0s)",
+      "cold_snapshot      : p50    0.003 ms  p95    0.003 ms  (informational; cached per revision)",
+      "warm_retrieval     : p50    0.001 ms  p95    0.001 ms  [ok vs 25 ms]",
+      "scoped_retrieval   : p50    0.001 ms  p95    0.001 ms",
+      "normalize_hot_path : p50    0.003 ms  p95    0.003 ms  (500-word prose, 10k-entry dictionary)",
+      "prompt subset      : 100 offered, 9400 omitted (budget_limit; limit 100)"
+     ]
+    },
+    "wrong_scope_selector": {
+     "exit": 0,
+     "seconds": 159.8,
+     "stderr_tail": [],
+     "stdout_tail": [
+      "entries            : 10000 (built in 0.0s)",
+      "cold_snapshot      : p50    0.003 ms  p95    0.003 ms  (informational; cached per revision)",
+      "warm_retrieval     : p50    0.001 ms  p95    0.001 ms  [ok vs 25 ms]",
+      "scoped_retrieval   : p50    0.001 ms  p95    0.001 ms",
+      "normalize_hot_path : p50    0.003 ms  p95    0.003 ms  (500-word prose, 10k-entry dictionary)",
+      "prompt subset      : 100 offered, 9400 omitted (budget_limit; limit 100)"
+     ]
+    }
+   },
+   "reproduced": true,
+   "seconds": 280.65
+  },
+  "a17": {
+   "all_green": true,
+   "inherited_suites": {
+    "tests/v2/vocabulary/test_hint_selection.py": {
+     "exit": 0,
+     "ok_lines": 9
+    },
+    "tests/v2/vocabulary/test_vocabulary_matching.py": {
+     "exit": 0,
+     "ok_lines": 12
+    },
+    "tests/v2/vocabulary/test_vocabulary_store.py": {
+     "exit": 0,
+     "ok_lines": 16
+    }
+   },
+   "note": "test gap: the inherited portable suites are green on this code root; a01/a02/a03/a06/a07 show whether defects coexist with that green (base) or not",
+   "reproduced": true,
+   "seconds": 1.64
+  },
+  "a18": {
+   "before": [
+    [
+     "vocab-2e1f963232934dfcb1027f4608abad86",
+     "Claude",
+     2,
+     [
+      [
+       "clod",
+       true
+      ],
+      [
+       "klod",
+       false
+      ]
+     ]
+    ],
+    [
+     "vocab-86146794dbef4206b4fb213aecbd4ef3",
+     "Cloud",
+     1,
+     [
+      [
+       "clod",
+       true
+      ]
+     ]
+    ]
+   ],
+   "cohorts": {
+    "drop_aliases": {
+     "aliases_preserved": false,
+     "entries_after": [
+      [
+       "vocab-2e1f963232934dfcb1027f4608abad86",
+       "Claude",
+       2,
+       []
+      ],
+      [
+       "vocab-86146794dbef4206b4fb213aecbd4ef3",
+       "Cloud",
+       1,
+       []
+      ]
+     ],
+     "entries_preserved": true,
+     "events": [
+      [
+       "store.backup_taken",
+       "pre_migration_backup"
+      ],
+      [
+       "store.schema_repaired",
+       "missing_tables"
+      ]
+     ],
+     "opened": true,
+     "orphan_alias_rows": 0,
+     "startup_seeding": {
+      "added": 2,
+      "skipped": 0
+     },
+     "store_revision_after": 5,
+     "vocabulary_integrity_signal": false
+    },
+    "drop_entries": {
+     "aliases_preserved": false,
+     "entries_after": [],
+     "entries_preserved": false,
+     "events": [
+      [
+       "store.backup_taken",
+       "pre_migration_backup"
+      ],
+      [
+       "store.schema_repaired",
+       "missing_tables"
+      ]
+     ],
+     "opened": true,
+     "orphan_alias_rows": 3,
+     "startup_seeding": {
+      "added": 2,
+      "skipped": 0
+     },
+     "store_revision_after": 5,
+     "vocabulary_integrity_signal": false
+    },
+    "drop_history": {
+     "aliases_preserved": true,
+     "entries_after": [
+      [
+       "vocab-2e1f963232934dfcb1027f4608abad86",
+       "Claude",
+       2,
+       [
+        [
+         "clod",
+         true
+        ],
+        [
+         "klod",
+         false
+        ]
+       ]
+      ],
+      [
+       "vocab-86146794dbef4206b4fb213aecbd4ef3",
+       "Cloud",
+       1,
+       [
+        [
+         "clod",
+         true
+        ]
+       ]
+      ]
+     ],
+     "entries_preserved": true,
+     "events": [
+      [
+       "store.backup_taken",
+       "pre_migration_backup"
+      ],
+      [
+       "store.schema_repaired",
+       "missing_tables"
+      ]
+     ],
+     "opened": true,
+     "orphan_alias_rows": 0,
+     "startup_seeding": {
+      "added": 2,
+      "skipped": 0
+     },
+     "store_revision_after": 5,
+     "vocabulary_integrity_signal": false
+    },
+    "drop_index_then_duplicate": {
+     "error": "IntegrityError",
+     "events": [
+      [
+       "store.backup_taken",
+       "pre_migration_backup"
+      ]
+     ],
+     "opened": false
+    },
+    "drop_meta": {
+     "aliases_preserved": true,
+     "entries_after": [
+      [
+       "vocab-2e1f963232934dfcb1027f4608abad86",
+       "Claude",
+       2,
+       [
+        [
+         "clod",
+         true
+        ],
+        [
+         "klod",
+         false
+        ]
+       ]
+      ],
+      [
+       "vocab-86146794dbef4206b4fb213aecbd4ef3",
+       "Cloud",
+       1,
+       [
+        [
+         "clod",
+         true
+        ]
+       ]
+      ]
+     ],
+     "entries_preserved": true,
+     "events": [
+      [
+       "store.backup_taken",
+       "pre_migration_backup"
+      ],
+      [
+       "store.schema_repaired",
+       "missing_tables"
+      ]
+     ],
+     "opened": true,
+     "orphan_alias_rows": 0,
+     "startup_seeding": {
+      "added": 2,
+      "skipped": 0
+     },
+     "store_revision_after": 2,
+     "vocabulary_integrity_signal": false
+    },
+    "drop_unique_index": {
+     "aliases_preserved": true,
+     "entries_after": [
+      [
+       "vocab-2e1f963232934dfcb1027f4608abad86",
+       "Claude",
+       2,
+       [
+        [
+         "clod",
+         true
+        ],
+        [
+         "klod",
+         false
+        ]
+       ]
+      ],
+      [
+       "vocab-86146794dbef4206b4fb213aecbd4ef3",
+       "Cloud",
+       1,
+       [
+        [
+         "clod",
+         true
+        ]
+       ]
+      ]
+     ],
+     "entries_preserved": true,
+     "events": [
+      [
+       "store.backup_taken",
+       "pre_migration_backup"
+      ],
+      [
+       "store.schema_repaired",
+       "missing_indexes"
+      ]
+     ],
+     "opened": true,
+     "orphan_alias_rows": 0,
+     "startup_seeding": {
+      "added": 2,
+      "skipped": 0
+     },
+     "store_revision_after": 5,
+     "vocabulary_integrity_signal": false
+    }
+   },
+   "entries_table_loss_silent": true,
+   "note": "test gap: characterization of repair over populated M05 tables (the inherited test used an empty store)",
+   "reproduced": true,
+   "seconds": 0.11,
+   "store_revision_before": 3
+  },
+  "a19": {
+   "boolean_bypasses_identity": true,
+   "mismatched_runtime": {
+    "disposition_ignored": false,
+    "fields_returned": true
+   },
+   "missing_checkpoint": {
+    "disposition_ignored": false,
+    "fields_returned": true
+   },
+   "production_unqualified": {
+    "disposition": {
+     "accepted_terms": 0,
+     "hint_set_id": "m05hs:593f507c0959",
+     "ignored": true,
+     "ignored_reason": "disabled_until_qualified",
+     "note": "pre-decode biasing stays disabled until qualified and is never emulated by concatenating terms onto the transcript; a post-ASR dictionary repair is recorded as normalization, never as a decoder hit",
+     "offered_terms": 1,
+     "vocabulary_revision": "m05:e0e4e1449f47"
+    },
+    "fields": null
+   },
+   "reproduced": true,
+   "seconds": 0.0,
+   "supported_flag_only": {
+    "disposition_ignored": false,
+    "fields_returned": true
+   }
+  },
+  "a20": {
+   "reproduced": true,
+   "seconds": 0.0,
+   "stale_statements_found": {
+    "docs/v2/contracts/asr_hints.md": [
+     "not a consumer yet"
+    ],
+    "docs/v2/contracts/vocabulary.md": [
+     "`profile` stays unfed until a writing-profile subsystem exists (M10)",
+     "Pre-M06 the live app filters with no destination context"
+    ],
+    "tests/v2/vocabulary/test_hint_selection.py": [
+     "cleanup deferred to M07 (not a consumer yet)"
+    ]
+   }
+  }
+ },
+ "native_shims": [
+  "AppKit",
+  "Foundation",
+  "Quartz",
+  "ApplicationServices",
+  "CoreFoundation",
+  "WebKit",
+  "Cocoa",
+  "objc",
+  "PyObjCTools",
+  "sounddevice"
+ ],
+ "python": "3.13.12",
+ "schema_version": 1,
+ "sqlite": "3.45.1",
+ "tool": "scripts/v2/m05_remediation_repro.py",
+ "working_tree_modified": false
+}

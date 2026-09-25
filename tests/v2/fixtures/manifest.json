@@ -45,6 +45,12 @@
         "fixture_files": [
           "tests/v2/normalization/m04_audit_corpus.json"
         ]
+      },
+      "m05_remediation_created": {
+        "note": "M05 remediation (2026-09-25) committed the read-only audit's authored synthetic challenge corpus verbatim (226 cases / 66 families, every case NOT_RUN as delivered; sha256 recorded in the M05 handoff addendum). Execution results live in separate result artifacts under docs/v2/acceptance/M05/remediation/, never in this file. It is DEVELOPMENT evidence consulted while repairing — not part of this family's 320 planned owning fixtures, not an unseen holdout, and its variants are not independent samples.",
+        "fixture_files": [
+          "tests/v2/vocabulary/m05_audit_corpus.json"
+        ]
       }
     },
     {

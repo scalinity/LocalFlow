@@ -1,0 +1,206 @@
+{
+ "code_root_modified": false,
+ "code_root_sha": "267d1c25910328f72afff7096eb2a442e96a5174",
+ "counts": {
+  "fail": 32
+ },
+ "evaluated_utc": "2026-09-25T23:18:05Z",
+ "python": "3.13.12",
+ "results": {
+  "test_m05_remediation.py::test_01_alias_never_spans_a_delimiter": {
+   "exception": "AssertionError",
+   "message": "(\"'clod, code'\", 'Claude Code', [('clod, code', 'Claude Code', 'E-CC')])",
+   "seconds": 0.15,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_03_left_overlap_canonical_claim": {
+   "exception": "AssertionError",
+   "message": "('Orange Page', [('red Status', 'Orange', 'E-B')])",
+   "seconds": 0.15,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_04_snapshot_deeply_immutable": {
+   "exception": "AssertionError",
+   "message": "",
+   "seconds": 0.14,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_05_hintset_identity_bound_to_content": {
+   "exception": "AssertionError",
+   "message": "expected (<class 'TypeError'>, <class 'AttributeError'>, <class 'dataclasses.FrozenInstanceError'>)",
+   "seconds": 0.14,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_06_approve_uses_authoritative_alias_set": {
+   "exception": "AssertionError",
+   "message": "(['P', 'L', 'L', 'L', 'P', 'P'], {'clod': 1})",
+   "seconds": 0.17,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_06_compare_and_swap": {
+   "exception": "AttributeError",
+   "message": "module 'localflow.v2.vocabulary_store' has no attribute 'StaleEntryError'",
+   "seconds": 0.18,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_06_concurrent_scope_update_never_commits_invalid_state": {
+   "exception": "AssertionError",
+   "message": "(['A', 'B', 'A', 'B'], 'workspace', None)",
+   "seconds": 0.16,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_06_independent_edits_version_monotonically": {
+   "exception": "AssertionError",
+   "message": "{'B': ('ok', 2), 'A': ('ok', 2)}",
+   "seconds": 0.16,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_06_update_delete_race": {
+   "exception": "AssertionError",
+   "message": "['U', 'D', 'D', 'U']",
+   "seconds": 0.17,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_07_import_rejects_malformed_booleans_before_any_write": {
+   "exception": "AssertionError",
+   "message": "expected (<class 'ValueError'>, <class 'TypeError'>)",
+   "seconds": 0.18,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_07_public_api_and_constructor_are_strict": {
+   "exception": "AssertionError",
+   "message": "expected (<class 'ValueError'>, <class 'TypeError'>)",
+   "seconds": 0.16,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_09_dictionary_skill_provenance": {
+   "exception": "AttributeError",
+   "message": "'VocabularySnapshot' object has no attribute 'skill_provenance'",
+   "seconds": 0.15,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_10_repeated_import_is_unchanged": {
+   "exception": "AssertionError",
+   "message": "{'created': 0, 'updated': 1, 'unchanged': 0}",
+   "seconds": 0.15,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_11_import_is_one_transaction_with_a_declared_identity": {
+   "exception": "AssertionError",
+   "message": "duplicate_new",
+   "seconds": 0.17,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_12_alias_language_inherits_or_overrides": {
+   "exception": "AssertionError",
+   "message": "(Alias(alias='clod', approved=True, language='en'),)",
+   "seconds": 0.15,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_13_preview_distinguishes_active_from_hypothetical": {
+   "exception": "KeyError",
+   "message": "'active'",
+   "seconds": 0.14,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_13_sandbox_suggestions_follow_the_engine": {
+   "exception": "AssertionError",
+   "message": "('say \" clod code \" now', [{'alias': 'clod code', 'span': [6, 15], 'text': 'clod code', 'canonical': 'Claude Code', 'entry_id': 'E-U', 'verification': 'suggested', 'scope': ['global', None], 'in_scope': True}])",
+   "seconds": 0.15,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_14_hint_retention_failure_is_precise": {
+   "exception": "TypeError",
+   "message": "'NoneType' object is not subscriptable",
+   "seconds": 0.18,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_15_applied_rule_state_reconstructable": {
+   "exception": "AttributeError",
+   "message": "'VocabularySnapshot' object has no attribute 'skill_provenance'",
+   "seconds": 0.2,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_17_selector_limit_is_strict": {
+   "exception": "AssertionError",
+   "message": "expected (<class 'ValueError'>, <class 'TypeError'>)",
+   "seconds": 0.13,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_18_integrity_report_over_populated_torn_tables": {
+   "exception": "AttributeError",
+   "message": "'VocabularyStore' object has no attribute 'integrity_report'",
+   "seconds": 0.16,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_19_qualification_requires_identity": {
+   "exception": "AssertionError",
+   "message": "flag_only",
+   "seconds": 0.13,
+   "status": "fail"
+  },
+  "test_m05_remediation.py::test_20_active_statements_are_current": {
+   "exception": "AssertionError",
+   "message": "('docs/v2/contracts/vocabulary.md', '`profile` stays unfed until a writing-profile subsystem')",
+   "seconds": 0.13,
+   "status": "fail"
+  },
+  "test_m05_remediation_app.py::test_02_refresh_failure_never_reuses_another_apps_dictionary": {
+   "exception": "AssertionError",
+   "message": "ask Claude now",
+   "seconds": 0.37,
+   "status": "fail"
+  },
+  "test_m05_remediation_app.py::test_02_refresh_failure_on_cold_start_degrades_honestly": {
+   "exception": "AssertionError",
+   "message": "['last_good_state']",
+   "seconds": 0.27,
+   "status": "fail"
+  },
+  "test_m05_remediation_app.py::test_02_selector_failure_does_not_block_the_scope_upgrade": {
+   "exception": "AssertionError",
+   "message": "ask GlobalName now",
+   "seconds": 0.34,
+   "status": "fail"
+  },
+  "test_m05_remediation_app.py::test_02_workspace_alternation_with_a_mid_failure": {
+   "exception": "AssertionError",
+   "message": "['XName', 'AppOnly', 'AppOnly', 'AppOnly']",
+   "seconds": 0.36,
+   "status": "fail"
+  },
+  "test_m05_remediation_app.py::test_02b_capture_failure_fallback_is_unscoped": {
+   "exception": "AssertionError",
+   "message": "ask Claude now GlobalTerm",
+   "seconds": 0.33,
+   "status": "fail"
+  },
+  "test_m05_remediation_app.py::test_08_panel_selection_is_a_stable_entry_id": {
+   "exception": "AssertionError",
+   "message": "('clear_filter', ['Alpha'], 'approved Alpha')",
+   "seconds": 0.22,
+   "status": "fail"
+  },
+  "test_m05_remediation_app.py::test_09_app_skill_provenance_and_hits": {
+   "exception": "KeyError",
+   "message": "'applied_skill_rule_ids'",
+   "seconds": 0.31,
+   "status": "fail"
+  },
+  "test_m05_remediation_app.py::test_13_panel_sandbox_scope_is_explicit": {
+   "exception": "AssertionError",
+   "message": "\u2192 ask GlobalName now",
+   "seconds": 0.2,
+   "status": "fail"
+  },
+  "test_m05_remediation_app.py::test_18_app_refuses_a_torn_dictionary": {
+   "exception": "AssertionError",
+   "message": "a torn dictionary must not run as a healthy one",
+   "seconds": 0.25,
+   "status": "fail"
+  }
+ },
+ "schema_version": 1,
+ "tests_from_sha": "267d1c25910328f72afff7096eb2a442e96a5174",
+ "tool": "scripts/v2/m05_test_record.py"
+}
