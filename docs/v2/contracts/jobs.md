@@ -40,3 +40,10 @@ posted-but-unobservable event. Auto-transform inserts `transforming` before
 4. Historical imported pairs (M01 reconciliation) are records of the legacy
    pipeline, not job-conformant objects; their identity is
    `legacy:<source-sha>:<physical-line-range>`.
+   (M01 remediation, additive:) pairs imported after the remediation store
+   the exact payload (`payload_derivation: "e02-exact-payload-v2"` in their
+   meta; earlier imports without the field used the stripped-lines view and
+   stay immutable). A pair a later record has not closed (an end-of-file
+   tail) is not imported until it is complete; a completion of a tail that
+   a pre-remediation import stored truncated records
+   `completes_prior_partial_identity` instead of replacing it.

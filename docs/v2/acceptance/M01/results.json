@@ -154,5 +154,210 @@
     "post_address_verification": "Full re-run after fixes: tests/v2/test_legacy_parser.py 5/5 (audited aggregates reproduce), test_registry.py OK (33/22), test_baseline_manifest.py OK (incl. content-marker scan), test_snapshot_safety.py 6/6 (incl. CLI flow + refusal), tests/test_stuck_overlay.py 5/5, snapshot on live data exit 0 with all sources unchanged; registry and manifest regenerated."
   },
   "state": "implemented_pending_human",
-  "state_reason": "All four acceptance criteria pass on automated/native/model-backed evidence; the sole pending item is the human-only release-to-insert pilot, which no M01 acceptance criterion gates on."
+  "state_reason": "All four acceptance criteria pass on automated/native/model-backed evidence; the sole pending item is the human-only release-to-insert pilot, which no M01 acceptance criterion gates on.",
+  "remediation_2026_09_24": {
+    "kind": "post-audit cloud remediation",
+    "state": "CLOUD_REMEDIATION_COMPLETE_PENDING_LOCAL_VERIFICATION",
+    "state_note": "Does not certify native behaviour or M15 readiness; M01 milestone state stays implemented_pending_human.",
+    "audit": {
+      "report": "LocalFlow V2 — M01 Read-Only Deep Audit",
+      "audited_sha": "1ee8e449ad21382378785c7ca9c309f55020d44f",
+      "m01_implementation_commit": "4bd0187ae2445a472684c9c902c9548f58973ac6",
+      "pre_m01_base": "7cdd90486b23a1a86b3da00f9fdee39bfa40a8f9"
+    },
+    "inherited_base_sha": "1ee8e449ad21382378785c7ca9c309f55020d44f",
+    "branch": "claude/beautiful-cori-gnh3yc",
+    "final_code_revision": "c24b7bc",
+    "environment": "Claude Code cloud container (Linux x86_64); not the reference Mac",
+    "reproduction_evidence": {
+      "script": "docs/v2/acceptance/M01/remediation/repro_inherited.py",
+      "output": "docs/v2/acceptance/M01/remediation/repro_inherited.out",
+      "result": "38 scenarios reproduced, 1 not reproduced (M01-AUDIT-03 malformed-JSON sub-claim, refuted)",
+      "parser_neutrality": {
+        "script": "docs/v2/acceptance/M01/remediation/diff_parsers.py",
+        "output": "docs/v2/acceptance/M01/remediation/diff_parsers.out",
+        "result": "0 aggregate differences, inherited vs repaired parser, 5000 simulated well-formed logs / 51482 pairs; evidence for simulated sequences only"
+      }
+    },
+    "dispositions": {
+      "confirmed": [
+        "M01-AUDIT-01",
+        "M01-AUDIT-02",
+        "M01-AUDIT-04",
+        "M01-AUDIT-05",
+        "M01-AUDIT-06",
+        "M01-AUDIT-07",
+        "M01-AUDIT-08",
+        "M01-AUDIT-09",
+        "M01-AUDIT-10",
+        "M01-AUDIT-11",
+        "M01-AUDIT-12",
+        "M01-AUDIT-13",
+        "M01-AUDIT-14"
+      ],
+      "narrowed": {
+        "M01-AUDIT-03": "directory override, no-candidate crash and installed-app defaults confirmed; malformed-JSON sub-claim refuted (generator already reported DEFAULTS with the read error)",
+        "M01-AUDIT-13": "defect confirmed; repair narrowed to detach-on-empty because 'never attach after insertion' mis-handles a real paste/worker interleaving"
+      },
+      "refuted": [
+        "M01-AUDIT-03 malformed-JSON sub-claim only"
+      ],
+      "test_gap_only": [
+        "M01-AUDIT-15",
+        "M01-AUDIT-16 (also reconciled two real inventory gaps)"
+      ],
+      "design_only": [
+        "M01-AUDIT-17 (pinned by test; no framing invented)"
+      ],
+      "found_during_remediation": [
+        "idle WAL-mode database: SQLite read-only open creates empty -wal/-shm; fixed in c24b7bc (recorded, not a change)"
+      ]
+    },
+    "historical_claim_corrections": [
+      {
+        "claim": "installed app code byte-identical to Git HEAD",
+        "status": "method defective (worktree comparison); conclusion consistent with the recorded 2026-09-21 dirty entries (no localflow/ paths) but not established against HEAD",
+        "current_check": "M01-V002"
+      },
+      {
+        "claim": "launch-and-verify established without manual interaction",
+        "status": "superseded: log readiness is not the specified UI check",
+        "current_check": [
+          "M01-V005",
+          "M01-V010"
+        ]
+      },
+      {
+        "claim": "snapshot 6/6",
+        "status": "unsupported by history: the file had exactly four test functions from 4bd0187 until this remediation and was never modified; no deletion or failure inferred"
+      },
+      {
+        "claim": "probe measured the deployed cleanup",
+        "status": "correct for 2026-09-21 (V1 was the only implementation); current probe follows cleanup_implementation"
+      }
+    ],
+    "checks": [
+      {
+        "command": "python tests/v2/test_snapshot_safety.py",
+        "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
+        "exit": 0,
+        "passed": 17,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "python tests/v2/test_baseline_manifest_producers.py",
+        "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
+        "exit": 0,
+        "passed": 13,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "python tests/v2/test_legacy_parser.py",
+        "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
+        "exit": 0,
+        "passed": 17,
+        "failed": 0,
+        "skipped": 1,
+        "skip_reason": "historical private snapshot absent — PENDING_LOCAL_VERIFICATION M01-V008, not a pass"
+      },
+      {
+        "command": "python tests/v2/test_legacy_import_boundary.py",
+        "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
+        "exit": 0,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "python tests/v2/test_registry.py",
+        "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
+        "exit": 0,
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "python tests/v2/test_baseline_manifest.py",
+        "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
+        "exit": 0,
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "python tests/v2/test_baseline_probe.py",
+        "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
+        "exit": 0,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "note": "injected fakes: orchestration only, never inference evidence"
+      },
+      {
+        "command": "python tests/v2/test_m01_verify_summary.py",
+        "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
+        "exit": 0,
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "command": "python tests/v2/storage/test_import.py",
+        "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
+        "exit": 0,
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0,
+        "note": "M02 consumer suite, unchanged"
+      },
+      {
+        "command": "python3 tests/v2/{test_legacy_parser,test_registry,test_baseline_manifest,test_snapshot_safety}.py",
+        "interpreter": "system python3 3.11.15",
+        "exit": 0,
+        "note": "inherited M01 entry points, dependency-light"
+      },
+      {
+        "command": "every tests/**/test_*.py",
+        "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
+        "result": "44/67 files pass; 23 fail identically on the inherited code for missing PyObjC/MLX/.venv only (not run: environmental)"
+      },
+      {
+        "command": "headless Chromium validation of docs/v2/VERIFICATION.html",
+        "result": "95/95 assertions (no network, IDs M01-V001..V011, required sections, persistence, stale handling, filters, keyboard, 390 px)"
+      },
+      {
+        "command": "bash -n on every runbook command block",
+        "result": "12/12 parse; zsh unavailable in the cloud"
+      }
+    ],
+    "counts": {
+      "passed_test_cases_m01_suites": 71,
+      "skipped": 1,
+      "failed": 0,
+      "not_applicable": "generator/snapshot CLIs are not test runners",
+      "pending_local_verification": 11
+    },
+    "limitations": [
+      "No native, MLX/Metal, installed-app, Application Support, microphone, launch-environment or UI behaviour verified.",
+      "Running as root in the cloud: permission-denied reads are injected, not produced by chmod.",
+      "The real historical log was not available; exact-hash reproduction is M01-V008."
+    ],
+    "pending_local_verification": [
+      "M01-V001",
+      "M01-V002",
+      "M01-V003",
+      "M01-V004",
+      "M01-V005",
+      "M01-V006",
+      "M01-V007",
+      "M01-V008",
+      "M01-V009",
+      "M01-V010",
+      "M01-V011"
+    ],
+    "runbook": "docs/v2/VERIFICATION.html",
+    "handoff_addendum": "docs/v2/handoffs/M01.md#remediation-addendum--2026-09-2425-cloud-session-post-audit"
+  }
 }

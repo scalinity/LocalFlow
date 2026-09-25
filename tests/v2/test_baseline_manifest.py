@@ -46,6 +46,8 @@ SYNTHETIC_MARKER_FILES = {
     "tests/v2/test_baseline_manifest.py": "marker constants and canaries",
     "docs/v2/acceptance/M01/remediation/repro_inherited.py":
         "synthetic reproduction inputs for the M01 audit findings",
+    "docs/v2/acceptance/M01/remediation/diff_parsers.py":
+        "simulated legacy logs for the parser neutrality check",
 }
 
 
@@ -168,8 +170,7 @@ def test_no_private_files_in_repository():
     assert not offenders, offenders
     missing = [p for p in SYNTHETIC_MARKER_FILES
                if not (ROOT / p).exists()]
-    assert not missing or missing == [
-        "docs/v2/acceptance/M01/remediation/repro_inherited.py"], missing
+    assert not missing, f"stale privacy exceptions: {missing}"
     # The reconciliation report must not embed transcript payloads.
     blob = (ROOT / "docs/v2/baseline/legacy-log-reconciliation.json").read_text()
     for key in ('"_raw"', '"_cleaned"', '"raw_text"', '"cleaned_text"'):
