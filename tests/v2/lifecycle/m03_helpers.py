@@ -31,12 +31,15 @@ import numpy as np  # noqa: E402
 
 import localflow.app as app_mod  # noqa: E402
 from localflow.hotkey import HotkeyListener  # noqa: E402
+
+# Microphone and main-thread seams are the declared fakes everywhere.
+native_shims.patch_seams(app_mod)
 from localflow.v2 import store as store_mod  # noqa: E402
 from localflow.v2.supervisor import WorkerSupervisor  # noqa: E402
 
 FAKE = HERE / "fake_worker.py"
 PROD = HERE / "prod_worker_harness.py"
-AppHelper = app_mod.AppHelper
+AppHelper = native_shims.AppHelper
 T0 = "2026-01-02T03:04:05.000Z"
 
 CFG = {
@@ -50,9 +53,9 @@ CFG = {
 
 
 def shim_banner():
-    return ("[portable orchestration under declared non-native shims: "
-            + ", ".join(native_shims.SHIMMED) + "]") \
-        if native_shims.SHIMMED else "[native modules present]"
+    mods = ", ".join(native_shims.SHIMMED) or "none (native modules present)"
+    return ("[declared shims — modules: " + mods + "; seams: microphone"
+            " (sounddevice), main-thread hops (AppHelper)]")
 
 
 class Rec:

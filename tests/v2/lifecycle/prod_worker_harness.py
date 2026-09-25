@@ -13,7 +13,8 @@ Plan (JSON file named by $LOCALFLOW_PROD_WORKER_PLAN):
   "asr_load": "ok" | "fail",
   "cleanup_load": "ok" | "fail",
   "cleanup_load_latch": "<path>",   # cleanup load blocks until it exists
-  "transcribe": ["ok:<text>" | "raise:<message>"],   # per call
+  "transcribe": ["ok:<text>" | "raise:<message>"
+                 | "delay:<ms>|<one of those>"],     # per call
   "clean": ["ok:<text>" | "raise:<message>"],        # per call
   "record": "<path>"                # JSONL: what the shims were given
 }
@@ -65,6 +66,9 @@ class ShimTranscriber:
 
     def transcribe(self, samples):
         b = _take("transcribe")
+        if b.startswith("delay:"):
+            head, b = b.split("|", 1)
+            time.sleep(int(head[len("delay:"):]) / 1000.0)
         _record(event="transcribe", samples=int(samples.size),
                 t=time.monotonic())
         if b.startswith("raise:"):
