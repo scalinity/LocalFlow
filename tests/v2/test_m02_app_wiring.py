@@ -73,7 +73,10 @@ def test_debug_copy_and_job_dirs():
     assert "config_mod.retention_policy(cfg)" in cfg
     assert "config_mod.event_retention_policy(cfg)" in cfg
     assert "int(cfg.get(\"retention_" not in cfg
-    assert "self._dump_audio(audio, job_id)" in src(fn("_worker"))
+    # (M03 remediation: the call also passes the job's actual sample
+    # rate, and the copy is written under the store's deletion
+    # arbitration after this pre-check.)
+    assert "self._dump_audio(audio, job_id" in src(fn("_worker"))
     dump = src(fn("_dump_audio"))
     assert "v2_debug_audio.write_debug_copy" in dump
     assert dump.index("self.store.job_deleted(job_id)") \

@@ -252,6 +252,11 @@ class TranscriptCleaner:
         self.last_fallback_reason = None
         self.load_failed = False
         self._piece_fallback = False
+        # M03-AUDIT-06: the exception class of a generation that RAISED
+        # during the last clean() (None when every pass returned). A
+        # sanity-check rejection is semantic and leaves this None; a
+        # runtime exception is not proof the model process is healthy.
+        self.last_runtime_error = None
 
     def _notify(self, msg: str, level: str = "INFO"):
         if self.notifier is not None:
@@ -320,6 +325,7 @@ class TranscriptCleaner:
         return out
 
     def clean(self, text: str) -> str:
+        self.last_runtime_error = None
         base = basic_cleanup(text)
         if self.mode == "off":
             self.last_path = "raw"
@@ -358,6 +364,7 @@ class TranscriptCleaner:
                     system_prompt=CORRECTIONS_PROMPT, examples=CORRECTION_EXAMPLES,
                 )
         except Exception as e:
+            self.last_runtime_error = type(e).__name__
             self._notify(f"correction_pass_failed, skipping: {e}", "WARNING")
             return base
 
@@ -400,6 +407,7 @@ class TranscriptCleaner:
             self._notify("cleanup output failed sanity check, using basic pass",
                          "WARNING")
         except Exception as e:
+            self.last_runtime_error = type(e).__name__
             self._observe({"kind": "cleanup_decision", "accepted": False,
                            "applied": base, "error": type(e).__name__})
             self._notify(f"cleanup failed, using basic pass: {e}", "WARNING")

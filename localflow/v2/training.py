@@ -68,6 +68,22 @@ def scan_secrets(text: str) -> list[str]:
     return found
 
 
+def _ranges_within(ranges, sample_count) -> bool:
+    """Decode ranges are half-open original-sample bounds inside the
+    retained audio: [[start, end], …] with 0 <= start < end <= count."""
+    if ranges is None or sample_count is None:
+        return True
+    if not isinstance(ranges, list):
+        return False
+    for r in ranges:
+        if not (isinstance(r, (list, tuple)) and len(r) == 2
+                and all(isinstance(v, int) and not isinstance(v, bool)
+                        for v in r)
+                and 0 <= r[0] < r[1] <= sample_count):
+            return False
+    return True
+
+
 def runtime_versions() -> dict:
     """Best-effort local runtime manifest; missing packages stay absent."""
     import importlib.metadata as md
@@ -169,10 +185,14 @@ class CaptureContext:
 
     def __init__(self, job_id, family_id, *, captured_at_utc, timezone,
                  utc_offset_minutes, consent_revision_id, policy,
-                 attempt=1, worker_generation=None):
+                 attempt=1, worker_generation=None, time_quality="known"):
         self.job_id = job_id
         self.family_id = family_id
         self.captured_at_utc = captured_at_utc
+        # M03-AUDIT-09: a recovered capture keeps ITS capture instant and
+        # quality ("unknown" with a null instant when the original was
+        # never recorded) — never the retry's clock.
+        self.time_quality = time_quality if captured_at_utc else "unknown"
         self.timezone = timezone
         self.utc_offset_minutes = utc_offset_minutes
         self.consent_revision_id = consent_revision_id
@@ -188,6 +208,7 @@ class CaptureContext:
         self.publish = None  # publish_example acknowledgment
         self.publish_attempted = False
         self.audio_artifact = None
+        self.audio_sample_count = None  # samples in the original artifact
         self.audio_write_failed = False  # M03: consent was on but the
         # payload write failed — a different missing reason than consent
         self.capture_meta = {}
@@ -260,7 +281,8 @@ class EvidenceCollector:
     # ---- job lifecycle ---------------------------------------------------
 
     def job_started(self, job_id, family_id, *, captured_at_utc, timezone,
-                    utc_offset_minutes, attempt=1, consent_snapshot=None):
+                    utc_offset_minutes, attempt=1, consent_snapshot=None,
+                    time_quality="known"):
         """Build the job's evidence context from ONE coherent consent
         decision. The app passes the snapshot it took at push-to-talk
         DOWN (``ConsentManager.capture_snapshot``) — the capture boundary
@@ -282,7 +304,8 @@ class EvidenceCollector:
         ctx = CaptureContext(
             job_id, family_id, captured_at_utc=captured_at_utc,
             timezone=timezone, utc_offset_minutes=utc_offset_minutes,
-            consent_revision_id=consent_id, policy=policy, attempt=attempt)
+            consent_revision_id=consent_id, policy=policy, attempt=attempt,
+            time_quality=time_quality)
         ctx.consent_point = snap.point
         return ctx
 
@@ -354,6 +377,7 @@ class EvidenceCollector:
             ctx.audio_write_failed = True
             return None
         ctx.audio_artifact = art
+        ctx.audio_sample_count = int(getattr(samples, "size", len(samples)))
         self.store.grant_lease(art, "training",
                                days=self.store.retention_days["training_buffer"])
         self.store.grant_lease(art, "history",
@@ -1394,8 +1418,46 @@ class EvidenceCollector:
         if capture.get("incomplete_tail"):
             discontinuities.append(
                 {"kind": "incomplete_tail",
-                 "torn_bytes": capture.get("journal_torn_bytes")})
-        if ctx.decode_ranges is not None and ctx.audio_artifact is not None:
+                 "torn_bytes": capture.get("journal_torn_bytes"),
+                 "journal_status": capture.get("journal_status")})
+        # M03-AUDIT-08/09: recovered audio names each gap at its ORIGINAL
+        # sample position (journal v2), or says the timeline could not be
+        # verified (journal v1) — never an assumed-continuous splice.
+        for gap in capture.get("journal_gaps") or []:
+            discontinuities.append(
+                {"kind": "journal_gap", "source": "capture_journal",
+                 "at_sample": gap.get("at_sample"),
+                 "missing_samples": gap.get("missing_samples"),
+                 "recovered_offset": gap.get("recovered_offset")})
+        if capture.get("audio_source") == "journal_reconstruction" \
+                and capture.get("journal_status") == "unfinalized":
+            # A clean record-boundary EOF: whether capture continued past
+            # it is unknown — stated, not assumed either way.
+            discontinuities.append(
+                {"kind": "capture_end_unknown",
+                 "reason": "journal_not_finalized"})
+        if capture.get("audio_source") == "journal_reconstruction" \
+                and capture.get("positions_known") is False:
+            discontinuities.append(
+                {"kind": "timeline_unverified",
+                 "reason": "journal_v1_no_positions"})
+        if capture.get("wav_declared_samples") is not None \
+                and capture.get("wav_available_samples") is not None \
+                and capture["wav_available_samples"] \
+                < capture["wav_declared_samples"]:
+            discontinuities.append(
+                {"kind": "truncated_wav",
+                 "declared_samples": capture["wav_declared_samples"],
+                 "available_samples": capture["wav_available_samples"]})
+        ranges_ok = _ranges_within(ctx.decode_ranges,
+                                   ctx.audio_sample_count)
+        if ctx.decode_ranges is not None and not ranges_ok:
+            # M03 test gap 20: an out-of-bounds or malformed model-input
+            # range is refused here, in production, not only in a test.
+            recog = ctx.capture_meta.setdefault("recognition", {})
+            recog["decode_ranges_rejected"] = "out_of_bounds_or_malformed"
+        if ctx.decode_ranges is not None and ctx.audio_artifact is not None \
+                and ranges_ok:
             audio_preparation = {
                 "source": "original_audio",
                 "artifact_id": ctx.audio_artifact,
@@ -1460,7 +1522,7 @@ class EvidenceCollector:
             "origin": "live_capture",
             "task_kind": "dictation",
             "captured_at_utc": ctx.captured_at_utc,
-            "time_quality": "known",
+            "time_quality": ctx.time_quality,
             "timezone": ctx.timezone,
             "utc_offset_minutes": ctx.utc_offset_minutes,
             "consent_revision_id": ctx.consent_revision_id,
@@ -1503,3 +1565,15 @@ class EvidenceCollector:
                 "device_discontinuity"),
             "audio_format": "wav_ieee_float32",
         }
+        # M03 capture provenance (content-free): which audio this job's
+        # evidence describes — the live in-memory capture or a recovered
+        # source — and what is known about its completeness.
+        stats = recorder_stats or {}
+        for key in ("audio_source", "journal_status", "journal_version",
+                    "journal_integrity", "journal_gaps", "positions_known",
+                    "journal_torn_bytes", "wav_declared_samples",
+                    "wav_available_samples", "stream_teardown_error",
+                    "crash_journal", "capture_journal", "recovered",
+                    "capture_complete"):
+            if stats.get(key) is not None:
+                ctx.capture_meta["capture"][key] = stats[key]

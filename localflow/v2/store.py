@@ -766,14 +766,7 @@ def _set_path(obj, keys, value):
 def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
     """Lossless float-preserving WAV for the capture path's float32 buffer."""
     data = np.ascontiguousarray(samples, dtype="<f4").tobytes()
-    header = struct.pack(
-        "<4sI4s4sIHHIIHH4sI",
-        b"RIFF", 36 + len(data), b"WAVE",
-        b"fmt ", 16, 3, 1, int(sample_rate),
-        int(sample_rate) * 4, 4, 32,
-        b"data", len(data),
-    )
-    _write_wav(path, header, data)
+    _write_wav(path, _f32_header(len(data), sample_rate), data)
 
 
 def write_wav_pcm16(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
@@ -791,49 +784,172 @@ def write_wav_pcm16(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
 
 
 def _write_wav(path: pathlib.Path, header: bytes, data: bytes):
+    """Stage in the destination directory, then publish with one atomic
+    rename (M03-AUDIT-10): an interrupted write leaves a ``.part-`` file,
+    never a final-path WAV whose header promises samples it lacks."""
+    path = pathlib.Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "wb") as f:
-        f.write(header)
-        f.write(data)
-    os.chmod(path, 0o600)
+    tmp = stage_path(path)
+    try:
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "wb") as f:
+            f.write(header)
+            f.write(data)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        pass
+
+
+def stage_path(path: pathlib.Path) -> pathlib.Path:
+    """A private sibling name for staging ``path``. It keeps ``path``'s
+    whole name as its prefix, so a job-named glob (``job-<id>.*``) owns
+    the staged file too — delete-everywhere removes it with the job."""
+    path = pathlib.Path(path)
+    return path.with_name(
+        f"{path.name}.part-{os.getpid()}-{ids.new_id('s')[-8:]}")
+
+
+def stage_wav_f32(path: pathlib.Path, samples: np.ndarray,
+                  sample_rate: int) -> pathlib.Path:
+    """Write a complete float32 WAV to a staging name beside ``path`` and
+    return it; the caller publishes it (``Store.publish_job_file``)."""
+    path = pathlib.Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = np.ascontiguousarray(samples, dtype="<f4").tobytes()
+    header = _f32_header(len(data), sample_rate)
+    tmp = stage_path(path)
+    try:
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "wb") as f:
+            f.write(header)
+            f.write(data)
+    except BaseException:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+    return tmp
+
+
+def _f32_header(nbytes, sample_rate):
+    return struct.pack(
+        "<4sI4s4sIHHIIHH4sI",
+        b"RIFF", 36 + nbytes, b"WAVE",
+        b"fmt ", 16, 3, 1, int(sample_rate),
+        int(sample_rate) * 4, 4, 32,
+        b"data", nbytes,
+    )
 
 
 _WAV_HEADER = struct.Struct("<4sI4s4sIHHIIHH4sI")
 
 
+class WavFormatError(ValueError):
+    """Not a WAV this code wrote (layout, flavor or length)."""
+
+
+class WavIncompleteError(WavFormatError):
+    """The header declares more payload than the file holds: a truncated
+    write. ``declared``/``available`` are sample counts."""
+
+    def __init__(self, declared, available):
+        super().__init__("WAV payload shorter than its header declares")
+        self.declared = declared
+        self.available = available
+
+
+def _parse_wav_header(raw: bytes):
+    if len(raw) < 44:
+        raise WavIncompleteError(None, 0)
+    (riff, riff_size, wave, fmt, fmt_size, audio_format, channels, rate,
+     _byte_rate, block_align, bits, mark, data_size) = _WAV_HEADER.unpack(
+        raw[:44])
+    if (riff, wave, fmt, mark, fmt_size) != (b"RIFF", b"WAVE", b"fmt ",
+                                             b"data", 16):
+        raise WavFormatError("not a canonical WAV")
+    if channels != 1 or rate <= 0:
+        raise WavFormatError("not a mono WAV")
+    width = bits // 8
+    if width <= 0 or block_align != width or data_size % width:
+        raise WavFormatError("misaligned WAV payload")
+    return audio_format, rate, bits, data_size, width
+
+
+def parse_wav_f32(raw: bytes, *, allow_prefix=False):
+    """Strict float32 mono WAV parse. The whole declared payload must be
+    present (a missing aligned suffix is ``WavIncompleteError``, never a
+    silently shorter array); bytes beyond it are refused too. With
+    ``allow_prefix`` a truncated file yields its aligned complete-sample
+    prefix plus the honest counts — for recovery classification only."""
+    audio_format, rate, bits, data_size, width = _parse_wav_header(raw)
+    if (audio_format, bits) != (3, 32):
+        raise WavFormatError("not a mono float32 WAV")
+    declared = data_size // 4
+    have = len(raw) - 44
+    if have < data_size:
+        if not allow_prefix:
+            raise WavIncompleteError(declared, max(0, have) // 4)
+        n = max(0, have) // 4
+        return (np.frombuffer(raw, dtype="<f4", count=n, offset=44).copy(),
+                rate, {"declared_samples": declared,
+                       "available_samples": n, "complete": False})
+    if have > data_size:
+        raise WavFormatError("bytes beyond the declared WAV payload")
+    samples = np.frombuffer(raw, dtype="<f4", count=declared,
+                            offset=44).copy()
+    if allow_prefix:
+        return samples, rate, {"declared_samples": declared,
+                               "available_samples": declared,
+                               "complete": True}
+    return samples, rate
+
+
 def read_wav_f32(path: pathlib.Path) -> tuple[np.ndarray, int]:
     with open(path, "rb") as f:
         raw = f.read()
-    (riff, _size, wave, fmt, _fmt_size, audio_format, channels, rate,
-     _byte_rate, _block_align, bits, _mark, data_size) = _WAV_HEADER.unpack(
-        raw[:44])
-    if (riff, wave, fmt, audio_format, channels, bits) != (
-            b"RIFF", b"WAVE", b"fmt ", 3, 1, 32):
-        raise ValueError("not a mono float32 WAV")
-    return (np.frombuffer(raw[44:44 + data_size], dtype="<f4").copy(), rate)
+    return parse_wav_f32(raw)
+
+
+def read_wav_f32_prefix(path: pathlib.Path):
+    """(samples, rate, info) — the complete-sample prefix of a possibly
+    truncated float32 WAV with declared/available counts (recovery)."""
+    with open(path, "rb") as f:
+        raw = f.read()
+    return parse_wav_f32(raw, allow_prefix=True)
 
 
 def read_wav(path: pathlib.Path) -> tuple[np.ndarray, int]:
     """Read either stored WAV flavor: float32 originals or PCM16 derivatives
     (returned as float32 in [-1, 1] — the quantization is already baked in
-    and is recorded on the artifact, not hidden by re-expanding bits)."""
+    and is recorded on the artifact, not hidden by re-expanding bits).
+    Strict like ``read_wav_f32``: a truncated payload raises."""
     with open(path, "rb") as f:
         raw = f.read()
-    (riff, _size, wave, fmt, _fmt_size, audio_format, channels, rate,
-     _byte_rate, _block_align, bits, _mark, data_size) = _WAV_HEADER.unpack(
-        raw[:44])
-    if (riff, wave, fmt, channels) != (b"RIFF", b"WAVE", b"fmt ", 1):
-        raise ValueError("not a mono WAV")
+    audio_format, rate, bits, data_size, width = _parse_wav_header(raw)
+    if len(raw) - 44 < data_size:
+        raise WavIncompleteError(data_size // width,
+                                 max(0, len(raw) - 44) // width)
+    if len(raw) - 44 > data_size:
+        raise WavFormatError("bytes beyond the declared WAV payload")
     if audio_format == 3 and bits == 32:
-        return (np.frombuffer(raw[44:44 + data_size], dtype="<f4").copy(),
-                rate)
+        return (np.frombuffer(raw, dtype="<f4", count=data_size // 4,
+                              offset=44).copy(), rate)
     if audio_format == 1 and bits == 16:
         # Scale by the same 32767 the writer used, so a derivative reads
         # back as exactly its quantized self (no phantom rescale).
-        return (np.frombuffer(raw[44:44 + data_size], dtype="<i2").astype(
-            np.float32) / 32767.0, rate)
-    raise ValueError(f"unsupported WAV flavor: format={audio_format}"
-                     f" bits={bits}")
+        return (np.frombuffer(raw, dtype="<i2", count=data_size // 2,
+                              offset=44).astype(np.float32) / 32767.0, rate)
+    raise WavFormatError(f"unsupported WAV flavor: format={audio_format}"
+                         f" bits={bits}")
 
 
 def _iso_to_epoch(iso: str) -> float | None:
@@ -874,6 +990,7 @@ class Store:
         # app's transcript-logging debug copies, recovery journal) that
         # delete-everywhere must also clear: (directory, job_id -> glob).
         self._job_payload_dirs = []
+        self._deletion_listeners = []
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
         try:
@@ -1220,15 +1337,27 @@ class Store:
             return True
         return bool(self._submit(op, wait=True))
 
-    def bump_job_attempt(self, job_id):
+    def bump_job_attempt(self, job_id, *, at_least=None, wait=False):
         """A retry of the same audio increments the attempt, keeping the
-        job_id (contracts/jobs.md)."""
+        job_id (contracts/jobs.md). ``at_least`` raises it to an execution
+        the caller KNOWS ran (M03-AUDIT-05: a failed automatic retry still
+        executed its attempt) — never lowers it. With ``wait`` the new
+        attempt is returned from the committed row."""
         def op():
-            self._db.execute(
-                "UPDATE jobs SET attempt=attempt+1, updated_at_utc=?"
-                " WHERE job_id=?",
-                (ids.now_utc_iso(self.now_fn()), job_id))
-        self._submit(op)
+            now = ids.now_utc_iso(self.now_fn())
+            if at_least is None:
+                self._db.execute(
+                    "UPDATE jobs SET attempt=attempt+1, updated_at_utc=?"
+                    " WHERE job_id=?", (now, job_id))
+            else:
+                self._db.execute(
+                    "UPDATE jobs SET attempt=MAX(attempt, ?),"
+                    " updated_at_utc=? WHERE job_id=?",
+                    (int(at_least), now, job_id))
+            row = self._db.execute("SELECT attempt FROM jobs WHERE"
+                                   " job_id=?", (job_id,)).fetchone()
+            return row[0] if row else None
+        return self._submit(op, wait=wait)
 
     def set_job_audio(self, job_id, artifact_id):
         def op():
@@ -2058,6 +2187,16 @@ class Store:
                     "INSERT OR IGNORE INTO job_deletions(job_id, reason,"
                     " deleted_at_utc) VALUES(?,?,?)",
                     (job_id, reason, now_iso))
+                # M03-AUDIT-02: revoke in-memory authority (queued work,
+                # cached output) in the same serialized op that creates
+                # the barrier — before its payload files are enumerated,
+                # so a producer serialized behind this op sees the barrier
+                # and one serialized before it has its file enumerated.
+                for listener in list(self._deletion_listeners):
+                    try:
+                        listener(job_id)
+                    except Exception:
+                        pass
                 for (aid,) in self._db.execute(
                         "SELECT artifact_id FROM artifacts WHERE job_id=?",
                         (job_id,)).fetchall():
@@ -2140,6 +2279,46 @@ class Store:
             return False
         return self._submit(lambda: conn_job_deleted(self._db, job_id),
                             wait=True)
+
+    def add_job_deletion_listener(self, fn):
+        """``fn(job_id)`` runs inside the delete-everywhere op, on the
+        writer thread, before the barrier commits. It must only revoke
+        in-memory authority (set flags) — never call back into the store."""
+        self._deletion_listeners.append(fn)
+
+    def run_unless_deleted(self, job_id, fn, timeout=15.0):
+        """Serialize ``fn()`` with delete-everywhere (M03-AUDIT-02): it
+        runs on the writer thread only if the job is not barred, and
+        returns ``(True, fn())``; a deleted job returns ``(False, None)``
+        without running it. Because deletion enumerates and purges a job's
+        payload files in its own writer op, a file created by ``fn`` either
+        exists before that enumeration (and is purged with the job) or is
+        never created. ``fn`` must be short (a rename, an ``open``)."""
+        def op():
+            if conn_job_deleted(self._db, job_id):
+                return (False, None)
+            return (True, fn())
+        return self._submit(op, wait=True, timeout=timeout)
+
+    def publish_job_file(self, job_id, staged, final, timeout=15.0) -> str:
+        """Atomically publish a staged job payload (``stage_wav_f32``)
+        unless the job was deleted. Returns ``"published"``, ``"deleted"``
+        (barrier won — nothing was published) or ``"failed"`` (store
+        closed/unavailable or rename error); a staged file that was not
+        published is removed."""
+        staged, final = pathlib.Path(staged), pathlib.Path(final)
+        try:
+            ok, _ = self.run_unless_deleted(
+                job_id, lambda: os.replace(staged, final), timeout=timeout)
+            outcome = "published" if ok else "deleted"
+        except Exception:
+            outcome = "failed"
+        if outcome != "published":
+            try:
+                staged.unlink(missing_ok=True)
+            except OSError:
+                pass
+        return outcome
 
     def register_job_payload_dir(self, directory, pattern):
         """Declare a directory holding JOB-SCOPED payload copies the store

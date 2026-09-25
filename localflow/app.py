@@ -81,6 +81,40 @@ DOUBLE_TAP_SEC = 0.4
 
 FAILED_PILL_SEC = 1.8
 
+# M03 remediation: the capture-provenance sidecar written next to a job's
+# recovery audio (content-free: timing, rate, sample counts, completeness).
+PROVENANCE_VERSION = 1
+PROVENANCE_SUFFIX = ".capture.json"
+_TERMINAL = {"insertion_confirmed", "insertion_unverified",
+             "saved_not_inserted", "cancelled", "failed_recoverable",
+             "failed_unrecoverable"}
+# Resolved states whose leftover journal was already consumed or
+# abandoned by the user: the residue is removed, never re-offered.
+_CONSUMED = {"insertion_confirmed", "insertion_unverified", "cancelled"}
+
+
+def _acquire_root_lock(root):
+    """Process-level ownership of the journal root (M03-AUDIT-01): only
+    the process holding it may treat files there as another boot's crash
+    residue. Returns the held descriptor, or None when another live
+    process owns the root (its lock dies with it)."""
+    try:
+        import fcntl
+    except ImportError:  # pragma: no cover
+        return None
+    try:
+        root = pathlib.Path(root)
+        root.mkdir(parents=True, exist_ok=True)
+        fd = os.open(root / ".owner.lock", os.O_CREAT | os.O_RDWR, 0o600)
+    except OSError:
+        return None
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        os.close(fd)
+        return None
+    return fd
+
 
 class _JobCancelled(Exception):
     """Internal: the user cancelled while this job was in the pipeline."""
@@ -129,6 +163,16 @@ class AppDelegate(NSObject):
             AUDIO_DEBUG_DIR, v2_debug_audio.job_pattern)
         self.store.register_job_payload_dir(
             V2_JOURNAL, lambda job_id: f"job-{job_id}.*")
+        # M03-AUDIT-02: delete-everywhere revokes this process's in-memory
+        # authority (queued work, cached output, recovery items) inside the
+        # same serialized store op that creates the barrier.
+        self._deleted_jobs = set()
+        self.store.add_job_deletion_listener(self._on_job_deleted)
+        # M03-AUDIT-04: app admission (capture, retry, recovery) closes
+        # once at quit; M03-AUDIT-01: journal-root ownership.
+        self._closing = False
+        self._coordinator_thread = None
+        self._journal_root_lock = _acquire_root_lock(V2_JOURNAL)
         # M13 (Spec S08/S21, contracts/analytics.md): usage analytics —
         # dated facts over the single-writer store, independent of
         # training consent (usage metadata, not evidence). Guarded like
@@ -427,6 +471,7 @@ class AppDelegate(NSObject):
         # fn there can never trigger a false recovery.
         self._watchdog_armed = False
         self._lost_ticks = 0
+        self._mouse_lost_ticks = 0
         self._failed_pill_timer = None
 
     @objc.python_method
@@ -1634,7 +1679,9 @@ class AppDelegate(NSObject):
         self.overlay = Overlay.alloc().init()
         self.overlay.setLevelSource_(lambda: self.recorder.level)
 
-        threading.Thread(target=self._worker, daemon=True).start()
+        self._coordinator_thread = threading.Thread(
+            target=self._worker, daemon=True, name="localflow-coordinator")
+        self._coordinator_thread.start()
         threading.Thread(target=self._start_worker, daemon=True).start()
         threading.Thread(target=self._recover_journals, daemon=True).start()
 
@@ -1705,16 +1752,49 @@ class AppDelegate(NSObject):
                             reason_code=e.reason_code)
 
     def applicationWillTerminate_(self, note):
+        """M03-AUDIT-04: one ordered quit. (1) app admission closes — no
+        new capture, retry or recovery; (2) an active capture stops and
+        its audio is kept as a recoverable item; (3) the worker's admission
+        closes permanently — the request in flight resolves as
+        ``supervisor_closed`` and nothing respawns; (4) the coordinator
+        settles what it holds (queued jobs fail fast with their audio
+        published as recovery items) and exits, bounded; (5) only then do
+        the store and event writer close admission and drain. Nothing here
+        waits for a main-thread callback."""
+        self._closing = True
+        try:
+            if self.state == STATE_RECORDING:
+                self._abandon_capture_for_system("app_quit")
+        except Exception as e:
+            self.v2log.emit("app.shutdown_capture_failed", level="ERROR",
+                            reason_code=type(e).__name__)
         try:
             self.supervisor.shutdown(timeout=2.0)
         except Exception:
             pass
+        coord = getattr(self, "_coordinator_thread", None)
+        settled = True
+        if coord is not None and coord.is_alive():
+            self._jobs.put(None)  # sentinel after every queued job
+            coord.join(timeout=4.0)
+            settled = not coord.is_alive()
+        if not settled:
+            self.v2log.emit("app.shutdown_incomplete", level="ERROR",
+                            reason_code="coordinator_busy",
+                            outcome="store_closes_with_producer_alive")
         self._shutdown_persistence()
+        fd = getattr(self, "_journal_root_lock", None)
+        if fd is not None:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+            self._journal_root_lock = None
 
     @objc.python_method
     def _shutdown_persistence(self, timeout=3.0):
         """M02-AUDIT-15: orderly quit for the M02 writers. Producers are
-        already stopped (the supervisor above); the store then closes
+        already stopped (``_shutdown_app`` above); the store then closes
         admission and drains its accepted ops, the outcome is recorded as
         an event, and only then does the event writer close (its own
         admission first, then its drain). Bounded: a stalled writer is
@@ -1794,10 +1874,16 @@ class AppDelegate(NSObject):
     @objc.python_method
     def _sweep_journal_root(self):
         """Failed/recoverable journal files expire with the audio-failed
-        retention knob; resolved jobs already deleted theirs eagerly."""
+        retention knob; resolved jobs already deleted theirs eagerly.
+        Staged ``.part-`` files are transient: any left by a crash go
+        after an hour."""
         days = self.store.retention_days["audio_failed"]
-        cutoff = time.time() - days * 86400
-        for pattern in ("job-*.blk", "job-*.wav"):
+        now = time.time()
+        for pattern, cutoff in (("job-*.blk", now - days * 86400),
+                                ("job-*.wav", now - days * 86400),
+                                ("job-*" + PROVENANCE_SUFFIX,
+                                 now - days * 86400),
+                                ("job-*.part-*", now - 3600)):
             for p in V2_JOURNAL.glob(pattern):
                 try:
                     if p.stat().st_mtime < cutoff:
@@ -1805,90 +1891,367 @@ class AppDelegate(NSObject):
                 except OSError:
                     continue
 
+    # ---- job-file ownership (M03-AUDIT-01/02) ------------------------------
+
+    @objc.python_method
+    def _on_job_deleted(self, job_id):
+        """Store deletion listener (writer thread, inside the delete op):
+        revoke every in-memory authority this process holds for the job.
+        Flags only — no store calls, no main-thread work."""
+        self._deleted_jobs.add(job_id)
+        tap = self._tap_pending or {}
+        for job in [self._job, tap.get("job")] + list(self._active_jobs):
+            if job and job.get("job_id") == job_id:
+                job["deleted"] = True
+                job["cancelled"] = True
+        revoke = getattr(self.supervisor, "revoke_job", None)
+        if revoke is not None:
+            try:
+                revoke(job_id)
+            except Exception:
+                pass
+
+    @objc.python_method
+    def _job_is_deleted(self, job_id) -> bool:
+        if not job_id:
+            return False
+        if job_id in self._deleted_jobs:
+            return True
+        try:
+            return bool(self.store.job_deleted(job_id))
+        except Exception:
+            return False
+
+    @objc.python_method
+    def _journal_open_gate(self, job_id):
+        """The capture journal creates its file only through the store's
+        deletion arbitration (M03-AUDIT-02)."""
+        store = self.store
+
+        def gate(opener):
+            return store.run_unless_deleted(job_id, opener)
+        return gate
+
+    @objc.python_method
+    def _live_job_ids(self) -> set:
+        """Jobs this process is working on right now (capture, queue,
+        coordinator, insertion) — never crash residue."""
+        live = set()
+        for job in [self._job, (self._tap_pending or {}).get("job")] \
+                + list(self._active_jobs):
+            if job and job.get("job_id"):
+                live.add(job["job_id"])
+        return live
+
+    @objc.python_method
+    def _publish_job_audio(self, job_id, path, samples, rate) -> str:
+        """Stage a complete float32 WAV, then publish it atomically under
+        the deletion barrier (M03-AUDIT-02/10). Returns the store's
+        outcome: published / deleted / failed."""
+        path = pathlib.Path(path)
+        if not job_id:
+            v2.store.write_wav_f32(path, samples, int(rate))
+            return "published"
+        staged = v2.store.stage_wav_f32(path, samples, int(rate))
+        return self.store.publish_job_file(job_id, staged, path)
+
+    @objc.python_method
+    def _write_provenance(self, job_id, prov) -> str:
+        """Publish the job's capture-provenance sidecar next to its audio
+        (same arbitration as the audio; deleted with the job)."""
+        if not job_id:
+            return "failed"
+        final = V2_JOURNAL / f"job-{job_id}{PROVENANCE_SUFFIX}"
+        try:
+            final.parent.mkdir(parents=True, exist_ok=True)
+            staged = v2.store.stage_path(final)
+            fd = os.open(staged, os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                         0o600)
+            with os.fdopen(fd, "w") as f:
+                json.dump(prov, f, sort_keys=True)
+        except Exception as e:
+            self.v2log.emit("capture.provenance_write_failed",
+                            level="WARNING", job_id=job_id,
+                            reason_code=type(e).__name__)
+            return "failed"
+        return self.store.publish_job_file(job_id, staged, final)
+
+    @objc.python_method
+    def _read_provenance(self, job_id):
+        path = V2_JOURNAL / f"job-{job_id}{PROVENANCE_SUFFIX}"
+        try:
+            prov = json.loads(path.read_text())
+        except (OSError, ValueError):
+            return None
+        if not isinstance(prov, dict) \
+                or prov.get("capture_provenance_version") \
+                != PROVENANCE_VERSION or prov.get("job_id") != job_id:
+            return None
+        return prov
+
+    @objc.python_method
+    def _live_provenance(self, job, stats, sample_count, rate):
+        cap = job.get("captured_at_utc")
+        return {
+            "capture_provenance_version": PROVENANCE_VERSION,
+            "job_id": job.get("job_id"), "family_id": job.get("family_id"),
+            "captured_at_utc": cap,
+            "time_quality": job.get("time_quality", "known") if cap
+            else "unknown",
+            "timezone": job.get("timezone"),
+            "utc_offset_minutes": job.get("utc_offset_minutes"),
+            "sample_rate": int(rate), "sample_count": int(sample_count),
+            "channels": 1,
+            # The live capture is the in-memory buffer: complete up to the
+            # device (input overflows never reach memory or the journal).
+            "source": "live_memory", "complete": True,
+            "capture_journal": "enabled" if job.get("journal") is not None
+            else "disabled",
+            "device": stats.get("device"),
+            "voiced_pct": stats.get("voiced_pct"),
+            "trailing_silence_sec": stats.get("trailing_silence_sec"),
+            "overflow_blocks": stats.get("overflow_blocks"),
+            "device_discontinuity": stats.get("device_discontinuity"),
+            "stream_teardown_error": stats.get("stream_teardown_error"),
+        }
+
+    @objc.python_method
+    def _inspect_wav(self, path):
+        """(samples, rate, info) for a recovery WAV — a truncated file
+        yields its complete-sample prefix with honest counts — or None."""
+        try:
+            return v2.store.read_wav_f32_prefix(path)
+        except (OSError, ValueError):
+            return None
+
     # ---- crash recovery (M03-AC03) --------------------------------------
 
     @objc.python_method
     def _recover_journals(self):
-        """Startup scan: unfinished journals become recoverable items with
-        every complete block recovered and an honest incomplete-tail flag."""
+        """Startup scan: crash residue from an EARLIER process becomes
+        recoverable items (M03-AC03). Ownership first (M03-AUDIT-01):
+        nothing is claimed unless this process owns the journal root, no
+        live writer holds the file, the job is not this session's own work,
+        and the job is neither deleted nor already resolved. Source
+        selection never replaces better audio: a complete worker WAV (the
+        full in-memory capture) beats a journal reconstruction, which beats
+        a truncated WAV's prefix; every choice is recorded in the job's
+        capture-provenance sidecar with the original capture instant."""
+        if getattr(self, "_journal_root_lock", None) is None:
+            self.v2log.emit("capture.recovery_skipped", level="WARNING",
+                            reason_code="journal_root_owned_elsewhere",
+                            outcome="nothing_claimed")
+            return
         found = 0
+        handled = set()
+        min_sec = float(self.cfg["min_duration_sec"])
         for blk in capture_journal.unfinished_journals(V2_JOURNAL):
+            if self._closing:
+                return
+            job_id = blk.stem[len("job-"):]
+            handled.add(job_id)
+            outcome = self._recover_one(job_id, blk, min_sec)
+            if outcome == "recoverable":
+                found += 1
+        # Jobs that finished capture but died before resolution (wav kept,
+        # blk already finalized or swept). Only residue from previous boots
+        # and never work this process holds.
+        for job_id in list(self.store.unresolved_job_ids()):
+            if self._closing:
+                return
+            if job_id in handled:
+                continue
+            outcome = self._recover_one(job_id, None, min_sec)
+            if outcome == "recoverable":
+                found += 1
+        if found:
+            AppHelper.callAfter(self._refresh_recovery_menu)
+
+    @objc.python_method
+    def _recover_one(self, job_id, blk, min_sec):
+        wav = V2_JOURNAL / f"job-{job_id}.wav"
+        if job_id in self._live_job_ids():
+            return "live_in_process"
+        if blk is not None and capture_journal.is_live(blk):
+            self.v2log.emit("capture.recovery_skipped", level="INFO",
+                            job_id=job_id, reason_code="journal_writer_live")
+            return "live_writer"
+        row = self.store.job(job_id)
+        if row and row.get("boot_id") == self.v2log.boot_id:
+            return "current_session"
+        if self._job_is_deleted(job_id):
+            # Deleted work is never resurrected; residue is removed.
+            self._delete_journal_files(job_id)
+            self.v2log.emit("capture.recovery_skipped", level="INFO",
+                            job_id=job_id, reason_code="job_deleted",
+                            outcome="residue_removed")
+            return "deleted"
+        state = (row or {}).get("state")
+        if state in _TERMINAL and state != "failed_recoverable":
+            if state in _CONSUMED and blk is not None:
+                try:
+                    blk.unlink()
+                except OSError:
+                    pass
+            self.v2log.emit("capture.recovery_skipped", level="INFO",
+                            job_id=job_id, reason_code="job_already_resolved",
+                            outcome=state)
+            return "resolved"
+        rec = None
+        if blk is not None:
             try:
                 rec = capture_journal.reconstruct(blk)
             except Exception as e:
                 self.v2log.emit("capture.recovery_failed", level="ERROR",
-                                reason_code=type(e).__name__,
-                                detail=blk.name)
-                continue
-            header = rec.header or {}
-            job_id = header.get("job_id") or blk.stem[len("job-"):]
+                                reason_code=type(e).__name__)
+                rec = None
+            if rec is not None and rec.header.get("job_id") not in (
+                    None, job_id):
+                self.v2log.emit("capture.recovery_failed", level="ERROR",
+                                job_id=job_id,
+                                reason_code="journal_job_mismatch")
+                return "mismatch"
+        existing = self._inspect_wav(wav) if wav.exists() else None
+        header = (rec.header if rec is not None else {}) or {}
+        meta = header.get("meta") or {}
+        if row is None:
             family_id = header.get("family_id") or v2.ids.new_id("fam")
-            stats = rec.stats()
-            existing = self.store.job(job_id)
-            if existing is None:
-                self.store.create_job(
-                    job_id=job_id, family_id=family_id,
-                    session_id=self.v2log.session_id,
-                    boot_id=v2.ids.new_id("boot"),
-                    captured_at_utc=header.get("captured_at_utc"),
-                    time_quality=header.get("time_quality", "unknown"),
-                    state="failed_recoverable",
-                    source_revision=v2.ids.source_revision(),
-                    pipeline_revision=v2.ids.PIPELINE_REVISION)
-            wav = V2_JOURNAL / f"job-{job_id}.wav"
-            min_sec = float(self.cfg["min_duration_sec"])
-            rate = int(header.get("sample_rate")
-                       or self.cfg["sample_rate"])
-            recoverable = (rec.samples.size
-                           and rec.samples.size / rate >= min_sec)
-            if recoverable:
-                v2.store.write_wav_f32(wav, rec.samples, rate)
-                self._recoverable.append({
-                    "job_id": job_id, "family_id": family_id,
-                    "wav": str(wav), "raw": None,
-                    "attempt": (existing or {}).get("attempt", 1) or 1})
-                found += 1
+            cap = meta.get("captured_at_utc")
+            self.store.create_job(
+                job_id=job_id, family_id=family_id,
+                session_id=self.v2log.session_id,
+                boot_id=header.get("boot_id") or "unknown_previous_boot",
+                captured_at_utc=cap,
+                time_quality=meta.get("time_quality", "known") if cap
+                else "unknown",
+                state="capturing",
+                source_revision=v2.ids.source_revision(),
+                pipeline_revision=v2.ids.PIPELINE_REVISION)
+            row = self.store.job(job_id) or {}
+        family_id = row.get("family_id") or header.get("family_id")
+        # ---- source selection ------------------------------------------
+        source, samples, rate, info = None, None, None, {}
+        j_samples = rec.samples if rec is not None else None
+        j_rate = header.get("sample_rate")
+        if existing is not None and existing[2]["complete"] and (
+                j_samples is None or existing[0].size >= j_samples.size):
+            source, samples, rate = "worker_wav", existing[0], existing[1]
+            info = existing[2]
+        elif j_samples is not None and j_samples.size and j_rate and (
+                existing is None or j_samples.size >= existing[0].size):
+            source, samples, rate = "journal_reconstruction", j_samples, \
+                j_rate
+        elif existing is not None and existing[0].size:
+            source, samples, rate = "worker_wav_prefix", existing[0], \
+                existing[1]
+            info = existing[2]
+        prov = self._read_provenance(job_id) or {}
+        if source is not None and source != "worker_wav" \
+                and samples.size / float(rate) >= min_sec:
+            published = self._publish_job_audio(job_id, wav, samples, rate)
+            if published != "published":
+                return "publish_" + published
+        recoverable = source is not None and \
+            samples.size / float(rate) >= min_sec
+        # ---- provenance: the ORIGINAL capture, not this scan ----------
+        cap = row.get("captured_at_utc") or prov.get("captured_at_utc") \
+            or meta.get("captured_at_utc")
+        new_prov = dict(prov)
+        new_prov.update({
+            "capture_provenance_version": PROVENANCE_VERSION,
+            "job_id": job_id, "family_id": family_id,
+            "captured_at_utc": cap,
+            "time_quality": (row.get("time_quality") or prov.get(
+                "time_quality") or meta.get("time_quality") or "known")
+            if cap else "unknown",
+            "timezone": row.get("timezone") or prov.get("timezone"),
+            "utc_offset_minutes": row.get("utc_offset_minutes")
+            if row.get("utc_offset_minutes") is not None
+            else prov.get("utc_offset_minutes"),
+            "recovered": True,
+            "recovered_at_utc": v2.ids.now_utc_iso(),
+        })
+        if source is not None:
+            new_prov.update({"source": source, "sample_rate": int(rate),
+                             "sample_count": int(samples.size),
+                             "channels": 1})
+        if source == "journal_reconstruction":
+            # Verified footer and no gap: complete. A clean record-boundary
+            # EOF without footer: the capture's end is UNKNOWN (None), not
+            # assumed. Anything torn, corrupt or gapped: incomplete.
+            if rec.gaps or rec.status not in (
+                    capture_journal.STATUS_VERIFIED,
+                    capture_journal.STATUS_UNFINALIZED):
+                new_prov["complete"] = False
+            elif rec.status == capture_journal.STATUS_VERIFIED:
+                new_prov["complete"] = True
+            else:
+                new_prov["complete"] = None
+        elif source == "worker_wav":
+            # The complete release-time WAV is the full memory capture.
+            new_prov["complete"] = prov.get("complete", True)
+        elif source == "worker_wav_prefix":
+            new_prov["complete"] = False
+        if source in ("worker_wav", "worker_wav_prefix"):
+            new_prov["wav"] = {
+                "declared_samples": info.get("declared_samples"),
+                "available_samples": info.get("available_samples")}
+        if rec is not None:
+            new_prov["journal"] = {
+                "status": rec.status, "version": rec.version,
+                "integrity": rec.integrity,
+                "corrupt_reason": rec.corrupt_reason,
+                "torn_bytes": rec.torn_bytes,
+                "positions_known": rec.positions_known,
+                "gaps": list(rec.gaps or []),
+                "dropped_blocks": (rec.footer or {}).get("dropped_blocks"),
+                "used": source == "journal_reconstruction"}
+        if recoverable:
+            self._write_provenance(job_id, new_prov)
+        if blk is not None:
             try:
                 blk.unlink()
             except OSError:
                 pass
-            self._job_state(job_id, "failed_recoverable"
-                            if recoverable else "cancelled",
-                            reason="app_crash_during_capture"
-                            if recoverable else
-                            ("crash_below_min_duration" if rec.samples.size
-                             else "crash_no_audio_recovered"))
-            self.v2log.emit(
-                "capture.recovered_after_crash", level="WARNING",
-                job_id=job_id, reason_code="journal_reconstruction",
-                outcome=("incomplete_tail" if rec.incomplete_tail
-                         else "complete") if recoverable
-                else "below_min_duration",
-                detail=f"blocks={stats['complete_blocks']}"
-                       f" samples={stats['sample_count']}"
-                       f" torn_bytes={stats['torn_bytes']}")
-        # Jobs that finished capture but died before resolution (wav kept,
-        # blk already finalized or swept). Only residue from previous boots:
-        # a job minted by this live session is mid-flight, not crashed, and
-        # must never be terminal-corrupted by this scan.
-        for job_id in list(self.store.unresolved_job_ids()):
-            row = self.store.job(job_id) or {}
-            if row.get("boot_id") == self.v2log.boot_id:
-                continue
-            wav = V2_JOURNAL / f"job-{job_id}.wav"
-            if not wav.exists():
-                self._job_state(job_id, "failed_recoverable",
-                                reason="app_crash_audio_lost")
-                continue
-            self._job_state(job_id, "failed_recoverable",
-                            reason="app_crash_before_resolution")
+        if state == "insertion_posted":
+            reason = "app_crash_after_insertion_posted"
+        elif blk is not None and source == "journal_reconstruction":
+            reason = "app_crash_during_capture"
+        elif source == "worker_wav_prefix":
+            reason = "app_crash_audio_truncated"
+        elif source == "worker_wav":
+            reason = "app_crash_before_resolution"
+        else:
+            reason = None
+        if recoverable:
+            self._job_state(job_id, "failed_recoverable", reason=reason)
             self._recoverable.append({
-                "job_id": job_id, "family_id": row.get("family_id"),
+                "job_id": job_id, "family_id": family_id,
                 "wav": str(wav), "raw": None,
-                "attempt": row.get("attempt", 1) or 1})
-            found += 1
-        if found:
-            AppHelper.callAfter(self._refresh_recovery_menu)
+                "attempt": int(row.get("attempt") or 1)})
+        elif blk is not None:
+            self._job_state(
+                job_id, "cancelled",
+                reason="crash_below_min_duration" if source is not None
+                else "crash_no_audio_recovered")
+        else:
+            self._job_state(job_id, "failed_recoverable",
+                            reason="app_crash_audio_lost")
+        self.v2log.emit(
+            "capture.recovered_after_crash", level="WARNING",
+            job_id=job_id, reason_code="journal_reconstruction"
+            if source == "journal_reconstruction" else (source or "none"),
+            outcome=("recoverable" if recoverable else
+                     "below_min_duration" if source is not None
+                     else "audio_lost"),
+            detail=(f"journal={rec.status} blocks={rec.complete_blocks}"
+                    f" samples={rec.samples.size}"
+                    f" torn_bytes={rec.torn_bytes}"
+                    f" gaps={len(rec.gaps or [])}" if rec is not None
+                    else "journal=none")
+            + (f" wav={'complete' if info.get('complete') else 'partial'}"
+               if info else ""))
+        return "recoverable" if recoverable else "not_recoverable"
 
     # ---- engine status ---------------------------------------------------
 
@@ -1902,6 +2265,8 @@ class AppDelegate(NSObject):
     # ---- dictation state machine (all on main thread) ------------------
 
     def startDictation(self, source="hotkey"):
+        if getattr(self, "_closing", False):
+            return  # quitting: app admission is closed (M03-AUDIT-04)
         if self._hands_free_active:
             # A tap while hands-free ends continuous capture (Spec S09).
             self._hands_free_active = False
@@ -1964,7 +2329,9 @@ class AppDelegate(NSObject):
                     sample_rate=self.cfg["sample_rate"],
                     emit=self.v2log.emit,
                     meta={"captured_at_utc": v2.ids.now_utc_iso(),
-                          "time_quality": "known"})
+                          "time_quality": "known"},
+                    boot_id=self.v2log.boot_id,
+                    open_gate=self._journal_open_gate(job_id))
                 self.recorder.journal = journal
             self.recorder.start()
         except Exception as e:
@@ -1984,6 +2351,8 @@ class AppDelegate(NSObject):
             "journal": journal,
             "hands_free": hands_free,
             "consent": consent_snapshot,
+            "sample_rate": int(self.cfg["sample_rate"]),
+            "time_quality": "known",
         }
         # M12 (Spec S20): a dictation started with the Scratchpad
         # editor focused is NOTE-BOUND — an internal destination. The
@@ -2125,7 +2494,7 @@ class AppDelegate(NSObject):
                 # (capture duration unknown at this seam: no stats yet,
                 # so duration_sec stays null, never invented).
                 self._record_dictation_usage(job, "cancelled")
-                self._delete_journal_files(job["job_id"])
+                self._delete_journal_files(job["job_id"], job)
             self.state = STATE_IDLE
             self._settle_state()
         elif self.state == STATE_PROCESSING and self._active_jobs:
@@ -2138,6 +2507,9 @@ class AppDelegate(NSObject):
             job = self._active_jobs[0]
             if not job.get("cancelled"):
                 job["cancelled"] = True
+                revoke = getattr(self.supervisor, "revoke_job", None)
+                if revoke is not None and job.get("job_id"):
+                    revoke(job["job_id"])
                 self._job_state(job["job_id"], "cancelled",
                                 reason="user_cancelled")
                 self.v2log.emit("capture.cancelled", level="INFO",
@@ -2161,6 +2533,11 @@ class AppDelegate(NSObject):
         if self.state != STATE_RECORDING:
             return
         self._clear_max_timer()
+        # M03-AUDIT-15: every capture end — release, tap, duration cap,
+        # device loss — clears the hands-free latch, so the next press
+        # starts a capture instead of "ending" one that is gone.
+        self._hands_free_active = False
+        self._lost_ticks = 0
         audio = self.recorder.stop()
         duration = len(audio) / float(self.cfg["sample_rate"])
         job, self._job = self._job, None
@@ -2283,8 +2660,14 @@ class AppDelegate(NSObject):
                                     job_id=job["job_id"],
                                     reason_code=type(e).__name__)
             job.update({"audio": audio, "stats": s, "ctx": ctx,
-                        "failed": False, "cancelled": False, "attempt": 1,
-                        "raw": None, "wav": None})
+                        "failed": False,
+                        # A job deleted while it was still capturing keeps
+                        # its revoked authority (M03-AUDIT-02).
+                        "cancelled": bool(job.get("deleted")),
+                        "attempt": 1, "raw": None, "wav": None})
+            job["capture_provenance"] = self._live_provenance(
+                job, s, len(audio), job.get("sample_rate")
+                or self.cfg["sample_rate"])
             # M13 (E06 end-to-end latency): the parent's monotonic
             # release instant — end_to_end_ms is measured against this
             # when the terminal insertion outcome lands (PTT release to
@@ -2380,10 +2763,21 @@ class AppDelegate(NSObject):
         if duration < float(self.cfg["min_duration_sec"]):
             self._discard_short(job)
             return
+        rate = int(job.get("sample_rate") or self.cfg["sample_rate"])
         try:
             wav = self._worker_wav_path(job)
-            v2.store.write_wav_f32(pathlib.Path(wav), audio,
-                                   int(self.cfg["sample_rate"]))
+            outcome = self._publish_job_audio(job["job_id"], wav, audio,
+                                              rate)
+            if outcome != "published":
+                wav = None
+                self.v2log.emit("capture.recovery_write_failed",
+                                level="WARNING", job_id=job["job_id"],
+                                reason_code=f"publish_{outcome}")
+            else:
+                prov = self._live_provenance(job, self.recorder.stats,
+                                             len(audio), rate)
+                prov["interrupted_by"] = reason
+                self._write_provenance(job["job_id"], prov)
         except Exception as e:
             self.v2log.emit("capture.recovery_write_failed", level="ERROR",
                             job_id=job["job_id"],
@@ -2462,6 +2856,20 @@ class AppDelegate(NSObject):
                 # A lost release outside RECORDING leaves `held` stuck
                 # True, which would eat the next press.
                 self.hotkey.held = False
+            # M03-AUDIT-15: the same repair for the mouse trigger (its
+            # button state is always observable). Two idle ticks, so a
+            # press being delivered right now is never undone; idle means
+            # there is no capture another trigger could be releasing.
+            mt = self.mouse_trigger
+            if mt is not None and mt.held and not mt.physically_down():
+                self._mouse_lost_ticks += 1
+                if self._mouse_lost_ticks >= 2:
+                    mt.held = False
+                    self._mouse_lost_ticks = 0
+                    self.v2log.emit("hotkey.release_lost", level="INFO",
+                                    reason_code="mouse_state_reconciled")
+            else:
+                self._mouse_lost_ticks = 0
 
     # ---- inference coordinator (FIFO thread) ------------------------------
 
@@ -2469,10 +2877,13 @@ class AppDelegate(NSObject):
     def _worker(self):
         while True:
             job = self._jobs.get()
+            if job is None:
+                return  # shutdown sentinel: every earlier job was settled
             if job.get("cancelled"):
                 AppHelper.callAfter(self._finishWithText_, "", job)
                 continue
             audio, ctx, job_id = job["audio"], job["ctx"], job["job_id"]
+            rate = int(job.get("sample_rate") or self.cfg["sample_rate"])
             # Observations during this job's cleanup attach to it even if
             # the main thread starts a newer dictation meanwhile.
             if ctx is not None:
@@ -2480,7 +2891,7 @@ class AppDelegate(NSObject):
             text = ""
             try:
                 if self.cfg["log_transcripts"]:
-                    self._dump_audio(audio, job_id)
+                    self._dump_audio(audio, job_id, rate)
                 self._job_state(job_id, "transcribing")
                 # Evidence/store work is guarded separately: a capture or
                 # disk problem must never fail an otherwise successful
@@ -2488,11 +2899,11 @@ class AppDelegate(NSObject):
                 try:
                     if ctx is not None:
                         self.collector.attach_capture_meta(
-                            ctx, job["stats"], self.cfg["sample_rate"])
+                            ctx, job["stats"], rate)
                         # The audio artifact is attached to the job before
                         # model execution.
                         self.collector.on_audio(
-                            ctx, audio, self.cfg["sample_rate"], job["stats"])
+                            ctx, audio, rate, job["stats"])
                         self.store.sync()
                 except Exception as e:
                     self.v2log.emit("training.capture_failed", level="ERROR",
@@ -2500,23 +2911,38 @@ class AppDelegate(NSObject):
                                     reason_code=type(e).__name__)
                 # Parent-created audio reference for the worker (Spec S06):
                 # a float32 WAV under the parent-owned journal root.
+                # M03-AUDIT-02/10: staged, then published atomically
+                # under the deletion barrier — a deleted job's audio is
+                # never recreated, and the worker never sees a
+                # half-written file.
                 try:
                     wav = self._worker_wav_path(job)
                     if not job.get("wav"):
-                        v2.store.write_wav_f32(
-                            pathlib.Path(wav), audio,
-                            int(self.cfg["sample_rate"]))
+                        if job.get("capture_provenance") and job_id:
+                            self._write_provenance(
+                                job_id, job["capture_provenance"])
+                        outcome = self._publish_job_audio(
+                            job_id, wav, audio, rate)
+                        if outcome == "deleted":
+                            job["deleted"] = job["cancelled"] = True
+                            raise _JobCancelled()
+                        if outcome != "published":
+                            raise RuntimeError("worker audio not published")
                         job["wav"] = wav
+                except _JobCancelled:
+                    raise
                 except Exception as e:
                     self.v2log.emit("capture.worker_audio_failed",
                                     level="ERROR", job_id=job_id,
                                     reason_code=type(e).__name__)
                     raise
+                if job.get("cancelled"):
+                    raise _JobCancelled()
                 t0 = time.monotonic()
                 res = self.supervisor.transcribe(
                     job_id=job_id, attempt=job["attempt"],
                     audio_name=pathlib.Path(wav).name,
-                    sample_rate=int(self.cfg["sample_rate"]))
+                    sample_rate=rate)
                 if res.get("retried") and job_id:
                     self._bump_attempt(job, job_id)
                 job["attempt"] = res.get("attempt", job["attempt"])
@@ -2886,6 +3312,10 @@ class AppDelegate(NSObject):
                 text = ""
                 self._note_cancelled_evidence(ctx)
             except WorkerFailure as e:
+                # M03-AUDIT-05: the attempt that actually executed — even
+                # one that produced no result — is acknowledged before any
+                # failure evidence, recovery item or usage fact is written.
+                self._acknowledge_executed_attempt(job, ctx, e)
                 if job.get("cancelled"):
                     # The user cancelled while the fault/retry was in
                     # flight: the failure is theirs, not a recoverable item.
@@ -2934,6 +3364,29 @@ class AppDelegate(NSObject):
             AppHelper.callAfter(self._finishWithText_, text, job)
 
     @objc.python_method
+    def _acknowledge_executed_attempt(self, job, ctx, err):
+        executed = getattr(err, "attempt", None)
+        if not isinstance(executed, int) or isinstance(executed, bool):
+            return
+        job_id = job.get("job_id")
+        if executed > int(job.get("attempt") or 1):
+            job["attempt"] = executed
+            if job_id:
+                try:
+                    self.store.bump_job_attempt(job_id, at_least=executed)
+                except Exception as e:
+                    self.v2log.emit("store.state_write_failed",
+                                    level="WARNING", job_id=job_id,
+                                    reason_code=type(e).__name__)
+        stage = {"transcribe": "asr", "clean": "cleanup"}.get(err.stage)
+        try:
+            self.collector.note_attempt(
+                ctx, job["attempt"], stage=stage,
+                worker_generation=getattr(err, "generation", None))
+        except Exception:
+            pass
+
+    @objc.python_method
     def _bump_attempt(self, job, job_id):
         job["attempt"] = int(job.get("attempt", 1)) + 1
         try:
@@ -2960,7 +3413,7 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def _register_recoverable(self, job):
-        if not job.get("wav"):
+        if not job.get("wav") or job.get("deleted"):
             return
         self._last_failed = {
             "job_id": job.get("job_id"), "family_id": job.get("family_id"),
@@ -2969,14 +3422,23 @@ class AppDelegate(NSObject):
         AppHelper.callAfter(self._refresh_recovery_menu)
 
     @objc.python_method
-    def _delete_journal_files(self, job_id):
+    def _delete_journal_files(self, job_id, job=None):
+        """A resolved job's journal files go eagerly. The job's journal
+        writer (if any) loses creation authority first, so a writer that
+        finishes late can never recreate the ``.blk`` (M03-AUDIT-01/02)."""
         if not job_id:
             return
+        journal = (job or {}).get("journal")
+        if journal is not None:
+            try:
+                journal.close_discard(join_timeout=0)
+            except Exception:
+                pass
+
         def _rm():
-            for suffix in (".blk", ".wav"):
+            for p in V2_JOURNAL.glob(f"job-{job_id}.*"):
                 try:
-                    (V2_JOURNAL / f"job-{job_id}{suffix}").unlink(
-                        missing_ok=True)
+                    p.unlink(missing_ok=True)
                 except OSError:
                     pass
         threading.Thread(target=_rm, daemon=True).start()
@@ -2996,16 +3458,26 @@ class AppDelegate(NSObject):
                             job_id=job_id, reason_code=type(e).__name__)
 
     @objc.python_method
-    def _dump_audio(self, audio, job_id=None):
+    def _dump_audio(self, audio, job_id=None, rate=None):
         # M02-AUDIT-02: the debug copy is named by its job so
         # delete-everywhere (registered in configure) removes it too.
+        # M03-AUDIT-02: written INSIDE the store's deletion arbitration —
+        # a check-then-write could still lose to a delete in between.
         try:
             if job_id and self.store.job_deleted(job_id):
                 return  # never recreate a deleted job's audio copy
             self._dump_seq += 1
-            v2_debug_audio.write_debug_copy(
-                AUDIO_DEBUG_DIR, job_id, audio, int(self.cfg["sample_rate"]),
-                keep=AUDIO_DEBUG_KEEP, seq=self._dump_seq)
+            seq = self._dump_seq
+            rate = int(rate or self.cfg["sample_rate"])
+
+            def write():
+                v2_debug_audio.write_debug_copy(
+                    AUDIO_DEBUG_DIR, job_id, audio, rate,
+                    keep=AUDIO_DEBUG_KEEP, seq=seq)
+            if job_id:
+                self.store.run_unless_deleted(job_id, write)
+            else:
+                write()
         except Exception as e:
             self.v2log.emit("capture.debug_audio_failed", level="WARNING",
                             reason_code=type(e).__name__)
@@ -3022,9 +3494,12 @@ class AppDelegate(NSObject):
             if job_id:
                 self.v2log.emit("insertion.skipped", level="INFO",
                                 job_id=job_id,
-                                reason_code="user_cancelled")
-            self._record_dictation_usage(job, "cancelled")
-            self._delete_journal_files(job_id)
+                                reason_code="job_deleted"
+                                if job.get("deleted") else "user_cancelled")
+            if not job.get("deleted"):
+                # A deleted job gets no new usage fact (M03-AUDIT-02).
+                self._record_dictation_usage(job, "cancelled")
+            self._delete_journal_files(job_id, job)
             self._settle_state()
             return
         if job.get("failed"):
@@ -3099,7 +3574,7 @@ class AppDelegate(NSObject):
                                 "training.capture_failed", level="ERROR",
                                 job_id=job_id,
                                 reason_code=type(e).__name__)
-                self._delete_journal_files(job_id)
+                self._delete_journal_files(job_id, job)
                 self._settle_state()
                 return
             # M08 (S18): the text branch hands off to the serialized
@@ -3123,6 +3598,10 @@ class AppDelegate(NSObject):
                     meta={"reason": "insertion_service_unavailable"})
                 if ctx is not None:
                     self.collector.on_insertion(ctx, False, 0)
+                # M03-AUDIT-17: no insertion callback will ever arrive for
+                # this synchronous fallback — it retires its own job. The
+                # recovery audio stays (saved-not-inserted policy).
+                self._retire_active_job(job)
                 self._settle_state()
                 return
             self._insertion.submit(
@@ -3154,7 +3633,7 @@ class AppDelegate(NSObject):
                     self.v2log.emit("training.capture_failed", level="ERROR",
                                     job_id=job_id,
                                     reason_code=type(e).__name__)
-            self._delete_journal_files(job_id)
+            self._delete_journal_files(job_id, job)
         if job.get("failed"):
             # The failed pill stays up briefly; its timer settles the state
             # machine so the failure is actually visible.
@@ -3258,8 +3737,9 @@ class AppDelegate(NSObject):
                     self.v2log.emit("insertion.skipped", level="INFO",
                                     job_id=job_id,
                                     reason_code="user_cancelled")
-                self._record_dictation_usage(job, "cancelled")
-                self._delete_journal_files(job_id)
+                if not job.get("deleted"):
+                    self._record_dictation_usage(job, "cancelled")
+                self._delete_journal_files(job_id, job)
                 self._settle_state()
                 return
             # Cancel landed MID-transaction: the insert physically ran
@@ -3348,7 +3828,7 @@ class AppDelegate(NSObject):
                                 reason_code=type(e).__name__)
         self._starting_observation = None
         if state in ("confirmed", "posted_unverified"):
-            self._delete_journal_files(job_id)
+            self._delete_journal_files(job_id, job)
         self._settle_state()
 
     @objc.python_method
@@ -3793,6 +4273,8 @@ class AppDelegate(NSObject):
             return {"outcome": "recording"}
         if any(j.get("job_id") == job_id for j in self._active_jobs):
             return {"outcome": "already_retrying"}
+        if self._job_is_deleted(job_id):
+            return {"outcome": "not_retryable", "reason": "deleted"}
         row = self.store.job(job_id) or {}
         if row.get("state") != "failed_recoverable":
             return {"outcome": "not_retryable",
@@ -4072,8 +4554,26 @@ class AppDelegate(NSObject):
     def _retry_job(self, info):
         """The one retry path (menu and the Hub's History row share it):
         re-arm the breaker, re-read the recovery audio, re-open the
-        failed job with attempt+1 and requeue it through the
-        coordinator."""
+        failed job with the next attempt and requeue it through the
+        coordinator. The retry re-processes the ORIGINAL capture
+        (M03-AUDIT-09): its capture instant, actual sample rate and known
+        discontinuities come from the job row and the capture-provenance
+        sidecar — never from the retry's clock or today's config."""
+        job_id = info.get("job_id")
+        family_id = info.get("family_id")
+        if getattr(self, "_closing", False):
+            return {"outcome": "closing"}
+        if self._job_is_deleted(job_id):
+            # Deleted work is never re-run or re-delivered (M03-AUDIT-02).
+            self._drop_recovery_item(job_id)
+            return {"outcome": "not_retryable", "reason": "deleted"}
+        row = (self.store.job(job_id) or {}) if job_id else {}
+        if job_id and row and row.get("state") != "failed_recoverable":
+            # Only a failed_recoverable job re-opens; a resolved job's
+            # leftover audio is never re-run from the menu either.
+            self._drop_recovery_item(job_id)
+            return {"outcome": "not_retryable",
+                    "reason": row.get("state") or "unknown_job"}
         if self.supervisor.supervisor_state == "failed":
             # An explicit user action re-arms the breaker (M03-AC01: the
             # automatic loop stops; recovery is manual from here).
@@ -4084,30 +4584,48 @@ class AppDelegate(NSObject):
                                 reason_code=e.reason_code)
                 return {"outcome": "restart_failed"}
         try:
+            # Strict read: a truncated file is refused, never re-run as a
+            # shorter "complete" capture (M03-AUDIT-10).
             _arr, _rate = v2.store.read_wav_f32(pathlib.Path(info["wav"]))
         except Exception as e:
             self.v2log.emit("dictation.retry_failed", level="ERROR",
-                            job_id=info.get("job_id"),
+                            job_id=job_id,
                             reason_code=type(e).__name__)
             return {"outcome": "audio_unavailable"}
+        prov = (self._read_provenance(job_id) if job_id else None) or {}
         attempt = int(info.get("attempt", 1) or 1) + 1
-        job_id = info.get("job_id")
-        family_id = info.get("family_id")
         if job_id:
-            self.store.bump_job_attempt(job_id)
+            try:
+                # The durable row is the attempt authority: the retry is
+                # the next attempt after the last one that EXECUTED.
+                attempt = int(self.store.bump_job_attempt(
+                    job_id, wait=True) or attempt)
+            except Exception as e:
+                self.v2log.emit("store.state_write_failed",
+                                level="WARNING", job_id=job_id,
+                                reason_code=type(e).__name__)
             self._job_state(job_id, "queued", reason="user_retry",
                             retry=True)
+        # The original capture's instant and zone: store row first (the
+        # durable truth), then the sidecar; absent stays absent — never
+        # the retry's 'now' (the refusal rule).
+        captured = row.get("captured_at_utc") or prov.get("captured_at_utc")
+        time_quality = (row.get("time_quality") or prov.get("time_quality")
+                        or "known") if captured else "unknown"
+        zone = row.get("timezone") or prov.get("timezone")
+        offset = row.get("utc_offset_minutes") \
+            if row.get("utc_offset_minutes") is not None \
+            else prov.get("utc_offset_minutes")
         try:
             # M02-AUDIT-06: a retry re-processes an OLD capture — it uses
             # that capture's permission (and only while collection is
             # enabled now), never today's consent attached retroactively.
             ctx = self.collector.job_started(
                 job_id, family_id,
-                captured_at_utc=v2.ids.now_utc_iso(),
-                timezone=v2.ids.local_zone_name(),
-                utc_offset_minutes=v2.ids.utc_offset_minutes(),
-                attempt=attempt,
-                consent_snapshot=self.collector.retry_snapshot(job_id))
+                captured_at_utc=captured, timezone=zone,
+                utc_offset_minutes=offset, attempt=attempt,
+                consent_snapshot=self.collector.retry_snapshot(job_id),
+                time_quality=time_quality)
         except Exception:
             ctx = None
         job = {"job_id": job_id, "family_id": family_id, "ctx": ctx,
@@ -4115,10 +4633,13 @@ class AppDelegate(NSObject):
                "raw": None, "wav": info["wav"], "journal": None,
                "from_retry": True,
                "audio": _arr,
-               "stats": {"device": "recovered", "duration_sec":
-                         len(_arr) / float(self.cfg["sample_rate"]),
-                         "voiced_pct": None, "trailing_silence_sec": None,
-                         "overflow_blocks": None}}
+               # The retained bytes' own rate — never relabeled to the
+               # current configuration.
+               "sample_rate": int(_rate),
+               "stats": self._stats_from_provenance(prov, _arr.size,
+                                                    int(_rate)),
+               "captured_at_utc": captured, "time_quality": time_quality,
+               "timezone": zone, "utc_offset_minutes": offset}
         # M13: the retry is the SAME logical dictation — its usage fact
         # keeps the ORIGINAL capture instant, observed zone and
         # destination app from the store rows (a retry completing on
@@ -4126,15 +4647,10 @@ class AppDelegate(NSObject):
         # instant stays absent — the refusal rule, never a fabricated
         # 'now').
         try:
-            row = self.store.job(job_id) or {}
             tgt = self.store.submit(lambda db: db.execute(
                 "SELECT app_name, app_bundle FROM job_targets WHERE"
                 " job_id=?", (job_id,)).fetchone()) or (None, None)
-            job.update({"captured_at_utc": row.get("captured_at_utc"),
-                        "timezone": row.get("timezone"),
-                        "utc_offset_minutes":
-                            row.get("utc_offset_minutes"),
-                        "app_name": tgt[0], "app_bundle": tgt[1]})
+            job.update({"app_name": tgt[0], "app_bundle": tgt[1]})
         except Exception as e:
             self.v2log.emit("usage.retry_provenance_unavailable",
                             level="WARNING", job_id=job_id,
@@ -4157,6 +4673,54 @@ class AppDelegate(NSObject):
         self.state = STATE_PROCESSING
         self.overlay.showWithMode_(MODE_PROCESSING)
         return {"outcome": "requeued", "job_id": job_id}
+
+    @objc.python_method
+    def _drop_recovery_item(self, job_id):
+        self._recoverable[:] = [i for i in self._recoverable
+                                if i.get("job_id") != job_id]
+        if self._last_failed is not None \
+                and self._last_failed.get("job_id") == job_id:
+            self._last_failed = None
+        self._refresh_recovery_menu()
+
+    @objc.python_method
+    def _stats_from_provenance(self, prov, sample_count, rate) -> dict:
+        """Capture diagnostics for a retried recovered capture: what is
+        known about the ORIGINAL capture, honest None where unknown."""
+        journal = prov.get("journal") or {}
+        used_journal = prov.get("source") == "journal_reconstruction"
+        wav = prov.get("wav") or {}
+        stats = {
+            "device": prov.get("device") or "unknown",
+            "duration_sec": sample_count / float(rate),
+            "voiced_pct": prov.get("voiced_pct"),
+            "trailing_silence_sec": prov.get("trailing_silence_sec"),
+            "overflow_blocks": prov.get("overflow_blocks"),
+            "device_discontinuity": prov.get("device_discontinuity"),
+            "stream_teardown_error": prov.get("stream_teardown_error"),
+            "audio_source": prov.get("source") or "unknown",
+            "recovered": bool(prov.get("recovered")),
+            "capture_complete": prov.get("complete"),
+            "capture_journal": prov.get("capture_journal"),
+        }
+        if used_journal:
+            stats.update({
+                "journal_status": journal.get("status"),
+                "journal_version": journal.get("version"),
+                "journal_integrity": journal.get("integrity"),
+                "journal_gaps": journal.get("gaps") or None,
+                "positions_known": journal.get("positions_known"),
+                "journal_torn_bytes": journal.get("torn_bytes"),
+                "journal_dropped_blocks": journal.get("dropped_blocks"),
+                "incomplete_tail": journal.get("status") in (
+                    capture_journal.STATUS_TORN_TAIL,
+                    capture_journal.STATUS_CORRUPT,
+                    capture_journal.STATUS_NO_HEADER),
+            })
+        if wav:
+            stats["wav_declared_samples"] = wav.get("declared_samples")
+            stats["wav_available_samples"] = wav.get("available_samples")
+        return stats
 
     def copyLastRaw_(self, sender):
         if self._last_failed is None or not self._last_failed.get("raw"):
