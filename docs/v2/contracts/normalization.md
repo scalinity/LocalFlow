@@ -18,7 +18,11 @@ to isolate Metal/MLX faults (S06); normalization holds no MLX state, so
 it gains no protocol op and never queues behind the supervisor's GPU
 lock. The M03 worker protocol (`worker.md`) is unchanged. The stage is
 budgeted at P95 ≤ 25 ms for a 500-word input (S24) — measured 4.77 ms
-on the reference Mac (`benchmarks/20260922-005827-m04/m04.json`).
+on the reference Mac (`benchmarks/20260922-005827-m04/m04.json`; historical —
+the M04 remediation added boundary/chain checks, re-measurement is
+M04-V003). Overlap arbitration and edit application are O(n log n) in
+the edit count (review R22); the benchmark gates workload validity
+(authored per-sentence outputs and summed edit counts) before speed.
 
 ## Policy and context objects
 
@@ -65,7 +69,7 @@ All text offsets are zero-based half-open Unicode code points
   precedence `layer` and a reason when relevant.
 - `rejected` — every considered-but-not-applied proposal with its
   reason (`overlap_conflict`, `ambiguous_same_span`,
-  `lower_layer_same_span`, `unknown_skill`, `verb_context`,
+  `lower_layer_same_span`, `unknown_skill`, `no_command_frame`,
   `invalid_octet`, `invalid_day`, `invalid_date`, `invalid_version`,
   `unanchored_version`, `malformed_scale`, `quantified_scale`,
   `dotted_number_arity`, `leading_decimal`, `invalid_port`,
@@ -101,15 +105,18 @@ no valid-looking prefix or suffix of a refused candidate converts
 (AUDIT-04/-08). Nothing is ever applied by substitution order.
 
 **Structural delimiters (AUDIT-02).** Edge punctuation (`.,;:!?` on a
-word) and line breaks separate clauses; spaces, tabs and no-break
-spaces do not. Every M04 grammar matches within one clause only, and
+word) and line breaks — every separator `str.splitlines()` honors,
+incl. U+2028/U+2029, VT, FF, NEL and the record separators (review
+R14) — separate clauses; spaces, tabs and no-break spaces do not. Every M04 grammar matches within one clause only, and
 every edit covers token CORES only, so the punctuation outside a
 converted phrase survives ("twelve percent." → `12%.`, "twelve
 dollars, please" → `$12, please`) and two delimited quantities are
 never merged ("twenty, five percent" → `twenty, 5%`, never `25%`). A
 proposal that would still cross a delimiter is rejected
 (`crosses_delimiter`); M05 vocabulary and M10 snippets/file tags keep
-their own matching rules.
+their own matching rules. A spoken punctuation/structure command owns
+its own token's edge punctuation ("hello comma, how" → `hello, how`;
+"new line, hello" at a text start → `hello`, review R23).
 
 ## Grammar behavior reference
 
@@ -125,7 +132,17 @@ as one phrase and converts), digit runs (phone/code territory) and any
 number standing next to other number speech in the same clause ("three
 fifteen minute breaks", "chapter five thirty two", "five minus three",
 "one oh five" stay words — adjacent digits would change how the run
-reads). Malformed scale chains are refused whole (`malformed_scale`):
+reads). Number speech includes a hyphenated compound ("three hundred
+sixty-five days" stays words rather than `300 sixty-five`), an ordinal
+after a tens word ("the twenty fifth anniversary"), "dot" and "and"
+only between numbers, "oh" only next to a digit ("oh twelve people" →
+`oh 12 people`), and "point"/"dot" not after a determiner ("at this
+point twelve percent" → `at this point 12%`) (review R2–R4, R12, R23).
+en joins a scale and a smaller group with "and" ("two thousand and
+twenty dollars" → `$2020`, "one thousand and one" → 1001); es does not
+use "y" after "mil", so "dos mil y veinte euros" stays words. es tables
+carry the accented spellings (`dieciséis`, `veintidós`, `veintitrés`,
+`veintiséis`, `millón`; review R13). Malformed scale chains are refused whole (`malformed_scale`):
 an explicit zero multiplier ("zero hundred"), a scale directly after a
 scale ("one thousand million") or a scale not smaller than the previous
 one ("one million million") — an explicit zero is tracked separately
@@ -143,7 +160,9 @@ word in the phrase is version-speak, not a decimal: the whole
 unanchored chain is refused (`unanchored_version`) — no suffix
 ("twenty six point four") converts on its own. A chain opening with a
 decimal word ("point five percent") is refused whole
-(`leading_decimal`). **Scaled decimals are exact** (AUDIT-03): "one
+(`leading_decimal`) — a fraction is spoken digit by digit, so this
+needs a single digit word after the decimal word and no determiner
+before it (review R12). **Scaled decimals are exact** (AUDIT-03): "one
 point two three four five thousand dollars" → `$1234.5` (typed value
 1234.5); an integral result renders as an integer ("one point five
 million" → `1,500,000`); nothing is truncated through `int()`. Every
@@ -172,8 +191,13 @@ whole, never shortened to `March 30`). Month names that are also
 ordinary words (`may`, `march`, `august` — `ambiguous_month_words` in
 the locale table) need evidence: written capitalization ("May first")
 or a date preposition before them ("on march fourth", "due on may
-first"); "this may first require approval" stays prose
-(`ambiguous_month_word` review). Numeric dates (03/04) and relative
+first") AND date-shaped context after the date phrase (clause end, a
+function word other than the modal-only "be", or a time follower: "on
+May first at noon"); "this may first require approval", "we build on
+may first require updates" and "May first responders" stay prose
+(`ambiguous_month_word` review; review R11). The day-first shape "the
+Nth of <month>" is date evidence by itself; an out-of-range day there
+is flagged too ("the thirty second of May", review R4). Numeric dates (03/04) and relative
 days ("tomorrow") are never touched.
 
 **Times** — hour + minute ("five thirty PM" → `5:30 PM`; "at nine oh
@@ -181,9 +205,13 @@ five" → `at 9:05`), gated on time EVIDENCE (AUDIT-06): a time
 preposition right before the hour (`at`, `by`, `around`, `before`,
 `after`, …) or a spoken meridiem. Utterance start alone is not
 evidence ("three fifteen minute breaks", "one oh five", "five thirty
-people" stay words), and an hour + minute pair followed by a duration
-unit is a count and a duration, never a clock ("for three fifteen
-minute breaks"). No
+people" stay words). Without a meridiem, what follows an anchored
+hour + minute must be clause material — the end of the clause, a
+function word, a pronoun or a time adverb (`time_followers`: "at five
+thirty tomorrow", "at eight fifteen sharp"); a content word means the
+numbers count or measure something ("for three fifteen minute
+breaks", "sold at three fifty dollars", "about one twenty people"),
+never a clock (review R5). No
 meridiem, timezone or 24h form is invented; bare hour + meridiem
 ("eight AM") and "noon" stay words (limitations). Bare single-unit
 minutes do not parse ("five five" is not 5:05).
@@ -223,8 +251,11 @@ form emits no edit (AUDIT-15) and claims the span.
 `.env`), anchored spoken paths ("path slash users slash danny" →
 `/users/danny`); components keep the speaker's written spelling
 ("path slash Users slash Ada" → `/Users/Ada` — paths are
-case-significant, AUDIT-11) and a chain whose next component is not a
-plain word ("… slash build2") is refused whole (`incomplete_path`);
+case-significant, AUDIT-11), a component may carry spoken dots
+("path slash etc slash nginx dot conf" → `/etc/nginx.conf`, "… slash
+dot env" → `/…/.env`; review R9), and a chain whose next component is
+not a plain word ("… slash build2") is refused whole
+(`incomplete_path`);
 unanchored slash chains stay prose ("slash the budget"). Spoken
 addresses with known TLDs convert ("danny at gmail dot com" → email;
 "example dot co dot uk" → domain), keeping the written spelling of
@@ -236,12 +267,16 @@ No filesystem action ever runs.
 registered skill/alias, exact spelling, multiword aliases map to exact
 hyphenated names; unknown skill words stay literal with a retained
 review suggestion. Registry membership is identity, not intent
-(AUDIT-01): "slash" right after a closed-class word that requires a
-verb next — a modal, infinitive "to", a subject pronoun, an auxiliary
-or a negation (`slash_verb_context` in the profile) — is the ordinary
-verb: "we should slash code review time" stays prose with a
-`verb_context` review record, while command positions ("slash code
-review", "add slash code review to the list") insert the token.
+(AUDIT-01, review R1): the token is inserted only in a COMMAND
+POSITION — the start of a clause ("slash code review", "Done. Slash
+code review the PR") or right after an explicit command frame
+(`slash_command_frames`: "add", "run", "use", "then", "please", "the",
+…; "to" only after a motion/change verb in `slash_command_frames_to`:
+"switch to slash code review"; a frame right after a subject pronoun
+is a verb — "we do slash costs"). Anywhere else ("we should really
+slash code review time", "managers slash costs", "we cut hiring and
+slash …") "slash" is the ordinary verb: the words stay literal with a
+`no_command_frame` review record.
 Residual (design D2): utterance-initial "slash <registered alias>"
 remains the command even when the alias is also an ordinary noun. A token followed by prose is space-separated. Slash
 insertion is text only — no Enter, no autocomplete selection, no skill
@@ -249,13 +284,18 @@ invocation.
 
 **Symbols** — spoken punctuation names convert with structural noun
 guards (AUDIT-09): a determiner right before ANY name ("a question
-mark", "the forward slash character", "my comma key"), and a
-trailing-punctuation or noun-ambiguous name at the start of a clause
-with more words after it ("period drama", "colon cancer", "pipe
-tobacco"; alone, "comma" is still `,`). The historical lexical guards
+mark", "the forward slash character", "my comma key" — articles,
+"each"/"every" and the possessives that cannot be objects; "that",
+"this", "her", "his", "those" are also object pronouns, so "let's do
+that period" → `let's do that.`; review R6), and a trailing-punctuation
+or noun-ambiguous name at the start of a clause with any token after
+it ("period drama", "colon cancer", "pipe tobacco", "Period 3 starts";
+alone, "comma" is still `,`; review R7 keeps the second pass stable). The historical lexical guards
 stay ("a dash of salt", "the period of adjustment", "fourth period",
-"grace period" / "trial period"). A written capital "I" after "dash" is
-the pronoun, never a flag. Residual (design D2): a mid-clause name
+"grace period" / "trial period"). Flags keep the written case of their
+letters ("ls dash L" → `ls -L`; `-L` ≠ `-l`, review R10); a
+single-letter flag follows a command in the same clause, so a
+clause-initial "dash I asked him" stays prose. Residual (design D2): a mid-clause name
 followed by a noun ("we discussed period drama") and "time period"
 are surface-identical to the command positions "hello comma how" /
 "stop period"; the supported escape is "write the word period". Tight
@@ -276,8 +316,9 @@ block command that IS the utterance keeps its break.
 emits the object verbatim, protected from every grammar ("write the
 word slash" → `slash`; "write the words twelve thousand" →
 `twelve thousand`). "word" protects one word; "words"/"phrase" protect
-the whole run of words to the next structural delimiter or the end of
-the utterance — no word cap (AUDIT-10) — and a marker inside an
+the whole run of tokens — written tokens such as "version 2" or
+"GPT-5" included (review R8) — to the next structural delimiter or the
+end of the utterance, with no word cap (AUDIT-10); a marker inside an
 escaped object is content, never a second escape. Quoted instructions are content, not escapes
 (escape markers inside quotes do not fire). **Idempotence corner
 (documented):** an escape whose object is or contains a command
@@ -308,12 +349,16 @@ content-free `training.capture_failed` event names the failed step
 (`stage=normalization`, `detail=<step>`, `outcome=
 normalization_not_retained`), the envelope carries the distinct
 missing reason `retention_write_failed` (the stage ran; its evidence
-was not retained), and no partial artifact reference enters the
-envelope (AUDIT-16). The block records `policy_source`:
-`job_snapshot` (the job's own captured policy) or `current_default`
-(a retry of retained audio, which captured none: the current registry
-under the CONFIGURED profile — a clearly identified new snapshot;
-AUDIT-21). A job's inherited ("inherit" style) profile always
+was not retained); a normalized-text artifact fully published before
+a ledger failure stays referenced (it is what cleanup read), and no
+half-published artifact is ever referenced (AUDIT-16, review R16). The
+block records `policy_source`: `job_snapshot` (the job's own captured
+policy), `retry_unscoped_default` (a retry of retained audio: a new
+snapshot belonging to no destination — configured profile, global
+dictionary and manifest skills, unscoped vocabulary, never the
+previous job's workspace skills or context; AUDIT-21, review R15) or
+`current_default` (the configured-profile fallback for a job whose
+hotkey-down capture failed). A job's inherited ("inherit" style) profile always
 resolves against the configuration, never the previous job's
 effective profile (AUDIT-13).
 

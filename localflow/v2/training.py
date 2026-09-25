@@ -613,9 +613,17 @@ class EvidenceCollector:
                 ctx.norm_ledger_artifact, "training",
                 days=self.store.retention_days["training_buffer"])
         except Exception as e:
-            # An unleased artifact is purge-eligible under the M02
-            # retention rules; the envelope must not reference it.
-            ctx.norm_text_artifact = None
+            # A normalized-text artifact that was fully published
+            # (written AND leased) before the failure stays referenced —
+            # it is what cleanup read, so it remains cleanup's parent and
+            # the envelope's normalization artifact (review R16). A
+            # half-published artifact (write without lease) and the
+            # ledger are dropped from the envelope: nothing references
+            # evidence that was not completely retained. Everything the
+            # job wrote is still governed by the job's retention and
+            # delete-everywhere (job-keyed, M02).
+            if step not in ("ledger_write", "ledger_lease"):
+                ctx.norm_text_artifact = None
             ctx.norm_ledger_artifact = None
             ctx.normalization_missing_reason = "retention_write_failed"
             self.emit("training.capture_failed", level="ERROR",
@@ -1507,8 +1515,11 @@ class EvidenceCollector:
         if normalization is None and getattr(
                 ctx, "normalization_missing_reason", None):
             # The stage ran but its evidence was not retained
-            # (M04-AUDIT-16) — distinct from a skipped stage.
+            # (M04-AUDIT-16) — distinct from a skipped stage. A fully
+            # published normalized text stays addressable (review R16).
             missing["normalization"] = ctx.normalization_missing_reason
+            if ctx.norm_text_artifact is not None:
+                artifact_ids["normalization"] = ctx.norm_text_artifact
         if normalization is not None:
             del missing["normalization"]
             artifact_ids["normalization"] = (

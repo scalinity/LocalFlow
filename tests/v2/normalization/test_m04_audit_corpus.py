@@ -171,9 +171,20 @@ def _structured(case, res):
         if not _rendered_sign_matches(e):
             return False, "ledger_sign_mismatch"
     if "components" in o:
-        want = "x".join(o["components"])
-        ok = any(isinstance(e.value, str) and e.value.startswith(want)
-                 for e in typed)
+        # exact component tuple + unit (review R20: a prefix match let
+        # "10x-200 cm" pass for 10 × -20)
+        want = [Decimal(c) for c in o["components"]]
+        ok = False
+        for e in typed:
+            if not isinstance(e.value, str) or " " not in e.value:
+                continue
+            head, unit = e.value.split(" ", 1)
+            try:
+                got = [Decimal(c) for c in head.split("x")]
+            except InvalidOperation:
+                continue
+            ok |= got == want and (o.get("unit") is None
+                                   or unit == o["unit"])
         return ok, "components"
     if "semantic_value" in o:
         want = Decimal(o["semantic_value"])

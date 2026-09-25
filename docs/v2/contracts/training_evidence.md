@@ -27,7 +27,9 @@ labels · collection/export state.
 **Retain actual stage inputs, not hash-only references.** Unsupported or
 forbidden fields carry reasons from the controlled vocabulary
 (`unsupported_by_adapter`, `not_captured_at_stage`, `consent_disabled`,
-`source_deleted`, `unreliable_target`, `not_applicable`).
+`source_deleted`, `unreliable_target`, `not_applicable`, and — M04
+remediation — `retention_write_failed`: the stage ran but its evidence
+could not be retained).
 
 ## Consent and retention
 
@@ -64,13 +66,20 @@ the envelope keeps the honest `not_captured_at_stage` reason. See
 **M04 remediation (2026-09-25).** When the stage RAN but its evidence
 could not be retained (a normalized-text or ledger write, or either
 lease, failed), the slot carries the distinct missing reason
-`retention_write_failed`, no partial artifact id is referenced, and a
-content-free `training.capture_failed` event names the failed step —
-dictation is unaffected (M04-AUDIT-16). The block gains an optional
-`policy_source` (`job_snapshot` | `current_default`): whether the edits
-came from the job's own captured policy or from a clearly identified
-new snapshot for a job that captured none (a retry of retained audio;
-M04-AUDIT-21). Additive; no existing field changed meaning.
+`retention_write_failed` and a content-free `training.capture_failed`
+event names the failed step — dictation is unaffected (M04-AUDIT-16).
+A normalized-text artifact that was fully published (written and
+leased) before a ledger failure stays referenced as
+`artifact_ids.normalization` and as cleanup's parent (it is what
+cleanup read); a half-published artifact or ledger is never referenced
+(review R16). The block gains an optional
+`policy_source` (`job_snapshot` | `retry_unscoped_default` |
+`current_default`): the job's own captured policy; a retry of retained
+audio, which runs under a new snapshot that belongs to no destination
+(configured profile, global dictionary and manifest skills, unscoped
+vocabulary — never the previous job's workspace skills or context;
+review R15); or the configured-profile fallback for a job whose
+hotkey-down capture failed (M04-AUDIT-21). Additive; no existing field changed meaning.
 
 ## M05 live status (context family)
 
