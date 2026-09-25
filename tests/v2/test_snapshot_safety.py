@@ -340,6 +340,29 @@ def test_wal_content_is_captured_consistently():
 
 
 @case
+def test_idle_wal_database_is_not_a_false_change():
+    # A WAL-mode database with no open connection and no -wal file (the
+    # installed pre-M02 app never opens stats.db): SQLite's own read-only
+    # open creates an empty -wal/-shm. That is recorded as a side effect,
+    # not reported as a content change.
+    with tempfile.TemporaryDirectory() as td:
+        app, log = make_sources(td, wal=True)
+        db = app / "stats.db"
+        assert not pathlib.Path(str(db) + "-wal").exists()
+        main_before = sha256_file(db)
+        rc, _ = run(app, log, pathlib.Path(td) / "ev")
+        assert rc == 0, rc
+        m = manifest_of(published(pathlib.Path(td) / "ev")[0])
+        e = next(x for x in m["entries"] if x["kind"] == "sqlite_backup")
+        assert e["status"] == "unchanged", e
+        assert sha256_file(db) == main_before
+        created = e["companions_created_by_read"]
+        assert "-wal" in created, created
+        assert pathlib.Path(str(db) + "-wal").stat().st_size == 0
+    print("ok  idle WAL database: read-created empty companions recorded, not a change")
+
+
+@case
 def test_missing_required_source_is_inventoried_and_incomplete():
     with tempfile.TemporaryDirectory() as td:
         app, log = make_sources(td)

@@ -172,12 +172,21 @@ def _file_identity(p: pathlib.Path):
 
 def sqlite_fingerprint(src: pathlib.Path) -> dict:
     """Hash of the main database file plus every companion that can hold
-    committed-but-uncheckpointed content."""
+    committed-but-uncheckpointed content. An absent and a zero-length
+    companion both hold no content (None): SQLite's read-only open of a
+    WAL-mode database with no other connection creates an empty -wal."""
     fp = {"main": sha256_file(src)}
     for suffix in SQLITE_COMPANIONS_HASHED:
         comp = pathlib.Path(str(src) + suffix)
-        fp[suffix] = sha256_file(comp) if comp.exists() else None
+        fp[suffix] = sha256_file(comp) if comp.is_file() \
+            and comp.stat().st_size > 0 else None
     return fp
+
+
+def _companions_present(src: pathlib.Path) -> set:
+    return {suffix for suffix in SQLITE_COMPANIONS_HASHED
+            + SQLITE_COMPANIONS_INVENTORIED
+            if pathlib.Path(str(src) + suffix).exists()}
 
 
 def sqlite_companion_inventory(src: pathlib.Path) -> dict:
@@ -251,10 +260,16 @@ def _capture_sqlite(src, staging, final, name):
         return entry
     entry["source_identity"] = _file_identity(src)
     entry["companions"] = sqlite_companion_inventory(src)
+    present_before = _companions_present(src)
     try:
         before = sqlite_fingerprint(src)
         sha = snapshot_sqlite(src, staging / name)
         after = sqlite_fingerprint(src)
+        created = sorted(_companions_present(src) - present_before)
+        # Recorded, never hidden and never deleted: SQLite itself creates
+        # empty -wal/-shm files when a WAL-mode database is opened read-only
+        # with no other connection. They carry no database content.
+        entry["companions_created_by_read"] = created
         check = sqlite3.connect(f"file:{staging / name}?mode=ro", uri=True)
         try:
             integrity = check.execute("PRAGMA integrity_check").fetchone()[0]
