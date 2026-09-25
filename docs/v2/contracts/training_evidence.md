@@ -61,6 +61,17 @@ raw artifact plus the ledger (AC05). When the stage does not run
 the envelope keeps the honest `not_captured_at_stage` reason. See
 `normalization.md` for the stage contract.
 
+**M04 remediation (2026-09-25).** When the stage RAN but its evidence
+could not be retained (a normalized-text or ledger write, or either
+lease, failed), the slot carries the distinct missing reason
+`retention_write_failed`, no partial artifact id is referenced, and a
+content-free `training.capture_failed` event names the failed step —
+dictation is unaffected (M04-AUDIT-16). The block gains an optional
+`policy_source` (`job_snapshot` | `current_default`): whether the edits
+came from the job's own captured policy or from a clearly identified
+new snapshot for a job that captured none (a retry of retained audio;
+M04-AUDIT-21). Additive; no existing field changed meaning.
+
 ## M05 live status (context family)
 
 The S29.4 context field family is now captured live: with collection

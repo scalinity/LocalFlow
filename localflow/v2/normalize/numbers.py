@@ -40,42 +40,65 @@ YEAR_MIN, YEAR_MAX = 1000, 2999
 
 
 class LocaleTables:
-    """Word tables and rendering rules for one locale."""
+    """Word tables and rendering rules for one locale. Built from the
+    policy's deeply frozen copy and sealed by the policy: its tables are
+    read-only views and its attributes cannot be reassigned
+    (M04-AUDIT-12)."""
 
-    def __init__(self, name: str, data: dict):
+    def __init__(self, name: str, data):
         self.name = name
-        self.units: dict[str, int] = data["units"]
-        self.teens: dict[str, int] = data["teens"]
-        self.tens: dict[str, int] = data["tens"]
-        self.hundreds_mult: dict[str, int] = data.get("hundreds_mult", {})
-        self.hundreds_val: dict[str, int] = data.get("hundreds_val", {})
-        self.big_scales: dict[str, int] = {
+        self.units = data["units"]
+        self.teens = data["teens"]
+        self.tens = data["tens"]
+        self.hundreds_mult = data.get("hundreds_mult", {})
+        self.hundreds_val = data.get("hundreds_val", {})
+        self.big_scales = {
             k: v for k, v in data.get("big_scales", {}).items()
             if v >= 1000}
         self.connector: str | None = data.get("connector")
-        self.connector_states: set[str] = set(
-            data.get("connector_states", []))
-        self.integer_stop_after: set[str] = {
-            *STOP_AFTER_INTEGER, *data.get("integer_stop_after", [])}
-        self.sign_words: dict[str, int] = data.get("sign_words", {})
-        self.decimal_words: set[str] = set(data.get("decimal_words", []))
-        self.percent_words: set[str] = set(data.get("percent_words", []))
-        self.pp_words: list[str] = data.get("percentage_point_words", [])
-        self.currency_words: dict[str, str] = data.get("currency_words", {})
-        self.currency_codes: dict[str, str] = data.get("currency_codes", {})
-        self.months: dict[str, int] = data.get("months", {})
-        self.ordinal_words: dict[str, int] = data.get("ordinal_words", {})
+        self.connector_states = frozenset(
+            data.get("connector_states", ()))
+        self.integer_stop_after = frozenset(
+            {*STOP_AFTER_INTEGER, *data.get("integer_stop_after", ())})
+        self.sign_words = data.get("sign_words", {})
+        self.decimal_words = frozenset(data.get("decimal_words", ()))
+        self.percent_words = frozenset(data.get("percent_words", ()))
+        self.pp_words = tuple(data.get("percentage_point_words", ()))
+        self.currency_words = data.get("currency_words", {})
+        self.currency_codes = data.get("currency_codes", {})
+        self.months = data.get("months", {})
+        self.ordinal_words = data.get("ordinal_words", {})
         self.grouping = data.get("grouping_separator", ",")
         self.decimal_sep = data.get("decimal_separator", ".")
         self.percent_space = data.get("percent_rendering") == "space"
         self.currency_before = data.get("currency_before", True)
         self.date_rendering = data.get("date_rendering", "month_day")
-        self.phone_groups: list[int] = data.get("phone_groups", [3, 3, 4])
-        self.number_words: set[str] = (
+        self.phone_groups = tuple(data.get("phone_groups", (3, 3, 4)))
+        # Month names that are also ordinary words ("may", "march",
+        # "august"): a date needs evidence beyond the word (M04-AUDIT-07).
+        self.ambiguous_months = frozenset(
+            data.get("ambiguous_month_words", ()))
+        self.date_previous = frozenset(data.get("date_previous_words", ()))
+        self.number_words = frozenset(
             set(self.units) | set(self.teens) | set(self.tens)
             | set(self.hundreds_mult) | set(self.hundreds_val)
             | set(self.big_scales) | set(self.sign_words)
             | self.decimal_words)
+        self.cardinal_words = frozenset(
+            set(self.units) | set(self.teens) | set(self.tens)
+            | set(self.hundreds_mult) | set(self.hundreds_val)
+            | set(self.big_scales))
+        from types import MappingProxyType
+        self.big_scales = MappingProxyType(dict(self.big_scales))
+
+    def seal(self) -> None:
+        object.__setattr__(self, "_sealed", True)
+
+    def __setattr__(self, name, value):
+        if getattr(self, "_sealed", False):
+            raise AttributeError(
+                f"LocaleTables is immutable (cannot set {name!r})")
+        object.__setattr__(self, name, value)
 
     # ---- rendering ----------------------------------------------------------
 
@@ -95,6 +118,20 @@ class LocaleTables:
         whole = abs(int(value))
         out = f"{self.group_int(whole)}{self.decimal_sep}{frac_digits}"
         return f"-{out}" if neg else out
+
+    def render_exact(self, value) -> str:
+        """Render an exact value with no spoken fraction pattern (a
+        scaled quantity): integral values as grouped integers, a
+        non-integral value with its exact minimal fraction — never
+        truncated through int() (M04-AUDIT-03)."""
+        d = Decimal(value)
+        if d == d.to_integral_value():
+            return self.group_int(int(d)) if d >= 0 else \
+                "-" + self.group_int(-int(d))
+        text = format(abs(d).normalize(), "f")
+        whole, frac = text.split(".")
+        out = f"{self.group_int(int(whole))}{self.decimal_sep}{frac}"
+        return f"-{out}" if d < 0 else out
 
     def render_percent(self, text_value: str) -> str:
         gap = " " if self.percent_space else ""
@@ -123,12 +160,29 @@ def parse_cardinal(words: list[str], t: LocaleTables):
     the grammar honest: "twenty six" parses, "two one", "one ninety" and
     "twenty thirty" stop before the illegal word — bare digit runs
     ("zero zero seven") parse as a single units word, never as a
-    compound cardinal.
+    compound cardinal. Malformed scale chains stop too (see
+    ``scan_cardinal``).
     """
+    value, count, _malformed = scan_cardinal(words, t)
+    if not count:
+        return None
+    return value, count
+
+
+def scan_cardinal(words: list[str], t: LocaleTables):
+    """(value, count, malformed) — the longest valid cardinal prefix and
+    whether it stopped on a MALFORMED scale (M04-AUDIT-04): an explicit
+    zero multiplier ("zero hundred", "zero thousand"), a scale with no
+    multiplier group after another scale ("one thousand million"), or a
+    scale not smaller than the previous one ("one million million").
+    An explicit zero is tracked separately from an omitted multiplier —
+    ``(current or 1)`` would turn "zero thousand" into 1000."""
     total = 0
     current = 0
     count = 0
     seen = False
+    explicit_zero = False
+    last_scale = None
     # What the current (<1000) group ends with: "empty", "unit" (a bare
     # units word — may still take "hundred"), "tens" (may still take
     # units), "unit_set" (units after tens/hundreds — terminal),
@@ -141,6 +195,7 @@ def parse_cardinal(words: list[str], t: LocaleTables):
         if w in t.units:
             if state == "empty":
                 state = "unit"
+                explicit_zero = t.units[w] == 0
             elif state == "tens":
                 state = "unit_set"
             elif state == "hundreds":
@@ -168,14 +223,25 @@ def parse_cardinal(words: list[str], t: LocaleTables):
         elif w in t.hundreds_mult:
             if state not in ("empty", "unit"):
                 break  # "twenty hundred", "hundred hundred"
-            current = (current or 1) * t.hundreds_mult[w]
+            if state == "unit" and explicit_zero:
+                return total + current, count, True  # "zero hundred"
+            current = (current if state == "unit" else 1) \
+                * t.hundreds_mult[w]
             state = "hundreds"
         elif w in t.big_scales:
+            scale = t.big_scales[w]
             if state == "empty" and not seen:
                 break
-            total += (current or 1) * t.big_scales[w]
+            if state == "empty" or (state == "unit" and explicit_zero) \
+                    or (last_scale is not None and scale >= last_scale):
+                # "one thousand million", "zero thousand",
+                # "one million two million"
+                return total + current, count, True
+            total += current * scale
             current = 0
+            last_scale = scale
             state = "empty"
+            explicit_zero = False
         elif w == t.connector and seen and state in t.connector_states \
                 and i + 1 < n and _is_num_word(words[i + 1], t):
             pass  # "one hundred and twenty", "treinta y cinco"
@@ -184,9 +250,7 @@ def parse_cardinal(words: list[str], t: LocaleTables):
         count += 1
         seen = True
         i += 1
-    if not seen:
-        return None
-    return total + current, count
+    return total + current, count, False
 
 
 def _is_num_word(w: str, t: LocaleTables) -> bool:
@@ -241,8 +305,15 @@ def parse_signed_quantity(words: list[str], t: LocaleTables):
         if j < len(rest) and rest[j] in t.big_scales:
             dec *= Decimal(t.big_scales[rest[j]])
             j += 1
-            value = dec
-            frac = None  # scaled to an integer-valued quantity
+            # The spoken fraction digits no longer describe the scaled
+            # value: keep it EXACT (an integral result becomes an int,
+            # a fractional one keeps its minimal exact digits) — never
+            # int()-truncated (M04-AUDIT-03).
+            if dec == dec.to_integral_value():
+                value, frac = int(dec), None
+            else:
+                value = dec
+                frac = format(dec.normalize(), "f").split(".")[1]
         else:
             value = dec
     elif j < len(rest) and rest[j] in t.big_scales:
@@ -277,8 +348,9 @@ def parse_year(words: list[str], t: LocaleTables):
 
 def _quantity_at(host, i):
     """Parse a spoken quantity (with optional sign word) starting at
-    token i. Returns ParsedNumber or None."""
-    words = [tok.word for tok in host.tokens[i:i + 14]]
+    token i, never across a structural delimiter. Returns ParsedNumber
+    or None."""
+    words = host.words(i, 14)
     if not words:
         return None
     return parse_signed_quantity(words, host.tables)
@@ -287,11 +359,67 @@ def _quantity_at(host, i):
 def _quantity_text(pn: ParsedNumber, t: LocaleTables) -> str:
     if pn.frac_digits is not None:
         return t.render_decimal(pn.value * pn.sign, pn.frac_digits)
-    return t.group_int(int(pn.value) * pn.sign)
+    return t.render_exact(pn.value * pn.sign)
+
+
+def _signed(pn: ParsedNumber):
+    """The quantity's typed value: magnitude composed with its sign —
+    every consumer validates and records THIS, the value it renders
+    (M04-AUDIT-05)."""
+    v = pn.value * pn.sign
+    return int(v) if isinstance(v, int) or (
+        isinstance(v, Decimal) and pn.frac_digits is None
+        and v == v.to_integral_value()) else v
 
 
 def _span(host, i, count) -> Span:
-    return Span(host.tokens[i].start, host.tokens[i + count - 1].end)
+    """Span of tokens i..i+count-1 — their lexical cores, so edge
+    punctuation stays outside every edit (M04-AUDIT-02)."""
+    return host.core_span(i, i + count)
+
+
+# Words that continue spoken digit/number speech: a number standing
+# next to one of these is part of a longer run (a code, a time, a
+# version, a second quantity), never a standalone count.
+_DIGIT_SPEECH = frozenset({"oh", "o", "dot"})
+
+
+def _num_like(host, idx) -> bool:
+    """Token idx is number speech: a cardinal word, a sign or decimal
+    word, or a digit-speech joiner."""
+    w = _word_at(host, idx)
+    if w is None:
+        return False
+    t = host.tables
+    return (w in t.cardinal_words or w in t.sign_words
+            or w in t.decimal_words or w in _DIGIT_SPEECH)
+
+
+def _juxtaposed_before(host, start) -> bool:
+    """The phrase starting at token ``start`` directly follows other
+    number speech in the same clause ("three FIFTEEN minute", "point
+    FIVE percent", "one ninety two dot ONE"): it is the tail of a
+    longer run, so no grammar may convert it alone — adjacent digits
+    ("3 15") would change how the run reads (M04-AUDIT-06/-08)."""
+    return start > 0 and not host.brk[start] and _num_like(host, start - 1)
+
+
+def _juxtaposed_after(host, end) -> bool:
+    """Number speech continues right after the phrase ending before
+    token ``end`` (same clause)."""
+    return end < len(host.tokens) and not host.brk[end] \
+        and _num_like(host, end)
+
+
+def _quantified(host, start) -> bool:
+    """A quantity that opens with a bare scale word right after a
+    quantifier ("a few HUNDRED thousand", "several hundred") is
+    approximate prose, not an exact amount (M04-AUDIT-04)."""
+    t = host.tables
+    first = _word_at(host, start)
+    return (first in t.hundreds_mult or first in t.big_scales) \
+        and start > 0 and not host.brk[start] \
+        and (_word_at(host, start - 1) or "") in QUANTIFIER_PREV_SCALE
 
 
 def _text_of(host, span: Span) -> str:
@@ -312,7 +440,10 @@ def grammar_integer(host):
     """Number words followed by a non-function word → digits ("twelve
     retries" → "12 retries"); single "one" after idioms stays prose.
     Bare digit runs belong to the phone/code grammars and a bare "zero"
-    is prose, not a count."""
+    is prose, not a count. A number standing next to other number
+    speech ("three fifteen minute breaks", "point five percent", "five
+    minus three") is part of a longer run and stays words; a quantity
+    after a quantifier ("a few hundred thousand") is approximate prose."""
     if not host.profile.get("integers"):
         return
     t = host.tables
@@ -323,30 +454,24 @@ def grammar_integer(host):
             i += 1
             continue
         pn = _quantity_at(host, i)
-        if pn is None or pn.value < 0 or int(pn.value) == 0:
+        if pn is None or pn.value < 0 or pn.value == 0:
             i += 1
             continue
         end = _end_index(host, i, pn.count)
         nxt = _word_at(host, end)
-        if nxt is None or nxt in host.tables.integer_stop_after:
+        if nxt is None or end >= len(host.tokens) or host.brk[end] \
+                or nxt in host.tables.integer_stop_after:
             i += 1
             continue
-        if int(pn.value) == 1 and pn.count == 1 \
+        if pn.value == 1 and pn.count == 1 \
                 and _word_at(host, i - 1) in IDIOM_PREV_ONE:
             i += 1
             continue
-        if pn.count == 1 and tok.word in t.hundreds_mult \
-                and (_word_at(host, i - 1) or "") in QUANTIFIER_PREV_SCALE:
-            i += 1  # "a few hundred people" — quantified prose, not a count
-            continue
-        if pn.count == 1 and tok.word in t.units \
-                and (nxt in t.units
-                     or (_word_at(host, i - 1) or "") in t.units):
-            i += 1  # inside a spoken digit run (phone/code territory)
-            continue
-        if pn.count == 1 and (tok.word in t.teens or tok.word in t.tens) \
-                and nxt in (t.units | t.teens | t.tens):
-            i += 1  # year-speak ("nineteen eighty four") — dates own it
+        if _quantified(host, i) or _juxtaposed_before(host, i) \
+                or _juxtaposed_after(host, end):
+            # quantified prose / inside a longer number run (digit run,
+            # year speech, time, version, a second quantity)
+            i += pn.count if pn.count > 1 else 1
             continue
         if pn.frac_digits is None:
             span = _span(host, i, pn.count)
@@ -354,7 +479,7 @@ def grammar_integer(host):
             yield Proposal(
                 layer=4, cls="integer", op="number_word_to_digits",
                 span=span, input_text=_text_of(host, span),
-                output_text=out, value=int(pn.value) * pn.sign,
+                output_text=out, value=_signed(pn),
                 join=JOIN_WORD)
         # A decimal ("one point two six …") is the decimal grammar's job.
         i += pn.count if pn.count > 1 else 1
@@ -362,27 +487,33 @@ def grammar_integer(host):
 
 def grammar_anchored_integer(host):
     """Technical anchors convert a trailing cardinal ("milestone
-    fourteen" → "milestone 14")."""
+    fourteen" → "milestone 14"); the typed value carries the spoken
+    sign ("step negative five" → -5, M04-AUDIT-05). A cardinal followed
+    by more number speech ("section five thirty") stays words."""
     anchors = set(host.profile.get("integer_anchors", []))
     for i, tok in enumerate(host.tokens):
-        if tok.word not in anchors:
+        if tok.word not in anchors or i + 1 >= len(host.tokens) \
+                or host.brk[i + 1]:
             continue
         j = i + 1
         pn = _quantity_at(host, j)
         if pn is None or pn.frac_digits is not None:
+            continue
+        if _juxtaposed_after(host, j + pn.count):
             continue
         span = _span(host, j, pn.count)
         yield Proposal(
             layer=4, cls="anchored_integer", op="number_word_to_digits",
             span=span, input_text=_text_of(host, span),
             output_text=_quantity_text(pn, host.tables),
-            value=int(pn.value), join=JOIN_WORD)
+            value=_signed(pn), join=JOIN_WORD)
 
 
 def grammar_decimal(host):
     """Sign + cardinal + decimal word + digit run ("minus zero point zero
-    five" → "-0.05"). More than one decimal word in the phrase is
-    version-speak, not a decimal (see grammar_version)."""
+    five" → "-0.05"). A decimal never starts inside a longer number run
+    ("one point TWENTY SIX point four") and a run with a second decimal
+    word is version-speak, owned by grammar_numeric_chains."""
     t = host.tables
     i = 0
     while i < len(host.tokens):
@@ -392,44 +523,35 @@ def grammar_decimal(host):
         if host.tokens[j].word in t.sign_words:
             sign = t.sign_words[host.tokens[j].word]
             j += 1
-        words_ahead = [tk.word for tk in host.tokens[j:j + 14]]
-        card = parse_cardinal(words_ahead, t)
+            if j >= len(host.tokens) or host.brk[j]:
+                i += 1
+                continue
+        if _juxtaposed_before(host, start):
+            i += 1
+            continue
+        card = parse_cardinal(host.words(j, 14), t)
         if card is None:
             i += 1
             continue
         value, count = card
         k = j + count
-        if _word_at(host, k) not in t.decimal_words:
+        if k >= len(host.tokens) or host.brk[k] \
+                or _word_at(host, k) not in t.decimal_words:
             i += 1
             continue
-        run = parse_digit_run(
-            [tk.word for tk in host.tokens[k + 1:k + 14]], t, min_len=1)
+        if k + 1 >= len(host.tokens) or host.brk[k + 1]:
+            i += 1
+            continue
+        run = parse_digit_run(host.words(k + 1, 13), t, min_len=1)
         if run is None:
             i += 1
             continue
         frac, dcount = run
-        # A second decimal word right after the fraction digits is
-        # version-speak ("one point two six point four"), not a decimal.
         consumed = k + 1 + dcount
-        if _word_at(host, consumed) in t.decimal_words:
-            # Longest version-shaped run: digits/points to the end.
-            tail = consumed
-            while True:
-                nxt_run = parse_digit_run(
-                    [tk.word for tk in host.tokens[tail + 1:tail + 14]],
-                    t, min_len=1)
-                if nxt_run is None:
-                    break
-                tail += 1 + nxt_run[1]
-                if _word_at(host, tail) not in t.decimal_words:
-                    break
-            span = _span(host, start, tail - start)
-            yield Proposal(
-                layer=4, cls="version", op="version_words",
-                span=span, input_text=_text_of(host, span),
-                output_text="", value=None,
-                reason="unanchored_version", review=True)
-            i = tail
+        if consumed < len(host.tokens) and not host.brk[consumed] \
+                and _word_at(host, consumed) in t.decimal_words:
+            # version-speak: the chain grammar owns (and flags) it
+            i = consumed
             continue
         dec = Decimal(int(value)) + Decimal(f"0.{frac}")
         total = consumed - start
@@ -442,6 +564,126 @@ def grammar_decimal(host):
         i = start + total
 
 
+def grammar_numeric_chains(host):
+    """Maximal number-speech chains that no single grammar may own in
+    part (M04-AUDIT-08). Each flagged chain is a STRUCTURAL review
+    region — nothing inside or straddling it converts:
+
+    * two or more decimal words without a version anchor
+      ("one point twenty six point four") — unanchored version-speak;
+    * a chain opening with a decimal word ("point five percent") — the
+      whole-number part is missing; converting "five percent" would
+      change the value;
+    * number components joined by "dot" whose arity is not the four
+      octets of an IPv4 address ("one dot two dot three",
+      "... dot four dot five"), or dots mixed with decimal words.
+    """
+    t = host.tables
+    tokens = host.tokens
+    n = len(tokens)
+
+    def member(k):
+        w = tokens[k].word
+        return tokens[k].is_word and (
+            w in t.cardinal_words or w in t.sign_words
+            or w in t.decimal_words or w == "dot" or w in ("oh", "o"))
+
+    i = 0
+    while i < n:
+        if not member(i):
+            i += 1
+            continue
+        j = i
+        while j + 1 < n and member(j + 1) and not host.brk[j + 1]:
+            j += 1
+        # trim joiners that do not sit between number words
+        lo, hi = i, j
+        while lo <= hi and tokens[lo].word == "dot":
+            lo += 1
+        while hi >= lo and (tokens[hi].word == "dot"
+                            or tokens[hi].word in t.decimal_words
+                            and hi > lo):
+            hi -= 1
+        i = j + 1
+        if lo > hi:
+            continue
+        words = [tokens[k].word for k in range(lo, hi + 1)]
+        points = sum(1 for w in words if w in t.decimal_words)
+        dots = sum(1 for w in words if w == "dot")
+        reason = None
+        lead = 1 if words[0] in t.sign_words else 0
+        if len(words) > lead + 1 and words[lead] in t.decimal_words \
+                and words[lead + 1] in t.cardinal_words:
+            reason = "leading_decimal"
+        elif dots and points:
+            reason = "dotted_number_arity"
+        elif points >= 2:
+            reason = "unanchored_version"
+        elif dots and dots + 1 != 4:
+            reason = "dotted_number_arity"
+        if reason is None or not any(w in t.cardinal_words
+                                     for w in words):
+            continue
+        span = _span(host, lo, hi - lo + 1)
+        yield Proposal(
+            layer=4, cls="version" if reason == "unanchored_version"
+            else "number_chain", op="number_chain",
+            span=span, input_text=_text_of(host, span),
+            output_text="", value=None, reason=reason, review=True)
+
+
+def grammar_malformed_quantity(host):
+    """Whole-span refusal of malformed or quantified scale speech
+    (M04-AUDIT-04): an explicit zero multiplier, a repeated or
+    increasing scale, or a bare scale opening a quantity right after a
+    quantifier ("a few hundred thousand dollars"). The number run
+    becomes a STRUCTURAL review region so no currency, percent, unit or
+    integer grammar converts a valid-looking part of it."""
+    t = host.tables
+    tokens = host.tokens
+    n = len(tokens)
+    i = 0
+    while i < n:
+        if tokens[i].word not in t.cardinal_words or not tokens[i].is_word:
+            i += 1
+            continue
+        j = i
+        while j + 1 < n and not host.brk[j + 1] and (
+                tokens[j + 1].word in t.cardinal_words
+                or tokens[j + 1].word == t.connector):
+            j += 1
+        words = [tokens[k].word for k in range(i, j + 1)]
+        reason = None
+        if _quantified(host, i):
+            reason = "quantified_scale"
+        else:
+            pos = 0
+            while pos < len(words):
+                # A cardinal never spans more than the 14-word window
+                # every other grammar parses; bounding the slice keeps
+                # a long number-word run linear.
+                _v, c, bad = scan_cardinal(words[pos:pos + 16], t)
+                if bad:
+                    reason = "malformed_scale"
+                    break
+                pos += c if c else 1
+        if reason is not None:
+            span = _span(host, i, j - i + 1)
+            yield Proposal(
+                layer=4, cls="quantity", op="number_words",
+                span=span, input_text=_text_of(host, span),
+                output_text="", value=None, reason=reason, review=True)
+        i = j + 1
+
+
+def _seq_at(host, i, words) -> bool:
+    """tokens[i:] spell ``words`` as one connected phrase."""
+    n = len(words)
+    return i + n <= len(host.tokens) and \
+        [tk.word for tk in host.tokens[i:i + n]] == words \
+        and host.connected(i, i + n)
+
+
 def grammar_percent(host):
     """Number phrase + percent word(s) → "N%"; the value is preserved so
     later checks know 12% and "twelve percent" are the same quantity.
@@ -452,8 +694,7 @@ def grammar_percent(host):
         words = phrase.split()
         n = len(words)
         for i in range(len(host.tokens) - n + 1):
-            seq = [tk.word for tk in host.tokens[i:i + n]]
-            if seq != words:
+            if not _seq_at(host, i, words):
                 continue
             pn = _quantity_before(host, i, t)
             if pn is None:
@@ -465,7 +706,7 @@ def grammar_percent(host):
                 layer=4, cls="percent", op="percent_words",
                 span=span, input_text=_text_of(host, span),
                 output_text=t.render_percent(num_text),
-                value=pn.value * pn.sign, unit="%", join=JOIN_WORD)
+                value=_signed(pn), unit="%", join=JOIN_WORD)
 
 
 def grammar_percentage_points(host):
@@ -475,7 +716,7 @@ def grammar_percentage_points(host):
     for phrase in t.pp_words:
         words = phrase.split()
         for i in range(len(host.tokens) - len(words) + 1):
-            if [tk.word for tk in host.tokens[i:i + len(words)]] != words:
+            if not _seq_at(host, i, words):
                 continue
             pn = _quantity_before(host, i, t)
             if pn is None:
@@ -487,28 +728,34 @@ def grammar_percentage_points(host):
                 op="percentage_point_words",
                 span=span, input_text=_text_of(host, span),
                 output_text=(f"{_quantity_text(pn, t)} "
-                             f"{_text_of(host, Span(host.tokens[i].start,
-                                                   host.tokens[i + len(words) - 1].end))}"),
-                value=pn.value * pn.sign, unit="percentage_points",
+                             f"{_text_of(host, host.core_span(i, i + len(words)))}"),
+                value=_signed(pn), unit="percentage_points",
                 join=JOIN_WORD)
 
 
 def _quantity_before(host, i, t):
-    """Parse a quantity ending right before token i. A bare multiplier
-    directly after a quantifier word is prose, not a quantity — return
-    None so no typed grammar rewrites "a few hundred dollars"."""
+    """Parse a quantity ending right before token i, inside the same
+    clause (no structural delimiter between its words or before token
+    i). None when it is quantified prose ("a few hundred dollars"), the
+    tail of a longer number run ("three FIFTEEN minute", "point FIVE
+    percent"), or does not parse — so no typed grammar rewrites part of
+    a phrase it does not own."""
+    if i <= 0 or host.brk[i]:
+        return None
     best = None
     for back in range(1, min(13, i + 1)):
+        if back > 1 and host.brk[i - back + 1]:
+            break  # a delimiter inside the would-be quantity
         words = [tk.word for tk in host.tokens[i - back:i]]
         pn = parse_signed_quantity(words, t)
         if pn is not None and pn.count == back:
             best = pn
-    if best is not None and best.count == 1:
-        first = host.tokens[i - 1].word
-        prev_idx = i - 2
-        if first in t.hundreds_mult and prev_idx >= 0 \
-                and host.tokens[prev_idx].word in QUANTIFIER_PREV_SCALE:
-            return None
+    if best is None:
+        return None
+    start = i - best.count
+    first = start + (1 if host.tokens[start].word in t.sign_words else 0)
+    if _quantified(host, first) or _juxtaposed_before(host, start):
+        return None
     return best
 
 
@@ -536,7 +783,7 @@ def grammar_currency(host):
         yield Proposal(
             layer=4, cls="currency", op="currency_words",
             span=span, input_text=_text_of(host, span),
-            output_text=out, value=pn.value * pn.sign,
+            output_text=out, value=_signed(pn),
             unit=t.currency_codes.get(cur, cur), join=JOIN_WORD)
 
 
@@ -552,27 +799,50 @@ TIME_PREVIOUS = {
 
 def grammar_time(host):
     """'five thirty PM' → '5:30 PM'. The meridiem is kept only when
-    spoken; no timezone or AM/PM is ever invented (S10)."""
+    spoken; no timezone or AM/PM is ever invented (S10).
+
+    Time ownership needs EVIDENCE (M04-AUDIT-06): a time preposition
+    right before the hour ("at five thirty") or a spoken meridiem
+    ("five thirty PM"). Utterance start alone is not evidence ("three
+    fifteen minute breaks", "one oh five"), and an hour+minute pair
+    followed by a duration unit is a count plus a duration, never a
+    clock time ("for three fifteen minute breaks")."""
     t = host.tables
     meridiems = host.profile.get("time_words", {})
+    units = host.profile.get("dimension_units", {})
+    durations = {w for w, sym in units.items()
+                 if sym in ("s", "min", "h", "d", "wk")}
     i = 0
     while i < len(host.tokens) - 1:
-        hour_tok, minute_tok = host.tokens[i], host.tokens[i + 1]
+        hour_tok = host.tokens[i]
         prev = _word_at(host, i - 1)
-        if i > 0 and prev not in TIME_PREVIOUS:
-            i += 1
+        anchored = i > 0 and not host.brk[i] and prev in TIME_PREVIOUS
+        if i > 0 and not anchored and not host.brk[i] \
+                and _num_like(host, i - 1):
+            i += 1  # inside a longer number run
             continue
         hour = _single_small_number(hour_tok.word, t)
-        if hour is None or not 1 <= hour <= 12:
+        if hour is None or not 1 <= hour <= 12 or host.brk[i + 1]:
             i += 1
             continue
-        minute, mcount = _minute_parse(host.tokens, i + 1, t)
+        minute, mcount = _minute_parse(host, i + 1, t)
         if minute is None or minute < 1:
             i += 1
             continue
         end = i + 1 + mcount
-        suffix = _meridiem_at(host, end, meridiems)
-        if suffix[0]:
+        suffix = ("", 0)
+        if end < len(host.tokens) and not host.brk[end]:
+            suffix = _meridiem_at(host, end, meridiems)
+        if not suffix[0]:
+            if not anchored:
+                i += 1
+                continue
+            if end < len(host.tokens) and not host.brk[end] \
+                    and (_word_at(host, end) in durations
+                         or _num_like(host, end)):
+                i += 1  # "for three fifteen minute breaks"
+                continue
+        else:
             end += suffix[1]
         span = _span(host, i, end - i)
         clock = f"{hour}:{minute:02d}"
@@ -588,7 +858,7 @@ def grammar_time(host):
 def _meridiem_at(host, end, meridiems):
     """(suffix like ' PM', tokens consumed) at token index end."""
     w = _word_at(host, end)
-    w2 = _word_at(host, end + 1)
+    w2 = _word_at(host, end + 1) if host.connected(end, end + 2) else None
     if w is None:
         return "", 0
     pair = f"{w} {w2}" if w2 else None
@@ -609,14 +879,16 @@ def _single_small_number(w: str, t: LocaleTables):
     return None
 
 
-def _minute_parse(tokens, i, t):
+def _minute_parse(host, i, t):
     """Minutes 1..59 as spoken: 'oh five', 'thirty', 'thirty five',
     'fifteen'. A bare single unit ('five five') is NOT a minute — that
     shape belongs to phone/code digit runs, so a unit only counts after
     'oh'/'o' or as tens/teens."""
+    tokens = host.tokens
     w = tokens[i].word
+    joined = i + 1 < len(tokens) and not host.brk[i + 1]
     if w in ("oh", "o"):
-        if i + 1 < len(tokens) and tokens[i + 1].word in t.units:
+        if joined and tokens[i + 1].word in t.units:
             v = t.units[tokens[i + 1].word]
             return (v, 2) if 1 <= v <= 59 else (None, 0)
         return None, 0
@@ -624,7 +896,7 @@ def _minute_parse(tokens, i, t):
         v = t.teens[w]
         return (v, 1) if 1 <= v <= 59 else (None, 0)
     if w in t.tens:
-        if i + 1 < len(tokens) and tokens[i + 1].word in t.units \
+        if joined and tokens[i + 1].word in t.units \
                 and t.connector in (None, "and", "y"):
             v = t.tens[w] + t.units[tokens[i + 1].word]
             return (v, 2) if 1 <= v <= 59 else (None, 0)
@@ -635,8 +907,10 @@ def _minute_parse(tokens, i, t):
 
 def _optional_year(host, end, t):
     """(year|None, tokens_consumed) for a spoken year at token index
-    end ("march fourth twenty twenty six")."""
-    ywords = [tk.word for tk in host.tokens[end:end + 6]]
+    end ("march fourth twenty twenty six"), same clause only."""
+    if end >= len(host.tokens) or host.brk[end]:
+        return None, 0
+    ywords = host.words(end, 6)
     if not ywords:
         return None, 0
     y = parse_year(ywords, t)
@@ -648,30 +922,84 @@ def _optional_year(host, end, t):
     return y, yc
 
 
+# Days per month for the NARROW calendar check (design D1): a day past
+# the month's maximum is refused; February allows 29 unless a spoken
+# year makes it a non-leap year. Nothing else about calendars (weekday,
+# era, relative dates) is inferred.
+_MONTH_DAYS = {1: 31, 2: 29, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31,
+               9: 30, 10: 31, 11: 30, 12: 31}
+
+
+def _leap(year: int) -> bool:
+    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
+
+def _date_refusal(month, day, year):
+    """None when the (month, day[, year]) triple can exist; else the
+    review reason."""
+    if not 1 <= day <= _MONTH_DAYS[month]:
+        return "invalid_day"
+    if year is not None and month == 2 and day == 29 and not _leap(year):
+        return "invalid_date"
+    return None
+
+
+def _month_evidence(host, i) -> bool:
+    """A month word that is also an ordinary word ("may", "march",
+    "august") names a month only with evidence: its written
+    capitalization or a date preposition right before it ("on march
+    fourth"). "this may first require approval" stays prose
+    (M04-AUDIT-07)."""
+    t = host.tables
+    tok = host.tokens[i]
+    if tok.word not in t.ambiguous_months:
+        return True
+    if tok.core[:1].isupper():
+        return True
+    return i > 0 and not host.brk[i] and \
+        _word_at(host, i - 1) in t.date_previous
+
+
 def grammar_date(host):
     """Unambiguous month-name dates: 'March fourth' → 'March 4', optional
     spoken year; 'the fourth of March' / 'el cuatro de marzo' render per
-    locale. Numeric dates are never touched."""
+    locale. Numeric dates are never touched. An impossible day (March
+    thirty second, February thirty first) is flagged as a whole, never
+    shortened to a valid-looking prefix."""
     t = host.tables
     for i, tok in enumerate(host.tokens):
-        if tok.word not in t.months:
+        if tok.word not in t.months or not tok.is_word:
             continue
         month = t.months[tok.word]
         j = i + 1
-        day, dcount = _day_parse(host.tokens, j, t)
-        if day is None or not dcount:
+        if j >= len(host.tokens) or host.brk[j]:
             continue
-        if not 1 <= day <= 31:
-            # "March thirty two" — flagged, never repaired (S10 dates).
-            span = _span(host, i, 1 + dcount)
-            yield Proposal(
-                layer=4, cls="date", op="date_words",
-                span=span, input_text=_text_of(host, span),
-                output_text="", value=None, reason="invalid_day",
-                review=True)
+        day, dcount = _day_parse(host, j, t)
+        if day is None or not dcount:
             continue
         end = j + dcount
         year, yc = _optional_year(host, end, t)
+        refusal = _date_refusal(month, day, year) if 1 <= day <= 31 \
+            else "invalid_day"
+        if refusal is not None:
+            # "March thirty two" — flagged, never repaired (S10 dates).
+            stop = end + (yc if year is not None
+                          and refusal == "invalid_date" else 0)
+            span = _span(host, i, stop - i)
+            yield Proposal(
+                layer=4, cls="date", op="date_words",
+                span=span, input_text=_text_of(host, span),
+                output_text="", value=None, reason=refusal,
+                review=True)
+            continue
+        if not _month_evidence(host, i):
+            span = _span(host, i, end - i)
+            yield Proposal(
+                layer=4, cls="date", op="date_words",
+                span=span, input_text=_text_of(host, span),
+                output_text="", value=None,
+                reason="ambiguous_month_word", review=True)
+            continue
         if year is not None:
             end += yc
         span = _span(host, i, end - i)
@@ -689,22 +1017,36 @@ def grammar_date_day_first(host):
     """"the fourth of March" (en) / "el cuatro de marzo" (es)."""
     t = host.tables
     for i in range(len(host.tokens)):
-        day, dcount = _day_parse(host.tokens, i, t)
+        if i > 0 and not host.brk[i] and _num_like(host, i - 1):
+            continue
+        day, dcount = _day_parse(host, i, t)
         if day is None or not 1 <= day <= 31 or not dcount:
             continue
         j = i + dcount
+        if j + 1 >= len(host.tokens) or not host.connected(i, j + 2):
+            continue
         if _word_at(host, j) not in ("of", "de"):
             continue
         m_idx = j + 1
         mword = _word_at(host, m_idx)
         if mword not in t.months:
             continue
+        month = t.months[mword]
         end = m_idx + 1
         year, yc = _optional_year(host, end, t)
+        refusal = _date_refusal(month, day, year)
+        if refusal is not None:
+            stop = end + (yc if year is not None
+                          and refusal == "invalid_date" else 0)
+            span = _span(host, i, stop - i)
+            yield Proposal(
+                layer=4, cls="date", op="date_words",
+                span=span, input_text=_text_of(host, span),
+                output_text="", value=None, reason=refusal, review=True)
+            continue
         if year is not None:
             end += yc
         span = _span(host, i, end - i)
-        month = t.months[mword]
         out = _render_date(host, m_idx, month, day, year)
         yield Proposal(
             layer=4, cls="date", op="date_words",
@@ -715,28 +1057,32 @@ def grammar_date_day_first(host):
             unit="date", join=JOIN_WORD)
 
 
-def _day_parse(tokens, i, t):
+def _day_parse(host, i, t):
     """Day-of-month as spoken: an ordinal ("fourth"), a compound
     tens-ordinal ("twenty third" = 23), a 1-2 word cardinal
     ("twenty six") or article-prefixed ("the fourth", "el cuatro").
-    Returns (value, count) — the caller validates 1..31 and rejects
-    (never repairs) out-of-range days."""
+    Returns (value, count) — the caller validates the day and rejects
+    (never repairs) an impossible one. A tens word followed by an
+    ordinal is ONE compound day even when it is out of range ("thirty
+    second" = 32): it is never shortened to its valid prefix "thirty"
+    (M04-AUDIT-07)."""
+    tokens = host.tokens
     if i >= len(tokens):
         return None, 0
     w = tokens[i].word
+    joined = i + 1 < len(tokens) and not host.brk[i + 1]
     if w in ("the", "el", "la"):
-        day, c = _day_parse(tokens, i + 1, t)
+        if not joined:
+            return None, 0
+        day, c = _day_parse(host, i + 1, t)
         return (day, c + 1) if day is not None else (None, 0)
     if w in t.ordinal_words:
         return t.ordinal_words[w], 1
     # "twenty third" / "thirty first" — tens word plus ordinal unit.
-    if w in t.tens and i + 1 < len(tokens) \
-            and tokens[i + 1].word in t.ordinal_words:
-        v = t.tens[w] + t.ordinal_words[tokens[i + 1].word]
-        if 1 <= v <= 31:
-            return v, 2
+    if w in t.tens and joined and tokens[i + 1].word in t.ordinal_words:
+        return t.tens[w] + t.ordinal_words[tokens[i + 1].word], 2
     words = [w]
-    if i + 1 < len(tokens) and _is_num_word(tokens[i + 1].word, t):
+    if joined and _is_num_word(tokens[i + 1].word, t):
         words.append(tokens[i + 1].word)
     card = parse_cardinal(words, t)
     if card is not None and 1 <= card[0] <= 99:
@@ -763,7 +1109,7 @@ def _year_count(words, t, year):
 def _month_display(host, i) -> str:
     """Month rendering: capitalized for en, lowercase for es (each
     locale's written convention)."""
-    raw = host.tokens[i].raw
+    raw = host.tokens[i].core
     if host.tables.date_rendering == "day_de_month":
         return raw.lower()
     return raw.capitalize()
@@ -771,7 +1117,7 @@ def _month_display(host, i) -> str:
 
 def _render_date(host, month_idx, month, day, year):
     if host.tables.date_rendering == "day_de_month":
-        m = host.tokens[month_idx].raw.lower()
+        m = host.tokens[month_idx].core.lower()
         return (f"{day} de {m} de {year}" if year
                 else f"{day} de {m}")
     m = _month_display(host, month_idx)
@@ -788,10 +1134,12 @@ def grammar_code(host):
         if tok.word not in anchors:
             continue
         j = i + 1
-        if _word_at(host, j) == "is":
+        if j < len(host.tokens) and not host.brk[j] \
+                and _word_at(host, j) == "is":
             j += 1
-        run = parse_digit_run(
-            [tk.word for tk in host.tokens[j:j + 16]], t, min_len=2)
+        if j >= len(host.tokens) or host.brk[j]:
+            continue
+        run = parse_digit_run(host.words(j, 16), t, min_len=2)
         if run is None:
             continue
         digits, count = run
@@ -811,17 +1159,17 @@ def grammar_phone(host):
     i = 0
     tokens = host.tokens
     while i < len(tokens):
-        run = parse_digit_run([tk.word for tk in tokens[i:i + 12]], t,
-                              min_len=1)
+        run = parse_digit_run(host.words(i, 12), t, min_len=1)
         if run is None or run[1] < 2:
             i += 1
             continue
         first, count = run
         j = i + count
         groups = [first]
-        while _word_at(host, j) in seps:
-            nxt = parse_digit_run(
-                [tk.word for tk in tokens[j + 1:j + 12]], t, min_len=1)
+        while j < len(tokens) and not host.brk[j] \
+                and _word_at(host, j) in seps \
+                and j + 1 < len(tokens) and not host.brk[j + 1]:
+            nxt = parse_digit_run(host.words(j + 1, 11), t, min_len=1)
             if nxt is None:
                 break
             groups.append(nxt[0])
@@ -861,13 +1209,13 @@ def grammar_version(host):
     t = host.tables
     anchors = set(host.profile.get("version_anchors", []))
     for i, tok in enumerate(host.tokens):
-        if tok.word not in anchors:
+        if tok.word not in anchors or i + 1 >= len(host.tokens) \
+                or host.brk[i + 1]:
             continue
         j = i + 1
         comps = []
-        count = 0
         ok = True
-        words = [tk.word for tk in host.tokens[j:j + 20]]
+        words = host.words(j, 20)
         # first component
         comp, c = _version_component(words, t)
         if comp is None:
@@ -897,7 +1245,7 @@ def grammar_version(host):
         yield Proposal(
             layer=4, cls="version", op="version_words",
             span=span, input_text=_text_of(host, span),
-            output_text=f"{tok.raw} {'.'.join(comps)}",
+            output_text=f"{tok.core} {'.'.join(comps)}",
             value=".".join(comps), unit="version", join=JOIN_WORD)
 
 
@@ -921,22 +1269,25 @@ def _version_component(words, t):
 def grammar_ip(host):
     """Four octets separated by spoken 'dot' ("one ninety two dot one
     sixty eight dot one dot ten" → 192.168.1.10). Invalid octets are
-    flagged, never repaired. The spoken octet separator is 'dot' in
+    flagged, never repaired; a dotted chain of any other arity is owned
+    by grammar_numeric_chains. The spoken octet separator is 'dot' in
     every locale this grammar supports (es fixtures do not cover IPs)."""
     t = host.tables
     tokens = host.tokens
     for i in range(len(tokens)):
         # A match may not start mid-phrase: if the previous token is a
         # number word, an earlier (possibly invalid) match owns this run.
-        if i > 0 and _is_num_word(tokens[i - 1].word, t):
+        if i > 0 and not host.brk[i] and _num_like(host, i - 1):
             continue
-        comp, c, valid = _ip_component(tokens, i, t)
+        comp, c, valid = _ip_component(host, i, t)
         if comp is None:
             continue
         j = i + c
         comps = [(comp, valid)]
-        while _word_at(host, j) == "dot" and len(comps) < 4:
-            comp2, c2, valid2 = _ip_component(tokens, j + 1, t)
+        while len(comps) < 4 and j + 1 < len(tokens) \
+                and not host.brk[j] and not host.brk[j + 1] \
+                and _word_at(host, j) == "dot":
+            comp2, c2, valid2 = _ip_component(host, j + 1, t)
             if comp2 is None:
                 break
             comps.append((comp2, valid2))
@@ -959,10 +1310,10 @@ def grammar_ip(host):
                 reason="invalid_octet", review=True)
 
 
-def _ip_component(tokens, i, t):
+def _ip_component(host, i, t):
     """IP octet as spoken: digit run ('two five five'), unit+tens
     ('one ninety two' → 192) or a plain cardinal ('ten')."""
-    words = [tk.word for tk in tokens[i:i + 4]]
+    words = host.words(i, 4)
     run = parse_digit_run(words, t, min_len=1)
     if run is not None and run[1] >= 2:
         v = int(run[0])
@@ -985,32 +1336,46 @@ def _ip_component(tokens, i, t):
 
 def grammar_port(host):
     """"port eight thousand" → "port 8000". The anchor list is
-    profile-driven like every other anchored grammar."""
+    profile-driven like every other anchored grammar. The SIGNED value
+    is what is validated and recorded: "port negative eighty" or a
+    port past 65535 is refused as a whole, never emitted as a valid
+    port (M04-AUDIT-05)."""
     anchors = set(host.profile.get("port_anchors", ["port"]))
     for i, tok in enumerate(host.tokens):
-        if tok.word not in anchors:
+        if tok.word not in anchors or i + 1 >= len(host.tokens) \
+                or host.brk[i + 1]:
             continue
         pn = _quantity_at(host, i + 1)
         if pn is None or pn.frac_digits is not None:
             continue
-        if not 1 <= int(pn.value) <= 65535:
+        if _juxtaposed_after(host, i + 1 + pn.count):
             continue
         span = _span(host, i + 1, pn.count)
+        value = _signed(pn)
+        if not (isinstance(value, int) and 1 <= value <= 65535):
+            yield Proposal(
+                layer=4, cls="port", op="number_word_to_digits",
+                span=span, input_text=_text_of(host, span),
+                output_text="", value=None, unit="port",
+                reason="invalid_port", review=True)
+            continue
         yield Proposal(
             layer=4, cls="port", op="number_word_to_digits",
             span=span, input_text=_text_of(host, span),
             output_text=_quantity_text(pn, host.tables),
-            value=int(pn.value), unit="port", join=JOIN_WORD)
+            value=value, unit="port", join=JOIN_WORD)
 
 
 def grammar_dimension(host):
     """'ten by twenty centimeters' → '10 × 20 cm' — no unit conversion,
-    no rounding; MB/Mb stay distinct."""
+    no rounding; MB/Mb stay distinct. Both components carry their
+    spoken sign in the typed value, exactly as rendered."""
     t = host.tables
     units = host.profile.get("dimension_units", {})
     bys = set(host.profile.get("by_words", ["by"]))
     for i in range(len(host.tokens)):
-        if host.tokens[i].word not in bys:
+        if host.tokens[i].word not in bys or i + 1 >= len(host.tokens) \
+                or host.brk[i + 1]:
             continue
         a = _quantity_before(host, i, t)
         if a is None:
@@ -1019,6 +1384,8 @@ def grammar_dimension(host):
         if pn_b is None or pn_b.frac_digits is not None:
             continue
         endb = i + 1 + pn_b.count
+        if endb >= len(host.tokens) or host.brk[endb]:
+            continue
         uword = _word_at(host, endb)
         if uword not in units:
             continue
@@ -1031,7 +1398,7 @@ def grammar_dimension(host):
             layer=4, cls="dimension", op="dimension_words",
             span=span, input_text=_text_of(host, span),
             output_text=out,
-            value=f"{a.value * a.sign}x{pn_b.value} {sym}",
+            value=f"{_signed(a)}x{_signed(pn_b)} {sym}",
             unit=sym, join=JOIN_WORD)
 
 
@@ -1053,7 +1420,7 @@ def grammar_unit_number(host):
             layer=4, cls="unit_number", op="number_word_to_digits",
             span=span, input_text=_text_of(host, span),
             output_text=_quantity_text(pn, t),
-            value=pn.value * pn.sign, unit=units[tok.word],
+            value=_signed(pn), unit=units[tok.word],
             join=JOIN_WORD)
 
 
@@ -1061,6 +1428,8 @@ ALL_NUMERIC_GRAMMARS = (
     grammar_integer,
     grammar_anchored_integer,
     grammar_decimal,
+    grammar_numeric_chains,
+    grammar_malformed_quantity,
     grammar_percent,
     grammar_percentage_points,
     grammar_currency,

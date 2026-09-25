@@ -330,9 +330,15 @@ class AppDelegate(NSObject):
         # A bad knob or unreadable policy file degrades to stage-off with
         # an event — never a startup crash, never silent re-direction.
         self._norm_policy = None
+        # The CONFIGURED base (M04-AUDIT-13): immutable, never replaced
+        # by a job's effective policy. Every "inherit" style resolves
+        # against it — not against whatever the previous job cached in
+        # _norm_policy.
+        self._norm_base_policy = None
         try:
             self._norm_policy = v2_normalize.NormalizationPolicy.from_config(
                 cfg)
+            self._norm_base_policy = self._norm_policy
         except Exception as e:
             self.v2log.emit("normalization.policy_invalid", level="WARNING",
                             reason_code=type(e).__name__,
@@ -569,8 +575,10 @@ class AppDelegate(NSObject):
             scope_ctx.workspace, scope_ctx.profile)
         m10_profile = (m10 or {}).get("norm_profile")
         m10_skills_rev = (m10 or {}).get("skill_records_rev")
-        norm_profile = m10_profile or (
-            policy.profile if policy is not None else None)
+        # "inherit" (no style number policy) resolves against the
+        # CONFIGURED profile, never the previous job's effective one
+        # cached in _norm_policy (M04-AUDIT-13).
+        norm_profile = m10_profile or self._configured_norm_profile()
         if self._vocab is not None and policy is not None \
                 and norm_profile != "off":
             try:
@@ -624,7 +632,49 @@ class AppDelegate(NSObject):
                 self.v2log.emit("profiles.refresh_failed", level="WARNING",
                                 reason_code=type(e).__name__,
                                 outcome="skills_dropped")
+        # Whatever branch ran (cache hit, vocabulary failure, no m10),
+        # the job never leaves with another job's profile: rebuild over
+        # the same registry when the cached object disagrees.
+        policy = self._policy_with_profile(policy, norm_profile)
         return policy, context, hint_set
+
+    @objc.python_method
+    def _configured_norm_profile(self):
+        """The configuration's normalization profile (M04-AUDIT-13)."""
+        base = getattr(self, "_norm_base_policy", None)
+        if base is not None:
+            return base.profile
+        cached = self._norm_policy
+        return cached.profile if cached is not None else None
+
+    @objc.python_method
+    def _policy_with_profile(self, policy, profile):
+        """``policy`` under ``profile`` (same locale and registry); the
+        object itself when it already matches. Never switches a stage
+        on or off: an "off" policy or target is returned unchanged."""
+        if policy is None or not profile or profile == "off" \
+                or policy.profile in ("off", profile):
+            return policy
+        try:
+            return v2_normalize.NormalizationPolicy(
+                locale=policy.locale, profile=profile,
+                registered_skills=dict(policy.registered_skills),
+                identifiers=dict(policy.identifiers))
+        except Exception as e:
+            self.v2log.emit("profiles.refresh_failed", level="WARNING",
+                            reason_code=type(e).__name__,
+                            outcome="policy_profile_kept")
+            return policy
+
+    @objc.python_method
+    def _default_job_policy(self):
+        """The policy for a job that captured none (a manual/History
+        retry of retained audio, or a job whose hotkey-down capture
+        failed): the current registry under the CONFIGURED profile — a
+        clearly identified new snapshot, never the previous live job's
+        style override (M04-AUDIT-21)."""
+        return self._policy_with_profile(self._norm_policy,
+                                         self._configured_norm_profile())
 
     # ---- M10: styles, snippets, developer registries -------------------
 
@@ -778,7 +828,12 @@ class AppDelegate(NSObject):
         masked), under the style-derived profile. Single owner of the
         upgraded policy's skill set so no path can silently drop the
         manifest half (review C2)."""
-        profile = (m10 or {}).get("norm_profile") or base_policy.profile
+        # "inherit" at finalize resolves against the configuration, not
+        # against the hotkey-down policy's (possibly explicit) profile
+        # (M04-AUDIT-13).
+        profile = (m10 or {}).get("norm_profile") or (
+            self._configured_norm_profile() if m10 is not None
+            else None) or base_policy.profile
         skills = dict(vocab_snapshot.skills) if vocab_snapshot is not None \
             else dict(base_policy.registered_skills or {})
         if m10 is not None:
@@ -839,11 +894,14 @@ class AppDelegate(NSObject):
                             reason_code=type(e).__name__,
                             outcome="hotkey_down_policy_kept")
             elif base is not None and base.profile != "off" \
-                    and m10.get("norm_profile") \
-                    and base.profile != m10["norm_profile"]:
+                    and base.profile != (
+                        m10.get("norm_profile")
+                        or self._configured_norm_profile()
+                        or base.profile):
                 # A rule that only matched at finalize (site/category
-                # widened): the number policy must reach the pipeline,
-                # not only the envelope.
+                # widened) — or an explicit hotkey-down rule that
+                # re-resolved to inherit: the number policy must reach
+                # the pipeline, not only the envelope.
                 try:
                     job["norm_policy"] = self._finalized_policy(
                         base, m10, job_vocab)
@@ -1755,9 +1813,13 @@ class AppDelegate(NSObject):
             # M04: the normalization policy revision that produced each
             # example's typed edits (S29.4 normalization field family).
             # Absent when the policy failed to load (stage off).
+            # The CONFIGURED policy's revision (a configuration fact);
+            # each job's actual revision rides in its normalization
+            # block (M04-AUDIT-13/-21).
             **({"normalization_policy_revision":
-                self._norm_policy.policy_revision}
-               if self._norm_policy is not None else {}),
+                self._norm_base_policy.policy_revision}
+               if getattr(self, "_norm_base_policy", None) is not None
+               else {}),
         }
 
     # ---- lifecycle ----------------------------------------------------
@@ -3200,7 +3262,15 @@ class AppDelegate(NSObject):
                 m10 = job.get("m10") or {}
                 wp = m10.get("wp")
                 mode_is_raw = wp is not None and wp.effective_mode == "raw"
-                norm_policy = job.get("norm_policy") or self._norm_policy
+                # A job without its own captured policy (a retry of
+                # retained audio) runs under a clearly identified NEW
+                # snapshot of the current registry and the configured
+                # profile — never the previous live job's style
+                # (M04-AUDIT-21); the source rides in the evidence.
+                norm_source = "job_snapshot" if job.get("norm_policy") \
+                    is not None else "current_default"
+                norm_policy = job.get("norm_policy") \
+                    or self._default_job_policy()
                 norm_context = job.get("norm_context") or self._norm_context
                 norm_text = raw
                 norm_result = None
@@ -3233,7 +3303,8 @@ class AppDelegate(NSObject):
                             self.collector.on_normalization_result(
                                 ctx, norm_result, source_text=raw,
                                 policy=norm_policy,
-                                context=norm_context)
+                                context=norm_context,
+                                policy_source=norm_source)
                     except Exception as e:
                         self.v2log.emit("training.capture_failed",
                                         level="ERROR", job_id=job_id,
@@ -4569,11 +4640,12 @@ class AppDelegate(NSObject):
         m10_policy, m10_context = base, self._norm_context
         try:
             wp = (self._norm_preview_profile() or {}).get("wp")
-            if wp is not None and wp.number_policy != "inherit" \
-                    and base is not None:
-                m10_policy = v2_normalize.NormalizationPolicy(
-                    locale=base.locale, profile=wp.number_policy,
-                    registered_skills=dict(base.registered_skills))
+            # inherit previews the CONFIGURED profile, not the last
+            # job's style (M04-AUDIT-13).
+            target = wp.number_policy if wp is not None \
+                and wp.number_policy != "inherit" \
+                else self._configured_norm_profile()
+            m10_policy = self._policy_with_profile(base, target)
             if m10_context is not None:
                 m10_context = dataclasses.replace(
                     m10_context,

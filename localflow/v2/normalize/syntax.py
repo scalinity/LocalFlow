@@ -10,6 +10,8 @@ character", "a dash of salt") stay prose.
 
 from __future__ import annotations
 
+import re
+
 from ..snippets import expand, split_slots
 from .span_types import (
     JOIN_ATTACH_LEFT,
@@ -25,7 +27,6 @@ _NAME_STOPWORDS = {
     "the", "a", "an", "he", "she", "it", "they", "we", "you", "i",
     "and", "or", "but", "at", "dot", "this", "that", "is", "was",
 }
-_ESCAPE_MAX_WORDS = 12
 
 
 def _text_of(host, span: Span) -> str:
@@ -47,8 +48,13 @@ def find_literal_escapes(host):
     """Yields (marker-drop Proposal, ProtectedSpan for the object).
 
     "write the word X" protects exactly one word; "write the words/phrase
-    X…" protects up to the next sentence punctuation. The object words are
-    emitted verbatim (SEED-08/12).
+    X…" protects the whole run of words up to the next structural
+    delimiter (sentence punctuation, a line break, a non-word token) or
+    the end of the utterance. The object words are emitted verbatim
+    (SEED-08/12). There is no word cap: a bound that stopped protecting
+    mid-phrase would expose the tail of a literal the speaker asked for
+    (M04-AUDIT-10). A marker INSIDE an escaped object is part of that
+    object — it is never processed as a second escape.
     """
     pats = host.profile.get("escape_patterns", [])
     tokens = host.tokens
@@ -60,7 +66,8 @@ def find_literal_escapes(host):
             continue
         plen, single = matched
         obj_i = i + plen
-        if obj_i >= len(tokens) or not tokens[obj_i].is_word:
+        if obj_i >= len(tokens) or not tokens[obj_i].is_word \
+                or host.brk[obj_i]:
             i += 1
             continue
         span_all = Span(tokens[i].start, tokens[obj_i].start)
@@ -69,16 +76,13 @@ def find_literal_escapes(host):
             i += plen
             continue
         if single:
-            obj_end = tokens[obj_i].end
+            j = obj_i + 1
         else:
-            j = obj_i
-            while (j < len(tokens) and tokens[j].is_word
-                   and j - obj_i < _ESCAPE_MAX_WORDS):
+            j = obj_i + 1
+            while j < len(tokens) and tokens[j].is_word \
+                    and not host.brk[j]:
                 j += 1
-            if j == obj_i:
-                i += 1
-                continue
-            obj_end = tokens[j - 1].end
+        obj_end = tokens[j - 1].end
         marker = Proposal(
             layer=1, cls="literal_escape", op="escape_marker_drop",
             span=span_all, input_text=_text_of(host, span_all),
@@ -86,7 +90,7 @@ def find_literal_escapes(host):
         zone = ProtectedSpan(span=Span(tokens[obj_i].start, obj_end),
                              kind="literal_escape")
         yield marker, zone
-        i = obj_i + 1
+        i = j
 
 
 def _match_escape_pattern(host, i, pats):
@@ -94,7 +98,8 @@ def _match_escape_pattern(host, i, pats):
     escape pattern, else None."""
     for pat in pats:
         words = pat.split()
-        if [_word_at(host, i + k) for k in range(len(words))] == words:
+        if [_word_at(host, i + k) for k in range(len(words))] == words \
+                and host.connected(i, i + len(words)):
             return len(words), words[-1] == "word"
     return None
 
@@ -131,6 +136,29 @@ def find_quote_zones(host) -> list[ProtectedSpan]:
     return zones
 
 
+_CODE_FENCE_RE = re.compile(r"```.*?```", re.DOTALL)
+_INLINE_CODE_RE = re.compile(r"`[^`\n]+`")
+
+
+def find_code_zones(host) -> list[ProtectedSpan]:
+    """Already-written code is protected existing syntax (layer 2): the
+    inside of a ``` fence and of an inline `code` span is never
+    normalized — "```twelve percent```" is code the speaker (or a
+    snippet) wrote, not number speech (M04-AUDIT-10 adjudication)."""
+    zones = []
+    taken = []
+    for m in _CODE_FENCE_RE.finditer(host.text):
+        zones.append(ProtectedSpan(span=Span(m.start(), m.end()),
+                                   kind="code"))
+        taken.append((m.start(), m.end()))
+    for m in _INLINE_CODE_RE.finditer(host.text):
+        if any(a <= m.start() < b for a, b in taken):
+            continue
+        zones.append(ProtectedSpan(span=Span(m.start(), m.end()),
+                                   kind="code"))
+    return zones
+
+
 # ---------------------------------------------------------------------------
 # Layer 3: registered slash skills — exact spelling only.
 # ---------------------------------------------------------------------------
@@ -139,22 +167,43 @@ def grammar_skills(host):
     """"slash brainstorm" → "/brainstorm" for a REGISTERED skill or alias
     (exact spelling, multiword aliases map to exact hyphenated names).
     Unknown skill words stay literal and surface as a review suggestion
-    (never applied). Ordinary slash prose never converts (AC06)."""
+    (never applied). Ordinary slash prose never converts (AC06).
+
+    Registry membership establishes token IDENTITY, not command INTENT
+    (M04-AUDIT-01). "slash" right after a word that grammatically
+    requires a verb next — a modal, infinitive "to", a subject pronoun,
+    an auxiliary or a negation ("we should slash code review time", "to
+    slash costs") — is the ordinary verb: the words stay literal and the
+    considered token is retained as a ``verb_context`` review
+    suggestion. The closed class lives in the profile
+    (``slash_verb_context``); command positions ("slash code review",
+    "add slash code review to the list") are unaffected."""
     skills = host.policy.registered_skills or {}
     if not skills:
         return
+    verb_ctx = set(host.profile.get("slash_verb_context", ()))
     aliases = sorted(skills.keys(), key=lambda a: -len(a.split()))
     for i, tok in enumerate(host.tokens):
         if tok.word != "slash" or not tok.is_word:
             continue
+        verb = i > 0 and not host.brk[i] and \
+            _word_at(host, i - 1) in verb_ctx
         for alias in aliases:
             words = alias.split()
             seq = [_word_at(host, i + 1 + k) for k in range(len(words))]
-            if seq != words:
+            if seq != words or not host.connected(i, i + 1 + len(words)) \
+                    or not all(host.tokens[i + 1 + k].is_word
+                               for k in range(len(words))):
                 continue
             exact = skills[alias]
-            span = Span(tok.start,
-                        host.tokens[i + len(words)].end)
+            span = host.core_span(i, i + 1 + len(words))
+            if verb:
+                yield Proposal(
+                    layer=3, cls="skill", op="slash_skill_token",
+                    span=span, input_text=_text_of(host, span),
+                    output_text=f"/{exact}", value=exact,
+                    unit="skill_token", reason="verb_context", review=True)
+                break
             yield Proposal(
                 layer=3, cls="skill", op="slash_skill_token",
                 span=span, input_text=_text_of(host, span),
@@ -163,10 +212,10 @@ def grammar_skills(host):
             break
         else:
             nxt = _word_at(host, i + 1)
-            if nxt and host.tokens[i + 1].is_word:
+            if nxt and host.tokens[i + 1].is_word and not host.brk[i + 1]:
                 # Never applied — retained as a review suggestion so a
                 # reviewer can see the command intent was considered.
-                span = Span(tok.start, host.tokens[i + 1].end)
+                span = host.core_span(i, i + 2)
                 yield Proposal(
                     layer=3, cls="skill", op="slash_skill_token",
                     span=span, input_text=_text_of(host, span),
@@ -308,12 +357,36 @@ def _phrase_tables(host, table):
     return out
 
 
-def _guard_blocks(host, i, name_words, always=False):
+def _guard_blocks(host, i, name_words, always=False, join=None):
+    """True when a spoken punctuation/structure name is being used as a
+    NOUN, not a command (M04-AUDIT-09). Structural rules, for every
+    name:
+
+    * a determiner right before it ("a question mark", "the forward
+      slash character", "an exclamation mark", "the comma character");
+    * a trailing-punctuation name (or a noun-ambiguous guarded name) at
+      the START of a clause with more words after it ("period drama",
+      "colon cancer", "pipe tobacco", "question mark placement"): a
+      punctuation command attaches to the words BEFORE it, so at a
+      clause start it has nothing to punctuate. Alone ("comma") it is
+      still the command.
+
+    Guarded names keep their historical lexical blockers (article /
+    preposition / "X period" compounds / ordinals)."""
     g = host.profile.get("symbol_guards", {}) if host.profile else {}
-    prev = _word_at(host, i - 1)
-    nxt = _word_at(host, i + len(name_words))
+    n = len(name_words)
+    prev = _word_at(host, i - 1) if i > 0 and not host.brk[i] else None
+    nxt_i = i + n
+    nxt = _word_at(host, nxt_i) if nxt_i < len(host.tokens) \
+        and not host.brk[nxt_i] else None
     joined = " ".join(name_words)
     guarded = always or joined in g.get("guarded_names", [])
+    if prev in g.get("determiner_words", []):
+        return True
+    clause_start = i == 0 or host.brk[i]
+    if clause_start and nxt is not None and host.tokens[nxt_i].is_word \
+            and (join == JOIN_ATTACH_LEFT or guarded):
+        return True
     if guarded:
         if prev in g.get("article_words", []):
             return True
@@ -328,8 +401,9 @@ def _guard_blocks(host, i, name_words, always=False):
 
 
 def grammar_symbols(host):
-    """Spoken punctuation/symbol names → the symbol, with article/idiom
-    guards ("a dash of salt", "the period of adjustment" stay prose)."""
+    """Spoken punctuation/symbol names → the symbol, with structural noun
+    guards ("a dash of salt", "the period of adjustment", "period
+    drama", "a question mark" stay prose)."""
     if not host.profile.get("punctuation_commands"):
         return
     for words, spec in _phrase_tables(host, host.profile.get("symbols")):
@@ -337,17 +411,35 @@ def grammar_symbols(host):
         for i in range(len(host.tokens) - n + 1):
             seq = [tk.word for tk in host.tokens[i:i + n]]
             if seq != words or not all(tk.is_word for tk in
-                                       host.tokens[i:i + n]):
+                                       host.tokens[i:i + n]) \
+                    or not host.connected(i, i + n):
                 continue
-            if _guard_blocks(host, i, words):
-                continue
-            span = Span(host.tokens[i].start, host.tokens[i + n - 1].end)
             join = spec.get("join", JOIN_WORD)
+            if _guard_blocks(host, i, words, join=join):
+                continue
+            span = host.core_span(i, i + n)
             yield Proposal(
                 layer=4, cls="symbol", op="symbol_command",
                 span=span, input_text=_text_of(host, span),
                 output_text=spec["out"], value=spec["out"],
                 unit="symbol", join=join)
+
+
+def _markdown_guard_blocks(host, i, name_words):
+    """The historical article/idiom guards for structure commands. The
+    clause-start rule does not apply: "new bullet ship the release"
+    opens with its command by design."""
+    g = host.profile.get("symbol_guards", {}) if host.profile else {}
+    prev = _word_at(host, i - 1) if i > 0 and not host.brk[i] else None
+    nxt_i = i + len(name_words)
+    nxt = _word_at(host, nxt_i) if nxt_i < len(host.tokens) \
+        and not host.brk[nxt_i] else None
+    if prev in g.get("determiner_words", []) \
+            or prev in g.get("article_words", []):
+        return True
+    if nxt in g.get("blocker_next", []) or prev in g.get("blocker_prev", []):
+        return True
+    return False
 
 
 def grammar_markdown(host):
@@ -361,14 +453,15 @@ def grammar_markdown(host):
         for i in range(len(host.tokens) - n + 1):
             seq = [tk.word for tk in host.tokens[i:i + n]]
             if seq != words or not all(tk.is_word for tk in
-                                       host.tokens[i:i + n]):
+                                       host.tokens[i:i + n]) \
+                    or not host.connected(i, i + n):
                 continue
             # "a new bullet point here" / "the new line of the poem"
             # stay prose: article/idiom guards apply to every structure
             # command, not just the guarded symbol names.
-            if _guard_blocks(host, i, words, always=True):
+            if _markdown_guard_blocks(host, i, words):
                 continue
-            span = Span(host.tokens[i].start, host.tokens[i + n - 1].end)
+            span = host.core_span(i, i + n)
             yield Proposal(
                 layer=4, cls="markdown", op="markdown_command",
                 span=span, input_text=_text_of(host, span),
@@ -378,7 +471,10 @@ def grammar_markdown(host):
 
 def grammar_flags(host):
     """Spoken shell flags: "dash dash verbose" → "--verbose", "dash r" →
-    "-r". Emission is text only — nothing executes (AC04)."""
+    "-r". Emission is text only — nothing executes (AC04). A single
+    written capital "I" is the English pronoun by orthographic
+    convention ("dash I asked him"), never the flag letter
+    (M04-AUDIT-09)."""
     if not host.profile.get("flag_commands"):
         return
     tokens = host.tokens
@@ -386,19 +482,22 @@ def grammar_flags(host):
         if tok.word != "dash" or not tok.is_word:
             continue
         w1 = _word_at(host, i + 1)
+        if w1 is None or host.brk[i + 1]:
+            continue
         if w1 == "dash":
             w2 = _word_at(host, i + 2)
-            if w2 and tokens[i + 2].is_word and len(w2) > 1 and \
+            if w2 and i + 2 < len(tokens) and not host.brk[i + 2] and \
+                    tokens[i + 2].is_word and len(w2) > 1 and \
                     w2.isalpha() and not _guard_blocks(host, i, ["dash"]):
-                span = Span(tok.start, tokens[i + 2].end)
+                span = host.core_span(i, i + 3)
                 yield Proposal(
                     layer=4, cls="flag", op="flag_words",
                     span=span, input_text=_text_of(host, span),
                     output_text=f"--{w2}", value=f"--{w2}",
                     unit="flag", join=JOIN_WORD)
-        elif (w1 and len(w1) == 1 and w1.isalpha()
-              and tokens[i + 1].is_word):
-            span = Span(tok.start, tokens[i + 1].end)
+        elif (len(w1) == 1 and w1.isalpha() and tokens[i + 1].is_word
+              and tokens[i + 1].core != "I"):
+            span = host.core_span(i, i + 2)
             yield Proposal(
                 layer=4, cls="flag", op="flag_words",
                 span=span, input_text=_text_of(host, span),
@@ -413,9 +512,9 @@ def grammar_dotfile(host):
         if host.tokens[i].word != "dot" or not host.tokens[i].is_word:
             continue
         nxt = host.tokens[i + 1]
-        if not nxt.is_word or nxt.word not in names:
+        if not nxt.is_word or nxt.word not in names or host.brk[i + 1]:
             continue
-        span = Span(host.tokens[i].start, nxt.end)
+        span = host.core_span(i, i + 2)
         yield Proposal(
             layer=4, cls="path", op="dotfile_words",
             span=span, input_text=_text_of(host, span),
@@ -426,25 +525,44 @@ def grammar_dotfile(host):
 def grammar_spoken_path(host):
     """Anchored spoken paths: "path slash users slash danny" →
     "/users/danny" — path intent is distinct from an ordinary slash word;
-    no filesystem action runs."""
+    no filesystem action runs. Components keep the speaker's exact
+    written spelling ("path slash Users slash Ada" → "/Users/Ada"): a
+    path is case-significant and M04 never assumes the destination
+    filesystem is not (M04-AUDIT-11). A chain whose next component is
+    not a plain word ("... slash build2") is refused WHOLE, never
+    emitted as a valid-looking prefix with a spoken tail."""
     anchors = set(host.profile.get("path_anchors", []))
     tokens = host.tokens
     for i, tok in enumerate(tokens):
         if tok.word not in anchors or not tok.is_word:
             continue
         j = i + 1
-        if _word_at(host, j) != "slash":
+        if _word_at(host, j) != "slash" or host.brk[j]:
             continue
         segs = []
-        while _word_at(host, j) == "slash":
+        complete = True
+        while j < len(tokens) and _word_at(host, j) == "slash" \
+                and not host.brk[j]:
             seg = tokens[j + 1] if j + 1 < len(tokens) else None
-            if seg is None or not seg.is_word:
+            if seg is None or host.brk[j + 1]:
+                complete = False
                 break
-            segs.append(seg.word)
+            if not seg.is_word:
+                complete = False
+                j += 2
+                break
+            segs.append(seg.core)
             j += 2
-        if len(segs) < 2:
+        if len(segs) < 2 and complete:
             continue
-        span = Span(tok.start, tokens[j - 1].end)
+        span = host.core_span(i, min(j, len(tokens)))
+        if not complete:
+            yield Proposal(
+                layer=4, cls="path", op="spoken_path_words",
+                span=span, input_text=_text_of(host, span),
+                output_text="", value=None, unit="path",
+                reason="incomplete_path", review=True)
+            continue
         yield Proposal(
             layer=4, cls="path", op="spoken_path_words",
             span=span, input_text=_text_of(host, span),
@@ -455,7 +573,10 @@ def grammar_spoken_path(host):
 def grammar_domain_email(host):
     """Spoken dot/at forms become syntax only in address patterns:
     "danny at gmail dot com" → email; "example dot com" → domain, with
-    known TLDs. Punctuation and spelling are never invented."""
+    known TLDs. Punctuation and spelling are never invented: every
+    component keeps the speaker's written spelling — an email local
+    part is case-significant ("UserName at example dot com" →
+    "UserName@example.com", M04-AUDIT-11)."""
     tlds = set(host.profile.get("known_tlds", []))
     tokens = host.tokens
     n = len(tokens)
@@ -470,18 +591,18 @@ def grammar_domain_email(host):
         if _word_at(host, j) != "dot":
             continue
         tld = _word_at(host, j + 1)
-        if tld not in tlds:
+        if tld not in tlds or not host.connected(i, j + 2):
             continue
-        host_parts = [tokens[i + 2].word, tld]
+        host_parts = [tokens[i + 2].core, tokens[j + 1].core]
         j += 2
-        while _word_at(host, j) == "dot":
+        while _word_at(host, j) == "dot" and host.connected(j - 1, j + 2):
             t2 = _word_at(host, j + 1)
             if t2 not in tlds:
                 break
-            host_parts.append(t2)
+            host_parts.append(tokens[j + 1].core)
             j += 2
-        span = Span(tokens[i].start, tokens[j - 1].end)
-        email = f"{tokens[i].word}@{'.'.join(host_parts)}"
+        span = host.core_span(i, j)
+        email = f"{tokens[i].core}@{'.'.join(host_parts)}"
         yield Proposal(
             layer=4, cls="email", op="spoken_email_words",
             span=span, input_text=_text_of(host, span),
@@ -494,20 +615,20 @@ def grammar_domain_email(host):
         if _word_at(host, i + 1) != "dot":
             continue
         tld = _word_at(host, i + 2)
-        if tld not in tlds:
+        if tld not in tlds or not host.connected(i, i + 3):
             continue
         # Skip when an email proposal already covers this span.
         if _word_at(host, i - 1) == "at":
             continue
-        parts = [tokens[i].word, tld]
+        parts = [tokens[i].core, tokens[i + 2].core]
         j = i + 3
-        while _word_at(host, j) == "dot":
+        while _word_at(host, j) == "dot" and host.connected(j - 1, j + 2):
             t2 = _word_at(host, j + 1)
             if t2 not in tlds:
                 break
-            parts.append(t2)
+            parts.append(tokens[j + 1].core)
             j += 2
-        span = Span(tokens[i].start, tokens[j - 1].end)
+        span = host.core_span(i, j)
         domain = ".".join(parts)
         yield Proposal(
             layer=4, cls="domain", op="spoken_domain_words",
@@ -523,9 +644,15 @@ def grammar_domain_email(host):
 # ---------------------------------------------------------------------------
 
 def grammar_identifiers(host):
+    """Context-fed identifiers (spoken form → canonical). A span that
+    already reads exactly as its canonical form is a no-op: it emits no
+    edit — a second pass over normalized text stays empty (M04-AC03,
+    M04-AUDIT-15) — and CLAIMS the span so a shorter overlapping
+    spoken form cannot rewrite inside it."""
     mapping = host.context.identifiers if host.context else None
     if not mapping:
         return
+    claimed: list[Span] = []
     spoken = sorted(mapping.keys(), key=lambda s: -len(s.split()))
     for phrase in spoken:
         words = phrase.lower().split()
@@ -533,15 +660,17 @@ def grammar_identifiers(host):
         for i in range(len(host.tokens) - n + 1):
             seq = [tk.word for tk in host.tokens[i:i + n]]
             if seq != words or not all(tk.is_word for tk in
-                                       host.tokens[i:i + n]):
+                                       host.tokens[i:i + n]) \
+                    or not host.connected(i, i + n):
                 continue
             # Match token cores so edge punctuation survives (same rule
             # as grammar_vocabulary).
-            toks = host.tokens[i:i + n]
-            raw = host.text[toks[0].start:toks[-1].end]
-            lead = len(raw) - len(raw.lstrip(".,;:!?\"'“”«»()"))
-            trail = len(raw) - len(raw.rstrip(".,;:!?\"'“”«»()"))
-            span = Span(toks[0].start + lead, toks[-1].end - trail)
+            span = host.core_span(i, i + n)
+            if host.text[span.start:span.end] == mapping[phrase]:
+                claimed.append(span)
+                continue
+            if any(span.overlaps(c) for c in claimed):
+                continue
             yield Proposal(
                 layer=5, cls="identifier", op="context_identifier",
                 span=span, input_text=_text_of(host, span),

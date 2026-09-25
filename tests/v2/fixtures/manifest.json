@@ -39,6 +39,12 @@
           "tests/v2/structure/fixtures_structure.json",
           "tests/v2/fidelity/fixtures_literal.json"
         ]
+      },
+      "m04_remediation_created": {
+        "note": "M04 remediation (2026-09-25) committed the read-only audit's authored synthetic challenge corpus verbatim (368 text cases / 171 families + 10 stateful probes; sha256 recorded in the M04 handoff addendum) with its per-case adjudications. It is DEVELOPMENT evidence consulted while repairing — not part of this family's 320 planned owning fixtures, not an unseen holdout, and its variants are not independent samples.",
+        "fixture_files": [
+          "tests/v2/normalization/m04_audit_corpus.json"
+        ]
       }
     },
     {

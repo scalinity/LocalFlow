@@ -11,6 +11,7 @@ identical inputs.
 
 from __future__ import annotations
 
+import bisect
 import re
 import time
 from dataclasses import dataclass
@@ -36,6 +37,11 @@ from .span_types import (
 _WORD_RE = re.compile(r"[^\W\d_]+(?:['’\u2011-][^\W\d_]+)*", re.UNICODE)
 _TOKEN_RE = re.compile(r"\S+")
 _WS_RE = re.compile(r"\s+")
+# Edge punctuation a word token may carry. It is never part of the
+# token's lexical CORE: an edit covers the core only, so "twelve
+# percent." keeps its period and "twelve dollars, please" its comma
+# (M04-AUDIT-02).
+EDGE_PUNCT = ".,;:!?\"'“”«»()"
 
 
 @dataclass
@@ -45,6 +51,15 @@ class Token:
     word: str        # lowercase core (edge punctuation stripped for words)
     raw: str
     is_word: bool    # pure word token (no digits/symbols)
+    core_start: int = -1   # code-point span of the lexical core (words:
+    core_end: int = -1     # edge punctuation excluded; others: the run)
+    lead: bool = False     # carries leading edge punctuation
+    trail: bool = False    # carries trailing edge punctuation
+
+    @property
+    def core(self) -> str:
+        return self.raw[self.core_start - self.start:
+                        self.core_end - self.start]
 
 
 def tokenize(text: str) -> list[Token]:
@@ -53,11 +68,31 @@ def tokenize(text: str) -> list[Token]:
         run = m.group(0)
         wm = _WORD_RE.fullmatch(run.rstrip(".,;:!?") .lstrip(".,;:!?"))
         if wm:
-            core = run.strip(".,;:!?\"'“”«»()")
-            tokens.append(Token(m.start(), m.end(), core.lower(), run, True))
+            core = run.strip(EDGE_PUNCT)
+            lead = len(run) - len(run.lstrip(EDGE_PUNCT))
+            trail = len(run) - len(run.rstrip(EDGE_PUNCT))
+            tokens.append(Token(m.start(), m.end(), core.lower(), run, True,
+                                m.start() + lead, m.end() - trail,
+                                bool(lead), bool(trail)))
         else:
-            tokens.append(Token(m.start(), m.end(), run.lower(), run, False))
+            tokens.append(Token(m.start(), m.end(), run.lower(), run, False,
+                                m.start(), m.end()))
     return tokens
+
+
+def _barriers(text: str, tokens: list[Token]) -> list[bool]:
+    """brk[k] is True when a STRUCTURAL delimiter separates token k-1
+    from token k: edge punctuation between them (a comma, a sentence
+    period, a quote or parenthesis) or a line break. Plain spaces, tabs
+    and no-break spaces are benign. No grammar may parse a phrase
+    across a barrier (M04-AUDIT-02): "twenty, five percent" is two
+    quantities, never 25%."""
+    brk = [False] * len(tokens)
+    for k in range(1, len(tokens)):
+        a, b = tokens[k - 1], tokens[k]
+        gap = text[a.end:b.start]
+        brk[k] = a.trail or b.lead or "\n" in gap or "\r" in gap
+    return brk
 
 
 class MatchHost:
@@ -71,12 +106,60 @@ class MatchHost:
         self.profile = policy.profile_table
         self.context = context
         self.tokens = tokenize(text)
+        self.brk = _barriers(text, self.tokens)
+        self._words = [tk.word for tk in self.tokens]
+        # run_end[i]: first token index after i that starts a new
+        # clause (a barrier precedes it), or len(tokens).
+        n = len(self.tokens)
+        self.run_end = [n] * (n + 1)
+        for k in range(n - 1, -1, -1):
+            self.run_end[k] = k + 1 if k + 1 < n and self.brk[k + 1] \
+                else self.run_end[k + 1]
+        # Barrier gaps (left core end, right core start), in text order.
+        self._gap_left = []
+        self._gap_right = []
+        for k in range(1, n):
+            if self.brk[k]:
+                self._gap_left.append(self.tokens[k - 1].core_end)
+                self._gap_right.append(self.tokens[k].core_start)
         self._quote_zones: list[ProtectedSpan] | None = None
+        self._code_zones: list[ProtectedSpan] | None = None
+
+    # ---- structural boundaries (M04-AUDIT-02) ------------------------------
+
+    def connected(self, i: int, j: int) -> bool:
+        """Tokens i..j-1 form one phrase: no barrier between them."""
+        if i < 0:
+            i = 0
+        if j - i <= 1 or i >= len(self.tokens):
+            return True
+        return min(j, len(self.tokens)) <= self.run_end[i]
+
+    def words(self, i: int, n: int) -> list[str]:
+        """Up to n token words from i, stopping at the first barrier."""
+        if i < 0 or i >= len(self.tokens):
+            return []
+        return self._words[i:min(i + n, self.run_end[i])]
+
+    def crosses_barrier(self, span: Span) -> bool:
+        """The span covers a structural delimiter between two of its
+        tokens (the delimiter is outside every token core)."""
+        k = bisect.bisect_right(self._gap_left, span.start)
+        return k < len(self._gap_left) and self._gap_right[k] < span.end
+
+    def core_span(self, i: int, j: int) -> Span:
+        """Code-point span of tokens i..j-1, lexical cores only."""
+        return Span(self.tokens[i].core_start, self.tokens[j - 1].core_end)
 
     def quote_zones(self) -> list[ProtectedSpan]:
         if self._quote_zones is None:
             self._quote_zones = syn_mod.find_quote_zones(self)
         return self._quote_zones
+
+    def code_zones(self) -> list[ProtectedSpan]:
+        if self._code_zones is None:
+            self._code_zones = syn_mod.find_code_zones(self)
+        return self._code_zones
 
     def in_quote_zone(self, span: Span) -> bool:
         return any(z.span.overlaps(span) or z.span.contains(span)
@@ -98,6 +181,29 @@ def _reject(p: Proposal, reason: str) -> RejectedProposal:
                             unit=p.unit, reason=reason, rule_id=p.rule_id)
 
 
+# Review reasons that mark a STRUCTURED candidate the grammar recognized
+# but refuses as a whole (invalid, malformed, ambiguous or quantified).
+# Such a region is owned: no other proposal may rewrite any part of it —
+# not only proposals inside it, but also ones that straddle its edge
+# (a valid four-octet prefix of a five-part dotted chain, the "five
+# percent" tail of "point five percent"). A proposal that CONTAINS the
+# whole region (the anchored version grammar over an unanchored
+# version-shaped run) is the more specific match and still applies
+# (M04-AUDIT-04/-07/-08).
+STRUCTURAL_REVIEW_REASONS = frozenset({
+    "invalid_day", "invalid_date", "invalid_octet", "unanchored_version",
+    "invalid_version", "malformed_scale", "quantified_scale",
+    "dotted_number_arity", "leading_decimal", "invalid_port",
+    "incomplete_path",
+})
+
+# Classes the structural-delimiter safety net leaves to their owning
+# milestone's own matching rules (M05 vocabulary, M10 snippets and file
+# tags); every M04 grammar is held to it.
+_BARRIER_EXEMPT = frozenset({"literal_escape", "vocabulary", "snippet",
+                             "file_tag"})
+
+
 def normalize(text: str, policy: NormalizationPolicy,
               context: ContextSnapshot | None = None) -> NormalizationResult:
     t0 = time.monotonic()
@@ -108,12 +214,14 @@ def normalize(text: str, policy: NormalizationPolicy,
             duration_ms=0.0)
     host = MatchHost(text, policy, context)
 
-    # Layer 1 + 2: quote zones first (quoted instructions are content),
-    # then literal escapes outside quotes.
+    # Layer 1 + 2: code zones (already-written code is protected
+    # existing syntax), quote zones (quoted instructions are content),
+    # then literal escapes outside both.
+    code_zones = host.code_zones()
     quote_zones = host.quote_zones()
     escapes = list(syn_mod.find_literal_escapes(host))
     escape_zones = [z for _, z in escapes]
-    protected = list(escape_zones) + list(quote_zones)
+    protected = list(escape_zones) + list(quote_zones) + list(code_zones)
 
     # Collect every proposal.
     proposals: list[Proposal] = [m for m, _ in escapes]
@@ -132,23 +240,33 @@ def normalize(text: str, policy: NormalizationPolicy,
 
     # A flagged region (invalid octet, invalid day, unanchored version)
     # keeps its words: no smaller grammar may rewrite inside it either —
-    # "flagged, never repaired" (S10). A candidate that CONTAINS the
-    # flagged span (e.g. the anchored version grammar over the same
+    # "flagged, never repaired" (S10). Structural refusals also own
+    # their edges (STRUCTURAL_REVIEW_REASONS). A candidate that CONTAINS
+    # the flagged span (e.g. the anchored version grammar over the same
     # words) is the more specific match and still applies.
     review_spans = [p for p in proposals if p.review]
     keep = []
     for p in candidates:
-        if any(r.span.contains(p.span) for r in review_spans):
+        if any(r.span.contains(p.span) for r in review_spans) or any(
+                r.reason in STRUCTURAL_REVIEW_REASONS
+                and r.span.overlaps(p.span)
+                and not p.span.contains(r.span) for r in review_spans):
             rejected.append(_reject(p, "flagged_region"))
+        elif p.cls not in _BARRIER_EXEMPT and host.crosses_barrier(p.span):
+            rejected.append(_reject(p, "crosses_delimiter"))
         else:
             keep.append(p)
     candidates = keep
 
-    # Protected spans: escape zones block everything; quote zones block
+    # Protected spans: code and escape zones block everything (an escape
+    # marker inside a code zone included); quote zones block
     # command-shaped grammars only.
     zone_rejected: list[RejectedProposal] = []
     keep = []
     for p in candidates:
+        if any(z.span.overlaps(p.span) for z in code_zones):
+            zone_rejected.append(_reject(p, "protected_span"))
+            continue
         if p.cls == "literal_escape":
             keep.append(p)
             continue
@@ -161,34 +279,31 @@ def normalize(text: str, policy: NormalizationPolicy,
             keep.append(p)
     candidates = keep
 
-    # Exact-same-span proposals from different grammars: identical output
-    # means the grammars agree — keep one deterministically (prefer the
-    # unit-bearing record, then class name). Different outputs at the
-    # SAME layer are ambiguous: reject every one rather than pick by
-    # order. Different outputs ACROSS layers are what the S10 precedence
-    # chain exists to decide: the higher-precedence layer wins and the
-    # lower proposal is rejected (M10: a snippet trigger over a
-    # same-span dictionary alias composes instead of annihilating both).
+    # Exact-same-span proposals. The S10 precedence chain decides FIRST,
+    # whatever the outputs: the highest-precedence layer present owns
+    # the span and every lower-layer proposal is rejected — also when
+    # its output text happens to be identical, because the retained
+    # record's layer decides later overlaps and carries the provenance
+    # (M04-AUDIT-14; M10: a snippet trigger over a same-span dictionary
+    # alias composes instead of annihilating both). Within the owning
+    # layer, identical output AND identical typed value agree: keep one
+    # deterministically (the unit-bearing record, then class name).
+    # Different outputs — or the same text with different typed
+    # values — at one layer are ambiguous: reject every one rather than
+    # pick by order.
     by_span: dict[tuple, list[Proposal]] = {}
     for p in candidates:
         by_span.setdefault((p.span.start, p.span.end), []).append(p)
     same_span_keep: dict[tuple, Proposal] = {}
     for k, ps in by_span.items():
+        top = min(p.layer for p in ps)
+        for p in ps:
+            if p.layer > top:
+                rejected.append(_reject(p, "lower_layer_same_span"))
+        ps = [p for p in ps if p.layer == top]
         outputs = {p.output_text for p in ps}
-        if len(outputs) > 1 and len({p.layer for p in ps}) > 1:
-            # Lower layer number = higher precedence (layer 1 is the
-            # literal escape).
-            top = min(p.layer for p in ps)
-            superseded = [p for p in ps if p.layer > top]
-            ps = [p for p in ps if p.layer == top]
-            outputs = {p.output_text for p in ps}
-        else:
-            superseded = []
-        for p in superseded:
-            rejected.append(_reject(p, "lower_layer_same_span"))
-        if len(outputs) > 1:
-            # Only the surviving same-layer set: the superseded
-            # proposals are already rejected once above.
+        values = {_value_key(p.value) for p in ps}
+        if len(outputs) > 1 or len(values) > 1:
             for p in ps:
                 rejected.append(_reject(p, "ambiguous_same_span"))
         else:
@@ -205,15 +320,33 @@ def normalize(text: str, policy: NormalizationPolicy,
             accepted.append(p)
 
     edits = _assemble(host, accepted)
+    out_text = _apply(host.text, edits)
+    # The complete stage: tokenize, propose, arbitrate, assemble AND
+    # apply (M04-AUDIT-17).
     duration_ms = (time.monotonic() - t0) * 1000.0
     return NormalizationResult(
-        text=_apply(host.text, edits),
+        text=out_text,
         edits=[e.edit for e in edits],
         rejected=rejected + zone_rejected,
         protected=protected,
         policy_revision=policy.policy_revision,
         applied=True,
         duration_ms=duration_ms)
+
+
+def _value_key(value) -> str | None:
+    """Typed-value identity for same-span agreement (Decimal('12') and
+    12 agree; 12 and -12 do not)."""
+    if value is None:
+        return None
+    try:
+        from decimal import Decimal
+        if isinstance(value, (int, Decimal)) and not isinstance(value,
+                                                                bool):
+            return "n:" + str(Decimal(value).normalize())
+    except Exception:
+        pass
+    return "s:" + str(value)
 
 
 # ---------------------------------------------------------------------------
