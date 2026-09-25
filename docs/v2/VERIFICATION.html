@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-24 · M01 remediation · code <code>c24b7bc</code></div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-24 · M01 remediation · code <code>3db7406</code></div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -343,7 +343,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
 cd ~/Documents/Tools/LocalFlow 2&gt;/dev/null || echo "Not there: cd into your LocalFlow checkout, then continue"
 git rev-parse --show-toplevel
 git remote get-url origin              <span class="c"># must name scalinity/LocalFlow</span>
-git status --short --branch            <span class="c"># look only; nothing here changes it</span>
+git --no-optional-locks status --short --branch   <span class="c"># look only; takes no index lock</span>
 
 <span class="c"># 2 · Variables every check uses</span>
 export LF_MAIN="$(git rev-parse --show-toplevel)"
@@ -351,15 +351,16 @@ export LF_VERIFY="$(dirname "$LF_MAIN")/LocalFlow-m01-verify"
 export PY="$LF_MAIN/.venv/bin/python"
 export EV="$HOME/Library/Application Support/LocalFlow/v2-evidence"
 export OUT="$EV/m01-verification"
+export APP="/Applications/LocalFlow.app"   <span class="c"># or "$HOME/Applications/LocalFlow.app" if build_app.sh installed it there</span>
 
 <span class="c"># 3 · Repaired M01 code in its own worktree (first time only)</span>
 git -C "$LF_MAIN" fetch origin claude/beautiful-cori-gnh3yc
 [ -d "$LF_VERIFY" ] || git -C "$LF_MAIN" worktree add --detach "$LF_VERIFY" origin/claude/beautiful-cori-gnh3yc
 <span class="c">#   (if that branch has been merged, use origin/main instead)</span>
-git -C "$LF_VERIFY" merge-base --is-ancestor c24b7bc HEAD &amp;&amp; echo "M01 repairs present"
+git -C "$LF_VERIFY" merge-base --is-ancestor 3db7406 HEAD &amp;&amp; echo "M01 repairs present"
 "$PY" --version
 mkdir -p "$OUT" &amp;&amp; chmod 700 "$OUT"</code></pre></div>
-          <p style="margin:6px 0 0" class="kbdhelp">Expected: the top-level path prints; the remote names scalinity/LocalFlow; “M01 repairs present”; Python 3.14.x. When finished with the whole campaign, remove the worktree with <code>git -C "$LF_MAIN" worktree remove "$LF_VERIFY"</code> (it holds no private data unless you copied some there).</p>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: the top-level path prints; the remote names scalinity/LocalFlow; “M01 repairs present”; Python 3.14.x; <code>ls "$APP"</code> lists <code>Contents</code>. When finished with the whole campaign, remove the worktree with <code>git -C "$LF_MAIN" worktree remove "$LF_VERIFY"</code> (it holds no private data unless you copied some there).</p>
         </div>
       </section>
 
@@ -369,13 +370,13 @@ mkdir -p "$OUT" &amp;&amp; chmod 700 "$OUT"</code></pre></div>
       <section class="milestone" id="M01" data-milestone="M01" data-title="Baseline & evaluation freeze">
         <div class="ms-head">
           <span class="mid">M01</span><h2>Baseline &amp; evaluation freeze</h2>
-          <span class="meta">instructions rev M01-r1 · code c24b7bc · remediation of audit at 1ee8e44</span>
+          <span class="meta">instructions M01-r1/r2 · code 3db7406 · remediation of audit at 1ee8e44</span>
         </div>
         <p class="ms-intro">The M01 cloud remediation repaired source/config/model identity, snapshot safety, the legacy-log parser and importer boundary, registry/privacy/fixture validation and probe attribution. Portable tests passed in the cloud; these checks cover what only this Mac can show. Detail: <code>docs/v2/handoffs/M01.md</code> (remediation addendum) and <code>docs/v2/acceptance/M01/results.json</code> → <code>remediation_2026_09_24</code>.</p>
 
         <h3 class="group">Automatable local parity</h3>
 
-        <article class="check" id="M01-V001" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal">
+        <article class="check" id="M01-V001" data-milestone="M01" data-rev="M01-r2" data-code="3db7406" data-tags="terminal">
           <header class="check-head">
             <span class="cid">M01-V001</span>
             <h4>Run the repaired M01 suites under the Mac interpreter</h4>
@@ -402,7 +403,7 @@ for t in tests/v2/test_snapshot_safety.py tests/v2/test_baseline_manifest_produc
 done</code></pre></div>
             <h5>Expected</h5>
             <ul class="list">
-              <li>Every line shows <code>exit=0</code>. Final lines and counts: snapshot safety <b>17</b>; manifest producers <b>13</b>; legacy parser <b>17 passed, 1 skipped</b> — or <b>18 passed, 0 skipped</b> if a verified historical prefix exists under <code>$EV</code> (that case is judged in M01-V008, not here); import boundary <b>4</b>; registry <b>5</b>; baseline manifest <b>5</b>; probe orchestration <b>6</b>; verify summary <b>4</b>; M02 import <b>“all import tests passed”</b> (7 cases).</li>
+              <li>Every line shows <code>exit=0</code>. Final lines and counts: snapshot safety <b>19</b>; manifest producers <b>15</b>; legacy parser <b>17 passed, 1 skipped</b> — or <b>18 passed, 0 skipped</b> if a verified historical prefix exists under <code>$EV</code> (that case is judged in M01-V008, not here); import boundary <b>6</b>; registry <b>5</b>; baseline manifest <b>5</b>; probe orchestration <b>7</b>; verify summary <b>4</b>; M02 import <b>“all import tests passed”</b> (7 cases).</li>
               <li>Invariant: the privacy scan line reports a clean scan over the worktree’s repository paths.</li>
             </ul>
             <h5>If it fails</h5>
@@ -420,7 +421,7 @@ done</code></pre></div>
 
         <h3 class="group">Native macOS · real data</h3>
 
-        <article class="check" id="M01-V002" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal native privacy">
+        <article class="check" id="M01-V002" data-milestone="M01" data-rev="M01-r2" data-code="3db7406" data-tags="terminal native privacy">
           <header class="check-head">
             <span class="cid">M01-V002</span>
             <h4>Real source, worktree and installed-bundle identity</h4>
@@ -432,20 +433,20 @@ done</code></pre></div>
           <details class="more"><summary>Instructions &amp; expected results</summary>
             <dl class="facts">
               <dt>Environment</dt><dd>Reference Mac · Terminal · installed app present (running or not) · read-only</dd>
-              <dt>Preconditions</dt><dd>M01-V001 passed. If the app was installed to <code>~/Applications</code> (build_app.sh does this when <code>/Applications</code> is not writable) add <code>--app ~/Applications/LocalFlow.app</code>.</dd>
+              <dt>Preconditions</dt><dd>M01-V001 passed. <code>$APP</code> points at the installed bundle (build_app.sh uses <code>~/Applications</code> when <code>/Applications</code> is not writable).</dd>
               <dt>Working dir</dt><dd><code>$LF_VERIFY</code>; the generator describes <code>$LF_MAIN</code> via <code>--repo-root</code></dd>
             </dl>
             <h5>Commands</h5>
             <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_VERIFY"
 export M="$OUT/manifest-$(date -u +%Y%m%dT%H%M%SZ).json"
-"$PY" scripts/v2/build_baseline_manifest.py --repo-root "$LF_MAIN" --output "$M"; echo "generator exit=$?"
+"$PY" scripts/v2/build_baseline_manifest.py --repo-root "$LF_MAIN" --app "$APP" --output "$M"; echo "generator exit=$?"
 "$PY" scripts/v2/m01_verify_summary.py manifest "$M" | tee "$M.summary.txt"
 
 <span class="c"># independent cross-checks</span>
 git -C "$LF_MAIN" rev-parse HEAD
-git -C "$LF_MAIN" status --porcelain --untracked-files=all | wc -l
-diff -rq -x __pycache__ /Applications/LocalFlow.app/Contents/Resources/localflow "$LF_MAIN/localflow" | wc -l
-shasum -a 256 /Applications/LocalFlow.app/Contents/MacOS/LocalFlow</code></pre></div>
+git -C "$LF_MAIN" --no-optional-locks status --porcelain --untracked-files=all | wc -l
+diff -rq -x __pycache__ "$APP/Contents/Resources/localflow" "$LF_MAIN/localflow" | wc -l
+shasum -a 256 "$APP/Contents/MacOS/LocalFlow"</code></pre></div>
             <h5>Expected</h5>
             <ul class="list">
               <li><code>generator exit=0</code>. Test count: not applicable (a generator, not a test).</li>
@@ -466,7 +467,7 @@ shasum -a 256 /Applications/LocalFlow.app/Contents/MacOS/LocalFlow</code></pre><
           </details>
         </article>
 
-        <article class="check" id="M01-V003" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal native">
+        <article class="check" id="M01-V003" data-milestone="M01" data-rev="M01-r2" data-code="3db7406" data-tags="terminal native">
           <header class="check-head">
             <span class="cid">M01-V003</span>
             <h4>Effective configuration in each real launch context</h4>
@@ -489,7 +490,7 @@ echo "shell LOCALFLOW_CONFIG=${LOCALFLOW_CONFIG:-unset}"
 (cd "$LF_MAIN" &amp;&amp; "$PY" -c 'import json; from localflow.config import load; c = load(); print(json.dumps({k: c.get(k) for k in ("model","cleanup","cleanup_model","cleanup_implementation","hotkey")}))')
 
 <span class="c"># runtime oracle — installed app's own loader and defaults (no bytecode written into the bundle)</span>
-R=/Applications/LocalFlow.app/Contents/Resources
+R="$APP/Contents/Resources"
 (cd "$R" &amp;&amp; env -u LOCALFLOW_CONFIG PYTHONDONTWRITEBYTECODE=1 "$R/venv/bin/python" -c 'import json; from localflow.config import load; c = load(); print(json.dumps({k: c.get(k) for k in ("model","cleanup","cleanup_model","cleanup_implementation","hotkey")}))')
 
 <span class="c"># what LaunchServices-launched apps inherit</span>
@@ -516,7 +517,7 @@ ls -la "$HOME/Library/Application Support/LocalFlow/config.json" 2&gt;&amp;1 | c
           </details>
         </article>
 
-        <article class="check" id="M01-V004" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal native">
+        <article class="check" id="M01-V004" data-milestone="M01" data-rev="M01-r1" data-code="3db7406" data-tags="terminal native">
           <header class="check-head">
             <span class="cid">M01-V004</span>
             <h4>Model assets, tokenizer/config files, cache origin and interpreters</h4>
@@ -559,7 +560,7 @@ done</code></pre></div>
           </details>
         </article>
 
-        <article class="check" id="M01-V005" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="native human terminal">
+        <article class="check" id="M01-V005" data-milestone="M01" data-rev="M01-r1" data-code="3db7406" data-tags="native human terminal">
           <header class="check-head">
             <span class="cid">M01-V005</span>
             <h4>Current-session engine readiness after a fresh launch</h4>
@@ -585,7 +586,7 @@ grep -nE '\[localflow\] (ready — hold|model loaded\.|cleanup model (loaded|una
 ls -t "$HOME/Library/Logs/LocalFlow"/events-*.jsonl 2&gt;/dev/null | head -n 1
 cd "$LF_VERIFY"
 export R5="$OUT/readiness-$(date -u +%Y%m%dT%H%M%SZ).json"
-"$PY" scripts/v2/build_baseline_manifest.py --repo-root "$LF_MAIN" --skip-model-hashes --output "$R5"; echo "exit=$?"
+"$PY" scripts/v2/build_baseline_manifest.py --repo-root "$LF_MAIN" --app "$APP" --skip-model-hashes --output "$R5"; echo "exit=$?"
 "$PY" scripts/v2/m01_verify_summary.py manifest "$R5" | grep -E "current session|legacy log last segment|processes"</code></pre></div>
             <h5>Expected</h5>
             <ul class="list">
@@ -606,7 +607,7 @@ export R5="$OUT/readiness-$(date -u +%Y%m%dT%H%M%SZ).json"
           </details>
         </article>
 
-        <article class="check" id="M01-V006" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal native privacy">
+        <article class="check" id="M01-V006" data-milestone="M01" data-rev="M01-r2" data-code="3db7406" data-tags="terminal native privacy">
           <header class="check-head">
             <span class="cid">M01-V006</span>
             <h4>Private evidence root: ownership, permissions, confinement</h4>
@@ -629,7 +630,7 @@ case "$EV/" in "$LF_MAIN"/*) echo "INSIDE the repository";; *) echo "outside the
 find "$EV" -maxdepth 1 -name '.*.partial' -print
 ls -la "$EV" | head -n 20
 
-<span class="c"># the tool must refuse an in-repo root and write nothing</span>
+<span class="c"># the tool (run from the verify worktree) must refuse a root inside your main checkout and write nothing</span>
 cd "$LF_VERIFY"
 "$PY" scripts/v2/snapshot_user_data.py --root "$LF_MAIN/docs/v2/private"; echo "exit=$?"
 ls "$LF_MAIN/docs/v2/private" 2&gt;&amp;1 | head -n 1
@@ -640,12 +641,12 @@ git -C "$LF_MAIN" check-ignore -v docs/v2/private/x stats.db.bak x.db-wal || tru
             <ul class="list">
               <li><code>stat</code> owner equals <code>whoami</code>; mode has no group/other <b>write</b> (<code>drwx------</code> ideal; <code>drwxr-xr-x</code> accepted and recorded by the tool as readable-by-others). “real directory”, “outside the repository”.</li>
               <li><code>find</code> prints nothing (no unpublished partial runs) — or you can name each one’s cause.</li>
-              <li>The in-repo run prints “must live outside the repository” with <code>exit=2</code>; <code>ls</code> reports “No such file or directory”. <code>check-ignore</code> lists a <code>.gitignore</code> rule for each path. Test count: not applicable.</li>
+              <li>The in-repo run prints “REFUSED: --root must live outside the repository … inside worktree …” with <code>exit=3</code>; <code>ls</code> reports “No such file or directory”. <code>check-ignore</code> lists a <code>.gitignore</code> rule for each path. Test count: not applicable.</li>
             </ul>
             <h5>If it fails</h5>
             <ul class="list">
               <li>Foreign owner or group/other-writable root: the tool refuses to write — fix ownership/permissions of the root, then rerun (<b>Blocked</b> until then).</li>
-              <li>In-repo run exits 0 or creates the directory: confinement is broken — <b>Failed</b>; do not run M01-V007.</li>
+              <li>In-repo run exits 0 or creates the directory: confinement is broken — <b>Failed</b>; do not run M01-V007, and remove only the directory it just created (<code>docs/v2/private</code> in your checkout) after checking it holds nothing else.</li>
               <li>A <code>.partial</code> directory: an earlier run did not publish (crash or full disk). Leave it; note it — <b>Needs follow-up</b>.</li>
             </ul>
             <h5>Evidence</h5>
@@ -655,7 +656,7 @@ git -C "$LF_MAIN" check-ignore -v docs/v2/private/x stats.db.bak x.db-wal || tru
           </details>
         </article>
 
-        <article class="check" id="M01-V007" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal native privacy">
+        <article class="check" id="M01-V007" data-milestone="M01" data-rev="M01-r1" data-code="3db7406" data-tags="terminal native privacy">
           <header class="check-head">
             <span class="cid">M01-V007</span>
             <h4>Safe snapshot of real Application Support data (SQLite + WAL/journal)</h4>
@@ -700,7 +701,7 @@ shasum -a 256 -c "$OUT/V007-before.sha"</code></pre></div>
           </details>
         </article>
 
-        <article class="check" id="M01-V008" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal privacy">
+        <article class="check" id="M01-V008" data-milestone="M01" data-rev="M01-r1" data-code="3db7406" data-tags="terminal privacy">
           <header class="check-head">
             <span class="cid">M01-V008</span>
             <h4>Exact-hash historical log reproduction with the repaired parser</h4>
@@ -745,7 +746,7 @@ shasum -a 256 "$P"
 
         <h3 class="group">Model-backed</h3>
 
-        <article class="check" id="M01-V009" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="model terminal native hardware">
+        <article class="check" id="M01-V009" data-milestone="M01" data-rev="M01-r2" data-code="3db7406" data-tags="model terminal native hardware">
           <header class="check-head">
             <span class="cid">M01-V009</span>
             <h4>Stage-timing probe through the configured cleanup implementation</h4>
@@ -758,13 +759,14 @@ shasum -a 256 "$P"
             <dl class="facts">
               <dt>Environment</dt><dd>Reference Mac · MLX/Metal · Terminal · prefer mains power (the report records power source)</dd>
               <dt>Preconditions</dt><dd>M01-V004 passed (usable cached snapshots). Quit the app for cleaner timings if you like (optional; record which). Offline is enforced with <code>HF_HUB_OFFLINE=1</code> so nothing downloads.</dd>
-              <dt>Working dir</dt><dd><code>$LF_VERIFY</code> (the probe imports the worktree’s <code>localflow</code>, which equals your code apart from the M01 importer change)</dd>
+              <dt>Working dir</dt><dd><code>$LF_VERIFY</code>. The probe <em>executes</em> the worktree’s <code>localflow</code> code (bound as <code>bindings.source</code>) and resolves the <em>configuration</em> of your checkout via <code>--repo-root "$LF_MAIN"</code> (bound as <code>bindings.config_checkout</code>, cross-checked by your checkout’s own <code>load()</code>). The <code>diff</code> command below shows how the executed code differs from yours.</dd>
             </dl>
             <h5>Commands</h5>
             <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_VERIFY"
 S="$(date -u +%Y%m%dT%H%M%SZ)"
-HF_HUB_OFFLINE=1 "$PY" scripts/v2/baseline_probe.py --output-dir "$OUT/probe-$S-configured" &gt; /dev/null; echo "configured exit=$?"
-HF_HUB_OFFLINE=1 "$PY" scripts/v2/baseline_probe.py --cleanup-implementation v1 --output-dir "$OUT/probe-$S-v1control" &gt; /dev/null; echo "v1-control exit=$?"
+diff -rq -x __pycache__ "$LF_VERIFY/localflow" "$LF_MAIN/localflow" | tee "$OUT/V009-code-diff.txt"
+HF_HUB_OFFLINE=1 "$PY" scripts/v2/baseline_probe.py --repo-root "$LF_MAIN" --output-dir "$OUT/probe-$S-configured" &gt; /dev/null; echo "configured exit=$?"
+HF_HUB_OFFLINE=1 "$PY" scripts/v2/baseline_probe.py --repo-root "$LF_MAIN" --cleanup-implementation v1 --output-dir "$OUT/probe-$S-v1control" &gt; /dev/null; echo "v1-control exit=$?"
 "$PY" scripts/v2/m01_verify_summary.py probe "$OUT/probe-$S-configured/probe.json" | tee "$OUT/V009-configured.txt"
 "$PY" scripts/v2/m01_verify_summary.py probe "$OUT/probe-$S-v1control/probe.json" | tee "$OUT/V009-v1control.txt"</code></pre></div>
             <h5>Expected</h5>
@@ -772,13 +774,13 @@ HF_HUB_OFFLINE=1 "$PY" scripts/v2/baseline_probe.py --cleanup-implementation v1 
               <li>Both <code>exit=0</code>; test count not applicable.</li>
               <li>Configured run: <code>cleanup selection</code> shows configured <code>v2</code>, probed <code>v2</code>, role “configured implementation”; stage cleanup implementation “ModelRunner → CleanupEngine (M07)” with a <code>template_revision</code>; ASR model <code>mlx-community/parakeet-tdt-0.6b-v3</code>, cleanup <code>mlx-community/Qwen3-4B-Instruct-2507-4bit</code>.</li>
               <li>V1-control run: probed <code>v1</code>, selected by “command-line override”, role “V1 control (not the configured V2 path)”.</li>
-              <li>Both summaries: <code>OK</code> for no early errors, no failed stage, <b>no fallback run</b>, config equals the runtime loader, probed = configured. <code>source binding.head_commit</code> equals <code>git -C "$LF_VERIFY" rev-parse HEAD</code>. Record load/transcribe/clean seconds and the power line; there is no pass threshold (the 2026-09-21 V1 figures were ASR load 3.79 s, transcribe 0.44/0.041 s, Qwen load 1.96 s, clean 0.98 s, on battery).</li>
+              <li>Both summaries: <code>OK</code> for no early errors, no failed stage, <b>no fallback run</b>, config equals the runtime loader, probed = configured. <code>executed code.head_commit</code> equals <code>git -C "$LF_VERIFY" rev-parse HEAD</code>; <code>config checkout.checkout</code> is <code>$LF_MAIN</code>; <code>runtime load oracle: ran</code>. The <code>diff</code> lists the files where the executed code differs from yours (<code>localflow/v2/importer.py</code> at least, unless your checkout already contains the M01 remediation): record the list — if it touches <code>stt.py</code>, <code>cleanup.py</code> or <code>v2/cleanup/</code>, the timings describe the worktree’s code, not yours (<b>Needs follow-up</b> only if you need your exact code measured). Record load/transcribe/clean seconds and the power line; there is no pass threshold (the 2026-09-21 V1 figures were ASR load 3.79 s, transcribe 0.44/0.041 s, Qwen load 1.96 s, clean 0.98 s, on battery).</li>
             </ul>
             <h5>If it fails</h5>
             <ul class="list">
               <li><code>exit=1</code>, stage <code>failed</code>: read its <code>error</code> — Metal/MLX errors are native failures (<b>Failed</b>); a download attempt blocked by offline mode means the cache is incomplete (back to M01-V004).</li>
               <li><code>CHECK no cleanup run fell back</code>: the model answered but its output failed validation (V2 <code>llm_fallback_normalized</code>/<code>llm_partial</code>, V1 <code>llm_fallback_basic</code>) — the timing is not a clean model timing: <b>Needs follow-up</b> with the <code>fallback_reason</code>.</li>
-              <li><code>exit=2</code>: the report could not be written (printed to stdout instead) — check disk space and <code>$OUT</code> permissions; <b>Blocked</b>.</li>
+              <li><code>exit=3</code>: the report could not be written (printed to stdout instead; the stage outcome is in the error line) — check disk space and <code>$OUT</code> permissions; <b>Blocked</b>. <code>exit=64</code>: mistyped command.</li>
             </ul>
             <h5>Evidence</h5>
             <p>Private: both <code>probe.json</code> files and summaries under <code>$OUT</code>. Sanitized destination (contains versions, hashes, timings and local paths only): copy a reviewed report to <code>docs/v2/benchmarks/&lt;run_id&gt;/probe.json</code>.</p>
@@ -789,7 +791,7 @@ HF_HUB_OFFLINE=1 "$PY" scripts/v2/baseline_probe.py --cleanup-implementation v1 
 
         <h3 class="group">Human behaviour</h3>
 
-        <article class="check" id="M01-V010" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="human native privacy">
+        <article class="check" id="M01-V010" data-milestone="M01" data-rev="M01-r1" data-code="3db7406" data-tags="human native privacy">
           <header class="check-head">
             <span class="cid">M01-V010</span>
             <h4>Installed app: 4B model, and what analytics/dictionary/transform UI exists</h4>
@@ -832,7 +834,7 @@ ls -la "$HOME/Library/Application Support/LocalFlow/" | cut -c1-110</code></pre>
           </details>
         </article>
 
-        <article class="check" id="M01-V011" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="human hardware">
+        <article class="check" id="M01-V011" data-milestone="M01" data-rev="M01-r1" data-code="3db7406" data-tags="human hardware">
           <header class="check-head">
             <span class="cid">M01-V011</span>
             <h4>Release-to-insert latency pilot — superseded by the M15 gate</h4>

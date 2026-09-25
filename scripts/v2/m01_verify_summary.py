@@ -179,7 +179,9 @@ def probe(r, o):
     o.fact("environment", r.get("environment"))
     o.fact("cleanup selection", r.get("cleanup_selection"))
     o.fact("config", r.get("config"))
-    o.fact("source binding", dig(r, "bindings.source"))
+    o.fact("executed code (bindings.source)", dig(r, "bindings.source"))
+    o.fact("config checkout", dig(r, "bindings.config_checkout"))
+    o.fact("runtime load oracle", dig(r, "config.runtime_load_reason") or "ran")
     for s in r.get("stages") or []:
         o.fact(f"stage {s['stage']}", f"{s['status']} "
                f"{s.get('implementation', '')} model={s.get('loaded_model_id')} "

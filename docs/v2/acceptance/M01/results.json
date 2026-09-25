@@ -167,7 +167,7 @@
     },
     "inherited_base_sha": "1ee8e449ad21382378785c7ca9c309f55020d44f",
     "branch": "claude/beautiful-cori-gnh3yc",
-    "final_code_revision": "c24b7bc",
+    "final_code_revision": "3db7406",
     "environment": "Claude Code cloud container (Linux x86_64); not the reference Mac",
     "reproduction_evidence": {
       "script": "docs/v2/acceptance/M01/remediation/repro_inherited.py",
@@ -210,7 +210,8 @@
         "M01-AUDIT-17 (pinned by test; no framing invented)"
       ],
       "found_during_remediation": [
-        "idle WAL-mode database: SQLite read-only open creates empty -wal/-shm; fixed in c24b7bc (recorded, not a change)"
+        "idle WAL-mode database: SQLite read-only open creates empty -wal/-shm; fixed in c24b7bc (recorded, not a change)",
+        "independent review round: cross-worktree evidence-root escape (high), importer single-prefix reconciliation, --repo-root defaults, probe config/oracle binding, rename/pathspec parsing, exit-code collisions, invalid-UTF-8/null config crash — all fixed in 3db7406 with regressions"
       ]
     },
     "historical_claim_corrections": [
@@ -241,7 +242,7 @@
         "command": "python tests/v2/test_snapshot_safety.py",
         "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
         "exit": 0,
-        "passed": 17,
+        "passed": 19,
         "failed": 0,
         "skipped": 0
       },
@@ -249,7 +250,7 @@
         "command": "python tests/v2/test_baseline_manifest_producers.py",
         "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
         "exit": 0,
-        "passed": 13,
+        "passed": 15,
         "failed": 0,
         "skipped": 0
       },
@@ -266,7 +267,7 @@
         "command": "python tests/v2/test_legacy_import_boundary.py",
         "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
         "exit": 0,
-        "passed": 4,
+        "passed": 6,
         "failed": 0,
         "skipped": 0
       },
@@ -290,7 +291,7 @@
         "command": "python tests/v2/test_baseline_probe.py",
         "interpreter": "uv-managed CPython 3.14.0rc2 + numpy 2.5.3 (scratch venv outside the repo; project .venv absent in the cloud)",
         "exit": 0,
-        "passed": 6,
+        "passed": 7,
         "failed": 0,
         "skipped": 0,
         "note": "injected fakes: orchestration only, never inference evidence"
@@ -333,7 +334,7 @@
       }
     ],
     "counts": {
-      "passed_test_cases_m01_suites": 71,
+      "passed_test_cases_m01_suites": 78,
       "skipped": 1,
       "failed": 0,
       "not_applicable": "generator/snapshot CLIs are not test runners",
@@ -358,6 +359,29 @@
       "M01-V011"
     ],
     "runbook": "docs/v2/VERIFICATION.html",
-    "handoff_addendum": "docs/v2/handoffs/M01.md#remediation-addendum--2026-09-2425-cloud-session-post-audit"
+    "handoff_addendum": "docs/v2/handoffs/M01.md#remediation-addendum--2026-09-2425-cloud-session-post-audit",
+    "exit_codes": {
+      "snapshot_user_data.py": "0 complete, 1 failed, 2 incomplete, 3 refused root, 64 usage",
+      "baseline_probe.py": "0 ok, 1 stage failed, 3 report not written, 64 usage",
+      "build_registry.py": "0 no problems, 1 problems",
+      "m01_verify_summary.py": "0 invariants hold, 1 violated, 2 unreadable input"
+    },
+    "runbook_instruction_revisions": {
+      "M01-r1": [
+        "M01-V004",
+        "M01-V005",
+        "M01-V007",
+        "M01-V008",
+        "M01-V010",
+        "M01-V011"
+      ],
+      "M01-r2": [
+        "M01-V001",
+        "M01-V002",
+        "M01-V003",
+        "M01-V006",
+        "M01-V009"
+      ]
+    }
   }
 }
