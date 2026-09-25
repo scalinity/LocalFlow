@@ -220,6 +220,10 @@ audio alignment and add no seconds).
   an old capture: it collects only when the ORIGINAL capture was
   collected (its example's capture-time revision is reused) AND
   collection is enabled now (`point: retry_original_capture`).
+- **Consent writes are acknowledged.** `ConsentManager.set` re-reads the
+  committed state; the capture-boundary cache follows the store, so a
+  failed write reports `training.collection_state` `not_recorded` (ERROR)
+  and never leaves a phantom `enabled` snapshot.
 - **Publication.** The example first becomes visible in its final initial
   state (quarantined when flagged) together with revision 1;
   `training.revision_saved` is emitted after the commit with

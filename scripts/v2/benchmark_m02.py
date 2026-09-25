@@ -267,6 +267,9 @@ def bench_collection_paired(n=50, bind=True):
     return {
         "certified": True,
         "timing_scope": COLLECTION_TIMING_SCOPE,
+        # Certification is about WHAT was measured; whether the cost
+        # meets S29.16 is reported separately and never hidden.
+        "meets_s2916_target": delta_p95 <= 25,
         "n_per_mode": n,
         "disabled": results["disabled"],
         "enabled": results["enabled"],

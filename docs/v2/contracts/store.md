@@ -246,7 +246,22 @@ Owner M02; findings M02-AUDIT-01…20 (`docs/v2/acceptance/M02/remediation/`).
   deletion release it.
 - **Attempt fence.** `update_job_state(..., expected_attempt=N)` discards
   a transition from a writer still on another attempt (unfenced calls
-  are unchanged).
+  are unchanged). It is an API for callers that hold an authoritative
+  attempt; the app does NOT pass it on its worker transitions: the
+  app's attempt is synchronized with the store only by an unacknowledged
+  bump, a mismatch would strand the job unresolved, and the single FIFO
+  coordinator plus the M03 supervisor's stale-message rejection leave no
+  confirmed stale writer to fence.
+- **Consumers across the barrier.** Note mining skips a deleted job
+  (one deleted job never fails the whole pass); a transform of text
+  whose originating job was deleted records its candidate with artifacts
+  detached from that job (`job_id` NULL); `TrainingDataService.exclude`
+  leaves a `deleted` example deleted; `Store.job_deleted(job_id)` lets
+  producers of copies outside the store (the debug WAV) check the
+  barrier first. v11 backfills `job_deletions` for pre-v11 deletions
+  (examples in state `deleted`, jobs whose artifacts carry deletion
+  tombstones), idempotently — the repair path rebuilds a lost barrier
+  table the same way; a lost `purge_intents` table is repaired empty.
 - **Verification.** `verify()` checks every referenced artifact (nested
   included) exists and belongs to the envelope's job, revision
   parent/pointer consistency, pending purges, and accepts valid
@@ -264,6 +279,7 @@ Owner M02; findings M02-AUDIT-01…20 (`docs/v2/acceptance/M02/remediation/`).
   `_CORE_DEPENDENTS`) is corruption: a `v2-pre-repair-*.db` backup is
   taken and the open is refused; additive tables without dependents and
   missing indexes are re-created (idempotent DDL, `store.schema_repaired`).
+  `job_deletions`/`purge_intents` are additive (rebuilt, never refused).
 - **Imports.** `start_import_run`/`finish_import_run` record a log run's
   byte snapshot BEFORE its first pair commits (`note` `status=started`
   until completed), so an interrupted run still reconciles as a verified
