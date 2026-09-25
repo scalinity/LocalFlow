@@ -1,0 +1,407 @@
+{
+ "schema_version": 1,
+ "code_sha": "bfbc63c35efa6273cc13242d54d3e5bbe264b21e",
+ "branch": "claude/intelligent-allen-iz9j6s",
+ "evaluated_utc": "2026-09-25T02:27:15Z",
+ "environment": "Claude Code cloud container (Linux x86_64); not the reference Mac",
+ "interpreter": "CPython 3.13.12 (scratch venv linked as .venv; project .venv absent in cloud)",
+ "dependencies": {
+  "numpy": "2.5.3",
+  "sqlite": "3.45.1"
+ },
+ "sqlite_effective_settings": {
+  "journal_mode": "delete",
+  "synchronous": "FULL (2)",
+  "foreign_keys": "off",
+  "busy_timeout_ms": 5000,
+  "note": "Python sqlite3 defaults on a fresh Store in this container; not asserted for the reference Mac"
+ },
+ "groups": {
+  "m02_required": [
+   {
+    "command": ".venv/bin/python tests/v2/logging/test_event_writer.py",
+    "exit": 0,
+    "passed": 13,
+    "final_line": "[localflow] logging degraded: event directory locked by another process \u2014 events are being retried; dictation is unaffected",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/storage/test_store.py",
+    "exit": 0,
+    "passed": 17,
+    "final_line": "all store tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/storage/test_import.py",
+    "exit": 0,
+    "passed": 7,
+    "final_line": "all import tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/training/test_collector.py",
+    "exit": 0,
+    "passed": 11,
+    "final_line": "all collector tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_legacy_import_boundary.py",
+    "exit": 0,
+    "passed": 6,
+    "final_line": "all legacy import boundary tests passed (6)",
+    "failed": 0
+   }
+  ],
+  "m02_remediation_new": [
+   {
+    "command": ".venv/bin/python tests/v2/storage/test_m02_remediation_store.py",
+    "exit": 0,
+    "passed": 19,
+    "final_line": "all m02 remediation store tests passed (19)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/storage/test_m02_remediation_import.py",
+    "exit": 0,
+    "passed": 4,
+    "final_line": "all m02 remediation import tests passed (4)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/training/test_m02_remediation_collector.py",
+    "exit": 0,
+    "passed": 14,
+    "final_line": "all m02 remediation collector tests passed (14)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/logging/test_m02_remediation_events.py",
+    "exit": 0,
+    "passed": 5,
+    "final_line": "all m02 remediation event tests passed (5)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/storage/test_m02_review_round.py",
+    "exit": 0,
+    "passed": 8,
+    "final_line": "all m02 review-round tests passed (8)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_m02_app_wiring.py",
+    "exit": 0,
+    "passed": 4,
+    "final_line": "all m02 app wiring (static) checks passed (4)",
+    "failed": 0
+   }
+  ],
+  "m01_compat": [
+   {
+    "command": ".venv/bin/python tests/v2/test_legacy_parser.py",
+    "exit": 0,
+    "passed": 17,
+    "final_line": "all legacy parser tests passed (17 passed, 1 skipped)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_snapshot_safety.py",
+    "exit": 0,
+    "passed": 19,
+    "final_line": "all snapshot safety tests passed (19)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_baseline_manifest.py",
+    "exit": 0,
+    "passed": 5,
+    "final_line": "all baseline manifest tests passed (5)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_baseline_manifest_producers.py",
+    "exit": 0,
+    "passed": 15,
+    "final_line": "all baseline manifest producer tests passed (15)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_registry.py",
+    "exit": 0,
+    "passed": 5,
+    "final_line": "all registry tests passed (5)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_baseline_probe.py",
+    "exit": 0,
+    "passed": 7,
+    "final_line": "all baseline probe orchestration tests passed (7)",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_m01_verify_summary.py",
+    "exit": 0,
+    "passed": 4,
+    "final_line": "all m01 verify summary tests passed (4)",
+    "failed": 0
+   }
+  ],
+  "downstream_targeted": [
+   {
+    "command": ".venv/bin/python tests/v2/lifecycle/test_worker_protocol.py",
+    "exit": 0,
+    "passed": 11,
+    "final_line": "all worker protocol tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/insertion/test_insertion_races.py",
+    "exit": 0,
+    "passed": 13,
+    "final_line": "all insertion race tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/analytics/test_usage_store.py",
+    "exit": 0,
+    "passed": 11,
+    "final_line": "all usage store tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/training/test_classification.py",
+    "exit": 0,
+    "passed": 7,
+    "final_line": "all classification tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/training/test_sampling.py",
+    "exit": 0,
+    "passed": 3,
+    "final_line": "all sampling tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/training/test_splits.py",
+    "exit": 0,
+    "passed": 4,
+    "final_line": "all splits tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/training/test_dataset_export.py",
+    "exit": 0,
+    "passed": 6,
+    "final_line": "all dataset export tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/personalization/test_learning.py",
+    "exit": 0,
+    "passed": 11,
+    "final_line": "all learning tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/personalization/test_profile.py",
+    "exit": 0,
+    "passed": 9,
+    "final_line": "all profile tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/notes/test_note_store.py",
+    "exit": 0,
+    "passed": 7,
+    "final_line": "all note store tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/notes/test_note_evidence.py",
+    "exit": 0,
+    "passed": 5,
+    "final_line": "all note evidence tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/ui/test_history_queries.py",
+    "exit": 0,
+    "passed": 11,
+    "final_line": "all history query tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/transforms/test_transform_engine.py",
+    "exit": 0,
+    "passed": 8,
+    "final_line": "all transform engine tests passed",
+    "failed": 0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/vocabulary/test_vocabulary_store.py",
+    "exit": 0,
+    "passed": 16,
+    "final_line": "all vocabulary store tests passed",
+    "failed": 0
+   }
+  ],
+  "native_limited_partial": [
+   {
+    "command": ".venv/bin/python tests/v2/lifecycle/test_lifecycle.py",
+    "exit": 1,
+    "passed": 0,
+    "final_line": "ModuleNotFoundError: No module named 'objc'",
+    "failed": null
+   },
+   {
+    "command": ".venv/bin/python tests/v2/insertion/test_insertion_attribution.py",
+    "exit": 1,
+    "passed": 9,
+    "final_line": "AssertionError: {'outcome': 'undo_error', 'reason_code': 'ModuleNotFoundError'}",
+    "failed": null
+   },
+   {
+    "command": ".venv/bin/python tests/v2/insertion/test_insertion_pipeline.py",
+    "exit": 1,
+    "passed": 0,
+    "final_line": "ModuleNotFoundError: No module named 'objc'",
+    "failed": null
+   },
+   {
+    "command": ".venv/bin/python tests/v2/ui/test_training_data.py",
+    "exit": 1,
+    "passed": 11,
+    "final_line": "ModuleNotFoundError: No module named 'objc'",
+    "failed": null
+   }
+  ],
+  "model_backed": [
+   {
+    "command": ".venv/bin/python tests/v2/training/test_live_pipeline.py",
+    "exit": 0,
+    "passed": 0,
+    "final_line": "SKIPPED (LOCALFLOW_SKIP_LIVE=1) \u2014 not recorded as passed",
+    "status": "SKIPPED",
+    "reason": "MLX/Metal and the Qwen/Parakeet models are unavailable in the cloud; PENDING_LOCAL_VERIFICATION M02-V002. Not counted as a pass.",
+    "failed": 0
+   }
+  ],
+  "mocked_interface_shim": {
+   "kind": "NON-NATIVE: permissive AppKit/PyObjC stand-ins injected via sitecustomize (not committed); a mocked-interface compatibility signal only, never native certification",
+   "base_vs_repaired": "identical exit codes and pass counts on 3ae0070 and on the repaired tree for all 15 files; failures are shim limitations present on both",
+   "results": [
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/analytics/test_insights_hub.py",
+     "exit": 1,
+     "passed": 1
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/context/test_context_pipeline.py",
+     "exit": 0,
+     "passed": 12
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/fidelity/test_cleanup_pipeline.py",
+     "exit": 1,
+     "passed": 1
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/insertion/test_insertion_attribution.py",
+     "exit": 1,
+     "passed": 9
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/insertion/test_insertion_pipeline.py",
+     "exit": 1,
+     "passed": 3
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/lifecycle/test_lifecycle.py",
+     "exit": 0,
+     "passed": 13
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/normalization/test_normalization_pipeline.py",
+     "exit": 0,
+     "passed": 7
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/notes/test_scratchpad_hub.py",
+     "exit": 1,
+     "passed": 0
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/profiles/test_profiles_pipeline.py",
+     "exit": 1,
+     "passed": 1
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/transforms/test_transform_pipeline.py",
+     "exit": 1,
+     "passed": 7
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/ui/test_hub_shell.py",
+     "exit": 1,
+     "passed": 0
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/ui/test_training_data.py",
+     "exit": 0,
+     "passed": 12
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/ui/test_training_review_hub.py",
+     "exit": 1,
+     "passed": 0
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/v2/vocabulary/test_vocabulary_pipeline.py",
+     "exit": 1,
+     "passed": 0
+    },
+    {
+     "command": "PYTHONPATH=<non-native AppKit shim> .venv/bin/python tests/test_stuck_overlay.py",
+     "exit": 0,
+     "passed": 5
+    }
+   ]
+  }
+ },
+ "totals": {
+  "m02_required": {
+   "files": 5,
+   "passed": 54,
+   "nonzero_exit": 0
+  },
+  "m02_remediation_new": {
+   "files": 6,
+   "passed": 54,
+   "nonzero_exit": 0
+  },
+  "m01_compat": {
+   "files": 7,
+   "passed": 72,
+   "nonzero_exit": 0
+  },
+  "downstream_targeted": {
+   "files": 14,
+   "passed": 122,
+   "nonzero_exit": 0
+  },
+  "native_limited_partial": {
+   "files": 4,
+   "passed": 20,
+   "nonzero_exit": 4
+  },
+  "model_backed": {
+   "files": 1,
+   "passed": 0,
+   "nonzero_exit": 0
+  }
+ }
+}
