@@ -35,7 +35,12 @@ Known structural limitation (M01-AUDIT-17): the legacy log has no escaping,
 so transcript text that itself contains the runtime prefix, or stderr
 output interleaved into a multi-line payload, is indistinguishable from a
 real record/continuation. The parser does not guess; the ambiguity is
-documented and pinned by tests.
+documented and pinned by tests. The same holds for download-progress
+output: a fragment terminated by a carriage return is its own splitlines()
+physical line, so while a raw/cleaned payload is open it is appended to
+that payload's exact text (and to the stripped statistics view, exactly
+as before the remediation). A prefix found mid-line after a fragment
+without a line break is still recognised.
 
 Usage:
     .venv/bin/python scripts/v2/parse_legacy_log.py --log PATH [--output PATH]

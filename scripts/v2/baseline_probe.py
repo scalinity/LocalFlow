@@ -26,10 +26,16 @@ fallback counts. It is written even when a stage fails.
 Usage:
     .venv/bin/python scripts/v2/baseline_probe.py [--skip-models]
         [--cleanup-implementation {config,v1,v2}] [--output-dir DIR]
+        [--repo-root CHECKOUT]
 
 Exit codes: 0 every requested stage succeeded (fallbacks are recorded, see
-summary.fallback_runs); 1 a requested stage failed; 2 the report could not
-be written (it is printed to stdout instead).
+summary.fallback_runs); 1 a requested stage failed; 3 the report could not
+be written (it is printed to stdout instead, stage outcome in stderr);
+64 command-line usage error.
+
+``--repo-root`` resolves the configuration from another checkout (its
+config.json and config.py defaults) and binds it separately; the localflow
+code executed is always this script's checkout (``bindings.source``).
 """
 
 import argparse
@@ -37,6 +43,7 @@ import datetime as dt
 import json
 import os
 import pathlib
+import subprocess
 import sys
 import time
 import traceback
@@ -61,12 +68,40 @@ def env_facts():
     return facts
 
 
-def bindings(cfg_record, cfg, hash_models=False):
-    g = bm.git_state(ROOT)
+def _source(root):
+    g = bm.git_state(root)
+    return {"checkout": str(root), "head_commit": g["head_commit"],
+            "clean_tree": g["clean_tree"], "dirty_digest": g["dirty_digest"],
+            "reason": g["head_reason"] or g.get("dirty_digest_reason")}
+
+
+def runtime_load_in(checkout):
+    """The checkout's OWN localflow.config.load(), in a separate process
+    (an independent oracle for the probe's resolution), or a reason."""
+    code = ("import json; from localflow.config import load; "
+            "print(json.dumps(load(), sort_keys=True))")
+    try:
+        r = subprocess.run([sys.executable, "-c", code], cwd=str(checkout),
+                           capture_output=True, text=True, timeout=60,
+                           env={**os.environ, "PYTHONPATH": str(checkout),
+                                "PYTHONDONTWRITEBYTECODE": "1"})
+    except (OSError, subprocess.SubprocessError) as e:
+        return None, f"{type(e).__name__}: {e}"
+    if r.returncode != 0:
+        return None, (r.stderr.strip().splitlines() or ["?"])[-1][:200]
+    try:
+        return json.loads(r.stdout.strip().splitlines()[-1]), None
+    except (ValueError, IndexError) as e:
+        return None, f"unparseable loader output: {e}"
+
+
+def bindings(cfg_record, cfg, config_root, hash_models=False):
     return {
-        "source": {"head_commit": g["head_commit"], "clean_tree": g["clean_tree"],
-                   "dirty_digest": g["dirty_digest"],
-                   "reason": g["head_reason"] or g.get("dirty_digest_reason")},
+        # The localflow code this process imported and executed:
+        "source": _source(ROOT),
+        # The checkout whose config.json / config.py defaults were resolved:
+        "config_checkout": _source(config_root) if config_root != ROOT
+        else {"checkout": str(ROOT), "same_as_source": True},
         "config": {k: cfg_record[k] for k in (
             "effective_source", "effective_values", "effective_config_sha256",
             "overridden_keys", "winner")},
@@ -198,9 +233,19 @@ def summarize(stages):
     }
 
 
+EXIT_NOT_WRITTEN = 3
+EXIT_USAGE = 64
+
+
+class _Parser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        self.exit(EXIT_USAGE, f"{self.prog}: error: {message}\n")
+
+
 def main(argv=None, *, asr_factory=None, v1_factory=None, v2_factory=None,
          out_root=None):
-    ap = argparse.ArgumentParser()
+    ap = _Parser()
     ap.add_argument("--skip-models", action="store_true",
                     help="record environment and bindings only, no model loads")
     ap.add_argument("--cleanup-implementation", choices=("config", "v1", "v2"),
@@ -208,7 +253,13 @@ def main(argv=None, *, asr_factory=None, v1_factory=None, v2_factory=None,
     ap.add_argument("--hash-models", action="store_true",
                     help="hash every cached model file into the binding")
     ap.add_argument("--output-dir", type=pathlib.Path)
+    ap.add_argument("--repo-root", type=pathlib.Path,
+                    help="checkout whose config.json and config.py defaults "
+                         "the run resolves (e.g. your main checkout when the "
+                         "probe runs from a verification worktree); the "
+                         "executed localflow code is always this script's")
     args = ap.parse_args(argv)
+    config_root = args.repo_root.resolve() if args.repo_root else ROOT
 
     run_id = new_run_id()
     report = {
@@ -227,19 +278,32 @@ def main(argv=None, *, asr_factory=None, v1_factory=None, v2_factory=None,
     try:
         report["environment"] = env_facts()
         from localflow import config as lf_config
+        if config_root != ROOT:
+            defaults, why = bm.load_defaults_from(
+                config_root / "localflow" / "config.py")
+            if defaults is None:
+                raise RuntimeError(f"cannot read {config_root}/localflow/"
+                                   f"config.py defaults: {why}")
+        else:
+            defaults = None
         cfg_record, cfg = bm.effective_config_record(
             "probe process", env_value=os.environ.get("LOCALFLOW_CONFIG"),
             env_observation={"observed": True, "method": "probe environment"},
             user_override=lf_config.user_override_path(),
-            bundled=ROOT / "config.json")
+            bundled=config_root / "config.json", defaults=defaults,
+            defaults_source=f"{config_root}/localflow/config.py")
         if cfg is None:
             raise RuntimeError("effective configuration would make the "
                                "runtime raise; nothing to probe")
-        # Cross-check against the runtime's own loader in this process.
-        runtime_cfg = lf_config.load()
+        # Independent cross-check: the config checkout's own loader, run in
+        # a separate process with that checkout on sys.path.
+        runtime_cfg, why = runtime_load_in(config_root)
         report["config"] = {k: cfg.get(k) for k in bm.SAFE_CONFIG_KEYS}
-        report["config"]["matches_runtime_load"] = runtime_cfg == cfg
-        report["bindings"] = bindings(cfg_record, cfg, args.hash_models)
+        report["config"]["matches_runtime_load"] = \
+            (runtime_cfg == cfg) if runtime_cfg is not None else None
+        report["config"]["runtime_load_reason"] = why
+        report["bindings"] = bindings(cfg_record, cfg, config_root,
+                                      args.hash_models)
 
         impl, configured, why = select_cleanup(cfg, args.cleanup_implementation)
         report["cleanup_selection"] = {
@@ -283,9 +347,9 @@ def main(argv=None, *, asr_factory=None, v1_factory=None, v2_factory=None,
             f.write(blob)
     except OSError as e:
         print(blob)
-        print(f"ERROR: probe report not written ({type(e).__name__}: {e})",
-              file=sys.stderr)
-        return 2
+        print(f"ERROR: probe report not written ({type(e).__name__}: {e}); "
+              f"stage outcome exit would have been {code}", file=sys.stderr)
+        return EXIT_NOT_WRITTEN
     print(blob)
     print(f"wrote {out_dir / 'probe.json'}")
     return code

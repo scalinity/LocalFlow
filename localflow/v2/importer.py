@@ -173,34 +173,35 @@ class LegacyImporter:
         parser = _parser()
         text, decode = parser.decode_log_bytes(data)
 
-        # M01 remediation (M01-AUDIT-07): only pairs that were COMPLETE in
-        # the verified prefix count as already imported. A pair flushed at
-        # the prefix's end-of-file may have grown since; it is imported now
-        # from the completed bytes. If a pre-remediation importer already
-        # stored that truncated tail, the completed pair records which
-        # identity it completes (the old artifact stays immutable).
+        # M01 remediation (M01-AUDIT-07): every earlier import run whose
+        # bytes are a verified prefix of this file is consulted (not only
+        # the longest). A pair counts as already imported only when some
+        # run stored it while it was COMPLETE in that run's bytes; a pair
+        # a run stored while it was still an end-of-file tail (only the
+        # pre-remediation importer did that) is imported again from the
+        # completed bytes and records which identity it completes — the
+        # old artifact stays immutable.
+        prefix_runs = sorted(
+            ((sha, n) for sha, n in self.store.import_run_bytes(KIND_LOG).items()
+             if n <= len(data) and sha256_bytes(data[:n]) == sha),
+            key=lambda kv: kv[1])
+        prefix_sha = prefix_runs[-1][0] if prefix_runs else None
         skip_pairs = set()
         prior_partial = {}
-        prefix_sha = None
-        for prev_sha, prev_len in sorted(
-                self.store.import_run_bytes(KIND_LOG).items(),
-                key=lambda kv: kv[1], reverse=True):
-            if prev_len <= len(data) and \
-                    sha256_bytes(data[:prev_len]) == prev_sha:
-                prefix_sha = prev_sha
-                prefix_text, _ = parser.decode_log_bytes(data[:prev_len])
-                for p in _iter_pairs(prefix_text):
-                    key = (p["raw_line"], p["cleaned_line"])
-                    if p.get("complete", True):
-                        skip_pairs.add(key)
-                    elif self.store.has_import(
-                            KIND_LOG, prev_sha,
-                            f"lines:{key[0]}-{key[1]}"):
-                        prior_partial[key] = \
-                            f"legacy:{prev_sha}:{key[0]}-{key[1]}"
-                break
+        for prev_sha, prev_len in prefix_runs:
+            prefix_text, _ = parser.decode_log_bytes(data[:prev_len])
+            for p in _iter_pairs(prefix_text):
+                key = (p["raw_line"], p["cleaned_line"])
+                if not self.store.has_import(
+                        KIND_LOG, prev_sha, f"lines:{key[0]}-{key[1]}"):
+                    continue
+                if p.get("complete", True):
+                    skip_pairs.add(key)
+                else:
+                    prior_partial.setdefault(
+                        key, f"legacy:{prev_sha}:{key[0]}-{key[1]}")
 
-        imported = skipped = deferred = 0
+        imported = skipped = deferred = completed_partials = 0
         for pair in _iter_pairs(text):
             line_range = f"{pair['raw_line']}-{pair['cleaned_line']}"
             locator = f"lines:{line_range}"
@@ -246,6 +247,8 @@ class LegacyImporter:
                 skipped += 1
             else:
                 imported += 1
+                if key in prior_partial:
+                    completed_partials += 1
         self.store.sync()
         self.store.record_import_run(
             KIND_LOG, data_hash, len(data), path, imported, skipped,
@@ -257,8 +260,7 @@ class LegacyImporter:
                 "bytes": len(data), "pairs_imported": imported,
                 "pairs_skipped": skipped,
                 "pairs_deferred_incomplete": deferred,
-                "prior_partial_tails_completed": len(
-                    [k for k in prior_partial if k not in skip_pairs]),
+                "prior_partial_tails_completed": completed_partials,
                 "decode": decode,
                 "payload_derivation": parser.PAYLOAD_DERIVATION,
                 "prefix_reconciled": prefix_sha or None}

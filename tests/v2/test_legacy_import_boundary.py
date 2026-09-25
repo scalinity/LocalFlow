@@ -109,6 +109,64 @@ def test_pre_remediation_partial_tail_is_completed_not_lost():
     print("ok  pre-remediation truncated tail kept immutable; completion linked")
 
 
+def _old_importer_stores(st, text, pairs, log):
+    """Simulate a pre-remediation importer run: stored every listed pair
+    (truncated tails included) under this text's sha, then its run row."""
+    data = text.encode()
+    sha = hashlib.sha256(data).hexdigest()
+    for raw_line, cleaned_line, raw, cleaned in pairs:
+        loc = f"lines:{raw_line}-{cleaned_line}"
+        st.import_legacy_pair(
+            raw_text=raw, cleaned_text=cleaned,
+            raw_meta={"identity": f"legacy:{sha}:{loc[6:]}", "time_quality": "unknown"},
+            cleaned_meta={"identity": f"legacy:{sha}:{loc[6:]}",
+                          "time_quality": "unknown"},
+            source_kind=importer.KIND_LOG, source_sha=sha, locator=loc)
+    st.record_import_run(importer.KIND_LOG, sha, len(data), log,
+                         len(pairs), 0)
+    st.sync()
+    return sha
+
+
+def test_partial_tail_then_old_skip_then_new_import_completes_it():
+    # Old importer: tail stored truncated; old importer again on the
+    # completed log skipped it by coordinates (never storing it complete);
+    # the new importer must still import the completed content once.
+    td, st, imp = env()
+    log = td / "LocalFlow.log"
+    old_sha = _old_importer_stores(st, TAIL, [(3, 5, "alpha beta\ngamma", "Alpha beta")], log)
+    _old_importer_stores(st, TAIL + REST, [], log)  # skipped by coordinates
+    log.write_text(TAIL + REST)
+    r = imp.import_log(log)
+    assert r["pairs_imported"] == 1 and r["prior_partial_tails_completed"] == 1, r
+    cleaned = [(t, m) for role, t, m in legacy_rows(st) if role == "cleaned_transcript"]
+    assert [t for t, _ in cleaned] == ["Alpha beta", "Alpha beta\ngamma delta."]
+    assert cleaned[1][1]["completes_prior_partial_identity"] == f"legacy:{old_sha}:3-5"
+    assert imp.import_log(log)["pairs_imported"] == 0
+    st.close()
+    print("ok  completion found although a later old run skipped it by coordinates")
+
+
+def test_partial_linked_across_an_intermediate_growing_prefix():
+    # Old importer stored the tail; the new importer then saw a still-
+    # growing prefix (deferred); the final import must link to the OLD
+    # prefix's identity, not the intermediate one.
+    td, st, imp = env()
+    log = td / "LocalFlow.log"
+    old_sha = _old_importer_stores(st, TAIL, [(3, 5, "alpha beta\ngamma", "Alpha beta")], log)
+    log.write_text(TAIL + "gamma")
+    mid = imp.import_log(log)
+    assert mid["pairs_imported"] == 0 and mid["pairs_deferred_incomplete"] == 1, mid
+    assert mid["prior_partial_tails_completed"] == 0, mid
+    log.write_text(TAIL + REST)
+    r = imp.import_log(log)
+    assert r["pairs_imported"] == 1 and r["prior_partial_tails_completed"] == 1, r
+    cleaned = [m for role, t, m in legacy_rows(st) if role == "cleaned_transcript"]
+    assert cleaned[-1]["completes_prior_partial_identity"] == f"legacy:{old_sha}:3-5"
+    st.close()
+    print("ok  partial linked to the run that stored it, across growing prefixes")
+
+
 def test_exact_payloads_reach_the_store():
     td, st, imp = env()
     log = td / "LocalFlow.log"
@@ -156,6 +214,8 @@ def test_repeated_identical_utterances_import_as_distinct_identities():
 if __name__ == "__main__":
     test_incomplete_tail_then_completion_imports_once()
     test_pre_remediation_partial_tail_is_completed_not_lost()
+    test_partial_tail_then_old_skip_then_new_import_completes_it()
+    test_partial_linked_across_an_intermediate_growing_prefix()
     test_exact_payloads_reach_the_store()
     test_repeated_identical_utterances_import_as_distinct_identities()
-    print("all legacy import boundary tests passed (4)")
+    print("all legacy import boundary tests passed (6)")

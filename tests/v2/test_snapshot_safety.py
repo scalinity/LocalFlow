@@ -151,15 +151,60 @@ def test_snapshot_cli_never_mutates_sources():
 @case
 def test_snapshot_refuses_in_repo_root():
     repo_root = pathlib.Path(__file__).resolve().parent.parent.parent
+    with contextlib.redirect_stderr(io.StringIO()) as err:
+        rc = su.main(["--root", str(repo_root / "docs/v2/private")])
+    assert rc == su.EXIT_REFUSED, rc
+    assert "must live outside the repository" in err.getvalue()
+    assert not (repo_root / "docs/v2/private").exists()
+    print("ok  snapshot refuses an in-repository evidence root (exit 3)")
+
+
+@case
+def test_snapshot_refuses_roots_in_other_worktrees_of_the_repo():
+    # The runbook runs the tool from a verification worktree; the user's
+    # main checkout is ANOTHER worktree of the same repository and must be
+    # refused too (review finding on the first remediation pass).
+    import subprocess
+    with tempfile.TemporaryDirectory() as td:
+        td = pathlib.Path(td)
+        main_wt = td / "LocalFlow"
+        main_wt.mkdir()
+        for args in (["init", "-q"], ["config", "user.email", "t@e.invalid"],
+                     ["config", "user.name", "t"]):
+            subprocess.run(["git", "-C", str(main_wt), *args], check=True)
+        (main_wt / "README").write_text("x")
+        subprocess.run(["git", "-C", str(main_wt), "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(main_wt), "commit", "-q", "-m", "i"],
+                       check=True)
+        verify = td / "LocalFlow-m01-verify"
+        subprocess.run(["git", "-C", str(main_wt), "worktree", "add", "-q",
+                        "--detach", str(verify)], check=True)
+        for root in (main_wt / "docs" / "v2" / "private", main_wt,
+                     verify / "x", td / "link-into-main" / "x"):
+            if root.parent.name == "link-into-main":
+                root.parent.symlink_to(main_wt, target_is_directory=True)
+            try:
+                su.prepare_root(root, repo_root=verify)
+            except su.EvidenceRootError:
+                pass
+            else:
+                raise AssertionError(f"accepted {root}")
+        assert not (main_wt / "docs").exists()
+        ok = su.prepare_root(td / "evidence", repo_root=verify)
+        assert ok["created_by_this_run"] is True
+    print("ok  roots inside any worktree of the repository are refused")
+
+
+@case
+def test_usage_errors_do_not_collide_with_outcomes():
     with contextlib.redirect_stderr(io.StringIO()):
         try:
-            su.main(["--root", str(repo_root / "docs/v2/private")])
+            su.main(["--no-such-flag"])
         except SystemExit as e:
-            assert e.code != 0
+            assert e.code == su.EXIT_USAGE, e.code
         else:
-            raise AssertionError("in-repo root accepted")
-    assert not (repo_root / "docs/v2/private").exists()
-    print("ok  snapshot refuses an in-repository evidence root")
+            raise AssertionError("usage error not raised")
+    print("ok  usage error exits 64, distinct from incomplete (2)")
 
 
 # ---- M01-AUDIT-06: allocation, confinement, permissions --------------------
@@ -233,22 +278,14 @@ def test_root_and_descendant_confinement():
         # A symlinked evidence root is refused outright.
         link_root = td / "link-root"
         link_root.symlink_to(elsewhere, target_is_directory=True)
-        try:
-            run(app, log, link_root)
-        except SystemExit as e:
-            assert e.code != 0
-        else:
-            raise AssertionError("symlinked root accepted")
+        assert run(app, log, link_root)[0] == su.EXIT_REFUSED, \
+            "symlinked root accepted"
         # A group/other-writable root is refused.
         loose = td / "loose"
         loose.mkdir()
         os.chmod(loose, 0o777)
-        try:
-            run(app, log, loose)
-        except SystemExit as e:
-            assert e.code != 0
-        else:
-            raise AssertionError("world-writable root accepted")
+        assert run(app, log, loose)[0] == su.EXIT_REFUSED, \
+            "world-writable root accepted"
         # A pre-planted symlink at the staging/run name is never followed:
         # the staging directory is created exclusively.
         root = td / "evidence"

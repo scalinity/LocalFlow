@@ -238,7 +238,7 @@ def test_publication_errors_are_reported():
                 contextlib.redirect_stderr(io.StringIO()) as err:
             rc = probe.main(["--skip-models", "--output-dir",
                              str(blocker / "sub")])
-        assert rc == 2
+        assert rc == probe.EXIT_NOT_WRITTEN
         assert "not written" in err.getvalue()
         assert json.loads(out.getvalue().split("\nERROR")[0])["run_id"]
         # An existing report is never overwritten.
@@ -249,9 +249,64 @@ def test_publication_errors_are_reported():
                 contextlib.redirect_stdout(io.StringIO()), \
                 contextlib.redirect_stderr(io.StringIO()):
             rc = probe.main(["--skip-models", "--output-dir", str(existing)])
-        assert rc == 2
+        assert rc == probe.EXIT_NOT_WRITTEN
         assert (existing / "probe.json").read_text() == '{"kept": true}'
-    print("ok  report publication failure -> exit 2 with the report on stdout")
+    print("ok  report publication failure -> exit 3 with the report on stdout")
+
+
+def test_repo_root_config_and_independent_runtime_oracle():
+    reset()
+    with tempfile.TemporaryDirectory() as td:
+        td = pathlib.Path(td)
+        other = td / "main-checkout"
+        (other / "localflow").mkdir(parents=True)
+        (other / "localflow" / "__init__.py").write_text("")
+        # A checkout at another commit: its own config.py (defaults select
+        # V1 here) and its own load(), which becomes the oracle.
+        (other / "localflow" / "config.py").write_text(
+            "import json, os, pathlib\n"
+            "DEFAULTS = {'model': 'org/asr', 'cleanup': 'llm',\n"
+            "            'cleanup_model': 'org/llm', 'hotkey': 'fn',\n"
+            "            'cleanup_implementation': 'v1'}\n"
+            "ROOT = pathlib.Path(__file__).resolve().parent.parent\n"
+            "def load(path=None):\n"
+            "    cfg = dict(DEFAULTS)\n"
+            "    for c in [path, os.environ.get('LOCALFLOW_CONFIG'),\n"
+            "              pathlib.Path.home() / 'Library' / 'Application Support' / 'LocalFlow' / 'config.json',\n"
+            "              ROOT / 'config.json']:\n"
+            "        if c and pathlib.Path(c).exists():\n"
+            "            cfg.update(json.loads(pathlib.Path(c).read_text())); break\n"
+            "    return cfg\n")
+        (other / "config.json").write_text('{"hotkey": "right_option"}')
+        home = td / "home"
+        home.mkdir()
+        saved = {k: os.environ.get(k) for k in ("HOME", "LOCALFLOW_CONFIG")}
+        os.environ["HOME"] = str(home)
+        os.environ.pop("LOCALFLOW_CONFIG", None)
+        CALLS.clear()
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), \
+                    contextlib.redirect_stderr(io.StringIO()):
+                rc = probe.main(["--output-dir", str(td / "out"),
+                                 "--repo-root", str(other)],
+                                asr_factory=FakeTranscriber, v1_factory=FakeV1,
+                                v2_factory=FakeRunner)
+        finally:
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+        r = json.loads((td / "out" / "probe.json").read_text())
+    assert rc == 0, r
+    assert r["config"]["hotkey"] == "right_option"
+    assert r["config"]["model"] == "org/asr"
+    assert r["config"]["matches_runtime_load"] is True, r["config"]
+    assert r["cleanup_selection"]["configured_implementation"] == "v1"
+    assert ("v1.init", "llm", "org/llm") in CALLS
+    assert r["bindings"]["config_checkout"]["checkout"] == str(other.resolve())
+    assert r["bindings"]["source"]["checkout"] == str(probe.ROOT)
+    print("ok  --repo-root: config from that checkout, oracle = its own load()")
 
 
 if __name__ == "__main__":
@@ -261,4 +316,5 @@ if __name__ == "__main__":
     test_stage_failures_exit_nonzero_and_still_publish()
     test_skips_are_explicit()
     test_publication_errors_are_reported()
-    print("all baseline probe orchestration tests passed (6)")
+    test_repo_root_config_and_independent_runtime_oracle()
+    print("all baseline probe orchestration tests passed (7)")
