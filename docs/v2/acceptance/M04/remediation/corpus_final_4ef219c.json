@@ -1,0 +1,214 @@
+{
+ "schema_version": 1,
+ "tool": "scripts/v2/m04_corpus_report.py",
+ "code_root_sha": "4ef219c52598e92a9857e9e0dec13ca7143f56dc",
+ "oracle_checkout_sha": "4ef219c52598e92a9857e9e0dec13ca7143f56dc",
+ "python": "3.13.12",
+ "evaluated_utc": "2026-09-25T08:20:13Z",
+ "exposure": "development evidence: consulted during the M04 remediation; not an unseen holdout; variants share families and are not independent samples",
+ "totals": {
+  "pass": 360,
+  "residual": 8
+ },
+ "cases": 368,
+ "families_total": 171,
+ "families_with_fail": 0,
+ "families_with_residual": 5,
+ "by_role": {
+  "adversarial_probe": {
+   "pass": 44
+  },
+  "design_probe": {
+   "pass": 6
+  },
+  "false_positive_control": {
+   "pass": 240,
+   "residual": 8
+  },
+  "negative_control": {
+   "pass": 2
+  },
+  "positive_control": {
+   "pass": 50
+  },
+  "profile_relation": {
+   "pass": 18
+  }
+ },
+ "by_oracle": {
+  "design_adjudication": {
+   "pass": 6
+  },
+  "exact_preserving_boundary": {
+   "pass": 2
+  },
+  "exact_supported_control": {
+   "pass": 50
+  },
+  "intent_invariant": {
+   "pass": 46
+  },
+  "literal_exact": {
+   "pass": 209,
+   "residual": 8
+  },
+  "literal_payload_or_whole_refusal": {
+   "pass": 2
+  },
+  "profile_contract": {
+   "pass": 18
+  },
+  "structured_or_literal": {
+   "pass": 9
+  },
+  "whole_literal_or_review": {
+   "pass": 18
+  }
+ },
+ "by_finding": {
+  "(none)": {
+   "pass": 242
+  },
+  "M04-AUDIT-01": {
+   "pass": 9,
+   "residual": 1
+  },
+  "M04-AUDIT-02": {
+   "pass": 4
+  },
+  "M04-AUDIT-03": {
+   "pass": 3
+  },
+  "M04-AUDIT-04": {
+   "pass": 8
+  },
+  "M04-AUDIT-05": {
+   "pass": 6
+  },
+  "M04-AUDIT-06": {
+   "pass": 3
+  },
+  "M04-AUDIT-07": {
+   "pass": 3
+  },
+  "M04-AUDIT-08": {
+   "pass": 11
+  },
+  "M04-AUDIT-09": {
+   "pass": 65,
+   "residual": 7
+  },
+  "M04-AUDIT-10": {
+   "pass": 3
+  },
+  "M04-AUDIT-11": {
+   "pass": 3
+  }
+ },
+ "non_pass": [
+  {
+   "case_id": "M04-C0002",
+   "family_id": "PROSE-001",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed period drama",
+   "output": "we discussed. drama",
+   "status": "residual",
+   "detail": "mid-clause punctuation name followed by a word after a transitive verb: surface-identical to the supported command position ('hello comma how are you' LF-SYN-025, 'cat notes dot txt pipe grep today' LF-SYN-035). Deciding that the next word is a compound-noun head needs part-of-speech knowledge a deterministic grammar does not have (design D2); the clause-start, determiner and lexical guards cover the other variants of this family. Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0009",
+   "family_id": "PROSE-003",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "time period",
+   "output": "time.",
+   "status": "residual",
+   "detail": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0010",
+   "family_id": "PROSE-003",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed time period",
+   "output": "we discussed time.",
+   "status": "residual",
+   "detail": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0011",
+   "family_id": "PROSE-003",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "time period yesterday",
+   "output": "time. yesterday",
+   "status": "residual",
+   "detail": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0012",
+   "family_id": "PROSE-003",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "time period",
+   "output": "time.",
+   "status": "residual",
+   "detail": "utterance-final 'period' after a noun: surface-identical to the accepted positive 'stop period' → 'stop.' (LF-SYN-026, SC corpus). The curated 'X period' compound list (grace/trial/notice/…) stays, but adding each new noun is the blacklist growth the audit rejects (design D2). Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0030",
+   "family_id": "PROSE-008",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed colon cancer",
+   "output": "we discussed: cancer",
+   "status": "residual",
+   "detail": "mid-clause punctuation name followed by a word after a transitive verb: surface-identical to the supported command position ('hello comma how are you' LF-SYN-025, 'cat notes dot txt pipe grep today' LF-SYN-035). Deciding that the next word is a compound-noun head needs part-of-speech knowledge a deterministic grammar does not have (design D2); the clause-start, determiner and lexical guards cover the other variants of this family. Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0034",
+   "family_id": "PROSE-009",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-09"
+   ],
+   "input": "we discussed pipe tobacco",
+   "output": "we discussed | tobacco",
+   "status": "residual",
+   "detail": "mid-clause punctuation name followed by a word after a transitive verb: surface-identical to the supported command position ('hello comma how are you' LF-SYN-025, 'cat notes dot txt pipe grep today' LF-SYN-035). Deciding that the next word is a compound-noun head needs part-of-speech knowledge a deterministic grammar does not have (design D2); the clause-start, determiner and lexical guards cover the other variants of this family. Escape: 'write the word period'."
+  },
+  {
+   "case_id": "M04-C0295",
+   "family_id": "REGISTRY-04",
+   "role": "false_positive_control",
+   "oracle": "literal_exact",
+   "finding_ids": [
+    "M04-AUDIT-01"
+   ],
+   "input": "slash costs",
+   "output": "/costs",
+   "status": "residual",
+   "detail": "utterance-initial 'slash <exact registered alias>' is the accepted command form ('slash brainstorm' → '/brainstorm', LF-SYN-015 / SC-01). With 'costs' registered as a skill, 'slash costs' is surface-identical; the repair removes the verb-context readings (REGISTRY-03/-05 now literal) but cannot infer intent here without lexical semantics (design D2)."
+  }
+ ]
+}

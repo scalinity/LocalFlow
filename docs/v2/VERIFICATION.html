@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-25 · M03 remediation · code <code>3e0d1ab</code> (M02 checks unchanged at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-25 · M04 remediation · code <code>4ef219c</code> (M03 checks unchanged at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -1807,7 +1807,212 @@ EOF</code></pre></div>
           </details>
         </article>
       </section>
-      <section class="milestone" id="M04" data-milestone="M04" data-title="Numeric & syntax normalization"><div class="ms-head"><span class="mid">M04</span><h2>Numeric &amp; syntax normalization</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M04-V001).</p></section>
+      <!-- ==================================================================
+           M04 — Typed numeric and spoken-syntax normalization
+           ================================================================== -->
+      <section class="milestone" id="M04" data-milestone="M04" data-title="Numeric & syntax normalization">
+        <div class="ms-head">
+          <span class="mid">M04</span><h2>Numeric &amp; syntax normalization</h2>
+          <span class="meta">instructions M04-r1 · code 4ef219c · remediation of audit at 1c9d981</span>
+        </div>
+        <p class="ms-intro">The M04 cloud remediation stopped the normalizer from changing correctly recognized speech into a different value, sign, date, time, version, path or command: punctuation around a converted number now stays in place and is never parsed through (“twelve percent.” → 12%., never merging “twenty, five percent”); scaled decimals keep their exact amount; malformed or approximate scale phrases stay words; negative ports are refused and every typed value carries its sign; clock times need a time word or AM/PM (“three fifteen minute breaks” stays prose); “may” as a verb and impossible days are not dates; unanchored versions, leading decimals and five-part dotted numbers stay whole; punctuation names used as nouns (“period drama”, “a question mark”) and slash-as-a-verb (“we should slash code review time”) stay prose; literal escapes protect their whole phrase and code in backticks is left alone; spoken paths and emails keep their capital letters; policies can no longer be changed after a job captured them, an “inherit” style always returns to your configured profile, and evidence-write failures are reported instead of swallowed. Portable tests, the audit's adversarial corpus and a stricter benchmark passed in the cloud; these checks cover what only this Mac can show. The September 22 M04 records stay as they are; their pending human item is carried by M04-V002 below for the current code. Detail: <code>docs/v2/handoffs/M04.md</code> (remediation addendum) and <code>docs/v2/acceptance/M04/results.json</code> → <code>remediation_2026_09_25</code>.</p>
+
+        <div class="callout">
+          <h3>M04 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The repaired M04 code gets its own worktree. The dictation check uses a <b>sandbox home folder</b>: the dev app then reads and writes a throw-away store and logs under <code>$SANDBOX4</code> — never your real Application Support data or the installed app. Models are read from your existing Hugging Face cache, offline. Quit the installed LocalFlow.app first so the two apps do not fight over the fn key or the microphone.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># M04 code in its own worktree (first time only)</span>
+export LF_M04="$(dirname "$LF_MAIN")/LocalFlow-m04-verify"
+git -C "$LF_MAIN" fetch origin claude/eloquent-curie-syb79l
+[ -d "$LF_M04" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M04" origin/claude/eloquent-curie-syb79l
+<span class="c">#   (if that branch has been merged, use origin/main instead)</span>
+git -C "$LF_M04" merge-base --is-ancestor 4ef219c HEAD &amp;&amp; echo "M04 repairs present"
+export OUT4="$EV/m04-verification"; mkdir -p "$OUT4" &amp;&amp; chmod 700 "$OUT4"
+
+<span class="c"># Sandbox home for the dev app (fresh each time you want a clean slate)</span>
+export REAL_HOME="$HOME"
+export SANDBOX4="$OUT4/sandbox-home"; mkdir -p "$SANDBOX4" &amp;&amp; chmod 700 "$SANDBOX4"
+<span class="c"># Two sandbox configs: your repo config under each normalization profile</span>
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M04"], "config.json").read_text())
+for prof in ("technical", "standard"):
+    c = dict(cfg, normalization_profile=prof, normalization_locale="en-US",
+             log_transcripts=False)
+    p = pathlib.Path(os.environ["OUT4"], f"sandbox-config-{prof}.json")
+    p.write_text(json.dumps(c, indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app under one profile; $LF4_PID is its process</span>
+lf4_start() { ( cd "$LF_M04" &amp;&amp; exec env HOME="$SANDBOX4" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT4/sandbox-config-$1.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT4/app-console.txt" 2&gt;&amp;1 &amp;
+  LF4_PID=$!; echo "dev app pid $LF4_PID ($1)"; }
+export SDB4="$SANDBOX4/Library/Application Support/LocalFlow/v2.db"</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M04 repairs present” and two “wrote …/sandbox-config-….json” lines. Remove the sandbox when finished: <code>rm -rf "$SANDBOX4"</code> (synthetic dictations only).</p>
+        </div>
+
+        <h3 class="group">Automatable local parity</h3>
+
+        <article class="check" id="M04-V001" data-milestone="M04" data-rev="M04-r1" data-code="4ef219c" data-tags="terminal">
+          <header class="check-head">
+            <span class="cid">M04-V001</span>
+            <h4>Run the repaired M04 suites under the Mac interpreter</h4>
+            <ul class="tags"><li>Terminal</li><li>~2 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The deterministic normalizer, the audit's adversarial corpus, the per-finding regressions and the app-seam regressions (profile inheritance, retry provenance, evidence-write failures) behave on macOS with the project's Python 3.14 as they did in the cloud (Linux, Python 3.13). Mac-parity reason: the app-seam and pipeline suites run the real <code>AppDelegate</code> with the <b>real</b> PyObjC on the Mac (in the cloud they ran under declared stand-ins), and the whole suite runs under the interpreter, <code>re</code>/Unicode tables and <code>Decimal</code> build the app actually ships with. No microphone, model or real data is used.</p>
+          <p class="plain"><b>In plain terms.</b> The same automatic tests that passed in the cloud must also pass on your Mac. They use synthetic phrases and temporary folders only.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · no app, model or microphone needed</dd>
+              <dt>Preconditions</dt><dd>M01 and M04 set-up done. Project <code>.venv</code> exists in your checkout.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M04</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M04"
+for t in tests/v2/normalization/test_normalize_numbers.py \
+         tests/v2/normalization/test_normalize_syntax.py \
+         tests/v2/normalization/test_short_command_scoring.py \
+         tests/v2/normalization/test_m04_audit_corpus.py \
+         tests/v2/normalization/test_m04_remediation.py \
+         tests/v2/normalization/test_m04_review_round.py \
+         tests/v2/normalization/test_m04_remediation_app.py \
+         tests/v2/normalization/test_normalization_pipeline.py \
+         tests/v2/test_baseline_manifest.py; do
+  "$PY" "$t" &gt; "$OUT4/V001-$(basename "$t" .py).txt" 2&gt;&amp;1
+  echo "exit=$?  $(tail -n 1 "$OUT4/V001-$(basename "$t" .py).txt")"
+done</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Every line shows <code>exit=0</code>. Final lines: “all numeric normalization tests passed” (<b>13</b> ok lines), “all syntax normalization tests passed” (<b>13</b>), “all short-command scoring tests passed” (<b>3</b>), “all M04 audit-corpus tests passed” with the line <code>corpus oracles: 360/368 pass, 8 declared residual ambiguities, 0 fail</code>, “all M04 remediation regressions passed” (<b>19</b>), “all M04 review-round regressions passed (22)”, “all M04 app-seam remediation tests passed” (<b>6</b>), “all normalization pipeline tests passed” (<b>7</b>), “all baseline manifest tests passed (5)”.</li>
+              <li>The first line of <code>V001-test_m04_remediation_app.txt</code> reads <code>[declared shims — modules: none (native modules present); seams: microphone (sounddevice), main-thread hops (AppHelper)]</code> — on the Mac nothing else is replaced.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A failing normalization, corpus or remediation line: the Mac's Python/Unicode behaves differently from the cloud — mark <b>Failed</b>, keep the <code>.txt</code>, and do not run M04-V002.</li>
+              <li><code>test_m04_remediation_app</code> or the pipeline suite failing with an AppKit/PyObjC error while the others pass: a native-integration difference — <b>Failed</b> (record the first traceback line).</li>
+              <li><code>ModuleNotFoundError</code>: wrong interpreter — check <code>$PY</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT4/V001-*.txt</code> (synthetic phrases only). Sanitized for Git (optional): the pass counts.</p>
+            <h5>Contract relevance</h5>
+            <p>EV-06/EV-19; M04-AC01–AC06; <code>contracts/normalization.md</code> and <code>training_evidence.md</code> → “M04 remediation”.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Native dictation</h3>
+
+        <article class="check" id="M04-V002" data-milestone="M04" data-rev="M04-r1" data-code="4ef219c" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M04-V002</span>
+            <h4>Dictate numbers, addresses and slash prose under the technical and standard profiles; read the ledger</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Through the real microphone, Parakeet ASR and Qwen cleanup, normalization turns spoken versions, percentages and IPv4 addresses into their written forms, keeps ordinary slash prose and the punctuation Parakeet writes itself, keeps bare counts as words under the standard profile while percentages still convert, and records a visible, replayable edit ledger for the dictation. Carries the historical pending item <code>native-m04-dictation-profiles</code> (September 22, <code>acceptance/M04/results.json</code>) for the repaired code; that record stays as it was.</p>
+          <p class="plain"><b>In plain terms.</b> When you say “version one point two six point four” or “twelve percent” you get <code>1.26.4</code> and <code>12%</code>; when you say “slash the budget” or “this may first require approval” the words stay exactly as you said them.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home (no real data touched)</dd>
+              <dt>Preconditions</dt><dd>M04 set-up done; installed LocalFlow.app quit; a new TextEdit document open for the dictations.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M04 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf4_start technical</code>; wait for the menu-bar icon and “ASR: ready”. In its menu choose <b>Training → Collect Training Evidence</b> (the sandbox store only).</li>
+              <li>Click into TextEdit. Hold fn and say each line below as its own dictation, releasing fn after each:
+                <ol>
+                  <li>“version one point two six point four shipped”</li>
+                  <li>“the budget grew twelve percent”</li>
+                  <li>“the host is one ninety two dot one sixty eight dot one dot ten”</li>
+                  <li>“we should slash the budget”</li>
+                  <li>“this may first require approval”</li>
+                  <li>“twelve retries failed”</li>
+                </ol></li>
+              <li>Quit from the menu. Run <code>lf4_start standard</code>, wait for ready, and dictate lines 2 and 6 again.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 4)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M04" &amp;&amp; HOME="$SANDBOX4" "$PY" - &lt;&lt;'EOF' | tee "$OUT4/V002-ledger.txt"
+import json, os, sqlite3
+from localflow.v2 import store as S
+db = sqlite3.connect(os.environ["SDB4"])
+rows = db.execute("select e.example_id from training_examples e order by e.rowid").fetchall()
+st = S.Store(os.environ["SDB4"])
+for (ex,) in rows:
+    env = st.latest_revision(ex); n = env.get("normalization")
+    if n is None:
+        print("no normalization block:", env["missing_reasons"].get("normalization")); continue
+    raw = st.artifact_payload(env["artifact_ids"]["source_text"])
+    led = json.loads(st.artifact_payload(n["artifact_ids"]["ledger"]))
+    out = raw
+    for e in sorted(led["edits"], key=lambda e: e["input_span"][0], reverse=True):
+        assert raw[e["input_span"][0]:e["input_span"][1]] == e["input_text"]
+        out = out[:e["input_span"][0]] + e["output_text"] + out[e["input_span"][1]:]
+    print(n["policy_revision"], n.get("policy_source"), n["class_counts"],
+          "| replay==normalized:", out == led["text"], "| rejected:",
+          sorted({r["reason"] for r in led["rejected"]}))
+st.close()
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>TextEdit, technical: <code>version 1.26.4 shipped</code>; <code>12%</code> in line 2; <code>192.168.1.10</code>; “we should slash the budget” and “this may first require approval” exactly as spoken (no <code>/</code>, no “May 1”); <code>12 retries failed</code>. Any sentence punctuation Parakeet added (a final period) is still there after the converted number.</li>
+              <li>TextEdit, standard: <code>12%</code> still converts; “twelve retries failed” keeps the word “twelve”.</li>
+              <li>The command prints one line per dictation: a <code>m04:…</code> revision (one value for the technical run, a different one for standard), <code>job_snapshot</code>, class counts that include <code>version</code>, <code>percent</code>, <code>ip</code> and (technical only) <code>integer</code> for those lines, <code>replay==normalized: True</code> every time; the slash and “may” lines show no <code>skill</code>/<code>date</code> class.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A line in TextEdit differs but the ledger shows the expected normalization: cleanup (Qwen) changed it afterwards — <b>Needs follow-up</b> (record the line and its cleanup path); M04 itself behaved.</li>
+              <li>The ledger shows a <code>date</code> edit for the “may” line, a <code>skill</code>/<code>symbol</code> edit for the slash line, or a changed value (e.g. <code>1:26</code>, <code>192.168.1.1</code>): <b>Failed</b>; keep <code>V002-ledger.txt</code>.</li>
+              <li>Parakeet transcribed the words differently (e.g. “1.26.4” already as digits): not an M04 result — repeat the line once; if it repeats, <b>Needs follow-up</b> with the raw text noted.</li>
+              <li><code>no normalization block</code>: collection was not on, or <code>retention_write_failed</code> (the store could not keep the evidence) — the latter is <b>Failed</b>.</li>
+              <li><code>replay==normalized: False</code>: <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT4/V002-ledger.txt</code> (revisions, classes and reasons only — no dictated text is printed). The dictated words stay in your TextEdit document and the sandbox store; delete the sandbox when done.</p>
+            <h5>Contract relevance</h5>
+            <p>M04-AC01/AC02/AC05/AC06; M04-AUDIT-01/02/07/08/13/16; <code>contracts/normalization.md</code> → “Evidence”, “M04 remediation”.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Reference-Mac performance</h3>
+
+        <article class="check" id="M04-V003" data-milestone="M04" data-rev="M04-r1" data-code="4ef219c" data-tags="terminal hardware">
+          <header class="check-head">
+            <span class="cid">M04-V003</span>
+            <h4>Re-run the M04 benchmark on this Mac (new run, history untouched)</h4>
+            <ul class="tags"><li>Terminal</li><li>~1 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The repaired normalizer still meets the S24 budget (p95 ≤ 25 ms for 500 words) on the reference Mac, under a benchmark that now also refuses a “fast” run that did no work (it checks edit counts and classes, and that the no-match cohort is untouched) and gates the no-match cohort too. The repair added boundary, chain and evidence checks, so the September 22 figures (<code>docs/v2/benchmarks/20260922-012259-m04/</code>, p95 4.273 ms) describe older code; they stay as recorded. The cloud run (Linux, shared CPU) measured long_500 p95 13.2 ms — algorithmic evidence only, not a Mac figure.</p>
+          <p class="plain"><b>In plain terms.</b> Normalization is timed again on your Mac to confirm it is still far below the time budget.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · on power, nothing heavy running · no model needed</dd>
+              <dt>Preconditions</dt><dd>M04 set-up done.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M04</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M04"
+"$PY" scripts/v2/benchmark_m04.py --out "$OUT4/V003-bench" | tee "$OUT4/V003-bench.txt"; echo "bench exit=${PIPESTATUS[0]}"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>bench exit=0</code> and the last line <code>verdict: pass</code>; every cohort line ends <code>[ok]</code> (none <code>INVALID</code>).</li>
+              <li><code>long_500</code> p95 ≤ 25 ms and <code>long_500_plain</code> p95 ≤ 25 ms; <code>long_500</code> shows <b>80</b> edits, <code>long_500_plain</code> <b>0</b> edits.</li>
+              <li>A JSON report under <code>$OUT4/V003-bench/…-m04/m04.json</code> with <code>source_sha</code> = the checked-out commit.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>bench exit=1</code> (<code>budget_fail</code>): repeat once with nothing else running; a second miss is <b>Failed</b> (keep the JSON).</li>
+              <li><code>bench exit=2</code> (<code>workload_invalid</code>): the normalizer did not do the expected work — <b>Failed</b>; this is a correctness problem, not a speed one.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT4/V003-bench*</code> (synthetic text; the JSON is content-free apart from timing and counts). Sanitized: the JSON may be committed as a new run under <code>docs/v2/benchmarks/</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>S24/E11; M04-AUDIT-17/20; <code>contracts/normalization.md</code> → “Process placement”.</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M05" data-milestone="M05" data-title="Scoped vocabulary"><div class="ms-head"><span class="mid">M05</span><h2>Scoped vocabulary</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M05-V001).</p></section>
       <section class="milestone" id="M06" data-milestone="M06" data-title="Local context"><div class="ms-head"><span class="mid">M06</span><h2>Local context</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M06-V001).</p></section>
       <section class="milestone" id="M07" data-milestone="M07" data-title="Faithful cleanup"><div class="ms-head"><span class="mid">M07</span><h2>Faithful cleanup</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M07-V001).</p></section>

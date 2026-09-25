@@ -1,0 +1,274 @@
+{
+ "code_sha": "4ef219c52598e92a9857e9e0dec13ca7143f56dc",
+ "evaluated_utc": "2026-09-25T08:21:53Z",
+ "environment": "Claude Code cloud container (Linux x86_64); not the reference Mac",
+ "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+ "interpreter": "CPython 3.13.12 (scratch venv linked as .venv)",
+ "dependencies": {
+  "numpy": "2.5.3",
+  "sqlite": "3.45.1"
+ },
+ "shim_note": "SHIM entries run via tests/v2/lifecycle/run_with_shims.py (declared inert AppKit/PyObjC/Quartz/sounddevice stand-ins); m03_helpers-based suites install the same shims themselves: portable orchestration only, never native verification",
+ "groups": {
+  "m04_required": [
+   {
+    "command": ".venv/bin/python tests/v2/normalization/test_normalize_numbers.py",
+    "exit": 0,
+    "ok_lines": 13,
+    "final_line": "all numeric normalization tests passed",
+    "seconds": 0.5
+   },
+   {
+    "command": ".venv/bin/python tests/v2/normalization/test_normalize_syntax.py",
+    "exit": 0,
+    "ok_lines": 13,
+    "final_line": "all syntax normalization tests passed",
+    "seconds": 0.4
+   },
+   {
+    "command": ".venv/bin/python tests/v2/normalization/test_short_command_scoring.py",
+    "exit": 0,
+    "ok_lines": 3,
+    "final_line": "all short-command scoring tests passed",
+    "seconds": 0.1
+   }
+  ],
+  "m04_pipeline_under_shim": [
+   {
+    "command": ".venv/bin/python tests/v2/lifecycle/run_with_shims.py tests/v2/normalization/test_normalization_pipeline.py",
+    "exit": 0,
+    "ok_lines": 7,
+    "final_line": "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]",
+    "seconds": 1.2
+   }
+  ],
+  "m04_remediation_new": [
+   {
+    "command": ".venv/bin/python tests/v2/normalization/test_m04_audit_corpus.py",
+    "exit": 0,
+    "ok_lines": 2,
+    "final_line": "all M04 audit-corpus tests passed",
+    "seconds": 0.5
+   },
+   {
+    "command": ".venv/bin/python tests/v2/normalization/test_m04_remediation.py",
+    "exit": 0,
+    "ok_lines": 19,
+    "final_line": "all M04 remediation regressions passed",
+    "seconds": 2.5
+   },
+   {
+    "command": ".venv/bin/python tests/v2/normalization/test_m04_remediation_app.py",
+    "exit": 0,
+    "ok_lines": 6,
+    "final_line": "all M04 app-seam remediation tests passed",
+    "seconds": 1.2
+   },
+   {
+    "command": ".venv/bin/python tests/v2/normalization/test_m04_review_round.py",
+    "exit": 0,
+    "ok_lines": 22,
+    "final_line": "all M04 review-round regressions passed (22)",
+    "seconds": 0.9
+   }
+  ],
+  "m01_privacy_inventory": [
+   {
+    "command": ".venv/bin/python tests/v2/test_baseline_manifest.py",
+    "exit": 0,
+    "ok_lines": 5,
+    "final_line": "all baseline manifest tests passed (5)",
+    "seconds": 0.1
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_snapshot_safety.py",
+    "exit": 0,
+    "ok_lines": 19,
+    "final_line": "all snapshot safety tests passed (19)",
+    "seconds": 0.4
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_registry.py",
+    "exit": 0,
+    "ok_lines": 5,
+    "final_line": "all registry tests passed (5)",
+    "seconds": 0.1
+   }
+  ],
+  "m02_training_evidence": [
+   {
+    "command": ".venv/bin/python tests/v2/training/test_collector.py",
+    "exit": 0,
+    "ok_lines": 11,
+    "final_line": "all collector tests passed",
+    "seconds": 0.6
+   },
+   {
+    "command": ".venv/bin/python tests/v2/training/test_m02_remediation_collector.py",
+    "exit": 0,
+    "ok_lines": 14,
+    "final_line": "all m02 remediation collector tests passed (14)",
+    "seconds": 1.2
+   },
+   {
+    "command": ".venv/bin/python tests/v2/test_m02_app_wiring.py",
+    "exit": 0,
+    "ok_lines": 4,
+    "final_line": "all m02 app wiring (static) checks passed (4)",
+    "seconds": 0.2
+   }
+  ],
+  "m03_lifecycle_touching_retry": [
+   {
+    "command": ".venv/bin/python tests/v2/lifecycle/test_m03_remediation_app.py",
+    "exit": 0,
+    "ok_lines": 14,
+    "final_line": "all m03 remediation app tests passed (14)",
+    "seconds": 5.2
+   },
+   {
+    "command": ".venv/bin/python tests/v2/lifecycle/test_m03_review_round.py",
+    "exit": 0,
+    "ok_lines": 15,
+    "final_line": "[localflow] logging degraded: event directory locked by another process \u2014 events are being retried; dictation is unaffected",
+    "seconds": 12.2
+   },
+   {
+    "command": ".venv/bin/python tests/v2/lifecycle/run_with_shims.py tests/v2/lifecycle/test_lifecycle.py",
+    "exit": 0,
+    "ok_lines": 13,
+    "final_line": "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]",
+    "seconds": 1.6
+   }
+  ],
+  "m05_registry_preview": [
+   {
+    "command": ".venv/bin/python tests/v2/vocabulary/test_vocabulary_matching.py",
+    "exit": 0,
+    "ok_lines": 12,
+    "final_line": "all vocabulary matching tests passed",
+    "seconds": 0.3
+   },
+   {
+    "command": ".venv/bin/python tests/v2/vocabulary/test_vocabulary_store.py",
+    "exit": 0,
+    "ok_lines": 16,
+    "final_line": "all vocabulary store tests passed",
+    "seconds": 0.7
+   },
+   {
+    "command": ".venv/bin/python tests/v2/vocabulary/test_hint_selection.py",
+    "exit": 0,
+    "ok_lines": 9,
+    "final_line": "all hint selection tests passed",
+    "seconds": 0.6
+   }
+  ],
+  "m06_context": [
+   {
+    "command": ".venv/bin/python tests/v2/context/test_context_snapshot.py",
+    "exit": 0,
+    "ok_lines": 27,
+    "final_line": "all context snapshot tests passed",
+    "seconds": 10.6
+   },
+   {
+    "command": ".venv/bin/python tests/v2/lifecycle/run_with_shims.py tests/v2/context/test_context_pipeline.py",
+    "exit": 0,
+    "ok_lines": 12,
+    "final_line": "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]",
+    "seconds": 3.6
+   }
+  ],
+  "m07_normalized_input_protection": [
+   {
+    "command": ".venv/bin/python tests/v2/fidelity/test_cleanup_engine.py",
+    "exit": 0,
+    "ok_lines": 18,
+    "final_line": "all cleanup engine tests passed",
+    "seconds": 0.3
+   },
+   {
+    "command": ".venv/bin/python tests/v2/fidelity/test_cleanup_remediation.py",
+    "exit": 0,
+    "ok_lines": 36,
+    "final_line": "36/36 remediation cases passed",
+    "seconds": 0.3
+   }
+  ],
+  "m10_profiles_snippets_skills": [
+   {
+    "command": ".venv/bin/python tests/v2/profiles/test_snippets.py",
+    "exit": 0,
+    "ok_lines": 9,
+    "final_line": "all snippet tests passed",
+    "seconds": 0.2
+   },
+   {
+    "command": ".venv/bin/python tests/v2/profiles/test_style_resolution.py",
+    "exit": 0,
+    "ok_lines": 9,
+    "final_line": "all style resolution tests passed",
+    "seconds": 0.2
+   },
+   {
+    "command": ".venv/bin/python tests/v2/developer/test_skills.py",
+    "exit": 0,
+    "ok_lines": 6,
+    "final_line": "all skill registry tests passed",
+    "seconds": 0.2
+   },
+   {
+    "command": ".venv/bin/python tests/v2/developer/test_developer_resolution.py",
+    "exit": 0,
+    "ok_lines": 6,
+    "final_line": "all developer resolution tests passed",
+    "seconds": 0.2
+   }
+  ],
+  "m14_classification_evidence": [
+   {
+    "command": ".venv/bin/python tests/v2/training/test_classification.py",
+    "exit": 0,
+    "ok_lines": 7,
+    "final_line": "all classification tests passed",
+    "seconds": 3.8
+   },
+   {
+    "command": ".venv/bin/python tests/v2/training/test_dataset_export.py",
+    "exit": 0,
+    "ok_lines": 6,
+    "final_line": "all dataset export tests passed",
+    "seconds": 6.2
+   },
+   {
+    "command": ".venv/bin/python tests/v2/training/test_sampling.py",
+    "exit": 0,
+    "ok_lines": 3,
+    "final_line": "all sampling tests passed",
+    "seconds": 0.5
+   },
+   {
+    "command": ".venv/bin/python tests/v2/training/test_splits.py",
+    "exit": 0,
+    "ok_lines": 4,
+    "final_line": "all splits tests passed",
+    "seconds": 0.4
+   },
+   {
+    "command": ".venv/bin/python tests/v2/personalization/test_learning.py",
+    "exit": 0,
+    "ok_lines": 11,
+    "final_line": "all learning tests passed",
+    "seconds": 1.0
+   },
+   {
+    "command": ".venv/bin/python tests/v2/personalization/test_profile.py",
+    "exit": 0,
+    "ok_lines": 9,
+    "final_line": "all profile tests passed",
+    "seconds": 1.1
+   }
+  ]
+ }
+}
