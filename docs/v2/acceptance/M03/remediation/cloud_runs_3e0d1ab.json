@@ -1,0 +1,202 @@
+{
+ "code_sha": "3e0d1ab972b866b4acbda622984bce04e8f95093",
+ "environment": "Claude Code cloud container (Linux x86_64); not the reference Mac",
+ "note": "Cloud runs only. The benchmark's worker part uses the protocol fake (spawn + protocol overhead, not model inference); the hotkey figure needs the declared non-native shims and is method-level. The live check's harness mode shims the model loaders (not model-backed); its real-model mode exited 2 (asr_engine_failed) because no models exist in the cloud \u2014 NOT RUN, carried by M03-V002/V003.",
+ "runs": {
+  "benchmark_plain": {
+   "command": "LOCALFLOW_SKIP_LIVE=1 .venv/bin/python scripts/v2/benchmark_m03.py --output <tmp>",
+   "exit": 0,
+   "result": {
+    "run_utc": "2026-09-25T05:42:18Z",
+    "machine": {
+     "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+     "python": "3.13.12"
+    },
+    "hotkey_ack": {
+     "not_run": "appkit_unavailable",
+     "detail": "ModuleNotFoundError"
+    },
+    "capture_queue": {
+     "flood_blocks": 3000,
+     "handoff_ms": {
+      "p50": 0.0,
+      "p95": 0.001,
+      "max": 0.043
+     },
+     "max_queue_depth_observed": 256,
+     "queue_bound": 256,
+     "stayed_bounded": true,
+     "queue_dropped": 2744,
+     "blocks_written": 256
+    },
+    "worker_fake": {
+     "restarts": 3,
+     "spawn_to_result_ms": [
+      135.7,
+      155.8,
+      136.1
+     ],
+     "active_request_kill": {
+      "retried": true,
+      "attempt": 2,
+      "generation": 2,
+      "result": true,
+      "request_to_result_sec": 1.641,
+      "killed_in_flight": true,
+      "recovered": true
+     },
+     "note": "fake worker: protocol + spawn overhead only"
+    },
+    "verdict": {
+     "passed": true,
+     "failures": [],
+     "checked": [
+      "capture_queue.population",
+      "capture_queue.stayed_bounded",
+      "capture_queue.drops_counted",
+      "worker_fake.population",
+      "worker_fake.active_request_kill_recovered"
+     ],
+     "not_run": [
+      "hotkey_ack:appkit_unavailable",
+      "worker_real:not_requested"
+     ]
+    }
+   }
+  },
+  "benchmark_shimmed": {
+   "command": ".venv/bin/python tests/v2/lifecycle/run_with_shims.py scripts/v2/benchmark_m03.py --output <tmp>",
+   "exit": 0,
+   "result": {
+    "run_utc": "2026-09-25T05:42:20Z",
+    "machine": {
+     "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+     "python": "3.13.12"
+    },
+    "hotkey_ack": {
+     "n": 200,
+     "hotkey_to_overlay_ms": {
+      "p50": 3.45,
+      "p95": 4.628,
+      "max": 9.477
+     },
+     "target_p95_ms": 50.0,
+     "passes_p95": true,
+     "journal_enabled": true,
+     "measure": "startDictation() return with overlay.visible set (method-level; not native compositor presentation)"
+    },
+    "capture_queue": {
+     "flood_blocks": 3000,
+     "handoff_ms": {
+      "p50": 0.0,
+      "p95": 0.001,
+      "max": 0.041
+     },
+     "max_queue_depth_observed": 256,
+     "queue_bound": 256,
+     "stayed_bounded": true,
+     "queue_dropped": 2744,
+     "blocks_written": 256
+    },
+    "worker_fake": {
+     "restarts": 3,
+     "spawn_to_result_ms": [
+      131.9,
+      130.2,
+      148.2
+     ],
+     "active_request_kill": {
+      "retried": true,
+      "attempt": 2,
+      "generation": 2,
+      "result": true,
+      "request_to_result_sec": 0.137,
+      "killed_in_flight": true,
+      "recovered": true
+     },
+     "note": "fake worker: protocol + spawn overhead only"
+    },
+    "verdict": {
+     "passed": true,
+     "failures": [],
+     "checked": [
+      "hotkey_ack.population",
+      "hotkey_ack.p95_le_50ms",
+      "capture_queue.population",
+      "capture_queue.stayed_bounded",
+      "capture_queue.drops_counted",
+      "worker_fake.population",
+      "worker_fake.active_request_kill_recovered"
+     ],
+     "not_run": [
+      "worker_real:not_requested"
+     ]
+    }
+   }
+  },
+  "live_check_harness": {
+   "command": ".venv/bin/python scripts/v2/m03_live_check.py --harness --output <tmp>",
+   "exit": 0,
+   "result": {
+    "asr_ready_sec": 0.14,
+    "checks": {
+     "active_kill": {
+      "attempt": 2,
+      "generation": 2,
+      "killed_in_flight": true,
+      "ok": true,
+      "retried": true,
+      "sec": 0.45
+     },
+     "basic_now": {
+      "answered_sec": 0.0,
+      "cleanup_state_when_sent": "loading",
+      "exercised": true,
+      "fallback_reason": "cleanup_not_ready",
+      "ok": true,
+      "path": "llm_fallback_normalized"
+     },
+     "cleanup_after_load": {
+      "engine": "ready",
+      "ok": true,
+      "path": "llm"
+     },
+     "transcribe": {
+      "ok": true,
+      "sample_count": 16000,
+      "sample_rate": 16000
+     }
+    },
+    "cleanup_ready_sec": 3.01,
+    "events": {
+     "worker.died": 1,
+     "worker.engine_state": 10,
+     "worker.pipe_closed": 2,
+     "worker.restarting": 1,
+     "worker.retired": 1,
+     "worker.shutdown": 1,
+     "worker.spawned": 2
+    },
+    "mode": "harness_not_model_backed",
+    "verdict": {
+     "exit": 0,
+     "failed": [],
+     "inconclusive": []
+    }
+   }
+  },
+  "live_check_real": {
+   "command": ".venv/bin/python scripts/v2/m03_live_check.py --output <tmp>",
+   "exit": 2,
+   "result": {
+    "asr_ready_sec": 0.13,
+    "checks": {},
+    "mode": "real_models_offline",
+    "verdict": {
+     "exit": 2,
+     "reason": "asr_engine_failed"
+    }
+   }
+  }
+ }
+}

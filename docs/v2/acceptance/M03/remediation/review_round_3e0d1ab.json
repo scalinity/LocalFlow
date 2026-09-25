@@ -1,0 +1,118 @@
+{
+ "code_sha": "3e0d1ab972b866b4acbda622984bce04e8f95093",
+ "test_file": "tests/v2/lifecycle/test_m03_review_round.py",
+ "runner": "each test function in its own process: .venv/bin/python -c 'import sys; sys.path.insert(0, \"tests/v2/lifecycle\"); import test_m03_review_round as m; m.<test>()' (cwd = repo root, 240 s cap)",
+ "note": "Run on the clean final production revision 3e0d1ab. Expected: 15/15 pass.",
+ "summary": {
+  "passed": 15,
+  "failed": 0,
+  "total": 15
+ },
+ "tests": [
+  {
+   "test": "test_R1_store_publish_unavailable_leaves_staged",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R1 store: a stalled writer reports 'unavailable' and leaves the staged file; the late queued rename is harmless",
+   "seconds": 0.6
+  },
+  {
+   "test": "test_R1_app_store_stall_delays_not_fails_dictation",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R1 app: a 4 s store stall past the publish bound delays the dictation (local fallback), text delivered once",
+   "seconds": 4.4
+  },
+  {
+   "test": "test_R1_guard_deletion_during_stall_still_wins",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R1 guard: deletion queued behind the stall purges the fallback-published WAV and revokes delivery",
+   "seconds": 3.7
+  },
+  {
+   "test": "test_R2_crash_left_staged_files_are_owned",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R2 crash-left staged debug copy: deleted with its job and rotated; staged artifact reported and swept as an orphan",
+   "seconds": 0.6
+  },
+  {
+   "test": "test_R3_relaunched_owner_never_claims_live_instance_work",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "[localflow] logging degraded: event directory locked by another process \u2014 events are being retried; dictation is unaffected",
+   "seconds": 0.4
+  },
+  {
+   "test": "test_R4_scan_and_retry_claim_exclusively",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R4 scan during the retry window leaves the claimed job; second click refused; delivered once, claim released",
+   "seconds": 0.3
+  },
+  {
+   "test": "test_R5_copy_last_raw_after_delete",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R5 'Copy last raw' copies before deletion, nothing after; the cached failure is dropped",
+   "seconds": 0.3
+  },
+  {
+   "test": "test_R6_shutdown_wake_cannot_be_erased",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R6 shutdown during the spawn's clear: spawn woken in 1.00s (hello_timeout 8 s), lifecycle acquired",
+   "seconds": 1.3
+  },
+  {
+   "test": "test_R7_clean_after_asr_load_failure_is_answered",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R7 ASR load failure: cleanup reported failed, a clean request answered by generation 1 (no death, no respawn)",
+   "seconds": 0.4
+  },
+  {
+   "test": "test_R8_gap_not_double_reported",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R8 the lost span is reported once, positioned (journal_gap @4800 x1600), not also as a queue drop",
+   "seconds": 0.3
+  },
+  {
+   "test": "test_R9_crc_covers_positions",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R9 one flipped bit in start_sample/seq/frames makes the journal not-verified (no fabricated gap); CRC definition pinned",
+   "seconds": 0.2
+  },
+  {
+   "test": "test_R10_revoked_failure_not_announced_as_retry",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R10 revoked job: one attempt, no 'restarting' event, the skipped retry recorded as such",
+   "seconds": 0.3
+  },
+  {
+   "test": "test_U1_transform_retry_attempt_acknowledged",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  U1 dictation transform retried as attempt 2: job and store attempt follow it",
+   "seconds": 0.6
+  },
+  {
+   "test": "test_U3_journal_gate_never_abandons_its_open",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  U3 a store stall past the default bound: the journal waits for its gated open, finalizes verified, no orphaned descriptor",
+   "seconds": 1.8
+  },
+  {
+   "test": "test_U6_prior_normal_failure_keeps_its_labels",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  U6 a normally failed job is re-offered with its own state reason and live-capture provenance (not relabeled a crash)",
+   "seconds": 0.3
+  }
+ ]
+}

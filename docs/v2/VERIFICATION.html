@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-25 · M02 remediation · code <code>bfbc63c</code> (M01 checks unchanged at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-25 · M03 remediation · code <code>3e0d1ab</code> (M02 checks unchanged at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -1364,7 +1364,449 @@ ls "$OUT2/V009-copy/backups"</code></pre></div>
           </details>
         </article>
       </section>
-      <section class="milestone" id="M03" data-milestone="M03" data-title="Resilient capture & inference"><div class="ms-head"><span class="mid">M03</span><h2>Resilient capture &amp; inference</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M03-V001).</p></section>
+      <!-- ==================================================================
+           M03 — Resilient capture and restartable inference
+           (cloud remediation of the audit at 2b9b7a1)
+           ================================================================== -->
+      <section class="milestone" id="M03" data-milestone="M03" data-title="Resilient capture & inference">
+        <div class="ms-head">
+          <span class="mid">M03</span><h2>Resilient capture &amp; inference</h2>
+          <span class="meta">instructions M03-r1 · code 3e0d1ab · remediation of audit at 2b9b7a1</span>
+        </div>
+        <p class="ms-intro">The M03 cloud remediation made the startup recovery scan take only work that is provably abandoned (and never replace better audio), put every M03 audio file under the delete-everywhere barrier, gave each worker generation sole ownership of its requests, serialized spawn/retry/restart/quit under one lifecycle with permanently closed admission, carried the attempt that actually ran through failures, retired damaged worker processes, let “basic now” cleanup answer during a model load, versioned the capture journal (checksums, original sample positions, verified footer), kept original capture time/rate/gaps through a recovery retry, made WAV writes atomic and reads strict, made microphone teardown exception-safe, and cleaned up trigger latches. Portable tests passed in the cloud; these checks cover what only this Mac can show. The September 22 M03 records stay as they are; their four pending human items are carried by M03-V004…V008 below for the current code. Detail: <code>docs/v2/handoffs/M03.md</code> (remediation addendum) and <code>docs/v2/acceptance/M03/results.json</code> → <code>remediation_2026_09_25</code>.</p>
+
+        <div class="callout">
+          <h3>M03 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The repaired M03 code gets its own worktree. Every check that runs the app uses a <b>sandbox home folder</b>: the dev app then reads and writes a throw-away store, journal, logs and recovery audio under <code>$SANDBOX3</code> — never your real Application Support data, logs or the installed app. Models are read from your existing Hugging Face cache, offline. Quit the installed LocalFlow.app first so the two apps do not fight over the fn key or the microphone.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># M03 code in its own worktree (first time only)</span>
+export LF_M03="$(dirname "$LF_MAIN")/LocalFlow-m03-verify"
+git -C "$LF_MAIN" fetch origin claude/amazing-hamilton-dq5as0
+[ -d "$LF_M03" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M03" origin/claude/amazing-hamilton-dq5as0
+<span class="c">#   (if that branch has been merged, use origin/main instead)</span>
+git -C "$LF_M03" merge-base --is-ancestor 3e0d1ab HEAD &amp;&amp; echo "M03 repairs present"
+export OUT3="$EV/m03-verification"; mkdir -p "$OUT3" &amp;&amp; chmod 700 "$OUT3"
+
+<span class="c"># Sandbox home for the dev app (fresh each time you want a clean slate)</span>
+export REAL_HOME="$HOME"
+export SANDBOX3="$OUT3/sandbox-home"; mkdir -p "$SANDBOX3" &amp;&amp; chmod 700 "$SANDBOX3"
+<span class="c"># Your repo config plus the settings these checks need</span>
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M03"], "config.json").read_text())
+cfg.update({"hands_free": "double_tap", "max_duration_sec": 20,
+            "capture_journal": True, "log_transcripts": False})
+p = pathlib.Path(os.environ["OUT3"], "sandbox-config.json")
+p.write_text(json.dumps(cfg, indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app in the background; $LF3_PID is its process</span>
+lf3_start() { ( cd "$LF_M03" &amp;&amp; exec env HOME="$SANDBOX3" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT3/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT3/app-console.txt" 2&gt;&amp;1 &amp;
+  LF3_PID=$!; echo "dev app pid $LF3_PID"; }
+export SDB3="$SANDBOX3/Library/Application Support/LocalFlow/v2.db"
+export SJ3="$SANDBOX3/Library/Application Support/LocalFlow/v2-journal"
+lf3_events() { ( cd "$LF_M03" &amp;&amp; "$PY" scripts/v2/view_events.py \
+    --dir "$SANDBOX3/Library/Logs/LocalFlow" --utc "$@" ); }</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M03 repairs present” and “wrote …/sandbox-config.json”. The sandbox config turns on hands-free double-tap and a 20-second capture cap (M03-V007 needs both); the rest is your normal config. Terminal needs the microphone and Accessibility permissions it already has; if a capture is silent, launch from Terminal.app. Remove the sandbox when finished: <code>rm -rf "$SANDBOX3"</code> (synthetic dictations only).</p>
+        </div>
+
+        <h3 class="group">Automatable local parity</h3>
+
+        <article class="check" id="M03-V001" data-milestone="M03" data-rev="M03-r1" data-code="3e0d1ab" data-tags="terminal privacy">
+          <header class="check-head">
+            <span class="cid">M03-V001</span>
+            <h4>Run the repaired M03 suites under the Mac interpreter</h4>
+            <ul class="tags"><li>Terminal</li><li>~4 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The worker ownership, lifecycle, protocol, journal, recovery, deletion, provenance and trigger repairs behave on macOS with Python 3.14 as they did in the cloud (Linux, Python 3.13). Mac-parity reason: these tests take and probe <code>flock</code> locks across processes, SIGKILL a writer child, open symlinks/FIFOs with <code>O_NOFOLLOW|O_NONBLOCK</code>, rename staged files, and spawn/kill worker subprocesses — on APFS and the macOS kernel for the first time; and the app-level suites run with the <b>real</b> PyObjC (<code>AppDelegate</code> as a real <code>NSObject</code>), keeping only two declared fakes (the microphone stream and main-thread hops), so no microphone opens.</p>
+          <p class="plain"><b>In plain terms.</b> The same automatic tests that passed in the cloud must also pass on your Mac. They use temporary folders and fake audio only.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · no app, model or microphone needed</dd>
+              <dt>Preconditions</dt><dd>M01 and M03 set-up done. Project <code>.venv</code> exists in your checkout.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M03</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M03"
+for t in tests/v2/lifecycle/test_worker_protocol.py tests/v2/lifecycle/test_capture_journal.py \
+         tests/v2/lifecycle/test_audio_fidelity.py \
+         tests/v2/lifecycle/test_m03_remediation_supervisor.py \
+         tests/v2/lifecycle/test_m03_remediation_worker.py \
+         tests/v2/lifecycle/test_m03_remediation_journal.py \
+         tests/v2/lifecycle/test_m03_remediation_app.py \
+         tests/v2/lifecycle/test_m03_review_round.py \
+         tests/v2/lifecycle/test_lifecycle.py tests/test_stuck_overlay.py \
+         tests/v2/test_m02_app_wiring.py tests/v2/storage/test_m02_remediation_store.py; do
+  "$PY" "$t" &gt; "$OUT3/V001-$(basename "$t" .py).txt" 2&gt;&amp;1
+  echo "exit=$?  $(tail -n 1 "$OUT3/V001-$(basename "$t" .py).txt")"
+done
+"$PY" scripts/v2/benchmark_m03.py --output "$OUT3/V001-bench-portable.json" &gt; /dev/null; echo "bench exit=$?"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Every line shows <code>exit=0</code>. Final lines: worker protocol “all worker protocol tests passed” (<b>11</b> ok lines); capture journal (<b>6</b>); audio fidelity (<b>7</b>); remediation supervisor <b>(17)</b>; remediation worker <b>(10)</b>; remediation journal <b>(6)</b>; remediation app <b>(14)</b>; review round <b>(15)</b>; lifecycle “all lifecycle tests passed” (<b>13</b> ok lines); stuck overlay “all tests passed”; M02 app wiring <b>(4)</b>; M02 remediation store <b>(19)</b>.</li>
+              <li>The first line of each remediation suite reads <code>[declared shims — modules: none (native modules present); seams: microphone (sounddevice), main-thread hops (AppHelper)]</code> — on the Mac nothing else is replaced.</li>
+              <li><code>bench exit=0</code>; in <code>V001-bench-portable.json</code>, <code>verdict.passed</code> is <code>true</code>, <code>not_run</code> lists only <code>worker_real:not_requested</code>, and <code>hotkey_ack.passes_p95</code> is <code>true</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A failure in <code>test_01_is_live_ownership</code>, <code>test_01_other_owner_root_claims_nothing</code>, <code>test_R3_relaunched_owner_never_claims_live_instance_work</code> or <code>test_14_input_path_matrix</code> means <code>flock</code> or <code>O_NOFOLLOW</code> behaves differently on this Mac — mark <b>Failed</b> and keep the output; do not run M03-V004.</li>
+              <li>On macOS the review-round line for U3 ends “descriptor check n/a (no /proc)”: its leaked-descriptor check reads Linux <code>/proc</code>; the journal part of that test still runs. Expected, not a failure.</li>
+              <li>Import errors mentioning <code>AppHelper.calls</code> or <code>streams</code>: the seam patching did not apply — <b>Failed</b> (test infrastructure), keep the output.</li>
+              <li><code>ModuleNotFoundError</code>: wrong interpreter — check <code>$PY</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT3/V001-*.txt</code>, <code>$OUT3/V001-bench-portable.json</code>. Sanitized for Git (optional): the pass counts and the bench verdict.</p>
+            <h5>Contract relevance</h5>
+            <p>EV-04/EV-05/EV-18/EV-19 producer subset; <code>contracts/worker.md</code>, <code>capture.md</code>, <code>store.md</code> → “M03 remediation”.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Model-backed</h3>
+
+        <article class="check" id="M03-V002" data-milestone="M03" data-rev="M03-r1" data-code="3e0d1ab" data-tags="terminal model">
+          <header class="check-head">
+            <span class="cid">M03-V002</span>
+            <h4>Real worker: basic-now during the real cleanup load, then a mid-request kill recovers</h4>
+            <ul class="tags"><li>Terminal</li><li>Model-backed</li><li>~3 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> With the real Parakeet and Qwen models loaded offline in a fresh worker process: a cleanup request sent while the cleanup model is still loading is answered at once on the CPU path and labeled <code>cleanup_not_ready</code> (never “llm”); after the load, cleanup runs the model; a real transcription completes with all 16000 samples; and killing the worker <b>during</b> a transcription is answered by the one automatic retry on a fresh generation with attempt 2. The cloud ran this script only with shimmed model loaders (labeled <code>harness_not_model_backed</code>); here it runs the real models for the first time. The existing <code>test_worker_live.py</code> (idle kill) is re-run alongside.</p>
+          <p class="plain"><b>In plain terms.</b> Right after launch you can dictate without waiting for the cleanup model, and a worker crash in the middle of a dictation is recovered automatically.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · models already in your Hugging Face cache (offline)</dd>
+              <dt>Preconditions</dt><dd>M03 set-up done. Nothing else using the GPU heavily. The dev app is not running.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M03</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M03"
+"$PY" scripts/v2/m03_live_check.py --output "$OUT3/V002-live-check.json" &gt; /dev/null; echo "live-check exit=$?"
+"$PY" -c "import json;d=json.load(open('$OUT3/V002-live-check.json'));print(d['mode'], d['verdict']);print(json.dumps(d['checks'], indent=1))"
+HF_HUB_OFFLINE=1 "$PY" tests/v2/lifecycle/test_worker_live.py &gt; "$OUT3/V002-worker-live.txt" 2&gt;&amp;1
+echo "worker-live exit=$?"; grep -v '^$' "$OUT3/V002-worker-live.txt" | tail -n 3</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>live-check exit=0</code>; mode <code>real_models_offline</code>; <code>basic_now</code>: <code>exercised: true</code>, <code>cleanup_state_when_sent</code> <code>loading</code> (or <code>warming</code>), <code>answered_sec</code> &lt; 2, <code>path</code> <code>llm_fallback_normalized</code>, <code>fallback_reason</code> <code>cleanup_not_ready</code>.</li>
+              <li><code>cleanup_after_load.path</code> <code>llm</code> (or an honest fallback label); <code>transcribe.sample_count</code> <b>16000</b>, <code>sample_rate</code> <b>16000</b>; <code>active_kill</code>: <code>killed_in_flight: true</code>, <code>retried: true</code>, <code>attempt</code> <b>2</b>, <code>ok: true</code>.</li>
+              <li><code>worker-live exit=0</code> with its two <code>ok</code> lines and no <code>SKIPPED</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>live-check exit=2</code> (<code>asr_engine_failed</code>): a model is missing from the cache — <b>Blocked</b>, not Failed.</li>
+              <li><code>exit=3</code> (inconclusive): the cleanup model finished loading before the probe could be sent — run once more; if it repeats, <b>Needs follow-up</b> (fast machine; the portable test still covers the path).</li>
+              <li><code>basic_now.answered_sec</code> ≥ 2 or <code>path</code> <code>llm</code> while loading: basic-now waited on the model — <b>Failed</b>.</li>
+              <li><code>active_kill.ok</code> false: the in-flight death was not retried on a fresh generation — <b>Failed</b>; keep the JSON.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT3/V002-*.json|txt</code> (synthetic inputs, no dictation). Sanitized: the JSON is content-free and may be committed.</p>
+            <h5>Contract relevance</h5>
+            <p>M03-AUDIT-06/07/22; <code>contracts/worker.md</code> → scheduling, retirement, one automatic retry.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M03-V003" data-milestone="M03" data-rev="M03-r1" data-code="3e0d1ab" data-tags="terminal model hardware">
+          <header class="check-head">
+            <span class="cid">M03-V003</span>
+            <h4>Re-run the M03 benchmark with real models (new run, history untouched)</h4>
+            <ul class="tags"><li>Terminal</li><li>Model-backed</li><li>~4 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The benchmark now ends in an explicit verdict that drives its exit code (a missed budget or an empty population fails the run; parts that did not run are listed as skips), and its real-worker part adds a kill <b>during</b> an active request next to the historical idle kill. The September 22 run (<code>docs/v2/benchmarks/20260922-011459-m03/</code>) stays as recorded: it measured an idle kill, its exit code did not evaluate budgets, and its hotkey figure is method-level; this run adds new, labelled measurements on the repaired code rather than replacing it.</p>
+          <p class="plain"><b>In plain terms.</b> The speed and restart measurements are taken again on your Mac with a stricter pass/fail rule.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · models cached · on power, nothing heavy running</dd>
+              <dt>Preconditions</dt><dd>M03 set-up done; dev app not running.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M03</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M03"
+"$PY" scripts/v2/benchmark_m03.py --real --output "$OUT3/V003-bench-real.json" &gt; /dev/null; echo "exit=$?"
+"$PY" - &lt;&lt;'EOF'
+import json, os
+d = json.load(open(os.path.join(os.environ["OUT3"], "V003-bench-real.json")))
+print("verdict", d["verdict"])
+print("hotkey", d["hotkey_ack"].get("hotkey_to_overlay_ms"))
+w = d["worker_real"]
+print("engines", w["engines"], "load s", w["load_to_engines_sec"])
+print("idle kill->result s", w["kill9_restart_to_result_sec"])
+print("active kill", w["active_request_kill"])
+print("rss MiB", [round((w[k] or 0) / 2**20) for k in ("worker_rss_bytes_idle", "worker_rss_bytes_after_asr", "worker_rss_bytes_restarted")])
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>exit=0</code>; <code>verdict.passed</code> <code>true</code> with <code>checked</code> including <code>worker_real.engines_ready</code> and <code>worker_real.active_request_kill_recovered</code>; <code>not_run</code> empty.</li>
+              <li>Hotkey p95 ≤ 50 ms (method-level); engines both <code>ready</code>; <code>active_request_kill</code>: <code>killed_in_flight</code> and <code>recovered</code> true, <code>attempt</code> 2. Record the load time, idle-kill and active-kill times and the three RSS figures.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>exit=1</code>: read <code>verdict.failures</code> — a named budget or population failed on this machine: <b>Failed</b> with the JSON.</li>
+              <li>Engines <code>failed</code>: cache problem — <b>Blocked</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT3/V003-bench-real.json</code> (content-free; may be committed as a new benchmark run in a later session).</p>
+            <h5>Contract relevance</h5>
+            <p>M03-AUDIT-22; S24/E11 measurement discipline; EV-05.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Native macOS · sandboxed dev app</h3>
+
+        <article class="check" id="M03-V004" data-milestone="M03" data-rev="M03-r1" data-code="3e0d1ab" data-tags="native human hardware">
+          <header class="check-head">
+            <span class="cid">M03-V004</span>
+            <h4>Kill the app mid-capture; relaunch recovers the speech with its original time</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~6 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A real process death during a real capture leaves a journal whose owner lock dies with the process; the next launch owns the journal root, rebuilds the verified prefix, records its original capture instant and journal status in the capture-provenance sidecar, and offers one recovery item; the microphone stays off at relaunch until you press; a retry keeps the original capture time and the job’s identity and runs the next attempt. Carries the historical pending item “quit/reopen mid-dictation with the journal enabled”.</p>
+          <p class="plain"><b>In plain terms.</b> If LocalFlow crashes while you are talking, what you said so far comes back after relaunch and can be inserted with one click.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · sandbox home (no real data touched)</dd>
+              <dt>Preconditions</dt><dd>M03 set-up done; installed LocalFlow.app quit; a text field ready (e.g. a new TextEdit document).</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M03 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf3_start</code>; wait for the menu-bar icon and for “ASR: ready” in its menu.</li>
+              <li>Double-tap fn (hands-free starts; the pill shows recording and the orange microphone dot appears). Say a few distinct sentences for about 5 seconds and <b>keep recording</b>.</li>
+              <li>In the Terminal, run <code>kill -9 $LF3_PID</code>. The menu-bar icon disappears; the orange dot goes off within a few seconds.</li>
+              <li>Run <code>lf3_start</code> again; wait for ready. Confirm the orange dot is <b>off</b>.</li>
+              <li>Run the first command block. Then click into the text field, open the menu → Recovery → <b>Retry Last Failed Dictation</b>. Your sentences (up to the kill) are inserted.</li>
+              <li>Quit from the menu, then run the second command block.</li>
+            </ol>
+            <h5>Commands (after step 4)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf3_events | grep -E 'recovered_after_crash|recovery_skipped' | tee "$OUT3/V004-events.txt"
+"$PY" - &lt;&lt;'EOF' | tee "$OUT3/V004-recovery.txt"
+import json, os, pathlib, sqlite3
+db = sqlite3.connect(os.environ["SDB3"])
+j = db.execute("select job_id, state, state_reason, attempt, captured_at_utc from jobs"
+               " where state='failed_recoverable' order by rowid desc limit 1").fetchone()
+print("job:", j[1], j[2], "attempt", j[3])
+p = pathlib.Path(os.environ["SJ3"], f"job-{j[0]}.capture.json")
+prov = json.loads(p.read_text())
+print("source:", prov["source"], "journal:", prov["journal"]["status"],
+      "complete:", prov["complete"], "rate:", prov["sample_rate"])
+print("capture time kept:", prov["captured_at_utc"] == j[4], "recovered later:",
+      prov["recovered_at_utc"] &gt; (j[4] or ""))
+print("seconds:", round(prov["sample_count"] / prov["sample_rate"], 1))
+EOF</code></pre></div>
+            <h5>Commands (after step 6)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>"$PY" - &lt;&lt;'EOF' | tee -a "$OUT3/V004-recovery.txt"
+import os, sqlite3
+db = sqlite3.connect(os.environ["SDB3"])
+print(db.execute("select state, attempt from jobs order by rowid desc limit 1").fetchone())
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>One <code>capture.recovered_after_crash</code> event, outcome <code>recoverable</code>, reason <code>journal_reconstruction</code>; no <code>recovery_skipped … journal_root_owned_elsewhere</code>.</li>
+              <li><code>job: failed_recoverable app_crash_during_capture attempt 1</code>; <code>source: journal_reconstruction</code>; journal <code>unfinalized</code> or <code>torn_tail</code>; <code>complete: None</code> or <code>False</code> (never <code>True</code>); <code>rate: 16000</code>; <code>capture time kept: True</code>; <code>recovered later: True</code>; seconds ≈ how long you spoke before the kill.</li>
+              <li>After the retry: the last line shows an insertion state (<code>insertion_confirmed</code> or <code>insertion_unverified</code>) and attempt <b>2</b>. The orange dot never appeared at relaunch before you pressed fn.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>No recovery item and a <code>journal_root_owned_elsewhere</code> event: another LocalFlow process was still running (installed app?) — quit it and repeat; if it persists, <b>Failed</b>.</li>
+              <li>No recovery item and a <code>recovery_skipped … owner_process_live</code> event: the killed process still held its boot lock — check <code>pgrep -f "python -m localflow"</code>; if nothing is running and it repeats, <b>Failed</b>.</li>
+              <li><code>capture time kept: False</code> or <code>complete: True</code>: provenance is wrong — <b>Failed</b>.</li>
+              <li>The microphone turned on at relaunch by itself: <b>Failed</b> (S09).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT3/V004-*.txt</code> (events and provenance are content-free; the inserted text stays in your document only).</p>
+            <h5>Contract relevance</h5>
+            <p>M03-AUDIT-01/08/09; M03-AC03/AC04; <code>contracts/capture.md</code> → ownership, statuses, capture provenance.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M03-V005" data-milestone="M03" data-rev="M03-r1" data-code="3e0d1ab" data-tags="native human hardware">
+          <header class="check-head">
+            <span class="cid">M03-V005</span>
+            <h4>Quit while recording: the microphone closes, the speech is kept, the worker is reaped</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~4 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Choosing Quit while a hands-free capture is running now closes app admission, stops the microphone and keeps the audio as a recoverable item, closes the worker’s admission permanently (no replacement worker is spawned during quit), lets the coordinator settle, and only then drains the store and the event log. Only a real AppKit quit on the main thread can show it.</p>
+          <p class="plain"><b>In plain terms.</b> Quitting in the middle of a dictation never loses what you said and leaves no background process behind.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · sandbox home</dd>
+              <dt>Preconditions</dt><dd>M03 set-up done (the sandbox from M03-V004 is fine).</dd>
+              <dt>Working dir</dt><dd>the M03 Terminal window</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf3_start</code>; wait for ready.</li>
+              <li>Double-tap fn and speak for a few seconds; while it is still recording, choose <b>Quit LocalFlow</b> from the menu-bar menu.</li>
+              <li>Watch the orange microphone dot: it goes off right away. Then run the commands.</li>
+              <li>Optional: <code>lf3_start</code> again; Recovery → Retry Last Failed Dictation inserts what you said; quit.</li>
+            </ol>
+            <h5>Commands (after step 3)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>sleep 5; pgrep -f "localflow.v2.worker" &gt; /dev/null &amp;&amp; echo "WORKER STILL RUNNING" || echo "no worker process"
+lf3_events | grep -E 'application_will_terminate|worker.shutdown|worker.spawned|system_interrupted|shutdown_incomplete' \
+  | tail -n 8 | tee "$OUT3/V005-quit.txt"
+"$PY" - &lt;&lt;'EOF' | tee -a "$OUT3/V005-quit.txt"
+import os, pathlib, sqlite3
+db = sqlite3.connect(os.environ["SDB3"])
+j = db.execute("select job_id, state, state_reason from jobs order by rowid desc limit 1").fetchone()
+print(j[1], j[2], "wav:", pathlib.Path(os.environ["SJ3"], f"job-{j[0]}.wav").exists())
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>no worker process</code>.</li>
+              <li>Events, in order: <code>capture.system_interrupted</code> (reason <code>app_quit</code>), <code>worker.shutdown</code> (outcome <code>reaped</code>), <code>app.shutdown</code> (<code>drained</code>); no <code>worker.spawned</code> after the <code>worker.shutdown</code> line; no <code>app.shutdown_incomplete</code>.</li>
+              <li><code>failed_recoverable app_quit wav: True</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>WORKER STILL RUNNING</code> or a <code>worker.spawned</code> after shutdown: the closed admission did not hold — <b>Failed</b>.</li>
+              <li><code>app.shutdown_incomplete</code> (<code>coordinator_busy</code>): the coordinator did not settle in 4 s — <b>Needs follow-up</b> with the events.</li>
+              <li>The job is still <code>capturing</code> or has no WAV: the capture was not preserved — <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT3/V005-quit.txt</code> (content-free).</p>
+            <h5>Contract relevance</h5>
+            <p>M03-AUDIT-04; M02 store/event lifecycle; <code>contracts/worker.md</code> → one lifecycle authority.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M03-V006" data-milestone="M03" data-rev="M03-r1" data-code="3e0d1ab" data-tags="native human hardware">
+          <header class="check-head">
+            <span class="cid">M03-V006</span>
+            <h4>Unplug the microphone mid-dictation; replug and dictate again</h4>
+            <ul class="tags"><li>Native macOS</li><li>Hardware / audio</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A real device loss finishes the dictation with the speech captured before the loss and a recorded discontinuity; if the audio driver raises while the stream is stopped or closed, the recorder now still returns the buffered speech and records <code>stream_teardown_error</code> instead of abandoning the capture; the next capture opens a fresh stream on the restored or default device. Carries the historical pending item “unplug/replug a microphone during dictation”.</p>
+          <p class="plain"><b>In plain terms.</b> Pulling out a USB or Bluetooth mic while talking keeps what you already said, and dictation works again after you plug it back in.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · a removable input (USB or Bluetooth microphone/headset) · sandbox home</dd>
+              <dt>Preconditions</dt><dd>M03 set-up done; the removable microphone selected as the system input.</dd>
+              <dt>Working dir</dt><dd>the M03 Terminal window</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li><code>lf3_start</code>; wait for ready; click into a text field.</li>
+              <li>Double-tap fn, speak two sentences, then unplug (or power off) the microphone while still speaking.</li>
+              <li>Within about a second the pill switches to processing and the first sentence(s) are inserted.</li>
+              <li>Plug the microphone back in (or keep the built-in one as default), hold fn and dictate one more sentence; it is inserted. Quit from the menu.</li>
+            </ol>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf3_events | grep -E 'device_loss|capture.completed|stage.failed' | tail -n 6 | tee "$OUT3/V006-device.txt"
+"$PY" - &lt;&lt;'EOF' | tee -a "$OUT3/V006-device.txt"
+import os, sqlite3
+db = sqlite3.connect(os.environ["SDB3"])
+print(db.execute("select state from jobs order by rowid desc limit 2").fetchall())
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>One <code>capture.device_loss</code> WARNING (outcome <code>finishing_with_captured_speech</code>) followed by <code>capture.completed</code> for the same job; no <code>stage.failed</code>.</li>
+              <li>Both jobs end in an insertion state; the text before the unplug and the later sentence were inserted.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>No removable input available: <b>Blocked</b> (say so in the note).</li>
+              <li>The pill stays on recording after the unplug, or the second dictation does nothing: <b>Failed</b> — keep <code>$OUT3/app-console.txt</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT3/V006-device.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M03-AUDIT-11; S09 device loss; <code>contracts/capture.md</code> → stream teardown.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M03-V007" data-milestone="M03" data-rev="M03-r1" data-code="3e0d1ab" data-tags="native human hardware">
+          <header class="check-head">
+            <span class="cid">M03-V007</span>
+            <h4>Triggers: fn during processing, a capped hands-free capture, and a lost mouse release</h4>
+            <ul class="tags"><li>Native macOS</li><li>Hardware / audio</li><li>~6 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Real Fn and mouse events: fn taps while a dictation processes never wedge the pill; a hands-free capture ended by the 20-second cap (or a device loss) clears the hands-free latch, so the next single press starts a new capture instead of being swallowed; a middle-button release lost while the screen was locked is reconciled while idle, so the next middle press dictates. Carries the historical pending items “Fn taps during processing” and “native hands-free and mouse-trigger firing”.</p>
+          <p class="plain"><b>In plain terms.</b> The dictation key and mouse button never get “stuck” after a long recording, a lock screen or a busy moment.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · microphone · a mouse with a middle button (part C only) · sandbox home</dd>
+              <dt>Preconditions</dt><dd>M03 set-up done. For part C, add <code>"mouse_trigger": "middle"</code> to <code>$OUT3/sandbox-config.json</code> before starting.</dd>
+              <dt>Working dir</dt><dd>the M03 Terminal window</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li><b>A.</b> <code>lf3_start</code>. Hold fn and speak ~8 seconds; release. While the pill shows processing, tap fn once or twice. The text is inserted; the pill clears.</li>
+              <li><b>B.</b> Double-tap fn (hands-free) and stay silent. After 20 seconds the capture ends by itself (pill → processing → hidden). Now press and hold fn once: the pill shows <b>recording</b>. Say a word, release.</li>
+              <li><b>C.</b> (middle button) Hold the middle button, speak, and while still holding press Control-Command-Q to lock. Release the button on the lock screen, unlock, wait two seconds, then hold the middle button again: the pill shows recording. Release. Quit from the menu.</li>
+            </ol>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf3_events | grep -E 'release_lost|capture.started|system_interrupted|capture.completed' | tail -n 14 | tee "$OUT3/V007-triggers.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>A: no stuck pill; <code>hotkey.release_lost</code> appears only if a release was genuinely lost.</li>
+              <li>B: a <code>capture.completed</code> about 20 s after the hands-free <code>capture.started</code> (outcome <code>hands_free</code>), then a new <code>capture.started</code> without outcome for your single press.</li>
+              <li>C: <code>capture.system_interrupted</code> (reason <code>session_locked_or_switched</code>), then a new <code>capture.started</code> for the next middle press. If macOS did not deliver the release made on the lock screen, a <code>hotkey.release_lost</code> with reason <code>mouse_state_reconciled</code> appears in between; if it did deliver it, that line is absent — either way the decisive result is the new capture.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>B: the single press after the cap does nothing (or ends immediately): the latch survived the forced end — <b>Failed</b>.</li>
+              <li>C: the next middle press does nothing: the lost release was not reconciled — <b>Failed</b>. No middle button: mark part C <b>Blocked</b> in the note and judge A and B.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT3/V007-triggers.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M03-AUDIT-15; S09 hands-free and mouse triggers; EV-04.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M03-V008" data-milestone="M03" data-rev="M03-r1" data-code="3e0d1ab" data-tags="native human hardware">
+          <header class="check-head">
+            <span class="cid">M03-V008</span>
+            <h4>Sleep and lock end capture recoverably; wake never reopens the microphone</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~6 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The real sleep and lock notifications reach the app: an active capture stops, its audio is published under the deletion barrier with its capture provenance, and it becomes a recoverable item; after wake or unlock the microphone stays off until you press. The audit asked for this native check because notification coverage (resign-active vs. real lock/unlock) cannot be proven from source.</p>
+          <p class="plain"><b>In plain terms.</b> Locking or sleeping the Mac while dictating keeps what you said for later and never switches the microphone back on by itself.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · microphone · sandbox home</dd>
+              <dt>Preconditions</dt><dd>M03 set-up done.</dd>
+              <dt>Working dir</dt><dd>the M03 Terminal window</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li><code>lf3_start</code>; wait for ready. Double-tap fn and speak a sentence; while recording press Control-Command-Q (lock). Unlock. Check the orange dot: <b>off</b>.</li>
+              <li>Double-tap fn again and speak; while recording choose Apple menu → Sleep. Wake the Mac. The orange dot stays <b>off</b>.</li>
+              <li>Recovery → Retry Last Failed Dictation into a text field: the second sentence is inserted. Quit from the menu.</li>
+            </ol>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf3_events | grep -E 'system_interrupted|app.woke' | tail -n 6 | tee "$OUT3/V008-sleep-lock.txt"
+"$PY" - &lt;&lt;'EOF' | tee -a "$OUT3/V008-sleep-lock.txt"
+import json, os, pathlib, sqlite3
+db = sqlite3.connect(os.environ["SDB3"])
+for jid, state, reason in db.execute("select job_id, state, state_reason from jobs"
+                                     " where state_reason in ('session_locked_or_switched','system_sleep')"):
+    p = pathlib.Path(os.environ["SJ3"], f"job-{jid}.capture.json")
+    prov = json.loads(p.read_text()) if p.exists() else {}
+    print(state, reason, "provenance:", prov.get("source"), prov.get("interrupted_by"))
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Two <code>capture.system_interrupted</code> events (<code>session_locked_or_switched</code>, <code>system_sleep</code>), outcome <code>recoverable_item</code>; one <code>app.woke</code> with outcome <code>mic_off</code>.</li>
+              <li>The lock job: <code>failed_recoverable session_locked_or_switched provenance: live_memory session_locked_or_switched</code> (the sleep job was retried in step 3, so it shows a different state or is absent).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Capture kept running through the lock (no <code>system_interrupted</code>): the lock notification did not arrive — <b>Failed</b> (record which one).</li>
+              <li><code>app.woke … mic_on</code> or an orange dot after wake: <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT3/V008-sleep-lock.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M03-AC04; S09 sleep/lock; M03-AUDIT-02/09 (publication and provenance of interrupted captures).</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M04" data-milestone="M04" data-title="Numeric & syntax normalization"><div class="ms-head"><span class="mid">M04</span><h2>Numeric &amp; syntax normalization</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M04-V001).</p></section>
       <section class="milestone" id="M05" data-milestone="M05" data-title="Scoped vocabulary"><div class="ms-head"><span class="mid">M05</span><h2>Scoped vocabulary</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M05-V001).</p></section>
       <section class="milestone" id="M06" data-milestone="M06" data-title="Local context"><div class="ms-head"><span class="mid">M06</span><h2>Local context</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M06-V001).</p></section>
