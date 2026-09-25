@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-24 · M01 remediation · code <code>3db7406</code></div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-25 · M02 remediation · code <code>bfbc63c</code> (M01 checks unchanged at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -862,7 +862,508 @@ ls -la "$HOME/Library/Application Support/LocalFlow/" | cut -c1-110</code></pre>
       </section>
 
       <!-- ================= Future milestones: replace the placeholder ================= -->
-      <section class="milestone" id="M02" data-milestone="M02" data-title="Observability, jobs & lossless import"><div class="ms-head"><span class="mid">M02</span><h2>Observability, jobs &amp; lossless import</h2></div><p class="placeholder">No deferred checks recorded yet. The M02 remediation session appends its checks here (IDs from M02-V001).</p></section>
+      <!-- ==================================================================
+           M02 — Dated observability, persistent jobs, lossless import and
+           training evidence (cloud remediation of the audit at 3ae0070)
+           ================================================================== -->
+      <section class="milestone" id="M02" data-milestone="M02" data-title="Observability, jobs & lossless import">
+        <div class="ms-head">
+          <span class="mid">M02</span><h2>Observability, jobs &amp; lossless import</h2>
+          <span class="meta">instructions M02-r1 · code bfbc63c · remediation of audit at 3ae0070</span>
+        </div>
+        <p class="ms-intro">The M02 cloud remediation added a durable deletion barrier and purge intents, one-op evidence publication (quarantine from first visibility, honest completeness), capture-time consent snapshots, atomic outcome revisions, independent retention interests, reviewed-evidence retention, safer schema repair, validated retention settings, an allowlisted redacted export, deterministic event ordering, protected log rotation and an orderly quit. Portable tests passed in the cloud; these checks cover what only this Mac can show. The September 22 human results stay in the record; the two whose behaviour changed are marked stale there and re-checked below in a smaller form. Detail: <code>docs/v2/handoffs/M02.md</code> (remediation addendum) and <code>docs/v2/acceptance/M02/results.json</code> → <code>remediation_2026_09_25</code>.</p>
+
+        <div class="callout">
+          <h3>M02 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The repaired M02 code gets its own worktree, like M01’s. Every check that runs the app uses a <b>sandbox home folder</b>: the dev app then reads and writes a throw-away store, logs and debug audio under <code>$SANDBOX</code> — never your real Application Support data or logs. Models are read from your existing Hugging Face cache, offline. Quit the installed LocalFlow.app first so the two apps do not fight over the fn key.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># M02 code in its own worktree (first time only)</span>
+export LF_M02="$(dirname "$LF_MAIN")/LocalFlow-m02-verify"
+git -C "$LF_MAIN" fetch origin claude/intelligent-allen-iz9j6s
+[ -d "$LF_M02" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M02" origin/claude/intelligent-allen-iz9j6s
+<span class="c">#   (if that branch has been merged, use origin/main instead)</span>
+git -C "$LF_M02" merge-base --is-ancestor bfbc63c HEAD &amp;&amp; echo "M02 repairs present"
+export OUT2="$EV/m02-verification"; mkdir -p "$OUT2" &amp;&amp; chmod 700 "$OUT2"
+
+<span class="c"># Sandbox home for the dev app (fresh each time you want a clean slate)</span>
+export REAL_HOME="$HOME"
+export SANDBOX="$OUT2/sandbox-home"; mkdir -p "$SANDBOX" &amp;&amp; chmod 700 "$SANDBOX"
+<span class="c"># Your repo config plus the two settings these checks need</span>
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M02"], "config.json").read_text())
+cfg.update({"hands_free": "double_tap", "log_transcripts": True})
+p = pathlib.Path(os.environ["OUT2"], "sandbox-config.json")
+p.write_text(json.dumps(cfg, indent=1)); print("wrote", p)
+EOF
+<span class="c"># Launch command used by M02-V004…V007 (runs until you quit it from the menu)</span>
+lf_sandbox() { ( cd "$LF_M02" &amp;&amp; HOME="$SANDBOX" HF_HOME="$REAL_HOME/.cache/huggingface" \
+  HF_HUB_OFFLINE=1 LOCALFLOW_CONFIG="$OUT2/sandbox-config.json" "$PY" -m localflow ); }
+export SDB="$SANDBOX/Library/Application Support/LocalFlow/v2.db"</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M02 repairs present” and “wrote …/sandbox-config.json”. Terminal needs the microphone and Accessibility permissions it already has from the September 22 pilot; if the first capture is silent, launch from Terminal.app (not an IDE terminal). Remove the sandbox when finished: <code>rm -rf "$SANDBOX"</code> (synthetic dictations only).</p>
+        </div>
+
+        <h3 class="group">Automatable local parity</h3>
+
+        <article class="check" id="M02-V001" data-milestone="M02" data-rev="M02-r1" data-code="bfbc63c" data-tags="terminal privacy">
+          <header class="check-head">
+            <span class="cid">M02-V001</span>
+            <h4>Run the repaired M02 suites under the Mac interpreter</h4>
+            <ul class="tags"><li>Terminal</li><li>~3 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The deletion barrier, purge intents, publication, consent, retention, import, verification, event-log and viewer repairs behave on macOS/APFS with Python 3.14 exactly as they did in the cloud (Linux, Python 3.13). Mac-parity reason: purge and crash tests unlink, rename and <code>chmod</code> real files in temp folders behind <code>/var → /private/var</code>, spawn a crashing child process, and time SQLite commits on APFS — none of which the cloud could exercise.</p>
+          <p class="plain"><b>In plain terms.</b> The same automatic tests that passed in the cloud must also pass on your Mac, including the ones that delete files and simulate crashes (all inside temporary folders).</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · no app or model needed</dd>
+              <dt>Preconditions</dt><dd>M01 and M02 set-up done. Project <code>.venv</code> exists in your checkout.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M02</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M02"
+for t in tests/v2/logging/test_event_writer.py tests/v2/storage/test_store.py \
+         tests/v2/storage/test_import.py tests/v2/training/test_collector.py \
+         tests/v2/test_legacy_import_boundary.py \
+         tests/v2/storage/test_m02_remediation_store.py \
+         tests/v2/storage/test_m02_remediation_import.py \
+         tests/v2/training/test_m02_remediation_collector.py \
+         tests/v2/logging/test_m02_remediation_events.py \
+         tests/v2/storage/test_m02_review_round.py \
+         tests/v2/test_m02_app_wiring.py \
+         tests/v2/analytics/test_usage_store.py tests/v2/personalization/test_learning.py \
+         tests/v2/ui/test_training_data.py tests/v2/training/test_dataset_export.py \
+         tests/v2/lifecycle/test_lifecycle.py tests/v2/test_baseline_manifest.py; do
+  "$PY" "$t" &gt; "$OUT2/V001-$(basename "$t" .py).txt" 2&gt;&amp;1
+  echo "exit=$?  $(tail -n 1 "$OUT2/V001-$(basename "$t" .py).txt")"
+done</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Every line shows <code>exit=0</code>. Final lines and counts: event writer <b>13</b>; store <b>17</b>; import <b>7</b>; collector <b>11</b>; import boundary <b>6</b>; remediation store <b>19</b>; remediation import <b>4</b>; remediation collector <b>14</b>; remediation events <b>5</b>; review round <b>8</b>; app wiring (static) <b>4</b>; usage store <b>11</b>; learning <b>11</b>; training data <b>“all training data inspector tests passed”</b>; dataset export <b>“all dataset export tests passed”</b>; lifecycle <b>“all lifecycle tests passed”</b>; baseline manifest <b>5</b> (clean privacy scan).</li>
+              <li>The last three suites import AppKit on the Mac; in the cloud they ran only partly or under a non-native shim, so this is their first real run on the repaired code.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A failure in <code>test_m02_remediation_store</code> naming purge, rollback or “process exit” means APFS/unlink semantics differ from Linux — mark <b>Failed</b>, keep the output, and do not run M02-V007.</li>
+              <li>A timeout (<code>store writer did not respond</code>) means commits are much slower than expected on this disk; note it — it matters for M02-V003.</li>
+              <li><code>ModuleNotFoundError</code> means the wrong interpreter: check <code>$PY</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT2/V001-*.txt</code>. Sanitized for Git (optional): the pass counts.</p>
+            <h5>Contract relevance</h5>
+            <p>EV-02/EV-03/EV-19; <code>contracts/store.md</code>, <code>training_evidence.md</code>, <code>events.md</code> → “M02 remediation”.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M02-V002" data-milestone="M02" data-rev="M02-r1" data-code="bfbc63c" data-tags="terminal model">
+          <header class="check-head">
+            <span class="cid">M02-V002</span>
+            <h4>Real models still feed complete evidence through the new publication path</h4>
+            <ul class="tags"><li>Terminal</li><li>Model-backed</li><li>~2 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> With the real Qwen cleanup model and the real Parakeet recogniser, the repaired collector still retains the exact rendered prompt, the model’s proposal and the applied text, and publishes them as one acknowledged example. The cloud has no MLX/Metal, so this test was recorded there as <b>skipped</b>, never as passed.</p>
+          <p class="plain"><b>In plain terms.</b> The training-evidence recorder still captures what the real models actually saw and said.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · models already in your Hugging Face cache (offline)</dd>
+              <dt>Preconditions</dt><dd>M02 set-up done. Nothing else using the GPU heavily.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M02</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M02"
+HF_HUB_OFFLINE=1 "$PY" tests/v2/training/test_live_pipeline.py &gt; "$OUT2/V002-live.txt" 2&gt;&amp;1
+echo "exit=$?"; cat "$OUT2/V002-live.txt" | grep -v '^$' | tail -n 3</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>exit=0</code> and two <code>ok</code> lines: “real Qwen cleanup: exact prompt + proposal + applied captured” and “real Parakeet on synthetic audio: verbatim output + audio join”.</li>
+              <li>No line containing <code>SKIPPED</code> (that environment variable must not be set).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A model-download or “offline” error: the cache is missing a model — <b>Blocked</b>, not Failed.</li>
+              <li>An assertion about <code>verify()</code> or a missing prompt/proposal artifact: the publication path lost evidence with real model output — <b>Failed</b>; keep the output.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT2/V002-live.txt</code> (contains no dictation — synthetic inputs).</p>
+            <h5>Contract relevance</h5>
+            <p>S29.4/S29.16; EV-19 (M02-AC05 automated half); <code>contracts/training_evidence.md</code>.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M02-V003" data-milestone="M02" data-rev="M02-r1" data-code="bfbc63c" data-tags="terminal hardware">
+          <header class="check-head">
+            <span class="cid">M02-V003</span>
+            <h4>Re-run the repaired M02 benchmark (new run, history untouched)</h4>
+            <ul class="tags"><li>Terminal</li><li>~3 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The collection-overhead benchmark now measures the path it claims: each job’s context is bound before the cleanup observations, the run refuses to report unless every expected evidence population exists (audio, raw text, rendered prompt, proposal, applied output, example, two revisions per job), and the timing scope is written into the report. The September 21 figure (3.4 ms delta p95) was measured with prompt/proposal capture silently missing and a different timing scope, so it is <b>stale, not comparable</b> — this run replaces nothing; it adds a new, labelled measurement.</p>
+          <p class="plain"><b>In plain terms.</b> A fair re-measurement of how much the evidence recorder costs, on your Mac, now that the benchmark really records what it says it does.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac on power, other heavy apps closed · Terminal · no model needed (add <code>--real</code> only if you want the optional model spot check)</dd>
+              <dt>Preconditions</dt><dd>M02-V001 passed.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M02</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M02"
+"$PY" scripts/v2/benchmark_m02.py --output "$OUT2/V003-m02-bench.json" &gt; /dev/null
+echo "exit=$?"
+"$PY" - &lt;&lt;'EOF'
+import json, os
+r = json.load(open(os.path.join(os.environ["OUT2"], "V003-m02-bench.json")))
+c = r["collection_paired"]
+print("certified:", c.get("certified"), "| scope:", c.get("timing_scope"))
+print("delta_p95_ms:", c.get("delta_p95_ms"), "| enabled p95:", c["enabled"]["p95_ms"],
+      "| disabled p95:", c["disabled"]["p95_ms"])
+print("enabled populations:", c["enabled"]["populations"])
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>exit=0</code>; <code>certified: True</code>; the scope mentions “acknowledged publication”.</li>
+              <li>Enabled populations: every role in <code>artifacts_by_role</code> equals <b>50</b>, <code>examples</code> <b>50</b>, <code>revisions</code> <b>100</b>, <code>model_input_artifacts</code> <b>50</b>, <code>incomplete_publications</code> <b>0</b>.</li>
+              <li>Record <code>delta_p95_ms</code> against the S29.16 target of 25 ms. Exceeding it is a <b>Needs follow-up</b> result (a finding for the next audit), not a test failure.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>exit=2</code> with <code>certified: false</code> and a <code>refusal</code> text: the measured path did not produce the evidence it costs — <b>Failed</b>; keep the JSON.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT2/V003-m02-bench.json</code>. For Git (content-free, optional): copy it to <code>docs/v2/benchmarks/&lt;run-id&gt;-m02-remediation/m02.json</code> in a later session — never over the 2026-09-21 run.</p>
+            <h5>Contract relevance</h5>
+            <p>S29.16 collection-overhead target; E11 benchmark discipline; M02-AUDIT-17.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Native macOS · sandboxed dev app</h3>
+
+        <article class="check" id="M02-V004" data-milestone="M02" data-rev="M02-r1" data-code="bfbc63c" data-tags="native human terminal">
+          <header class="check-head">
+            <span class="cid">M02-V004</span>
+            <h4>Quit drains the store and the event log; reopen is clean</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Choosing Quit in the real app now closes the store’s admission, finishes its queued writes, records an <code>app.shutdown</code> event, then closes the event log — instead of letting daemon threads die mid-write. Reopening finds a consistent store. Only a real AppKit quit can show this.</p>
+          <p class="plain"><b>In plain terms.</b> Quitting LocalFlow right after a dictation no longer risks losing that dictation’s records.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · sandbox home (no real data touched)</dd>
+              <dt>Preconditions</dt><dd>M02 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>any (the function changes into <code>$LF_M02</code>)</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf_sandbox</code>. Wait for the menu-bar icon and the ready line.</li>
+              <li>Hold fn and say one short sentence; release. As soon as the text is inserted, choose <b>Quit LocalFlow</b> from the menu-bar menu.</li>
+              <li>Run <code>lf_sandbox</code> again, wait for ready, then quit again from the menu.</li>
+            </ol>
+            <h5>Commands (after step 3)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M02"
+"$PY" scripts/v2/view_events.py --dir "$SANDBOX/Library/Logs/LocalFlow" --utc \
+  | grep -E 'application_will_terminate|drained|store_drain' | tee "$OUT2/V004-shutdown.txt"
+"$PY" - &lt;&lt;'EOF' | tee -a "$OUT2/V004-shutdown.txt"
+import os, sqlite3
+db = sqlite3.connect(os.environ["SDB"])
+print("schema:", db.execute("select value from schema_meta where key='schema_version'").fetchone())
+print("jobs by state:", db.execute("select state, count(*) from jobs group by state").fetchall())
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Two <code>app.shutdown</code> lines (one per quit), each reading <code>drained: application_will_terminate</code> at INFO level.</li>
+              <li><code>schema: ('11',)</code>; the dictation’s job is in a terminal state (<code>insertion_unverified</code> or <code>insertion_confirmed</code>), nothing stuck in <code>capturing</code>/<code>queued</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>store_drain_incomplete</code> at ERROR: the writer did not finish within 3 s at quit — <b>Needs follow-up</b> with the pending count.</li>
+              <li>No <code>app.shutdown</code> line at all: the quit path did not run the new shutdown — <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT2/V004-shutdown.txt</code> (events are content-free).</p>
+            <h5>Contract relevance</h5>
+            <p>M02-AUDIT-15; <code>contracts/store.md</code> lifecycle; <code>contracts/events.md</code> shutdown.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M02-V005" data-milestone="M02" data-rev="M02-r1" data-code="bfbc63c" data-tags="native human hardware">
+          <header class="check-head">
+            <span class="cid">M02-V005</span>
+            <h4>Consent is decided when you start speaking</h4>
+            <ul class="tags"><li>Native macOS</li><li>Hardware / audio</li><li>~8 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The training-evidence permission is now taken at push-to-talk <em>down</em>: turning collection on in the middle of a capture does not collect that capture, and pausing in the middle does not revoke a capture that started while collection was on (the documented capture-snapshot policy). Needs the real menu bar and a real hands-free capture, which the cloud cannot drive. Replaces the pause part of the September 22 pilot, which ran on the old timing.</p>
+          <p class="plain"><b>In plain terms.</b> What counts is whether collection was on when you began talking — changing it mid-sentence changes the next dictation, not this one.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · microphone · sandbox home · hands-free double-tap enabled by the sandbox config</dd>
+              <dt>Preconditions</dt><dd>M02 set-up done. Start from a fresh sandbox (<code>rm -rf "$SANDBOX"; mkdir -p "$SANDBOX"</code>) so collection starts <b>disabled</b>.</dd>
+              <dt>Working dir</dt><dd>any</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf_sandbox</code>. In the menu-bar Training submenu, confirm <b>Collect Training Evidence</b> has no check mark.</li>
+              <li><b>Case A.</b> Double-tap fn to start hands-free capture. While it records, turn <b>Collect Training Evidence</b> on from the menu. Say a sentence, then tap fn to finish.</li>
+              <li><b>Case B.</b> With collection now on, double-tap fn to start. While it records, choose <b>Pause Collection</b>. Say a sentence, tap fn to finish.</li>
+              <li><b>Case C.</b> Collection is paused. Hold fn normally and dictate once more.</li>
+              <li>Quit from the menu, then run the command below.</li>
+            </ol>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>"$PY" - &lt;&lt;'EOF' | tee "$OUT2/V005-consent.txt"
+import json, os, sqlite3
+db = sqlite3.connect(os.environ["SDB"])
+<span class="c"># double-tap first taps are discarded as cancelled jobs — skip them</span>
+jobs = [r[0] for r in db.execute("select job_id from jobs where state != 'cancelled' order by created_at_utc")]
+states = dict(db.execute("select consent_revision_id, state from consent_revisions"))
+for i, j in enumerate(jobs, 1):
+    ex = db.execute("select example_id, consent_revision_id from training_examples where job_id=?", (j,)).fetchone()
+    arts = db.execute("select count(*) from artifacts where job_id=? and retention_class='training'", (j,)).fetchone()[0]
+    env = json.loads(db.execute("select envelope_json from training_revisions where example_id=? order by rowid limit 1",
+                                (ex[0],)).fetchone()[0]) if ex else {}
+    print(f"dictation {i}: example={'yes' if ex else 'no'} training_artifacts={arts}"
+          f" consent_state={states.get(ex[1]) if ex else None} point={env.get('consent_snapshot_point')}")
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Dictation 1 (Case A): <code>example=no training_artifacts=0</code> — enabling mid-capture did not collect it.</li>
+              <li>Dictation 2 (Case B): <code>example=yes</code>, <code>training_artifacts</code> ≥ 4, <code>consent_state=enabled point=ptt_down</code> — the pause arrived after it started.</li>
+              <li>Dictation 3 (Case C): <code>example=no training_artifacts=0</code>.</li>
+              <li>All three dictations were inserted normally.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Dictation 1 has an example: the capture boundary is still at release — <b>Failed</b>.</li>
+              <li>Dictation 2 has no example: pause is acting as immediate revocation, which contradicts the documented policy — <b>Needs follow-up</b> (a policy decision, not necessarily a bug).</li>
+              <li>A dictation missing entirely: the hands-free gesture did not start — repeat that case.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT2/V005-consent.txt</code> (no transcript text). The sandbox holds your three sentences; delete it when done.</p>
+            <h5>Contract relevance</h5>
+            <p>M02-AUDIT-06; S29.2; <code>contracts/training_evidence.md</code> → consent snapshot policy.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M02-V006" data-milestone="M02" data-rev="M02-r1" data-code="bfbc63c" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M02-V006</span>
+            <h4>“Mark Last Dictation Correct” keeps the example as reviewed evidence</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~4 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The menu’s mark now records the same intended-writing judgment as the Hub (<code>user_explicit_intended_writing</code>) and moves the example to the reviewed <code>annotated</code> state that retention keeps; marking an excluded example does not re-include it. Replaces the mark/exclude part of the September 22 pilot, whose stored provenance was the old <code>user_explicit</code>.</p>
+          <p class="plain"><b>In plain terms.</b> When you mark a dictation correct from the menu, it is now kept as reviewed and counts exactly like marking it in the Hub.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · microphone · sandbox home</dd>
+              <dt>Preconditions</dt><dd>M02 set-up done (the sandbox from M02-V005 is fine).</dd>
+              <dt>Working dir</dt><dd>any</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf_sandbox</code>; make sure <b>Collect Training Evidence</b> is checked (un-pause if needed).</li>
+              <li>Dictate once; then Training → <b>Mark Last Dictation Correct</b>.</li>
+              <li>Dictate again; Training → <b>Exclude Last Dictation</b>; then Training → <b>Mark Last Dictation Correct</b>.</li>
+              <li>Quit from the menu and run the command.</li>
+            </ol>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>"$PY" - &lt;&lt;'EOF' | tee "$OUT2/V006-mark.txt"
+import json, os, sqlite3
+db = sqlite3.connect(os.environ["SDB"])
+for ex, state in db.execute("select example_id, state from training_examples order by rowid desc limit 2"):
+    env = json.loads(db.execute("select envelope_json from training_revisions where example_id=?"
+                                " order by rowid desc limit 1", (ex,)).fetchone()[0])
+    o = env.get("outcome", {})
+    print(state, o.get("correctness"), o.get("correctness_provenance"))
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Newest line (second dictation): <code>excluded correct user_explicit_intended_writing</code> — marked, still excluded.</li>
+              <li>Older line (first dictation): <code>annotated correct user_explicit_intended_writing</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Provenance <code>user_explicit</code> or state <code>captured_unreviewed</code> after marking: the menu still uses the old path — <b>Failed</b>.</li>
+              <li>The excluded example became <code>annotated</code>: exclusion was overridden — <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT2/V006-mark.txt</code> (no transcript text).</p>
+            <h5>Contract relevance</h5>
+            <p>M02-AUDIT-16; S29.2/S29.14; <code>contracts/training_evidence.md</code> → intended-writing judgment.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M02-V007" data-milestone="M02" data-rev="M02-r1" data-code="bfbc63c" data-tags="native human privacy">
+          <header class="check-head">
+            <span class="cid">M02-V007</span>
+            <h4>Delete Everywhere removes every managed audio copy on APFS</h4>
+            <ul class="tags"><li>Native macOS</li><li>Privacy / data</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Deleting a dictation everywhere now removes its float32 evidence WAV, its transcript-logging debug copy (now named with the job) and any recovery-journal audio, records a durable deletion barrier, and reports “complete” only when the files are really gone. Uses real APFS paths, permissions and the Hub button, which the cloud cannot exercise.</p>
+          <p class="plain"><b>In plain terms.</b> “Delete everywhere” now really deletes every copy of that recording the app manages — and says so honestly if something could not be deleted.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · microphone · sandbox home · Hub window</dd>
+              <dt>Preconditions</dt><dd>M02 set-up done; collection enabled in the sandbox.</dd>
+              <dt>Working dir</dt><dd>any</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf_sandbox</code>; dictate once with collection enabled; quit from the menu.</li>
+              <li>Run the “before” command below and note the job it prints.</li>
+              <li>Run <code>lf_sandbox</code>, open the Hub → Training Data, select the newest example and press <b>Delete Everywhere</b>. Quit from the menu.</li>
+              <li>Run the “after” command.</li>
+            </ol>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code><span class="c"># before</span>
+"$PY" - &lt;&lt;'EOF' | tee "$OUT2/V007-before.txt"
+import os, sqlite3, pathlib
+home = pathlib.Path(os.environ["SANDBOX"])
+db = sqlite3.connect(os.environ["SDB"])
+job = db.execute("select job_id from training_examples order by rowid desc limit 1").fetchone()[0]
+print("job:", job)
+print("evidence wavs:", db.execute("select count(*) from artifacts where job_id=? and content_path is not null", (job,)).fetchone()[0])
+print("debug copies:", len(list((home / "Library/Logs/LocalFlow-audio").glob(f"*-{job}.wav"))))
+EOF
+<span class="c"># after</span>
+"$PY" - &lt;&lt;'EOF' | tee "$OUT2/V007-after.txt"
+import os, sqlite3, pathlib
+home = pathlib.Path(os.environ["SANDBOX"])
+sup = home / "Library/Application Support/LocalFlow"
+db = sqlite3.connect(os.environ["SDB"])
+job = open(os.path.join(os.environ["OUT2"], "V007-before.txt")).readline().split()[1]
+print("barrier:", db.execute("select reason from job_deletions where job_id=?", (job,)).fetchall())
+print("live artifacts:", db.execute("select count(*) from artifacts where job_id=? and purged=0", (job,)).fetchone()[0])
+print("pending purges:", db.execute("select count(*) from purge_intents where completed_at_utc is null").fetchone()[0])
+print("debug copies:", len(list((home / "Library/Logs/LocalFlow-audio").glob(f"*-{job}.wav"))))
+print("journal files:", len(list((sup / "v2-journal").glob(f"job-{job}.*"))))
+print("any wav under artifacts named for this job's artifacts:",
+      sum(1 for (p,) in db.execute("select path from purge_intents where job_id=?", (job,))
+          if (sup / "v2-artifacts" / p).exists() or pathlib.Path(p).exists()))
+EOF
+"$PY" "$LF_M02/scripts/v2/view_events.py" --dir "$SANDBOX/Library/Logs/LocalFlow" --utc | grep -c 'complete: user_request'</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Before: <code>evidence wavs: 1</code> and <code>debug copies: 1</code>.</li>
+              <li>After: <code>barrier: [('user_request',)]</code>; <code>live artifacts: 0</code>; <code>pending purges: 0</code>; <code>debug copies: 0</code>; <code>journal files: 0</code>; the last count <code>0</code>.</li>
+              <li>The last command prints <code>1</code>: the store’s deletion event reads <code>complete: user_request</code> (the Hub adds its own <code>hub_manual</code> event beside it).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>pending purges</code> &gt; 0 or event <code>purge_pending</code>: a file could not be unlinked (permissions?) — <b>Needs follow-up</b>; the store kept the work and will retry at next launch; re-run “after” after one more launch/quit.</li>
+              <li><code>debug copies: 1</code> after deletion: the debug copy is not wired to the job — <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT2/V007-*.txt</code> (ids and counts only).</p>
+            <h5>Contract relevance</h5>
+            <p>M02-AUDIT-01/02/04; S29.14; <code>contracts/store.md</code> → deletion barrier, purge intents, job-scoped copies.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Native macOS · real data (read-only or on a copy)</h3>
+
+        <article class="check" id="M02-V008" data-milestone="M02" data-rev="M02-r1" data-code="bfbc63c" data-tags="terminal privacy">
+          <header class="check-head">
+            <span class="cid">M02-V008</span>
+            <h4>Redacted export and “last N” on your real event log</h4>
+            <ul class="tags"><li>Terminal</li><li>Privacy / data</li><li>~3 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> On the months of real events on this Mac, the redacted export keeps only allowlisted, type-checked fields (anything unknown, nested or free-text is dropped and counted), and <code>--last</code> shows the truly newest events across rotated and per-process files. Reads your logs; writes only the export into your private evidence folder. Replaces the export half of the September 22 view check, which ran on the old exporter.</p>
+          <p class="plain"><b>In plain terms.</b> The “safe to share” event export now fails closed, and “show me the last events” really shows the last ones.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · real logs under <code>~/Library/Logs/LocalFlow</code> (read-only)</dd>
+              <dt>Preconditions</dt><dd>M02 set-up done. Use your REAL home here (not the sandbox).</dd>
+              <dt>Working dir</dt><dd><code>$LF_M02</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M02"
+"$PY" scripts/v2/view_events.py --last 5 --utc 2&gt; "$OUT2/V008-order-warnings.txt"
+"$PY" scripts/v2/view_events.py --export-redacted "$OUT2/V008-redacted.jsonl"
+"$PY" - &lt;&lt;'EOF' | tee "$OUT2/V008-summary.txt"
+import importlib.util, json, os
+spec = importlib.util.spec_from_file_location("ve", "scripts/v2/view_events.py")
+ve = importlib.util.module_from_spec(spec); spec.loader.exec_module(ve)
+recs = [json.loads(l) for l in open(os.path.join(os.environ["OUT2"], "V008-redacted.jsonl"))]
+extra = {k for r in recs for k in r} - set(ve.REDACTION_ALLOWLIST) - {"redaction_version", "omitted_fields"}
+print("records:", len(recs), "| keys outside allowlist:", sorted(extra))
+print("with detail:", sum("detail" in r for r in recs), "| omitted fields total:", sum(r["omitted_fields"] for r in recs))
+EOF
+wc -l &lt; "$OUT2/V008-order-warnings.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>The five lines printed first are your most recent events (compare with the last thing you did in LocalFlow), newest last.</li>
+              <li><code>keys outside allowlist: []</code>; <code>with detail: 0</code>; the omitted total is at least the number of records that had a <code>detail</code>.</li>
+              <li>Spot check: open the export and search for three words you know you dictated — zero matches (as on September 22).</li>
+              <li>The warnings file usually has 0 lines; a “wall clock went backwards” line is an honest report of a clock change, not a failure.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Any dictated word in the export: <b>Failed</b> — do not share the export; keep it private.</li>
+              <li>The “last 5” are clearly older than recent activity: <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT2/V008-*</code>. For Git: only the two counts from the summary.</p>
+            <h5>Contract relevance</h5>
+            <p>M02-AUDIT-12/20; M02-AC04; <code>contracts/events.md</code> → redaction allowlist and view order.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M02-V009" data-milestone="M02" data-rev="M02-r1" data-code="bfbc63c" data-tags="terminal native privacy">
+          <header class="check-head">
+            <span class="cid">M02-V009</span>
+            <h4>A copy of your real store upgrades to schema 11 and verifies deeply</h4>
+            <ul class="tags"><li>Terminal</li><li>Privacy / data</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Your real <code>v2.db</code>, <em>copied</em> into the private evidence folder, opens with the repaired code: the additive v11 migration runs with its backup, the new corruption classification does not mistake a healthy store for a damaged one, and the deep verifier re-hashes every retained payload. Your live database is only read (SQLite online backup); nothing is migrated in place.</p>
+          <p class="plain"><b>In plain terms.</b> Before you ever run the repaired app on your real data, we prove on a copy that it upgrades cleanly and that every stored recording and text still matches its fingerprint.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · real store read-only</dd>
+              <dt>Preconditions</dt><dd>M02 set-up done; <b>quit every LocalFlow instance</b> (installed and dev) so the copy is quiescent.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M02</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M02"
+export LIVE="$HOME/Library/Application Support/LocalFlow"
+mkdir -p "$OUT2/V009-copy" &amp;&amp; chmod 700 "$OUT2/V009-copy"
+sqlite3 "$LIVE/v2.db" ".backup '$OUT2/V009-copy/v2.db'"      <span class="c"># online backup: reads the live file only</span>
+"$PY" - &lt;&lt;'EOF' | tee "$OUT2/V009-verify.txt"
+import os, pathlib, sqlite3
+from localflow.v2 import store
+out = pathlib.Path(os.environ["OUT2"], "V009-copy")
+print("before:", sqlite3.connect(out / "v2.db").execute("select value from schema_meta where key='schema_version'").fetchone())
+# The COPY is migrated; payloads are only READ from the live artifacts folder (no sweep, no prune, no delete).
+st = store.Store(out / "v2.db", backup_dir=out / "backups",
+                 artifacts_dir=pathlib.Path(os.environ["LIVE"], "v2-artifacts"))
+v = st.verify(deep=True)
+print("after:", st.submit(lambda db: db.execute("select value from schema_meta where key='schema_version'").fetchone()))
+print("ok:", v["ok"], "| issues:", len(v["issues"]), "| orphan files:", len(v["orphan_files"]),
+      "| pending purges:", v["pending_purges"])
+for i in v["issues"][:20]: print("  ", i)
+print("close:", st.close())
+EOF
+ls "$OUT2/V009-copy/backups"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>before: ('10',)</code> (or lower), <code>after: ('11',)</code>; one <code>v2-pre-migrate-*.db</code> file in the backups listing.</li>
+              <li><code>ok: True</code>, <code>issues: 0</code>, <code>pending purges: 0</code>, and <code>close: {'drained': True, …}</code>. A small <code>orphan files</code> count is possible (files left by pre-remediation crashes) — record it; it is not a failure of this check.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>RuntimeError … store schema corrupt</code>: the new classification refuses your real store — <b>Failed</b>, and <b>do not</b> run the repaired app on real data until explained (this is a merge blocker).</li>
+              <li><code>payload hash mismatch</code> / <code>payload file missing</code> issues: real stored payloads do not match their records — <b>Needs follow-up</b>; note which kinds (ids only) — the old verifier could not see this.</li>
+              <li>Other issues (e.g. <code>owned by another job</code>, <code>latest pointer</code>): <b>Needs follow-up</b> with the issue lines (content-free).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT2/V009-*</code>. Delete <code>$OUT2/V009-copy</code> when done — it is a full copy of your private store.</p>
+            <h5>Contract relevance</h5>
+            <p>M02-AUDIT-14/18; S08 backup-before-migration; <code>contracts/store.md</code> → schema repair, verification.</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M03" data-milestone="M03" data-title="Resilient capture & inference"><div class="ms-head"><span class="mid">M03</span><h2>Resilient capture &amp; inference</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M03-V001).</p></section>
       <section class="milestone" id="M04" data-milestone="M04" data-title="Numeric & syntax normalization"><div class="ms-head"><span class="mid">M04</span><h2>Numeric &amp; syntax normalization</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M04-V001).</p></section>
       <section class="milestone" id="M05" data-milestone="M05" data-title="Scoped vocabulary"><div class="ms-head"><span class="mid">M05</span><h2>Scoped vocabulary</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M05-V001).</p></section>

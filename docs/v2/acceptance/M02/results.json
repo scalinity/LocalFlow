@@ -242,5 +242,166 @@
     "post_address_verification": "Every suite re-run green after the fixes (13+16+7+11 automated, 2/2 model-backed live pipeline, 5/5 overlay, 51/51 model-backed cleanup); real-data import re-run idempotent; live store migrated to schema v2 with backup; benchmark re-run on post-fix code."
   },
   "privacy": "Nothing private entered Git: committed artifacts carry hashes, counts, locators and synthetic fixtures only; tests/v2/test_baseline_manifest.py privacy scan passes over the new subdirectories; live data, backups and snapshots stay under ~/Library/Application Support/LocalFlow/ (outside Git).",
-  "human_verification_completed_utc": "2026-09-22T00:30:00Z"
+  "human_verification_completed_utc": "2026-09-22T00:30:00Z",
+  "remediation_2026_09_25": {
+    "kind": "post-audit cloud remediation",
+    "state": "CLOUD_REMEDIATION_COMPLETE_PENDING_LOCAL_VERIFICATION",
+    "state_note": "Does not certify native behaviour, the installed app, real data or reference-Mac performance; the M02 milestone state recorded above is historical and unchanged by this addendum.",
+    "audit": {
+      "report": "LocalFlow V2 \u2014 M02 Read-Only Deep Audit",
+      "audited_sha": "3ae0070d84730f8d750440f51097c4a53ff8bf02",
+      "findings": 20,
+      "severity": "3 Critical, 14 High, 3 Medium"
+    },
+    "inherited_base_sha": "3ae0070d84730f8d750440f51097c4a53ff8bf02",
+    "base_note": "origin/main had not moved from the audited SHA; accepted M01 commits 3db7406 and 3ae0070 verified as ancestors.",
+    "branch": "claude/intelligent-allen-iz9j6s",
+    "production_repair_commits": [
+      "dc3b17e (first pass)",
+      "bfbc63c (independent review round)"
+    ],
+    "final_code_revision": "bfbc63c",
+    "environment": "Claude Code cloud container (Linux x86_64); not the reference Mac",
+    "reproduction_evidence": {
+      "script": "scripts/v2/m02_remediation_repro.py",
+      "base": {
+        "output": "docs/v2/acceptance/M02/remediation/repro_base_3ae0070.json",
+        "result": "20/20 findings reproduced",
+        "note": "run in a clean worktree of 3ae0070 with only the script copied in (hence working_tree_modified: true)"
+      },
+      "repaired": {
+        "output": "docs/v2/acceptance/M02/remediation/repro_repaired_bfbc63c.json",
+        "result": "0/20 reproduced (clean tree at bfbc63c)"
+      }
+    },
+    "dispositions": {
+      "M02-AUDIT-01": "reproduced; repaired (job_deletions barrier in every evidence write)",
+      "M02-AUDIT-02": "reproduced; repaired (durable purge intents, honest completion, job-named debug copy + registered debug/journal dirs)",
+      "M02-AUDIT-03": "reproduced; repaired (publish_example: quarantine is the first visible state)",
+      "M02-AUDIT-04": "reproduced; repaired (no unlink before commit; intent + post-commit unlink)",
+      "M02-AUDIT-05": "reproduced; repaired (publication verifies committed references; completeness block; events after commit)",
+      "M02-AUDIT-06": "reproduced; repaired (atomic ConsentSnapshot at PTT down; capture-snapshot policy documented; retry uses original permission)",
+      "M02-AUDIT-07": "reproduced; repaired (training expiry revokes only the training interest)",
+      "M02-AUDIT-08": "reproduced; repaired (update_latest_revision: read/modify/append in one op)",
+      "M02-AUDIT-09": "reproduced; NARROWED: context attempt/stage generations repaired and wired; expected_attempt fence added as API but deliberately not wired app-wide (reasons in contracts/store.md)",
+      "M02-AUDIT-10": "reproduced; repaired (run snapshot recorded before the first pair)",
+      "M02-AUDIT-11": "reproduced; repaired (row + bookkeeping one op; id conflicts preserved and reported)",
+      "M02-AUDIT-12": "reproduced; repaired (versioned typed allowlist)",
+      "M02-AUDIT-13": "reproduced; repaired (roll cap applies unresolved-job protection)",
+      "M02-AUDIT-14": "reproduced; repaired (nested/ownership/chain checks, deep payload mode, tombstones valid)",
+      "M02-AUDIT-15": "reproduced; repaired (store/event lifecycle with closed admission and bounded drain; app quit drains)",
+      "M02-AUDIT-16": "reproduced and BROADENED: the Hub's annotated examples also lost payloads to prune at day 31; repaired (one intended-writing op; prune retains annotated)",
+      "M02-AUDIT-17": "reproduced; repaired (bound observer, population refusal, timing scope)",
+      "M02-AUDIT-18": "reproduced; repaired (newer version refused; missing core table with dependents backed up and refused; additive tables/indexes repaired)",
+      "M02-AUDIT-19": "reproduced; repaired (validated retention knobs with defaults + reported problems)",
+      "M02-AUDIT-20": "reproduced; repaired (declared stream/sequence/instant ordering)"
+    },
+    "refuted": [],
+    "independent_review": {
+      "reviewer": "adversarial subagent over 3ae0070..dc3b17e (read-only)",
+      "verified_defects_fixed_in_bfbc63c": [
+        "note mining failed for all notes once one dictated span's job was deleted (barrier raised inside the all-notes op)",
+        "verify false positives: missing-reason keys ending in artifact_id read as references",
+        "TrainingDataService.exclude resurrected a deleted example",
+        "consent cache believed a failed consent write",
+        "delete_everywhere raised after a durable deletion when close() raced it",
+        "envelope keys containing '.'/'[' broke publication (latent)",
+        "loss of an additive v11 table was refused instead of repaired; pre-v11 deletions had no barrier"
+      ],
+      "also_fixed": [
+        "transform candidates for text of a deleted job detach instead of failing",
+        "no debug copy written for an already-deleted job",
+        "benchmark reports meets_s2916_target"
+      ],
+      "regressions": "tests/v2/storage/test_m02_review_round.py (8 cases; all fail on dc3b17e, pass on bfbc63c)",
+      "not_adopted": {
+        "wire expected_attempt into every app transition": "the app attempt is synchronized with the store by an unacknowledged bump; a mismatch would strand jobs unresolved; no confirmed stale writer (single FIFO coordinator; M03 supervisor rejects stale messages)"
+      },
+      "recorded_not_in_scope": [
+        "notes.py attachment deletion still unlinks inside its op (M12 code, same pattern as M02-AUDIT-04; suggested as a separate task)"
+      ]
+    },
+    "pause_policy": "capture-snapshot: consent at push-to-talk down governs the capture; a later enable never authorizes earlier audio; a pause after capture start does not revoke the in-flight capture; delete-everywhere is the separate immediate barrier; a recovery retry needs the original capture's permission AND current enabled (contracts/training_evidence.md)",
+    "schema": "store schema v11 (additive: job_deletions, purge_intents, backfill of pre-v11 deletions)",
+    "portable_tests": {
+      "evidence": "docs/v2/acceptance/M02/remediation/portable_tests_bfbc63c.json",
+      "interpreter": "CPython 3.13.12 + numpy 2.5.3, SQLite 3.45.1 (scratch venv linked as .venv; reference Mac uses Python 3.14)",
+      "m02_required": {
+        "files": 5,
+        "passed": 54,
+        "failed": 0,
+        "skipped": 0,
+        "detail": "event_writer 13, store 17, import 7, collector 11, legacy_import_boundary 6"
+      },
+      "m02_remediation_new": {
+        "files": 6,
+        "passed": 54,
+        "failed": 0,
+        "skipped": 0,
+        "detail": "remediation store 19, import 4, collector 14, events 5, review round 8, app wiring (static AST) 4"
+      },
+      "m01_compat": {
+        "files": 7,
+        "passed": 72,
+        "failed": 0,
+        "skipped": 1,
+        "skip": "legacy parser historical private snapshot absent (M01-V008)"
+      },
+      "downstream_targeted": {
+        "files": 14,
+        "passed": 122,
+        "failed": 0,
+        "skipped": 0
+      },
+      "native_limited": "test_lifecycle, test_insertion_pipeline, test_insertion_attribution, test_training_data stop at objc/AppKit imports in the cloud (same as on 3ae0070); under a NON-NATIVE shim their results are identical on base and repaired trees (lifecycle 13, training data 12, normalization pipeline 7, stuck overlay 5 pass on both)",
+      "model_backed": {
+        "tests/v2/training/test_live_pipeline.py": "SKIPPED (MLX/models unavailable) \u2014 PENDING_LOCAL_VERIFICATION M02-V002; not counted as a pass"
+      },
+      "whole_tree": "every tests/v2 test file: identical exit status to 3ae0070 except the six new suites (all pass) and test_dataset_export (passes on both once .venv resolves)"
+    },
+    "intended_test_changes": [
+      "tests/v2/training/test_collector.py: menu mark provenance now user_explicit_intended_writing + annotated (M02-AUDIT-16)",
+      "tests/v2/analytics/test_usage_store.py, tests/v2/personalization/test_learning.py: latest-schema assertion tracks max(_MIGRATIONS) instead of the literal '10'",
+      "tests/v2/test_baseline_manifest.py: privacy-scan allowlist entries for the synthetic repro script and import regression"
+    ],
+    "sqlite_effective_settings_cloud": {
+      "journal_mode": "delete",
+      "synchronous": "FULL",
+      "foreign_keys": "off",
+      "busy_timeout_ms": 5000
+    },
+    "benchmark": {
+      "historical_2026_09_21": "collection_paired_delta_p95_ms 3.437 is STALE, not comparable: prompt/proposal capture was unbound (no model-input artifacts written) and the timed region measured enqueue, not commits. Kept as recorded; not overwritten.",
+      "cloud_observation": "repaired benchmark certified with full populations (50 each role, 100 revisions); cloud delta p95 22.9 ms under the committed end-to-end scope \u2014 cloud only, not a reference-Mac value",
+      "reference_mac": "PENDING_LOCAL_VERIFICATION M02-V003"
+    },
+    "historical_human_results_2026_09_22": {
+      "preserved": "the human_verification entries above are unchanged",
+      "stale_for_current_code": {
+        "Inspect one dictation in both UTC and local-time diagnostic views/export; reopen the app ...": "export half stale (redacted export is now an allowlist; view order changed) \u2192 M02-V008; UTC/local display and legacy totals unaffected",
+        "Enable local collection, dictate \u22655 times, mark one example, ...": "mark and pause halves stale (menu mark provenance/lifecycle and the consent boundary changed) \u2192 M02-V006, M02-V005; audio/stage join still covered by M02-V002 and M02-V007"
+      }
+    },
+    "pending_local_verification": [
+      "M02-V001",
+      "M02-V002",
+      "M02-V003",
+      "M02-V004",
+      "M02-V005",
+      "M02-V006",
+      "M02-V007",
+      "M02-V008",
+      "M02-V009"
+    ],
+    "runbook": "docs/v2/VERIFICATION.html \u2192 M02 (instructions M02-r1, code bfbc63c)",
+    "cloud_cannot_certify": [
+      "AppKit/PyObjC menu, Hub and quit paths",
+      "Accessibility/TCC",
+      "microphone and hands-free capture",
+      "MLX/Metal, Qwen and Parakeet",
+      "APFS unlink/permission semantics",
+      "the installed app and real Application Support data",
+      "reference-Mac latency/overhead"
+    ]
+  }
 }
