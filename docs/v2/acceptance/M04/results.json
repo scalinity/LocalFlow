@@ -118,5 +118,198 @@
     "findings_rejected": [],
     "post_address_verification": "All 17 fast suites + 2 model-backed suites + benchmark re-run green on post-review code; the previously vacuous AC04 scan verified to scan all 7 package modules."
   },
-  "privacy": "Committed artifacts carry synthetic fixtures, hashes and counts only; the baseline-manifest privacy scan passes over every new path; envelope values restricted to typed numerics so no transcript-derived strings outlive artifact leases; live events remain content-free."
+  "privacy": "Committed artifacts carry synthetic fixtures, hashes and counts only; the baseline-manifest privacy scan passes over every new path; envelope values restricted to typed numerics so no transcript-derived strings outlive artifact leases; live events remain content-free.",
+  "remediation_2026_09_25": {
+    "kind": "post-audit cloud remediation",
+    "state": "CLOUD_REMEDIATION_COMPLETE_PENDING_LOCAL_VERIFICATION",
+    "state_note": "Does not certify native behaviour, the installed app, real data, real models or reference-Mac performance; the M04 milestone state and the 2026-09-22 records above are historical and unchanged by this addendum.",
+    "audit": {
+      "report": "LocalFlow V2 — M04 Read-Only Deep Audit",
+      "audited_sha": "1c9d981b1505b6cd975ce6e701e0382c6db96c78",
+      "verdict": "C",
+      "severity": "1 Critical, 12 High, 3 Medium, 1 Low",
+      "test_gaps": 4,
+      "design_concerns": 3,
+      "corpus": {
+        "file": "tests/v2/normalization/m04_audit_corpus.json",
+        "sha256": "76139794d180f4e63c20f69f2901c0caf9460593ed1c80888e583230bf90e210",
+        "text_cases": 368,
+        "families": 171,
+        "stateful_probes": 10,
+        "exposure": "development evidence (consulted during repair); not an unseen holdout; variants are not independent samples"
+      }
+    },
+    "inherited_base_sha": "1c9d981b1505b6cd975ce6e701e0382c6db96c78",
+    "base_note": "origin/main had not moved from the audited SHA; accepted M01 3db74061, M02 bfbc63c3, M03 3e0d1ab9 and the M03 evidence head 1c9d981b verified as ancestors.",
+    "branch": "claude/eloquent-curie-syb79l",
+    "production_repair_commits": [
+      "d31245f49614699c46288d5fa40157ee5a80c996 (first pass, frozen for review)",
+      "4ef219c52598e92a9857e9e0dec13ca7143f56dc (independent review round)"
+    ],
+    "non_production_commits": [
+      "7ce7460 (reproduction tool + base evidence)",
+      "08ddf44 (first-pass evidence + corpus report tool)",
+      "later commits: evidence and documentation only"
+    ],
+    "final_code_revision": "4ef219c52598e92a9857e9e0dec13ca7143f56dc",
+    "environment": "Claude Code cloud container (Linux x86_64), CPython 3.13.12, numpy 2.5.3, SQLite 3.45.1; not the reference Mac",
+    "reproduction_evidence": {
+      "script": "scripts/v2/m04_remediation_repro.py",
+      "base": {
+        "output": "docs/v2/acceptance/M04/remediation/repro_base_1c9d981.json",
+        "result": "21/21 findings reproduced (clean worktree, working_tree_modified false)"
+      },
+      "first_pass": {
+        "output": "docs/v2/acceptance/M04/remediation/repro_first_pass_d31245f.json",
+        "result": "0/21 reproduced"
+      },
+      "repaired": {
+        "output": "docs/v2/acceptance/M04/remediation/repro_repaired_4ef219c.json",
+        "result": "0/21 reproduced, no probe errors"
+      }
+    },
+    "dispositions": {
+      "M04-AUDIT-01": "reproduced; repaired (command-position ownership of registered slash tokens; review R1)",
+      "M04-AUDIT-02": "reproduced; repaired (token cores, structural barriers incl. Unicode line separators, crosses_delimiter net; R14, R23)",
+      "M04-AUDIT-03": "reproduced; repaired (exact scaled Decimal, render_exact)",
+      "M04-AUDIT-04": "reproduced; repaired (malformed_scale / quantified_scale structural regions; en 'thousand and N' one number, R2)",
+      "M04-AUDIT-05": "reproduced; repaired (signed typed values; invalid_port)",
+      "M04-AUDIT-06": "reproduced; repaired (time needs preposition or meridiem; clause-material followers, R5)",
+      "M04-AUDIT-07": "reproduced; repaired (ambiguous month evidence before and after, R11; compound invalid day flagged; narrow calendar check; day-first invalid, R4)",
+      "M04-AUDIT-08": "reproduced; repaired (numeric chain regions: unanchored version, leading decimal, dotted arity; R12)",
+      "M04-AUDIT-09": "reproduced, narrowed; repaired (determiner + clause-start guards, pronoun I; R6, R7); residual: 'time period' and mid-clause noun compounds (design D2)",
+      "M04-AUDIT-10": "reproduced; repaired (uncapped payload incl. written tokens, nested markers are content, code zones; R8)",
+      "M04-AUDIT-11": "reproduced; repaired (written spelling for paths/emails, incomplete paths whole, dotted components; R9)",
+      "M04-AUDIT-12": "reproduced; repaired (deep-frozen private policy copy, sealed LocaleTables with __slots__, immutable attributes, snapshotted context; R19)",
+      "M04-AUDIT-13": "reproduced; repaired (configured base for inherit at every seam; R18)",
+      "M04-AUDIT-14": "reproduced; repaired (layer precedence before equal-output agreement; typed disagreement ambiguous)",
+      "M04-AUDIT-15": "reproduced; repaired (canonical identifier no-op claims its span)",
+      "M04-AUDIT-16": "reproduced; repaired (content-free event naming the step, retention_write_failed, fully published text stays referenced; R16, R17)",
+      "M04-AUDIT-17": "reproduced; repaired (duration after application)",
+      "M04-AUDIT-18": "test gap reproduced, narrowed (sign mutation partly caught); closed (independent typed oracle, exception inventory, semantic time negative)",
+      "M04-AUDIT-19": "test gap reproduced; closed (recursive AST scanner, population, collaborator capability trap)",
+      "M04-AUDIT-20": "test gap reproduced; closed (workload validity before speed, authored sentence oracle, no-match gate; R21)",
+      "M04-AUDIT-21": "test gap reproduced (retry ran under the previous job's style); closed (caller inventory; retry_unscoped_default snapshot recorded as policy_source; R15)",
+      "D1": "adjudicated: narrow month-length + explicit-year leap check",
+      "D2": "adjudicated: declared conservative ownership; 8 surface-identical corpus residuals",
+      "D3": "documented: ledger replay independent of the parser; policy_source + immutable revision identify the regenerating snapshot"
+    },
+    "refuted": [],
+    "narrowed": [
+      "M04-AUDIT-09 (residual D2 cases)",
+      "M04-AUDIT-18 (typed-sign mutation was partly caught)",
+      "review R11 day-first pun"
+    ],
+    "independent_review": {
+      "method": "separate subagent, empty context, own git worktree at d31245f, read-only; findings re-run by the author on d31245f before fixing",
+      "confirmed": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R6",
+        "R7",
+        "R8",
+        "R9",
+        "R10",
+        "R11",
+        "R12",
+        "R13",
+        "R14",
+        "R15",
+        "R16",
+        "R17",
+        "R18",
+        "R19",
+        "R20",
+        "R21",
+        "R22",
+        "R23"
+      ],
+      "regressions": "tests/v2/normalization/test_m04_review_round.py (22 tests; R17 is documentation-only)",
+      "first_pass_results": "docs/v2/acceptance/M04/remediation/review_round_d31245f.json (0/22 pass)",
+      "final_results": "docs/v2/acceptance/M04/remediation/review_round_4ef219c.json (22/22 pass)"
+    },
+    "corpus_results": {
+      "base_1c9d981": {
+        "pass": 290,
+        "fail": 70,
+        "residual": 8,
+        "output": "docs/v2/acceptance/M04/remediation/corpus_base_1c9d981.json"
+      },
+      "first_pass_d31245f": {
+        "pass": 360,
+        "fail": 0,
+        "residual": 8,
+        "output": "docs/v2/acceptance/M04/remediation/corpus_first_pass_d31245f.json"
+      },
+      "final_4ef219c": {
+        "pass": 360,
+        "fail": 0,
+        "residual": 8,
+        "output": "docs/v2/acceptance/M04/remediation/corpus_final_4ef219c.json"
+      }
+    },
+    "contracts_changed": [
+      "docs/v2/contracts/normalization.md",
+      "docs/v2/contracts/training_evidence.md"
+    ],
+    "portable_tests": {
+      "output": "docs/v2/acceptance/M04/remediation/portable_tests_4ef219c.json",
+      "summary": "34 files across M04 required/new suites and targeted M01/M02/M03/M05/M06/M07/M10/M14 compatibility: all exit 0; whole-tree 78 pre-existing files same exit status as base; 95 shim-limited test functions identical to base"
+    },
+    "intended_test_changes": [
+      "tests/v2/normalization/test_normalize_numbers.py and test_normalize_syntax.py: typed oracle, idempotence-exception inventory, semantic time negative, AST scanner",
+      "tests/v2/fixtures/manifest.json: declares the committed audit corpus"
+    ],
+    "benchmark": {
+      "output": "docs/v2/acceptance/M04/remediation/benchmark_cloud_4ef219c.json",
+      "command": ".venv/bin/python scripts/v2/benchmark_m04.py --out <dir>",
+      "verdict": "pass",
+      "long_500": {
+        "words": 502,
+        "edits": 80,
+        "p50_ms": 11.709,
+        "p95_ms": 13.175,
+        "p99_ms": 15.115
+      },
+      "long_500_plain": {
+        "words": 504,
+        "edits": 0,
+        "p95_ms": 9.943
+      },
+      "base_same_container_old_harness": {
+        "long_500_p95_ms": 10.273,
+        "long_500_plain_p95_ms": 7.182
+      },
+      "note": "cloud algorithmic evidence only; the 2026-09-22 Mac run is historical and stale for the current code (M04-V003)"
+    },
+    "historical_records_2026_09_22": "preserved unchanged; pending item native-m04-dictation-profiles carried by M04-V002",
+    "pending_local_verification": [
+      "M04-V001",
+      "M04-V002",
+      "M04-V003"
+    ],
+    "runbook": {
+      "page": "docs/v2/VERIFICATION.html",
+      "section": "M04",
+      "instructions_revision": "M04-r1",
+      "code": "4ef219c",
+      "frontend_skill": "anthropic-skills:frontend-design"
+    },
+    "cloud_cannot_certify": [
+      "AppKit/PyObjC",
+      "microphone capture",
+      "Parakeet ASR output shape (punctuation/casing)",
+      "Qwen cleanup",
+      "dev app interaction",
+      "reference-Mac timing"
+    ],
+    "limits": [
+      "8 corpus residuals are declared design choices (D2)",
+      "paren/quote-attached words are not word tokens (pre-existing)",
+      "half-published evidence artifacts follow the job's retention; no new store API"
+    ]
+  }
 }

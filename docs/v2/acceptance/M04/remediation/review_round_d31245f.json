@@ -1,0 +1,32 @@
+{
+ "code_sha": "d31245f49614699c46288d5fa40157ee5a80c996",
+ "working_tree_modified": false,
+ "python": "3.13.12",
+ "test_file": "tests/v2/normalization/test_m04_review_round.py (final version, copied in)",
+ "results": {
+  "test_R1_slash_command_needs_command_position": "fail: AssertionError: ('we should really slash code review time', 'we should really /code-review time')",
+  "test_R2_scale_and_small_number": "fail: AssertionError: ('two thousand and twenty dollars', 'two thousand and $20', '$2020')",
+  "test_R3_hyphenated_compounds_are_number_speech": "fail: AssertionError: ('three hundred sixty-five days', '300 sixty-five days')",
+  "test_R4_tens_before_ordinal_and_day_first_invalid": "fail: AssertionError: ('the twenty fifth anniversary', 'the 20 fifth anniversary')",
+  "test_R5_time_followed_by_content_is_not_a_clock": "fail: AssertionError: ('sold at three fifty dollars', 'sold at 3:50 dollars')",
+  "test_R6_object_pronouns_keep_punctuation_commands": "fail: AssertionError: (\"let's do that period\", \"let's do that period\", \"let's do that.\")",
+  "test_R7_clause_start_noun_guard_any_token_and_idempotent": "fail: AssertionError: ('Period 3 starts at noon', '. 3 starts at noon')",
+  "test_R8_escape_payload_includes_written_tokens": "fail: AssertionError: ('write the phrase version 2 is twelve percent period', 'version 2 is 12%.', 'version 2 is twelve percent period')",
+  "test_R9_spoken_paths_with_dotted_names": "fail: AssertionError: ('path slash etc slash nginx dot conf', '/etc/nginx dot conf', '/etc/nginx.conf')",
+  "test_R10_flag_letter_case_and_position": "fail: AssertionError: ('ls dash L', 'ls -l', 'ls -L')",
+  "test_R11_may_needs_date_shaped_context": "fail: AssertionError: ('the libraries we build on may first require updates', 'the libraries we build on May 1 require updates')",
+  "test_R12_noun_point_and_dot_do_not_block": "fail: AssertionError: ('at this point twelve percent of users churn', 'at this point twelve percent of users churn', 'at this point 12% of users churn')",
+  "test_R13_spanish_accented_numbers": "fail: AssertionError: ('doscientos veintiséis por ciento', '200 veintiséis por ciento', '226 %')",
+  "test_R14_unicode_line_breaks_are_barriers": "fail: AssertionError: (\"'\\\\u2028'\", '25%')",
+  "test_R15_retry_does_not_inherit_previous_destination_scope": "fail: AttributeError: 'AppDelegate' object has no attribute '_retry_norm_state'",
+  "test_R16_published_normalized_text_stays_referenced": "fail: AssertionError: published normalized text is unreferenced",
+  "test_R18_preview_fallback_uses_configuration": "fail: AssertionError: {'input': 'twelve retries failed', 'output': 'twelve retries failed', 'changed': False, 'policy_revision': 'm04:b325b5b07664', 'edits': [], 'rejected': []}",
+  "test_R19_locale_tables_have_no_writable_dict": "fail: AssertionError: ",
+  "test_R20_corpus_component_oracle_is_exact": "fail: AssertionError: 10x-200 accepted for 10 x -20",
+  "test_R21_benchmark_validity_is_exact": "fail: AssertionError: 0",
+  "test_R22_arbitration_and_apply_scale": "fail: AssertionError: (1.3291989980007202, 0.04906151300019701)",
+  "test_R23_command_punctuation_and_digit_speech": "fail: AssertionError: ('new line, hello', ', hello', 'hello')"
+ },
+ "passed": 0,
+ "total": 22
+}
