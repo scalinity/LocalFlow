@@ -1,0 +1,172 @@
+{
+ "code_sha": "3ae0070d84730f8d750440f51097c4a53ff8bf02",
+ "evaluated_utc": "2026-09-25T02:03:21.887Z",
+ "findings": {
+  "M02-AUDIT-01": {
+   "live_artifacts_after_delete": 5,
+   "live_examples_after_delete": 1,
+   "reproduced": true,
+   "revisions_on_deleted_example_after_late_outcome": 1,
+   "wav_files_after_delete": 1
+  },
+  "M02-AUDIT-02": {
+   "debug_copy_survives_job_delete": true,
+   "debug_copy_wiring": "base_app_naming",
+   "durable_purge_intent_table": false,
+   "file_left_after_failed_unlink": true,
+   "payload_present_after_retry": true,
+   "payload_present_before_retry": true,
+   "pending_purge_reported": false,
+   "reproduced": true,
+   "sweep_moved_deleted_payload_to_orphans": true
+  },
+  "M02-AUDIT-03": {
+   "examples": 1,
+   "non_quarantined_examples": 1,
+   "reproduced": true,
+   "scanner_detected_marker": true
+  },
+  "M02-AUDIT-04": {
+   "crash_file_present": false,
+   "crash_live_row": true,
+   "reproduced": true,
+   "rollback_file_present": false,
+   "rollback_live_row": true
+  },
+  "M02-AUDIT-05": {
+   "completion_event_claimed_complete": true,
+   "envelope_references_uncommitted_artifact": true,
+   "raw_artifact_committed": false,
+   "reproduced": true
+  },
+  "M02-AUDIT-06": {
+   "collecting_under_non_enabled_revision": true,
+   "later_enable_attached_to_earlier_capture": true,
+   "reproduced": true,
+   "wiring": "base_job_started_at_release"
+  },
+  "M02-AUDIT-07": {
+   "artifact_purged_despite_history_lease": true,
+   "example_expired": 1,
+   "history_lease_revoked": true,
+   "reproduced": true
+  },
+  "M02-AUDIT-08": {
+   "annotation_lost_in_latest": true,
+   "parent_chain_follows_actual_order": false,
+   "reproduced": true,
+   "revisions": 3
+  },
+  "M02-AUDIT-09": {
+   "envelope_attempt": 1,
+   "reproduced": true,
+   "stale_attempt_update_rejected": null,
+   "store_attempt": 2,
+   "wiring": "base_app"
+  },
+  "M02-AUDIT-10": {
+   "duplicated_pairs": 1,
+   "expected_raw_pairs": 4,
+   "raw_pairs": 5,
+   "reproduced": true
+  },
+  "M02-AUDIT-11": {
+   "conflicting_source_row_preserved": false,
+   "conflicts_reported": 0,
+   "fault_bookkeeping_without_row": true,
+   "reproduced": true,
+   "second_source_rows_marked_imported": 1
+  },
+  "M02-AUDIT-12": {
+   "markers_leaked": 2,
+   "reproduced": true,
+   "safe_identifiers_kept": true
+  },
+  "M02-AUDIT-13": {
+   "files": 9,
+   "reproduced": true,
+   "unresolved_job_record_survives": false
+  },
+  "M02-AUDIT-14": {
+   "deep_mode_available": false,
+   "missing_audio_reported_ok": true,
+   "mutated_audio_reported_ok": true,
+   "reproduced": true,
+   "valid_tombstone_reported_ok": false,
+   "wrong_job_reference_reported_ok": true
+  },
+  "M02-AUDIT-15": {
+   "app_terminate_drains_store_and_events": false,
+   "event_emit_accepted_after_close": true,
+   "kind": "dynamic_store_writer + static_wiring(app)",
+   "queued_ops_committed_after_release": 0,
+   "reproduced": true,
+   "store_accepted_submission_while_closing": true,
+   "writer_alive_when_close_returned": true
+  },
+  "M02-AUDIT-16": {
+   "provenance": "user_explicit",
+   "reproduced": true,
+   "reviewed_audio_retained_after_31_days": false,
+   "state_after_31_days": "expired",
+   "state_after_mark": "captured_unreviewed"
+  },
+  "M02-AUDIT-17": {
+   "benchmark_refused": false,
+   "populations_reported": false,
+   "prompt_artifacts_written": 0,
+   "proposal_artifacts_written": 0,
+   "report_claims_consistency_ok": true,
+   "reproduced": true
+  },
+  "M02-AUDIT-18": {
+   "backup_copies": 0,
+   "future_version_refused": false,
+   "missing_core_with_dependents_refused": false,
+   "missing_index_restored": false,
+   "reopened_verify_ok": true,
+   "reproduced": true
+  },
+  "M02-AUDIT-19": {
+   "cases": {
+    "huge": {
+     "effective": 1000000000,
+     "rejected": false,
+     "startup_error": null
+    },
+    "malformed": {
+     "startup_error": "ValueError"
+    },
+    "negative": {
+     "effective": -5,
+     "rejected": false,
+     "startup_error": null
+    },
+    "null": {
+     "startup_error": "TypeError"
+    },
+    "zero": {
+     "effective": 0,
+     "rejected": false,
+     "startup_error": null
+    }
+   },
+   "negative_purged_fresh": true,
+   "reproduced": true,
+   "startup_errors": [
+    "null",
+    "malformed"
+   ]
+  },
+  "M02-AUDIT-20": {
+   "last_1_is_newest": false,
+   "reproduced": true
+  }
+ },
+ "numpy": "2.5.3",
+ "python": "3.13.12",
+ "schema_version": 1,
+ "sqlite": "3.45.1",
+ "tool": "m02_remediation_repro",
+ "working_tree_modified": true
+}
