@@ -42,8 +42,17 @@ YEAR_MIN, YEAR_MAX = 1000, 2999
 class LocaleTables:
     """Word tables and rendering rules for one locale. Built from the
     policy's deeply frozen copy and sealed by the policy: its tables are
-    read-only views and its attributes cannot be reassigned
-    (M04-AUDIT-12)."""
+    read-only views, its attributes cannot be reassigned and it has no
+    instance ``__dict__`` to rewrite (M04-AUDIT-12, review R19)."""
+
+    __slots__ = (
+        "name", "units", "teens", "tens", "hundreds_mult", "hundreds_val",
+        "big_scales", "connector", "connector_states", "integer_stop_after",
+        "sign_words", "decimal_words", "percent_words", "pp_words",
+        "currency_words", "currency_codes", "months", "ordinal_words",
+        "grouping", "decimal_sep", "percent_space", "currency_before",
+        "date_rendering", "phone_groups", "ambiguous_months",
+        "date_previous", "number_words", "cardinal_words", "_sealed")
 
     def __init__(self, name: str, data):
         self.name = name
@@ -242,9 +251,16 @@ def scan_cardinal(words: list[str], t: LocaleTables):
             last_scale = scale
             state = "empty"
             explicit_zero = False
-        elif w == t.connector and seen and state in t.connector_states \
-                and i + 1 < n and _is_num_word(words[i + 1], t):
-            pass  # "one hundred and twenty", "treinta y cinco"
+        elif w == t.connector and seen and i + 1 < n \
+                and _is_num_word(words[i + 1], t) \
+                and words[i + 1] not in t.big_scales \
+                and (state in t.connector_states
+                     or (state == "empty" and last_scale is not None
+                         and "scale" in t.connector_states)):
+            # "one hundred and twenty", "treinta y cinco", and (en)
+            # "two thousand and twenty" — one number, never a tail
+            # (M04 review R2)
+            pass
         else:
             break
         count += 1
@@ -378,37 +394,70 @@ def _span(host, i, count) -> Span:
     return host.core_span(i, i + count)
 
 
-# Words that continue spoken digit/number speech: a number standing
-# next to one of these is part of a longer run (a code, a time, a
-# version, a second quantity), never a standalone count.
-_DIGIT_SPEECH = frozenset({"oh", "o", "dot"})
+# Determiners: a decimal word right after one is the noun ("at this
+# point", "the dot"), not number speech (review R12).
+_NOUN_DETERMINERS = frozenset({
+    "a", "an", "the", "this", "that", "these", "those", "my", "your",
+    "his", "her", "its", "our", "their", "some", "any", "each", "every",
+    "which", "what", "no",
+})
 
 
-def _num_like(host, idx) -> bool:
-    """Token idx is number speech: a cardinal word, a sign or decimal
-    word, or a digit-speech joiner."""
+def _is_compound_number(w: str, t: LocaleTables) -> bool:
+    """A hyphenated number word ("sixty-five", "twenty-six") — number
+    speech even though the grammar does not parse it (review R3)."""
+    parts = w.replace("\u2011", "-").split("-")
+    return len(parts) > 1 and all(p in t.cardinal_words for p in parts)
+
+
+def _num_like(host, idx, other) -> bool:
+    """Token ``idx`` continues the number speech of its neighbor
+    ``other`` (the token on the far side of the phrase being judged):
+    a cardinal, sign or hyphenated number word always; a decimal word
+    unless it is the noun after a determiner ("at this point"); "dot"
+    and the connector ("thousand AND twenty") only between numbers;
+    "oh"/"o" only next to a single digit ("one oh five"); an ordinal
+    only AFTER a number ("twenty FIFTH")."""
     w = _word_at(host, idx)
     if w is None:
         return False
     t = host.tables
-    return (w in t.cardinal_words or w in t.sign_words
-            or w in t.decimal_words or w in _DIGIT_SPEECH)
+    if w in t.cardinal_words or w in t.sign_words \
+            or _is_compound_number(w, t):
+        return True
+    if w in t.decimal_words:
+        return not (idx > 0 and not host.brk[idx]
+                    and _word_at(host, idx - 1) in _NOUN_DETERMINERS)
+    far = idx - 1 if other > idx else idx + 1
+    far_joined = 0 <= far < len(host.tokens) \
+        and not host.brk[max(idx, far)]
+    fw = _word_at(host, far) if far_joined else None
+    if w == "dot" or (t.connector and w == t.connector):
+        return fw is not None and fw in t.cardinal_words
+    if w in ("oh", "o"):
+        return _word_at(host, other) in t.units or fw in t.units
+    if w in t.ordinal_words:
+        return other < idx
+    return False
 
 
 def _juxtaposed_before(host, start) -> bool:
     """The phrase starting at token ``start`` directly follows other
     number speech in the same clause ("three FIFTEEN minute", "point
-    FIVE percent", "one ninety two dot ONE"): it is the tail of a
-    longer run, so no grammar may convert it alone — adjacent digits
-    ("3 15") would change how the run reads (M04-AUDIT-06/-08)."""
-    return start > 0 and not host.brk[start] and _num_like(host, start - 1)
+    FIVE percent", "one ninety two dot ONE", "thousand and TWENTY"): it
+    is the tail of a longer run, so no grammar may convert it alone —
+    adjacent digits ("3 15") would change how the run reads
+    (M04-AUDIT-06/-08, review R2)."""
+    return start > 0 and not host.brk[start] \
+        and _num_like(host, start - 1, start)
 
 
 def _juxtaposed_after(host, end) -> bool:
     """Number speech continues right after the phrase ending before
-    token ``end`` (same clause)."""
+    token ``end`` (same clause) — including a hyphenated compound or a
+    following ordinal ("twenty FIFTH anniversary", review R3/R4)."""
     return end < len(host.tokens) and not host.brk[end] \
-        and _num_like(host, end)
+        and _num_like(host, end, end - 1)
 
 
 def _quantified(host, start) -> bool:
@@ -612,8 +661,14 @@ def grammar_numeric_chains(host):
         dots = sum(1 for w in words if w == "dot")
         reason = None
         lead = 1 if words[0] in t.sign_words else 0
+        noun = lo > 0 and not host.brk[lo] \
+            and _word_at(host, lo - 1) in _NOUN_DETERMINERS
         if len(words) > lead + 1 and words[lead] in t.decimal_words \
-                and words[lead + 1] in t.cardinal_words:
+                and words[lead + 1] in t.units and not noun:
+            # "point five percent": a fraction with no whole part. After
+            # a determiner the word is the noun ("at this point twelve
+            # percent"), and a fraction is spoken digit by digit, so
+            # "point twelve" is not one (review R12).
             reason = "leading_decimal"
         elif dots and points:
             reason = "dotted_number_arity"
@@ -804,21 +859,25 @@ def grammar_time(host):
     Time ownership needs EVIDENCE (M04-AUDIT-06): a time preposition
     right before the hour ("at five thirty") or a spoken meridiem
     ("five thirty PM"). Utterance start alone is not evidence ("three
-    fifteen minute breaks", "one oh five"), and an hour+minute pair
-    followed by a duration unit is a count plus a duration, never a
-    clock time ("for three fifteen minute breaks")."""
+    fifteen minute breaks", "one oh five"). Without a meridiem, the
+    words after an anchored hour+minute must be clause material — the
+    end of the clause, a function word, a pronoun or a time adverb
+    (``time_followers`` in the profile: "at five thirty tomorrow", "at
+    eight fifteen sharp"). A content word after it means the numbers
+    count or measure something ("for three fifteen minute breaks",
+    "sold at three fifty dollars", "about one twenty people"), never a
+    clock time (review R5)."""
     t = host.tables
     meridiems = host.profile.get("time_words", {})
-    units = host.profile.get("dimension_units", {})
-    durations = {w for w, sym in units.items()
-                 if sym in ("s", "min", "h", "d", "wk")}
+    followers = set(host.profile.get("time_followers", ())) \
+        | set(t.integer_stop_after)
     i = 0
     while i < len(host.tokens) - 1:
         hour_tok = host.tokens[i]
         prev = _word_at(host, i - 1)
         anchored = i > 0 and not host.brk[i] and prev in TIME_PREVIOUS
         if i > 0 and not anchored and not host.brk[i] \
-                and _num_like(host, i - 1):
+                and _num_like(host, i - 1, i):
             i += 1  # inside a longer number run
             continue
         hour = _single_small_number(hour_tok.word, t)
@@ -838,8 +897,7 @@ def grammar_time(host):
                 i += 1
                 continue
             if end < len(host.tokens) and not host.brk[end] \
-                    and (_word_at(host, end) in durations
-                         or _num_like(host, end)):
+                    and _word_at(host, end) not in followers:
                 i += 1  # "for three fifteen minute breaks"
                 continue
         else:
@@ -944,20 +1002,31 @@ def _date_refusal(month, day, year):
     return None
 
 
-def _month_evidence(host, i) -> bool:
+def _month_evidence(host, i, end) -> bool:
     """A month word that is also an ordinary word ("may", "march",
-    "august") names a month only with evidence: its written
-    capitalization or a date preposition right before it ("on march
-    fourth"). "this may first require approval" stays prose
-    (M04-AUDIT-07)."""
+    "august") names a month only with evidence on BOTH sides
+    (M04-AUDIT-07, review R11): before it, its written capitalization or
+    a date preposition ("on march fourth"); after the date phrase
+    (tokens up to ``end``), date-shaped context — the end of the
+    clause, a function word or a time follower ("on May first at
+    noon"). "this may first require approval", "we build on may first
+    require updates" and "May first responders" stay prose."""
     t = host.tables
     tok = host.tokens[i]
     if tok.word not in t.ambiguous_months:
         return True
-    if tok.core[:1].isupper():
+    before = tok.core[:1].isupper() or (
+        i > 0 and not host.brk[i]
+        and _word_at(host, i - 1) in t.date_previous)
+    if not before:
+        return False
+    if end >= len(host.tokens) or host.brk[end]:
         return True
-    return i > 0 and not host.brk[i] and \
-        _word_at(host, i - 1) in t.date_previous
+    nxt = _word_at(host, end)
+    # "be" is the bare infinitive that only follows a modal ("may first
+    # be inspected"); every other function word can follow a date.
+    return (nxt in t.integer_stop_after and nxt != "be") or nxt in set(
+        host.profile.get("time_followers", ()))
 
 
 def grammar_date(host):
@@ -992,7 +1061,7 @@ def grammar_date(host):
                 output_text="", value=None, reason=refusal,
                 review=True)
             continue
-        if not _month_evidence(host, i):
+        if not _month_evidence(host, i, end + (yc if year else 0)):
             span = _span(host, i, end - i)
             yield Proposal(
                 layer=4, cls="date", op="date_words",
@@ -1017,10 +1086,10 @@ def grammar_date_day_first(host):
     """"the fourth of March" (en) / "el cuatro de marzo" (es)."""
     t = host.tables
     for i in range(len(host.tokens)):
-        if i > 0 and not host.brk[i] and _num_like(host, i - 1):
+        if i > 0 and not host.brk[i] and _num_like(host, i - 1, i):
             continue
         day, dcount = _day_parse(host, i, t)
-        if day is None or not 1 <= day <= 31 or not dcount:
+        if day is None or not dcount:
             continue
         j = i + dcount
         if j + 1 >= len(host.tokens) or not host.connected(i, j + 2):
@@ -1034,7 +1103,11 @@ def grammar_date_day_first(host):
         month = t.months[mword]
         end = m_idx + 1
         year, yc = _optional_year(host, end, t)
-        refusal = _date_refusal(month, day, year)
+        # "the thirty second of May" is flagged whole (review R4). The
+        # "the Nth of <month>" shape is itself date evidence, so an
+        # ambiguous month word needs no further context here.
+        refusal = _date_refusal(month, day, year) if 1 <= day <= 31 \
+            else "invalid_day"
         if refusal is not None:
             stop = end + (yc if year is not None
                           and refusal == "invalid_date" else 0)
@@ -1277,7 +1350,7 @@ def grammar_ip(host):
     for i in range(len(tokens)):
         # A match may not start mid-phrase: if the previous token is a
         # number word, an earlier (possibly invalid) match owns this run.
-        if i > 0 and not host.brk[i] and _num_like(host, i - 1):
+        if i > 0 and not host.brk[i] and _num_like(host, i - 1, i):
             continue
         comp, c, valid = _ip_component(host, i, t)
         if comp is None:

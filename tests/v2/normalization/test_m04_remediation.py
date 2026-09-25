@@ -74,7 +74,7 @@ def test_01_slash_verb_context_stays_prose():
         res = N(text, pol)
         assert res.text == text, (text, res.text)
         assert not edits_of(res, "skill")
-        assert any(r.reason == "verb_context" for r in res.rejected), text
+        assert any(r.reason == "no_command_frame" for r in res.rejected), text
     # Positives: explicit command positions still insert the token.
     assert N("slash code review", pol).text == "/code-review"
     assert N("add slash code review to the list", pol).text == \

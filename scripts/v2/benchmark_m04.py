@@ -60,6 +60,31 @@ SENTENCES = [
     "ninety nine percent of the time twelve dollars is enough",
 ]
 
+# The authored, hand-checked normalization of every benchmark sentence
+# (output text, edit count) under the default policy — an oracle
+# independent of the run. Each matched cohort must reproduce exactly the
+# summed per-sentence work: a normalizer that silently skips part of its
+# work (review R21) or rewrites a sentence differently is INVALID,
+# whatever its speed.
+EXPECTED_SENTENCES = [
+    ("the timeout is 30 seconds and the budget grew 12%", 2),
+    ("deploy on March 4 with version 1.26.4", 2),
+    ("the host is 192.168.1.10", 1),
+    ("we need 12 retries and the file is 10 × 20 cm", 2),
+    ("set the retry count to twenty six and port 8000", 1),
+    ("the download took 12 megabytes at a cost of $12,000", 2),
+    ("see you at 5:30 PM for the 2 percentage point review", 2),
+    ("code 0073 unlocks room 214", 2),
+    ("edit .env then grep -i pattern files", 2),
+    ("the ratio is 1.26 plus 550 items", 2),
+    ("slash then hello, world.", 3),
+    ("the constant is -0.05 for 12 seconds", 2),
+    ("revenue reached $250,000 last quarter", 1),
+    ("el doce por ciento de doce mil euros quedó registrado", 0),
+    ("/users/danny/documents holds .gitignore", 2),
+    ("99% of the time $12 is enough", 2),
+]
+
 # Edit classes the matched cohorts must actually produce (long_500
 # contains every sentence at least once).
 EXPECTED_CLASSES_LONG = {
@@ -141,9 +166,36 @@ def bench(text: str, policy, iterations: int) -> dict:
     }
 
 
+def sentence_work(words: int) -> int:
+    """Summed authored edit count of the sentences build_text(words)
+    concatenates."""
+    total = n = i = 0
+    while total < words:
+        s = SENTENCES[i % len(SENTENCES)]
+        n += EXPECTED_SENTENCES[i % len(SENTENCES)][1]
+        total += len(s.split())
+        i += 1
+    return n
+
+
+def sentence_problems(policy) -> list:
+    """Each sentence alone against its authored normalization."""
+    out = []
+    for src, (want, count) in zip(SENTENCES, EXPECTED_SENTENCES):
+        res = normalize(src, policy)
+        if res.text != want or len(res.edits) != count:
+            out.append(f"sentence changed: {src!r}")
+    return out
+
+
 def validate(name: str, r: dict) -> list:
     """Workload validity: independent of speed."""
     problems = []
+    if name in ("short", "medium", "long_500"):
+        want = sentence_work({"short": 20, "medium": 120,
+                              "long_500": 500}[name])
+        if r["edits"] != want:
+            problems.append(f"{r['edits']} edits, authored work is {want}")
     if name == "long_500_plain":
         if r["text_changed"] or r["edits"]:
             problems.append("no-match control was changed")
@@ -211,6 +263,10 @@ def main(argv=None):
     }
     budget_ok = True
     workload_ok = True
+    bad = sentence_problems(policy)
+    if bad:
+        workload_ok = False
+        report["workload_problems"]["sentences"] = bad
     for name, text, iters, gated in cohorts:
         r = bench(text, policy, max(1, int(iters * scale)))
         r["gated"] = gated and name in ("long_500", "long_500_plain")

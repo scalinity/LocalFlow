@@ -19,7 +19,9 @@ CAPABILITY_FIELDS = (
 )
 
 # Reasons are free-form strings for the manifest itself; envelope
-# missing_reasons stay within the controlled six-value vocabulary.
+# missing_reasons stay within the controlled vocabulary of
+# contracts/training_evidence.md (six values, plus M04's
+# retention_write_failed for a stage whose evidence was not retained).
 _DISABLED_UNTIL_QUALIFIED = "disabled_until_qualified"
 _UNSUPPORTED = "unsupported_by_adapter"
 _NOT_EXPOSED = "not_exposed_on_dictation_path"

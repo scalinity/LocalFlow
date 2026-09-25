@@ -170,7 +170,13 @@ def test_16_retention_failure_is_visible_and_clean():
                 assert env["normalization"] is None
                 assert env["missing_reasons"]["normalization"] == \
                     "retention_write_failed", env["missing_reasons"]
-                assert "normalization" not in env["artifact_ids"]
+                if fail_at.startswith("ledger") and text != res.text:
+                    # the fully published normalized text stays
+                    # referenced (review R16)
+                    aid = env["artifact_ids"]["normalization"]
+                    assert st.artifact(aid)["role"] == "normalized_text"
+                else:
+                    assert "normalization" not in env["artifact_ids"]
                 fails = [kw for n, kw in events
                          if n == "training.capture_failed"
                          and kw.get("stage") == "normalization"]
@@ -254,13 +260,13 @@ def test_21_retry_uses_identified_default_snapshot():
             assert seen == ["12 retries failed"], seen
             env = a.envelope(jid)
             norm = env["normalization"]
-            assert norm["policy_source"] == "current_default", norm
+            assert norm["policy_source"] == "retry_unscoped_default", norm
             assert norm["policy_revision"] == \
                 NormalizationPolicy().policy_revision
         finally:
             a.close()
     print("ok  21: retry normalizes the new raw ASR once, configured "
-          "profile, source labeled current_default")
+          "profile, source labeled retry_unscoped_default")
 
 
 def test_21b_live_job_labels_its_own_snapshot():

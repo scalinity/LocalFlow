@@ -75,12 +75,12 @@ def find_literal_escapes(host):
             # A quoted instruction about editing words is content (S10).
             i += plen
             continue
-        if single:
-            j = obj_i + 1
-        else:
-            j = obj_i + 1
-            while j < len(tokens) and tokens[j].is_word \
-                    and not host.brk[j]:
+        j = obj_i + 1
+        if not single:
+            # every token of the clause — written tokens included
+            # ("version 2", "GPT-5"): the marker is dropped, so an
+            # early stop would expose the rest of the literal (R8)
+            while j < len(tokens) and not host.brk[j]:
                 j += 1
         obj_end = tokens[j - 1].end
         marker = Proposal(
@@ -170,24 +170,29 @@ def grammar_skills(host):
     (never applied). Ordinary slash prose never converts (AC06).
 
     Registry membership establishes token IDENTITY, not command INTENT
-    (M04-AUDIT-01). "slash" right after a word that grammatically
-    requires a verb next — a modal, infinitive "to", a subject pronoun,
-    an auxiliary or a negation ("we should slash code review time", "to
-    slash costs") — is the ordinary verb: the words stay literal and the
-    considered token is retained as a ``verb_context`` review
-    suggestion. The closed class lives in the profile
-    (``slash_verb_context``); command positions ("slash code review",
-    "add slash code review to the list") are unaffected."""
+    (M04-AUDIT-01, review R1). A registered token is inserted only in a
+    COMMAND POSITION: at the start of a clause ("slash code review",
+    "Done. Slash code review the PR") or right after an explicit command
+    frame from the profile (``slash_command_frames``: "add", "run",
+    "use", "then", "please", "the" …; "to" only after a motion/change
+    verb in ``slash_command_frames_to``: "switch to slash code review").
+    Anywhere else — after a subject, modal, adverb, noun or "and" ("we
+    should really slash code review time", "managers slash costs") —
+    "slash" is the ordinary verb: the words stay literal and the
+    considered token is retained as a ``no_command_frame`` review
+    suggestion. A frame word after a subject pronoun is itself a verb
+    ("we do slash costs"), not a frame."""
     skills = host.policy.registered_skills or {}
     if not skills:
         return
-    verb_ctx = set(host.profile.get("slash_verb_context", ()))
+    frames = set(host.profile.get("slash_command_frames", ()))
+    frames_to = set(host.profile.get("slash_command_frames_to", ()))
+    subjects = set(host.profile.get("slash_subject_words", ()))
     aliases = sorted(skills.keys(), key=lambda a: -len(a.split()))
     for i, tok in enumerate(host.tokens):
         if tok.word != "slash" or not tok.is_word:
             continue
-        verb = i > 0 and not host.brk[i] and \
-            _word_at(host, i - 1) in verb_ctx
+        verb = not _command_position(host, i, frames, frames_to, subjects)
         for alias in aliases:
             words = alias.split()
             seq = [_word_at(host, i + 1 + k) for k in range(len(words))]
@@ -202,7 +207,8 @@ def grammar_skills(host):
                     layer=3, cls="skill", op="slash_skill_token",
                     span=span, input_text=_text_of(host, span),
                     output_text=f"/{exact}", value=exact,
-                    unit="skill_token", reason="verb_context", review=True)
+                    unit="skill_token", reason="no_command_frame",
+                    review=True)
                 break
             yield Proposal(
                 layer=3, cls="skill", op="slash_skill_token",
@@ -221,6 +227,20 @@ def grammar_skills(host):
                     span=span, input_text=_text_of(host, span),
                     output_text=f"/{nxt}", value=nxt, unit="skill_token",
                     reason="unknown_skill", review=True)
+
+
+def _command_position(host, i, frames, frames_to, subjects) -> bool:
+    """Token i opens a command: clause start, or an explicit frame."""
+    if i == 0 or host.brk[i]:
+        return True
+    prev = _word_at(host, i - 1)
+    prev2 = _word_at(host, i - 2) if i >= 2 and not host.brk[i - 1] \
+        else None
+    if prev == "to":
+        return prev2 in frames_to
+    if prev in frames:
+        return prev2 not in subjects
+    return False
 
 
 def grammar_snippets(host):
@@ -384,8 +404,12 @@ def _guard_blocks(host, i, name_words, always=False, join=None):
     if prev in g.get("determiner_words", []):
         return True
     clause_start = i == 0 or host.brk[i]
-    if clause_start and nxt is not None and host.tokens[nxt_i].is_word \
+    if clause_start and nxt is not None \
             and (join == JOIN_ATTACH_LEFT or guarded):
+        # any following token in the clause — a word or a written
+        # number ("Period 3 starts at noon"): the guard must not depend
+        # on the next token's shape, or a second pass over "Period 5"
+        # would convert what the first pass kept (review R7)
         return True
     if guarded:
         if prev in g.get("article_words", []):
@@ -417,7 +441,10 @@ def grammar_symbols(host):
             join = spec.get("join", JOIN_WORD)
             if _guard_blocks(host, i, words, join=join):
                 continue
-            span = host.core_span(i, i + n)
+            # A command word's own edge punctuation belongs to the
+            # command it replaces ("comma," → ","; "new line," at a
+            # text start leaves no stray comma — review R23).
+            span = Span(host.tokens[i].start, host.tokens[i + n - 1].end)
             yield Proposal(
                 layer=4, cls="symbol", op="symbol_command",
                 span=span, input_text=_text_of(host, span),
@@ -461,7 +488,7 @@ def grammar_markdown(host):
             # command, not just the guarded symbol names.
             if _markdown_guard_blocks(host, i, words):
                 continue
-            span = host.core_span(i, i + n)
+            span = Span(host.tokens[i].start, host.tokens[i + n - 1].end)
             yield Proposal(
                 layer=4, cls="markdown", op="markdown_command",
                 span=span, input_text=_text_of(host, span),
@@ -471,10 +498,11 @@ def grammar_markdown(host):
 
 def grammar_flags(host):
     """Spoken shell flags: "dash dash verbose" → "--verbose", "dash r" →
-    "-r". Emission is text only — nothing executes (AC04). A single
-    written capital "I" is the English pronoun by orthographic
-    convention ("dash I asked him"), never the flag letter
-    (M04-AUDIT-09)."""
+    "-r". Emission is text only — nothing executes (AC04). The flag
+    keeps the written case of its letters ("ls dash L" → "-L"; "-L" and
+    "-l" are different flags — review R10). A single-letter flag
+    follows a command in the same clause; a clause-initial "dash I …"
+    is prose ("dash I asked him")."""
     if not host.profile.get("flag_commands"):
         return
     tokens = host.tokens
@@ -489,19 +517,21 @@ def grammar_flags(host):
             if w2 and i + 2 < len(tokens) and not host.brk[i + 2] and \
                     tokens[i + 2].is_word and len(w2) > 1 and \
                     w2.isalpha() and not _guard_blocks(host, i, ["dash"]):
+                flag = "--" + tokens[i + 2].core
                 span = host.core_span(i, i + 3)
                 yield Proposal(
                     layer=4, cls="flag", op="flag_words",
                     span=span, input_text=_text_of(host, span),
-                    output_text=f"--{w2}", value=f"--{w2}",
+                    output_text=flag, value=flag,
                     unit="flag", join=JOIN_WORD)
         elif (len(w1) == 1 and w1.isalpha() and tokens[i + 1].is_word
-              and tokens[i + 1].core != "I"):
+              and i > 0 and not host.brk[i]):
+            flag = "-" + tokens[i + 1].core
             span = host.core_span(i, i + 2)
             yield Proposal(
                 layer=4, cls="flag", op="flag_words",
                 span=span, input_text=_text_of(host, span),
-                output_text=f"-{w1}", value=f"-{w1}",
+                output_text=flag, value=flag,
                 unit="flag", join=JOIN_WORD)
 
 
@@ -522,15 +552,45 @@ def grammar_dotfile(host):
             unit="dotfile", join=JOIN_WORD)
 
 
+def _path_component(host, j):
+    """(text, tokens used) for one spoken path component starting at
+    token j: a word, optionally joined to further words by spoken "dot"
+    ("nginx dot conf" → "nginx.conf"), or a dotted name ("dot env" →
+    ".env"). Written spelling is kept. (None, 0) when token j is not a
+    plain word."""
+    tokens = host.tokens
+    if j >= len(tokens) or host.brk[j] or not tokens[j].is_word:
+        return None, 0
+    parts = []
+    k = j
+    if tokens[k].word == "dot":
+        if k + 1 >= len(tokens) or host.brk[k + 1] \
+                or not tokens[k + 1].is_word:
+            return None, 0
+        parts.append("." + tokens[k + 1].core)
+        k += 2
+    else:
+        parts.append(tokens[k].core)
+        k += 1
+    while k + 1 < len(tokens) and _word_at(host, k) == "dot" \
+            and not host.brk[k] and not host.brk[k + 1] \
+            and tokens[k + 1].is_word:
+        parts.append("." + tokens[k + 1].core)
+        k += 2
+    return "".join(parts), k - j
+
+
 def grammar_spoken_path(host):
     """Anchored spoken paths: "path slash users slash danny" →
     "/users/danny" — path intent is distinct from an ordinary slash word;
     no filesystem action runs. Components keep the speaker's exact
     written spelling ("path slash Users slash Ada" → "/Users/Ada"): a
     path is case-significant and M04 never assumes the destination
-    filesystem is not (M04-AUDIT-11). A chain whose next component is
-    not a plain word ("... slash build2") is refused WHOLE, never
-    emitted as a valid-looking prefix with a spoken tail."""
+    filesystem is not (M04-AUDIT-11). A component may carry spoken dots
+    ("nginx dot conf" → "nginx.conf", "slash dot env" → "/.env"), so a
+    file name never leaves a path/speech hybrid behind (review R9). A
+    chain whose next component is not a plain word ("... slash build2")
+    is refused WHOLE, never emitted as a valid-looking prefix."""
     anchors = set(host.profile.get("path_anchors", []))
     tokens = host.tokens
     for i, tok in enumerate(tokens):
@@ -543,16 +603,14 @@ def grammar_spoken_path(host):
         complete = True
         while j < len(tokens) and _word_at(host, j) == "slash" \
                 and not host.brk[j]:
-            seg = tokens[j + 1] if j + 1 < len(tokens) else None
-            if seg is None or host.brk[j + 1]:
+            seg, used = _path_component(host, j + 1)
+            if seg is None:
                 complete = False
+                j += 2 if j + 1 < len(tokens) and not host.brk[j + 1] \
+                    else 1
                 break
-            if not seg.is_word:
-                complete = False
-                j += 2
-                break
-            segs.append(seg.core)
-            j += 2
+            segs.append(seg)
+            j += 1 + used
         if len(segs) < 2 and complete:
             continue
         span = host.core_span(i, min(j, len(tokens)))

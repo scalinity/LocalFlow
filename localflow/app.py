@@ -667,6 +667,42 @@ class AppDelegate(NSObject):
             return policy
 
     @objc.python_method
+    def _retry_norm_state(self):
+        """(policy, context, source) for a retry of retained audio: a NEW,
+        clearly identified snapshot that belongs to no destination — the
+        configured profile over the unscoped (global) dictionary skills
+        and globally configured manifest skills, with the unscoped
+        vocabulary as context. Never the previous live job's
+        workspace-scoped skills, identifiers or destination context
+        (review R15). A vocabulary failure degrades to the configured
+        policy with no context."""
+        base = getattr(self, "_norm_base_policy", None)
+        if base is None or base.profile == "off":
+            return base, None, "retry_unscoped_default"
+        snap = None
+        if self._vocab is not None:
+            try:
+                snap = self._vocab.snapshot(None)
+            except Exception as e:
+                self.v2log.emit("vocabulary.refresh_failed",
+                                level="WARNING",
+                                reason_code=type(e).__name__,
+                                outcome="retry_without_vocabulary")
+        skills = dict(snap.skills) if snap is not None else {}
+        try:
+            records = self._m10_skill_records((), None)
+            skills = dict(v2_skills.SkillRegistry(
+                records, skills or None).policy_skills)
+        except Exception:
+            pass
+        policy = v2_normalize.NormalizationPolicy(
+            locale=base.locale, profile=base.profile,
+            registered_skills=skills)
+        context = v2_normalize.ContextSnapshot(
+            vocabulary=snap, source="retry_unscoped_default")
+        return policy, context, "retry_unscoped_default"
+
+    @objc.python_method
     def _default_job_policy(self):
         """The policy for a job that captured none (a manual/History
         retry of retained audio, or a job whose hotkey-down capture
@@ -3267,8 +3303,9 @@ class AppDelegate(NSObject):
                 # snapshot of the current registry and the configured
                 # profile — never the previous live job's style
                 # (M04-AUDIT-21); the source rides in the evidence.
-                norm_source = "job_snapshot" if job.get("norm_policy") \
-                    is not None else "current_default"
+                norm_source = job.get("norm_source") or (
+                    "job_snapshot" if job.get("norm_policy") is not None
+                    else "current_default")
                 norm_policy = job.get("norm_policy") \
                     or self._default_job_policy()
                 norm_context = job.get("norm_context") or self._norm_context
@@ -4653,7 +4690,11 @@ class AppDelegate(NSObject):
                     file_resolver=getattr(self, "_last_file_resolver",
                                           None))
         except Exception:
-            m10_policy, m10_context = base, self._norm_context
+            # Even the fallback previews the configured profile, never
+            # the last job's style (review R18).
+            m10_policy = self._policy_with_profile(
+                base, self._configured_norm_profile())
+            m10_context = self._norm_context
         try:
             res = v2_normalize.normalize(text, m10_policy, m10_context)
         except Exception as e:
@@ -4943,6 +4984,17 @@ class AppDelegate(NSObject):
                                                         int(_rate)),
                    "captured_at_utc": captured, "time_quality": time_quality,
                    "timezone": zone, "utc_offset_minutes": offset}
+            # M04 (review R15): the retry re-recognizes old audio with no
+            # destination context — its normalization runs under a NEW,
+            # unscoped snapshot, recorded as such in the evidence.
+            try:
+                (job["norm_policy"], job["norm_context"],
+                 job["norm_source"]) = self._retry_norm_state()
+            except Exception as e:
+                self.v2log.emit("vocabulary.refresh_failed",
+                                level="WARNING", job_id=job_id,
+                                reason_code=type(e).__name__,
+                                outcome="retry_default_policy")
             # M13: the retry is the SAME logical dictation — its usage fact
             # keeps the ORIGINAL capture instant, observed zone and
             # destination app from the store rows (a retry completing on

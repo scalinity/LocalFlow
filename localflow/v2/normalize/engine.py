@@ -80,6 +80,12 @@ def tokenize(text: str) -> list[Token]:
     return tokens
 
 
+# Every character str.splitlines() treats as a line boundary — a
+# paragraph or record separator is as much a delimiter as "\n"
+# (review R14).
+_LINE_BREAKS = frozenset("\n\r\x0b\x0c\x1c\x1d\x1e\x85\u2028\u2029")
+
+
 def _barriers(text: str, tokens: list[Token]) -> list[bool]:
     """brk[k] is True when a STRUCTURAL delimiter separates token k-1
     from token k: edge punctuation between them (a comma, a sentence
@@ -91,7 +97,7 @@ def _barriers(text: str, tokens: list[Token]) -> list[bool]:
     for k in range(1, len(tokens)):
         a, b = tokens[k - 1], tokens[k]
         gap = text[a.end:b.start]
-        brk[k] = a.trail or b.lead or "\n" in gap or "\r" in gap
+        brk[k] = a.trail or b.lead or any(ch in _LINE_BREAKS for ch in gap)
     return brk
 
 
@@ -312,11 +318,21 @@ def normalize(text: str, policy: NormalizationPolicy,
 
     # Greedy accept by (layer, longer span, position, class): overlap
     # losers are rejected with their reason, never substituted.
+    # Accepted spans never overlap, so they stay sorted by start and a
+    # new span can only collide with its two neighbors: O(n log n)
+    # instead of a scan of every accepted span (review R22).
     accepted: list[Proposal] = []
+    starts: list[int] = []
+    ordered: list[Proposal] = []
     for p in sorted(same_span_keep.values(), key=_sort_key):
-        if any(p.span.overlaps(a.span) for a in accepted):
+        k = bisect.bisect_left(starts, p.span.start)
+        clash = (k < len(ordered) and ordered[k].span.overlaps(p.span)) \
+            or (k > 0 and ordered[k - 1].span.overlaps(p.span))
+        if clash:
             rejected.append(_reject(p, "overlap_conflict"))
         else:
+            starts.insert(k, p.span.start)
+            ordered.insert(k, p)
             accepted.append(p)
 
     edits = _assemble(host, accepted)
@@ -444,9 +460,16 @@ def _make_edit(host, p: Proposal, eff_start: int, eff_end: int) -> EditRecord:
 
 def _apply(text: str, applied: list[_AppliedEdit]) -> str:
     """Apply effective spans right-to-left; then compute output spans."""
-    out = text
-    for ae in sorted(applied, key=lambda a: a.eff_start, reverse=True):
-        out = out[:ae.eff_start] + ae.edit.output_text + out[ae.eff_end:]
+    # One left-to-right join (review R22): repeated slicing of the whole
+    # string per edit was quadratic in the edit count.
+    pieces = []
+    pos = 0
+    for ae in sorted(applied, key=lambda a: a.eff_start):
+        pieces.append(text[pos:ae.eff_start])
+        pieces.append(ae.edit.output_text)
+        pos = ae.eff_end
+    pieces.append(text[pos:])
+    out = "".join(pieces)
     # Output spans: walk accepted edits left-to-right over the output.
     delta = 0
     for ae in sorted(applied, key=lambda a: a.eff_start):
