@@ -1,0 +1,364 @@
+{
+ "code_root_sha": "3e0d1ab972b866b4acbda622984bce04e8f95093",
+ "evaluated_utc": "2026-09-25T05:40:02Z",
+ "findings": {
+  "d24": {
+   "executions": [
+    [
+     "transcribe",
+     1,
+     1
+    ],
+    [
+     "transcribe",
+     2,
+     2
+    ],
+    [
+     "clean",
+     2,
+     2
+    ],
+    [
+     "clean",
+     3,
+     3
+    ]
+   ],
+   "final_attempt": 3,
+   "seconds": 0.54,
+   "spawns": 3
+  },
+  "d25": {
+   "blk_written": false,
+   "seconds": 0.1,
+   "worker_wav_written": true
+  },
+  "d27": {
+   "blocks": 2000,
+   "max_ms": 1.8543,
+   "p50_ms": 0.0819,
+   "p99_ms": 0.1834,
+   "seconds": 0.2
+  },
+  "p01": {
+   "completed_job_offered": false,
+   "completed_row_state": "insertion_confirmed",
+   "fuller_wav_replaced_by_shorter": false,
+   "fuller_wav_samples_after": 16000,
+   "fuller_wav_samples_before": 16000,
+   "live_blk_present_before_scan": true,
+   "live_blk_unlinked_by_scan": false,
+   "live_offered_as_recovery": false,
+   "live_row_state_after_scan": "capturing",
+   "live_wav_created_by_scan": false,
+   "other_process_blk_present": true,
+   "other_process_live_blk_claimed": false,
+   "reproduced": false,
+   "seconds": 0.37
+  },
+  "p02": {
+   "clipboard_after_delete": 0,
+   "delete_reported_complete": true,
+   "delete_returned_s": 0.2,
+   "deleted_job_resurrected_by_recovery": false,
+   "discard_returned_s": 0.5,
+   "host_insert_after_delete": 0,
+   "insert_after_delete": 0,
+   "journal_reappeared_after_delete": false,
+   "journal_reappeared_after_discard": false,
+   "model_called_after_delete": false,
+   "reproduced": false,
+   "retry_insert_after_delete": 0,
+   "retry_wav_after_delete": false,
+   "seconds": 1.17,
+   "worker_wav_after_delete": false
+  },
+  "p03": {
+   "deaths_recorded": 0,
+   "g1_finalizer_held": true,
+   "g2_request_failed": false,
+   "g2_request_pending_when_released": true,
+   "g2_retried_spuriously": false,
+   "reproduced": false,
+   "seconds": 1.8,
+   "spawns": 2
+  },
+  "p04": {
+   "children_alive_after_shutdown": 0,
+   "inflight_job_state_after_quit": "failed_recoverable",
+   "mic_stream_still_active_after_quit": false,
+   "orphaned_children": 0,
+   "processes_spawned": 3,
+   "producer_writes_refused_after_close": 0,
+   "recording_job_state_after_quit": "failed_recoverable",
+   "refusal_code": "supervisor_closed",
+   "reproduced": false,
+   "restart_completed_while_retry_spawning": false,
+   "retry_spawn_held": true,
+   "seconds": 6.66,
+   "spawned_after_shutdown_began": false,
+   "spawns_after_shutdown": 0,
+   "submit_after_shutdown_accepted": false,
+   "worker_alive_after_quit": false,
+   "worker_spawns_during_quit": 0
+  },
+  "p05": {
+   "executed_attempts": [
+    1,
+    2
+   ],
+   "failure_envelope_attempt": 2,
+   "recovery_item_attempt": 2,
+   "recovery_retry_attempt": 3,
+   "reproduced": false,
+   "seconds": 0.34,
+   "store_attempt": 2,
+   "usage_fact_attempt": 2
+  },
+  "p06": {
+   "death_streak_after": 1,
+   "fallback_text_preserved": true,
+   "next_job_reused_failed_generation": false,
+   "next_request_same_generation": false,
+   "reproduced": false,
+   "runtime_exception_returned_as_result": true,
+   "second_failed_child_alive": false,
+   "seconds": 0.81
+  },
+  "p07": {
+   "asr_answered_while_latched": true,
+   "asr_latency_s": 4.19,
+   "asr_state": "ready",
+   "basic_now_answered": true,
+   "basic_now_latency_s": 0.0,
+   "basic_now_path": "llm_fallback_normalized",
+   "basic_now_reason": "cleanup_not_ready",
+   "cleanup_state_while_latched": "loading",
+   "reproduced": false,
+   "seconds": 4.56,
+   "spawns": 2
+  },
+  "p08": {
+   "bad_count_accepted_as_finalized": false,
+   "bad_hash_accepted_as_finalized": false,
+   "bitflip_accepted_as_finalized": false,
+   "boundary_eof_claims_finalized_or_clean": false,
+   "cases": {
+    "bad_footer_count": {
+     "finalized": null,
+     "samples": 3200,
+     "status": "corrupt",
+     "torn": false
+    },
+    "bad_footer_hash": {
+     "finalized": null,
+     "samples": 3200,
+     "status": "corrupt",
+     "torn": false
+    },
+    "bitflip_finalized": {
+     "finalized": null,
+     "samples": 3200,
+     "status": "corrupt",
+     "torn": false
+    },
+    "boundary_eof": {
+     "finalized": null,
+     "samples": 3200,
+     "status": "unfinalized",
+     "torn": false
+    },
+    "control_finalized": {
+     "finalized": true,
+     "samples": 3200,
+     "status": "finalized_verified",
+     "torn": false
+    },
+    "duplicate": {
+     "finalized": null,
+     "samples": 1600,
+     "status": "corrupt",
+     "torn": false
+    },
+    "interior_corruption": {
+     "finalized": null,
+     "samples": 800,
+     "status": "corrupt",
+     "torn": false
+    },
+    "lone_brace": {
+     "finalized": null,
+     "samples": 3200,
+     "status": "torn_footer",
+     "torn": false
+    },
+    "overflow": {
+     "finalized": true,
+     "samples": 40960,
+     "status": "finalized_verified",
+     "torn": false
+    },
+    "partial_footer": {
+     "finalized": null,
+     "samples": 3200,
+     "status": "torn_footer",
+     "torn": false
+    },
+    "reordered": {
+     "finalized": null,
+     "samples": 800,
+     "status": "corrupt",
+     "torn": false
+    },
+    "torn_tail": {
+     "finalized": null,
+     "samples": 2400,
+     "status": "torn_tail",
+     "torn": true
+    }
+   },
+   "duplicate_accepted": false,
+   "interior_same_class_as_torn_tail": false,
+   "lone_brace_treated_as_clean_finalize": false,
+   "overflow_dropped_in_memory": 40,
+   "overflow_gap_positions_persisted": true,
+   "reorder_accepted": false,
+   "reproduced": false,
+   "seconds": 0.01
+  },
+  "p09": {
+   "known_capture_incomplete_tail": true,
+   "known_discontinuity_kinds": [
+    "incomplete_tail",
+    "timeline_unverified"
+   ],
+   "known_envelope_captured_at": "T0",
+   "known_envelope_sample_rate": 8000,
+   "known_envelope_time_quality": "known",
+   "known_recovered": true,
+   "known_usage_activity": "T0",
+   "known_worker_rate_passed": [
+    8000
+   ],
+   "reproduced": false,
+   "seconds": 0.17,
+   "unknown_capture_incomplete_tail": true,
+   "unknown_discontinuity_kinds": [
+    "incomplete_tail",
+    "timeline_unverified"
+   ],
+   "unknown_envelope_captured_at": "null",
+   "unknown_envelope_sample_rate": 8000,
+   "unknown_envelope_time_quality": "unknown",
+   "unknown_recovered": true,
+   "unknown_usage_activity": "null",
+   "unknown_worker_rate_passed": [
+    8000
+   ]
+  },
+  "p10": {
+   "complete_control_samples": 16000,
+   "interrupted_write_left_final_path": false,
+   "misaligned_accepted": false,
+   "misaligned_error": "WavIncompleteError",
+   "model_input_samples": [],
+   "reproduced": false,
+   "seconds": 0.18,
+   "truncated_error": "WavIncompleteError",
+   "truncated_read_silently": false,
+   "worker_refusal": "audio_incomplete",
+   "worker_transcribed_truncated_input": false
+  },
+  "p11": {
+   "app_finish_raised": false,
+   "app_job_queued_with_audio": true,
+   "app_state_after_stop_failure": "processing",
+   "close_failure_close_attempted": true,
+   "close_failure_prefix_samples": 4000,
+   "close_failure_raised": false,
+   "next_start_created_stream": true,
+   "next_start_stream_started": true,
+   "recording_flag_after_failed_start": false,
+   "reproduced": false,
+   "seconds": 0.04,
+   "stop_failure_close_attempted": true,
+   "stop_failure_prefix_samples": 4000,
+   "stop_failure_raised": false
+  },
+  "p12": {
+   "operational_events_contain_canary": false,
+   "reproduced": false,
+   "seconds": 0.29,
+   "worker_fault_frame_contains_canary": false,
+   "workerfailure_reason_contains_canary": false
+  },
+  "p13": {
+   "non_object_frame_raised": false,
+   "old_attempt_accepted_as_result": false,
+   "old_generation_fault_resolved_live_request": false,
+   "reproduced": false,
+   "seconds": 0.68,
+   "short_write_frame_complete": true,
+   "worker_exited_on_malformed_frame": false,
+   "wrong_job_accepted_as_result": false,
+   "wrong_kind_accepted_as_result": false
+  },
+  "p14": {
+   "job-dir_outcome": "InputError",
+   "job-fifo_outcome": "InputError",
+   "job-link_outcome": "InputError",
+   "reproduced": false,
+   "seconds": 0.0,
+   "traversal_accepted": false
+  },
+  "p15": {
+   "device_loss_hands_free_entered": true,
+   "device_loss_latch_after_forced_end": false,
+   "device_loss_next_press_started_capture": true,
+   "max_duration_hands_free_entered": true,
+   "max_duration_latch_after_forced_end": false,
+   "max_duration_next_press_started_capture": true,
+   "mouse_held_after_idle_watchdog": false,
+   "mouse_next_press_started_capture": true,
+   "reproduced": false,
+   "seconds": 0.19
+  },
+  "p16": {
+   "digest_raised": false,
+   "fault_resolved_with_worker_reason": true,
+   "old_drainer_contaminated_new_generation": false,
+   "reproduced": false,
+   "retried": true,
+   "seconds": 0.48,
+   "stderr_bytes_retained_from_4MiB_line": 16384,
+   "wiring": "per_generation",
+   "worker_fault_event_emitted": true
+  },
+  "p17": {
+   "active_jobs_after": 0,
+   "clipboard_copies": 1,
+   "pending_after": 0,
+   "reproduced": false,
+   "seconds": 0.05,
+   "state_after": "idle"
+  }
+ },
+ "native_shims": [
+  "AppKit",
+  "Foundation",
+  "Quartz",
+  "ApplicationServices",
+  "CoreFoundation",
+  "WebKit",
+  "Cocoa",
+  "objc",
+  "PyObjCTools",
+  "sounddevice"
+ ],
+ "numpy": "2.5.3",
+ "python": "3.13.12",
+ "schema_version": 1,
+ "tool": "scripts/v2/m03_remediation_repro.py",
+ "working_tree_modified": false
+}

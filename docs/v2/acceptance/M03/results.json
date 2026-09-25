@@ -168,5 +168,240 @@
     "post_address_verification": "All 13 automated suites re-run green; model-backed live pipeline 2/2, live worker 2/2 (kill -9 restart 2.0 s), cleanup 51/51; benchmark re-run on post-review code (hotkey p95 passes, queue bounded at 256, real load 2.35 s, kill9 2.05 s, RSS stable)."
   },
   "privacy": "Nothing private entered Git: events stay content-free (fault details are now digests by mechanism, not just capped); committed artifacts carry hashes, counts and synthetic fixtures only; tests/v2/test_baseline_manifest.py privacy scan passes over the new directories; journals/wavs/recovery audio live under ~/Library/Application Support/LocalFlow/v2-journal/ (0700/0600) outside the repository, and every test/benchmark harness repaths those roots into tempdirs.",
-  "regression_requirements": "PTT cancellation, clipboard fallback and FIFO processing verified green (test_stuck_overlay 5/5, lifecycle suites); no new always-on microphone behavior (wake handler starts nothing; hands-free and mouse triggers are opt-in config, default off)."
+  "regression_requirements": "PTT cancellation, clipboard fallback and FIFO processing verified green (test_stuck_overlay 5/5, lifecycle suites); no new always-on microphone behavior (wake handler starts nothing; hands-free and mouse triggers are opt-in config, default off).",
+  "remediation_2026_09_25": {
+    "kind": "post-audit cloud remediation",
+    "state": "CLOUD_REMEDIATION_COMPLETE_PENDING_LOCAL_VERIFICATION",
+    "state_note": "Does not certify native behaviour, the installed app, real data, real models or reference-Mac performance; the M03 milestone state and the 2026-09-22 records above are historical and unchanged by this addendum.",
+    "audit": {
+      "report": "LocalFlow V2 — M03 Read-Only Deep Audit",
+      "audited_sha": "2b9b7a1832ebf737c2a6c346a28e9b96ac4ba44e",
+      "material_findings": 17,
+      "severity": "2 Critical, 10 High, 5 Medium",
+      "test_gaps": 6,
+      "design_concerns": 4
+    },
+    "inherited_base_sha": "2b9b7a1832ebf737c2a6c346a28e9b96ac4ba44e",
+    "base_note": "origin/main had not moved from the audited SHA; accepted M01 3db74061, M02 first pass dc3b17e6 and M02 final bfbc63c3 verified as ancestors.",
+    "branch": "claude/amazing-hamilton-dq5as0",
+    "production_repair_commits": [
+      "a992d29579bfed8167bc35172710cc6ca5364581 (first pass, frozen for review)",
+      "3e0d1ab972b866b4acbda622984bce04e8f95093 (independent review round)"
+    ],
+    "non_production_commits": [
+      "b3e07dd (contracts, declared seam fakes, real-worker check tool — tests/tools/docs only)",
+      "later commits: evidence and documentation only"
+    ],
+    "final_code_revision": "3e0d1ab972b866b4acbda622984bce04e8f95093",
+    "environment": "Claude Code cloud container (Linux x86_64), CPython 3.13.12, numpy 2.5.3, SQLite 3.45.1; not the reference Mac",
+    "reproduction_evidence": {
+      "script": "scripts/v2/m03_remediation_repro.py",
+      "base": {
+        "output": "docs/v2/acceptance/M03/remediation/repro_base_2b9b7a1.json",
+        "result": "17/17 material findings reproduced",
+        "note": "script run with --code-root on a clean worktree of 2b9b7a1 (working_tree_modified: false); app probes under the declared non-native shims, worker probes on the production worker entry with shimmed model loaders"
+      },
+      "repaired": {
+        "output": "docs/v2/acceptance/M03/remediation/repro_repaired_3e0d1ab.json",
+        "result": "0/17 reproduced (clean tree at 3e0d1ab), no probe errors"
+      }
+    },
+    "dispositions": {
+      "M03-AUDIT-01": "reproduced; repaired (journal-root owner lock, writer flock, own/current/deleted/resolved skips, never-worse source selection; review round: per-process boot locks R3, scan/retry claims R4, prior-failure labels U6)",
+      "M03-AUDIT-02": "reproduced; repaired (run_unless_deleted/publish_job_file arbitration for every M03 file, deletion listener revokes queued work/delivery/recovery/retry, gated and revocable journal creation; review round: store-stall fallback R1, job-owned staging names R2, Copy-last-raw R5, gate waits for its open U3)",
+      "M03-AUDIT-03": "reproduced; repaired (generation-owned pendings with immutable expected identity; request on a finished generation resolves at once)",
+      "M03-AUDIT-04": "reproduced; repaired (one lifecycle lock, permanently closed admission, ordered app quit; review round: hello wake cannot be erased R6)",
+      "M03-AUDIT-05": "reproduced; repaired (executed attempt/generation on WorkerFailure, acknowledged by the app and store; review round: dictation transforms U1)",
+      "M03-AUDIT-06": "reproduced; repaired (retire_generation results counted as deaths; second fatal failure retired below the breaker)",
+      "M03-AUDIT-07": "reproduced; NARROWED: basic-now and bounded hold repaired (control thread + one GPU thread, deferred cleanup load for request-made spawns); an ASR request arriving during an in-progress cleanup load waits for the single GPU owner by design — reported by event and bounded by the request timeout",
+      "M03-AUDIT-08": "reproduced; repaired (journal v2: seq, start_sample, per-block CRC over positions and payload (review R9), verified footer, explicit statuses and positioned gaps; v1 still read as unverified)",
+      "M03-AUDIT-09": "reproduced; repaired (capture-provenance sidecar; retry keeps T0/zone/time quality/rate/gaps; unknown stays unknown; review R8: a gap reported once)",
+      "M03-AUDIT-10": "reproduced; repaired (staged atomic WAV writes, strict reads, worker refuses audio_incomplete, labeled recovery prefix)",
+      "M03-AUDIT-11": "reproduced; repaired (exception-safe Recorder start/stop, prefix kept, stream_teardown_error)",
+      "M03-AUDIT-12": "reproduced; repaired (controlled reason tokens both sides; class-name-only error_type)",
+      "M03-AUDIT-13": "reproduced; repaired (expected identity matrix, generation-scoped framing, write-all, 64 MiB cap, malformed request refused and the next served)",
+      "M03-AUDIT-14": "reproduced; repaired (O_NOFOLLOW|O_NONBLOCK, regular file, one descriptor)",
+      "M03-AUDIT-15": "reproduced; repaired (forced ends clear the hands-free latch; idle mouse release reconciled)",
+      "M03-AUDIT-16": "reproduced; repaired (per-generation 16 KiB byte-bounded tails, chunked drain, non-throwing digest)",
+      "M03-AUDIT-17": "reproduced; repaired (insertion-unavailable fallback retires its job once)",
+      "M03-AUDIT-18": "test gap addressed (production worker harness with only loaders shimmed; latched interleavings)",
+      "M03-AUDIT-19": "test gap addressed (struct-built journal fixtures, delayed-discard latches incl. discard during creation)",
+      "M03-AUDIT-20": "test gap addressed (invalid decode ranges passed into production)",
+      "M03-AUDIT-21": "test gap addressed (real AppDelegate methods under declared shims; quit order tested behaviourally)",
+      "M03-AUDIT-22": "test gap addressed (benchmark verdict drives exit code, explicit populations/skips, active-request kill; m03_live_check.py)",
+      "M03-AUDIT-23": "test gap addressed (M03 publication/delivery vs M02 deletion, drain and consent incl. a journal-recovered job with no evidence row)",
+      "M03-AUDIT-24": "design concern adjudicated: NO CHANGE — per-stage retry budget kept and documented (traced attempts 1,2,2,3)",
+      "M03-AUDIT-25": "design concern adjudicated: NO CHANGE — capture_journal:false disables the journal only; the worker WAV stays retryable; provenance records capture_journal: disabled",
+      "M03-AUDIT-26": "design concern: NO CHANGE (documented) — the parent resolves the model id at configure time and the worker loads that id offline; loaded-checkpoint identity across restarts needs the real cache/models (PENDING_LOCAL_VERIFICATION, M03-V002/V003)",
+      "M03-AUDIT-27": "design concern adjudicated: NO CHANGE — callback cost measured in the cloud (base p50 0.06 / p99 0.13 / max 0.20 ms; final p50 0.08 / p99 0.18 / max 1.85 ms, 2000 blocks, shared CPU); durability is process-crash, not power-loss (no per-block fsync), documented"
+    },
+    "refuted": [],
+    "narrowed": [
+      "M03-AUDIT-07"
+    ],
+    "independent_review": {
+      "frozen_first_pass": "a992d29579bfed8167bc35172710cc6ca5364581",
+      "method": "separate subagent (general-purpose) with its own empty context, given only the audit, the diff 2b9b7a1..a992d29 and a read-only mandate; worked in its own git worktree at a992d29 and wrote probes only under a temporary directory; its report was re-checked against the frozen code by the author",
+      "confirmed_and_fixed": {
+        "R1": "store writer stall failed a dictation (publication through the writer)",
+        "R2": "staged .part- names escaped debug-copy job pattern, rotation and artifact orphan scan",
+        "R3": "relaunched root owner claimed a live second instance's post-capture job",
+        "R4": "startup scan claimed a job a user retry had re-opened",
+        "R5": "Copy last raw exported a deleted job's transcript",
+        "R6": "shutdown's hello wake-up could be erased by a spawn's clear",
+        "R7": "clean after an ASR load failure crashed the worker request (fatal fault, respawn)",
+        "R8": "positioned journal gap also reported as an unpositioned queue drop",
+        "R9": "v2 CRC did not cover seq/frames/start_sample",
+        "R10": "worker.restarting emitted for a refused retry; refusal non-fatal",
+        "U1": "dictation transform auto-retry attempt not acknowledged (reviewer hypothesis, reproduced by the author)",
+        "U3": "journal gate timeout abandoned a queued open (reviewer hypothesis, reproduced by the author)",
+        "U6": "normally failed job relabeled crash-recovered at relaunch (reviewer hypothesis, reproduced by the author)"
+      },
+      "not_reproduced_or_narrowed": {
+        "stale engine frame racing a spawn": "not reproduced; the engine generation check was moved under the state lock anyway (with R6)",
+        "publish timeout misreports a late commit": "subsumed by R1 (unavailable outcome, tolerant late rename)",
+        "debug copy file I/O on the store writer": "latency cost only; moved off the writer with R2",
+        "_kill_proc hang on an unkillable child": "speculative, not reproduced; left bounded by the existing wait"
+      },
+      "regressions": "tests/v2/lifecycle/test_m03_review_round.py",
+      "first_pass_result": "docs/v2/acceptance/M03/remediation/review_round_a992d29.json (14 regressions fail, 1 guard passes)",
+      "final_result": "docs/v2/acceptance/M03/remediation/review_round_3e0d1ab.json (15/15 pass)",
+      "oracle_weaknesses_fixed": [
+        "order-A deletion asserts the refused publication",
+        "debug-copy deletion isolated to the arbitration",
+        "journal discard during creation",
+        "request on a finished but running generation",
+        "worker tests latched on record files and a latched v1 load",
+        "post-retire cleanup label asserted",
+        "tautological _reason assertion removed",
+        "consent for a journal-recovered job without an evidence row"
+      ]
+    },
+    "contracts_changed": {
+      "contracts/worker.md": "M03 remediation section: generation-owned requests, fault classes, lifecycle authority, executed identity, retry honesty, retirement, revocation, scheduling/basic-now, input boundary, framing, diagnostics, retry budget (design)",
+      "contracts/capture.md": "M03 remediation section: journal v2 format and CRC definition, statuses, ownership (root + boot locks, claims), prior-failure restore, creation authority, source selection, capture provenance, live vs recovered discontinuities, worker WAV staging and store-stall fallback, stream teardown, memory-only and durability (design)",
+      "contracts/store.md": "M03 remediation section: run_unless_deleted / publish_job_file outcomes incl. unavailable, staging names, deletion listeners, strict WAV helpers, attempt acknowledgement",
+      "unchanged": "worker protocol version 1; store schema v11; journal_version 2 (v1 still read)"
+    },
+    "portable_tests": {
+      "tested_sha": "3e0d1ab972b866b4acbda622984bce04e8f95093",
+      "output": "docs/v2/acceptance/M03/remediation/portable_tests_3e0d1ab.json",
+      "groups": {
+        "m03_required": {
+          "files": 3,
+          "passed": 24,
+          "failed": 0,
+          "skipped": 0,
+          "all_exit_0": true
+        },
+        "m03_remediation_new": {
+          "files": 5,
+          "passed": 62,
+          "failed": 0,
+          "skipped": 0,
+          "all_exit_0": true
+        },
+        "m02_compat": {
+          "files": 11,
+          "passed": 108,
+          "failed": 0,
+          "skipped": 0,
+          "all_exit_0": true
+        },
+        "m01_compat": {
+          "files": 7,
+          "passed": 72,
+          "failed": 0,
+          "skipped": 1,
+          "all_exit_0": true
+        },
+        "targeted_downstream": {
+          "files": 16,
+          "passed": 158,
+          "failed": 0,
+          "skipped": 0,
+          "all_exit_0": true
+        },
+        "shim_gated_full": {
+          "files": 5,
+          "passed": 49,
+          "failed": 0,
+          "skipped": 0,
+          "all_exit_0": true
+        },
+        "model_backed_skipped": {
+          "files": 2,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 2,
+          "all_exit_0": true
+        }
+      },
+      "notes": [
+        "shim_gated_full runs under tests/v2/lifecycle/run_with_shims.py (declared non-native shims) — orchestration evidence, not native verification",
+        "model_backed_skipped: test_worker_live.py and test_live_pipeline.py print SKIPPED with LOCALFLOW_SKIP_LIVE=1 (no MLX/models in the cloud) — skips, not passes",
+        "m01_compat's one skip is the legacy parser's historical private snapshot (absent in the cloud; M01-V008)"
+      ],
+      "whole_tree_sweep": "every tests/**/test_*.py run plain and shimmed on 3e0d1ab's tree: identical exit status to 2b9b7a1 for every pre-existing file (two training files that failed in the base sweep were a harness artifact — no .venv link in the base worktree — and pass 6/6 and 7/7 on 2b9b7a1 when linked); only the six new M03 suites differ",
+      "downstream_per_function": "ten AppKit-importing suites that fail partly under the shim on the base too were compared test-by-test on 2b9b7a1 vs 3e0d1ab: identical (cleanup_pipeline 12/13, insertion_pipeline 4/5, insertion_attribution 9/10, transform_pipeline 9/10, profiles_pipeline 11/13, vocabulary_pipeline 1/6, hub_shell 4/15, scratchpad_hub 0/10, insights_hub 3/7, training_review_hub 1/6) — shim limitations, not M03 regressions",
+      "targeted_downstream": "M07 cleanup path/fallback (test_cleanup_remediation 36, test_cleanup_engine 18), M08 late result/insertion authority (test_insertion_races 13), M09 recovery/History (test_history_queries 11, test_diagnostics 3), M13 attempt/usage (test_usage_store 11, test_insights_service 6), M14 consent/recovered lineage (test_learning 11, test_profile 9, sampling 3, splits 4, classification 7, dataset export 6), M11/M12 (transform engine 8, note store 7, note evidence 5): all exit 0"
+    },
+    "intended_test_changes": [
+      "tests/v2/test_m02_app_wiring.py: the _dump_audio call-site literal now matches the call with the job's rate (prefix match); the pre-check-before-write assertion is unchanged",
+      "tests/v2/lifecycle/fake_worker.py: result kinds per op and an 'eof' plan behaviour (stdout closed, process alive) — test-owned protocol fake"
+    ],
+    "benchmark": {
+      "historical": "docs/v2/benchmarks/20260922-011459-m03/ is kept as recorded. SUPERSEDED for the current code: its worker restart measured an idle kill only, its exit code did not evaluate budgets, and its hotkey figure is method-level.",
+      "cloud_run": "docs/v2/acceptance/M03/remediation/cloud_runs_3e0d1ab.json",
+      "cloud_result": "scripts/v2/benchmark_m03.py at 3e0d1ab: plain exit 0 (hotkey not run: appkit_unavailable; capture queue bounded at 256 with 2744 drops counted; fake-worker active-request kill recovered on attempt 2 / generation 2); shimmed exit 0 (hotkey p50 3.45 / p95 4.63 ms method-level ≤ 50 ms target). Not reference-Mac numbers; worker_real not run (M03-V003).",
+      "live_check": "scripts/v2/m03_live_check.py --harness exit 0 (basic_now answered in 0.0 s while loading, cleanup_not_ready; transcribe 16000 samples at 16000 Hz; active kill retried attempt 2 generation 2) — harness_not_model_backed; real-model mode exit 2 asr_engine_failed (no models in the cloud) — NOT RUN (M03-V002)"
+    },
+    "historical_records_2026_09_22": "Preserved unchanged above (acceptance_criteria, human_verification, checks, benchmark_summary, review_loop). The four pending human items are carried with current instructions by M03-V004 (quit/reopen mid-dictation), M03-V006 (microphone unplug/replug), M03-V007 (Fn during processing; hands-free and mouse firing), with M03-V005/V008 for quit and sleep/lock.",
+    "pending_local_verification": {
+      "M03-V001": "Mac parity of the portable suites (real PyObjC, APFS, macOS flock/O_NOFOLLOW)",
+      "M03-V002": "real worker: basic-now during the real cleanup load, in-flight kill recovery",
+      "M03-V003": "benchmark re-run with real models (new run; history untouched)",
+      "M03-V004": "kill mid-capture; relaunch recovers the speech with its original time",
+      "M03-V005": "quit while recording: microphone closed, speech kept, worker reaped",
+      "M03-V006": "microphone unplug/replug mid-dictation",
+      "M03-V007": "Fn during processing, capped hands-free capture, lost mouse release",
+      "M03-V008": "sleep and lock end capture recoverably; wake never reopens the microphone"
+    },
+    "runbook": {
+      "page": "docs/v2/VERIFICATION.html",
+      "section": "M03",
+      "instruction_revision": "M03-r1",
+      "code": "3e0d1ab",
+      "ids": [
+        "M03-V001",
+        "M03-V002",
+        "M03-V003",
+        "M03-V004",
+        "M03-V005",
+        "M03-V006",
+        "M03-V007",
+        "M03-V008"
+      ],
+      "initial_status": "Not run",
+      "frontend_design_skill_invoked": "anthropic-skills:frontend-design",
+      "campaign_rule": "Pending entries in VERIFICATION.html do not block starting the next read-only milestone audit during this campaign unless the remediation discovers that an unverified condition makes downstream static analysis invalid."
+    },
+    "cloud_cannot_certify": [
+      "AppKit/PyObjC",
+      "Accessibility/TCC",
+      "physical Fn and mouse event taps",
+      "microphone removal",
+      "physical sleep/lock/wake",
+      "APFS",
+      "MLX/Metal",
+      "actual Parakeet/Qwen",
+      "reference-Mac latency/RSS"
+    ],
+    "limits": [
+      "the store-stall fallback arbitrates deletions made by this process (app + Hub); a deletion from a second concurrently running instance during a stall is not covered",
+      "boot locks protect a second instance only where flock works (failure reported as capture.boot_lock_unavailable)",
+      "journal durability is process-crash, not power-loss",
+      "the expected_attempt fence stays unwired app-wide (M02 decision, unchanged)"
+    ]
+  }
 }

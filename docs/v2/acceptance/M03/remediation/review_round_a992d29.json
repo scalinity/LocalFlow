@@ -1,0 +1,118 @@
+{
+ "code_sha": "a992d29579bfed8167bc35172710cc6ca5364581",
+ "test_file": "tests/v2/lifecycle/test_m03_review_round.py",
+ "runner": "each test function in its own process: .venv/bin/python -c 'import sys; sys.path.insert(0, \"tests/v2/lifecycle\"); import test_m03_review_round as m; m.<test>()' (cwd = repo root, 240 s cap)",
+ "note": "Run in a clean worktree of the frozen first pass a992d29 with ONLY tests/v2/lifecycle/test_m03_review_round.py copied in (its own helpers are a992d29's). Expected: every R*/U* regression fails, the one guard (test_R1_guard_\u2026) passes.",
+ "summary": {
+  "passed": 1,
+  "failed": 14,
+  "total": 15
+ },
+ "tests": [
+  {
+   "test": "test_R1_store_publish_unavailable_leaves_staged",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: failed",
+   "seconds": 0.8
+  },
+  {
+   "test": "test_R1_app_store_stall_delays_not_fails_dictation",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError",
+   "seconds": 4.4
+  },
+  {
+   "test": "test_R1_guard_deletion_during_stall_still_wins",
+   "exit": 0,
+   "result": "pass",
+   "evidence": "ok  R1 guard: deletion queued behind the stall purges the fallback-published WAV and revokes delivery",
+   "seconds": 3.6
+  },
+  {
+   "test": "test_R2_crash_left_staged_files_are_owned",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: staged debug copy of a deleted job survived",
+   "seconds": 0.3
+  },
+  {
+   "test": "test_R3_relaunched_owner_never_claims_live_instance_work",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: failed_recoverable",
+   "seconds": 0.3
+  },
+  {
+   "test": "test_R4_scan_and_retry_claim_exclusively",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: failed_recoverable",
+   "seconds": 0.3
+  },
+  {
+   "test": "test_R5_copy_last_raw_after_delete",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: deleted transcript copied",
+   "seconds": 0.3
+  },
+  {
+   "test": "test_R6_shutdown_wake_cannot_be_erased",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: spawn held the lifecycle 8.0s",
+   "seconds": 8.2
+  },
+  {
+   "test": "test_R7_clean_after_asr_load_failure_is_answered",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: {'asr': 'failed', 'cleanup': 'not_started'}",
+   "seconds": 5.4
+  },
+  {
+   "test": "test_R8_gap_not_double_reported",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: ['journal_queue_drop', 'journal_gap']",
+   "seconds": 0.3
+  },
+  {
+   "test": "test_R9_crc_covers_positions",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: ('start_sample', 'finalized_verified')",
+   "seconds": 0.2
+  },
+  {
+   "test": "test_R10_revoked_failure_not_announced_as_retry",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError",
+   "seconds": 0.3
+  },
+  {
+   "test": "test_U1_transform_retry_attempt_acknowledged",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: 1",
+   "seconds": 0.6
+  },
+  {
+   "test": "test_U3_journal_gate_never_abandons_its_open",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: {'job_id': 'job-7580cd72da804b3b9d28b5d3c63f7feb', 'blocks_written': 0, 'samples_written': 0, 'queue_dropped': 0, 'dropped_samples': 0, 'offered_samples': 4800, 'degraded': True, 'degrade_reason': 'journal write failed (TimeoutError)', 'finalized': False, 'writer_alive': False, 'path",
+   "seconds": 1.8
+  },
+  {
+   "test": "test_U6_prior_normal_failure_keeps_its_labels",
+   "exit": 1,
+   "result": "fail",
+   "evidence": "AssertionError: {'capture_provenance_version': 1, 'captured_at_utc': '2026-01-02T03:04:05.000Z', 'channels': 1, 'complete': True, 'family_id': 'fam-14accc7c163b4ea5bde46d4226067286', 'job_id': 'job-d9225bedbdba4866a40de4c7c8baf4d3', 'journal': {'corrupt_reason': None, 'dropped_blocks': None, 'gaps':",
+   "seconds": 0.3
+  }
+ ]
+}
