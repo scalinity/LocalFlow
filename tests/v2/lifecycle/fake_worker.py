@@ -39,6 +39,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
 
 from localflow.v2.worker import PROTOCOL_VERSION, _read_msg, _write_msg  # noqa: E402
 
+# The production worker's result kinds (the supervisor checks them
+# against each pending request's expected kind).
+KIND = {"transcribe": "asr", "clean": "clean", "transform": "transform"}
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -111,7 +115,7 @@ def main():
 
         if behavior.startswith("stale:"):
             # Unsolicited stale frame: an old request id AND generation 0.
-            _write_msg({"v": PROTOCOL_VERSION, "op": "result", "kind": op,
+            _write_msg({"v": PROTOCOL_VERSION, "op": "result", "kind": KIND[op],
                         "req_id": "req-fabricated-old",
                         "job_id": msg.get("job_id"), "attempt": 99,
                         "generation": 0, "text": behavior[len("stale:"):],
@@ -123,7 +127,7 @@ def main():
             # A live req_id echoing an OLD generation: the supervisor must
             # discard it as stale and resolve the request as a fault rather
             # than let a generation-mismatched result satisfy anything.
-            _write_msg({"v": PROTOCOL_VERSION, "op": "result", "kind": op,
+            _write_msg({"v": PROTOCOL_VERSION, "op": "result", "kind": KIND[op],
                         "req_id": msg.get("req_id"),
                         "job_id": msg.get("job_id"),
                         "attempt": msg.get("attempt"),
@@ -147,7 +151,7 @@ def main():
             for part in rest:
                 k, _, v = part.partition("=")
                 extras[k] = v
-        out = {"v": PROTOCOL_VERSION, "op": "result", "kind": op,
+        out = {"v": PROTOCOL_VERSION, "op": "result", "kind": KIND[op],
                "req_id": msg.get("req_id"), "job_id": msg.get("job_id"),
                "attempt": msg.get("attempt"),
                "generation": msg.get("generation"),

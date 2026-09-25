@@ -68,6 +68,18 @@ class Transcriber:
         finally:
             self.ready.set()
 
+    def model_sample_rate(self):
+        """The rate the loaded model's frontend expects (None before a
+        successful load). The worker refuses input at any other rate
+        instead of relabeling it (M03-AUDIT-09: no implicit resampling)."""
+        model = self._model
+        if model is None:
+            return None
+        try:
+            return int(model.preprocessor_config.sample_rate)
+        except Exception:
+            return None
+
     # Recordings longer than this get chunked so memory and latency stay
     # bounded; the library's token-merge stitches the overlaps seamlessly.
     CHUNK_SEC = 60.0
