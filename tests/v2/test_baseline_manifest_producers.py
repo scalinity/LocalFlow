@@ -134,6 +134,25 @@ def test_failing_git_is_unknown_not_clean():
     print("ok  failing Git -> null with reason, never clean")
 
 
+@case
+def test_porcelain_renames_and_literal_pathspecs():
+    # Worktree-side rename ("git add -N" + mv) and glob characters in a
+    # path (review findings on the first remediation pass).
+    entries = bm._parse_porcelain_z(" R b.txt\0a.txt\0?? c d.txt\0")
+    assert entries == [(" R", "b.txt"), ("R-", "a.txt"), ("??", "c d.txt")], entries
+    entries = bm._parse_porcelain_z("R  new.txt\0old.txt\0 M x\0")
+    assert entries == [("R ", "new.txt"), ("R-", "old.txt"), (" M", "x")], entries
+    with tempfile.TemporaryDirectory() as td:
+        r = make_repo(td)
+        (r / "a1.txt").write_text("tracked")
+        sh(r, "git", "add", "a1.txt")
+        sh(r, "git", "commit", "-q", "-m", "a1")
+        (r / "a[1].txt").write_text("untracked")
+        assert bm._index_state(r, "a[1].txt") == "absent"
+        assert bm._index_state(r, "a1.txt").startswith("100644:")
+    print("ok  worktree renames parsed; paths matched literally, not as globs")
+
+
 # ---- M01-AUDIT-02: bundle vs HEAD vs worktree ---------------------------------
 
 def make_bundle(td, files):
@@ -359,6 +378,44 @@ def test_installed_app_context_uses_the_bundles_own_defaults():
         assert repo_ctx["effective_values"]["cleanup_implementation"] == \
             lf_config.DEFAULTS["cleanup_implementation"]
     print("ok  installed-app context resolves with the bundle's own DEFAULTS")
+
+
+@case
+def test_repo_root_uses_the_described_checkouts_defaults_and_bad_encoding():
+    with tempfile.TemporaryDirectory() as td:
+        td = pathlib.Path(td)
+        r = make_repo(td)
+        (r / "localflow" / "config.py").write_text(
+            'DEFAULTS = {"model": "org/described-asr", "cleanup": "llm",\n'
+            '            "cleanup_model": "org/described-llm", "hotkey": "fn"}\n')
+        (r / "config.json").write_text("{}")
+        home = td / "home"
+        home.mkdir()
+        saved = os.environ.get("HOME")
+        os.environ["HOME"] = str(home)
+        try:
+            m = bm.build(root=r, app=td / "absent.app", env={},
+                         hash_model_files=False)
+            ctx = m["effective_configuration"]["contexts"]["repo_run"]
+            assert ctx["defaults_source"].startswith("described checkout"), ctx
+            assert ctx["effective_values"]["model"] == "org/described-asr"
+            # Invalid UTF-8: load() does not catch UnicodeDecodeError, so the
+            # runtime would raise — recorded, and the build does not crash.
+            (r / "config.json").write_bytes(b'{"cleanup": "\xff"}')
+            m2 = bm.build(root=r, app=td / "absent.app", env={},
+                          hash_model_files=False)
+            ctx2 = m2["effective_configuration"]["contexts"]["repo_run"]
+            assert ctx2["winner"]["outcome"] == "runtime_would_raise", ctx2
+            assert ctx2["effective_values"] is None
+            # JSON null: runtime cfg.update(None) raises too.
+            (r / "config.json").write_text("null")
+            m3 = bm.build(root=r, app=td / "absent.app", env={},
+                          hash_model_files=False)
+            assert m3["effective_configuration"]["contexts"]["repo_run"][
+                "winner"]["outcome"] == "runtime_would_raise"
+        finally:
+            os.environ["HOME"] = saved
+    print("ok  --repo-root defaults from the described checkout; bad bytes/null recorded")
 
 
 # ---- M01-AUDIT-04: models and interpreters ------------------------------------

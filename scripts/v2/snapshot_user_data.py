@@ -33,7 +33,9 @@ Usage:
     .venv/bin/python scripts/v2/snapshot_user_data.py [--root PATH]
 
 Exit codes: 0 complete, 1 failed (source changed, unreadable, or the run
-could not be written/published), 2 incomplete (a required source missing).
+could not be written/published), 2 incomplete (a required source missing),
+3 refused (unsafe evidence root, e.g. inside any worktree of this
+repository; nothing written), 64 command-line usage error.
 """
 
 import argparse
@@ -68,8 +70,18 @@ SQLITE_COMPANIONS_HASHED = ("-wal", "-journal")
 SQLITE_COMPANIONS_INVENTORIED = ("-shm",)
 
 
+EXIT_REFUSED = 3   # unsafe evidence root: nothing was written
+EXIT_USAGE = 64    # command-line usage error (EX_USAGE)
+
+
 class EvidenceRootError(Exception):
     """The evidence root is unsafe to write private evidence into."""
+
+
+class _Parser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        self.exit(EXIT_USAGE, f"{self.prog}: error: {message}\n")
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -203,13 +215,50 @@ def sqlite_companion_inventory(src: pathlib.Path) -> dict:
 
 # ---- evidence root ------------------------------------------------------------
 
+def repository_worktrees(repo_root: pathlib.Path) -> list:
+    """This checkout plus every worktree of the same repository (the
+    runbook runs this script from a verification worktree while the
+    user's main checkout is another worktree of the same repository)."""
+    roots = [pathlib.Path(repo_root)]
+    try:
+        r = subprocess.run(["git", "-C", str(repo_root), "worktree", "list",
+                            "--porcelain"], capture_output=True, text=True,
+                           timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return roots
+    if r.returncode == 0:
+        roots += [pathlib.Path(line[len("worktree "):])
+                  for line in r.stdout.splitlines()
+                  if line.startswith("worktree ")]
+    return roots
+
+
+def _inside(path: pathlib.Path, roots) -> pathlib.Path | None:
+    """The root that contains ``path``, compared by file identity
+    (samefile), so symlinks and case-insensitive APFS spellings cannot
+    slip past a string comparison. Walks from the nearest existing
+    ancestor of ``path`` upwards."""
+    anc = path.absolute()
+    while not anc.exists() and anc != anc.parent:
+        anc = anc.parent
+    existing = [r for r in roots if r.exists()]
+    for a in (anc, *anc.parents):
+        for r in existing:
+            try:
+                if os.path.samefile(a, r):
+                    return r
+            except OSError:
+                continue
+    return None
+
+
 def prepare_root(root: pathlib.Path, repo_root: pathlib.Path = REPO_ROOT) -> dict:
     """Validate (or create) the evidence root. Raises EvidenceRootError."""
-    resolved = root.resolve()
-    if resolved == repo_root or repo_root in resolved.parents:
+    hit = _inside(root, repository_worktrees(repo_root))
+    if hit is not None:
         raise EvidenceRootError(
-            f"--root must live outside the repository (got {resolved} "
-            f"inside {repo_root})")
+            f"--root must live outside the repository (got {root.absolute()} "
+            f"inside worktree {hit})")
     created = False
     try:
         st = os.lstat(root)
@@ -378,14 +427,15 @@ def _capture_log(src, staging, final, entries):
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser()
+    ap = _Parser()
     ap.add_argument("--root", type=pathlib.Path, default=DEFAULT_ROOT)
     args = ap.parse_args(argv)
     root = args.root
     try:
         root_info = prepare_root(root)
     except EvidenceRootError as e:
-        ap.error(str(e))
+        print(f"REFUSED: {e}", file=sys.stderr)
+        return EXIT_REFUSED
 
     created = dt.datetime.now(dt.timezone.utc)
     run_id = new_run_id(created)

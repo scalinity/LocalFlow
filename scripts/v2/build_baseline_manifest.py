@@ -139,7 +139,8 @@ def _parse_porcelain_z(out: str):
             continue
         xy, path = item[:2], item[3:]
         entries.append((xy, path))
-        if xy[0] in "RC":  # rename/copy: the next item is the source path
+        if "R" in xy or "C" in xy:  # rename/copy (index or worktree side):
+            # the next NUL-separated item is the source path
             entries.append(("R-", items[i + 1]))
             i += 1
         i += 1
@@ -168,7 +169,9 @@ def _worktree_state(path: pathlib.Path) -> str:
 
 
 def _index_state(root, path):
-    res = git(["ls-files", "--stage", "-z", "--", path], root)
+    # --literal-pathspecs: a path like "a[1].txt" must not glob-match "a1.txt"
+    res = git(["--literal-pathspecs", "ls-files", "--stage", "-z", "--", path],
+              root)
     if not res["ok"]:
         return f"unknown:{res['returncode']}"
     entry = res["stdout"].split("\0")[0]
@@ -339,6 +342,9 @@ def config_file_identity(p: pathlib.Path):
     return ident
 
 
+_NO_UPDATE = object()
+
+
 def resolve_config(explicit=None, env_value=None, user_override=None,
                    bundled=None, defaults=None):
     """Mirror of ``localflow.config.load``: first candidate that EXISTS
@@ -363,7 +369,14 @@ def resolve_config(explicit=None, env_value=None, user_override=None,
                 except (json.JSONDecodeError, OSError) as e:
                     winner.update(outcome="ignored_bad_config_defaults_used",
                                   error=type(e).__name__)
-                else:
+                    obj = _NO_UPDATE
+                except UnicodeDecodeError as e:
+                    # load() does not catch this: the runtime would raise.
+                    winner.update(outcome="runtime_would_raise",
+                                  error=type(e).__name__)
+                    cfg = None
+                    obj = _NO_UPDATE
+                if obj is not _NO_UPDATE:
                     try:
                         cfg.update(obj)
                     except (TypeError, ValueError) as e:
@@ -762,8 +775,19 @@ def build(*, root=None, app=None, env=None, hash_model_files=True):
     g = git_state(root)
     bundle = bundle_state(app, root, g["head_commit"])
 
+    if root.resolve() == ROOT.resolve():
+        repo_defaults, repo_defaults_source = None, "repository localflow/config.py"
+    else:
+        # --repo-root: the described checkout's own config.py, which may be
+        # at another commit than the script's checkout.
+        repo_defaults, why = load_defaults_from(root / "localflow" / "config.py")
+        repo_defaults_source = (f"described checkout {root}/localflow/config.py"
+                                if repo_defaults is not None else
+                                f"script checkout localflow/config.py (described "
+                                f"checkout defaults unreadable: {why})")
     repo_ctx, repo_cfg = effective_config_record(
         "repo_run (this shell: ./run.sh or the generator's environment)",
+        defaults=repo_defaults, defaults_source=repo_defaults_source,
         env_value=env.get("LOCALFLOW_CONFIG"),
         env_observation={"observed": True, "set": bool(env.get("LOCALFLOW_CONFIG")),
                          "method": "generator process environment"},
