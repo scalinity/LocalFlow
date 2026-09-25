@@ -10,7 +10,11 @@ Plan shape:
   "asr": "ready" | "failed",
   "cleanup": "ready" | "failed" | "loading_forever",
   "transcribe": [behavior, ...],   # consumed per request
-  "clean": [behavior, ...]
+  "clean": [behavior, ...],
+  "eof": ["close" | "stay", ...]   # per generation, after load: "close"
+                                   # closes stdout and stays ALIVE (the
+                                   # parent's reader sees EOF while the
+                                   # process still runs)
 }
 
 behavior:
@@ -96,6 +100,11 @@ def main():
                 send_engine("cleanup", cleanup,
                             "cleanup_load_error" if cleanup == "failed"
                             else None)
+            if plan.get("eof") and take("eof") == "close":
+                sys.stdout.flush()
+                os.close(1)
+                sys.stdin.buffer.read()  # alive until the parent lets go
+                return 0
             continue
         if op not in ("transcribe", "clean", "transform"):
             _write_msg({"v": PROTOCOL_VERSION, "op": "fault",

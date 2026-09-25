@@ -1407,7 +1407,10 @@ class EvidenceCollector:
         # in original samples, or the join is reported as a discontinuity.
         capture = dict(ctx.capture_meta.get("capture", {}))
         discontinuities = []
-        if capture.get("journal_dropped_blocks"):
+        if capture.get("journal_dropped_blocks") \
+                and not capture.get("journal_gaps"):
+            # (Positioned gaps below supersede the unpositioned count —
+            # the same loss is never reported twice; review R8.)
             discontinuities.append(
                 {"kind": "journal_queue_drop",
                  "blocks": capture.get("journal_dropped_blocks"),

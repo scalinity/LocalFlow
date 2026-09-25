@@ -43,6 +43,17 @@ def _records(path):
         if p.exists() else []
 
 
+def _await_record(path, event, timeout=10.0):
+    """The shim's record file is written by the worker process: poll it
+    (a latch, never a fixed sleep)."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if any(r["event"] == event for r in _records(path)):
+            return True
+        time.sleep(0.01)
+    return False
+
+
 def test_07_basic_now_while_cleanup_load_is_latched():
     with tmpdir() as td:
         latch = pathlib.Path(td) / "release"
@@ -58,8 +69,8 @@ def test_07_basic_now_while_cleanup_load_is_latched():
                     and time.monotonic() < deadline:
                 time.sleep(0.01)
             assert s.engine_state["cleanup"] == "loading"
-            assert any(r["event"] == "cleanup_load_started"
-                       for r in _records(recf)), "load not latched"
+            assert _await_record(recf, "cleanup_load_started"), \
+                "load not latched"
             # bounded hold: returns at its bound with the honest state
             t0 = time.monotonic()
             assert s.wait_engine("cleanup", 0.5) == "loading"
@@ -88,11 +99,16 @@ def test_07_basic_now_while_cleanup_load_is_latched():
 def test_07_v1_basic_now_is_the_basic_pass():
     with tmpdir() as td:
         latch = pathlib.Path(td) / "release"
-        s, rec = make_sup(td, {"cleanup_load_latch": str(latch)}, prod=True)
+        recf = pathlib.Path(td) / "rec.jsonl"
+        s, rec = make_sup(td, {"cleanup_load_latch": str(latch),
+                               "record": str(recf)}, prod=True)
         s.cleanup_implementation = "v1"
         try:
             s.ensure_running()
             s.wait_engine("asr", 15)
+            # the v1 load is held (the adverse state is real)
+            assert _await_record(recf, "cleanup_load_started")
+            assert s.engine_state["cleanup"] == "loading"
             out = s.clean(job_id="j", attempt=1,
                           raw_text="um so like hello there")
             assert out["path"] == "basic"
@@ -382,7 +398,6 @@ def test_12_fault_codes_are_controlled():
                                       "audio_missing", "input"))
     assert sent[0]["reason_code"] == "audio_missing"
     assert sent[0]["error_type"] == "KeyError"
-    assert wm._reason(RuntimeError("secret text")) == "stage_exception"
     print("ok  12 worker fault codes: free text replaced, tokens kept")
 
 

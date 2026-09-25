@@ -90,7 +90,10 @@ excerpt — transcripts never appear there.
   to — one process. `shutdown()` closes admission permanently first:
   waiting requests resolve as `supervisor_closed` (non-fatal), a spawn
   waiting for `hello` is woken and kills its own child, and every later
-  request, `ensure_running` or `restart` raises `supervisor_closed`.
+  request, `ensure_running` or `restart` raises `supervisor_closed`. A
+  spawn clears its `hello`/engine events under the same state lock as its
+  closed-check, so shutdown's wake-up can never be erased (review R6); an
+  `engine` frame from a generation other than the current one is ignored.
 - **Fault classes.** Worker faults carry `fault_class`: `input`, `engine`,
   `protocol` (and parent-side `closed`, `revoked`) are refusals — no kill,
   no retry, no death counted; anything else (`runtime`, or a frame without
@@ -114,6 +117,12 @@ excerpt — transcripts never appear there.
 - **Revocation.** `revoke_job(job_id)` (user cancel, delete-everywhere)
   forbids the automatic retry for that job; the damaged generation is
   still retired.
+- **Retry honesty (review R10).** `worker.restarting` (`retry_once`) is
+  emitted only when the retry actually proceeds. A fatal failure whose
+  retry is refused — `request_revoked`, `supervisor_closed`,
+  `supervisor_breaker_tripped` — emits `worker.retry_skipped` with that
+  reason and raises `WorkerFailure(<reason>, fatal=True)` carrying the
+  first (executed) attempt; `retried` stays false.
 - **Scheduling.** The worker has a control thread (always reading) and one
   GPU thread (loads and model requests, strictly one at a time). A
   `clean` while the cleanup model is not usable is answered NOW on the
@@ -126,7 +135,12 @@ excerpt — transcripts never appear there.
   running waits for that load (one GPU owner) — the parent reports it as
   `worker.request_queued_behind_load`; the request timeout still bounds
   it. A transform waits for the cleanup load; a failed load refuses it
-  (`cleanup_engine_not_ready`, non-fatal).
+  (`cleanup_engine_not_ready`, non-fatal). When the ASR load fails, the
+  cleanup load never starts: the worker reports cleanup `failed`
+  (`cleanup_not_loaded_asr_failed`; V2 marks its load failed, V1 keeps a
+  basic-only cleaner) — or `ready` with `not_llm_mode` when no model was
+  configured — so a later `clean` gets the engine's normal degraded
+  answer, never an exception (review R7).
 - **Input boundary.** The worker opens the named file under its root with
   `O_NOFOLLOW|O_NONBLOCK`, requires a regular file and reads that one
   descriptor (symlinks, FIFOs and directories are refused without

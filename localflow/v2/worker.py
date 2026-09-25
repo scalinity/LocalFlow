@@ -348,6 +348,34 @@ class Worker:
                         "engine": "cleanup", "state": "ready",
                         "reason_code": "not_llm_mode"})
 
+    def _cleanup_not_loaded(self):
+        """No ASR engine → the cleanup model is never loaded (the pre-split
+        behavior). The cleanup engine is then REPORTED failed, and clean
+        requests get the same degraded answers as a failed cleanup load
+        (review R7) — never an exception, never a wait to the bound."""
+        if self.cleanup_mode != "llm":
+            if self.cleaner is None:
+                self.cleaner = self._plain_cleaner()
+            self.cleanup_state = "ready"
+            _write_msg({"v": PROTOCOL_VERSION, "op": "engine",
+                        "engine": "cleanup", "state": "ready",
+                        "reason_code": "not_llm_mode"})
+            return
+        if self.cleanup_implementation == "v2":
+            self._v2_load_failed = True
+        else:
+            from ..cleanup import TranscriptCleaner
+            c = TranscriptCleaner(self.cleanup_mode, self._cleanup_model,
+                                  notifier=lambda m, level="INFO": None,
+                                  observer=None)
+            c.load_failed = True  # basic pass, labeled engine-failed
+            self.cleaner = c
+        self.cleanup_state = "failed"
+        _write_msg({"v": PROTOCOL_VERSION, "op": "engine",
+                    "engine": "cleanup", "state": "failed",
+                    "model_id": self._cleanup_model,
+                    "reason_code": "cleanup_not_loaded_asr_failed"})
+
     def _plain_cleaner(self):
         from ..cleanup import TranscriptCleaner
         return TranscriptCleaner(
@@ -655,12 +683,9 @@ class Worker:
                 if kind == "load_asr":
                     if not self._load_asr():
                         with self._cond:
-                            # No ASR: cleanup is never loaded either (the
-                            # pre-split behavior), but requests queued for
-                            # it are answered, not stranded.
                             if "load_cleanup" in self._loads:
                                 self._loads.remove("load_cleanup")
-                            self.cleanup_state = "failed"
+                        self._cleanup_not_loaded()
                 elif kind == "load_cleanup":
                     self._load_cleanup()
                 elif kind == "transcribe":

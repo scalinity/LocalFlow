@@ -14,6 +14,7 @@ The copy is a quantized DERIVATIVE, never the original evidence (the
 float32 artifact is — S29.5).
 """
 
+import os
 import pathlib
 import time
 
@@ -36,12 +37,32 @@ def job_pattern(job_id) -> str:
 
 
 def write_debug_copy(directory, job_id, audio, sample_rate, *, keep=5,
-                     seq=1) -> pathlib.Path:
+                     seq=1, publish=None) -> pathlib.Path:
+    """Write one debug copy. It is staged under a name the job's
+    ``job_pattern`` and the rotation glob both own (so a crash-left staged
+    file is deleted with its job and rotated away — M03 review R2), then
+    published by ``publish(staged, final)`` — the app passes the store's
+    deletion arbitration (M03-AUDIT-02); a refused publish (False) removes
+    the staged file and returns None."""
     directory = pathlib.Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
-    path = directory / debug_name(job_id, seq)
-    write_wav_pcm16(path, np.asarray(audio, dtype=np.float32),
-                    int(sample_rate))
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    path = directory / debug_name(job_id, seq, stamp)
+    owner = job_id if job_id else "nojob"
+    staged = directory / (f"{PREFIX}{stamp}-{seq:03d}-part"
+                          f"{os.getpid()}{time.monotonic_ns() % 10**8}"
+                          f"-{owner}.wav")
+    try:
+        write_wav_pcm16(staged, np.asarray(audio, dtype=np.float32),
+                        int(sample_rate), atomic=False)
+        ok = publish(staged, path) if publish is not None \
+            else (os.replace(staged, path) or True)
+    except BaseException:
+        staged.unlink(missing_ok=True)
+        raise
+    if not ok:
+        staged.unlink(missing_ok=True)
+        return None
     for old in sorted(directory.glob(f"{PREFIX}*.wav"))[:-keep]:
         try:
             old.unlink()

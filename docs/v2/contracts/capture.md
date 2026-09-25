@@ -55,9 +55,13 @@ evidence envelope surfaces under `audio_preparation.discontinuities`
 
 - **Format v2** (v1 still read). Header adds `boot_id`. Each record is
   `b"BLK"` + `<u32 seq> <u32 frames> <u32 record_bytes>` +
-  `<u64 start_sample> <u32 crc32(payload)>` + payload, with
+  `<u64 start_sample> <u32 crc>` + payload, with
   `record_bytes = 12 + 4·frames` (so the record stays self-delimiting by
-  the same length field). `seq` numbers persisted records 1, 2, 3 … with
+  the same length field) and
+  `crc = crc32(payload, crc32(<u32 seq><u32 frames><u64 start_sample>))`
+  — the CRC protects the positions and counts, not only the samples, so
+  a flipped position bit is `crc_mismatch`, never a verified journal with
+  a fabricated gap (review R9; defined before any v2 file shipped). `seq` numbers persisted records 1, 2, 3 … with
   no holes; `start_sample` is the block's position in the capture
   timeline, which counts every OFFERED block — a queue drop becomes a
   positioned gap. The finalize line adds `offered_samples`,
@@ -78,14 +82,30 @@ evidence envelope surfaces under `audio_preparation.discontinuities`
   may append (`capture_journal.is_live`). The app holds `.owner.lock` on
   the journal root for its lifetime; a process that cannot take it claims
   nothing at startup (`capture.recovery_skipped`
-  `journal_root_owned_elsewhere`). The scan also skips live writers, jobs
-  this process holds, rows of the current boot, deleted jobs (their
-  residue is removed) and resolved jobs (consumed residue removed; a
-  resolved job is never re-offered).
+  `journal_root_owned_elsewhere`). Every process also holds
+  `.boot-<boot_id>.lock` for its whole life: the root owner treats a job
+  as residue only when the job's boot lock is free, so a relaunched owner
+  never claims a still-running second instance's work
+  (`owner_process_live`); free boot locks are removed by the root owner
+  (review R3). The scan also skips live writers, jobs this process holds
+  or has claimed, rows of the current boot, deleted jobs (their residue
+  is removed) and resolved jobs (consumed residue removed; a resolved job
+  is never re-offered). The scan and a user retry take an exclusive
+  in-process claim on a job before touching its recovery state (review
+  R4): a retry of a job the scan is deciding, or a scan of a job a retry
+  has re-opened, leaves it alone; a second retry click answers
+  `already_retrying`.
+- **A prior normal failure is not a crash (review U6).** A job that was
+  already `failed_recoverable` in its own session keeps its state, reason
+  and live-capture provenance when the scan restores its recovery item
+  (`capture.recovery_restored`); only audio actually rebuilt from the
+  journal is marked `recovered`.
 - **Creation authority.** File creation goes through the store's deletion
-  arbitration (`Store.run_unless_deleted`); a discard (`close_discard`)
-  revokes creation, and a writer that was already creating the file
-  removes it itself — a cancelled or deleted journal cannot reappear.
+  arbitration (`Store.run_unless_deleted`, waiting for the op itself — a
+  caller timeout would leave a queued open whose descriptor nobody owns;
+  review U3); a discard (`close_discard`) revokes creation, and a writer
+  that was already creating the file removes it itself — a cancelled or
+  deleted journal cannot reappear.
 - **Source selection.** A complete worker WAV (the full in-memory capture
   written at release) is kept untouched when it is at least as long as
   the journal reconstruction; otherwise the reconstruction is published
@@ -108,10 +128,16 @@ evidence envelope surfaces under `audio_preparation.discontinuities`
   `crash_journal` diagnostics, not audio discontinuities. Recovered audio
   reports its real ones (`incomplete_tail`, positioned `journal_gap`,
   `timeline_unverified` for v1, `capture_end_unknown`, `truncated_wav`).
-- **Worker WAV.** Written to a `.part-` staging name in the journal root
-  and published by atomic rename under the deletion barrier; the reader
-  is strict (a truncated or over-long payload raises). Staged leftovers
-  expire after an hour.
+- **Worker WAV.** Written to a staging name in the journal root
+  (`job-<id>.part-<pid>-<rand>.wav`) and published by atomic rename under
+  the deletion barrier; the reader is strict (a truncated or over-long
+  payload raises). Staged leftovers belong to their job (deleted with
+  it) and expire after an hour. When the store cannot answer within 2 s
+  (writer stalled, or closing), the app publishes itself with
+  check-rename-recheck against its deletion flag — correct because the
+  deletion listener sets that flag inside the delete op before the op
+  enumerates the job's files; a store stall delays a dictation, never
+  fails it (`store.publish_fallback`; review R1).
 - **Stream teardown.** `Recorder.start` owns a stream only once it has
   started (a failed start closes it and leaves no stale reference);
   `Recorder.stop` survives stop/close exceptions, always returns the

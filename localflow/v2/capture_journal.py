@@ -7,7 +7,8 @@ dictation journals to ``<root>/job-<job_id>.blk``:
     line 1  : header JSON + "\\n"
               {"journal_version":2,"job_id":…,"sample_rate":…,"boot_id":…}
     records : b"BLK" + <u32 seq> <u32 frames> <u32 record_bytes>
-              + <u64 start_sample> <u32 crc32(payload)> + float32 payload
+              + <u64 start_sample> <u32 crc> + float32 payload, where
+              crc = crc32(<u32 seq><u32 frames><u64 start_sample> + payload)
               (record_bytes = 12 + 4 * frames; seq counts PERSISTED records
               1, 2, 3 … with no holes)
     finish  : finalize JSON line {"op":"finalize","blocks","samples",
@@ -69,8 +70,17 @@ QUEUE_BOUND = 256  # 50 ms blocks → 12.8 s of writer headroom
 MAX_BLOCK_FRAMES = 1 << 20
 _BLK_MAGIC = b"BLK"
 _BLK_HEAD = struct.Struct("<3sIII")  # magic, seq, frames, record bytes
-_BLK_EXT = struct.Struct("<QI")      # v2: start_sample, crc32(payload)
+_BLK_EXT = struct.Struct("<QI")      # v2: start_sample, crc
+_CRC_HEAD = struct.Struct("<IIQ")    # seq, frames, start_sample (crc'd)
 _BLOCK_DTYPE = np.dtype("<f4")
+
+
+def _block_crc(seq, frames, start, payload) -> int:
+    """v2 record checksum: the position fields and the payload, so a
+    flipped seq/frames/start is caught like a flipped sample (review R9)."""
+    return zlib.crc32(payload, zlib.crc32(_CRC_HEAD.pack(seq, frames,
+                                                         start)))
+
 
 STATUS_VERIFIED = "finalized_verified"
 STATUS_UNFINALIZED = "unfinalized"
@@ -233,7 +243,8 @@ class CaptureJournal:
                 frames = len(data) // 4
                 rec = (_BLK_HEAD.pack(_BLK_MAGIC, seq, frames,
                                       _BLK_EXT.size + len(data))
-                       + _BLK_EXT.pack(start, zlib.crc32(data)) + data)
+                       + _BLK_EXT.pack(start, _block_crc(seq, frames, start,
+                                                         data)) + data)
                 # os.write may write partially (pipes aside, regular files
                 # rarely do, but the contract is a complete record or a
                 # torn one — never a silent short write).
@@ -494,7 +505,7 @@ def reconstruct(blk_path: pathlib.Path) -> JournalRecovery:
         payload = raw[pstart:pstart + frames * 4]
         if version >= 2:
             start_sample, crc = _BLK_EXT.unpack_from(raw, start)
-            if zlib.crc32(payload) != crc:
+            if _block_crc(seq, frames, start_sample, payload) != crc:
                 status, reason = STATUS_CORRUPT, "crc_mismatch"
                 break
             if start_sample < next_start:

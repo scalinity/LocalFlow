@@ -129,7 +129,8 @@ def v1_journal(path, job_id, blocks, *, rate=16000, meta=None,
 def v2_journal(path, job_id, blocks, *, rate=16000, meta=None, footer=None,
                seqs=None, starts=None, crcs=None, tail=b"", boot_id=None):
     """Journal v2 bytes built with struct, independently of the writer:
-    BLK + seq, frames, record_bytes(=12+4*frames) + u64 start + u32 crc."""
+    BLK + seq, frames, record_bytes(=12+4*frames) + u64 start + u32 crc,
+    crc = crc32(<u32 seq><u32 frames><u64 start> + payload)."""
     header = {"journal_version": 2, "job_id": job_id, "family_id": None,
               "sample_rate": rate, "channels": 1, "dtype": "float32",
               "boot_id": boot_id, "meta": meta or {}}
@@ -140,7 +141,8 @@ def v2_journal(path, job_id, blocks, *, rate=16000, meta=None, footer=None,
         frames = len(data) // 4
         seq = seqs[i] if seqs else i + 1
         start = starts[i] if starts else pos
-        crc = crcs[i] if crcs else zlib.crc32(data)
+        crc = crcs[i] if crcs else zlib.crc32(
+            data, zlib.crc32(struct.pack("<IIQ", seq, frames, start)))
         out += struct.pack("<3sIII", b"BLK", seq, frames, 12 + len(data))
         out += struct.pack("<QI", start, crc) + data
         pos = start + frames
@@ -342,13 +344,14 @@ class App:
             self.d.v2log.close(timeout=3)
         except Exception:
             pass
-        fd = getattr(self.d, "_journal_root_lock", None)
-        if fd is not None:
-            try:
-                os.close(fd)
-            except OSError:
-                pass
-            self.d._journal_root_lock = None
+        for attr in ("_journal_root_lock", "_boot_lock"):
+            fd = getattr(self.d, attr, None)
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+                setattr(self.d, attr, None)
 
 
 def tmpdir():

@@ -116,6 +116,72 @@ def _acquire_root_lock(root):
     return fd
 
 
+def _boot_lock_path(root, boot_id):
+    """``.boot-<boot_id>.lock`` in the journal root, or None for a boot id
+    that is not a plain token (ids come from rows and journal headers)."""
+    if not boot_id or not all(c.isalnum() or c in "_-" for c in boot_id):
+        return None
+    return pathlib.Path(root) / f".boot-{boot_id}.lock"
+
+
+def _acquire_boot_lock(root, boot_id):
+    """Held for this process's whole life (M03 review R3): the root owner
+    treats a job as another process's crash residue only once that
+    process's boot lock is free — a second instance that never owned the
+    root keeps its in-flight work when a relaunched owner scans. Returns
+    the held descriptor, or None (then this process's work is
+    unprotected, which is reported)."""
+    try:
+        import fcntl
+    except ImportError:  # pragma: no cover
+        return None
+    path = _boot_lock_path(root, boot_id)
+    if path is None:
+        return None
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+    except OSError:
+        return None
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        os.close(fd)
+        return None
+    return fd
+
+
+def _boot_is_live(root, boot_id, *, remove_stale=False) -> bool:
+    """Whether the process that ran ``boot_id`` still holds its boot lock.
+    A missing lock file (older residue, or a process that could not take
+    one) is not live. ``remove_stale`` unlinks a free lock file while
+    holding it (root owner only)."""
+    try:
+        import fcntl
+    except ImportError:  # pragma: no cover
+        return False
+    path = _boot_lock_path(root, boot_id)
+    if path is None:
+        return False
+    try:
+        fd = os.open(path, os.O_RDWR)
+    except OSError:
+        return False
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            return True
+        if remove_stale:
+            try:
+                path.unlink()
+            except OSError:
+                pass
+        return False
+    finally:
+        os.close(fd)
+
+
 class _JobCancelled(Exception):
     """Internal: the user cancelled while this job was in the pipeline."""
 
@@ -173,6 +239,16 @@ class AppDelegate(NSObject):
         self._closing = False
         self._coordinator_thread = None
         self._journal_root_lock = _acquire_root_lock(V2_JOURNAL)
+        # M03 review R3/R4: this process's liveness, visible to a later
+        # root owner, and the claims the startup scan and a user retry
+        # take before touching a job's recovery state.
+        self._boot_lock = _acquire_boot_lock(V2_JOURNAL, self.v2log.boot_id)
+        if self._boot_lock is None:
+            self.v2log.emit("capture.boot_lock_unavailable",
+                            level="WARNING", reason_code="flock_failed",
+                            outcome="work_not_protected_from_other_scans")
+        self._recovery_lock = threading.Lock()
+        self._claimed_jobs = set()
         # M13 (Spec S08/S21, contracts/analytics.md): usage analytics —
         # dated facts over the single-writer store, independent of
         # training consent (usage metadata, not evidence). Guarded like
@@ -810,14 +886,17 @@ class AppDelegate(NSObject):
     @objc.python_method
     def _m11_run_transform(self, defn, source, *, source_kind,
                            parent_job_id=None, attempt=1,
-                           selection=None):
+                           selection=None, executed=None):
         """Run one transform on the worker's cleanup model and rebuild
         the ``TransformResult`` parent-side. TOTAL: a failed request —
         including an oversized source refused at job construction —
         returns the honest fallback-original result, never a raised
         exception into the dictation or selection paths (an exception
         escaping the selection work() would wedge ``_tf_active``
-        forever)."""
+        forever). ``executed`` (a dict), when given, receives what the
+        worker actually ran — ``attempt``/``generation`` of the result, or
+        ``error`` (the WorkerFailure) — so the caller can acknowledge an
+        automatic retry's attempt (review U1)."""
         try:
             job = v2_transforms.job_for_definition(
                 defn, source, source_kind=source_kind,
@@ -841,11 +920,16 @@ class AppDelegate(NSObject):
                 path=v2_transforms.PATH_FALLBACK_ORIGINAL,
                 reason=f"transform_refused:{str(e)[:60]}")
         except Exception as e:
+            if executed is not None:
+                executed["error"] = e
             reason = getattr(e, "reason_code", None) or type(e).__name__
             return v2_transforms.TransformResult(
                 job=None, output=source,
                 path=v2_transforms.PATH_FALLBACK_ORIGINAL,
                 reason=f"transform_request_failed:{reason}")
+        if executed is not None:
+            executed["attempt"] = res.get("attempt")
+            executed["generation"] = res.get("generation")
         if res.get("refused"):
             return v2_transforms.TransformResult(
                 job=None, output=source,
@@ -911,9 +995,22 @@ class AppDelegate(NSObject):
                             job_id=job_id, reason_code=reason)
             return clean_text
         try:
+            executed = {}
             result = self._m11_run_transform(
                 defn, clean_text, source_kind="dictation",
-                parent_job_id=job_id, attempt=job.get("attempt", 1))
+                parent_job_id=job_id, attempt=job.get("attempt", 1),
+                executed=executed)
+            # An automatic retry ran the next attempt: the job, its store
+            # row and the evidence follow it (M03-AUDIT-05, review U1).
+            err = executed.get("error")
+            ran = getattr(err, "attempt", None) if err is not None \
+                else executed.get("attempt")
+            if isinstance(ran, int) and not isinstance(ran, bool) \
+                    and ran > int(job.get("attempt") or 1):
+                self._acknowledge_attempt(
+                    job, ctx, ran, stage="transform",
+                    generation=getattr(err, "generation", None)
+                    if err is not None else executed.get("generation"))
         except Exception as e:
             # _m11_run_transform is total; this guards the impossible.
             result = None
@@ -1783,13 +1880,14 @@ class AppDelegate(NSObject):
                             reason_code="coordinator_busy",
                             outcome="store_closes_with_producer_alive")
         self._shutdown_persistence()
-        fd = getattr(self, "_journal_root_lock", None)
-        if fd is not None:
-            try:
-                os.close(fd)
-            except OSError:
-                pass
-            self._journal_root_lock = None
+        for attr in ("_journal_root_lock", "_boot_lock"):
+            fd = getattr(self, attr, None)
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+                setattr(self, attr, None)
 
     @objc.python_method
     def _shutdown_persistence(self, timeout=3.0):
@@ -1904,6 +2002,16 @@ class AppDelegate(NSObject):
             if job and job.get("job_id") == job_id:
                 job["deleted"] = True
                 job["cancelled"] = True
+        # Cached recovery CONTENT goes too (review R5): the last failure's
+        # raw text is never copied out after its job was deleted. The
+        # menu list itself is main-thread state, refreshed there.
+        last = getattr(self, "_last_failed", None)
+        if last is not None and last.get("job_id") == job_id:
+            self._last_failed = None
+        if any(i.get("job_id") == job_id
+               for i in list(getattr(self, "_recoverable", ()))) \
+                or last is not None and last.get("job_id") == job_id:
+            AppHelper.callAfter(self._drop_recovery_item, job_id)
         revoke = getattr(self.supervisor, "revoke_job", None)
         if revoke is not None:
             try:
@@ -1929,19 +2037,41 @@ class AppDelegate(NSObject):
         store = self.store
 
         def gate(opener):
-            return store.run_unless_deleted(job_id, opener)
+            # Waits for the op itself (review U3): a caller timeout would
+            # not cancel the queued open, whose descriptor nobody would
+            # then own. The journal writer thread is the only waiter.
+            return store.run_unless_deleted(job_id, opener, timeout=None)
         return gate
 
     @objc.python_method
     def _live_job_ids(self) -> set:
         """Jobs this process is working on right now (capture, queue,
         coordinator, insertion) — never crash residue."""
-        live = set()
+        live = set(getattr(self, "_claimed_jobs", ()))
         for job in [self._job, (self._tap_pending or {}).get("job")] \
                 + list(self._active_jobs):
             if job and job.get("job_id"):
                 live.add(job["job_id"])
         return live
+
+    @objc.python_method
+    def _claim_job(self, job_id) -> bool:
+        """Exclusive recovery authority over one job for the startup scan
+        or a user retry (review R4): whoever claims first acts; the other
+        leaves the job alone. Released by ``_release_job``."""
+        if not job_id:
+            return True
+        with self._recovery_lock:
+            if job_id in self._live_job_ids():
+                return False
+            self._claimed_jobs.add(job_id)
+            return True
+
+    @objc.python_method
+    def _release_job(self, job_id):
+        if job_id:
+            with self._recovery_lock:
+                self._claimed_jobs.discard(job_id)
 
     @objc.python_method
     def _publish_job_audio(self, job_id, path, samples, rate) -> str:
@@ -1953,7 +2083,44 @@ class AppDelegate(NSObject):
             v2.store.write_wav_f32(path, samples, int(rate))
             return "published"
         staged = v2.store.stage_wav_f32(path, samples, int(rate))
-        return self.store.publish_job_file(job_id, staged, path)
+        return self._publish_staged(job_id, staged, path)
+
+    @objc.python_method
+    def _publish_staged(self, job_id, staged, final) -> str:
+        """Publish through the store's deletion arbitration; when the
+        store cannot answer (writer stalled past its bound, or closing),
+        publish locally with check-rename-recheck against this process's
+        deletion flag (review R1) — a store stall delays, never fails, a
+        dictation. Correct because the deletion listener sets the flag
+        inside the delete op BEFORE that op enumerates the job's files:
+        a rename the recheck sees as undeleted is enumerated and purged by
+        the later op; one it sees as deleted is removed here."""
+        # A short wait: the fallback below is as safe as the store path,
+        # so the bound only decides how long a stalled writer delays.
+        outcome = self.store.publish_job_file(job_id, staged, final,
+                                              timeout=2.0)
+        if outcome != "unavailable":
+            return outcome
+        staged, final = pathlib.Path(staged), pathlib.Path(final)
+        self.v2log.emit("store.publish_fallback", level="WARNING",
+                        job_id=job_id, reason_code="store_unavailable",
+                        outcome="local_check_rename_recheck")
+        if job_id in self._deleted_jobs:
+            staged.unlink(missing_ok=True)
+            return "deleted"
+        try:
+            os.replace(staged, final)
+        except FileNotFoundError:
+            # The queued store op published it meanwhile.
+            if not final.exists():
+                return "failed"
+        except OSError:
+            staged.unlink(missing_ok=True)
+            return "failed"
+        if job_id in self._deleted_jobs:
+            final.unlink(missing_ok=True)
+            return "deleted"
+        return "published"
 
     @objc.python_method
     def _write_provenance(self, job_id, prov) -> str:
@@ -1974,7 +2141,7 @@ class AppDelegate(NSObject):
                             level="WARNING", job_id=job_id,
                             reason_code=type(e).__name__)
             return "failed"
-        return self.store.publish_job_file(job_id, staged, final)
+        return self._publish_staged(job_id, staged, final)
 
     @objc.python_method
     def _read_provenance(self, job_id):
@@ -2042,6 +2209,11 @@ class AppDelegate(NSObject):
                             reason_code="journal_root_owned_elsewhere",
                             outcome="nothing_claimed")
             return
+        # Free boot locks are residue of exited processes (review R3).
+        for lock in V2_JOURNAL.glob(".boot-*.lock"):
+            bid = lock.name[len(".boot-"):-len(".lock")]
+            if bid != self.v2log.boot_id:
+                _boot_is_live(V2_JOURNAL, bid, remove_stale=True)
         found = 0
         handled = set()
         min_sec = float(self.cfg["min_duration_sec"])
@@ -2069,9 +2241,18 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def _recover_one(self, job_id, blk, min_sec):
-        wav = V2_JOURNAL / f"job-{job_id}.wav"
-        if job_id in self._live_job_ids():
+        # The scan holds the job's claim while it decides (review R4): a
+        # concurrent user retry of the same job waits its turn or leaves.
+        if not self._claim_job(job_id):
             return "live_in_process"
+        try:
+            return self._recover_claimed(job_id, blk, min_sec)
+        finally:
+            self._release_job(job_id)
+
+    @objc.python_method
+    def _recover_claimed(self, job_id, blk, min_sec):
+        wav = V2_JOURNAL / f"job-{job_id}.wav"
         if blk is not None and capture_journal.is_live(blk):
             self.v2log.emit("capture.recovery_skipped", level="INFO",
                             job_id=job_id, reason_code="journal_writer_live")
@@ -2079,6 +2260,12 @@ class AppDelegate(NSObject):
         row = self.store.job(job_id)
         if row and row.get("boot_id") == self.v2log.boot_id:
             return "current_session"
+        if row and _boot_is_live(V2_JOURNAL, row.get("boot_id")):
+            # Another running instance's work — never residue (R3).
+            self.v2log.emit("capture.recovery_skipped", level="INFO",
+                            job_id=job_id,
+                            reason_code="owner_process_live")
+            return "owner_live"
         if self._job_is_deleted(job_id):
             # Deleted work is never resurrected; residue is removed.
             self._delete_journal_files(job_id)
@@ -2111,6 +2298,12 @@ class AppDelegate(NSObject):
                                 job_id=job_id,
                                 reason_code="journal_job_mismatch")
                 return "mismatch"
+            if row is None and rec is not None and _boot_is_live(
+                    V2_JOURNAL, rec.header.get("boot_id")):
+                self.v2log.emit("capture.recovery_skipped", level="INFO",
+                                job_id=job_id,
+                                reason_code="owner_process_live")
+                return "owner_live"
         existing = self._inspect_wav(wav) if wav.exists() else None
         header = (rec.header if rec is not None else {}) or {}
         meta = header.get("meta") or {}
@@ -2153,6 +2346,11 @@ class AppDelegate(NSObject):
                 return "publish_" + published
         recoverable = source is not None and \
             samples.size / float(rate) >= min_sec
+        # A job that already FAILED normally in its own session (not a
+        # crash) keeps its state, reason and live-capture provenance; the
+        # scan only restores its recovery item (review U6).
+        prior_failure = state == "failed_recoverable"
+        live_audio = prior_failure and source == "worker_wav"
         # ---- provenance: the ORIGINAL capture, not this scan ----------
         cap = row.get("captured_at_utc") or prov.get("captured_at_utc") \
             or meta.get("captured_at_utc")
@@ -2168,9 +2366,10 @@ class AppDelegate(NSObject):
             "utc_offset_minutes": row.get("utc_offset_minutes")
             if row.get("utc_offset_minutes") is not None
             else prov.get("utc_offset_minutes"),
-            "recovered": True,
-            "recovered_at_utc": v2.ids.now_utc_iso(),
         })
+        if not live_audio:
+            new_prov.update({"recovered": True,
+                             "recovered_at_utc": v2.ids.now_utc_iso()})
         if source is not None:
             new_prov.update({"source": source, "sample_rate": int(rate),
                              "sample_count": int(samples.size),
@@ -2206,7 +2405,7 @@ class AppDelegate(NSObject):
                 "gaps": list(rec.gaps or []),
                 "dropped_blocks": (rec.footer or {}).get("dropped_blocks"),
                 "used": source == "journal_reconstruction"}
-        if recoverable:
+        if recoverable and (not live_audio or not prov):
             self._write_provenance(job_id, new_prov)
         if blk is not None:
             try:
@@ -2224,11 +2423,14 @@ class AppDelegate(NSObject):
         else:
             reason = None
         if recoverable:
-            self._job_state(job_id, "failed_recoverable", reason=reason)
+            if not prior_failure:
+                self._job_state(job_id, "failed_recoverable", reason=reason)
             self._recoverable.append({
                 "job_id": job_id, "family_id": family_id,
                 "wav": str(wav), "raw": None,
                 "attempt": int(row.get("attempt") or 1)})
+        elif prior_failure:
+            pass  # its own failure stands; no audio to offer
         elif blk is not None:
             self._job_state(
                 job_id, "cancelled",
@@ -2238,7 +2440,9 @@ class AppDelegate(NSObject):
             self._job_state(job_id, "failed_recoverable",
                             reason="app_crash_audio_lost")
         self.v2log.emit(
-            "capture.recovered_after_crash", level="WARNING",
+            "capture.recovery_restored" if prior_failure
+            else "capture.recovered_after_crash",
+            level="INFO" if prior_failure else "WARNING",
             job_id=job_id, reason_code="journal_reconstruction"
             if source == "journal_reconstruction" else (source or "none"),
             outcome=("recoverable" if recoverable else
@@ -3365,7 +3569,17 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def _acknowledge_executed_attempt(self, job, ctx, err):
-        executed = getattr(err, "attempt", None)
+        self._acknowledge_attempt(
+            job, ctx, getattr(err, "attempt", None),
+            stage={"transcribe": "asr", "clean": "cleanup"}.get(
+                getattr(err, "stage", None)),
+            generation=getattr(err, "generation", None))
+
+    @objc.python_method
+    def _acknowledge_attempt(self, job, ctx, executed, *, stage=None,
+                             generation=None):
+        """The job, its durable row and the evidence context follow the
+        attempt the worker actually EXECUTED (never below the current)."""
         if not isinstance(executed, int) or isinstance(executed, bool):
             return
         job_id = job.get("job_id")
@@ -3378,11 +3592,10 @@ class AppDelegate(NSObject):
                     self.v2log.emit("store.state_write_failed",
                                     level="WARNING", job_id=job_id,
                                     reason_code=type(e).__name__)
-        stage = {"transcribe": "asr", "clean": "cleanup"}.get(err.stage)
         try:
             self.collector.note_attempt(
                 ctx, job["attempt"], stage=stage,
-                worker_generation=getattr(err, "generation", None))
+                worker_generation=generation)
         except Exception:
             pass
 
@@ -3470,14 +3683,20 @@ class AppDelegate(NSObject):
             seq = self._dump_seq
             rate = int(rate or self.cfg["sample_rate"])
 
-            def write():
-                v2_debug_audio.write_debug_copy(
-                    AUDIO_DEBUG_DIR, job_id, audio, rate,
-                    keep=AUDIO_DEBUG_KEEP, seq=seq)
-            if job_id:
-                self.store.run_unless_deleted(job_id, write)
-            else:
-                write()
+            # The PCM16 write happens HERE (coordinator thread), staged
+            # under a job-owned name; only the rename runs inside the
+            # store's arbitration (review R2/U5) — the writer is never
+            # held for file I/O, and a crash-left staged copy is still
+            # the job's (deleted with it) and rotation's.
+            def publish(staged, final):
+                if not job_id:
+                    os.replace(staged, final)
+                    return True
+                return self._publish_staged(job_id, staged, final) \
+                    == "published"
+            v2_debug_audio.write_debug_copy(
+                AUDIO_DEBUG_DIR, job_id, audio, rate,
+                keep=AUDIO_DEBUG_KEEP, seq=seq, publish=publish)
         except Exception as e:
             self.v2log.emit("capture.debug_audio_failed", level="WARNING",
                             reason_code=type(e).__name__)
@@ -3720,6 +3939,8 @@ class AppDelegate(NSObject):
         self._pending -= 1
         if job in self._active_jobs:
             self._active_jobs.remove(job)
+        if job.get("from_retry"):
+            self._release_job(job.get("job_id"))
 
     @objc.python_method
     def _insertionDone_(self, result, job):
@@ -4560,119 +4781,133 @@ class AppDelegate(NSObject):
         discontinuities come from the job row and the capture-provenance
         sidecar — never from the retry's clock or today's config."""
         job_id = info.get("job_id")
-        family_id = info.get("family_id")
         if getattr(self, "_closing", False):
             return {"outcome": "closing"}
-        if self._job_is_deleted(job_id):
-            # Deleted work is never re-run or re-delivered (M03-AUDIT-02).
-            self._drop_recovery_item(job_id)
-            return {"outcome": "not_retryable", "reason": "deleted"}
-        row = (self.store.job(job_id) or {}) if job_id else {}
-        if job_id and row and row.get("state") != "failed_recoverable":
-            # Only a failed_recoverable job re-opens; a resolved job's
-            # leftover audio is never re-run from the menu either.
-            self._drop_recovery_item(job_id)
-            return {"outcome": "not_retryable",
-                    "reason": row.get("state") or "unknown_job"}
-        if self.supervisor.supervisor_state == "failed":
-            # An explicit user action re-arms the breaker (M03-AC01: the
-            # automatic loop stops; recovery is manual from here).
-            try:
-                self.supervisor.restart()
-            except WorkerFailure as e:
-                self.v2log.emit("worker.manual_restart_failed", level="ERROR",
-                                reason_code=e.reason_code)
-                return {"outcome": "restart_failed"}
+        # Exclusive with the startup scan and a second retry click of the
+        # same job (review R4): the claim is taken before the job is
+        # re-opened and held until the requeued job retires.
+        if not self._claim_job(job_id):
+            return {"outcome": "already_retrying"}
+        family_id = info.get("family_id")
+        requeued = False
         try:
-            # Strict read: a truncated file is refused, never re-run as a
-            # shorter "complete" capture (M03-AUDIT-10).
-            _arr, _rate = v2.store.read_wav_f32(pathlib.Path(info["wav"]))
-        except Exception as e:
-            self.v2log.emit("dictation.retry_failed", level="ERROR",
-                            job_id=job_id,
-                            reason_code=type(e).__name__)
-            return {"outcome": "audio_unavailable"}
-        prov = (self._read_provenance(job_id) if job_id else None) or {}
-        attempt = int(info.get("attempt", 1) or 1) + 1
-        if job_id:
+            if self._job_is_deleted(job_id):
+                # Deleted work is never re-run or re-delivered
+                # (M03-AUDIT-02).
+                self._drop_recovery_item(job_id)
+                return {"outcome": "not_retryable", "reason": "deleted"}
+            row = (self.store.job(job_id) or {}) if job_id else {}
+            if job_id and row and row.get("state") != "failed_recoverable":
+                # Only a failed_recoverable job re-opens; a resolved job's
+                # leftover audio is never re-run from the menu either.
+                self._drop_recovery_item(job_id)
+                return {"outcome": "not_retryable",
+                        "reason": row.get("state") or "unknown_job"}
+            if self.supervisor.supervisor_state == "failed":
+                # An explicit user action re-arms the breaker (M03-AC01: the
+                # automatic loop stops; recovery is manual from here).
+                try:
+                    self.supervisor.restart()
+                except WorkerFailure as e:
+                    self.v2log.emit("worker.manual_restart_failed",
+                                    level="ERROR",
+                                    reason_code=e.reason_code)
+                    return {"outcome": "restart_failed"}
             try:
-                # The durable row is the attempt authority: the retry is
-                # the next attempt after the last one that EXECUTED.
-                attempt = int(self.store.bump_job_attempt(
-                    job_id, wait=True) or attempt)
+                # Strict read: a truncated file is refused, never re-run as a
+                # shorter "complete" capture (M03-AUDIT-10).
+                _arr, _rate = v2.store.read_wav_f32(pathlib.Path(info["wav"]))
             except Exception as e:
-                self.v2log.emit("store.state_write_failed",
+                self.v2log.emit("dictation.retry_failed", level="ERROR",
+                                job_id=job_id,
+                                reason_code=type(e).__name__)
+                return {"outcome": "audio_unavailable"}
+            prov = (self._read_provenance(job_id) if job_id else None) or {}
+            attempt = int(info.get("attempt", 1) or 1) + 1
+            if job_id:
+                try:
+                    # The durable row is the attempt authority: the retry is
+                    # the next attempt after the last one that EXECUTED.
+                    attempt = int(self.store.bump_job_attempt(
+                        job_id, wait=True) or attempt)
+                except Exception as e:
+                    self.v2log.emit("store.state_write_failed",
+                                    level="WARNING", job_id=job_id,
+                                    reason_code=type(e).__name__)
+                self._job_state(job_id, "queued", reason="user_retry",
+                                retry=True)
+            # The original capture's instant and zone: store row first (the
+            # durable truth), then the sidecar; absent stays absent — never
+            # the retry's 'now' (the refusal rule).
+            captured = row.get("captured_at_utc") \
+                or prov.get("captured_at_utc")
+            time_quality = (row.get("time_quality") or prov.get("time_quality")
+                            or "known") if captured else "unknown"
+            zone = row.get("timezone") or prov.get("timezone")
+            offset = row.get("utc_offset_minutes") \
+                if row.get("utc_offset_minutes") is not None \
+                else prov.get("utc_offset_minutes")
+            try:
+                # M02-AUDIT-06: a retry re-processes an OLD capture — it uses
+                # that capture's permission (and only while collection is
+                # enabled now), never today's consent attached retroactively.
+                ctx = self.collector.job_started(
+                    job_id, family_id,
+                    captured_at_utc=captured, timezone=zone,
+                    utc_offset_minutes=offset, attempt=attempt,
+                    consent_snapshot=self.collector.retry_snapshot(job_id),
+                    time_quality=time_quality)
+            except Exception:
+                ctx = None
+            job = {"job_id": job_id, "family_id": family_id, "ctx": ctx,
+                   "failed": False, "cancelled": False, "attempt": attempt,
+                   "raw": None, "wav": info["wav"], "journal": None,
+                   "from_retry": True,
+                   "audio": _arr,
+                   # The retained bytes' own rate — never relabeled to the
+                   # current configuration.
+                   "sample_rate": int(_rate),
+                   "stats": self._stats_from_provenance(prov, _arr.size,
+                                                        int(_rate)),
+                   "captured_at_utc": captured, "time_quality": time_quality,
+                   "timezone": zone, "utc_offset_minutes": offset}
+            # M13: the retry is the SAME logical dictation — its usage fact
+            # keeps the ORIGINAL capture instant, observed zone and
+            # destination app from the store rows (a retry completing on
+            # another day must not move the dictation there, and an absent
+            # instant stays absent — the refusal rule, never a fabricated
+            # 'now').
+            try:
+                tgt = self.store.submit(lambda db: db.execute(
+                    "SELECT app_name, app_bundle FROM job_targets WHERE"
+                    " job_id=?", (job_id,)).fetchone()) or (None, None)
+                job.update({"app_name": tgt[0], "app_bundle": tgt[1]})
+            except Exception as e:
+                self.v2log.emit("usage.retry_provenance_unavailable",
                                 level="WARNING", job_id=job_id,
                                 reason_code=type(e).__name__)
-            self._job_state(job_id, "queued", reason="user_retry",
-                            retry=True)
-        # The original capture's instant and zone: store row first (the
-        # durable truth), then the sidecar; absent stays absent — never
-        # the retry's 'now' (the refusal rule).
-        captured = row.get("captured_at_utc") or prov.get("captured_at_utc")
-        time_quality = (row.get("time_quality") or prov.get("time_quality")
-                        or "known") if captured else "unknown"
-        zone = row.get("timezone") or prov.get("timezone")
-        offset = row.get("utc_offset_minutes") \
-            if row.get("utc_offset_minutes") is not None \
-            else prov.get("utc_offset_minutes")
-        try:
-            # M02-AUDIT-06: a retry re-processes an OLD capture — it uses
-            # that capture's permission (and only while collection is
-            # enabled now), never today's consent attached retroactively.
-            ctx = self.collector.job_started(
-                job_id, family_id,
-                captured_at_utc=captured, timezone=zone,
-                utc_offset_minutes=offset, attempt=attempt,
-                consent_snapshot=self.collector.retry_snapshot(job_id),
-                time_quality=time_quality)
-        except Exception:
-            ctx = None
-        job = {"job_id": job_id, "family_id": family_id, "ctx": ctx,
-               "failed": False, "cancelled": False, "attempt": attempt,
-               "raw": None, "wav": info["wav"], "journal": None,
-               "from_retry": True,
-               "audio": _arr,
-               # The retained bytes' own rate — never relabeled to the
-               # current configuration.
-               "sample_rate": int(_rate),
-               "stats": self._stats_from_provenance(prov, _arr.size,
-                                                    int(_rate)),
-               "captured_at_utc": captured, "time_quality": time_quality,
-               "timezone": zone, "utc_offset_minutes": offset}
-        # M13: the retry is the SAME logical dictation — its usage fact
-        # keeps the ORIGINAL capture instant, observed zone and
-        # destination app from the store rows (a retry completing on
-        # another day must not move the dictation there, and an absent
-        # instant stays absent — the refusal rule, never a fabricated
-        # 'now').
-        try:
-            tgt = self.store.submit(lambda db: db.execute(
-                "SELECT app_name, app_bundle FROM job_targets WHERE"
-                " job_id=?", (job_id,)).fetchone()) or (None, None)
-            job.update({"app_name": tgt[0], "app_bundle": tgt[1]})
-        except Exception as e:
-            self.v2log.emit("usage.retry_provenance_unavailable",
-                            level="WARNING", job_id=job_id,
-                            reason_code=type(e).__name__)
-        self.v2log.emit("dictation.retry_started", level="INFO",
-                        job_id=job_id, attempt=attempt,
-                        reason_code="user_retry")
-        if info in self._recoverable:
-            self._recoverable.remove(info)
-        elif (self._last_failed is not None
-              and self._last_failed.get("job_id") == info.get("job_id")):
-            # Only clear when this retry IS the last failure — retrying
-            # an older History row must not strand a different failure's
-            # recovery menu entry.
-            self._last_failed = None
-        self._refresh_recovery_menu()
-        self._pending += 1
-        self._active_jobs.append(job)
-        self._jobs.put(job)
-        self.state = STATE_PROCESSING
-        self.overlay.showWithMode_(MODE_PROCESSING)
-        return {"outcome": "requeued", "job_id": job_id}
+            self.v2log.emit("dictation.retry_started", level="INFO",
+                            job_id=job_id, attempt=attempt,
+                            reason_code="user_retry")
+            if info in self._recoverable:
+                self._recoverable.remove(info)
+            elif (self._last_failed is not None
+                  and self._last_failed.get("job_id") == info.get("job_id")):
+                # Only clear when this retry IS the last failure — retrying
+                # an older History row must not strand a different failure's
+                # recovery menu entry.
+                self._last_failed = None
+            self._refresh_recovery_menu()
+            self._pending += 1
+            self._active_jobs.append(job)
+            self._jobs.put(job)
+            self.state = STATE_PROCESSING
+            self.overlay.showWithMode_(MODE_PROCESSING)
+            requeued = True
+            return {"outcome": "requeued", "job_id": job_id}
+        finally:
+            if not requeued:
+                self._release_job(job_id)
 
     @objc.python_method
     def _drop_recovery_item(self, job_id):
@@ -4724,6 +4959,10 @@ class AppDelegate(NSObject):
 
     def copyLastRaw_(self, sender):
         if self._last_failed is None or not self._last_failed.get("raw"):
+            return
+        if self._job_is_deleted(self._last_failed.get("job_id")):
+            # A deleted job's words never leave again (review R5).
+            self._drop_recovery_item(self._last_failed.get("job_id"))
             return
         copy_text(self._last_failed["raw"])
         self.v2log.emit("dictation.raw_exported", level="INFO",
