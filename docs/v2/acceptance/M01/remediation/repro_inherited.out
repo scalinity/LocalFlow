@@ -1,0 +1,40 @@
+REPRODUCED      M01-AUDIT-01 different dirty bytes, same HEAD/status -> same digest ba0708cc58f8
+REPRODUCED      M01-AUDIT-01 failing Git reported clean_tree=True head=''
+REPRODUCED      M01-AUDIT-02 bundle == dirty worktree != HEAD reported embedded_code_matches_git_head=True
+REPRODUCED      M01-AUDIT-03 env dir override: manifest says repo_config (cleanup=basic) but runtime uses defaults (cleanup=llm)
+REPRODUCED      M01-AUDIT-03 no candidate files -> main() expression raises AttributeError
+NOT-REPRODUCED  M01-AUDIT-03(malformed-json sub-claim) malformed JSON: manifest configured_id=mlx-community/parakeet-tdt-0.6b-v3 (runtime uses DEFAULTS too; read_error recorded=True)
+REPRODUCED      M01-AUDIT-04 tokenizer changed with unchanged weights -> identical model entry
+REPRODUCED      M01-AUDIT-04 refs/main points at a missing snapshot -> cached=True with no weights
+REPRODUCED      M01-AUDIT-04 HF_HUB_CACHE override holds the model (runtime would find it) but manifest reports cached=False
+REPRODUCED      M01-AUDIT-04 runtimes() probes only the repo .venv; installed bundle runs Resources/venv (build_app.sh)
+REPRODUCED      M01-AUDIT-05 later launch failed but readiness still reports the old success
+REPRODUCED      M01-AUDIT-05 historical 749/477 and dated provenance note re-emitted on every regeneration
+REPRODUCED      M01-AUDIT-06 two runs in the same second share one directory; the first run's copy is overwritten
+REPRODUCED      M01-AUDIT-06 leaf symlink inside the run dir: write followed it and overwrote an unrelated file
+REPRODUCED      M01-AUDIT-06 descendant symlink: private snapshot escaped the evidence root
+REPRODUCED      M01-AUDIT-06 umask 000 -> private evidence modes ['0o644', '0o666', '0o777']
+REPRODUCED      M01-AUDIT-12 WAL-backed write during snapshot: main-file hash unchanged -> 'source unchanged', exit 0
+REPRODUCED      M01-AUDIT-12 missing transforms.json: no inventory entry, exit 0, all_sources_unchanged=True
+REPRODUCED      M01-AUDIT-12 live log entry carries no change status at all (unchecked)
+REPRODUCED      M01-AUDIT-12(nuance) all-missing fresh run: FileNotFoundError before manifest publication (not a green run)
+REPRODUCED      M01-AUDIT-12 corrupt stats.db: uncaught DatabaseError, no manifest
+REPRODUCED      M01-AUDIT-07 EOF tail yields a pair with truncated cleaned text and the SAME line coordinates as the completed pair -> importer skip_pairs drops the completed content
+REPRODUCED      M01-AUDIT-07 pairs carry no completeness flag
+REPRODUCED      M01-AUDIT-08 exact payload lost: got 'def f():\nreturn 1\nend'
+REPRODUCED      M01-AUDIT-11 parse('') reports the Metal window located=True
+REPRODUCED      M01-AUDIT-11 report carries no source hash / parser derivation binding
+REPRODUCED      M01-AUDIT-13 later empty-dictation timing attached to the earlier posted pair
+REPRODUCED      parser-malformed-numeric malformed timing crashes parse(): could not convert string to float: '1..2'
+REPRODUCED      M01-AUDIT-17(design) transcript text containing a runtime prefix is parsed as a record (pairs=1; structural ambiguity, no authentic framing to disambiguate)
+REPRODUCED      M01-AUDIT-10 empty catalogs -> exit 0, registry with 0/0 and no problems
+REPRODUCED      M01-AUDIT-10 duplicate LF-R01 silently overwritten; malformed row only warns; exit 0
+REPRODUCED      M01-AUDIT-10 missing catalog -> uncaught FileNotFoundError
+REPRODUCED      M01-AUDIT-10 registry with a fabricated requirement->suite reverse edge passes the test
+REPRODUCED      M01-AUDIT-14 renamed SQLite in tests/, raw_text JSON in docs/, log content under scripts/ all pass the privacy scan (synthetic canaries)
+REPRODUCED      M01-AUDIT-15 provenance test reads only the frozen JSON; no producer function is exercised
+REPRODUCED      M01-AUDIT-16 nonexistent fixture file + inflated count (999) pass
+REPRODUCED      M01-AUDIT-09 probe always runs V1 TranscriptCleaner; config default cleanup_implementation='v2' is ignored/unrecorded
+REPRODUCED      M01-AUDIT-09 probe ignores TranscriptCleaner.last_path / fallback status
+REPRODUCED      M01-AUDIT-09 probe exits 0 regardless of stage failure; report write errors uncaught
+{"reproduced": 38, "not_reproduced": 1}

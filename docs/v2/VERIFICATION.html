@@ -1,0 +1,1188 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>LocalFlow V2 · Reference-Mac Verification</title>
+<!--
+  ============================================================================
+  MAINTAINERS — HOW TO APPEND A MILESTONE (M02 … M14)
+  ============================================================================
+  This is the ONE human execution runbook for the pre-M15 campaign. Do not
+  create another page and do not copy this shell. To add checks:
+
+  1. Find the placeholder  <section class="milestone" id="M0N" ...>  below
+     and replace its "no entries yet" paragraph with groups + checks. Keep
+     the section id, data-milestone and data-title attributes.
+  2. Each check is an <article class="check"> with:
+       id="M0N-V001" (next free number; NEVER renumber or reuse an ID)
+       data-milestone="M0N"
+       data-rev="M0N-r1"     instruction revision — bump to M0N-r2 when the
+                             instructions change materially. Saved results
+                             recorded against an older rev are then shown as
+                             STALE (history kept, never silently reused).
+       data-code="<commit>"  code revision the commands were derived from
+       data-tags="terminal native model human hardware privacy" (subset)
+     and the same inner structure as the M01 checks (header, .proves,
+     .plain, details.more with facts/commands/expected/failure/evidence/
+     contract). Commands go in <pre class="cmd"><code>…</code></pre>;
+     escape <, > and & as entities.
+  3. Add nothing to the <script>: status controls, persistence, filters,
+     totals, the annunciator strip and navigation are generated from the
+     markup. Update the "Last updated" line in the page header.
+  4. Every newly added check starts as Not run. Record detailed audit and
+     machine evidence in the milestone's handoff/acceptance records, not
+     here.
+  Saved state lives in this browser's localStorage under
+  "localflow.v2.verification/state@1"; use Export to keep a copy.
+  ============================================================================
+-->
+<style>
+:root{
+  --display: ui-serif, "New York", "Iowan Old Style", "Palatino", Georgia, serif;
+  --text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --radius: 10px;
+  --bg:#f3f1ec; --bg2:#ebe8e1; --panel:#fffdf8; --sidebar:rgba(233,230,223,.78);
+  --ink:#1c1b19; --muted:#6a665d; --faint:#9a958a; --line:rgba(28,27,25,.10);
+  --accent:#0a63d6; --accent-ink:#fff; --focus:rgba(10,99,214,.38);
+  --pass:#1d8348; --fail:#c3352c; --blocked:#566070; --follow:#b36b00; --notrun:#8f8a80;
+  --code-bg:#f6f3ec; --code-ink:#1f2a37; --shadow:0 1px 0 rgba(0,0,0,.04),0 6px 24px -12px rgba(0,0,0,.18);
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141412; --bg2:#1a1917; --panel:#1f1e1b; --sidebar:rgba(30,29,26,.8);
+    --ink:#ebe9e4; --muted:#a09b90; --faint:#6f6b63; --line:rgba(255,255,255,.08);
+    --accent:#4b9bff; --accent-ink:#06121f; --focus:rgba(75,155,255,.45);
+    --pass:#46c27b; --fail:#ff6a5c; --blocked:#8e98a8; --follow:#f0a73a; --notrun:#8a857b;
+    --code-bg:#171613; --code-ink:#dfe7f1; --shadow:0 1px 0 rgba(255,255,255,.03),0 10px 30px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141412; --bg2:#1a1917; --panel:#1f1e1b; --sidebar:rgba(30,29,26,.8);
+  --ink:#ebe9e4; --muted:#a09b90; --faint:#6f6b63; --line:rgba(255,255,255,.08);
+  --accent:#4b9bff; --accent-ink:#06121f; --focus:rgba(75,155,255,.45);
+  --pass:#46c27b; --fail:#ff6a5c; --blocked:#8e98a8; --follow:#f0a73a; --notrun:#8a857b;
+  --code-bg:#171613; --code-ink:#dfe7f1; --shadow:0 1px 0 rgba(255,255,255,.03),0 10px 30px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;font:14px/1.5 var(--text);color:var(--ink);background:var(--bg);
+  background-image:var(--grain),radial-gradient(1200px 600px at 110% -10%,var(--bg2),transparent 60%);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+code,pre,kbd{font-family:var(--mono);font-size:12.5px}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--panel)}
+.skip{position:absolute;left:-999px}
+.skip:focus{left:12px;top:12px;z-index:99;background:var(--panel);padding:8px 12px;border-radius:8px}
+
+/* ---- shell ---- */
+.app{display:grid;grid-template-columns:252px minmax(0,1fr);min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:18px 12px 16px;
+  background:var(--sidebar);backdrop-filter:saturate(1.6) blur(22px);-webkit-backdrop-filter:saturate(1.6) blur(22px);
+  border-right:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
+.brand{padding:4px 10px 10px;border-bottom:1px solid var(--line)}
+.brand .eyebrow{font:600 10.5px/1 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.brand h1{font:600 21px/1.15 var(--display);margin:6px 0 2px;letter-spacing:-.01em}
+.brand p{margin:0;color:var(--muted);font-size:12px}
+.navlabel{font:600 10.5px/1 var(--text);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:0 10px}
+.nav{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:1px}
+.nav a{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;color:var(--ink);font-size:13px}
+.nav a:hover{background:var(--line);text-decoration:none}
+.nav a[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
+.nav .mid{font:600 11.5px var(--mono);width:30px;color:inherit;opacity:.8}
+.nav .ttl{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav .badge{font:600 10.5px/1 var(--mono);padding:3px 6px;border-radius:99px;background:var(--line);color:inherit}
+.nav a.empty .ttl{color:var(--faint)}
+.nav a[aria-current="true"] .ttl{color:inherit}
+.nav .dot{width:8px;height:8px;border-radius:50%;background:var(--notrun);flex:none}
+.nav .dot.ok{background:var(--pass)} .nav .dot.bad{background:var(--fail)} .nav .dot.none{background:transparent;border:1px dashed var(--faint)}
+.side-actions{margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 4px}
+.side-actions .wide{grid-column:1/-1}
+
+.btn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  font:500 12.5px/1 var(--text);padding:7px 10px;border-radius:7px;cursor:pointer;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+
+main{min-width:0}
+.toolbar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;
+  padding:12px 28px;background:color-mix(in srgb,var(--bg) 94%,transparent);
+  backdrop-filter:saturate(1.5) blur(16px);-webkit-backdrop-filter:saturate(1.5) blur(16px);border-bottom:1px solid var(--line)}
+.search{flex:1 1 220px;display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:0 10px}
+.search input{flex:1;border:0;background:transparent;color:var(--ink);font:13px var(--text);padding:7px 0;outline:none}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--muted);
+  font:500 12px/1 var(--text);padding:6px 9px;border-radius:99px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .n{font:600 10.5px var(--mono);opacity:.7;margin-left:4px}
+
+.content{padding:26px 28px 80px;max-width:1180px}
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:22px;align-items:start}
+.hero h2{font:600 34px/1.08 var(--display);letter-spacing:-.02em;margin:4px 0 10px}
+.hero .lede{color:var(--muted);font-size:14.5px;max-width:62ch;margin:0 0 10px}
+.rule{border-left:3px solid var(--follow);background:color-mix(in srgb,var(--follow) 9%,var(--panel));
+  padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0 0;font-size:13.5px}
+.rule b{font-weight:600}
+
+.gauge{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.gauge .big{display:flex;align-items:baseline;gap:8px}
+.gauge .big strong{font:600 42px/1 var(--display);letter-spacing:-.02em}
+.gauge .big span{color:var(--muted)}
+.bar{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--line);margin:12px 0 10px}
+.bar i{display:block;height:100%}
+.legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px;font-size:12px}
+.legend div{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.legend b{font:600 12.5px var(--mono);color:var(--ink);margin-left:auto}
+.sw{width:9px;height:9px;border-radius:3px;flex:none}
+
+/* annunciator strip: one lamp per check */
+.strip{margin:22px 0 6px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.strip .lbl{font:600 10.5px/1 var(--text);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-right:8px}
+.lamp{width:26px;height:18px;border-radius:4px;border:1px solid var(--line);background:var(--panel);cursor:pointer;
+  font:600 8.5px/16px var(--mono);color:var(--faint);text-align:center;padding:0}
+.lamp[data-s="passed"]{background:var(--pass);border-color:transparent;color:#fff}
+.lamp[data-s="failed"]{background:var(--fail);border-color:transparent;color:#fff;animation:pulse 1.6s ease-in-out infinite}
+.lamp[data-s="blocked"]{background:repeating-linear-gradient(135deg,var(--blocked) 0 4px,transparent 4px 7px);color:var(--ink)}
+.lamp[data-s="follow-up"]{background:var(--follow);border-color:transparent;color:#1b1204}
+.lamp.stale{outline:2px dashed var(--follow);outline-offset:1px}
+@keyframes pulse{50%{filter:brightness(1.25)}}
+@media (prefers-reduced-motion:reduce){.lamp[data-s="failed"]{animation:none}html{scroll-behavior:auto}}
+
+.panels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0 8px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.panel h3{font:600 11px/1 var(--text);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:2px 0 10px}
+.panel ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:13px}
+.panel li{display:flex;gap:8px;align-items:center}
+.panel .empty-note{color:var(--faint)}
+
+h2.section{font:600 26px/1.15 var(--display);letter-spacing:-.01em;margin:38px 0 6px}
+.milestone{margin-top:34px}
+.ms-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.ms-head .mid{font:600 13px var(--mono);color:var(--accent)}
+.ms-head h2{font:600 26px/1.15 var(--display);margin:0;letter-spacing:-.01em}
+.ms-head .meta{color:var(--muted);font-size:12.5px;margin-left:auto}
+.ms-intro{color:var(--muted);max-width:78ch}
+.group{font:600 11px/1 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  margin:26px 0 10px;display:flex;align-items:center;gap:10px}
+.group::after{content:"";flex:1;height:1px;background:var(--line)}
+.placeholder{border:1px dashed var(--line);border-radius:12px;padding:14px 16px;color:var(--faint);font-size:13px}
+
+/* ---- check card ---- */
+.check{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px 12px 20px;margin:10px 0;box-shadow:var(--shadow);animation:rise .4s ease both}
+.check::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--notrun);opacity:.55}
+.check[data-s="passed"]::before{background:var(--pass);opacity:1}
+.check[data-s="failed"]::before{background:var(--fail);opacity:1}
+.check[data-s="blocked"]::before{background:var(--blocked);opacity:1}
+.check[data-s="follow-up"]::before{background:var(--follow);opacity:1}
+.check.hidden{display:none}
+@keyframes rise{from{opacity:0;transform:translateY(4px)}}
+.check-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start}
+.cid{font:600 11.5px/22px var(--mono);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);
+  padding:0 7px;border-radius:6px;white-space:nowrap}
+.check h4{font:600 15.5px/1.3 var(--text);margin:1px 0 0;letter-spacing:-.005em}
+.tags{grid-column:2;list-style:none;margin:4px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px}
+.tags li{font:500 11px/1 var(--text);padding:4px 7px;border-radius:5px;background:var(--line);color:var(--muted)}
+.status-slot{grid-row:1/3;grid-column:3;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.popup{appearance:none;-webkit-appearance:none;font:500 12.5px var(--text);color:var(--ink);background:var(--panel);
+  border:1px solid var(--line);border-radius:7px;padding:5px 26px 5px 10px;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 13px) 55%,calc(100% - 9px) 55%;background-size:4px 4px;background-repeat:no-repeat}
+.check[data-s="passed"] .popup{border-color:var(--pass);color:var(--pass)}
+.check[data-s="failed"] .popup{border-color:var(--fail);color:var(--fail)}
+.check[data-s="follow-up"] .popup{border-color:var(--follow);color:var(--follow)}
+.stamp{font:11px var(--mono);color:var(--faint);text-align:right}
+.stale-note{grid-column:1/-1;margin-top:8px;font-size:12.5px;padding:7px 10px;border-radius:7px;
+  background:color-mix(in srgb,var(--follow) 12%,transparent);border:1px solid color-mix(in srgb,var(--follow) 40%,transparent)}
+.proves{margin:10px 0 2px;max-width:86ch}
+.plain{margin:4px 0 6px;color:var(--muted);max-width:86ch;font-size:13.5px}
+.proves b,.plain b{font-weight:600;color:var(--ink)}
+details.more{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
+details.more>summary{cursor:pointer;list-style:none;font:500 12.5px var(--text);color:var(--accent);padding:4px 0;width:max-content}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::before{content:"▸ ";display:inline-block;transition:transform .15s}
+details.more[open]>summary::before{transform:rotate(90deg)}
+.facts{display:grid;grid-template-columns:150px minmax(0,1fr);gap:6px 16px;margin:10px 0}
+.facts dt{font:600 11px/1.9 var(--text);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.facts dd{margin:0}
+.check h5{font:600 11px/1 var(--text);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.check ul.list{margin:0;padding-left:18px}
+.check ul.list li{margin:3px 0}
+.cmdwrap{position:relative;margin:6px 0}
+pre.cmd{margin:0;background:var(--code-bg);color:var(--code-ink);border:1px solid var(--line);border-radius:8px;
+  padding:12px 14px;overflow:auto;line-height:1.55;tab-size:2}
+pre.cmd .c{color:var(--faint)}
+.copy{position:absolute;top:6px;right:6px;font:500 11px var(--text);padding:4px 8px;border-radius:6px;border:1px solid var(--line);
+  background:var(--panel);color:var(--muted);cursor:pointer;opacity:.85}
+.copy:hover{opacity:1;color:var(--ink)}
+.copy.done{color:var(--pass);border-color:var(--pass)}
+.note{width:100%;margin-top:10px;min-height:34px;resize:vertical;font:12.5px var(--text);color:var(--ink);
+  background:transparent;border:1px dashed var(--line);border-radius:7px;padding:6px 9px}
+.note:focus{border-style:solid}
+.history{font:11px var(--mono);color:var(--faint);margin-top:4px}
+.callout{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0}
+.callout h3{font:600 17px/1.2 var(--display);margin:0 0 6px}
+.banner{display:none;margin:0 28px;padding:9px 12px;border-radius:8px;background:color-mix(in srgb,var(--fail) 14%,var(--panel));border:1px solid var(--fail);font-size:13px}
+.banner.show{display:block;margin-top:12px}
+.kbdhelp{color:var(--faint);font-size:12px}
+footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid var(--line);padding-top:12px}
+
+@media (max-width:980px){
+  .hero,.panels{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  .nav{flex-direction:row;overflow-x:auto;padding-bottom:4px}
+  #msnav a .ttl{display:none}
+  .toolbar{position:relative}
+  html{scroll-padding-top:12px}
+  .side-actions{grid-template-columns:repeat(4,auto);justify-content:start}
+  .side-actions .wide{grid-column:auto}
+  .toolbar,.content{padding-left:16px;padding-right:16px}
+  .check-head{grid-template-columns:auto minmax(0,1fr)}
+  .status-slot{grid-column:1/-1;grid-row:auto;flex-direction:row;align-items:center;justify-content:space-between}
+  .facts{grid-template-columns:1fr}
+  .hero h2{font-size:28px}
+}
+@media print{
+  .sidebar,.toolbar,.copy,.strip{display:none}
+  .app{display:block} details.more{display:block}
+  .check{break-inside:avoid;box-shadow:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to checks</a>
+<div class="app">
+  <aside class="sidebar" aria-label="Milestones">
+    <div class="brand">
+      <div class="eyebrow">LocalFlow V2 · pre-M15 campaign</div>
+      <h1>Reference-Mac Verification</h1>
+      <p>Deferred native, model-backed and human checks.</p>
+    </div>
+    <div>
+      <div class="navlabel">Runbook</div>
+      <ul class="nav">
+        <li><a href="#overview" data-nav="overview"><span class="mid">◎</span><span class="ttl">Overview</span></a></li>
+        <li><a href="#before"><span class="mid">$</span><span class="ttl">Before you start</span></a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="navlabel">Milestones</div>
+      <ul class="nav" id="msnav"><!-- generated from the milestone sections --></ul>
+    </div>
+    <div class="side-actions">
+      <button class="btn" id="theme" type="button" title="Cycle theme (t)">Theme: auto</button>
+      <button class="btn" id="export" type="button">Export</button>
+      <button class="btn" id="import" type="button">Import…</button>
+      <button class="btn" id="expand" type="button" title="Expand or collapse all (e)">Expand all</button>
+      <input type="file" id="importfile" accept="application/json" hidden>
+    </div>
+  </aside>
+
+  <main>
+    <div class="toolbar" role="search">
+      <label class="search"><span aria-hidden="true">⌕</span>
+        <input id="q" type="search" placeholder="Filter checks — ID, title, command…  ( / )" aria-label="Filter checks">
+      </label>
+      <div class="chips" id="chips" aria-label="Filters">
+        <button class="chip" type="button" data-tag="terminal" aria-pressed="false">Terminal</button>
+        <button class="chip" type="button" data-tag="native" aria-pressed="false">Native macOS</button>
+        <button class="chip" type="button" data-tag="model" aria-pressed="false">Model-backed</button>
+        <button class="chip" type="button" data-tag="human" aria-pressed="false">Human visual</button>
+        <button class="chip" type="button" data-tag="hardware" aria-pressed="false">Hardware / audio</button>
+        <button class="chip" type="button" data-tag="privacy" aria-pressed="false">Privacy / data</button>
+        <button class="chip" type="button" data-status="failed" aria-pressed="false">Failed</button>
+        <button class="chip" type="button" data-status="not-run" aria-pressed="false">Not run</button>
+      </div>
+    </div>
+    <div class="banner" id="banner" role="alert"></div>
+
+    <div class="content" id="content">
+      <section id="overview" aria-labelledby="ov-h">
+        <div class="hero">
+          <div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-24 · M01 remediation · code <code>c24b7bc</code></div>
+            <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
+            <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
+            <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
+            <div class="rule"><b>Campaign rule.</b> “Pending entries in VERIFICATION.html do not block starting the next read-only milestone audit during this campaign unless the remediation discovers that an unverified condition makes downstream static analysis invalid.”</div>
+          </div>
+          <div class="gauge" aria-live="polite">
+            <div class="big"><strong id="pct">0%</strong><span id="pctlabel">of 0 checks passed</span></div>
+            <div class="bar" id="bar" aria-hidden="true"></div>
+            <div class="legend" id="legend"></div>
+          </div>
+        </div>
+        <div class="strip" id="strip" aria-label="Every check, by status"><span class="lbl">Annunciator</span></div>
+        <div class="panels">
+          <div class="panel"><h3>Pending milestones</h3><ul id="pending"></ul></div>
+          <div class="panel"><h3>Failed · blocked · follow-up</h3><ul id="attention"></ul></div>
+          <div class="panel"><h3>Stale results</h3><ul id="stale"></ul></div>
+        </div>
+        <p class="kbdhelp">Keys: <kbd>/</kbd> search · <kbd>j</kbd>/<kbd>k</kbd> next/previous check · <kbd>o</kbd> open/close the focused check · <kbd>e</kbd> expand all · <kbd>t</kbd> theme</p>
+      </section>
+
+      <section id="before" aria-labelledby="bf-h">
+        <h2 class="section" id="bf-h">Before you start</h2>
+        <div class="callout">
+          <h3>Statuses</h3>
+          <p style="margin:0 0 6px"><b>Not run</b> — the default for every check. <b>Passed</b> — every expected result was observed. <b>Failed</b> — an expected result was contradicted. <b>Blocked</b> — could not be executed (say why in the note). <b>Needs follow-up</b> — ran, but something needs a decision or another session. A result recorded against older instructions is marked <b>stale</b> and counts as not run until you run it again; its history is kept.</p>
+          <p style="margin:0">Private evidence (logs, snapshots, manifests with local paths, screenshots) goes under <code>~/Library/Application Support/LocalFlow/v2-evidence/</code>, never into Git or into a note on this page. Anything committed must be sanitized: hashes, counts, versions and locators only.</p>
+        </div>
+        <div class="callout">
+          <h3>Terminal set-up (once per Terminal window)</h3>
+          <p style="margin:0 0 8px">The historical repository path is <code>~/Documents/Tools/LocalFlow</code>; confirm it rather than assume it. The repaired M01 code is checked out into a <em>separate</em> worktree next to your checkout, so your working tree, branch and uncommitted changes are never touched. Nothing below resets, cleans or checks out over your work.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># 1 · Find and confirm the repository root</span>
+cd ~/Documents/Tools/LocalFlow 2&gt;/dev/null || echo "Not there: cd into your LocalFlow checkout, then continue"
+git rev-parse --show-toplevel
+git remote get-url origin              <span class="c"># must name scalinity/LocalFlow</span>
+git status --short --branch            <span class="c"># look only; nothing here changes it</span>
+
+<span class="c"># 2 · Variables every check uses</span>
+export LF_MAIN="$(git rev-parse --show-toplevel)"
+export LF_VERIFY="$(dirname "$LF_MAIN")/LocalFlow-m01-verify"
+export PY="$LF_MAIN/.venv/bin/python"
+export EV="$HOME/Library/Application Support/LocalFlow/v2-evidence"
+export OUT="$EV/m01-verification"
+
+<span class="c"># 3 · Repaired M01 code in its own worktree (first time only)</span>
+git -C "$LF_MAIN" fetch origin claude/beautiful-cori-gnh3yc
+[ -d "$LF_VERIFY" ] || git -C "$LF_MAIN" worktree add --detach "$LF_VERIFY" origin/claude/beautiful-cori-gnh3yc
+<span class="c">#   (if that branch has been merged, use origin/main instead)</span>
+git -C "$LF_VERIFY" merge-base --is-ancestor c24b7bc HEAD &amp;&amp; echo "M01 repairs present"
+"$PY" --version
+mkdir -p "$OUT" &amp;&amp; chmod 700 "$OUT"</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: the top-level path prints; the remote names scalinity/LocalFlow; “M01 repairs present”; Python 3.14.x. When finished with the whole campaign, remove the worktree with <code>git -C "$LF_MAIN" worktree remove "$LF_VERIFY"</code> (it holds no private data unless you copied some there).</p>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           M01 — Reconcile the deployed baseline and freeze evaluation
+           ================================================================== -->
+      <section class="milestone" id="M01" data-milestone="M01" data-title="Baseline & evaluation freeze">
+        <div class="ms-head">
+          <span class="mid">M01</span><h2>Baseline &amp; evaluation freeze</h2>
+          <span class="meta">instructions rev M01-r1 · code c24b7bc · remediation of audit at 1ee8e44</span>
+        </div>
+        <p class="ms-intro">The M01 cloud remediation repaired source/config/model identity, snapshot safety, the legacy-log parser and importer boundary, registry/privacy/fixture validation and probe attribution. Portable tests passed in the cloud; these checks cover what only this Mac can show. Detail: <code>docs/v2/handoffs/M01.md</code> (remediation addendum) and <code>docs/v2/acceptance/M01/results.json</code> → <code>remediation_2026_09_24</code>.</p>
+
+        <h3 class="group">Automatable local parity</h3>
+
+        <article class="check" id="M01-V001" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal">
+          <header class="check-head">
+            <span class="cid">M01-V001</span>
+            <h4>Run the repaired M01 suites under the Mac interpreter</h4>
+            <ul class="tags"><li>Terminal</li><li>~2 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The repaired snapshot, manifest, parser, importer, registry, privacy, probe-orchestration and summarizer code behaves the same on macOS with the project’s Python 3.14 as it did in the cloud (Linux, Python 3.14.0rc2). Mac-parity reason: the snapshot and identity code relies on platform behaviour — <code>O_NOFOLLOW</code>/<code>O_EXCL</code>, <code>chmod</code> under the macOS umask, APFS symlinks (temp dirs live behind the <code>/var → /private/var</code> link), macOS <code>git</code> porcelain and <code>plistlib</code> — that the cloud could not exercise.</p>
+          <p class="plain"><b>In plain terms.</b> The same automatic tests that passed in the cloud must also pass on your Mac before we trust the tools on your real data.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · no app or model needed</dd>
+              <dt>Preconditions</dt><dd>Terminal set-up done (variables exported, worktree present). Project <code>.venv</code> exists in your checkout.</dd>
+              <dt>Working dir</dt><dd><code>$LF_VERIFY</code> (the repaired worktree)</dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_VERIFY"
+for t in tests/v2/test_snapshot_safety.py tests/v2/test_baseline_manifest_producers.py \
+         tests/v2/test_legacy_parser.py tests/v2/test_legacy_import_boundary.py \
+         tests/v2/test_registry.py tests/v2/test_baseline_manifest.py \
+         tests/v2/test_baseline_probe.py tests/v2/test_m01_verify_summary.py \
+         tests/v2/storage/test_import.py; do
+  "$PY" "$t" &gt; "$OUT/V001-$(basename "$t" .py).txt" 2&gt;&amp;1
+  echo "exit=$?  $(tail -n 1 "$OUT/V001-$(basename "$t" .py).txt")"
+done</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Every line shows <code>exit=0</code>. Final lines and counts: snapshot safety <b>17</b>; manifest producers <b>13</b>; legacy parser <b>17 passed, 1 skipped</b> — or <b>18 passed, 0 skipped</b> if a verified historical prefix exists under <code>$EV</code> (that case is judged in M01-V008, not here); import boundary <b>4</b>; registry <b>5</b>; baseline manifest <b>5</b>; probe orchestration <b>6</b>; verify summary <b>4</b>; M02 import <b>“all import tests passed”</b> (7 cases).</li>
+              <li>Invariant: the privacy scan line reports a clean scan over the worktree’s repository paths.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A snapshot-safety failure on permissions or symlinks means the macOS filesystem semantics differ from the cloud’s — mark <b>Failed</b>, keep the output file, and do not run M01-V007 until it is fixed.</li>
+              <li>A producer failure mentioning <code>git</code> or <code>plistlib</code> points at macOS tooling differences in identity code; M01-V002 results would be unreliable.</li>
+              <li><code>ModuleNotFoundError</code> means the wrong interpreter: check <code>$PY</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT/V001-*.txt</code>. Sanitized for Git (optional): the pass counts, in the note below or the next handoff.</p>
+            <h5>Contract relevance</h5>
+            <p>EV-01 (M01 evaluation suite); private-evidence rules in <code>contracts/INDEX.md</code>; legacy identity in <code>contracts/jobs.md</code>.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Native macOS · real data</h3>
+
+        <article class="check" id="M01-V002" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal native privacy">
+          <header class="check-head">
+            <span class="cid">M01-V002</span>
+            <h4>Real source, worktree and installed-bundle identity</h4>
+            <ul class="tags"><li>Terminal</li><li>Native macOS</li><li>Privacy / data</li><li>~3 min (hashes model files)</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Your checkout’s identity is recorded by content (a digest of every dirty path’s bytes and index blob, not just <code>git status</code> text), and the installed <code>LocalFlow.app</code> is compared separately against Git HEAD and against your working tree — so “the app matches the code” can no longer be claimed when it only matches uncommitted files.</p>
+          <p class="plain"><b>In plain terms.</b> We find out exactly which code your installed app contains and whether it is the same as what is committed or only what is on disk.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · installed app present (running or not) · read-only</dd>
+              <dt>Preconditions</dt><dd>M01-V001 passed. If the app was installed to <code>~/Applications</code> (build_app.sh does this when <code>/Applications</code> is not writable) add <code>--app ~/Applications/LocalFlow.app</code>.</dd>
+              <dt>Working dir</dt><dd><code>$LF_VERIFY</code>; the generator describes <code>$LF_MAIN</code> via <code>--repo-root</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_VERIFY"
+export M="$OUT/manifest-$(date -u +%Y%m%dT%H%M%SZ).json"
+"$PY" scripts/v2/build_baseline_manifest.py --repo-root "$LF_MAIN" --output "$M"; echo "generator exit=$?"
+"$PY" scripts/v2/m01_verify_summary.py manifest "$M" | tee "$M.summary.txt"
+
+<span class="c"># independent cross-checks</span>
+git -C "$LF_MAIN" rev-parse HEAD
+git -C "$LF_MAIN" status --porcelain --untracked-files=all | wc -l
+diff -rq -x __pycache__ /Applications/LocalFlow.app/Contents/Resources/localflow "$LF_MAIN/localflow" | wc -l
+shasum -a 256 /Applications/LocalFlow.app/Contents/MacOS/LocalFlow</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>generator exit=0</code>. Test count: not applicable (a generator, not a test).</li>
+              <li><code>HEAD</code> in the summary equals <code>git rev-parse HEAD</code>; <code>clean_tree</code> is true exactly when the porcelain count is 0 (generated evidence under <code>docs/v2/baseline/runs/</code> and <code>docs/v2/benchmarks/</code> is excluded and listed separately).</li>
+              <li><code>bundle identity</code> shows <code>com.danny.localflow</code>. <code>embedded == worktree</code> is true exactly when the <code>diff -rq … | wc -l</code> count is 0. <code>embedded == Git HEAD</code> is whatever it is — later handoffs record that the installed app still runs pre-M02 code, so <b>false with a large divergence is an expected, recordable fact</b>, not a failure.</li>
+              <li><code>launcher sha256</code> equals the <code>shasum</code> line. The summary’s identity invariants print <code>OK</code> (<code>dirty_digest</code> null exactly when clean; each bundle flag agrees with its divergence list). Model/cache lines belong to M01-V004.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A <code>CHECK</code> on an identity invariant, or a summary value that contradicts the independent command beside it, is a generator defect — mark <b>Failed</b> and keep both outputs.</li>
+              <li><code>HEAD null</code> with a reason means Git could not be run in <code>$LF_MAIN</code> (permissions, not a repository) — <b>Blocked</b> with the reason.</li>
+              <li>If you intend the app to match HEAD and it does not, that is a deployment decision (rebuild is not part of this check) — <b>Needs follow-up</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$M</code> and <code>$M.summary.txt</code> (contain local paths and dirty file names). Sanitized destination if you want it in Git: copy the manifest to <code>docs/v2/baseline/runs/&lt;run-id&gt;/manifest.json</code> after reading it — it holds hashes, paths, versions, key names and model-selection values only. Never overwrite <code>docs/v2/baseline/manifest.json</code> (frozen 2026-09-21 record; the generator refuses).</p>
+            <h5>Contract relevance</h5>
+            <p>M01 architecture contract (Git commit or dirty-tree digest, installed bundle revision); M01-AC01; supersedes the historical claim “installed app == Git HEAD” as a current fact.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M01-V003" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal native">
+          <header class="check-head">
+            <span class="cid">M01-V003</span>
+            <h4>Effective configuration in each real launch context</h4>
+            <ul class="tags"><li>Terminal</li><li>Native macOS</li><li>~2 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The manifest’s effective configuration for the <code>./run.sh</code>/Terminal context and for the installed app (LaunchServices, launchd environment, the bundle’s own embedded <code>config.py</code> defaults) equals what the runtime loader itself returns in each context — including the directory/malformed-file cases where the runtime falls back to its defaults.</p>
+          <p class="plain"><b>In plain terms.</b> We check that the settings the report says the app uses are the settings the app would really load, both when you run it from Terminal and when you open the app normally.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · installed app bundle (its Python is run read-only)</dd>
+              <dt>Preconditions</dt><dd>M01-V002 done (reuse <code>$M</code>). Do not paste configuration contents anywhere — only the model-selection values printed below.</dd>
+              <dt>Working dir</dt><dd><code>$LF_MAIN</code> for the repo-run loader; the bundle’s <code>Contents/Resources</code> for the app loader</dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>grep -E "effective source|winner|values|env LOCALFLOW_CONFIG|overridden" "$M.summary.txt"
+
+<span class="c"># runtime oracle — repo run (./run.sh context)</span>
+echo "shell LOCALFLOW_CONFIG=${LOCALFLOW_CONFIG:-unset}"
+(cd "$LF_MAIN" &amp;&amp; "$PY" -c 'import json; from localflow.config import load; c = load(); print(json.dumps({k: c.get(k) for k in ("model","cleanup","cleanup_model","cleanup_implementation","hotkey")}))')
+
+<span class="c"># runtime oracle — installed app's own loader and defaults (no bytecode written into the bundle)</span>
+R=/Applications/LocalFlow.app/Contents/Resources
+(cd "$R" &amp;&amp; env -u LOCALFLOW_CONFIG PYTHONDONTWRITEBYTECODE=1 "$R/venv/bin/python" -c 'import json; from localflow.config import load; c = load(); print(json.dumps({k: c.get(k) for k in ("model","cleanup","cleanup_model","cleanup_implementation","hotkey")}))')
+
+<span class="c"># what LaunchServices-launched apps inherit</span>
+launchctl getenv LOCALFLOW_CONFIG; launchctl getenv HF_HUB_CACHE; launchctl getenv HF_HOME
+ls -la "$HOME/Library/Application Support/LocalFlow/config.json" 2&gt;&amp;1 | cut -c1-120</code></pre></div>
+            <h5>Manual</h5>
+            <p>If <code>launchctl getenv LOCALFLOW_CONFIG</code> prints a path, rerun the installed-app oracle with <code>LOCALFLOW_CONFIG=&lt;that path&gt;</code> instead of <code>env -u LOCALFLOW_CONFIG</code>.</p>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>All commands exit 0 (the last <code>ls</code> may report “No such file” — that is the override-absent fact). Test count: not applicable.</li>
+              <li>The repo-run JSON equals <code>[repo_run] values</code>; the installed-app JSON equals <code>[installed_app] values</code>, key for key (a pre-M02 bundle has no <code>cleanup_implementation</code>, so both show <code>null</code>). <code>[installed_app] defaults_source</code> should read “installed bundle localflow/config.py”.</li>
+              <li><code>[…] env LOCALFLOW_CONFIG</code> agrees with the <code>launchctl</code> output. Historical expectation (2026-09-21): no override anywhere, source = bundled/repo <code>config.json</code>, ASR Parakeet v3, cleanup <code>llm</code> with Qwen3-4B-Instruct-2507-4bit. A different value is a fact to record, not automatically a failure.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Any key where the manifest and the runtime oracle differ is a resolver defect — <b>Failed</b>; keep both outputs (values only).</li>
+              <li><code>winner outcome: runtime_would_raise</code> means a config file the app would crash on — <b>Needs follow-up</b> (fix the file; do not edit it as part of this check).</li>
+              <li>The bundle Python failing to start means the installed venv is damaged — <b>Blocked</b>; this also blocks M01-V005.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: terminal output (save as <code>$OUT/V003.txt</code>). Sanitized: the five model-selection values per context plus sources — safe to quote in a handoff.</p>
+            <h5>Contract relevance</h5>
+            <p>M01 architecture contract (effective config path); <code>localflow/config.py::load</code> precedence; <code>contracts/events.md</code> <code>config_hash</code> semantics.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M01-V004" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal native">
+          <header class="check-head">
+            <span class="cid">M01-V004</span>
+            <h4>Model assets, tokenizer/config files, cache origin and interpreters</h4>
+            <ul class="tags"><li>Terminal</li><li>Native macOS</li><li>~2 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> For each launch context, the configured model IDs resolve in the cache the runtime would actually use (honouring <code>HF_HUB_CACHE</code>/<code>HF_HOME</code>), the snapshot is usable by the loader’s rule, and its identity covers every file — tokenizer, config and chat template as well as weights. The repo venv and the installed bundle’s venv are inventoried separately. This observes what <em>would</em> load; M01-V005 and M01-V009 establish what <em>did</em> load.</p>
+          <p class="plain"><b>In plain terms.</b> We fingerprint the exact speech and cleanup model files on disk, including the small settings files that change behaviour, and see which Python and libraries each way of running the app uses.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · model caches present · no inference</dd>
+              <dt>Preconditions</dt><dd>M01-V002 done with model hashing (the default; do not pass <code>--skip-model-hashes</code>).</dd>
+              <dt>Working dir</dt><dd>any (reads <code>$M.summary.txt</code>)</dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>grep -E "\] (asr|cleanup) |interpreter |LocalAI|never claims|usable snapshot|model matches" "$M.summary.txt"
+
+<span class="c"># independent look at the default cache</span>
+for m in mlx-community--parakeet-tdt-0.6b-v3 mlx-community--Qwen3-4B-Instruct-2507-4bit; do
+  d="$HOME/.cache/huggingface/hub/models--$m"
+  echo "$m refs/main=$(cat "$d/refs/main" 2&gt;/dev/null)  snapshots=$(ls "$d/snapshots" 2&gt;/dev/null | tr '\n' ' ')"
+done</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Test count: not applicable. For each context and role the summary prints <code>OK … model matches the effective config</code>, <code>OK … never claims a loaded checkpoint</code> and <code>OK … usable snapshot in the resolved cache</code>.</li>
+              <li>Exactly one snapshot per model, equal to <code>refs/main</code> (historically parakeet <code>ed2b7e8c…</code>, Qwen <code>50d42775…</code>); <code>resolution.ids_resolve_model_revision</code> equals it; <code>dangling=[]</code>. Record each <code>snapshot_digest</code>.</li>
+              <li><code>LocalAI copy same digest</code> true per revision if you still keep <code>~/Documents/LocalAI/models/hub</code> (re-observes the 2026-09-21 user-stated provenance; absence is a fact, not a failure).</li>
+              <li>Interpreters: <code>repo_venv</code> and <code>installed_bundle_venv</code> each list mlx, mlx-lm, parakeet-mlx, transformers (&lt; 5.11), numpy, sounddevice. Differences between them are facts to record.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>ambiguous_snapshot</code>: two revisions cached — which one loads depends on the loader, so the model identity is not pinned: <b>Needs follow-up</b> (do not delete a snapshot as part of this check).</li>
+              <li>Unusable or dangling snapshot: the model would re-download or fail offline — <b>Failed</b>; M01-V009 will likely fail too.</li>
+              <li>transformers ≥ 5.11 in either venv: the README’s pin is broken for that context — <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$M</code>, <code>$M.summary.txt</code>. Sanitized: model IDs, revisions, snapshot digests and package versions (safe to commit in a handoff).</p>
+            <h5>Contract relevance</h5>
+            <p>M01 architecture contract (“both loaded model IDs, runtime versions”); <code>contracts/events.md</code> <code>model_revision</code>; <code>localflow/stt.py</code> cache rule; E07 runtime qualification.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M01-V005" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="native human terminal">
+          <header class="check-head">
+            <span class="cid">M01-V005</span>
+            <h4>Current-session engine readiness after a fresh launch</h4>
+            <ul class="tags"><li>Installed app</li><li>Native macOS</li><li>Human visual</li><li>~3 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The installed app, launched now, reaches ASR-ready and cleanup-loaded with the configured 4B model <em>in this session</em>. Readiness is read only from the latest launch segment (legacy log) or the latest session (dated event log), so an old success can no longer vouch for a later failed launch — the defect behind the historical “established without manual interaction” claim.</p>
+          <p class="plain"><b>In plain terms.</b> Quit and reopen the app, then confirm from its own fresh startup messages that both models loaded this time.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · installed app · menu bar · Terminal</dd>
+              <dt>Preconditions</dt><dd>No dictation in progress. Network state: irrelevant (models are cached; the app sets offline mode after first download).</dd>
+              <dt>Working dir</dt><dd><code>$LF_VERIFY</code></dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Menu bar LocalFlow icon → <b>Quit</b>. Note the time.</li>
+              <li>Open <b>LocalFlow</b> from /Applications (Spotlight). Wait until the menu bar icon appears, then ~30 s more for the cleanup model.</li>
+            </ol>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>date
+grep -nE '\[localflow\] (ready — hold|model loaded\.|cleanup model (loaded|unavailable))' "$HOME/Library/Logs/LocalFlow.log" | tail -n 4
+ls -t "$HOME/Library/Logs/LocalFlow"/events-*.jsonl 2&gt;/dev/null | head -n 1
+cd "$LF_VERIFY"
+export R5="$OUT/readiness-$(date -u +%Y%m%dT%H%M%SZ).json"
+"$PY" scripts/v2/build_baseline_manifest.py --repo-root "$LF_MAIN" --skip-model-hashes --output "$R5"; echo "exit=$?"
+"$PY" scripts/v2/m01_verify_summary.py manifest "$R5" | grep -E "current session|legacy log last segment|processes"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Generator <code>exit=0</code>; test count not applicable. The grep prints only status lines (no transcripts).</li>
+              <li><b>Pre-M02 installed build (expected today):</b> the last <code>ready — hold</code> line is from your relaunch (its line number equals <code>legacy log last segment.start_line</code>), followed by <code>model loaded.</code> and <code>cleanup model loaded (Qwen3-4B-Instruct-2507-4bit)</code>; the summary shows <code>cleanup_state: loaded</code>, <code>cleanup_model: Qwen3-4B-Instruct-2507-4bit</code>.</li>
+              <li><b>Post-M02 build, if installed:</b> <code>current session</code> shows <code>ready_at_utc</code> after your relaunch and <code>engine_state_by_model</code> with both model IDs <code>outcome: ready</code>.</li>
+              <li><code>processes</code> shows the app’s start time (<code>lstart</code>) at your relaunch.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>cleanup_state: unavailable</code>, <code>outcome: failed</code> or no cleanup line in the new segment: the 4B engine did not load <em>now</em>, whatever older lines say — <b>Failed</b>; note the reason text from the status line.</li>
+              <li>Segment start line older than the relaunch: the relaunch did not reach the log (app not restarted, or logging redirected) — <b>Blocked</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$R5</code> and the grep output. Sanitized: model name, readiness state, session timestamp.</p>
+            <h5>Contract relevance</h5>
+            <p>M01 human verification (“verify the confirmed 4B model”); S09 engine lifecycle; <code>contracts/events.md</code> (<code>app.ready</code>, <code>worker.engine_state</code>).</p>
+          </details>
+        </article>
+
+        <article class="check" id="M01-V006" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal native privacy">
+          <header class="check-head">
+            <span class="cid">M01-V006</span>
+            <h4>Private evidence root: ownership, permissions, confinement</h4>
+            <ul class="tags"><li>Terminal</li><li>Native macOS</li><li>Privacy / data</li><li>~1 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The evidence root is a real directory you own, not writable by others, outside the repository and ignored by Git; the repaired snapshot tool refuses an in-repository root without writing anything; and no unpublished <code>.partial</code> run is lying around unnoticed.</p>
+          <p class="plain"><b>In plain terms.</b> We make sure the private folder holding copies of your data belongs to you, is locked to you, and can never be mistaken for part of the code.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal</dd>
+              <dt>Preconditions</dt><dd>Terminal set-up done.</dd>
+              <dt>Working dir</dt><dd><code>$LF_VERIFY</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>whoami
+stat -f "%Su %Sp %N" "$EV"
+[ -L "$EV" ] &amp;&amp; echo "SYMLINK (refused by the tool)" || echo "real directory"
+case "$EV/" in "$LF_MAIN"/*) echo "INSIDE the repository";; *) echo "outside the repository";; esac
+find "$EV" -maxdepth 1 -name '.*.partial' -print
+ls -la "$EV" | head -n 20
+
+<span class="c"># the tool must refuse an in-repo root and write nothing</span>
+cd "$LF_VERIFY"
+"$PY" scripts/v2/snapshot_user_data.py --root "$LF_MAIN/docs/v2/private"; echo "exit=$?"
+ls "$LF_MAIN/docs/v2/private" 2&gt;&amp;1 | head -n 1
+git -C "$LF_MAIN" check-ignore -v docs/v2/private/x stats.db.bak x.db-wal || true</code></pre></div>
+            <h5>Manual (optional, non-destructive)</h5>
+            <p>If <code>stat</code> shows group/other read (<code>drwxr-xr-x</code>, the default the 2026-09-21 run left), tighten the root only: <code>chmod 700 "$EV"</code>. Do not change or delete anything inside it.</p>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>stat</code> owner equals <code>whoami</code>; mode has no group/other <b>write</b> (<code>drwx------</code> ideal; <code>drwxr-xr-x</code> accepted and recorded by the tool as readable-by-others). “real directory”, “outside the repository”.</li>
+              <li><code>find</code> prints nothing (no unpublished partial runs) — or you can name each one’s cause.</li>
+              <li>The in-repo run prints “must live outside the repository” with <code>exit=2</code>; <code>ls</code> reports “No such file or directory”. <code>check-ignore</code> lists a <code>.gitignore</code> rule for each path. Test count: not applicable.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Foreign owner or group/other-writable root: the tool refuses to write — fix ownership/permissions of the root, then rerun (<b>Blocked</b> until then).</li>
+              <li>In-repo run exits 0 or creates the directory: confinement is broken — <b>Failed</b>; do not run M01-V007.</li>
+              <li>A <code>.partial</code> directory: an earlier run did not publish (crash or full disk). Leave it; note it — <b>Needs follow-up</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: terminal output to <code>$OUT/V006.txt</code>. Sanitized: owner/mode/inside-outside facts.</p>
+            <h5>Contract relevance</h5>
+            <p><code>contracts/INDEX.md</code> privacy rules; M01-AC03 (private data excluded from commits).</p>
+          </details>
+        </article>
+
+        <article class="check" id="M01-V007" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal native privacy">
+          <header class="check-head">
+            <span class="cid">M01-V007</span>
+            <h4>Safe snapshot of real Application Support data (SQLite + WAL/journal)</h4>
+            <ul class="tags"><li>Terminal</li><li>Native macOS</li><li>Privacy / data</li><li>~1 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The repaired tool copies your live <code>stats.db</code> (consistent SQLite backup, integrity-checked), <code>dictionary.json</code>, <code>transforms.json</code> and the log into a new owner-only run directory, inventories the <code>-wal</code>/<code>-shm</code>/<code>-journal</code> companions, detects any change — including WAL-only writes that leave the main file untouched — and publishes the run atomically, without modifying a single live file.</p>
+          <p class="plain"><b>In plain terms.</b> We take a private, tamper-evident copy of your real dictation data and prove the originals were not touched.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · the app may be running (log appends are allowed and recorded)</dd>
+              <dt>Preconditions</dt><dd>M01-V001 and M01-V006 passed. Avoid dictating during the ~seconds it runs.</dd>
+              <dt>Working dir</dt><dd><code>$LF_VERIFY</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_VERIFY"
+AS="$HOME/Library/Application Support/LocalFlow"
+shasum -a 256 "$AS"/stats.db "$AS"/dictionary.json "$AS"/transforms.json &gt; "$OUT/V007-before.sha"
+ls -la "$AS"/stats.db* | cut -c1-110
+"$PY" scripts/v2/snapshot_user_data.py &gt; "$OUT/V007-stdout.txt"; echo "exit=$?"
+export RUN="$(tail -n 1 "$OUT/V007-stdout.txt" | sed 's/^snapshot manifest: //; s#/snapshot-manifest.json$##')"
+"$PY" scripts/v2/m01_verify_summary.py snapshot "$RUN" | tee "$OUT/V007-summary.txt"
+shasum -a 256 -c "$OUT/V007-before.sha"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>exit=0</code>; test count not applicable. Summary: <code>outcome: complete</code>, and <code>OK</code> for “no source changed, errored or missing”, run directory <code>0o700</code>, every file <code>0600</code>, owned by you.</li>
+              <li><code>stats.db</code>: <code>unchanged</code>, <code>backup integrity_check: ok</code>, companions listed (a <code>-wal</code> is normal if the DB is in WAL mode). If the manifest’s <code>companions_created_by_read</code> is non-empty, SQLite itself created empty <code>-wal</code>/<code>-shm</code> files while reading an idle WAL-mode database — record it; they hold no data and the tool never deletes them. JSON files <code>unchanged</code>. Log <code>unchanged</code> or <code>appended_during_snapshot</code>.</li>
+              <li><code>historical_prefix</code>: <code>verified</code> if the live log still begins with the audited 544,221 bytes; <code>not_present</code> otherwise (then M01-V008 uses the 2026-09-21 run’s prefix).</li>
+              <li><code>shasum -c</code> prints <code>OK</code> for all three files (originals unmodified).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>exit=1</code> with <code>changed_during_snapshot</code>: something wrote to the source while copying (e.g. a dictation) — rerun when idle; if it repeats with the app quit, <b>Failed</b>.</li>
+              <li><code>exit=1</code> with <code>error</code>: unreadable/corrupt source — <b>Failed</b>, do not retry-loop on live data; note the reason.</li>
+              <li><code>exit=2</code>: a required source is missing — record which (<b>Needs follow-up</b>: missing live data is itself a finding for M02).</li>
+              <li>Any <code>shasum -c</code> FAILED line: a live file changed — <b>Failed</b>, stop and investigate before any other check.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private only: the run directory <code>$RUN</code> and <code>$OUT/V007-*</code>. Never copy snapshots into the repository. Sanitized: outcome, statuses and hashes.</p>
+            <h5>Contract relevance</h5>
+            <p>M01 task 2 (consistent snapshot, WAL/journal inventory); M02 import reads verified backups (S08); privacy rules.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M01-V008" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="terminal privacy">
+          <header class="check-head">
+            <span class="cid">M01-V008</span>
+            <h4>Exact-hash historical log reproduction with the repaired parser</h4>
+            <ul class="tags"><li>Terminal</li><li>Privacy / data</li><li>~1 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Against the private audited artifact (SHA-256 <code>51e8ee70…</code>), the repaired parser — exact payload extraction, EOF completeness, the post-insertion timing rule, strict numeric handling, source-bound windows — still reproduces the E02 aggregates (749 pairs, 477 timed, 498 capture diagnostics, 3 Metal failures, cohorts 476/272/1). The cloud showed zero aggregate differences on 5,000 simulated logs; only this file can show it for the real history.</p>
+          <p class="plain"><b>In plain terms.</b> We re-count the original audited log with the fixed parser and confirm the numbers everyone has relied on are unchanged — or learn exactly why one moved.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · private evidence present</dd>
+              <dt>Preconditions</dt><dd>A published run under <code>$EV</code> containing <code>LocalFlow.log.historical-prefix</code> (the 2026-09-21 run, or M01-V007’s if <code>verified</code>). If none exists, mark <b>Blocked</b> — a skip is never a pass.</dd>
+              <dt>Working dir</dt><dd><code>$LF_VERIFY</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_VERIFY"
+export P="$(ls -d "$EV"/2*/LocalFlow.log.historical-prefix 2&gt;/dev/null | tail -n 1)"; echo "prefix: $P"
+shasum -a 256 "$P"
+"$PY" tests/v2/test_legacy_parser.py | tail -n 3
+"$PY" scripts/v2/parse_legacy_log.py --log "$P" --output "$OUT/legacy-log-reconciliation.v2.json" &gt; /dev/null; echo "parser exit=$?"
+"$PY" scripts/v2/m01_verify_summary.py parse "$OUT/legacy-log-reconciliation.v2.json" | tee "$OUT/V008-summary.txt"</code></pre></div>
+            <h5>Manual (optional, private)</h5>
+            <p>The 11 cited windows are <em>located</em> automatically; that is not semantic verification. To verify one privately, read it on screen only, e.g. <code>sed -n '1540,1544p' "$P"</code>, and compare with its description in <code>scripts/v2/parse_legacy_log.py</code> (<code>NOTABLE_WINDOWS</code>). Never paste the text anywhere.</p>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>shasum</code> = <code>51e8ee707cbbe05fe8d383d10bdbb8bde2b90ea749554b3085fd113169fad6f0</code>.</li>
+              <li>Parser test: exit 0, <b>“18 passed, 0 skipped”</b> with the line “historical snapshot reproduces audited aggregates” (plus a heuristics line).</li>
+              <li><code>parser exit=0</code>. Summary: <code>OK</code> for the audited-hash binding, every E02 value (pairs 749, timed_pairs 477, audio 498, cohorts 476/272/1, Metal 3, unpaired 16, empty 29, load failures 21 / successes 27, zero-voiced 10, overflow 0, sums 176.6 / 629.6) and all 11 windows located. <code>timing_detached_after_posted_insertion</code>, <code>malformed_timing_records</code> and <code>eof_incomplete_pairs</code> = 0. Record <code>decode.replaced_sequences</code> and the heuristics (2026-09-21: lexical 107, boundaries 134 vs E02’s 108/133 — descriptive, not accuracy).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Wrong hash: wrong or modified file — find the right run; <b>Blocked</b> if none.</li>
+              <li><code>timed_pairs</code> below 477 with <code>timing_detached_after_posted_insertion</code> = <i>n</i> &gt; 0: the repaired rule found <i>n</i> timings that followed a posted insertion and preceded an empty transcription. Do not force the old number: <b>Needs follow-up</b> with the pair line numbers (from the private report) so the next session can adjudicate.</li>
+              <li>Any other count difference: <b>Failed</b> — attach the summary; this invalidates the M02 import baseline until explained.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT/legacy-log-reconciliation.v2.json</code> and the summary. The report holds counts and line locators only (no transcript text); after reading it you may commit it as <code>docs/v2/baseline/legacy-log-reconciliation.v2.json</code>. Never replace the historical <code>legacy-log-reconciliation.json</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M01-AC02; E02 parsing protocol; <code>contracts/jobs.md</code> legacy identity <code>legacy:&lt;source-sha&gt;:&lt;line-range&gt;</code> (unchanged); M13 legacy metric labels (heuristics stay descriptive).</p>
+          </details>
+        </article>
+
+        <h3 class="group">Model-backed</h3>
+
+        <article class="check" id="M01-V009" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="model terminal native hardware">
+          <header class="check-head">
+            <span class="cid">M01-V009</span>
+            <h4>Stage-timing probe through the configured cleanup implementation</h4>
+            <ul class="tags"><li>Model-backed</li><li>MLX / Metal</li><li>Terminal</li><li>~3 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The real Parakeet and cleanup models load and run on this Mac through the implementation the configuration selects (V2 engine by default), with each run’s output path recorded so a fallback is never mistaken for a model-cleaned timing; plus an explicitly labelled V1-control run. Each report is bound to the source commit, effective config and model cache observed at run time. Stage timings only — not release-to-insert.</p>
+          <p class="plain"><b>In plain terms.</b> We actually run both AI models on your Mac, the same way the app is configured to, and time each step — making sure a silent fallback can’t pass as a success.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · MLX/Metal · Terminal · prefer mains power (the report records power source)</dd>
+              <dt>Preconditions</dt><dd>M01-V004 passed (usable cached snapshots). Quit the app for cleaner timings if you like (optional; record which). Offline is enforced with <code>HF_HUB_OFFLINE=1</code> so nothing downloads.</dd>
+              <dt>Working dir</dt><dd><code>$LF_VERIFY</code> (the probe imports the worktree’s <code>localflow</code>, which equals your code apart from the M01 importer change)</dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_VERIFY"
+S="$(date -u +%Y%m%dT%H%M%SZ)"
+HF_HUB_OFFLINE=1 "$PY" scripts/v2/baseline_probe.py --output-dir "$OUT/probe-$S-configured" &gt; /dev/null; echo "configured exit=$?"
+HF_HUB_OFFLINE=1 "$PY" scripts/v2/baseline_probe.py --cleanup-implementation v1 --output-dir "$OUT/probe-$S-v1control" &gt; /dev/null; echo "v1-control exit=$?"
+"$PY" scripts/v2/m01_verify_summary.py probe "$OUT/probe-$S-configured/probe.json" | tee "$OUT/V009-configured.txt"
+"$PY" scripts/v2/m01_verify_summary.py probe "$OUT/probe-$S-v1control/probe.json" | tee "$OUT/V009-v1control.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Both <code>exit=0</code>; test count not applicable.</li>
+              <li>Configured run: <code>cleanup selection</code> shows configured <code>v2</code>, probed <code>v2</code>, role “configured implementation”; stage cleanup implementation “ModelRunner → CleanupEngine (M07)” with a <code>template_revision</code>; ASR model <code>mlx-community/parakeet-tdt-0.6b-v3</code>, cleanup <code>mlx-community/Qwen3-4B-Instruct-2507-4bit</code>.</li>
+              <li>V1-control run: probed <code>v1</code>, selected by “command-line override”, role “V1 control (not the configured V2 path)”.</li>
+              <li>Both summaries: <code>OK</code> for no early errors, no failed stage, <b>no fallback run</b>, config equals the runtime loader, probed = configured. <code>source binding.head_commit</code> equals <code>git -C "$LF_VERIFY" rev-parse HEAD</code>. Record load/transcribe/clean seconds and the power line; there is no pass threshold (the 2026-09-21 V1 figures were ASR load 3.79 s, transcribe 0.44/0.041 s, Qwen load 1.96 s, clean 0.98 s, on battery).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>exit=1</code>, stage <code>failed</code>: read its <code>error</code> — Metal/MLX errors are native failures (<b>Failed</b>); a download attempt blocked by offline mode means the cache is incomplete (back to M01-V004).</li>
+              <li><code>CHECK no cleanup run fell back</code>: the model answered but its output failed validation (V2 <code>llm_fallback_normalized</code>/<code>llm_partial</code>, V1 <code>llm_fallback_basic</code>) — the timing is not a clean model timing: <b>Needs follow-up</b> with the <code>fallback_reason</code>.</li>
+              <li><code>exit=2</code>: the report could not be written (printed to stdout instead) — check disk space and <code>$OUT</code> permissions; <b>Blocked</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: both <code>probe.json</code> files and summaries under <code>$OUT</code>. Sanitized destination (contains versions, hashes, timings and local paths only): copy a reviewed report to <code>docs/v2/benchmarks/&lt;run_id&gt;/probe.json</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M01 required benchmarks (per-stage latency; hardware/power/runtime); proposed vs applied vs fallback outputs (S13–S14 paths); stage latency ≠ release-to-insert (E06).</p>
+          </details>
+        </article>
+
+        <h3 class="group">Human behaviour</h3>
+
+        <article class="check" id="M01-V010" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="human native privacy">
+          <header class="check-head">
+            <span class="cid">M01-V010</span>
+            <h4>Installed app: 4B model, and what analytics/dictionary/transform UI exists</h4>
+            <ul class="tags"><li>Human visual</li><li>Installed app</li><li>Privacy / data</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The M01 specification’s human check, which the historical record marked as “established without manual interaction” from log lines: a person launches the installed app and confirms the model it reports and which analytics, dictionary and transform features are (or are not) reachable in its UI — the deleted Jul-4-era dashboard must not be assumed present, and its data must not be assumed absent.</p>
+          <p class="plain"><b>In plain terms.</b> You open the app and look: which model is it using, and can you see your stats, dictionary and transforms anywhere?</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · installed app · human eyes · screenshots</dd>
+              <dt>Preconditions</dt><dd>M01-V005 done in the same session (app freshly launched and ready).</dd>
+              <dt>Working dir</dt><dd>not applicable (UI)</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Click the menu bar icon; screenshot the open menu (⇧⌘4, then Space, click the menu).</li>
+              <li>Look for any Hub/Dashboard/Insights, dictionary or transforms entry. Open each one that exists and screenshot it — crop or blur any transcript text, app names or personal words before saving.</li>
+              <li>Dictate one short neutral phrase (e.g. “testing one two three”) into TextEdit to confirm the app is live; do not keep the document.</li>
+            </ol>
+            <h5>Commands (supporting facts)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>mkdir -p "$OUT/V010" &amp;&amp; chmod 700 "$OUT/V010"
+grep -nE '\[localflow\] (cleanup model (loaded|unavailable)|inserted [0-9]+ chars)' "$HOME/Library/Logs/LocalFlow.log" | tail -n 3
+ls -la "$HOME/Library/Application Support/LocalFlow/" | cut -c1-110</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Exit code / test count: not applicable. The model shown or logged is Qwen3-4B-Instruct-2507-4bit (matches M01-V005).</li>
+              <li>With the pre-M02 bundle (expected today): <b>no</b> analytics/dictionary/transform UI — the producing modules were deleted before the 2026-09-21 snapshot — while the data files still exist (M01-V007 hashes). With a newer V2 build: the Hub shows the imported legacy data (historically 7 rows, 7 dictionary terms, 2 transforms).</li>
+              <li>The dictated phrase is inserted.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A different model, or no insertion: <b>Failed</b> (record what you saw).</li>
+              <li>UI shows the legacy features even though the bundle is pre-M02, or data appears missing: <b>Needs follow-up</b> — the provenance picture in the baseline is wrong.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: redacted screenshots in <code>$OUT/V010/</code>. Sanitized: a one-line description of what exists, in the note below.</p>
+            <h5>Contract relevance</h5>
+            <p>M01 human verification; M01 deliverable “highlight installed source not represented in Git”; preservation of <code>stats.db</code>/<code>dictionary.json</code>/<code>transforms.json</code>.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M01-V011" data-milestone="M01" data-rev="M01-r1" data-code="c24b7bc" data-tags="human hardware">
+          <header class="check-head">
+            <span class="cid">M01-V011</span>
+            <h4>Release-to-insert latency pilot — superseded by the M15 gate</h4>
+            <ul class="tags"><li>Human</li><li>Microphone</li><li>No action in this campaign</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Nothing yet. M01 asked for a small instrumented pilot of actual release-to-insert latency. M15-AC04 requires the same quantity — “actual insertion latency” — measured far more strongly (≥ 30 unique cases per latency band × 5 warm runs, cached cold processes, real referenced speech, fallback rates reported). Running the small pilot now would duplicate a weaker version of that gate, so it is superseded by M15-AC04 and stays open here only as a pointer. Stage timings (M01-V009) are never a substitute.</p>
+          <p class="plain"><b>In plain terms.</b> Timing “let go of the key → text appears” needs you speaking into the mic; a much bigger, better version of that test is scheduled for M15, so don’t do the small one now.</p>
+          <details class="more"><summary>Why there are no commands</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · physical microphone · human speaker · instrumented target (at M15)</dd>
+              <dt>Preconditions</dt><dd>M15 qualification harness (not built yet).</dd>
+              <dt>Working dir</dt><dd>not applicable</dd>
+            </dl>
+            <h5>Expected</h5>
+            <p>No command, no exit code, no test count in this campaign. Leave as <b>Not run</b>; M15 records the measurement against M15-AC04 and closes this pointer.</p>
+            <h5>If you run anything anyway</h5>
+            <p>Do not record synthetic or stage timings here. If you did an ad-hoc spoken pilot, keep it private and mark <b>Needs follow-up</b> with its location so M15 can decide whether to use it.</p>
+            <h5>Evidence</h5>
+            <p>None now. M15 benchmark directory later.</p>
+            <h5>Contract relevance</h5>
+            <p>M01 required benchmarks; S24 budgets; E06 (stage latency ≠ release-to-insert); M15-AC04.</p>
+          </details>
+        </article>
+      </section>
+
+      <!-- ================= Future milestones: replace the placeholder ================= -->
+      <section class="milestone" id="M02" data-milestone="M02" data-title="Observability, jobs & lossless import"><div class="ms-head"><span class="mid">M02</span><h2>Observability, jobs &amp; lossless import</h2></div><p class="placeholder">No deferred checks recorded yet. The M02 remediation session appends its checks here (IDs from M02-V001).</p></section>
+      <section class="milestone" id="M03" data-milestone="M03" data-title="Resilient capture & inference"><div class="ms-head"><span class="mid">M03</span><h2>Resilient capture &amp; inference</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M03-V001).</p></section>
+      <section class="milestone" id="M04" data-milestone="M04" data-title="Numeric & syntax normalization"><div class="ms-head"><span class="mid">M04</span><h2>Numeric &amp; syntax normalization</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M04-V001).</p></section>
+      <section class="milestone" id="M05" data-milestone="M05" data-title="Scoped vocabulary"><div class="ms-head"><span class="mid">M05</span><h2>Scoped vocabulary</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M05-V001).</p></section>
+      <section class="milestone" id="M06" data-milestone="M06" data-title="Local context"><div class="ms-head"><span class="mid">M06</span><h2>Local context</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M06-V001).</p></section>
+      <section class="milestone" id="M07" data-milestone="M07" data-title="Faithful cleanup"><div class="ms-head"><span class="mid">M07</span><h2>Faithful cleanup</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M07-V001).</p></section>
+      <section class="milestone" id="M08" data-milestone="M08" data-title="Insertion"><div class="ms-head"><span class="mid">M08</span><h2>Insertion</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M08-V001).</p></section>
+      <section class="milestone" id="M09" data-milestone="M09" data-title="Hub"><div class="ms-head"><span class="mid">M09</span><h2>Hub</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M09-V001).</p></section>
+      <section class="milestone" id="M10" data-milestone="M10" data-title="Developer mode & profiles"><div class="ms-head"><span class="mid">M10</span><h2>Developer mode &amp; profiles</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M10-V001).</p></section>
+      <section class="milestone" id="M11" data-milestone="M11" data-title="Transforms & Prompt Engineer"><div class="ms-head"><span class="mid">M11</span><h2>Transforms &amp; Prompt Engineer</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M11-V001).</p></section>
+      <section class="milestone" id="M12" data-milestone="M12" data-title="Scratchpad"><div class="ms-head"><span class="mid">M12</span><h2>Scratchpad</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M12-V001).</p></section>
+      <section class="milestone" id="M13" data-milestone="M13" data-title="Usage analytics"><div class="ms-head"><span class="mid">M13</span><h2>Usage analytics</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M13-V001).</p></section>
+      <section class="milestone" id="M14" data-milestone="M14" data-title="Learning & datasets"><div class="ms-head"><span class="mid">M14</span><h2>Learning &amp; datasets</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M14-V001).</p></section>
+
+      <section id="maintainers" aria-labelledby="mt-h">
+        <h2 class="section" id="mt-h">For remediation sessions</h2>
+        <div class="callout">
+          <h3>Appending checks</h3>
+          <p style="margin:0">Replace your milestone’s placeholder with checks built exactly like the M01 ones (see the comment at the top of this file). IDs are permanent: never renumber, never reuse. When instructions change materially, bump <code>data-rev</code>; results saved against the old revision then show as stale with their history intact. Keep audit detail in handoff/acceptance records — this page is the execution guide.</p>
+          <p style="margin:8px 0 0" id="orphans" class="kbdhelp"></p>
+        </div>
+      </section>
+      <footer>LocalFlow V2 · verification runbook · self-contained (no network, fonts or scripts are loaded) · state stays in this browser unless you export it.</footer>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const KEY = "localflow.v2.verification/state@1";
+  const THEME_KEY = "localflow.v2.verification/theme";
+  const STATUSES = [["not-run", "Not run"], ["passed", "Passed"], ["failed", "Failed"],
+                    ["blocked", "Blocked"], ["follow-up", "Needs follow-up"]];
+  const LABEL = Object.fromEntries(STATUSES);
+  const COLOR = {"passed": "var(--pass)", "failed": "var(--fail)", "blocked": "var(--blocked)",
+                 "follow-up": "var(--follow)", "not-run": "var(--notrun)"};
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const banner = $("#banner");
+  const warn = (msg) => { banner.textContent = msg; banner.classList.add("show"); };
+
+  // ---- persistence (never silently discards records) ----------------------
+  let storageOK = true;
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; }
+    catch (e) { storageOK = false; return {}; }
+  }
+  let state = load();
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) {
+      if (storageOK) warn("Browser storage is unavailable — statuses will not persist. Use Export to keep a copy.");
+      storageOK = false;
+    }
+  }
+  if (!storageOK) warn("Browser storage is unavailable — statuses will not persist. Use Export to keep a copy.");
+
+  const checks = $$("article.check");
+  const milestones = $$("section.milestone");
+
+  // Effective status: a result recorded against other instructions is stale.
+  function effective(check) {
+    const rec = state[check.id];
+    if (!rec || !rec.status || rec.status === "not-run") return {status: "not-run", stale: null, rec};
+    if (rec.rev !== check.dataset.rev) return {status: "not-run", stale: rec, rec};
+    return {status: rec.status, stale: null, rec};
+  }
+  function setStatus(check, status) {
+    const prev = state[check.id] || {};
+    const at = new Date().toISOString();
+    const history = (prev.history || []).concat(prev.status ? [{status: prev.status, rev: prev.rev, at: prev.at}] : []);
+    state[check.id] = {status, rev: check.dataset.rev, code: check.dataset.code, at, note: prev.note || "", history};
+    save(); render();
+  }
+
+  // ---- enhance each check (controls come from here, content from markup) --
+  checks.forEach((check) => {
+    const slot = $(".status-slot", check);
+    const sel = document.createElement("select");
+    sel.className = "popup";
+    sel.setAttribute("aria-label", `Status of ${check.id}`);
+    STATUSES.forEach(([v, l]) => sel.add(new Option(l, v)));
+    sel.addEventListener("change", () => setStatus(check, sel.value));
+    const stamp = document.createElement("div");
+    stamp.className = "stamp";
+    slot.append(sel, stamp);
+    check.tabIndex = -1;
+
+    const note = document.createElement("textarea");
+    note.className = "note";
+    note.rows = 1;
+    note.placeholder = "Note (sanitized only — no transcripts, paths to private files are fine)";
+    note.setAttribute("aria-label", `Note for ${check.id}`);
+    note.value = (state[check.id] || {}).note || "";
+    note.addEventListener("change", () => {
+      const rec = state[check.id] || {status: "not-run", rev: check.dataset.rev, history: []};
+      rec.note = note.value; state[check.id] = rec; save();
+    });
+    const hist = document.createElement("div");
+    hist.className = "history";
+    check.append(note, hist);
+
+    $$("pre.cmd", check).forEach((pre) => {
+      const b = document.createElement("button");
+      b.className = "copy"; b.type = "button"; b.textContent = "Copy";
+      b.setAttribute("aria-label", "Copy commands");
+      b.addEventListener("click", () => copy(pre.innerText, b));
+      pre.parentElement.append(b);
+    });
+  });
+  $$("#before pre.cmd").forEach((pre) => {
+    const b = document.createElement("button");
+    b.className = "copy"; b.type = "button"; b.textContent = "Copy";
+    b.addEventListener("click", () => copy(pre.innerText, b));
+    pre.parentElement.append(b);
+  });
+
+  function copy(text, btn) {
+    const done = () => { btn.textContent = "Copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("done"); }, 1400); };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, () => fallback(text) && done());
+    } else if (fallback(text)) done();
+  }
+  function fallback(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.append(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+    ta.remove(); return ok;
+  }
+
+  // ---- navigation ------------------------------------------------------------
+  const nav = $("#msnav");
+  milestones.forEach((ms) => {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = "#" + ms.id; a.dataset.nav = ms.id;
+    a.innerHTML = `<span class="dot"></span><span class="mid">${ms.id}</span><span class="ttl"></span><span class="badge"></span>`;
+    $(".ttl", a).textContent = ms.dataset.title || ms.id;
+    li.append(a); nav.append(li);
+  });
+
+  // ---- filters ----------------------------------------------------------------
+  const active = {tags: new Set(), statuses: new Set(), q: ""};
+  $$("#chips .chip").forEach((chip) => chip.addEventListener("click", () => {
+    const on = chip.getAttribute("aria-pressed") !== "true";
+    chip.setAttribute("aria-pressed", String(on));
+    const set = chip.dataset.tag ? active.tags : active.statuses;
+    const key = chip.dataset.tag || chip.dataset.status;
+    on ? set.add(key) : set.delete(key);
+    render();
+  }));
+  $("#q").addEventListener("input", (e) => { active.q = e.target.value.trim().toLowerCase(); render(); });
+  function visible(check, eff) {
+    const tags = (check.dataset.tags || "").split(/\s+/);
+    if (active.tags.size && !tags.some((t) => active.tags.has(t))) return false;
+    if (active.statuses.size && !active.statuses.has(eff.status)) return false;
+    if (active.q && !(check.id.toLowerCase().includes(active.q) || check.textContent.toLowerCase().includes(active.q))) return false;
+    return true;
+  }
+
+  // ---- render --------------------------------------------------------------------
+  function li(html) { const x = document.createElement("li"); x.innerHTML = html; return x; }
+  function render() {
+    const counts = {"passed": 0, "failed": 0, "blocked": 0, "follow-up": 0, "not-run": 0};
+    let stale = 0;
+    const strip = $("#strip"); $$(".lamp", strip).forEach((l) => l.remove());
+    const attention = $("#attention"), staleList = $("#stale");
+    attention.replaceChildren(); staleList.replaceChildren();
+    const perMs = {};
+    checks.forEach((check) => {
+      const eff = effective(check);
+      counts[eff.status]++;
+      check.dataset.s = eff.status;
+      $(".popup", check).value = eff.status;
+      const rec = eff.rec;
+      $(".stamp", check).textContent = rec && rec.at && !eff.stale && eff.status !== "not-run"
+        ? `${rec.at.slice(0, 16).replace("T", " ")} UTC · ${rec.rev}` : `rev ${check.dataset.rev}`;
+      let sn = $(".stale-note", check);
+      if (eff.stale) {
+        stale++;
+        if (!sn) { sn = document.createElement("div"); sn.className = "stale-note"; $(".check-head", check).append(sn); }
+        sn.textContent = `Stale: “${LABEL[eff.stale.status]}” was recorded ${eff.stale.at ? eff.stale.at.slice(0, 10) : ""} against instructions ${eff.stale.rev || "?"}; these are ${check.dataset.rev}. Run it again — the old result is kept in history, not reused.`;
+        staleList.append(li(`<a href="#${check.id}">${check.id}</a> <span class="empty-note">${LABEL[eff.stale.status]} @ ${eff.stale.rev}</span>`));
+      } else if (sn) sn.remove();
+      const h = (rec && rec.history) || [];
+      $(".history", check).textContent = h.length
+        ? "history: " + h.slice(-4).map((x) => `${LABEL[x.status] || x.status} (${x.rev}, ${(x.at || "").slice(0, 10)})`).join(" → ")
+        : "";
+      check.classList.toggle("hidden", !visible(check, eff));
+      if (["failed", "blocked", "follow-up"].includes(eff.status))
+        attention.append(li(`<span class="sw" style="background:${COLOR[eff.status]}"></span><a href="#${check.id}">${check.id}</a> <span class="empty-note">${LABEL[eff.status]}</span>`));
+      const lamp = document.createElement("button");
+      lamp.className = "lamp" + (eff.stale ? " stale" : ""); lamp.type = "button";
+      lamp.dataset.s = eff.status; lamp.textContent = check.id.split("-V")[1];
+      lamp.title = `${check.id} · ${LABEL[eff.status]}${eff.stale ? " (stale)" : ""} — ${$("h4", check).textContent}`;
+      lamp.addEventListener("click", () => { location.hash = check.id; check.focus({preventScroll: true}); });
+      strip.append(lamp);
+      const ms = check.dataset.milestone;
+      (perMs[ms] = perMs[ms] || {total: 0, passed: 0, bad: 0});
+      perMs[ms].total++;
+      if (eff.status === "passed") perMs[ms].passed++;
+      if (["failed", "blocked"].includes(eff.status)) perMs[ms].bad++;
+    });
+    if (!attention.children.length) attention.append(li(`<span class="empty-note">Nothing failed, blocked or awaiting follow-up.</span>`));
+    if (!staleList.children.length) staleList.append(li(`<span class="empty-note">No stale results.</span>`));
+
+    const total = checks.length;
+    $("#pct").textContent = total ? Math.round(100 * counts.passed / total) + "%" : "—";
+    $("#pctlabel").textContent = `of ${total} checks passed`;
+    const bar = $("#bar"); bar.replaceChildren();
+    ["passed", "follow-up", "blocked", "failed", "not-run"].forEach((s) => {
+      if (!counts[s]) return; const i = document.createElement("i");
+      i.style.width = (100 * counts[s] / total) + "%"; i.style.background = COLOR[s]; bar.append(i);
+    });
+    const legend = $("#legend"); legend.replaceChildren();
+    [["passed"], ["failed"], ["blocked"], ["follow-up"], ["not-run"]].forEach(([s]) => {
+      const d = document.createElement("div");
+      d.innerHTML = `<span class="sw" style="background:${COLOR[s]}"></span>${LABEL[s]}<b>${counts[s]}</b>`; legend.append(d);
+    });
+    const sd = document.createElement("div");
+    sd.innerHTML = `<span class="sw" style="outline:2px dashed var(--follow)"></span>Stale<b>${stale}</b>`; legend.append(sd);
+
+    const pending = $("#pending"); pending.replaceChildren();
+    milestones.forEach((ms) => {
+      const p = perMs[ms.id]; const a = $(`#msnav a[data-nav="${ms.id}"]`);
+      a.classList.toggle("empty", !p);
+      $(".badge", a).textContent = p ? `${p.passed}/${p.total}` : "—";
+      $(".dot", a).className = "dot " + (!p ? "none" : p.bad ? "bad" : p.passed === p.total ? "ok" : "");
+      if (p && p.passed < p.total)
+        pending.append(li(`<span class="sw" style="background:${p.bad ? COLOR.failed : COLOR["not-run"]}"></span><a href="#${ms.id}">${ms.id}</a> <span class="empty-note">${p.total - p.passed} of ${p.total} open</span>`));
+    });
+    const empty = milestones.filter((ms) => !perMs[ms.id]).map((ms) => ms.id);
+    if (empty.length) pending.append(li(`<span class="empty-note">No entries yet: ${empty.join(", ")}</span>`));
+    $$("#chips .chip").forEach((chip) => {
+      let n;
+      if (chip.dataset.tag) n = checks.filter((c) => (c.dataset.tags || "").split(/\s+/).includes(chip.dataset.tag)).length;
+      else n = counts[chip.dataset.status];
+      let s = $(".n", chip); if (!s) { s = document.createElement("span"); s.className = "n"; chip.append(s); }
+      s.textContent = n;
+    });
+    const known = new Set(checks.map((c) => c.id));
+    const orphans = Object.keys(state).filter((id) => !known.has(id));
+    $("#orphans").textContent = orphans.length
+      ? `Saved records for checks not on this page are kept, not discarded: ${orphans.join(", ")}.` : "";
+  }
+
+  // ---- export / import (merge; newest record wins, histories unioned) -------
+  $("#export").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({format: KEY, exported_utc: new Date().toISOString(), state}, null, 2)], {type: "application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `localflow-verification-state-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.append(a); a.click(); a.remove();
+  });
+  $("#import").addEventListener("click", () => $("#importfile").click());
+  $("#importfile").addEventListener("change", async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const doc = JSON.parse(await f.text());
+      const incoming = doc.state || doc;
+      Object.entries(incoming).forEach(([id, rec]) => {
+        const mine = state[id];
+        const seen = new Set();
+        const hist = [...((mine && mine.history) || []), ...(rec.history || [])].filter((h) => {
+          const k = JSON.stringify(h); if (seen.has(k)) return false; seen.add(k); return true; });
+        const newer = !mine || (rec.at || "") > (mine.at || "");
+        const winner = newer ? rec : mine;
+        const loser = newer ? mine : rec;
+        if (loser && loser.status && loser.at && !hist.some((h) => h.at === loser.at))
+          hist.push({status: loser.status, rev: loser.rev, at: loser.at});
+        state[id] = {...winner, history: hist.sort((a, b) => (a.at || "").localeCompare(b.at || ""))};
+      });
+      save(); render();
+      checks.forEach((c) => { $(".note", c).value = (state[c.id] || {}).note || ""; });
+    } catch (err) { warn("Import failed: not a verification-state export (" + err.message + ")."); }
+    e.target.value = "";
+  });
+
+  // ---- theme ---------------------------------------------------------------------
+  const themes = ["auto", "light", "dark"];
+  function applyTheme(t) { document.documentElement.dataset.theme = t; $("#theme").textContent = "Theme: " + t; }
+  let theme = "auto"; try { theme = localStorage.getItem(THEME_KEY) || "auto"; } catch (e) {}
+  applyTheme(theme);
+  $("#theme").addEventListener("click", () => {
+    theme = themes[(themes.indexOf(theme) + 1) % themes.length]; applyTheme(theme);
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  });
+
+  // ---- expand / keyboard / scroll spy ------------------------------------------
+  function toggleAll() {
+    const open = !$$("details.more").every((d) => d.open);
+    $$("details.more").forEach((d) => { d.open = open; });
+    $("#expand").textContent = open ? "Collapse all" : "Expand all";
+  }
+  $("#expand").addEventListener("click", toggleAll);
+  document.addEventListener("keydown", (e) => {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (e.key === "/" && !typing) { e.preventDefault(); $("#q").focus(); return; }
+    if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+    const shown = checks.filter((c) => !c.classList.contains("hidden"));
+    const idx = shown.indexOf(document.activeElement.closest && document.activeElement.closest("article.check"));
+    if (e.key === "j" || e.key === "k") {
+      const next = shown[Math.max(0, Math.min(shown.length - 1, idx + (e.key === "j" ? 1 : -1)))] || shown[0];
+      if (next) { next.focus(); next.scrollIntoView({block: "start"}); }
+    } else if (e.key === "o" && idx >= 0) {
+      const d = $("details.more", shown[idx]); if (d) d.open = !d.open;
+    } else if (e.key === "e") toggleAll();
+    else if (e.key === "t") $("#theme").click();
+  });
+  const navLinks = $$(".nav a[data-nav]");
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      navLinks.forEach((a) => a.setAttribute("aria-current", String(a.dataset.nav === en.target.id)));
+    }), {rootMargin: "-20% 0px -70% 0px"});
+    [$("#overview"), ...milestones].forEach((s) => io.observe(s));
+  }
+  window.addEventListener("storage", (e) => { if (e.key === KEY) { state = load(); render(); } });
+  render();
+})();
+</script>
+</body>
+</html>

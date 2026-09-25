@@ -17,7 +17,9 @@ three canonical Markdown documents are. Package entry point: `README.md`.
 
 | Path | What |
 |---|---|
-| `baseline/manifest.json` | Authoritative deployed/source/config/data baseline (regenerate: `scripts/v2/build_baseline_manifest.py`) |
+| `baseline/manifest.json` | **Frozen 2026-09-21 historical** deployed/source/config/data baseline (schema 1; never regenerated or overwritten) |
+| `baseline/runs/<run-id>/manifest.json` | Versioned current-run observations (schema 2) from `scripts/v2/build_baseline_manifest.py` (`--repo-root`, `--app`); historical claims appear only as dated pointers |
+| `VERIFICATION.html` | The one human runbook for deferred reference-Mac checks (M01–M14 sections; stable IDs `Mxx-Vnnn`; status saved in the browser) |
 | `baseline/legacy-log-reconciliation.json` | Audited log aggregates reproduced by `scripts/v2/parse_legacy_log.py` |
 | `benchmarks/<run-id>/` | Measured runs (probe output, environment) |
 | `acceptance/<Mxx>/results.json` | Per-milestone structured acceptance results |
@@ -39,3 +41,7 @@ three canonical Markdown documents are. Package entry point: `README.md`.
   `tests/v2/test_baseline_manifest.py` enforces this.
 - Unknown facts are null with a reason. Never mark unavailable human checks
   as passed.
+- Checks that need the real Mac go into `VERIFICATION.html` as
+  `PENDING_LOCAL_VERIFICATION` entries (append to your milestone's section;
+  never renumber). Pending entries do not block the next read-only audit
+  unless an unverified condition invalidates its static premise.
