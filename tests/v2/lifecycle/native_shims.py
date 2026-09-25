@@ -19,6 +19,12 @@ the native seams:
 * ``sounddevice`` is a scriptable fake (``FakeSoundDevice``) so the real
   ``localflow.audio.Recorder`` can be driven through its stream seam.
 
+``patch_seams(app_mod)`` additionally replaces two SEAMS on every
+platform — ``localflow.audio.sd`` (the microphone) and the app's
+``AppHelper`` (main-thread hops) — so the same suites run
+deterministically on the reference Mac without opening a microphone or
+needing a run loop, while real AppKit/PyObjC is used when present.
+
 A pass under these shims is a portable orchestration result. It is NOT
 native verification of AppKit, PyObjC, TCC, event taps, microphones or
 sleep/wake — those stay PENDING_LOCAL_VERIFICATION (VERIFICATION.html).
@@ -224,6 +230,9 @@ class FakeSoundDevice(types.ModuleType):
         return dev if index is not None else [dev]
 
 
+FAKE_SD = FakeSoundDevice()
+
+
 def _real(name):
     try:
         importlib.import_module(name)
@@ -264,10 +273,19 @@ def install():
         sys.modules["PyObjCTools.AppHelper"] = AppHelper
         SHIMMED.append("PyObjCTools")
     if not _real("sounddevice"):
-        sys.modules["sounddevice"] = FakeSoundDevice()
+        sys.modules["sounddevice"] = FAKE_SD
         SHIMMED.append("sounddevice")
     return SHIMMED
 
 
+def patch_seams(app_mod=None):
+    """Declared seam fakes applied on EVERY platform (see module doc)."""
+    import localflow.audio as audio_mod
+    audio_mod.sd = FAKE_SD
+    if app_mod is not None:
+        app_mod.AppHelper = AppHelper
+    return FAKE_SD
+
+
 def sounddevice():
-    return sys.modules["sounddevice"]
+    return FAKE_SD

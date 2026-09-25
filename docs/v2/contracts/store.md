@@ -291,3 +291,34 @@ Owner M02; findings M02-AUDIT-01…20 (`docs/v2/acceptance/M02/remediation/`).
   day knobs (integral, 1…36500); an invalid value falls back to its
   default and is reported (`config.retention_invalid`), never a crash or
   a zero/negative window.
+
+## M03 remediation (schema unchanged, v11)
+
+- **Deletion arbitration for payloads outside the store.**
+  `run_unless_deleted(job_id, fn)` runs a short `fn` on the writer thread
+  only if the job is not barred; `publish_job_file(job_id, staged, final)`
+  atomically renames a staged file into place the same way and returns
+  `published`/`deleted`/`failed` (a staged file that was not published is
+  removed). Because delete-everywhere enumerates and purges a job's
+  registered payload files in its own writer op, an M03 file (worker WAV,
+  recovery WAV, capture-provenance sidecar, journal creation, debug copy)
+  either exists before that enumeration and is purged with the job, or is
+  never created. Staging names keep the final name as their prefix
+  (`<name>.part-<pid>-<rand>`), so the job's glob owns them.
+- **Deletion listeners.** `add_job_deletion_listener(fn)` runs `fn(job_id)`
+  inside the delete op (writer thread) before the barrier commits; the app
+  uses it only to revoke in-memory authority (queued work, cached
+  delivery, recovery items, automatic retries) — flags, no store calls.
+- **WAV helpers.** `_write_wav` stages and renames (no final-path prefix
+  after an interruption). `read_wav_f32`/`read_wav` are strict: a
+  truncated payload raises `WavIncompleteError` (declared/available
+  sample counts), bytes beyond the declared payload raise
+  `WavFormatError`; both subclass `ValueError`.
+  `read_wav_f32_prefix` returns the complete-sample prefix with honest
+  counts, for recovery classification only.
+- **Attempts.** `bump_job_attempt(job_id, at_least=N, wait=True)` raises
+  the attempt to an execution known to have run (never lowers it) and can
+  return the committed value; the recovery retry uses the committed row
+  as the attempt authority. The `expected_attempt` fence stays unwired
+  app-wide (no stale writer was established; M03-AUDIT-03/05 were repaired
+  at their concrete mechanisms).

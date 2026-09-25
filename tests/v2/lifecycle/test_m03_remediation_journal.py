@@ -37,7 +37,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from m03_helpers import (ROOT, blocks_of, native_shims, run,  # noqa: E402
                          tmpdir, v1_journal, v2_journal)
 import numpy as np  # noqa: E402
-from localflow import audio as audio_mod  # noqa: E402
+from localflow import audio as audio_mod  # noqa: E402  (sd patched by m03_helpers)
 from localflow.v2 import capture_journal as cj  # noqa: E402
 
 B = blocks_of(4)
