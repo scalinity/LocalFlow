@@ -534,6 +534,7 @@ def test_benchmark_refuses_unbound_or_empty_collection():
     res = bench.bench_collection_paired(n=3)
     assert res["certified"] is True
     assert "acknowledged" in res["timing_scope"]
+    assert res["meets_s2916_target"] == (res["delta_p95_ms"] <= 25)
     pops = res["enabled"]["populations"]
     assert pops["artifacts_by_role"] == {r: 3 for r in bench.EXPECTED_ROLES}
     assert pops["examples"] == 3 and pops["revisions"] == 6

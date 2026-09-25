@@ -635,6 +635,19 @@ _MIGRATIONS[11] = [
          completed_at_utc TEXT)""",
     """CREATE INDEX IF NOT EXISTS idx_purge_intents_open
          ON purge_intents(completed_at_utc)""",
+    # Backfill the barrier for deletions made before v11 (idempotent, so
+    # the repair path can re-run it): jobs whose examples were deleted
+    # everywhere, and jobs whose artifacts carry a deletion tombstone
+    # (retention never writes artifact tombstones).
+    """INSERT OR IGNORE INTO job_deletions(job_id, reason, deleted_at_utc)
+         SELECT job_id, 'pre_v11_deletion', MIN(updated_at_utc)
+         FROM training_examples WHERE state='deleted' GROUP BY job_id""",
+    """INSERT OR IGNORE INTO job_deletions(job_id, reason, deleted_at_utc)
+         SELECT a.job_id, 'pre_v11_deletion', MIN(t.created_at_utc)
+         FROM deletion_tombstones t JOIN artifacts a
+           ON a.artifact_id = t.target_id
+         WHERE t.target_kind='artifact' AND a.job_id IS NOT NULL
+         GROUP BY a.job_id""",
 ]
 
 # Tables whose loss at the current schema version is corruption, not a
@@ -662,8 +675,10 @@ _CORE_DEPENDENTS = {
                           " source_kind='stats_db' LIMIT 1",),
     "deletion_tombstones": ("SELECT 1 FROM training_examples WHERE"
                             " state='deleted' LIMIT 1",),
-    "job_deletions": ("SELECT 1 FROM deletion_tombstones LIMIT 1",),
-    "purge_intents": ("SELECT 1 FROM artifacts WHERE purged=1 LIMIT 1",),
+    # job_deletions is rebuilt from the tombstones by the v11 backfill
+    # (re-applied by the repair path); a lost purge_intents table loses
+    # only unfinished unlinks, which the orphan sweep still surfaces —
+    # neither is refused.
 }
 
 
@@ -711,40 +726,39 @@ def conn_assert_example_writable(conn, example_id):
 _ARTIFACT_ID = __import__("re").compile(r"^art-[0-9a-f]{32}$")
 
 
-def iter_artifact_refs(obj, path="", _ref_slot=False):
+def iter_artifact_refs(obj, path="", _ref_slot=False, _keys=()):
     """Every artifact id an envelope references, with its JSON path —
     top-level artifact_ids and nested prompt/proposal/audio-preparation
     references alike (M02-AUDIT-05/14). A reference is any string in an
     ``*artifact_id`` slot or an ``*artifact_ids`` mapping/list, plus any
-    string shaped exactly like a minted artifact id."""
+    string shaped exactly like a minted artifact id. ``missing_reasons``
+    and ``completeness`` hold reasons and paths, never references.
+    Yields (display_path, artifact_id, key_tuple); walk back with the
+    key tuple (keys may themselves contain '.' or '[')."""
     if isinstance(obj, dict):
         for k, v in obj.items():
-            if k == "completeness":
+            if not _keys and k in ("completeness", "missing_reasons"):
                 continue
             slot = isinstance(k, str) and (k.endswith("artifact_id")
                                            or k.endswith("artifact_ids"))
             yield from iter_artifact_refs(
-                v, f"{path}.{k}" if path else k, _ref_slot or slot)
+                v, f"{path}.{k}" if path else str(k), _ref_slot or slot,
+                _keys + (k,))
     elif isinstance(obj, list):
         for i, v in enumerate(obj):
-            yield from iter_artifact_refs(v, f"{path}[{i}]", _ref_slot)
+            yield from iter_artifact_refs(v, f"{path}[{i}]", _ref_slot,
+                                          _keys + (i,))
     elif isinstance(obj, str) and obj and (
             _ref_slot or _ARTIFACT_ID.match(obj)):
-        yield path, obj
+        yield path, obj, _keys
 
 
-def _set_path(obj, path, value):
-    """Replace one reference found by iter_artifact_refs."""
-    import re as _re
-    parts = _re.findall(r"[^.\[\]]+|\[\d+\]", path)
+def _set_path(obj, keys, value):
+    """Replace one reference found by iter_artifact_refs (key tuple)."""
     cur = obj
-    for p in parts[:-1]:
-        cur = cur[int(p[1:-1])] if p.startswith("[") else cur[p]
-    last = parts[-1]
-    if last.startswith("["):
-        cur[int(last[1:-1])] = value
-    else:
-        cur[last] = value
+    for k in keys[:-1]:
+        cur = cur[k]
+    cur[keys[-1]] = value
 
 
 # ---- IEEE float32 WAV (Spec S29.5: the original capture artifact) -------
@@ -920,6 +934,11 @@ class Store:
                     # Only now is the purge durable; remove the files.
                     self._purge_pending = False
                     self._drain_purge_intents()
+                if isinstance(out, dict) and "_purge_intents" in out:
+                    # Report what is still on disk from HERE (no second
+                    # submission that a concurrent close could refuse).
+                    out["pending_purges"] = self._count_pending(
+                        out.pop("_purge_intents"))
                 if result_q is not None:
                     result_q.put((out, err))
             finally:
@@ -1676,13 +1695,13 @@ class Store:
             env["state"] = state
             missing = dict(env.get("missing_reasons") or {})
             uncommitted = []
-            for path, aid in list(iter_artifact_refs(env)):
+            for path, aid, keys in list(iter_artifact_refs(env)):
                 row = self._db.execute(
                     "SELECT job_id, purged FROM artifacts WHERE"
                     " artifact_id=?", (aid,)).fetchone()
                 if row is not None and row[0] == job_id and not row[1]:
                     continue
-                _set_path(env, path, None)
+                _set_path(env, keys, None)
                 uncommitted.append(path)
                 key = path[len("artifact_ids."):] \
                     if path.startswith("artifact_ids.") else path
@@ -2101,20 +2120,26 @@ class Store:
                     (ids.new_id("tomb"), "artifact", aid, reason, now_iso))
             return {"job_id": job_id,
                     "purged_artifacts": len(purged_artifacts),
-                    "intents": intents}
+                    "payload_files": len(intents),
+                    "_purge_intents": intents}
         out = self._submit(op, wait=True)
-        # The writer drained the intents right after the commit; report
-        # what is actually still on disk, never the plan.
-        intents = out.pop("intents")
-        pending = self.pending_purges(intents) if intents else 0
-        out["payload_files"] = len(intents)
-        out["pending_purges"] = pending
+        # The writer drained the intents right after the commit and
+        # counted what is actually still on disk — never the plan.
+        pending = out["pending_purges"]
         out["complete"] = pending == 0
         self.emit("training.deleted_everywhere", level="INFO",
                   reason_code=reason, job_id=out.pop("job_id"),
                   outcome="complete" if pending == 0 else "purge_pending",
-                  detail=f"files={len(intents)} pending={pending}")
+                  detail=f"files={out['payload_files']} pending={pending}")
         return out
+
+    def job_deleted(self, job_id) -> bool:
+        """Whether delete-everywhere has barred this job (a check for
+        producers writing job-scoped copies OUTSIDE the store)."""
+        if not job_id:
+            return False
+        return self._submit(lambda: conn_job_deleted(self._db, job_id),
+                            wait=True)
 
     def register_job_payload_dir(self, directory, pattern):
         """Declare a directory holding JOB-SCOPED payload copies the store
@@ -2187,6 +2212,16 @@ class Store:
             self.emit("store.purge_pending", level="ERROR",
                       reason_code="payload_unlink_failed",
                       detail=f"pending={failed}")
+
+    def _count_pending(self, intent_ids) -> int:
+        """Writer-thread only."""
+        if not intent_ids:
+            return 0
+        marks = ",".join("?" * len(intent_ids))
+        return self._db.execute(
+            "SELECT COUNT(*) FROM purge_intents WHERE completed_at_utc IS"
+            f" NULL AND intent_id IN ({marks})",
+            tuple(intent_ids)).fetchone()[0]
 
     def reconcile_purges(self) -> int:
         """Retry every pending purge intent now; returns how many remain."""
@@ -2323,7 +2358,7 @@ class Store:
                 reasons = env.get("missing_reasons") or {}
                 ex = examples.get(ex_id)
                 job_id = env.get("job_id") or (ex[0] if ex else None)
-                for path, aid in iter_artifact_refs(env):
+                for path, aid, _keys in iter_artifact_refs(env):
                     key = path[len("artifact_ids."):] \
                         if path.startswith("artifact_ids.") else path
                     if key in reasons:
@@ -2346,7 +2381,8 @@ class Store:
                     # handles by eligibility).
                 prep = env.get("audio_preparation") or {}
                 if prep and not prep.get("artifact_id"):
-                    if "audio_preparation" not in reasons:
+                    if "audio_preparation" not in reasons and \
+                            "audio_preparation.artifact_id" not in reasons:
                         issues.append(
                             f"revision {rev_id} has decode ranges with no"
                             " parent audio artifact and no missing-reason")

@@ -46,8 +46,8 @@ import time
 
 from . import ids
 from .curation import classify
-from .store import (TRAINABLE_STATES, Store, grant_lease_row,
-                    insert_text_artifact_row)
+from .store import (TRAINABLE_STATES, Store, conn_job_deleted,
+                    grant_lease_row, insert_text_artifact_row)
 from .store import conn_artifact_text as _conn_artifact_text
 
 CANDIDATE_STATUSES = ("pending", "approved", "rejected", "suppressed",
@@ -263,6 +263,11 @@ class LearningService:
                     job_id = job_row[0] if job_row else None
                 if not job_id:
                     continue  # no dictation to attribute the edit to
+                if conn_job_deleted(conn, job_id):
+                    # M02 deletion barrier: a deleted dictation's content
+                    # is never re-minted into evidence (and one deleted
+                    # job must not fail the whole mining pass).
+                    continue
                 state = conn.execute(
                     "SELECT state FROM training_examples WHERE"
                     " example_id=?", (ex_id,)).fetchone() \

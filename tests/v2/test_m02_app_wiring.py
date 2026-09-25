@@ -74,8 +74,10 @@ def test_debug_copy_and_job_dirs():
     assert "config_mod.event_retention_policy(cfg)" in cfg
     assert "int(cfg.get(\"retention_" not in cfg
     assert "self._dump_audio(audio, job_id)" in src(fn("_worker"))
-    assert "v2_debug_audio.write_debug_copy" in src(
-        fn("_dump_audio"))
+    dump = src(fn("_dump_audio"))
+    assert "v2_debug_audio.write_debug_copy" in dump
+    assert dump.index("self.store.job_deleted(job_id)") \
+        < dump.index("write_debug_copy")
     hub = src(fn("hubApplyRetention"))
     assert "validate_retention_value" in hub
     print("ok  02/19 wiring: job-named debug copy + registered job dirs;"

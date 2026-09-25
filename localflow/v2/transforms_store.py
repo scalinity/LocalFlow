@@ -25,7 +25,8 @@ from typing import Optional
 
 from . import ids
 from . import transforms as tf
-from .store import Store, grant_lease_row, insert_text_artifact_row
+from .store import (Store, conn_job_deleted, grant_lease_row,
+                    insert_text_artifact_row)
 
 _COLS = ("transform_id", "name", "mode", "origin", "description",
          "prompt", "edit_types_json", "examples_json", "shortcut",
@@ -386,10 +387,17 @@ class TransformStore:
 
         def op(db):
             nonlocal src_art, out_art
+            # M02 deletion barrier: a transform of text whose originating
+            # dictation was deleted everywhere (e.g. moved to the
+            # Scratchpad) is not evidence OF that job — its artifacts are
+            # detached instead of recreating the deleted job's content.
+            job_ref = result.job.parent_job_id
+            if conn_job_deleted(db, job_ref):
+                job_ref = None
             if source_artifact_text is not None:
                 src_art = insert_text_artifact_row(
                     db, artifact_id=ids.new_id("art"),
-                    job_id=result.job.parent_job_id, stage="transform",
+                    job_id=job_ref, stage="transform",
                     role="transform_source", text=source_artifact_text,
                     kind="text", retention_class="training",
                     meta={"task_key": manifest["task_key"],
@@ -401,7 +409,7 @@ class TransformStore:
             if output_artifact_text is not None:
                 out_art = insert_text_artifact_row(
                     db, artifact_id=ids.new_id("art"),
-                    job_id=result.job.parent_job_id, stage="transform",
+                    job_id=job_ref, stage="transform",
                     role="transform_output", text=output_artifact_text,
                     kind="text", retention_class="training",
                     meta={"task_key": manifest["task_key"],

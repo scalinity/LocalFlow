@@ -3000,6 +3000,8 @@ class AppDelegate(NSObject):
         # M02-AUDIT-02: the debug copy is named by its job so
         # delete-everywhere (registered in configure) removes it too.
         try:
+            if job_id and self.store.job_deleted(job_id):
+                return  # never recreate a deleted job's audio copy
             self._dump_seq += 1
             v2_debug_audio.write_debug_copy(
                 AUDIO_DEBUG_DIR, job_id, audio, int(self.cfg["sample_rate"]),

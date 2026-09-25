@@ -150,8 +150,15 @@ class ConsentManager:
         if new_state not in CONSENT_STATES:
             raise ValueError(f"unknown consent state {new_state!r}")
         cid = self.store.append_consent(new_state, note=note)
-        with self._lock:
-            self._cached = (new_state, cid)
+        # The cache follows the COMMITTED store, never the request: a
+        # failed consent write must not leave the capture boundary
+        # believing in a revision that does not exist.
+        snap = self.snapshot_now(point="consent_set")
+        if snap.state != new_state or (
+                new_state == "enabled" and snap.revision_id != cid):
+            self.emit("training.collection_state", level="ERROR",
+                      outcome="not_recorded", reason_code="consent_write_failed")
+            return None
         self.emit("training.collection_state", level="INFO",
                   outcome=new_state, reason_code="consent_revision")
         return cid

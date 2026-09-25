@@ -537,6 +537,8 @@ class TrainingDataService:
             if row is None:
                 raise ValueError("example not found")
             current = row[0]
+            if current == "deleted":
+                return current  # delete-everywhere is final (M02-AUDIT-01)
             if excluded:
                 new = "excluded"
             elif current in ("deleted", "expired", "quarantined_sensitive"):
