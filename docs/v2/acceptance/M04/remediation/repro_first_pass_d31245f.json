@@ -1,0 +1,839 @@
+{
+ "code_root_sha": "d31245f49614699c46288d5fa40157ee5a80c996",
+ "evaluated_utc": "2026-09-25T07:44:45Z",
+ "findings": {
+  "a01": {
+   "negative": {
+    "edits": [],
+    "input": "we should slash code review time",
+    "output": "we should slash code review time",
+    "rejected": [
+     {
+      "cls": "skill",
+      "input": "slash code review",
+      "reason": "verb_context"
+     }
+    ]
+   },
+   "positives": [
+    {
+     "edits": [
+      {
+       "cls": "skill",
+       "input": "slash code review",
+       "layer": 3,
+       "output": "/code-review",
+       "span": [
+        0,
+        17
+       ],
+       "unit": "skill_token",
+       "value": "code-review"
+      }
+     ],
+     "input": "slash code review",
+     "output": "/code-review",
+     "rejected": []
+    },
+    {
+     "edits": [
+      {
+       "cls": "skill",
+       "input": "slash code review",
+       "layer": 3,
+       "output": "/code-review",
+       "span": [
+        4,
+        21
+       ],
+       "unit": "skill_token",
+       "value": "code-review"
+      }
+     ],
+     "input": "add slash code review to the list",
+     "output": "add /code-review to the list",
+     "rejected": []
+    }
+   ],
+   "positives_hold": true,
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a02": {
+   "cases": {
+    "one hundred. five percent": {
+     "edits": [
+      {
+       "cls": "percent",
+       "input": "five percent",
+       "layer": 4,
+       "output": "5%",
+       "span": [
+        13,
+        25
+       ],
+       "unit": "%",
+       "value": "5"
+      }
+     ],
+     "input": "one hundred. five percent",
+     "output": "one hundred. 5%",
+     "rejected": [
+      {
+       "cls": "integer",
+       "input": "five",
+       "reason": "overlap_conflict"
+      }
+     ]
+    },
+    "twelve dollars, please": {
+     "edits": [
+      {
+       "cls": "currency",
+       "input": "twelve dollars",
+       "layer": 4,
+       "output": "$12",
+       "span": [
+        0,
+        14
+       ],
+       "unit": "USD",
+       "value": "12"
+      }
+     ],
+     "input": "twelve dollars, please",
+     "output": "$12, please",
+     "rejected": [
+      {
+       "cls": "integer",
+       "input": "twelve",
+       "reason": "overlap_conflict"
+      }
+     ]
+    },
+    "twelve percent.": {
+     "edits": [
+      {
+       "cls": "percent",
+       "input": "twelve percent",
+       "layer": 4,
+       "output": "12%",
+       "span": [
+        0,
+        14
+       ],
+       "unit": "%",
+       "value": "12"
+      }
+     ],
+     "input": "twelve percent.",
+     "output": "12%.",
+     "rejected": [
+      {
+       "cls": "integer",
+       "input": "twelve",
+       "reason": "overlap_conflict"
+      }
+     ]
+    },
+    "twenty, five percent": {
+     "edits": [
+      {
+       "cls": "percent",
+       "input": "five percent",
+       "layer": 4,
+       "output": "5%",
+       "span": [
+        8,
+        20
+       ],
+       "unit": "%",
+       "value": "5"
+      }
+     ],
+     "input": "twenty, five percent",
+     "output": "twenty, 5%",
+     "rejected": [
+      {
+       "cls": "integer",
+       "input": "five",
+       "reason": "overlap_conflict"
+      }
+     ]
+    }
+   },
+   "punctuation_lost": false,
+   "quantities_merged_across_delimiter": {
+    "one hundred. five percent": false,
+    "twenty, five percent": false
+   },
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a03": {
+   "cases": {
+    "one point two three four five thousand dollars": {
+     "edits": [
+      {
+       "cls": "currency",
+       "input": "one point two three four five thousand dollars",
+       "layer": 4,
+       "output": "$1234.5",
+       "span": [
+        0,
+        46
+       ],
+       "unit": "USD",
+       "value": "1234.5000"
+      }
+     ],
+     "independent_amount": "1234.5000",
+     "input": "one point two three four five thousand dollars",
+     "output": "$1234.5",
+     "rejected": [
+      {
+       "cls": "decimal",
+       "input": "one point two three four five",
+       "reason": "overlap_conflict"
+      }
+     ],
+     "rendered_amount": "1234.5"
+    },
+    "zero point zero zero zero one thousand dollars": {
+     "edits": [
+      {
+       "cls": "currency",
+       "input": "zero point zero zero zero one thousand dollars",
+       "layer": 4,
+       "output": "$0.1",
+       "span": [
+        0,
+        46
+       ],
+       "unit": "USD",
+       "value": "0.1000"
+      }
+     ],
+     "independent_amount": "0.1000",
+     "input": "zero point zero zero zero one thousand dollars",
+     "output": "$0.1",
+     "rejected": [
+      {
+       "cls": "decimal",
+       "input": "zero point zero zero zero one",
+       "reason": "overlap_conflict"
+      }
+     ],
+     "rendered_amount": "0.1"
+    }
+   },
+   "controls": [
+    "$1,500,000",
+    "$1250"
+   ],
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a04": {
+   "cases": {
+    "a few hundred thousand dollars": {
+     "edits": [],
+     "input": "a few hundred thousand dollars",
+     "output": "a few hundred thousand dollars",
+     "rejected": [
+      {
+       "cls": "quantity",
+       "input": "hundred thousand",
+       "reason": "quantified_scale"
+      }
+     ]
+    },
+    "one million million dollars": {
+     "edits": [],
+     "input": "one million million dollars",
+     "output": "one million million dollars",
+     "rejected": [
+      {
+       "cls": "quantity",
+       "input": "one million million",
+       "reason": "malformed_scale"
+      }
+     ]
+    },
+    "one thousand million dollars": {
+     "edits": [],
+     "input": "one thousand million dollars",
+     "output": "one thousand million dollars",
+     "rejected": [
+      {
+       "cls": "quantity",
+       "input": "one thousand million",
+       "reason": "malformed_scale"
+      }
+     ]
+    },
+    "zero hundred dollars": {
+     "edits": [],
+     "input": "zero hundred dollars",
+     "output": "zero hundred dollars",
+     "rejected": [
+      {
+       "cls": "quantity",
+       "input": "zero hundred",
+       "reason": "malformed_scale"
+      }
+     ]
+    },
+    "zero thousand dollars": {
+     "edits": [],
+     "input": "zero thousand dollars",
+     "output": "zero thousand dollars",
+     "rejected": [
+      {
+       "cls": "quantity",
+       "input": "zero thousand",
+       "reason": "malformed_scale"
+      }
+     ]
+    }
+   },
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a05": {
+   "cases": {
+    "port negative eighty": {
+     "edits": [],
+     "input": "port negative eighty",
+     "output": "port negative eighty",
+     "rejected": [
+      {
+       "cls": "port",
+       "input": "negative eighty",
+       "reason": "invalid_port"
+      }
+     ]
+    },
+    "step negative five": {
+     "edits": [
+      {
+       "cls": "anchored_integer",
+       "input": "negative five",
+       "layer": 4,
+       "output": "-5",
+       "span": [
+        5,
+        18
+       ],
+       "unit": null,
+       "value": "-5"
+      }
+     ],
+     "input": "step negative five",
+     "output": "step -5",
+     "rejected": []
+    },
+    "ten by minus twenty centimeters": {
+     "edits": [
+      {
+       "cls": "dimension",
+       "input": "ten by minus twenty centimeters",
+       "layer": 4,
+       "output": "10 × -20 cm",
+       "span": [
+        0,
+        31
+       ],
+       "unit": "cm",
+       "value": "10x-20 cm"
+      }
+     ],
+     "input": "ten by minus twenty centimeters",
+     "output": "10 × -20 cm",
+     "rejected": [
+      {
+       "cls": "unit_number",
+       "input": "minus twenty",
+       "reason": "overlap_conflict"
+      }
+     ]
+    }
+   },
+   "negative_port_accepted": false,
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a06": {
+   "cases": {
+    "one twenty minute session": {
+     "edits": [],
+     "input": "one twenty minute session",
+     "output": "one twenty minute session",
+     "rejected": []
+    },
+    "three fifteen minute breaks": {
+     "edits": [],
+     "input": "three fifteen minute breaks",
+     "output": "three fifteen minute breaks",
+     "rejected": []
+    }
+   },
+   "controls": {
+    "at five thirty": "at 5:30",
+    "at nine oh five am": "at 9:05 AM",
+    "five thirty PM": "5:30 PM"
+   },
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a07": {
+   "cases": {
+    "invalid_ordinal": {
+     "edits": [],
+     "input": "March thirty second",
+     "output": "March thirty second",
+     "rejected": [
+      {
+       "cls": "date",
+       "input": "March thirty second",
+       "reason": "invalid_day"
+      },
+      {
+       "cls": "integer",
+       "input": "thirty",
+       "reason": "flagged_region"
+      },
+      {
+       "cls": "unit_number",
+       "input": "thirty",
+       "reason": "flagged_region"
+      }
+     ]
+    },
+    "modal": {
+     "edits": [],
+     "input": "this may first require approval",
+     "output": "this may first require approval",
+     "rejected": [
+      {
+       "cls": "date",
+       "input": "may first",
+       "reason": "ambiguous_month_word"
+      }
+     ]
+    }
+   },
+   "controls": {
+    "March thirty two is invalid": "March thirty two is invalid",
+    "May first": "May 1",
+    "September twenty fifth": "September 25"
+   },
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a08": {
+   "cases": {
+    "one dot two dot three": {
+     "edits": [],
+     "input": "one dot two dot three",
+     "output": "one dot two dot three",
+     "rejected": [
+      {
+       "cls": "number_chain",
+       "input": "one dot two dot three",
+       "reason": "dotted_number_arity"
+      }
+     ]
+    },
+    "one dot two dot three dot four dot five": {
+     "edits": [],
+     "input": "one dot two dot three dot four dot five",
+     "output": "one dot two dot three dot four dot five",
+     "rejected": [
+      {
+       "cls": "number_chain",
+       "input": "one dot two dot three dot four dot five",
+       "reason": "dotted_number_arity"
+      },
+      {
+       "cls": "ip",
+       "input": "one dot two dot three dot four",
+       "reason": "flagged_region"
+      }
+     ]
+    },
+    "one point twenty six point four": {
+     "edits": [],
+     "input": "one point twenty six point four",
+     "output": "one point twenty six point four",
+     "rejected": [
+      {
+       "cls": "version",
+       "input": "one point twenty six point four",
+       "reason": "unanchored_version"
+      }
+     ]
+    },
+    "point five percent": {
+     "edits": [],
+     "input": "point five percent",
+     "output": "point five percent",
+     "rejected": [
+      {
+       "cls": "number_chain",
+       "input": "point five",
+       "reason": "leading_decimal"
+      }
+     ]
+    }
+   },
+   "controls": {
+    "ten dot zero dot zero dot one": "10.0.0.1",
+    "version one point two six point four": "version 1.26.4"
+   },
+   "reproduced": false,
+   "seconds": 0.01
+  },
+  "a09": {
+   "controls": {
+    "grep dash i pattern files": "grep -i pattern files",
+    "hello comma how are you": "hello, how are you",
+    "stop period": "stop."
+   },
+   "declared_residual_rewrites": 2,
+   "of": 14,
+   "outputs": {
+    "standard:a question mark": "a question mark",
+    "standard:colon cancer": "colon cancer",
+    "standard:dash I asked him": "dash I asked him",
+    "standard:period drama": "period drama",
+    "standard:pipe tobacco": "pipe tobacco",
+    "standard:the forward slash character": "the forward slash character",
+    "standard:time period": "time.",
+    "technical:a question mark": "a question mark",
+    "technical:colon cancer": "colon cancer",
+    "technical:dash I asked him": "dash I asked him",
+    "technical:period drama": "period drama",
+    "technical:pipe tobacco": "pipe tobacco",
+    "technical:the forward slash character": "the forward slash character",
+    "technical:time period": "time."
+   },
+   "reproduced": false,
+   "rewritten": 2,
+   "seconds": 0.01
+  },
+  "a10": {
+   "cap_plus_one": {
+    "edits": [
+     {
+      "cls": "literal_escape",
+      "input": "write the phrase ",
+      "layer": 1,
+      "output": "",
+      "span": [
+       0,
+       17
+      ],
+      "unit": null,
+      "value": null
+     }
+    ],
+    "input": "write the phrase alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha period",
+    "output": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha period",
+    "rejected": [
+     {
+      "cls": "symbol",
+      "input": "period",
+      "reason": "protected_span"
+     }
+    ]
+   },
+   "nested": {
+    "edits": [
+     {
+      "cls": "literal_escape",
+      "input": "write the phrase ",
+      "layer": 1,
+      "output": "",
+      "span": [
+       0,
+       17
+      ],
+      "unit": null,
+      "value": null
+     }
+    ],
+    "input": "write the phrase please write the word comma",
+    "output": "please write the word comma",
+    "rejected": [
+     {
+      "cls": "symbol",
+      "input": "comma",
+      "reason": "protected_span"
+     }
+    ]
+   },
+   "nested_marker_dropped": false,
+   "reproduced": false,
+   "seconds": 0.0,
+   "tail_reinterpreted": false
+  },
+  "a11": {
+   "case_lost": false,
+   "hybrid_prefix": false,
+   "mixed_case": {
+    "edits": [
+     {
+      "cls": "path",
+      "input": "path slash Users slash Ada slash MyProject",
+      "layer": 4,
+      "output": "/Users/Ada/MyProject",
+      "span": [
+       0,
+       42
+      ],
+      "unit": "path",
+      "value": "/Users/Ada/MyProject"
+     }
+    ],
+    "input": "path slash Users slash Ada slash MyProject",
+    "output": "/Users/Ada/MyProject",
+    "rejected": []
+   },
+   "reproduced": false,
+   "seconds": 0.0,
+   "unsupported_tail": {
+    "edits": [],
+    "input": "path slash Users slash Ada slash build2",
+    "output": "path slash Users slash Ada slash build2",
+    "rejected": [
+     {
+      "cls": "path",
+      "input": "path slash Users slash Ada slash build2",
+      "reason": "incomplete_path"
+     }
+    ]
+   },
+   "written_control": "/Users/Ada/MyProject"
+  },
+  "a12": {
+   "attr_mutation": "refused:AttributeError",
+   "comma_after": "hello, world",
+   "context_after_caller_mutation": "the userId field",
+   "fresh_policy_output": "12%",
+   "fresh_policy_same_revision": true,
+   "output_after": "12%",
+   "output_before": "12%",
+   "reproduced": false,
+   "rev_unchanged": true,
+   "seconds": 0.14,
+   "symbol_mutation": "refused:TypeError",
+   "teens_mutation": "refused:TypeError"
+  },
+  "a13": {
+   "reproduced": false,
+   "seconds": 0.32,
+   "sequences": {
+    "configured_standard": {
+     "finalize_inherit_profile": "standard",
+     "job_a_profile": "technical",
+     "job_b_inherit_profile": "standard",
+     "job_b_text": "twelve retries failed"
+    },
+    "configured_technical": {
+     "finalize_inherit_profile": "technical",
+     "job_a_profile": "standard",
+     "job_b_inherit_profile": "technical",
+     "job_b_text": "12 retries failed"
+    }
+   },
+   "wiring": "AppDelegate._vocab_job_state + _finalized_policy (real methods)"
+  },
+  "a14": {
+   "accepted": [
+    [
+     "skill",
+     3
+    ]
+   ],
+   "case": {
+    "edits": [
+     {
+      "cls": "skill",
+      "input": "slash period",
+      "layer": 3,
+      "output": "/period",
+      "span": [
+       0,
+       12
+      ],
+      "unit": "skill_token",
+      "value": "period"
+     }
+    ],
+    "input": "slash period",
+    "output": "/period",
+    "rejected": [
+     {
+      "cls": "identifier",
+      "input": "slash period",
+      "reason": "lower_layer_same_span"
+     },
+     {
+      "cls": "symbol",
+      "input": "period",
+      "reason": "overlap_conflict"
+     }
+    ]
+   },
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a15": {
+   "first": "user ID",
+   "is_idempotent": true,
+   "reproduced": false,
+   "second": "user ID",
+   "second_edits": [],
+   "seconds": 0.0
+  },
+  "a16": {
+   "injections": {
+    "ledger_lease": {
+     "dictation_text": "12%",
+     "envelope_normalization_present": false,
+     "failure_event": true,
+     "failure_outcomes": [
+      "normalization_not_retained"
+     ],
+     "missing_reason": "retention_write_failed"
+    },
+    "ledger_write": {
+     "dictation_text": "12%",
+     "envelope_normalization_present": false,
+     "failure_event": true,
+     "failure_outcomes": [
+      "normalization_not_retained"
+     ],
+     "missing_reason": "retention_write_failed"
+    },
+    "text_lease": {
+     "dictation_text": "12%",
+     "envelope_normalization_present": false,
+     "failure_event": true,
+     "failure_outcomes": [
+      "normalization_not_retained"
+     ],
+     "missing_reason": "retention_write_failed"
+    },
+    "text_write": {
+     "dictation_text": "12%",
+     "envelope_normalization_present": false,
+     "failure_event": true,
+     "failure_outcomes": [
+      "normalization_not_retained"
+     ],
+     "missing_reason": "retention_write_failed"
+    }
+   },
+   "reproduced": false,
+   "seconds": 0.15
+  },
+  "a17": {
+   "dense_samples_internal_vs_external_ms": [
+    [
+     28.935,
+     29.129
+    ],
+    [
+     30.161,
+     30.383
+    ],
+    [
+     27.138,
+     27.31
+    ],
+    [
+     26.34,
+     26.494
+    ],
+    [
+     28.261,
+     28.442
+    ]
+   ],
+   "injected_50ms_apply_delay_reported_ms": 50.494,
+   "reproduced": false,
+   "seconds": 0.19
+  },
+  "a18": {
+   "mutations": {
+    "time_negative_other_rewrite": {
+     "caught": true,
+     "suite_failures": [
+      "test_time_requires_time_context"
+     ]
+    },
+    "typed_sign_flip_text_unchanged": {
+     "caught": true,
+     "suite_failures": [
+      "test_typed_semantics_independent_oracle",
+      "test_typed_values_and_units"
+     ]
+    },
+    "unjustified_idempotence_flag": {
+     "caught": true,
+     "suite_failures": [
+      "test_idempotence_all_fixtures",
+      "test_idempotence_exception_inventory"
+     ]
+    }
+   },
+   "reproduced": false,
+   "seconds": 1.08
+  },
+  "a19": {
+   "nested_alias_detected": true,
+   "reproduced": false,
+   "seconds": 0.05
+  },
+  "a20": {
+   "identity_normalizer_exit": 2,
+   "reproduced": false,
+   "seconds": 0.01
+  },
+  "a21": {
+   "callers": [
+    "localflow/app.py:4658:normalize",
+    "localflow/app.py:3283:normalize",
+    "localflow/v2/training.py:634:is_idempotent",
+    "localflow/v2/vocabulary.py:534:normalize"
+   ],
+   "reproduced": false,
+   "retry": {
+    "configured_profile": "technical",
+    "retry_cleanup_input": [
+     "12 retries failed"
+    ]
+   },
+   "retry_used_previous_jobs_style": false,
+   "seconds": 0.41
+  }
+ },
+ "native_shims": [
+  "AppKit",
+  "Foundation",
+  "Quartz",
+  "ApplicationServices",
+  "CoreFoundation",
+  "WebKit",
+  "Cocoa",
+  "objc",
+  "PyObjCTools",
+  "sounddevice"
+ ],
+ "python": "3.13.12",
+ "schema_version": 1,
+ "tool": "scripts/v2/m04_remediation_repro.py",
+ "working_tree_modified": false
+}
