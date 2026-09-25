@@ -220,6 +220,13 @@ class WorkerSupervisor:
                 generation = self.generation
                 self.engine_state = {"asr": "not_started",
                                      "cleanup": "not_started"}
+                # Cleared under the same lock as the closed check: a
+                # shutdown either sees this spawn's generation and wakes
+                # its hello wait afterwards, or refuses it — its wake-up
+                # can never be erased by a later clear (review R6).
+                self._hello.clear()
+                for evt in self._engine_events.values():
+                    evt.clear()
             env = dict(os.environ)
             env.update(self.spawn_env)
             # No unexpected downloads during dictation (S09): the worker
@@ -230,9 +237,6 @@ class WorkerSupervisor:
             env.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
             env.setdefault("PYTHONPATH", os.path.dirname(
                 os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-            self._hello.clear()
-            for evt in self._engine_events.values():
-                evt.clear()
             # A new process starts with its own byte-bounded stderr tail;
             # an old generation's drainer can never write into it.
             self._stderr_tails[generation] = _StderrTail()
@@ -417,14 +421,15 @@ class WorkerSupervisor:
                 self._hello.set()
             return
         if op == "engine":
-            if generation != self.generation:
-                # A late engine message from a dying generation must not
-                # mutate the fresh worker's readiness.
-                return
             engine = msg.get("engine")
             state = msg.get("state")
             if engine in self.engine_state and state in _ENGINE_STATES:
                 with self._state_lock:
+                    if generation != self.generation:
+                        # A late engine message from a dying generation
+                        # must not mutate the fresh worker's readiness;
+                        # checked under the lock _spawn resets it with.
+                        return
                     self.engine_state[engine] = state
                 # The event signals "reached a scheduling-terminal state"
                 # (ready or failed) — intermediate loading/warming updates
@@ -649,29 +654,37 @@ class WorkerSupervisor:
                 raise
 
     def _retry_once(self, op, engine, payload, wait, first, revoked):
-        self.emit("worker.restarting", level="WARNING",
-                  worker_generation=first.generation,
-                  job_id=payload.get("job_id"),
-                  stage=op, reason_code=first.reason_code,
-                  outcome="retry_once")
         with self._spawn_lock:
             # The damaged generation is retired whatever happens next.
             self._retire(first.generation, "fatal_stage_failure")
             if first.generation is None:
                 self._kill()
+            skip = None
             if (revoked is not None and revoked()) \
                     or self.is_revoked(payload.get("job_id")):
-                raise WorkerFailure("request_revoked", stage=op,
-                                    fatal=False)
+                skip = "request_revoked"
             with self._state_lock:
-                if self._closed:
-                    raise WorkerFailure("supervisor_closed", stage=op,
-                                        fatal=False)
-                if self.supervisor_state == "failed" or \
-                        self._consecutive_deaths >= BREAKER_LIMIT:
-                    raise WorkerFailure("supervisor_breaker_tripped",
-                                        stage=op, fatal=False)
-                self.supervisor_state = "degraded"
+                if skip is None and self._closed:
+                    skip = "supervisor_closed"
+                elif skip is None and (
+                        self.supervisor_state == "failed"
+                        or self._consecutive_deaths >= BREAKER_LIMIT):
+                    skip = "supervisor_breaker_tripped"
+                if skip is None:
+                    self.supervisor_state = "degraded"
+            if skip is not None:
+                # No retry runs: say so (never a "retry_once" that did not
+                # happen). The failed generation WAS retired → fatal.
+                self.emit("worker.retry_skipped", level="WARNING",
+                          worker_generation=first.generation,
+                          job_id=payload.get("job_id"), stage=op,
+                          reason_code=skip)
+                raise WorkerFailure(skip, stage=op, fatal=True)
+            self.emit("worker.restarting", level="WARNING",
+                      worker_generation=first.generation,
+                      job_id=payload.get("job_id"),
+                      stage=op, reason_code=first.reason_code,
+                      outcome="retry_once")
             fresh = (self._proc is not None and self._proc.poll() is None
                      and self._hello.is_set()
                      and self.generation != first.generation)

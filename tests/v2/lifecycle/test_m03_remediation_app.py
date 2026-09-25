@@ -199,6 +199,14 @@ def test_02_delete_vs_worker_wav_publication_both_orders():
                 return real_state(job_id, state, reason=reason, retry=retry)
 
             d._job_state = gated
+            outcomes = []
+            real_pub = d._publish_job_audio
+
+            def pub(*args, **kw):
+                outcomes.append(real_pub(*args, **kw))
+                return outcomes[-1]
+
+            d._publish_job_audio = pub
             sup = GateSup()
             a.set_sup(sup)
             a.start_coordinator()
@@ -210,6 +218,9 @@ def test_02_delete_vs_worker_wav_publication_both_orders():
             assert a.wait_call("_finishWithText_", 10)
             a.drain()
             time.sleep(0.3)
+            # the publication itself was refused by the barrier (the WAV
+            # never existed), not removed afterwards
+            assert outcomes == ["deleted"], outcomes
             assert sup.calls == [], "model ran for a deleted job"
             assert list(a.journal.glob(f"job-{jid}.*")) == []
             assert a.ins.submits == [] and a.copies == []
@@ -314,8 +325,17 @@ def test_02_retry_recovery_and_debug_copy_after_delete():
             assert d._recoverable == []
             assert list(a.journal.glob(f"job-{jid}.*")) == [] or \
                 _wait_gone(a.journal, jid)
-            # the transcript-logging debug copy is never recreated
-            d._dump_audio(np.zeros(1600, np.float32), jid)
+            # the transcript-logging debug copy is never recreated — by
+            # the store's arbitration itself: the pre-check and this
+            # process's deletion flag are both blinded here
+            real_jd = d.store.job_deleted
+            d.store.job_deleted = lambda j: False
+            d._deleted_jobs.discard(jid)
+            try:
+                d._dump_audio(np.zeros(1600, np.float32), jid)
+            finally:
+                d.store.job_deleted = real_jd
+                d._deleted_jobs.add(jid)
             assert list(app_mod.AUDIO_DEBUG_DIR.glob(f"*{jid}*")) == []
             # control: a live job's debug copy is written
             jid2, _ = d.store.create_job(boot_id=d.v2log.boot_id)
@@ -752,8 +772,17 @@ def test_23_retry_consent_is_original_and_enabled_now():
             d.store.upsert_example(job_id=collected, family_id=fam1,
                                    consent_revision_id=rev)
             never, _ = _prev_job(d)
+            # a crash-recovered capture never reached evidence: no example
+            # row, so no original permission — recovery grants none
+            recovered = "job-" + "c" * 32
+            a.journal.mkdir(parents=True, exist_ok=True)
+            v1_journal(a.journal / f"job-{recovered}.blk", recovered,
+                       blocks_of(12), meta={"captured_at_utc": T0})
+            d._recover_journals()
+            assert any(i["job_id"] == recovered for i in d._recoverable)
             assert d.collector.retry_snapshot(collected).collecting
             assert not d.collector.retry_snapshot(never).collecting
+            assert not d.collector.retry_snapshot(recovered).collecting
             d.consent.set("paused")
             assert not d.collector.retry_snapshot(collected).collecting
         finally:

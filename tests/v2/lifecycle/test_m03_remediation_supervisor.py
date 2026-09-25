@@ -115,6 +115,36 @@ def test_03_finalizer_before_registration():
     print("ok  03 finalizer before registration: fresh generation serves")
 
 
+def test_03_request_registered_on_finalized_generation():
+    """G1's reader has FINISHED (stdout EOF) while its process still runs:
+    a request stamped with G1 resolves at once as a runtime fault and is
+    retried on G2 — it never waits out the request timeout on a pipe
+    nobody reads."""
+    with tmpdir() as td:
+        w = wav(pathlib.Path(td) / "audio", "job-e.wav")
+        s, rec = make_sup(td, {"eof": ["close"], "transcribe": ["ok:g2"]},
+                          request_timeout=60.0)
+        try:
+            s.ensure_running()
+            assert s.wait_engine("asr", 15) == "ready"
+            deadline = time.monotonic() + 10
+            while 1 not in s._finalized and time.monotonic() < deadline:
+                time.sleep(0.01)
+            assert 1 in s._finalized, "G1's reader never finished"
+            assert s._proc is not None and s._proc.poll() is None, \
+                "the adverse state needs G1 still running"
+            t0 = time.monotonic()
+            res = s.transcribe(job_id="job-e", attempt=1, audio_name=w.name)
+            took = time.monotonic() - t0
+            assert res["text"] == "g2" and res["generation"] == 2
+            assert res["retried"] is True and res["attempt"] == 2
+            assert took < 10.0, f"waited {took:.1f}s on a finished reader"
+        finally:
+            s.shutdown()
+    print(f"ok  03 request on a finalized (still running) generation:"
+          f" resolved at once, served by G2 in {took:.2f}s")
+
+
 def test_04_closed_admission_is_permanent():
     with tmpdir() as td:
         w = wav(pathlib.Path(td) / "audio", "job-x.wav")
@@ -344,9 +374,13 @@ def test_06_runtime_cleanup_fallback_retires_generation():
     """Production worker: an exception escaping the cleanup engine keeps
     the text but retires the process; a healthy result does not."""
     with tmpdir() as td:
+        latch = pathlib.Path(td) / "release"
+        latch.write_text("go")  # G1 loads its cleanup engine
         s, rec = make_sup(td, {"clean": ["ok:clean one",
                                          "raise:boom in generation",
-                                         "ok:after retire"]}, prod=True)
+                                         "ok:after retire"],
+                               "cleanup_load_latch": str(latch)},
+                          prod=True)
         try:
             s.ensure_running()
             assert s.wait_engine("cleanup", 15) == "ready"
@@ -359,10 +393,16 @@ def test_06_runtime_cleanup_fallback_retires_generation():
             assert out["retired_generation"] is True
             assert s._consecutive_deaths == 1, "fallback counted healthy"
             assert s._proc is None
+            latch.unlink()  # G2's cleanup load is held
             after = s.clean(job_id="j3", attempt=1, raw_text="x")
             assert s.generation == gen + 1
-            assert after["op"] == "result"
+            # G2 was spawned FOR this request: basic-now, honestly labeled
+            assert after["op"] == "result" and after["text"] == "x"
+            assert after["path"] == "llm_fallback_normalized", after
+            assert after["fallback_reason"] == "cleanup_not_ready", after
+            assert not after.get("retired_generation")
         finally:
+            latch.write_text("go")
             s.shutdown()
     print("ok  06 runtime cleanup exception: text kept, generation retired,"
           " death counted; healthy control untouched")
@@ -599,6 +639,7 @@ def test_24_retry_budget_is_per_stage():
 def main():
     run([test_03_old_finalizer_cannot_fail_new_request,
          test_03_finalizer_before_registration,
+         test_03_request_registered_on_finalized_generation,
          test_04_closed_admission_is_permanent,
          test_04_shutdown_during_request_never_respawns,
          test_04_restart_serialized_with_retry_spawn,

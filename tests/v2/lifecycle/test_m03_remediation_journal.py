@@ -149,9 +149,12 @@ def test_08_v2_positions_crc_and_gaps():
              "recovered_offset": 3200}], r.gaps
         assert r.segments[2] == [1600, 2400, 800]
         # a payload bit flip is caught by the per-block CRC (no footer)
-        crcs = [None] * 4
+        import struct
         import zlib
-        crcs = [zlib.crc32(np.asarray(b, "<f4").tobytes()) for b in B]
+        crcs = [zlib.crc32(np.asarray(b, "<f4").tobytes(),
+                           zlib.crc32(struct.pack("<IIQ", i + 1, 800,
+                                                  i * 800)))
+                for i, b in enumerate(B)]
         crcs[2] ^= 1
         r = _rec(td, "crc", builder=v2_journal, crcs=crcs)
         assert (r.status, r.corrupt_reason) == ("corrupt", "crc_mismatch")
@@ -293,6 +296,32 @@ def test_01_is_live_ownership():
 
 def test_02_delayed_writer_cannot_recreate():
     with tmpdir() as td:
+        # discard DURING creation: the file exists when close_discard runs
+        # and only the creator's post-check can remove it
+        gate, inside = threading.Event(), threading.Event()
+        real_create = cj.CaptureJournal._create
+
+        def slow_create(self):
+            fd = real_create(self)
+            inside.set()
+            gate.wait(10)
+            return fd
+
+        cj.CaptureJournal._create = slow_create
+        try:
+            j = cj.CaptureJournal(td, job_id="job-midcreate",
+                                  sample_rate=16000)
+            j.handoff_block(np.ones(800, dtype=np.float32))
+            assert inside.wait(5), "writer never created its file"
+            assert j.blk_path.exists()  # the adverse state is real
+            j.close_discard(join_timeout=0.05)
+            gate.set()
+            j._thread.join(5)
+            assert not j._thread.is_alive()
+            assert not j.blk_path.exists(), "mid-create discard: remained"
+        finally:
+            cj.CaptureJournal._create = real_create
+            gate.set()
         for variant in ("discard", "gate_refused"):
             gate, entered = threading.Event(), threading.Event()
             real = cj.CaptureJournal._open_file
@@ -332,8 +361,9 @@ def test_02_delayed_writer_cannot_recreate():
         j.handoff_block(np.ones(800, dtype=np.float32))
         j.finalize()
         assert j.blk_path.exists() and j.finalized
-    print("ok  02 delayed writer: discard and deletion-gate refusal leave no"
-          " file; unrevoked control creates one")
+    print("ok  02 delayed writer: discard before/during creation and"
+          " deletion-gate refusal leave no file; unrevoked control creates"
+          " one")
 
 
 def main():

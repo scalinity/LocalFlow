@@ -2,9 +2,11 @@
 
 Runs the REAL ``localflow.v2.worker`` (``Worker.serve`` scheduling, the
 protocol framing, fault/reason handling, input-path checks) in a fresh
-subprocess, replacing only the two model loaders — ``localflow.stt
-.Transcriber`` and ``localflow.v2.cleanup.ModelRunner`` — with scriptable
-stand-ins. Unlike ``fake_worker.py`` (which re-implements the protocol),
+subprocess, replacing only the model loaders — ``localflow.stt
+.Transcriber``, ``localflow.v2.cleanup.ModelRunner`` and the v1
+``TranscriptCleaner.load`` (latched like the V2 load, then reported
+failed: the shim has no v1 model) — with scriptable stand-ins. Unlike
+``fake_worker.py`` (which re-implements the protocol),
 nothing here decides WHEN a request is read or answered: that is the
 production loop's behaviour under test.
 
@@ -121,6 +123,17 @@ class ShimRunner:
         return ""
 
 
+def _shim_v1_load(self):
+    """v1 cleaner load: same latch as the V2 load, then an honest failure
+    (the cleaner keeps its basic path — no v1 model exists here)."""
+    latch = PLAN.get("cleanup_load_latch")
+    _record(event="cleanup_load_started", impl="v1", t=time.monotonic())
+    if latch:
+        while not os.path.exists(latch):
+            time.sleep(0.01)
+    self.load_failed = True
+
+
 def main():
     global PLAN
     with open(os.environ["LOCALFLOW_PROD_WORKER_PLAN"]) as f:
@@ -130,6 +143,8 @@ def main():
     sys.modules["localflow.stt"] = stt
     import localflow.v2.cleanup as v2c
     v2c.ModelRunner = ShimRunner
+    import localflow.cleanup as v1c
+    v1c.TranscriptCleaner.load = _shim_v1_load
     from localflow.v2 import worker
     return worker.main(sys.argv[1:])
 

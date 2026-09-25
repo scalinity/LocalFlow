@@ -769,7 +769,8 @@ def write_wav_f32(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
     _write_wav(path, _f32_header(len(data), sample_rate), data)
 
 
-def write_wav_pcm16(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
+def write_wav_pcm16(path: pathlib.Path, samples: np.ndarray, sample_rate: int,
+                    *, atomic=True):
     """Quantized PCM16 WAV — a derivative export, never lossless (S29.5)."""
     data = (np.clip(np.asarray(samples), -1.0, 1.0) * 32767).astype(
         "<i2").tobytes()
@@ -780,22 +781,26 @@ def write_wav_pcm16(path: pathlib.Path, samples: np.ndarray, sample_rate: int):
         int(sample_rate) * 2, 2, 16,
         b"data", len(data),
     )
-    _write_wav(path, header, data)
+    _write_wav(path, header, data, atomic=atomic)
 
 
-def _write_wav(path: pathlib.Path, header: bytes, data: bytes):
+def _write_wav(path: pathlib.Path, header: bytes, data: bytes, *,
+               atomic=True):
     """Stage in the destination directory, then publish with one atomic
     rename (M03-AUDIT-10): an interrupted write leaves a ``.part-`` file,
-    never a final-path WAV whose header promises samples it lacks."""
+    never a final-path WAV whose header promises samples it lacks.
+    ``atomic=False`` writes ``path`` directly (``path`` is itself a
+    caller-chosen staging name)."""
     path = pathlib.Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = stage_path(path)
+    tmp = stage_path(path) if atomic else path
     try:
         fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, "wb") as f:
             f.write(header)
             f.write(data)
-        os.replace(tmp, path)
+        if atomic:
+            os.replace(tmp, path)
     except BaseException:
         try:
             tmp.unlink(missing_ok=True)
@@ -809,12 +814,14 @@ def _write_wav(path: pathlib.Path, header: bytes, data: bytes):
 
 
 def stage_path(path: pathlib.Path) -> pathlib.Path:
-    """A private sibling name for staging ``path``. It keeps ``path``'s
-    whole name as its prefix, so a job-named glob (``job-<id>.*``) owns
-    the staged file too — delete-everywhere removes it with the job."""
+    """A private sibling name for staging ``path``:
+    ``<stem>.part-<pid>-<rand><suffix>``. It keeps the stem as prefix and
+    the suffix as suffix, so every name pattern that owns ``path`` owns a
+    crash-left staged file too — the job glob ``job-<id>.*`` (delete-
+    everywhere), ``*.wav`` (artifact orphan detection) — review R2."""
     path = pathlib.Path(path)
-    return path.with_name(
-        f"{path.name}.part-{os.getpid()}-{ids.new_id('s')[-8:]}")
+    return path.with_name(f"{path.stem}.part-{os.getpid()}-"
+                          f"{ids.new_id('s')[-8:]}{path.suffix}")
 
 
 def stage_wav_f32(path: pathlib.Path, samples: np.ndarray,
@@ -2287,6 +2294,9 @@ class Store:
         self._deletion_listeners.append(fn)
 
     def run_unless_deleted(self, job_id, fn, timeout=15.0):
+        # (``timeout=None`` waits for the op itself: a caller timeout does
+        # not cancel a queued op, so a caller that must know whether ``fn``
+        # ran — e.g. a journal creating its file — waits.)
         """Serialize ``fn()`` with delete-everywhere (M03-AUDIT-02): it
         runs on the writer thread only if the job is not barred, and
         returns ``(True, fn())``; a deleted job returns ``(False, None)``
@@ -2303,15 +2313,32 @@ class Store:
     def publish_job_file(self, job_id, staged, final, timeout=15.0) -> str:
         """Atomically publish a staged job payload (``stage_wav_f32``)
         unless the job was deleted. Returns ``"published"``, ``"deleted"``
-        (barrier won — nothing was published) or ``"failed"`` (store
-        closed/unavailable or rename error); a staged file that was not
-        published is removed."""
+        (barrier won — nothing published, staged file removed),
+        ``"failed"`` (rename error; staged file removed) or
+        ``"unavailable"`` (store closing/closed, or the writer did not
+        answer within ``timeout``): the staged file is then LEFT for the
+        caller's decision, and a still-queued rename tolerates the caller
+        having published or removed it meanwhile (review R1)."""
         staged, final = pathlib.Path(staged), pathlib.Path(final)
+
+        def rename():
+            try:
+                os.replace(staged, final)
+            except FileNotFoundError:
+                # The caller gave up waiting and settled it itself.
+                return final.exists()
+            return True
+
         try:
-            ok, _ = self.run_unless_deleted(
-                job_id, lambda: os.replace(staged, final), timeout=timeout)
-            outcome = "published" if ok else "deleted"
-        except Exception:
+            ok, renamed = self.run_unless_deleted(job_id, rename,
+                                                  timeout=timeout)
+            outcome = ("published" if renamed else "failed") if ok \
+                else "deleted"
+        except TimeoutError:
+            return "unavailable"
+        except RuntimeError as e:
+            if str(e).startswith("store is "):
+                return "unavailable"
             outcome = "failed"
         if outcome != "published":
             try:
