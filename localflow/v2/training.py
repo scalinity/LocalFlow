@@ -16,6 +16,7 @@ supply carry reasons from the controlled vocabulary, never guesses.
 
 import json
 import re
+import threading
 
 from . import ids
 
@@ -80,13 +81,44 @@ def runtime_versions() -> dict:
     return out
 
 
+class ConsentSnapshot:
+    """One coherent collection-consent decision: a state and the id of
+    the revision that state came from, read together (M02-AUDIT-06).
+    ``point`` records WHERE it was taken — ``ptt_down`` (the capture
+    boundary the contract names), ``job_started`` (a caller without a
+    capture boundary, e.g. tests/benchmarks) or
+    ``retry_original_capture`` (a retry reusing the original capture's
+    permission)."""
+
+    __slots__ = ("state", "revision_id", "point")
+
+    def __init__(self, state, revision_id, point):
+        self.state = state if state in CONSENT_STATES else "disabled"
+        self.revision_id = revision_id if self.state == "enabled" else None
+        self.point = point
+
+    @property
+    def collecting(self) -> bool:
+        return self.state == "enabled" and self.revision_id is not None
+
+
 class ConsentManager:
     """The four distinct consent states of S29.2 begin with one here:
-    collection itself. Enable/pause/disable append auditable revisions."""
+    collection itself. Enable/pause/disable append auditable revisions.
+
+    Pause semantics (M02 remediation, documented in
+    contracts/training_evidence.md): collection consent is a CAPTURE-TIME
+    snapshot. The decision in force at push-to-talk DOWN governs that
+    capture's evidence; a later enable never retroactively authorizes
+    audio that started while collection was off, and a pause/disable
+    after capture start does not revoke an already-authorized in-flight
+    capture. Delete-everywhere is the separate, immediate barrier."""
 
     def __init__(self, store, emit):
         self.store = store
         self.emit = emit
+        self._lock = threading.Lock()
+        self._cached = None
 
     def state(self) -> str:
         s = self.store.consent_state()
@@ -95,10 +127,31 @@ class ConsentManager:
     def revision_id(self):
         return self.store.current_consent_id()
 
+    def snapshot_now(self, point="job_started") -> ConsentSnapshot:
+        """Atomic (state, revision) from ONE store read."""
+        state, cid = self.store.consent_snapshot()
+        snap = ConsentSnapshot(state, cid, point)
+        with self._lock:
+            self._cached = (snap.state, cid)
+        return snap
+
+    def capture_snapshot(self) -> ConsentSnapshot:
+        """Non-blocking snapshot for the push-to-talk-down boundary (main
+        thread): this process's consent writes all go through ``set``,
+        which updates the cached pair atomically; the first call reads
+        the store once."""
+        with self._lock:
+            cached = self._cached
+        if cached is None:
+            return self.snapshot_now(point="ptt_down")
+        return ConsentSnapshot(cached[0], cached[1], "ptt_down")
+
     def set(self, new_state: str, note=None) -> str:
         if new_state not in CONSENT_STATES:
             raise ValueError(f"unknown consent state {new_state!r}")
         cid = self.store.append_consent(new_state, note=note)
+        with self._lock:
+            self._cached = (new_state, cid)
         self.emit("training.collection_state", level="INFO",
                   outcome=new_state, reason_code="consent_revision")
         return cid
@@ -116,10 +169,17 @@ class CaptureContext:
         self.timezone = timezone
         self.utc_offset_minutes = utc_offset_minutes
         self.consent_revision_id = consent_revision_id
+        self.consent_point = None  # where the consent snapshot was taken
         self.policy = policy  # pipeline/config provenance snapshot
         self.collecting = policy is not None
         self.attempt = attempt
         self.worker_generation = worker_generation
+        # Stage-specific worker generations (M02-AUDIT-09): the ASR and
+        # cleanup results may come from different worker generations
+        # after a retry; neither is relabeled as the other's.
+        self.stage_generations = {}
+        self.publish = None  # publish_example acknowledgment
+        self.publish_attempted = False
         self.audio_artifact = None
         self.audio_write_failed = False  # M03: consent was on but the
         # payload write failed — a different missing reason than consent
@@ -193,15 +253,21 @@ class EvidenceCollector:
     # ---- job lifecycle ---------------------------------------------------
 
     def job_started(self, job_id, family_id, *, captured_at_utc, timezone,
-                    utc_offset_minutes, attempt=1):
-        """Snapshot consent at capture time; a mid-job consent change never
-        retroactively adds or removes this job's evidence. Does NOT bind the
-        observation sink — the worker thread does that via bind_current, so
-        a newer job starting on the main thread can never steal this job's
-        cleaner observations while it is still processing."""
-        state = self.consent.state()
-        if state == "enabled":
-            consent_id = self.consent.revision_id()
+                    utc_offset_minutes, attempt=1, consent_snapshot=None):
+        """Build the job's evidence context from ONE coherent consent
+        decision. The app passes the snapshot it took at push-to-talk
+        DOWN (``ConsentManager.capture_snapshot``) — the capture boundary
+        ``consent_revision_id`` is defined against — so a later consent
+        change never retroactively adds or removes this job's evidence
+        (M02-AUDIT-06). Without one, an atomic snapshot is read now.
+        Does NOT bind the observation sink — the worker thread does that
+        via bind_current, so a newer job starting on the main thread can
+        never steal this job's cleaner observations while it is still
+        processing."""
+        snap = consent_snapshot if consent_snapshot is not None \
+            else self.consent.snapshot_now()
+        if snap.collecting:
+            consent_id = snap.revision_id
             policy = dict(self.pipeline_info() or {})
         else:
             consent_id = None
@@ -210,7 +276,41 @@ class EvidenceCollector:
             job_id, family_id, captured_at_utc=captured_at_utc,
             timezone=timezone, utc_offset_minutes=utc_offset_minutes,
             consent_revision_id=consent_id, policy=policy, attempt=attempt)
+        ctx.consent_point = snap.point
         return ctx
+
+    def retry_snapshot(self, job_id) -> ConsentSnapshot:
+        """Consent for re-processing an OLD capture (the recovery retry):
+        the original capture's permission, never the current one attached
+        retroactively. Collects only when the original capture was
+        collected (its example carries the capture-time revision) AND
+        collection is enabled now — a retry started while paused or
+        disabled creates no new payload."""
+        try:
+            row = self.store.submit(lambda db: db.execute(
+                "SELECT consent_revision_id FROM training_examples WHERE"
+                " job_id=? AND consent_revision_id IS NOT NULL AND"
+                " state != 'deleted' ORDER BY rowid LIMIT 1",
+                (job_id,)).fetchone())
+        except Exception:
+            row = None
+        now = self.consent.capture_snapshot()
+        if row and now.collecting:
+            return ConsentSnapshot("enabled", row[0],
+                                   "retry_original_capture")
+        return ConsentSnapshot("disabled", None, "retry_original_capture")
+
+    def note_attempt(self, ctx, attempt, *, stage=None, worker_generation=None):
+        """The app's retry transition, propagated to the evidence context
+        (M02-AUDIT-09): the envelope's attempt is the attempt whose
+        results it records; a stage's worker generation is recorded for
+        that stage only."""
+        if ctx is None:
+            return
+        if attempt is not None:
+            ctx.attempt = int(attempt)
+        if stage and worker_generation is not None:
+            ctx.stage_generations[stage] = worker_generation
 
     def bind_current(self, ctx):
         """Bind the cleaner-observation sink to this job. Called on the
@@ -262,6 +362,8 @@ class EvidenceCollector:
             return
         ctx.raw_text = raw_text
         ctx.worker_generation = worker_generation
+        if worker_generation is not None:
+            ctx.stage_generations["asr"] = worker_generation
         ctx.decode_ranges = decode_ranges
         if raw_text is not None:
             # An empty ASR output is a real observation; record it verbatim.
@@ -657,7 +759,7 @@ class EvidenceCollector:
     def finalize(self, ctx):
         """After cleanup: mint the example and revision 1 with the full
         field-family envelope and honest missing reasons."""
-        if not ctx.collecting or ctx.example_id:
+        if not ctx.collecting or ctx.example_id or ctx.publish_attempted:
             return None
         ctx.secret_hits = scan_secrets(ctx.raw_text or "") \
             + scan_secrets(ctx.applied_text or "")
@@ -817,23 +919,71 @@ class EvidenceCollector:
                     payload.get("vocabulary_pairs") or [])
             cleanup_detail["v2"] = v2
 
-        ctx.example_id = self.store.upsert_example(
-            job_id=ctx.job_id, family_id=ctx.family_id,
-            consent_revision_id=ctx.consent_revision_id,
-            collection_policy="m02_live_capture")
         envelope = self._envelope(ctx, cleanup_detail)
-        ctx.revision_1 = self.store.append_revision(ctx.example_id, envelope)
-        if ctx.secret_hits:
-            ctx.quarantined = True
-            self.store.set_example_state(ctx.example_id, "quarantined_sensitive")
+        return self._publish(ctx, envelope, "capture_complete")
+
+    def _publish(self, ctx, envelope, reason_code):
+        """ONE acknowledged publication op (M02-AUDIT-03/05): the example
+        is visible for the first time in its final initial state
+        (quarantined when the scanner flagged it), its revision 1 and
+        pointer commit together, and uncommitted artifact references are
+        reported instead of claimed. Events follow the COMMIT, never the
+        enqueue. A publish failure never fails the dictation — it is an
+        explicit ``training.capture_failed`` event. A caller timeout is
+        not a cancellation: the pre-allocated example id stays on the
+        context (``publish`` = None) so a late commit is still joinable,
+        and the event says the publication is unacknowledged."""
+        if ctx.publish_attempted:
+            return ctx.example_id
+        ctx.publish_attempted = True
+        ctx.quarantined = bool(ctx.secret_hits)
+        example_id = ids.new_id("ex")
+        envelope["example_id"] = example_id
+        try:
+            ack = self.store.publish_example(
+                job_id=ctx.job_id, family_id=ctx.family_id,
+                envelope=envelope,
+                consent_revision_id=ctx.consent_revision_id,
+                collection_policy="m02_live_capture",
+                quarantined=ctx.quarantined, example_id=example_id)
+        except TimeoutError:
+            ctx.example_id = example_id
+            self.emit("training.capture_failed", level="ERROR",
+                      job_id=ctx.job_id, reason_code="TimeoutError",
+                      outcome="publish_unacknowledged")
+            return None
+        except Exception as e:
+            deleted = "JobDeletedError" in str(e)
+            self.emit("training.capture_failed",
+                      level="INFO" if deleted else "ERROR",
+                      job_id=ctx.job_id,
+                      reason_code=("job_deleted" if deleted
+                                   else type(e).__name__),
+                      outcome="publish_refused" if deleted
+                      else "publish_failed")
+            return None
+        ctx.publish = ack
+        ctx.example_id = ack["example_id"]
+        ctx.revision_1 = ack["revision_id"]
+        if ctx.quarantined:
             self.emit("training.secret_quarantined", level="WARNING",
                       job_id=ctx.job_id, reason_code="suspected_credential",
                       detail=f"patterns={len(ctx.secret_hits)}")
-        self.emit("training.revision_saved", level="INFO", job_id=ctx.job_id,
-                  reason_code="capture_complete",
-                  artifact_ids=[a for a in (ctx.audio_artifact,
-                                            ctx.raw_artifact,
-                                            ctx.applied_artifact) if a])
+        complete = ack["complete"]
+        self.emit("training.revision_saved",
+                  level="INFO" if complete else "WARNING",
+                  job_id=ctx.job_id, attempt=ctx.attempt,
+                  reason_code=(reason_code if complete
+                               else "capture_incomplete"),
+                  outcome="committed",
+                  detail=(None if complete else
+                          f"uncommitted={len(ack['uncommitted'])}"),
+                  artifact_ids=[
+                      envelope["artifact_ids"][k]
+                      for k in ("original_audio", "source_text",
+                                "applied_output")
+                      if envelope["artifact_ids"].get(k)
+                      and f"artifact_ids.{k}" not in ack["uncommitted"]])
         return ctx.example_id
 
     def on_insertion(self, ctx, posted: bool, chars: int):
@@ -844,18 +994,44 @@ class EvidenceCollector:
         ``on_insertion_result``."""
         if not ctx.collecting or not ctx.example_id:
             return
-        envelope = self.store.latest_revision(ctx.example_id) or {}
-        envelope.setdefault("artifact_ids", {})
-        envelope["outcome"] = {
-            "insertion": "posted_unverified" if posted else "not_attempted",
-            "inserted_chars": chars if posted else 0,
-            "correctness": "unreviewed",
-        }
-        envelope["missing_reasons"] = dict(envelope.get("missing_reasons") or {})
-        envelope["missing_reasons"]["outcome_observation"] = R_NOT_CAPTURED
-        envelope["revision_id"] = None  # append a fresh revision
-        self.store.append_revision(ctx.example_id, envelope,
-                                   parent_revision_id=ctx.revision_1)
+
+        def mutate(envelope):
+            envelope.setdefault("artifact_ids", {})
+            outcome = dict(envelope.get("outcome") or {})
+            # A human judgment recorded meanwhile survives (M02-AUDIT-08).
+            outcome.update({
+                "insertion": "posted_unverified" if posted
+                else "not_attempted",
+                "inserted_chars": chars if posted else 0,
+            })
+            outcome.setdefault("correctness", "unreviewed")
+            envelope["outcome"] = outcome
+            envelope["missing_reasons"] = dict(
+                envelope.get("missing_reasons") or {})
+            envelope["missing_reasons"]["outcome_observation"] = \
+                R_NOT_CAPTURED
+            return envelope
+        return self._update_outcome(ctx, mutate)
+
+    def _update_outcome(self, ctx, mutate):
+        """Outcome revisions extend the CURRENT latest revision in one
+        writer op (read, modify, append, pointer) — an annotation that
+        landed meanwhile is kept and the parent is the revision actually
+        extended (M02-AUDIT-08). A deleted example refuses the write
+        (M02-AUDIT-01). Failures never fail the dictation; they are
+        reported."""
+        try:
+            return self.store.update_latest_revision(ctx.example_id, mutate)
+        except Exception as e:
+            deleted = "JobDeletedError" in str(e)
+            self.emit("training.capture_failed",
+                      level="INFO" if deleted else "ERROR",
+                      job_id=ctx.job_id,
+                      reason_code=("job_deleted" if deleted
+                                   else type(e).__name__),
+                      outcome="outcome_revision_refused" if deleted
+                      else "outcome_revision_failed")
+            return None
 
     def on_insertion_result(self, ctx, result, observation=None):
         """M08 outcome revision (Spec S18/S29.8): the real insertion
@@ -867,38 +1043,41 @@ class EvidenceCollector:
         artifacts referenced by id, never in the envelope."""
         if not ctx.collecting or not ctx.example_id:
             return
-        envelope = self.store.latest_revision(ctx.example_id) or {}
-        envelope.setdefault("artifact_ids", {})
-        outcome = dict(envelope.get("outcome") or {})
-        outcome["correctness"] = outcome.get("correctness", "unreviewed")
-        outcome.update(result.to_envelope_block())
-        missing = dict(envelope.get("missing_reasons") or {})
-        if observation is not None:
-            # An S29.8 window is running on a certified surface: the
-            # insert-time block is interim (stop_reason fills in when
-            # the window closes — its own revision).
-            outcome["observation"] = self._observation_block(
-                observation.get("observer"))
-            missing.pop("outcome_observation", None)
-        elif result.state == "confirmed":
-            # Confirmed but no window (outcome_observation_sec = 0):
-            # observation is off by configuration, not unreliable.
-            outcome["observation"] = {"status": "observation_disabled"}
-            missing["outcome_observation"] = R_NOT_APPLICABLE
-        elif result.state == "posted_unverified":
-            # An unobserved insert on an uncertified surface: it never
-            # proved its AX reads self-consistent (S29.8's
-            # outcome_observation_unavailable).
-            outcome["observation"] = {
-                "status": "outcome_observation_unavailable"}
-            missing["outcome_observation"] = R_UNRELIABLE
-        else:
-            missing.pop("outcome_observation", None)
-        envelope["outcome"] = outcome
-        envelope["missing_reasons"] = missing
-        envelope["revision_id"] = None
-        self.store.append_revision(ctx.example_id, envelope,
-                                   parent_revision_id=ctx.revision_1)
+        block = result.to_envelope_block()
+        obs_block = (self._observation_block(observation.get("observer"))
+                     if observation is not None else None)
+
+        def mutate(envelope):
+            envelope.setdefault("artifact_ids", {})
+            outcome = dict(envelope.get("outcome") or {})
+            outcome["correctness"] = outcome.get("correctness",
+                                                 "unreviewed")
+            outcome.update(block)
+            missing = dict(envelope.get("missing_reasons") or {})
+            if obs_block is not None:
+                # An S29.8 window is running on a certified surface: the
+                # insert-time block is interim (stop_reason fills in when
+                # the window closes — its own revision).
+                outcome["observation"] = obs_block
+                missing.pop("outcome_observation", None)
+            elif result.state == "confirmed":
+                # Confirmed but no window (outcome_observation_sec = 0):
+                # observation is off by configuration, not unreliable.
+                outcome["observation"] = {"status": "observation_disabled"}
+                missing["outcome_observation"] = R_NOT_APPLICABLE
+            elif result.state == "posted_unverified":
+                # An unobserved insert on an uncertified surface: it never
+                # proved its AX reads self-consistent (S29.8's
+                # outcome_observation_unavailable).
+                outcome["observation"] = {
+                    "status": "outcome_observation_unavailable"}
+                missing["outcome_observation"] = R_UNRELIABLE
+            else:
+                missing.pop("outcome_observation", None)
+            envelope["outcome"] = outcome
+            envelope["missing_reasons"] = missing
+            return envelope
+        return self._update_outcome(ctx, mutate)
 
     def on_observation_closed(self, ctx, result, observer):
         """The bounded S29.8 window ended: append the observation
@@ -906,17 +1085,18 @@ class EvidenceCollector:
         insert transaction by up to the window)."""
         if not ctx.collecting or not ctx.example_id:
             return
-        envelope = self.store.latest_revision(ctx.example_id) or {}
-        outcome = dict(envelope.get("outcome") or {})
-        outcome["observation"] = self._observation_block(observer)
-        missing = dict(envelope.get("missing_reasons") or {})
-        if outcome["observation"].get("recorded"):
-            missing.pop("outcome_observation", None)
-        envelope["outcome"] = outcome
-        envelope["missing_reasons"] = missing
-        envelope["revision_id"] = None
-        self.store.append_revision(ctx.example_id, envelope,
-                                   parent_revision_id=ctx.revision_1)
+        obs_block = self._observation_block(observer)
+
+        def mutate(envelope):
+            outcome = dict(envelope.get("outcome") or {})
+            outcome["observation"] = obs_block
+            missing = dict(envelope.get("missing_reasons") or {})
+            if obs_block.get("recorded"):
+                missing.pop("outcome_observation", None)
+            envelope["outcome"] = outcome
+            envelope["missing_reasons"] = missing
+            return envelope
+        return self._update_outcome(ctx, mutate)
 
     # ---- M12: the Scratchpad note family (S20/S29.8) --------------------
 
@@ -1084,27 +1264,16 @@ class EvidenceCollector:
         an explicit failure reason (content-free — exception type only)."""
         if not ctx.collecting or ctx.example_id:
             return
+        if ctx.publish_attempted:
+            return
         ctx.secret_hits = scan_secrets(ctx.raw_text or "") \
             + scan_secrets(ctx.applied_text or "")
-        ctx.example_id = self.store.upsert_example(
-            job_id=ctx.job_id, family_id=ctx.family_id,
-            consent_revision_id=ctx.consent_revision_id,
-            collection_policy="m02_live_capture")
         envelope = self._envelope(ctx, {"passes": [], "pipeline_error":
                                         error_kind})
         envelope["outcome"] = {"insertion": "not_attempted",
                                "correctness": "unreviewed",
                                "pipeline_error": error_kind}
-        ctx.revision_1 = self.store.append_revision(ctx.example_id, envelope)
-        if ctx.secret_hits:
-            ctx.quarantined = True
-            self.store.set_example_state(ctx.example_id,
-                                         "quarantined_sensitive")
-            self.emit("training.secret_quarantined", level="WARNING",
-                      job_id=ctx.job_id, reason_code="suspected_credential",
-                      detail=f"patterns={len(ctx.secret_hits)}")
-        self.emit("training.revision_saved", level="INFO", job_id=ctx.job_id,
-                  reason_code="capture_failed_pipeline")
+        self._publish(ctx, envelope, "capture_failed_pipeline")
 
     # ---- explicit user actions (minimal M02 surface) ----------------------
 
@@ -1127,15 +1296,21 @@ class EvidenceCollector:
         ex_id, job_id, state = row
         if state in ("deleted", "expired"):
             return None
-        envelope = self.store.latest_revision(ex_id)
-        if not envelope:
+        # M02-AUDIT-16: the menu's "correct" is an intended-writing
+        # judgment (the user did not audio-review anything) — routed
+        # through the same op as the Hub's Mark Intended: provenance
+        # user_explicit_intended_writing, reviewed lifecycle (retained
+        # until removed). Earlier user_explicit revisions stay as they
+        # were recorded; nothing is bulk-upgraded.
+        from . import training_data as td
+        try:
+            rev = self.store.submit(
+                lambda db: td.conn_mark_intended(db, ex_id, True))
+        except Exception as e:
+            self.emit("training.capture_failed", level="WARNING",
+                      job_id=job_id, reason_code=type(e).__name__,
+                      outcome="annotation_not_recorded")
             return None
-        outcome = dict(envelope.get("outcome") or {})
-        outcome["correctness"] = "correct"
-        outcome["correctness_provenance"] = "user_explicit"
-        envelope["outcome"] = outcome
-        envelope["revision_id"] = None
-        rev = self.store.append_revision(ex_id, envelope)
         self.emit("training.annotation_recorded", level="INFO", job_id=job_id,
                   reason_code="mark_correct")
         return rev
@@ -1274,6 +1449,7 @@ class EvidenceCollector:
             "family_id": ctx.family_id,
             "attempt": ctx.attempt,
             "worker_generation": ctx.worker_generation,
+            "stage_generations": dict(ctx.stage_generations),
             "origin": "live_capture",
             "task_kind": "dictation",
             "captured_at_utc": ctx.captured_at_utc,
@@ -1281,6 +1457,7 @@ class EvidenceCollector:
             "timezone": ctx.timezone,
             "utc_offset_minutes": ctx.utc_offset_minutes,
             "consent_revision_id": ctx.consent_revision_id,
+            "consent_snapshot_point": ctx.consent_point,
             "capture": capture,
             "audio_preparation": audio_preparation,
             "recognition": dict(ctx.capture_meta.get("recognition", {})),

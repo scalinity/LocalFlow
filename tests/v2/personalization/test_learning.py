@@ -69,7 +69,9 @@ def test_migration_v10_additive_with_backup_and_repair():
         try:
             assert s.submit(lambda db: db.execute(
                 "SELECT value FROM schema_meta WHERE"
-                " key='schema_version'").fetchone())[0] == "10"
+                " key='schema_version'").fetchone())[0] == \
+                str(max(store_mod._MIGRATIONS))  # latest (v11 since M02
+            # remediation: additive job_deletions/purge_intents)
             for table in ("learning_candidates", "correction_labels",
                           "sampling_decisions", "split_assignments",
                           "training_memberships", "example_tags",

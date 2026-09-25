@@ -32,3 +32,30 @@ deduplicable), `timestamp_utc` (RFC 3339 ms), `timezone`,
 5. The legacy undated log (`~/Library/Logs/LocalFlow.log`) is an import
    source with physical-line provenance, parsed by
    `scripts/v2/parse_legacy_log.py` under the E02 protocol.
+
+## M02 remediation (export, ordering, retention, shutdown)
+
+- **Redacted export is a versioned typed allowlist**
+  (`scripts/v2/view_events.py::REDACTION_ALLOWLIST`, `redaction_version`
+  1): only listed envelope fields survive, each only when its value
+  passes that field's type/shape check (minted-id shapes, code tokens,
+  numbers, UTC instants); `detail`, unknown/future fields, nested
+  values, wrong types and secret-scanner hits are omitted and counted in
+  `omitted_fields`. A new field is exported only after it is added to
+  the allowlist with its check.
+- **View order.** A stream is one writer instance (boot_id, session_id,
+  process_id). Within a stream the writer `sequence` is authoritative;
+  across streams, records merge by UTC instant; file names (active,
+  `.2`, `.10`, pid-prefixed) never decide order. A wall-clock rollback
+  inside a stream is shown in sequence order and reported as ambiguous
+  for cross-stream placement. `--last N` is the last N of that order.
+- **Every removal path is protection-aware.** The size-roll cap
+  (`KEEP_ROLLS`) applies the same unresolved-job predicate as age/size
+  retention; a protected roll is kept past the cap
+  (`stats()["protected_rolls_kept"]`) until its jobs resolve. When the
+  unresolved set cannot be read, nothing is removed.
+- **Shutdown.** `close()` closes admission first (a later `emit` returns
+  False and counts `dropped_after_close`), drains accepted events and
+  returns `{drained, pending}`. The store is the durable authority for
+  job state; an event is a diagnostic record of it, not a transactional
+  replica.

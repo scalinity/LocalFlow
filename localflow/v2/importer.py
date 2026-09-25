@@ -79,7 +79,7 @@ class LegacyImporter:
         backup_bytes = backup.read_bytes()
         data_hash = sha256_bytes(backup_bytes)
         con = sqlite3.connect(f"file:{backup}?mode=ro", uri=True)
-        imported = skipped = 0
+        imported = skipped = conflicted = duplicates = 0
         try:
             rows = [dict(zip(
                 ("id", "ts", "duration_sec", "raw_text", "cleaned_text",
@@ -93,20 +93,32 @@ class LegacyImporter:
             con.close()
         for row in rows:
             locator = f"row:{row['id']}"
-            if self.store.has_import(KIND_STATS, data_hash, locator):
+            # M02-AUDIT-11: row and bookkeeping commit together (one op),
+            # and a reused legacy id from another source is reconciled
+            # explicitly — identical content is the same entity; distinct
+            # content is preserved and REPORTED as a conflict, never
+            # silently ignored while its source is marked imported.
+            outcome = self.store.import_legacy_stats_row(row, data_hash,
+                                                         locator)
+            if outcome == "skipped":
                 skipped += 1
-                continue
-            self.store.insert_legacy_dictation(row, data_hash)
-            self.store.record_import(KIND_STATS, data_hash, locator,
-                                     f"legacy_dictations:{row['id']}",
-                                     time_quality="known")
-            imported += 1
-        self.store.sync()
+            elif outcome == "conflict":
+                conflicted += 1
+            elif outcome == "duplicate_identical":
+                duplicates += 1
+            else:
+                imported += 1
         self.store.record_import_run(
             KIND_STATS, data_hash, path.stat().st_size, path,
-            imported, skipped, note=f"from verified backup {backup.name}")
+            imported, skipped,
+            note=f"from verified backup {backup.name};"
+                 f" conflicts={conflicted}; identical_duplicates="
+                 f"{duplicates}")
+        self.store.sync()
         return {"source": str(path), "sha256": data_hash,
                 "rows_imported": imported, "rows_skipped": skipped,
+                "rows_conflicted": conflicted,
+                "rows_identical_duplicate": duplicates,
                 "backup": str(backup)}
 
     # ---- dictionary / transforms ----------------------------------------
@@ -186,6 +198,13 @@ class LegacyImporter:
              if n <= len(data) and sha256_bytes(data[:n]) == sha),
             key=lambda kv: kv[1])
         prefix_sha = prefix_runs[-1][0] if prefix_runs else None
+        # M02-AUDIT-10: this run's source snapshot is durable BEFORE its
+        # first pair commits, so an interrupted run's committed pairs are
+        # still recognized through a verified prefix when the log grows
+        # before the retry. (Identity is untouched: pairs keep
+        # legacy:<sha>:<lines>; equal text is never merged.)
+        run_id = self.store.start_import_run(KIND_LOG, data_hash, len(data),
+                                             path)
         skip_pairs = set()
         prior_partial = {}
         for prev_sha, prev_len in prefix_runs:
@@ -250,8 +269,8 @@ class LegacyImporter:
                 if key in prior_partial:
                     completed_partials += 1
         self.store.sync()
-        self.store.record_import_run(
-            KIND_LOG, data_hash, len(data), path, imported, skipped,
+        self.store.finish_import_run(
+            run_id, imported, skipped,
             note=f"prefix_reconciled={prefix_sha or 'none'};"
                  f" deferred_incomplete={deferred};"
                  f" payload_derivation={parser.PAYLOAD_DERIVATION};"

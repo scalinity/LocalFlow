@@ -44,6 +44,10 @@ SYNTHETIC_MARKER_FILES = {
     "tests/v2/storage/test_import.py": "generated synthetic log lines",
     "tests/v2/logging/test_event_writer.py": "impersonation-attempt fixture",
     "tests/v2/test_baseline_manifest.py": "marker constants and canaries",
+    "scripts/v2/m02_remediation_repro.py":
+        "synthetic reproduction inputs for the M02 audit findings",
+    "tests/v2/storage/test_m02_remediation_import.py":
+        "generated synthetic log lines",
     "docs/v2/acceptance/M01/remediation/repro_inherited.py":
         "synthetic reproduction inputs for the M01 audit findings",
     "docs/v2/acceptance/M01/remediation/diff_parsers.py":

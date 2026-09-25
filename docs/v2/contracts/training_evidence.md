@@ -204,3 +204,40 @@ export's state, examples with a training lease expiring within 3 days,
 and verbatim coverage in reviewed audio seconds over retained seconds
 (a verbatim reference covers its whole clip; span corrections have no
 audio alignment and add no seconds).
+
+## M02 remediation (consent boundary, publication, provenance)
+
+- **Consent is a capture-time snapshot.** `ConsentSnapshot(state,
+  revision_id, point)` is read as ONE coherent pair. The app takes it at
+  push-to-talk DOWN (`point: ptt_down`) and carries it to
+  `job_started`; the envelope records `consent_snapshot_point`. Policy:
+  the decision in force at capture start governs that capture — a later
+  enable never authorizes audio that began while collection was off,
+  and a pause/disable after capture start does not revoke an
+  already-authorized in-flight capture (no new capture starts
+  collecting after the pause). Delete-everywhere is the separate,
+  immediate barrier (contracts/store.md). A recovery retry re-processes
+  an old capture: it collects only when the ORIGINAL capture was
+  collected (its example's capture-time revision is reused) AND
+  collection is enabled now (`point: retry_original_capture`).
+- **Publication.** The example first becomes visible in its final initial
+  state (quarantined when flagged) together with revision 1;
+  `training.revision_saved` is emitted after the commit with
+  `capture_complete`, or `capture_incomplete` (WARNING) when a referenced
+  artifact never committed — the envelope's `completeness` block lists
+  those references and they carry `not_captured_at_stage`.
+- **Attempt identity.** `attempt` is the attempt whose results the
+  revision records (the app propagates automatic retries);
+  `stage_generations` records the worker generation per stage (`asr`,
+  `cleanup`) — never relabeled; top-level `worker_generation` stays the
+  ASR generation as before.
+- **Outcome revisions** extend the current latest revision atomically
+  (a human annotation that lands meanwhile is preserved; the parent is
+  the revision actually extended) and are refused for a deleted example.
+- **Intended-writing judgment.** The menu's "Mark Last Dictation
+  Correct" and the Hub's Mark Intended are one op: provenance
+  `user_explicit_intended_writing` (an intended-writing judgment, never
+  verbatim/acoustic truth), state `annotated` (retained until removed);
+  an excluded/expired/quarantined/deleted example keeps its state.
+  Revisions recorded earlier as `user_explicit` stay as recorded — no
+  bulk upgrade.

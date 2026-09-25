@@ -162,3 +162,84 @@ def load(path=None) -> dict:
                 print(f"[localflow] ignoring bad config {p}: {e}")
             break
     return cfg
+
+
+# ---- retention policy validation (M02 remediation, M02-AUDIT-19) --------
+
+# Store retention knobs: config key -> (store retention key, lo, hi) in
+# days. Zero is NOT "keep nothing": a zero/negative window would make
+# fresh content immediately purgeable, so it is rejected like any other
+# out-of-range value. The upper bound (100 years) keeps every expiry
+# instant representable. An invalid value falls back to its default and
+# is reported (content-free: key name + reason) — never a startup crash
+# and never a destructive interpretation.
+RETENTION_BOUNDS = {
+    "retention_transcript_days": ("transcript", 1, 36500),
+    "retention_audio_success_days": ("audio_success", 1, 36500),
+    "retention_audio_failed_days": ("audio_failed", 1, 36500),
+    "retention_metadata_days": ("metadata", 1, 36500),
+    "training_buffer_days": ("training_buffer", 1, 36500),
+    "retention_usage_days": ("usage", 1, 36500),
+}
+EVENT_RETENTION_BOUNDS = {
+    "events_retention_days": (1, 3650),
+    "events_cap_mib": (1, 1024 * 1024),
+}
+
+
+def _valid_int(value, lo, hi):
+    """(int, None) when value is an integral number within [lo, hi];
+    otherwise (None, reason). Booleans and non-integral values are
+    rejected; integral strings are not guessed at."""
+    if isinstance(value, bool) or value is None:
+        return None, "not_a_number"
+    if isinstance(value, float):
+        if value != value or value in (float("inf"), float("-inf")) \
+                or not value.is_integer():
+            return None, "not_an_integer"
+        value = int(value)
+    if not isinstance(value, int):
+        return None, "not_a_number"
+    if value < lo or value > hi:
+        return None, "out_of_range"
+    return value, None
+
+
+def retention_policy(cfg) -> tuple[dict, list]:
+    """The validated store retention map + a list of (key, reason)
+    problems. Missing keys use DEFAULTS silently (not a problem)."""
+    days, problems = {}, []
+    for key, (store_key, lo, hi) in RETENTION_BOUNDS.items():
+        default = DEFAULTS[key]
+        if key not in cfg:
+            days[store_key] = default
+            continue
+        value, reason = _valid_int(cfg.get(key), lo, hi)
+        if reason:
+            problems.append((key, reason))
+            value = default
+        days[store_key] = value
+    return days, problems
+
+
+def event_retention_policy(cfg) -> tuple[dict, list]:
+    out, problems = {}, []
+    for key, (lo, hi) in EVENT_RETENTION_BOUNDS.items():
+        default = DEFAULTS[key]
+        if key not in cfg:
+            out[key] = default
+            continue
+        value, reason = _valid_int(cfg.get(key), lo, hi)
+        if reason:
+            problems.append((key, reason))
+            value = default
+        out[key] = value
+    return out, problems
+
+
+def validate_retention_value(key, value):
+    """One knob from a UI/settings write: the int, or None when invalid."""
+    lo, hi = (RETENTION_BOUNDS[key][1:] if key in RETENTION_BOUNDS
+              else EVENT_RETENTION_BOUNDS[key])
+    value, reason = _valid_int(value, lo, hi)
+    return value
