@@ -143,7 +143,10 @@ class DictionaryPanelController(NSObject):
             self.window.contentView().addSubview_(b)
         self._entries = []
         self._shown = []
-        self._selected = None
+        # Selection is a STABLE entry id (M05-AUDIT-08) — never a row
+        # index into whatever the listing shows after a filter change or
+        # a store-driven reorder.
+        self._selected_id = None
         self.refresh()
 
     # ---- data ------------------------------------------------------------
@@ -161,6 +164,9 @@ class DictionaryPanelController(NSObject):
         shown = [e for e in self._entries
                  if not needle or needle in e.canonical.lower()
                  or any(needle in a.alias.lower() for a in e.aliases)]
+        if self._selected_id is not None and not any(
+                e.entry_id == self._selected_id for e in self._entries):
+            self._selected_id = None      # the selected entry is gone
         lines = [f"{len(self._entries)} entries"
                  f" ({len(shown)} shown) — click a line to select:\n"]
         for i, e in enumerate(shown):
@@ -175,17 +181,29 @@ class DictionaryPanelController(NSObject):
             scope = e.scope_kind + (
                 f":{e.scope_value}" if e.scope_value else "")
             suffix = f" [{'; '.join(state)}]" if state else ""
-            lines.append(f"{i + 1:3d}. {e.canonical}  ({aliases})"
+            mark = "›" if e.entry_id == self._selected_id else " "
+            lines.append(f"{mark}{i + 1:3d}. {e.canonical}  ({aliases})"
                          f"  · {scope} · used {e.usage_count}{suffix}")
         self._shown = shown
         self.listing.setStringValue_("\n".join(lines))
 
     @objc.python_method
     def _selected_entry(self):
-        if self._selected is not None and 0 <= self._selected < len(
-                self._shown):
-            return self._shown[self._selected]
-        return None
+        """The selected entry, RE-READ from the store at action time (its
+        current revision); None — and the selection cleared — when it no
+        longer exists. An action never infers its target from a row
+        position."""
+        if self._selected_id is None:
+            return None
+        try:
+            e = self.vstore.entry(self._selected_id)
+        except Exception:
+            e = None
+        if e is None:
+            self._selected_id = None
+            self.sandbox.setStringValue_(
+                "the selected entry no longer exists — select again")
+        return e
 
     def searchChanged_(self, sender):
         self.refresh()
@@ -207,12 +225,14 @@ class DictionaryPanelController(NSObject):
                 origin="user", approved=False)
             conflicts = vocab.preview_entry_conflicts(
                 self.vstore.entry(entry_id), self._entries)
-            self._selected = None
+            self._selected_id = None
             self.refresh()
             if conflicts:
                 self.sandbox.setStringValue_(
                     "added with conflicts:\n" + "\n".join(
                         f"· {c['alias']}: {c['kind']}"
+                        + ("" if c.get("active") else " (if approved/"
+                           "enabled — not active now)")
                         + (f" — {c['detail']}" if c.get("detail") else "")
                         for c in conflicts))
             else:
@@ -222,15 +242,24 @@ class DictionaryPanelController(NSObject):
         except Exception as e:
             self.sandbox.setStringValue_(f"not added: {e}")
 
-    def approveEntry_(self, sender):
-        e = self._selected_entry()
-        if e is None:
+    @objc.python_method
+    def _no_selection(self):
+        if self._selected_id is None and not (
+                self.sandbox.stringValue() or "").startswith("the selected"):
             self.sandbox.setStringValue_(
                 "select an entry first (type its line number in Test"
                 " phrase and press Test)")
+
+    def approveEntry_(self, sender):
+        e = self._selected_entry()
+        if e is None:
+            self._no_selection()
             return
         try:
-            self.vstore.approve_entry(e.entry_id)
+            # Compare-and-swap on the revision just read: the approval
+            # lands on exactly the state the action was decided on.
+            self.vstore.approve_entry(e.entry_id,
+                                      expected_revision=e.revision)
             self.refresh()
             self.sandbox.setStringValue_(f"approved {e.canonical}")
         except Exception as ex:
@@ -239,10 +268,11 @@ class DictionaryPanelController(NSObject):
     def toggleEntry_(self, sender):
         e = self._selected_entry()
         if e is None:
-            self.sandbox.setStringValue_("select an entry first")
+            self._no_selection()
             return
         try:
-            self.vstore.set_enabled(e.entry_id, not e.enabled)
+            self.vstore.set_enabled(e.entry_id, not e.enabled,
+                                    expected_revision=e.revision)
             self.refresh()
         except Exception as ex:
             self.sandbox.setStringValue_(f"not toggled: {ex}")
@@ -250,10 +280,11 @@ class DictionaryPanelController(NSObject):
     def pinEntry_(self, sender):
         e = self._selected_entry()
         if e is None:
-            self.sandbox.setStringValue_("select an entry first")
+            self._no_selection()
             return
         try:
-            self.vstore.update_entry(e.entry_id, pinned=not e.pinned)
+            self.vstore.update_entry(e.entry_id, pinned=not e.pinned,
+                                     expected_revision=e.revision)
             self.refresh()
         except Exception as ex:
             self.sandbox.setStringValue_(f"not pinned: {ex}")
@@ -261,14 +292,29 @@ class DictionaryPanelController(NSObject):
     def deleteEntry_(self, sender):
         e = self._selected_entry()
         if e is None:
-            self.sandbox.setStringValue_("select an entry first")
+            self._no_selection()
             return
         try:
-            self.vstore.delete_entry(e.entry_id)
-            self._selected = None
+            self.vstore.delete_entry(e.entry_id,
+                                     expected_revision=e.revision)
+            self._selected_id = None
             self.refresh()
         except Exception as ex:
             self.sandbox.setStringValue_(f"not deleted: {ex}")
+
+    @objc.python_method
+    def _sandbox_scope(self):
+        """The ScopeContext the sandbox tests: the scope chosen in the
+        panel's scope controls (global entries always apply). Explicit —
+        no destination is scraped (M05-AUDIT-13)."""
+        kind = self.scope_popup.titleOfSelectedItem() or "global"
+        value = (self.scope_value.stringValue() or "").strip()
+        field = {"app": "app_bundle", "site": "site_origin",
+                 "profile": "profile", "workspace": "workspace"}.get(kind)
+        if field is None or not value:
+            return None, "scope: global only"
+        return vocab.ScopeContext(**{field: value}), \
+            f"scope: {kind}={value} (+ global)"
 
     def runSandbox_(self, sender):
         text = (self.phrase.stringValue() or "").strip()
@@ -276,8 +322,8 @@ class DictionaryPanelController(NSObject):
         if text.isdigit():
             idx = int(text) - 1
             if 0 <= idx < len(self._shown):
-                self._selected = idx
                 e = self._shown[idx]
+                self._selected_id = e.entry_id
                 self.sandbox.setStringValue_(
                     f"selected: {e.canonical} ({e.scope_kind}:"
                     f"{e.scope_value or '-'})")
@@ -285,13 +331,15 @@ class DictionaryPanelController(NSObject):
         if not text:
             return
         try:
-            snapshot = self.vstore.snapshot(None)
+            scope_ctx, scope_label = self._sandbox_scope()
+            snapshot = self.vstore.snapshot(scope_ctx)
             out = vocab.sandbox_phrase(text, snapshot)
         except Exception as e:
             self.sandbox.setStringValue_(f"sandbox failed: {e}")
             return
         lines = [f"→ {out['output']}",
-                 f"vocabulary {out['vocabulary_revision']} ·"
+                 f"{scope_label} · vocabulary"
+                 f" {out['vocabulary_revision']} ·"
                  f" {len(out['applied'])} applied,"
                  f" {len(out['suggestions'])} suggested"]
         for a in out["applied"]:
@@ -303,8 +351,14 @@ class DictionaryPanelController(NSObject):
                 kind, value = s["scope"]
                 where = f"{kind}:{value}" if value else kind
                 scope_note = f" (needs {where} context active)"
+            if s.get("masked"):
+                lines.append(f"  suggested: {s['canonical']!r} would be"
+                             " masked by a conflicting approved entry if"
+                             f" approved{scope_note}")
+                continue
             lines.append(f"  suggested: {s['text']!r} would become"
-                         f" {s['canonical']!r} if approved{scope_note}")
+                         f" {s.get('would_become', s['canonical'])!r} if"
+                         f" approved{scope_note}")
         for c in out["conflicts"]:
             lines.append(f"  conflict: alias {c['alias']!r} masked"
                          f" ({c['reason']})")

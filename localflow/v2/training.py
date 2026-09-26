@@ -428,8 +428,22 @@ class EvidenceCollector:
         "original hints" (S29.11). A store failure is swallowed."""
         if not ctx.collecting or hint_set is None or ctx.example_id:
             return
+        # Content-free facts about the offered set exist whether or not
+        # its payload could be retained (M05-AUDIT-14): a retention
+        # failure must never read as "no hint set was offered".
+        summary = {
+            "hint_set_id": hint_set.hint_set_id,
+            "selector_revision": hint_set.selector_revision,
+            "vocabulary_revision": hint_set.vocabulary_revision,
+            "offered_terms": len(hint_set.terms),
+            "omitted_terms": len(hint_set.omitted),
+            "omission_reasons": sorted({o["reason"]
+                                        for o in hint_set.omitted}),
+            "disposition": disposition,
+        }
+        step = "hint_set_write"
         try:
-            ctx.hint_set_artifact = self.store.write_text_artifact(
+            art = self.store.write_text_artifact(
                 job_id=ctx.job_id, stage="pre_decode",
                 role="hint_set", kind="hint_set_json",
                 retention_class="training",
@@ -439,29 +453,31 @@ class EvidenceCollector:
                       "selector_revision": hint_set.selector_revision,
                       "terms": len(hint_set.terms),
                       "omitted": len(hint_set.omitted)})
+            step = "hint_set_lease"
             self.store.grant_lease(
-                ctx.hint_set_artifact, "training",
+                art, "training",
                 days=self.store.retention_days["training_buffer"])
         except Exception as e:
-            # The envelope degrades honestly (context stays in
-            # missing_reasons), but the degradation must be observable —
-            # the app's surrounding guard cannot fire through this
-            # swallow, so the event comes from here.
+            # The degradation is observable (the app's guard cannot fire
+            # through this swallow) and precise: the known set keeps its
+            # id/counts/disposition with the controlled reason
+            # retention_write_failed and the failed step; no reference to
+            # an unretained (or half-published) artifact survives. The
+            # job's own retention and delete-everywhere still govern any
+            # half-published bytes (job-keyed, M02).
             self.emit("training.capture_failed", level="ERROR",
                       job_id=ctx.job_id, reason_code=type(e).__name__,
+                      stage="pre_decode", detail=step,
                       outcome="hint_set_not_retained")
+            ctx.hint_set_artifact = None
+            ctx.context_hints = {
+                **summary, "artifact_ids": {},
+                "hint_set_missing_reason": "retention_write_failed",
+                "retention_failed_step": step}
             return
-        ctx.context_hints = {
-            "hint_set_id": hint_set.hint_set_id,
-            "selector_revision": hint_set.selector_revision,
-            "vocabulary_revision": hint_set.vocabulary_revision,
-            "offered_terms": len(hint_set.terms),
-            "omitted_terms": len(hint_set.omitted),
-            "omission_reasons": sorted({o["reason"]
-                                        for o in hint_set.omitted}),
-            "disposition": disposition,
-            "artifact_ids": {"hint_set": ctx.hint_set_artifact},
-        }
+        ctx.hint_set_artifact = art
+        ctx.context_hints = {**summary,
+                             "artifact_ids": {"hint_set": art}}
 
     def on_context_snapshot(self, ctx, snapshot, *, downstream=None):
         """M06 (S12/S29.4): record the bounded destination-context
@@ -650,12 +666,60 @@ class EvidenceCollector:
         vocab_snapshot = getattr(context, "vocabulary", None) \
             if context is not None else None
         if vocab_snapshot is not None:
+            term_ids = [e.rule_id for e in result.edits
+                        if e.cls == "vocabulary" and e.rule_id]
+            # Dictionary skills keep their approving entry (M05-AUDIT-09);
+            # manifest skills carry no rule id and are not listed.
+            skill_ids = [e.rule_id for e in result.edits
+                         if e.cls == "skill" and e.rule_id]
             vocabulary_block = {
                 "revision": getattr(vocab_snapshot, "revision", None),
-                "applied_rule_ids": [
-                    e.rule_id for e in result.edits
-                    if e.cls == "vocabulary" and e.rule_id],
+                "applied_rule_ids": term_ids,
+                "applied_skill_rule_ids": skill_ids,
             }
+            # M05-AUDIT-15: the exact frozen state of every applied rule
+            # (entry + per-alias approval, scope, verification, entry
+            # revision) as a lease-governed artifact of THIS job, so the
+            # approving rule stays reconstructable after the live
+            # dictionary is edited or deleted — bounded to the rules that
+            # actually applied, never the whole dictionary, and never in
+            # the envelope (ids and counts only there).
+            applied = sorted(set(term_ids) | set(skill_ids))
+            by_id = getattr(vocab_snapshot, "entry_by_id", None)
+            if applied and by_id is not None:
+                rules = []
+                for rid in applied:
+                    e = by_id(rid)
+                    if e is not None:
+                        rules.append({**e.to_json(), "usage_count": None,
+                                      "last_used_utc": None})
+                try:
+                    art = self.store.write_text_artifact(
+                        job_id=ctx.job_id, stage="normalization",
+                        role="vocabulary_applied_rules",
+                        kind="vocabulary_rules_json",
+                        retention_class="training",
+                        text=json.dumps({
+                            "schema_version": 1,
+                            "vocabulary_revision": vocabulary_block[
+                                "revision"],
+                            "scope": vocab_snapshot.scope_ctx.to_json(),
+                            "rules": rules}, ensure_ascii=False,
+                            sort_keys=True),
+                        meta={"rules": len(rules)})
+                    self.store.grant_lease(
+                        art, "training",
+                        days=self.store.retention_days["training_buffer"])
+                    vocabulary_block["applied_rules_artifact"] = art
+                except Exception as e:
+                    vocabulary_block["applied_rules_missing_reason"] = \
+                        "retention_write_failed"
+                    self.emit("training.capture_failed", level="ERROR",
+                              job_id=ctx.job_id,
+                              reason_code=type(e).__name__,
+                              stage="normalization",
+                              detail="applied_rules",
+                              outcome="applied_rules_not_retained")
         # M10: snippet-expansion provenance — which rules expanded and
         # how many generated spans the applied text carries. Generated
         # text is never an acoustic reference (M10-AC05); the counts
@@ -1538,6 +1602,13 @@ class EvidenceCollector:
             if ctx.context_hints is None:
                 context_block["hint_set"] = None
                 context_block["hint_set_missing_reason"] = R_NOT_CAPTURED
+            elif context_block.get("hint_set_missing_reason"):
+                # A known set whose payload could not be retained: replay
+                # inputs are honestly incomplete (M05-AUDIT-14); the M14
+                # export reads the reason next to a null payload.
+                context_block["hint_set"] = None
+                missing["hint_set_payload"] = \
+                    context_block["hint_set_missing_reason"]
             # The absent destination half carries its honest reason too:
             # context disabled, capture failure or no collection — a
             # replay consumer can distinguish "never read" from "read

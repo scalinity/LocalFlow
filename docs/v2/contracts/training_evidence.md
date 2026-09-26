@@ -79,7 +79,9 @@ audio, which runs under a new snapshot that belongs to no destination
 (configured profile, global dictionary and manifest skills, unscoped
 vocabulary — never the previous job's workspace skills or context;
 review R15); or the configured-profile fallback for a job whose
-hotkey-down capture failed (M04-AUDIT-21). Additive; no existing field changed meaning.
+hotkey-down capture failed (M04-AUDIT-21) — since the M05 remediation
+that fallback is the same UNSCOPED default a retry uses, never the
+previous job's cached scoped state (M05-AUDIT-02). Additive; no existing field changed meaning.
 
 ## M05 live status (context family)
 
@@ -94,6 +96,22 @@ attribution). Later store edits cannot alter the stored set, and a
 corrected dictionary is never relabeled as original hints (S29.11).
 When no set was offered the honest `not_captured_at_stage` reason
 stays.
+
+**M05 remediation (2026-09-25).** A KNOWN hint set whose artifact write
+or lease failed is never reported as "not offered" (M05-AUDIT-14): the
+`context` block keeps its id, revisions, counts, omission reasons and
+disposition, adds `hint_set_missing_reason: retention_write_failed`
+and `retention_failed_step` (`hint_set_write` | `hint_set_lease`),
+references no hint-set artifact, and `missing_reasons.hint_set_payload`
+carries `retention_write_failed`; a content-free
+`training.capture_failed` event names the step. The normalization
+`vocabulary` sub-block gains `applied_skill_rule_ids` (dictionary skill
+edits keep their approving entry — M05-AUDIT-09) and, when rules
+applied, `applied_rules_artifact`: a lease-governed
+`vocabulary_applied_rules` artifact of the job holding the exact frozen
+entry state of each applied rule (M05-AUDIT-15), or
+`applied_rules_missing_reason: retention_write_failed`. Additive; no
+existing field changed meaning.
 
 ## M06 live status (destination context)
 

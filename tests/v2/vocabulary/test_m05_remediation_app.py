@@ -132,6 +132,100 @@ def test_02_selector_failure_does_not_block_the_scope_upgrade():
           " runs; only the optional hint set is absent")
 
 
+def test_02d_invalid_identity_keeps_unscoped_default():
+    # A destination identity whose bundle is not a string (an opaque
+    # bridge object) must degrade like a failed capture: the job keeps
+    # the unscoped default (global entries), never vocabulary-off, and
+    # the degradation is recorded with a precise outcome.
+    class Opaque:
+        def __bool__(self):
+            return False
+
+        def __repr__(self):
+            return "<opaque>"
+    r = AppRun("ask clod now glob term")
+    try:
+        v = r.d._vocab
+        v.add_entry("Claude", ["clod"], scope_kind="app",
+                    scope_value="app.A", approved=True)
+        v.add_entry("GlobalTerm", ["glob term"], approved=True)
+        bad = r.job("app.X")  # warm path first: the normal case
+        from m05_helpers import target
+        tgt = target("app.X")
+        object.__setattr__(tgt, "app_bundle", Opaque())
+        r.fc.identity = tgt
+        r.fc.final = None
+        r.h.AppHelper.calls.clear()
+        n = len(r.clean_kwargs)
+        r.a.dictate(blocks=10)
+        assert r.a.wait_call("_finishWithText_", 20)
+        text = None
+        for fn, args in list(r.h.AppHelper.calls):
+            if getattr(fn, "__name__", "") == "_finishWithText_":
+                text = args[0]
+        r.a.drain()
+        good = r.job("app.A")
+        events = [e for e in r.events
+                  if e["event"].startswith("vocabulary.")]
+    finally:
+        r.close()
+    assert bad["text"] == "ask clod now GlobalTerm", bad["text"]
+    assert text == "ask clod now GlobalTerm", text
+    assert len(r.clean_kwargs) > n
+    assert good["text"] == "ask Claude now GlobalTerm", good["text"]
+    outcomes = [(e["event"], e.get("reason_code"), e.get("outcome"))
+                for e in events]
+    assert ("vocabulary.scope_unavailable", "invalid_identity",
+            "unscoped_default") in outcomes, outcomes
+    assert not any(o == "vocabulary_off" for _, _, o in outcomes), outcomes
+    print("ok  02d an invalid destination identity degrades to the"
+          " unscoped default (global entries kept), never vocabulary-off")
+
+
+def test_02e_finalize_never_rebuilds_on_the_app_cached_policy():
+    # A job whose hotkey-down trio was never stored (the freeze raised
+    # after M10 froze) runs on the unscoped default. Its M10 finalize
+    # (changed workspace skill records) must not rebuild the job's
+    # policy on the APP's cached policy — another job's state — and so
+    # silently replace the unscoped default.
+    from localflow.v2.developer import skills as sk
+    r = AppRun("ask clod now glob term")
+    try:
+        v = r.d._vocab
+        v.add_entry("Claude", ["clod"], scope_kind="app",
+                    scope_value="app.A", approved=True)
+        v.add_entry("GlobalTerm", ["glob term"], approved=True)
+        a = r.job("app.A")  # warms the app cache with app.A's state
+        real_state = r.d._vocab_job_state
+        real_records = r.d._m10_skill_records
+
+        def boom(*a, **k):
+            raise RuntimeError("injected trio failure")
+
+        def changed_records(*a, **k):
+            return list(real_records(*a, **k)) + [sk.SkillRecord(
+                name="deploy-check", aliases=("deploy check",),
+                scope="workspace:w1")]
+
+        def at_finalize():
+            r.d._m10_skill_records = changed_records
+        r.d._vocab_job_state = boom
+        r.fc.on_finalize = at_finalize
+        b = r.job("app.B", workspace="w1")
+        r.d._vocab_job_state = real_state
+        r.d._m10_skill_records = real_records
+        r.fc.on_finalize = None
+    finally:
+        r.close()
+    assert a["text"] == "ask Claude now GlobalTerm", a["text"]
+    assert b["finished"] and b["text"] == "ask clod now GlobalTerm", \
+        b["text"]
+    assert b["job"].get("norm_source", "current_default") == \
+        "current_default", b["job"].get("norm_source")
+    print("ok  02e M10 finalize never rebuilds a trio-less job on the"
+          " app's cached policy; the unscoped default stands")
+
+
 def test_02b_capture_failure_fallback_is_unscoped():
     r = AppRun("ask clod now glob term")
     try:
@@ -268,6 +362,50 @@ def test_09_app_skill_provenance_and_hits():
     assert e.usage_count == 1, "an applied dictionary skill is a hit"
     print("ok  09 live path: /code-review carries its approving entry in"
           " evidence and records one usage hit")
+
+
+def test_09_hit_accounting_counts_only_applied_rules():
+    text = ("clod said done. slash code review then Claude Code with"
+            " klaud and zed and omeg")
+    r = AppRun(text)
+    try:
+        v = r.d._vocab
+        ids = {
+            "term": v.add_entry("Claude", ["clod"], approved=True),
+            "skill": v.add_entry("code-review", ["code review"],
+                                 kind="skill", approved=True),
+            "noop": v.add_entry("Claude Code", ["clod code"],
+                                approved=True),
+            "mask1": v.add_entry("Cloud", ["klaud"], approved=True),
+            "mask2": v.add_entry("Clown", ["klaud"], approved=True),
+            "offered_only": v.add_entry("Zulu", ["zulu"], approved=True),
+            "suggested": v.add_entry("Omega", ["omeg"], approved=False),
+            "deleted_midflight": v.add_entry("Zed", ["zed"],
+                                             approved=True),
+            "disabled_midflight": v.add_entry("Omeg", ["omeg"],
+                                              approved=True),
+        }
+
+        def midflight():
+            v.delete_entry(ids["deleted_midflight"])
+            v.set_enabled(ids["disabled_midflight"], False)
+        r.on_transcribe = midflight
+        j = r.job("app.X")
+        r.on_transcribe = None
+        r.d.store.sync()
+        usage = {k: (v.entry(i).usage_count if v.entry(i) else None)
+                 for k, i in ids.items()}
+    finally:
+        r.close()
+    assert j["text"] == ("Claude said done. /code-review then Claude Code"
+                         " with klaud and Zed and Omeg"), j["text"]
+    assert usage == {"term": 1, "skill": 1, "noop": 0, "mask1": 0,
+                     "mask2": 0, "offered_only": 0, "suggested": 0,
+                     "deleted_midflight": None,
+                     "disabled_midflight": 1}, usage
+    print("ok  09 hits: applied term + dictionary skill + disabled-mid-"
+          "flight count; no-op, masked, offered-only, suggestion and"
+          " cleanup-only use do not; a deleted row is harmless")
 
 
 # ---------------------------------------------------------------------------

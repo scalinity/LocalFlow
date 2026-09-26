@@ -1,11 +1,22 @@
 """Persistent scoped-vocabulary store (V2 M05, Spec S08/S11).
 
 ``VocabularyStore`` owns the dictionary tables inside the single-writer
-SQLite ``Store`` (schema v3): versioned canonical/alias records, an
-append-only edit history, a monotonic state counter for snapshot
-invalidation, and usage (hit) recording. Every mutation is one writer
-transaction that also bumps the counter and appends history, so an edit
-either fully lands or never happened.
+SQLite ``Store`` (schema v3 tables, current store schema 11): versioned
+canonical/alias records, an append-only edit history, a monotonic state
+counter for snapshot invalidation, and usage (hit) recording. Every
+mutation is one writer transaction that also bumps the counter and
+appends history, so an edit either fully lands or never happened.
+
+M05 remediation (M05-AUDIT-06): every read-modify-write — update,
+approve, delete and each import upsert — reads the AUTHORITATIVE row,
+merges, validates and versions it INSIDE its writer operation, so a
+caller's stale read can never commit an invalid combined scope, reuse a
+next revision, orphan alias/history rows after a delete or approve a
+stale alias list. ``expected_revision`` adds explicit compare-and-swap
+for callers that act on something the user saw (the Dictionary panel).
+Expected outcomes (missing, stale, duplicate, invalid) come back from
+the op as statuses and are raised on the CALLER thread as typed,
+content-free errors — they never become ``store.write_failed`` events.
 
 The seven legacy dictionary terms are adopted, not replaced: they seed
 approved global entries from the legacy artifacts M02 imported, and the
@@ -14,8 +25,10 @@ Claude/Claude Code coding suggestions ship visible-but-unapproved (S11).
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import pathlib
+import string
 from typing import Optional
 
 from . import ids
@@ -35,34 +48,75 @@ _EDITABLE = (
     "scope_value", "priority", "pinned", "origin", "enabled", "approved",
     "verification", "aliases",
 )
+_BOOL_FIELDS = ("pinned", "enabled", "approved")
+_STR_FIELDS = ("kind", "matching_mode", "scope_kind", "origin",
+               "verification")
+_ROW_FIELDS = ("canonical", "language", "kind", "matching_mode",
+               "scope_kind", "scope_value", "priority", "pinned", "origin",
+               "enabled", "approved", "verification")
+
+# The declared import identity is SQLite NOCASE — ASCII case only, the
+# exact rule of the unique index (M05-AUDIT-11 / design D6). "Claude" and
+# "CLAUDE" are one identity; "Éclair" and "éclair" are two, exactly as
+# the database sees them. No broader Unicode equivalence is claimed.
+_ASCII_FOLD = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
 
 
-def _normalize_alias_items(aliases) -> list[tuple[str, bool]]:
-    """Aliases arrive as str | (text, approved) tuples | Alias records
-    (``approve_entry``/``import_json`` pass tuples); normalize to
-    validated (text, approved) pairs."""
+class StaleEntryError(ValueError):
+    """The entry changed since the caller read it (compare-and-swap)."""
+
+
+class ImportRejected(ValueError):
+    """A whole import file refused before any write (content-free)."""
+
+    def __init__(self, code: str, where: Optional[str] = None):
+        self.code = code
+        self.where = where
+        super().__init__(f"import rejected: {code}"
+                         + (f" at {where}" if where else ""))
+
+
+def identity_key(canonical: str, scope_kind: str, scope_value) -> tuple:
+    return (canonical.translate(_ASCII_FOLD), scope_kind, scope_value or "")
+
+
+def _normalize_alias_items(aliases) -> list[tuple[str, bool, Optional[str]]]:
+    """Aliases arrive as str | (text[, approved[, language]]) tuples |
+    Alias records | {"alias", "approved", "language"} objects; normalize
+    to validated (text, approved, language) triples. ``language`` None
+    means inherit the entry's language. Booleans are strict — a string
+    or integer flag is refused, never truth-coerced (M05-AUDIT-07)."""
+    if isinstance(aliases, (str, bytes)) or aliases is None:
+        raise vocab.AdmissionError("not_a_list", "aliases")
     out = []
     seen = set()
     for a in aliases:
         if isinstance(a, str):
-            text, flag = a, True
-        elif isinstance(a, tuple):
-            text, flag = a[0], (a[1] if len(a) > 1 else True)
+            text, flag, lang = a, True, None
+        elif isinstance(a, tuple) and 1 <= len(a) <= 3:
+            text = a[0]
+            flag = a[1] if len(a) > 1 else True
+            lang = a[2] if len(a) > 2 else None
+        elif isinstance(a, vocab.Alias):
+            text, flag, lang = a.alias, a.approved, a.language
+        elif isinstance(a, dict):
+            text = a.get("alias")
+            flag = a.get("approved", True)
+            lang = a.get("language")
         else:
-            text, flag = a.alias, a.approved
+            raise vocab.AdmissionError("invalid_alias_item", "aliases")
+        vocab.require_bool("aliases[].approved", flag)
+        vocab.require_opt_str("aliases[].language", lang)
         norm = vocab._validate_alias(text)
         if norm.lower() in seen:
-            raise ValueError(f"duplicate alias: {norm!r}")
+            raise vocab.AdmissionError("duplicate_alias", "aliases")
         seen.add(norm.lower())
-        out.append((norm, bool(flag)))
+        out.append((norm, flag, lang))
     return out
 
 
 def _row_to_entry(row, alias_rows) -> vocab.VocabularyEntry:
     d = dict(zip(_ENTRY_COLS, row))
-    d["aliases"] = [
-        vocab.Alias(alias=a[0], approved=bool(a[1]), language=a[2])
-        for a in alias_rows]
     return vocab.VocabularyEntry(
         entry_id=d["entry_id"], canonical=d["canonical"],
         language=d["language"], kind=d["kind"],
@@ -72,7 +126,41 @@ def _row_to_entry(row, alias_rows) -> vocab.VocabularyEntry:
         last_used_utc=d["last_used_utc"], origin=d["origin"],
         enabled=bool(d["enabled"]), approved=bool(d["approved"]),
         verification=d["verification"], revision=d["revision"],
-        aliases=tuple(d["aliases"]))
+        aliases=tuple(vocab.Alias(alias=a[0], approved=bool(a[1]),
+                                  language=a[2]) for a in alias_rows))
+
+
+def _read_entry(db, entry_id) -> Optional[vocab.VocabularyEntry]:
+    row = db.execute(
+        f"SELECT {', '.join(_ENTRY_COLS)} FROM vocabulary_entries"
+        f" WHERE entry_id=?", (entry_id,)).fetchone()
+    if row is None:
+        return None
+    alias_rows = db.execute(
+        "SELECT alias, approved, language FROM vocabulary_aliases"
+        " WHERE entry_id=? ORDER BY alias COLLATE NOCASE",
+        (entry_id,)).fetchall()
+    return _row_to_entry(row, alias_rows)
+
+
+def _find_identity(db, canonical, scope_kind, scope_value,
+                   exclude: Optional[str] = None) -> Optional[str]:
+    row = db.execute(
+        "SELECT entry_id FROM vocabulary_entries WHERE canonical=?"
+        " COLLATE NOCASE AND scope_kind=? AND"
+        " IFNULL(scope_value,'')=IFNULL(?,'')"
+        + (" AND entry_id<>?" if exclude else ""),
+        (canonical, scope_kind, scope_value)
+        + ((exclude,) if exclude else ())).fetchone()
+    return row[0] if row else None
+
+
+def _alias_identity(entry: vocab.VocabularyEntry) -> list:
+    """Order-insensitive alias state (M05-AUDIT-10): text, approval and
+    EFFECTIVE language (explicit override or the entry's) — storage
+    order is never identity."""
+    return sorted((a.alias.casefold(), a.alias, a.approved,
+                   a.language or entry.language) for a in entry.aliases)
 
 
 class VocabularyStore:
@@ -109,10 +197,7 @@ class VocabularyStore:
         return self.store.submit(op)
 
     def entry(self, entry_id: str) -> Optional[vocab.VocabularyEntry]:
-        for e in self.entries():
-            if e.entry_id == entry_id:
-                return e
-        return None
+        return self.store.submit(lambda db: _read_entry(db, entry_id))
 
     def history(self, entry_id: str) -> list[dict]:
         def op(db):
@@ -132,7 +217,44 @@ class VocabularyStore:
         on the caller so the writer is never blocked on hashing."""
         return vocab.VocabularySnapshot(self.entries(), scope_ctx)
 
-    # ---- writes ----------------------------------------------------------
+    def integrity_report(self) -> dict:
+        """Content-free counts that tell a TORN dictionary from a healthy
+        one after the store's schema repair (M05-AUDIT-18): entries that
+        vanished without ever being deleted (the entries table was lost
+        while their history/aliases survive), alias rows without an
+        entry, and entries whose recorded alias set is gone (the alias
+        table was lost). A repaired empty table is never a recovery."""
+        def op(db):
+            vanished = db.execute(
+                "SELECT count(DISTINCT entry_id) FROM vocabulary_history"
+                " WHERE entry_id NOT IN (SELECT entry_id FROM"
+                " vocabulary_entries) AND entry_id NOT IN (SELECT entry_id"
+                " FROM vocabulary_history WHERE action='deleted')"
+            ).fetchone()[0]
+            orphans = db.execute(
+                "SELECT count(*) FROM vocabulary_aliases WHERE entry_id"
+                " NOT IN (SELECT entry_id FROM vocabulary_entries)"
+            ).fetchone()[0]
+            bare = {r[0] for r in db.execute(
+                "SELECT entry_id FROM vocabulary_entries e WHERE NOT EXISTS"
+                " (SELECT 1 FROM vocabulary_aliases a WHERE"
+                " a.entry_id=e.entry_id)")}
+            latest: dict[str, list] = {}
+            if bare:
+                for eid, cj in db.execute(
+                        "SELECT entry_id, change_json FROM"
+                        " vocabulary_history ORDER BY history_id"):
+                    if eid in bare and '"aliases"' in cj:
+                        ch = json.loads(cj)
+                        if "aliases" in ch:
+                            latest[eid] = ch["aliases"]
+            missing = sum(1 for v in latest.values() if v)
+            return {"vanished_entries": vanished,
+                    "orphan_alias_rows": orphans,
+                    "entries_missing_aliases": missing}
+        return self.store.submit(op)
+
+    # ---- writer-side helpers (run INSIDE one writer op) ------------------
 
     def _bump(self, cur) -> None:
         cur.execute(
@@ -148,6 +270,106 @@ class VocabularyStore:
              json.dumps(change, ensure_ascii=False, sort_keys=True),
              ids.now_utc_iso()))
 
+    def _insert(self, db, entry: vocab.VocabularyEntry, now: str) -> None:
+        db.execute(
+            f"INSERT INTO vocabulary_entries({', '.join(_ENTRY_COLS)})"
+            f" VALUES({', '.join('?' * len(_ENTRY_COLS))})",
+            (entry.entry_id, entry.canonical, entry.language, entry.kind,
+             entry.matching_mode, entry.scope_kind, entry.scope_value,
+             entry.priority, int(entry.pinned), 0, None, entry.origin,
+             int(entry.enabled), int(entry.approved), entry.verification,
+             1, now, now))
+        for a in entry.aliases:
+            db.execute(
+                "INSERT INTO vocabulary_aliases(entry_id, alias,"
+                " language, approved) VALUES(?,?,?,?)",
+                (entry.entry_id, a.alias, a.language, int(a.approved)))
+        self._history(db.cursor(), entry.entry_id, 1, "created", {
+            "canonical": entry.canonical,
+            "scope": [entry.scope_kind, entry.scope_value],
+            "aliases": [a.alias for a in entry.aliases],
+            "origin": entry.origin, "approved": entry.approved})
+        self._bump(db.cursor())
+
+    def _apply_update(self, db, cur: vocab.VocabularyEntry, fields: dict,
+                      now: str):
+        """Merge ``fields`` into the AUTHORITATIVE current entry, validate
+        the merged state, version and write it. Returns a status tuple."""
+        merged = {k: getattr(cur, k) for k in (
+            "entry_id", "canonical", "language", "kind", "matching_mode",
+            "scope_kind", "scope_value", "priority", "pinned",
+            "usage_count", "last_used_utc", "origin", "enabled",
+            "approved", "verification")}
+        merged.update({k: v for k, v in fields.items() if k != "aliases"})
+        triples = fields.get("aliases")
+        aliases = tuple(vocab.Alias(t, f, lang) for t, f, lang in triples) \
+            if triples is not None else cur.aliases
+        new_revision = cur.revision + 1
+        try:
+            vocab.VocabularyEntry(**merged, aliases=aliases,
+                                  revision=new_revision)
+        except (ValueError, TypeError) as e:
+            return ("invalid", str(e))
+        if any(k in fields for k in ("canonical", "scope_kind",
+                                     "scope_value")) and _find_identity(
+                db, merged["canonical"], merged["scope_kind"],
+                merged["scope_value"], exclude=cur.entry_id):
+            return ("duplicate", None)
+        c = db.cursor()
+        sets, vals = [], []
+        for col in _ROW_FIELDS:
+            if col in fields:
+                sets.append(f"{col}=?")
+                v = fields[col]
+                vals.append(int(v) if col in _BOOL_FIELDS else v)
+        sets += ["revision=?", "updated_at_utc=?"]
+        vals += [new_revision, now, cur.entry_id, cur.revision]
+        c.execute(f"UPDATE vocabulary_entries SET {', '.join(sets)}"
+                  f" WHERE entry_id=? AND revision=?", vals)
+        if c.rowcount != 1:
+            return ("stale", None)
+        if triples is not None:
+            c.execute("DELETE FROM vocabulary_aliases WHERE entry_id=?",
+                      (cur.entry_id,))
+            for text, flag, lang in triples:
+                c.execute(
+                    "INSERT INTO vocabulary_aliases(entry_id, alias,"
+                    " language, approved) VALUES(?,?,?,?)",
+                    (cur.entry_id, text, lang, int(flag)))
+        elif "language" in fields and fields["language"] != cur.language \
+                and cur.language is not None:
+            # Alias language inheritance (M05-AUDIT-12): a row equal to
+            # the entry's PREVIOUS language was inherited (stores before
+            # the remediation materialized it) — it follows the entry
+            # from now on; an explicit different override is kept.
+            c.execute("UPDATE vocabulary_aliases SET language=NULL"
+                      " WHERE entry_id=? AND language=?",
+                      (cur.entry_id, cur.language))
+        change = {k: v for k, v in fields.items() if k != "aliases"}
+        if triples is not None:
+            change["aliases"] = [t for t, _, _ in triples]
+        self._history(c, cur.entry_id, new_revision, "updated", change)
+        self._bump(c)
+        return ("ok", None)
+
+    @staticmethod
+    def _raise_for(status, detail=None):
+        if status == "missing":
+            raise KeyError("no such vocabulary entry")
+        if status == "stale":
+            raise StaleEntryError(
+                "vocabulary entry changed since it was read"
+                + (f" (now at revision {detail})" if detail else ""))
+        if status == "duplicate":
+            raise ValueError("an entry with this canonical spelling"
+                             " already exists in the requested scope")
+        if status == "duplicate_id":
+            raise ValueError("an entry with this id already exists")
+        if status == "invalid":
+            raise ValueError(f"invalid vocabulary entry: {detail}")
+
+    # ---- writes ----------------------------------------------------------
+
     def add_entry(self, canonical: str, aliases=(), *,
                   language: str | None = None, kind: str = "term",
                   matching_mode: str = "phrase",
@@ -159,6 +381,13 @@ class VocabularyStore:
                   entry_id: str | None = None) -> str:
         canonical = vocab._validate_canonical(canonical)
         alias_records = _normalize_alias_items(aliases)
+        for name, value in (("pinned", pinned), ("enabled", enabled),
+                            ("approved", approved)):
+            vocab.require_bool(name, value)
+        vocab.require_int("priority", priority)
+        vocab.require_opt_str("language", language)
+        vocab.require_opt_str("scope_value", scope_value)
+        vocab.require_opt_str("entry_id", entry_id)
         if verification is None:
             verification = ("explicit" if approved else "suggested")
         # Construct once for validation before touching the database.
@@ -168,147 +397,144 @@ class VocabularyStore:
             scope_kind=scope_kind, scope_value=scope_value,
             priority=priority, pinned=pinned, origin=origin,
             enabled=enabled, approved=approved, verification=verification,
-            aliases=tuple(vocab.Alias(alias=t, approved=f, language=language)
-                          for t, f in alias_records))
-        # Duplicate probe BEFORE the writer: a rejection raised here is
-        # a plain ValueError on the caller thread and never reaches the
-        # store's error channel, whose event detail must stay free of
-        # dictionary content. (Panel edits are main-thread serialized,
-        # and the in-op probe below remains as the backstop.)
+            aliases=tuple(vocab.Alias(t, f, lang)
+                          for t, f, lang in alias_records))
+        # Duplicate probe BEFORE the writer keeps the common rejection
+        # cheap; the in-op check below is the authoritative one (two
+        # concurrent adds that both passed the probe resolve there, as
+        # a status — never a raised write failure in the event log).
         if self._canonical_exists(canonical, scope_kind, scope_value):
-            raise ValueError(
-                "an entry with this canonical spelling already exists"
-                " in the requested scope")
+            self._raise_for("duplicate")
         now = ids.now_utc_iso()
 
         def op(db):
-            db.execute(
-                f"INSERT INTO vocabulary_entries({', '.join(_ENTRY_COLS)})"
-                f" VALUES({', '.join('?' * len(_ENTRY_COLS))})",
-                (entry.entry_id, canonical, language, kind, matching_mode,
-                 scope_kind, scope_value, priority, int(pinned), 0, None,
-                 origin, int(enabled), int(approved), verification, 1,
-                 now, now))
-            for text, flag in alias_records:
-                db.execute(
-                    "INSERT INTO vocabulary_aliases(entry_id, alias,"
-                    " language, approved) VALUES(?,?,?,?)",
-                    (entry.entry_id, text, language, int(flag)))
-            self._history(db.cursor(), entry.entry_id, 1, "created", {
-                "canonical": canonical, "scope": [scope_kind, scope_value],
-                "aliases": [t for t, _ in alias_records],
-                "origin": origin, "approved": approved})
-            self._bump(db.cursor())
-        self.store.submit(op)
+            if _find_identity(db, canonical, scope_kind, scope_value):
+                return "duplicate"
+            if db.execute("SELECT 1 FROM vocabulary_entries WHERE"
+                          " entry_id=?", (entry.entry_id,)).fetchone():
+                return "duplicate_id"
+            self._insert(db, entry, now)
+            return "ok"
+        self._raise_for(self.store.submit(op))
         return entry.entry_id
 
-    def update_entry(self, entry_id: str, **changes) -> vocab.VocabularyEntry:
+    def _validated_fields(self, changes: dict) -> dict:
         unknown = set(changes) - set(_EDITABLE)
         if unknown:
             raise ValueError(f"unknown entry fields: {sorted(unknown)}")
+        fields = {}
         for k, v in changes.items():
             # language/scope_value are genuinely nullable; anything else
             # passed as None is a caller bug, not a silent no-op.
             if v is None and k not in ("language", "scope_value"):
                 raise ValueError(f"field {k!r} may not be None")
-        current = self.entry(entry_id)
-        if current is None:
-            raise KeyError(f"no vocabulary entry {entry_id}")
-        fields = dict(changes)
-        if not fields:
-            return current  # nothing requested: no history, no bump
-        if "canonical" in fields:
-            fields["canonical"] = vocab._validate_canonical(
-                fields["canonical"])
-        if "aliases" in fields:
-            fields["aliases"] = _normalize_alias_items(fields["aliases"])
-        merged = dataclass_values(current)
-        merged.update(fields)
-        # Construct for validation (scope value rules, enum values…).
-        vocab.VocabularyEntry(**merged)
+            if k in _BOOL_FIELDS:
+                vocab.require_bool(k, v)
+            elif k == "priority":
+                vocab.require_int(k, v)
+            elif k in ("language", "scope_value"):
+                vocab.require_opt_str(k, v)
+            elif k in _STR_FIELDS:
+                if not isinstance(v, str):
+                    raise vocab.AdmissionError("not_a_string", k)
+            elif k == "canonical":
+                v = vocab._validate_canonical(v)
+            elif k == "aliases":
+                v = _normalize_alias_items(v)
+            fields[k] = v
+        return fields
+
+    def update_entry(self, entry_id: str, *,
+                     expected_revision: int | None = None,
+                     **changes) -> vocab.VocabularyEntry:
+        """Edit fields of one entry. The current row is read, merged,
+        validated and versioned inside ONE writer operation; with
+        ``expected_revision`` the edit is refused (StaleEntryError) when
+        the row moved on since the caller read it."""
+        fields = self._validated_fields(changes)
+        if expected_revision is not None:
+            vocab.require_int("expected_revision", expected_revision)
         now = ids.now_utc_iso()
 
         def op(db):
-            cur = db.cursor()
-            sets, vals = [], []
-            for col in ("canonical", "language", "kind", "matching_mode",
-                        "scope_kind", "scope_value", "priority", "pinned",
-                        "origin", "enabled", "approved", "verification"):
-                if col in fields:
-                    sets.append(f"{col}=?")
-                    v = fields[col]
-                    if col in ("pinned", "enabled", "approved"):
-                        v = int(bool(v))
-                    vals.append(v)
-            # Any real change — columns OR aliases — versions the entry:
-            # the row's revision must always track its history.
-            new_revision = current.revision + 1
-            sets.append("revision=?")
-            vals.append(new_revision)
-            sets.append("updated_at_utc=?")
-            vals.append(now)
-            vals.append(entry_id)
-            cur.execute(
-                f"UPDATE vocabulary_entries SET {', '.join(sets)}"
-                f" WHERE entry_id=?", vals)
-            if "aliases" in fields:
-                cur.execute(
-                    "DELETE FROM vocabulary_aliases WHERE entry_id=?",
-                    (entry_id,))
-                for text, flag in fields["aliases"]:
-                    cur.execute(
-                        "INSERT INTO vocabulary_aliases(entry_id, alias,"
-                        " language, approved) VALUES(?,?,?,?)",
-                        (entry_id, text,
-                         fields.get("language", current.language),
-                         int(flag)))
-            change = dict(fields)
-            if "aliases" in change:
-                change["aliases"] = [t for t, _ in fields["aliases"]]
-            self._history(cur, entry_id, new_revision, "updated", change)
-            self._bump(cur)
-        self.store.submit(op)
-        out = self.entry(entry_id)
-        assert out is not None
+            cur = _read_entry(db, entry_id)
+            if cur is None:
+                return ("missing", None, None)
+            if expected_revision is not None \
+                    and cur.revision != expected_revision:
+                return ("stale", cur.revision, None)
+            if not fields:
+                return ("ok", None, cur)  # nothing requested: no history
+            status, detail = self._apply_update(db, cur, fields, now)
+            return (status, detail, _read_entry(db, entry_id)
+                    if status == "ok" else None)
+        status, detail, out = self.store.submit(op)
+        self._raise_for(status, detail)
         return out
 
-    def set_enabled(self, entry_id: str, enabled: bool):
-        return self.update_entry(entry_id, enabled=enabled)
+    def set_enabled(self, entry_id: str, enabled: bool, *,
+                    expected_revision: int | None = None):
+        return self.update_entry(entry_id, enabled=enabled,
+                                 expected_revision=expected_revision)
 
-    def approve_entry(self, entry_id: str):
+    def approve_entry(self, entry_id: str, *,
+                      expected_revision: int | None = None):
         """Approve the entry and every alias (one-click approval, S11):
         from here the rule may rewrite text and its applications count
-        as hits (AC04)."""
-        current = self.entry(entry_id)
-        if current is None:
-            raise KeyError(f"no vocabulary entry {entry_id}")
-        aliases = [(a.alias, True) for a in current.aliases]
-        return self.update_entry(
-            entry_id, approved=True, verification="explicit",
-            aliases=aliases)
-
-    def set_scope(self, entry_id: str, scope_kind: str,
-                  scope_value: str | None):
-        return self.update_entry(entry_id, scope_kind=scope_kind,
-                                 scope_value=scope_value)
-
-    def delete_entry(self, entry_id: str):
-        current = self.entry(entry_id)
-        if current is None:
-            raise KeyError(f"no vocabulary entry {entry_id}")
+        as hits (AC04). The alias set approved is the one CURRENT inside
+        the writer op — a concurrent alias edit is never lost and a
+        stale alias list is never written back (M05-AUDIT-06)."""
+        if expected_revision is not None:
+            vocab.require_int("expected_revision", expected_revision)
+        now = ids.now_utc_iso()
 
         def op(db):
+            cur = _read_entry(db, entry_id)
+            if cur is None:
+                return ("missing", None, None)
+            if expected_revision is not None \
+                    and cur.revision != expected_revision:
+                return ("stale", cur.revision, None)
+            fields = {"approved": True, "verification": "explicit",
+                      "aliases": [(a.alias, True, a.language)
+                                  for a in cur.aliases]}
+            status, detail = self._apply_update(db, cur, fields, now)
+            return (status, detail, _read_entry(db, entry_id)
+                    if status == "ok" else None)
+        status, detail, out = self.store.submit(op)
+        self._raise_for(status, detail)
+        return out
+
+    def set_scope(self, entry_id: str, scope_kind: str,
+                  scope_value: str | None, *,
+                  expected_revision: int | None = None):
+        return self.update_entry(entry_id, scope_kind=scope_kind,
+                                 scope_value=scope_value,
+                                 expected_revision=expected_revision)
+
+    def delete_entry(self, entry_id: str, *,
+                     expected_revision: int | None = None):
+        if expected_revision is not None:
+            vocab.require_int("expected_revision", expected_revision)
+
+        def op(db):
+            row = db.execute(
+                "SELECT revision, canonical FROM vocabulary_entries WHERE"
+                " entry_id=?", (entry_id,)).fetchone()
+            if row is None:
+                return ("missing", None)
+            if expected_revision is not None and row[0] != expected_revision:
+                return ("stale", row[0])
             cur = db.cursor()
-            cur.execute(
-                "DELETE FROM vocabulary_entries WHERE entry_id=?",
-                (entry_id,))
-            cur.execute(
-                "DELETE FROM vocabulary_aliases WHERE entry_id=?",
-                (entry_id,))
-            self._history(cur, entry_id, current.revision + 1, "deleted",
-                          {"canonical": current.canonical})
+            cur.execute("DELETE FROM vocabulary_entries WHERE entry_id=?",
+                        (entry_id,))
+            cur.execute("DELETE FROM vocabulary_aliases WHERE entry_id=?",
+                        (entry_id,))
+            self._history(cur, entry_id, row[0] + 1, "deleted",
+                          {"canonical": row[1]})
             self._bump(cur)
-        self.store.submit(op)
+            return ("ok", None)
+        self._raise_for(*self.store.submit(op))
 
     def record_hits(self, entry_ids: list[str]) -> int:
         """Record applied approved matches as usage (S11 ranking, task 5):
@@ -316,7 +542,8 @@ class VocabularyStore:
         here because only approved aliases can produce edits. The caller
         contract is the ledger's applied rule ids — approval was checked
         at match time under the job's frozen revision, so an entry
-        disabled after the job started still records its applied use.
+        disabled after the job started still records its applied use
+        (and an entry deleted meanwhile updates no row — harmless).
         Usage is statistics, not matching state: it deliberately does
         NOT bump the store revision (and is excluded from the snapshot
         revision hash), so a hit never forces a snapshot rebuild on the
@@ -372,7 +599,8 @@ class VocabularyStore:
         """Claude/Claude Code as visible suggested coding entries (S11,
         task 3): unapproved, profile-scoped 'coding' — they never rewrite
         text until approved, and a dismissed suggestion (disabled entry)
-        does not reappear."""
+        does not reappear (a DELETED one is re-seeded: delete is not
+        dismiss)."""
         added = skipped = 0
         for canonical, alias in (("Claude", "clod"),
                                  ("Claude Code", "clod code")):
@@ -388,14 +616,9 @@ class VocabularyStore:
         return {"added": added, "skipped": skipped}
 
     def _canonical_exists(self, canonical: str, scope_kind: str,
-                           scope_value) -> bool:
-        def op(db):
-            return db.execute(
-                "SELECT 1 FROM vocabulary_entries WHERE canonical=?"
-                " COLLATE NOCASE AND scope_kind=? AND"
-                " IFNULL(scope_value,'')=IFNULL(?,'')",
-                (canonical, scope_kind, scope_value)).fetchone() is not None
-        return self.store.submit(op)
+                          scope_value) -> bool:
+        return self.store.submit(lambda db: _find_identity(
+            db, canonical, scope_kind, scope_value) is not None)
 
     # ---- JSON import/export (bulk, S11 dictionary UI) ---------------------
 
@@ -403,61 +626,81 @@ class VocabularyStore:
         return vocab.entries_to_doc(self.entries())
 
     def import_json(self, source, *, additive_only: bool = True) -> dict:
-        """Bulk import (S11). Upsert by (canonical, scope) — the
-        canonical spelling IS the key, so imports update settings
-        (aliases, scope-independent fields) but never re-key an entry;
-        re-spelling goes through update_entry. Observed usage (count/
-        last-use) stays with the store — a file never fabricates usage
-        history. Idempotent: re-importing the same document changes
-        nothing."""
-        doc = json.loads(pathlib.Path(source).read_text(encoding="utf-8"))
-        entries = [vocab.VocabularyEntry.from_json(d)
-                   for d in doc.get("entries", [])]
-        created = updated = unchanged = 0
-        # Case-insensitive key, matching the DB's NOCASE uniqueness: a
-        # file's "servo" updates the stored "Servo", never forks it.
-        existing = {(e.canonical.lower(), e.scope_kind, e.scope_value or ""): e
-                    for e in self.entries()}
-        for e in entries:
-            key = (e.canonical.lower(), e.scope_kind, e.scope_value or "")
-            cur = existing.get(key)
-            if cur is None:
-                self.add_entry(
-                    canonical=e.canonical,
-                    aliases=[vocab.Alias(a.alias, a.approved, a.language)
-                             for a in e.aliases],
-                    language=e.language, kind=e.kind,
-                    matching_mode=e.matching_mode,
-                    scope_kind=e.scope_kind, scope_value=e.scope_value,
-                    priority=e.priority, pinned=e.pinned, origin=e.origin,
-                    enabled=e.enabled, approved=e.approved,
-                    verification=e.verification)
-                created += 1
-                continue
-            changes = {}
-            for col in ("language", "kind", "matching_mode", "priority",
-                        "pinned", "origin", "enabled", "approved",
-                        "verification"):
-                if getattr(e, col) != getattr(cur, col):
-                    changes[col] = getattr(e, col)
-            new_aliases = [(a.alias, a.approved) for a in e.aliases]
-            old_aliases = [(a.alias, a.approved) for a in cur.aliases]
-            if new_aliases != old_aliases:
-                changes["aliases"] = new_aliases
-            if changes:
-                self.update_entry(cur.entry_id, **changes)
+        """Bulk import (S11), one WHOLE-FILE transaction (M05-AUDIT-11,
+        design D6). The file is parsed and validated completely first —
+        strict types, alias words, and no two rows with one identity
+        (the declared SQLite-NOCASE canonical+scope key) — and refused
+        with a content-free ``ImportRejected`` before any write; then
+        every upsert runs inside ONE writer operation, so a fault part
+        way commits nothing. Upsert by (canonical, scope): the canonical
+        spelling IS the key, so imports update settings (aliases,
+        scope-independent fields) but never re-key an entry; new rows
+        get freshly minted ids. Observed usage (count/last-use) stays
+        with the store — a file never fabricates usage history.
+        Idempotent: re-importing the same document, in any alias order,
+        changes nothing (M05-AUDIT-10)."""
+        try:
+            doc = json.loads(pathlib.Path(source).read_text(
+                encoding="utf-8"))
+        except (OSError, UnicodeDecodeError):
+            raise ImportRejected("unreadable_file") from None
+        except json.JSONDecodeError:
+            raise ImportRejected("not_json") from None
+        if not isinstance(doc, dict) \
+                or not isinstance(doc.get("entries", []), list):
+            raise ImportRejected("invalid_document")
+        parsed = []
+        for i, d in enumerate(doc.get("entries", [])):
+            try:
+                parsed.append(vocab.VocabularyEntry.from_json(d))
+            except vocab.AdmissionError as e:
+                raise ImportRejected(e.code, f"entries[{i}].{e.field}") \
+                    from None
+            except (ValueError, TypeError, KeyError):
+                raise ImportRejected("invalid_entry", f"entries[{i}]") \
+                    from None
+        seen: dict[tuple, int] = {}
+        for i, e in enumerate(parsed):
+            key = identity_key(e.canonical, e.scope_kind, e.scope_value)
+            if key in seen:
+                raise ImportRejected("duplicate_identity_in_file",
+                                     f"entries[{seen[key]}],entries[{i}]")
+            seen[key] = i
+        now = ids.now_utc_iso()
+
+        def op(db):
+            created = updated = unchanged = 0
+            for e in parsed:
+                cur_id = _find_identity(db, e.canonical, e.scope_kind,
+                                        e.scope_value)
+                if cur_id is None:
+                    self._insert(db, dataclasses.replace(
+                        e, entry_id=ids.new_id("vocab"), usage_count=0,
+                        last_used_utc=None, revision=1), now)
+                    created += 1
+                    continue
+                cur = _read_entry(db, cur_id)
+                changes = {}
+                for col in ("language", "kind", "matching_mode", "priority",
+                            "pinned", "origin", "enabled", "approved",
+                            "verification"):
+                    if getattr(e, col) != getattr(cur, col):
+                        changes[col] = getattr(e, col)
+                if _alias_identity(e) != _alias_identity(cur):
+                    changes["aliases"] = [(a.alias, a.approved, a.language)
+                                          for a in e.aliases]
+                if not changes:
+                    unchanged += 1
+                    continue
+                status, detail = self._apply_update(db, cur, changes, now)
+                if status != "ok":
+                    # Validated up front; anything else aborts the WHOLE
+                    # transaction (raised inside the op → rolled back).
+                    raise ImportRejected("conflicting_row")
                 updated += 1
-            else:
-                unchanged += 1
-        return {"created": created, "updated": updated,
-                "unchanged": unchanged}
-
-
-def dataclass_values(entry: vocab.VocabularyEntry) -> dict:
-    d = {k: getattr(entry, k) for k in (
-        "entry_id", "canonical", "language", "kind", "matching_mode",
-        "scope_kind", "scope_value", "priority", "pinned", "usage_count",
-        "last_used_utc", "origin", "enabled", "approved", "verification",
-        "revision")}
-    d["aliases"] = [(a.alias, a.approved) for a in entry.aliases]
-    return d
+            return {"created": created, "updated": updated,
+                    "unchanged": unchanged}
+        try:
+            return self.store.submit(op)
+        except RuntimeError as e:
+            raise ImportRejected("write_failed") from e

@@ -25,10 +25,13 @@ duplicate as layer-5 targets.
 
 **Scopes:** `global`, `app` (bundle), `site` (browser origin),
 `profile` (writing profile), `workspace`. Precedence
-workspace > profile > site > app > global (narrower wins).
-Pre-M06 the live app filters with no destination context, so only
-global entries match; tests and the sandbox supply explicit
-`ScopeContext`s.
+workspace > profile > site > app > global (narrower wins). The live app
+scopes every job by its destination (M06 app/site/workspace, M10
+resolved writing profile); the sandbox tests the scope chosen in the
+panel. Scope identity is exact string equality: a workspace is an
+opaque project label (not a canonical path) and a site is the
+normalized origin M06 supplies — M05 adds no URL or filesystem
+semantics.
 
 ## The immutable snapshot
 
@@ -180,6 +183,134 @@ resolved origin/workspace widen the scope — rebuilding from the job's
 frozen entry set (AC03 holds: no store re-read, so mid-flight edits
 change only future jobs). Site/workspace/app-scoped entries now match
 live; the hint set is selected under the upgraded scope and frozen
-pre-decode. `profile` stays unfed until a writing-profile subsystem
-exists (M10). The `context_snapshot_id` in `asr_hint_request_fields`
-is populated from the M06 snapshot under a qualified adapter.
+pre-decode. Since M10 the resolved writing-profile name feeds the
+`profile` dimension. The `context_snapshot_id` in
+`asr_hint_request_fields` is populated from the M06 snapshot under a
+qualified adapter.
+
+## M05 remediation (2026-09-25)
+
+Post-audit repairs (docs/v2/handoffs/M05.md "Remediation addendum" has
+the dispositions and evidence). Everything above stays in force except
+where this section narrows or extends it.
+
+- **Occurrence ownership (AUDIT-01).** A multiword alias matches only
+  CONNECTED word tokens: edge punctuation between its words or any
+  Unicode line separator is a clause barrier ("clod, code" and
+  "clod\ncode" stay two clauses). The edit covers word cores only, so
+  outer edge punctuation survives. Spaces, tabs and no-break spaces
+  between the words still match.
+- **Canonical claims (AUDIT-03).** Already-canonical spans are collected
+  for the whole text first and arbitrate like proposals (longer span,
+  then earlier start): a claim suppresses every overlapping alias
+  proposal it would beat, wherever that proposal starts — the first
+  pass's winner is also the second pass's, so vocabulary normalization
+  is idempotent under left AND right overlaps.
+- **Masked longer phrase (adjudication D-M1).** A same-scope masked
+  alias does not reserve its span: a shorter approved alias inside it
+  still applies (the engine's rule for an ambiguous same-span pair).
+- **Deep immutability (AUDIT-04/05).** `VocabularyEntry` owns a tuple
+  of `Alias` records (a caller list is copied at construction);
+  `VocabularySnapshot` is sealed (no attribute can be rebound or
+  deleted; indexes, skills, `skill_provenance` and conflict records are
+  read-only views; `to_json` is detached). `HintSet` freezes its scope,
+  terms and omissions, returns detached JSON, derives its id from the
+  content (the selector) and refuses an explicit id that does not match
+  the content; `created_utc` stays outside identity.
+- **Strict admission (AUDIT-07).** Booleans must be real booleans and
+  integers real integers at every boundary (import `from_json`,
+  `add_entry`, `update_entry`, alias items, the dataclasses): the string
+  "false", 0/1, null, [] and {} are refused with a content-free
+  `AdmissionError` before any write. Omitted fields keep their
+  documented defaults (entry `approved=false`, `enabled=true`,
+  `pinned=false`; alias `approved=true`). The selector refuses a
+  non-integer or non-positive budget.
+- **Authoritative read-modify-write (AUDIT-06).** `update_entry`,
+  `approve_entry`, `set_enabled`, `set_scope` and `delete_entry` read,
+  merge, validate and version the CURRENT row inside one writer
+  operation (no invalid combined scope, no duplicate next revision, no
+  orphan alias/history after a delete; approval applies to the alias set
+  current at write time). `expected_revision` gives callers explicit
+  compare-and-swap (`StaleEntryError`). Missing/stale/duplicate/invalid
+  outcomes are typed caller errors (`KeyError`, `StaleEntryError`,
+  `ValueError`), never `store.write_failed` events.
+- **Import (AUDIT-10/11, design D6).** One WHOLE-FILE transaction:
+  the file is parsed and validated first (strict types, alias words, no
+  two rows with one identity) and refused with a content-free
+  `ImportRejected` before any write; every upsert then runs in one
+  writer operation, so a fault part way commits nothing. The declared
+  identity is SQLite NOCASE — canonical + scope, ASCII case only
+  ("Claude"/"CLAUDE" are one entry; "Éclair"/"éclair" are two, exactly
+  as the unique index sees them). Alias order is not identity: the same
+  file in any alias order is `unchanged` on re-import.
+- **Alias language (AUDIT-12, D1).** `Alias.language` None INHERITS the
+  entry's language (stored NULL); a value is an explicit override kept
+  across entry-language changes and export/import. A pre-remediation
+  alias row equal to its entry's previous language counts as inherited
+  on an entry-language change. Language stays informational — it never
+  filters matching.
+- **Sandbox and preview (AUDIT-13).** `sandbox_phrase` echoes the
+  `scope` it tested and decides suggestions with the REAL engine under a
+  hypothetical approval of one suggested entry at a time (quote/code/
+  literal protection, barriers, longer active aliases and masks apply);
+  an out-of-scope suggestion is evaluated in its own scope and labeled.
+  The panel sandbox tests the scope chosen in its scope controls.
+  `preview_entry_conflicts` marks every record `active` (both sides
+  contend now) or hypothetical; a term and a skill sharing an alias are
+  reported as `skill_wins`, never as a mask.
+- **Panel selection (AUDIT-08).** The panel selects by entry id,
+  re-reads the entry at action time, and acts with `expected_revision`;
+  a vanished selection is cleared, never retargeted.
+- **Dictionary skill provenance (AUDIT-09).** `snapshot.skill_provenance`
+  (alias → approving entry id, verification) travels through
+  `SkillRegistry(dictionary_provenance=…)` (`policy_provenance`) into
+  `NormalizationPolicy(skill_provenance=…)` (hashed into the policy
+  revision only when non-empty); an applied dictionary skill edit carries
+  `rule_id` and its verification as `reason`. Manifest skills carry
+  none. The evidence block lists `applied_skill_rule_ids`, and an
+  applied dictionary skill records a usage hit.
+- **Applied rules (AUDIT-15).** When rules applied, the collector
+  retains the applied-rule manifest: a lease-governed
+  `vocabulary_applied_rules` artifact
+  of THIS job (the exact frozen entry state of each applied rule: scope,
+  approval, per-alias approval, verification, entry revision, plus the
+  snapshot revision) and references it from the normalization block
+  (`applied_rules_artifact`, or `applied_rules_missing_reason:
+  retention_write_failed`). Bounded to applied rules; the envelope stays
+  ids/counts only; job deletion removes it with the job.
+- **Failure paths (AUDIT-02).** A job never inherits another job's
+  scope: on a store read failure the app rebuilds THIS job's scope from
+  the last good frozen entry set (`rescoped_last_good_entries`) or runs
+  without dictionary vocabulary (`vocabulary_off`); a hint-selection
+  failure leaves the job without a hint set but never blocks the M06
+  scope upgrade; a job whose hotkey-down capture failed runs on the
+  unscoped default (`current_default`), never the app's cached state.
+  `ScopeContext` values are strings or absent (bridged string subclasses
+  normalize to `str`; anything else raises `TypeError` at construction);
+  a destination identity that is not a usable string degrades like a
+  failed capture — the unscoped default with
+  `vocabulary.scope_unavailable` (`invalid_identity`,
+  `unscoped_default`), never `vocabulary_off`.
+- **Integrity (AUDIT-18).** `VocabularyStore.integrity_report()` counts
+  vanished entries (never deleted, no row), orphan alias rows and
+  entries whose recorded aliases are gone. At startup the app refuses
+  the vocabulary (`vocabulary.integrity_failed`, off, no seeding) when
+  entries vanished and warns (`vocabulary.integrity_warning`) on alias
+  loss — a repaired empty table is never reported as a recovery.
+- **Qualification (AUDIT-19).** See `asr_hints.md`: contextual biasing is
+  qualified only for an exact adapter + checkpoint + runtime identity
+  with evidence.
+- **Hint retention failure (AUDIT-14).** See `training_evidence.md`: a
+  known hint set whose artifact write or lease failed keeps its id,
+  counts and disposition with `hint_set_missing_reason:
+  retention_write_failed`.
+- **Adjudicated policies (unchanged behavior, now explicit).** D2 — an
+  explicitly approved rule does what it says (a lone approved
+  cloud→Claude rewrites weather prose; same-scope masking is the
+  safety). D3 — an enabled in-scope suggestion or conflict-masked
+  canonical may be OFFERED as hint/cleanup context but never becomes a
+  rewrite or a cleanup alias pair (offering is not authority; the M07
+  validator's alias pairs stay approved-only). D4 — pin-first ranking,
+  frozen usage ranking between dictionary edits and duplicate canonicals
+  in separate slots stay as documented. D5 — scope identity as above.
+  Deleting a seeded suggestion re-seeds it; disabling dismisses it.

@@ -279,9 +279,12 @@ def test_no_post_answer_hint_leakage():
 def test_hint_set_feeds_all_supported_consumers():
     """M05-AC05 with the consumer set named: pre-decode ASR (ignored,
     unqualified), post-ASR recovery (actual use through the snapshot the
-    set was built from). Cleanup consumes permitted context from M07 —
-    not a consumer yet, so nothing records a disposition for it (no
-    speculative field is written)."""
+    set was built from). Since M07 cleanup is the third consumer: the
+    app passes the frozen set's canonicals (≤40) as prompt context and
+    the snapshot's approved alias pairs (≤40) as validator data — that
+    live path is asserted by the M05 corpus cleanup-data-boundary family
+    and tests/v2/vocabulary/test_m05_remediation_app.py; this test pins
+    the two domain-level consumers."""
     entries = [_entry("Claude Code", ["clod code"])]
     snap = VocabularySnapshot(entries, IN_SCOPE)
     hs = RelevantVocabularySelector(100).select(snap)
@@ -297,8 +300,9 @@ def test_hint_set_feeds_all_supported_consumers():
     assert applied and applied[0].rule_id in {e.entry_id
                                               for e in snap2.entries}
     assert hs.vocabulary_revision == snap2.revision
-    print("ok  one HintSet, two live consumers with recorded"
-          " dispositions; cleanup deferred to M07 (not a consumer yet)")
+    print("ok  one HintSet feeding pre-decode (ignored, unqualified) and"
+          " post-ASR recovery (ledger rule ids); cleanup's M07 path is"
+          " pinned by the remediation suites")
 
 
 def test_request_fields_shape_pinned_for_qualified_adapter():
@@ -308,10 +312,21 @@ def test_request_fields_shape_pinned_for_qualified_adapter():
     snap = VocabularySnapshot([_entry("Claude Code", ["clod code"])],
                               IN_SCOPE)
     hs = RelevantVocabularySelector(100).select(snap)
-    manifest = caps.asr_capability_manifest("qualified-adapter")
+    # M05 remediation (AUDIT-19): qualification is identity-bound — the
+    # synthetic manifest names the exact adapter/checkpoint/runtime it
+    # was qualified for (a bare supported flag is refused; see
+    # test_m05_remediation.test_19_qualification_requires_identity).
+    manifest = caps.asr_capability_manifest(
+        "qualified-adapter", model_revision="synthetic-rev",
+        runtime={"runtime": "synthetic"})
     manifest["capabilities"]["contextual_biasing"] = {
         "supported": True, "reason": "synthetic_test",
-        "evidence": "synthetic manifest for shape pinning"}
+        "evidence": "synthetic manifest for shape pinning",
+        "qualified_identity": {
+            "adapter": manifest["adapter"],
+            "model_id": "qualified-adapter",
+            "model_revision": "synthetic-rev",
+            "runtime": {"runtime": "synthetic"}}}
     fields = caps.asr_hint_request_fields(hs, manifest)
     assert fields is not None
     assert set(fields) == {"hint_set_id", "context_snapshot_id",

@@ -385,10 +385,19 @@ def test_hint_request_fields_carry_context_snapshot_id():
     hs = job["hint_set"]
     snap = job["context_snapshot"]
     assert hs is not None and snap is not None
-    manifest = caps.asr_capability_manifest("qualified-adapter")
+    # M05 remediation (AUDIT-19): qualification is identity-bound, so
+    # the synthetic manifest names the exact adapter/checkpoint/runtime.
+    manifest = caps.asr_capability_manifest(
+        "qualified-adapter", model_revision="synthetic-rev",
+        runtime={"runtime": "synthetic"})
     manifest["capabilities"]["contextual_biasing"] = {
         "supported": True, "reason": "synthetic_test",
-        "evidence": "synthetic manifest for M06 wiring"}
+        "evidence": "synthetic manifest for M06 wiring",
+        "qualified_identity": {
+            "adapter": manifest["adapter"],
+            "model_id": "qualified-adapter",
+            "model_revision": "synthetic-rev",
+            "runtime": {"runtime": "synthetic"}}}
     fields = caps.asr_hint_request_fields(
         hs, manifest, context_snapshot_id=snap.context_snapshot_id)
     assert fields["context_snapshot_id"] == snap.context_snapshot_id
