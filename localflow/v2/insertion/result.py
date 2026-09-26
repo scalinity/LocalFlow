@@ -2,12 +2,14 @@
 
 States (contracts/targets.md, contracts/insertion.md):
 
-- ``confirmed``         — readback of the owned range in the target equals
-                          the inserted text (never the clipboard: LocalFlow
-                          reading its own pasteboard proves nothing about
-                          the destination). Requires a consistent pre-write
-                          readback too, so a stale-AX surface cannot
-                          self-confirm.
+- ``confirmed``         — readback of the owned range in the recorded,
+                          readable destination equals the inserted text
+                          (never the clipboard: LocalFlow reading its own
+                          pasteboard proves nothing about the destination),
+                          against a pre-write read of the same region and
+                          field length that shows an attributable change —
+                          equal bytes alone never confirm, so a stale-AX
+                          surface or a no-op write cannot self-confirm.
 - ``posted_unverified`` — the insert event was posted but acceptance could
                           not be observed (no readback, or readback
                           disagreed/partial).
@@ -57,10 +59,13 @@ class InsertionResult:
     reason_code: Optional[str] = None
     method: str = METHOD_NONE
     verification: dict = dataclasses.field(default_factory=dict)
-    owned_start: Optional[int] = None      # target-field code points
+    owned_start: Optional[int] = None      # host units (UTF-16 on macOS);
+                                           # None when not read
     owned_end: Optional[int] = None
     inserted_chars: int = 0
-    readback: Optional[str] = None         # match | mismatch | partial | unavailable
+    readback: Optional[str] = None         # match | match_ambiguous |
+                                           # partial | mismatch | changed |
+                                           # unavailable
     clipboard: dict = dataclasses.field(default_factory=dict)
     target_snapshot_id: Optional[str] = None
     context_snapshot_id: Optional[str] = None
@@ -96,6 +101,7 @@ class InsertionResult:
             "inserted_chars": self.inserted_chars,
             "owned_start": self.owned_start,
             "owned_end": self.owned_end,
+            "range_units": "utf16_host",
             "readback": self.readback,
             "verification": dict(self.verification),
             "clipboard": {

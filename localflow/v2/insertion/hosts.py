@@ -23,11 +23,20 @@ AX_MESSAGING_TIMEOUT = 0.2
 
 
 class InsertionHost(Protocol):
-    """The Accessibility surface insertion needs (read + write)."""
+    """The Accessibility surface insertion needs (read + write).
+
+    Destination elements come from ``focused_element_for(pid)`` — the
+    focused element OF that application, checked with ``element_pid`` —
+    never from whatever holds the system focus (the M06 ownership rule;
+    ``focused_element`` remains for callers outside M08). Ranges are
+    host units (UTF-16 code units on macOS); ``set_attribute`` takes a
+    ``(location, length)`` tuple for a range attribute and boxes it."""
 
     def is_trusted(self) -> bool: ...
     def frontmost(self) -> Optional[dict]: ...
     def focused_element(self): ...
+    def focused_element_for(self, pid): ...
+    def element_pid(self, el) -> Optional[int]: ...
     def attribute(self, el, name): ...
     def is_settable(self, el, name) -> bool: ...
     def set_attribute(self, el, name, value) -> bool: ...
@@ -41,9 +50,13 @@ class SystemInsertionHost:
     unavailable, never a hung queue thread)."""
 
     def __init__(self, messaging_timeout: float = AX_MESSAGING_TIMEOUT):
+        from ..context.providers import SystemAXHost
         self.messaging_timeout = messaging_timeout
         self._system_el = None
         self._lock = threading.Lock()
+        # The M06 typed adapter: application-owned acquisition and the
+        # AXUIElementGetPid ownership check (one implementation).
+        self._owned = SystemAXHost(messaging_timeout)
 
     def is_trusted(self) -> bool:
         import ApplicationServices as AS
@@ -82,6 +95,16 @@ class SystemInsertionHost:
                 el, self.messaging_timeout)
             return el
         return None
+
+    def focused_element_for(self, pid):
+        """The focused element WITHIN application ``pid`` (or None)."""
+        try:
+            return self._owned.focused_element_for(pid)
+        except Exception:
+            return None
+
+    def element_pid(self, el) -> Optional[int]:
+        return self._owned.element_pid(el)
 
     def attribute(self, el, name):
         import ApplicationServices as AS
@@ -127,7 +150,12 @@ class SystemInsertionHost:
 
     def set_attribute(self, el, name, value) -> bool:
         import ApplicationServices as AS
+        from ..context.providers import ax_box_range
         try:
+            if isinstance(value, tuple) and len(value) == 2:
+                # A range write must be a boxed AXValue CFRange (host
+                # units) — a bare CFRange is refused natively.
+                value = ax_box_range(value[0], value[1])
             err = AS.AXUIElementSetAttributeValue(el, name, value)
         except Exception:
             return False
@@ -168,18 +196,23 @@ STRING_TYPE = "public.utf8-plain-text"
 
 
 class PasteboardHost(Protocol):
+    """Writes return the new change count when the pasteboard
+    acknowledged every write, else None (the board was cleared but the
+    data was refused — nothing LocalFlow wrote is on it)."""
+
     def change_count(self) -> int: ...
     def types(self) -> list: ...
     def data_for_type(self, ptype): ...
     def string_for_type(self, ptype) -> Optional[str]: ...
-    def clear_and_write_text(self, text: str) -> int: ...
-    def clear_and_write_items(self, items) -> int: ...
+    def clear_and_write_text(self, text: str) -> Optional[int]: ...
+    def clear_and_write_items(self, items) -> Optional[int]: ...
 
 
 class SystemPasteboard:
     """NSPasteboard wrapper. Ownership generations are the pasteboard's
     own changeCount: capture before publishing, verify the count is
-    still LocalFlow's before restoring — a user copy always wins."""
+    still LocalFlow's before restoring — a user copy always wins. Each
+    native write's acknowledgment is propagated (None = refused)."""
 
     def __init__(self):
         from AppKit import NSPasteboard
@@ -198,23 +231,24 @@ class SystemPasteboard:
         v = self._pb.stringForType_(ptype)
         return str(v) if v is not None else None
 
-    def clear_and_write_text(self, text: str) -> int:
+    def clear_and_write_text(self, text: str) -> Optional[int]:
         from AppKit import NSPasteboardTypeString
         self._pb.clearContents()
-        self._pb.setString_forType_(text, NSPasteboardTypeString)
-        return self.change_count()
+        ok = self._pb.setString_forType_(text, NSPasteboardTypeString)
+        return self.change_count() if ok else None
 
-    def clear_and_write_items(self, items) -> int:
+    def clear_and_write_items(self, items) -> Optional[int]:
         from AppKit import NSPasteboardItem
         pb_items = []
+        ok = True
         for type_data in items:
             it = NSPasteboardItem.alloc().init()
             for ptype, data in type_data:
-                it.setData_forType_(data, ptype)
+                ok = bool(it.setData_forType_(data, ptype)) and ok
             pb_items.append(it)
         self._pb.clearContents()
-        self._pb.writeObjects_(pb_items)
-        return self.change_count()
+        ok = bool(self._pb.writeObjects_(pb_items)) and ok
+        return self.change_count() if ok else None
 
 
 KEY_V = 9  # ANSI 'V'

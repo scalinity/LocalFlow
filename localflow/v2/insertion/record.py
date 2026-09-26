@@ -1,10 +1,18 @@
-"""Insertion/observation persistence (store schema v4, M08).
+"""Insertion/observation persistence (tables added at store schema v4;
+the store is additive — contracts/store.md).
 
 All writes go through ``Store.submit`` — the sanctioned writer-thread
 entry point for same-package domain layers (contracts/store.md), so
 the single-writer discipline holds. Content-bearing payloads
 (before/after owned-range texts) are separate lease-governed
-artifacts; these rows carry ids, ranges, counts and reasons only.
+artifacts; these rows carry ids, ranges (host units), counts and
+reasons only.
+
+Deletion: an insertion row for a deleted job is still written — it is
+content-free truth about an effect that happened (never a payload,
+never read authority). An observation is never OPENED for a deleted
+job: the check runs inside the writer op, after any delete-everywhere
+serialized before it (M02 barrier discipline).
 """
 
 from __future__ import annotations
@@ -12,6 +20,7 @@ from __future__ import annotations
 import json
 
 from .. import ids
+from ..store import JobDeletedError, conn_job_deleted
 
 
 def record_insertion(store, result) -> str:
@@ -43,6 +52,8 @@ def open_observation(store, insertion_id: str, job_id) -> str:
     now = ids.now_utc_iso()
 
     def op(conn):
+        if conn_job_deleted(conn, job_id):
+            raise JobDeletedError("observation refused: job was deleted")
         conn.execute(
             "INSERT INTO insertion_observations(observation_id,"
             " insertion_id, job_id, started_at_utc) VALUES(?,?,?,?)",
