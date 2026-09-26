@@ -107,6 +107,12 @@
         "fixture_files": [
           "tests/v2/transforms/fixtures_prompt_engineer.json"
         ]
+      },
+      "m11_remediation_created": {
+        "note": "M11 audit remediation (2026-09-24) added version 2 of the Prompt Engineer cases (schema m11-prompt-engineer-cases/2; 40 synthetic cases: 15 dev, 5 validation, 10 regression, 10 held-out). The ten v1 held-out cases were inspected during that remediation and move to split 'regression' as exposed; PE-BLIND-001..010 are the new held-out families. v1 above is kept unchanged as the historical manifest. The splits are M11's case-level acceptance split carried in the file — not an S29.11 family assignment and not part of this family's 30 planned cases. The blind split was first run against the real model on 2026-09-26 (pre-M08 integration; verdicts recorded, case texts not read) and is exposed for any later tuning.",
+        "fixture_files": [
+          "tests/v2/transforms/fixtures_prompt_engineer_v2.json"
+        ]
       }
     },
     {

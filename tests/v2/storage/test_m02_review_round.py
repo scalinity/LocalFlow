@@ -259,6 +259,9 @@ def test_r8_transform_of_deleted_job_text_is_detached():
     with tempfile.TemporaryDirectory() as td:
         s = new_store(td)
         ts = TransformStore(s)
+        # Candidates are recorded only under collection consent (M11).
+        training.ConsentManager(s, lambda *a, **k: None).set(
+            "enabled", note="test")
         job, _ = s.create_job()
         s.delete_everywhere("job", job, reason="moved_to_scratchpad")
         d = tf.TransformDefinition(transform_id="t", name="T", mode="polish")
@@ -266,15 +269,21 @@ def test_r8_transform_of_deleted_job_text_is_detached():
                                       parent_job_id=job)
         cand = ts.record_candidate(
             tf.TransformResult(job=job_t, output="Note text.",
-                               path="applied"),
+                               path="applied", prompt="rendered prompt"),
             source_artifact_text="note text",
             output_artifact_text="Note text.")
         assert cand
-        rows = q(s.db_path, "SELECT job_id FROM artifacts WHERE purged=0")
-        assert rows == [(None,), (None,)], rows
+        # Every artifact — source, output and the M11 prompt and decision
+        # children — is detached from the deleted job.
+        rows = q(s.db_path, "SELECT role, job_id FROM artifacts"
+                 " WHERE purged=0 ORDER BY role")
+        assert rows == [("transform_decision", None),
+                        ("transform_output", None),
+                        ("transform_prompt", None),
+                        ("transform_source", None)], rows
         s.close()
     print("ok  R8 transform of a deleted job's text: candidate recorded,"
-          " artifacts detached from the deleted job")
+          " every artifact detached from the deleted job")
 
 
 def main():
