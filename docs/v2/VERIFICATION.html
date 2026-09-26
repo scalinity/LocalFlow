@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M05 remediation · code <code>01a1f3c</code> (M04 checks unchanged at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M06 remediation · code <code>4388b52</code> (M05 checks unchanged at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -2239,7 +2239,278 @@ EOF</code></pre></div>
           </details>
         </article>
       </section>
-      <section class="milestone" id="M06" data-milestone="M06" data-title="Local context"><div class="ms-head"><span class="mid">M06</span><h2>Local context</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M06-V001).</p></section>
+      <section class="milestone" id="M06" data-milestone="M06" data-title="Local context">
+        <div class="ms-head">
+          <span class="mid">M06</span><h2>Local context</h2>
+          <span class="meta">instructions M06-r1 · code 4388b52 · remediation of audit at 6a083bd</span>
+        </div>
+        <p class="ms-intro">The M06 local remediation binds everything LocalFlow reads about the place you are dictating into to that one place: every Accessibility read now goes to a field that belongs to the app you started in, so switching apps while you speak can never pull text from the new app or mix one app's field with another's page; a password or unrecognised field is only asked what kind of field it is, never for its contents; a denied app is not read at all; an app or page is recognised only by a real identity (never by “both unknown”), and another window or tab of the same app counts as a different place when the text is about to be inserted; a page's address comes from the page itself — a host guessed from a window title is kept as a hint and never selects site-specific dictionary entries; selected and nearby text are capped, and an over-long selection is treated as a caret rather than something to replace; cancelling, deleting or quitting stops a dictation's context work, and nothing late is stored for a deleted dictation; “retained” in the evidence now means the snapshot was really stored. On this Mac the session ran the audit's reproductions, a 101-case adversarial corpus, a mutation check, native probes against a synthetic window of its own, and the context benchmark; the checks below cover what only real apps, real pages and your own hands can show. The September 22 M06 records stay as they are; their pending destination trial is carried by M06-V001 and M06-V002 for the current code. Detail: <code>docs/v2/handoffs/M06.md</code> (remediation addendum) and <code>docs/v2/acceptance/M06/results.json</code> → <code>remediation_2026_09_26</code>.</p>
+
+        <div class="callout">
+          <h3>M06 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The repaired M06 code gets its own worktree, and the dev app runs with a <b>sandbox home folder</b> (<code>$SANDBOX6</code>), so its store, logs and captured context land in a throw-away folder — never your real Application Support data or the installed app. The sandbox config turns context and its retention on and denies one app, Notes, for M06-V002. Test documents live in <code>$OUT6/lf-m06-trial</code>. Quit the installed LocalFlow.app first so the two apps do not fight over the fn key or the microphone. The evidence reader prints ids, kinds, counts and statuses — never the text of a field.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># M06 code in its own worktree (first time only)</span>
+export LF_M06="$(dirname "$LF_MAIN")/LocalFlow-m06-verify"
+git -C "$LF_MAIN" fetch origin m06-local-remediation
+[ -d "$LF_M06" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M06" origin/m06-local-remediation
+<span class="c">#   (if that branch has been merged, use origin/main instead)</span>
+git -C "$LF_M06" merge-base --is-ancestor 4388b52 HEAD &amp;&amp; echo "M06 repairs present"
+export OUT6="$EV/m06-verification"; mkdir -p "$OUT6/lf-m06-trial" &amp;&amp; chmod 700 "$OUT6"
+printf 'Trial note one.\n' &gt; "$OUT6/lf-m06-trial/note-one.txt"
+printf 'Trial note two.\n' &gt; "$OUT6/lf-m06-trial/note-two.txt"
+
+<span class="c"># Sandbox home and config for the dev app</span>
+export REAL_HOME="$HOME"
+export SANDBOX6="$OUT6/sandbox-home"; mkdir -p "$SANDBOX6" &amp;&amp; chmod 700 "$SANDBOX6"
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M06"], "config.json").read_text())
+c = dict(cfg, log_transcripts=False, context_enabled=True,
+         training_retain_context=True, context_denied_apps=["com.apple.Notes"])
+p = pathlib.Path(os.environ["OUT6"], "sandbox-config.json")
+p.write_text(json.dumps(c, indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app; $LF6_PID is its process</span>
+lf6_start() { ( cd "$LF_M06" &amp;&amp; exec env HOME="$SANDBOX6" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT6/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT6/app-console.txt" 2&gt;&amp;1 &amp;
+  LF6_PID=$!; echo "dev app pid $LF6_PID"; }
+export SDB6="$SANDBOX6/Library/Application Support/LocalFlow/v2.db"
+
+<span class="c"># Evidence reader: one line per dictation, oldest first (no field text)</span>
+cat &gt; "$OUT6/m06_evidence.py" &lt;&lt;'EOF'
+import json, os, sqlite3
+from localflow.v2 import store as S
+db = sqlite3.connect(os.environ["SDB6"])
+st = S.Store(os.environ["SDB6"])
+rows = db.execute("select example_id, job_id from training_examples"
+                  " order by rowid").fetchall()
+for n, (ex, job) in enumerate(rows, 1):
+    env = st.latest_revision(ex) or {}
+    d = (env.get("context") or {}).get("destination") or {}
+    snap = json.loads(st.artifact_payload(d["artifact_id"]) or "{}") \
+        if d.get("artifact_id") else {}
+    t, f = snap.get("target") or {}, snap.get("field") or {}
+    ws = snap.get("workspace")
+    ins = db.execute("select state, reason_code from insertions where"
+                     " job_id=? order by rowid desc limit 1", (job,)).fetchone()
+    sel = f.get("selected_text")
+    print(f"#{n} app={t.get('app_bundle')} category={t.get('category')}"
+          f" field={d.get('field_classification')}"
+          f" origin={snap.get('site_origin')} ({snap.get('origin_source')})"
+          f" workspace={ws if ws in (None, 'lf-m06-trial') else 'other'}"
+          f" ({snap.get('workspace_source')})"
+          f" before={len(f.get('preceding_text') or '')}"
+          f" after={len(f.get('following_text') or '')}"
+          f" selected={None if sel is None else len(sel)}"
+          f" ids={d.get('identifier_count')} denied={d.get('denied_app')}"
+          f" retained={d.get('retained')}"
+          f" providers={','.join(p['name'] + ':' + p['status'] for p in d.get('providers') or [])}"
+          f" omitted={sorted({o.get('reason') for o in d.get('omissions') or []} - {None})}"
+          f" insertion={ins[0] if ins else None}/{ins[1] if ins else None}")
+st.close()
+EOF
+lf6_evidence() { ( cd "$LF_M06" &amp;&amp; HOME="$SANDBOX6" "$PY" "$OUT6/m06_evidence.py" ); }</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M06 repairs present” and one “wrote …/sandbox-config.json” line. The dev app runs from Terminal, so Terminal's Accessibility permission is the one that counts. Remove the sandbox when finished: <code>rm -rf "$SANDBOX6"</code> (test dictations only).</p>
+        </div>
+
+        <h3 class="group">Native destination trial</h3>
+
+        <article class="check" id="M06-V001" data-milestone="M06" data-rev="M06-r1" data-code="4388b52" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M06-V001</span>
+            <h4>Dictate into a document, two browsers' pages and a selection; read what context was captured</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~15 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> With real apps the repaired collector reads the field you are in and nothing else: a TextEdit document gives a text field and the words before and after the caret (capped, never sent to a model), plus the document's folder as its workspace if TextEdit exposes the document on the field itself; a Safari and a Chrome page give a text field and the page's own address with <code>ax_url</code> as its source — or, where the browser does not expose the address on the field, an honest title hint or nothing (which one each browser does is exactly what the local session could not see: its synthetic web view exposed no page tree); a selected word is captured with its length and the dictation replaces it; and every dictation's snapshot is really stored (<code>retained=True</code>). Carries the historical pending item <code>native-m06-destination-trial</code> (September 22, <code>acceptance/M06/results.json</code>) for the repaired code under instruction revision M06-r1, except its password-field and denied-app steps, which M06-V002 carries; that record stays as it was.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate a few short sentences into a text document, a search box in Safari and in Chrome, and over a selected word. Then one command shows what LocalFlow noticed about each place — the kind of field, the page address, the folder — without printing any of your text.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home · Safari; Chrome if installed</dd>
+              <dt>Preconditions</dt><dd>M06 set-up done; installed LocalFlow.app quit; Terminal holds the Accessibility permission.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M06 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf6_start</code>; wait for the menu-bar icon and “ASR: ready”. In its menu choose <b>Training → Collect Training Evidence</b> (the sandbox store only).</li>
+              <li>Run <code>open -a TextEdit "$OUT6/lf-m06-trial/note-one.txt"</code>. Click at the end of “Trial note one.”, hold fn and say “the parse config function returns early”, release.</li>
+              <li>In Safari open <code>https://duckduckgo.com</code>, click into the search box and dictate “weather in lisbon tomorrow”. Do not press Return.</li>
+              <li>If Chrome is installed, do the same in Chrome. Otherwise skip this step and note “no Chrome”.</li>
+              <li>Back in TextEdit, double-click the word “early” so it is selected and dictate “late”.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 6)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf6_evidence | tee "$OUT6/V001-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>One line per dictation, in order. Every line: <code>retained=True</code>, <code>denied=False</code>, and an <code>insertion=</code> state of <code>confirmed</code> or <code>posted_unverified</code>; the text appeared where you dictated.</li>
+              <li>TextEdit (#1): <code>app=com.apple.TextEdit field=text</code>, <code>before=</code> a number ≥ 15, <code>origin=None</code>. Record the <code>workspace=</code> part as seen — <code>lf-m06-trial (document)</code> means TextEdit exposes the document on its text field; <code>None (None)</code> means it exposes it only on the window, which M06 does not read (then folder-scoped entries will not apply in TextEdit; the documented limit, not a failure).</li>
+              <li>Safari (#2) and Chrome (#3): <code>category=browser field=text</code>, <code>focused_field:ok</code>. Record the <code>origin=</code> part as seen — <code>https://duckduckgo.com (ax_url)</code> is the full result; <code>(window_title)</code> or <code>None</code> means that browser does not expose the address on the field (then the page's site-specific dictionary entries will not apply there; this is the documented limit, not a failure).</li>
+              <li>Selection (#4, or #3 without Chrome): <code>field=text selected=5</code>, and the word “early” in TextEdit was replaced by the dictated word (a capital or a full stop added by cleanup is fine); nothing else in the line changed.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>field=</code> anything but <code>text</code> in TextEdit or the search boxes, or <code>retained=False</code>: <b>Failed</b>; keep <code>V001-evidence.txt</code> and <code>app-console.txt</code>.</li>
+              <li>An <code>origin=</code> that is not the page you were on: <b>Failed</b> — a wrong address is worse than none.</li>
+              <li>The selection line shows <code>selected=None</code> and the word was not replaced: <b>Failed</b>. If it was replaced but <code>selected=None</code>: <b>Needs follow-up</b>.</li>
+              <li>Different words appeared (Parakeet heard differently, or cleanup rephrased): not an M06 result — repeat once; if it repeats, note the words and carry on.</li>
+              <li>No lines at all: Collect Training Evidence was off — turn it on and repeat.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT6/V001-evidence.txt</code> (app ids, the public test page's address, counts and statuses — no dictated or nearby text), <code>$OUT6/app-console.txt</code>. The dictated words stay in the trial documents and the sandbox store; the search boxes were never submitted.</p>
+            <h5>Contract relevance</h5>
+            <p>M06-AC01–AC03, AC05; M06-AUDIT-01/02/04/09/14/23; <code>contracts/context.md</code> → read ownership, sensitive-field rules 6–7, budgets and offsets, evidence; <code>contracts/insertion.md</code> → selection.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Privacy boundaries</h3>
+
+        <article class="check" id="M06-V002" data-milestone="M06" data-rev="M06-r1" data-code="4388b52" data-tags="native human privacy model">
+          <header class="check-head">
+            <span class="cid">M06-V002</span>
+            <h4>Dictate into a password field and into a denied app; confirm nothing of either was read</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Privacy / data</li><li>Microphone</li><li>~8 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A real password field in a real browser is classified from its role alone — its value, selection, placeholder and address are never asked — and the snapshot carries no content from it; an app on the deny list (Notes, in the sandbox config) is not read at all: every context provider reports <code>denied_app</code>. Only real apps can show that the browser's password field reports itself as secure through the Accessibility tree the way the synthetic fields did. Carries the password-field and denied-app steps of <code>native-m06-destination-trial</code>.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate into a login page's password box and into a note in Notes, then check that LocalFlow recorded only “this was a password field” and “this app is off-limits” — nothing about what was in them.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached · sandbox home · Safari · Notes</dd>
+              <dt>Preconditions</dt><dd>M06 set-up done; M06-V001 done in this sandbox (its lines come first); installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M06 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf6_start</code>; wait for “ASR: ready”. Collect Training Evidence stays on from M06-V001.</li>
+              <li>In Safari open <code>https://github.com/login</code>, click into the <b>Password</b> box (leave the username empty) and dictate “test phrase one”. Then clear the box; never submit the form.</li>
+              <li>Open Notes, make a new note, click into it and dictate “test phrase two”. Delete the note afterwards.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 4)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf6_evidence | tail -n 2 | tee "$OUT6/V002-evidence.txt"
+grep -h '"context.provider_failed"' "$SANDBOX6"/Library/Logs/LocalFlow/events-*.jsonl | wc -l</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Password box: <code>field=secure</code>, <code>before=0 after=0 selected=None</code>, <code>origin=None</code>, and <code>omitted=</code> includes <code>secure_field</code>. How the text itself landed is M08's business: record the <code>insertion=</code> state as seen.</li>
+              <li>Notes: <code>app=com.apple.Notes denied=True field=None</code>, <code>before=0 after=0</code>, every provider <code>:omitted</code>, and <code>omitted=['denied_app']</code>. The text was still dictated into the note — a denied app loses its context, not its dictation.</li>
+              <li>The <code>grep</code> count is <code>0</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>The password line shows <code>field=text</code>, a non-zero <code>before</code>/<code>after</code>/<code>selected</code> or an origin: <b>Failed</b> — this is the one M06 promise that must hold. Keep the evidence and <code>app-console.txt</code>; do not repeat on a real account.</li>
+              <li>The password line shows <code>field=unclassifiable</code> with no content: <b>Needs follow-up</b> (safe, but that browser does not report the field as secure).</li>
+              <li>The Notes line shows <code>denied=False</code> or any provider <code>:ok</code>: <b>Failed</b> (check that <code>sandbox-config.json</code> lists <code>com.apple.Notes</code> first).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT6/V002-evidence.txt</code> (two lines: kinds, counts, reasons). Nothing typed into the password box was submitted anywhere.</p>
+            <h5>Contract relevance</h5>
+            <p>M06-AC01, AC06; M06-AUDIT-01/22; <code>contracts/context.md</code> → sensitive-field rules 1–5.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Destination changes before insertion</h3>
+
+        <article class="check" id="M06-V003" data-milestone="M06" data-rev="M06-r1" data-code="4388b52" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M06-V003</span>
+            <h4>Switch window or tab after releasing fn; the text must not land in the new place</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Between releasing fn and the text arriving, insertion re-checks the place against the dictation's snapshot: another window of the same app (a different window element) and another tab of the same window (a different title) are both a changed destination, and the text is kept in history instead of being typed there; with no switch the text lands normally; and moving the caret within the same document is not a change — the text lands at the new caret, by design. The local session proved the window-element comparison on its own synthetic window; real TextEdit windows and real Safari tabs are what only this Mac can show.</p>
+          <p class="plain"><b>In plain terms.</b> You start a dictation in one window and, right after letting go of fn, switch to another window or tab. The words should not appear in the one you switched to — LocalFlow keeps them for you instead.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached · sandbox home · TextEdit · Safari</dd>
+              <dt>Preconditions</dt><dd>M06 set-up done; installed LocalFlow.app quit. Each switch must happen within about a second of releasing fn: say the whole sentence, release, and press the keys at once.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M06 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf6_start</code>; wait for “ASR: ready”. Collect Training Evidence on.</li>
+              <li>Run <code>open -a TextEdit "$OUT6/lf-m06-trial/note-one.txt" "$OUT6/lf-m06-trial/note-two.txt"</code> so both windows are open. Click at the end of note one.</li>
+              <li><b>Control:</b> dictate “first control sentence for the window test” and do nothing else.</li>
+              <li><b>Other window:</b> click at the end of note one again, dictate “second sentence that should not move windows”, and right after releasing fn press <b>⌘`</b> (switch to note two).</li>
+              <li><b>Moved caret:</b> in note one, dictate “third sentence at the moved caret”, and right after releasing fn click at the very start of the first line.</li>
+              <li><b>Other tab:</b> in Safari open two tabs, <code>https://duckduckgo.com</code> and <code>https://example.com</code>. In the DuckDuckGo tab click into the search box, dictate “fourth sentence for the tab test”, and right after releasing fn press <b>⌃Tab</b>.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 7)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf6_evidence | tail -n 4 | tee "$OUT6/V003-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Control: the sentence is in note one; its line shows <code>insertion=confirmed</code> or <code>posted_unverified</code>.</li>
+              <li>Other window: note two is unchanged, and the line shows <code>insertion=target_changed/target_changed</code>. The sentence is in LocalFlow's history.</li>
+              <li>Moved caret: the sentence appears at the start of note one; the line shows <code>confirmed</code> or <code>posted_unverified</code>.</li>
+              <li>Other tab: the example.com tab is unchanged and the line shows <code>insertion=target_changed/target_changed</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Text typed into note two or into the example.com tab: <b>Failed</b> — keep the evidence and <code>app-console.txt</code>.</li>
+              <li>The text landed in the original place before you could switch (a line shows <code>confirmed</code> and nothing moved): not a result — repeat that step with a longer sentence; if you cannot beat it twice, mark <b>Blocked</b> (“insertion faster than a switch”).</li>
+              <li>The control or the moved-caret step shows <code>target_changed</code>: <b>Failed</b> (a false refusal — dictation is stuck in history when it should have landed).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT6/V003-evidence.txt</code> (kinds, counts and insertion states only).</p>
+            <h5>Contract relevance</h5>
+            <p>M06-AUDIT-03/25; <code>contracts/insertion.md</code> → target revalidation (identity, window, field, selection); <code>contracts/context.md</code> → freshness and identity.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Permission change</h3>
+
+        <article class="check" id="M06-V004" data-milestone="M06" data-rev="M06-r1" data-code="4388b52" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M06-V004</span>
+            <h4>Turn Terminal's Accessibility off and back on while the dev app runs</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human</li><li>~6 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Losing the Accessibility permission mid-session is survivable and reads nothing: the app keeps running, any dictation that still starts records its context as <code>permission_unavailable</code> and is offered for copying rather than typed, and after the permission is restored context works again — with or without a relaunch, which this check records. Only System Settings can change the permission; the local session could not, and the corpus case for it (LF-M06-N004) stays open until this is run. The fn key itself listens through Accessibility, so it may stop responding while the permission is off — that is expected and is recorded, not failed.</p>
+          <p class="plain"><b>In plain terms.</b> You briefly switch off the permission LocalFlow uses to see the text field, check that nothing breaks, switch it back on and check that everything works again.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · System Settings · microphone · models cached · sandbox home · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M06 set-up done. Other Terminal tools that use Accessibility pause while it is off — turn it back on in step 5 even if something goes wrong.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M06 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf6_start</code>; wait for “ASR: ready”. Collect Training Evidence on. Open note one in TextEdit and dictate “before the permission change”.</li>
+              <li>System Settings → Privacy &amp; Security → Accessibility → switch <b>Terminal</b> off.</li>
+              <li>In TextEdit, try to dictate “while the permission is off”. Note whether fn started a dictation at all.</li>
+              <li>In Terminal run <code>kill -0 "$LF6_PID" &amp;&amp; echo "dev app alive"</code>.</li>
+              <li>Switch <b>Terminal</b> back on in the same pane.</li>
+              <li>Dictate “after the permission change” in TextEdit. If fn does not respond, or step 7 shows the new line without <code>field=text</code>, quit from the menu, run <code>lf6_start</code>, dictate it again and note “relaunch needed”.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 7)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf6_evidence | tail -n 3 | tee "$OUT6/V004-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 4 prints <code>dev app alive</code>.</li>
+              <li>The line for “before …” shows <code>field=text</code> and <code>focused_field:ok</code>.</li>
+              <li>If step 3 started a dictation: its line shows <code>omitted=</code> with <code>permission_unavailable</code>, <code>before=0 after=0</code>, and <code>insertion=saved_not_inserted</code> with the reason <code>accessibility_not_trusted</code>; nothing was typed into TextEdit (the text is on the clipboard and in history). If fn did not respond, there is no such line — record “fn inactive while revoked”.</li>
+              <li>The last line (“after …”) shows <code>field=text</code> and <code>focused_field:ok</code>; record whether a relaunch was needed.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>The dev app exited in step 3 or 4: <b>Failed</b>; keep <code>app-console.txt</code>.</li>
+              <li>A dictation made while revoked shows <code>field=text</code> or a non-zero <code>before</code>: <b>Failed</b>.</li>
+              <li>Context stays unavailable even after a relaunch with the permission back on: <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT6/V004-evidence.txt</code>; your notes on fn behaviour and on the relaunch.</p>
+            <h5>Contract relevance</h5>
+            <p>M06-AUDIT-13/21 (the error classes; −25211 is a permission, not a failed read); <code>contracts/context.md</code> → degradation and statuses; <code>contracts/insertion.md</code> → method matrix (not trusted ⇒ copy-only).</p>
+          </details>
+        </article>
+
+        <p class="ms-intro">Related: <b>M05-V003</b> (the reference-Mac vocabulary benchmark) is pinned to M05 code <code>01a1f3c</code> and stays yours to record. The M06 session ran the same benchmark on this Mac against the M06 code, whose release path it changed (<code>docs/v2/benchmarks/20260926-043413-m06-remediation/m05/</code>, 10,000 entries): work validity valid, verdict pass, and <code>scope_upgrade_and_packaging</code> p50 121 ms / p95 141 ms — still above 75 ms as a stand-alone build. M06 now runs that build while you speak instead of after you release fn; the release-path addition measured by the M06 benchmark in the same run is p95 40.5 ms. That run informs M05-V003; it does not record it.</p>
+      </section>
       <section class="milestone" id="M07" data-milestone="M07" data-title="Faithful cleanup"><div class="ms-head"><span class="mid">M07</span><h2>Faithful cleanup</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M07-V001).</p></section>
       <section class="milestone" id="M08" data-milestone="M08" data-title="Insertion"><div class="ms-head"><span class="mid">M08</span><h2>Insertion</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M08-V001).</p></section>
       <section class="milestone" id="M09" data-milestone="M09" data-title="Hub"><div class="ms-head"><span class="mid">M09</span><h2>Hub</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M09-V001).</p></section>

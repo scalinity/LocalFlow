@@ -344,6 +344,11 @@ Constructors and consumers of the M06 types in `localflow/` and
 
 ## Limitations (documented, not hidden)
 
+- The document locator (`AXDocument`) is read from the focused element
+  only; an app that exposes it only on its window yields no workspace
+  (the synthetic native probe's NSTextView answers -25205 for it).
+  Which real editors expose it on the field is part of the pending
+  native trial (M06-V001).
 - Browser origins come from the focused element's AXURL; a browser that
   exposes the URL only on an ancestor web area yields the title
   fallback (evidence only) or no origin — real browsers are part of the

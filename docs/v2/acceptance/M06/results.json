@@ -134,5 +134,282 @@
     "rejected_as_incorrect": [],
     "post_address_verification": "Every suite re-run green after the fixes (23 fast suites incl. both M06 suites at 27+12 tests, worker_live 2/2, live_pipeline 2/2, cleanup 51/51 at 47.9 s) and the benchmark re-run on post-review code (this file's benchmark_summary)."
   },
-  "privacy": "Committed artifacts carry synthetic fixtures, hashes and counts only; the envelope's context destination/downstream blocks carry ids, flags, counts and omission reasons — bundle ids, origins, workspace names, window titles and field text live only in the lease-governed snapshot artifacts (pre_decode_context/downstream_context, training lease, independent training_retain_context knob); denied apps and secure fields retain no content anywhere (canary-tested across snapshot JSON, envelope and events); context events are content-free (counts/reasons/durations); the baseline-manifest privacy scan passes over every new path; live data stays under Application Support / Logs, outside the repository."
+  "privacy": "Committed artifacts carry synthetic fixtures, hashes and counts only; the envelope's context destination/downstream blocks carry ids, flags, counts and omission reasons — bundle ids, origins, workspace names, window titles and field text live only in the lease-governed snapshot artifacts (pre_decode_context/downstream_context, training lease, independent training_retain_context knob); denied apps and secure fields retain no content anywhere (canary-tested across snapshot JSON, envelope and events); context events are content-free (counts/reasons/durations); the baseline-manifest privacy scan passes over every new path; live data stays under Application Support / Logs, outside the repository.",
+  "remediation_2026_09_26": {
+    "kind": "post-audit local remediation (reference Mac)",
+    "state": "LOCAL_REMEDIATION_COMPLETE_PENDING_MANUAL_VERIFICATION",
+    "state_note": "Every automatable, native-local and independent-review step ran on the reference Mac; four human checks remain (M06-V001..V004). The 2026-09-22 records above are historical and unchanged.",
+    "audit": {
+      "report": "LocalFlow V2 — M06 Read-Only Deep Audit (sha256 53b121916cb960b7740f121a0bdc993a4eedfceeac2438650311bf0884265611)",
+      "audited_sha": "6a083bd70011988314836164e7d3016da3968490",
+      "verdict": "C",
+      "severity": {
+        "critical": 1,
+        "high": 8,
+        "medium": 7,
+        "test_gap": 5,
+        "design_concern": 4
+      },
+      "corpus": "tests/v2/context/m06_audit_corpus.json (sha256 e2a2b561c5119e32f7c10b69c3d8a777aed3add402af067841f2554037efb9c6; 101 cases, 50 families, 10 metamorphic relations, 18 mutations; byte-identical)"
+    },
+    "synchronization": {
+      "gpt_audited_main": "6a083bd70011988314836164e7d3016da3968490",
+      "remote_main_at_sync": "6a083bd70011988314836164e7d3016da3968490",
+      "local_main_before": "1ee8e449ad21382378785c7ca9c309f55020d44f",
+      "local_main_after": "6a083bd70011988314836164e7d3016da3968490",
+      "disposition": "fast-forward only; 0 ahead / 31 behind; no local-only commits; remote unchanged since the audit; accepted M01-M05 remediation commits verified as ancestors",
+      "left_untouched": [
+        "docs/v2/benchmarks/20260924-m11-remediation/ (untracked, M11 session)",
+        "tests/v2/transforms/test_transform_remediation.py (untracked, M11 session)"
+      ]
+    },
+    "inherited_base_sha": "6a083bd70011988314836164e7d3016da3968490",
+    "branch": "m06-local-remediation",
+    "commits": {
+      "281733e": "base reproduction, corpus runner, fail-first regressions, base evidence (no production change)",
+      "88ee303": "first-pass production repair (frozen for review)",
+      "545e21b": "first-pass tools: work-valid benchmark, mutation check, native suite",
+      "9435846": "evidence-tool fixes from the first-pass run",
+      "4388b52": "independent-review fixes (final production code)",
+      "5f277d7": "review-round regressions and tightened tools",
+      "fd91032": "contracts",
+      "a41dfcc": "repro stamp counts tracked changes only",
+      "3a2d8e1": "MUT-14 re-anchored on the final guard (final test/tool head)"
+    },
+    "first_pass_sha": "88ee3038855da1f334a10306e0b65ba840093582",
+    "final_code_revision": "4388b521cedfebe5a16dc8c485d25275f0b342f0",
+    "final_test_head": "3a2d8e19d4024403fdb2928708f35b84ee9db9d9",
+    "environment": "reference Mac: Apple M5 Pro, Mac17,8, 18 CPUs, 48 GiB, macOS 27.0 (26A428) arm64; .venv CPython 3.14.7; PyObjC 12.2.1; MLX 0.31.2 (Metal); Accessibility trusted for the terminal; every suite/probe/benchmark desktop-isolated (tests/v2/context/run_isolated.py, ax_calls_blocked=0); native checks only against the session's own synthetic helper window",
+    "reproduction_evidence": {
+      "script": "scripts/v2/m06_remediation_repro.py",
+      "base": "remediation/repro_base_6a083bd.json (25/25 reproduced)",
+      "first_pass": "remediation/repro_first_pass_545e21b.json (24/25 not reproduced; a21 awaited the caller inventory; its code_root_modified=true came from an untracked M11 test file)",
+      "final": "remediation/repro_final_a41dfcc.json (0/25 reproduced)",
+      "native_probe": [
+        "remediation/native_probe_base_6a083bd.json",
+        "remediation/native_probe_final_a41dfcc.json"
+      ]
+    },
+    "disposition_counts": {
+      "reproduced": 16,
+      "test_gap_reproduced": 5,
+      "design_adjudicated": 4,
+      "refuted": 0,
+      "already_fixed": 0
+    },
+    "adjudications": {
+      "policy_version": "m06-policy-v1",
+      "file": "tests/v2/context/m06_corpus_adjudications.json",
+      "decisions": [
+        "D1 secure/unclassifiable metadata",
+        "D2 failed vs absent (-25205/-25212 absence, -25211 permission)",
+        "D3 heuristic authority (title origin is evidence, never site scope)",
+        "D4 downstream late delta with parent link, sealed",
+        "D5 destination distinctions (usable identity; window element + title)",
+        "D6 configuration (read once, fail closed)",
+        "D7 budgets (600-unit flanks, selection <= 4096 units)",
+        "D8 native offsets",
+        "D9 lifecycle (handles, revoke, admission, shutdown)",
+        "D10 retention acknowledgment",
+        "D11 release clock",
+        "D12 origin forms",
+        "D13 workspace locators"
+      ],
+      "contract": "contracts/context.md -> Remediation policy"
+    },
+    "regressions": {
+      "suite": "tests/v2/context/test_m06_remediation.py",
+      "base": "remediation/regressions_base_6a083bd.json (1/31; the pass is the A01 positive control)",
+      "first_pass": "remediation/regressions_first_pass_545e21b.json (31/31)",
+      "final": "remediation/regressions_final_a41dfcc.json (31/31)"
+    },
+    "independent_review": {
+      "method": "separate code-auditor subagent with an empty context; audit + corpus + contracts + diff 6a083bd..545e21b + written brief only; own read-only worktree at 545e21b; no tracked file changed. Every allegation re-run by the author with independent probes (scripts/v2/m06_review_repro.py) on the first pass before fixing",
+      "author_repro": {
+        "first_pass": "remediation/review_repro_first_pass_545e21b.json (r1 r2 r3 r4 r6 r7 r8_r9 r10 reproduced)",
+        "final": "remediation/review_repro_final_a41dfcc.json (only r4 reproduces: deferred)"
+      },
+      "regressions": {
+        "suite": "tests/v2/context/test_m06_review_round.py",
+        "first_pass": "remediation/review_round_regressions_first_pass_545e21b.json (0/8, exit 1)",
+        "final": "remediation/review_round_regressions_final_a41dfcc.json (8/8)"
+      },
+      "findings": {
+        "R1": "fixed: window element AND title both apply",
+        "R2": "fixed: an unkept selection carries no host range (a caret)",
+        "R3": "fixed: captured profile/policy tuple restored on deferred or failed widening; no_policy disposition",
+        "R4": "deferred to the M11 merge: _m11_capture_selection reads the raw deny list (M11-owned; rewritten on the M11 remediation branch); still reproduces",
+        "R5": "not verifiable locally (own WKWebView helper exposes no web tree while inactive); carried by M06-V001 and contracts/context.md limitations",
+        "R6": "fixed: only ax_url origins cached",
+        "R7": "fixed: finalized handle previews nothing; per-entry cost estimate",
+        "R8": "fixed: no application-window substitute",
+        "R9": "fixed: messaging timeout on the window element",
+        "R10": "fixed: -25211 is permission; bundle drift detected",
+        "R11": "fixed: clean runs reportable, errors never kills, MUT-10 unmasked; MUT-01 re-targeted to the collector gate (documented); MUT-04/MUT-12 killed by the regression suite only (disclosed)",
+        "R12": "fixed: per-run validity and disposition gates, labels"
+      },
+      "probe_sources": "not committed (they embed the session scratch path); the author's reproductions are committed"
+    },
+    "corpus_results": {
+      "runner": "tests/v2/context/m06_corpus_runner.py",
+      "base_6a083bd": {
+        "pass": 63,
+        "fail": 36,
+        "not_run": 2,
+        "file": "remediation/corpus_base_6a083bd.json"
+      },
+      "first_pass_9435846": {
+        "pass": 100,
+        "not_run": 1,
+        "file": "remediation/corpus_first_pass_9435846.json (families recomputed over the merged isolated + native cases)"
+      },
+      "final_3a2d8e1": {
+        "pass": 100,
+        "not_run": 1,
+        "file": "remediation/corpus_final_3a2d8e1.json"
+      },
+      "not_run": "LF-M06-N004 permission revocation/restoration (System Settings) -> M06-V004",
+      "stateful": "22 cases (16 required F-STATE families + additional) pass, Events/Barriers",
+      "metamorphic": "10/10 pass"
+    },
+    "mutation_results": {
+      "tool": "scripts/v2/m06_mutation_check.py",
+      "first_pass": "remediation/mutation_first_pass_9435846.json: control green, 18/18 killed, 4/4 benchmark mutants rejected",
+      "final": "remediation/mutation_final_3a2d8e1.json: control green, 18/18 killed, 4/4 benchmark mutants rejected",
+      "note": "at a41dfcc MUT-14's anchor no longer matched (R6 changed the guard) and was reported as a harness error, not a kill; 3a2d8e1 re-anchors the unchanged mutation (killed by LF-M06-E003 + regressions). MUT-04 and MUT-12 are killed only by the regression suite."
+    },
+    "portable_tests": {
+      "sweeps": [
+        "remediation/sweep_base_6a083bd.json (80 files, 80 exit 0)",
+        "remediation/sweep_first_pass_9435846.json (82 files, 81 exit 0)",
+        "remediation/sweep_final_a41dfcc.json (83 files, 81 exit 0; 861 ok case lines, 0 FAIL lines)"
+      ],
+      "non_zero_final": [
+        "tests/v2/context/test_native_ax.py: exit 2 NOT RUN under isolation by design (runs natively)",
+        "tests/v2/ui/test_training_review_hub.py: one SIGABRT (AppKit assertion on the localflow-hub-query thread; the suite runs AppHelper.callAfter inline); 6/6 alone; pre-existing M14 test-harness race, not in M06 scope"
+      ],
+      "command": ".venv/bin/python tests/v2/context/run_isolated.py <file> (each tracked tests/**/test_*.py; model-backed files run separately)"
+    },
+    "shims": "synthetic AX host (tests/v2/context/m06_world.py WorldHost, test_context_snapshot.FakeAXHost) in the regressions, review round, non-native corpus cases and context suites: certifies policy/ownership logic, not native behaviour",
+    "native_tests": {
+      "suite": "tests/v2/context/test_native_ax.py",
+      "first_pass": "remediation/native_suite_first_pass_545e21b.json (7/7)",
+      "final": "remediation/native_suite_final_a41dfcc.json (7/7)",
+      "corpus_native": "N001-N003, N005, N006 pass; N004 not run"
+    },
+    "model_backed": {
+      "suite": "tests/v2/training/test_live_pipeline.py",
+      "result": "2/2 pass at 3a2d8e1",
+      "file": "remediation/live_pipeline_final_3a2d8e1.json",
+      "models": {
+        "asr": "mlx-community/parakeet-tdt-0.6b-v3 snapshot ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15",
+        "cleanup": "mlx-community/Qwen3-4B-Instruct-2507-4bit snapshot 50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b"
+      },
+      "runtime": "MLX 0.31.2, Metal gpu:0, HF offline",
+      "note": "synthetic no-speech audio; covers the training/store capture seam M06 changed; M06 privacy/ownership need no model"
+    },
+    "benchmark": {
+      "dir": "docs/v2/benchmarks/20260926-043413-m06-remediation/",
+      "code_sha": "3a2d8e19d4024403fdb2928708f35b84ee9db9d9",
+      "conditions": "clean code paths; AC power; no thermal/performance warning; load average 3.1-3.5 with another session's LectureLive test binary on one core (disclosed, not stopped)",
+      "m06": {
+        "command": ".venv/bin/python tests/v2/context/run_isolated.py scripts/v2/benchmark_m06.py --entries 10000 <dir>",
+        "verdict": "pass",
+        "exit": 0,
+        "work_validity": "valid",
+        "additional_delay_ms": {
+          "n": 60,
+          "p50": 5.517,
+          "p95": 40.476,
+          "p99": 43.202,
+          "budget": 75.0,
+          "gated": true
+        },
+        "release_path_on_ms": {
+          "n": 60,
+          "p50": 16.616,
+          "p95": 51.574
+        },
+        "release_path_off_ms": {
+          "n": 60,
+          "p50": 11.091,
+          "p95": 11.857
+        },
+        "release_to_asr_handoff_ms": {
+          "n": 20,
+          "p50": 21.501,
+          "p95": 35.146
+        },
+        "finalize_slow_cut_ms": {
+          "n": 20,
+          "p50": 85.08,
+          "note": "75 ms deadline + platform timer wake slack"
+        },
+        "widen_build_ms": {
+          "n": 10,
+          "p50": 59.194,
+          "p95": 77.848,
+          "note": "built while recording, off the release path"
+        },
+        "injected_delay_control": {
+          "injected_ms": 50.0,
+          "median_delta_ms": 50.869,
+          "conserved": true
+        },
+        "release_immediate_ms": {
+          "n": 20,
+          "p50": 190.013,
+          "p95": 203.032,
+          "gated": false,
+          "dispositions": {
+            "widened": 6,
+            "widening_deferred": 14
+          },
+          "note": "unreachable from a real dictation: releases under min_duration_sec (0.3 s) are discarded before any context finalize"
+        }
+      },
+      "m05": {
+        "command": ".venv/bin/python tests/v2/context/run_isolated.py scripts/v2/benchmark_m05.py --entries 10000 --out <dir>/m05",
+        "verdict": "pass",
+        "exit": 0,
+        "work_validity": "valid",
+        "scope_upgrade_and_packaging_ms": {
+          "n": 10,
+          "p50": 120.949,
+          "p95": 141.403,
+          "bound": 75.0,
+          "within_bound": false,
+          "gated_by_tool": false
+        },
+        "note": "the tool's fixed label reads 'algorithmic evidence only' (cloud origin) though this ran on the reference Mac; code_root_modified=true counts every tracked file (only VERIFICATION.html and contracts/context.md were uncommitted)"
+      },
+      "disposition_75ms": "The 75 ms post-release context target is met on the release path (additional p95 40.5 ms). The M05 scope build + packaging still takes p95 141 ms as a stand-alone synchronous build; M06 runs it during recording, off the release path. Target not redefined."
+    },
+    "historical_records_2026_09_22": "preserved unchanged; pending item native-m06-destination-trial carried by M06-V001 and M06-V002 (instructions M06-r1)",
+    "pending_manual_verification": [
+      "M06-V001 real destinations (TextEdit, Safari, Chrome, a selection); records browser address exposure (R5) and TextEdit document exposure",
+      "M06-V002 real password field and denied app (Notes)",
+      "M06-V003 window/tab switch between release and insertion; moved caret; control",
+      "M06-V004 Terminal Accessibility off and on (corpus N004)"
+    ],
+    "runbook": {
+      "page": "docs/v2/VERIFICATION.html",
+      "section": "M06",
+      "instructions_revision": "M06-r1",
+      "code": "4388b52",
+      "frontend_skill": "frontend-design:frontend-design",
+      "m05_link": "closing note links the M05 benchmark run to M05-V003 without recording it"
+    },
+    "declared_residuals": [
+      "R4: M11's _m11_capture_selection reads the raw deny list (case-sensitive, unstripped) until the M11 merge",
+      "R5: browsers may expose the page address only on the web area; then no site scope in that browser",
+      "AXDocument read from the focused element only",
+      "immediate release ~190 ms while the projection build is unfinished (unreachable below min_duration_sec)",
+      "slow-provider cut ~85 ms (deadline + timer slack)",
+      "MUT-04/MUT-12 killed by the regression suite only",
+      "M08 does not distinguish two same-role fields in one window (by design)",
+      "M14 hub suite off-main-thread refresh race (test harness)"
+    ],
+    "privacy": "synthetic fixtures, synthetic helper windows and temporary stores only; no installed app, real destination, private text, browser history, dictionary, audio or screenshot read or committed; branch diff and evidence scanned for user paths (none)"
+  }
 }
