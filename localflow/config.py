@@ -1,5 +1,6 @@
 """Configuration loading for LocalFlow."""
 
+import dataclasses
 import json
 import os
 import pathlib
@@ -274,6 +275,65 @@ def context_policy(cfg) -> tuple[dict, list]:
     return ({"context_enabled": enabled, "training_retain_context": retain,
              "context_denied_apps": tuple(b.strip() for b in denied),
              "context_deadline_ms": deadline}, problems)
+
+
+@dataclasses.dataclass(frozen=True)
+class DeveloperPolicy:
+    """The validated M10 developer configuration (read once at startup).
+
+    ``skill_manifest_paths`` are absolute (or ``~``-prefixed) paths — a
+    relative path would resolve against whatever the current directory
+    is. ``workspace_skill_dirs`` are relative names resolved under the
+    active document's directory (no absolute path, no ``..``, no ``~``).
+    ``developer_workspace_listing`` is a real Boolean."""
+
+    skill_manifest_paths: tuple = ()
+    workspace_skill_dirs: tuple = ()
+    developer_workspace_listing: bool = True
+
+
+def developer_policy(cfg) -> tuple[DeveloperPolicy, list]:
+    """The validated M10 developer policy + (key, reason) problems.
+    Every malformed value fails CLOSED and whole: a path collection that
+    is not a list of acceptable strings reads nothing (never a string
+    split into one-character paths), and a listing switch that is not
+    the JSON Boolean true lists nothing."""
+    problems = []
+    paths = cfg.get("skill_manifest_paths",
+                    DEFAULTS["skill_manifest_paths"])
+    if paths is None:
+        paths = []
+    if not isinstance(paths, list) or not all(
+            isinstance(p, str) and p.strip()
+            and os.path.isabs(os.path.expanduser(p.strip()))
+            for p in paths):
+        problems.append(("skill_manifest_paths",
+                         "not_a_list_of_absolute_paths"))
+        paths = []
+    dirs = cfg.get("workspace_skill_dirs", DEFAULTS["workspace_skill_dirs"])
+    if dirs is None:
+        dirs = []
+
+    def relative_ok(d):
+        if not isinstance(d, str) or not d.strip():
+            return False
+        d = d.strip()
+        parts = pathlib.PurePosixPath(d).parts
+        return (not d.startswith(("/", "~")) and bool(parts)
+                and ".." not in parts)
+    if not isinstance(dirs, list) or not all(relative_ok(d) for d in dirs):
+        problems.append(("workspace_skill_dirs",
+                         "not_a_list_of_relative_dirs"))
+        dirs = []
+    listing = cfg.get("developer_workspace_listing",
+                      DEFAULTS["developer_workspace_listing"])
+    if not isinstance(listing, bool):
+        problems.append(("developer_workspace_listing", "not_a_boolean"))
+        listing = False
+    return (DeveloperPolicy(
+        skill_manifest_paths=tuple(p.strip() for p in paths),
+        workspace_skill_dirs=tuple(d.strip() for d in dirs),
+        developer_workspace_listing=listing), problems)
 
 
 def validate_retention_value(key, value):

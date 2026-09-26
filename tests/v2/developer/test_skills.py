@@ -104,10 +104,16 @@ def test_dictionary_merge_and_collision_masking():
                       "brainstorm": "different-name"})
         # Same alias, two names → masked (unregistered), recorded.
         assert "brainstorm" not in reg.policy_skills
-        assert reg.conflicts == ({
+        # The captured conflicts are sealed (M10-AUDIT-17); the export
+        # is a fresh copy in the historical shape.
+        assert [dict(c) for c in reg.conflicts] == [{
+            "alias": "brainstorm",
+            "names": ("brainstorm", "different-name"),
+            "reason": "ambiguous_skill_alias"}]
+        assert reg.to_json()["conflicts"] == [{
             "alias": "brainstorm",
             "names": ["brainstorm", "different-name"],
-            "reason": "ambiguous_skill_alias"},)
+            "reason": "ambiguous_skill_alias"}]
         assert reg.policy_skills["code review"] == "code-review"
         assert reg.to_json()["dictionary_skill_aliases"] == 1
         print("ok  dictionary merge: collisions mask, never order")

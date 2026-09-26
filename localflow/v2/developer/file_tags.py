@@ -30,6 +30,15 @@ from typing import Optional
 # beyond it.
 LISTING_DEPTH = 2
 LISTING_CAP = 500
+# The WORK bound (M10-AUDIT-22): directory entries examined across the
+# whole walk. A directory is read lazily and the walk stops at this
+# budget; the listing then says it was truncated. Deterministic for an
+# unchanged tree (each directory's admitted entries are sorted).
+LISTING_VISIT_BUDGET = 2000
+
+_O_NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+_O_DIRECTORY = getattr(os, "O_DIRECTORY", 0)
+_O_CLOEXEC = getattr(os, "O_CLOEXEC", 0)
 
 # Spoken separators inside a filename/path reference: the filename dot
 # and the path slash ("engine dot py" → engine.py; "sub slash util dot
@@ -52,38 +61,101 @@ class FileResolution:
     reason: Optional[str] = None
 
 
+@dataclasses.dataclass(frozen=True)
+class ListingResult:
+    """Names plus the work actually done (entries examined) and whether
+    a bound cut the listing short — reported separately from the result
+    count, which alone is no work bound."""
+
+    names: tuple
+    visited: int
+    truncated: bool
+    reason: Optional[str] = None
+
+
+def list_workspace_files_bounded(root, *, depth: int = LISTING_DEPTH,
+                                 cap: int = LISTING_CAP,
+                                 budget: int = LISTING_VISIT_BUDGET
+                                 ) -> ListingResult:
+    """Bounded, name-only listing of one root (relative names). The walk
+    is descriptor-relative and never follows a link: each subdirectory
+    is opened ``O_NOFOLLOW`` relative to its parent, so a child swapped
+    for a link after it was listed is refused, not descended (C214).
+    Nothing is opened for reading content. Errors degrade to whatever
+    was collected — a listing failure must never fail a dictation."""
+    names: list[str] = []
+    state = {"visited": 0, "truncated": False, "reason": None}
+
+    def stop(reason):
+        state["truncated"] = True
+        state["reason"] = state["reason"] or reason
+
+    def walk(fd: int, rel: str, level: int):
+        if level > depth:
+            return
+        batch = []
+        try:
+            with os.scandir(fd) as it:
+                while True:
+                    if state["visited"] >= budget:
+                        # Conservative: at the budget the listing says
+                        # it may be incomplete (reading one more entry
+                        # to find out would exceed the budget).
+                        stop("visit_budget_reached")
+                        break
+                    entry = next(it, None)
+                    if entry is None:
+                        break
+                    state["visited"] += 1
+                    if entry.name.startswith("."):
+                        continue
+                    try:
+                        is_dir = entry.is_dir(follow_symlinks=False)
+                    except OSError:
+                        continue
+                    batch.append((entry.name, is_dir))
+        except OSError:
+            stop("unreadable_directory")
+            return
+        batch.sort()
+        for name, is_dir in batch:
+            if len(names) >= cap:
+                stop("name_cap")
+                return
+            child_rel = f"{rel}/{name}" if rel else name
+            if not is_dir:
+                names.append(child_rel)
+                continue
+            if level + 1 > depth:
+                continue
+            try:
+                cfd = os.open(name, os.O_RDONLY | _O_DIRECTORY
+                              | _O_NOFOLLOW | _O_CLOEXEC, dir_fd=fd)
+            except OSError:
+                continue   # vanished, or replaced by a link: not walked
+            try:
+                walk(cfd, child_rel, level + 1)
+            finally:
+                os.close(cfd)
+
+    try:
+        root_fd = os.open(os.fspath(root), os.O_RDONLY | _O_DIRECTORY
+                          | _O_CLOEXEC)
+    except (OSError, TypeError):
+        return ListingResult((), 0, True, "unreadable_root")
+    try:
+        walk(root_fd, "", 1)
+    finally:
+        os.close(root_fd)
+    return ListingResult(tuple(names), state["visited"], state["truncated"],
+                         state["reason"])
+
+
 def list_workspace_files(root, *, depth: int = LISTING_DEPTH,
                          cap: int = LISTING_CAP) -> tuple[str, ...]:
-    """Bounded, name-only listing of one configured root (relative
-    names). Errors degrade to whatever was collected — a listing
-    failure must never fail a dictation."""
-    root = pathlib.Path(root)
-    names: list[str] = []
-
-    def walk(dir_path: pathlib.Path, rel: str, level: int):
-        if level > depth or len(names) >= cap:
-            return
-        try:
-            entries = sorted(os.scandir(dir_path), key=lambda e: e.name)
-        except OSError:
-            return
-        for entry in entries:
-            if len(names) >= cap:
-                return
-            if entry.name.startswith("."):
-                continue
-            child_rel = f"{rel}/{entry.name}" if rel else entry.name
-            try:
-                is_dir = entry.is_dir(follow_symlinks=False)
-            except OSError:
-                continue
-            if is_dir:
-                walk(pathlib.Path(entry.path), child_rel, level + 1)
-            else:
-                names.append(child_rel)
-
-    walk(root, "", 1)
-    return tuple(names)
+    """The names of ``list_workspace_files_bounded`` (historical
+    signature)."""
+    return list_workspace_files_bounded(root, depth=depth, cap=cap).names
 
 
 def spoken_to_name(words) -> str:
@@ -139,19 +211,28 @@ class FileTagResolver:
         return tuple(sorted(found))
 
     def resolve(self, spoken_words) -> FileResolution:
+        """Longest spoken prefix first; at each length the COMPLETE
+        candidate set — every known file plus the open document —
+        decides (M10-AUDIT-16): one candidate resolves, several are
+        ambiguous. The open document is a candidate like any other; it
+        never breaks a tie or manufactures uniqueness."""
         if not spoken_words:
             return FileResolution("unresolved", reason="empty_reference")
-        if self.document_name:
-            doc_base = pathlib.Path(self.document_name).name.lower()
-            # The open document resolves on any prefix that names it.
-            for k in range(len(spoken_words), 0, -1):
-                if spoken_to_name(spoken_words[:k]).lower() == doc_base:
-                    return FileResolution(
-                        "resolved", filename=self.document_name,
-                        matched_words=k)
+        doc = self.document_name
+        doc_full = doc.lower() if doc else None
+        doc_base = pathlib.Path(doc).name.lower() if doc else None
         for k in range(len(spoken_words), 0, -1):
             spoken = spoken_to_name(spoken_words[:k])
-            matches = self._match(spoken)
+            low = spoken.lower()
+            found = set(self._match(spoken))
+            if doc is not None and low in (doc_full, doc_base):
+                # The open document names itself; a listed copy of the
+                # same file (its basename at the listing root) is the
+                # same candidate, not a second one.
+                if not any(f.lower() in (doc_full, doc_base)
+                           and "/" not in f for f in found):
+                    found.add(doc)
+            matches = tuple(sorted(found))
             if len(matches) == 1:
                 return FileResolution("resolved", filename=matches[0],
                                       matched_words=k)
