@@ -1,0 +1,355 @@
+{
+ "schema_version": 1,
+ "code_sha": "01a1f3c07ed3270aa1e7b3da39d89c453c84c1e8",
+ "runner": "tests/v2/lifecycle/run_with_shims.py (declared non-native shims) via scripts/v2/m05_test_sweep.py",
+ "groups": {
+  "M05 required + remediation": [
+   {
+    "file": "tests/v2/vocabulary/test_vocabulary_matching.py",
+    "exit": 0,
+    "ok_lines": 12,
+    "base_exit": 0,
+    "base_ok_lines": 12
+   },
+   {
+    "file": "tests/v2/vocabulary/test_vocabulary_store.py",
+    "exit": 0,
+    "ok_lines": 16,
+    "base_exit": 0,
+    "base_ok_lines": 16
+   },
+   {
+    "file": "tests/v2/vocabulary/test_hint_selection.py",
+    "exit": 0,
+    "ok_lines": 9,
+    "base_exit": 0,
+    "base_ok_lines": 9
+   },
+   {
+    "file": "tests/v2/vocabulary/test_vocabulary_pipeline.py",
+    "exit": 1,
+    "ok_lines": 5,
+    "base_exit": 1,
+    "base_ok_lines": 0
+   },
+   {
+    "file": "tests/v2/vocabulary/test_m05_remediation.py",
+    "exit": 0,
+    "ok_lines": 28,
+    "base_exit": null,
+    "base_ok_lines": null
+   },
+   {
+    "file": "tests/v2/vocabulary/test_m05_remediation_app.py",
+    "exit": 0,
+    "ok_lines": 12,
+    "base_exit": null,
+    "base_ok_lines": null
+   },
+   {
+    "file": "tests/v2/vocabulary/test_m05_review_round.py",
+    "exit": 0,
+    "ok_lines": 30,
+    "base_exit": null,
+    "base_ok_lines": null
+   }
+  ],
+  "M04 normalization": [
+   {
+    "file": "tests/v2/normalization/test_normalize_numbers.py",
+    "exit": 0,
+    "ok_lines": 13,
+    "base_exit": 0,
+    "base_ok_lines": 13
+   },
+   {
+    "file": "tests/v2/normalization/test_normalize_syntax.py",
+    "exit": 0,
+    "ok_lines": 13,
+    "base_exit": 0,
+    "base_ok_lines": 13
+   },
+   {
+    "file": "tests/v2/normalization/test_short_command_scoring.py",
+    "exit": 0,
+    "ok_lines": 3,
+    "base_exit": 0,
+    "base_ok_lines": 3
+   },
+   {
+    "file": "tests/v2/normalization/test_m04_audit_corpus.py",
+    "exit": 0,
+    "ok_lines": 2,
+    "base_exit": 0,
+    "base_ok_lines": 2
+   },
+   {
+    "file": "tests/v2/normalization/test_m04_remediation.py",
+    "exit": 0,
+    "ok_lines": 19,
+    "base_exit": 0,
+    "base_ok_lines": 19
+   },
+   {
+    "file": "tests/v2/normalization/test_m04_review_round.py",
+    "exit": 0,
+    "ok_lines": 22,
+    "base_exit": 0,
+    "base_ok_lines": 22
+   },
+   {
+    "file": "tests/v2/normalization/test_m04_remediation_app.py",
+    "exit": 0,
+    "ok_lines": 6,
+    "base_exit": 0,
+    "base_ok_lines": 6
+   },
+   {
+    "file": "tests/v2/normalization/test_normalization_pipeline.py",
+    "exit": 0,
+    "ok_lines": 7,
+    "base_exit": 0,
+    "base_ok_lines": 7
+   }
+  ],
+  "M06 context": [
+   {
+    "file": "tests/v2/context/test_context_snapshot.py",
+    "exit": 0,
+    "ok_lines": 27,
+    "base_exit": 0,
+    "base_ok_lines": 27
+   },
+   {
+    "file": "tests/v2/context/test_context_pipeline.py",
+    "exit": 0,
+    "ok_lines": 12,
+    "base_exit": 0,
+    "base_ok_lines": 12
+   }
+  ],
+  "M07 cleanup": [
+   {
+    "file": "tests/v2/fidelity/test_cleanup_engine.py",
+    "exit": 0,
+    "ok_lines": 18,
+    "base_exit": 0,
+    "base_ok_lines": 18
+   },
+   {
+    "file": "tests/v2/fidelity/test_cleanup_remediation.py",
+    "exit": 0,
+    "ok_lines": 36,
+    "base_exit": 0,
+    "base_ok_lines": 36
+   },
+   {
+    "file": "tests/v2/fidelity/test_cleanup_pipeline.py",
+    "exit": 0,
+    "ok_lines": 13,
+    "base_exit": 1,
+    "base_ok_lines": 1
+   }
+  ],
+  "M10 profiles/skills": [
+   {
+    "file": "tests/v2/profiles/test_style_resolution.py",
+    "exit": 0,
+    "ok_lines": 9,
+    "base_exit": 0,
+    "base_ok_lines": 9
+   },
+   {
+    "file": "tests/v2/profiles/test_snippets.py",
+    "exit": 0,
+    "ok_lines": 9,
+    "base_exit": 0,
+    "base_ok_lines": 9
+   },
+   {
+    "file": "tests/v2/developer/test_skills.py",
+    "exit": 0,
+    "ok_lines": 6,
+    "base_exit": 0,
+    "base_ok_lines": 6
+   },
+   {
+    "file": "tests/v2/developer/test_developer_resolution.py",
+    "exit": 0,
+    "ok_lines": 6,
+    "base_exit": 0,
+    "base_ok_lines": 6
+   },
+   {
+    "file": "tests/v2/profiles/test_profiles_pipeline.py",
+    "exit": 1,
+    "ok_lines": 1,
+    "base_exit": 1,
+    "base_ok_lines": 1
+   }
+  ],
+  "M14 learning/datasets": [
+   {
+    "file": "tests/v2/training/test_classification.py",
+    "exit": 0,
+    "ok_lines": 7,
+    "base_exit": 0,
+    "base_ok_lines": 7
+   },
+   {
+    "file": "tests/v2/training/test_dataset_export.py",
+    "exit": 1,
+    "ok_lines": 2,
+    "base_exit": 1,
+    "base_ok_lines": 2
+   },
+   {
+    "file": "tests/v2/training/test_sampling.py",
+    "exit": 0,
+    "ok_lines": 3,
+    "base_exit": 0,
+    "base_ok_lines": 3
+   },
+   {
+    "file": "tests/v2/training/test_splits.py",
+    "exit": 0,
+    "ok_lines": 4,
+    "base_exit": 0,
+    "base_ok_lines": 4
+   },
+   {
+    "file": "tests/v2/personalization/test_learning.py",
+    "exit": 0,
+    "ok_lines": 11,
+    "base_exit": 0,
+    "base_ok_lines": 11
+   },
+   {
+    "file": "tests/v2/personalization/test_profile.py",
+    "exit": 0,
+    "ok_lines": 9,
+    "base_exit": 0,
+    "base_ok_lines": 9
+   }
+  ],
+  "M02 evidence/store": [
+   {
+    "file": "tests/v2/training/test_collector.py",
+    "exit": 0,
+    "ok_lines": 11,
+    "base_exit": 0,
+    "base_ok_lines": 11
+   },
+   {
+    "file": "tests/v2/training/test_m02_remediation_collector.py",
+    "exit": 0,
+    "ok_lines": 14,
+    "base_exit": 0,
+    "base_ok_lines": 14
+   },
+   {
+    "file": "tests/v2/test_m02_app_wiring.py",
+    "exit": 0,
+    "ok_lines": 4,
+    "base_exit": 0,
+    "base_ok_lines": 4
+   },
+   {
+    "file": "tests/v2/storage/test_store.py",
+    "exit": 0,
+    "ok_lines": 17,
+    "base_exit": 0,
+    "base_ok_lines": 17
+   },
+   {
+    "file": "tests/v2/storage/test_m02_remediation_store.py",
+    "exit": 0,
+    "ok_lines": 19,
+    "base_exit": 0,
+    "base_ok_lines": 19
+   },
+   {
+    "file": "tests/v2/storage/test_m02_review_round.py",
+    "exit": 0,
+    "ok_lines": 8,
+    "base_exit": 0,
+    "base_ok_lines": 8
+   },
+   {
+    "file": "tests/v2/storage/test_import.py",
+    "exit": 0,
+    "ok_lines": 7,
+    "base_exit": 0,
+    "base_ok_lines": 7
+   }
+  ],
+  "M01 privacy/inventory": [
+   {
+    "file": "tests/v2/test_baseline_manifest.py",
+    "exit": 0,
+    "ok_lines": 5,
+    "base_exit": 0,
+    "base_ok_lines": 5
+   },
+   {
+    "file": "tests/v2/test_snapshot_safety.py",
+    "exit": 0,
+    "ok_lines": 19,
+    "base_exit": 0,
+    "base_ok_lines": 19
+   },
+   {
+    "file": "tests/v2/test_registry.py",
+    "exit": 0,
+    "ok_lines": 5,
+    "base_exit": 0,
+    "base_ok_lines": 5
+   }
+  ]
+ },
+ "missing_paths": [],
+ "whole_tree": {
+  "files": 85,
+  "nonzero_exit": 17,
+  "nonzero_identical_to_base": [
+   "tests/test_cleanup.py",
+   "tests/v2/analytics/test_insights_hub.py",
+   "tests/v2/fidelity/test_fidelity.py",
+   "tests/v2/fidelity/test_literal.py",
+   "tests/v2/insertion/test_insertion_attribution.py",
+   "tests/v2/insertion/test_insertion_pipeline.py",
+   "tests/v2/lifecycle/test_worker_live.py",
+   "tests/v2/notes/test_scratchpad_hub.py",
+   "tests/v2/profiles/test_profiles_pipeline.py",
+   "tests/v2/structure/test_structure.py",
+   "tests/v2/training/test_dataset_export.py",
+   "tests/v2/training/test_live_pipeline.py",
+   "tests/v2/transforms/test_prompt_engineer_cases.py",
+   "tests/v2/transforms/test_transform_pipeline.py",
+   "tests/v2/ui/test_hub_shell.py",
+   "tests/v2/ui/test_training_review_hub.py"
+  ],
+  "nonzero_differs_from_base": {
+   "tests/v2/vocabulary/test_vocabulary_pipeline.py": [
+    {
+     "exit": 1,
+     "last_line": "AssertionError: use clod code for the cloud deployment",
+     "ok_lines": 0,
+     "seconds": 0.5
+    },
+    5
+   ]
+  },
+  "improved_vs_base": [
+   "tests/v2/fidelity/test_cleanup_pipeline.py",
+   "tests/v2/lifecycle/test_m03_remediation_supervisor.py"
+  ],
+  "notes": {
+   "tests/v2/vocabulary/test_vocabulary_pipeline.py": "5/6 under the shims since the invalid-identity repair (02d); the sixth is the native AppKit panel construction smoke \u2014 PENDING_LOCAL_VERIFICATION (M05-V001)",
+   "tests/v2/fidelity/test_cleanup_pipeline.py": "passes under the shims since the invalid-identity repair (the shim's stub bundle id no longer turns vocabulary off)",
+   "tests/v2/lifecycle/test_m03_remediation_supervisor.py": "failed once in the base sweep under concurrency; passes alone on base and final",
+   "tests/v2/training/test_dataset_export.py": "invokes <root>/.venv/bin/python: fails in detached worktrees without a venv on base and final alike; passes 6/6 from the main checkout",
+   "tests/v2/lifecycle/test_capture_journal.py": "a 5 ms max-latency assertion failed once while the author oversubscribed the CPU; passes alone (3/3) and in the base, first-pass and final sweeps"
+  }
+ }
+}

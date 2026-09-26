@@ -1,0 +1,223 @@
+{
+ "code_root": "/tmp/claude-0/-home-user-LocalFlow/60feaa92-3367-5b00-af84-78a53bb5703a/scratchpad/final",
+ "code_sha": "4adda7ddff8acd2510bb6057c1df4d466d3cbf81",
+ "code_root_modified": false,
+ "probes": {
+  "p01_idem_shrink.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "NON-IDEMPOTENT cases: 0"
+   ],
+   "stderr_tail": []
+  },
+  "p01b_defeated_claim.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": []
+  },
+  "p02_chain_idem.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": []
+  },
+  "p03_import_language.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": []
+  },
+  "p03b_explicit_equal_override.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": []
+  },
+  "p04_import_dup_alias.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": []
+  },
+  "p05_global_with_value.py": {
+   "exit": 1,
+   "violations": [],
+   "summary": [
+    "OK   second global 'Claude' refused as duplicate identity :: 'ValueError'"
+   ],
+   "stderr_tail": [
+    "    raise ValueError(\"a global entry takes no scope value\")",
+    "ValueError: a global entry takes no scope value"
+   ]
+  },
+  "p06_row_order.py": {
+   "exit": 1,
+   "violations": [],
+   "summary": [
+    "distinct alias orders: 2"
+   ],
+   "stderr_tail": []
+  },
+  "p07_alias_mapping.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": []
+  },
+  "p09_hintset_identity.py": {
+   "exit": 1,
+   "violations": [],
+   "summary": [],
+   "stderr_tail": [
+    "    raise TypeError(\"hint term score components must be int/str\")",
+    "TypeError: hint term score components must be int/str"
+   ]
+  },
+  "p10_mutation_witness.py": {
+   "exit": 1,
+   "violations": [],
+   "summary": [
+    "control witnesses (all must be true): {'claim_tie': True, 'score_id': True, 'revision_scope': True, 'sandbox_masked': True, 'applied_bounded': True}"
+   ],
+   "stderr_tail": [
+    "           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+    "FileNotFoundError: [Errno 2] No such file or directory: '/tmp/claude-0/-home-user-LocalFlow/60feaa92-3367-5b00-af84-78a53bb5703a/scratchpad/reprobe/mutdrv_summary.json'"
+   ]
+  },
+  "p11_bench_memo.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "a >=150 ms-per-selection implementation passes the 25 ms selection gate: False"
+   ],
+   "stderr_tail": []
+  },
+  "p12_panel_unseen_alias.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  },
+  "p13_mutharness_control.py": {
+   "exit": 1,
+   "violations": [],
+   "summary": [
+    "control_green=False survivors=[] errors=['control_unmodified', 'identity_matcher']"
+   ],
+   "stderr_tail": [
+    "         ~^^^^^^^^",
+    "KeyError: 'exit'"
+   ]
+  },
+  "p14_hub_preview_scope.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  },
+  "p15_scope_value_format.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": []
+  },
+  "p16_separator_sweep.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": []
+  },
+  "p17_torn_entries_and_history.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  },
+  "p17b_torn_aliases_and_history.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL alias loss is reported (non-zero integrity report) :: {'vanished_entries': 0, 'orphan_alias_rows': 0, 'entries_missing_aliases': 0}"
+   ],
+   "summary": [
+    "VIOLATIONS: 1 ['alias loss is reported (non-zero integrity report)']"
+   ],
+   "stderr_tail": []
+  },
+  "p18_lastgood_resurrects_disabled.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  },
+  "p19_qualification_selfattested.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": []
+  },
+  "p20_partial_import_defaults.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": []
+  },
+  "p21_hint_limit_config.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "VIOLATIONS: 0 []"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  },
+  "fam_rev1.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "PASS REV-FAM-1-C6 negative:no_leak_on_failed_identity {\"text\": \"run cube cuddle\", \"usage\": {\"E-APP\": 1, \"E-GLB\": 3, \"E-SUG\": 0}, \"pairs\": [[\"helm file\", \"Helmfile\"], [\"helmfile\", \"Helmfile\"]], \"hint\": [\"Helmfile\"]}"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  }
+ }
+}

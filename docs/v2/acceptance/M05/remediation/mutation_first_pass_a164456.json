@@ -1,0 +1,257 @@
+{
+ "code_sha": "a16445671491a3072b307a139407523adc3c181b",
+ "control_green": true,
+ "mutations": {
+  "control_unmodified": {
+   "counts": {
+    "declared_residual": 2,
+    "pass": 224
+   },
+   "exit": 0,
+   "failed_cases": [],
+   "failed_total": 0,
+   "seconds": 5.9,
+   "survived": false
+  },
+  "drop_rule_ids": {
+   "counts": {
+    "declared_residual": 2,
+    "fail": 47,
+    "pass": 177
+   },
+   "exit": 1,
+   "failed_cases": [
+    "APPROVAL-004",
+    "COLLIDE-002",
+    "COLLIDE-003",
+    "COMMON-001",
+    "COMMON-002",
+    "EDGE-001",
+    "EDGE-002",
+    "EDGE-003",
+    "EDGE-004",
+    "EDGE-005",
+    "EDGE-006",
+    "GAP-001",
+    "GAP-002",
+    "GAP-003",
+    "GAP-004",
+    "LANG-001",
+    "LANG-002",
+    "LANG-003",
+    "META-006",
+    "NOOP-005",
+    "OVERLAP-001",
+    "OVERLAP-002",
+    "OVERLAP-003",
+    "OVERLAP-004",
+    "OVERLAP-005",
+    "POS-001",
+    "POS-002",
+    "POS-003",
+    "POS-004",
+    "POS-005",
+    "POS-006",
+    "PRECEDENCE-001",
+    "PRECEDENCE-002",
+    "PRECEDENCE-003",
+    "PRECEDENCE-004",
+    "SCOPE-001",
+    "SCOPE-002",
+    "SCOPE-003",
+    "SCOPE-004",
+    "SCOPE-005"
+   ],
+   "failed_total": 47,
+   "seconds": 5.9,
+   "survived": false
+  },
+  "drop_skill_provenance": {
+   "counts": {
+    "declared_residual": 2,
+    "fail": 3,
+    "pass": 221
+   },
+   "exit": 1,
+   "failed_cases": [
+    "SKILL-001",
+    "SKILL-004",
+    "SKILL-005"
+   ],
+   "failed_total": 3,
+   "seconds": 6.0,
+   "survived": false
+  },
+  "identity_matcher": {
+   "counts": {
+    "declared_residual": 2,
+    "fail": 74,
+    "pass": 150
+   },
+   "exit": 1,
+   "failed_cases": [
+    "APPROVAL-004",
+    "CLEANUP-001",
+    "CLEANUP-004",
+    "CLEANUP-005",
+    "COLLIDE-002",
+    "COLLIDE-003",
+    "COMMON-001",
+    "COMMON-002",
+    "EDGE-001",
+    "EDGE-002",
+    "EDGE-003",
+    "EDGE-004",
+    "EDGE-005",
+    "EDGE-006",
+    "GAP-001",
+    "GAP-002",
+    "GAP-003",
+    "GAP-004",
+    "LANG-001",
+    "LANG-002",
+    "LANG-003",
+    "LIT-005",
+    "META-001",
+    "META-003",
+    "META-004",
+    "META-006",
+    "META-007",
+    "MUTATE-001",
+    "MUTATE-002",
+    "MUTATE-003",
+    "MUTATE-004",
+    "MUTATE-005",
+    "MUTATE-006",
+    "MUTATE-007",
+    "MUTATE-009",
+    "NOOP-004",
+    "NOOP-005",
+    "OVERLAP-001",
+    "OVERLAP-002",
+    "OVERLAP-003"
+   ],
+   "failed_total": 74,
+   "seconds": 6.7,
+   "survived": false
+  },
+  "no_barrier_check": {
+   "counts": {
+    "declared_residual": 2,
+    "fail": 15,
+    "pass": 209
+   },
+   "exit": 1,
+   "failed_cases": [
+    "BAR-001",
+    "BAR-002",
+    "BAR-003",
+    "BAR-004",
+    "BAR-005",
+    "BAR-006",
+    "BAR-007",
+    "BAR-008",
+    "BAR-009",
+    "BAR-010",
+    "BAR-011",
+    "BAR-012",
+    "BAR-013",
+    "BAR-014",
+    "META-006"
+   ],
+   "failed_total": 15,
+   "seconds": 6.0,
+   "survived": false
+  },
+  "rank_tie_break_changed": {
+   "counts": {
+    "declared_residual": 2,
+    "fail": 1,
+    "pass": 223
+   },
+   "exit": 1,
+   "failed_cases": [
+    "RANK-005"
+   ],
+   "failed_total": 1,
+   "seconds": 5.9,
+   "survived": false
+  },
+  "remove_scoped_contenders": {
+   "counts": {
+    "declared_residual": 2,
+    "fail": 27,
+    "pass": 197
+   },
+   "exit": 1,
+   "failed_cases": [
+    "CLEANUP-001",
+    "CLEANUP-002",
+    "CLEANUP-004",
+    "CLEANUP-005",
+    "HINT-DUPLICATE",
+    "META-001",
+    "MUTATE-005",
+    "MUTATE-006",
+    "PRECEDENCE-001",
+    "PRECEDENCE-002",
+    "PRECEDENCE-003",
+    "PRECEDENCE-004",
+    "PRIVACY-005",
+    "RANK-001",
+    "RANK-002",
+    "SCOPE-002",
+    "SCOPE-003",
+    "SCOPE-004",
+    "SCOPE-005",
+    "STATE-004",
+    "STATE-005",
+    "STATE-007",
+    "STATE-015",
+    "STATE-016",
+    "STATE-022",
+    "STATE-027",
+    "STATE-028"
+   ],
+   "failed_total": 27,
+   "seconds": 5.9,
+   "survived": false
+  },
+  "scope_blind_selector": {
+   "counts": {
+    "declared_residual": 2,
+    "fail": 5,
+    "pass": 219
+   },
+   "exit": 1,
+   "failed_cases": [
+    "CLEANUP-002",
+    "HINT-DUPLICATE",
+    "RANK-001",
+    "RANK-002",
+    "STATE-009"
+   ],
+   "failed_total": 5,
+   "seconds": 6.1,
+   "survived": false
+  },
+  "skip_every_fourth_edit": {
+   "counts": {
+    "declared_residual": 2,
+    "fail": 1,
+    "pass": 223
+   },
+   "exit": 1,
+   "failed_cases": [
+    "META-006"
+   ],
+   "failed_total": 1,
+   "seconds": 5.9,
+   "survived": false
+  }
+ },
+ "python": "3.13.12",
+ "schema_version": 1,
+ "survivors": [],
+ "tool": "scripts/v2/m05_mutation_check.py"
+}

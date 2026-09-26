@@ -1,0 +1,170 @@
+{
+ "benchmark": "m05_vocabulary_actual_work",
+ "code_sha": "267d1c25910328f72afff7096eb2a442e96a5174",
+ "code_root_modified": false,
+ "environment": {
+  "python": "3.13.12",
+  "machine": "x86_64",
+  "system": "Linux",
+  "processor": "x86_64",
+  "macos": null,
+  "label": "algorithmic evidence only (not reference-Mac latency)"
+ },
+ "model_call": false,
+ "budget_ms": 25.0,
+ "population": {
+  "entries": 10000,
+  "approved_aliases": 10000,
+  "matchable_keys_global": 19000,
+  "matchable_keys_scoped": 20000,
+  "scope_distribution": {
+   "global": 9500,
+   "workspace:scope-a": 500
+  },
+  "pinned": 40,
+  "store_build_seconds": 14.8
+ },
+ "selection": {
+  "limit": 100,
+  "offered": 100,
+  "omitted": 9400,
+  "scoped_offered": 100,
+  "scoped_omitted": 9900,
+  "membership_checked_against_independent_rank": true
+ },
+ "cache_state": {
+  "cold_snapshot": "fresh store read + build each iteration",
+  "cached_retrieval": "store revision read + selection over the cached snapshot",
+  "warm_selection": "repeat selection on one snapshot (memoized per snapshot)",
+  "fresh_selection": "first selection on each of several fresh snapshots over the frozen entries (no memo; the scope-upgrade path)",
+  "cold_selection": "first selection over entries freshly read from the store (informational)"
+ },
+ "timings": {
+  "cold_snapshot": {
+   "iterations": 10,
+   "p50_ms": 345.579,
+   "p95_ms": 390.398,
+   "p99_ms": 390.398,
+   "max_ms": 390.398
+  },
+  "cached_retrieval": {
+   "iterations": 200,
+   "p50_ms": 12.587,
+   "p95_ms": 14.29,
+   "p99_ms": 18.961,
+   "max_ms": 22.715
+  },
+  "warm_selection": {
+   "iterations": 200,
+   "p50_ms": 11.982,
+   "p95_ms": 14.668,
+   "p99_ms": 19.854,
+   "max_ms": 52.226
+  },
+  "scoped_selection": {
+   "iterations": 200,
+   "p50_ms": 13.024,
+   "p95_ms": 14.678,
+   "p99_ms": 16.518,
+   "max_ms": 17.014
+  },
+  "fresh_selection": {
+   "iterations": 20,
+   "p50_ms": 17.349,
+   "p95_ms": 20.973,
+   "p99_ms": 20.973,
+   "max_ms": 20.973
+  },
+  "fresh_scoped_selection": {
+   "iterations": 20,
+   "p50_ms": 15.234,
+   "p95_ms": 91.235,
+   "p99_ms": 91.235,
+   "max_ms": 91.235
+  },
+  "normalize_no_hit": {
+   "iterations": 200,
+   "p50_ms": 11.301,
+   "p95_ms": 12.433,
+   "p99_ms": 15.77,
+   "max_ms": 20.399,
+   "words": 500,
+   "expected_edits": 0,
+   "observed_edits": 0,
+   "work_valid": true
+  },
+  "normalize_positive": {
+   "iterations": 200,
+   "p50_ms": 90.218,
+   "p95_ms": 102.881,
+   "p99_ms": 116.484,
+   "max_ms": 121.551,
+   "words": 520,
+   "expected_edits": 20,
+   "observed_edits": 20,
+   "work_valid": true
+  },
+  "scope_upgrade_and_packaging": {
+   "iterations": 10,
+   "p50_ms": 288.625,
+   "p95_ms": 373.732,
+   "p99_ms": 373.732,
+   "max_ms": 373.732,
+   "bound_ms": 75.0,
+   "within_bound": false,
+   "gated": false
+  },
+  "cold_selection": {
+   "iterations": 5,
+   "p50_ms": 14.682,
+   "p95_ms": 15.555,
+   "p99_ms": 15.555,
+   "max_ms": 15.555,
+   "gated": false
+  },
+  "stress_dense_hits": {
+   "iterations": 20,
+   "p50_ms": 1016.9,
+   "p95_ms": 1264.727,
+   "p99_ms": 1264.727,
+   "max_ms": 1264.727,
+   "words": 750,
+   "expected_edits": 250,
+   "observed_edits": 250,
+   "work_valid": true
+  },
+  "stress_shared_first_word_bucket": {
+   "iterations": 20,
+   "p50_ms": 926.573,
+   "p95_ms": 1068.131,
+   "p99_ms": 1068.131,
+   "max_ms": 1068.131,
+   "words": 252,
+   "expected_edits": 1,
+   "observed_edits": 1,
+   "work_valid": true
+  },
+  "stress_overlap_long_aliases": {
+   "iterations": 20,
+   "p50_ms": 6.938,
+   "p95_ms": 8.32,
+   "p99_ms": 8.32,
+   "max_ms": 8.32,
+   "words": 280,
+   "expected_edits": 40,
+   "observed_edits": 40,
+   "work_valid": true
+  }
+ },
+ "work_validity": {
+  "verdict": "valid",
+  "problems": []
+ },
+ "timing_verdict": "over_budget",
+ "over_budget": {
+  "fresh_scoped_selection": 91.235,
+  "normalize_positive": 102.881
+ },
+ "verdict": "budget_failed",
+ "exit_code": 1
+}

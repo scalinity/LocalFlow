@@ -1,0 +1,272 @@
+{
+ "code_root": "/tmp/claude-0/-home-user-LocalFlow/60feaa92-3367-5b00-af84-78a53bb5703a/scratchpad/fp",
+ "code_sha": "a16445671491a3072b307a139407523adc3c181b",
+ "code_root_modified": false,
+ "probes": {
+  "p01_idem_shrink.py": {
+   "exit": 1,
+   "violations": [],
+   "summary": [
+    "NON-IDEMPOTENT cases: 3"
+   ],
+   "stderr_tail": []
+  },
+  "p01b_defeated_claim.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL pass 2 is a no-op :: ('Zz Cc dd', 'Zz Yy')",
+    "FAIL claim arbitrates like the equivalent proposal (same winners) :: (['E-P'], ['E-P', 'E-Q'])"
+   ],
+   "summary": [
+    "VIOLATIONS: 2 ['pass 2 is a no-op', 'claim arbitrates like the equivalent proposal (same winners)']"
+   ],
+   "stderr_tail": []
+  },
+  "p02_chain_idem.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL chain: pass 2 is a no-op :: ('ask Cloud now', 'ask Claude now')",
+    "FAIL masked canonical key: pass 2 is a no-op :: ('use Claude Code', 'use Claude Kode')"
+   ],
+   "summary": [
+    "VIOLATIONS: 2 ['chain: pass 2 is a no-op', 'masked canonical key: pass 2 is a no-op']"
+   ],
+   "stderr_tail": []
+  },
+  "p03_import_language.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL explicit alias override 'en' kept after import :: [('clod', None, 'fr')]",
+    "FAIL same file re-import is unchanged :: {'created': 0, 'updated': 1, 'unchanged': 0}"
+   ],
+   "summary": [
+    "VIOLATIONS: 2 [\"explicit alias override 'en' kept after import\", 'same file re-import is unchanged']"
+   ],
+   "stderr_tail": []
+  },
+  "p03b_explicit_equal_override.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL explicit 'en' override on clod survives the entry-language change :: [('clod', None, 'fr'), ('klod', None, 'fr')]"
+   ],
+   "summary": [
+    "VIOLATIONS: 1 [\"explicit 'en' override on clod survives the entry-language change\"]"
+   ],
+   "stderr_tail": []
+  },
+  "p04_import_dup_alias.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL dup alias refused BEFORE the writer (content-free code, not write_failed) :: ('ImportRejected', 'write_failed')",
+    "FAIL no store.write_failed ERROR event for a validation outcome :: 1",
+    "FAIL import admission agrees with add_entry (case-variant duplicate refused) :: (('ok', {'created': 1, 'updated': 0, 'unchanged': 0}), [('Clod',), ('clod',)])"
+   ],
+   "summary": [
+    "VIOLATIONS: 3 ['dup alias refused BEFORE the writer (content-free code, not write_failed)', 'no store.write_failed ERROR event for a validation outcome', 'import admission agrees with add_entry (case-variant duplicate refused)']"
+   ],
+   "stderr_tail": []
+  },
+  "p05_global_with_value.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL second global 'Claude' refused as duplicate identity :: 'accepted'",
+    "FAIL preview reports the committed same-scope mask on 'clod' :: []"
+   ],
+   "summary": [
+    "VIOLATIONS: 2 [\"second global 'Claude' refused as duplicate identity\", \"preview reports the committed same-scope mask on 'clod'\"]"
+   ],
+   "stderr_tail": []
+  },
+  "p06_row_order.py": {
+   "exit": 1,
+   "violations": [],
+   "summary": [
+    "distinct alias orders: 2"
+   ],
+   "stderr_tail": []
+  },
+  "p07_alias_mapping.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL add_entry refuses a mapping alias container :: [('clod', True)]",
+    "FAIL alias flagged False never rewrites :: 'ask Claude now'",
+    "FAIL update_entry refuses a mapping alias container :: [('zed', True)]",
+    "FAIL {} alias container refused (contract lists {} as refused) :: 'accepted'"
+   ],
+   "summary": [
+    "VIOLATIONS: 4 ['add_entry refuses a mapping alias container', 'alias flagged False never rewrites', 'update_entry refuses a mapping alias container', '{} alias container refused (contract lists {} as refused)']"
+   ],
+   "stderr_tail": []
+  },
+  "p09_hintset_identity.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL same hint_set_id never describes two contents (nested values) :: {'id': 'm05hs:0050f4848004', 'content_changed': True}",
+    "FAIL stored id equals the id of the current content :: ('m05hs:0050f4848004', 'm05hs:3673183930ea')",
+    "FAIL select() never returns a HintSet whose id mismatches its content :: {'id': 'm05hs:000000000000', 'terms': 0, 'content_id': 'm05hs:16b960164d4c'}"
+   ],
+   "summary": [
+    "VIOLATIONS: 3 ['same hint_set_id never describes two contents (nested values)', 'stored id equals the id of the current content', 'select() never returns a HintSet whose id mismatches its content']"
+   ],
+   "stderr_tail": []
+  },
+  "p10_mutation_witness.py": {
+   "exit": 1,
+   "violations": [],
+   "summary": [
+    "control witnesses (all must be true): {'claim_tie': True, 'score_id': True, 'revision_scope': True, 'sandbox_masked': True, 'applied_bounded': True}"
+   ],
+   "stderr_tail": [
+    "           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+    "FileNotFoundError: [Errno 2] No such file or directory: '/tmp/claude-0/-home-user-LocalFlow/60feaa92-3367-5b00-af84-78a53bb5703a/scratchpad/reprobe/mutdrv_summary.json'"
+   ]
+  },
+  "p11_bench_memo.py": {
+   "exit": 1,
+   "violations": [],
+   "summary": [
+    "a >=150 ms-per-selection implementation passes the 25 ms selection gate: True"
+   ],
+   "stderr_tail": []
+  },
+  "p12_panel_unseen_alias.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL unseen alias not approved by the click :: [('bay tah', True), ('beeta', True)]",
+    "FAIL unseen alias does not rewrite text :: 'say Beta'",
+    "FAIL add preview names the same-scope contender added since refresh :: \"added 'Claude' (unapproved — approve to make it rewrite text)\""
+   ],
+   "summary": [
+    "VIOLATIONS: 3 ['unseen alias not approved by the click', 'unseen alias does not rewrite text', 'add preview names the same-scope contender added since refresh']"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  },
+  "p13_mutharness_control.py": {
+   "exit": 1,
+   "violations": [],
+   "summary": [
+    "crashed control reported green: True"
+   ],
+   "stderr_tail": []
+  },
+  "p14_hub_preview_scope.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL Hub preview of one phrase does not depend on the last job's destination :: ('ask Claude now', 'ask clod now')",
+    "FAIL Hub preview echoes the scope it tested :: ['changed', 'edits', 'input', 'output', 'policy_revision', 'rejected']"
+   ],
+   "summary": [
+    "VIOLATIONS: 2 [\"Hub preview of one phrase does not depend on the last job's destination\", 'Hub preview echoes the scope it tested']"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  },
+  "p15_scope_value_format.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL 'git hub term' applies for the same destination :: 'git hub term'",
+    "FAIL 'case term' applies for the same destination :: 'case term'",
+    "FAIL 'pad term' applies for the same destination :: 'pad term'",
+    "FAIL 'bundle term' applies for the same destination :: 'bundle term'"
+   ],
+   "summary": [
+    "VIOLATIONS: 4 [\"'git hub term' applies for the same destination\", \"'case term' applies for the same destination\", \"'pad term' applies for the same destination\", \"'bundle term' applies for the same destination\"]"
+   ],
+   "stderr_tail": []
+  },
+  "p16_separator_sweep.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL unit separator U+001F behaves like U+001C..U+001E (barrier) :: ['U+001F', 'U+1680', 'U+2000', 'U+2001', 'U+2002', 'U+2003', 'U+2004', 'U+2005', 'U+2006', 'U+2007', 'U+2008', 'U+2009', 'U+200A', 'U+202F', 'U+205F', 'U+3000']"
+   ],
+   "summary": [
+    "VIOLATIONS: 1 ['unit separator U+001F behaves like U+001C..U+001E (barrier)']"
+   ],
+   "stderr_tail": []
+  },
+  "p17_torn_entries_and_history.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL torn entries+history (orphans only) refuses the vocabulary :: True",
+    "FAIL nothing seeded over the torn state :: ['Claude', 'Claude Code']"
+   ],
+   "summary": [
+    "VIOLATIONS: 2 ['torn entries+history (orphans only) refuses the vocabulary', 'nothing seeded over the torn state']"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  },
+  "p17b_torn_aliases_and_history.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL alias loss is reported (non-zero integrity report) :: {'vanished_entries': 0, 'orphan_alias_rows': 0, 'entries_missing_aliases': 0}"
+   ],
+   "summary": [
+    "VIOLATIONS: 1 ['alias loss is reported (non-zero integrity report)']"
+   ],
+   "stderr_tail": []
+  },
+  "p18_lastgood_resurrects_disabled.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL a disabled rule never rewrites a later dictation :: 'ask Claude now'",
+    "FAIL a disabled rule records no new usage hit :: 2"
+   ],
+   "summary": [
+    "VIOLATIONS: 2 ['a disabled rule never rewrites a later dictation', 'a disabled rule records no new usage hit']"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  },
+  "p19_qualification_selfattested.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL disqualifying evidence text does not qualify :: True",
+    "FAIL whitespace checkpoint + '.' evidence does not qualify :: True",
+    "FAIL qualified disposition is not labelled unsupported_by_adapter :: 'unsupported_by_adapter'"
+   ],
+   "summary": [
+    "VIOLATIONS: 3 ['disqualifying evidence text does not qualify', \"whitespace checkpoint + '.' evidence does not qualify\", 'qualified disposition is not labelled unsupported_by_adapter']"
+   ],
+   "stderr_tail": []
+  },
+  "p20_partial_import_defaults.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL omitted fields do not silently de-approve/re-kind an existing entry :: {'kind': 'term', 'approved': False, 'pinned': False, 'priority': 0, 'verification': 'suggested'}"
+   ],
+   "summary": [
+    "VIOLATIONS: 1 ['omitted fields do not silently de-approve/re-kind an existing entry']"
+   ],
+   "stderr_tail": []
+  },
+  "p21_hint_limit_config.py": {
+   "exit": 1,
+   "violations": [
+    "FAIL a bad hint budget never disables the dictionary :: {'0': False, \"'abc'\": False, 'True': True, '2.9': True, \"'7'\": True}",
+    "FAIL malformed budgets are refused, not coerced (True/2.9/'7') :: {'True': 1, '2.9': 2, \"'7'\": 7}"
+   ],
+   "summary": [
+    "VIOLATIONS: 2 ['a bad hint budget never disables the dictionary', \"malformed budgets are refused, not coerced (True/2.9/'7')\"]"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  },
+  "fam_rev1.py": {
+   "exit": 0,
+   "violations": [],
+   "summary": [
+    "PASS REV-FAM-1-C6 negative:no_leak_on_failed_identity {\"text\": \"run cube cuddle\", \"usage\": {\"E-APP\": 1, \"E-GLB\": 3, \"E-SUG\": 0}, \"pairs\": [[\"helm file\", \"Helmfile\"], [\"helmfile\", \"Helmfile\"]], \"hint\": [\"Helmfile\"]}"
+   ],
+   "stderr_tail": [
+    "[declared non-native shims: AppKit, Foundation, Quartz, ApplicationServices, CoreFoundation, WebKit, Cocoa, objc, PyObjCTools, sounddevice]"
+   ]
+  }
+ }
+}

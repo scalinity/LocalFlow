@@ -1,0 +1,1083 @@
+{
+ "schema_version": 1,
+ "round": 1,
+ "first_pass_sha": "a16445671491a3072b307a139407523adc3c181b",
+ "final_production_sha": "01a1f3c07ed3270aa1e7b3da39d89c453c84c1e8",
+ "final_test_head_sha": "4adda7ddff8acd2510bb6057c1df4d466d3cbf81",
+ "isolation": {
+  "method": "separate subagent started with an empty context (general-purpose agent), given only the audit, the frozen corpus, the contracts, the diff 267d1c2..a164456 and a written brief; read-only detached git worktree at a164456 of its own; every probe and output under its own scratch directory; no repository write, commit or push",
+  "worktree": "<scratch>/review_fp (detached at a164456)",
+  "reviewer_disclosure": "its first probe ran without PYTHONDONTWRITEBYTECODE and created 4 git-ignored __pycache__ directories in its worktree, which it deleted at once; git status --short --ignored empty at the end, HEAD unchanged",
+  "author_reproduction": "every allegation re-run by the author on a separate detached worktree at a164456 (review_round_probes_first_pass_a164456.json: all 22 probes exit 1) before any fix"
+ },
+ "reviewer_findings": 19,
+ "reviewer_design_questions": 6,
+ "findings": [
+  {
+   "id": "R1",
+   "severity": "high",
+   "area": "matching/idempotence (AUDIT-03)",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "Claims keyed at their entry's longest matchable form and arbitrated with proposals in engine order.",
+   "probe": "review_round_probes/p01_idem_shrink.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "NON-IDEMPOTENT cases: 3"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "NON-IDEMPOTENT cases: 0"
+    ]
+   },
+   "regressions": {
+    "test_R1_claim_is_as_strong_as_its_entry": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R2",
+   "severity": "medium",
+   "area": "matching/claim arbitration",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "One greedy pass over claims and proposals; only surviving claims suppress; same-span claim first. Adjudicated: an occurrence already spelled as a canonical is keyed by its entry, so 'Bb Cc' and 'bb cc' can arbitrate differently when the entry has a longer alias (documented).",
+   "probe": "review_round_probes/p01b_defeated_claim.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 2 ['pass 2 is a no-op', 'claim arbitrates like the equivalent proposal (same winners)']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R2_a_defeated_claim_suppresses_nothing": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R3",
+   "severity": "medium",
+   "area": "import/alias language",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "Import compares the STORED alias language; explicit overrides are written; repeat import unchanged.",
+   "probe": "review_round_probes/p03_import_language.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 2 [\"explicit alias override 'en' kept after import\", 'same file re-import is unchanged']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R3_R4_explicit_alias_language_survives_language_changes": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R4",
+   "severity": "low",
+   "area": "alias language",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "One-time idempotent migration (vocabulary_meta alias_language_inherit_v1) of legacy materialized languages to NULL; afterwards every value is an explicit override.",
+   "probe": "review_round_probes/p03b_explicit_equal_override.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 1 [\"explicit 'en' override on clod survives the entry-language change\"]"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R3_R4_explicit_alias_language_survives_language_changes": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    },
+    "test_R4_legacy_materialized_languages_migrate_once_to_inherit": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R5",
+   "severity": "medium",
+   "area": "import admission",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "Duplicate / case-variant aliases in one import row refused up front (duplicate_alias), no write, no store.write_failed.",
+   "probe": "review_round_probes/p04_import_dup_alias.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 3 ['dup alias refused BEFORE the writer (content-free code, not write_failed)', 'no store.write_failed ERROR event for a validation outcome', 'import admission agrees with add_entry (case-variant duplicate refused)']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R5_import_refuses_duplicate_aliases_before_any_write": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R6",
+   "severity": "medium",
+   "area": "scope identity/preview",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "A global entry takes no scope value (add/update/import); legacy rows read as the one global identity.",
+   "probe": "review_round_probes/p05_global_with_value.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 2 [\"second global 'Claude' refused as duplicate identity\", \"preview reports the committed same-scope mask on 'clod'\"]"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 1,
+    "summary": [
+     "OK   second global 'Claude' refused as duplicate identity :: 'ValueError'"
+    ]
+   },
+   "regressions": {
+    "test_R6_a_global_entry_takes_no_scope_value": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R7",
+   "severity": "medium",
+   "area": "strict admission",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "Alias containers must be lists or tuples.",
+   "probe": "review_round_probes/p07_alias_mapping.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 4 ['add_entry refuses a mapping alias container', 'alias flagged False never rewrites', 'update_entry refuses a mapping alias container', '{} alias container refused (contract lists {} as refused)']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R7_alias_containers_are_lists_or_tuples": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R8",
+   "severity": "medium",
+   "area": "evidence: mutation survival",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b,4adda7d",
+   "note": "Mutation harness judges corpus + remediation + app + review-round suites; the review's mutations added (re-anchored); witnesses added. Final: 18/18 mutations killed, control green.",
+   "probe": "review_round_probes/p10_mutation_witness.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "control witnesses (all must be true): {'claim_tie': True, 'score_id': True, 'revision_scope': True, 'sandbox_masked': True, 'applied_bounded': True}"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 1,
+    "summary": [
+     "control witnesses (all must be true): {'claim_tie': True, 'score_id': True, 'revision_scope': True, 'sandbox_masked': True, 'applied_bounded': True}"
+    ]
+   },
+   "regressions": {
+    "test_R8_score_is_part_of_hint_identity": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "pass",
+     "final_4adda7d": "pass"
+    },
+    "test_R8_snapshot_revision_encodes_its_scope": {
+     "base_267d1c2": "pass",
+     "first_pass_a164456": "pass",
+     "final_4adda7d": "pass"
+    },
+    "test_R8_sandbox_reports_a_would_be_masked_suggestion": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "pass",
+     "final_4adda7d": "pass"
+    },
+    "test_R8_applied_rule_manifest_holds_only_applied_rules": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "pass",
+     "final_4adda7d": "pass"
+    },
+    "test_R8_a_job_counts_one_hit_per_applied_entry": {
+     "base_267d1c2": "pass",
+     "first_pass_a164456": "pass",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R9",
+   "severity": "medium",
+   "area": "evidence: benchmark gate",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b,01a1f3c",
+   "note": "Gated fresh_selection / fresh_scoped_selection cohorts time the first select() on fresh snapshots; per-entry cached omission records keep real selection ~10 ms p50 at 10k (same ids).",
+   "probe": "review_round_probes/p11_bench_memo.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "a >=150 ms-per-selection implementation passes the 25 ms selection gate: True"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "a >=150 ms-per-selection implementation passes the 25 ms selection gate: False"
+    ]
+   },
+   "regressions": {
+    "test_R9_selection_identity_fast_path_equals_generic": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R10",
+   "severity": "low",
+   "area": "evidence: mutation harness",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "A crashed tool / missing result is never green; survival requires a proven-applied mutation and green tools.",
+   "probe": "review_round_probes/p13_mutharness_control.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "crashed control reported green: True"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 1,
+    "summary": [
+     "control_green=False survivors=[] errors=['control_unmodified', 'identity_matcher']"
+    ]
+   },
+   "regressions": {
+    "test_R10_a_crashed_control_is_never_green": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R11",
+   "severity": "medium",
+   "area": "integrity (AUDIT-18)",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "Orphan alias rows of never-deleted entries count as vanished entries; the app refuses and seeds nothing.",
+   "probe": "review_round_probes/p17_torn_entries_and_history.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 2 ['torn entries+history (orphans only) refuses the vocabulary', 'nothing seeded over the torn state']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R11_orphan_aliases_prove_vanished_entries": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    },
+    "test_R11_app_refuses_torn_entries_and_history": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R12",
+   "severity": "low",
+   "area": "app admission of the hint budget",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "hint_term_limit must be a positive JSON integer; else vocabulary.config_invalid and default 100; dictionary stays on.",
+   "probe": "review_round_probes/p21_hint_limit_config.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 2 ['a bad hint budget never disables the dictionary', \"malformed budgets are refused, not coerced (True/2.9/'7')\"]"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R12_hint_budget_config_is_strict_and_never_disables": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R13",
+   "severity": "low",
+   "area": "HintSet/snapshot identity",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "Scalars only in hint terms/sets; the selection memo is a read-only view with a private write path.",
+   "probe": "review_round_probes/p09_hintset_identity.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 3 ['same hint_set_id never describes two contents (nested values)', 'stored id equals the id of the current content', 'select() never returns a HintSet whose id mismatches its content']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 1,
+    "summary": []
+   },
+   "regressions": {
+    "test_R13_hint_sets_hold_only_immutable_scalars": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R14",
+   "severity": "low",
+   "area": "panel preview",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "The add preview reads the store at the add, not the listing's last read.",
+   "probe": "review_round_probes/p12_panel_unseen_alias.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 3 ['unseen alias not approved by the click', 'unseen alias does not rewrite text', 'add preview names the same-scope contender added since refresh']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R14_panel_add_preview_reads_the_store_now": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R15",
+   "severity": "low",
+   "area": "Hub preview scope",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "hubPreviewPhrase tests the unscoped default and echoes scope 'global only'.",
+   "probe": "review_round_probes/p14_hub_preview_scope.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 2 [\"Hub preview of one phrase does not depend on the last job's destination\", 'Hub preview echoes the scope it tested']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R15_hub_preview_has_an_explicit_scope": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R16",
+   "severity": "low",
+   "area": "determinism/row order",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "ORDER BY alias COLLATE NOCASE, alias; import can no longer create case-variant aliases (R5).",
+   "probe": "review_round_probes/p06_row_order.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "distinct alias orders: 2"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 1,
+    "summary": [
+     "distinct alias orders: 2"
+    ]
+   },
+   "regressions": {
+    "test_R16_alias_order_is_deterministic_for_case_variants": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R17",
+   "severity": "low",
+   "area": "second-pass drift without overlap",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "Exact canonical spellings of approved in-scope terms are claims even when shadowed or masked. Declared residual: a canonical that spells another entry's longer alias chains; flagged idempotent=false.",
+   "probe": "review_round_probes/p02_chain_idem.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 2 ['chain: pass 2 is a no-op', 'masked canonical key: pass 2 is a no-op']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R17_no_second_pass_drift_through_a_canonical": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    },
+    "test_R17_declared_residual_chain_is_flagged_not_hidden": {
+     "base_267d1c2": "pass",
+     "first_pass_a164456": "pass",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R18",
+   "severity": "low",
+   "area": "barriers (AUDIT-01)",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "U+001F is a barrier; Unicode space separators (Zs) stay benign. Single/German/CJK quote pairs as protected zones are M04 quote-zone policy (not changed; recorded).",
+   "probe": "review_round_probes/p16_separator_sweep.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 1 ['unit separator U+001F behaves like U+001C..U+001E (barrier)']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_R18_unit_separator_is_a_barrier_unicode_spaces_are_not": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "R19",
+   "severity": "low",
+   "area": "qualification disposition",
+   "disposition": "fixed (found independently by the author as A2)",
+   "fix_commit": "51e5cb6",
+   "note": "Qualified disposition: ignored false, no ignored reason, accepted_terms null.",
+   "probe": "review_round_probes/p19_qualification_selfattested.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 3 ['disqualifying evidence text does not qualify', \"whitespace checkpoint + '.' evidence does not qualify\", 'qualified disposition is not labelled unsupported_by_adapter']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_A2_qualified_disposition_is_not_ignored_with_a_reason": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "Q1",
+   "severity": "medium",
+   "area": "qualification identity",
+   "disposition": "fixed (narrowed)",
+   "fix_commit": "fac2a0b",
+   "note": "Baseline 'no qualified implementation' evidence, blank checkpoint/model and content-free evidence never qualify. Declined: an external qualification registry — the manifest is in-repo code, so qualification is a code-reviewed change either way.",
+   "probe": "review_round_probes/p19_qualification_selfattested.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 3 ['disqualifying evidence text does not qualify', \"whitespace checkpoint + '.' evidence does not qualify\", 'qualified disposition is not labelled unsupported_by_adapter']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_Q1_self_attested_qualification_is_refused": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "Q2",
+   "severity": "medium",
+   "area": "failure-path staleness",
+   "disposition": "fixed (safe reading adopted)",
+   "fix_commit": "fac2a0b",
+   "note": "A last-good set older than the newest revision this process wrote is known stale: vocabulary_off_stale_last_good.",
+   "probe": "review_round_probes/p18_lastgood_resurrects_disabled.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 2 ['a disabled rule never rewrites a later dictation', 'a disabled rule records no new usage hit']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_Q2_failed_read_never_resurrects_a_disabled_rule": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "Q3",
+   "severity": "medium",
+   "area": "panel approval authority",
+   "disposition": "fixed (safe reading adopted)",
+   "fix_commit": "fac2a0b",
+   "note": "Actions compare-and-swap against the revision the user selected; a change made elsewhere waits for a fresh look. Intended edit: test_08 changed_since_selection now expects no approval.",
+   "probe": "review_round_probes/p12_panel_unseen_alias.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 3 ['unseen alias not approved by the click', 'unseen alias does not rewrite text', 'add preview names the same-scope contender added since refresh']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_Q3_panel_actions_bind_to_what_the_user_selected": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "Q4",
+   "severity": "medium",
+   "area": "import upsert semantics",
+   "disposition": "fixed (safe reading adopted)",
+   "fix_commit": "fac2a0b",
+   "note": "For an existing entry only the fields a row names are compared and written.",
+   "probe": "review_round_probes/p20_partial_import_defaults.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 1 ['omitted fields do not silently de-approve/re-kind an existing entry']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_Q4_import_omitted_fields_keep_stored_values": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "Q5",
+   "severity": "low",
+   "area": "scope value format",
+   "disposition": "fixed",
+   "fix_commit": "fac2a0b",
+   "note": "Canonical comparison form (trimmed; bundle ids case-insensitive; origins lower-case without trailing slash); ScopeContext keeps M06's exact values.",
+   "probe": "review_round_probes/p15_scope_value_format.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 4 [\"'git hub term' applies for the same destination\", \"'case term' applies for the same destination\", \"'pad term' applies for the same destination\", \"'bundle term' applies for the same destination\"]"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 0,
+    "summary": [
+     "VIOLATIONS: 0 []"
+    ]
+   },
+   "regressions": {
+    "test_Q5_scope_values_have_one_canonical_form": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "Q6",
+   "severity": "low",
+   "area": "integrity (aliases+history loss)",
+   "disposition": "declined — declared residual",
+   "fix_commit": null,
+   "note": "Without an independent record, entries whose aliases AND history were lost are indistinguishable from canonical-only entries; the M02 pre-repair backup holds the prior state.",
+   "probe": "review_round_probes/p17b_torn_aliases_and_history.py",
+   "probe_on_first_pass_a164456": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 1 ['alias loss is reported (non-zero integrity report)']"
+    ]
+   },
+   "probe_on_final_4adda7d": {
+    "exit": 1,
+    "summary": [
+     "VIOLATIONS: 1 ['alias loss is reported (non-zero integrity report)']"
+    ]
+   },
+   "regressions": {}
+  }
+ ],
+ "author_findings_during_review": [
+  {
+   "id": "A1",
+   "note": "panel listing said 'click a line to select' (pre-existing copy)",
+   "fix_commit": "51e5cb6",
+   "regressions": {
+    "test_A1_panel_listing_describes_the_real_selection_method": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  },
+  {
+   "id": "A2",
+   "note": "qualified disposition contradicted itself (pre-existing; = R19)",
+   "fix_commit": "51e5cb6",
+   "regressions": {
+    "test_A2_qualified_disposition_is_not_ignored_with_a_reason": {
+     "base_267d1c2": "fail",
+     "first_pass_a164456": "fail",
+     "final_4adda7d": "pass"
+    }
+   }
+  }
+ ],
+ "probes_non_zero_on_final_explained": {
+  "p05_global_with_value.py": "stops at the intended refusal (a global entry with a value is refused) — test_R6",
+  "p06_row_order.py": "import now refuses the case-variant aliases the probe needs — test_R16 pins ordering over legacy rows",
+  "p09_hintset_identity.py": "stops at the intended refusal (a mutable score is refused) — test_R13",
+  "p10_mutation_witness.py": "depends on the reviewer's driver and first-pass anchors — superseded by the in-repo harness (mutation_final_4adda7d.json: 18/18 killed)",
+  "p13_mutharness_control.py": "reads the old harness schema; its run prints control_green=False — test_R10",
+  "p17b_torn_aliases_and_history.py": "Q6 declared residual"
+ },
+ "fresh_family": {
+  "family_id": "REV-FAM-1",
+  "authored_by": "reviewer (expectations fixed before running)",
+  "cases": [
+   {
+    "case_id": "REV-FAM-1-C1",
+    "role": "positive",
+    "input": "run cube cuddle and helm file",
+    "setup": {
+     "bundle": "com.example.term",
+     "fault": false
+    },
+    "expected": {
+     "text": "run Kubectl and Helmfile",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 1,
+      "E-SUG": 0
+     },
+     "pairs_have": [
+      [
+       "cube cuddle",
+       "Kubectl"
+      ],
+      [
+       "helm file",
+       "Helmfile"
+      ]
+     ],
+     "pairs_lack_alias": [
+      "custom eyes"
+     ]
+    },
+    "observed": {
+     "text": "run Kubectl and Helmfile",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 1,
+      "E-SUG": 0
+     },
+     "pairs": [
+      [
+       "cube cuddle",
+       "Kubectl"
+      ],
+      [
+       "helm file",
+       "Helmfile"
+      ],
+      [
+       "helmfile",
+       "Helmfile"
+      ],
+      [
+       "kubectl",
+       "Kubectl"
+      ]
+     ],
+     "hint": [
+      "Kubectl",
+      "Kustomize",
+      "Helmfile"
+     ]
+    },
+    "pass": true
+   },
+   {
+    "case_id": "REV-FAM-1-C2",
+    "role": "negative:no_leak_to_neighbor_bundle",
+    "input": "run cube cuddle and helm file",
+    "setup": {
+     "bundle": "com.example.terminal",
+     "fault": false
+    },
+    "expected": {
+     "text": "run cube cuddle and Helmfile",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 2,
+      "E-SUG": 0
+     },
+     "pairs_have": [
+      [
+       "helm file",
+       "Helmfile"
+      ]
+     ],
+     "pairs_lack_alias": [
+      "cube cuddle",
+      "custom eyes"
+     ],
+     "hint_lacks": [
+      "Kubectl"
+     ]
+    },
+    "observed": {
+     "text": "run cube cuddle and Helmfile",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 2,
+      "E-SUG": 0
+     },
+     "pairs": [
+      [
+       "helm file",
+       "Helmfile"
+      ],
+      [
+       "helmfile",
+       "Helmfile"
+      ]
+     ],
+     "hint": [
+      "Helmfile"
+     ]
+    },
+    "pass": true
+   },
+   {
+    "case_id": "REV-FAM-1-C3",
+    "role": "negative:no_rewrite_across_barrier",
+    "input": "run cube, cuddle and helm file",
+    "setup": {
+     "bundle": "com.example.term",
+     "fault": false
+    },
+    "expected": {
+     "text": "run cube, cuddle and Helmfile",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 3,
+      "E-SUG": 0
+     }
+    },
+    "observed": {
+     "text": "run cube, cuddle and Helmfile",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 3,
+      "E-SUG": 0
+     },
+     "pairs": [
+      [
+       "cube cuddle",
+       "Kubectl"
+      ],
+      [
+       "helm file",
+       "Helmfile"
+      ],
+      [
+       "helmfile",
+       "Helmfile"
+      ],
+      [
+       "kubectl",
+       "Kubectl"
+      ]
+     ],
+     "hint": [
+      "Kubectl",
+      "Kustomize",
+      "Helmfile"
+     ]
+    },
+    "pass": true
+   },
+   {
+    "case_id": "REV-FAM-1-C4",
+    "role": "negative:suggestion_never_rewrites_or_counts",
+    "input": "run custom eyes",
+    "setup": {
+     "bundle": "com.example.term",
+     "fault": false
+    },
+    "expected": {
+     "text": "run custom eyes",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 3,
+      "E-SUG": 0
+     },
+     "pairs_lack_alias": [
+      "custom eyes"
+     ]
+    },
+    "observed": {
+     "text": "run custom eyes",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 3,
+      "E-SUG": 0
+     },
+     "pairs": [
+      [
+       "cube cuddle",
+       "Kubectl"
+      ],
+      [
+       "helm file",
+       "Helmfile"
+      ],
+      [
+       "helmfile",
+       "Helmfile"
+      ],
+      [
+       "kubectl",
+       "Kubectl"
+      ]
+     ],
+     "hint": [
+      "Kubectl",
+      "Kustomize",
+      "Helmfile"
+     ]
+    },
+    "pass": true
+   },
+   {
+    "case_id": "REV-FAM-1-C5",
+    "role": "negative:no_leak_on_store_read_failure",
+    "input": "run cube cuddle",
+    "setup": {
+     "bundle": "com.example.terminal",
+     "fault": true
+    },
+    "expected": {
+     "text": "run cube cuddle",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 3,
+      "E-SUG": 0
+     },
+     "pairs_lack_alias": [
+      "cube cuddle"
+     ]
+    },
+    "observed": {
+     "text": "run cube cuddle",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 3,
+      "E-SUG": 0
+     },
+     "pairs": [
+      [
+       "helm file",
+       "Helmfile"
+      ],
+      [
+       "helmfile",
+       "Helmfile"
+      ]
+     ],
+     "hint": [
+      "Helmfile"
+     ]
+    },
+    "pass": true
+   },
+   {
+    "case_id": "REV-FAM-1-C6",
+    "role": "negative:no_leak_on_failed_identity",
+    "input": "run cube cuddle",
+    "setup": {
+     "bundle": null,
+     "fault": false
+    },
+    "expected": {
+     "text": "run cube cuddle",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 3,
+      "E-SUG": 0
+     }
+    },
+    "observed": {
+     "text": "run cube cuddle",
+     "usage": {
+      "E-APP": 1,
+      "E-GLB": 3,
+      "E-SUG": 0
+     },
+     "pairs": [
+      [
+       "helm file",
+       "Helmfile"
+      ],
+      [
+       "helmfile",
+       "Helmfile"
+      ]
+     ],
+     "hint": [
+      "Helmfile"
+     ]
+    },
+    "pass": true
+   }
+  ],
+  "first_pass": "6/6 pass",
+  "final": "6/6 pass (review_round_probes_final_4adda7d.json)",
+  "final_probe_exit": 0
+ }
+}
