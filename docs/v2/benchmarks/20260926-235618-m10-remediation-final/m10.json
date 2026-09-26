@@ -1,0 +1,215 @@
+{
+ "benchmark": "m10",
+ "budget": {
+  "budgeted_components": [
+   "matching_500_words",
+   "matching_500_words_same_prefix"
+  ],
+  "matching_500_words_p95_ms": 25.0,
+  "note": "the budget applies to the M10-populated normalization pass (policy/snippet matching) on the ordinary and the adversarial same-first-word input; adapter work (listing, discovery, registry) is reported separately and in the combined job",
+  "within_budget": true
+ },
+ "environment": {
+  "chip": "Apple M5 Pro",
+  "code_sha": "87602baf60015d18451df995a7bb4d3d8bbc3e61",
+  "command": "python scripts/v2/benchmark_m10.py --out docs/v2/benchmarks/20260926-235618-m10-remediation-final",
+  "cores": 18,
+  "executable": ".venv/bin/python",
+  "load_avg_1_5_15": [
+   2.43,
+   2.49,
+   1.91
+  ],
+  "mac_model": "Mac17,8",
+  "macos": "27.0 (26A428)",
+  "memory_gib": 48.0,
+  "power_source": "AC Power",
+  "production_tree_modified": false,
+  "python": "3.14.7",
+  "tracked_files_modified": false,
+  "utc": "2026-09-26T23:56:18+00:00"
+ },
+ "m10_matching_contribution_p95_ms": 2.2941,
+ "population": {
+  "input_words": 500,
+  "json_manifests": 1,
+  "same_prefix_decoys": 50,
+  "same_prefix_input_words": 500,
+  "same_scope_rules": 200,
+  "skill_dirs": 50,
+  "snippets_same_first_word": 300,
+  "style_rules": 200,
+  "wide_directory_entries": 5000,
+  "workspace_files": 500
+ },
+ "qualified": true,
+ "schema_version": 2,
+ "switches": {
+  "delay": null,
+  "noop": null,
+  "outside_delay_ms": 0.0
+ },
+ "timing": {
+  "combined_job_cold": {
+   "max_ms": 12.3002,
+   "p50_ms": 8.4021,
+   "p95_ms": 11.1262,
+   "p99_ms": 12.3002,
+   "runs": 50
+  },
+  "combined_job_warm": {
+   "max_ms": 7.8268,
+   "p50_ms": 7.3058,
+   "p95_ms": 7.7188,
+   "p99_ms": 7.8268,
+   "runs": 50
+  },
+  "file_listing_500": {
+   "max_ms": 1.1575,
+   "p50_ms": 0.4607,
+   "p95_ms": 0.6874,
+   "p99_ms": 1.1575,
+   "runs": 40
+  },
+  "file_listing_wide_5000": {
+   "max_ms": 1.4063,
+   "p50_ms": 0.9609,
+   "p95_ms": 1.0042,
+   "p99_ms": 1.4063,
+   "runs": 40
+  },
+  "file_resolution": {
+   "max_ms": 0.0011,
+   "p50_ms": 0.001,
+   "p95_ms": 0.001,
+   "p99_ms": 0.001,
+   "runs": 200
+  },
+  "file_resolution_ambiguous": {
+   "max_ms": 0.0012,
+   "p50_ms": 0.0009,
+   "p95_ms": 0.001,
+   "p99_ms": 0.001,
+   "runs": 200
+  },
+  "manifest_discovery_cold": {
+   "max_ms": 1.2957,
+   "p50_ms": 1.1384,
+   "p95_ms": 1.2467,
+   "p99_ms": 1.2957,
+   "runs": 40
+  },
+  "manifest_fingerprint_warm": {
+   "max_ms": 0.5048,
+   "p50_ms": 0.4515,
+   "p95_ms": 0.499,
+   "p99_ms": 0.5048,
+   "runs": 40
+  },
+  "matching_500_words": {
+   "max_ms": 8.8427,
+   "p50_ms": 5.3913,
+   "p95_ms": 6.6071,
+   "p99_ms": 7.3301,
+   "runs": 200
+  },
+  "matching_500_words_same_prefix": {
+   "max_ms": 8.451,
+   "p50_ms": 7.6087,
+   "p95_ms": 7.8077,
+   "p99_ms": 8.1056,
+   "runs": 200
+  },
+  "matching_500_words_without_m10": {
+   "max_ms": 4.371,
+   "p50_ms": 4.2152,
+   "p95_ms": 4.313,
+   "p99_ms": 4.3415,
+   "runs": 200
+  },
+  "matching_plain_500": {
+   "max_ms": 4.508,
+   "p50_ms": 4.2828,
+   "p95_ms": 4.3972,
+   "p99_ms": 4.4249,
+   "runs": 200
+  },
+  "snippet_snapshot": {
+   "max_ms": 0.4992,
+   "p50_ms": 0.4642,
+   "p95_ms": 0.4882,
+   "p99_ms": 0.4992,
+   "runs": 40
+  },
+  "style_resolution": {
+   "max_ms": 0.3081,
+   "p50_ms": 0.2546,
+   "p95_ms": 0.267,
+   "p99_ms": 0.2768,
+   "runs": 200
+  },
+  "style_resolution_same_scope": {
+   "max_ms": 0.32,
+   "p50_ms": 0.268,
+   "p95_ms": 0.2835,
+   "p99_ms": 0.3083,
+   "runs": 200
+  }
+ },
+ "validity": {
+  "file_listing_500": {
+   "detail": "500 names, visited 520",
+   "valid": true
+  },
+  "file_listing_wide_5000": {
+   "detail": "500 names, visited 2000 (budget 2000)",
+   "valid": true
+  },
+  "file_resolution": {
+   "detail": "resolved dira/fao.py",
+   "valid": true
+  },
+  "file_resolution_ambiguous": {
+   "detail": "status ambiguous",
+   "valid": true
+  },
+  "manifest_discovery_cold": {
+   "detail": "51 records (expected 51)",
+   "valid": true
+  },
+  "manifest_fingerprint_warm": {
+   "detail": "fingerprint equals the discovery's (the warm cache hit)",
+   "valid": true
+  },
+  "matching_500_words": {
+   "detail": "edit classes ['file_tag', 'skill', 'snippet']",
+   "valid": true
+  },
+  "matching_500_words_same_prefix": {
+   "detail": "1 expansion(s), 50 decoys kept literal (expected 1 and 50)",
+   "valid": true
+  },
+  "matching_500_words_without_m10": {
+   "detail": "same input, no M10 registries: no M10 edits",
+   "valid": true
+  },
+  "matching_plain_500": {
+   "detail": "plain prose control unchanged",
+   "valid": true
+  },
+  "snippet_snapshot": {
+   "detail": "300 triggers indexed, all sharing the first word",
+   "valid": true
+  },
+  "style_resolution": {
+   "detail": "winner style-0003 (expected style-0003: the one workspace rule)",
+   "valid": true
+  },
+  "style_resolution_same_scope": {
+   "detail": "winner same-0000, ties 199",
+   "valid": true
+  }
+ },
+ "verdict": "VALID_WITHIN_BUDGET",
+ "work_valid": true
+}
