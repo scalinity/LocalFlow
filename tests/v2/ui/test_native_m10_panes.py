@@ -62,6 +62,13 @@ APP.setActivationPolicy_(1)  # accessory: never takes the menu bar
 
 CASES = []
 ACTIVE = "--activate" in sys.argv
+# Launched as an app by the active tier's launcher (which names the app
+# to restore): the system activated this process at launch, so the run
+# keeps that activation for every case and hands focus back once, at
+# the end — a per-case hand-back cannot be re-requested (macOS
+# activation is cooperative). The passive cases run unlaunched.
+LAUNCHED = ACTIVE and os.environ.get("LF_NATIVE_RESTORE_PID",
+                                     "").isdigit()
 
 
 def case(tier="passive"):
@@ -187,7 +194,8 @@ class NativeWorld:
         if active:
             APP.activateIgnoringOtherApps_(True)
             self.win.makeKeyAndOrderFront_(None)
-            deadline = time.monotonic() + 3.0
+            # A launched app's activation arrives asynchronously.
+            deadline = time.monotonic() + (8.0 if LAUNCHED else 3.0)
             while not (APP.isActive() and self.win.isKeyWindow()) \
                     and time.monotonic() < deadline:
                 pump(0.05)
@@ -214,6 +222,8 @@ class NativeWorld:
             self.mq.__exit__(None, None, None)
         finally:
             self.h.close()
+        if self.active and LAUNCHED:
+            return          # focus is handed back once, after the run
         if self.active:
             # Hand focus back to whichever app had it before the run.
             from AppKit import NSRunningApplication
@@ -487,6 +497,12 @@ def main(argv):
     out_json = argv[argv.index("--json") + 1] if "--json" in argv else None
     only = argv[argv.index("-k") + 1] if "-k" in argv else None
     results = []
+    activated = None
+    if LAUNCHED:
+        deadline = time.monotonic() + 8.0
+        while not APP.isActive() and time.monotonic() < deadline:
+            pump(0.05)
+        activated = bool(APP.isActive())
     for fn in CASES:
         if only and only not in fn.__name__:
             continue
@@ -498,6 +514,22 @@ def main(argv):
                                       " hands off the keyboard)",
                             "seconds": 0.0})
             print(f"NOT_RUN {fn.__name__}: needs --activate")
+            continue
+        if fn.tier == "passive" and LAUNCHED:
+            results.append({"case": fn.__name__, "tier": fn.tier,
+                            "status": "not_run",
+                            "detail": "passive cases run unlaunched (a"
+                                      " launched app is active by design)",
+                            "seconds": 0.0})
+            print(f"NOT_RUN {fn.__name__}: passive tier runs unlaunched")
+            continue
+        if fn.tier == "active" and LAUNCHED and not activated:
+            results.append({"case": fn.__name__, "tier": fn.tier,
+                            "status": "error",
+                            "detail": "the launched app was never"
+                                      " activated (harness, not product)",
+                            "seconds": 0.0})
+            print(f"ERROR {fn.__name__}: launch activation not granted")
             continue
         try:
             fn()
@@ -513,6 +545,19 @@ def main(argv):
         results.append({"case": fn.__name__, "tier": fn.tier,
                         "status": status, "detail": detail,
                         "seconds": round(time.monotonic() - t0, 2)})
+    restored = None
+    if LAUNCHED:
+        # The single hand-back: the app that was in front before launch.
+        from AppKit import NSRunningApplication
+        front = int(os.environ["LF_NATIVE_RESTORE_PID"])
+        prev = NSRunningApplication \
+            .runningApplicationWithProcessIdentifier_(front)
+        if prev is not None:
+            prev.activateWithOptions_(0)
+        deadline = time.monotonic() + 3.0
+        while frontmost_pid() != front and time.monotonic() < deadline:
+            pump(0.05)
+        restored = frontmost_pid() == front
     passed = sum(r["status"] == "pass" for r in results)
     ran = sum(r["status"] != "not_run" for r in results)
     print(f"{passed}/{ran} native M10 pane cases passed"
@@ -522,6 +567,9 @@ def main(argv):
             **w.code_stamp("tests/v2/ui/test_native_m10_panes.py"),
             "kind": "NATIVE_AUTOMATED",
             "active_tier_run": ACTIVE,
+            "launched_as_app": LAUNCHED,
+            "launch_activation_granted": activated,
+            "prior_frontmost_restored": restored,
             "window": "owned by this process, off-screen; events via"
                       " this app's own dispatch; passive tier never"
                       " activates the app, the active tier (--activate)"
