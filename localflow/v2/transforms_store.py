@@ -183,6 +183,11 @@ class TransformStore:
 
     def update_transform(self, transform_id: str, **changes
                          ) -> tf.TransformDefinition:
+        # The auto-apply opt-in and enablement are refused unless they
+        # are real Booleans — before any read or write (M10-AUDIT-06).
+        for field in ("auto_apply", "enabled"):
+            if field in changes and type(changes[field]) is not bool:
+                raise ValueError(f"not_a_boolean: {field}")
         current = self.definition(transform_id)
         if current is None:
             raise KeyError(f"no transform {transform_id}")
@@ -233,7 +238,7 @@ class TransformStore:
                 v = json.dumps([list(ex) for ex in v]
                                if field == "examples" else list(v))
             elif field in ("auto_apply", "enabled"):
-                v = int(bool(v))
+                v = int(v)
             sets.append(f"{col}=?")
             vals.append(v)
         sets += ["revision=revision+1", "updated_at_utc=?"]
@@ -258,8 +263,8 @@ class TransformStore:
                 examples=tuple(tuple(ex) for ex in merged["examples"]),
                 shortcut=merged["shortcut"],
                 target_profiles=tuple(merged["target_profiles"]),
-                auto_apply=bool(merged["auto_apply"]),
-                enabled=bool(merged["enabled"]),
+                auto_apply=merged["auto_apply"],
+                enabled=merged["enabled"],
                 revision=int(row[0]) + 1,
                 source_locator=current.source_locator,
                 legacy_key=current.legacy_key)

@@ -20,6 +20,7 @@ import json
 from typing import Optional
 
 from . import prompts as tf_prompts
+from ..profiles import CATEGORIES as _BUILTIN_PROFILE_NAMES
 
 SCHEMA_VERSION = 1
 
@@ -55,6 +56,11 @@ class TransformDefinition:
     legacy_key: Optional[str] = None       # recorded, never bound
 
     def __post_init__(self):
+        # The opt-in and enablement are Booleans, never truthiness: the
+        # string "false" must not opt a definition in (M10-AUDIT-06).
+        for f in ("auto_apply", "enabled"):
+            if type(getattr(self, f)) is not bool:
+                raise ValueError(f"not_a_boolean: {f}")
         if self.mode not in MODE_KINDS:
             raise ValueError(f"unknown transform mode: {self.mode}")
         if self.origin not in ORIGINS:
@@ -116,8 +122,8 @@ class TransformDefinition:
             examples=tuple(tuple(ex) for ex in d.get("examples", ())),
             shortcut=d.get("shortcut"),
             target_profiles=tuple(d.get("target_profiles", ())),
-            auto_apply=bool(d.get("auto_apply", False)),
-            enabled=bool(d.get("enabled", True)),
+            auto_apply=d.get("auto_apply", False),
+            enabled=d.get("enabled", True),
             revision=int(d.get("revision", 1)),
             source_locator=d.get("source_locator"),
             legacy_key=d.get("legacy_key"))
@@ -232,7 +238,13 @@ class TransformSnapshot:
         if not d.auto_apply:
             return d, f"transform_auto_apply_disabled:{mode}"
         if not d.targets_profile(profile_name, category):
-            return d, (
-                f"transform_profile_not_targeted:"
-                f"{profile_name or category or 'default'}")
+            # The reason rides the envelope and the operational event: a
+            # built-in category name is fixed vocabulary, a user-declared
+            # profile name is private configuration and is never copied
+            # into it (M10-AUDIT-30).
+            label = profile_name or category or "default"
+            if profile_name and profile_name != category \
+                    and profile_name not in _BUILTIN_PROFILE_NAMES:
+                label = "declared_profile"
+            return d, f"transform_profile_not_targeted:{label}"
         return d, None

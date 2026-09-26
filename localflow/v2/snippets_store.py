@@ -4,10 +4,19 @@ The M05 ``vocabulary_store`` pattern: versioned rows (the revision
 counter is the snippet's version, M10-AC02) plus a monotonic state
 counter in ``profiles_meta`` so the app's frozen snippet registry
 invalidates on edit. The NOCASE unique trigger index keeps the stored
-set unambiguous (a duplicate trigger would be ambiguous at match
-time); the caller-thread probe raises a plain ValueError so store
-content never reaches the event channel. Usage statistics ride the
-same rows and — like vocabulary usage — never bump the state counter.
+set unambiguous (a duplicate trigger would be ambiguous at match time).
+Usage statistics ride the same rows and — like vocabulary usage — never
+bump the state counter.
+
+Every mutation is ONE writer operation over the writer-current row: the
+requested changes merge onto it and the merged snippet is validated as
+a whole (kind and content are coupled — a URL snippet must stay one
+address token), the trigger's uniqueness is checked in the same
+operation, exactly one row must be affected, and only then does the
+counter move (M10-AUDIT-04/05). Outcomes are the typed, content-free
+ones of ``profiles_store`` (not found, stale revision, invalid,
+outcome unknown after an admitted timeout — M10-AUDIT-21); an add
+repeated with the same ``snippet_id`` is idempotent.
 """
 
 from __future__ import annotations
@@ -18,7 +27,10 @@ from typing import Optional
 
 from . import ids
 from . import snippets as snip_mod
+from .profiles_store import (NotFoundError, OutcomeUnknownError,
+                             StaleRevisionError)
 from .store import Store
+from .vocabulary import AdmissionError, require_bool, require_int
 
 _SNIPPET_COLS = (
     "snippet_id", "trigger", "name", "kind", "content", "content_rtf",
@@ -28,6 +40,11 @@ _SNIPPET_COLS = (
 
 _EDITABLE = ("trigger", "name", "kind", "content", "content_rtf",
              "allow_rewrite", "enabled")
+
+_IDENTITY = _EDITABLE
+
+DUPLICATE_TRIGGER = ("another snippet already uses this trigger (the"
+                     " engine would keep both literal)")
 
 
 def _row_to_snippet(row) -> snip_mod.Snippet:
@@ -39,11 +56,34 @@ def _row_to_snippet(row) -> snip_mod.Snippet:
         revision=d["revision"])
 
 
+def _admit_changes(changes: dict) -> dict:
+    unknown = set(changes) - set(_EDITABLE)
+    if unknown:
+        raise ValueError(f"unknown snippet fields: {sorted(unknown)}")
+    for f, v in changes.items():
+        if f in ("allow_rewrite", "enabled"):
+            require_bool(f, v)
+        elif f == "content_rtf":
+            if v is not None and not isinstance(v, str):
+                raise AdmissionError("not_a_string", f)
+        elif not isinstance(v, str):
+            raise AdmissionError("not_a_string", f)
+    return dict(changes)
+
+
+def _trigger_holder(db, trigger: str) -> Optional[str]:
+    row = db.execute(
+        "SELECT snippet_id FROM snippets WHERE trigger=? COLLATE NOCASE",
+        (trigger,)).fetchone()
+    return row[0] if row else None
+
+
 class SnippetStore:
     """Snippet persistence (store schema v6, additive)."""
 
     def __init__(self, store: Store):
         self.store = store
+        self.invalid_rows = 0
 
     # ---- reads -----------------------------------------------------------
 
@@ -61,14 +101,24 @@ class SnippetStore:
                 f"SELECT {', '.join(_SNIPPET_COLS)} FROM snippets"
                 f" ORDER BY trigger COLLATE NOCASE, snippet_id"
             ).fetchall()
-            return [_row_to_snippet(r) for r in rows]
-        return self.store.submit(op)
+            out, bad = [], 0
+            for r in rows:
+                try:
+                    out.append(_row_to_snippet(r))
+                except ValueError:
+                    bad += 1
+            return out, bad
+        out, bad = self.store.submit(op)
+        self.invalid_rows = bad
+        return out
 
     def snippet(self, snippet_id: str) -> Optional[snip_mod.Snippet]:
-        for s in self.snippets():
-            if s.snippet_id == snippet_id:
-                return s
-        return None
+        def op(db):
+            return db.execute(
+                f"SELECT {', '.join(_SNIPPET_COLS)} FROM snippets"
+                f" WHERE snippet_id=?", (snippet_id,)).fetchone()
+        row = self.store.submit(op)
+        return _row_to_snippet(row) if row is not None else None
 
     # ---- writes ----------------------------------------------------------
 
@@ -77,33 +127,36 @@ class SnippetStore:
             "INSERT INTO profiles_meta VALUES('snippets','1')"
             " ON CONFLICT(key) DO UPDATE SET value=CAST(value AS INTEGER)+1")
 
-    def _trigger_exists(self, trigger: str,
-                        exclude_id: Optional[str] = None) -> bool:
-        def op(db):
-            row = db.execute(
-                "SELECT 1 FROM snippets WHERE trigger=? COLLATE NOCASE"
-                " AND snippet_id IS NOT ?",
-                (snip_mod.validate_trigger(trigger), exclude_id or "")
-            ).fetchone()
-            return row is not None
-        return self.store.submit(op)
+    def _run(self, op, action: str, entity_id: Optional[str]):
+        try:
+            return self.store.submit(op)
+        except TimeoutError:
+            raise OutcomeUnknownError(action, entity_id) from None
 
     def add_snippet(self, *, trigger: str, name: str, content: str,
                     kind: str = "plain", content_rtf: Optional[str] = None,
                     allow_rewrite: bool = False, enabled: bool = True,
                     snippet_id: Optional[str] = None) -> str:
+        require_bool("allow_rewrite", allow_rewrite)
+        require_bool("enabled", enabled)
         snippet = snip_mod.Snippet(
             snippet_id=snippet_id or ids.new_id("snip"),
             trigger=trigger, name=name, content=content, kind=kind,
             content_rtf=content_rtf, allow_rewrite=allow_rewrite,
             enabled=enabled, revision=1)
-        if self._trigger_exists(snippet.trigger):
-            raise ValueError(
-                "another snippet already uses this trigger (the engine"
-                " would keep both literal)")
         now = ids.now_utc_iso()
 
         def op(db):
+            row = db.execute(
+                f"SELECT {', '.join(_SNIPPET_COLS)} FROM snippets"
+                f" WHERE snippet_id=?", (snippet.snippet_id,)).fetchone()
+            if row is not None:
+                cur = _row_to_snippet(row)
+                same = all(getattr(cur, f) == getattr(snippet, f)
+                           for f in _IDENTITY)
+                return "already_applied" if same else "id_in_use"
+            if _trigger_holder(db, snippet.trigger) is not None:
+                return "duplicate_trigger"
             db.execute(
                 f"INSERT INTO snippets({', '.join(_SNIPPET_COLS)})"
                 f" VALUES({', '.join('?' * len(_SNIPPET_COLS))})",
@@ -112,70 +165,99 @@ class SnippetStore:
                  int(snippet.allow_rewrite), int(snippet.enabled), 1, 0,
                  None, now, now))
             self._bump(db.cursor())
-        self.store.submit(op)
+            return "created"
+        outcome = self._run(op, "add", snippet.snippet_id)
+        if outcome == "duplicate_trigger":
+            raise ValueError(DUPLICATE_TRIGGER)
+        if outcome == "id_in_use":
+            raise ValueError("id_in_use")
         return snippet.snippet_id
 
-    def update_snippet(self, snippet_id: str, **changes
-                       ) -> snip_mod.Snippet:
-        unknown = set(changes) - set(_EDITABLE)
-        if unknown:
-            raise ValueError(f"unknown snippet fields: {sorted(unknown)}")
-        current = self.snippet(snippet_id)
-        if current is None:
-            raise KeyError(f"no snippet {snippet_id}")
-        if not changes:
-            return current
-        merged = {
-            "trigger": current.trigger, "name": current.name,
-            "kind": current.kind, "content": current.content,
-            "content_rtf": current.content_rtf,
-            "allow_rewrite": current.allow_rewrite,
-            "enabled": current.enabled,
-        }
-        merged.update(changes)
-        # Construct for validation (trigger tokens, kind, placeholders).
-        snip_mod.Snippet(snippet_id=snippet_id,
-                         revision=current.revision + 1, **merged)
-        if "trigger" in changes and self._trigger_exists(
-                merged["trigger"], exclude_id=snippet_id):
-            raise ValueError(
-                "another snippet already uses this trigger (the engine"
-                " would keep both literal)")
+    def update_snippet(self, snippet_id: str, *,
+                       expected_revision: Optional[int] = None,
+                       **changes) -> snip_mod.Snippet:
+        changes = _admit_changes(changes)
+        if expected_revision is not None:
+            require_int("expected_revision", expected_revision)
         now = ids.now_utc_iso()
-        sets, vals = [], []
-        for col in _EDITABLE:
-            if col in changes:
-                sets.append(f"{col}=?")
-                v = changes[col]
-                if col in ("allow_rewrite", "enabled"):
-                    v = int(bool(v))
-                vals.append(v)
-        sets.append("revision=revision+1")
-        sets.append("updated_at_utc=?")
-        vals.extend([now, snippet_id])
 
         def op(db):
-            db.execute(
-                f"UPDATE snippets SET {', '.join(sets)} WHERE snippet_id=?",
-                vals)
+            row = db.execute(
+                f"SELECT {', '.join(_SNIPPET_COLS)} FROM snippets"
+                f" WHERE snippet_id=?", (snippet_id,)).fetchone()
+            if row is None:
+                return ("not_found", None)
+            current = _row_to_snippet(row)
+            if expected_revision is not None \
+                    and current.revision != expected_revision:
+                return ("stale", current.revision)
+            if not changes:
+                return ("unchanged", current)
+            merged = {f: getattr(current, f) for f in _EDITABLE}
+            merged.update(changes)
+            try:
+                updated = snip_mod.Snippet(
+                    snippet_id=snippet_id, revision=current.revision + 1,
+                    **merged)
+            except ValueError as e:
+                return ("invalid", e)
+            holder = _trigger_holder(db, updated.trigger)
+            if holder is not None and holder != snippet_id:
+                return ("invalid", ValueError(DUPLICATE_TRIGGER))
+            cols = [c for c in _EDITABLE if c in changes]
+            vals = [int(getattr(updated, c))
+                    if c in ("allow_rewrite", "enabled")
+                    else getattr(updated, c) for c in cols]
+            cur = db.execute(
+                f"UPDATE snippets SET "
+                f"{', '.join(f'{c}=?' for c in cols)}, revision=?,"
+                f" updated_at_utc=? WHERE snippet_id=? AND revision=?",
+                (*vals, updated.revision, now, snippet_id,
+                 current.revision))
+            if cur.rowcount != 1:
+                return ("stale", None)
             self._bump(db.cursor())
-        self.store.submit(op)
-        out = self.snippet(snippet_id)
-        assert out is not None
-        return out
+            return ("updated", updated)
+        outcome, value = self._run(op, "update", snippet_id)
+        if outcome == "not_found":
+            raise NotFoundError(f"no snippet {snippet_id}")
+        if outcome == "stale":
+            raise StaleRevisionError(snippet_id, value)
+        if outcome == "invalid":
+            raise value
+        return value
 
-    def delete_snippet(self, snippet_id: str):
-        if self.snippet(snippet_id) is None:
-            raise KeyError(f"no snippet {snippet_id}")
+    def delete_snippet(self, snippet_id: str, *,
+                       expected_revision: Optional[int] = None):
+        if expected_revision is not None:
+            require_int("expected_revision", expected_revision)
 
         def op(db):
-            db.execute("DELETE FROM snippets WHERE snippet_id=?",
-                       (snippet_id,))
+            row = db.execute(
+                "SELECT revision FROM snippets WHERE snippet_id=?",
+                (snippet_id,)).fetchone()
+            if row is None:
+                return ("not_found", None)
+            if expected_revision is not None and row[0] != expected_revision:
+                return ("stale", row[0])
+            cur = db.execute("DELETE FROM snippets WHERE snippet_id=?",
+                             (snippet_id,))
+            if cur.rowcount != 1:
+                return ("not_found", None)
             self._bump(db.cursor())
-        self.store.submit(op)
+            return ("deleted", None)
+        outcome, value = self._run(op, "delete", snippet_id)
+        if outcome == "not_found":
+            raise NotFoundError(f"no snippet {snippet_id}")
+        if outcome == "stale":
+            raise StaleRevisionError(snippet_id, value)
 
-    def set_enabled(self, snippet_id: str, enabled: bool):
-        return self.update_snippet(snippet_id, enabled=enabled)
+    def set_enabled(self, snippet_id: str, enabled: bool, *,
+                    expected_revision: Optional[int] = None):
+        require_bool("enabled", enabled)
+        return self.update_snippet(snippet_id,
+                                   expected_revision=expected_revision,
+                                   enabled=enabled)
 
     def record_hits(self, snippet_ids) -> int:
         """Applied expansions as usage statistics (not matching state):
@@ -205,7 +287,7 @@ class SnippetStore:
     def import_json(self, source) -> dict:
         """Upsert by trigger (the trigger is the spoken key): imports
         update settings but never fork a trigger; observed usage stays
-        with the store. Idempotent."""
+        with the store. Idempotent. Documents are admitted strictly."""
         doc = json.loads(pathlib.Path(source).read_text(encoding="utf-8"))
         incoming = [snip_mod.Snippet.from_json(d)
                     for d in doc.get("snippets", ())]

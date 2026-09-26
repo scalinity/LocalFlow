@@ -28,6 +28,8 @@ import hashlib
 import json
 from typing import Optional
 
+from .vocabulary import AdmissionError, canonical_scope_value
+
 SCHEMA_VERSION = 1
 
 # The six S15 writing modes. M11 ships the transform executors: every
@@ -74,6 +76,23 @@ AI_PROMPT_ORIGINS = frozenset({
 })
 
 
+def canonical_scope(kind: str, value) -> Optional[str]:
+    """The comparable form of a destination scope value — the accepted
+    M05 comparator (``vocabulary.canonical_scope_value``: surrounding
+    whitespace is never part of a value, a bundle id compares in ASCII
+    lower case, a site origin with a lower-case scheme and host and no
+    trailing slash; workspace and profile names are otherwise exact).
+    No www/port aliasing and no case folding of workspace names."""
+    if not isinstance(value, str):
+        return None
+    value = canonical_scope_value(kind, value)
+    return value or None
+
+
+_AI_PROMPT_CANON = frozenset(canonical_scope("site", o)
+                             for o in AI_PROMPT_ORIGINS)
+
+
 def hint_key(category: Optional[str]) -> Optional[str]:
     """The M07 structure-hints key for a writing category (messaging
     classes share one hint set; every other category maps to itself)."""
@@ -102,7 +121,8 @@ def derive_category(target_category: Optional[str],
         return "coding"
     if target_category == "terminal":
         return "terminal"
-    if target_category == "browser" and site_origin in AI_PROMPT_ORIGINS:
+    if target_category == "browser" \
+            and canonical_scope("site", site_origin) in _AI_PROMPT_CANON:
         return "ai_prompt"
     return None
 
@@ -125,11 +145,33 @@ class StyleRule:
     revision: int = 1
 
     def __post_init__(self):
+        # Strict primitive admission (M10-AUDIT-06): a Boolean-looking
+        # string is not a Boolean, and a non-string is not a scope.
+        for f in ("rule_id", "name", "scope_kind", "mode",
+                  "number_policy"):
+            if not isinstance(getattr(self, f), str):
+                raise AdmissionError("not_a_string", f)
+        for f in ("scope_value", "profile_name"):
+            v = getattr(self, f)
+            if v is not None and not isinstance(v, str):
+                raise AdmissionError("not_a_string", f)
+        if type(self.enabled) is not bool:
+            raise AdmissionError("not_a_boolean", "enabled")
+        if isinstance(self.revision, bool) \
+                or not isinstance(self.revision, int):
+            raise AdmissionError("not_an_integer", "revision")
         if self.scope_kind not in RULE_SCOPES:
             raise ValueError(f"unknown rule scope: {self.scope_kind}")
-        if self.scope_kind != "global" and not self.scope_value:
-            raise ValueError(
-                f"scope {self.scope_kind} requires a scope value")
+        if self.scope_kind == "global":
+            # A global rule matches everywhere; a stray value never
+            # narrowed it and is not part of its identity.
+            object.__setattr__(self, "scope_value", None)
+        else:
+            value = (self.scope_value or "").strip()
+            if not value:
+                raise ValueError(
+                    f"scope {self.scope_kind} requires a scope value")
+            object.__setattr__(self, "scope_value", value)
         if self.scope_kind == "category" \
                 and self.scope_value not in CATEGORIES:
             raise ValueError(
@@ -139,8 +181,16 @@ class StyleRule:
         if self.number_policy not in NUMBER_POLICIES:
             raise ValueError(
                 f"unknown number policy: {self.number_policy}")
-        if not self.name or not self.name.strip():
+        if not self.name.strip():
             raise ValueError("rule name must not be empty")
+        if self.profile_name is not None:
+            # A declared writing-profile identity is exact apart from
+            # surrounding whitespace (the M05 profile comparator); an
+            # empty one would silently become the category's identity.
+            name = self.profile_name.strip()
+            if not name:
+                raise AdmissionError("empty_profile_name", "profile_name")
+            object.__setattr__(self, "profile_name", name)
 
     def to_json(self) -> dict:
         return {
@@ -185,6 +235,13 @@ class WritingProfile:
     number_policy: str = "inherit"   # the winning rule's policy
     style_revision: Optional[str] = None
     fallback_reason: Optional[str] = None   # non-executable mode etc.
+    # Other enabled rules of the winner's exact authority (same step,
+    # same scope kind) that matched too — the deterministic rule-id tie
+    # break made visible (M10-AUDIT-29). Ids only.
+    equal_authority_rule_ids: tuple = ()
+    # Where profile_name came from: "category" (a built-in category
+    # name) or "rule" (a user-declared name) — M10-AUDIT-30.
+    profile_name_source: Optional[str] = None
 
     @property
     def executable(self) -> bool:
@@ -196,9 +253,11 @@ class WritingProfile:
             "source": self.source, "rule_id": self.rule_id,
             "category": self.category,
             "profile_name": self.profile_name,
+            "profile_name_source": self.profile_name_source,
             "number_policy": self.number_policy,
             "style_revision": self.style_revision,
             "fallback_reason": self.fallback_reason,
+            "equal_authority_rule_ids": list(self.equal_authority_rule_ids),
         }
 
 
@@ -211,7 +270,9 @@ def _rule_matches(rule: StyleRule, dest: Destination) -> bool:
         return dest.category == rule.scope_value
     have = {"app": dest.app_bundle, "site": dest.site_origin,
             "workspace": dest.workspace}[rule.scope_kind]
-    return have is not None and have == rule.scope_value
+    have = canonical_scope(rule.scope_kind, have)
+    return have is not None and have == canonical_scope(
+        rule.scope_kind, rule.scope_value)
 
 
 def resolve(job_override: Optional[str], rules, dest: Destination,
@@ -252,7 +313,8 @@ def resolve(job_override: Optional[str], rules, dest: Destination,
         return _finish(rule.mode, f"rule:{rule.scope_kind}",
                        rule.rule_id, dest_category, revision,
                        rule.number_policy, rule.profile_name,
-                       transforms=transforms)
+                       transforms=transforms,
+                       ties=_ties(rule, matching))
     # Category default: a category-scoped rule for this category, else
     # the built-in Clean (S15's table).
     cat_rules = sorted(
@@ -264,7 +326,8 @@ def resolve(job_override: Optional[str], rules, dest: Destination,
         rule = cat_rules[0]
         return _finish(rule.mode, "rule:category", rule.rule_id,
                        dest_category, revision, rule.number_policy,
-                       rule.profile_name, transforms=transforms)
+                       rule.profile_name, transforms=transforms,
+                       ties=_ties(rule, cat_rules))
     if dest_category is not None:
         return _finish("clean", "category_default", None, dest_category,
                        revision, default_number_policy)
@@ -276,14 +339,22 @@ def resolve(job_override: Optional[str], rules, dest: Destination,
         rule = glob[0]
         return _finish(rule.mode, "rule:global", rule.rule_id,
                        dest_category, revision, rule.number_policy,
-                       rule.profile_name, transforms=transforms)
+                       rule.profile_name, transforms=transforms,
+                       ties=_ties(rule, glob))
     return _finish("clean", "global_default", None, dest_category,
                    revision, default_number_policy)
 
 
+def _ties(winner: StyleRule, candidates) -> tuple:
+    """Ids of the other matching rules of the winner's exact authority
+    (same scope kind): the rule-id tie break decided between them."""
+    return tuple(r.rule_id for r in candidates
+                 if r is not winner and r.scope_kind == winner.scope_kind)
+
+
 def _finish(mode: str, source: str, rule_id, category, revision,
             number_policy: str, profile_name=None,
-            transforms=None) -> WritingProfile:
+            transforms=None, ties=()) -> WritingProfile:
     effective, fallback = mode, None
     if mode not in ("raw", "clean"):
         # A transform-backed mode: executable through the M11 engine
@@ -300,4 +371,7 @@ def _finish(mode: str, source: str, rule_id, category, revision,
         mode=mode, effective_mode=effective, source=source,
         rule_id=rule_id, category=category,
         profile_name=profile_name or category, number_policy=number_policy,
-        style_revision=revision, fallback_reason=fallback)
+        style_revision=revision, fallback_reason=fallback,
+        equal_authority_rule_ids=tuple(ties),
+        profile_name_source=("rule" if profile_name
+                             else "category" if category else None))

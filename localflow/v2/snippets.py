@@ -93,6 +93,23 @@ class Snippet:
     revision: int = 1                 # version counter (M10-AC02)
 
     def __post_init__(self):
+        # Strict primitive admission (M10-AUDIT-06): a Boolean-looking
+        # string never grants rewriting or enablement.
+        for f, v in (("snippet_id", self.snippet_id),
+                     ("trigger", self.trigger), ("name", self.name),
+                     ("content", self.content), ("kind", self.kind)):
+            if not isinstance(v, str):
+                raise _admission("not_a_string", f)
+        if self.content_rtf is not None \
+                and not isinstance(self.content_rtf, str):
+            raise _admission("not_a_string", "content_rtf")
+        for f, v in (("allow_rewrite", self.allow_rewrite),
+                     ("enabled", self.enabled)):
+            if type(v) is not bool:
+                raise _admission("not_a_boolean", f)
+        if isinstance(self.revision, bool) \
+                or not isinstance(self.revision, int):
+            raise _admission("not_an_integer", "revision")
         if self.kind not in KINDS:
             raise ValueError(f"unknown snippet kind: {self.kind}")
         self.__dict__["trigger"] = validate_trigger(self.trigger)
@@ -125,14 +142,21 @@ class Snippet:
 
     @staticmethod
     def from_json(d: dict) -> "Snippet":
+        # Imported documents are admitted strictly: "false" is refused,
+        # never read as true (M10-AUDIT-06).
         return Snippet(
             snippet_id=d["snippet_id"], trigger=d["trigger"],
             name=d["name"], content=d["content"], kind=d.get(
                 "kind", "plain"),
             content_rtf=d.get("content_rtf"),
-            allow_rewrite=bool(d.get("allow_rewrite", False)),
-            enabled=bool(d.get("enabled", True)),
-            revision=int(d.get("revision", 1)))
+            allow_rewrite=d.get("allow_rewrite", False),
+            enabled=d.get("enabled", True),
+            revision=d.get("revision", 1))
+
+
+def _admission(code, field):
+    from .vocabulary import AdmissionError
+    return AdmissionError(code, field)
 
 
 def expand(snippet: Snippet, slot_values=()) -> str:
@@ -180,41 +204,48 @@ class SnippetSnapshot:
     same-trigger collision (two enabled snippets, same trigger) masks
     the trigger — both stay literal, the conflict is recorded — never
     resolved by insertion order. ``revision`` is a content hash the
-    evidence envelope retains."""
+    evidence envelope retains. The object is sealed after construction
+    and every export is a fresh copy (M10-AUDIT-17): nothing a caller
+    does to a returned structure can change what the revision names."""
 
     def __init__(self, snippets):
-        self.snippets = tuple(snippets)
+        _set = object.__setattr__
+        _set(self, "snippets", tuple(snippets))
         index: dict[str, list[Snippet]] = {}
         for s in self.snippets:
             if s.enabled:
                 index.setdefault(s.trigger.lower(), []).append(s)
-        self.conflicts: tuple[dict, ...] = ()
-        self._index: dict[str, Snippet] = {}
+        unique: dict[str, Snippet] = {}
         conflicts = []
         for trig, cands in index.items():
             if len({c.snippet_id for c in cands}) > 1:
-                conflicts.append({
+                conflicts.append(MappingProxyType({
                     "trigger": trig,
-                    "snippets": sorted(c.snippet_id
-                                       for c in cands),
+                    "snippets": tuple(sorted(c.snippet_id
+                                             for c in cands)),
                     "reason": "duplicate_trigger",
-                })
+                }))
             else:
-                self._index[trig] = cands[0]
-        self.conflicts = tuple(conflicts)
-        self.index = MappingProxyType(self._index)
+                unique[trig] = cands[0]
+        _set(self, "conflicts", tuple(conflicts))
+        _set(self, "index", MappingProxyType(unique))
         by_first: dict[str, list[tuple[str, Snippet]]] = {}
-        for trig, s in sorted(self._index.items(),
+        for trig, s in sorted(unique.items(),
                               key=lambda kv: (-len(kv[0].split()), kv[0])):
             by_first.setdefault(trig.split()[0], []).append((trig, s))
-        self._by_first_word = MappingProxyType(
-            {k: tuple(v) for k, v in by_first.items()})
+        _set(self, "_by_first_word", MappingProxyType(
+            {k: tuple(v) for k, v in by_first.items()}))
+        _set(self, "_by_id", MappingProxyType(
+            {s.snippet_id: s for s in self.snippets}))
         payload = json.dumps(
             {"snippets": sorted((s.to_json() for s in self.snippets),
                                 key=lambda d: d["snippet_id"])},
             sort_keys=True, ensure_ascii=False)
-        self.revision = f"m10snip:{hashlib.sha256(
-            payload.encode()).hexdigest()[:12]}"
+        _set(self, "revision", f"m10snip:{hashlib.sha256(
+            payload.encode()).hexdigest()[:12]}")
+
+    def __setattr__(self, name, value):
+        raise AttributeError("a frozen snippet snapshot is immutable")
 
     def by_first_word(self):
         """first-word → [(trigger, snippet)] longest-first — the
@@ -222,76 +253,120 @@ class SnippetSnapshot:
         return self._by_first_word
 
     def entry_by_id(self, snippet_id: str) -> Optional[Snippet]:
-        for s in self.snippets:
-            if s.snippet_id == snippet_id:
-                return s
-        return None
+        return self._by_id.get(snippet_id)
+
+    def conflicts_json(self) -> list:
+        return [{"trigger": c["trigger"], "snippets": list(c["snippets"]),
+                 "reason": c["reason"]} for c in self.conflicts]
 
     def to_json(self) -> dict:
         return {
             "schema_version": SCHEMA_VERSION,
             "revision": self.revision,
             "snippet_count": len(self.snippets),
-            "enabled_triggers": len(self._index),
-            "conflicts": list(self.conflicts),
+            "enabled_triggers": len(self.index),
+            "conflicts": self.conflicts_json(),
         }
 
 
-def preview_conflicts(candidate: Snippet, snippets,
-                      vocabulary_entries=(), dictionary_skills=()):
-    """What collides if ``candidate`` joins ``snippets`` (S17 preview):
+def preview_collisions(candidate: Snippet, snippets, *, policy,
+                       vocabulary=None, selected_id: Optional[str] = None):
+    """What happens to ``candidate``'s trigger if it joins ``snippets``,
+    answered by the SAME engine call dictation makes (M10-AUDIT-18): the
+    candidate replaces the selected snippet (by stable id — an edit never
+    collides with itself), and the bare trigger — then ``slash`` plus the
+    trigger — is normalized under ``policy`` (the registered skills) and
+    ``vocabulary`` (an eligible scoped snapshot: disabled, unapproved or
+    out-of-scope entries are simply absent, as at runtime). Outcomes:
 
-    - ``duplicate_trigger`` — same trigger as another snippet (masks).
-    - ``skill_wins`` / ``ambiguous_with_skill`` — the trigger phrase
-      collides with a registered dictionary skill alias: both are
-      layer-3 intent, so a same-span match is ambiguous and the engine
-      keeps the words literal (the preview says which skill).
-    - ``snippet_wins`` — the trigger collides with a dictionary TERM
-      alias: snippet intent (layer 3) outranks vocabulary (layer 5) on
-      the same span; informational.
-    """
-    out = []
+    - ``duplicate_trigger`` — another ENABLED snippet shares the trigger
+      (both are masked at runtime).
+    - ``ambiguous_with_skill`` / ``ambiguous_same_span`` — the engine
+      rejects the snippet on the same span (the words stay literal).
+    - ``blocked`` — the trigger does not expand for another recorded
+      reason (e.g. a protected span).
+    - ``snippet_wins`` — informational: a lower-layer dictionary term on
+      the same span loses to the snippet.
+    - ``skill_on_slash`` — informational: saying "slash <trigger>"
+      inserts the registered skill token instead (a longer span); the
+      bare trigger still expands this snippet.
+
+    Pure computation: no usage, hit or evidence is recorded."""
+    from .normalize import ContextSnapshot, normalize
+    drop = {candidate.snippet_id, selected_id}
+    others = [s for s in snippets if s.snippet_id not in drop]
     trig = candidate.trigger.lower()
-    for other in snippets:
-        if other.snippet_id == candidate.snippet_id:
-            continue
-        if other.trigger.lower() == trig:
+    out = []
+    if candidate.enabled:
+        for other in others:
+            if other.enabled and other.trigger.lower() == trig:
+                out.append({
+                    "trigger": trig, "other_id": other.snippet_id,
+                    "kind": "duplicate_trigger",
+                    "detail": "two enabled snippets share the trigger;"
+                              " both stay literal until one is renamed"})
+    ctx = ContextSnapshot(snippets=SnippetSnapshot(others + [candidate]),
+                          vocabulary=vocabulary)
+    bare = normalize(candidate.trigger, policy, ctx)
+    expanded = any(e.cls == "snippet" and e.rule_id == candidate.snippet_id
+                   for e in bare.edits)
+    if expanded:
+        for r in bare.rejected:
+            if r.reason == "lower_layer_same_span" and r.cls == "vocabulary":
+                out.append({
+                    "trigger": trig, "other_id": r.rule_id,
+                    "kind": "snippet_wins",
+                    "detail": "snippet intent outranks the dictionary term"
+                              " on the same span"})
+    elif candidate.enabled and not out:
+        mine = [r for r in bare.rejected if r.cls == "snippet"
+                and r.rule_id == candidate.snippet_id]
+        if any(r.reason == "ambiguous_same_span" for r in mine):
+            skill = any(r.cls == "skill" and r.reason == "ambiguous_same_span"
+                        for r in bare.rejected)
             out.append({
-                "trigger": trig, "other_id": other.snippet_id,
-                "kind": "duplicate_trigger",
-                "detail": "two enabled snippets share the trigger; both"
-                          " stay literal until one is renamed"})
-    for entry in vocabulary_entries:
-        if entry.kind != "skill":
-            continue
-        entry_aliases = {a.alias.lower() for a in entry.aliases}
-        entry_aliases.add(entry.canonical.lower())
-        if trig in entry_aliases:
+                "trigger": trig, "other_id": None,
+                "kind": ("ambiguous_with_skill" if skill
+                         else "ambiguous_same_span"),
+                "detail": "the engine keeps the words literal: another"
+                          " intent claims exactly the same words"})
+        else:
             out.append({
-                "trigger": trig, "other_id": entry.entry_id,
-                "kind": "ambiguous_with_skill",
-                "detail": "snippet and skill intent share the phrase;"
-                          " the engine keeps the words literal"
-                          " (ambiguous same span)"})
-    skill_aliases = {a.lower() for a in dictionary_skills}
-    if trig in skill_aliases:
+                "trigger": trig, "other_id": None, "kind": "blocked",
+                "detail": "the trigger does not expand: "
+                          + (mine[0].reason if mine else "not matched")})
+    slash = normalize("slash " + candidate.trigger, policy, ctx)
+    token = next((e for e in slash.edits if e.cls == "skill"), None)
+    if token is not None:
         out.append({
-            "trigger": trig, "other_id": None,
-            "kind": "ambiguous_with_skill",
-            "detail": "trigger collides with a manifest skill alias;"
-                      " the engine keeps the words literal"})
-    for entry in vocabulary_entries:
-        if entry.kind == "skill":
-            continue
-        entry_aliases = {a.alias.lower() for a in entry.aliases}
-        entry_aliases.add(entry.canonical.lower())
-        if trig in entry_aliases:
-            out.append({
-                "trigger": trig, "other_id": entry.entry_id,
-                "kind": "snippet_wins",
-                "detail": "snippet intent outranks dictionary vocabulary"
-                          " on the same span"})
+            "trigger": trig, "other_id": token.rule_id,
+            "kind": "skill_on_slash",
+            "detail": f"saying 'slash {trig}' inserts {token.output_text};"
+                      " the bare trigger expands this snippet"})
     return out
+
+
+def preview_conflicts(candidate: Snippet, snippets,
+                      vocabulary_entries=(), dictionary_skills=(), *,
+                      selected_id: Optional[str] = None):
+    """``preview_collisions`` over explicit inputs: dictionary entries
+    (admitted through an unscoped ``VocabularySnapshot`` — the same
+    eligibility dictation applies) and registered skills (a mapping
+    alias → exact name, or bare aliases naming themselves)."""
+    from .normalize import NormalizationPolicy
+    from .vocabulary import VocabularySnapshot
+    vsnap = VocabularySnapshot(list(vocabulary_entries), None) \
+        if vocabulary_entries else None
+    skills = dict(vsnap.skills) if vsnap is not None else {}
+    if hasattr(dictionary_skills, "items"):
+        skills.update(dict(dictionary_skills))
+    else:
+        skills.update({a.lower(): a.lower().replace(" ", "-")
+                       for a in dictionary_skills})
+    return preview_collisions(
+        candidate, snippets, policy=NormalizationPolicy(
+            registered_skills=skills), vocabulary=vsnap,
+        selected_id=selected_id)
 
 
 def snippets_to_doc(snippets, *, exported_utc: str | None = None) -> dict:
@@ -299,6 +374,44 @@ def snippets_to_doc(snippets, *, exported_utc: str | None = None) -> dict:
         "schema_version": SCHEMA_VERSION,
         "exported_utc": exported_utc or ids.now_utc_iso(),
         "snippets": [s.to_json() for s in snippets],
+    }
+
+
+def applied_definition(snippet: "Snippet", edit) -> dict:
+    """The exact provenance of one applied expansion (M10-AUDIT-23),
+    from the job's FROZEN definition — never today's store: the
+    definition (id, revision, trigger, kind, template bytes, rewrite
+    authorization), the edit's source/output spans, and the slot values
+    separated from template-generated bytes. Slot values are recovered
+    by matching the template against the output and are recorded only
+    when re-expanding them reproduces the output byte for byte."""
+    names = snippet.placeholders
+    slots = None
+    if names:
+        pattern, seen = "", set()
+        pos = 0
+        for m in _PLACEHOLDER_RE.finditer(snippet.content):
+            pattern += re.escape(snippet.content[pos:m.start()])
+            n = m.group(1)
+            pattern += f"(?P={n})" if n in seen else f"(?P<{n}>.*?)"
+            seen.add(n)
+            pos = m.end()
+        pattern += re.escape(snippet.content[pos:])
+        m = re.fullmatch(pattern, edit.output_text, re.DOTALL)
+        if m is not None:
+            values = [m.group(n) for n in names]
+            if expand(snippet, values) == edit.output_text:
+                slots = [{"name": n, "value": v}
+                         for n, v in zip(names, values)]
+    return {
+        "snippet_id": snippet.snippet_id, "revision": snippet.revision,
+        "trigger": snippet.trigger, "kind": snippet.kind,
+        "content": snippet.content, "allow_rewrite": snippet.allow_rewrite,
+        "placeholders": list(names),
+        "input_span": [edit.input_span.start, edit.input_span.end],
+        "output_span": [edit.output_span.start, edit.output_span.end],
+        "slots": slots,
+        "slots_recovered": slots is not None or not names,
     }
 
 
