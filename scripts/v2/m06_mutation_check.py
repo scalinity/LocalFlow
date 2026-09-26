@@ -100,7 +100,8 @@ MUTATIONS = {
     "M06-MUT-14": [(COLL, "        if key is None or origin is None or "
                     "origin.reason is not None \\\n                or "
                     "origin.value is None or getattr(origin, \"cached\", "
-                    "False):", "        if key is None or origin is None:")],
+                    "False) \\\n                or origin.provenance != "
+                    "\"ax_url\":", "        if key is None or origin is None:")],
     "M06-MUT-15": [(APP, "        released_mono = time.monotonic()\n",
                     "        released_mono = None\n"),
                    (APP, "                self._m10_finalize_upgrade(job)\n",
