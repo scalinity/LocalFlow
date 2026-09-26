@@ -68,7 +68,7 @@ def order_records(recs, warn=True):
 
 # ---- redacted export: versioned typed allowlist (M02-AUDIT-12) ----------
 
-REDACTION_VERSION = 1
+REDACTION_VERSION = 2
 _ID = r"[a-z]+-[0-9a-f]{32}"
 _CODE = re.compile(r"^[A-Za-z0-9_.:\-]{1,96}$")
 _HEX = re.compile(r"^[0-9a-f]{6,128}$")
@@ -121,7 +121,10 @@ REDACTION_ALLOWLIST = {
     "reason_code": _opt(_code),
     "duration_ms": _opt(_is_num),
     "queue_wait_ms": _opt(_is_num),
-    "model_id": _opt(_match(r"^[A-Za-z0-9_.\-/]{1,128}$")),
+    # A hub id ("name" or "org/name"), never a filesystem path: a
+    # locally configured model directory would carry a home path.
+    "model_id": _opt(_match(r"^[A-Za-z0-9_.\-]{1,64}"
+                            r"(?:/[A-Za-z0-9_.\-]{1,64})?$")),
     "model_revision": _opt(_code),
     "config_hash": _opt(lambda v: isinstance(v, str) and bool(_HEX.match(v))),
     "prompt_hash": _opt(lambda v: isinstance(v, str) and bool(_HEX.match(v))),

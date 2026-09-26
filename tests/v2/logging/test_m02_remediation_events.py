@@ -79,7 +79,7 @@ def test_redacted_export_is_a_typed_allowlist():
         # Every useful safe field survives on the well-formed record.
         for key in good:
             assert a[key] == good[key], key
-        assert a["redaction_version"] == 1 and a["omitted_fields"] == 0
+        assert a["redaction_version"] == 2 and a["omitted_fields"] == 0
         # The hostile record keeps only fields that passed their checks.
         assert b["omitted_fields"] == 11, b  # detail, context, error,
         # reason_code, outcome, stage, job_id, attempt, model_id,
