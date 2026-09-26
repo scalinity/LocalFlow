@@ -525,22 +525,53 @@ def test_a02_independent_history_lease_survives_training_expiry():
 
 # ---- M09-AUDIT-03: atomic publication; errors guarded -----------------------
 
+class _HoldAtLockEntry:
+    """The state lock, except that the publishing thread flagged by
+    ``_publish_probe`` pauses just BEFORE acquiring it — after any
+    generation check placed outside the lock, before the mutation."""
+
+    def __init__(self, real, probe, local):
+        self._real, self._probe, self._local = real, probe, local
+
+    def __enter__(self):
+        if getattr(self._local, "hold", False):
+            self._local.hold = False
+            self._probe["arrived"].set()
+            self._probe["release"].wait(10)
+        return self._real.__enter__()
+
+    def __exit__(self, *exc):
+        return self._real.__exit__(*exc)
+
+
 def _publish_probe(state):
-    """Wrap the publication entry: callers can hold a publication whose
-    data contains a marker (the interval between a generation check and
-    the mutation on the base; before the atomic check on the repair)."""
+    """Hold a publication whose data contains a marker in the last
+    window before its mutation that does not hold the state lock: at
+    lock entry inside the guarded publication, or — where publication
+    takes no lock (the base) — at its entry, after the loader's check.
+    A check outside the atomic boundary is stale by then."""
     real = state._publish_locked
     probe = {"hold": None, "arrived": threading.Event(),
              "release": threading.Event(), "seen": []}
+    local = threading.local()
+    locked = hasattr(state, "_lock")
+    if locked:
+        state._lock = _HoldAtLockEntry(state._lock, probe, local)
 
     def wrapped(view, *a, **kw):
         blob = json.dumps(kw.get("data"), default=str)
         probe["seen"].append((view, blob[:200]))
         marker = probe["hold"]
-        if marker and marker in blob and not probe["release"].is_set():
+        hold = bool(marker and marker in blob
+                    and not probe["release"].is_set())
+        if hold and not locked:
             probe["arrived"].set()
             probe["release"].wait(10)
-        return real(view, *a, **kw)
+        local.hold = hold and locked
+        try:
+            return real(view, *a, **kw)
+        finally:
+            local.hold = False
     state._publish_locked = wrapped
     return probe
 

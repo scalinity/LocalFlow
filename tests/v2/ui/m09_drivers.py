@@ -710,13 +710,14 @@ def c068_retry_races_deletion():
         app_mod.AppHelper.callAfter = lambda fn, *a: captured.append(
             (fn, a))
         try:
+            # The requeued retry is already queued; the shutdown sentinel
+            # behind it makes the worker return once that job is settled,
+            # so the join is the latch (everything it posted is captured).
+            w.d._jobs.put(None)
             t = threading.Thread(target=w.d._worker, daemon=True)
             t.start()
-            deadline = time.monotonic() + 10
-            while w.d._active_jobs and time.monotonic() < deadline \
-                    and not captured:
-                time.sleep(0.02)
-            time.sleep(0.1)
+            t.join(30)
+            assert not t.is_alive(), "worker never settled the retry"
         finally:
             app_mod.AppHelper.callAfter = real
         for fn, a in captured:

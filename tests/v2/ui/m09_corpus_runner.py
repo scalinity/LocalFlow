@@ -24,6 +24,7 @@ pass. Statuses are counted only from what ran in this process.
 
 Run: .venv/bin/python tests/v2/context/run_isolated.py \
          tests/v2/ui/m09_corpus_runner.py --json OUT [-k CASE_OR_MR]
+         [--only ID,ID,...]   (exact case ids; relations are skipped)
 """
 
 from __future__ import annotations
@@ -106,6 +107,8 @@ def _run_one(fn):
 def main(argv):
     out_json = argv[argv.index("--json") + 1] if "--json" in argv else None
     only = argv[argv.index("-k") + 1] if "-k" in argv else None
+    exact = set(argv[argv.index("--only") + 1].split(",")) \
+        if "--only" in argv else None
     raw = CORPUS.read_bytes()
     sha = hashlib.sha256(raw).hexdigest()
     assert sha == CORPUS_SHA256, f"frozen corpus changed: {sha}"
@@ -118,7 +121,7 @@ def main(argv):
     results = {}
     for c in corpus["cases"]:
         cid = c["id"]
-        if only and only not in cid:
+        if (only and only not in cid) or (exact and cid not in exact):
             continue
         rec = {"name": c["name"], "finding_ids": c["finding_ids"],
                "corpus_environment": c["environment"]}
@@ -142,7 +145,7 @@ def main(argv):
     relations = {}
     for mr in corpus["metamorphic_relations"]:
         mid = mr["id"]
-        if only and only not in mid:
+        if (only and only not in mid) or exact:
             continue
         fn = MR_DRIVERS.get(mid)
         rec = {"name": mr["name"], "case_ids": mr["case_ids"]}
