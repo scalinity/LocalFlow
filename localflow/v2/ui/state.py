@@ -79,20 +79,43 @@ class _Request:
 
 
 class QueryExecutor:
-    """One long-lived worker thread with per-key latest-request
-    coalescing and full accounting (every admitted request is started,
-    or counted as superseded before it started)."""
+    """A small, reused worker pool with per-key latest-request
+    coalescing and full accounting.
 
-    def __init__(self, name=QUERY_THREAD_NAME):
+    Bounds: at most ``max_workers`` threads in all; per key at most one
+    PENDING request (a newer one replaces it — the replaced one never
+    runs) and at most ``per_key`` RUNNING ones — the newest may start
+    while an older, already-superseded one finishes, so a slow stale
+    query never delays the one the user is waiting for (its own
+    publication is refused by the state's guard). Every admitted
+    request is either started or counted as superseded before start."""
+
+    def __init__(self, name=QUERY_THREAD_NAME, max_workers=4, per_key=2):
         self._cond = threading.Condition()
         self._pending = collections.OrderedDict()
-        self._running = None
-        self._thread = None
+        self._running = {}  # key -> count
+        self._threads = []
+        self._available = 0  # threads not running a request
         self._name = name
+        self._max = max_workers
+        self._per_key = per_key
         self._closed = False
         self.stats = {"admitted": 0, "superseded_before_start": 0,
                       "started": 0, "completed": 0, "peak_pending": 0,
-                      "threads_started": 0}
+                      "peak_running": 0, "peak_running_per_key": 0,
+                      "threads_started": 0, "max_workers": max_workers,
+                      "per_key": per_key}
+
+    def _runnable(self):
+        """The oldest pending request whose key has a free slot."""
+        for key, entry in self._pending.items():
+            if self._running.get(key, 0) < self._per_key:
+                return key, entry
+        return None
+
+    def _runnable_count(self):
+        return sum(1 for key in self._pending
+                   if self._running.get(key, 0) < self._per_key)
 
     def submit(self, req, before_run) -> bool:
         with self._cond:
@@ -105,24 +128,38 @@ class QueryExecutor:
             self.stats["admitted"] += 1
             self.stats["peak_pending"] = max(self.stats["peak_pending"],
                                              len(self._pending))
-            if self._thread is None:
-                self._thread = threading.Thread(
-                    target=self._run, daemon=True, name=self._name)
+            # A new thread only when the available ones (idle, or started
+            # and not yet running) cannot take every runnable request.
+            if self._runnable_count() > self._available and \
+                    len(self._threads) < self._max:
+                t = threading.Thread(target=self._run, daemon=True,
+                                     name=self._name)
+                self._threads.append(t)
+                self._available += 1
                 self.stats["threads_started"] += 1
-                self._thread.start()
+                t.start()
             self._cond.notify_all()
         return True
 
     def _run(self):
         while True:
             with self._cond:
-                while not self._pending and not self._closed:
+                while not self._closed and self._runnable() is None:
                     self._cond.wait()
-                if not self._pending:
-                    return
-                _key, (req, before_run) = self._pending.popitem(last=False)
-                self._running = req
+                nxt = self._runnable()
+                if nxt is None:
+                    self._available -= 1
+                    return  # closed and nothing runnable
+                key, (req, before_run) = nxt
+                del self._pending[key]
+                self._available -= 1
+                self._running[key] = self._running.get(key, 0) + 1
                 self.stats["started"] += 1
+                total = sum(self._running.values())
+                self.stats["peak_running"] = max(self.stats["peak_running"],
+                                                 total)
+                self.stats["peak_running_per_key"] = max(
+                    self.stats["peak_running_per_key"], self._running[key])
             try:
                 before_run(req)
                 req.fn(req)
@@ -130,19 +167,21 @@ class QueryExecutor:
                 pass  # loaders publish their own (guarded) errors
             finally:
                 with self._cond:
-                    self._running = None
+                    self._running[key] -= 1
+                    if not self._running[key]:
+                        del self._running[key]
+                    self._available += 1
                     self.stats["completed"] += 1
                     self._cond.notify_all()
 
     def idle(self) -> bool:
         with self._cond:
-            return not self._pending and self._running is None
+            return not self._pending and not self._running
 
     def wait_idle(self, timeout) -> bool:
         with self._cond:
             return self._cond.wait_for(
-                lambda: not self._pending and self._running is None,
-                timeout)
+                lambda: not self._pending and not self._running, timeout)
 
     def close(self):
         """Closed admission: pending requests are dropped (counted as
