@@ -136,6 +136,19 @@ class ReplayService:
                     self._revoked_jobs:
                 self._stop_locked()
 
+    def stop_unavailable(self, store):
+        """Main thread, after a retention pass: stop and drop a sound
+        whose artifact is no longer available (purged or gone)."""
+        with self._lock:
+            current = self._current
+        if current is None:
+            return
+        avail = self.availability(store, current.get("artifact_id"))
+        if not avail.get("available"):
+            with self._lock:
+                if self._current is current:
+                    self._stop_locked()
+
     def stop(self):
         with self._lock:
             self._stop_locked()

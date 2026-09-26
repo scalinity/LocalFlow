@@ -62,11 +62,19 @@ def _like_escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+# The same instant in SQL, for each source's cut under the limit: only
+# a value ending in an explicit zone (Z or ±HH:MM, as parse_instant
+# requires) names one; anything else sorts after every dated row.
+_JOB_INSTANT = ("(CASE WHEN j.captured_at_utc GLOB '*Z' OR"
+                " j.captured_at_utc GLOB '*[+-][0-9][0-9]:[0-9][0-9]'"
+                " THEN julianday(j.captured_at_utc) END)")
+
+
 def parse_instant(iso) -> dt.datetime | None:
     """An aware instant from a stored timestamp: the writer's
     ``...sss Z`` form, whole-second ``Z``, or an explicit RFC 3339
-    offset. A zone-less or malformed value names no instant (None) —
-    never a guessed zone, today or a file time."""
+    offset (``±HH:MM``). A zone-less or malformed value names no
+    instant (None) — never a guessed zone, today or a file time."""
     if not iso or not isinstance(iso, str):
         return None
     for fmt in ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"):
@@ -75,6 +83,9 @@ def parse_instant(iso) -> dt.datetime | None:
                 tzinfo=dt.timezone.utc)
         except ValueError:
             pass
+    if not (iso.endswith("Z") or (len(iso) >= 6 and iso[-6] in "+-"
+                                  and iso[-3] == ":")):
+        return None  # no explicit zone: the SQL cut's rule too
     try:
         t = dt.datetime.fromisoformat(iso)
     except ValueError:
@@ -174,8 +185,8 @@ class HistoryQueryService:
         sql = ("SELECT j.job_id, j.captured_at_utc, j.time_quality, j.state,"
                " j.state_reason, t.app_name, t.app_bundle FROM jobs j LEFT"
                f" JOIN job_targets t ON t.job_id = j.job_id{where}"
-               " ORDER BY j.captured_at_utc IS NULL, j.captured_at_utc DESC,"
-               " j.rowid DESC LIMIT ?")
+               f" ORDER BY {_JOB_INSTANT} IS NULL, {_JOB_INSTANT} DESC,"
+               " j.job_id LIMIT ?")
         job_rows = conn.execute(sql, [*params, sql_limit]).fetchall()
         manifests = self._manifests(conn, [r[0] for r in job_rows])
         for (job_id, captured, tq, state, reason, app_name, app_bundle) \
@@ -212,7 +223,7 @@ class HistoryQueryService:
             where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
             sql = ("SELECT id, captured_at_utc, app_name, app_bundle, kind,"
                    " raw_text, cleaned_text FROM legacy_dictations"
-                   f"{where} ORDER BY ts DESC LIMIT ?")
+                   f"{where} ORDER BY ts DESC, CAST(id AS TEXT) LIMIT ?")
             params.append(sql_limit)
             for (rid, captured, app_name, app_bundle, kind, raw, cleaned) \
                     in conn.execute(sql, params).fetchall():

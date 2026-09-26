@@ -4936,9 +4936,11 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def _insertion_idle(self):
-        """Insertion service idle notification (its queue thread)."""
-        if self._hub_show_pending:
-            AppHelper.callAfter(self._flush_pending_hub_show)
+        """Insertion service idle notification (its queue thread). The
+        flush is posted whatever the deferred flag says here: openHub_
+        sets that flag only after its own ``pending`` read, and the
+        flush reads it on main, after openHub_ has returned."""
+        AppHelper.callAfter(self._flush_pending_hub_show)
 
     @objc.python_method
     def _flush_pending_hub_show(self):

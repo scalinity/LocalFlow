@@ -161,6 +161,7 @@ class HubController(NSObject):
             transforms_store=spec.get("transforms_store"))
         self.state.on_update = self._state_updated
         self.state.on_revoked = self._state_revoked
+        self.state.on_revalidated = self._state_revalidated
         self._built_views = {}
         self._history_flat = []  # group markers + rows, in table order
         # What each pane last RENDERED (main thread only): actions bind
@@ -204,6 +205,19 @@ class HubController(NSObject):
         AppHelper.callAfter(self._revoke_rendered, job_id)
 
     @objc.python_method
+    def _state_revalidated(self):
+        AppHelper.callAfter(self._revalidate_rendered)
+
+    @objc.python_method
+    def _revalidate_rendered(self):
+        """Main thread, after a retention pass: audio it purged stops
+        playing and its buffer is released."""
+        store = self.spec.get("store")
+        if self.replay is not None and store is not None and \
+                hasattr(self.replay, "stop_unavailable"):
+            self.replay.stop_unavailable(store)
+
+    @objc.python_method
     def _revoke_rendered(self, job_id):
         """Main thread: nothing the user can see or act on still carries
         the deleted job's text."""
@@ -219,6 +233,20 @@ class HubController(NSObject):
         if train is not None and train.get("job_id") == job_id:
             self._rendered["training_detail"] = None
             self._clear_training_editors()
+            # The Models refresh below redraws only the subview on
+            # screen; a hidden Training detail is cleared here.
+            if getattr(self, "training_detail", None) is not None:
+                self.training_detail.setString_(self._training_pane_text())
+        if self._rendered.get("voice") and \
+                self.state.views["insights"].get("data") is None:
+            # The state dropped the cached profile (it may draw on the
+            # deleted dictation); the pane stops showing it.
+            self._rendered["voice"] = False
+            self.voice_pane.text.setString_(
+                "The profile shown here drew on a deleted dictation and"
+                " was cleared. Generate again for a current profile.")
+            if self.state.selected_view == "insights":
+                self.state.reload_insights()
         if self._pending_annotation is not None and \
                 self._pending_annotation.get("job_id") == job_id:
             self._pending_annotation = None
@@ -676,8 +704,8 @@ class HubController(NSObject):
             return
         text = self._final_text(ctx)
         if text is None:
-            self._history_note("Nothing to copy: the final text is no"
-                               " longer retained.")
+            self._history_note("Nothing to copy: this row has no retained"
+                               " final text.")
             return
         self.coordinator.hubCopyText(text)
         self._history_note("Copied the final text.")
@@ -700,8 +728,8 @@ class HubController(NSObject):
             return
         text = self._final_text(ctx)
         if text is None:
-            self._history_note("Nothing to paste: the final text is no"
-                               " longer retained.")
+            self._history_note("Nothing to paste: this row has no retained"
+                               " final text.")
             return
         # The job id rides along so the re-paste keeps its insertion
         # attribution (contracts/insertion.md); legacy rows pass None.
@@ -749,6 +777,14 @@ class HubController(NSObject):
         if not job_id:
             self._history_note("Teach refused: imported rows are not"
                                " dictations.")
+            return
+        if ctx.get("final_stage") == "transformed":
+            # Teach measures a correction against the cleaned output;
+            # this row's inserted text is the transform's, which is not
+            # the text the correction would be compared with.
+            self._history_note("Teach refused: this dictation's final"
+                               " text came from a transform, and Teach"
+                               " corrects the cleaned text.")
             return
         try:
             out = learning.teach_correction(job_id, corrected)
@@ -837,8 +873,8 @@ class HubController(NSObject):
     def _final_text(self, detail):
         """The text that was actually inserted: the transform output
         when its recorded decision says applied, else the cleaned
-        output, else the source. An applied transform whose output is
-        gone yields None — never a substitute text."""
+        output. A final stage that is gone yields None — the source
+        transcript is never a substitute for it."""
         stages = {s["stage"]: s for s in detail.get("lineage") or []}
 
         def text(name):
@@ -847,7 +883,7 @@ class HubController(NSObject):
                 and art.get("text") else None
         if detail.get("final_stage") == "transformed":
             return text("transformed")
-        return text("cleaned") or text("source")
+        return text("cleaned")
 
     @objc.python_method
     def _current_detail_text(self):
@@ -970,6 +1006,11 @@ class HubController(NSObject):
                         False)
             finally:
                 self._suppress_select = False
+        elif self._history_flat:
+            # Data dropped by a retention pass: no stale (possibly purged)
+            # rows while the reload runs.
+            self._history_flat = []
+            self.history_table.reloadData()
         detail = view.get("detail")
         key = (view.get("selected_kind"), view.get("selected_id"))
         self._rendered["history_detail"] = detail \
@@ -2053,9 +2094,10 @@ class HubController(NSObject):
         main thread (M09-AUDIT-20). Redaction is the accepted typed
         allowlist (M09-AUDIT-08)."""
         from .. import diagnostics as diag
-        view = self.state.views["diagnostics"]
-        data = view.get("data")
-        if view.get("error") or not data:
+        # The window last drawn — a newer load not yet on screen is not
+        # what the user is exporting.
+        data = self._rendered.get("diagnostics")
+        if not data:
             self._diag_note("Nothing to export: no event window is"
                             " displayed.")
             return
@@ -2098,6 +2140,7 @@ class HubController(NSObject):
     def _refresh_diagnostics_view(self):
         view = self.state.views["diagnostics"]
         data = view.get("data")
+        self._rendered["diagnostics"] = None
         if view.get("error"):
             self.diag_text.setString_(f"query failed: {view['error']}")
             return
@@ -2105,6 +2148,7 @@ class HubController(NSObject):
             self.diag_text.setString_(
                 "No events loaded. Set filters and reload.")
             return
+        self._rendered["diagnostics"] = data
         lines = ["— engines / build —"]
         for k, val in sorted((data.get("engine") or {}).items()):
             lines.append(f"{k}: {val}")
@@ -2749,6 +2793,11 @@ class HubController(NSObject):
             for row in rows:
                 if row.get("example_id") == sel:
                     return row
+            # Never another row than the one the user chose.
+            self.review_text.setString_(
+                "The example selected in Evidence has no row in the"
+                " review queue, so nothing was approved or rejected.")
+            return None
         return rows[0] if rows else None
 
     def reviewApprove_(self, sender):
@@ -2973,15 +3022,32 @@ class HubController(NSObject):
                 self._rendered["training_detail"] = detail \
                     if detail is not None and view.get("detail_key") == sel \
                     and detail.get("example_id") == sel else None
-                shown = (self._rendered["training_detail"] or {}).get(
-                    "example_id")
+                rendered = self._rendered["training_detail"]
+                # Editor buffers belong to the example AND the stage
+                # texts they were typed against: another example, or a
+                # new stage text under the same example, never inherits
+                # them (a revision leaving the stages alone keeps them).
+                shown = None if rendered is None else (
+                    rendered.get("example_id"),
+                    tuple(sorted((s.get("stage"), s.get("artifact_id"))
+                                 for s in rendered.get("stages") or []
+                                 if s.get("available"))))
+                cleared_typing = False
                 if shown != self._editor_bound:
-                    # Editor buffers belong to the example they were
-                    # typed against: another example never inherits them.
                     if self._editor_bound is not None:
+                        cleared_typing = shown is not None and \
+                            shown[0] == self._editor_bound[0] and any(
+                                getattr(self, n).stringValue()
+                                for n in ("verbatim_field",
+                                          "span_corrected"))
                         self._clear_training_editors()
                     self._editor_bound = shown
                 self.training_detail.setString_(self._training_pane_text())
+                if cleared_typing:
+                    self._training_note(
+                        "This example's text changed, so the correction"
+                        " fields were cleared — nothing typed against the"
+                        " old text is saved.")
         else:
             if view.get("error"):
                 self.models_text.setString_(
@@ -3266,6 +3332,7 @@ class HubController(NSObject):
         self.voice_pane.view.setHidden_(subview != "voice")
         if subview == "voice":
             self.voice_pane.refresh(data)
+            self._rendered["voice"] = data.get("profile") is not None
             note = self._action_notes.get("voice")
             if note:
                 self.voice_pane.text.setString_(

@@ -264,6 +264,7 @@ class HubState:
         self._executor = QueryExecutor()
         self.on_update = None   # shell installs; called after publishes
         self.on_revoked = None  # shell installs; called after revoke_job
+        self.on_revalidated = None  # shell installs; after revalidate
 
     @property
     def _generation(self):
@@ -302,6 +303,15 @@ class HubState:
             raise ValueError(f"unknown view {view!r}")
         self.selected_view = view
         self.reload_current()
+        if view in ("history", "models"):
+            # A kept selection whose detail a retention pass dropped
+            # while the view was hidden loads it again.
+            with self._lock:
+                v = self.views[view]
+                orphan = v.get("selected_id") is not None and \
+                    v.get("detail") is None and not v.get("detail_loading")
+            if orphan:
+                self.reload_current(detail_only=True)
         self._publish()
 
     def select_view_by_index(self, index):
@@ -1034,6 +1044,12 @@ class HubState:
         if self.selected_view in ("history", "models"):
             self.reload_current(detail_only=True)
         self._publish()
+        cb = self.on_revalidated
+        if cb is not None:
+            try:
+                cb()
+            except Exception:
+                pass
 
     # ---- publication ------------------------------------------------------------
 
@@ -1050,26 +1066,23 @@ class HubState:
         """Guarded publication: under the lock, apply ``changes`` only if
         ``req`` is still the newest request for its key (and a detail
         request still names the selected item), fenced by revocation.
-        A request that raced a revocation is dropped and re-admitted.
-        Observers are notified after the lock is released. Returns
-        whether the changes were applied."""
-        readmit = False
+        A request that raced a revocation is dropped and re-admitted in
+        the same critical section, so a request the user admits after
+        that point is newer and wins. Observers are notified after the
+        lock is released. Returns whether the changes were applied."""
         with self._lock:
             if self._closed:
                 return False
             if req is not None:
                 if self._gens.get(req.key) != req.gen:
                     return False
-                if req.epoch is not None and req.epoch != self._epoch:
-                    readmit = True
-                elif not self._target_current(req):
+                if not self._target_current(req):
                     return False
-            if not readmit:
-                self.views[view].update(self._fence(view, changes))
-                if after is not None:
-                    after(self.views[view])
-        if readmit:
-            self._spawn(req.key, req.fn, **req.inputs)
-            return False
+                if req.epoch is not None and req.epoch != self._epoch:
+                    self._spawn(req.key, req.fn, **req.inputs)
+                    return False
+            self.views[view].update(self._fence(view, changes))
+            if after is not None:
+                after(self.views[view])
         self._publish()
         return True
