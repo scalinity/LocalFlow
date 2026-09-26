@@ -1187,8 +1187,13 @@ def code_stamp():
     except ValueError:
         rel = None
     dirty = git("status", "--porcelain", "--untracked-files=no")
+    prod = git("status", "--porcelain", "--untracked-files=no",
+               "--", "localflow")
     return {"code_root_sha": git("rev-parse", "HEAD"),
             "tracked_files_modified": bool(dirty) if dirty is not None
+            else None,
+            # The code under test: the production package only.
+            "production_tree_modified": bool(prod) if prod is not None
             else None,
             "localflow_imported_from_root": rel,
             "python": sys.version.split()[0]}
