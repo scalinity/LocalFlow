@@ -49,11 +49,11 @@ sys.path.insert(0, str(HERE.parents[3]))
 sys.path.insert(0, str(HERE.parents[1] / "profiles"))
 
 from AppKit import (NSApplication, NSEvent,  # noqa: E402
-                    NSEventModifierFlagCommand, NSEventTypeKeyDown,
-                    NSEventTypeKeyUp, NSEventTypeLeftMouseDown,
-                    NSEventTypeLeftMouseUp, NSMakePoint, NSMakeSize,
-                    NSTimer, NSWorkspace)
-from Foundation import NSDate, NSRunLoop  # noqa: E402
+                    NSEventMaskLeftMouseUp, NSEventModifierFlagCommand,
+                    NSEventTypeKeyDown, NSEventTypeKeyUp,
+                    NSEventTypeLeftMouseDown, NSEventTypeLeftMouseUp,
+                    NSMakePoint, NSMakeSize, NSTimer, NSWorkspace)
+from Foundation import NSDate, NSDefaultRunLoopMode, NSRunLoop  # noqa: E402
 
 import m10_world as w  # noqa: E402
 
@@ -94,7 +94,7 @@ class Driver:
 
     def __init__(self, win):
         self.win = win
-        self.sent = {"mouse": 0, "key": 0}
+        self.sent = {"mouse": 0, "key": 0, "late_mouse_up": 0}
 
     def _key(self, t, chars, code, flags):
         return NSEvent.keyEventWithType_location_modifierFlags_timestamp_windowNumber_context_characters_charactersIgnoringModifiers_isARepeat_keyCode_(
@@ -141,6 +141,17 @@ class Driver:
         APP.postEvent_atStart_(mk(NSEventTypeLeftMouseUp), False)
         APP.sendEvent_(mk(NSEventTypeLeftMouseDown))
         self.sent["mouse"] += 2
+        # A control that decided the click without a tracking loop (a
+        # table row in an active window) leaves the mouse-up queued. The
+        # run loop pumped here never dispatches queued events, so deliver
+        # it now as the app's event loop would — a stray mouse-up must
+        # not be taken by the NEXT control's tracking as its own.
+        late = APP.nextEventMatchingMask_untilDate_inMode_dequeue_(
+            NSEventMaskLeftMouseUp, NSDate.distantPast(),
+            NSDefaultRunLoopMode, True)
+        if late is not None:
+            self.sent["late_mouse_up"] += 1
+            APP.sendEvent_(late)
         pump()
 
     def editing(self, field):
@@ -154,9 +165,12 @@ class Driver:
         return (r.location, r.length) if r is not None else None
 
     def popup(self, popup, title):
-        """Open the popup's own menu with a click and choose ``title``
-        with arrow keys + Return queued for its tracking loop (a timer in
-        the tracking mode cancels it if it ever stalls)."""
+        """Open the popup's own menu and choose ``title`` with arrow keys
+        + Return queued for its tracking loop (a timer in the tracking
+        mode cancels it if it ever stalls). Inactive, a click opens the
+        menu; in an ACTIVE app a mouse-opened menu tracks the real cursor
+        and ignores queued keys, so the menu is opened from the keyboard
+        (Space on the focused popup) — measured on the reference Mac."""
         titles = list(popup.itemTitles())
         cur = titles.index(popup.titleOfSelectedItem())
         tgt = titles.index(title)
@@ -166,7 +180,11 @@ class Driver:
             3.0, False, lambda t: popup.menu().cancelTracking())
         NSRunLoop.currentRunLoop().addTimer_forMode_(
             guard, "NSEventTrackingRunLoopMode")
-        self.click(popup)
+        if APP.isActive():
+            self.win.makeFirstResponder_(popup)
+            self.key(" ", 49)
+        else:
+            self.click(popup)
         guard.invalidate()
         return popup.titleOfSelectedItem()
 
