@@ -1524,6 +1524,61 @@ def test_a12_same_day_merge_is_by_instant_with_one_limit():
         assert ids2 == [new_id, "legacy-db:5"], ids2
 
 
+class _SqlLog:
+    """A connection proxy recording each statement's SQL text."""
+
+    def __init__(self, conn, log):
+        self._conn, self._log = conn, log
+
+    def execute(self, sql, params=()):
+        self._log.append(sql)
+        return self._conn.execute(sql, params)
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
+
+@case("M09-LOCAL-02")
+def test_local02_pairs_fetched_only_with_room_and_hydrated_in_batch():
+    """Full benchmark (50k jobs): browse p95 1.5 s. Every returned legacy
+    log pair was hydrated by its own unindexed parent_artifact_id scan,
+    although Undated pairs sort after every other row and could not
+    appear once those fill the limit. Pairs are fetched only for the
+    room left under the limit and a page is hydrated in batch."""
+    import datetime as dt
+    from localflow.v2.history_queries import HistoryQueryService
+    with World(build=False) as w:
+        for i in range(30):
+            seed_job(w.store, f"dated row {i}", captured=iso(T0 + i))
+        for i in range(40):
+            seed_legacy_pair(w.store, f"pair raw {i}", f"pair clean {i}",
+                             f"log:local02:{i}")
+        w.store.sync()
+        svc = HistoryQueryService(w.store, tz=dt.timezone.utc)
+        sql = []
+        real = w.store.submit
+        w.store.submit = lambda op: real(lambda conn: op(_SqlLog(conn, sql)))
+
+        def hydration():
+            return [s for s in sql if "parent_artifact_id=?" in s
+                    or "parent_artifact_id IN" in s]
+        try:
+            rows = [r for g in svc.search(limit=20)["groups"]
+                    for r in g["rows"]]
+            assert [r["kind"] for r in rows] == ["job"] * 20
+            assert not hydration(), \
+                f"{len(hydration())} pair lookups for 0 visible pairs"
+            sql.clear()
+            rows = [r for g in svc.search(limit=50)["groups"]
+                    for r in g["rows"]]
+            pairs = [r for r in rows if r["kind"] == "legacy_log"]
+            assert len(pairs) == 20 and all(r["preview"] for r in pairs)
+            assert len(hydration()) <= 1, \
+                f"{len(hydration())} pair lookups for one page of 20"
+        finally:
+            w.store.submit = real
+
+
 @case("M09-AUDIT-13")
 def test_a13_default_zone_honors_historical_dst():
     """C041: the production default resolver groups an instant from the

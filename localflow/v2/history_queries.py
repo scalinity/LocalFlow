@@ -234,7 +234,11 @@ class HistoryQueryService:
         # They carry no destination app, so any app filter excludes them.
         # A pair's identity is its root (raw) artifact whichever half
         # matched the search; both retained halves are hydrated after.
-        if mode in (None, "legacy") and not app:
+        # Pairs sort after every row above, so only the room left under
+        # the limit can ever appear; nothing is fetched beyond it.
+        room = limit - len(out) if limit > 0 else None  # None: no limit
+        if mode in (None, "legacy") and not app and \
+                (room is None or room > 0):
             clauses, params = ["a.stage = 'legacy_log'",
                                "a.role IN (?,?)"], \
                 ["cleaned_transcript", "raw_transcript"]
@@ -247,9 +251,12 @@ class HistoryQueryService:
                    " MIN(a.rowid) AS first FROM artifacts a"
                    f" WHERE {' AND '.join(clauses)} GROUP BY root"
                    " ORDER BY first LIMIT ?")
-            for (root, _first) in conn.execute(
-                    sql, [*params, sql_limit]).fetchall():
-                raw, cleaned = self._legacy_halves(conn, root)
+            roots = [root for (root, _first) in conn.execute(
+                sql, [*params, room if room is not None else -1])
+                .fetchall()]
+            halves = self._legacy_halves_many(conn, roots)
+            for root in roots:
+                raw, cleaned = halves[root]
                 out.append({
                     "kind": "legacy_log", "id": root,
                     "date_iso": None, "date": None, "_t": None,
@@ -485,25 +492,57 @@ class HistoryQueryService:
         """(raw, cleaned) halves of the legacy pair rooted at ``root``
         (a raw artifact, or a parentless cleaned one). An absent half is
         None — never synthesized."""
-        row = conn.execute(
-            "SELECT role, content_text, purged, parent_artifact_id FROM"
-            " artifacts WHERE artifact_id=?", (root,)).fetchone()
-        if row is None:
-            return None, None
-        role, content, purged, parent = row
-        if role == "cleaned_transcript":
-            cleaned = self._half(content, purged)
-            praw = conn.execute(
-                "SELECT content_text, purged FROM artifacts WHERE"
-                " artifact_id=? AND role='raw_transcript'",
-                (parent,)).fetchone() if parent else None
-            return (self._half(*praw) if praw else None), cleaned
-        raw = self._half(content, purged)
-        child = conn.execute(
-            "SELECT content_text, purged FROM artifacts WHERE"
-            " parent_artifact_id=? AND role='cleaned_transcript' ORDER BY"
-            " rowid LIMIT 1", (root,)).fetchone()
-        return raw, (self._half(*child) if child else None)
+        return self._legacy_halves_many(conn, [root])[root]
+
+    def _legacy_halves_many(self, conn, roots):
+        """{root: (raw, cleaned)} for a page of pair roots in a fixed
+        number of statements: parent_artifact_id is not indexed, so a
+        per-root child lookup would scan the artifacts table once per
+        row (the 50k-store browse cost)."""
+        rows = {}
+        for chunk in _chunks(roots):
+            marks = ",".join("?" * len(chunk))
+            for aid, role, content, purged, parent in conn.execute(
+                    "SELECT artifact_id, role, content_text, purged,"
+                    " parent_artifact_id FROM artifacts WHERE artifact_id"
+                    f" IN ({marks})", chunk).fetchall():
+                rows[aid] = (role, content, purged, parent)
+        raw_roots = [a for a, v in rows.items()
+                     if v[0] != "cleaned_transcript"]
+        parents = [v[3] for v in rows.values()
+                   if v[0] == "cleaned_transcript" and v[3]]
+        children, parent_raws = {}, {}
+        for chunk in _chunks(raw_roots):
+            marks = ",".join("?" * len(chunk))
+            for parent, content, purged in conn.execute(
+                    "SELECT parent_artifact_id, content_text, purged FROM"
+                    " artifacts WHERE role='cleaned_transcript' AND"
+                    f" parent_artifact_id IN ({marks}) ORDER BY rowid",
+                    chunk).fetchall():
+                children.setdefault(parent, (content, purged))
+        for chunk in _chunks(parents):
+            marks = ",".join("?" * len(chunk))
+            for aid, content, purged in conn.execute(
+                    "SELECT artifact_id, content_text, purged FROM artifacts"
+                    f" WHERE role='raw_transcript' AND artifact_id IN"
+                    f" ({marks})", chunk).fetchall():
+                parent_raws[aid] = (content, purged)
+        out = {}
+        for root in roots:
+            row = rows.get(root)
+            if row is None:
+                out[root] = (None, None)
+                continue
+            role, content, purged, parent = row
+            if role == "cleaned_transcript":
+                praw = parent_raws.get(parent) if parent else None
+                out[root] = ((self._half(*praw) if praw else None),
+                             self._half(content, purged))
+            else:
+                child = children.get(root)
+                out[root] = (self._half(content, purged),
+                             self._half(*child) if child else None)
+        return out
 
     def legacy_detail(self, artifact_id) -> dict | None:
         """A legacy log pair's detail (raw + cleaned halves). Accepts the
