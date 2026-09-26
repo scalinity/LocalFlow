@@ -96,7 +96,8 @@ def _surroundings_verdict(host, field) -> str:
     el = host.focused_element()
     if el is None:
         return VERIFICATION_UNAVAILABLE
-    s, e = field.selected_range
+    # Host units, as recorded (the selection check's convention).
+    s, e = field.selected_range_utf16 or field.selected_range
     pre, fol = surroundings(host, el, s, e)
     if (field.preceding_text is not None and pre is None) or \
             (field.following_text is not None and fol is None):

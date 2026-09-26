@@ -67,6 +67,7 @@ from .snapshot import (
     ContextSnapshot,
     FieldContext,
     TargetSnapshot,
+    app_denied,
 )
 
 DEFAULT_DEADLINE_MS = 75.0
@@ -228,7 +229,7 @@ class ContextCollector:
             target_snapshot_id=ids.new_id("tgt"),
             app_bundle=bundle, app_name=info.get("name"),
             app_pid=pid,
-            denied=bool(bundle and bundle in self.denied_apps),
+            denied=app_denied(bundle, self.denied_apps),
             category=providers.categorize(bundle),
             captured_at_utc=ids.now_utc_iso())
 

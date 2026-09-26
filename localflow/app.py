@@ -241,6 +241,10 @@ class AppDelegate(NSObject):
         # retain (content-free: key + reason).
         self._context_policy, context_problems = \
             config_mod.context_policy(cfg)
+        # A deny list that cannot be honored denies every app to the
+        # M11 selection capture (context itself is already off).
+        self._context_deny_invalid = any(
+            key == "context_denied_apps" for key, _ in context_problems)
         for key, reason in context_problems:
             self.v2log.emit("config.context_invalid", level="WARNING",
                             reason_code=reason, outcome="fail_closed",
@@ -1316,15 +1320,19 @@ class AppDelegate(NSObject):
         (S16): classify the field first (a secure field is never read),
         then the selection, its range, the window title and bounded
         surrounding text — the identity the strict accept-time
-        revalidation proves (insertion/selection.py). Runs on the
-        transform thread — bounded AX reads never touch the UI
+        revalidation proves (insertion/selection.py). Denial is the M06
+        decision over the validated policy, never the raw config: a
+        malformed deny list refuses every app before any read. Runs on
+        the transform thread — bounded AX reads never touch the UI
         callback."""
         if self._insertion is None:
             return None, "insertion_service_unavailable"
+        if self._context_deny_invalid:
+            return None, "deny_list_invalid"
         from .v2.insertion.selection import capture_selection
         return capture_selection(
             self._insertion.host,
-            denied_apps=self.cfg.get("context_denied_apps") or ())
+            denied_apps=self._context_policy["context_denied_apps"])
 
     def runTransform_(self, sender):
         """Status-menu action: transform the current selection with the

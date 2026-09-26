@@ -47,12 +47,15 @@ paste offer; nothing is inserted into the newly focused destination.
 accepted selected-text transform — contracts/transforms.md). Replacing
 text the user reviewed needs positive proof, so every `unavailable` in
 the matrix refuses: the window title must be recorded at capture and
-read back equal; the role must read back equal; the recorded non-empty
-selection must read back with the same range and text; and the bounded
-text recorded on either side of it (`FieldContext.preceding_text` /
-`following_text`, up to 200 characters, captured by
-`insertion/selection.py`) must read back unchanged — a second document
-in the same app can match title, role, range and text. The verdicts
+read back equal, and the field's own window element recorded at
+capture must be the live one (the M06 element-and-title rule); the
+role must read back equal; the recorded non-empty selection must read
+back with the same range (host units: `selected_range_utf16`) and
+text; and the bounded text recorded on either side of it
+(`FieldContext.preceding_text` / `following_text`, up to 200 host
+units, captured by `insertion/selection.py`) must read back unchanged
+— a second document in the same app can match title, role, range and
+text. The verdicts
 ride the verification JSON as `surroundings` and `strict`; a refusal
 is `target_changed` with the copy offer. Plain dictation (no flag)
 keeps the permissive matrix above unchanged.
