@@ -97,6 +97,16 @@ _TERMINAL_UNSAFE = re.compile(
 
 READBACK_POLL_SEC = 0.05
 
+# Readbacks that show the destination consumed the paste (restoring the
+# user's clipboard is then safe).
+_CONSUMED = ("match", "partial", "normalized")
+
+# How long an unconsumed clipboard payload stays pending after its post.
+# A late consumer is protected for this long; after it the paste is taken
+# as never landed (a dropped ⌘V) and the payload no longer blocks later
+# publications — the user's clipboard is restored while still ours.
+PENDING_PAYLOAD_SEC = 5.0
+
 # paste_again's reconciliation reads at most this many units of the
 # destination field (bounded so a pathological document cannot stall
 # the queue — the check is a duplicate guard, not a guarantee).
@@ -288,6 +298,7 @@ class InsertionService:
             # paste, an application undo of a different revision):
             # showing the previous text is the safe recovery.
             return refuse("stale_range", "owned_range_no_longer_ours")
+        total = self.host.number_of_characters(el)
         if not self.host.set_attribute(el, "AXSelectedTextRange",
                                        (start, end - start)):
             return refuse("unsupported_surface", "ax_range_write_failed")
@@ -297,8 +308,13 @@ class InsertionService:
                       job_id=lease.job_id, outcome="undo_unverified",
                       reason_code="selected_text_write_failed")
             return {"outcome": "undo_unverified"}
+        # Undone means the previous text is back AND the field shrank by
+        # exactly the owned length less the restored one (a zero-length
+        # read after a caret undo proves nothing on its own).
         after = self.host.string_for_range(el, start, utf16_len(before))
-        undone = after == before
+        total_after = self.host.number_of_characters(el)
+        undone = after == before and total is not None \
+            and total_after == total - (end - start) + utf16_len(before)
         self.emit("insertion.undo", level="INFO", job_id=lease.job_id,
                   outcome="undone" if undone else "undo_unverified")
         with self._lock:
@@ -502,15 +518,6 @@ class InsertionService:
         snapshot = job.get("context_snapshot") or job.get("target")
         category = getattr(
             getattr(snapshot, "target", snapshot), "category", "unknown")
-        if category == "unknown":
-            # No snapshot carried a category (context disabled / PTT
-            # identity failed): classify the LIVE frontmost bundle so
-            # the terminal guard never depends on the context collector
-            # having been available (review critical — a missing
-            # snapshot must not let newlines paste into a shell).
-            fm = self.host.frontmost()
-            live_bundle = fm.get("bundle") if fm else None
-            category = categorize(live_bundle) if live_bundle else "unknown"
 
         # 1. Cancelled/deleted: insertion authority was revoked — no
         #    transaction, no clipboard touch.
@@ -525,9 +532,7 @@ class InsertionService:
         #    synthetic Return, never a blind paste that could execute
         #    partial commands (a CR, a Unicode line separator or a
         #    control character counts as much as a newline).
-        surface = getattr(snapshot, "site_origin", None) or category
-        if (category == "terminal" and _TERMINAL_UNSAFE.search(text)
-                and surface not in CERTIFIED_BRACKETED_SURFACES):
+        if self._terminal_hazard(text, snapshot, category):
             return self._copy_offer(
                 text, STATE_SAVED_NOT_INSERTED,
                 "multiline_terminal_unverified", common)
@@ -550,6 +555,19 @@ class InsertionService:
             return self._copy_offer(
                 text, STATE_TARGET_CHANGED, "revalidation_failed", common,
                 verification=verification)
+        if category == "unknown":
+            # No snapshot carried a category (context disabled, PTT
+            # identity failed, a repaste): classify the application
+            # validation BOUND — the identity the effect boundary
+            # re-checks — so a switch between two frontmost reads cannot
+            # carry newlines into a shell.
+            bundle = lease.frontmost_bundle
+            category = categorize(bundle) if bundle else "unknown"
+            if self._terminal_hazard(text, snapshot, category):
+                return self._copy_offer(
+                    text, STATE_SAVED_NOT_INSERTED,
+                    "multiline_terminal_unverified", common,
+                    verification=verification)
 
         # 5. Method selection on the bound destination.
         el = lease.element
@@ -558,6 +576,12 @@ class InsertionService:
                                    on_observation)
         return self._clipboard_insert(text, lease, job, common, facts,
                                       on_observation)
+
+    @staticmethod
+    def _terminal_hazard(text, snapshot, category) -> bool:
+        surface = getattr(snapshot, "site_origin", None) or category
+        return bool(category == "terminal" and _TERMINAL_UNSAFE.search(text)
+                    and surface not in CERTIFIED_BRACKETED_SURFACES)
 
     # ---- the effect boundary -------------------------------------------
 
@@ -572,6 +596,22 @@ class InsertionService:
         el, owned = acquire_destination(self.host, lease.owner_pid)
         return owned and el is not None and el == lease.element
 
+    def _selection_holds(self, lease) -> bool:
+        """The selection the effect acts on is still the one validation
+        authorized — both the AX write and the paste replace whatever is
+        selected now: a recorded replacement range exactly, a recorded
+        caret still a caret (it may have moved, M06 D5). Checked where
+        the destination may be read, as validation checks it."""
+        if not lease.read_allowed or lease.element is None \
+                or lease.selected_range is None:
+            return True
+        live = ax_range(self.host.attribute(lease.element,
+                                            "AXSelectedTextRange"))
+        if lease.replace_selection:
+            return live is not None and (live[0], live[0] + live[1]) \
+                == tuple(lease.selected_range)
+        return live is None or live[1] == 0
+
     def _gate(self, job, lease) -> Optional[tuple]:
         """Authority at the last defensible effect boundary:
         ``(state, reason)`` when the effect must not happen."""
@@ -580,6 +620,8 @@ class InsertionService:
             return STATE_SAVED_NOT_INSERTED, why
         if not self._still_bound(lease):
             return STATE_TARGET_CHANGED, "target_changed_before_effect"
+        if not self._selection_holds(lease):
+            return STATE_TARGET_CHANGED, "selection_changed_before_effect"
         return None
 
     # ---- AX replacement -------------------------------------------------
@@ -616,7 +658,7 @@ class InsertionService:
                              if changed else "ax_write_failed"),
                 method=METHOD_AX, verification=lease.verification,
                 owned_start=facts["owned"][0], owned_end=facts["owned"][1],
-                inserted_chars=n if changed else 0,
+                inserted_chars=len(text) if changed else 0,
                 readback="changed" if changed else "unavailable",
                 **common))
         readback = None
@@ -630,7 +672,8 @@ class InsertionService:
             owned_start=owned[0], owned_end=owned[1],
             inserted_chars=len(text), readback=readback or "unavailable",
             **common)
-        self._remember(lease, text, owned, before_text)
+        self._remember(lease, text, owned, before_text,
+                       undoable=readback == "match")
         return self._finish(result, self._observe(
             result, lease, text, owned, job, on_observation))
 
@@ -686,9 +729,11 @@ class InsertionService:
         """Readback of the owned region against the pre-state:
         ``match`` (exact and attributable), ``match_ambiguous`` (the
         text was already there), ``partial`` (a changed proper prefix —
-        the target consumed part of it), ``mismatch`` (anything else;
-        ``unchanged`` is kept separately as pending) or None
-        (unreadable)."""
+        the target consumed part of it), ``normalized`` (the field grew
+        by exactly the text's length but the region holds other text —
+        the target consumed the paste and rewrote it), ``mismatch``
+        (anything else; ``unchanged`` is kept separately as pending) or
+        None (unreadable)."""
         total = self.host.number_of_characters(el)
         if total is None:
             return None
@@ -714,6 +759,8 @@ class InsertionService:
         if total > pre["total"] and 0 < len(region) < len(text) \
                 and text.startswith(region) and region != pre["region"]:
             return "partial"
+        if total == expected and region != pre["region"]:
+            return "normalized"
         return "mismatch"
 
     def _outcome(self, lease, readback) -> tuple:
@@ -842,19 +889,20 @@ class InsertionService:
                 **common))
         readback = self._await_readback(el, pre, text)
         restored = None
-        consumed = readback in ("match", "partial") or readback is None
+        # A destination with no pre-state cannot be observed: it restores
+        # per the V1 protocol (the documented residual). One that was
+        # read before the post but whose readback failed is NOT
+        # unobservable — a late consumer there must still paste ours.
+        consumed = readback in _CONSUMED or (readback is None and pre is None)
         if consumed:
-            # match: the paste landed; partial: the target consumed it
-            # (the field grew). None (unobservable) restores per the V1
-            # protocol — the documented residual.
             if self.restore_clipboard:
                 restored = txn.restore_if_owned()
         else:
             # No attributable consumption yet (unchanged, ambiguous,
-            # mismatch): the paste may not have landed. The payload is
-            # pending whether or not restoring is enabled — a later job
-            # must not replace what a late target read still pastes;
-            # with restoring on, the sacrificed user clipboard is
+            # mismatch, unreadable): the paste may not have landed. The
+            # payload is pending whether or not restoring is enabled — a
+            # later job must not replace what a late target read still
+            # pastes; with restoring on, the sacrificed user clipboard is
             # disclosed via restore_skipped_reason (wrong-insert
             # prevention outranks restore on observable surfaces).
             if self.restore_clipboard:
@@ -864,7 +912,8 @@ class InsertionService:
             with self._lock:
                 self._pending_paste = {
                     "txn": txn, "lease": lease, "pre": pre,
-                    "text": text, "job_id": job.get("job_id")}
+                    "text": text, "job_id": job.get("job_id"),
+                    "at": self._clock()}
         state, reason = self._outcome(lease, readback)
         owned = facts["owned"]
         result = InsertionResult(
@@ -876,17 +925,20 @@ class InsertionService:
                       else readback or "unavailable"),
             clipboard=self._clipboard_block(txn, captured, restored),
             **common)
-        self._remember(lease, text, owned, before_text)
+        self._remember(lease, text, owned, before_text,
+                       undoable=readback == "match")
         return self._finish(result, self._observe(
             result, lease, text, owned, job, on_observation))
 
     def _resolve_pending(self) -> bool:
         """Before a new publication: is an earlier unresolved payload
         out of the way? It is when the board moved on (a user copy
-        won), when its destination now shows the paste landed (then the
-        user's original is restored first, so the next capture sees it),
-        or when its job was deleted (restored away). Otherwise the next
-        clipboard transaction must not publish."""
+        won), when its job was deleted (restored away, its destination
+        never read again), when its lifetime passed (the paste never
+        landed; restored away), or when its destination now shows the
+        paste landed (then the user's original is restored first, so the
+        next capture sees it). Otherwise the next clipboard transaction
+        must not publish."""
         with self._lock:
             p = self._pending_paste
         if p is None:
@@ -897,14 +949,17 @@ class InsertionService:
                 self._pending_paste = None
             return True
         lease = p["lease"]
+        deleted = bool(p["job_id"] and p["job_id"] in self._revoked_jobs)
+        expired = self._clock() - p["at"] > PENDING_PAYLOAD_SEC
         consumed = False
-        if p["pre"] is not None and lease.element is not None:
+        if not (deleted or expired) and p["pre"] is not None \
+                and lease.element is not None:
             cls = self._classify(lease.element, p["pre"], p["text"])
-            consumed = cls in ("match", "partial") or (
+            consumed = cls in _CONSUMED or (
                 cls == "match_ambiguous"
                 and self.host.number_of_characters(lease.element)
                 != p["pre"]["total"])
-        if consumed or (p["job_id"] and p["job_id"] in self._revoked_jobs):
+        if consumed or deleted or expired:
             txn.restore_skipped_reason = None
             if self.restore_clipboard:
                 txn.restore_if_owned()
@@ -916,8 +971,9 @@ class InsertionService:
     def _await_readback(self, el, pre, text):
         """Wait the settle bound for the target to consume the paste,
         polling the bound destination when it may be read (early exit
-        once the owned range shows the text attributably). None means
-        the destination is unobservable (or may not be read)."""
+        once the owned range shows the text attributably, or rewritten).
+        None means the destination is unobservable (or may not be read)
+        or its last read failed."""
         settle = (self._settle_sec if self._settle_sec is not None
                   else PASTE_SETTLE_SEC)
         deadline = time.monotonic() + settle
@@ -926,7 +982,8 @@ class InsertionService:
             return None
         while True:
             cls = self._classify(el, pre, text)
-            if cls == "match" or time.monotonic() >= deadline:
+            if cls in ("match", "normalized") \
+                    or time.monotonic() >= deadline:
                 return cls
             self._sleep(READBACK_POLL_SEC)
 
@@ -995,19 +1052,23 @@ class InsertionService:
     def _expired(self, entry) -> bool:
         return self._clock() - entry["at"] > RECOVERY_CACHE_TTL_SEC
 
-    def _remember(self, lease, text, owned, before_text):
+    def _remember(self, lease, text, owned, before_text, *, undoable):
         """The recovery cache: the last result's text (Paste Again) and,
-        where the destination may be read and the owned range is known,
-        the target-bound undo record."""
+        where the readback attributed the owned range to this insertion
+        (``undoable``: a ``match``) and the destination may be read, the
+        target-bound undo record. A job deleted while its transaction
+        ran leaves nothing here."""
         now = self._clock()
         with self._lock:
+            if lease.job_id and lease.job_id in self._revoked_jobs:
+                return
             self._last = {"text": text, "job_id": lease.job_id,
                           "attempt": lease.attempt, "at": now}
             self._undo_record = (
                 {"lease": lease, "inserted_text": text,
                  "owned_range": owned, "before_text": before_text,
                  "at": now}
-                if lease.read_allowed and owned[0] is not None
+                if undoable and lease.read_allowed and owned[0] is not None
                 and lease.element is not None else None)
 
     def _offer_recovery(self, text: str):
