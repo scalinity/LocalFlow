@@ -51,6 +51,12 @@
         "fixture_files": [
           "tests/v2/vocabulary/m05_audit_corpus.json"
         ]
+      },
+      "m10_remediation_created": {
+        "note": "M10 remediation (2026-09-26) committed the read-only M10 audit's authored synthetic adversarial corpus verbatim (220 cases / 24 categories incl. 20 stateful integration cases, 12 metamorphic relations, 26 mutation definitions, every entry NOT_RUN as delivered; sha256 3cc5a9288f432a45ddf85c0ecaa7b1c1f83c0e550ea774a4a326f5e23780f755). It covers styles, snippets, skill manifests, file tags and their literal/delimiter boundaries, which is why it is filed with this family's syntax/skills and literal strata. Bindings and drivers live in tests/v2/profiles/m10_corpus_runner.py; execution results live in separate artifacts under docs/v2/acceptance/M10/remediation/, never in this file. DEVELOPMENT evidence consulted while repairing — not part of this family's 320 planned owning fixtures, not an unseen holdout, and its variants are not independent samples.",
+        "fixture_files": [
+          "tests/v2/profiles/m10_audit_corpus.json"
+        ]
       }
     },
     {

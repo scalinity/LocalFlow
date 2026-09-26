@@ -847,7 +847,9 @@ def r11_manifest_edit_after_freeze_never_reaches_the_job():
     assert "beta phrase" not in j_a["m10"]["skills"].policy_skills
 
 
-def _ws_project(fx, name="proj", skill="ws-one"):
+def _ws_project(fx, name="proj", skill="ws-alpha"):
+    # No number word in the skill's spoken form: under the Technical
+    # policy an unregistered "ws one" would still render "ws 1".
     proj = fx.allowed / name
     write(proj / "main.py", "x")
     write(proj / ".claude" / "skills" / skill / "SKILL.md", skill_md(skill))
@@ -863,14 +865,14 @@ def r12_deferred_widening_adds_no_workspace_registry():
                         cfg={"workspace_skill_dirs": [".claude/skills"]})
         try:
             h.d._widened_for_release = lambda job, entries, scope: None
-            text, job = run_job(h, "slash ws one now")
+            text, job = run_job(h, "slash ws alpha now")
         finally:
             h.close()
     assert job.get("scope_disposition") == "widening_deferred", \
         job.get("scope_disposition")
-    assert text == "slash ws one now", \
+    assert text == "slash ws alpha now", \
         f"workspace skill added after a deferred widening: {text!r}"
-    assert "ws one" not in job["m10"]["skills"].policy_skills
+    assert "ws alpha" not in job["m10"]["skills"].policy_skills
 
 
 @case("M10-AUDIT-12")
@@ -884,11 +886,11 @@ def r12_failed_widening_adds_no_workspace_registry():
             def boom(job, entries, scope):
                 raise RuntimeError("synthetic widening failure")
             h.d._widened_for_release = boom
-            text, job = run_job(h, "slash ws one now")
+            text, job = run_job(h, "slash ws alpha now")
         finally:
             h.close()
     assert job.get("scope_disposition") == "widening_failed"
-    assert text == "slash ws one now", text
+    assert text == "slash ws alpha now", text
 
 
 @case("M10-AUDIT-12", kind="control")
@@ -899,12 +901,12 @@ def c12_widened_job_gets_workspace_skill():
                         workspace="proj", document_url=str(proj / "main.py"),
                         cfg={"workspace_skill_dirs": [".claude/skills"]})
         try:
-            text, job = run_job(h, "slash ws one now")
+            text, job = run_job(h, "slash ws alpha now")
         finally:
             h.close()
     assert job.get("scope_disposition") == "widened", \
         job.get("scope_disposition")
-    assert text == "/ws-one now", text
+    assert text == "/ws-alpha now", text
 
 
 @case("M10-AUDIT-12")
@@ -937,7 +939,7 @@ def r12_builder_failure_leaves_no_half_tuple():
             h.d.consent.set("enabled", note="test")
             h.d._m10_finalize_upgrade = fin
             app_mod.v2_normalize.NormalizationPolicy = np_factory
-            text, job = run_job(h, "slash ws one now")
+            text, job = run_job(h, "slash ws alpha now")
         finally:
             app_mod.v2_normalize.NormalizationPolicy = real_np
             h.close()
@@ -947,7 +949,7 @@ def r12_builder_failure_leaves_no_half_tuple():
     assert dict(reg.policy_skills) == used, \
         "registry claimed != policy used: " \
         f"{sorted(reg.policy_skills)} vs {sorted(used)}"
-    assert text in ("slash ws one now", "/ws-one now"), text
+    assert text in ("slash ws alpha now", "/ws-alpha now"), text
 
 
 @case("M10-AUDIT-13")
@@ -1450,14 +1452,26 @@ def r23_applied_definition_survives_config_deletion():
     finally:
         h.close()
     assert text == "Best,\nAda\nCore", text
-    retained = [a for a in arts if a[3] and template in a[3]]
+    retained = []
+    for a in arts:
+        try:
+            doc = json.loads(a[3]) if a[3] else None
+        except ValueError:
+            continue
+        applied = doc.get("applied") if isinstance(doc, dict) else None
+        if isinstance(applied, list):
+            retained += [d for d in applied if isinstance(d, dict)
+                         and d.get("content") == template]
     declared = json.dumps(env.get("normalization") or {})
     assert retained or "not_captured" in declared, \
         "the applied template is neither retained nor declared missing"
     if retained:
-        doc = json.loads(retained[0][3])
-        blob = json.dumps(doc)
-        assert '"revision": 1' in blob and "allow_rewrite" in blob, doc
+        d = retained[0]
+        assert (d.get("revision"), d.get("allow_rewrite")) == (1, False), d
+        assert d.get("slots") == [{"name": "name", "value": "Ada"},
+                                  {"name": "team", "value": "Core"}], d
+        assert "snippets.definitions_artifact_id" not in json.dumps(
+            env.get("missing_reasons") or {}), env.get("missing_reasons")
 
 
 @case("M10-AUDIT-24")

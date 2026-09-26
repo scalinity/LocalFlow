@@ -288,15 +288,34 @@ def test_conflict_preview_against_dictionary_and_skills():
     out = snip.preview_conflicts(cand, [], [term, skill])
     kinds = {c["kind"] for c in out}
     assert "snippet_wins" in kinds
+    # M10-AUDIT-18: the preview answers what the ENGINE does. A bare
+    # trigger equal to a skill alias expands the snippet at runtime
+    # (skills need "slash"), so the preview reports no ambiguity — it
+    # says that "slash <trigger>" inserts the skill instead.
     cand2 = N("c2", "code review", "template")
+    runtime = normalize("code review", NormalizationPolicy(
+        registered_skills={"code review": "code-review"}),
+        ContextSnapshot(snippets=snip.SnippetSnapshot([cand2])))
+    assert runtime.text == "template", runtime.text   # independent oracle
     out = snip.preview_conflicts(cand2, [], [term, skill])
     kinds = {c["kind"] for c in out}
-    assert "ambiguous_with_skill" in kinds
+    assert "ambiguous_with_skill" not in kinds, out
+    assert "skill_on_slash" in kinds, out
     # Manifest skill aliases preview too.
     out = snip.preview_conflicts(
         N("c3", "idea storm", "x"), [], [], ["idea storm"])
-    assert any(c["kind"] == "ambiguous_with_skill" for c in out)
-    print("ok  collision preview: skills ambiguous, terms lose")
+    assert [c["kind"] for c in out] == ["skill_on_slash"], out
+    # A trigger that itself starts with "slash" really is ambiguous
+    # with the same-span skill at runtime — and the preview says so.
+    out = snip.preview_conflicts(
+        N("c4", "slash brainstorm", "x"), [], [], ["brainstorm"])
+    assert any(c["kind"] == "ambiguous_with_skill" for c in out), out
+    # Editing a stored snippet never collides with itself.
+    stored = N("c5", "sign off", "Best")
+    out = snip.preview_conflicts(N("c5", "sign off", "Best,"), [stored],
+                                 selected_id="c5")
+    assert not any(c["kind"] == "duplicate_trigger" for c in out), out
+    print("ok  collision preview: the engine's own decision per trigger")
 
 
 def main():

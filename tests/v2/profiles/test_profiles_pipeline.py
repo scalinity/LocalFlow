@@ -525,10 +525,18 @@ def test_hub_commands_and_menu():
         # Preview + collision commands.
         prev = h.d.hubPreviewPhrase("slash idea storm")
         assert prev["output"] == "/brainstorm", prev
-        h.d._snip_store.add_snippet(trigger="idea storm", name="x",
-                                    content="template")
+        sid = h.d._snip_store.add_snippet(trigger="idea storm", name="x",
+                                          content="template")
+        # M10-AUDIT-18: a NEW snippet with that trigger duplicates the
+        # stored one; the stored one itself (edited in place) does not
+        # collide with itself; saying "slash idea storm" still inserts
+        # the manifest skill (the engine's own decisions).
         col = h.d.hubSnippetCollisionPreview("idea storm")
-        assert any(c["kind"] == "ambiguous_with_skill" for c in col), col
+        assert {c["kind"] for c in col} == {"duplicate_trigger",
+                                            "skill_on_slash"}, col
+        col = h.d.hubSnippetCollisionPreview("idea storm", snippet_id=sid,
+                                             content="template")
+        assert [c["kind"] for c in col] == ["skill_on_slash"], col
         # The menu line reflects the last destination.
         assert "Mode: Clean" in h.d.mode_menu_item.title()
     finally:

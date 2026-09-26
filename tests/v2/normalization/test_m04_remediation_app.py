@@ -297,6 +297,10 @@ CALLERS = {
     ("localflow/app.py", "hubPreviewPhrase", "normalize"): "preview only",
     ("localflow/v2/vocabulary.py", "sandbox_phrase", "normalize"):
         "M05 sandbox preview only",
+    # M10-AUDIT-18: the snippet collision preview asks the engine what
+    # it would do to the bare and slash-prefixed trigger; never applied.
+    ("localflow/v2/snippets.py", "preview_collisions", "normalize"):
+        "M10 collision preview only",
     ("localflow/v2/training.py", "on_normalization_result",
      "is_idempotent"): "diagnostic second pass, never applied",
 }
