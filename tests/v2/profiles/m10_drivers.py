@@ -359,10 +359,13 @@ def override_once(c):
 
 @driver("M10-C027", "M10-C218")
 def override_fault(c):
+    """Two faults after the override is taken: one inside the freeze's
+    optional work (the transform snapshot — isolated there), and one that
+    escapes the freeze at its return (the coordinator's own degraded
+    fallback). Raw survives both; each job takes the mode exactly once."""
     h, *_ = harness()
     barriers = []
     try:
-        h.d.hubSetNextJobMode("raw")
         real_take = h.d._take_next_job_mode
 
         def take(job_id=None):
@@ -370,22 +373,37 @@ def override_fault(c):
             barriers.append("next-mode taken")
             return mode
         h.d._take_next_job_mode = take
+        h.d.hubSetNextJobMode("raw")
         real_rev = h.d._tf_store.revision
 
         def boom():
-            barriers.append("before M10 snapshot return")
+            barriers.append("transform snapshot fault")
             raise RuntimeError("synthetic transform snapshot fault")
         h.d._tf_store.revision = boom
         ta, ja = run_job(h, NUM)
         h.d._tf_store.revision = real_rev
+        h.d.hubSetNextJobMode("raw")
+        real_freeze = h.d._m10_freeze
+
+        def freeze(dest, **kw):
+            real_freeze(dest, **kw)
+            barriers.append("before M10 snapshot return")
+            raise RuntimeError("synthetic freeze fault")
+        h.d._m10_freeze = freeze
+        tf, jf = run_job(h, NUM)
+        h.d._m10_freeze = real_freeze
         h.d._take_next_job_mode = real_take
         tb, jb = run_job(h, NUM)
         owners = [ln for ln in w.app_events(h) if "override_taken" in ln]
     finally:
         h.close()
-    return verdict({"raw_kept": ta == NUM,
-                    "job_owned": ja.get("m10_override") == "raw",
-                    "ownership_recorded_once": len(owners) == 1,
+    return verdict({"raw_kept_inner_fault": ta == NUM,
+                    "raw_kept_outer_fault": tf == NUM
+                    and (jf.get("m10") or {}).get("degraded")
+                    == "RuntimeError",
+                    "job_owned": ja.get("m10_override") == "raw"
+                    and jf.get("m10_override") == "raw",
+                    "ownership_recorded_per_job": len(owners) == 2,
                     "b_ordinary": tb == NUM_TECH},
                    {"owner_events": len(owners)}, barriers)
 

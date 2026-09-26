@@ -786,12 +786,21 @@ def hub_reorder(c):
             barriers.append("A form rendered")
             h.d._styles.update_rule(b, name="0 first now")   # reorders
             hub.state.reload_styles()
-            mq.drain(hub.state)
-            barriers.append("reordered rows published on MainQueue")
-            order = [r["rule_id"] for r in hub._rendered_rows["styles_table"]]
+            # The reordered list is PUBLISHED (the worker finished) while
+            # its render is still queued on the MainQueue: the window in
+            # which a click must act on the row the user sees, never on
+            # an index into the newest list.
+            hub.state.wait_for_queries(10)
+            published = [r["rule_id"] for r in
+                         hub.state.views["styles"]["data"]["rules"]]
+            shown = [r["rule_id"]
+                     for r in hub._rendered_rows["styles_table"]]
+            if published == [b, a] and shown == [a, b] and mq.pending():
+                barriers.append("reordered rows published on MainQueue")
             hub.style_name.setStringValue_("A renamed")
             hub.stylesUpdate_(None)
             mq.drain(hub.state)
+            order = [r["rule_id"] for r in hub._rendered_rows["styles_table"]]
             rows = {r[0]: r for r in w.raw_rows(h.d.store, "style_rules",
                                                 "rule_id")}
         finally:
