@@ -1275,8 +1275,24 @@ def c054_four_distinct_stages():
                                     retention_class="history")
         d2 = _svc(w.store).job_detail(jid2)
         stages = {s["stage"]: s for s in d2["lineage"]}
+        assert stages["normalized"]["artifact"] is None, stages["normalized"]
         assert stages["cleaned"]["artifact"] is None
         assert stages["transformed"]["reason"] == "not_applicable"
+        # Raw and cleaned only: each absent stage stays absent — never a
+        # copy of the stage before it.
+        jid3, _ = w.store.create_job(captured_at_utc=iso(T0 + 2),
+                                     time_quality="known")
+        for role, t in (("raw_transcript", "third raw"),
+                        ("applied_output", "third cleaned")):
+            w.store.write_text_artifact(job_id=jid3, stage=role, role=role,
+                                        text=t, retention_class="history")
+        w.store.sync()
+        s3 = {s["stage"]: s for s in _svc(w.store).job_detail(jid3)
+              ["lineage"]}
+        assert s3["normalized"]["artifact"] is None, s3["normalized"]
+        assert s3["transformed"]["artifact"] is None and \
+            s3["transformed"]["reason"] == "not_applicable", s3["transformed"]
+        assert s3["cleaned"]["artifact"]["text"] == "third cleaned"
     return {}
 
 

@@ -327,6 +327,25 @@ MUTANTS = [
 ]
 
 
+# Equivalence probes (not corpus mutations; reported apart from the
+# tally). MUT05 can survive because the verbatim gate is held twice:
+# the per-example comparison AND the reset of ``listened_for`` on every
+# Training selection change. Each probe removes one or both defenses;
+# ``expect`` is what the design predicts.
+_RESET = (STATE,
+          "            if view.get(\"selected_id\") != example_id:\n"
+          "                view[\"listened_for\"] = None\n",
+          "            if view.get(\"selected_id\") != example_id:\n")
+PROBES = [
+    {"id": "M09-MUT05-EQ-both", "for": "M09-MUT05", "expect": "killed",
+     "name": "Boolean listening AND no reset on selection change",
+     "edits": [MUTANTS[4]["edits"][0], _RESET], "killers": ["M09-C007"]},
+    {"id": "M09-MUT05-EQ-reset", "for": "M09-MUT05", "expect": "survived",
+     "name": "No reset on selection change (per-example comparison kept)",
+     "edits": [_RESET], "killers": ["M09-C007"]},
+]
+
+
 def export(dest: pathlib.Path) -> str:
     head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
                           capture_output=True, text=True).stdout.strip()
@@ -418,21 +437,47 @@ def check_edits(todo):
     return 1 if bad else 0
 
 
+def run_one(base, control, m):
+    root = base.parent / m["id"]
+    shutil.copytree(base, root, symlinks=True)
+    proof = apply(root, m)
+    rec = {"mutation_id": m["id"], "name": m["name"],
+           "files": sorted({e[0] for e in m["edits"]}),
+           "proof": proof, "killers": m["killers"]}
+    if not proof["applied"]:
+        rec.update(outcome="harness_error",
+                   reason=proof.get("reason", "mutation not applied"))
+    else:
+        mut = run_killers(root, m["killers"])
+        rec["control"] = {k: control.get("cases", {}).get(k)
+                          for k in m["killers"]}
+        rec["mutant"] = mut.get("cases", mut)
+        rec["mutant_details"] = mut.get("details")
+        rec["imported_from"] = mut.get("imported_from")
+        rec["outcome"], rec["reason"] = verdict(root, control, mut,
+                                                m["killers"])
+    shutil.rmtree(root, ignore_errors=True)
+    print(f"{rec['outcome']:14} {m['id']} {m['name']}"
+          f" {rec.get('reason') or ''} {rec.get('mutant', '')}", flush=True)
+    return rec
+
+
 def main(argv):
     out_json = argv[argv.index("--json") + 1] if "--json" in argv else None
     only = set(argv[argv.index("--only") + 1].split(",")) \
         if "--only" in argv else None
+    todo = [m for m in MUTANTS if not only or m["id"] in only]
+    probes = [p for p in PROBES if not only or p["id"] in only
+              or p["for"] in only]
     if "--check-edits" in argv:
-        return check_edits([m for m in MUTANTS
-                            if not only or m["id"] in only])
+        return check_edits(todo + probes)
     work = pathlib.Path(tempfile.mkdtemp(prefix="m09-mut-"))
-    results = []
+    results, probe_results = [], []
     try:
         base = work / "control"
         base.mkdir()
         head = export(base)
-        todo = [m for m in MUTANTS if not only or m["id"] in only]
-        killers = sorted({k for m in todo for k in m["killers"]})
+        killers = sorted({k for m in todo + probes for k in m["killers"]})
         t0 = time.monotonic()
         control = run_killers(base, killers, timeout=1800)
         if control.get("imported_from") not in (None, base.name):
@@ -440,42 +485,35 @@ def main(argv):
         print(f"control: {control.get('cases', control)}"
               f" ({time.monotonic() - t0:.0f}s)", flush=True)
         for m in todo:
-            root = work / m["id"]
-            shutil.copytree(base, root, symlinks=True)
-            proof = apply(root, m)
-            rec = {"mutation_id": m["id"], "name": m["name"],
-                   "files": sorted({e[0] for e in m["edits"]}),
-                   "proof": proof, "killers": m["killers"]}
-            if not proof["applied"]:
-                rec.update(outcome="harness_error",
-                           reason=proof.get("reason",
-                                            "mutation not applied"))
-            else:
-                mut = run_killers(root, m["killers"])
-                rec["control"] = {k: control.get("cases", {}).get(k)
-                                  for k in m["killers"]}
-                rec["mutant"] = mut.get("cases", mut)
-                rec["mutant_details"] = mut.get("details")
-                rec["imported_from"] = mut.get("imported_from")
-                rec["outcome"], rec["reason"] = verdict(
-                    root, control, mut, m["killers"])
-            shutil.rmtree(root, ignore_errors=True)
-            results.append(rec)
-            print(f"{rec['outcome']:14} {m['id']} {m['name']}"
-                  f" {rec.get('reason') or ''} {rec.get('mutant', '')}",
-                  flush=True)
+            results.append(run_one(base, control, m))
+        for p in probes:
+            rec = run_one(base, control, p)
+            rec.update({"for": p["for"], "expect": p["expect"],
+                        "as_expected": rec["outcome"] == p["expect"]})
+            probe_results.append(rec)
     finally:
         shutil.rmtree(work, ignore_errors=True)
+    # A survivor is annotated equivalent only when every probe for it
+    # ran and behaved as the design predicts; it is never a kill.
+    for r in results:
+        mine = [p for p in probe_results if p["for"] == r["mutation_id"]]
+        if r["outcome"] == "survived" and mine:
+            r["equivalent_by_probe"] = all(p["as_expected"] for p in mine)
     tally = {}
     for r in results:
         tally[r["outcome"]] = tally.get(r["outcome"], 0) + 1
+    tally["survived_equivalent_by_probe"] = sum(
+        1 for r in results if r.get("equivalent_by_probe"))
     print(json.dumps(tally))
     if out_json:
         pathlib.Path(out_json).write_text(json.dumps({
             "tool": "scripts/v2/m09_mutation_check.py",
             "runner": RUNNER, "code_sha": head, "control": control,
-            "summary": tally, "results": results}, indent=1) + "\n")
-    return 0 if tally.get("killed", 0) == len(results) else 1
+            "summary": tally, "results": results,
+            "equivalence_probes": probe_results}, indent=1) + "\n")
+    unexplained = [r for r in results if r["outcome"] != "killed"
+                   and not r.get("equivalent_by_probe")]
+    return 0 if not unexplained else 1
 
 
 if __name__ == "__main__":
