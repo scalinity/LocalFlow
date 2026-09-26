@@ -38,6 +38,7 @@ Accessibility, event posting or the general pasteboard)
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import sys
 import time
@@ -171,7 +172,12 @@ def button(pane, title):
 class NativeWorld:
     def __init__(self, active=False):
         self.active = active
-        self.front = frontmost_pid()
+        # Launched as an app (the active tier's launcher), this process
+        # is itself frontmost at start: the launcher names the app that
+        # was in front before the launch, which is the one to restore.
+        restore = os.environ.get("LF_NATIVE_RESTORE_PID", "")
+        self.front = int(restore) if active and restore.isdigit() \
+            else frontmost_pid()
         self.h, self.sup, _ = w.harness()
         self.mq = w.MainQueue().__enter__()
         self.hub = __import__("test_m10_remediation")._hub(self.h)
