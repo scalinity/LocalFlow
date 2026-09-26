@@ -1507,10 +1507,14 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def _tfInsertDone_(self, insertion_result):
-        state = getattr(insertion_result, "state", None) or \
-            insertion_result.get("state")
-        reason = getattr(insertion_result, "reason_code", None) or \
-            insertion_result.get("reason_code")
+        # An InsertionResult (submit's outcome) or a dict: a successful
+        # insert has no reason_code, which must not fall through to .get.
+        if isinstance(insertion_result, dict):
+            state = insertion_result.get("state")
+            reason = insertion_result.get("reason_code")
+        else:
+            state = getattr(insertion_result, "state", None)
+            reason = getattr(insertion_result, "reason_code", None)
         self.v2log.emit("transforms.insertion_done", level="INFO",
                         outcome=state, reason_code=reason)
         self._settle_state()
