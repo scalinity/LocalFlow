@@ -669,8 +669,9 @@ def test_a11_duplicate_occurrence_is_ambiguous():
     time.sleep(0.15)
     w.user_replace("F1", 4, 7, "")
     obs.join(5)
-    assert not (obs.stop_reason == "window_elapsed" and obs.reanchors), \
+    assert (obs.start, obs.end) == (4, 7) and obs.reanchors == 0, \
         f"re-anchored onto the pre-existing occurrence ({obs.stop_reason})"
+    assert obs.after_artifact is None, "the user's text recorded as ours"
     env.close()
 
 
@@ -701,8 +702,9 @@ def test_a11_read_failure_is_not_an_edit():
 @case("M08-AUDIT-11")
 def test_a11_changed_length_edit_keeps_only_owned_region():
     """'cat' inserted before a neighbour canary; the user replaces it
-    with a longer word. The after-text is exactly the new word or
-    nothing — never a truncated or neighbour-including region."""
+    with a longer or shorter word. Both sides are unchanged, so the end
+    is provable: the after-text is exactly the new word — never a
+    truncated or neighbour-including region, and never abandoned."""
     for new in ("tiger", "ox"):
         env = Env(window=1.5, text_f1=" CANARY_OUTSIDE", sel_f1=(0, 0))
         w = env.w
@@ -713,7 +715,8 @@ def test_a11_changed_length_edit_keeps_only_owned_region():
         obs.join(5)
         after = artifact_text(env, obs.after_artifact) \
             if obs.after_artifact else None
-        assert after in (None, new), f"after-text {after!r} for {new!r}"
+        assert after == new, f"after-text {after!r} for {new!r}"
+        assert obs.stop_reason == "owned_range_edited", obs.stop_reason
         env.close()
 
 
@@ -1184,6 +1187,356 @@ def test_a18_close_in_subscription_gap_delivers_once():
         service_mod.OutcomeObserver = base
     a.close()
     assert len(calls) == 1, f"final observation callbacks: {len(calls)}"
+
+
+# ---- Independent review of the first pass (7f27262): R1..R10 -------------
+
+OLD_CLIP = "CANARY_OLD_CLIPBOARD"
+PLAIN = "public.utf8-plain-text"
+
+
+class patched:
+    """Set ``module.name`` for the block (created when absent — the first
+    pass has no such knob, and there the case must fail on behavior)."""
+
+    def __init__(self, module, name, value):
+        self.module, self.name, self.value = module, name, value
+
+    def __enter__(self):
+        self.had = hasattr(self.module, self.name)
+        self.saved = getattr(self.module, self.name, None)
+        setattr(self.module, self.name, self.value)
+
+    def __exit__(self, *exc):
+        if self.had:
+            setattr(self.module, self.name, self.saved)
+        else:
+            delattr(self.module, self.name)
+
+
+def clipboard_env(**kw):
+    """Env whose A and B fields both take the clipboard path."""
+    env = Env(**kw)
+    for fid in ("F1", "FB"):
+        env.w.fields[fid].settable = False
+    env.w.fields["FB"].text, env.w.fields["FB"].sel = "", (0, 0)
+    env.pb.user_copy(OLD_CLIP)
+    return env
+
+
+@case("M08-REVIEW-R1")
+def test_r01_dropped_paste_stops_blocking_after_its_lifetime():
+    """A paste that never lands is pending only for a bounded lifetime:
+    inside it the next clipboard job is refused (D8 — a late consumer
+    keeps its payload); after it the payload is restored away and
+    clipboard insertion works again."""
+    with patched(service_mod, "PENDING_PAYLOAD_SEC", 0.4):
+        env = clipboard_env(text_f1="abc", sel_f1=(3, 3), settle=0.1)
+        w, pb, kb = env.w, env.pb, env.kb
+        kb.mode = "drop"
+        r1 = env.run("first dictation", job("job-1", snap(w)))
+        assert r1.reason_code == "readback_pending", r1.reason_code
+        kb.mode = "sync"
+        w.focus("B", "FB")
+        r2 = env.run("second dictation", job("job-2", snap(w, "B", "FB")))
+        assert r2.reason_code == "clipboard_payload_pending", \
+            (r2.state, r2.reason_code)
+        time.sleep(0.5)
+        r3 = env.run("third dictation", job("job-3", snap(w, "B", "FB")))
+        assert w.text("FB") == "third dictation", \
+            (w.text("FB"), r3.state, r3.reason_code)
+        assert pb.plain() == OLD_CLIP, pb.plain()
+        env.close()
+
+
+@case("M08-REVIEW-R1")
+def test_r01_normalized_paste_counts_as_consumed():
+    """The destination consumed the paste but rewrote it (a single-line
+    input turning the newline into a space): the field grew by exactly
+    the pasted length. That is consumption — the user's clipboard comes
+    back and the next clipboard job is not blocked."""
+    env = clipboard_env(text_f1="", sel_f1=(0, 0), settle=0.1)
+    w, pb, kb = env.w, env.pb, env.kb
+    real = kb._consume
+
+    def normalizing():
+        with pb.lock:
+            for it in pb.items:
+                if PLAIN in it:
+                    it[PLAIN] = it[PLAIN].replace(b"\n", b" ")
+        real()
+    kb._consume = normalizing
+    r1 = env.run("line one\nline two", job("job-1", snap(w)))
+    kb._consume = real
+    assert w.text("F1") == "line one line two", w.text("F1")
+    assert r1.state == "posted_unverified", (r1.state, r1.readback)
+    assert pb.plain() == OLD_CLIP, (pb.plain(), r1.clipboard)
+    w.focus("B", "FB")
+    r2 = env.run("next", job("job-2", snap(w, "B", "FB")))
+    assert w.text("FB") == "next", (w.text("FB"), r2.reason_code)
+    env.close()
+
+
+@case("M08-REVIEW-R2")
+def test_r02_failed_final_readback_keeps_clipboard_ownership():
+    """A readable destination whose last readback read fails at the
+    settle deadline is not an unobservable surface: the payload stays
+    LocalFlow's, so a late consumer pastes the dictation, never the
+    user's clipboard."""
+    env = clipboard_env(text_f1="abc ", sel_f1=(4, 4), settle=0.12)
+    w, pb, kb = env.w, env.pb, env.kb
+    kb.mode = "gate"
+    w.on("post_paste",
+         lambda _w, *_a: setattr(w.fields["F1"], "readable", False), nth=1)
+    r = env.run("dictated", job("job-1", snap(w)))
+    assert pb.plain() == "dictated", (pb.plain(), r.clipboard)
+    w.fields["F1"].readable = True
+    kb.release()
+    wait_for(lambda: any(e[1] == "paste_consumed" for e in w.effects), 3)
+    assert w.text("F1") == "abc dictated", w.text("F1")
+    env.close()
+    # Control: a destination that may not be read (denied app) keeps the
+    # V1 protocol — restored after the settle bound.
+    env = clipboard_env(text_f1="abc ", sel_f1=(4, 4), settle=0.12,
+                        denied_apps=("com.example.a",))
+    r = env.run("dictated", job("job-2", snap(env.w)))
+    assert env.pb.plain() == OLD_CLIP, (env.pb.plain(), r.clipboard)
+    env.close()
+
+
+@case("M08-REVIEW-R3")
+def test_r03_selection_made_after_validation_is_never_replaced():
+    """A recorded caret validates; before the effect the user selects
+    text in the same field. Neither the AX write nor the paste may
+    replace that selection (D4). A caret that merely moved is still the
+    insertion point (M06 D5)."""
+    for settable in (True, False):
+        env = Env(text_f1="keep this sentence", sel_f1=(18, 18))
+        w = env.w
+        w.fields["F1"].settable = settable
+        s = snap(w, sel=(18, 18), sel_text="")
+        with after_validation(lambda _j: w.user_select("F1", 5, 9)):
+            r = env.run("DICTATED", job(s=s))
+        assert w.text("F1") == "keep this sentence", \
+            (settable, w.text("F1"), r.state)
+        assert r.state == "target_changed", (settable, r.state, r.reason_code)
+        env.close()
+    env = Env(text_f1="keep this sentence", sel_f1=(18, 18))
+    w = env.w
+    s = snap(w, sel=(18, 18), sel_text="")
+    with after_validation(lambda _j: w.user_select("F1", 5, 5)):
+        r = env.run("DICTATED ", job(s=s))
+    assert w.text("F1") == "keep DICTATED this sentence", \
+        (w.text("F1"), r.state, r.reason_code)
+    env.close()
+
+
+@case("M08-REVIEW-R3")
+def test_r03_strict_selection_changed_after_validation_is_refused():
+    """Strict replacement proved 'alpha'; the user extends the selection
+    before the write. The unreviewed selection is never replaced."""
+    text = "alpha beta gamma"
+    env = Env(text_f1=text, sel_f1=(0, 5))
+    w = env.w
+    s = snap(w, sel=(0, 5), sel_text="alpha", pre="", fol=text[5:])
+    with after_validation(lambda _j: w.user_select("F1", 0, 10)):
+        r = env.run("OMEGA", job("tcand-1", s, strict_replacement=True))
+    assert w.text("F1") == text, (w.text("F1"), r.state, r.reason_code)
+    assert r.state == "target_changed", (r.state, r.reason_code)
+    env.close()
+    env = Env(text_f1=text, sel_f1=(0, 5))
+    s = snap(env.w, sel=(0, 5), sel_text="alpha", pre="", fol=text[5:])
+    r = env.run("OMEGA", job("tcand-2", s, strict_replacement=True))
+    assert env.w.text("F1") == "OMEGA beta gamma", env.w.text("F1")
+    env.close()
+
+
+@case("M08-REVIEW-R4")
+def test_r04_ambiguous_readback_arms_no_undo():
+    """An AX setter that acknowledged without effect over text already
+    equal to the dictation: nothing is attributable, so undo has nothing
+    of LocalFlow's to remove — the user's own text stays."""
+    env = Env(text_f1="Thanks, Sam", sel_f1=(0, 0))
+    w = env.w
+    w.fields["F1"].set_behavior = "noop"
+    r = env.run("Thanks,", job(s=snap(w)))
+    assert r.readback == "match_ambiguous", r.readback
+    w.fields["F1"].set_behavior = "normal"
+    mark = w.seq
+    out = env.svc.undo_last()
+    assert w.text("F1") == "Thanks, Sam", (w.text("F1"), out)
+    assert writes_on(w, {"F1"}, mark) == [], writes_on(w, {"F1"}, mark)
+    env.close()
+
+
+@case("M08-REVIEW-R5")
+def test_r05_caret_undo_without_effect_is_not_reported_undone():
+    """Undo of a caret insert whose setter acknowledges without effect
+    leaves the text: the outcome must not claim it was undone."""
+    env = Env(text_f1="abc ", sel_f1=(4, 4))
+    w = env.w
+    r = env.run("red", job(s=snap(w)))
+    assert r.state == "confirmed" and w.text("F1") == "abc red", \
+        (r.state, w.text("F1"))
+    w.fields["F1"].set_behavior = "noop"
+    out = env.svc.undo_last()
+    assert w.text("F1") == "abc red", w.text("F1")
+    assert out.get("outcome") != "undone", out
+    env.close()
+
+
+@case("M08-REVIEW-R6")
+def test_r06_terminal_drift_without_snapshot_never_pastes_multiline():
+    """No snapshot (context off, Paste Again, History): a switch to a
+    terminal at any frontmost read of the transaction must not let
+    multi-line text reach it (D15)."""
+    for nth in (1, 2, 3, 4):
+        env = Env(text_f1="", settle=0.05)
+        w = env.w
+        w.add_app("T", 303, "com.apple.Terminal")
+        w.add_window("WT", "T", "zsh")
+        w.add_field("FT", "WT", text="$ ", sel=(2, 2))
+        w.fields["FT"].settable = False
+        w.app_focus["T"] = "FT"
+        w.on("frontmost", lambda _w, *_a: w.focus("T", "FT"), nth=nth)
+        r = env.run("echo one\nrm -rf scratch\n",
+                    {"job_id": f"job-t{nth}", "attempt": 1})
+        assert w.text("FT") == "$ ", (nth, w.text("FT"), r.reason_code)
+        assert not [e for e in w.effects if e[1] == "paste_consumed"
+                    and e[2] == "FT"], nth
+        env.close()
+    # Control: with no drift the same text lands in the editor.
+    env = Env(text_f1="", settle=0.05)
+    env.run("echo one\nrm -rf scratch\n", {"job_id": "job-e", "attempt": 1})
+    assert env.w.text("F1") == "echo one\nrm -rf scratch\n", \
+        env.w.text("F1")
+    env.close()
+
+
+@case("M08-REVIEW-R7")
+def test_r07_same_length_duplicate_is_never_reanchored():
+    """Our 'cat' sits at the end of 'xx dog yy cat'. The user turns
+    'dog' into 'cat' (same length), then edits OUR word. The user's
+    'cat' is not ours: the observer must not move onto it, and its later
+    edit must never be recorded against this insertion."""
+    with patched(observation_mod, "TICK_SEC", 0.05):
+        env = Env(window=3.0, text_f1="xx dog yy ", sel_f1=(10, 10))
+        w = env.w
+        ticks = {"n": 0}
+
+        def on_total(_w, *_a):
+            if threading.current_thread().name != "localflow-v2-observer":
+                return
+            ticks["n"] += 1
+            if ticks["n"] == 3:
+                w.user_replace("F1", 3, 6, "cat")
+            elif ticks["n"] == 6:
+                w.user_replace("F1", 10, 13, "cow")
+            elif ticks["n"] == 9:
+                w.user_replace("F1", 3, 6, "cap")
+        w.on("number_of_characters", on_total)
+        r, obs = observed(env, "cat")
+        assert r.state == "confirmed" and obs is not None, r.state
+        obs.join(6)
+        env.store.sync()
+        after = artifact_text(env, obs.after_artifact) \
+            if obs.after_artifact else None
+        assert (obs.start, obs.end) == (10, 13) and obs.reanchors == 0, \
+            (obs.start, obs.end, obs.reanchors, obs.stop_reason)
+        assert after in (None, "cow"), after
+        env.close()
+
+
+@case("M08-REVIEW-R8")
+def test_r08_system_host_title_comes_from_the_element_owner():
+    """SystemInsertionHost.focused_window_title for a field without its
+    own AXFocusedWindow asks the element's OWNER application — never
+    whichever application is frontmost by then (D1: no title read of a
+    denied app)."""
+    import ApplicationServices as AS
+    from localflow.v2.insertion import hosts as hosts_mod
+    asked = []
+
+    class Host(hosts_mod.SystemInsertionHost):
+        def __init__(self):
+            self.messaging_timeout = 0.2
+
+        def attribute(self, el, name):
+            return f"TITLE_OF_{el}" if name == "AXTitle" else None
+
+        def frontmost(self):
+            return {"pid": 202, "bundle": "com.example.b"}
+
+        def element_pid(self, el):
+            return 101
+
+    saved = (AS.AXUIElementCreateApplication,
+             AS.AXUIElementSetMessagingTimeout,
+             AS.AXUIElementCopyAttributeValue)
+    AS.AXUIElementCreateApplication = \
+        lambda pid: asked.append(pid) or f"APP{pid}"
+    AS.AXUIElementSetMessagingTimeout = lambda *_a: 0
+    AS.AXUIElementCopyAttributeValue = \
+        lambda el, name, _o: (0, f"WIN_OF_{el}")
+    try:
+        title = Host().focused_window_title("FIELD_OF_101")
+    finally:
+        (AS.AXUIElementCreateApplication,
+         AS.AXUIElementSetMessagingTimeout,
+         AS.AXUIElementCopyAttributeValue) = saved
+    assert asked == [101], asked
+    assert title == "TITLE_OF_WIN_OF_APP101", title
+
+
+@case("M08-REVIEW-R9")
+def test_r09_pending_payload_of_deleted_job_is_not_read():
+    """A pending payload's job is deleted: the next clipboard job clears
+    it without reading the deleted job's destination (D13)."""
+    env = clipboard_env(text_f1="abc", sel_f1=(3, 3), settle=0.1)
+    w, kb = env.w, env.kb
+    kb.mode = "drop"
+    env.run("first", job("job-1", snap(w)))
+    env.svc.revoke_job("job-1")
+    mark = w.seq
+    kb.mode = "sync"
+    w.focus("B", "FB")
+    r = env.run("second", job("job-2", snap(w, "B", "FB")))
+    assert reads_on(w, {"F1"}, mark) == [], reads_on(w, {"F1"}, mark)
+    assert w.text("FB") == "second", (w.text("FB"), r.reason_code)
+    env.close()
+
+
+@case("M08-REVIEW-R10")
+def test_r10_deletion_during_settle_leaves_no_recovery_cache():
+    """Delete-everywhere lands while the clipboard transaction settles:
+    the deleted job's text and undo record never enter the recovery
+    cache afterwards (D13/D14)."""
+    env = clipboard_env(text_f1="abc", sel_f1=(3, 3), settle=0.15)
+    w = env.w
+    w.on("post_paste", lambda _w, *_a: env.svc.revoke_job("job-del"),
+         nth=1)
+    env.run("secret words", job("job-del", snap(w)))
+    out = env.svc.paste_again()
+    assert out.get("outcome") == "nothing_to_paste", out
+    mark = w.seq
+    out = env.svc.undo_last()
+    assert out.get("outcome") == "nothing_to_undo", out
+    assert writes_on(w, {"F1"}, mark) == []
+    env.close()
+
+
+@case("M08-REVIEW-minor")
+def test_r_inserted_chars_counts_code_points_on_every_path():
+    """inserted_chars is a code-point count on every path, including an
+    AX setter that reports failure after changing the field (host units
+    are for ranges only)."""
+    env = Env(text_f1="", sel_f1=(0, 0))
+    env.w.fields["F1"].set_behavior = ("partial", 4)
+    r = env.run("😀😀", job(s=snap(env.w)))
+    assert r.reason_code == "ax_write_reported_failure_after_effect", \
+        r.reason_code
+    assert r.inserted_chars == 2, r.inserted_chars
+    env.close()
 
 
 def code_stamp():

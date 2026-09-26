@@ -753,16 +753,38 @@ def f06_c04(c):
 
 @driver("LF-M08-F06-C05")
 def f06_c05(c):
+    """The recorded caret becomes a live selection — before validation,
+    and held after validation until just before the write (the AX write
+    and the paste both replace the live selection). A moved caret is the
+    separate control: it stays the insertion point (M06 D5)."""
+    c.install(recorded="caret 4", live="selection [5:10]=NEWER",
+              timings=["before_validation", "after_validation:ax",
+                       "after_validation:clipboard"], decision="D4")
+    for timing in ("before_validation", "after_validation:ax",
+                   "after_validation:clipboard"):
+        env = corpus_env(c, text_f1="keep NEWER text", sel_f1=(4, 4))
+        env.w.fields["F1"].settable = timing != "after_validation:clipboard"
+        s = snap(env, sel=(4, 4))
+        if timing == "before_validation":
+            env.w.user_select("F1", 5, 10)
+            r = run(env, "dictated", job(s))
+        else:
+            with after_validation(c, f"HOLD_BEFORE_WRITE:{timing}",
+                                  lambda j: env.w.user_select("F1", 5, 10)):
+                r = run(env, "dictated", job(s))
+        c.observe(**{timing: (r.state, r.reason_code)})
+        c.check(f"D4_target_changed:{timing}", r.state == "target_changed",
+                (r.state, r.reason_code))
+        c.check(f"no_newer_text_loss:{timing}",
+                env.w.text("F1") == "keep NEWER text", env.w.text("F1"))
+        env.close()
     env = corpus_env(c, text_f1="keep NEWER text", sel_f1=(4, 4))
     s = snap(env, sel=(4, 4))
-    env.w.user_select("F1", 5, 10)                   # user selects "NEWER"
-    c.install(recorded="caret 4", live="selection [5:10]=NEWER",
-              decision="D4")
-    r = run(env, "dictated", job(s))
-    c.observe(state=r.state)
-    c.check("D4_target_changed", r.state == "target_changed", r.state)
-    c.check("no_newer_text_loss", env.w.text("F1") == "keep NEWER text",
-            env.w.text("F1"))
+    with after_validation(c, "MOVED_CARET_CONTROL",
+                          lambda j: env.w.user_select("F1", 5, 5)):
+        run(env, "dictated ", job(s))
+    c.check("moved_caret_control_inserts",
+            env.w.text("F1") == "keep dictated NEWER text", env.w.text("F1"))
     env.close()
 
 
@@ -1417,18 +1439,53 @@ def f16_c03(c):
 
 @driver("LF-M08-F16-C04")
 def f16_c04(c):
-    env = corpus_env(c, text_f1="")
-    env.w.add_app("T", 303, "com.apple.Terminal")
-    env.w.add_window("WT", "T", "shell")
-    env.w.add_field("FT", "WT", role="AXTextArea", text="", sel=(0, 0))
-    env.w.app_focus["T"] = "FT"
-    env.w.fields["F1"].settable = False
-    with after_validation(c, "AFTER_CATEGORY_GUARD",
+    """Multi-line text classified for an editor; the destination becomes
+    a terminal after the classification. With a snapshot the category is
+    the recorded editor's; without one (context off, Paste Again,
+    History) it is classified live — the switch then lands at each
+    frontmost read in turn. The terminal receives nothing."""
+    text = "echo one\nrm -rf scratch\n"
+
+    def with_terminal():
+        env = corpus_env(c, text_f1="")
+        env.w.add_app("T", 303, "com.apple.Terminal")
+        env.w.add_window("WT", "T", "shell")
+        env.w.add_field("FT", "WT", role="AXTextArea", text="", sel=(0, 0))
+        env.w.fields["FT"].settable = False
+        env.w.app_focus["T"] = "FT"
+        env.w.fields["F1"].settable = False
+        return env
+
+    c.install(text=repr(text), snapshot_variant="editor category recorded",
+              live_variant="no snapshot; switch at frontmost read 1..3")
+    env = with_terminal()
+    with after_validation(c, "AFTER_CATEGORY_GUARD:snapshot",
                           lambda j: env.w.focus("T", "FT")):
-        r = run(env, "echo hi", job(snap(env)))
-    c.expect_state(r.state)
-    c.check("no_post", env.kb.posts == 0 and env.w.text("FT") == "",
-            (env.kb.posts, env.w.text("FT")))
+        r = run(env, text, job(snap(env)))
+    c.observe(snapshot=(r.state, r.reason_code))
+    c.check("snapshot:terminal_untouched", env.w.text("FT") == ""
+            and all(e[2] != "FT" for e in effects(
+                env, ("paste_consumed", "ax_set_text"))),
+            (env.w.text("FT"), r.reason_code))
+    env.close()
+    # Validation's read, then the effect boundary before publication and
+    # before the post: every frontmost read of a live-classified job.
+    for nth in (1, 2, 3):
+        env = with_terminal()
+        env.w.on("frontmost", once(c, f"SWITCH_AT_FRONTMOST_READ_{nth}",
+                                   lambda w, *a: w.focus("T", "FT")),
+                 nth=nth)
+        r = run(env, text, {"job_id": f"job-live-{nth}", "attempt": 1})
+        c.observe(**{f"live_{nth}": (r.state, r.reason_code)})
+        c.check(f"live_{nth}:terminal_untouched", env.w.text("FT") == ""
+                and all(e[2] != "FT" for e in effects(
+                    env, ("paste_consumed", "ax_set_text"))),
+                (env.w.text("FT"), r.reason_code))
+        env.close()
+    env = with_terminal()
+    run(env, text, {"job_id": "job-control", "attempt": 1})
+    c.check("control_editor_receives", env.w.text("F1") == text,
+            env.w.text("F1"))
     env.close()
 
 
