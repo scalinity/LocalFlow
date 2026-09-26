@@ -165,3 +165,20 @@ milestones add fields; they must not repurpose or weaken these identifiers.
   collector module). The repair set covers the v10 tables. No frozen
   identifier changed; the registry stays 33/22; no ADR — no spec
   deviation accepted.
+
+- **M06 remediation (2026-09-26):** `context.md` states the current
+  design after the read-only audit: reads bound to one element of the
+  target application (ownership-verified), job-owned handles (finalize
+  once per handle, revoke, sealed late-delta revisions with a parent
+  link, bounded admission, shutdown), the typed native adapter
+  (AXValue ranges, AXError classes, UTF-16 vs code-point offsets), the
+  classification/metadata, origin, workspace, budget and configuration
+  policies (m06-policy-v1), the identity-keyed origin cache, the
+  release budget with the recording-time vocabulary projection, the
+  publication-time retained flag and the local caller inventory.
+  `targets.md` and `insertion.md` take the shared identity rule, the
+  in-memory window element and host-unit selection comparison;
+  `vocabulary.md`, `profiles.md` and `training_evidence.md` take
+  `scope_site_origin`, `scope_disposition` and the retained-flag rule
+  (the existing `retention_write_failed` reason, additively). No frozen
+  identifier changed; the registry stays 33/22; no ADR.

@@ -44,7 +44,8 @@ frozen per job pre-decode, and none of it executes anything.
   email · documents · ai_prompt · coding · terminal`, derived from the
   M06 snapshot (mail→email; messaging split by bundle; editor→
   documents; ide→coding; terminal→terminal; browser + a known AI-prompt
-  origin→ai_prompt; anything else→uncategorized, the global default
+  origin→ai_prompt (an authoritative origin only — a window-title
+  fallback is evidence, never a site rule or category input); anything else→uncategorized, the global default
   applies — a generic browser field is never forced into a category).
   `hint_key()` maps them onto the M07 structure-hint vocabulary
   (messaging classes share "messaging"); the resolved writing category

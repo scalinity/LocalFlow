@@ -182,10 +182,15 @@ skill collisions before an edit is committed.
 
 M06 feeds `ScopeContext` live: the trio is captured at hotkey-down
 scoped by the frontmost app identity, and the bounded context finalize
-at release (≤75 ms, `contracts/context.md`) upgrades the trio when the
-resolved origin/workspace widen the scope — rebuilding from the job's
-frozen entry set (AC03 holds: no store re-read, so mid-flight edits
-change only future jobs). Site/workspace/app-scoped entries now match
+at release (`contracts/context.md`) upgrades the trio when the resolved
+origin/workspace widen the scope — projecting the job's frozen entry
+set onto the widened scope (AC03 holds: no store re-read, so mid-flight
+edits change only future jobs). The projection is precomputed while
+recording and cached by the captured entry tuple itself; the release
+path uses it within the 75 ms post-release budget, else the job keeps
+its captured narrower scope as an explicit `widening_deferred`
+(`scope_disposition` in the job and its context evidence). Only an
+authoritative origin (not a window-title fallback) is a site scope. Site/workspace/app-scoped entries now match
 live; the hint set is selected under the upgraded scope and frozen
 pre-decode. Since M10 the resolved writing-profile name feeds the
 `profile` dimension. The `context_snapshot_id` in

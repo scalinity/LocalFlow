@@ -28,13 +28,15 @@ messaging timeout (0.2 s). The settled matrix:
 
 | Check | Rule | Failure |
 |---|---|---|
-| identity | pid (else bundle) equality — exactly `ContextSnapshot.same_destination` for full snapshots; the same rule inline for a bare PTT-time `TargetSnapshot` | `target_changed` |
-| window | recorded title vs live focused-window title, when both exist (the system host resolves `AXFocusedWindow` from the application element; unreadable ⇒ `unavailable`) | `target_changed` |
+| identity | the shared M06 rule `snapshot.identity_matches` (`same_destination` on a full snapshot and on a bare PTT-time `TargetSnapshot`; `TargetLease.identity_matches` re-checks with it): a usable pid on both sides, else a usable bundle on both sides; a pid match with two different known bundles is refused; absent identity never matches | `target_changed` |
+| window | the M06 window element (in memory on the pre-decode snapshot) vs the live field's `AXWindow`, compared by host identity, when both exist — another window of the same app is a change even under an equal title; the recorded title vs the live focused-window title ALSO applies whenever both exist (tabs share one window element) (the system host resolves `AXFocusedWindow` from the application element; unreadable ⇒ `unavailable`) | `target_changed` |
 | field | focused role vs the snapshot's recorded role; an unreadable live role degrades to `unavailable` — identity alone governs | `target_changed` |
-| selection | **only a recorded NON-EMPTY selection** (replacement case) must still match exactly (range + text) | `target_changed` |
+| selection | **only a recorded NON-EMPTY selection** (replacement case) must still match exactly (range + text), compared in the host's own AX units: the snapshot's `selected_range_utf16` against the live `AXSelectedTextRange` (a native `AXValue` CFRange, decoded — never parsed), falling back to `selected_range` for hosts without native units; the live text is read with a boxed `AXStringForRange` | `target_changed` |
 
 A moved caret is never a target change: the caret is the insertion
-point, and queued results land in dictation order. A snapshot with no
+point, and queued results land in dictation order. Another field of the
+same role in the same window is not a target change either (a
+different role, window, app or identity is). A snapshot with no
 field data (denied/unclassifiable/AX off/context disabled) validates on
 identity alone — plain dictation proceeds; the live caret is still
 read as the owned-range anchor. `target_changed` routes the artifact
