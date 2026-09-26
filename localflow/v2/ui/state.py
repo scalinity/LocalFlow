@@ -572,7 +572,10 @@ class HubState:
             return
         self._publish_locked("styles", req, error=None, loading=False,
                              data={"rules": rules,
-                                   "effective": effective})
+                                   "effective": effective,
+                                   "invalid_rows": getattr(
+                                       self.styles_service,
+                                       "invalid_rows", 0)})
 
     def reload_snippets(self):
         self._spawn(("snippets", "list"), self._load_snippets)
@@ -590,7 +593,7 @@ class HubState:
             # masked duplicate triggers surface here, exactly as they
             # would behave at dictation time.
             snapshot = snippets_mod.SnippetSnapshot(stored)
-            conflicts = list(snapshot.conflicts)
+            conflicts = snapshot.conflicts_json()
         except Exception as e:
             self._publish_locked("snippets", req, error=type(e).__name__,
                                  loading=False)

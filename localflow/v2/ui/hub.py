@@ -35,10 +35,13 @@ from AppKit import (
     NSAlertFirstButtonReturn,
     NSAlertStyleWarning,
     NSApp,
+    NSApplication,
     NSBackingStoreBuffered,
     NSButton,
     NSFont,
     NSMakeRect,
+    NSMenu,
+    NSMenuItem,
     NSPopUpButton,
     NSSearchField,
     NSScrollView,
@@ -108,6 +111,34 @@ def _scroll(frame, view):
     return sc
 
 
+def _ensure_edit_menu():
+    """Text fields and text views take ⌘A/⌘C/⌘V/⌘X/⌘Z from the
+    application's Edit menu (standard selectors sent down the responder
+    chain). A menu-bar-only app has no main menu, so those keys did
+    nothing in any Hub field (M10-AUDIT-26); the Hub installs a minimal
+    Edit menu when the app has none. An accessory app shows no menu bar
+    — only the key equivalents take effect."""
+    app = NSApplication.sharedApplication()
+    if app.mainMenu() is not None:
+        return
+    main = NSMenu.alloc().init()
+    top = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+        "Edit", None, "")
+    edit = NSMenu.alloc().initWithTitle_("Edit")
+    for title, action, key in (("Undo", "undo:", "z"),
+                               ("Redo", "redo:", "Z"),
+                               ("Cut", "cut:", "x"),
+                               ("Copy", "copy:", "c"),
+                               ("Paste", "paste:", "v"),
+                               ("Select All", "selectAll:", "a")):
+        edit.addItem_(NSMenuItem.alloc()
+                      .initWithTitle_action_keyEquivalent_(
+                          title, action, key))
+    top.setSubmenu_(edit)
+    main.addItem_(top)
+    app.setMainMenu_(main)
+
+
 def _refusal_text(e):
     """A service refusal's reason, or None. Raised inside a writer op it
     reaches the caller as the store's ``RuntimeError('ValueError: …')``;
@@ -173,6 +204,12 @@ class HubController(NSObject):
         self._editor_bound = None  # example the Training editors belong to
         self._teach_key = None  # History row the teach buffer belongs to
         self._pending_annotation = None  # unknown-outcome save to reuse
+        # M10 editors (bound id, revision, baseline form) and adds whose
+        # outcome was unknown (their pre-allocated id is reused by a
+        # retry of the same form — never a duplicate rule).
+        self._style_editor = None
+        self._snippet_editor = None
+        self._pending_adds = {}
         self._action_seq = 0
         self._action_tokens = {}
         self._action_notes = {}
@@ -329,6 +366,7 @@ class HubController(NSObject):
         self.content.setAutoresizingMask_(2 | 16)  # flexible, left-anchored
         content.addSubview_(self.content)
         self.window.setInitialFirstResponder_(self.sidebar)
+        _ensure_edit_menu()
         self._select_view_index(0, initial=True)
 
     def _select_view_index(self, index, initial=False):
@@ -343,9 +381,19 @@ class HubController(NSObject):
         if view not in self._built_views:
             self._built_views[view] = getattr(
                 self, f"_build_{view}_view")()
+        pane = self._built_views[view]
+        # Every pane fills the content area it is shown in and follows it
+        # on resize (M10-AUDIT-26): a pane created with init() has a zero
+        # frame, and a view hit-tests only inside its own frame — its
+        # controls drew, but no click reached them. The children keep
+        # exactly the layout they were built with: sizing the pane must
+        # not autoresize them (their masks assumed a different origin).
+        pane.setAutoresizesSubviews_(False)
+        pane.setFrame_(self.content.bounds())
+        pane.setAutoresizingMask_(18)  # width + height flexible
         for sub in list(self.content.subviews()):
             sub.removeFromSuperview()
-        self.content.addSubview_(self._built_views[view])
+        self.content.addSubview_(pane)
         self.state.select_view(view)
 
     # ---- state publish back-edge -------------------------------------------
@@ -558,6 +606,14 @@ class HubController(NSObject):
             if row >= 0:
                 self._select_view_index(int(row))
 
+    # ---- M10 editors: bound to the rendered row (M10-AUDIT-20) ------------
+    #
+    # An editor buffer belongs to the stable id and revision it was
+    # filled from. Update writes ONLY the fields changed in the form
+    # (the store merges them onto the writer-current row and validates
+    # the result), so a stale form never overwrites a field it did not
+    # touch; a row that disappears clears the editor.
+
     @objc.python_method
     def _fill_style_editor(self, r):
         self.style_name.setStringValue_(r.get("name") or "")
@@ -567,6 +623,31 @@ class HubController(NSObject):
         self.style_mode.selectItemWithTitle_(r.get("mode") or "clean")
         self.style_numbers.selectItemWithTitle_(
             r.get("number_policy") or "inherit")
+        self._style_editor = {"id": r.get("rule_id"),
+                              "revision": r.get("revision"),
+                              "baseline": self._style_form()}
+
+    @objc.python_method
+    def _style_form(self):
+        return {"name": self.style_name.stringValue() or "",
+                "scope_kind": self.style_scope.titleOfSelectedItem()
+                or "global",
+                "scope_value": self.style_scope_value.stringValue() or None,
+                "mode": self.style_mode.titleOfSelectedItem() or "clean",
+                "number_policy": self.style_numbers.titleOfSelectedItem()
+                or "inherit"}
+
+    @objc.python_method
+    def _clear_style_editor(self, note=None):
+        self._style_editor = None
+        self.state.views["styles"]["selected_id"] = None
+        self.style_name.setStringValue_("")
+        self.style_scope.selectItemWithTitle_("global")
+        self.style_scope_value.setStringValue_("")
+        self.style_mode.selectItemWithTitle_("clean")
+        self.style_numbers.selectItemWithTitle_("inherit")
+        if note:
+            self.styles_status.setStringValue_(note)
 
     @objc.python_method
     def _fill_snippet_editor(self, s):
@@ -575,6 +656,83 @@ class HubController(NSObject):
         self.snip_kind.selectItemWithTitle_(s.get("kind") or "plain")
         self.snip_rewrite.setState_(1 if s.get("allow_rewrite") else 0)
         self.snip_content.setString_(s.get("content") or "")
+        self._snippet_editor = {"id": s.get("snippet_id"),
+                                "revision": s.get("revision"),
+                                "baseline": self._snippet_form()}
+
+    @objc.python_method
+    def _snippet_form(self):
+        return {"trigger": self.snip_trigger.stringValue() or "",
+                "name": self.snip_name.stringValue() or "",
+                "kind": self.snip_kind.titleOfSelectedItem() or "plain",
+                "content": self.snip_content.string() or "",
+                "allow_rewrite": bool(self.snip_rewrite.state())}
+
+    @objc.python_method
+    def _clear_snippet_editor(self, note=None):
+        self._snippet_editor = None
+        self.state.views["snippets"]["selected_id"] = None
+        self.snip_trigger.setStringValue_("")
+        self.snip_name.setStringValue_("")
+        self.snip_kind.selectItemWithTitle_("plain")
+        self.snip_rewrite.setState_(0)
+        self.snip_content.setString_("")
+        if note:
+            self.snippets_status.setStringValue_(note)
+
+    @staticmethod
+    def _row_form(view, r):
+        """The editor-shaped values of a rendered row."""
+        if view == "styles":
+            scope = r.get("scope") or ["global", None]
+            return {"name": r.get("name") or "", "scope_kind": scope[0],
+                    "scope_value": scope[1] or None,
+                    "mode": r.get("mode") or "clean",
+                    "number_policy": r.get("number_policy") or "inherit"}
+        return {"trigger": r.get("trigger") or "",
+                "name": r.get("name") or "",
+                "kind": r.get("kind") or "plain",
+                "content": r.get("content") or "",
+                "allow_rewrite": bool(r.get("allow_rewrite"))}
+
+    @objc.python_method
+    def _m10_target(self, view):
+        """What an M10 action acts on: the SELECTED item as rendered —
+        its editor binding when the editor was filled from it, else the
+        rendered row itself (never an index, never a stale buffer)."""
+        sel = self.state.views[view].get("selected_id")
+        if not sel:
+            return None
+        editor = self._style_editor if view == "styles" \
+            else self._snippet_editor
+        if editor is not None and editor.get("id") == sel:
+            return editor
+        id_key = "rule_id" if view == "styles" else "snippet_id"
+        row = next((r for r in self._rendered_rows.get(f"{view}_table", ())
+                    if r.get(id_key) == sel), None)
+        if row is None:
+            return None
+        return {"id": sel, "revision": row.get("revision"),
+                "baseline": self._row_form(view, row)}
+
+    @objc.python_method
+    def _sync_editor(self, view, rows, id_key, fill, form):
+        """After a refresh: a vanished selection clears its editor; a
+        row that changed elsewhere refills an UNEDITED editor and marks
+        an edited one (its Update still writes only its own changes)."""
+        editor = getattr(self, f"_{view}_editor", None)
+        if editor is None:
+            return None
+        row = next((r for r in rows if r.get(id_key) == editor["id"]),
+                   None)
+        if row is None:
+            return "deleted"
+        if row.get("revision") != editor["revision"]:
+            if form() == editor["baseline"]:
+                fill(row)
+                return None
+            return "changed_elsewhere"
+        return None
 
     # ---- History view -----------------------------------------------------------
 
@@ -1111,79 +1269,190 @@ class HubController(NSObject):
         return v
 
     def stylesAdd_(self, sender):
-        self._style_write("add")
+        self._m10_add("styles")
 
     def stylesUpdate_(self, sender):
-        self._style_write("update")
+        self._m10_update("styles")
 
     @objc.python_method
-    def _style_write(self, action):
-        svc = self.spec.get("styles_service")
+    def _m10_outcome(self, view, verb, e):
+        """One honest status line per failure class: an admitted write
+        whose caller stopped waiting is UNKNOWN (it may still commit —
+        repeating the same action is safe), a vanished row is gone, and
+        everything else was refused before or by the writer (nothing
+        committed)."""
+        from .. import profiles_store as ps
+        status = self.styles_status if view == "styles" \
+            else self.snippets_status
+        if isinstance(e, ps.OutcomeUnknownError):
+            status.setStringValue_(
+                f"outcome unknown: the {verb} was queued and may still"
+                f" complete — press {verb.capitalize()} again with the"
+                " same fields to confirm (no duplicate is created)")
+        elif isinstance(e, ps.NotFoundError):
+            status.setStringValue_(
+                f"not {verb}d: the selected item no longer exists")
+        elif isinstance(e, ps.StaleRevisionError):
+            status.setStringValue_(
+                f"not {verb}d: it changed elsewhere — reloaded")
+        elif isinstance(e, (ValueError, KeyError)):
+            status.setStringValue_(f"not saved: {e}")
+        else:
+            status.setStringValue_(f"not saved: {type(e).__name__}")
+
+    @objc.python_method
+    def _m10_add(self, view):
+        """Add with a pre-allocated id: a retry of the SAME form after an
+        unknown outcome reuses the id, so the store either confirms the
+        earlier commit or performs it once (M10-AUDIT-21)."""
+        from .. import ids
+        svc = self.spec.get(f"{view}_service")
+        status = self.styles_status if view == "styles" \
+            else self.snippets_status
         if svc is None:
-            self.styles_status.setStringValue_("styles unavailable")
+            status.setStringValue_(f"{view} unavailable")
             return
-        name = self.style_name.stringValue() or ""
-        scope = self.style_scope.titleOfSelectedItem() or "global"
-        scope_value = self.style_scope_value.stringValue() or None
-        mode = self.style_mode.titleOfSelectedItem() or "clean"
-        numbers = self.style_numbers.titleOfSelectedItem() or "inherit"
+        form = self._style_form() if view == "styles" \
+            else self._snippet_form()
+        pending = self._pending_adds.get(view)
+        new_id = pending["id"] if pending and pending["form"] == form \
+            else ids.new_id("style" if view == "styles" else "snip")
+        self._pending_adds[view] = {"id": new_id, "form": form}
         try:
-            if action == "add":
-                svc.add_rule(name=name, scope_kind=scope,
-                             scope_value=scope_value, mode=mode,
-                             number_policy=numbers)
+            if view == "styles":
+                svc.add_rule(name=form["name"],
+                             scope_kind=form["scope_kind"],
+                             scope_value=form["scope_value"],
+                             mode=form["mode"],
+                             number_policy=form["number_policy"],
+                             rule_id=new_id)
             else:
-                rule_id = self.state.views["styles"].get("selected_id")
-                if not rule_id:
-                    self.styles_status.setStringValue_(
-                        "select a rule to update")
-                    return
-                svc.update_rule(rule_id, name=name, scope_kind=scope,
-                                scope_value=scope_value, mode=mode,
-                                number_policy=numbers)
-        except (ValueError, KeyError) as e:
-            self.styles_status.setStringValue_(f"not saved: {e}")
-            return
+                svc.add_snippet(trigger=form["trigger"],
+                                name=form["name"] or form["trigger"],
+                                content=form["content"], kind=form["kind"],
+                                allow_rewrite=form["allow_rewrite"],
+                                snippet_id=new_id)
         except Exception as e:
-            self.styles_status.setStringValue_(
-                f"not saved: {type(e).__name__}")
+            from .. import profiles_store as ps
+            if not isinstance(e, ps.OutcomeUnknownError):
+                self._pending_adds.pop(view, None)
+            self._m10_outcome(view, "save", e)
             return
-        self.state.reload_styles()
+        self._pending_adds.pop(view, None)
+        status.setStringValue_(
+            "added (confirmed)" if pending and pending["id"] == new_id
+            else "added")
+        getattr(self.state, f"reload_{view}")()
+
+    @objc.python_method
+    def _m10_update(self, view):
+        """Write only the fields changed since the editor was filled from
+        its row; the store validates the merge against the row as it is
+        now (M10-AUDIT-20)."""
+        svc = self.spec.get(f"{view}_service")
+        status = self.styles_status if view == "styles" \
+            else self.snippets_status
+        editor = self._m10_target(view)
+        if svc is None:
+            status.setStringValue_(f"{view} unavailable")
+            return
+        if editor is None or not editor.get("id"):
+            status.setStringValue_("select an item to update")
+            return
+        form = self._style_form() if view == "styles" \
+            else self._snippet_form()
+        diff = {k: v for k, v in form.items()
+                if v != editor["baseline"].get(k)}
+        if view == "snippets" and "name" in diff and not diff["name"]:
+            diff["name"] = form["trigger"]
+        if not diff:
+            status.setStringValue_("no changes to save")
+            return
+        try:
+            if view == "styles":
+                updated = svc.update_rule(editor["id"], **diff)
+            else:
+                updated = svc.update_snippet(editor["id"], **diff)
+        except Exception as e:
+            from .. import profiles_store as ps
+            if isinstance(e, ps.NotFoundError):
+                (self._clear_style_editor if view == "styles"
+                 else self._clear_snippet_editor)()
+            self._m10_outcome(view, "save", e)
+            getattr(self.state, f"reload_{view}")()
+            return
+        binding = {"id": editor["id"], "revision": updated.revision,
+                   "baseline": form}
+        if view == "styles":
+            self._style_editor = binding
+        else:
+            self._snippet_editor = binding
+        status.setStringValue_("saved")
+        getattr(self.state, f"reload_{view}")()
+
+    @objc.python_method
+    def _m10_delete(self, view):
+        svc = self.spec.get(f"{view}_service")
+        editor = self._m10_target(view)
+        if svc is None or editor is None or not editor.get("id"):
+            return
+        try:
+            if view == "styles":
+                svc.delete_rule(editor["id"])
+            else:
+                svc.delete_snippet(editor["id"])
+        except Exception as e:
+            from .. import profiles_store as ps
+            if isinstance(e, ps.NotFoundError):
+                (self._clear_style_editor if view == "styles"
+                 else self._clear_snippet_editor)()
+            self._m10_outcome(view, "delete", e)
+            getattr(self.state, f"reload_{view}")()
+            return
+        (self._clear_style_editor if view == "styles"
+         else self._clear_snippet_editor)("deleted")
+        getattr(self.state, f"reload_{view}")()
+
+    @objc.python_method
+    def _m10_toggle(self, view):
+        """Flip the RENDERED row's state, refused if the row changed
+        since it was rendered (a stale toggle never re-enables what was
+        disabled elsewhere)."""
+        svc = self.spec.get(f"{view}_service")
+        editor = self._m10_target(view)
+        if svc is None or editor is None or not editor.get("id"):
+            return
+        key, id_key = (("rules", "rule_id") if view == "styles"
+                       else ("snippets", "snippet_id"))
+        table = f"{view}_table"
+        row = next((r for r in self._rendered_rows.get(table, ())
+                    if r.get(id_key) == editor["id"]), None)
+        if row is None:
+            return
+        try:
+            svc.set_enabled(editor["id"], not row.get("enabled", True),
+                            expected_revision=row.get("revision"))
+        except Exception as e:
+            self._m10_outcome(view, "save", e)
+            getattr(self.state, f"reload_{view}")()
+            return
+        getattr(self.state, f"reload_{view}")()
 
     def stylesDelete_(self, sender):
-        svc = self.spec.get("styles_service")
-        rule_id = self.state.views["styles"].get("selected_id")
-        if svc is None or not rule_id:
-            return
-        try:
-            svc.delete_rule(rule_id)
-        except Exception as e:
-            self.styles_status.setStringValue_(
-                f"not deleted: {type(e).__name__}")
-            return
-        self.state.reload_styles()
+        self._m10_delete("styles")
 
     def stylesToggle_(self, sender):
-        svc = self.spec.get("styles_service")
-        rule_id = self.state.views["styles"].get("selected_id")
-        data = (self.state.views["styles"].get("data") or {})
-        if svc is None or not rule_id:
-            return
-        enabled = next((r.get("enabled") for r in data.get("rules", ())
-                        if r.get("rule_id") == rule_id), True)
-        try:
-            svc.set_enabled(rule_id, not enabled)
-        except Exception as e:
-            self.styles_status.setStringValue_(
-                f"not toggled: {type(e).__name__}")
-            return
-        self.state.reload_styles()
+        self._m10_toggle("styles")
 
     def stylesPreview_(self, sender):
         text = self.style_phrase.stringValue() or ""
         if self.coordinator is None:
             return
-        out = self.coordinator.hubPreviewPhrase(text)
+        # The sandbox previews the style the editor shows — its mode and
+        # number policy — in the declared global scope (M10-AUDIT-19).
+        out = self.coordinator.hubPreviewPhrase(
+            text, mode=self.style_mode.titleOfSelectedItem() or "clean",
+            number_policy=self.style_numbers.titleOfSelectedItem())
         self.state.set_developer_preview("styles", out)
         self._render_styles_preview(out)
 
@@ -1195,7 +1464,10 @@ class HubController(NSObject):
             self.styles_detail.setString_(
                 f"preview failed: {out['error']}")
             return
-        lines = [f"→ {out.get('output')}", ""]
+        lines = [f"→ {out.get('output')}",
+                 f"(preview: {out.get('mode', 'clean')} in"
+                 f" {out.get('scope', 'global only')} —"
+                 f" {out.get('scope_detail', '')})", ""]
         for e in out.get("edits") or []:
             lines.append(f"edit: {e['before']!r} → {e['after']!r}"
                          f"  ({e['cls']})")
@@ -1213,8 +1485,21 @@ class HubController(NSObject):
             self._render_rows("styles_table", "rule_id",
                               self.state.views["styles"].get("selected_id"))
             return
-        self._render_rows("styles_table", "rule_id",
-                          self.state.views["styles"].get("selected_id"))
+        rows = self._render_rows(
+            "styles_table", "rule_id",
+            self.state.views["styles"].get("selected_id"))
+        sync = self._sync_editor("style", rows, "rule_id",
+                                 self._fill_style_editor, self._style_form)
+        if sync == "deleted":
+            self._clear_style_editor(
+                "The selected rule no longer exists; its editor was"
+                " cleared.")
+            return
+        if sync == "changed_elsewhere":
+            self.styles_status.setStringValue_(
+                "This rule changed since you opened it; Update writes"
+                " only the fields you changed.")
+            return
         eff = (data or {}).get("effective") or {}
         profile = eff.get("profile") or {}
         if profile:
@@ -1305,100 +1590,61 @@ class HubController(NSObject):
         return v
 
     def snippetsAdd_(self, sender):
-        self._snippet_write("add")
+        self._m10_add("snippets")
 
     def snippetsUpdate_(self, sender):
-        self._snippet_write("update")
-
-    @objc.python_method
-    def _snippet_write(self, action):
-        svc = self.spec.get("snippets_service")
-        if svc is None:
-            self.snippets_status.setStringValue_("snippets unavailable")
-            return
-        trigger = self.snip_trigger.stringValue() or ""
-        name = self.snip_name.stringValue() or ""
-        kind = self.snip_kind.titleOfSelectedItem() or "plain"
-        content = self.snip_content.string() or ""
-        allow = bool(self.snip_rewrite.state())
-        try:
-            if action == "add":
-                svc.add_snippet(trigger=trigger, name=name or trigger,
-                                content=content, kind=kind,
-                                allow_rewrite=allow)
-            else:
-                sid = self.state.views["snippets"].get("selected_id")
-                if not sid:
-                    self.snippets_status.setStringValue_(
-                        "select a snippet to update")
-                    return
-                svc.update_snippet(sid, trigger=trigger,
-                                   name=name or trigger, kind=kind,
-                                   content=content, allow_rewrite=allow)
-        except (ValueError, KeyError) as e:
-            self.snippets_status.setStringValue_(f"not saved: {e}")
-            return
-        except Exception as e:
-            self.snippets_status.setStringValue_(
-                f"not saved: {type(e).__name__}")
-            return
-        self.state.reload_snippets()
+        self._m10_update("snippets")
 
     def snippetsDelete_(self, sender):
-        svc = self.spec.get("snippets_service")
-        sid = self.state.views["snippets"].get("selected_id")
-        if svc is None or not sid:
-            return
-        try:
-            svc.delete_snippet(sid)
-        except Exception as e:
-            self.snippets_status.setStringValue_(
-                f"not deleted: {type(e).__name__}")
-            return
-        self.state.reload_snippets()
+        self._m10_delete("snippets")
 
     def snippetsToggle_(self, sender):
-        svc = self.spec.get("snippets_service")
-        sid = self.state.views["snippets"].get("selected_id")
-        data = (self.state.views["snippets"].get("data") or {})
-        if svc is None or not sid:
-            return
-        enabled = next((s.get("enabled")
-                        for s in data.get("snippets", ())
-                        if s.get("snippet_id") == sid), True)
-        try:
-            svc.set_enabled(sid, not enabled)
-        except Exception as e:
-            self.snippets_status.setStringValue_(
-                f"not toggled: {type(e).__name__}")
-            return
-        self.state.reload_snippets()
+        self._m10_toggle("snippets")
 
     def snippetsCollisions_(self, sender):
-        """Preview this trigger against dictionary aliases and
-        registered skills before saving (S17) — through the
-        coordinator, which owns the live registries."""
-        trigger = self.snip_trigger.stringValue() or ""
-        if not trigger or self.coordinator is None:
+        """Preview this form before saving (S17) — through the
+        coordinator, which runs the same engine call dictation makes in
+        the declared preview scope. The form is an edit of the selected
+        snippet (so it never collides with itself), or a new one."""
+        form = self._snippet_form()
+        if not form["trigger"] or self.coordinator is None:
             return
-        out = self.coordinator.hubSnippetCollisionPreview(trigger) \
+        editor = self._m10_target("snippets") or {}
+        out = self.coordinator.hubSnippetCollisionPreview(
+            form["trigger"], snippet_id=editor.get("id"),
+            content=form["content"], kind=form["kind"]) \
             if hasattr(self.coordinator, "hubSnippetCollisionPreview") \
             else []
         lines = []
         for c in out:
             lines.append(f"{c['kind']}: {c['detail']}")
         self.snippets_detail.setString_(
-            "\n".join(lines) or "no collisions for this trigger")
+            "\n".join(lines) or "no collisions for this trigger (preview"
+            " scope: global only — no destination, no workspace)")
 
     @objc.python_method
     def _refresh_snippets_view(self):
         view = self.state.views["snippets"]
         data = view.get("data")
-        self._render_rows("snippets_table", "snippet_id",
-                          self.state.views["snippets"].get("selected_id"))
+        rows = self._render_rows(
+            "snippets_table", "snippet_id",
+            self.state.views["snippets"].get("selected_id"))
         if view.get("error"):
             self.snippets_status.setStringValue_(
                 f"snippets unavailable ({view['error']})")
+            return
+        sync = self._sync_editor("snippet", rows, "snippet_id",
+                                 self._fill_snippet_editor,
+                                 self._snippet_form)
+        if sync == "deleted":
+            self._clear_snippet_editor(
+                "The selected snippet no longer exists; its editor was"
+                " cleared.")
+            return
+        if sync == "changed_elsewhere":
+            self.snippets_status.setStringValue_(
+                "This snippet changed since you opened it; Update writes"
+                " only the fields you changed.")
             return
         rows = (data or {}).get("snippets") or []
         conflicts = (data or {}).get("conflicts") or []
