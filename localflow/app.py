@@ -2272,6 +2272,15 @@ class AppDelegate(NSObject):
         the store and event writer close admission and drain. Nothing here
         waits for a main-thread callback."""
         self._closing = True
+        # M09: no deferred Hub show or quick-open after quit began, and
+        # the Hub's query admission closes before the store drains.
+        self._hub_show_pending = False
+        self._hub_pending_action = None
+        if self._hub is not None:
+            try:
+                self._hub.state.shutdown()
+            except Exception:
+                pass
         shutdown = getattr(self._context, "shutdown", None)
         if shutdown is not None:
             shutdown()          # M06: admission closed, live reads revoked
@@ -2384,6 +2393,13 @@ class AppDelegate(NSObject):
         except Exception as e:
             self.v2log.emit("store.retention_failed", level="ERROR",
                             reason_code=type(e).__name__)
+        # M09: payload the pass purged must not survive in an open Hub —
+        # results read before it are re-run and hidden caches dropped.
+        if self._hub is not None:
+            try:
+                self._hub.state.revalidate()
+            except Exception:
+                pass
 
     @objc.python_method
     def _sweep_journal_root(self):
@@ -3961,15 +3977,22 @@ class AppDelegate(NSObject):
                         # store under a history lease (Spec S07). The
                         # cleanup stage's applied output is the CLEAN
                         # text even when a transform follows.
+                        # The attempt tag lets History resolve one
+                        # coherent attempt when a retry wrote a second
+                        # group for the same job (M09-AUDIT-09).
+                        attempt_meta = {"attempt": int(
+                            job.get("attempt") or 1)}
                         self.store.write_text_artifact(
                             job_id=job_id, stage="asr", role="raw_transcript",
-                            text=raw, retention_class="history")
+                            text=raw, retention_class="history",
+                            meta=attempt_meta)
                         if clean_text is not None:
                             self.store.write_text_artifact(
                                 job_id=job_id, stage="cleanup",
                                 role="applied_output", text=clean_text,
                                 retention_class="history",
-                                meta={"cleanup_path": cleanup_path})
+                                meta={"cleanup_path": cleanup_path,
+                                      **attempt_meta})
                     # M11: a dictation transform applied pre-insertion
                     # keeps its own History stage artifact (the Clean
                     # output above stays the cleanup stage's output).
@@ -3986,7 +4009,8 @@ class AppDelegate(NSObject):
                             meta={"transform_id":
                                   tf_result.job.transform_id,
                                   "transform_revision":
-                                  tf_result.job.transform_revision})
+                                  tf_result.job.transform_revision,
+                                  "attempt": int(job.get("attempt") or 1)})
                     self._job_state(job_id, "ready_to_insert")
                     self.store.sync()
                 except Exception as e:
@@ -4892,13 +4916,36 @@ class AppDelegate(NSObject):
     def _hub_blocks_show(self) -> bool:
         # getattr keeps the shared test harnesses' insertion stubs valid.
         # Recording is included: activating the Hub mid-capture would
-        # flip the destination under the release-time insert.
-        return self.state == STATE_RECORDING or self._injecting or (
-            self._insertion is not None
-            and bool(getattr(self._insertion, "busy", False)))
+        # flip the destination under the release-time insert. Insertion
+        # work counts from admission (queued as well as executing,
+        # M09-AUDIT-11/28); a pending clipboard payload after a finished
+        # transaction does not block (it lapses by M08's policy).
+        ins = self._insertion
+        if ins is None:
+            return self.state == STATE_RECORDING or self._injecting
+        listen = getattr(ins, "add_idle_listener", None)
+        if listen is not None:
+            # Registered BEFORE the state is read: the operation that
+            # ends the unsafe interval always wakes a deferred show,
+            # whatever its outcome.
+            listen(self._insertion_idle)
+        pending = getattr(ins, "pending", None)
+        working = pending if isinstance(pending, bool) \
+            else bool(getattr(ins, "busy", False))
+        return self.state == STATE_RECORDING or self._injecting or working
+
+    @objc.python_method
+    def _insertion_idle(self):
+        """Insertion service idle notification (its queue thread)."""
+        if self._hub_show_pending:
+            AppHelper.callAfter(self._flush_pending_hub_show)
 
     @objc.python_method
     def _flush_pending_hub_show(self):
+        if getattr(self, "_closing", False):
+            self._hub_show_pending = False
+            self._hub_pending_action = None
+            return
         if self._hub_show_pending and not self._hub_blocks_show():
             self._hub_show_pending = False
             action = self._hub_pending_action
@@ -4960,7 +5007,9 @@ class AppDelegate(NSObject):
             self.hubCopyText(text)
             return {"outcome": "copy_only"}
         # The AX path fires no ⌘V guard timer, so the deferred-Hub-show
-        # flush rides the transaction's completion instead.
+        # flush rides the transaction's completion instead — and, for an
+        # operation that runs no transaction, the service's idle
+        # notification (``_hub_blocks_show`` registers it).
         def _repaste_done(r, _job_id=job_id):
             # M13: a re-paste is its own activity row — never a second
             # dictation word count (M13-AC02). Guarded like every

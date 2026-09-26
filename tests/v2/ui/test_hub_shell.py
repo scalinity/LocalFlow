@@ -21,6 +21,7 @@ import threading
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] /
                        "lifecycle"))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] /
@@ -42,16 +43,31 @@ except Exception:  # pragma: no cover — non-macOS guard
     NSApplication = None
 
 
-class ImmediateAfter:
-    """Run AppHelper.callAfter callbacks inline (headless)."""
+from m09_world import MainQueue  # noqa: E402
+
+# Each test runs inside its own MainQueue (see __main__): every
+# AppHelper.callAfter — Hub refreshes, coordinator completions — is
+# queued and delivered only when this script's main thread drains it,
+# never inline on a query/worker thread (an inline shim here once let a
+# Hub query thread mutate AppKit off-main — M09-AUDIT-25).
+_MQ = None
+
+
+def drain(hub):
+    """Wait for every admitted Hub query and long action, then deliver
+    the queued callbacks on the main thread (repeat until idle)."""
+    return _MQ.drain(hub.state)
+
+
+class MainFlush:
+    """Deliver callbacks queued during the block on the main thread when
+    it ends (the coordinator paths below post their completions)."""
 
     def __enter__(self):
-        self._real = app_mod.AppHelper.callAfter
-        app_mod.AppHelper.callAfter = lambda fn, *a: fn(*a)
         return self
 
     def __exit__(self, *exc):
-        app_mod.AppHelper.callAfter = self._real
+        _MQ.flush()
 
 
 class FakeSound:
@@ -88,7 +104,7 @@ def make_hub(d, tmp):
         # coordinator built in configure() (the same lesson).
         "insights_service": d._insights,
     })
-    hub.state.wait_for_queries()
+    drain(hub)
     return hub
 
 
@@ -172,12 +188,12 @@ def test_close_reopen_preserves_state_and_service():
         hub = make_hub(h.d, h.tmp)
         hub.state.select_view("history")
         hub.state.set_history_search("needle")
-        assert hub.state.wait_for_queries()
+        assert drain(hub)
         rows = [r for g in hub.state.views["history"]["data"]["groups"]
                 for r in g["rows"]]
         assert len(rows) == 1
         hub.state.select_history_row(rows[0]["kind"], rows[0]["id"])
-        assert hub.state.wait_for_queries()
+        assert drain(hub)
         assert hub.state.visible is False
         hub.showWindow_(None)
         assert hub.state.visible is True
@@ -209,7 +225,7 @@ def test_close_reopen_preserves_state_and_service():
 def test_duplicate_launch_single_instance():
     h = Harness(durations=[1.0])
     try:
-        with ImmediateAfter():
+        with MainFlush():
             h.d.openHub_(None)
             first = h.d._hub
             assert first is not None
@@ -230,7 +246,7 @@ def test_open_deferred_during_insertion():
     insertion — the open defers and flushes when the pipeline settles."""
     h = Harness(durations=[1.0])
     try:
-        with ImmediateAfter():
+        with MainFlush():
             h.d._injecting = True
             h.d.openHub_(None)
             assert h.d._hub is None, "Hub shown mid-insertion"
@@ -313,7 +329,7 @@ def test_hub_retry_job_paths():
         # Complete the retried job through the coordinator; the job is
         # now terminal, so a later retry reports not-retryable (its
         # recovery wav was also consumed by the insert).
-        with ImmediateAfter():
+        with MainFlush():
             fn, args = h.run_coordinator()
             fn(*args)
         h.d.store.sync()
@@ -339,9 +355,10 @@ def test_history_retry_button_fires():
         h.press()
         h.d.willSleep_(None)
         job_id = h.d._last_failed["job_id"]
-        hub.state.select_view("history")
+        from localflow.v2.ui.state import VIEWS
+        hub._select_view_index(VIEWS.index("history"))  # the real pane
         hub.state.select_history_row("job", job_id)
-        hub.state.wait_for_queries()
+        drain(hub)
         detail = hub.state.views["history"]["detail"]
         assert detail["kind"] == "job" and detail["job_id"] == job_id
         called = []
@@ -433,15 +450,15 @@ def test_verbatim_listen_gate_is_per_example():
         from localflow.v2.ui.state import VIEWS
         hub._select_view_index(VIEWS.index("models"))  # builds the pane
         hub.state.select_models_subview("training")
-        hub.state.wait_for_queries()
+        drain(hub)
         # Replay example A; then select B and try to save a verbatim for
         # B without ever playing B's audio.
         hub.state.select_training_example(ids[0])
-        hub.state.wait_for_queries()
+        drain(hub)
         hub.trainingReplay_(None)
         assert hub.state.views["models"]["listened_for"] == ids[0]
         hub.state.select_training_example(ids[1])
-        hub.state.wait_for_queries()
+        drain(hub)
         assert hub.state.views["models"]["listened_for"] is None
         hub.verbatim_field.setStringValue_("fabricated verbatim")
         hub.trainingVerbatim_(None)
@@ -466,13 +483,13 @@ def test_verbatim_listen_gate_is_per_example():
 def test_recording_blocks_hub_show():
     h = Harness(durations=[1.0])
     try:
-        with ImmediateAfter():
+        with MainFlush():
             h.press()
             h.d.openHub_(None)
             assert h.d._hub is None, "Hub shown mid-recording"
             assert h.d._hub_show_pending is True
             h.release()
-            with ImmediateAfter():
+            with MainFlush():
                 fn, args = h.run_coordinator()
                 fn(*args)  # settle → flush shows the pending Hub
             assert h.d._hub is not None
@@ -526,7 +543,7 @@ def test_search_cancellation_by_generation():
         gen_old = hub.state._generation
         hub.state.set_history_search("new")  # supersedes
         assert hub.state._generation > gen_old
-        assert hub.state.wait_for_queries()
+        assert drain(hub)
         assert hub.state.views["history"]["search"] == "new"
     finally:
         h.close()
@@ -542,7 +559,7 @@ def test_fn_workflow_with_hub_constructed():
         hub.showWindow_(None)
         h.press()
         h.release()
-        with ImmediateAfter():
+        with MainFlush():
             fn, args = h.run_coordinator()
             fn(*args)
         assert h.pastes and h.pastes[0].startswith("RAW FOR"), h.pastes
@@ -563,26 +580,26 @@ def test_styles_and_snippets_views_real_services():
         # Styles: build + CRUD through the controller actions.
         hub._select_view_index(2)  # builds the Styles view
         hub.state.select_view("styles")
-        hub.state.wait_for_queries()
+        drain(hub)
         hub.style_name.setStringValue_("Terminal raw")
         hub.style_scope.selectItemWithTitle_("app")
         hub.style_scope_value.setStringValue_("com.apple.Terminal")
         hub.style_mode.selectItemWithTitle_("raw")
         hub.stylesAdd_(None)
         hub.state.reload_styles()
-        hub.state.wait_for_queries()
+        drain(hub)
         rules = hub.state.views["styles"]["data"]["rules"]
         assert len(rules) == 1 and rules[0]["mode"] == "raw", rules
         rid = rules[0]["rule_id"]
         hub.state.views["styles"]["selected_id"] = rid
         hub.stylesToggle_(None)
         hub.state.reload_styles()
-        hub.state.wait_for_queries()
+        drain(hub)
         rules = hub.state.views["styles"]["data"]["rules"]
         assert rules[0]["enabled"] is False, rules
         hub.stylesDelete_(None)
         hub.state.reload_styles()
-        hub.state.wait_for_queries()
+        drain(hub)
         assert hub.state.views["styles"]["data"]["rules"] == []
         # The effective-profile panel answers through the coordinator.
         eff = h.d.hubEffectiveProfile()
@@ -590,20 +607,20 @@ def test_styles_and_snippets_views_real_services():
         # Snippets: build + CRUD + a collision preview.
         hub._select_view_index(3)  # builds the Snippets view
         hub.state.select_view("snippets")
-        hub.state.wait_for_queries()
+        drain(hub)
         hub.snip_trigger.setStringValue_("sign off")
         hub.snip_name.setStringValue_("Sign-off")
         hub.snip_content.setString_("Best,\\n{{name}}")
         hub.snippetsAdd_(None)
         hub.state.reload_snippets()
-        hub.state.wait_for_queries()
+        drain(hub)
         rows = hub.state.views["snippets"]["data"]["snippets"]
         assert len(rows) == 1 and rows[0]["kind"] == "plain", rows
         sid = rows[0]["snippet_id"]
         hub.state.views["snippets"]["selected_id"] = sid
         hub.snippetsDelete_(None)
         hub.state.reload_snippets()
-        hub.state.wait_for_queries()
+        drain(hub)
         assert hub.state.views["snippets"]["data"]["snippets"] == []
         # The duplicate-trigger probe surfaces through the action.
         hub.snip_trigger.setStringValue_("anything")
@@ -617,19 +634,27 @@ def test_styles_and_snippets_views_real_services():
 
 
 if __name__ == "__main__":
-    test_window_bounds_and_min_size()
-    test_view_switching_and_keyboard_paths()
-    test_close_reopen_preserves_state_and_service()
-    test_duplicate_launch_single_instance()
-    test_open_deferred_during_insertion()
-    test_busy_flag_and_paste_gating_real_service()
-    test_hub_retry_job_paths()
-    test_history_retry_button_fires()
-    test_repaste_keeps_insertion_attribution()
-    test_verbatim_listen_gate_is_per_example()
-    test_recording_blocks_hub_show()
-    test_job_target_recorded_on_capture()
-    test_search_cancellation_by_generation()
-    test_fn_workflow_with_hub_constructed()
-    test_styles_and_snippets_views_real_services()
+    for test in (
+            test_window_bounds_and_min_size,
+            test_view_switching_and_keyboard_paths,
+            test_close_reopen_preserves_state_and_service,
+            test_duplicate_launch_single_instance,
+            test_open_deferred_during_insertion,
+            test_busy_flag_and_paste_gating_real_service,
+            test_hub_retry_job_paths,
+            test_history_retry_button_fires,
+            test_repaste_keeps_insertion_attribution,
+            test_verbatim_listen_gate_is_per_example,
+            test_recording_blocks_hub_show,
+            test_job_target_recorded_on_capture,
+            test_search_cancellation_by_generation,
+            test_fn_workflow_with_hub_constructed,
+            test_styles_and_snippets_views_real_services):
+        with MainQueue() as _MQ:
+            try:
+                test()
+            finally:
+                # Callbacks still queued reference this test's closed
+                # harness store: drop them, never run them later.
+                _MQ.discard()
     print("all hub shell tests passed")

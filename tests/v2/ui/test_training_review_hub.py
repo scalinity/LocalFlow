@@ -16,10 +16,12 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] /
                        "lifecycle"))
 
 from test_lifecycle import Harness  # noqa: E402
+from m09_world import MainQueue  # noqa: E402
 
 import localflow.app as app_mod  # noqa: E402
 from localflow.v2.history_queries import HistoryQueryService  # noqa: E402
@@ -67,25 +69,31 @@ def make_hub(d):
         "export_service": d._exporter,
         "transforms_store": d._tf_store,
     })
-    hub.state.wait_for_queries()
+    drain(hub.state)
     return hub
 
 
-def run_background(action):
-    """Run a Hub action whose work goes to a background thread and wait
-    for it; the completion callback runs inline (headless — no AppKit
-    run loop drains AppHelper.callAfter here)."""
-    import threading
-    from PyObjCTools import AppHelper
-    real = AppHelper.callAfter
-    AppHelper.callAfter = lambda fn, *a: fn(*a)
-    try:
-        action(None)
-        for t in threading.enumerate():
-            if t.name == "localflow-hub-work":
-                t.join(60)
-    finally:
-        AppHelper.callAfter = real
+# Each test runs inside its own MainQueue (see __main__): every
+# AppHelper.callAfter is queued and delivered only when this script's
+# main thread drains it. The former helper replaced callAfter with an
+# inline call while Hub query threads were still live, so a query
+# thread could run a Hub refresh and touch AppKit off the main thread —
+# the recorded `-[NSView _setHidden:]` abort was that shim, not
+# production (M09-AUDIT-25, ownership: this M14 test helper).
+_MQ = None
+
+
+def drain(state):
+    """Wait for every admitted Hub query and long action, then deliver
+    queued callbacks on the main thread (repeat until idle)."""
+    assert _MQ.drain(state, 60), "Hub work did not drain"
+
+
+def run_background(action, hub):
+    """Run a Hub action whose work goes to a background thread; its
+    completion is delivered on the main thread by the drain."""
+    action(None)
+    drain(hub.state)
 
 
 def _seed_example(d, raw, applied, *, observation=None):
@@ -139,24 +147,24 @@ def test_training_tabs_and_review_actions():
         hub._select_view_index(VIEWS.index("models"))  # builds the pane
         state = hub.state
         state.select_models_subview("training")
-        state.wait_for_queries()
+        drain(state)
         data = state.views["models"]["data"] or {}
         assert data.get("training_tab") == "evidence"
         assert "examples" in data
         # Tab switching loads each section's real service data.
         state.select_training_tab("review")
-        state.wait_for_queries()
+        drain(state)
         data = state.views["models"]["data"] or {}
         assert data["training_tab"] == "review"
         assert "queue" in data and "coverage" in data \
             and "preference_pairs" in data
         state.select_training_tab("splits")
-        state.wait_for_queries()
+        drain(state)
         data = state.views["models"]["data"] or {}
         assert data["training_tab"] == "splits"
         assert "contamination" in data
         state.select_training_tab("export")
-        state.wait_for_queries()
+        drain(state)
         data = state.views["models"]["data"] or {}
         assert data["training_tab"] == "export"
         assert data["views"]
@@ -171,9 +179,9 @@ def test_training_tabs_and_review_actions():
                       "Ship the clod code branch",
                       observation=("Ship the clod code branch",
                                    "Ship the Claude Code branch"))
-        run_background(hub.reviewMine_)
+        run_background(hub.reviewMine_, hub)
         hub.state.select_training_tab("review")
-        hub.state.wait_for_queries()
+        drain(hub.state)
         pending = h.d._learning.candidates(status="pending")
         assert any(c["alias"] == "clod" for c in pending), pending
         print("ok  Training Data tabs: evidence/review/splits/export"
@@ -189,12 +197,12 @@ def test_review_draw_sample_and_pair_actions():
         from localflow.v2.ui.state import VIEWS
         hub._select_view_index(VIEWS.index("models"))  # builds the pane
         hub.state.select_models_subview("training")
-        hub.state.wait_for_queries()
+        drain(hub.state)
         for i in range(6):
             _seed_example(h.d, f"queue utterance {i}",
                           f"Queue utterance {i}.")
         hub.reviewSample_(None)
-        hub.state.wait_for_queries()
+        drain(hub.state)
         cov = h.d._sampling.coverage()
         assert cov["decisions_total"] >= 6
         # A same-task pair through the M11 store + review layer.
@@ -253,11 +261,11 @@ def test_your_voice_subview_and_generate():
         state = hub.state
         state.select_view("insights")
         state.select_insights_subview("voice")
-        state.wait_for_queries()
+        drain(state)
         data = state.views["insights"]["data"] or {}
         assert data["subview"] == "voice"
         assert "profile" in data
-        run_background(hub.voiceGenerate_)
+        run_background(hub.voiceGenerate_, hub)
         assert h.d._profile.current() is not None
         # A failed generation is shown in the pane, never swallowed.
         from localflow.v2.ui.state import VIEWS
@@ -267,12 +275,12 @@ def test_your_voice_subview_and_generate():
         def failing_compute(**_kw):
             raise RuntimeError("profile evidence kept changing")
         h.d._profile.compute = failing_compute
-        run_background(hub.voiceGenerate_)
+        run_background(hub.voiceGenerate_, hub)
         h.d._profile.compute = real_compute
         assert "generation failed: RuntimeError" in \
             hub.voice_pane.text.string(), hub.voice_pane.text.string()
         state.reload_insights()
-        state.wait_for_queries()
+        drain(state)
         data = state.views["insights"]["data"] or {}
         assert data["profile"]["state"] == "current"
         # Unknown subviews refuse; usage still loads.
@@ -282,7 +290,7 @@ def test_your_voice_subview_and_generate():
         except ValueError:
             pass
         state.select_insights_subview("usage")
-        state.wait_for_queries()
+        drain(state)
         assert "summary" in (state.views["insights"]["data"] or {})
         print("ok  Your Voice: subview switch, generate through the"
               " pane, usage unaffected")
@@ -299,12 +307,11 @@ def test_history_teach_correction_action():
         state = hub.state
         from localflow.v2.ui.state import VIEWS
         hub._select_view_index(VIEWS.index("history"))  # builds pane
-        state.wait_for_queries()
-        # Select the row and teach through the History action.
-        state.views["history"]["selected_kind"] = "job"
-        state.views["history"]["selected_id"] = job
-        state._spawn(state._load_history_detail)
-        state.wait_for_queries()
+        drain(state)
+        # Select the row (the table's selection path) and teach through
+        # the History action once its detail is on screen.
+        state.select_history_row("job", job)
+        drain(state)
         hub.teach_field.setStringValue_("Open the MLX docs")
         hub.historyTeach_(None)
         cands = h.d._learning.candidates(status="pending")
@@ -365,7 +372,7 @@ def test_review_split_export_actions_through_the_pane():
         from localflow.v2.ui.state import VIEWS
         hub._select_view_index(VIEWS.index("models"))
         hub.state.select_models_subview("training")
-        hub.state.wait_for_queries()
+        drain(hub.state)
         assert h.d._sampling.percent == 10.0  # the configured knob
         ex_a, _ja = _seed_example(
             h.d, "ship the clod branch", "Ship the clod branch",
@@ -373,8 +380,13 @@ def test_review_split_export_actions_through_the_pane():
         ex_b, _jb = _seed_example(
             h.d, "open the mlx docs", "Open the mlx docs",
             observation=("Open the mlx docs", "Open the MLX docs"))
-        run_background(hub.reviewMine_)
-        hub.state.wait_for_queries()
+        # Mine Candidates lives on the Review tab: open it first (a late
+        # Mine completion no longer navigates there by itself —
+        # M09-AUDIT-21).
+        hub.state.select_training_tab("review")
+        drain(hub.state)
+        run_background(hub.reviewMine_, hub)
+        drain(hub.state)
         view = hub.state.views["models"]
         # Approve with a counterexample that the rule would flip:
         # refused, the reason on the Review tab.
@@ -386,13 +398,13 @@ def test_review_split_export_actions_through_the_pane():
         # Without the counterexample the approval lands.
         hub.review_counter.setStringValue_("")
         hub.reviewApprove_(None)
-        hub.state.wait_for_queries()
+        drain(hub.state)
         approved = h.d._learning.candidates(status="approved")
         assert any(c["example_id"] == ex_a for c in approved), approved
         # Reject the other candidate through the pane.
         view["selected_id"] = ex_b
         hub.reviewReject_(None)
-        hub.state.wait_for_queries()
+        drain(hub.state)
         assert any(c["example_id"] == ex_b for c in
                    h.d._learning.candidates(status="rejected"))
         # Label through the pane (keyword call into the service).
@@ -409,19 +421,19 @@ def test_review_split_export_actions_through_the_pane():
         # Splits: Assign through the pane (below the family floor it
         # records an honest unassigned version).
         hub.state.select_training_tab("splits")
-        hub.state.wait_for_queries()
+        drain(hub.state)
         hub.splitsAssign_(None)
         assert h.d._splits.current_version() == 1
         # Export: the refusal (collection consent off) stays on the
         # Export tab; the user's folder is untouched.
         hub.state.select_training_tab("export")
-        hub.state.wait_for_queries()
+        drain(hub.state)
         with tempfile.TemporaryDirectory() as out_dir:
             dest = pathlib.Path(out_dir) / "dataset"
             for cb in hub.export_checks.values():
                 cb.setState_(1)
             hub.export_dest.setStringValue_(str(dest))
-            run_background(hub.exportRun_)
+            run_background(hub.exportRun_, hub)
             text = hub.export_text.string()
             assert "action failed: ExportError" in text, text
             assert not dest.exists()
@@ -432,10 +444,17 @@ def test_review_split_export_actions_through_the_pane():
 
 
 if __name__ == "__main__":
-    test_review_split_export_actions_through_the_pane()
-    test_training_tabs_and_review_actions()
-    test_review_draw_sample_and_pair_actions()
-    test_your_voice_subview_and_generate()
-    test_history_teach_correction_action()
-    test_idle_profile_scheduler_yields()
+    for test in (test_review_split_export_actions_through_the_pane,
+                 test_training_tabs_and_review_actions,
+                 test_review_draw_sample_and_pair_actions,
+                 test_your_voice_subview_and_generate,
+                 test_history_teach_correction_action,
+                 test_idle_profile_scheduler_yields):
+        with MainQueue() as _MQ:
+            try:
+                test()
+            finally:
+                # Callbacks still queued reference this test's closed
+                # harness store: drop them, never run them later.
+                _MQ.discard()
     print("all M14 hub tests passed")

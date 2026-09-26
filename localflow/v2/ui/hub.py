@@ -108,6 +108,19 @@ def _scroll(frame, view):
     return sc
 
 
+def _refusal_text(e):
+    """A service refusal's reason, or None. Raised inside a writer op it
+    reaches the caller as the store's ``RuntimeError('ValueError: …')``;
+    refusal reasons are content-free ids/states by contract, so they are
+    shown — any other failure shows its type only."""
+    msg = str(e)
+    if isinstance(e, ValueError):
+        return msg
+    if isinstance(e, RuntimeError) and msg.startswith("ValueError: "):
+        return msg[len("ValueError: "):]
+    return None
+
+
 def _stage_diff(a, b) -> str:
     """A compact unified diff between two lineage stages."""
     if a is None or b is None:
@@ -147,13 +160,70 @@ class HubController(NSObject):
             export_service=spec.get("export_service"),
             transforms_store=spec.get("transforms_store"))
         self.state.on_update = self._state_updated
+        self.state.on_revoked = self._state_revoked
         self._built_views = {}
         self._history_flat = []  # group markers + rows, in table order
+        # What each pane last RENDERED (main thread only): actions bind
+        # to these snapshots — a table row index names the row the user
+        # sees, and a detail action acts only on the rendered detail of
+        # the selected item (M09-AUDIT-01).
+        self._rendered = {}
+        self._rendered_rows = {}
+        self._editor_bound = None  # example the Training editors belong to
+        self._pending_annotation = None  # unknown-outcome save to reuse
+        self._action_seq = 0
+        self._action_tokens = {}
+        self._action_notes = {}
         self._suppress_select = False
         self._building = True
+        # Delete-everywhere revokes the Hub's cached payload and replay
+        # (store deletion listener: writer thread, flags only).
+        store = spec.get("store")
+        if store is not None and hasattr(store, "add_job_deletion_listener"):
+            store.add_job_deletion_listener(self._store_job_deleted)
         self._build_window()
         self._building = False
         return self
+
+    # ---- revocation (delete-everywhere) -----------------------------------
+
+    @objc.python_method
+    def _store_job_deleted(self, job_id):
+        """Store listener, inside the delete op on the writer thread:
+        flag-only revocation of cached state and replay; the rendered
+        widgets are cleared on the main thread."""
+        self.state.revoke_job(job_id)
+        replay = self.replay
+        if replay is not None and hasattr(replay, "revoke_job") \
+                and replay.revoke_job(job_id):
+            AppHelper.callAfter(replay.stop_revoked)
+
+    @objc.python_method
+    def _state_revoked(self, job_id):
+        AppHelper.callAfter(self._revoke_rendered, job_id)
+
+    @objc.python_method
+    def _revoke_rendered(self, job_id):
+        """Main thread: nothing the user can see or act on still carries
+        the deleted job's text."""
+        hist = self._rendered.get("history_detail")
+        if hist is not None and hist.get("job_id") == job_id:
+            self._rendered["history_detail"] = None
+            if hasattr(self, "teach_field"):
+                self.teach_field.setStringValue_("")
+        train = self._rendered.get("training_detail")
+        if train is not None and train.get("job_id") == job_id:
+            self._rendered["training_detail"] = None
+            self._clear_training_editors()
+        if self._pending_annotation is not None and \
+                self._pending_annotation.get("job_id") == job_id:
+            self._pending_annotation = None
+        if "history" in self._built_views:
+            self._refresh_history_view()
+        if "models" in self._built_views:
+            self._refresh_models_view()
+        if self.replay is not None and hasattr(self.replay, "stop_revoked"):
+            self.replay.stop_revoked()
 
     # ---- window / sidebar -------------------------------------------------
 
@@ -270,33 +340,59 @@ class HubController(NSObject):
 
     # ---- shared table routing --------------------------------------------------
 
+    # Rendered row snapshots per table: (view, data key). A table only
+    # ever indexes the list it last rendered (``_render_rows``).
+    _TABLE_ROWS = {"training_table": ("models", "examples"),
+                   "styles_table": ("styles", "rules"),
+                   "snippets_table": ("snippets", "snippets"),
+                   "transforms_table": ("transforms", "transforms"),
+                   "scratchpad_table": ("scratchpad", "notes"),
+                   "insights_table": ("insights", "daily")}
+
+    @objc.python_method
+    def _table_name(self, table):
+        for name in self._TABLE_ROWS:
+            if table is getattr(self, name, None):
+                return name
+        return None
+
+    @objc.python_method
+    def _render_rows(self, name, id_key=None, selected=None):
+        """Snapshot the state's rows for ``name``, reload the table from
+        that snapshot and reselect the stable ``selected`` id (or clear
+        the selection when that row is gone) — a refresh never leaves
+        the highlight on a different item than the one acted on."""
+        view, key = self._TABLE_ROWS[name]
+        rows = list(((self.state.views[view].get("data") or {})
+                     .get(key)) or [])
+        self._rendered_rows[name] = rows
+        table = getattr(self, name)
+        table.reloadData()
+        if id_key is None:
+            return rows
+        idx = next((i for i, r in enumerate(rows)
+                    if r.get(id_key) == selected), None)
+        self._suppress_select = True
+        try:
+            if idx is None:
+                table.deselectAll_(None)
+            else:
+                table.selectRowIndexes_byExtendingSelection_(
+                    Foundation.NSIndexSet.indexSetWithIndex_(idx), False)
+        finally:
+            self._suppress_select = False
+        return rows
+
+    @objc.python_method
+    def _rows_of(self, table):
+        name = self._table_name(table)
+        return self._rendered_rows.get(name) or [] if name else []
+
     def numberOfRowsInTableView_(self, table):
         if table is getattr(self, "history_table", None):
             return len(self._history_flat)
-        if table is getattr(self, "training_table", None):
-            rows = (self.state.views["models"].get("data")
-                    or {}).get("examples") or []
-            return len(rows)
-        if table is getattr(self, "styles_table", None):
-            rows = (self.state.views["styles"].get("data")
-                    or {}).get("rules") or []
-            return len(rows)
-        if table is getattr(self, "snippets_table", None):
-            rows = (self.state.views["snippets"].get("data")
-                    or {}).get("snippets") or []
-            return len(rows)
-        if table is getattr(self, "transforms_table", None):
-            rows = (self.state.views["transforms"].get("data")
-                    or {}).get("transforms") or []
-            return len(rows)
-        if table is getattr(self, "scratchpad_table", None):
-            rows = (self.state.views["scratchpad"].get("data")
-                    or {}).get("notes") or []
-            return len(rows)
-        if table is getattr(self, "insights_table", None):
-            rows = (self.state.views["insights"].get("data")
-                    or {}).get("daily") or []
-            return len(rows)
+        if self._table_name(table) is not None:
+            return len(self._rows_of(table))
         return len(VIEWS)
 
     def tableView_objectValueForTableColumn_row_(self, table, col, row):
@@ -309,8 +405,7 @@ class HubController(NSObject):
             return (entry.get("preview")
                     or f"({entry.get('state')} — no retained text)")
         if table is getattr(self, "training_table", None):
-            rows = (self.state.views["models"].get("data")
-                    or {}).get("examples") or []
+            rows = self._rows_of(table)
             r = rows[int(row)]
             if col.identifier() == "ex":
                 stamp = r.get("captured_at_utc") or ""
@@ -318,8 +413,7 @@ class HubController(NSObject):
             audio = "yes" if r["audio"].get("available") else "no"
             return f"{r['state']} · {r['correctness']} · audio {audio}"
         if table is getattr(self, "styles_table", None):
-            rows = (self.state.views["styles"].get("data")
-                    or {}).get("rules") or []
+            rows = self._rows_of(table)
             r = rows[int(row)]
             if col.identifier() == "mode":
                 return f"{r['mode']} · {r['number_policy']}" \
@@ -327,15 +421,13 @@ class HubController(NSObject):
             return f"{r['name']} ({r['scope'][0]}" \
                 + (f": {r['scope'][1]}" if r["scope"][1] else "") + ")"
         if table is getattr(self, "snippets_table", None):
-            rows = (self.state.views["snippets"].get("data")
-                    or {}).get("snippets") or []
+            rows = self._rows_of(table)
             r = rows[int(row)]
             if col.identifier() == "kind":
                 return r["kind"] + ("" if r.get("enabled") else " · off")
             return r["trigger"]
         if table is getattr(self, "transforms_table", None):
-            rows = (self.state.views["transforms"].get("data")
-                    or {}).get("transforms") or []
+            rows = self._rows_of(table)
             r = rows[int(row)]
             if col.identifier() == "mode":
                 auto = "auto-apply" if r.get("auto_apply") else "manual"
@@ -344,15 +436,13 @@ class HubController(NSObject):
             return r["name"] + (" (legacy)" if r.get("origin") == "legacy"
                                 else "")
         if table is getattr(self, "scratchpad_table", None):
-            rows = (self.state.views["scratchpad"].get("data")
-                    or {}).get("notes") or []
+            rows = self._rows_of(table)
             r = rows[int(row)]
             if col.identifier() == "words":
                 return str(r.get("word_count", 0))
             return r.get("title") or "untitled"
         if table is getattr(self, "insights_table", None):
-            rows = (self.state.views["insights"].get("data")
-                    or {}).get("daily") or []
+            rows = self._rows_of(table)
             r = rows[int(row)]
             key = col.identifier()
             if key == "day":
@@ -387,15 +477,13 @@ class HubController(NSObject):
                                                   entry["id"])
         elif table is getattr(self, "training_table", None):
             row = self.training_table.selectedRow()
-            rows = (self.state.views["models"].get("data")
-                    or {}).get("examples") or []
+            rows = self._rows_of(table)
             if 0 <= row < len(rows):
                 self.state.select_training_example(
                     rows[row]["example_id"])
         elif table is getattr(self, "styles_table", None):
             row = self.styles_table.selectedRow()
-            rows = (self.state.views["styles"].get("data")
-                    or {}).get("rules") or []
+            rows = self._rows_of(table)
             if 0 <= row < len(rows):
                 r = rows[row]
                 self.state.views["styles"]["selected_id"] = \
@@ -403,8 +491,7 @@ class HubController(NSObject):
                 self._fill_style_editor(r)
         elif table is getattr(self, "snippets_table", None):
             row = self.snippets_table.selectedRow()
-            rows = (self.state.views["snippets"].get("data")
-                    or {}).get("snippets") or []
+            rows = self._rows_of(table)
             if 0 <= row < len(rows):
                 s = rows[row]
                 self.state.views["snippets"]["selected_id"] = \
@@ -412,8 +499,7 @@ class HubController(NSObject):
                 self._fill_snippet_editor(s)
         elif table is getattr(self, "transforms_table", None):
             row = self.transforms_table.selectedRow()
-            rows = (self.state.views["transforms"].get("data")
-                    or {}).get("transforms") or []
+            rows = self._rows_of(table)
             if 0 <= row < len(rows):
                 t = rows[row]
                 self.state.views["transforms"]["selected_id"] = \
@@ -421,8 +507,7 @@ class HubController(NSObject):
                 self._fill_transform_editor(t)
         elif table is getattr(self, "scratchpad_table", None):
             row = self.scratchpad_table.selectedRow()
-            rows = (self.state.views["scratchpad"].get("data")
-                    or {}).get("notes") or []
+            rows = self._rows_of(table)
             if 0 <= row < len(rows):
                 self.state.select_scratchpad_note(rows[row]["note_id"])
         elif table is self.sidebar:
@@ -474,6 +559,23 @@ class HubController(NSObject):
         v.addSubview_(self.teach_field)
         v.addSubview_(_button("Teach", self, "historyTeach:",
                               NSMakeRect(678, ch - 29, 84, 24)))
+        # App and mode filters (S19): an app name/bundle substring and a
+        # cleanup mode; empty / "All modes" clears each one.
+        v.addSubview_(_label(NSMakeRect(8, ch - 55, 34, 18), "App:"))
+        self.history_app = NSSearchField.alloc().initWithFrame_(
+            NSMakeRect(44, ch - 58, 180, 24))
+        self.history_app.setPlaceholderString_("app name or bundle")
+        self.history_app.setTarget_(self)
+        self.history_app.setAction_("historyAppChanged:")
+        v.addSubview_(self.history_app)
+        v.addSubview_(_label(NSMakeRect(236, ch - 55, 44, 18), "Mode:"))
+        from ..history_queries import MODES
+        self.history_mode = NSPopUpButton.alloc().initWithFrame_(
+            NSMakeRect(282, ch - 59, 170, 24))
+        self.history_mode.addItemsWithTitles_(["All modes", *MODES])
+        self.history_mode.setTarget_(self)
+        self.history_mode.setAction_("historyModeChanged:")
+        v.addSubview_(self.history_mode)
         self.history_table = NSTableView.alloc().initWithFrame_(
             NSMakeRect(0, 0, cw * 0.42, 10))
         for ident, width in (("when", 100.0), ("what", 300.0)):
@@ -483,13 +585,13 @@ class HubController(NSObject):
         self.history_table.setDataSource_(self)
         self.history_table.setDelegate_(self)
         self.history_table.setAutoresizingMask_(2)
-        list_scroll = _scroll(NSMakeRect(0, 36, cw * 0.45, ch - 40),
+        list_scroll = _scroll(NSMakeRect(0, 36, cw * 0.45, ch - 70),
                               self.history_table)
         list_scroll.setAutoresizingMask_(18)
         v.addSubview_(list_scroll)
         self.history_detail = _textview(NSMakeRect(0, 0, cw * 0.5, 100))
         detail_scroll = _scroll(NSMakeRect(cw * 0.46, 36,
-                                           cw * 0.54 - 8, ch - 72),
+                                           cw * 0.54 - 8, ch - 102),
                                 self.history_detail)
         detail_scroll.setAutoresizingMask_(18 | 16)
         v.addSubview_(detail_scroll)
@@ -515,42 +617,116 @@ class HubController(NSObject):
     def historySearchChanged_(self, sender):
         self.state.set_history_search(sender.stringValue() or "")
 
+    def historyAppChanged_(self, sender):
+        self.state.set_history_filters(app=sender.stringValue() or "")
+
+    def historyModeChanged_(self, sender):
+        idx = sender.indexOfSelectedItem()
+        self.state.set_history_filters(
+            mode=None if idx <= 0 else str(sender.titleOfSelectedItem()))
+
     def historyReload_(self, sender):
         self.state.reload_history()
 
+    @objc.python_method
+    def _history_ctx(self):
+        """The action context: the RENDERED detail of the selected row —
+        or None, with the reason shown, while the selection's detail is
+        still loading, failed, or was replaced by a newer publication
+        not yet on screen. An action never uses a detail other than the
+        one the user sees for the row they selected (M09-AUDIT-01)."""
+        view = self.state.views["history"]
+        rendered = self._rendered.get("history_detail")
+        key = (view.get("selected_kind"), view.get("selected_id"))
+        if rendered is None or rendered is not view.get("detail") \
+                or view.get("detail_key") != key:
+            self._history_note("Select a row and wait for its detail to"
+                               " load before acting on it.")
+            return None
+        return rendered
+
+    @objc.python_method
+    def _history_note(self, note):
+        if getattr(self, "history_detail", None) is None:
+            return  # the History view was never built: nothing to show
+        base = self._history_pane_text()
+        self.history_detail.setString_(f"{base}\n\n{note}" if base
+                                       else note)
+
     def historyReplay_(self, sender):
-        detail = self.state.views["history"].get("detail")
-        audio = (detail or {}).get("audio") or {}
-        if self.replay is None:
+        ctx = self._history_ctx()
+        if ctx is None or self.replay is None:
             return
+        audio = ctx.get("audio") or {}
+        # An unavailable item still ends the current playback (one
+        # replay authority: the item last asked for, or nothing).
         out = self.replay.play_artifact(self.spec["store"],
                                         audio.get("artifact_id"))
         if not out.get("available"):
-            # Parity with the training view: an unavailable replay says
-            # why instead of looking like a dead button.
-            self.history_detail.setString_(
-                (self._render_history_detail(detail) or "")
-                + f"\n\nreplay unavailable ({out.get('reason')})")
+            self._history_note(
+                f"Replay unavailable ({out.get('reason')}).")
 
     def historyCopy_(self, sender):
-        text = self._current_detail_text()
-        if text and self.coordinator is not None:
-            self.coordinator.hubCopyText(text)
+        ctx = self._history_ctx()
+        if ctx is None or self.coordinator is None:
+            return
+        text = self._final_text(ctx)
+        if text is None:
+            self._history_note("Nothing to copy: the final text is no"
+                               " longer retained.")
+            return
+        self.coordinator.hubCopyText(text)
+        self._history_note("Copied the final text.")
+
+    _PASTE_NOTES = {
+        "repaste_queued": "Paste Again queued: it pastes into the app in"
+                          " front when it runs.",
+        "recording": "Paste Again refused: recording in progress.",
+        "insertion_in_flight": "Paste Again refused: an insertion is in"
+                               " progress. Try again when it finishes.",
+        "job_deleted": "Paste Again refused: this dictation was deleted.",
+        "copy_only": "Copied instead: pasting is unavailable here.",
+        "copy_only_no_service": "Copied instead: pasting is unavailable.",
+        "nothing_to_paste": "Nothing to paste.",
+    }
 
     def historyPasteAgain_(self, sender):
-        detail = self.state.views["history"].get("detail") or {}
-        text = self._current_detail_text()
-        if text and self.coordinator is not None:
-            # The job id rides along so the re-paste keeps its insertion
-            # attribution (contracts/insertion.md); legacy rows pass None.
-            self.coordinator.hubPasteText(
-                text, job_id=detail.get("job_id"))
+        ctx = self._history_ctx()
+        if ctx is None or self.coordinator is None:
+            return
+        text = self._final_text(ctx)
+        if text is None:
+            self._history_note("Nothing to paste: the final text is no"
+                               " longer retained.")
+            return
+        # The job id rides along so the re-paste keeps its insertion
+        # attribution (contracts/insertion.md); legacy rows pass None.
+        out = self.coordinator.hubPasteText(text, job_id=ctx.get("job_id")) \
+            or {}
+        outcome = out.get("outcome")
+        self._history_note(self._PASTE_NOTES.get(
+            outcome, f"Paste Again returned {outcome}."))
 
     def historyRetry_(self, sender):
-        detail = self.state.views["history"].get("detail")
-        if detail and detail.get("job_id") \
-                and self.coordinator is not None:
-            self.coordinator.hubRetryJob(detail["job_id"])
+        ctx = self._history_ctx()
+        if ctx is None or self.coordinator is None:
+            return
+        job_id = ctx.get("job_id")
+        if not job_id:
+            self._history_note("Retry refused: imported rows have no"
+                               " recording to retry.")
+            return
+        out = self.coordinator.hubRetryJob(job_id) or {}
+        outcome, reason = out.get("outcome"), out.get("reason")
+        self._history_note({
+            "requeued": "Retry queued.",
+            "already_retrying": "Retry refused: this dictation is already"
+                                " being retried.",
+            "not_retryable": f"Retry refused: not retryable ({reason}).",
+            "audio_unavailable": f"Retry refused: {reason}.",
+            "recording": "Retry refused: recording in progress.",
+        }.get(outcome, f"Retry returned {outcome}"
+                       + (f" ({reason})" if reason else "") + "."))
 
     def historyTeach_(self, sender):
         """M14 (S22): explicit teach-correction. The submitted text is
@@ -558,11 +734,17 @@ class HubController(NSObject):
         reliable bounded correction becomes a pending LearningCandidate
         (an unchanged or whole-rewrite submission refuses with the
         reason — never a fabricated correction)."""
-        detail = self.state.views["history"].get("detail") or {}
         learning = self.spec.get("learning_service")
         corrected = (self.teach_field.stringValue() or "").strip()
-        job_id = detail.get("job_id")
-        if learning is None or not corrected or not job_id:
+        if learning is None or not corrected:
+            return
+        ctx = self._history_ctx()
+        if ctx is None:
+            return
+        job_id = ctx.get("job_id")
+        if not job_id:
+            self._history_note("Teach refused: imported rows are not"
+                               " dictations.")
             return
         try:
             out = learning.teach_correction(job_id, corrected)
@@ -576,29 +758,28 @@ class HubController(NSObject):
             note = f"teach correction refused: {e}"
         except Exception as e:
             note = f"teach correction failed: {type(e).__name__}"
-        self.history_detail.setString_(
-            (self._render_history_detail(detail) or "") + f"\n\n{note}")
+        self._history_note(note)
 
     def historyDeleteUsage_(self, sender):
         """M13 (S21/M13-AC03): the explicit 'delete associated usage'
         control for one V2 job — counters only, never content. Legacy
         rows refuse honestly (the lossless import carries no deletable
         usage facts)."""
-        detail = self.state.views["history"].get("detail") or {}
         if self.coordinator is None or \
                 not hasattr(self.coordinator, "hubDeleteUsageForJob"):
             return
-        out = self.coordinator.hubDeleteUsageForJob(detail.get("job_id"))
+        ctx = self._history_ctx()
+        if ctx is None:
+            return
+        out = self.coordinator.hubDeleteUsageForJob(ctx.get("job_id")) or {}
         note = {"deleted": "usage for this dictation deleted — graphs"
                            " recomputed",
                 "not_a_v2_job": "legacy rows carry no deletable usage"
                                 " facts (lossless import)",
                 "unavailable": "usage analytics unavailable",
                 "failed": "usage deletion failed — see Diagnostics"}
-        self.history_detail.setString_(
-            (self._render_history_detail(detail) or "")
-            + "\n\n" + note.get(out.get("outcome"), "usage deletion"
-                                " returned " + str(out.get("outcome"))))
+        self._history_note(note.get(out.get("outcome"), "usage deletion"
+                                    " returned " + str(out.get("outcome"))))
 
     def historyToScratchpad_(self, sender):
         self._history_to_scratchpad(move=False)
@@ -611,11 +792,12 @@ class HubController(NSObject):
         """M12 (S20 task 4): explicit copy/move from History into the
         Scratchpad. Move's delete-everywhere only applies to V2 jobs —
         legacy rows degrade honestly to copy (reported in the detail)."""
-        view = self.state.views["history"]
-        detail = view.get("detail") or {}
-        kind, row_id = view.get("selected_kind"), view.get("selected_id")
-        if self.coordinator is None or not kind or not row_id:
+        if self.coordinator is None:
             return
+        ctx = self._history_ctx()
+        if ctx is None:
+            return
+        kind, row_id = self.state.views["history"].get("detail_key")
         out = self.coordinator.hubSaveHistoryRow(kind, row_id, move=move)
         note = {"copied": "saved to a new Scratchpad note",
                 "moved": "moved — the History row's content was deleted"
@@ -627,15 +809,15 @@ class HubController(NSObject):
                     "the note was created but the History deletion"
                     " failed — row kept",
                 }.get(out.get("outcome"), out.get("outcome"))
-        self.history_detail.setString_(
-            (self._render_history_detail(detail) or "")
-            + f"\n\n→ Scratchpad: {note}")
+        self._history_note(f"→ Scratchpad: {note}")
         if kind == "job" and out.get("outcome") == "moved":
             self.state.reload_history()
 
     def historyDiff_(self, sender):
-        detail = self.state.views["history"].get("detail") or {}
-        stages = detail.get("lineage") or []
+        ctx = self._history_ctx()
+        if ctx is None:
+            return
+        stages = ctx.get("lineage") or []
 
         def text_of(stage_name):
             for s in stages:
@@ -643,23 +825,30 @@ class HubController(NSObject):
                     art = s.get("artifact")
                     return art.get("text") if art else None
             return None
-        self.history_detail.setString_(
-            (self._render_history_detail(detail) or "")
-            + "\n\n— diff source → cleaned —\n"
-            + _stage_diff(text_of("source"), text_of("cleaned")))
+        self._history_note("— diff source → cleaned —\n"
+                           + _stage_diff(text_of("source"),
+                                         text_of("cleaned")))
+
+    @objc.python_method
+    def _final_text(self, detail):
+        """The text that was actually inserted: the transform output
+        when its recorded decision says applied, else the cleaned
+        output, else the source. An applied transform whose output is
+        gone yields None — never a substitute text."""
+        stages = {s["stage"]: s for s in detail.get("lineage") or []}
+
+        def text(name):
+            art = (stages.get(name) or {}).get("artifact")
+            return art["text"] if art and art.get("present") \
+                and art.get("text") else None
+        if detail.get("final_stage") == "transformed":
+            return text("transformed")
+        return text("cleaned") or text("source")
 
     @objc.python_method
     def _current_detail_text(self):
-        detail = self.state.views["history"].get("detail") or {}
-        for stage in detail.get("lineage") or []:
-            art = stage.get("artifact")
-            if stage["stage"] == "cleaned" and art and art.get("text"):
-                return art["text"]
-        for stage in detail.get("lineage") or []:
-            art = stage.get("artifact")
-            if stage["stage"] == "source" and art and art.get("text"):
-                return art["text"]
-        return None
+        detail = self._rendered.get("history_detail")
+        return self._final_text(detail) if detail else None
 
     @objc.python_method
     def _render_history_detail(self, detail):
@@ -670,13 +859,23 @@ class HubController(NSObject):
             lines.append("date: Undated (imported legacy record)")
         elif detail.get("captured_at_utc"):
             lines.append(f"captured (UTC): {detail['captured_at_utc']}"
-                         f"  attempt {detail.get('attempt')}")
+                         + (f"  attempt {detail.get('attempt')}"
+                            if detail.get("attempt") else ""))
+        if detail.get("kind") == "legacy_db":
+            lines.append("imported legacy record — no recording, not a"
+                         " V2 dictation")
         if detail.get("app"):
             lines.append(f"app: {detail['app']}")
         if detail.get("state"):
             reason = detail.get("state_reason")
             lines.append(f"state: {detail['state']}"
                          + (f" ({reason})" if reason else ""))
+        la = detail.get("lineage_attempt")
+        if la and detail.get("attempt") and la != detail.get("attempt"):
+            lines.append(f"stages recorded by attempt {la}")
+        if detail.get("lineage_ambiguous"):
+            lines.append("several attempts recorded without attempt ids —"
+                         " showing the newest stages")
         ins = detail.get("insertion")
         if ins:
             lines.append(f"insertion: {ins.get('state')}"
@@ -689,22 +888,56 @@ class HubController(NSObject):
                         else f"unavailable ({audio.get('reason')})"))
         for stage in detail.get("lineage") or []:
             art = stage.get("artifact")
+            label = stage["label"]
+            decision = stage.get("decision")
+            if decision:
+                if decision.get("applied"):
+                    label += f" — applied ({decision.get('path')})"
+                else:
+                    label += (f" — not applied: {decision.get('path')}"
+                              + (f" ({decision.get('reason')})"
+                                 if decision.get("reason") else "")
+                              + "; proposal kept, not inserted")
             if art is None:
-                lines.append(f"\n── {stage['label']} ──\n"
+                lines.append(f"\n── {label} ──\n"
                              f"({stage.get('reason', 'not captured')})")
             elif not art.get("present"):
-                lines.append(f"\n── {stage['label']} ──\n"
-                             f"(content expired)")
+                lines.append(f"\n── {label} ──\n(content expired)")
             else:
-                lines.append(f"\n── {stage['label']} ──\n"
+                lines.append(f"\n── {label} ──\n"
                              f"{art.get('text') or '(empty)'}")
         return "\n".join(lines)
+
+    @objc.python_method
+    def _history_pane_text(self):
+        view = self.state.views["history"]
+        data = view.get("data")
+        if view.get("error"):
+            return (f"History could not load ({view['error']})."
+                    + (" The rows shown are from the last successful"
+                       " load." if data else ""))
+        if not data:
+            return "Loading history…" if view.get("loading") else \
+                "No history yet — dictations appear here."
+        if view.get("selected_id") is None:
+            return self._render_history_detail(None)
+        rendered = self._rendered.get("history_detail")
+        if rendered is not None:
+            return self._render_history_detail(rendered)
+        if view.get("detail_loading"):
+            return "Loading the selected dictation…"
+        err = view.get("detail_error")
+        if err == "deleted":
+            return "This dictation was deleted."
+        if err:
+            return f"This row's detail could not load ({err})."
+        return self._render_history_detail(None)
 
     @objc.python_method
     def _refresh_history_view(self):
         view = self.state.views["history"]
         data = view.get("data")
-        if data:
+        if data is not None:
             flat = []
             for group in data["groups"]:
                 flat.append({"__group__": group["label"]})
@@ -712,27 +945,28 @@ class HubController(NSObject):
             self._history_flat = flat
             self.history_table.reloadData()
             # Preserve selection (AC04): reselect the same row id; a
-            # refresh never jumps to the newest row.
-            sel = view.get("selected_id")
-            for i, entry in enumerate(flat):
-                if not entry.get("__group__") and entry["id"] == sel:
-                    self._suppress_select = True
-                    try:
-                        self.history_table\
-                            .selectRowIndexes_byExtendingSelection_(
-                                Foundation.NSIndexSet.indexSetWithIndex_(i),
-                                False)
-                    finally:
-                        self._suppress_select = False
-                    break
-        if view.get("error"):
-            self.history_detail.setString_(f"query failed: {view['error']}")
-        elif not data and not view.get("loading"):
-            self.history_detail.setString_(
-                "No history yet — dictations appear here.")
-        else:
-            self.history_detail.setString_(
-                self._render_history_detail(view.get("detail")))
+            # refresh never jumps to the newest row, and a row that is
+            # gone leaves no stale highlight.
+            sel = (view.get("selected_kind"), view.get("selected_id"))
+            idx = next((i for i, e in enumerate(flat)
+                        if not e.get("__group__")
+                        and (e["kind"], e["id"]) == sel), None)
+            self._suppress_select = True
+            try:
+                if idx is None:
+                    self.history_table.deselectAll_(None)
+                else:
+                    self.history_table.selectRowIndexes_byExtendingSelection_(
+                        Foundation.NSIndexSet.indexSetWithIndex_(idx),
+                        False)
+            finally:
+                self._suppress_select = False
+        detail = view.get("detail")
+        key = (view.get("selected_kind"), view.get("selected_id"))
+        self._rendered["history_detail"] = detail \
+            if detail is not None and view.get("detail_key") == key \
+            else None
+        self.history_detail.setString_(self._history_pane_text())
 
     # ---- Styles (M10, Spec S15) -------------------------------------------
 
@@ -911,9 +1145,11 @@ class HubController(NSObject):
         if view.get("error"):
             self.styles_status.setStringValue_(
                 f"styles unavailable ({view['error']})")
-            self.styles_table.reloadData()
+            self._render_rows("styles_table", "rule_id",
+                              self.state.views["styles"].get("selected_id"))
             return
-        self.styles_table.reloadData()
+        self._render_rows("styles_table", "rule_id",
+                          self.state.views["styles"].get("selected_id"))
         eff = (data or {}).get("effective") or {}
         profile = eff.get("profile") or {}
         if profile:
@@ -1093,7 +1329,8 @@ class HubController(NSObject):
     def _refresh_snippets_view(self):
         view = self.state.views["snippets"]
         data = view.get("data")
-        self.snippets_table.reloadData()
+        self._render_rows("snippets_table", "snippet_id",
+                          self.state.views["snippets"].get("selected_id"))
         if view.get("error"):
             self.snippets_status.setStringValue_(
                 f"snippets unavailable ({view['error']})")
@@ -1296,9 +1533,11 @@ class HubController(NSObject):
         if view.get("error"):
             self.transforms_status.setStringValue_(
                 f"transforms unavailable ({view['error']})")
-            self.transforms_table.reloadData()
+            self._render_rows("transforms_table", "transform_id",
+                              self.state.views["transforms"].get("selected_id"))
             return
-        self.transforms_table.reloadData()
+        self._render_rows("transforms_table", "transform_id",
+                          self.state.views["transforms"].get("selected_id"))
         conflicts = (data or {}).get("shortcut_conflicts") or []
         if conflicts:
             self.transforms_status.setStringValue_(
@@ -1585,9 +1824,11 @@ class HubController(NSObject):
         if view.get("error"):
             self.scratchpad_status.setStringValue_(
                 f"notes unavailable ({view['error']})")
-            self.scratchpad_table.reloadData()
+            self._render_rows("scratchpad_table", "note_id",
+                              self.state.views["scratchpad"].get("selected_id"))
             return
-        self.scratchpad_table.reloadData()
+        self._render_rows("scratchpad_table", "note_id",
+                          self.state.views["scratchpad"].get("selected_id"))
         notes = (data or {}).get("notes") or []
         detail = view.get("detail")
         # Transform picker: rebuild from the frozen snapshot (ids ride
@@ -1793,28 +2034,52 @@ class HubController(NSObject):
             utc=bool(self.diag_utc.state()))
 
     def diagnosticsExport_(self, sender):
+        """Export exactly the window on screen: the displayed records and
+        filters are frozen here (main thread, no file parse); only the
+        save panel runs here too; redaction and the write run off the
+        main thread (M09-AUDIT-20). Redaction is the accepted typed
+        allowlist (M09-AUDIT-08)."""
         from .. import diagnostics as diag
-        spec = self.state.diagnostics_provider() or {}
         view = self.state.views["diagnostics"]
-        # The export is bounded to the same filtered window the view
-        # displays (the event log caps at 100 MiB — an unbounded parse
-        # on the UI thread would freeze the app).
-        records = diag.load_events(
-            spec.get("events_dir"), job_id=view["job_filter"] or None,
-            level=view["level_filter"], last=spec.get("last", 500))
+        data = view.get("data")
+        if view.get("error") or not data:
+            self._diag_note("Nothing to export: no event window is"
+                            " displayed.")
+            return
+        records = list(data.get("records") or [])
+        filters = dict(data.get("filters") or {})
+        loaded = data.get("loaded_at_utc")
         try:
             from AppKit import NSSavePanel
             panel = NSSavePanel.savePanel()
             panel.setAllowedFileTypes_(["jsonl"])
             if panel.runModal() != 1 or panel.URL() is None:
                 return
-            path = panel.URL().path()
-        except Exception:
+            path = str(panel.URL().path())
+        except Exception as e:
+            self._diag_note(f"Export needs a destination ({type(e).__name__}).")
             return
-        n = diag.redacted_export(records, path)
-        self.diag_text.setString_(
-            f"wrote {n} redacted events (filtered window,"
-            f" newest {spec.get('last', 500)}) to {path}")
+        window = (f"the window displayed at {loaded or 'load time'}"
+                  f" — job {filters.get('job') or 'any'},"
+                  f" level {filters.get('level') or 'all'},"
+                  f" newest {filters.get('last')}")
+
+        def done(n, err, current):
+            if err is not None:
+                self._diag_note(
+                    f"Export failed ({type(err).__name__}); the file at"
+                    f" {path} may be incomplete.")
+                return
+            self._diag_note(f"Wrote {n} redacted events ({window}) to"
+                            f" {path}.")
+        self._in_background(lambda: diag.redacted_export(records, path),
+                            done, key="diag_export")
+
+    @objc.python_method
+    def _diag_note(self, note):
+        if getattr(self, "diag_text", None) is None:
+            return
+        self.diag_text.setString_(f"{note}\n\n{self.diag_text.string()}")
 
     @objc.python_method
     def _refresh_diagnostics_view(self):
@@ -1837,6 +2102,9 @@ class HubController(NSObject):
             lines.extend(timeline)
         lines.append("")
         lines.append(f"— events ({data.get('count')}) —")
+        if data.get("skipped_lines"):
+            lines.append(f"({data['skipped_lines']} unreadable log lines"
+                         " skipped)")
         lines.extend(data.get("events") or [])
         self.diag_text.setString_("\n".join(lines))
 
@@ -2109,21 +2377,93 @@ class HubController(NSObject):
         return self.state.views["models"].get("selected_id")
 
     @objc.python_method
-    def _in_background(self, work, done):
+    def _training_ctx(self, quiet=False):
+        """The action context: the RENDERED detail of the selected
+        example — or None, with the reason shown, while the selection's
+        detail is still loading, failed, or a newer publication is not
+        yet on screen. Judgments are only ever attached to the example
+        whose text the user is looking at (M09-AUDIT-01)."""
+        view = self.state.views["models"]
+        rendered = self._rendered.get("training_detail")
+        sel = view.get("selected_id")
+        if rendered is None or rendered is not view.get("detail") \
+                or rendered.get("example_id") != sel \
+                or view.get("detail_key") != sel:
+            if not quiet:
+                self._training_note("Select an example and wait for its"
+                                    " detail to load before acting on it.")
+            return None
+        return rendered
+
+    @objc.python_method
+    def _training_note(self, note):
+        if getattr(self, "training_detail", None) is None:
+            return
+        base = self._training_pane_text()
+        self.training_detail.setString_(f"{base}\n\n{note}" if base
+                                        else note)
+
+    @objc.python_method
+    def _clear_training_editors(self):
+        for name in ("verbatim_field", "span_start", "span_end",
+                     "span_corrected"):
+            field = getattr(self, name, None)
+            if field is not None:
+                field.setStringValue_("")
+        self._editor_bound = None
+
+    @objc.python_method
+    def _annotation_id(self, ctx, kind, text):
+        """A stable operation id per (example, kind, text): a save whose
+        outcome was unknown (the caller's wait timed out) is retried
+        with the SAME id, so a late commit is never duplicated."""
+        from .. import ids
+        key = (ctx["example_id"], kind, ids.sha256_text(text))
+        pending = self._pending_annotation
+        if pending is not None and pending["key"] == key:
+            return pending["annotation_id"]
+        self._pending_annotation = {"key": key, "job_id": ctx.get("job_id"),
+                                    "annotation_id": ids.new_id("ann")}
+        return self._pending_annotation["annotation_id"]
+
+    @objc.python_method
+    def _in_background(self, work, done, key=None):
         """Run a long curation action (export, mining, generation) off
-        the AppKit main thread so the Hub stays responsive; ``done(out,
-        err)`` runs back on the main thread. The services' writes go
-        through the store's writer like any other caller."""
+        the AppKit main thread so the Hub stays responsive;
+        ``done(out, err, current)`` runs back on the main thread.
+        ``current`` is False when a newer action with the same ``key``
+        started since (its result must not overwrite the newer one's
+        status). The services' writes go through the store's writer
+        like any other caller."""
         import threading
+        token = None
+        if key is not None:
+            self._action_seq += 1
+            token = self._action_seq
+            self._action_tokens[key] = token
 
         def run():
             try:
                 out, err = work(), None
             except Exception as e:
                 out, err = None, e
-            AppHelper.callAfter(done, out, err)
+            AppHelper.callAfter(self._finish_action, done, key, token,
+                                out, err)
         threading.Thread(target=run, daemon=True,
                          name="localflow-hub-work").start()
+        return token
+
+    @objc.python_method
+    def _finish_action(self, done, key, token, out, err):
+        current = key is None or self._action_tokens.get(key) == token
+        done(out, err, current)
+
+    @objc.python_method
+    def _on_training_tab(self, tab):
+        view = self.state.views["models"]
+        return (self.state.selected_view == "models"
+                and view.get("subview") == "training"
+                and view.get("training_tab") == tab)
 
     def _training_action(self, fn, *args, **kwargs):
         """Run one inspector/curation mutation; failures and refusals
@@ -2147,129 +2487,197 @@ class HubController(NSObject):
             return None
 
     def trainingMarkCorrect_(self, sender):
-        ex = self._selected_example_id()
-        if ex and self._training_action(
-                self.spec["training_service"].mark_intended, ex, True) \
-                is not None:
-            self.state.select_training_example(ex)
+        self._mark_intended(True)
 
     def trainingMarkIncorrect_(self, sender):
-        ex = self._selected_example_id()
-        if ex and self._training_action(
-                self.spec["training_service"].mark_intended, ex, False) \
+        self._mark_intended(False)
+
+    @objc.python_method
+    def _mark_intended(self, correct):
+        ctx = self._training_ctx()
+        if ctx is None:
+            return
+        ex = ctx["example_id"]
+        if self._training_action(
+                self.spec["training_service"].mark_intended, ex, correct) \
                 is not None:
             self.state.select_training_example(ex)
 
     def trainingPin_(self, sender):
-        ex = self._selected_example_id()
-        detail = self.state.views["models"].get("detail") or {}
-        if ex and self._training_action(
+        ctx = self._training_ctx()
+        if ctx is None:
+            return
+        ex = ctx["example_id"]
+        if self._training_action(
                 self.spec["training_service"].pin, ex,
-                not detail.get("pinned")) is not None:
+                not ctx.get("pinned")) is not None:
             self.state.select_training_example(ex)
 
     def trainingExclude_(self, sender):
-        ex = self._selected_example_id()
-        detail = self.state.views["models"].get("detail") or {}
-        if ex and self._training_action(
-                self.spec["training_service"].exclude, ex,
-                detail.get("state") != "excluded") is not None:
-            self.state.select_training_example(ex)
+        ctx = self._training_ctx()
+        if ctx is None:
+            return
+        ex = ctx["example_id"]
+        want = ctx.get("state") != "excluded"
+        new = self._training_action(
+            self.spec["training_service"].exclude, ex, want)
+        if new is None:
+            return
+        self.state.select_training_example(ex)
+        if want != (new == "excluded"):
+            # The service keeps deleted/expired/quarantined authoritative
+            # in both directions (M09-AUDIT-04): say so.
+            self._training_note(
+                f"{'Exclude' if want else 'Include'} refused: the example"
+                f" is {new}.")
 
     def trainingDelete_(self, sender):
-        ex = self._selected_example_id()
-        if not ex:
+        ctx = self._training_ctx()
+        if ctx is None:
             return
+        # The identity the user confirms is captured BEFORE the modal: a
+        # selection change while it is open cannot redirect the delete.
+        ex = ctx["example_id"]
         try:
             from AppKit import NSAlert
-            alert = NSAlert.alertWithMessageText_defaultButton_alternateButton_otherButton_informativeTextWithFormat_(
-                "Delete this example everywhere?",
-                "Delete", "Cancel", None,
-                "Revokes every lease and purges audio, transcripts and "
-                "derived records. Only a content-free tombstone remains.")
-            if alert.runModal() != 1000:  # NSAlertDefaultReturn
+            alert = NSAlert.alloc().init()
+            alert.setMessageText_("Delete this example everywhere?")
+            alert.setInformativeText_(
+                f"Example {ex[:24]}… — revokes every lease and purges"
+                " audio, transcripts and derived records. Only a"
+                " content-free tombstone remains.")
+            alert.setAlertStyle_(NSAlertStyleWarning)
+            alert.addButtonWithTitle_("Delete Everywhere")
+            alert.addButtonWithTitle_("Cancel")
+            if alert.runModal() != NSAlertFirstButtonReturn:
                 return
         except Exception:
             pass  # headless/test path: the guarded action runs directly
-        self._delete_example()
+        self._delete_example(ex)
 
     @objc.python_method
-    def _delete_example(self):
-        ex = self._selected_example_id()
+    def _delete_example(self, ex=None):
+        if ex is None:
+            ctx = self._training_ctx(quiet=True)
+            ex = ctx["example_id"] if ctx else self._selected_example_id()
         if not ex:
             return
         if self._training_action(
                 self.spec["training_service"].delete_everywhere, ex) \
                 is None:
             return
-        self.state.views["models"]["selected_id"] = None
+        # The store listener has already revoked the job in the state
+        # and replay; what this pane shows goes now, on the main thread.
+        rendered = self._rendered.get("training_detail")
+        if rendered is not None and rendered.get("example_id") == ex:
+            self._rendered["training_detail"] = None
+            self._clear_training_editors()
+            self.training_detail.setString_("This example was deleted.")
+        if self._selected_example_id() == ex:
+            self.state.select_training_example(None)
         self.state.reload_training()
 
     def trainingReplay_(self, sender):
-        detail = self.state.views["models"].get("detail") or {}
-        audio = detail.get("audio") or {}
+        ctx = self._training_ctx()
+        if ctx is None:
+            return
+        audio = ctx.get("audio") or {}
         if self.replay is None or not audio.get("available"):
-            self.training_detail.setString_(
+            if self.replay is not None:
+                self.replay.stop()
+            self._training_note(
                 "audio unavailable ("
                 + (audio.get("reason") or "no artifact") + ")")
             return
         out = self.replay.play_artifact(self.spec["store"],
                                         audio.get("artifact_id"))
         if out.get("status") == "playing":
-            # The verbatim gate opens only for THIS example's real
-            # playback (E14) — the flag is bound to the example id, so
-            # replaying one example never certifies another.
-            if detail.get("example_id") == self._selected_example_id():
+            # The verbatim gate opens only for THIS example's successful
+            # playback start (E14) — bound to the rendered, selected
+            # example; a start is not proof the whole recording was
+            # heard (the contract's playback-start gate).
+            if self._training_ctx(quiet=True) is ctx:
                 self.state.views["models"]["listened_for"] = \
-                    detail.get("example_id")
+                    ctx["example_id"]
         else:
-            self.training_detail.setString_(
+            self._training_note(
                 "replay unavailable (" + str(out.get("reason")) + ")")
 
+    _UNKNOWN_SAVE = ("save outcome unknown: the store is busy and the save"
+                     " may still complete. Saving the same text again will"
+                     " not duplicate it.")
+
     def trainingVerbatim_(self, sender):
-        ex = self._selected_example_id()
         text = self.verbatim_field.stringValue() or ""
-        if not ex or not text:
+        if not text:
             return
+        ctx = self._training_ctx()
+        if ctx is None:
+            return
+        ex = ctx["example_id"]
         listened = (self.state.views["models"].get("listened_for") == ex)
+        ann_id = self._annotation_id(ctx, "verbatim", text)
         try:
             self.spec["training_service"].set_verbatim(
-                ex, text, listened_audio=listened)
-        except ValueError as e:
-            self.training_detail.setString_(
-                f"verbatim not saved: {e} — replay this example's audio"
-                " first")
+                ex, text, listened_audio=listened, annotation_id=ann_id)
+        except TimeoutError:
+            self._training_note("verbatim " + self._UNKNOWN_SAVE)
             return
-        except Exception as e:  # store stall etc. — surfaced, never lost
-            self.training_detail.setString_(
-                f"verbatim not saved: {type(e).__name__}")
+        except Exception as e:  # refused or failed: nothing committed
+            self._pending_annotation = None
+            reason = _refusal_text(e)
+            hint = (" — replay this example's audio first"
+                    if reason and "listen_before_verbatim" in reason else "")
+            self._training_note("verbatim not saved: "
+                                + (reason or type(e).__name__) + hint)
             return
+        self._pending_annotation = None
         self.state.views["models"]["listened_for"] = None
         self.state.select_training_example(ex)
 
     def trainingSpan_(self, sender):
-        ex = self._selected_example_id()
         try:
             start = int(self.span_start.stringValue())
             end = int(self.span_end.stringValue())
         except ValueError:
-            self.training_detail.setString_(
-                "span start/end must be code-point integers")
+            self._training_note("span start/end must be code-point"
+                                " integers")
             return
         corrected = self.span_corrected.stringValue() or ""
         stage = self.span_stage.titleOfSelectedItem() or "source_text"
-        if not ex or not corrected:
+        if not corrected:
             return
+        ctx = self._training_ctx()
+        if ctx is None:
+            return
+        ex = ctx["example_id"]
+        # The exact stage text the user reviewed: its immutable artifact
+        # and hash travel into the writer op (M09-AUDIT-06).
+        reviewed = next((s for s in ctx.get("stages") or []
+                         if s.get("stage") == stage and s.get("available")),
+                        None)
+        if reviewed is None:
+            self._training_note(f"span not saved: the {stage} text is not"
+                                " available")
+            return
+        from .. import ids
+        ann_id = self._annotation_id(ctx, f"span:{stage}:{start}:{end}",
+                                     corrected)
         try:
             self.spec["training_service"].add_span_correction(
-                ex, stage, start, end, corrected)
-        except ValueError as e:
-            self.training_detail.setString_(f"span not saved: {e}")
+                ex, stage, start, end, corrected,
+                expected_artifact_id=reviewed["artifact_id"],
+                expected_sha256=ids.sha256_text(reviewed["text"]),
+                annotation_id=ann_id)
+        except TimeoutError:
+            self._training_note("span " + self._UNKNOWN_SAVE)
             return
-        except Exception as e:
-            self.training_detail.setString_(
-                f"span not saved: {type(e).__name__}")
+        except Exception as e:  # refused (stale, not reviewable) or failed
+            self._pending_annotation = None
+            self._training_note("span not saved: "
+                                + (_refusal_text(e) or type(e).__name__))
             return
+        self._pending_annotation = None
         self.state.select_training_example(ex)
 
     # ---- Training Data M14 actions -------------------------------------------
@@ -2288,17 +2696,41 @@ class HubController(NSObject):
             return
         self.review_text.setString_("mining observations…")
 
-        def done(_out, err):
-            if err is not None:
-                self.review_text.setString_(
-                    f"action failed: {type(err).__name__}: {err}")
+        def done(_out, err, current):
+            # A late completion reports under its own action and never
+            # navigates: the user may have moved on (M09-AUDIT-21).
+            if not current:
                 return
-            self.state.select_training_tab("review")
-        self._in_background(svc.mine_observation_candidates, done)
+            on_review = self._on_training_tab("review")
+            if err is not None:
+                msg = f"action failed: {type(err).__name__}: {err}"
+                if on_review:
+                    self.review_text.setString_(msg)
+                else:
+                    self._action_notes["review"] = "mining " + msg
+                return
+            if on_review:
+                self.state.reload_training()
+            else:
+                self._action_notes["review"] = \
+                    "mining finished — the review queue was updated"
+        self._in_background(svc.mine_observation_candidates, done,
+                            key="mine")
 
+    @objc.python_method
     def _selected_queue_row(self):
+        """The queue row an Approve/Reject acts on: the selected
+        example's row in the RENDERED queue, else the rendered first
+        row — refused while a newer queue is not yet on screen, so a
+        reordered backing list can never redirect the action."""
         view = self.state.views["models"]
-        rows = ((view.get("data") or {}).get("queue")) or []
+        current = (view.get("data") or {}).get("queue")
+        rows = self._rendered_rows.get("review_queue")
+        if rows is None or current is not self._rendered.get(
+                "review_queue_src"):
+            self.review_text.setString_(
+                "The review queue is refreshing — try again.")
+            return None
         sel = view.get("selected_id")
         if sel:
             for row in rows:
@@ -2308,9 +2740,11 @@ class HubController(NSObject):
 
     def reviewApprove_(self, sender):
         learning = self.spec.get("learning_service")
+        if learning is None:
+            return
         row = self._selected_queue_row()
         counter = (self.review_counter.stringValue() or "").strip()
-        if learning is None or row is None:
+        if row is None:
             return
         if not row.get("candidate_id"):
             self.review_text.setString_(
@@ -2332,8 +2766,10 @@ class HubController(NSObject):
 
     def reviewReject_(self, sender):
         learning = self.spec.get("learning_service")
+        if learning is None:
+            return
         row = self._selected_queue_row()
-        if learning is None or row is None:
+        if row is None:
             return
         if not row.get("candidate_id"):
             self.review_text.setString_(
@@ -2417,20 +2853,29 @@ class HubController(NSObject):
             return
         self.export_text.setString_("exporting…")
 
-        def done(out, err):
+        def done(out, err, current):
+            # An older export finishing after a newer one started keeps
+            # its own record (export history) but never takes over the
+            # current status (M09-AUDIT-21).
+            if not current:
+                return
             if err is not None:
                 # The refusal reason stays on screen (no reload over it).
-                self.export_text.setString_(
-                    f"action failed: {type(err).__name__}: {err}")
-                return
-            counts = json.dumps(out.get("counts") or {}, sort_keys=True)
-            self.export_text.setString_(
-                f"export {out['state']} · {out['export_id']}\n"
-                f"counts: {counts}\nfingerprint:"
-                f" {(out.get('fingerprint') or '')[:16]}…")
-            self.state.reload_training()
+                msg = f"action failed: {type(err).__name__}: {err}"
+            else:
+                counts = json.dumps(out.get("counts") or {},
+                                    sort_keys=True)
+                msg = (f"export {out['state']} · {out['export_id']}\n"
+                       f"counts: {counts}\nfingerprint:"
+                       f" {(out.get('fingerprint') or '')[:16]}…")
+            if self._on_training_tab("export"):
+                self.export_text.setString_(msg)
+                if err is None:
+                    self.state.reload_training()
+            else:
+                self._action_notes["export"] = msg
         self._in_background(
-            lambda: svc.build(dest, task_views=views), done)
+            lambda: svc.build(dest, task_views=views), done, key="export")
 
     def exportValidate_(self, sender):
         from ..curation.export import validate_dataset
@@ -2456,6 +2901,23 @@ class HubController(NSObject):
             b.setEnabled_(TRAINING_TABS[i] != tab)
 
     @objc.python_method
+    def _training_pane_text(self):
+        view = self.state.views["models"]
+        if view.get("selected_id") is None:
+            return self._render_training_detail(None)
+        rendered = self._rendered.get("training_detail")
+        if rendered is not None:
+            return self._render_training_detail(rendered)
+        if view.get("detail_loading"):
+            return "Loading the selected example…"
+        err = view.get("detail_error")
+        if err == "deleted":
+            return "This example was deleted."
+        if err:
+            return f"This example's detail could not load ({err})."
+        return self._render_training_detail(None)
+
+    @objc.python_method
     def _refresh_models_view(self):
         view = self.state.views["models"]
         is_training = view.get("subview", "engines") == "training"
@@ -2464,17 +2926,27 @@ class HubController(NSObject):
         self.models_tabs.setSelectedSegment_(1 if is_training else 0)
         if is_training:
             data = view.get("data") or {}
-            tab = data.get("training_tab") or "evidence"
+            tab = data.get("training_tab") or \
+                view.get("training_tab") or "evidence"
             self._apply_training_tab(tab)
             ready = data.get("readiness") or {}
             cov = ready.get("dataset_coverage") or {}
-            self.training_ready.setStringValue_(
-                f"{len(data.get('examples') or [])} examples · audio "
-                f"{cov.get('retained_audio_examples')} · verbatim "
-                f"{cov.get('verbatim_reviewed_examples')} · spans "
-                f"{cov.get('span_annotations')} · unreviewed "
-                f"{cov.get('unreviewed_outcomes')} · storage "
-                f"{(ready.get('storage_bytes') or 0) // 1024} KiB")
+            if view.get("error"):
+                # A failed refresh never passes for a fresh success.
+                status = (f"Training Data refresh failed ({view['error']})"
+                          + (" — showing the rows from the last successful"
+                             " load" if data else ""))
+            elif view.get("loading") and not data:
+                status = "Loading training data…"
+            else:
+                status = (
+                    f"{len(data.get('examples') or [])} examples · audio "
+                    f"{cov.get('retained_audio_examples')} · verbatim "
+                    f"{cov.get('verbatim_reviewed_examples')} · spans "
+                    f"{cov.get('span_annotations')} · unreviewed "
+                    f"{cov.get('unreviewed_outcomes')} · storage "
+                    f"{(ready.get('storage_bytes') or 0) // 1024} KiB")
+            self.training_ready.setStringValue_(status)
             if tab == "review":
                 self._refresh_review_pane(data)
             elif tab == "splits":
@@ -2482,10 +2954,26 @@ class HubController(NSObject):
             elif tab == "export":
                 self._refresh_export_pane(data)
             else:
-                self.training_table.reloadData()
-                self.training_detail.setString_(
-                    self._render_training_detail(view.get("detail")))
+                sel = view.get("selected_id")
+                self._render_rows("training_table", "example_id", sel)
+                detail = view.get("detail")
+                self._rendered["training_detail"] = detail \
+                    if detail is not None and view.get("detail_key") == sel \
+                    and detail.get("example_id") == sel else None
+                shown = (self._rendered["training_detail"] or {}).get(
+                    "example_id")
+                if shown != self._editor_bound:
+                    # Editor buffers belong to the example they were
+                    # typed against: another example never inherits them.
+                    if self._editor_bound is not None:
+                        self._clear_training_editors()
+                    self._editor_bound = shown
+                self.training_detail.setString_(self._training_pane_text())
         else:
+            if view.get("error"):
+                self.models_text.setString_(
+                    f"Engine status could not load ({view['error']}).")
+                return
             block = (view.get("data") or {}).get("engine") or {}
             lines = ["— engines / build —"]
             lines += [f"{k}: {v}" for k, v in sorted(block.items())]
@@ -2504,11 +2992,16 @@ class HubController(NSObject):
     @objc.python_method
     def _refresh_review_pane(self, data):
         queue = data.get("queue") or []
+        # The queue as rendered: Approve/Reject resolve against it.
+        self._rendered["review_queue_src"] = data.get("queue")
+        self._rendered_rows["review_queue"] = list(queue)
         coverage = data.get("coverage") or {}
         strata = json.dumps(coverage.get("by_stratum") or {},
                             sort_keys=True)
+        note = self._action_notes.pop("review", None)
         self.review_status.setStringValue_(
-            f"{len(queue)} review rows · strata {strata}")
+            f"{len(queue)} review rows · strata {strata}"
+            + (f" · {note}" if note else ""))
         lines = ["— review queue —"]
         for row in queue[:60]:
             cls = row.get("classification") or {}
@@ -2559,6 +3052,12 @@ class HubController(NSObject):
     @objc.python_method
     def _refresh_export_pane(self, data):
         last = data.get("last_export")
+        note = self._action_notes.pop("export", None)
+        if note:
+            self.export_status.setStringValue_("Export finished while you"
+                                               " were away")
+            self.export_text.setString_(note)
+            return
         if not last:
             self.export_status.setStringValue_("No export run yet")
             self.export_text.setString_(
@@ -2754,6 +3253,10 @@ class HubController(NSObject):
         self.voice_pane.view.setHidden_(subview != "voice")
         if subview == "voice":
             self.voice_pane.refresh(data)
+            note = self._action_notes.get("voice")
+            if note:
+                self.voice_pane.text.setString_(
+                    f"{note}\n\n{self.voice_pane.text.string()}")
             return
         s = data.get("summary") or {}
         cohort = s.get("cohort") or {}
@@ -2762,24 +3265,33 @@ class HubController(NSObject):
             f"{s.get('algorithm_version')}")
         self.insights_text.setString_(self._insights_summary_text(data))
         self._refresh_insights_popups(data)
-        self.insights_table.reloadData()
+        self._render_rows("insights_table")
 
     # ---- Your Voice actions (M14, S22) ----------------------------------------
 
     def voiceGenerate_(self, sender):
         """On-demand profile generation (S22), off the main thread; a
-        failure is shown in the pane, never swallowed."""
+        failure is shown in the pane, never swallowed — it stays until
+        the next generation starts (a routine refresh re-applies it)."""
         profile = self.spec.get("profile_service")
         if profile is None:
             return
+        self._action_notes.pop("voice", None)
 
-        def done(_out, err):
+        def done(_out, err, current):
+            if not current:
+                return  # a newer generation owns the status
             if err is not None:
-                self.voice_pane.text.setString_(
-                    f"generation failed: {type(err).__name__}: {err}")
+                msg = f"generation failed: {type(err).__name__}: {err}"
+                self._action_notes["voice"] = msg
+                view = self.state.views["insights"]
+                if self.state.selected_view == "insights" and \
+                        view.get("subview") == "voice":
+                    self.voice_pane.text.setString_(
+                        f"{msg}\n\n{self.voice_pane.text.string()}")
                 return
             self.state.reload_insights()
-        self._in_background(profile.compute, done)
+        self._in_background(profile.compute, done, key="voice")
 
     def voiceExcludeEvidence_(self, sender):
         profile = self.spec.get("profile_service")
@@ -3033,10 +3545,25 @@ class HubController(NSObject):
         self._set_collection("disabled")
 
     @objc.python_method
+    def _settings_call(self, what, fn, *args):
+        """Run one Settings coordinator command; a failure is shown (the
+        exception type only — never a payload) and nothing reloads over
+        it (M09-AUDIT-22)."""
+        try:
+            fn(*args)
+        except Exception as e:
+            self.settings_text.setStringValue_(
+                f"{what} failed ({type(e).__name__}) — nothing changed on"
+                " screen; see Diagnostics")
+            return False
+        self.state.reload_current()
+        return True
+
+    @objc.python_method
     def _set_collection(self, new_state):
         if self.coordinator is not None:
-            self.coordinator.hubSetCollection(new_state)
-        self.state.reload_current()
+            self._settings_call("Changing collection",
+                                self.coordinator.hubSetCollection, new_state)
 
     def settingsApplyRetention_(self, sender):
         values = []
@@ -3048,8 +3575,8 @@ class HubController(NSObject):
                     "retention values must be whole days")
                 return
         if self.coordinator is not None and len(values) == 5:
-            self.coordinator.hubApplyRetention(values)
-        self.state.reload_current()
+            self._settings_call("Applying retention",
+                                self.coordinator.hubApplyRetention, values)
 
     def settingsApplyUsage_(self, sender):
         if self.coordinator is None or \
@@ -3061,8 +3588,8 @@ class HubController(NSObject):
             self.settings_text.setStringValue_(
                 "usage retention must be whole days")
             return
-        self.coordinator.hubApplyUsageRetention(days)
-        self.state.reload_current()
+        self._settings_call("Applying usage retention",
+                            self.coordinator.hubApplyUsageRetention, days)
 
     def settingsDeleteUsage_(self, sender):
         """The explicit delete-all-usage control (S21): counters and
@@ -3082,13 +3609,17 @@ class HubController(NSObject):
         alert.addButtonWithTitle_("Cancel")
         if alert.runModal() != NSAlertFirstButtonReturn:
             return
-        self.coordinator.hubDeleteAllUsage()
-        self.state.reload_current()
+        self._settings_call("Deleting usage data",
+                            self.coordinator.hubDeleteAllUsage)
 
     @objc.python_method
     def _refresh_settings_view(self):
         view = self.state.views["settings"]
         data = view.get("data") or {}
+        if view.get("error"):
+            self.settings_text.setStringValue_(
+                f"Settings could not load ({view['error']})")
+            return
         self.settings_text.setStringValue_(
             f"Collection: {data.get('collection_state', 'unknown')}")
         ret = data.get("retention") or {}

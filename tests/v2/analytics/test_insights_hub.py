@@ -305,19 +305,25 @@ def test_insights_view_over_real_services():
 def test_history_delete_usage_button_paths():
     """The History 'Delete Usage' control: a V2 job deletes its usage;
     a legacy row refuses honestly (the lossless import)."""
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] /
+                           "ui"))
+    from m09_world import MainQueue
     h = Harness(durations=[1.0])
+    # The History button acts on the detail rendered on screen: its
+    # refreshes are delivered on this (main) thread by the queue.
+    mq = MainQueue().__enter__()
     try:
         drive_dictation(h)
         jid = facts(h.d)[0][0]
         hub = make_hub(h.d, h.tmp)
         from localflow.v2.ui.state import VIEWS
         hub._select_view_index(VIEWS.index("history"))
-        hub.state.wait_for_queries()
+        assert mq.drain(hub.state)
         view = hub.state.views["history"]
         rows = [r for g in view["data"]["groups"] for r in g["rows"]]
         job_row = next(r for r in rows if r["kind"] == "job")
         hub.state.select_history_row("job", job_row["id"])
-        hub.state.wait_for_queries()
+        assert mq.drain(hub.state)
         hub.historyDeleteUsage_(None)
         assert facts(h.d) == [], "usage fact not deleted"
         # Legacy rows refuse: no job id on the detail.
@@ -325,11 +331,13 @@ def test_history_delete_usage_button_paths():
         if legacy_row is not None:
             hub.state.select_history_row(legacy_row["kind"],
                                          legacy_row["id"])
-            hub.state.wait_for_queries()
+            assert mq.drain(hub.state)
             out = h.d.hubDeleteUsageForJob(None)
             assert out["outcome"] == "not_a_v2_job"
     finally:
         h.close()
+        mq.discard()
+        mq.__exit__()
     print("ok  History delete-usage: V2 job deletes; legacy refuses")
 
 
