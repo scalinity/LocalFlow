@@ -196,7 +196,7 @@ class FakeContextCollector:
     def abandon(self):
         pass
 
-    def finalize(self, *, job_id, target_snapshot_id=None):
+    def finalize(self, *, coll=None, job_id, target_snapshot_id=None):
         return CtxSnap(
             context_snapshot_id=ids.new_id("ctx"), stage="pre_decode",
             target=TargetSnapshot(

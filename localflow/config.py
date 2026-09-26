@@ -237,6 +237,45 @@ def event_retention_policy(cfg) -> tuple[dict, list]:
     return out, problems
 
 
+def context_policy(cfg) -> tuple[dict, list]:
+    """The validated M06 privacy controls + (key, reason) problems.
+    Read once at startup — a change applies from the next launch, there
+    is no hot reload. Every malformed value fails CLOSED: a disable or
+    deny request that is not the documented type never becomes
+    permission to read or retain (JSON false/lists keep working as
+    written). The deadline keeps a configured value only inside
+    [0, 250] ms, else its default."""
+    problems = []
+    enabled = cfg.get("context_enabled", DEFAULTS["context_enabled"])
+    if not isinstance(enabled, bool):
+        problems.append(("context_enabled", "not_a_boolean"))
+        enabled = False
+    retain = cfg.get("training_retain_context",
+                     DEFAULTS["training_retain_context"])
+    if not isinstance(retain, bool):
+        problems.append(("training_retain_context", "not_a_boolean"))
+        retain = False
+    denied = cfg.get("context_denied_apps", DEFAULTS["context_denied_apps"])
+    if denied is None:
+        denied = []
+    if not isinstance(denied, list) or not all(
+            isinstance(b, str) and b.strip() for b in denied):
+        # The deny intent cannot be honored, so nothing is read at all.
+        problems.append(("context_denied_apps", "not_a_list_of_bundle_ids"))
+        enabled, denied = False, []
+    deadline = cfg.get("context_deadline_ms",
+                       DEFAULTS["context_deadline_ms"])
+    if isinstance(deadline, bool) or not isinstance(deadline, (int, float)) \
+            or deadline != deadline \
+            or deadline in (float("inf"), float("-inf")) \
+            or not 0 <= deadline <= 250:
+        problems.append(("context_deadline_ms", "out_of_range"))
+        deadline = DEFAULTS["context_deadline_ms"]
+    return ({"context_enabled": enabled, "training_retain_context": retain,
+             "context_denied_apps": tuple(b.strip() for b in denied),
+             "context_deadline_ms": deadline}, problems)
+
+
 def validate_retention_value(key, value):
     """One knob from a UI/settings write: the int, or None when invalid."""
     lo, hi = (RETENTION_BOUNDS[key][1:] if key in RETENTION_BOUNDS

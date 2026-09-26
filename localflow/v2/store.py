@@ -1842,6 +1842,26 @@ class Store:
                 key = path[len("artifact_ids."):] \
                     if path.startswith("artifact_ids.") else path
                 missing.setdefault(key, "not_captured_at_stage")
+            # M06-AUDIT-15: a context block may claim retention only for
+            # a payload that committed for this job AND holds a live
+            # training lease — decided here, in the acknowledged op, not
+            # by the producer that merely queued the writes.
+            context = env.get("context")
+            for stage in ("destination", "downstream"):
+                blk = context.get(stage) if isinstance(context, dict) \
+                    else None
+                if not isinstance(blk, dict) or blk.get("retained") is not True:
+                    continue
+                aid = blk.get("artifact_id")
+                leased = aid is not None and self._db.execute(
+                    "SELECT 1 FROM artifact_leases WHERE artifact_id=? AND"
+                    " holder='training' AND revoked_at_utc IS NULL",
+                    (aid,)).fetchone() is not None
+                if not leased:
+                    blk["retained"] = False
+                    blk["retention_reason"] = "retention_write_failed"
+                    missing.setdefault("context_snapshot_payload",
+                                       "retention_write_failed")
             env["missing_reasons"] = missing
             env["completeness"] = {"complete": not uncommitted,
                                    "uncommitted_references": uncommitted}

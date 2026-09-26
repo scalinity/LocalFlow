@@ -6,13 +6,18 @@ live frontmost app, and the field/selection signature decides whether
 replacement authority is still valid. The settled matrix
 (contracts/insertion.md):
 
-- identity (pid, else bundle — exactly ``ContextSnapshot.same_destination``
-  for full snapshots, the same rule inline for a bare PTT-time
-  ``TargetSnapshot``): strict — mismatch ⇒ target_changed.
-- window title: when the snapshot recorded one and it is readable,
-  mismatch ⇒ target_changed (a different document is not the same
-  destination even in the same app); unreadable ⇒ ``unavailable``,
-  identity alone governs (plain-dictation contract).
+- identity (the shared M06 rule ``snapshot.identity_matches`` via
+  ``same_destination`` on both a full snapshot and a bare PTT-time
+  ``TargetSnapshot``: a usable pid or bundle on both sides, a
+  contradiction refused, absence never a match): strict — mismatch ⇒
+  target_changed.
+- window: the M06 window element (in-memory, compared by host
+  identity) when both sides expose it — another window of the same app
+  is target_changed even under an equal title; otherwise the window
+  title when the snapshot recorded one and it is readable, mismatch ⇒
+  target_changed (a different document is not the same destination
+  even in the same app); unreadable ⇒ ``unavailable``, identity alone
+  governs (plain-dictation contract).
 - field classification/role: mismatch ⇒ target_changed. A snapshot
   without field data (denied/unclassifiable/AX off/PTT-identity-only)
   validates on identity alone — insertion proceeds as plain dictation.
@@ -33,6 +38,7 @@ from __future__ import annotations
 from typing import Optional
 
 from .. import ids
+from ..context.providers import ax_range
 from ..context.snapshot import ContextSnapshot, TargetSnapshot
 from .hosts import InsertionHost
 from .target_lease import (VERIFICATION_FAIL, VERIFICATION_NOT_RECORDED,
@@ -41,12 +47,10 @@ from .target_lease import (VERIFICATION_FAIL, VERIFICATION_NOT_RECORDED,
 
 
 def _as_range(rng) -> Optional[tuple]:
-    if rng is None:
-        return None
-    try:
-        return (int(rng.location), int(rng.location) + int(rng.length))
-    except (AttributeError, TypeError, ValueError):
-        return None
+    """Half-open (start, end) in the host's AX units — a native AXValue
+    CFRange is decoded (UTF-16 units on macOS), never parsed."""
+    r = ax_range(rng)
+    return None if r is None else (r[0], r[0] + r[1])
 
 
 def validate_target(host: InsertionHost,
@@ -57,7 +61,8 @@ def validate_target(host: InsertionHost,
     verification: dict = {}
     if isinstance(snapshot, TargetSnapshot) and not isinstance(
             snapshot, ContextSnapshot):
-        target, field, window_title, same_fn = snapshot, None, None, None
+        target, field, window_title = snapshot, None, None
+        same_fn = snapshot.same_destination
     elif isinstance(snapshot, ContextSnapshot):
         target = snapshot.target
         field = snapshot.field
@@ -86,14 +91,7 @@ def validate_target(host: InsertionHost,
             frontmost_pid=frontmost.get("pid") if frontmost else None,
             frontmost_bundle=frontmost.get("bundle") if frontmost else None,
             caret=caret, verification=verification), verification
-    if same_fn is not None:
-        same = same_fn(frontmost)
-    elif frontmost is None:
-        same = False
-    elif frontmost.get("pid") is not None and target.app_pid is not None:
-        same = frontmost["pid"] == target.app_pid
-    else:
-        same = frontmost.get("bundle") == target.app_bundle
+    same = same_fn(frontmost)
     verification["identity"] = VERIFICATION_PASS if same else VERIFICATION_FAIL
     if not same:
         # No further reads: the destination is wrong and nothing about
@@ -103,7 +101,19 @@ def validate_target(host: InsertionHost,
         return None, verification
 
     el = host.focused_element()
-    if window_title is None:
+    # The M06 window identity (an in-memory host element; equal titles
+    # are not unique): when both sides expose it, it decides — a
+    # different window of the same app is a changed target; a moved
+    # caret or another field of the SAME window is not.
+    recorded_win = getattr(snapshot, "window_element", None) \
+        if isinstance(snapshot, ContextSnapshot) else None
+    live_win = host.attribute(el, "AXWindow") \
+        if recorded_win is not None and el is not None else None
+    if live_win is not None:
+        verification["window"] = (VERIFICATION_PASS
+                                  if live_win == recorded_win
+                                  else VERIFICATION_FAIL)
+    elif window_title is None:
         verification["window"] = VERIFICATION_NOT_RECORDED
     elif el is None:
         verification["window"] = VERIFICATION_UNAVAILABLE
@@ -137,7 +147,8 @@ def validate_target(host: InsertionHost,
             job_id=job.get("job_id"), attempt=int(job.get("attempt", 1)),
             target_snapshot_id=target.target_snapshot_id,
             context_snapshot_id=(snapshot.context_snapshot_id
-                                 if same_fn is not None else None),
+                                 if isinstance(snapshot, ContextSnapshot)
+                                 else None),
             frontmost_pid=target.app_pid, frontmost_bundle=target.app_bundle,
             field_role=field.role if field else None,
             field_classification=field.classification if field else None,
@@ -164,7 +175,10 @@ def validate_target(host: InsertionHost,
     # (empty range) moves freely — the caret is the insertion point.
     selected_range = _as_range(host.attribute(el, "AXSelectedTextRange"))
     caret = selected_range[0] if selected_range is not None else None
-    snap_range = field.selected_range if field else None
+    # Host units on both sides: the native selection (UTF-16 on macOS)
+    # when the snapshot recorded one, else the fixture's own range.
+    snap_range = ((field.selected_range_utf16 or field.selected_range)
+                  if field else None)
     replace_selection = bool(snap_range and snap_range[1] > snap_range[0])
     if not replace_selection:
         verification["selection"] = (
@@ -189,7 +203,8 @@ def validate_target(host: InsertionHost,
         job_id=job.get("job_id"), attempt=int(job.get("attempt", 1)),
         target_snapshot_id=target.target_snapshot_id,
         context_snapshot_id=(snapshot.context_snapshot_id
-                             if same_fn is not None else None),
+                             if isinstance(snapshot, ContextSnapshot)
+                             else None),
         frontmost_pid=target.app_pid, frontmost_bundle=target.app_bundle,
         replace_selection=replace_selection,
         selected_range=tuple(snap_range) if snap_range else None,

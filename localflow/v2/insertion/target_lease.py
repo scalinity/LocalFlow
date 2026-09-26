@@ -32,14 +32,15 @@ class TargetLease:
     attempt: int
     target_snapshot_id: Optional[str]
     context_snapshot_id: Optional[str]
-    # Identity the insert must land in (pid when both sides have one,
-    # else bundle — exactly ContextSnapshot.same_destination's rule).
+    # Identity the insert must land in (the shared M06 rule,
+    # snapshot.identity_matches: absent or contradictory never matches).
     frontmost_pid: Optional[int]
     frontmost_bundle: Optional[str]
     # Replacement authority: a non-empty selection recorded at snapshot
     # time may only be replaced while it is still exactly there.
     replace_selection: bool = False
-    selected_range: Optional[tuple] = None      # half-open code points
+    selected_range: Optional[tuple] = None      # half-open, host AX units
+                                                # (UTF-16 on macOS)
     selected_text_sha: Optional[str] = None
     # Field signature for observation continuity and undo binding.
     field_role: Optional[str] = None
@@ -50,9 +51,6 @@ class TargetLease:
     verification: dict = dataclasses.field(default_factory=dict)
 
     def identity_matches(self, frontmost: Optional[dict]) -> bool:
-        if frontmost is None:
-            return False
-        if frontmost.get("pid") is not None \
-                and self.frontmost_pid is not None:
-            return frontmost["pid"] == self.frontmost_pid
-        return frontmost.get("bundle") == self.frontmost_bundle
+        from ..context.snapshot import identity_matches
+        return identity_matches(self.frontmost_pid, self.frontmost_bundle,
+                                frontmost)

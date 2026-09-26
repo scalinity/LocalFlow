@@ -113,6 +113,46 @@ class FakeAXHost:
             return None, None
         return int(r[0]), int(r[1])
 
+    # ---- job-owned typed protocol (M06 remediation) -------------------
+    # The fixture's one application owns its tree: the focused element
+    # belongs to the scenario's frontmost pid, identities are the fixture
+    # objects themselves (a new tree = a new window/field).
+
+    def _owner(self):
+        return self.tree.get("owner_pid",
+                             (self.scenario.get("frontmost") or {}).get("pid"))
+
+    def focused_element_for(self, pid):
+        if pid != self._owner():
+            return None
+        return self.focused_element()
+
+    def element_pid(self, el):
+        return self._owner()
+
+    def element_token(self, el):
+        return ("field", id(el[1]))
+
+    def window_of(self, el):
+        return ("window", self.tree)
+
+    def window_token(self, win):
+        return ("window", id(win[1]))
+
+    def read(self, el, name):
+        if el[0] == "window":
+            if name == "AXTitle":
+                self.reads.append(("window", "AXTitle"))
+                t = self.tree.get("window_title")
+                return (t, 0) if t is not None else (None, -25212)
+            return None, -25205
+        value = self.attribute(el, name)
+        return (value, 0) if value is not None else (None, -25205)
+
+    def read_range(self, el, name="AXSelectedTextRange"):
+        value, err = self.read(el, name)
+        return (tuple(value) if value is not None else None), err
+
 
 class Recorder:
     """Content-free event sink for trace assertions."""
@@ -138,10 +178,10 @@ def run(scenario, *, denied_apps=(), deadline_ms=75.0,
         frontmost=lambda: frontmost_override
         or scenario["frontmost"])
     target = coll.capture_identity()
-    coll.begin(target)
+    handle = coll.begin(target)
     if settle_sec:
         time.sleep(settle_sec)
-    snap = coll.finalize()
+    snap = coll.finalize(handle)
     return coll, host, sink, target, snap
 
 
@@ -190,8 +230,14 @@ def test_ac01_secure_field_retains_no_content():
         assert "CANARY-SECRET" not in blob
     assert snap.omission_reason("focused_field") == "secure_field"
     # The identity itself is still recorded (destination known, content
-    # not) and the origin resolved with query/fragment stripped.
-    assert snap.site_origin == "https://accounts.example.com"
+    # not). Policy D1 (M06 remediation, contracts/context.md): a secure
+    # element answers AXRole/AXSubrole only — its AXURL is not asked, so
+    # the origin comes from the window title or is honestly absent
+    # ("Sign in — Safari" names no host); the title itself is allowed
+    # destination metadata.
+    assert "AXURL" not in read_names, read_names
+    assert snap.site_origin is None
+    assert snap.window_title == "Sign in — Safari"
     print("ok  AC01: secure field classified before read; no retained"
           " content in snapshot, events or reads")
 
@@ -292,7 +338,7 @@ def test_ac02_timeout_partial_snapshot():
     t = coll.capture_identity()
     handle = coll.begin(t)
     t0 = time.monotonic()
-    snap = coll.finalize()          # no settle: the field is slow
+    snap = coll.finalize(handle)    # no settle: the field is slow
     waited = (time.monotonic() - t0) * 1000.0
     assert snap.partial
     assert snap.omission_reason("focused_field") == "deadline"
@@ -317,8 +363,12 @@ def test_ac02_timeout_partial_snapshot():
 
 def test_finalize_idempotent_and_reusable():
     s = SCENARIOS["LF-CTX-010"]
-    coll, _, _, _, snap = run(s, settle_sec=0.0)
-    again = coll.finalize()
+    coll = ContextCollector(enabled=True, emit=Recorder(),
+                            host=FakeAXHost(s),
+                            frontmost=lambda: s["frontmost"])
+    handle = coll.begin(coll.capture_identity())
+    snap = coll.finalize(handle)
+    again = coll.finalize(handle)
     assert again is snap           # same object, no re-composition
     print("ok  finalize is idempotent per job")
 
@@ -333,9 +383,9 @@ def test_ac03_stale_window_invalidates():
     coll = ContextCollector(enabled=True, deadline_ms=75.0, emit=sink,
                             host=host, frontmost=lambda: holder["fm"])
     t1 = coll.capture_identity()
-    coll.begin(t1)
+    h1 = coll.begin(t1)
     time.sleep(0.15)
-    snap = coll.finalize()
+    snap = coll.finalize(h1)
     assert snap.same_destination(holder["fm"]) is True
     new_front = {"bundle": "com.apple.iChat", "name": "Messages",
                  "pid": 999}
@@ -363,10 +413,12 @@ def test_cache_reuse_same_window():
     # come from the cache (no second AXURL read).
     reads_before = len(host.reads)
     t2 = coll.capture_identity()
-    coll.begin(t2)
+    h2 = coll.begin(t2)
     time.sleep(0.15)
-    snap2 = coll.finalize()
+    snap2 = coll.finalize(h2)
     assert snap2.site_origin == snap1.site_origin
+    row = {p["name"]: p for p in snap2.providers}["site_origin"]
+    assert row["status"] == "ok" and row.get("cached") is True, row
     new_url_reads = [a for _, a in host.reads[reads_before:]
                      if a == "AXURL"]
     assert not new_url_reads, new_url_reads
@@ -508,30 +560,33 @@ def test_context_disabled():
                             host=FakeAXHost(SCENARIOS["LF-CTX-002"]),
                             frontmost=lambda: {"bundle": "x", "pid": 1})
     assert coll.capture_identity() is None
-    assert coll.finalize() is None
+    assert coll.begin(None) is None and coll.finalize(None) is None
     print("ok  context disabled: no identity, no snapshot, no reads")
 
 
 def test_stale_finalize_refused_and_abandoned():
     """Review critical: a failed identity capture can never finalize the
     PREVIOUS job's snapshot; a finalize naming a foreign target is
-    refused outright."""
+    refused outright. (Remediation: every call names the job's own
+    handle — a job whose identity failed has none, so nothing of the
+    previous job is reachable; there is no global collection to
+    abandon.)"""
     s1 = SCENARIOS["LF-CTX-010"]
     holder = {"fm": s1["frontmost"]}
     coll = ContextCollector(enabled=True, emit=Recorder(),
                             host=FakeAXHost(s1),
                             frontmost=lambda: holder["fm"])
     t1 = coll.capture_identity()
-    coll.begin(t1)
+    h1 = coll.begin(t1)
     time.sleep(0.1)
-    snap1 = coll.finalize()
+    snap1 = coll.finalize(h1)
     assert snap1 is not None
-    # Job 2: identity capture fails (no frontmost) → the app abandons
-    # the collection; finalize must return None, never snap1.
+    # Job 2: identity capture fails (no frontmost) → no handle, so its
+    # finalize returns None, never snap1.
     holder["fm"] = None
-    assert coll.capture_identity() is None
-    coll.abandon()
-    assert coll.finalize() is None
+    t2 = coll.capture_identity()
+    assert t2 is None and coll.begin(t2) is None
+    assert coll.finalize(coll.begin(t2)) is None
     # A finalize that names a different target id is refused even with
     # an active collection.
     t2_holder = {"fm": SCENARIOS["LF-CTX-002"]["frontmost"]}
@@ -539,11 +594,13 @@ def test_stale_finalize_refused_and_abandoned():
                              host=FakeAXHost(SCENARIOS["LF-CTX-002"]),
                              frontmost=lambda: t2_holder["fm"])
     t2 = coll2.capture_identity()
-    coll2.begin(t2)
+    h2 = coll2.begin(t2)
     time.sleep(0.1)
-    assert coll2.finalize(target_snapshot_id="tgt-foreign") is None
+    assert coll2.finalize(h2, target_snapshot_id="tgt-foreign") is None
     assert coll2.finalize(
-        target_snapshot_id=t2.target_snapshot_id) is not None
+        h2, target_snapshot_id=t2.target_snapshot_id) is not None
+    # The older job's handle still finalizes ITS OWN snapshot.
+    assert coll.finalize(h1) is snap1
     print("ok  per-job ownership: abandoned/stale collections never"
           " finalize into the wrong job")
 
@@ -554,7 +611,9 @@ def test_provider_exception_recorded_not_deadline():
 
     class BoomHost(FakeAXHost):
         def attribute(self, el, name):
-            if name == "AXSelectedText":
+            # A read every text field performs (the selected text is
+            # only read for a non-empty in-budget selection).
+            if name == "AXPlaceholderValue":
                 raise RuntimeError("synthetic provider crash")
             return super().attribute(el, name)
 
@@ -563,9 +622,9 @@ def test_provider_exception_recorded_not_deadline():
     coll = ContextCollector(enabled=True, emit=sink, host=BoomHost(s),
                             frontmost=lambda: s["frontmost"])
     t = coll.capture_identity()
-    coll.begin(t)
+    h = coll.begin(t)
     time.sleep(0.1)
-    snap = coll.finalize()
+    snap = coll.finalize(h)
     assert snap.omission_reason("focused_field") == "provider_failed"
     assert any(e == "context.provider_failed" for e, _ in sink.events)
     print("ok  provider exception: provider_failed omission + event,"
@@ -584,9 +643,9 @@ def test_destination_changed_skips_content_reads():
     t = coll.capture_identity()
     holder["fm"] = {"bundle": "com.apple.Terminal", "name": "Terminal",
                     "pid": 4242}       # cmd-tab away mid-dictation
-    coll.begin(t)
+    h = coll.begin(t)
     time.sleep(0.1)
-    snap = coll.finalize()
+    snap = coll.finalize(h)
     assert host.reads == [], host.reads
     for f in ("focused_field", "site_origin", "workspace"):
         assert snap.omission_reason(f) == "destination_changed", f
@@ -603,17 +662,17 @@ def test_same_pid_window_change_invalidates_cache():
     coll = ContextCollector(enabled=True, emit=Recorder(), host=host,
                             frontmost=lambda: s["frontmost"])
     t1 = coll.capture_identity()
-    coll.begin(t1)
+    h1 = coll.begin(t1)
     time.sleep(0.05)
-    snap1 = coll.finalize()
+    snap1 = coll.finalize(h1)
     reads_before = len(host.reads)
     # Same pid, new tab (different window title + URL).
     s2 = SCENARIOS["LF-CTX-017"]
     host.tree = s2["tree"]
     t2 = coll.capture_identity()
-    coll.begin(t2)
+    h2 = coll.begin(t2)
     time.sleep(0.05)
-    snap2 = coll.finalize()
+    snap2 = coll.finalize(h2)
     assert snap2.site_origin == "https://claude.ai" != snap1.site_origin
     assert any(a == "AXURL"
                for _, a in host.reads[reads_before:]), host.reads
