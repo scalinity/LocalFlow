@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-09-26",
+  "kind": "reference Mac environment (sanitized: no serial numbers, user names or absolute paths)",
+  "os": {
+    "product": "macOS",
+    "version": "27.0",
+    "build": "26A428"
+  },
+  "hardware": {
+    "model": "Mac17,8",
+    "chip": "Apple M5 Pro",
+    "cpus": 18,
+    "memory_gib": 48,
+    "arch": "arm64"
+  },
+  "power": "AC",
+  "python": {
+    "version": "3.14.7",
+    "interpreter": ".venv/bin/python (repository venv; localflow imported from the code root, not installed)"
+  },
+  "packages": {
+    "pyobjc-core": "12.2.1",
+    "pyobjc-framework-Cocoa": "12.2.1",
+    "pyobjc-framework-ApplicationServices": "12.2.1",
+    "pyobjc-framework-Quartz": "12.2.1",
+    "numpy": "2.4.6",
+    "mlx": "0.31.2",
+    "mlx-lm": "0.31.3"
+  },
+  "accessibility_trusted_for_terminal": true,
+  "desktop_isolation": "every portable suite, the corpus and the benchmark ran under tests/v2/context/run_isolated.py (live-desktop AX calls, trust queries and CGEventPost blocked and counted; the general pasteboard redirected to a private one); native suites reached only their own helper processes by pid; no key event was posted to the desktop",
+  "models_for_the_model_backed_check_only": {
+    "parakeet-tdt-0.6b-v3": "snapshot ed2b7e8c",
+    "Qwen3-4B-Instruct-2507-4bit": "snapshot 50d42775",
+    "offline": true
+  },
+  "concurrent_activity": "other Claude sessions and a LectureLive test run were active on the Mac during parts of the session (load average 2.0-3.7); disclosed beside timings"
+}

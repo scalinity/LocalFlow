@@ -1,0 +1,558 @@
+{
+ "tool": "scripts/v2/m08_mutation_check.py",
+ "code_sha": "82de7df4d26b380d2fabf8be84c5153c1baa9d4d",
+ "control": {
+  "exit": 0,
+  "imported_from": "localflow/__init__.py",
+  "cases": {
+   "LF-M08-F01-C02": "pass",
+   "LF-M08-F02-C01": "pass",
+   "LF-M08-F02-C02": "pass",
+   "LF-M08-F04-C01": "pass",
+   "LF-M08-F05-C01": "pass",
+   "LF-M08-F06-C04": "pass",
+   "LF-M08-F07-C05": "pass",
+   "LF-M08-F10-C02": "pass",
+   "LF-M08-F10-C04": "pass",
+   "LF-M08-F11-C01": "pass",
+   "LF-M08-F12-C03": "pass",
+   "LF-M08-F13-C01": "pass",
+   "LF-M08-F15-C01": "pass",
+   "LF-M08-F16-C02": "pass",
+   "LF-M08-F17-C03": "pass",
+   "LF-M08-F18-C04": "pass",
+   "LF-M08-F19-C02": "pass",
+   "LF-M08-F19-C04": "pass",
+   "LF-M08-F21-C02": "pass",
+   "LF-M08-F23-C03": "pass"
+  }
+ },
+ "native_control": {
+  "exit": 0,
+  "cases": {
+   "LF-M08-F07-C01": "pass"
+  },
+  "witness": {}
+ },
+ "summary": {
+  "killed": 20
+ },
+ "results": [
+  {
+   "mutation_id": "LF-M08-MUT-01",
+   "name": "Ignore contradictory bundle",
+   "file": "localflow/v2/context/snapshot.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "b9f7ae5475f62dfa",
+    "sha_after": "14190a892d146488"
+   },
+   "killers": [
+    "LF-M08-F01-C02"
+   ],
+   "control": {
+    "LF-M08-F01-C02": "pass"
+   },
+   "mutant": {
+    "LF-M08-F01-C02": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-02",
+   "name": "Ignore native window mismatch",
+   "file": "localflow/v2/insertion/validation.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "17e59455bed9cb24",
+    "sha_after": "c4b5deb077029d7b"
+   },
+   "killers": [
+    "LF-M08-F02-C01"
+   ],
+   "control": {
+    "LF-M08-F02-C01": "pass"
+   },
+   "mutant": {
+    "LF-M08-F02-C01": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-03",
+   "name": "Ignore readable title mismatch",
+   "file": "localflow/v2/insertion/validation.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "17e59455bed9cb24",
+    "sha_after": "5cd58fef23415010"
+   },
+   "killers": [
+    "LF-M08-F02-C02"
+   ],
+   "control": {
+    "LF-M08-F02-C02": "pass"
+   },
+   "mutant": {
+    "LF-M08-F02-C02": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-04",
+   "name": "Use unchecked system-focused element",
+   "file": "localflow/v2/insertion/validation.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "sha_before": "17e59455bed9cb24",
+    "sha_after": "695b0a1016049727"
+   },
+   "killers": [
+    "LF-M08-F04-C01"
+   ],
+   "control": {
+    "LF-M08-F04-C01": "pass"
+   },
+   "mutant": {
+    "LF-M08-F04-C01": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-05",
+   "name": "Skip applicable deny check",
+   "file": "localflow/v2/insertion/validation.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "17e59455bed9cb24",
+    "sha_after": "562efe3a0f0970ee"
+   },
+   "killers": [
+    "LF-M08-F05-C01"
+   ],
+   "control": {
+    "LF-M08-F05-C01": "pass"
+   },
+   "mutant": {
+    "LF-M08-F05-C01": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-06",
+   "name": "Trust unkept nonempty selection range",
+   "file": "localflow/v2/insertion/validation.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "sha_before": "17e59455bed9cb24",
+    "sha_after": "ba1a4a3683341b50"
+   },
+   "killers": [
+    "LF-M08-F06-C04"
+   ],
+   "control": {
+    "LF-M08-F06-C04": "pass"
+   },
+   "mutant": {
+    "LF-M08-F06-C04": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-07",
+   "name": "Remove pre-write consistency read",
+   "file": "localflow/v2/insertion/service.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "8fc6e6ef11163ea5",
+    "sha_after": "8351985a98aa65a9"
+   },
+   "killers": [
+    "LF-M08-F12-C03"
+   ],
+   "control": {
+    "LF-M08-F12-C03": "pass"
+   },
+   "mutant": {
+    "LF-M08-F12-C03": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-08",
+   "name": "Confirm from LocalFlow clipboard",
+   "file": "localflow/v2/insertion/service.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "8fc6e6ef11163ea5",
+    "sha_after": "c6e4cd640d37e5ee"
+   },
+   "killers": [
+    "LF-M08-F11-C01"
+   ],
+   "control": {
+    "LF-M08-F11-C01": "pass"
+   },
+   "mutant": {
+    "LF-M08-F11-C01": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-09",
+   "name": "Always restore",
+   "file": "localflow/v2/insertion/clipboard.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "947497338a06fd94",
+    "sha_after": "c9094c720aa35ac5"
+   },
+   "killers": [
+    "LF-M08-F10-C02"
+   ],
+   "control": {
+    "LF-M08-F10-C02": "pass"
+   },
+   "mutant": {
+    "LF-M08-F10-C02": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-10",
+   "name": "Compare clipboard text instead of generation",
+   "file": "localflow/v2/insertion/clipboard.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "sha_before": "947497338a06fd94",
+    "sha_after": "15056a0cf7195a95"
+   },
+   "killers": [
+    "LF-M08-F10-C04"
+   ],
+   "control": {
+    "LF-M08-F10-C04": "pass"
+   },
+   "mutant": {
+    "LF-M08-F10-C04": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-11",
+   "name": "Promote partial to confirmed",
+   "file": "localflow/v2/insertion/service.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "8fc6e6ef11163ea5",
+    "sha_after": "0d429e6c06fef6d9"
+   },
+   "killers": [
+    "LF-M08-F13-C01"
+   ],
+   "control": {
+    "LF-M08-F13-C01": "pass"
+   },
+   "mutant": {
+    "LF-M08-F13-C01": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-12",
+   "name": "Bypass terminal guard without context",
+   "file": "localflow/v2/insertion/service.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "8fc6e6ef11163ea5",
+    "sha_after": "f13564e2a2ce383a"
+   },
+   "killers": [
+    "LF-M08-F16-C02"
+   ],
+   "control": {
+    "LF-M08-F16-C02": "pass"
+   },
+   "mutant": {
+    "LF-M08-F16-C02": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-13",
+   "name": "Do not rearm wake signal",
+   "file": "localflow/v2/insertion/observation.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "1649736005f27c79",
+    "sha_after": "f93b7ba39375e985"
+   },
+   "killers": [
+    "LF-M08-F21-C02"
+   ],
+   "control": {
+    "LF-M08-F21-C02": "pass"
+   },
+   "mutant": {
+    "LF-M08-F21-C02": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-14",
+   "name": "Allow undo over changed owned text",
+   "file": "localflow/v2/insertion/service.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "8fc6e6ef11163ea5",
+    "sha_after": "d5e7b6ef924be454"
+   },
+   "killers": [
+    "LF-M08-F17-C03"
+   ],
+   "control": {
+    "LF-M08-F17-C03": "pass"
+   },
+   "mutant": {
+    "LF-M08-F17-C03": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-15",
+   "name": "Skip observer field identity validation",
+   "file": "localflow/v2/insertion/observation.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "1649736005f27c79",
+    "sha_after": "e8f056994cfa8eac"
+   },
+   "killers": [
+    "LF-M08-F19-C02"
+   ],
+   "control": {
+    "LF-M08-F19-C02": "pass"
+   },
+   "mutant": {
+    "LF-M08-F19-C02": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-16",
+   "name": "Bypass deletion guard",
+   "file": "localflow/v2/store.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "04e744e27c2ebfe7",
+    "sha_after": "e1958fa7b0804c98"
+   },
+   "killers": [
+    "LF-M08-F23-C03"
+   ],
+   "control": {
+    "LF-M08-F23-C03": "pass"
+   },
+   "mutant": {
+    "LF-M08-F23-C03": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-17",
+   "name": "Run insertion/repaste work on UI callback",
+   "file": "localflow/v2/insertion/service.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "sha_before": "8fc6e6ef11163ea5",
+    "sha_after": "7e77d31d9e6ed7a0"
+   },
+   "killers": [
+    "LF-M08-F18-C04"
+   ],
+   "control": {
+    "LF-M08-F18-C04": "pass"
+   },
+   "mutant": {
+    "LF-M08-F18-C04": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-18",
+   "name": "Use code-point length as UTF-16 length",
+   "file": "localflow/v2/insertion/service.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     2
+    ],
+    "sha_before": "8fc6e6ef11163ea5",
+    "sha_after": "7f7231ee55199a8a"
+   },
+   "killers": [
+    "LF-M08-F07-C05"
+   ],
+   "control": {
+    "LF-M08-F07-C05": "pass"
+   },
+   "mutant": {
+    "LF-M08-F07-C05": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null,
+   "native": {
+    "control": {
+     "LF-M08-F07-C01": "pass"
+    },
+    "mutant": {
+     "LF-M08-F07-C01": "fail"
+    },
+    "witness": {
+     "LF-M08-F07-C01": "{\"appkit_text\": \"A\ud83d\ude00BX\ud83d\ude00Y\", \"result\": {\"state\": \"posted_unverified\", \"reason_code\": \"readback_partial\", \"method\": \"ax_replacement\", \"readback\": \"partial\", \"owned\": [4, 7], \"clipboard\": {\"restore_skipped_reason\": null, \"restored_types\": null, \"publish_failed\": null}}}"
+    },
+    "outcome": "killed"
+   }
+  },
+  {
+   "mutation_id": "LF-M08-MUT-19",
+   "name": "Observe without capture permission",
+   "file": "localflow/v2/insertion/service.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "8fc6e6ef11163ea5",
+    "sha_after": "818258df64b4b918"
+   },
+   "killers": [
+    "LF-M08-F19-C04"
+   ],
+   "control": {
+    "LF-M08-F19-C04": "pass"
+   },
+   "mutant": {
+    "LF-M08-F19-C04": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M08-MUT-20",
+   "name": "Remove operation idempotency fence",
+   "file": "localflow/v2/insertion/service.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "sha_before": "8fc6e6ef11163ea5",
+    "sha_after": "d8e4c85cd21e1fad"
+   },
+   "killers": [
+    "LF-M08-F15-C01"
+   ],
+   "control": {
+    "LF-M08-F15-C01": "pass"
+   },
+   "mutant": {
+    "LF-M08-F15-C01": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null
+  }
+ ]
+}
