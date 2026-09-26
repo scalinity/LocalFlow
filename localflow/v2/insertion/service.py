@@ -170,6 +170,10 @@ class InsertionService:
         # M09: an insert transaction is executing on the queue thread —
         # the coordinator's focus-steal guard for Hub window actions.
         self._in_flight = 0
+        # M09 remediation: operations admitted and not yet finished
+        # (queued or executing) and who to tell when none remain.
+        self._outstanding = 0
+        self._idle_listeners: list = []
         self._thread = threading.Thread(
             target=self._run, name="localflow-v2-insertion", daemon=True)
         self._thread.start()
@@ -181,6 +185,27 @@ class InsertionService:
         regression requirement: window actions never steal focus during
         insertion)."""
         return self._in_flight > 0
+
+    @property
+    def pending(self) -> bool:
+        """True while any admitted operation — queued or executing — has
+        not finished (M09: ``busy`` alone misses work admitted but not
+        yet dequeued). An unresolved clipboard payload after a finished
+        transaction is not pending work: it lapses on its own terms."""
+        return self._outstanding > 0
+
+    def add_idle_listener(self, fn: Callable) -> None:
+        """``fn()`` runs on the queue thread each time the last
+        outstanding operation finishes, whatever its outcome (a
+        reconciliation that ran no transaction included). Registering
+        the same callable twice has no effect."""
+        with self._lock:
+            if fn not in self._idle_listeners:
+                self._idle_listeners.append(fn)
+
+    def _count_admitted(self):
+        with self._lock:
+            self._outstanding += 1
 
     # ---- public API (called from the coordinator/UI thread) ----------
 
@@ -195,6 +220,7 @@ class InsertionService:
         if not op_id:
             op_id = (f"job:{job['job_id']}:{int(job.get('attempt', 1))}"
                      if job.get("job_id") else ids.new_id("op"))
+        self._count_admitted()
         self._q.put(("insert", op_id, text, job, on_done, on_observation))
 
     def note_new_dictation(self):
@@ -255,6 +281,7 @@ class InsertionService:
                     pass
             done.set()
 
+        self._count_admitted()
         self._q.put(("undo", _deliver))
         if on_done is None:
             done.wait(15.0)
@@ -341,6 +368,7 @@ class InsertionService:
                 self._last = last = None
         if last is None:
             return {"outcome": "nothing_to_paste"}
+        self._count_admitted()
         self._q.put(("repaste", ids.new_id("op"), last["text"],
                      last["job_id"], last["attempt"], on_done))
         return {"outcome": "repaste_queued"}
@@ -358,6 +386,7 @@ class InsertionService:
             return {"outcome": "nothing_to_paste"}
         if job_id and job_id in self._revoked_jobs:
             return {"outcome": "job_deleted"}
+        self._count_admitted()
         self._q.put(("repaste", ids.new_id("op"), text, job_id, 1, on_done))
         return {"outcome": "repaste_queued"}
 
@@ -442,6 +471,15 @@ class InsertionService:
                     pass
             finally:
                 self._in_flight -= 1
+                with self._lock:
+                    self._outstanding -= 1
+                    listeners = (list(self._idle_listeners)
+                                 if self._outstanding == 0 else [])
+                for fn in listeners:
+                    try:
+                        fn()
+                    except Exception:
+                        pass
 
     def _run_insert(self, op_id, text, job, on_observation, *,
                     check_attempt=True) -> InsertionResult:
