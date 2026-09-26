@@ -2242,17 +2242,85 @@ def f24_c05(c):
 BENCH = {"record": None}
 
 
+STATS = ("n", "p50_ms", "p95_ms", "p99_ms", "max_ms")
+UI_COHORTS = ("ui_finish_with_text", "ui_recovery_paste_again",
+              "ui_history_paste_text", "ui_undo_last_insertion")
+
+
+def _cohort_ok(c, rec, name, where="cohorts"):
+    co = (rec.get(where) or {}).get(name) if where == "cohorts" \
+        else (rec.get("native") or {}).get("cohorts", {}).get(name)
+    ok = co is not None and co.get("invalid_samples") == 0 \
+        and not co.get("problems") and co.get("n", 0) > 0
+    c.check(f"{name}_every_sample_witnessed", ok,
+            None if co is None else {k: co.get(k) for k in
+                                     ("n", "invalid_samples", "problems")})
+    return co or {}
+
+
+def _clock(co, name):
+    s = co.get(name)
+    return isinstance(s, dict) and all(k in s for k in STATS) and s["n"] > 0
+
+
 @driver("LF-M08-F25-C01", "LF-M08-F25-C02", "LF-M08-F25-C03",
         "LF-M08-F25-C04", "LF-M08-F25-C05")
 def f25(c):
+    """Graded from the benchmark record's own fields (cohort validity,
+    clocks, boundaries, witnesses, environment, verdicts)."""
     rec = BENCH["record"]
     if rec is None:
         raise NotRun(ADJ["decisions"]["D18_benchmark_cases"]["decision"])
-    grade = (rec.get("corpus_f25") or {}).get(c.cid)
-    if grade is None:
-        raise NotRun("the benchmark record carries no grade for this case")
-    c.observe(benchmark=grade)
-    c.check("benchmark_valid", grade.get("status") == "pass", grade)
+    c.install(benchmark=rec.get("tool"), measured_utc=rec.get("measured_utc"))
+    c.check("work_valid", rec.get("work_valid") is True)
+    verdicts = rec.get("verdicts", {})
+    if c.cid.endswith("C01"):
+        for name in UI_COHORTS:
+            co = _cohort_ok(c, rec, name)
+            c.check(f"{name}_callback_clock", _clock(co, "callback"),
+                    sorted(co))
+            c.check(f"{name}_s24_verdict", verdicts.get(name) == "pass",
+                    verdicts.get(name))
+        c.check("ax_delay_injected_outside_ui",
+                (rec.get("injected_delays") or {}).get(
+                    "ui_ax_content_read_sec", 0) > 0,
+                rec.get("injected_delays"))
+    elif c.cid.endswith("C02"):
+        for name in rec.get("cohorts", {}):
+            _cohort_ok(c, rec, name)
+        for name in ("native_ax", "native_ax_cold"):
+            _cohort_ok(c, rec, name, where="native")
+    elif c.cid.endswith("C03"):
+        co = _cohort_ok(c, rec, "ax_transaction")
+        for clock in ("enqueue", "queue_wait", "worker_exec"):
+            c.check(f"separate_{clock}", _clock(co, clock), sorted(co))
+        for name in ("clipboard_settle_inside", "clipboard_settle_beyond"):
+            _cohort_ok(c, rec, name)
+        d = rec.get("injected_delays") or {}
+        c.check("settle_delays_declared",
+                d.get("settle_inside_consumer_sec", 0) > 0
+                and d.get("settle_beyond_consumer_sec", 0) > 0, d)
+    elif c.cid.endswith("C04"):
+        co = _cohort_ok(c, rec, "observer_tick")
+        b = (co.get("boundary") or "").lower()
+        c.check("full_tick_not_approximation",
+                "full" in b and "no approximation" in b, co.get("boundary"))
+        _cohort_ok(c, rec, "observer_reanchor_tick")
+        _cohort_ok(c, rec, "observer_stop")
+    else:
+        warm = _cohort_ok(c, rec, "native_ax", where="native")
+        cold = _cohort_ok(c, rec, "native_ax_cold", where="native")
+        c.check("warm_and_cold_cohorts", warm.get("warmth") == "warm"
+                and cold.get("warmth") == "cold",
+                (warm.get("warmth"), cold.get("warmth")))
+        env = rec.get("environment") or {}
+        c.check("environment_recorded", all(
+            env.get(k) for k in ("macos", "machine", "code_root_sha",
+                                 "python", "pyobjc")), sorted(env))
+        c.check("budget_verdicts", all(
+            verdicts.get(k, "").startswith("pass")
+            for k in ("native_ax", "native_ax_cold")), verdicts)
+    c.observe(benchmark_verdicts={k: v for k, v in verdicts.items()})
 
 
 # ---- stateful probes (intermediate state checked after every step) -------
