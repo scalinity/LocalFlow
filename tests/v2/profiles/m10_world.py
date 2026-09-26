@@ -222,11 +222,15 @@ def meta_counter(store, key):
 
 # ---- coordinator driving ---------------------------------------------------
 
-def run_job(h, asr_text):
-    """One real dictation through the real coordinator: (text, job)."""
+def run_job(h, asr_text, deliver=False):
+    """One real dictation through the real coordinator: (text, job).
+    ``deliver`` also runs the captured finish callback on this (main)
+    thread, so the stub insertion service records the payload."""
     h.d.supervisor.asr_text = asr_text
     h.press_release()
-    _fn, args = h.run_coordinator()
+    fn, args = h.run_coordinator()
+    if deliver:
+        fn(*args)
     return args
 
 

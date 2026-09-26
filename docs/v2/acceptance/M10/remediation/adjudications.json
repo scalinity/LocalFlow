@@ -1,0 +1,108 @@
+{
+ "schema_version": 1,
+ "milestone": "M10",
+ "policy_revision": "m10-policy-r1",
+ "about": "Explicit adjudications for the M10 audit corpus (tests/v2/profiles/m10_audit_corpus.json, sha256 3cc5a9288f432a45ddf85c0ecaa7b1c1f83c0e550ea774a4a326f5e23780f755, never edited). The corpus marks a case policy-dependent with a non-null expected.policy_adjudication; the runner (tests/v2/profiles/m10_corpus_runner.py) refuses to grade such a case PASS unless it is listed under case_adjudications with a decision defined here, and reports the decision and this policy_revision beside the result. Input bindings record where a driver chooses the utterance for a declaratively stated case, and the contract clause that choice follows. Barrier bindings map a stateful probe's required barrier to the label its driver reports, or state why the barrier is structural in the repaired design; a required barrier with neither is ERROR, never a pass.",
+ "decisions": {
+  "D1_equal_authority_rules": {
+   "findings": ["M10-AUDIT-29"],
+   "decision": "Kept: among enabled rules of equal authority (same scope step) the lexically smallest rule_id wins, in every input order. The tie is disclosed, not hidden: WritingProfile.equal_authority_rule_ids names the other rules and the Styles pane shows them. Existing duplicate rules are neither merged nor deleted; admission does not refuse a second rule for the same scope."
+  },
+  "D2_profile_name_admission": {
+   "findings": ["M10-AUDIT-02"],
+   "decision": "profile_name is stripped (the M05 strip-only rule for profile scope) and refused when empty or whitespace-only (AdmissionError empty_profile_name). There is no Unicode normalization and no case folding: the stored name is otherwise exact. The same name on two rules is one profile identity; renaming a rule's display name never changes its profile identity; deleting one rule leaves the others."
+  },
+  "D3_one_shot_override": {
+   "findings": ["M10-AUDIT-13", "M10-AUDIT-32"],
+   "decision": "Kept: Next Dictation Mode is in-memory and one-shot. The capture that is admitted takes it into job-owned state at admission, including a capture that ends up cancelled or too short (capture-bound consumption). It is never persisted, so a restart starts with no pending mode. An optional-freeze failure after admission keeps the taken mode (AUDIT-13)."
+  },
+  "D4_override_number_policy": {
+   "findings": ["M10-AUDIT-32"],
+   "decision": "Kept: an explicit override selects the mode only; the number policy is the configured default_number_policy, not the destination rule's, and the profile carries no rule_id. Destination inheritance for overrides would be a contract change and is not made."
+  },
+  "D5_literal_forms": {
+   "findings": ["M10-AUDIT-14"],
+   "decision": "The recognized literal forms are the M04 double-quoted zone and the literal escape 'write the word(s)/phrase X' (docs/v2/contracts/normalization.md, Literal escape). Both keep a snippet trigger literal. No other paraphrase is claimed as an escape."
+  },
+  "D6_second_pass": {
+   "findings": ["M10-AUDIT-31"],
+   "decision": "Narrowed text-only idempotence: the coordinator makes exactly one normalization pass per job (pinned by test_m10_remediation c31). A text-only second call to normalize() has no generated-span provenance and may expand a trigger that a previous expansion produced; repeat processing is not a supported API, and the contract says so. Expansion semantics are unchanged."
+  },
+  "D7_written_comma": {
+   "findings": ["M10-AUDIT-14", "M10-AUDIT-32"],
+   "decision": "Only the spoken word 'comma' separates slots. A written comma between the trigger and the first value is the trigger/value delimiter (the written form of the leading spoken comma); a written comma inside a value stays part of the value verbatim; a line break or hard edge punctuation (. ! ? ; : quotes, brackets) ends the slot span, and sentence punctuation stays outside the edit."
+  },
+  "D8_slot_content": {
+   "findings": ["M10-AUDIT-14"],
+   "decision": "Spoken slot content is inserted verbatim: no correction rule applies to slot text, and the template bytes are exact. The whole expansion is a generated span that cleanup must keep verbatim (S17 protection)."
+  },
+  "D9_manifest_freshness": {
+   "findings": ["M10-AUDIT-10"],
+   "decision": "Strong freshness, not best-effort: the cache key is the fingerprint (device, inode, size, mtime_ns, ctime_ns) of every file actually read plus each configured directory's child name set. utime can restore mtime but not ctime, so an in-place replacement with a preserved mtime still invalidates for the next job. Jobs already captured keep their frozen registry. Residual: forging an unchanged ctime needs the system clock changed, which is outside this threat model."
+  },
+  "D10_listing_budget": {
+   "findings": ["M10-AUDIT-22"],
+   "decision": "The names-only workspace listing walks at most depth 2 and examines at most LISTING_VISIT_BUDGET = 2000 directory entries across the whole walk, returning at most LISTING_CAP = 500 names. A directory is read lazily, so work stops at the budget and is not only the result count. A cut listing reports truncated=True with reason visit_budget_reached or name_cap. Within a directory the examined entries are sorted before admission; which entries are examined at the budget follows the filesystem's directory order, which is stable for an unchanged tree."
+  },
+  "D11_listing_escape_and_packages": {
+   "findings": ["M10-AUDIT-07", "M10-AUDIT-22"],
+   "decision": "workspace_skill_dirs entries must be relative, with no '..', absolute or '~' component; otherwise the whole list is disabled with a content-free config problem. An explicitly configured absolute skill_manifest_paths entry is separate, named authority, and the two controls are not interchangeable. A package directory (for example Bundle.app) is an ordinary directory for the names-only listing: its names are listed and its contents are never opened."
+  },
+  "D12_profile_name_privacy": {
+   "findings": ["M10-AUDIT-30"],
+   "decision": "A user-declared profile name is private configuration, not content-free metadata. The evidence envelope keeps profile_name only for a built-in category profile (profile_name_source 'category'); for a rule-declared name it records profile_name null, profile_name_source 'rule' and the opaque rule_id. The M11 fallback reason uses the label 'declared_profile' and never the name, and events never carry it. The name is not hashed."
+  },
+  "D13_cleanup_worker_failure": {
+   "findings": ["M10-AUDIT-23"],
+   "decision": "The M03 recovery contract applies unchanged: a cleanup worker failure makes the job recoverable and nothing is inserted. The job's exact expansion is retained on the job and in the normalized_text artifact. An explicit retry runs under the fresh unscoped default (retry_unscoped_default), which carries no snippets, so today's snippet set never re-expands the old audio."
+  },
+  "D14_builtin_mode": {
+   "findings": ["M10-AUDIT-27"],
+   "decision": "A built-in transform's mode is fixed by the M11 contract: a built-in carrying a different mode cannot be stored, so the 'mode-mismatched definition' variant is graded on the admission refusal together with the disabled and missing variants' honest fallback reasons."
+  }
+ },
+ "case_adjudications": {
+  "M10-C010": {"decision": "D1_equal_authority_rules"},
+  "M10-C011": {"decision": "D1_equal_authority_rules"},
+  "M10-C012": {"decision": "D1_equal_authority_rules"},
+  "M10-C013": {"decision": "D1_equal_authority_rules"},
+  "M10-C025": {"decision": "D2_profile_name_admission"},
+  "M10-C034": {"decision": "D3_one_shot_override"},
+  "M10-C042": {"decision": "D4_override_number_policy"},
+  "M10-C080": {"decision": "D5_literal_forms"},
+  "M10-C081": {"decision": "D5_literal_forms"},
+  "M10-C084": {"decision": "D6_second_pass"},
+  "M10-C092": {"decision": "D7_written_comma"},
+  "M10-C097": {"decision": "D8_slot_content"},
+  "M10-C127": {"decision": "D9_manifest_freshness"},
+  "M10-C136": {"decision": "D10_listing_budget"},
+  "M10-C138": {"decision": "D11_listing_escape_and_packages"},
+  "M10-C181": {"decision": "D12_profile_name_privacy"},
+  "M10-C109": {"decision": "D13_cleanup_worker_failure",
+               "why": "Not marked policy-dependent by the corpus; its expectation 'normalized ACK is preserved' is graded as retained on the job and in evidence, because the M03 contract inserts nothing after a cleanup worker failure."},
+  "M10-C162": {"decision": "D14_builtin_mode",
+               "why": "Not marked policy-dependent by the corpus; recorded because one of its three variants is graded on admission refusal."}
+ },
+ "input_bindings": {
+  "M10-C130": "Workspace B's utterance puts each slash in a command position ('... now. Slash beta review then slash global review'): under the accepted M04 rule (docs/v2/contracts/normalization.md, Slash skills) a mid-sentence 'slash' is the ordinary verb and stays literal.",
+  "M10-C208": "Same driver and binding as M10-C130.",
+  "M10-C209": "The utterance uses a counted noun ('twelve retries'): a bare trailing 'twelve' stays a word under both Standard and Technical, so only a counted noun distinguishes the two profiles' number policies.",
+  "M10-C185": "The retried job is given its own training example (as tests/v2/context/m06_corpus_runner.py run_retry does) and its envelope is read by job id.",
+  "M10-C188": "Same driver and binding as M10-C185.",
+  "M10-C215": "Same driver and binding as M10-C185."
+ },
+ "barrier_bindings": {
+  "M10-S004": {
+   "both reads complete": "structural: the repaired style patch reads, merges and validates inside its single writer op (AUDIT-03), so there is no separate caller-side read to hold; the probe holds the writer and admits both patches instead",
+   "A writer committed": "first_committed",
+   "B writer admitted": "second_admitted"
+  },
+  "M10-S005": {
+   "update read complete": "structural: the repaired update reads its row inside the writer op (AUDIT-05); the probe admits the update behind the delete instead"
+  },
+  "M10-S006": {
+   "both reads complete": "structural: the repaired snippet patch reads, merges and validates inside its single writer op (AUDIT-04)",
+   "kind=url committed": "first_committed"
+  }
+ }
+}
