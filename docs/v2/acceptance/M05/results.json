@@ -129,5 +129,342 @@
     "rejected_as_incorrect": [],
     "post_address_verification": "All 21 automated suites + test_worker_live + both model-backed suites re-run green; benchmark re-run on the fixed code with all gates passing."
   },
-  "privacy": "Committed artifacts carry synthetic fixtures, hashes and counts only; the envelope's context/vocabulary blocks carry ids, revisions and counts (no terms — the frozen hint set's terms live in a lease-governed store artifact); duplicate-rejection events carry no dictionary content; the baseline-manifest privacy scan passes over every new path; the store error channel never sees canonical spellings."
+  "privacy": "Committed artifacts carry synthetic fixtures, hashes and counts only; the envelope's context/vocabulary blocks carry ids, revisions and counts (no terms — the frozen hint set's terms live in a lease-governed store artifact); duplicate-rejection events carry no dictionary content; the baseline-manifest privacy scan passes over every new path; the store error channel never sees canonical spellings.",
+  "remediation_2026_09_25": {
+    "kind": "post-audit cloud remediation",
+    "state": "CLOUD_REMEDIATION_COMPLETE_PENDING_LOCAL_VERIFICATION",
+    "state_note": "Does not certify native behaviour (AppKit Dictionary panel, Accessibility, microphone), the installed app, real data, real Parakeet/Qwen or reference-Mac performance; the 2026-09-22 records above are historical and unchanged by this addendum.",
+    "audit": {
+      "report": "LocalFlow V2 — M05 Read-Only Deep Audit (sha256 1df4ca8573b158d5ba81d6bad2462dd00352c76f12d6c45efaa1c9f9be5bf260)",
+      "audited_sha": "267d1c25910328f72afff7096eb2a442e96a5174",
+      "verdict": "C",
+      "severity": {
+        "critical": 2,
+        "high": 7,
+        "medium": 5,
+        "low": 1,
+        "test_gap": 5
+      },
+      "design_concerns": 6,
+      "corpus": {
+        "file": "tests/v2/vocabulary/m05_audit_corpus.json",
+        "sha256": "c9c51adc9e531e9777f817879171ed763d9bc69183d763917f9d285eed983088",
+        "cases": 226,
+        "families": 66,
+        "as_delivered": "NOT_RUN"
+      }
+    },
+    "inherited_base_sha": "267d1c25910328f72afff7096eb2a442e96a5174",
+    "base_note": "origin/main equal to the audited SHA; accepted M01 3db7406, M02 bfbc63c, M03 3e0d1ab and M04 4ef219c verified as ancestors; schema 11 unchanged",
+    "branch": "claude/m05-vocabulary-remediation-kgi2kl",
+    "commits": {
+      "fff94eb": "tools + base evidence (no production change)",
+      "a164456": "first-pass production repair (frozen for review)",
+      "51e5cb6": "author findings A1/A2 during review",
+      "fac2a0b": "review-round fixes R1-R19, Q1-Q5",
+      "01a1f3c": "real-selection cost + benchmark cohorts (final production code)",
+      "4adda7d": "hit-accounting mutation witness (test only)"
+    },
+    "first_pass_sha": "a16445671491a3072b307a139407523adc3c181b",
+    "final_code_revision": "01a1f3c07ed3270aa1e7b3da39d89c453c84c1e8",
+    "final_test_head": "4adda7ddff8acd2510bb6057c1df4d466d3cbf81",
+    "environment": "Claude Code cloud container (Linux x86_64), CPython 3.13.12, SQLite 3.45.1; declared non-native shims for AppKit/PyObjC/Quartz/sounddevice; not the reference Mac",
+    "reproduction_evidence": {
+      "script": "scripts/v2/m05_remediation_repro.py",
+      "base": "remediation/repro_base_267d1c2.json (21/21) + repro_base_267d1c2_probes_v2.json (21/21 with the first-pass-aware probes)",
+      "first_pass": "remediation/repro_first_pass_a164456.json (0/21)",
+      "final": "remediation/repro_final_4adda7d.json (0/21)"
+    },
+    "dispositions": {
+      "M05-AUDIT-01": {
+        "disposition": "reproduced",
+        "base_observation": "a01: all 14 clause/line separators crossed ('clod, code' → 'Claude Code'); positives held",
+        "repair": "alias owns connected word cores only; separators are barriers",
+        "regressions": "test_01_alias_never_spans_a_delimiter"
+      },
+      "M05-AUDIT-02": {
+        "disposition": "reproduced (+02b sibling)",
+        "base_observation": "a02: app.B job after a refresh failure inserted app.A's 'ask Claude now'; a selector failure blocked the M06 upgrade; a02b: a capture-failed job reused the cached scope",
+        "repair": "proven cache key; failure path rescopes THIS job from last-good entries or runs vocabulary-off; unscoped default for failed/invalid identity; selector failure never blocks the upgrade; M10 finalize never rebuilds on the app cache",
+        "regressions": "test_02_* (app), test_02b/02c/02d/02e"
+      },
+      "M05-AUDIT-03": {
+        "disposition": "reproduced",
+        "base_observation": "a03: 'red status page' → 'red Status Page' → 'Orange Page' on pass 2",
+        "repair": "claims collected first and arbitrated; review round R1/R2/R17 re-keyed claims by entry strength",
+        "regressions": "test_03_left_overlap_canonical_claim, test_R1/R2/R17"
+      },
+      "M05-AUDIT-04": {
+        "disposition": "reproduced",
+        "base_observation": "a04: scope_ctx/match_index/revision/conflicts rebindable; caller alias list mutation changed a later rescope",
+        "repair": "sealed snapshot, read-only views, entry-owned alias tuple",
+        "regressions": "test_04_snapshot_deeply_immutable"
+      },
+      "M05-AUDIT-05": {
+        "disposition": "reproduced",
+        "base_observation": "a05: omissions/scope mutable under the same hint_set_id",
+        "repair": "deep-frozen HintSet, content-bound id, checked constructor; review R13 scalars only",
+        "regressions": "test_05_hintset_identity_bound_to_content, test_R13"
+      },
+      "M05-AUDIT-06": {
+        "disposition": "reproduced",
+        "base_observation": "a06: approve lost a concurrent alias; duplicate next revision; invalid scope committed; orphan alias rows after update/delete race",
+        "repair": "read-merge-validate-version inside one writer op; expected_revision CAS; typed caller errors",
+        "regressions": "test_06_* (5)"
+      },
+      "M05-AUDIT-07": {
+        "disposition": "reproduced",
+        "base_observation": "a07: 28 malformed boolean cells admitted; string 'false' became approval",
+        "repair": "strict admission at every boundary; review R7 container types, R12 config",
+        "regressions": "test_07_* (2), test_R7, test_R12"
+      },
+      "M05-AUDIT-08": {
+        "disposition": "reproduced",
+        "base_observation": "a08: panel approved Alpha while Beta was selected",
+        "repair": "selection by stable entry id; review Q3 selection-time revision",
+        "regressions": "test_08_panel_selection_is_a_stable_entry_id, test_Q3"
+      },
+      "M05-AUDIT-09": {
+        "disposition": "reproduced",
+        "base_observation": "a09: dictionary skill edit carried rule_id None through the M10 registry",
+        "repair": "skill provenance through SkillRegistry → policy → skill edits; hits for applied dictionary skills",
+        "regressions": "test_09_dictionary_skill_provenance, test_09_app_* (2)"
+      },
+      "M05-AUDIT-10": {
+        "disposition": "reproduced",
+        "base_observation": "a10: identical re-import reported 'updated' every time",
+        "repair": "order-insensitive alias identity (stored language — review R3)",
+        "regressions": "test_10_repeated_import_is_unchanged, test_R3_R4"
+      },
+      "M05-AUDIT-11": {
+        "disposition": "reproduced",
+        "base_observation": "a11: duplicate identity in a file left a partial commit behind the error",
+        "repair": "whole-file transaction; ASCII NOCASE identity; review R5 duplicate aliases",
+        "regressions": "test_11_import_is_one_transaction_with_a_declared_identity, test_R5"
+      },
+      "M05-AUDIT-12": {
+        "disposition": "reproduced",
+        "base_observation": "a12: explicit alias override lost; inherited alias language drifted",
+        "repair": "None inherits; explicit override kept; one-time migration (review R4)",
+        "regressions": "test_12_alias_language_inherits_or_overrides, test_R3_R4, test_R4_legacy"
+      },
+      "M05-AUDIT-13": {
+        "disposition": "reproduced",
+        "base_observation": "a13: panel tested global only, unlabeled; preview reported inactive masks as active; suggestions claimed protected rewrites",
+        "repair": "sandbox with explicit scope + label; preview active flags; engine-decided suggestions; review R14/R15",
+        "regressions": "test_13_* (3 domain, 1 app), test_R14, test_R15"
+      },
+      "M05-AUDIT-14": {
+        "disposition": "reproduced",
+        "base_observation": "a14: a hint-set write/lease failure read as ordinary non-capture",
+        "repair": "precise retention_write_failed with step, id/counts/disposition kept",
+        "regressions": "test_14_hint_retention_failure_is_precise"
+      },
+      "M05-AUDIT-15": {
+        "disposition": "reproduced (test gap confirmed as an evidence gap)",
+        "base_observation": "a15: scope, alias approval and entry revision of a deleted applied rule unrecoverable from retained artifacts",
+        "repair": "lease-governed applied-rule manifest artifact per job (bounded: review R8 witness)",
+        "regressions": "test_15_* (2), test_R8_applied_rule_manifest_holds_only_applied_rules"
+      },
+      "M05-AUDIT-16": {
+        "disposition": "reproduced",
+        "base_observation": "a16 (scripted clock): identity matcher, wrong-scope selector and skip-every-fourth all exited 0 on the base benchmark",
+        "repair": "work-validity gates before timing (exit 2), independent ranking oracle; review R9 fresh-selection cohorts",
+        "regressions": "test_16_benchmark_rejects_invalid_work, test_R9"
+      },
+      "M05-AUDIT-17": {
+        "disposition": "test_gap_only",
+        "base_observation": "a17: the inherited suites were green while a01/a02/a03/a06/a07 defects coexisted",
+        "repair": "new regression suites + corpus runner + mutation harness (review R8/R10)",
+        "regressions": "test_17_* (2) — test_17_hint_budget_matrix pins behavior already correct on base"
+      },
+      "M05-AUDIT-18": {
+        "disposition": "reproduced, narrowed",
+        "base_observation": "a18: lost entries table repaired empty, seeded over, no signal; drop_index_then_duplicate: the store refuses to open (M02 unique-index repair) — M02 residual, unchanged",
+        "repair": "integrity_report + app refusal; review R11 orphan evidence",
+        "regressions": "test_18_integrity_report_over_populated_torn_tables, test_18_app_refuses_a_torn_dictionary, test_R11 (2)"
+      },
+      "M05-AUDIT-19": {
+        "disposition": "reproduced",
+        "base_observation": "a19: a bare supported flag, a missing checkpoint and a mismatched runtime all returned request fields",
+        "repair": "identity-bound qualification; review Q1 self-attestation hardening; A2 disposition",
+        "regressions": "test_19_qualification_requires_identity, test_Q1, test_A2"
+      },
+      "M05-AUDIT-20": {
+        "disposition": "reproduced",
+        "base_observation": "a20: stale pre-M06/pre-M07 statements in vocabulary.md, asr_hints.md and test_hint_selection.py",
+        "repair": "active contracts/tests describe the connected system",
+        "regressions": "test_20_active_statements_are_current"
+      }
+    },
+    "disposition_counts": {
+      "reproduced": 18,
+      "test_gap_only": 1,
+      "narrowed": 1,
+      "refuted": 0,
+      "already_fixed": 0,
+      "design_only": 0
+    },
+    "adjudications": {
+      "D1": "alias/entry language is informational metadata — never a match filter; None inherits",
+      "D2": "an explicitly approved rule does what it says; same-scope masking is the safety",
+      "D3": "suggestions and conflict-masked canonicals may be OFFERED as hint/cleanup context, never rewrites or cleanup alias pairs",
+      "D4": "pin-first ranking, frozen usage between edits, duplicate canonicals in separate scopes",
+      "D5": "scope identity: canonical + scope kind + canonical scope value (review Q5/R6)",
+      "D6": "whole-file import transaction; ASCII NOCASE canonical identity; omitted fields keep stored values (review Q4)",
+      "D-M1": "a same-scope masked longer alias does not reserve its span",
+      "delete_vs_disable": "delete re-seeds a suggested term; disable dismisses it"
+    },
+    "independent_review": {
+      "method": "separate empty-context subagent, read-only detached worktree at a164456, audit + corpus + contracts + diff only; every allegation re-run by the author on a separate worktree at a164456 before fixing",
+      "record": "remediation/review_round.json",
+      "reviewer_findings": 19,
+      "design_questions": 6,
+      "fixed": [
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R6",
+        "R7",
+        "R8",
+        "R9",
+        "R10",
+        "R11",
+        "R12",
+        "R13",
+        "R14",
+        "R15",
+        "R16",
+        "R17",
+        "R18",
+        "R19",
+        "Q1",
+        "Q2",
+        "Q3",
+        "Q4",
+        "Q5"
+      ],
+      "declined": {
+        "Q6": "aliases+history loss indistinguishable without an independent record — declared residual",
+        "Q1-registry": "external qualification registry declined (in-repo manifest; qualification is a code change either way)"
+      },
+      "regressions": "tests/v2/vocabulary/test_m05_review_round.py (31)",
+      "first_pass_results": "remediation/regressions_first_pass_a164456.json — review round 25 fail / 6 pass (5 mutation witnesses + 1 residual pin pass by design)",
+      "final_results": "remediation/regressions_final_4adda7d.json — all 71 regressions pass (28 + 12 + 31)",
+      "fresh_family": "REV-FAM-1 (reviewer-authored, expectations fixed first): 6/6 on a164456 and on the final code"
+    },
+    "corpus_results": {
+      "base_267d1c2": {
+        "pass": 159,
+        "fail": 67
+      },
+      "first_pass_a164456": {
+        "pass": 224,
+        "declared_residual": 2
+      },
+      "final_4adda7d": {
+        "pass": 224,
+        "declared_residual": 2
+      },
+      "final_by_role": {
+        "challenge": 46,
+        "characterization": "15 + 2 residual",
+        "fault": 7,
+        "metamorphic": 10,
+        "mutation": 12,
+        "negative": 45,
+        "positive": 30,
+        "reproduction": 29,
+        "stateful": 30
+      },
+      "declared_residuals": [
+        "TOKEN-001 '(clod code)' and TOKEN-003 \"'clod code'\" — M04 attached-punctuation tokens are not word tokens"
+      ],
+      "runner": "tests/v2/vocabulary/m05_corpus_runner.py (m05-corpus-runner-1)",
+      "exposure": "development evidence visible to the remediation, not a blind holdout"
+    },
+    "mutation_results": {
+      "first_pass": "remediation/mutation_first_pass_a164456.json (corpus-only harness: 8/8 killed)",
+      "final": "remediation/mutation_final_4adda7d.json — corpus + remediation + app + review-round suites: control green, 18/18 mutations killed, 0 errors"
+    },
+    "portable_tests": {
+      "output": "remediation/portable_tests_final.json",
+      "sweeps": [
+        "remediation/sweep_base_267d1c2.json",
+        "remediation/sweep_first_pass_a164456.json",
+        "remediation/sweep_final_01a1f3c.json"
+      ],
+      "summary": "85 test files under the shim runner at 01a1f3c: 68 exit 0; the 17 non-zero are the same shim-limited/model-backed files as on base (test_vocabulary_pipeline improves 0 → 5 ok; its sixth test is the native panel smoke); no downstream regression in M01/M02/M04/M06/M07/M10/M14"
+    },
+    "intended_test_changes": [
+      "tests/v2/vocabulary/test_vocabulary_store.py: asserts the EFFECTIVE alias language (AUDIT-12)",
+      "tests/v2/vocabulary/test_hint_selection.py: synthetic qualified manifests carry the full identity (AUDIT-19)",
+      "tests/v2/context/test_context_pipeline.py: same (AUDIT-19)",
+      "tests/v2/vocabulary/test_m05_remediation_app.py test_08: changed-since-selection now waits for a fresh look (review Q3)"
+    ],
+    "benchmark": {
+      "output": "remediation/benchmark_cloud_01a1f3c.json",
+      "command": ".venv/bin/python scripts/v2/benchmark_m05.py --entries 10000 --out <dir>",
+      "verdict": "pass",
+      "work_validity": "valid",
+      "gated_p95_ms": {
+        "cached_retrieval": 0.142,
+        "warm_selection": 0.003,
+        "scoped_selection": 0.004,
+        "fresh_selection": 19.372,
+        "fresh_scoped_selection": 13.292,
+        "normalize_no_hit": 13.626,
+        "normalize_positive": 12.746
+      },
+      "informational_p95_ms": {
+        "cold_snapshot": 489.009,
+        "cold_selection": 190.442,
+        "scope_upgrade_and_packaging": 363.568,
+        "stress_dense_hits": 40.046,
+        "stress_shared_first_word_bucket": 5.42,
+        "stress_overlap_long_aliases": 7.246
+      },
+      "base_same_harness": {
+        "output": "remediation/benchmark_cloud_base_267d1c2_final_harness.json",
+        "verdict": "budget_failed",
+        "normalize_positive_p95_ms": 102.881,
+        "stress_shared_first_word_bucket_p95_ms": 1068.131,
+        "stress_dense_hits_p95_ms": 1264.727
+      },
+      "note": "Cloud numbers are algorithmic evidence only. scope_upgrade_and_packaging (M06 finalize rebuild at 10k entries) exceeds its 75 ms bound in the cloud on base, first pass and final alike — declared residual, binding check on the reference Mac (M05-V003)."
+    },
+    "historical_records_2026_09_22": "preserved unchanged; pending item native-m05-dictionary-trial carried by M05-V002 (instructions M05-r1)",
+    "pending_local_verification": [
+      "M05-V001 Mac parity of the M05 suites + corpus (real PyObjC; native panel smoke)",
+      "M05-V002 native Dictionary panel + dictation trial with evidence read (carries native-m05-dictionary-trial)",
+      "M05-V003 reference-Mac benchmark at 10,000 entries"
+    ],
+    "runbook": {
+      "page": "docs/v2/VERIFICATION.html",
+      "section": "M05",
+      "instructions_revision": "M05-r1",
+      "code": "01a1f3c",
+      "frontend_skill": "anthropic-skills:frontend-design"
+    },
+    "cloud_cannot_certify": [
+      "AppKit/PyObjC Dictionary panel",
+      "Accessibility / M06 native destination identity",
+      "microphone capture",
+      "real Parakeet ASR punctuation meeting the barrier rules",
+      "real Qwen cleanup",
+      "reference-Mac latency"
+    ],
+    "declared_residuals": [
+      "cross-entry chain through a canonical ('clod ops' → 'Cloud ops' → 'CloudOps'): flagged idempotent=false",
+      "M04 attached-punctuation tokens (corpus TOKEN-001/003)",
+      "M02 unique-index repair over duplicate rows refuses store open (a18)",
+      "aliases+history loss indistinguishable (review Q6)",
+      "scope upgrade + packaging at 10k entries > 75 ms in the cloud",
+      "single/German/CJK quote pairs are not M04 protected zones",
+      "a store whose vocabulary_meta was lost re-runs the one-time alias-language migration"
+    ],
+    "privacy": "synthetic terms and temporary stores only; no installed app, live dictionary, private transcript, scope path or model cache touched; evidence is ids/counts/synthetic words"
+  }
 }

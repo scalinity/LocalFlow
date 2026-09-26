@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-25 · M04 remediation · code <code>4ef219c</code> (M03 checks unchanged at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M05 remediation · code <code>01a1f3c</code> (M04 checks unchanged at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -2013,7 +2013,232 @@ EOF</code></pre></div>
           </details>
         </article>
       </section>
-      <section class="milestone" id="M05" data-milestone="M05" data-title="Scoped vocabulary"><div class="ms-head"><span class="mid">M05</span><h2>Scoped vocabulary</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M05-V001).</p></section>
+      <section class="milestone" id="M05" data-milestone="M05" data-title="Scoped vocabulary">
+        <div class="ms-head">
+          <span class="mid">M05</span><h2>Scoped vocabulary</h2>
+          <span class="meta">instructions M05-r1 · code 01a1f3c · remediation of audit at 267d1c2</span>
+        </div>
+        <p class="ms-intro">The M05 cloud remediation made every dictionary rewrite belong to the exact words you said, in the place you said them, under the dictionary state the dictation started with: a two-word alias no longer swallows a comma, full stop or line break between its words (“clod, code” stays two clauses, “clod code,” keeps its comma); a phrase that already reads correctly can no longer be rewritten on a second pass; one dictation can never borrow another app's or workspace's entries when the dictionary cannot be read, and a destination that cannot be identified falls back to your global entries only; the frozen dictionary and hint list of a dictation can no longer change after they were identified; concurrent edits, approvals and deletes land atomically and on the revision you looked at; “false” written as text is never read as approval; a file import applies whole or not at all, and re-importing the same file changes nothing; the Dictionary panel approves the entry you selected (not whatever row sits there after a search) and its Test field says which scope it tested; dictionary skills keep the entry that approved them, and each applied rule's exact frozen state is kept with the dictation's evidence; a torn dictionary is refused instead of booting empty; and speech-model biasing can only be switched on for an exactly identified, qualified model. Portable tests, the audit's adversarial corpus, a mutation check and a benchmark that refuses a matcher doing no work passed in the cloud; these checks cover what only this Mac can show. The September 22 M05 records stay as they are; their pending dictionary trial is carried by M05-V002 below for the current code. Detail: <code>docs/v2/handoffs/M05.md</code> (remediation addendum) and <code>docs/v2/acceptance/M05/results.json</code> → <code>remediation_2026_09_25</code>.</p>
+
+        <div class="callout">
+          <h3>M05 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The repaired M05 code gets its own worktree. The dictionary trial uses a <b>sandbox home folder</b>: the dev app then reads and writes a throw-away store, dictionary and logs under <code>$SANDBOX5</code> — never your real Application Support data, your real dictionary or the installed app. Models are read from your existing Hugging Face cache, offline. Quit the installed LocalFlow.app first so the two apps do not fight over the fn key or the microphone.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># M05 code in its own worktree (first time only)</span>
+export LF_M05="$(dirname "$LF_MAIN")/LocalFlow-m05-verify"
+git -C "$LF_MAIN" fetch origin claude/m05-vocabulary-remediation-kgi2kl
+[ -d "$LF_M05" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M05" origin/claude/m05-vocabulary-remediation-kgi2kl
+<span class="c">#   (if that branch has been merged, use origin/main instead)</span>
+git -C "$LF_M05" merge-base --is-ancestor 01a1f3c HEAD &amp;&amp; echo "M05 repairs present"
+export OUT5="$EV/m05-verification"; mkdir -p "$OUT5" &amp;&amp; chmod 700 "$OUT5"
+
+<span class="c"># Sandbox home for the dev app (fresh each time you want a clean slate)</span>
+export REAL_HOME="$HOME"
+export SANDBOX5="$OUT5/sandbox-home"; mkdir -p "$SANDBOX5" &amp;&amp; chmod 700 "$SANDBOX5"
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M05"], "config.json").read_text())
+c = dict(cfg, log_transcripts=False, context_enabled=True)
+p = pathlib.Path(os.environ["OUT5"], "sandbox-config.json")
+p.write_text(json.dumps(c, indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app; $LF5_PID is its process</span>
+lf5_start() { ( cd "$LF_M05" &amp;&amp; exec env HOME="$SANDBOX5" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT5/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT5/app-console.txt" 2&gt;&amp;1 &amp;
+  LF5_PID=$!; echo "dev app pid $LF5_PID"; }
+export SDB5="$SANDBOX5/Library/Application Support/LocalFlow/v2.db"</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M05 repairs present” and one “wrote …/sandbox-config.json” line. Remove the sandbox when finished: <code>rm -rf "$SANDBOX5"</code> (synthetic dictations and test entries only).</p>
+        </div>
+
+        <h3 class="group">Automatable local parity</h3>
+
+        <article class="check" id="M05-V001" data-milestone="M05" data-rev="M05-r1" data-code="01a1f3c" data-tags="terminal">
+          <header class="check-head">
+            <span class="cid">M05-V001</span>
+            <h4>Run the repaired M05 suites and the audit corpus under the Mac interpreter</h4>
+            <ul class="tags"><li>Terminal</li><li>~3 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Alias matching, scope precedence, the vocabulary store (atomic edits, compare-and-swap, whole-file imports, case-insensitive identity), hint selection and qualification, the per-finding regressions, the independent-review regressions, the app-seam regressions (failure paths, invalid destinations, finalize upgrades, panel selection and scope, torn dictionaries) and the audit's 226-case corpus behave on macOS with the project's Python 3.14 as they did in the cloud (Linux, Python 3.13). Mac-parity reason: the app-seam and pipeline suites run the real <code>AppDelegate</code> and the real Dictionary panel with the <b>real</b> PyObjC on the Mac (in the cloud they ran under declared stand-ins, and the panel construction smoke could not run at all), and the store's case-insensitive identity depends on the SQLite build the app ships with. No microphone, model or real data is used.</p>
+          <p class="plain"><b>In plain terms.</b> The same automatic tests that passed in the cloud must also pass on your Mac. They use made-up words and temporary folders only.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · no app, model or microphone needed</dd>
+              <dt>Preconditions</dt><dd>M01 and M05 set-up done. Project <code>.venv</code> exists in your checkout.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M05</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M05"
+for t in tests/v2/vocabulary/test_vocabulary_matching.py \
+         tests/v2/vocabulary/test_vocabulary_store.py \
+         tests/v2/vocabulary/test_hint_selection.py \
+         tests/v2/vocabulary/test_vocabulary_pipeline.py \
+         tests/v2/vocabulary/test_m05_remediation.py \
+         tests/v2/vocabulary/test_m05_remediation_app.py \
+         tests/v2/vocabulary/test_m05_review_round.py \
+         tests/v2/context/test_context_pipeline.py \
+         tests/v2/test_baseline_manifest.py; do
+  "$PY" "$t" &gt; "$OUT5/V001-$(basename "$t" .py).txt" 2&gt;&amp;1
+  echo "exit=$?  $(tail -n 1 "$OUT5/V001-$(basename "$t" .py).txt")"
+done
+"$PY" tests/v2/vocabulary/m05_corpus_runner.py --output "$OUT5/V001-corpus.json" &gt; "$OUT5/V001-corpus.txt" 2&gt;&amp;1
+echo "corpus exit=$?  $(tail -n 1 "$OUT5/V001-corpus.txt")"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Every line shows <code>exit=0</code>. Final lines: “all vocabulary matching tests passed” (<b>12</b> ok lines), “all vocabulary store tests passed” (<b>16</b>), “all hint selection tests passed” (<b>9</b>), “all vocabulary pipeline tests passed” (<b>6</b> — including “dictionary panel constructs and sandboxes over the public APIs”, which only the Mac can run), “all 28 M05 remediation tests passed”, “all 12 M05 app-seam tests passed”, “all 31 M05 review-round tests passed”, “all context pipeline tests passed”, “all baseline manifest tests passed (5)”.</li>
+              <li><code>corpus exit=0</code> and the last line <code>cases 226: declared_residual 2, pass 224</code> (the two residuals are the M04 tokenizer limit for words glued to brackets/quotes, “(clod code)” and “'clod code'”, declared in the handoff).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A failing matching, store, corpus or remediation line: the Mac's Python/SQLite/Unicode behaves differently from the cloud — mark <b>Failed</b>, keep the <code>.txt</code>, and do not run M05-V002.</li>
+              <li>Only the pipeline suite's panel line or an app-seam test failing with an AppKit/PyObjC error: a native-integration difference — <b>Failed</b> (record the first traceback line).</li>
+              <li><code>ModuleNotFoundError</code>: wrong interpreter — check <code>$PY</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT5/V001-*</code> (synthetic words only). Sanitized for Git (optional): the pass counts and the corpus counts.</p>
+            <h5>Contract relevance</h5>
+            <p>EV-07/EV-18/EV-19; M05-AC01–AC04; <code>contracts/vocabulary.md</code>, <code>asr_hints.md</code>, <code>training_evidence.md</code> → “M05 remediation”.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Native Dictionary trial</h3>
+
+        <article class="check" id="M05-V002" data-milestone="M05" data-rev="M05-r1" data-code="01a1f3c" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M05-V002</span>
+            <h4>Use the Dictionary panel, then dictate with global and app-scoped entries; read the evidence</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~15 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> In the real Dictionary panel, an approval lands on the entry you selected even after the search filter changes the list, and the Test field tests the scope you chose and says so. Through the real microphone, Parakeet ASR and Qwen cleanup, an approved global entry applies everywhere, an app-scoped entry applies only in its app (the destination is read at the hotkey, as M06 now provides), disabling an entry takes effect on the next dictation, an alias never rewrites across punctuation Parakeet wrote between its words, the dictation's evidence names the applied rules with their frozen scope and approval, and the pre-decode hint list is offered to Parakeet but recorded as ignored (biasing is not qualified for this model). Carries the historical pending item <code>native-m05-dictionary-trial</code> (September 22, <code>acceptance/M05/results.json</code>) for the repaired code under instruction revision M05-r1 — the live workspace/app-scoped half, which waited for M06 then, is now part of it; that record stays as it was.</p>
+          <p class="plain"><b>In plain terms.</b> You add a few test words to the dictionary, check that the panel approves and tests the right thing, then dictate a few sentences in TextEdit and in Notes: the TextEdit-only word changes only in TextEdit, the global word changes everywhere, and a comma between two words keeps them from being merged.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home (no real data touched)</dd>
+              <dt>Preconditions</dt><dd>M05 set-up done; M05-V001 passed; installed LocalFlow.app quit; a new TextEdit document and a new Notes note open for the dictations.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M05 set-up</dd>
+            </dl>
+            <h5>Manual actions — panel</h5>
+            <ol class="list">
+              <li>Run <code>lf5_start</code>; wait for the menu-bar icon and “ASR: ready”. In its menu choose <b>Training → Collect Training Evidence</b> (the sandbox store only), then <b>Dictionary…</b>.</li>
+              <li>The list reads “2 entries” with <code>Claude</code> and <code>Claude Code</code>, each <code>· profile:coding</code> and <code>[suggested (suggested)]</code>.</li>
+              <li>Add three entries, one at a time (type into Canonical / Alias, pick the scope in the pop-up, type the scope value when not global, press <b>Add / Preview Conflicts</b>):
+                <ol>
+                  <li>Canonical <code>Parakeet</code>, Alias empty, scope <b>global</b>.</li>
+                  <li>Canonical <code>Claude Code</code>, Alias <code>clod code</code>, scope <b>global</b>.</li>
+                  <li>Canonical <code>Claude</code>, Alias <code>clod</code>, scope <b>app</b>, value <code>com.apple.TextEdit</code>.</li>
+                </ol>
+                Each reports “added … (unapproved — approve to make it rewrite text)” or lists conflicts marked “not active now”.</li>
+              <li>Approve by stable selection: type the line number of the <b>app-scoped</b> <code>Claude</code> into <b>Test phrase</b> and press <b>Test</b> (“selected: Claude (app:com.apple.TextEdit)”). Now type <code>code</code> into the search field so the list changes, then press <b>Approve</b>. Clear the search. Then select and approve the global <code>Parakeet</code> and the global <code>Claude Code</code> the same way (line number → Test → Approve).</li>
+              <li>Scope test: Test phrase <code>ask clod now</code>; pop-up <b>global</b> → <b>Test</b>. Then pop-up <b>app</b>, value <code>com.apple.TextEdit</code> → <b>Test</b>.</li>
+            </ol>
+            <h5>Manual actions — dictation</h5>
+            <ol class="list" start="6">
+              <li>Click into TextEdit. Hold fn and say each line as its own dictation, releasing fn after each:
+                <ol>
+                  <li>“tell clod the parakeet model is ready”</li>
+                  <li>“open clod code for the cloud deployment”</li>
+                  <li>“I found a clod, code review starts later” (pause at the comma)</li>
+                </ol></li>
+              <li>Click into the Notes note and dictate line 6.1 again.</li>
+              <li>In the panel select the app-scoped <code>Claude</code> (line number → Test) and press <b>Disable/Enable</b>; the line shows <code>[disabled]</code>. Dictate line 6.1 in TextEdit again. Select it again and press <b>Disable/Enable</b> to restore it.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 9)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M05" &amp;&amp; HOME="$SANDBOX5" "$PY" - &lt;&lt;'EOF' | tee "$OUT5/V002-evidence.txt"
+import json, os, sqlite3
+from localflow.v2 import store as S
+from localflow.v2 import vocabulary_store as VS
+db = sqlite3.connect(os.environ["SDB5"])
+rows = db.execute("select example_id from training_examples order by rowid").fetchall()
+st = S.Store(os.environ["SDB5"])
+SEP = ",.;:!?\n\r\u0085  "
+for (ex,) in rows:
+    env = st.latest_revision(ex)
+    n, c = env.get("normalization") or {}, env.get("context") or {}
+    v = n.get("vocabulary") or {}
+    d = c.get("disposition") or {}
+    led = json.loads(st.artifact_payload(n["artifact_ids"]["ledger"])) if n.get("artifact_ids") else {"edits": []}
+    vedits = [e for e in led["edits"] if e["cls"] == "vocabulary"]
+    rules = []
+    if v.get("applied_rules_artifact"):
+        doc = json.loads(st.artifact_payload(v["applied_rules_artifact"]))
+        rules = [(r["canonical"], r["scope"][0], r["scope"][1], r["approved"],
+                  r["verification"], r["revision"]) for r in doc["rules"]]
+    print("rules:", rules, "| vocab edits:", len(vedits), "| ids match:",
+          sorted({e["rule_id"] for e in vedits}) == sorted(set(v.get("applied_rule_ids", []))),
+          "| edit spans a separator:", any(ch in e["input_text"] for e in vedits for ch in SEP),
+          "| hints offered:", c.get("offered_terms"), "ignored:", d.get("ignored"),
+          d.get("ignored_reason"), c.get("hint_set_missing_reason"))
+vs = VS.VocabularyStore(st)
+print("integrity:", vs.integrity_report())
+print("usage:", sorted((e.canonical, e.scope_kind, e.usage_count) for e in vs.entries()))
+st.close()
+EOF</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Panel, step 4: after the search changed the list, the message is “approved Claude” and, after clearing the search, the <b>app-scoped</b> <code>Claude</code> line has no <code>[suggested …]</code> mark while the <code>profile:coding</code> <code>Claude</code> still has it. No other entry changed.</li>
+              <li>Panel, step 5: global → first line <code>→ ask clod now</code> and <code>scope: global only</code>; app → <code>→ ask Claude now</code> and <code>scope: app=com.apple.TextEdit (+ global)</code>. Testing never changes a “used” count.</li>
+              <li>TextEdit: “tell Claude the Parakeet model is ready”; “open Claude Code for the cloud deployment” (“cloud” untouched); line 6.3 keeps “clod” and “code” apart wherever Parakeet wrote a comma or full stop between them (“… a Claude, code review …” is correct: the TextEdit-only single-word entry applies to “clod”, the two-word alias does not cross the comma).</li>
+              <li>Notes: “tell clod the Parakeet model is ready” — the TextEdit-only entry does not apply, the global one does.</li>
+              <li>TextEdit with the entry disabled: “tell clod the Parakeet model is ready”.</li>
+              <li>The command prints one line per dictation: every <code>ids match: True</code>; every <code>edit spans a separator: False</code>; the rules list names only entries that applied in that dictation, with their scope (<code>app</code>, <code>com.apple.TextEdit</code> only for the TextEdit lines), <code>True</code> approval and <code>explicit</code> verification; <code>hints offered:</code> a number ≥ 1 with <code>ignored: True disabled_until_qualified</code> and no missing reason. Then <code>integrity: {'vanished_entries': 0, 'orphan_alias_rows': 0, 'entries_missing_aliases': 0}</code> and usage counts that grew only for entries that rewrote a dictation (the suggested <code>profile:coding</code> entries stay at 0).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Step 4 approves a different entry, or the Test output does not name the scope: <b>Failed</b> (screenshot of the panel kept outside Git).</li>
+              <li>The TextEdit-only entry applies in Notes, or a disabled entry still applies: <b>Failed</b>; keep <code>V002-evidence.txt</code> and <code>app-console.txt</code>.</li>
+              <li><code>edit spans a separator: True</code> or <code>ids match: False</code>: <b>Failed</b>.</li>
+              <li>A line in TextEdit differs but the evidence shows the expected vocabulary edits: cleanup (Qwen) changed it afterwards — <b>Needs follow-up</b> (record the line); M05 itself behaved.</li>
+              <li>Parakeet transcribed a different word (e.g. “cloud” for “clod”, or “Claude” directly): not an M05 result — repeat the line once; if it repeats, <b>Needs follow-up</b> with the raw word noted.</li>
+              <li><code>ignored: False</code>, or hints accepted: <b>Failed</b> — biasing must not be active for this model. A <code>hint_set_missing_reason</code> of <code>retention_write_failed</code>: <b>Failed</b> (the store could not keep the evidence).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT5/V002-evidence.txt</code> (test entry names, scopes, counts and reasons only — no dictated sentence is printed), <code>$OUT5/app-console.txt</code>. The dictated words stay in your TextEdit document, the Notes note and the sandbox store; delete the note, the document and the sandbox when done.</p>
+            <h5>Contract relevance</h5>
+            <p>M05-AC01–AC04; M05-AUDIT-01/02/08/09/13/14/15/19; <code>contracts/vocabulary.md</code> → “M05 remediation”, <code>asr_hints.md</code> → qualification.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Reference-Mac performance</h3>
+
+        <article class="check" id="M05-V003" data-milestone="M05" data-rev="M05-r1" data-code="01a1f3c" data-tags="terminal hardware">
+          <header class="check-head">
+            <span class="cid">M05-V003</span>
+            <h4>Re-run the M05 benchmark on this Mac at 10,000 entries (new run, history untouched)</h4>
+            <ul class="tags"><li>Terminal</li><li>~3 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> With a 10,000-entry dictionary the repaired vocabulary path stays inside its budgets on the reference Mac: cached snapshot retrieval and warm/scoped hint selection, normalization with and without dictionary hits, dense-hit and shared-first-word stress text, and the hotkey-to-finalize scope upgrade with evidence packaging. The benchmark now first proves the work was done — it compares every cohort's output and applied edits with an independently authored expectation and the scoped ranking with an independent ranking, and exits 2 for a matcher that does nothing, a scope-blind selector or skipped edits — before any timing counts. The September 22 figures (<code>docs/v2/benchmarks/</code> M05 run) describe older code under a weaker harness; they stay as recorded. The cloud run (Linux, shared CPU) is algorithmic evidence only: at 10,000 entries the gated paths measured fresh selection p95 19.4 ms (scoped 13.3 ms) and normalization p95 13.6 ms without hits / 12.7 ms with hits, while the scope upgrade with packaging took 364 ms against its 75 ms bound — the one cohort that must be confirmed here.</p>
+          <p class="plain"><b>In plain terms.</b> The dictionary is timed on your Mac with ten thousand made-up words to confirm it stays fast — and the test first checks the dictionary actually did its job.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · on power, nothing heavy running · no model needed</dd>
+              <dt>Preconditions</dt><dd>M05 set-up done.</dd>
+              <dt>Working dir</dt><dd><code>$LF_M05</code></dd>
+            </dl>
+            <h5>Commands</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>cd "$LF_M05"
+"$PY" scripts/v2/benchmark_m05.py --entries 10000 --out "$OUT5/V003-bench" | tee "$OUT5/V003-bench.txt"; echo "bench exit=${PIPESTATUS[0]}"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>bench exit=0</code>, the line <code>work validity: valid</code> and the last line <code>verdict: pass (exit 0)</code>.</li>
+              <li>Every cohort line within its budget as printed; <code>scope_upgrade_and_packaging</code> p95 ≤ 75 ms (this bound is informational in the cloud and <b>binding</b> here).</li>
+              <li>A JSON report <code>$OUT5/V003-bench/m05_benchmark.json</code> whose <code>code_sha</code> is the checked-out commit.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li><code>bench exit=1</code> (<code>budget_failed</code>): repeat once with nothing else running; a second miss is <b>Failed</b> (keep the JSON). A miss only on <code>scope_upgrade_and_packaging</code> is the declared cloud residual — record the p95 and mark <b>Needs follow-up</b>.</li>
+              <li><code>bench exit=2</code> (<code>work_invalid</code>): the dictionary did not do the expected work — <b>Failed</b>; this is a correctness problem, not a speed one.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT5/V003-bench*</code> (synthetic words; the JSON holds timings and counts). Sanitized: the JSON may be committed as a new run under <code>docs/v2/benchmarks/</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>S24; M05-AUDIT-16; <code>contracts/vocabulary.md</code> → performance.</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M06" data-milestone="M06" data-title="Local context"><div class="ms-head"><span class="mid">M06</span><h2>Local context</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M06-V001).</p></section>
       <section class="milestone" id="M07" data-milestone="M07" data-title="Faithful cleanup"><div class="ms-head"><span class="mid">M07</span><h2>Faithful cleanup</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M07-V001).</p></section>
       <section class="milestone" id="M08" data-milestone="M08" data-title="Insertion"><div class="ms-head"><span class="mid">M08</span><h2>Insertion</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M08-V001).</p></section>

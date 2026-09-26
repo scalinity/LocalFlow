@@ -1,0 +1,441 @@
+{
+ "code_root_modified": false,
+ "code_root_sha": "a16445671491a3072b307a139407523adc3c181b",
+ "counts": {
+  "fail": 26,
+  "pass": 45
+ },
+ "evaluated_utc": "2026-09-26T01:22:16Z",
+ "python": "3.13.12",
+ "results": {
+  "test_m05_remediation.py::test_01_alias_never_spans_a_delimiter": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.23,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_02c_scope_context_rejects_non_string_identity": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.14,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_03_left_overlap_canonical_claim": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.19,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_04_snapshot_deeply_immutable": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.17,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_05_hintset_identity_bound_to_content": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.16,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_06_approve_uses_authoritative_alias_set": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.29,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_06_compare_and_swap": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.24,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_06_concurrent_scope_update_never_commits_invalid_state": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.25,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_06_independent_edits_version_monotonically": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.22,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_06_update_delete_race": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.29,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_07_import_rejects_malformed_booleans_before_any_write": {
+   "exception": null,
+   "message": null,
+   "seconds": 1.32,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_07_public_api_and_constructor_are_strict": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.23,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_09_dictionary_skill_provenance": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.28,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_10_repeated_import_is_unchanged": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.27,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_11_import_is_one_transaction_with_a_declared_identity": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.35,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_12_alias_language_inherits_or_overrides": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.26,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_13_every_preview_kind_matches_committed_behavior": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.18,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_13_preview_distinguishes_active_from_hypothetical": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.18,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_13_sandbox_suggestions_follow_the_engine": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.19,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_14_hint_retention_failure_is_precise": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.35,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_15_applied_rule_manifest_is_deleted_with_the_job": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.29,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_15_applied_rule_state_reconstructable": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.32,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_16_benchmark_rejects_invalid_work": {
+   "exception": null,
+   "message": null,
+   "seconds": 14.56,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_17_hint_budget_matrix": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.19,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_17_selector_limit_is_strict": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.14,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_18_integrity_report_over_populated_torn_tables": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.27,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_19_qualification_requires_identity": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.19,
+   "status": "pass"
+  },
+  "test_m05_remediation.py::test_20_active_statements_are_current": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.22,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_02_refresh_failure_never_reuses_another_apps_dictionary": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.46,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_02_refresh_failure_on_cold_start_degrades_honestly": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.31,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_02_selector_failure_does_not_block_the_scope_upgrade": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.51,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_02_workspace_alternation_with_a_mid_failure": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.61,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_02b_capture_failure_fallback_is_unscoped": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.43,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_02d_invalid_identity_keeps_unscoped_default": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.47,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_02e_finalize_never_rebuilds_on_the_app_cached_policy": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.46,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_08_panel_selection_is_a_stable_entry_id": {
+   "exception": "AssertionError",
+   "message": "('changed_since_selection', ['Beta'], 'approved Beta')",
+   "seconds": 0.54,
+   "status": "fail"
+  },
+  "test_m05_remediation_app.py::test_09_app_skill_provenance_and_hits": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.5,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_09_hit_accounting_counts_only_applied_rules": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.43,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_13_panel_sandbox_scope_is_explicit": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.28,
+   "status": "pass"
+  },
+  "test_m05_remediation_app.py::test_18_app_refuses_a_torn_dictionary": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.33,
+   "status": "pass"
+  },
+  "test_m05_review_round.py::test_A1_panel_listing_describes_the_real_selection_method": {
+   "exception": "AssertionError",
+   "message": "1 entries (1 shown) \u2014 click a line to select:",
+   "seconds": 0.3,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_A2_qualified_disposition_is_not_ignored_with_a_reason": {
+   "exception": "AssertionError",
+   "message": "{'offered_terms': 2, 'accepted_terms': 0, 'ignored': False, 'ignored_reason': 'unsupported_by_adapter', 'hint_set_id': 'm05hs:70c77201443e', 'vocabulary_revision': 'm05:1db012625be5', 'note': 'pre-decode biasing stays disabled until qualified and is never emulated by concatenating terms onto the tra",
+   "seconds": 0.13,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_Q1_self_attested_qualification_is_refused": {
+   "exception": "AssertionError",
+   "message": "",
+   "seconds": 0.14,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_Q2_failed_read_never_resurrects_a_disabled_rule": {
+   "exception": "AssertionError",
+   "message": "('ask Claude now', 'ask Claude now')",
+   "seconds": 0.38,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_Q3_panel_actions_bind_to_what_the_user_selected": {
+   "exception": "AssertionError",
+   "message": "",
+   "seconds": 0.26,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_Q4_import_omitted_fields_keep_stored_values": {
+   "exception": "AssertionError",
+   "message": "VocabularyEntry(entry_id='vocab-7f5ce385a7054fac85b43bb61a9626a5', canonical='code-review', language=None, kind='term', matching_mode='phrase', scope_kind='global', scope_value=None, priority=0, pinned=False, usage_count=0, last_used_utc=None, origin='user', enabled=True, approved=False, verificatio",
+   "seconds": 0.28,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_Q5_scope_values_have_one_canonical_form": {
+   "exception": "AssertionError",
+   "message": "expected a refusal",
+   "seconds": 0.26,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R10_a_crashed_control_is_never_green": {
+   "exception": "AssertionError",
+   "message": "True",
+   "seconds": 0.25,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R11_app_refuses_torn_entries_and_history": {
+   "exception": "AssertionError",
+   "message": "(True, 2)",
+   "seconds": 0.31,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R11_orphan_aliases_prove_vanished_entries": {
+   "exception": "AssertionError",
+   "message": "",
+   "seconds": 0.24,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R12_hint_budget_config_is_strict_and_never_disables": {
+   "exception": "AttributeError",
+   "message": "'NoneType' object has no attribute 'max_terms'",
+   "seconds": 0.38,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R13_hint_sets_hold_only_immutable_scalars": {
+   "exception": "AssertionError",
+   "message": "expected a refusal",
+   "seconds": 0.19,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R14_panel_add_preview_reads_the_store_now": {
+   "exception": "AssertionError",
+   "message": "added 'Claude' (unapproved \u2014 approve to make it rewrite text)",
+   "seconds": 0.3,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R15_hub_preview_has_an_explicit_scope": {
+   "exception": "AssertionError",
+   "message": "[{'input': 'ask clod now glob term', 'output': 'ask Claude now GlobalTerm', 'changed': True, 'policy_revision': 'm04:4ed08b074909', 'edits': [{'before': 'clod', 'after': 'Claude', 'cls': 'vocabulary', 'rule_id': 'vocab-e4051b69575948f5bcfd2ae3bad7c228'}, {'before': 'glob term', 'after': 'GlobalTerm'",
+   "seconds": 0.35,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R16_alias_order_is_deterministic_for_case_variants": {
+   "exception": "AssertionError",
+   "message": "{(('Clod', 'clod', 'klod'), ('Clod', 'clod', 'klod')), (('clod', 'Clod', 'klod'), ('clod', 'Clod', 'klod'))}",
+   "seconds": 0.3,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R17_declared_residual_chain_is_flagged_not_hidden": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.22,
+   "status": "pass"
+  },
+  "test_m05_review_round.py::test_R17_no_second_pass_drift_through_a_canonical": {
+   "exception": "AssertionError",
+   "message": "",
+   "seconds": 0.17,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R18_unit_separator_is_a_barrier_unicode_spaces_are_not": {
+   "exception": "AssertionError",
+   "message": "",
+   "seconds": 0.2,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R1_claim_is_as_strong_as_its_entry": {
+   "exception": "AssertionError",
+   "message": "('reddish status page', 'Red Status page', 'Red Orange Page', [('Status page', 'Orange Page', 'vy')])",
+   "seconds": 0.21,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R2_a_defeated_claim_suppresses_nothing": {
+   "exception": "AssertionError",
+   "message": "('Zz Cc dd', 'Zz Yy')",
+   "seconds": 0.18,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R3_R4_explicit_alias_language_survives_language_changes": {
+   "exception": "AssertionError",
+   "message": "{'clod': None, 'klod': None}",
+   "seconds": 0.3,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R4_legacy_materialized_languages_migrate_once_to_inherit": {
+   "exception": "AssertionError",
+   "message": "",
+   "seconds": 0.36,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R5_import_refuses_duplicate_aliases_before_any_write": {
+   "exception": "AssertionError",
+   "message": "import rejected: write_failed",
+   "seconds": 0.26,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R6_a_global_entry_takes_no_scope_value": {
+   "exception": "AssertionError",
+   "message": "expected a refusal",
+   "seconds": 0.27,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R7_alias_containers_are_lists_or_tuples": {
+   "exception": "AssertionError",
+   "message": "expected a refusal",
+   "seconds": 0.22,
+   "status": "fail"
+  },
+  "test_m05_review_round.py::test_R8_a_job_counts_one_hit_per_applied_entry": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.36,
+   "status": "pass"
+  },
+  "test_m05_review_round.py::test_R8_applied_rule_manifest_holds_only_applied_rules": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.27,
+   "status": "pass"
+  },
+  "test_m05_review_round.py::test_R8_sandbox_reports_a_would_be_masked_suggestion": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.2,
+   "status": "pass"
+  },
+  "test_m05_review_round.py::test_R8_score_is_part_of_hint_identity": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.22,
+   "status": "pass"
+  },
+  "test_m05_review_round.py::test_R8_snapshot_revision_encodes_its_scope": {
+   "exception": null,
+   "message": null,
+   "seconds": 0.21,
+   "status": "pass"
+  },
+  "test_m05_review_round.py::test_R9_selection_identity_fast_path_equals_generic": {
+   "exception": "AssertionError",
+   "message": "",
+   "seconds": 0.2,
+   "status": "fail"
+  }
+ },
+ "schema_version": 1,
+ "tests_from_sha": "4adda7ddff8acd2510bb6057c1df4d466d3cbf81",
+ "tool": "scripts/v2/m05_test_record.py"
+}

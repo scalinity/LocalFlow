@@ -1,0 +1,1031 @@
+{
+ "code_root_modified": false,
+ "code_sha": "4adda7ddff8acd2510bb6057c1df4d466d3cbf81",
+ "control_green": true,
+ "errors": [],
+ "mutations": {
+  "alias_order_identity": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 1,
+      "pass": 223
+     },
+     "exit": 1,
+     "failed_cases": [
+      "STATE-011"
+     ],
+     "failed_total": 1,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_10_repeated_import_is_unchanged: AssertionError: {'created': 0, 'updated': 1, 'unchanged': 0}"
+     ],
+     "killed": true,
+     "last_line": "1 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 31 M05 review-round tests passed"
+    }
+   }
+  },
+  "applied_rules_unbounded": {
+   "applied": true,
+   "killed_by": [
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "pass": 224
+     },
+     "exit": 0,
+     "failed_cases": [],
+     "failed_total": 0,
+     "killed": false
+    },
+    "domain": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 28 M05 remediation tests passed"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_R8_applied_rule_manifest_holds_only_applied_rules: AssertionError: [{'aliases': [], 'approved': True, 'canonical': 'Pin1', 'enabled': True, 'entry_id'"
+     ],
+     "killed": true,
+     "last_line": "1 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "claim_strength_is_occurrence": {
+   "applied": true,
+   "killed_by": [
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "pass": 224
+     },
+     "exit": 0,
+     "failed_cases": [],
+     "failed_total": 0,
+     "killed": false
+    },
+    "domain": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 28 M05 remediation tests passed"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_R1_claim_is_as_strong_as_its_entry: AssertionError: ('reddish status page', 'Red Status page', 'Red Orange Page', [('Status page', 'Orange Page', 'vy'"
+     ],
+     "killed": true,
+     "last_line": "1 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "claim_tie_ignored": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain",
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 1,
+      "pass": 223
+     },
+     "exit": 1,
+     "failed_cases": [
+      "NOOP-004"
+     ],
+     "failed_total": 1,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_03_left_overlap_canonical_claim: AssertionError: ('Orange Page', [('red Status', 'Orange', 'E-B')])"
+     ],
+     "killed": true,
+     "last_line": "1 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_R17_no_second_pass_drift_through_a_canonical: AssertionError: ",
+      "FAIL test_R1_claim_is_as_strong_as_its_entry: AssertionError: ('reddish status page', 'Red Status page', 'Red Orange Page', [('Status page', 'Orange Page', 'vy'",
+      "FAIL test_R2_a_defeated_claim_suppresses_nothing: AssertionError: ('Alpha Beta gamma', 'Alpha Zeta Q', [('Beta gamma', 'Zeta Q', 'E-B')])"
+     ],
+     "killed": true,
+     "last_line": "3 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "control_unmodified": {
+   "applied": true,
+   "killed_by": [],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "pass": 224
+     },
+     "exit": 0,
+     "failed_cases": [],
+     "failed_total": 0,
+     "killed": false
+    },
+    "domain": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 28 M05 remediation tests passed"
+    },
+    "review": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 31 M05 review-round tests passed"
+    }
+   }
+  },
+  "drop_rule_ids": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain",
+    "app",
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_09_hit_accounting_counts_only_applied_rules: AssertionError: {'term': 0, 'skill': 1, 'noop': 0, 'mask1': 0, 'mask2': 0, 'offered_only': 0, 'suggested'"
+     ],
+     "killed": true,
+     "last_line": "1 of 12 M05 app-seam tests FAILED"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 47,
+      "pass": 177
+     },
+     "exit": 1,
+     "failed_cases": [
+      "APPROVAL-004",
+      "COLLIDE-002",
+      "COLLIDE-003",
+      "COMMON-001",
+      "COMMON-002",
+      "EDGE-001",
+      "EDGE-002",
+      "EDGE-003",
+      "EDGE-004",
+      "EDGE-005",
+      "EDGE-006",
+      "GAP-001",
+      "GAP-002",
+      "GAP-003",
+      "GAP-004",
+      "LANG-001",
+      "LANG-002",
+      "LANG-003",
+      "META-006",
+      "NOOP-005"
+     ],
+     "failed_total": 47,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_01_alias_never_spans_a_delimiter: AssertionError: [EditRecord(cls='vocabulary', op='scoped_alias', input_span=Span(start=0, end=9), output_span=Span(s",
+      "FAIL test_03_left_overlap_canonical_claim: AssertionError: ",
+      "FAIL test_13_sandbox_suggestions_follow_the_engine: AssertionError: []",
+      "FAIL test_15_applied_rule_manifest_is_deleted_with_the_job: KeyError: 'applied_rules_artifact'",
+      "FAIL test_15_applied_rule_state_reconstructable: KeyError: 'vocab-cd50f13292b143fa848357f8b67fee88'",
+      "FAIL test_16_benchmark_rejects_invalid_work: AssertionError: the unmodified tree must be work-valid"
+     ],
+     "killed": true,
+     "last_line": "6 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_Q2_failed_read_never_resurrects_a_disabled_rule: AssertionError: 0",
+      "FAIL test_R2_a_defeated_claim_suppresses_nothing: AssertionError: ",
+      "FAIL test_R8_a_job_counts_one_hit_per_applied_entry: AssertionError: (0, 0)",
+      "FAIL test_R8_applied_rule_manifest_holds_only_applied_rules: KeyError: 'applied_rules_artifact'"
+     ],
+     "killed": true,
+     "last_line": "4 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "drop_skill_provenance": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain",
+    "app"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_09_app_skill_provenance_and_hits: AssertionError: {'applied_rule_ids': [], 'applied_skill_rule_ids': [], 'revision': 'm05:945ee8d3b859'}",
+      "FAIL test_09_hit_accounting_counts_only_applied_rules: AssertionError: {'term': 1, 'skill': 0, 'noop': 0, 'mask1': 0, 'mask2': 0, 'offered_only': 0, 'suggested'"
+     ],
+     "killed": true,
+     "last_line": "2 of 12 M05 app-seam tests FAILED"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 3,
+      "pass": 221
+     },
+     "exit": 1,
+     "failed_cases": [
+      "SKILL-001",
+      "SKILL-004",
+      "SKILL-005"
+     ],
+     "failed_total": 3,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_09_dictionary_skill_provenance: AssertionError: [EditRecord(cls='skill', op='slash_skill_token', input_span=Span(start=0, end=17), output_span=Span(st",
+      "FAIL test_15_applied_rule_state_reconstructable: KeyError: 'vocab-775a7d2f02964b6bb8cad6d8415df7e7'"
+     ],
+     "killed": true,
+     "last_line": "2 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 31 M05 review-round tests passed"
+    }
+   }
+  },
+  "hits_per_occurrence": {
+   "applied": true,
+   "killed_by": [
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "pass": 224
+     },
+     "exit": 0,
+     "failed_cases": [],
+     "failed_total": 0,
+     "killed": false
+    },
+    "domain": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 28 M05 remediation tests passed"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_R8_a_job_counts_one_hit_per_applied_entry: AssertionError: (3, 0)"
+     ],
+     "killed": true,
+     "last_line": "1 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "identity_matcher": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain",
+    "app",
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_02_refresh_failure_never_reuses_another_apps_dictionary: AssertionError: ask clod now",
+      "FAIL test_02_selector_failure_does_not_block_the_scope_upgrade: AssertionError: ",
+      "FAIL test_02_workspace_alternation_with_a_mid_failure: AssertionError: ['clod', 'clod', 'clod', 'clod']",
+      "FAIL test_02b_capture_failure_fallback_is_unscoped: AssertionError: ask clod now glob term",
+      "FAIL test_02d_invalid_identity_keeps_unscoped_default: AssertionError: ask clod now glob term",
+      "FAIL test_02e_finalize_never_rebuilds_on_the_app_cached_policy: AssertionError: ask clod now glob term",
+      "FAIL test_09_hit_accounting_counts_only_applied_rules: AssertionError: clod said done. /code-review then Claude Code with klaud and zed and omeg",
+      "FAIL test_13_panel_sandbox_scope_is_explicit: AssertionError: \u2192 ask clod now"
+     ],
+     "killed": true,
+     "last_line": "8 of 12 M05 app-seam tests FAILED"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 74,
+      "pass": 150
+     },
+     "exit": 1,
+     "failed_cases": [
+      "APPROVAL-004",
+      "CLEANUP-001",
+      "CLEANUP-004",
+      "CLEANUP-005",
+      "COLLIDE-002",
+      "COLLIDE-003",
+      "COMMON-001",
+      "COMMON-002",
+      "EDGE-001",
+      "EDGE-002",
+      "EDGE-003",
+      "EDGE-004",
+      "EDGE-005",
+      "EDGE-006",
+      "GAP-001",
+      "GAP-002",
+      "GAP-003",
+      "GAP-004",
+      "LANG-001",
+      "LANG-002"
+     ],
+     "failed_total": 74,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_01_alias_never_spans_a_delimiter: AssertionError: (\"'clod code'\", 'clod code')",
+      "FAIL test_02c_scope_context_rejects_non_string_identity: AssertionError: ",
+      "FAIL test_03_left_overlap_canonical_claim: AssertionError: red status page",
+      "FAIL test_04_snapshot_deeply_immutable: AssertionError: ask clod and klod and klaud",
+      "FAIL test_07_import_rejects_malformed_booleans_before_any_write: AssertionError: ",
+      "FAIL test_12_alias_language_inherits_or_overrides: AssertionError: ",
+      "FAIL test_13_every_preview_kind_matches_committed_behavior: AssertionError: ",
+      "FAIL test_13_preview_distinguishes_active_from_hypothetical: AssertionError: disabled"
+     ],
+     "killed": true,
+     "last_line": "12 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_Q2_failed_read_never_resurrects_a_disabled_rule: AssertionError: ('ask clod now', 'ask clod now')",
+      "FAIL test_Q3_panel_actions_bind_to_what_the_user_selected: AssertionError: ",
+      "FAIL test_Q5_scope_values_have_one_canonical_form: AssertionError: git hub term pad term ws term",
+      "FAIL test_R15_hub_preview_has_an_explicit_scope: AssertionError: [{'input': 'ask clod now glob term', 'output': 'ask clod now glob term', 'changed': False, 'sco",
+      "FAIL test_R17_declared_residual_chain_is_flagged_not_hidden: AssertionError: ",
+      "FAIL test_R17_no_second_pass_drift_through_a_canonical: AssertionError: ",
+      "FAIL test_R18_unit_separator_is_a_barrier_unicode_spaces_are_not: AssertionError: ('0x2003', 'use clod\\u2003code')",
+      "FAIL test_R1_claim_is_as_strong_as_its_entry: AssertionError: ('reddish status page', 'reddish status page', 'reddish status page', [])"
+     ],
+     "killed": true,
+     "last_line": "12 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "no_barrier_check": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain",
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 15,
+      "pass": 209
+     },
+     "exit": 1,
+     "failed_cases": [
+      "BAR-001",
+      "BAR-002",
+      "BAR-003",
+      "BAR-004",
+      "BAR-005",
+      "BAR-006",
+      "BAR-007",
+      "BAR-008",
+      "BAR-009",
+      "BAR-010",
+      "BAR-011",
+      "BAR-012",
+      "BAR-013",
+      "BAR-014",
+      "META-006"
+     ],
+     "failed_total": 15,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_01_alias_never_spans_a_delimiter: AssertionError: (\"'clod, code'\", 'Claude Code', [('clod, code', 'Claude Code', 'E-CC')])",
+      "FAIL test_13_sandbox_suggestions_follow_the_engine: AssertionError: ('clod, code', [{'alias': 'clod, code', 'span': [0, 10], 'text': 'clod, code', 'would_become"
+     ],
+     "killed": true,
+     "last_line": "2 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_R18_unit_separator_is_a_barrier_unicode_spaces_are_not: AssertionError: "
+     ],
+     "killed": true,
+     "last_line": "1 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "partial_edits_after_60": {
+   "applied": true,
+   "killed_by": [
+    "domain",
+    "app"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_09_hit_accounting_counts_only_applied_rules: AssertionError: Claude said done. /code-review then Claude Code with klaud and zed and omeg"
+     ],
+     "killed": true,
+     "last_line": "1 of 12 M05 app-seam tests FAILED"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "pass": 224
+     },
+     "exit": 0,
+     "failed_cases": [],
+     "failed_total": 0,
+     "killed": false
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_16_benchmark_rejects_invalid_work: AssertionError: the unmodified tree must be work-valid"
+     ],
+     "killed": true,
+     "last_line": "1 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 31 M05 review-round tests passed"
+    }
+   }
+  },
+  "qualify_ignores_runtime": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 1,
+      "pass": 223
+     },
+     "exit": 1,
+     "failed_cases": [
+      "ASR-005"
+     ],
+     "failed_total": 1,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_19_qualification_requires_identity: AssertionError: changed_runtime"
+     ],
+     "killed": true,
+     "last_line": "1 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 31 M05 review-round tests passed"
+    }
+   }
+  },
+  "rank_tie_break_changed": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 1,
+      "pass": 223
+     },
+     "exit": 1,
+     "failed_cases": [
+      "RANK-005"
+     ],
+     "failed_total": 1,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_16_benchmark_rejects_invalid_work: AssertionError: the unmodified tree must be work-valid"
+     ],
+     "killed": true,
+     "last_line": "1 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 31 M05 review-round tests passed"
+    }
+   }
+  },
+  "remove_scoped_contenders": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain",
+    "app",
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_02_refresh_failure_never_reuses_another_apps_dictionary: AssertionError: ask clod now",
+      "FAIL test_02_selector_failure_does_not_block_the_scope_upgrade: AssertionError: ",
+      "FAIL test_02_workspace_alternation_with_a_mid_failure: AssertionError: ['GlobalName', 'GlobalName', 'GlobalName', 'GlobalName']",
+      "FAIL test_02b_capture_failure_fallback_is_unscoped: AssertionError: ask clod now GlobalTerm",
+      "FAIL test_02d_invalid_identity_keeps_unscoped_default: AssertionError: ask clod now GlobalTerm",
+      "FAIL test_02e_finalize_never_rebuilds_on_the_app_cached_policy: AssertionError: ask clod now GlobalTerm",
+      "FAIL test_13_panel_sandbox_scope_is_explicit: AssertionError: \u2192 ask GlobalName now"
+     ],
+     "killed": true,
+     "last_line": "7 of 12 M05 app-seam tests FAILED"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 27,
+      "pass": 197
+     },
+     "exit": 1,
+     "failed_cases": [
+      "CLEANUP-001",
+      "CLEANUP-002",
+      "CLEANUP-004",
+      "CLEANUP-005",
+      "HINT-DUPLICATE",
+      "META-001",
+      "MUTATE-005",
+      "MUTATE-006",
+      "PRECEDENCE-001",
+      "PRECEDENCE-002",
+      "PRECEDENCE-003",
+      "PRECEDENCE-004",
+      "PRIVACY-005",
+      "RANK-001",
+      "RANK-002",
+      "SCOPE-002",
+      "SCOPE-003",
+      "SCOPE-004",
+      "SCOPE-005",
+      "STATE-004"
+     ],
+     "failed_total": 27,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_02c_scope_context_rejects_non_string_identity: AssertionError: ",
+      "FAIL test_13_every_preview_kind_matches_committed_behavior: AssertionError: ",
+      "FAIL test_13_sandbox_suggestions_follow_the_engine: AssertionError: []",
+      "FAIL test_15_applied_rule_state_reconstructable: AssertionError: /code-review with zeeta",
+      "FAIL test_16_benchmark_rejects_invalid_work: AssertionError: the unmodified tree must be work-valid",
+      "FAIL test_17_hint_budget_matrix: AssertionError: "
+     ],
+     "killed": true,
+     "last_line": "6 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_Q5_scope_values_have_one_canonical_form: AssertionError: git hub term pad term ws term",
+      "FAIL test_R17_no_second_pass_drift_through_a_canonical: AssertionError: "
+     ],
+     "killed": true,
+     "last_line": "2 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "revision_scope_blind": {
+   "applied": true,
+   "killed_by": [
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "pass": 224
+     },
+     "exit": 0,
+     "failed_cases": [],
+     "failed_total": 0,
+     "killed": false
+    },
+    "domain": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 28 M05 remediation tests passed"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_R8_snapshot_revision_encodes_its_scope: AssertionError: ('m05:9dcf1e8a3ac8', 'm05:9dcf1e8a3ac8', 'm05:9dcf1e8a3ac8')"
+     ],
+     "killed": true,
+     "last_line": "1 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "sandbox_drops_masked": {
+   "applied": true,
+   "killed_by": [
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "pass": 224
+     },
+     "exit": 0,
+     "failed_cases": [],
+     "failed_total": 0,
+     "killed": false
+    },
+    "domain": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 28 M05 remediation tests passed"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_R8_sandbox_reports_a_would_be_masked_suggestion: AssertionError: []"
+     ],
+     "killed": true,
+     "last_line": "1 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "scope_blind_selector": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 5,
+      "pass": 219
+     },
+     "exit": 1,
+     "failed_cases": [
+      "CLEANUP-002",
+      "HINT-DUPLICATE",
+      "RANK-001",
+      "RANK-002",
+      "STATE-009"
+     ],
+     "failed_total": 5,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_05_hintset_identity_bound_to_content: ValueError: hint_set_id does not match the hint set's content",
+      "FAIL test_16_benchmark_rejects_invalid_work: AssertionError: the unmodified tree must be work-valid",
+      "FAIL test_17_hint_budget_matrix: AssertionError: "
+     ],
+     "killed": true,
+     "last_line": "3 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 31 M05 review-round tests passed"
+    }
+   }
+  },
+  "score_not_in_hint_id": {
+   "applied": true,
+   "killed_by": [
+    "review"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "pass": 224
+     },
+     "exit": 0,
+     "failed_cases": [],
+     "failed_total": 0,
+     "killed": false
+    },
+    "domain": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 28 M05 remediation tests passed"
+    },
+    "review": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_R8_score_is_part_of_hint_identity: AssertionError: expected a refusal"
+     ],
+     "killed": true,
+     "last_line": "1 of 31 M05 review-round tests FAILED"
+    }
+   }
+  },
+  "skip_every_fourth_edit": {
+   "applied": true,
+   "killed_by": [
+    "corpus",
+    "domain"
+   ],
+   "survived": false,
+   "tools": {
+    "app": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 12 M05 app-seam tests passed"
+    },
+    "corpus": {
+     "complete": true,
+     "counts": {
+      "declared_residual": 2,
+      "fail": 1,
+      "pass": 223
+     },
+     "exit": 1,
+     "failed_cases": [
+      "META-006"
+     ],
+     "failed_total": 1,
+     "killed": true
+    },
+    "domain": {
+     "complete": true,
+     "exit": 1,
+     "fail_lines": [
+      "FAIL test_16_benchmark_rejects_invalid_work: AssertionError: the unmodified tree must be work-valid"
+     ],
+     "killed": true,
+     "last_line": "1 of 28 M05 remediation tests FAILED"
+    },
+    "review": {
+     "complete": true,
+     "exit": 0,
+     "fail_lines": [],
+     "killed": false,
+     "last_line": "all 31 M05 review-round tests passed"
+    }
+   }
+  }
+ },
+ "python": "3.13.12",
+ "schema_version": 2,
+ "seconds": 147.3,
+ "survivors": [],
+ "tool": "scripts/v2/m05_mutation_check.py",
+ "tools": [
+  "corpus",
+  "domain",
+  "app",
+  "review"
+ ]
+}
