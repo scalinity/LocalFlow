@@ -80,6 +80,15 @@ V2_EVENTS_DIR = pathlib.Path.home() / "Library" / "Logs" / "LocalFlow"
 DOUBLE_TAP_SEC = 0.4
 
 FAILED_PILL_SEC = 1.8
+# M06 (Spec S12, M06-AUDIT-07): the additional post-release context budget
+# (the milestone's P95 target), measured from the release instant; the
+# widened-vocabulary step waits or builds only inside what remains of it.
+# A build whose last measured cost is under the floor always runs (a small
+# dictionary never loses its scope to a budget spent elsewhere). The
+# precompute waits this long for its collection before giving up.
+RELEASE_CONTEXT_BUDGET_MS = 75.0
+SYNC_WIDEN_FLOOR_MS = 5.0
+PREWIDEN_WAIT_S = 10.0
 
 # M03 remediation: the capture-provenance sidecar written next to a job's
 # recovery audio (content-free: timing, rate, sample counts, completeness).
@@ -222,6 +231,15 @@ class AppDelegate(NSObject):
             self.v2log.emit("config.retention_invalid", level="WARNING",
                             reason_code=reason, outcome="default_used",
                             detail=key)
+        # M06-AUDIT-10: the privacy controls fail CLOSED — a malformed
+        # disable/deny/retain value never becomes permission to read or
+        # retain (content-free: key + reason).
+        self._context_policy, context_problems = \
+            config_mod.context_policy(cfg)
+        for key, reason in context_problems:
+            self.v2log.emit("config.context_invalid", level="WARNING",
+                            reason_code=reason, outcome="fail_closed",
+                            detail=key)
         # M02-AUDIT-02: job-scoped payload copies outside v2-artifacts
         # that delete-everywhere must also remove — the transcript-
         # logging debug WAV (named by job) and the recovery journal.
@@ -300,7 +318,7 @@ class AppDelegate(NSObject):
         self.collector = v2.training.EvidenceCollector(
             self.store, self.v2log.emit, self.consent,
             pipeline_info=lambda: self._pipeline_info(),
-            retain_context=bool(cfg.get("training_retain_context", True)))
+            retain_context=self._context_policy["training_retain_context"])
         self.recorder = Recorder(
             sample_rate=cfg["sample_rate"], input_device=cfg["input_device"],
             notifier=lambda msg: self.v2log.emit(
@@ -501,6 +519,14 @@ class AppDelegate(NSObject):
                             outcome="styles_snippets_off")
         self._norm_context = None  # per-job vocabulary context (M06 adds
         #                            destination/path fields)
+        # M06-AUDIT-07: the widened vocabulary projection (the job's FROZEN
+        # entry set onto its finalized scope) is precomputed while
+        # recording and cached single-slot by the entry tuple itself and
+        # the scope, so the release path does not rebuild it inside the
+        # post-release budget. Guarded: precompute threads write it.
+        self._widen_lock = threading.Lock()
+        self._widen_cache = None       # (entries, scope, snapshot)
+        self._widen_cost_ms = None     # last measured projection build
         # M06 (Spec S12): destination-aware context. Identity is read
         # cheaply at PTT start (after the overlay), providers collect
         # asynchronously during recording, and the finalize at release is
@@ -509,9 +535,9 @@ class AppDelegate(NSObject):
         self._context = None
         try:
             self._context = v2_context.ContextCollector(
-                enabled=bool(cfg.get("context_enabled", True)),
-                deadline_ms=float(cfg.get("context_deadline_ms", 75)),
-                denied_apps=cfg.get("context_denied_apps") or (),
+                enabled=self._context_policy["context_enabled"],
+                deadline_ms=self._context_policy["context_deadline_ms"],
+                denied_apps=self._context_policy["context_denied_apps"],
                 emit=self.v2log.emit)
         except Exception as e:
             self._context = None
@@ -966,19 +992,27 @@ class AppDelegate(NSObject):
         m10 = job.get("m10")
         if m10 is None or snap is None or snap.target is None:
             return
-        dest = v2_profiles.Destination(
-            app_bundle=snap.target.app_bundle,
-            site_origin=snap.site_origin,
-            workspace=snap.workspace,
-            category=v2_profiles.derive_category(
-                snap.target.category, snap.target.app_bundle,
-                snap.site_origin))
         m10["wp"] = v2_profiles.resolve(m10["override"], m10["rules"],
-                                        dest,
+                                        self._m10_destination(snap),
                                         transforms=m10.get("transforms"))
         m10["norm_profile"] = (
             m10["wp"].number_policy
             if m10["wp"].number_policy != "inherit" else None)
+
+    @objc.python_method
+    def _m10_destination(self, snap):
+        """The writing-profile destination a finalized snapshot implies
+        (pure — the release path and the recording-time precompute
+        resolve the same one). A title-derived origin is evidence, not
+        site authority (M06 policy D3): rules and categories see only an
+        authoritative one."""
+        return v2_profiles.Destination(
+            app_bundle=snap.target.app_bundle,
+            site_origin=snap.scope_site_origin,
+            workspace=snap.workspace,
+            category=v2_profiles.derive_category(
+                snap.target.category, snap.target.app_bundle,
+                snap.scope_site_origin))
 
     @objc.python_method
     def _finalized_policy(self, base_policy, m10, vocab_snapshot,
@@ -1887,20 +1921,150 @@ class AppDelegate(NSObject):
             f"Mode: {mode} · profile {profile} · {source}")
 
     @objc.python_method
+    def _widened_scope(self, snap, profile_name):
+        """The scope a finalized snapshot (plus the resolved writing
+        profile) gives the M05 trio, or None when that is exactly the
+        hotkey-down app scope — nothing to widen."""
+        from .v2.vocabulary import ScopeContext
+        full = snap.to_scope_context()
+        if profile_name is not None:
+            full = ScopeContext(app_bundle=full.app_bundle,
+                                site_origin=full.site_origin,
+                                workspace=full.workspace,
+                                profile=profile_name)
+        if full == snap.target.to_scope_context() and full.profile is None:
+            return None
+        return full
+
+    @objc.python_method
+    def _cached_widening(self, entries, scope):
+        with self._widen_lock:
+            c = self._widen_cache
+            if c is not None and c[0] is entries and c[1] == scope:
+                return c[2]
+        return None
+
+    @objc.python_method
+    def _widened_vocabulary(self, entries, scope):
+        """The job's FROZEN entry set projected onto ``scope`` (an
+        immutable VocabularySnapshot). The single-slot cache is keyed by
+        the entry tuple ITSELF — held alive by the cache and compared by
+        identity — plus the scope, so a hit is exactly the projection a
+        rebuild would produce; the live dictionary is never read."""
+        hit = self._cached_widening(entries, scope)
+        if hit is not None:
+            return hit
+        t0 = time.perf_counter()
+        snap = v2.vocabulary.VocabularySnapshot(entries, scope)
+        with self._widen_lock:
+            self._widen_cost_ms = (time.perf_counter() - t0) * 1000.0
+            self._widen_cache = (entries, scope, snap)
+        return snap
+
+    @objc.python_method
+    def _warm_widening(self, entries, scope, job_id=None):
+        try:
+            self._widened_vocabulary(entries, scope)
+        except Exception as e:
+            self.v2log.emit("vocabulary.prewiden_failed", level="INFO",
+                            job_id=job_id, reason_code=type(e).__name__)
+
+    @objc.python_method
+    def _start_prewiden(self, job):
+        """While the job records, project its frozen entry set onto the
+        scope its own collection implies (the same scope helpers, the
+        profile resolved purely), so the release path finds the widened
+        vocabulary ready instead of rebuilding it inside the post-release
+        budget (M06-AUDIT-07). Publishes nothing; a miss only means the
+        release path builds or defers the projection itself."""
+        job = job or {}
+        coll = job.get("context_coll")
+        vocab = getattr(job.get("norm_context"), "vocabulary", None)
+        done = getattr(coll, "done", None)
+        preview = getattr(self._context, "preview", None)
+        if done is None or vocab is None or preview is None \
+                or job.get("norm_policy") is None:
+            return
+        finished = job["prewiden_done"] = threading.Event()
+
+        def run():
+            try:
+                if not done.wait(PREWIDEN_WAIT_S):
+                    return
+                snap = preview(coll)
+                if snap is None:
+                    return
+                m10 = job.get("m10")
+                profile = None if m10 is None else v2_profiles.resolve(
+                    m10["override"], m10["rules"],
+                    self._m10_destination(snap),
+                    transforms=m10.get("transforms")).profile_name
+                scope = self._widened_scope(snap, profile)
+                if scope is not None:
+                    self._warm_widening(vocab.entries, scope,
+                                        job.get("job_id"))
+            except Exception as e:
+                self.v2log.emit("vocabulary.prewiden_failed", level="INFO",
+                                job_id=job.get("job_id"),
+                                reason_code=type(e).__name__)
+            finally:
+                finished.set()
+        threading.Thread(target=run, daemon=True,
+                         name="lf-prewiden").start()
+
+    @objc.python_method
+    def _widened_for_release(self, job, entries, scope):
+        """The widened projection inside the M06 post-release budget
+        (RELEASE_CONTEXT_BUDGET_MS from the release instant): the
+        precomputed one when ready — waiting only for what remains of the
+        budget — else a synchronous build when its last measured cost
+        fits; otherwise None: the job keeps its captured narrower scope as
+        an explicit downgrade and the projection warms in the background
+        for the next job."""
+        hit = self._cached_widening(entries, scope)
+        if hit is not None:
+            return hit
+        released = job.get("released_mono") or time.monotonic()
+
+        def remaining_s():
+            return RELEASE_CONTEXT_BUDGET_MS / 1000.0 \
+                - (time.monotonic() - released)
+        finished = job.get("prewiden_done")
+        if finished is not None and not finished.is_set() \
+                and remaining_s() > 0:
+            finished.wait(remaining_s())
+            hit = self._cached_widening(entries, scope)
+            if hit is not None:
+                return hit
+        cost = self._widen_cost_ms
+        if cost is None or cost <= max(remaining_s() * 1000.0,
+                                       SYNC_WIDEN_FLOOR_MS):
+            return self._widened_vocabulary(entries, scope)
+        threading.Thread(target=self._warm_widening,
+                         args=(entries, scope, job.get("job_id")),
+                         daemon=True, name="lf-prewiden").start()
+        return None
+
+    @objc.python_method
     def _finalize_job_context(self, job):
         """M06 (S12): bounded context finalize at release — before the
         job is enqueued for ASR, so everything here is pre-decode. The
-        finalized origin/workspace can widen the hotkey-down app-only
-        scope; the trio upgrade rebuilds from the job's FROZEN entry set
-        (never the store), so a mid-flight edit cannot leak into an
-        in-flight job (AC03). Failures degrade to the hotkey-down trio
-        with an event — never a dropped dictation."""
+        JOB's own collection handle is finalized (never another
+        dictation's). The finalized destination/path/identifier fields
+        reach the M04 engine context whether or not a vocabulary exists;
+        the finalized origin/workspace can widen the hotkey-down
+        app-only scope — the trio rebuilds from the job's FROZEN entry
+        set (never the store), so a mid-flight edit cannot leak into an
+        in-flight job (AC03). The widened trio is built entirely in
+        locals and commits as one tuple; if any part fails the job keeps
+        its captured narrower scope and says so (``scope_disposition``),
+        never a half-upgraded mix and never a dropped dictation."""
         if self._context is None:
             return
         target = job.get("target")
         try:
             snap = self._context.finalize(
-                job_id=job.get("job_id"),
+                coll=job.get("context_coll"), job_id=job.get("job_id"),
                 target_snapshot_id=target.target_snapshot_id
                 if target is not None else None)
         except Exception as e:
@@ -1926,49 +2090,59 @@ class AppDelegate(NSObject):
                             outcome="hotkey_down_profile_kept")
         vocab_snapshot = getattr(job.get("norm_context"), "vocabulary",
                                  None)
+        # One snapshot, three consumers (contracts/context.md): the M04
+        # engine context gains the destination/path/identifier fields —
+        # independently of whether a vocabulary is available
+        # (M06-AUDIT-16).
+        job["norm_context"] = snap.to_engine_context(vocab_snapshot)
+        job["scope_disposition"] = "unchanged"
         if vocab_snapshot is None:
             return
-        # One snapshot, three consumers (contracts/context.md): the M04
-        # engine context gains the destination/path/identifier fields.
-        job["norm_context"] = snap.to_engine_context(vocab_snapshot)
         # The scope upgrade is independent of the OPTIONAL hint set: a
         # job whose hotkey-down selection failed (or with no selector)
         # still rebuilds its vocabulary for the finalized scope
         # (M05-AUDIT-02).
         m10 = job.get("m10")
-        full = snap.to_scope_context()
-        if m10 is not None and m10["wp"].profile_name is not None:
-            from .v2.vocabulary import ScopeContext
-            full = ScopeContext(app_bundle=full.app_bundle,
-                                site_origin=full.site_origin,
-                                workspace=full.workspace,
-                                profile=m10["wp"].profile_name)
-        if full == snap.target.to_scope_context() and not (
-                m10 is not None and full.profile is not None):
+        full = self._widened_scope(
+            snap, m10["wp"].profile_name if m10 is not None else None)
+        if full is None:
             return  # origin/workspace never resolved: scope unchanged
-        upgraded = v2.vocabulary.VocabularySnapshot(
-            vocab_snapshot.entries, full)
         base_policy = job.get("norm_policy")
         if base_policy is None:
             return
-        # Build every upgraded value first: an exception anywhere must
-        # leave the job on its hotkey-down trio, not a half-upgraded
-        # mix (review fix). The M10 skills merge through the single
-        # owner (_finalized_policy) so the scope upgrade can never drop
-        # the manifest skills the job froze at hotkey-down.
+        # Build every upgraded value first; the skills merge (which also
+        # refreshes the M10 registry) runs last. The M10 skills merge
+        # through the single owner (_finalized_policy) so the scope
+        # upgrade can never drop the manifest skills the job froze at
+        # hotkey-down.
         try:
-            upgraded_policy = self._finalized_policy(
-                base_policy, m10, upgraded)
-            upgraded_context = snap.to_engine_context(upgraded)
+            upgraded = self._widened_for_release(
+                job, vocab_snapshot.entries, full)
+            if upgraded is not None:
+                upgraded_context = snap.to_engine_context(upgraded)
+                upgraded_policy = self._finalized_policy(
+                    base_policy, m10, upgraded)
         except Exception as e:
+            job["scope_disposition"] = "widening_failed"
             self.v2log.emit("vocabulary.refresh_failed", level="WARNING",
                             job_id=job.get("job_id"),
                             reason_code=type(e).__name__,
-                            outcome="hotkey_down_trio_kept")
+                            outcome="captured_scope_kept")
+            return
+        if upgraded is None:
+            # The projection could not be ready inside the post-release
+            # budget: an explicit, recorded downgrade — never a silent
+            # stall and never a partial mix.
+            job["scope_disposition"] = "widening_deferred"
+            self.v2log.emit("vocabulary.refresh_deferred", level="INFO",
+                            job_id=job.get("job_id"),
+                            reason_code="release_budget",
+                            outcome="captured_scope_kept")
             return
         job["norm_policy"] = upgraded_policy
         job["norm_context"] = upgraded_context
         job["scope_upgraded"] = True
+        job["scope_disposition"] = "widened"
         # The hint set follows the upgraded scope; if selection fails the
         # job has NO hint set (the hotkey-down set described a narrower
         # scope) — the vocabulary upgrade above stands either way.
@@ -2105,6 +2279,9 @@ class AppDelegate(NSObject):
         the store and event writer close admission and drain. Nothing here
         waits for a main-thread callback."""
         self._closing = True
+        shutdown = getattr(self._context, "shutdown", None)
+        if shutdown is not None:
+            shutdown()          # M06: admission closed, live reads revoked
         try:
             if self.state == STATE_RECORDING:
                 self._abandon_capture_for_system("app_quit")
@@ -2248,6 +2425,7 @@ class AppDelegate(NSObject):
             if job and job.get("job_id") == job_id:
                 job["deleted"] = True
                 job["cancelled"] = True
+                self._revoke_context(job, "job_deleted")
         # Cached recovery CONTENT goes too (review R5): the last failure's
         # raw text is never copied out after its job was deleted. The
         # menu list itself is main-thread state, refreshed there.
@@ -2264,6 +2442,16 @@ class AppDelegate(NSObject):
                 revoke(job_id)
             except Exception:
                 pass
+
+    @objc.python_method
+    def _revoke_context(self, job, reason):
+        """M06-AUDIT-06: stop the job's context collection. Flag-only (no
+        store call, no wait, no event) — safe inside the store's
+        deletion listener; the collection thread discards anything it
+        would still have published."""
+        revoke = getattr(self._context, "revoke", None)
+        if revoke is not None and job and job.get("context_coll"):
+            revoke(job["context_coll"], reason=reason)
 
     @objc.python_method
     def _job_is_deleted(self, job_id) -> bool:
@@ -2841,8 +3029,8 @@ class AppDelegate(NSObject):
                 identity = self._context.capture_identity()
                 if identity is not None:
                     # The per-job collection handle travels with the job;
-                    # its downstream revision is composed from this handle
-                    # only (never from whatever a newer dictation started).
+                    # finalize, the downstream revision and revocation
+                    # all name this handle (never a newer dictation's).
                     self._job["context_coll"] = self._context.begin(identity)
                     # M13: the usage fact's own app copy (facts survive
                     # job-row pruning — AC03).
@@ -2858,14 +3046,11 @@ class AppDelegate(NSObject):
                         self.v2log.emit("store.state_write_failed",
                                         level="WARNING", job_id=job_id,
                                         reason_code=type(e).__name__)
-                else:
-                    # A failed identity capture must never leave the
-                    # PREVIOUS job's collection active — its finalize
-                    # could hand the old snapshot to this job.
-                    self._context.abandon()
+                # A failed identity capture leaves this job without a
+                # handle: every later context call names the job's own
+                # handle, so no other dictation's collection is reachable.
             except Exception as e:
                 identity = None
-                self._context.abandon()
                 self.v2log.emit("context.capture_failed", level="WARNING",
                                 job_id=job_id, reason_code=type(e).__name__,
                                 outcome="context_skipped")
@@ -2915,6 +3100,7 @@ class AppDelegate(NSObject):
         except Exception as e:
             self.v2log.emit("vocabulary.refresh_failed", level="WARNING",
                             job_id=job_id, reason_code=type(e).__name__)
+        self._start_prewiden(self._job)
         if hands_free or float(self.cfg["max_duration_sec"]) > 0:
             cap = (float(self.cfg["max_duration_sec"])
                    if float(self.cfg["max_duration_sec"]) > 0 else 3600.0)
@@ -2940,6 +3126,7 @@ class AppDelegate(NSObject):
             job, self._job = self._job, None
             self.recorder.stop()
             if job:
+                self._revoke_context(job, "user_cancelled")
                 journal = job.get("journal")
                 if journal is not None:
                     journal.close_discard()
@@ -2966,6 +3153,7 @@ class AppDelegate(NSObject):
             job = self._active_jobs[0]
             if not job.get("cancelled"):
                 job["cancelled"] = True
+                self._revoke_context(job, "user_cancelled")
                 revoke = getattr(self.supervisor, "revoke_job", None)
                 if revoke is not None and job.get("job_id"):
                     revoke(job["job_id"])
@@ -2991,6 +3179,11 @@ class AppDelegate(NSObject):
     def _finishCapture(self):
         if self.state != STATE_RECORDING:
             return
+        # M13 (E06) + M06-AUDIT-07: the parent's monotonic RELEASE instant,
+        # taken at the release boundary itself — before the recorder stops
+        # and before context finalize, the scope upgrade and evidence
+        # packaging — so end_to_end_ms includes that release-path work.
+        released_mono = time.monotonic()
         self._clear_max_timer()
         # M03-AUDIT-15: every capture end — release, tap, duration cap,
         # device loss — clears the hands-free latch, so the next press
@@ -3000,6 +3193,11 @@ class AppDelegate(NSObject):
         audio = self.recorder.stop()
         duration = len(audio) / float(self.cfg["sample_rate"])
         job, self._job = self._job, None
+        if job is not None:
+            # M13 (E06): end_to_end_ms is measured against this release
+            # instant (PTT release to target-confirmed text, never a
+            # cross-process clock); the release-path context budget too.
+            job["released_mono"] = released_mono
         if duration < float(self.cfg["min_duration_sec"]):
             if (job is not None and job.get("hands_free") is False
                     and self.cfg.get("hands_free") == "double_tap"
@@ -3100,7 +3298,8 @@ class AppDelegate(NSObject):
             if ctx is not None and job.get("context_snapshot") is not None:
                 try:
                     self.collector.on_context_snapshot(
-                        ctx, job["context_snapshot"])
+                        ctx, job["context_snapshot"],
+                        scope_disposition=job.get("scope_disposition"))
                 except Exception as e:
                     self.v2log.emit("training.capture_failed", level="ERROR",
                                     job_id=job["job_id"],
@@ -3127,11 +3326,6 @@ class AppDelegate(NSObject):
             job["capture_provenance"] = self._live_provenance(
                 job, s, len(audio), job.get("sample_rate")
                 or self.cfg["sample_rate"])
-            # M13 (E06 end-to-end latency): the parent's monotonic
-            # release instant — end_to_end_ms is measured against this
-            # when the terminal insertion outcome lands (PTT release to
-            # target-confirmed text, never a cross-process clock).
-            job["released_mono"] = time.monotonic()
             self._job_state(job["job_id"], "queued")
             try:
                 self.store.set_job_released(job["job_id"])
@@ -3169,6 +3363,7 @@ class AppDelegate(NSObject):
         """Below-minimum-duration capture: cancelled, journal deleted."""
         if job is None:
             return
+        self._revoke_context(job, "below_min_duration")
         if job.get("job_id"):
             self._job_state(job["job_id"], "cancelled",
                             reason="below_min_duration")
@@ -3219,6 +3414,7 @@ class AppDelegate(NSObject):
             self.state = STATE_IDLE
             self.overlay.hide()
             return
+        self._revoke_context(job, reason)
         if duration < float(self.cfg["min_duration_sec"]):
             self._discard_short(job)
             return

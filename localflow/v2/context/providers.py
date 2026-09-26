@@ -7,11 +7,21 @@ inject fakes that interpret synthetic AX trees
 (``tests/v2/context/fixtures_context_targets.json``), so every filtering
 rule is testable without a live destination.
 
+Ownership: every content read goes to ONE element obtained from the
+target application's own element (``focused_element_for(pid)``) and
+verified to belong to the target process — never to whatever the
+system-wide focus points at by the time a provider runs.
+
 Absolute sensitive-field rules (S12): secure fields and denied apps are
-never read for content; an unclassifiable field gets plain dictation
-without nearby text; browser origins drop query/fragment; placeholder
-values are metadata, never text; no arbitrary filesystem read ever runs
-(a document locator is a recorded string, not an open()).
+never read for content; an unclassifiable field — including one whose
+classification read FAILED — gets plain dictation without nearby text;
+browser origins drop userinfo/path/query/fragment; placeholder values
+are metadata, never text; no arbitrary filesystem read ever runs (a
+document locator is a recorded string, not an open()).
+
+Units: the Accessibility API counts UTF-16 code units. Ranges are
+decoded from (and boxed into) native ``AXValue`` CFRanges here; retained
+code-point offsets are derived only where exact (contracts/artifacts.md).
 """
 
 from __future__ import annotations
@@ -26,19 +36,38 @@ from .snapshot import (
     FIELD_SECURE,
     FIELD_TEXT,
     FIELD_UNCLASSIFIABLE,
+    OMISSION_CLASSIFICATION_FAILED,
     OMISSION_DENIED,
     OMISSION_MESSAGING,
     OMISSION_NOT_EXPOSED,
     OMISSION_PERMISSION,
     OMISSION_SECURE,
+    OMISSION_SELECTION_UNAVAILABLE,
     OMISSION_UNCLASSIFIABLE,
     FieldContext,
     classify_field,
 )
 
-# Bounded reads: the nearby-text window and the identifier budget.
+# Bounded reads: the nearby window per side (UTF-16 units requested),
+# the identifier budget, and per-value budgets. A selection above its
+# budget is not read at all; an over-budget metadata string is omitted
+# rather than truncated (a cut title would no longer identify its
+# window, a cut locator would name another file).
 NEARBY_CHARS = 600
 IDENTIFIER_LIMIT = 64
+SELECTION_LIMIT = 4096
+PLACEHOLDER_LIMIT = 200
+DOCUMENT_LIMIT = 2048
+TITLE_LIMIT = 512
+
+# AXError codes that mean "this element does not have that attribute"
+# (an honest absence) versus a read that failed.
+AX_OK = 0
+AX_ERR_UNSUPPORTED = -25205
+AX_ERR_NO_VALUE = -25212
+AX_ERR_API_DISABLED = -25211
+AX_ERR_FAILURE = -25200
+_ABSENT = frozenset({AX_ERR_UNSUPPORTED, AX_ERR_NO_VALUE})
 
 CATEGORY_BROWSER = "browser"
 CATEGORY_IDE = "ide"
@@ -75,7 +104,7 @@ _TITLE_DOMAIN_RE = re.compile(
     r"\b([a-z0-9-]+(?:\.[a-z0-9-]+)+)\b", re.IGNORECASE)
 
 # File extensions that would otherwise pass the alphabetic-TLD rule —
-# a filename in a title is never a site origin.
+# a filename in a title is never a site origin (compared case-blind).
 _NON_ORIGIN_TLDS = frozenset({
     "app", "aspx", "avi", "css", "csv", "dmg", "exe", "gif", "go",
     "gz", "htm", "html", "ini", "java", "jpeg", "jpg", "js", "json",
@@ -83,6 +112,8 @@ _NON_ORIGIN_TLDS = frozenset({
     "png", "py", "rb", "rs", "so", "svg", "tar", "toml", "ts", "tsv",
     "txt", "webp", "xml", "yaml", "yml", "zip",
 })
+
+_LONE_SURROGATE = re.compile("[\ud800-\udfff]")
 
 
 def categorize(bundle: Optional[str]) -> str:
@@ -101,69 +132,148 @@ def categorize(bundle: Optional[str]) -> str:
     return CATEGORY_UNKNOWN
 
 
+def ax_range(value) -> Optional[tuple[int, int]]:
+    """(location, length) from a native AXValue CFRange (decoded with
+    AXValueGetValue — its description is not parsed), a (loc, len)
+    tuple/list, an object with location/length, or a dict. None when
+    the value is not a well-formed non-negative range."""
+    if value is None:
+        return None
+    pair = None
+    if type(value).__name__ == "AXValueRef":
+        try:
+            import ApplicationServices as AS
+            ok, cf = AS.AXValueGetValue(value, AS.kAXValueCFRangeType, None)
+        except Exception:
+            return None
+        pair = tuple(cf) if ok else None
+    elif isinstance(value, (tuple, list)) and len(value) == 2:
+        pair = tuple(value)
+    elif isinstance(value, dict) and "location" in value:
+        pair = (value["location"], value.get("length", 0))
+    elif hasattr(value, "location") and hasattr(value, "length"):
+        pair = (value.location, value.length)
+    if pair is None:
+        return None
+    try:
+        loc, ln = int(pair[0]), int(pair[1])
+    except (TypeError, ValueError):
+        return None
+    if loc < 0 or ln < 0:
+        return None
+    return loc, ln
+
+
+def ax_box_range(start: int, length: int):
+    """A native AXValue CFRange for a parameterized attribute call."""
+    import ApplicationServices as AS
+    return AS.AXValueCreate(AS.kAXValueCFRangeType, (int(start), int(length)))
+
+
+def utf16_len(s: str) -> int:
+    return len(s.encode("utf-16-le", "surrogatepass")) // 2
+
+
+def _utf16_clip(s: str, units: int) -> str:
+    """At most ``units`` UTF-16 units of ``s``; a surrogate pair cut by
+    the boundary is dropped, never kept half."""
+    if utf16_len(s) > units:
+        b = s.encode("utf-16-le", "surrogatepass")[:units * 2]
+        s = b.decode("utf-16-le", "surrogatepass")
+    return _LONE_SURROGATE.sub("", s)
+
+
 class SystemAXHost:
     """Accessibility reads with a per-call messaging timeout so an
-    unresponsive application can never stall the dictation path. One
-    systemwide element is created lazily and reused (guarded —
-    overlapping collections may share the host)."""
+    unresponsive application can never stall the dictation path.
+
+    Elements are obtained from the TARGET application's own element
+    (``AXUIElementCreateApplication(pid)``), never from the system-wide
+    focused element: a read can only ever reach the process the capture
+    is about. Reads return ``(value, AXError)`` so callers can tell an
+    attribute the element lacks from a read that failed."""
 
     def __init__(self, messaging_timeout: float = 0.2):
         self.messaging_timeout = messaging_timeout
-        self._system_el = None
-        self._system_lock = __import__("threading").Lock()
 
     def is_trusted(self) -> bool:
         import ApplicationServices as AS
         return bool(AS.AXIsProcessTrusted())
 
-    def _system(self):
+    def _app(self, pid):
         import ApplicationServices as AS
-        with self._system_lock:
-            if self._system_el is None:
-                el = AS.AXUIElementCreateSystemWide()
-                AS.AXUIElementSetMessagingTimeout(el, self.messaging_timeout)
-                self._system_el = el
-            return self._system_el
+        app = AS.AXUIElementCreateApplication(int(pid))
+        AS.AXUIElementSetMessagingTimeout(app, self.messaging_timeout)
+        return app
 
-    def focused_element(self):
+    def focused_element_for(self, pid):
+        """The focused element WITHIN application ``pid`` (or None)."""
+        if pid is None:
+            return None
+        value, err = self.read(self._app(pid), "AXFocusedUIElement")
+        if err != AX_OK or value is None:
+            return None
         import ApplicationServices as AS
-        err, el = AS.AXUIElementCopyAttributeValue(
-            self._system(), "AXFocusedUIElement", None)
-        if err == 0 and el is not None:
-            AS.AXUIElementSetMessagingTimeout(
-                el, self.messaging_timeout)
-            return el
-        return None
+        AS.AXUIElementSetMessagingTimeout(value, self.messaging_timeout)
+        return value
 
-    def attribute(self, el, name):
+    def element_pid(self, el) -> Optional[int]:
+        import ApplicationServices as AS
+        try:
+            err, pid = AS.AXUIElementGetPid(el, None)
+        except Exception:
+            return None
+        return int(pid) if err == AX_OK else None
+
+    def element_token(self, el):
+        """An opaque identity for cache keys: AXUIElementRefs compare
+        with CFEqual, so a later fetch of the same element is equal."""
+        return el
+
+    def window_of(self, el):
+        """The window that contains ``el`` (AXWindow); else the owning
+        application's focused window. ``el`` is already ownership-
+        verified by the caller, so its application is the target."""
+        win, err = self.read(el, "AXWindow")
+        if err == AX_OK and win is not None:
+            return win
+        pid = self.element_pid(el)
+        if pid is None:
+            return None
+        win, err = self.read(self._app(pid), "AXFocusedWindow")
+        return win if err == AX_OK else None
+
+    def window_token(self, win):
+        return win
+
+    def read(self, el, name):
         import ApplicationServices as AS
         try:
             err, val = AS.AXUIElementCopyAttributeValue(el, name, None)
         except Exception:
-            return None
-        return val if err == 0 else None
+            return None, AX_ERR_FAILURE
+        return (val if err == AX_OK else None), err
 
-    def focused_window(self, el) -> Optional[object]:
-        return self.attribute(el, "AXFocusedWindow")
+    def attribute(self, el, name):
+        return self.read(el, name)[0]
 
-    def window_title(self, win) -> Optional[str]:
-        t = self.attribute(win, "AXTitle")
-        return str(t) if t else None
+    def read_range(self, el, name="AXSelectedTextRange"):
+        value, err = self.read(el, name)
+        return (ax_range(value) if err == AX_OK else None), err
 
     def string_for_range(self, el, start: int, length: int) -> Optional[str]:
         import ApplicationServices as AS
-        from CoreFoundation import CFRange
         try:
             err, val = AS.AXUIElementCopyParameterizedAttributeValue(
-                el, "AXStringForRange", CFRange(start, length), None)
+                el, "AXStringForRange", ax_box_range(start, length), None)
         except Exception:
             return None
-        return str(val) if err == 0 and val is not None else None
+        return str(val) if err == AX_OK and val is not None else None
 
     def number_of_characters(self, el) -> Optional[int]:
-        n = self.attribute(el, "AXNumberOfCharacters")
+        n, err = self.read(el, "AXNumberOfCharacters")
         try:
-            return int(n)
+            return int(n) if err == AX_OK else None
         except (TypeError, ValueError):
             return None
 
@@ -183,20 +293,52 @@ def system_frontmost() -> Optional[dict]:
 
 class ProviderResult:
     """One provider's outcome: a value, an omission reason, provenance
-    and the measured duration (for coverage/skip reporting)."""
+    and the measured duration (for coverage/skip reporting). ``notes``
+    are content-free sub-omissions ({field, reason}) of a provider whose
+    main value resolved (e.g. a selection that was not retained);
+    ``cached`` marks a value reused rather than read this capture."""
 
     def __init__(self, name, value=None, reason=None, provenance=None,
-                 duration_ms=None):
+                 duration_ms=None, notes=(), cached=False):
         self.name = name
         self.value = value
         self.reason = reason
         self.provenance = provenance
         self.duration_ms = duration_ms
+        self.notes = tuple(notes)
+        self.cached = cached          # reused from the identity-keyed cache
 
 
-def read_field(host, denied: bool) -> ProviderResult:
-    """Focused-field provider: classify FIRST, then read bounded content
-    only for classifiable text fields (S12 ordering is a hard rule)."""
+def _str(value, limit) -> Optional[str]:
+    if not isinstance(value, str):
+        return None
+    value = _LONE_SURROGATE.sub("", value)
+    return value if len(value) <= limit else None
+
+
+def classify_element(host, el) -> tuple[str, Optional[str],
+                                        Optional[str], Optional[str]]:
+    """(classification, role, subrole, failure reason) from AXRole and
+    AXSubrole ONLY. A read that failed — rather than an attribute the
+    element lacks — can never promote a field to text."""
+    role, rerr = host.read(el, "AXRole")
+    role = role if isinstance(role, str) else None
+    if rerr != AX_OK and rerr not in _ABSENT:
+        return FIELD_UNCLASSIFIABLE, None, None, \
+            OMISSION_CLASSIFICATION_FAILED
+    subrole, serr = host.read(el, "AXSubrole")
+    subrole = subrole if isinstance(subrole, str) else None
+    cls = classify_field(role, subrole)
+    if cls == FIELD_TEXT and serr != AX_OK and serr not in _ABSENT:
+        return FIELD_UNCLASSIFIABLE, role, None, \
+            OMISSION_CLASSIFICATION_FAILED
+    return cls, role, subrole, None
+
+
+def read_field(host, denied: bool, el=None) -> ProviderResult:
+    """Focused-field provider over ONE ownership-verified element:
+    classify FIRST, then read bounded content only for classifiable
+    text fields (S12 ordering is a hard rule)."""
     t0 = time.monotonic()
     name = "focused_field"
     if denied:
@@ -205,74 +347,96 @@ def read_field(host, denied: bool) -> ProviderResult:
     if not host.is_trusted():
         return ProviderResult(name, reason=OMISSION_PERMISSION,
                               duration_ms=_ms(t0))
-    el = host.focused_element()
     if el is None:
-        # Either no focused element or the AX messaging failed — the
+        # No focused element in the target, or the lookup failed — the
         # host cannot distinguish cheaply, so the honest generic reason.
         return ProviderResult(name, reason=OMISSION_MESSAGING,
                               duration_ms=_ms(t0))
-    role = host.attribute(el, "AXRole")
-    subrole = host.attribute(el, "AXSubrole")
-    cls = classify_field(
-        role if isinstance(role, str) else None,
-        subrole if isinstance(subrole, str) else None)
+    cls, role, subrole, failed = classify_element(host, el)
     if cls == FIELD_SECURE:
         # Absolute rule: no content attribute of a secure field is ever
         # read — not its value, selection, placeholder or ranges.
         return ProviderResult(
-            name, value=FieldContext(
-                role=role if isinstance(role, str) else None,
-                subrole=subrole if isinstance(subrole, str) else None,
-                classification=FIELD_SECURE),
+            name, value=FieldContext(role=role, subrole=subrole,
+                                     classification=FIELD_SECURE),
             reason=OMISSION_SECURE, duration_ms=_ms(t0))
     if cls != FIELD_TEXT:
         return ProviderResult(
-            name, value=FieldContext(
-                role=role if isinstance(role, str) else None,
-                subrole=subrole if isinstance(subrole, str) else None,
-                classification=cls),
-            reason=(None if cls == FIELD_NONE
-                    else OMISSION_UNCLASSIFIABLE),
+            name, value=FieldContext(role=role, subrole=subrole,
+                                     classification=cls),
+            reason=(failed or (None if cls == FIELD_NONE
+                               else OMISSION_UNCLASSIFIABLE)),
             duration_ms=_ms(t0))
-    # Classifiable text field: bounded reads only.
-    placeholder = host.attribute(el, "AXPlaceholderValue")
-    selected = host.attribute(el, "AXSelectedText")
-    rng = host.attribute(el, "AXSelectedTextRange")
-    doc = host.attribute(el, "AXDocument")
+    # Classifiable text field: bounded reads only. The range comes
+    # first so a selection's size is known before its text is read.
+    placeholder = _str(host.read(el, "AXPlaceholderValue")[0],
+                       PLACEHOLDER_LIMIT)
+    document = _str(host.read(el, "AXDocument")[0], DOCUMENT_LIMIT)
+    # Validated whatever the host returns: a negative or malformed range
+    # is no range (no selection, no flank read).
+    rng = ax_range(host.read_range(el)[0])
     total = host.number_of_characters(el)
-    selected_text = str(selected) if isinstance(selected, str) else None
-    loc, length = _as_range(rng)
-    preceding = following = None
-    if total is not None and loc is not None:
+    if rng is not None and total is not None and rng[0] + rng[1] > total:
+        rng = None                  # inconsistent with the field length
+    notes = []
+    selected_text = preceding = following = None
+    cp_range = utf16_range = None
+    if rng is not None:
+        loc, length = rng
+        utf16_range = (loc, loc + length)
+        if length > SELECTION_LIMIT:
+            notes.append({"field": "selected_text",
+                          "reason": OMISSION_SELECTION_UNAVAILABLE})
+        elif length:
+            sel = host.read(el, "AXSelectedText")[0]
+            if isinstance(sel, str) and utf16_len(sel) == length \
+                    and not _LONE_SURROGATE.search(sel):
+                selected_text = sel
+            else:
+                notes.append({"field": "selected_text",
+                              "reason": OMISSION_SELECTION_UNAVAILABLE})
         p_start = max(0, loc - NEARBY_CHARS)
-        preceding = host.string_for_range(el, p_start, loc - p_start)
-        f_start = (loc + (length or 0))
-        if f_start < total:
-            following = host.string_for_range(
-                el, f_start, min(NEARBY_CHARS, total - f_start))
+        preceding = _flank(host, el, p_start, loc - p_start)
+        if total is not None and loc + length < total:
+            following = _flank(host, el, loc + length,
+                               min(NEARBY_CHARS, total - loc - length))
+        # Code-point offsets are exact only when the whole prefix was
+        # read (the selection starts inside the bounded window) and the
+        # read kept every unit of it.
+        if p_start == 0 and preceding is not None \
+                and utf16_len(preceding) == loc \
+                and (length == 0 or selected_text is not None):
+            start = len(preceding)
+            cp_range = (start, start + len(selected_text or ""))
     return ProviderResult(
         name,
         value=FieldContext(
-            role=role if isinstance(role, str) else None,
-            subrole=subrole if isinstance(subrole, str) else None,
-            classification=FIELD_TEXT,
-            selected_text=selected_text,
-            selected_range=(loc, loc + (length or 0))
-            if loc is not None else None,
+            role=role, subrole=subrole, classification=FIELD_TEXT,
+            selected_text=selected_text, selected_range=cp_range,
             preceding_text=preceding, following_text=following,
-            placeholder=str(placeholder)
-            if isinstance(placeholder, str) else None,
-            document_url=str(doc) if isinstance(doc, str) else None),
-        duration_ms=_ms(t0))
+            placeholder=placeholder, document_url=document,
+            selected_range_utf16=utf16_range),
+        duration_ms=_ms(t0), notes=notes)
+
+
+def _flank(host, el, start: int, length: int) -> Optional[str]:
+    """One bounded nearby read: never more than requested, whatever the
+    host returns."""
+    if length <= 0:
+        return ""
+    s = host.string_for_range(el, start, length)
+    if not isinstance(s, str):
+        return None
+    return _utf16_clip(s, length)
 
 
 def read_site_origin(host, category: str, window_title: Optional[str],
-                     denied: bool = False) -> ProviderResult:
-    """Browser-origin provider: AXURL where the browser exposes it,
-    stripped to origin (query/fragment dropped by construction); a
-    plausible domain token in the window title is the marked fallback.
-    Never a guess from arbitrary text. A denied app is never read —
-    not even probed (S12 absolute)."""
+                     denied: bool = False, el=None) -> ProviderResult:
+    """Browser-origin provider: AXURL of the ownership-verified element
+    (when one is given — a secure/unclassifiable element is not asked),
+    reduced to scheme://host[:port]; a plausible host in the window
+    title is the marked heuristic fallback. Never a guess from arbitrary
+    text. A denied app is never read — not even probed (S12 absolute)."""
     t0 = time.monotonic()
     name = "site_origin"
     if denied:
@@ -284,24 +448,20 @@ def read_site_origin(host, category: str, window_title: Optional[str],
     if not host.is_trusted():
         return ProviderResult(name, reason=OMISSION_PERMISSION,
                               duration_ms=_ms(t0))
-    el = host.focused_element()
-    url = None
-    if el is not None:
-        url = host.attribute(el, "AXURL")
+    url = host.read(el, "AXURL")[0] if el is not None else None
     origin = _url_origin(url if isinstance(url, str) else None)
     if origin is not None:
         return ProviderResult(name, value=origin, provenance="ax_url",
                               duration_ms=_ms(t0))
-    if window_title:
-        m = _TITLE_DOMAIN_RE.search(window_title)
-        if m and _plausible_host(m.group(1)):
-            # Titles expose hostnames at best; the scheme is not
-            # knowable from a title token, so the recorded fallback
-            # origin is https-schemed with explicit provenance marking
-            # it heuristic (consumers see origin_source).
-            return ProviderResult(
-                name, value=f"https://{m.group(1)}",
-                provenance="window_title", duration_ms=_ms(t0))
+    host_token = _title_host(window_title)
+    if host_token:
+        # Titles expose hostnames at best; the scheme is not knowable
+        # from a title token, so the recorded fallback origin is
+        # https-schemed with provenance marking it heuristic — evidence,
+        # never site-scope authority (ContextSnapshot.scope_site_origin).
+        return ProviderResult(
+            name, value=f"https://{host_token}",
+            provenance="window_title", duration_ms=_ms(t0))
     return ProviderResult(name, reason=OMISSION_NOT_EXPOSED,
                           duration_ms=_ms(t0))
 
@@ -343,12 +503,13 @@ def extract_identifiers(field: Optional[FieldContext],
     """Spoken form → canonical identifier map, derived only from the
     bounded nearby window of a classifiable text field (S12 "visible
     file/symbol names"; a full symbol provider would need an IDE
-    extension — not shipped here)."""
+    extension — not shipped here). Scans lazily and stops at the cap."""
     if field is None or field.classification != FIELD_TEXT:
         return {}
     text = field.nearby_text() or ""
     out: dict[str, str] = {}
-    for tok in _IDENTIFIER_RE.findall(text):
+    for m in _IDENTIFIER_RE.finditer(text):
+        tok = m.group(0)
         if not ("_" in tok[1:] or _has_case_transition(tok)):
             continue          # plain words are not identifiers
         spoken = _spoken_form(tok)
@@ -412,46 +573,51 @@ def _ide_title_project(title: str) -> Optional[str]:
 
 
 def _url_origin(url: Optional[str]) -> Optional[str]:
+    """scheme://host[:port] rebuilt from validated parts — userinfo,
+    path, query and fragment are dropped by construction; only web
+    schemes with a real host (and a valid port) yield an origin."""
     if not url or "://" not in url:
         return None
     try:
         sp = urlsplit(url)
+        port = sp.port
     except ValueError:
         return None
-    if not sp.netloc:
+    scheme = sp.scheme.lower()
+    if scheme not in ("http", "https") or not sp.hostname:
         return None
-    origin = f"{sp.scheme}://{sp.netloc}"
-    # Query and fragment are dropped by construction (S12).
-    return origin
+    # The host as written (after any userinfo, before any port): its
+    # case is preserved — M05's comparison canonicalization already owns
+    # case-insensitive equivalence; validation runs on the lowered form.
+    hostport = sp.netloc.rsplit("@", 1)[-1]
+    if hostport.startswith("["):                 # IPv6 literal
+        host = hostport[:hostport.index("]") + 1]
+    else:
+        host = hostport.rsplit(":", 1)[0] if sp.port is not None \
+            or hostport.endswith(":") else hostport
+        if not host.isascii():
+            try:
+                host = host.encode("idna").decode("ascii")
+            except UnicodeError:
+                return None
+        if not re.fullmatch(r"[a-z0-9.-]+", host.lower()):
+            return None
+    return f"{scheme}://{host}" + (f":{port}" if port is not None else "")
 
 
-def _as_range(rng) -> tuple[Optional[int], Optional[int]]:
-    """AX value shapes: CFRange-like (loc, len) tuple/dict, or an
-    AXValue-ref whose description reads 'loc=len'; accept the common
-    shapes without importing AX types."""
-    if rng is None:
-        return None, None
-    if isinstance(rng, tuple) and len(rng) == 2:
-        try:
-            return int(rng[0]), int(rng[1])
-        except (TypeError, ValueError):
-            return None, None
-    loc = getattr(rng, "location", None)
-    ln = getattr(rng, "length", None)
-    if loc is not None and ln is not None:
-        try:
-            return int(loc), int(ln)
-        except (TypeError, ValueError):
-            return None, None
-    if isinstance(rng, dict) and "location" in rng:
-        try:
-            return int(rng["location"]), int(rng.get("length", 0))
-        except (TypeError, ValueError):
-            return None, None
-    m = re.match(r"^NSRange\s*=\s*\{(\d+),\s*(\d+)\}", str(rng))
-    if m:
-        return int(m.group(1)), int(m.group(2))
-    return None, None
+def _title_host(title: Optional[str]) -> Optional[str]:
+    """The first plausible hostname in a title that is not part of an
+    e-mail address or a path (an author@host byline, a/b/host.txt)."""
+    if not title:
+        return None
+    for m in _TITLE_DOMAIN_RE.finditer(title):
+        before = title[m.start() - 1] if m.start() else ""
+        after = title[m.end()] if m.end() < len(title) else ""
+        if before in ("@", "/", ".", ":") or after in ("@", "/"):
+            continue
+        if _plausible_host(m.group(1)):
+            return m.group(1)
+    return None
 
 
 def _ms(t0: float) -> float:
@@ -461,15 +627,15 @@ def _ms(t0: float) -> float:
 def _plausible_host(host: str) -> bool:
     """A title token is treated as a hostname only when it looks like
     one: every label non-empty and non-numeric, the TLD alphabetic with
-    2+ chars and not a file extension — '16.4', 'index.html' and 'e.g'
-    never become origins."""
+    2+ chars and not a file extension (in any case) — '16.4',
+    'index.html', 'foo.com.TXT' and 'e.g' never become origins."""
     labels = host.split(".")
     if len(labels) < 2:
         return False
     tld = labels[-1]
     if not (tld.isalpha() and len(tld) >= 2):
         return False
-    if tld in _NON_ORIGIN_TLDS:
+    if tld.lower() in _NON_ORIGIN_TLDS:
         return False
     if any(lab.isdigit() for lab in labels[:-1]):
         return False
@@ -480,9 +646,11 @@ def _plausible_host(host: str) -> bool:
 __all__ = [
     "SystemAXHost", "system_frontmost", "categorize",
     "read_field", "read_site_origin", "read_workspace",
-    "extract_identifiers", "is_path_document",
+    "classify_element", "extract_identifiers", "is_path_document",
+    "ax_range", "ax_box_range", "utf16_len",
     "CATEGORY_BROWSER", "CATEGORY_IDE", "CATEGORY_TERMINAL",
     "CATEGORY_UNKNOWN", "NEARBY_CHARS", "IDENTIFIER_LIMIT",
+    "SELECTION_LIMIT",
     "OMISSION_SECURE", "OMISSION_DENIED", "OMISSION_UNCLASSIFIABLE",
     "OMISSION_PERMISSION", "OMISSION_MESSAGING", "OMISSION_NOT_EXPOSED",
 ]

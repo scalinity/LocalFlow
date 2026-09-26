@@ -479,7 +479,8 @@ class EvidenceCollector:
         ctx.context_hints = {**summary,
                              "artifact_ids": {"hint_set": art}}
 
-    def on_context_snapshot(self, ctx, snapshot, *, downstream=None):
+    def on_context_snapshot(self, ctx, snapshot, *, downstream=None,
+                            scope_disposition=None):
         """M06 (S12/S29.4): record the bounded destination-context
         snapshot. The pre-decode call happens BEFORE recognition (with
         the finalize that cut it), so late providers cannot leak into
@@ -493,6 +494,9 @@ class EvidenceCollector:
         if not ctx.collecting or snapshot is None or ctx.example_id:
             return
         block = snapshot.to_envelope_block()
+        if scope_disposition is not None:
+            # widened | unchanged | widening_failed (captured scope kept)
+            block["scope_disposition"] = scope_disposition
         if downstream:
             ctx.context_downstream = block
         else:
@@ -527,6 +531,8 @@ class EvidenceCollector:
             block["retained"] = False
             block["retention_reason"] = "retention_write_failed"
             return
+        # Provisional: publish_example keeps this true only when the
+        # artifact committed and its training lease is live (M06-AUDIT-15).
         block["retained"] = True
         block["artifact_id"] = art
         # (the artifact id lives in the envelope's destination block —

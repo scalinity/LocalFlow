@@ -135,10 +135,12 @@ class SystemInsertionHost:
 
     def string_for_range(self, el, start: int, length: int) -> Optional[str]:
         import ApplicationServices as AS
-        from CoreFoundation import CFRange
+        from ..context.providers import ax_box_range
         try:
+            # The range must be a boxed AXValue CFRange — a bare CFRange
+            # is refused natively (kAXErrorIllegalArgument).
             err, val = AS.AXUIElementCopyParameterizedAttributeValue(
-                el, "AXStringForRange", CFRange(start, length), None)
+                el, "AXStringForRange", ax_box_range(start, length), None)
         except Exception:
             return None
         return str(val) if err == 0 and val is not None else None

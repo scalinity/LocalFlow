@@ -9,6 +9,12 @@ classifiable non-secure fields), browser origin with query/fragment
 stripped, opaque workspace, capture time, freshness, provenance and an
 omission reason for every absent field.
 
+Both are transitively immutable: nested identifier/provider/omission
+state is frozen at construction from a private copy, so neither the
+caller that built a snapshot nor any consumer can change the bytes
+behind its ``context_snapshot_id``; every serialization returns fresh
+plain containers.
+
 Context content is data about a destination, never instructions for the
 cleaner; a missing field is an explicit null with a reason (S12, S29.4).
 """
@@ -18,7 +24,7 @@ from __future__ import annotations
 import dataclasses
 from typing import Optional
 
-from .. import ids
+from ..normalize.policy import freeze, thaw
 
 SCHEMA_VERSION = 1
 
@@ -34,7 +40,7 @@ SECURE_ROLES = {"AXSecureTextField"}
 SECURE_SUBROLES = {"AXSecureTextField"}
 
 # Omission reasons — provider-level vocabulary (distinct from the
-# envelope's six-value missing-reason set, contracts/artifacts.md).
+# envelope's missing-reason set, contracts/artifacts.md).
 OMISSION_SECURE = "secure_field"
 OMISSION_DENIED = "denied_app"
 OMISSION_UNCLASSIFIABLE = "unclassifiable_field"
@@ -42,9 +48,24 @@ OMISSION_DEADLINE = "deadline"
 OMISSION_PERMISSION = "permission_unavailable"
 OMISSION_NOT_EXPOSED = "not_exposed"
 OMISSION_MESSAGING = "ax_messaging_failed"
+# A classification read that FAILED (not an attribute the field simply
+# lacks) — the field is treated as unclassifiable, never as text.
+OMISSION_CLASSIFICATION_FAILED = "classification_failed"
+# The focused element could not be proven to belong to the target
+# process (missing pid, foreign owner): nothing of it is read.
+OMISSION_UNVERIFIED = "destination_unverified"
+# A selection larger than the budget, or one whose range and text do
+# not agree: no selected text and no replacement authority.
+OMISSION_SELECTION_UNAVAILABLE = "selection_unavailable"
 
 STAGE_PRE_DECODE = "pre_decode"
 STAGE_DOWNSTREAM = "downstream"
+
+# A downstream revision carries only the providers that finished after
+# the pre-decode cut (a delta, never a merged full view).
+REVISION_LATE_DELTA = "late_delta"
+
+ORIGIN_SOURCE_TITLE = "window_title"
 
 
 def classify_field(role: Optional[str],
@@ -57,6 +78,36 @@ def classify_field(role: Optional[str],
     if role is None:
         return FIELD_NONE
     return FIELD_UNCLASSIFIABLE
+
+
+def identity_matches(pid: Optional[int], bundle: Optional[str],
+                     frontmost: Optional[dict]) -> bool:
+    """The one destination-identity rule (M06 hook; M08 validation and
+    the insertion lease use it too). Missing identity is never evidence
+    of equality: a match needs a usable identity on BOTH sides — the pid
+    when both have one, else the bundle when both have one — and a pid
+    match is refused when both bundles are known and differ (a recycled
+    pid)."""
+    if not frontmost:
+        return False
+    live_pid = frontmost.get("pid")
+    live_bundle = frontmost.get("bundle") or None
+    bundle = bundle or None
+    if bundle is not None and live_bundle is not None \
+            and bundle != live_bundle:
+        return False
+    if pid is not None and live_pid is not None:
+        return live_pid == pid
+    if bundle is not None and live_bundle is not None:
+        return live_bundle == bundle
+    return False
+
+
+def _range(value) -> Optional[tuple[int, int]]:
+    if value is None:
+        return None
+    lo, hi = value
+    return (int(lo), int(hi))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -81,6 +132,9 @@ class TargetSnapshot:
         from ..vocabulary import ScopeContext
         return ScopeContext(app_bundle=self.app_bundle)
 
+    def same_destination(self, frontmost: Optional[dict]) -> bool:
+        return identity_matches(self.app_pid, self.app_bundle, frontmost)
+
     def to_json(self) -> dict:
         return {
             "target_snapshot_id": self.target_snapshot_id,
@@ -97,18 +151,31 @@ class TargetSnapshot:
 class FieldContext:
     """The focused field: classification first, then (only for
     classifiable text fields) bounded content. Secure and unclassifiable
-    fields carry no content at all — plain dictation, no nearby text."""
+    fields carry no content at all — plain dictation, no nearby text.
+
+    Offsets: ``selected_range`` is zero-based half-open Unicode code
+    points (contracts/artifacts.md), present only when it is exactly
+    derivable from what was read; ``selected_range_utf16`` is the same
+    selection in the host's native units (UTF-16 code units on macOS
+    Accessibility). The two conventions are never interchanged."""
 
     role: Optional[str] = None
     subrole: Optional[str] = None
     classification: str = FIELD_NONE
     selected_text: Optional[str] = None
-    selected_range: Optional[tuple[int, int]] = None   # half-open code points
+    selected_range: Optional[tuple[int, int]] = None   # code points
     preceding_text: Optional[str] = None
     following_text: Optional[str] = None
     placeholder: Optional[str] = None    # recorded as metadata only;
                                          # never text, never prepended
     document_url: Optional[str] = None   # locator string; never opened
+    selected_range_utf16: Optional[tuple[int, int]] = None
+
+    def __post_init__(self):
+        object.__setattr__(self, "selected_range",
+                           _range(self.selected_range))
+        object.__setattr__(self, "selected_range_utf16",
+                           _range(self.selected_range_utf16))
 
     def nearby_text(self) -> Optional[str]:
         if self.preceding_text is None and self.following_text is None:
@@ -118,7 +185,10 @@ class FieldContext:
             if t is not None)
 
     def to_json(self) -> dict:
-        return dataclasses.asdict(self)
+        d = dataclasses.asdict(self)
+        if d["selected_range_utf16"] is None:
+            del d["selected_range_utf16"]
+        return d
 
 
 @dataclasses.dataclass(frozen=True)
@@ -128,7 +198,8 @@ class ContextSnapshot:
     context (destination/path/identifiers) and the S30.1
     ``context_snapshot_id``. ``stage`` separates the pre-decode snapshot
     (frozen before ASR) from a later downstream revision — late context
-    never merges back into the pre-decode one."""
+    never merges back into the pre-decode one; a downstream revision is
+    a delta naming its parent pre-decode snapshot."""
 
     context_snapshot_id: str
     stage: str
@@ -147,13 +218,40 @@ class ContextSnapshot:
     finalized_at_utc: str = ""
     finalize_duration_ms: Optional[float] = None
     partial: bool = False
+    parent_context_snapshot_id: Optional[str] = None
+    revision_kind: Optional[str] = None
+    # The window the destination field lived in, as the host's own
+    # element (an AXUIElementRef natively): an opaque, IN-MEMORY identity
+    # M08 compares with the live window (equal titles are not unique).
+    # Never serialized, compared or hashed with the snapshot.
+    window_element: Optional[object] = dataclasses.field(
+        default=None, compare=False, repr=False)
+
+    def __post_init__(self):
+        # Private frozen copies: a caller-owned dict/list handed in (or
+        # read back by from_json) can never change this snapshot later.
+        object.__setattr__(self, "identifiers",
+                           None if self.identifiers is None
+                           else freeze(dict(self.identifiers)))
+        object.__setattr__(self, "providers",
+                           tuple(freeze(dict(p)) for p in self.providers))
+        object.__setattr__(self, "omissions",
+                           tuple(freeze(dict(o)) for o in self.omissions))
+
+    @property
+    def scope_site_origin(self) -> Optional[str]:
+        """The origin that may grant site scope: a title-derived host is
+        provenance-marked evidence, not authority (policy D3)."""
+        if self.origin_source == ORIGIN_SOURCE_TITLE:
+            return None
+        return self.site_origin
 
     def to_scope_context(self):
         """Full destination scope for vocabulary filtering (M05)."""
         from ..vocabulary import ScopeContext
         return ScopeContext(
             app_bundle=self.target.app_bundle,
-            site_origin=self.site_origin,
+            site_origin=self.scope_site_origin,
             workspace=self.workspace)
 
     def to_engine_context(self, vocabulary):
@@ -163,7 +261,7 @@ class ContextSnapshot:
         return EngineContext(
             destination_app=self.target.app_bundle,
             path_context=self.path_context,
-            identifiers=dict(self.identifiers or {}),
+            identifiers=thaw(self.identifiers or {}),
             vocabulary=vocabulary,
             source="m06_context")
 
@@ -172,14 +270,11 @@ class ContextSnapshot:
         return (sc.app_bundle, sc.site_origin, sc.workspace, sc.profile)
 
     def same_destination(self, frontmost: Optional[dict]) -> bool:
-        """Stale check for future replacement authority (S12/S18): does
-        the recorded identity still match the current frontmost app?"""
-        if frontmost is None:
-            return False
-        if frontmost.get("pid") is not None \
-                and self.target.app_pid is not None:
-            return frontmost["pid"] == self.target.app_pid
-        return frontmost.get("bundle") == self.target.app_bundle
+        """Stale check for replacement authority (S12/S18): does the
+        recorded identity still match the current frontmost app? Absent
+        or contradictory identity never matches (identity_matches)."""
+        return identity_matches(self.target.app_pid,
+                                self.target.app_bundle, frontmost)
 
     def omission_reason(self, field: str) -> Optional[str]:
         for o in self.omissions:
@@ -190,7 +285,7 @@ class ContextSnapshot:
     def to_json(self) -> dict:
         """Full snapshot JSON — lease-governed artifact payload only,
         never an event or envelope field (it carries field text)."""
-        return {
+        d = {
             "schema_version": SCHEMA_VERSION,
             "context_snapshot_id": self.context_snapshot_id,
             "stage": self.stage,
@@ -201,21 +296,31 @@ class ContextSnapshot:
             "window_title": self.window_title,
             "workspace": self.workspace,
             "workspace_source": self.workspace_source,
-            "identifiers": dict(self.identifiers or {}),
+            "identifiers": thaw(self.identifiers or {}),
             "path_context": self.path_context,
-            "providers": [dict(p) for p in self.providers],
-            "omissions": [dict(o) for o in self.omissions],
+            "providers": [thaw(p) for p in self.providers],
+            "omissions": [thaw(o) for o in self.omissions],
             "captured_at_utc": self.captured_at_utc,
             "finalized_at_utc": self.finalized_at_utc,
             "finalize_duration_ms": self.finalize_duration_ms,
             "partial": self.partial,
         }
+        d.update(self._lineage())
+        return d
+
+    def _lineage(self) -> dict:
+        if self.parent_context_snapshot_id is None \
+                and self.revision_kind is None:
+            return {}
+        return {"parent_context_snapshot_id":
+                self.parent_context_snapshot_id,
+                "revision_kind": self.revision_kind}
 
     def to_envelope_block(self) -> dict:
         """Content-free summary for the evidence envelope: ids, flags,
         counts and reasons only — bundle/origin/workspace/text live in
         the lease-governed snapshot artifact, never here (S29.14)."""
-        return {
+        d = {
             "context_snapshot_id": self.context_snapshot_id,
             "target_snapshot_id": self.target.target_snapshot_id,
             "stage": self.stage,
@@ -231,8 +336,10 @@ class ContextSnapshot:
             "providers": [
                 {"name": p["name"], "status": p["status"]}
                 for p in self.providers],
-            "omissions": [dict(o) for o in self.omissions],
+            "omissions": [thaw(o) for o in self.omissions],
         }
+        d.update(self._lineage())
+        return d
 
     @staticmethod
     def from_json(d: dict) -> "ContextSnapshot":
@@ -240,13 +347,10 @@ class ContextSnapshot:
         f = d.get("field")
         field = None
         if f is not None:
-            # Tolerant read: normalize the JSON range shape and ignore
-            # unknown future keys rather than raising on a newer
-            # snapshot version's extras.
+            # Tolerant read: ignore unknown future keys rather than
+            # raising on a newer snapshot version's extras.
             keep = {k: v for k, v in f.items()
                     if k in FieldContext.__dataclass_fields__}
-            if isinstance(keep.get("selected_range"), list):
-                keep["selected_range"] = tuple(keep["selected_range"])
             field = FieldContext(**keep)
         return ContextSnapshot(
             context_snapshot_id=d["context_snapshot_id"],
@@ -265,9 +369,11 @@ class ContextSnapshot:
             workspace_source=d.get("workspace_source"),
             identifiers=d.get("identifiers"),
             path_context=bool(d.get("path_context")),
-            providers=tuple(dict(p) for p in d.get("providers", ())),
-            omissions=tuple(dict(o) for o in d.get("omissions", ())),
+            providers=tuple(d.get("providers", ())),
+            omissions=tuple(d.get("omissions", ())),
             captured_at_utc=d.get("captured_at_utc", ""),
             finalized_at_utc=d.get("finalized_at_utc", ""),
             finalize_duration_ms=d.get("finalize_duration_ms"),
-            partial=bool(d.get("partial")))
+            partial=bool(d.get("partial")),
+            parent_context_snapshot_id=d.get("parent_context_snapshot_id"),
+            revision_kind=d.get("revision_kind"))
