@@ -10,8 +10,14 @@ role/classification, the selected range and text, and bounded text on
 either side of the selection (a second document in the same app with
 the same title, role, range and text differs there).
 
-Ranges are the host's accessibility offsets, exactly as
-``validate_target`` reads them back.
+Denial is the M06 rule (``snapshot.app_denied`` over the validated
+``config.context_policy`` list) and is decided before any Accessibility
+call. The selection is recorded in the host's own units
+(``selected_range_utf16``, exactly as ``validate_target`` reads it
+back) and in code points only when exactly derivable (the M06 field
+convention); the field's own window element is recorded so the M06/M08
+window check applies, not the title alone. The returned ``range`` stays
+in host units.
 """
 
 from __future__ import annotations
@@ -19,9 +25,10 @@ from __future__ import annotations
 from typing import Optional
 
 from .. import ids
-from ..context.providers import NEARBY_CHARS, categorize
+from ..context.providers import (_LONE_SURROGATE, NEARBY_CHARS, categorize,
+                                 utf16_len)
 from ..context.snapshot import (FIELD_SECURE, ContextSnapshot, FieldContext,
-                                TargetSnapshot, classify_field)
+                                TargetSnapshot, app_denied, classify_field)
 from .validation import _as_range
 
 SURROUNDING_CHARS = min(NEARBY_CHARS, 200)
@@ -65,7 +72,7 @@ def capture_selection(host, *, denied_apps=()):
     if not fm:
         return None, "no_frontmost_application"
     bundle = fm.get("bundle")
-    if bundle and bundle in (denied_apps or ()):
+    if app_denied(bundle, denied_apps or ()):
         return None, "app_denied"
     el = host.focused_element()
     if el is None:
@@ -91,7 +98,16 @@ def capture_selection(host, *, denied_apps=()):
     if not text or not text.strip():
         return None, "no_selection"
     title = window_title(host, el)
+    window_el = host.attribute(el, "AXWindow")
     preceding, following = surroundings(host, el, rng[0], rng[1])
+    # Code points are exact only when the whole prefix was read and every
+    # unit of the prefix and the selection came back (the M06 rule).
+    cp_range = None
+    if rng[0] <= SURROUNDING_CHARS and preceding is not None \
+            and utf16_len(preceding) == rng[0] \
+            and utf16_len(text) == rng[1] - rng[0] \
+            and not _LONE_SURROGATE.search(preceding + text):
+        cp_range = (len(preceding), len(preceding) + len(text))
     target = TargetSnapshot(
         target_snapshot_id=ids.new_id("tgt"),
         app_bundle=bundle, app_name=fm.get("name"), app_pid=fm.get("pid"),
@@ -99,11 +115,13 @@ def capture_selection(host, *, denied_apps=()):
         captured_at_utc=ids.now_utc_iso())
     field = FieldContext(
         role=role, subrole=subrole, classification=classification,
-        selected_text=text, selected_range=tuple(rng),
+        selected_text=text, selected_range=cp_range,
+        selected_range_utf16=tuple(rng),
         preceding_text=preceding, following_text=following)
     snap = ContextSnapshot(
         context_snapshot_id=ids.new_id("ctx"),
         stage="transform_selection", target=target, field=field,
-        window_title=title, captured_at_utc=ids.now_utc_iso())
+        window_title=title, window_element=window_el,
+        captured_at_utc=ids.now_utc_iso())
     return {"source": text, "range": tuple(rng), "snapshot": snap,
             "target": target}, None

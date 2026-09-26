@@ -214,7 +214,9 @@ candidate retains two children of it: `transform_prompt` (the exact
 rendered prompt) and `transform_decision` (JSON: path, reason,
 validator revision, task key, the full coverage map and the review
 excerpts shown). A note candidate's source artifact carries `note_id`
-and `note_revision_id`.
+and `note_revision_id`. Every one of these artifacts follows the M02
+deletion barrier: when the originating job was deleted everywhere
+they are written detached (`job_id` NULL — contracts/store.md).
 
 The same-task invariant is enforced at write time — a judgment across
 task keys refuses. Judgments: `accept|reject|undo|prefer_a|prefer_b|
@@ -269,8 +271,11 @@ Transforms view); execution budgets are engine constants, not config.
 - Identifier literals are case-sensitive: a Polish that capitalizes a
   dictated "q3" to "Q3" is reviewed.
 - The selection capture requires Accessibility trust and a readable
-  focused field; `app_denied` destinations (context_denied_apps)
-  refuse transforms honestly; a secure field refuses before any read.
+  focused field; `app_denied` destinations refuse transforms honestly
+  before any Accessibility call — the M06 decision over the validated
+  `context_denied_apps` (contracts/context.md), and a malformed deny
+  list refuses every app (`deny_list_invalid`); a secure field refuses
+  before any read.
 - A transform generation queues behind/holds the serialized GPU lock:
   a concurrent dictation's ASR waits (measured 0.65 s behind a
   504-word transform on this machine) — recorded, never starved.

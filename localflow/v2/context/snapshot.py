@@ -103,6 +103,19 @@ def identity_matches(pid: Optional[int], bundle: Optional[str],
     return False
 
 
+def app_denied(bundle: Optional[str], denied_apps) -> bool:
+    """The one denied-app rule (the M06 collector and the M11 selection
+    capture decide with it). Bundle IDs compare trimmed and
+    case-insensitively — Apple defines CFBundleIdentifier as
+    case-insensitive — so a padded or differently cased deny entry still
+    denies its app."""
+    if not isinstance(bundle, str) or not bundle.strip():
+        return False
+    key = bundle.strip().casefold()
+    return any(isinstance(d, str) and d.strip().casefold() == key
+               for d in denied_apps)
+
+
 def _range(value) -> Optional[tuple[int, int]]:
     if value is None:
         return None

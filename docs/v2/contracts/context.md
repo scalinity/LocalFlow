@@ -139,7 +139,10 @@ widening share the one budget clock.
    The containing window's title is allowed destination metadata.
 5. **Denied apps** (`context_denied_apps`) are never read at all — no
    Accessibility call of any kind; identity records the denial
-   (omission `denied_app` on every provider).
+   (omission `denied_app` on every provider). One rule decides denial
+   for every reader (`snapshot.app_denied`, used by the collector and
+   the M11 selection capture): bundle IDs compare trimmed and
+   case-insensitively, as Apple defines `CFBundleIdentifier`.
 6. **Browser origins** are `scheme://host[:port]` for http/https only,
    rebuilt from validated parts: userinfo, path, query and fragment are
    dropped by construction; the host is kept as written (M05 compares
@@ -322,12 +325,13 @@ Constructors and consumers of the M06 types in `localflow/` and
   (profile + workspace), coordinator `take_downstream`,
   `cancelDictation`/`_discard_short`/`_abandon_capture_for_system`/
   `_on_job_deleted` (revoke), `applicationWillTerminate_` (shutdown),
-  `_m11_capture_selection` (an M11 constructor of a
-  `transform_selection` snapshot for M08 revalidation — M11-owned; it
-  still reads the raw `context_denied_apps` rather than the validated
-  policy, and the M11 merge owns switching it to
-  `_context_policy`, with a malformed list denying every app for
-  transforms).
+  `_m11_capture_selection` → `v2/insertion/selection.py`
+  (M11-owned constructor of a `transform_selection` snapshot for M08
+  revalidation: denial from the validated `_context_policy` list
+  through `app_denied`, decided before any Accessibility call; a
+  malformed deny list refuses every app for transforms,
+  `deny_list_invalid`; the selection in host units with code points
+  only when exact, and the field's own window element).
 - **Consumers:** `v2/insertion/validation.py` and `target_lease.py`
   (identity rule, window element, host-unit selection),
   `v2/insertion/service.py` (target category/surface label),
