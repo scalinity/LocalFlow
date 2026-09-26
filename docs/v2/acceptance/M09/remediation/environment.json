@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "recorded": "2026-09-26",
+  "machine": {"model": "Mac17,8", "chip": "Apple M5 Pro", "cores": 18,
+              "memory_bytes": 51539607552},
+  "macos": {"product_version": "27.0", "build": "26A428"},
+  "python": {"version": "3.14.7", "interpreter": "<repo>/.venv/bin/python"},
+  "pyobjc": "12.2.1",
+  "numpy": "2.4.6",
+  "accessibility": "the terminal holds the Accessibility grant (AXIsProcessTrusted True); portable suites run under tests/v2/context/run_isolated.py, which blocks every AX read/write, CGEventPost and redirects the general pasteboard",
+  "dispatch": "Hub callbacks (AppHelper.callAfter) are queued and drained on each script's own main thread (tests/v2/ui/m09_world.py MainQueue); no suite replaces callAfter with an inline call while Hub query threads are live",
+  "sync": {
+    "audited_sha": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+    "pre_sync_local_main": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+    "fetched_origin_main": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+    "local_main_after_ff": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+    "drift": "none",
+    "m08_gate": {"145488c8962eb061b122c9ce9f3240bf730acef8": "ancestor (exit 0)",
+                 "ea83bc198567d001e3d770ae5103ca369701825d": "ancestor (exit 0)"},
+    "remediation_base": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+    "branch": "m09-local-remediation-20260926"
+  },
+  "inputs": {
+    "LocalFlow_M09_Read_Only_Deep_Audit.md": {"sha256": "12276b07a35d1f08f31698af1d44245ae5ccb17189abf9f28242a966d89333da", "lines": 1645},
+    "LocalFlow_M09_Adversarial_Corpus.json": {"sha256": "a00f6618121e9881592be7d25cb4a03696ab298af9c16eefda8df697399dbcb8", "committed_as": "tests/v2/ui/m09_audit_corpus.json (byte-identical)"},
+    "LocalFlow_M09_Findings.json": "NOT PROVIDED on this Mac (searched Downloads, Desktop, Documents, Application Support/LocalFlow and Spotlight). The 29 findings were taken from the audit markdown's finding sections, which carry each finding's requirement, location, mechanism, reproduction, expected behavior and repair direction.",
+    "LocalFlow_M09_Source_Index.json": "NOT PROVIDED on this Mac. The audit markdown's Evidence and Reading Ledger (S01-S13, T01-T06, C01-C15, D01-D15) names the same pinned sources."
+  },
+  "base_evidence_tree": "a detached git worktree at the audited SHA with the project .venv symlinked (a git-archive export failed two location-bound suites: test_baseline_probe needs a git head, test_dataset_export spawns <root>/.venv/bin/python)"
+}

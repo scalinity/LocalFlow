@@ -1,0 +1,453 @@
+{
+  "suite": "tests/v2/ui/test_m09_remediation.py",
+  "suite_sha256": "2dc039324d3b70ee20d693d22cbb421caad66aa70ec0c3d4a4ed5059a41c91c3",
+  "code_root_sha": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "localflow_imported_from_root": "wt-base",
+  "python": "3.14.7",
+  "results": [
+    {
+      "case": "test_a01_history_actions_during_selection_interval",
+      "finding": "M09-AUDIT-01",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "wrong-record action on A while B selected: [(('M09_CANARY_A_not_user_data',), {'job_id': 'job-32e86af572e2453c836be634e8a61af6'}), (('job-32e86af572e2453c836be634e8a61af6',), {}), (('M09_CANARY_A_not_user_data',), {})]",
+      "seconds": 0.27
+    },
+    {
+      "case": "test_a01_training_mark_during_selection_interval",
+      "finding": "M09-AUDIT-01",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "mutation while rendered A and selected B disagree: [('mark_intended', ('ex-1b5e2d024cfa428c87db0f1ecd107bf9', True), {}, 'MainThread'), ('pin', ('ex-1b5e2d024cfa428c87db0f1ecd107bf9', True), {}, 'MainThread'), ('exclude', ('ex-1b5e2d024cfa428c87db0f1ecd107bf9', True), {}, 'MainThread')]",
+      "seconds": 0.055
+    },
+    {
+      "case": "test_a01_training_editor_buffers_bound_to_rendered_example",
+      "finding": "M09-AUDIT-01",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "A's span buffer saved onto B: [('add_span_correction', ('ex-28c4c4065aa44077976add5be9beab87', 'source_text', 0, 5, 'ALPHA'), {}, 'MainThread'), ('add_span_correction', ('ex-28c4c4065aa44077976add5be9beab87', 'source_text', 0, 5, 'ALPHA'), {}, 'MainThread')]",
+      "seconds": 0.049
+    },
+    {
+      "case": "test_a01_training_table_click_uses_rendered_row",
+      "finding": "M09-AUDIT-01",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "click on rendered row 0 (ex-a420651cc) selected ex-02ebbbe7e47f4e79b06fce289f389887",
+      "seconds": 0.049
+    },
+    {
+      "case": "test_local01_training_delete_confirm_deletes_confirmed_identity",
+      "finding": "M09-LOCAL-01",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "confirmed Delete did not delete the confirmed example",
+      "seconds": 0.048
+    },
+    {
+      "case": "test_local01_training_delete_cancel_deletes_nothing",
+      "finding": "M09-LOCAL-01",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.052
+    },
+    {
+      "case": "test_a02_training_delete_clears_detail_and_editor",
+      "finding": "M09-AUDIT-02",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "deleted text still in Training state",
+      "seconds": 0.057
+    },
+    {
+      "case": "test_a02_cross_view_history_cache_after_training_delete",
+      "finding": "M09-AUDIT-02",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "History cache kept deleted text",
+      "seconds": 0.061
+    },
+    {
+      "case": "test_a02_late_detail_publication_after_delete",
+      "finding": "M09-AUDIT-02",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "late pre-deletion detail republished deleted text",
+      "seconds": 0.032
+    },
+    {
+      "case": "test_a02_independent_history_lease_survives_training_expiry",
+      "finding": "M09-AUDIT-02",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.03
+    },
+    {
+      "case": "test_a03_publication_check_and_mutation_atomic",
+      "finding": "M09-AUDIT-03",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "stale A overwrote newer B: ['job-4d0a4a256ef54d09a71bf326300c6674']",
+      "seconds": 0.04
+    },
+    {
+      "case": "test_a03_old_error_after_new_success",
+      "finding": "M09-AUDIT-03",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "stale A error overwrote B: RuntimeError",
+      "seconds": 0.047
+    },
+    {
+      "case": "test_a03_old_success_after_new_error",
+      "finding": "M09-AUDIT-03",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.032
+    },
+    {
+      "case": "test_a03_old_detail_error_after_newer_detail",
+      "finding": "M09-AUDIT-03",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "('RuntimeError', None)",
+      "seconds": 0.043
+    },
+    {
+      "case": "test_a10_hundred_searches_bounded_and_fully_drained",
+      "finding": "M09-AUDIT-10",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "71 query threads admitted for 101 searches",
+      "seconds": 0.042
+    },
+    {
+      "case": "test_a22_loading_is_a_real_transition",
+      "finding": "M09-AUDIT-22",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "admitted outstanding query not loading",
+      "seconds": 0.032
+    },
+    {
+      "case": "test_a22_retry_and_paste_refusals_are_visible",
+      "finding": "M09-AUDIT-22",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "Retry refusal invisible",
+      "seconds": 0.031
+    },
+    {
+      "case": "test_a22_models_failure_is_visible_not_stale_success",
+      "finding": "M09-AUDIT-22",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "failure invisible: '1 examples \u00b7 audio 1 \u00b7 verbatim 0 \u00b7 spans 0 \u00b7 unreviewed 1 \u00b7 storage 62 KiBSelect an example to inspect stages, completeness and annotations.'",
+      "seconds": 0.045
+    },
+    {
+      "case": "test_a25_refresh_and_completions_run_on_main",
+      "finding": "M09-AUDIT-25",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.072
+    },
+    {
+      "case": "test_a25_inline_dispatch_negative_control_is_intercepted",
+      "finding": "M09-AUDIT-25",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.04
+    },
+    {
+      "case": "test_a04_quarantine_survives_exclude_then_restore_via_hub",
+      "finding": "M09-AUDIT-04",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "quarantine laundered through exclusion: captured_unreviewed",
+      "seconds": 0.05
+    },
+    {
+      "case": "test_a04_expired_survives_exclude_then_restore",
+      "finding": "M09-AUDIT-04",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "expired evidence reactivated: captured_unreviewed",
+      "seconds": 0.013
+    },
+    {
+      "case": "test_a04_ordinary_exclusion_stays_reversible",
+      "finding": "M09-AUDIT-04",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.013
+    },
+    {
+      "case": "test_a05_span_save_never_reincludes_excluded",
+      "finding": "M09-AUDIT-05",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "span save re-included: annotated",
+      "seconds": 0.052
+    },
+    {
+      "case": "test_a05_verbatim_save_never_reincludes_excluded",
+      "finding": "M09-AUDIT-05",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "verbatim save re-included: annotated",
+      "seconds": 0.05
+    },
+    {
+      "case": "test_a05_intended_mark_refuses_non_reviewable",
+      "finding": "M09-AUDIT-05",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "judgment written on non-reviewable evidence: {'excluded': (1, 'excluded'), 'expired': (1, 'expired'), 'quarantined_sensitive': (1, 'quarantined_sensitive')}",
+      "seconds": 0.021
+    },
+    {
+      "case": "test_a06_span_after_same_length_stage_replacement",
+      "finding": "M09-AUDIT-06",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "R1 offsets reinterpreted against R2: [{'corrected': 'delta', 'end': 5, 'original': 'gamma', 'stage': 'source_text', 'start': 0}]",
+      "seconds": 0.051
+    },
+    {
+      "case": "test_a06_unrelated_revision_keeps_same_reviewed_artifact",
+      "finding": "M09-AUDIT-06",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.053
+    },
+    {
+      "case": "test_a06_emoji_code_point_offsets",
+      "finding": "M09-AUDIT-06",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.106
+    },
+    {
+      "case": "test_a24_annotation_failpoints_roll_back_completely",
+      "finding": "M09-AUDIT-24",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.08
+    },
+    {
+      "case": "test_a24_timeout_is_unknown_not_failure_and_retry_is_idempotent",
+      "finding": "M09-AUDIT-24",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "timeout reported as certain failure: 'verbatim not saved: TimeoutError'",
+      "seconds": 0.368
+    },
+    {
+      "case": "test_a07_delete_stops_active_replay_and_refuses_again",
+      "finding": "M09-AUDIT-07",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "A still playing after delete",
+      "seconds": 0.066
+    },
+    {
+      "case": "test_a07_prepared_buffer_cannot_start_after_delete",
+      "finding": "M09-AUDIT-07",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "deleted audio started: {'available': True, 'status': 'playing', 'artifact_id': 'art-3c2a45fa3ed54a23904de33d02a4a676'}",
+      "seconds": 0.059
+    },
+    {
+      "case": "test_a07_unavailable_replacement_stops_previous",
+      "finding": "M09-AUDIT-07",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "A kept playing as if it were B",
+      "seconds": 0.038
+    },
+    {
+      "case": "test_a07_failed_playback_grants_no_listening",
+      "finding": "M09-AUDIT-07",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.068
+    },
+    {
+      "case": "test_a07_listen_gate_is_per_example_through_current_hub",
+      "finding": "M09-AUDIT-07",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.099
+    },
+    {
+      "case": "test_a09_history_shows_current_attempt_not_first_row",
+      "finding": "M09-AUDIT-09",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "{'source': 'attempt one raw', 'normalized': None, 'cleaned': 'attempt one applied', 'transformed': None}",
+      "seconds": 0.043
+    },
+    {
+      "case": "test_a17_transform_decision_is_displayed_and_final_text_authorized",
+      "finding": "M09-AUDIT-17",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "fallback_original transform shown without its decision",
+      "seconds": 0.07
+    },
+    {
+      "case": "test_a12_same_day_merge_is_by_instant_with_one_limit",
+      "finding": "M09-AUDIT-12",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "['legacy-db:5', 'job-ffffffffffffffffffffffffffffffff', 'job-00000000000000000000000000000000']",
+      "seconds": 0.02
+    },
+    {
+      "case": "test_a13_default_zone_honors_historical_dst",
+      "finding": "M09-AUDIT-13",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "('2026-01-15T04:30:00.000Z', '2026-01-14', '2026-01-15')",
+      "seconds": 0.019
+    },
+    {
+      "case": "test_a13_explicit_offset_timestamp_policy",
+      "finding": "M09-AUDIT-13",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "{'job-230a4e9c1b4e4e5a9043dc875c402ba3': '2026-09-26', 'job-ff8a8a9f29b64d458c766d609815e270': None, 'job-2feb1d36e58d4baa8fa38ae4c7819c61': None}",
+      "seconds": 0.018
+    },
+    {
+      "case": "test_a14_legacy_db_row_detail_and_jobless_actions",
+      "finding": "M09-AUDIT-14",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "Select a row to see its lineage, outcome and actions.",
+      "seconds": 0.043
+    },
+    {
+      "case": "test_a15_legacy_pair_identity_stable_across_matching_half",
+      "finding": "M09-AUDIT-15",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "(['art-fabc56ccd251499b8366e00132a32dff'], ['art-21acc8f58e3e4cfa9ebcfd8bcb31d493'], ['art-21acc8f58e3e4cfa9ebcfd8bcb31d493'])",
+      "seconds": 0.019
+    },
+    {
+      "case": "test_a16_history_app_and_mode_controls_reachable",
+      "finding": "M09-AUDIT-16",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "no app/mode filter control in History: ['_doScroller:', 'historyCopy:', 'historyDeleteUsage:', 'historyDiff:', 'historyMoveToScratchpad:', 'historyPasteAgain:', 'historyReload:', 'historyReplay:', 'historyRetry:', 'historySearchChanged:', 'historyTeach:', 'historyToScratchpad:']",
+      "seconds": 0.072
+    },
+    {
+      "case": "test_a29_deleted_job_leaves_history_immediately",
+      "finding": "M09-AUDIT-29",
+      "kind": "design",
+      "status": "fail",
+      "detail": "(['job-815889ae288b4c7296a8471d03d3b27a'], ['job-815889ae288b4c7296a8471d03d3b27a'])",
+      "seconds": 0.027
+    },
+    {
+      "case": "test_a08_hub_export_uses_typed_allowlist",
+      "finding": "M09-AUDIT-08",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "M09_PRIVATE_CANARY survived Hub export",
+      "seconds": 0.038
+    },
+    {
+      "case": "test_a18_ordering_is_stream_aware_and_filename_independent",
+      "finding": "M09-AUDIT-18",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "(('events-1.jsonl', 'events-2.jsonl'), ['evt-00000000000000000000000000000003a', 'evt-00000000000000000000000000000001b', 'evt-00000000000000000000000000000002b', 'evt-00000000000000000000000000000003b'], ['evt-00000000000000000000000000000002a', 'evt-00000000000000000000000000000002b', 'evt-00000000000000000000000000000003a', 'evt-00000000000000000000000000000003b'])",
+      "seconds": 0.001
+    },
+    {
+      "case": "test_a19_level_all_resets_filter_via_popup",
+      "finding": "M09-AUDIT-19",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "All levels left the ERROR filter in place",
+      "seconds": 0.042
+    },
+    {
+      "case": "test_a19_non_object_json_lines_are_skipped_safely",
+      "finding": "M09-AUDIT-19",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "AttributeError",
+      "seconds": 0.037
+    },
+    {
+      "case": "test_a19_utc_toggle_applies_to_job_timeline",
+      "finding": "M09-AUDIT-19",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "['2026-09-25 23:30:00.000 -04:00 INFO job=job-dddddddd m09.t1']",
+      "seconds": 0.039
+    },
+    {
+      "case": "test_a20_export_is_the_displayed_snapshot_and_parses_off_main",
+      "finding": "M09-AUDIT-20",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "export re-queried past the displayed snapshot: ['store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'usage.aggregates_rebuilt', 'm09.s1.1', 'm09.s1.2', 'm09.s1.3', 'm09.s2.late']",
+      "seconds": 0.037
+    },
+    {
+      "case": "test_a21_mine_completion_never_forces_review_tab",
+      "finding": "M09-AUDIT-21",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "late Mine completion navigated to review",
+      "seconds": 0.054
+    },
+    {
+      "case": "test_a21_older_export_cannot_overwrite_newer_status",
+      "finding": "M09-AUDIT-21",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "older export presented as current: 'export finalized \u00b7 exp-A\\ncounts: {}\\nfingerprint: ffffffffffffffff\u2026'",
+      "seconds": 0.076
+    },
+    {
+      "case": "test_a11_noop_repaste_still_delivers_deferred_open",
+      "finding": "M09-AUDIT-11",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "deferred Open Hub never delivered after a no-op repaste",
+      "seconds": 0.029
+    },
+    {
+      "case": "test_a11_flush_before_busy_decrement_is_not_lost",
+      "finding": "M09-AUDIT-11",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "deferred show lost: the only flush saw busy",
+      "seconds": 0.028
+    }
+  ],
+  "passed": 11,
+  "total": 55
+}
