@@ -83,10 +83,14 @@ MUTATIONS = {
                     "\"widening_failed\"\n            if self._widen_cache:\n"
                     "                job[\"norm_context\"] = "
                     "snap.to_engine_context(self._widen_cache[2])\n")],
+    # The deletion barrier itself (every publication path calls it,
+    # directly and via the revision append) — removing one call site
+    # would be masked by the other.
     "M06-MUT-10": [("localflow/v2/store.py",
-                    "        def op():\n            conn_assert_job_writable("
-                    "self._db, job_id)\n            env = json.loads(",
-                    "        def op():\n            env = json.loads(")],
+                    "    if conn_job_deleted(conn, job_id):\n        raise "
+                    "JobDeletedError(\"evidence write refused: job was "
+                    "deleted\")\n",
+                    "    pass\n")],
     "M06-MUT-11": [(COLL, "            coll.sealed = True\n", "")],
     "M06-MUT-12": [(SNAP, "        return live_bundle == bundle\n    return "
                     "False\n", "        return live_bundle == bundle\n"
@@ -179,7 +183,13 @@ def evaluate(dst, cases):
     iso = str(dst / "tests/v2/context/run_isolated.py")
     runner = str(dst / "tests/v2/context/m06_corpus_runner.py")
     out = {}
-    plain = [c for c in cases if not c.startswith("LF-M06-N")]
+    # LF-M06-M005 IS the benchmark mutants (run below): delegated, never
+    # scored as a corpus case here.
+    for c in cases:
+        if c == "LF-M06-M005":
+            out[c] = "delegated_to_benchmark_mutants"
+    plain = [c for c in cases if not c.startswith("LF-M06-N")
+             and c != "LF-M06-M005"]
     native = [c for c in cases if c.startswith("LF-M06-N")]
     for group, isolated in ((plain, True), (native, False)):
         if not group:
@@ -237,9 +247,10 @@ def main():
         ctl.mkdir()
         extract(ctl)
         control = evaluate(ctl, all_cases)
-        green = all(control[c] == "pass" or (
-            c.startswith("LF-M06-N") and control[c] == "not_run")
-            for c in all_cases) and control["regression_suite"]["exit"] == 0
+        green = all(control[c] == "pass" or control[c] ==
+                    "delegated_to_benchmark_mutants" or (
+                        c.startswith("LF-M06-N") and control[c] == "not_run")
+                    for c in all_cases) and control["regression_suite"]["exit"] == 0
         report["control"] = control
         report["control_green"] = green
         print(f"control green={green}", flush=True)

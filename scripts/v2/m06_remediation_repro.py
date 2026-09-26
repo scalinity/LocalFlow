@@ -516,17 +516,63 @@ def a07():
 
 # ---- A08 benchmark_m06 false green ---------------------------------------
 
+def a08_schema2(src):
+    """The repaired (schema 2) harness: are the validity mechanics the
+    audit asked for present, and does a small run pass them? (Whether
+    they REJECT broken work is the mutation check's benchmark mutants.)"""
+    rel = src.split("def release(")[1].split("\n    def ")[0] \
+        if "def release(" in src else ""
+    checks = {
+        "off_arm_zero_ax_oracle": "off.host.calls == []" in src,
+        "clock_starts_before_release_event":
+            rel.find("t0 = time.perf_counter()")
+            < rel.find("hk.on_release()") != -1,
+        "injected_delay_conservation_gate": "conserved" in src
+        and "the release clock does not cover" in src,
+        "authored_eligible_set_oracle": "picked == rig.eligible_on" in src,
+        "workspace_widening_required": "release_on: workspace not" in src,
+        "packaging_inside_measured_path": "hint_set_artifact is not None"
+        in src,
+        "separate_exit_codes": '"work_invalid", 2' in src
+        and '"budget_failed", 1' in src,
+    }
+    import tempfile as _tf
+    with _tf.TemporaryDirectory() as td:
+        iso = HERE / "tests" / "v2" / "context" / "run_isolated.py"
+        p = subprocess.run(
+            [sys.executable, str(iso),
+             str(CODE / "scripts" / "v2" / "benchmark_m06.py"), td,
+             "--entries", "500", "--reps", "3"],
+            cwd=str(CODE), capture_output=True, text=True, timeout=900)
+        try:
+            rep = json.loads((pathlib.Path(td) / "m06.json").read_text())
+        except Exception:
+            rep = {}
+    run = {"exit": p.returncode, "verdict": rep.get("verdict"),
+           "problems": rep.get("problems"),
+           "injected_delay": (rep.get("cohorts") or {}).get(
+               "injected_delay_control")}
+    return {"schema": 2, "checks": checks, "small_run": run,
+            "reproduced": not all(checks.values())
+            or run["verdict"] != "pass"}
+
+
 def a08():
     src = (CODE / "scripts" / "v2" / "benchmark_m06.py").read_text()
     out = {}
+    if "def pipeline_delta" not in src:
+        return a08_schema2(src)
     # Execute the benchmark's own pipeline_delta arms with an instrumented
     # host to count AX reads in the "off" arm.
     import importlib.util
     spec = importlib.util.spec_from_file_location(
         "bench_m06_probe", CODE / "scripts" / "v2" / "benchmark_m06.py")
     mod = importlib.util.module_from_spec(spec)
-    sys.argv_saved = sys.argv
-    spec.loader.exec_module(mod)
+    saved, sys.argv = sys.argv, [str(spec.origin)]
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        sys.argv = saved
     reads = {"n": 0}
     real_host = mod.FakeAXHost
 

@@ -1403,8 +1403,10 @@ def run_delete_orders(case):
         st = h.d.store
         jid = {}
         undo = []
+        reached = []
 
         def delete():
+            reached.append(order)
             st.delete_everywhere("job", jid["id"])
         if order == "before_artifact":
             real = st.write_text_artifact
@@ -1447,6 +1449,8 @@ def run_delete_orders(case):
             for u in undo:
                 u()
         live = context_artifacts(h, jid["id"])
+        need(reached, f"{order}: the deletion point was never reached "
+             "(no positive population)")
         examples = st.submit(lambda db: db.execute(
             "SELECT COUNT(*) FROM training_examples WHERE job_id=?",
             (jid["id"],)).fetchone()[0])
