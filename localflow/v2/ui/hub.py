@@ -170,6 +170,7 @@ class HubController(NSObject):
         self._rendered = {}
         self._rendered_rows = {}
         self._editor_bound = None  # example the Training editors belong to
+        self._teach_key = None  # History row the teach buffer belongs to
         self._pending_annotation = None  # unknown-outcome save to reuse
         self._action_seq = 0
         self._action_tokens = {}
@@ -209,8 +210,11 @@ class HubController(NSObject):
         hist = self._rendered.get("history_detail")
         if hist is not None and hist.get("job_id") == job_id:
             self._rendered["history_detail"] = None
-            if hasattr(self, "teach_field"):
-                self.teach_field.setStringValue_("")
+        # Keyed on the row, not the rendered detail: a refresh queued by
+        # the same revocation may already have cleared that.
+        if self._teach_key == ("job", job_id) and \
+                hasattr(self, "teach_field"):
+            self.teach_field.setStringValue_("")
         train = self._rendered.get("training_detail")
         if train is not None and train.get("job_id") == job_id:
             self._rendered["training_detail"] = None
@@ -916,9 +920,14 @@ class HubController(NSObject):
             return (f"History could not load ({view['error']})."
                     + (" The rows shown are from the last successful"
                        " load." if data else ""))
-        if not data:
-            return "Loading history…" if view.get("loading") else \
-                "No history yet — dictations appear here."
+        if not data or not data.get("groups"):
+            # A loaded empty result is {"groups": [], ...}: still empty.
+            if view.get("loading"):
+                return "Loading history…"
+            if view.get("search") or view.get("app") or view.get("mode"):
+                return ("Nothing matches these filters. Clear the search"
+                        " or filters to see all history.")
+            return "No history yet — dictations appear here."
         if view.get("selected_id") is None:
             return self._render_history_detail(None)
         rendered = self._rendered.get("history_detail")
@@ -966,6 +975,10 @@ class HubController(NSObject):
         self._rendered["history_detail"] = detail \
             if detail is not None and view.get("detail_key") == key \
             else None
+        if key != self._teach_key:
+            # A typed correction belongs to the row it was typed against.
+            self._teach_key = key
+            self.teach_field.setStringValue_("")
         self.history_detail.setString_(self._history_pane_text())
 
     # ---- Styles (M10, Spec S15) -------------------------------------------
