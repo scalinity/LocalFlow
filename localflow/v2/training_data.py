@@ -52,6 +52,31 @@ EXAMPLE_STATES = ("captured_unreviewed", "review_candidate", "annotated",
 # them. Both operations scope to artifacts outside these roles.
 _ANNOTATION_ROLES = ("verbatim_reference", "span_correction")
 
+# States no review may write to (the learning contract's non-reviewable
+# set): purged, content-flagged, past retention, or excluded by the
+# user. An annotation is a label, never a Restore.
+NON_REVIEWABLE_STATES = ("deleted", "expired", "quarantined_sensitive",
+                         "excluded")
+
+
+def conn_assert_reviewable(conn, example_id):
+    """The one writer-time reviewability predicate, checked INSIDE the
+    annotation op before any artifact/lease/revision is written."""
+    row = conn.execute(
+        "SELECT state FROM training_examples WHERE example_id=?",
+        (example_id,)).fetchone()
+    if row is None:
+        raise ValueError(f"no example {example_id}")
+    if row[0] in NON_REVIEWABLE_STATES:
+        raise ValueError(f"example_not_reviewable: {row[0]}")
+
+
+def _existing_annotation(env, annotation_id):
+    if not annotation_id:
+        return None
+    return next((a for a in env.get("annotations") or []
+                 if a.get("annotation_id") == annotation_id), None)
+
 
 def _conn_grant_lease(conn, artifact_id, holder, days=None):
     return grant_lease_row(conn, artifact_id, holder, days=days,
@@ -87,8 +112,10 @@ def conn_mark_intended(conn, example_id, correct: bool):
     (``user_explicit_intended_writing``: the user judged the output as
     the writing they intended, never an acoustic/verbatim claim) and the
     same reviewed lifecycle (``annotated``, retained until removed). An
-    excluded, expired, quarantined or deleted example keeps its state:
-    a mark never silently re-includes evidence the user excluded."""
+    excluded, expired, quarantined or deleted example refuses the mark
+    (``ValueError``) and keeps its state: a mark never silently
+    re-includes evidence the user excluded."""
+    conn_assert_reviewable(conn, example_id)
     env, rev = _conn_latest(conn, example_id)
     if env is None:
         raise ValueError(f"no revision for example {example_id}")
@@ -349,19 +376,26 @@ class TrainingDataService:
         return out
 
     def set_verbatim(self, example_id, text: str, *,
-                     listened_audio: bool) -> str:
+                     listened_audio: bool, annotation_id=None) -> str:
         """Audio-reviewed verbatim reference (S29.6 object 1). The exact
         words live in a lease-governed artifact; the envelope entry is
-        content-free. Refuses to save without listening (E14)."""
+        content-free. Refuses to save without listening (E14) and on a
+        non-reviewable example. ``annotation_id`` is the caller's stable
+        operation identity: a retry of an op that already committed
+        (e.g. after the caller's wait timed out) writes nothing."""
         if not text:
             raise ValueError("verbatim text required")
         if not listened_audio:
             raise ValueError("listen_before_verbatim")
 
         def op(conn):
+            conn_assert_reviewable(conn, example_id)
             env, rev = _conn_latest(conn, example_id)
             if env is None:
                 raise ValueError(f"no revision for example {example_id}")
+            done = _existing_annotation(env, annotation_id)
+            if done is not None:
+                return done["annotation_id"], rev
             job_id = _conn_job_id(conn, example_id)
             art_id = _conn_write_text_artifact(
                 conn, job_id=job_id, stage="review",
@@ -372,7 +406,7 @@ class TrainingDataService:
                       "origin": "audio_reviewed"})
             _conn_grant_lease(conn, art_id, "training", days=None)
             annotation = {
-                "annotation_id": ids.new_id("ann"),
+                "annotation_id": annotation_id or ids.new_id("ann"),
                 "kind": "verbatim_reference",
                 "coverage": "full",
                 "listened_audio": True,
@@ -388,7 +422,7 @@ class TrainingDataService:
             conn.execute(
                 "UPDATE training_examples SET state='annotated',"
                 " updated_at_utc=? WHERE example_id=? AND state NOT IN"
-                " ('deleted','expired','quarantined_sensitive')",
+                " ('deleted','expired','quarantined_sensitive','excluded')",
                 (ids.now_utc_iso(), example_id))
             return annotation["annotation_id"], new_rev
         ann_id, _rev = self.store.submit(op)
@@ -398,12 +432,22 @@ class TrainingDataService:
 
     def add_span_correction(self, example_id, stage: str,
                             start: int, end: int,
-                            corrected_text: str) -> str:
+                            corrected_text: str, *,
+                            expected_artifact_id=None,
+                            expected_sha256=None,
+                            annotation_id=None) -> str:
         """A reviewed local change with explicit coverage (S29.6 object
         3). Offsets are zero-based half-open Unicode code points into
         the stage's exact immutable text (S29.4). Verifies ONLY the span:
         the envelope's whole-example correctness is untouched (AC05) and
-        the annotation stays ``coverage: partial`` forever."""
+        the annotation stays ``coverage: partial`` forever.
+
+        ``expected_artifact_id``/``expected_sha256`` name the exact stage
+        text the user reviewed; inside the writer op the example's
+        current stage must still be that artifact (and text), else the
+        save refuses as stale — offsets are never reinterpreted against
+        a different text. A later revision that leaves the reviewed
+        artifact in place does not refuse."""
         if stage not in ("source_text", "applied_output"):
             raise ValueError(f"unknown stage {stage!r}")
 
@@ -425,10 +469,19 @@ class TrainingDataService:
                 " code points")
 
         def op(conn):
+            conn_assert_reviewable(conn, example_id)
             env, rev = _conn_latest(conn, example_id)
             if env is None:
                 raise ValueError(f"no revision for example {example_id}")
+            done = _existing_annotation(env, annotation_id)
+            if done is not None:
+                return done["annotation_id"], rev
             stage_aid = (env.get("artifact_ids") or {}).get(stage)
+            if expected_artifact_id is not None and \
+                    stage_aid != expected_artifact_id:
+                raise ValueError(
+                    "stale_source: the reviewed text changed — reload"
+                    " the example before correcting")
             arow = conn.execute(
                 "SELECT content_text, purged FROM artifacts WHERE"
                 " artifact_id=?", (stage_aid,)).fetchone() \
@@ -437,6 +490,11 @@ class TrainingDataService:
                 raise ValueError(
                     f"stage {stage} unavailable — cannot annotate")
             text = arow[0]
+            if expected_sha256 is not None and \
+                    ids.sha256_text(text) != expected_sha256:
+                raise ValueError(
+                    "stale_source: the reviewed text changed — reload"
+                    " the example before correcting")
             if not (0 <= start < end <= len(text)):
                 raise ValueError(
                     f"span [{start},{end}) out of range for {len(text)}"
@@ -455,7 +513,7 @@ class TrainingDataService:
                       "start": start, "end": end})
             _conn_grant_lease(conn, art_id, "training", days=None)
             annotation = {
-                "annotation_id": ids.new_id("ann"),
+                "annotation_id": annotation_id or ids.new_id("ann"),
                 "kind": "span_correction",
                 "stage": stage,
                 "span": [start, end],
@@ -474,7 +532,7 @@ class TrainingDataService:
             conn.execute(
                 "UPDATE training_examples SET state='annotated',"
                 " updated_at_utc=? WHERE example_id=? AND state NOT IN"
-                " ('deleted','expired','quarantined_sensitive')",
+                " ('deleted','expired','quarantined_sensitive','excluded')",
                 (ids.now_utc_iso(), example_id))
             return annotation["annotation_id"], new_rev
         ann_id, _rev = self.store.submit(op)
@@ -525,11 +583,12 @@ class TrainingDataService:
 
     def exclude(self, example_id, excluded: bool = True) -> str:
         """Exclude from training eligibility, or restore to the review
-        state its annotations justify (S29.2). Restoring never
-        resurrects an expired, quarantined or deleted example — those
-        states mean something else (retention passed / content flagged /
-        purged) and a plain include click must not silently re-eligible
-        purged content."""
+        state its annotations justify (S29.2). Neither direction touches
+        an expired, quarantined or deleted example — those states mean
+        something else (retention passed / content flagged / purged):
+        excluding one would overwrite the restriction with 'excluded',
+        and a later include would then re-eligible it. Both return the
+        unchanged state (the caller shows the refusal)."""
         def op(conn):
             row = conn.execute(
                 "SELECT state FROM training_examples WHERE example_id=?",
@@ -537,12 +596,12 @@ class TrainingDataService:
             if row is None:
                 raise ValueError("example not found")
             current = row[0]
-            if current == "deleted":
-                return current  # delete-everywhere is final (M02-AUDIT-01)
+            if current in ("deleted", "expired", "quarantined_sensitive"):
+                # delete-everywhere is final (M02-AUDIT-01); expiry and
+                # quarantine stay authoritative through both directions.
+                return current, False
             if excluded:
                 new = "excluded"
-            elif current in ("deleted", "expired", "quarantined_sensitive"):
-                return current  # restore refused: not merely excluded
             else:
                 env, _rev = _conn_latest(conn, example_id)
                 new = ("annotated" if (env or {}).get("annotations")
@@ -551,12 +610,12 @@ class TrainingDataService:
                 "UPDATE training_examples SET state=?, updated_at_utc=?"
                 " WHERE example_id=?",
                 (new, ids.now_utc_iso(), example_id))
-            return new
-        new = self.store.submit(op)
-        if new == "excluded":
+            return new, True
+        new, changed = self.store.submit(op)
+        if changed and new == "excluded":
             self.emit("training.example_excluded", level="INFO",
                       reason_code="user_action")
-        elif new != "excluded":
+        elif changed:
             self.emit("training.example_included", level="INFO",
                       reason_code="user_restore")
         return new

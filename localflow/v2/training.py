@@ -1446,7 +1446,11 @@ class EvidenceCollector:
         if not row:
             return None
         ex_id, job_id, state = row
-        if state in ("deleted", "expired"):
+        from . import training_data as td
+        if state in td.NON_REVIEWABLE_STATES:
+            # The shared op refuses these too (a mark is a label, never
+            # a Restore); skipping here keeps a refusal out of the
+            # capture-failure events.
             return None
         # M02-AUDIT-16: the menu's "correct" is an intended-writing
         # judgment (the user did not audio-review anything) — routed
@@ -1454,7 +1458,6 @@ class EvidenceCollector:
         # user_explicit_intended_writing, reviewed lifecycle (retained
         # until removed). Earlier user_explicit revisions stay as they
         # were recorded; nothing is bulk-upgraded.
-        from . import training_data as td
         try:
             rev = self.store.submit(
                 lambda db: td.conn_mark_intended(db, ex_id, True))
