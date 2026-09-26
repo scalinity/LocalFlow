@@ -82,8 +82,11 @@ def tokenize(text: str) -> list[Token]:
 
 # Every character str.splitlines() treats as a line boundary — a
 # paragraph or record separator is as much a delimiter as "\n"
-# (review R14).
-_LINE_BREAKS = frozenset("\n\r\x0b\x0c\x1c\x1d\x1e\x85\u2028\u2029")
+# (review R14) — plus the unit separator U+001F, the one C0
+# information separator splitlines() omits (M05 review R18). Unicode
+# space separators (category Zs) and the tab stay benign word gaps.
+_LINE_BREAKS = frozenset(
+    "\n\r\x0b\x0c\x1c\x1d\x1e\x1f\x85\u2028\u2029")
 
 
 def _barriers(text: str, tokens: list[Token]) -> list[bool]:

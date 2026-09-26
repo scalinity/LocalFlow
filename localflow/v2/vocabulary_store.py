@@ -86,7 +86,9 @@ def _normalize_alias_items(aliases) -> list[tuple[str, bool, Optional[str]]]:
     to validated (text, approved, language) triples. ``language`` None
     means inherit the entry's language. Booleans are strict — a string
     or integer flag is refused, never truth-coerced (M05-AUDIT-07)."""
-    if isinstance(aliases, (str, bytes)) or aliases is None:
+    # A list or tuple only (review R7): a mapping would iterate its keys
+    # and silently drop the flags; a set has no stable order.
+    if not isinstance(aliases, (list, tuple)):
         raise vocab.AdmissionError("not_a_list", "aliases")
     out = []
     seen = set()
@@ -121,7 +123,10 @@ def _row_to_entry(row, alias_rows) -> vocab.VocabularyEntry:
         entry_id=d["entry_id"], canonical=d["canonical"],
         language=d["language"], kind=d["kind"],
         matching_mode=d["matching_mode"], scope_kind=d["scope_kind"],
-        scope_value=d["scope_value"], priority=d["priority"],
+        # A legacy global row carrying a value reads as the one global
+        # identity it always behaved as (review R6).
+        scope_value=None if d["scope_kind"] == "global"
+        else d["scope_value"], priority=d["priority"],
         pinned=bool(d["pinned"]), usage_count=d["usage_count"],
         last_used_utc=d["last_used_utc"], origin=d["origin"],
         enabled=bool(d["enabled"]), approved=bool(d["approved"]),
@@ -138,7 +143,7 @@ def _read_entry(db, entry_id) -> Optional[vocab.VocabularyEntry]:
         return None
     alias_rows = db.execute(
         "SELECT alias, approved, language FROM vocabulary_aliases"
-        " WHERE entry_id=? ORDER BY alias COLLATE NOCASE",
+        " WHERE entry_id=? ORDER BY alias COLLATE NOCASE, alias",
         (entry_id,)).fetchall()
     return _row_to_entry(row, alias_rows)
 
@@ -147,8 +152,8 @@ def _find_identity(db, canonical, scope_kind, scope_value,
                    exclude: Optional[str] = None) -> Optional[str]:
     row = db.execute(
         "SELECT entry_id FROM vocabulary_entries WHERE canonical=?"
-        " COLLATE NOCASE AND scope_kind=? AND"
-        " IFNULL(scope_value,'')=IFNULL(?,'')"
+        " COLLATE NOCASE AND scope_kind=? AND (scope_kind='global' OR"
+        " IFNULL(scope_value,'')=IFNULL(?,''))"
         + (" AND entry_id<>?" if exclude else ""),
         (canonical, scope_kind, scope_value)
         + ((exclude,) if exclude else ())).fetchone()
@@ -157,10 +162,19 @@ def _find_identity(db, canonical, scope_kind, scope_value,
 
 def _alias_identity(entry: vocab.VocabularyEntry) -> list:
     """Order-insensitive alias state (M05-AUDIT-10): text, approval and
-    EFFECTIVE language (explicit override or the entry's) — storage
-    order is never identity."""
+    STORED language — None (inherit) and an explicit override are
+    different states even when they currently resolve to the same
+    language (review R3) — storage order is never identity."""
     return sorted((a.alias.casefold(), a.alias, a.approved,
-                   a.language or entry.language) for a in entry.aliases)
+                   a.language or "") for a in entry.aliases)
+
+
+_INHERIT_KEY = "alias_language_inherit_v1"
+
+
+def _inherit_migrated(db) -> bool:
+    return db.execute("SELECT 1 FROM vocabulary_meta WHERE key=?",
+                      (_INHERIT_KEY,)).fetchone() is not None
 
 
 class VocabularyStore:
@@ -168,6 +182,37 @@ class VocabularyStore:
 
     def __init__(self, store: Store):
         self.store = store
+        self.last_written_revision = 0
+        try:
+            self.migrate_alias_language()
+        except Exception:
+            # Best effort: until it runs, the legacy inheritance rule
+            # stays in force (the store works either way).
+            pass
+
+    def migrate_alias_language(self) -> int:
+        """One-time, idempotent (review R4): stores before the M05
+        remediation MATERIALIZED each alias's language as a copy of its
+        entry's; those rows become NULL (inherit), which is what they
+        meant — the effective language of every alias is unchanged.
+        From then on a stored value is an explicit override, even when it
+        equals the entry's language. Returns the rows converted."""
+        def op(db):
+            if _inherit_migrated(db):
+                return 0
+            cur = db.cursor()
+            cur.execute(
+                "UPDATE vocabulary_aliases SET language=NULL WHERE"
+                " language IS NOT NULL AND language=(SELECT e.language"
+                " FROM vocabulary_entries e WHERE"
+                " e.entry_id=vocabulary_aliases.entry_id)")
+            changed = cur.rowcount
+            cur.execute("INSERT INTO vocabulary_meta VALUES(?, '1')",
+                        (_INHERIT_KEY,))
+            if changed:
+                self._bump(cur)
+            return changed
+        return self.store.submit(op)
 
     # ---- reads -----------------------------------------------------------
 
@@ -187,7 +232,7 @@ class VocabularyStore:
             ).fetchall()
             alias_rows = db.execute(
                 "SELECT entry_id, alias, approved, language"
-                " FROM vocabulary_aliases ORDER BY alias COLLATE NOCASE"
+                " FROM vocabulary_aliases ORDER BY alias COLLATE NOCASE, alias"
             ).fetchall()
             by_entry: dict[str, list] = {}
             for r in alias_rows:
@@ -225,11 +270,16 @@ class VocabularyStore:
         entry, and entries whose recorded alias set is gone (the alias
         table was lost). A repaired empty table is never a recovery."""
         def op(db):
+            # Vanished = never deleted, no entry row, but evidence it
+            # existed: its history OR its surviving alias rows (review
+            # R11 — entries and history lost together leave orphans).
             vanished = db.execute(
-                "SELECT count(DISTINCT entry_id) FROM vocabulary_history"
-                " WHERE entry_id NOT IN (SELECT entry_id FROM"
-                " vocabulary_entries) AND entry_id NOT IN (SELECT entry_id"
-                " FROM vocabulary_history WHERE action='deleted')"
+                "SELECT count(*) FROM (SELECT entry_id FROM"
+                " vocabulary_history UNION SELECT entry_id FROM"
+                " vocabulary_aliases) AS known WHERE entry_id NOT IN"
+                " (SELECT entry_id FROM vocabulary_entries) AND entry_id"
+                " NOT IN (SELECT entry_id FROM vocabulary_history WHERE"
+                " action='deleted')"
             ).fetchone()[0]
             orphans = db.execute(
                 "SELECT count(*) FROM vocabulary_aliases WHERE entry_id"
@@ -260,6 +310,15 @@ class VocabularyStore:
         cur.execute(
             "INSERT INTO vocabulary_meta VALUES('revision','1')"
             " ON CONFLICT(key) DO UPDATE SET value=CAST(value AS INTEGER)+1")
+        # The newest revision THIS process wrote (review Q2): a caller
+        # holding state read at an older revision knows it is stale even
+        # when a later read fails. A rolled-back op only makes it look
+        # newer — the conservative direction.
+        row = cur.execute("SELECT value FROM vocabulary_meta WHERE"
+                          " key='revision'").fetchone()
+        if row is not None:
+            self.last_written_revision = max(self.last_written_revision,
+                                             int(row[0]))
 
     def _history(self, cur, entry_id: str, revision: int, action: str,
                  change: dict) -> None:
@@ -300,16 +359,23 @@ class VocabularyStore:
             "scope_kind", "scope_value", "priority", "pinned",
             "usage_count", "last_used_utc", "origin", "enabled",
             "approved", "verification")}
+        fields = dict(fields)
+        if fields.get("scope_kind") == "global" \
+                and "scope_value" not in fields:
+            fields["scope_value"] = None     # one global identity (R6)
         merged.update({k: v for k, v in fields.items() if k != "aliases"})
         triples = fields.get("aliases")
         aliases = tuple(vocab.Alias(t, f, lang) for t, f, lang in triples) \
             if triples is not None else cur.aliases
         new_revision = cur.revision + 1
         try:
-            vocab.VocabularyEntry(**merged, aliases=aliases,
-                                  revision=new_revision)
+            valid = vocab.VocabularyEntry(**merged, aliases=aliases,
+                                          revision=new_revision)
         except (ValueError, TypeError) as e:
             return ("invalid", str(e))
+        if "scope_value" in fields:
+            fields["scope_value"] = valid.scope_value
+            merged["scope_value"] = valid.scope_value
         if any(k in fields for k in ("canonical", "scope_kind",
                                      "scope_value")) and _find_identity(
                 db, merged["canonical"], merged["scope_kind"],
@@ -337,11 +403,14 @@ class VocabularyStore:
                     " language, approved) VALUES(?,?,?,?)",
                     (cur.entry_id, text, lang, int(flag)))
         elif "language" in fields and fields["language"] != cur.language \
-                and cur.language is not None:
-            # Alias language inheritance (M05-AUDIT-12): a row equal to
-            # the entry's PREVIOUS language was inherited (stores before
-            # the remediation materialized it) — it follows the entry
-            # from now on; an explicit different override is kept.
+                and cur.language is not None \
+                and not _inherit_migrated(c):
+            # Alias language inheritance (M05-AUDIT-12) on a store the
+            # one-time migration has not reached: a row equal to the
+            # entry's PREVIOUS language was materialized by the old
+            # store, so it follows the entry. After the migration NULL
+            # alone means inherit and every value is an explicit
+            # override, kept across language changes (review R4).
             c.execute("UPDATE vocabulary_aliases SET language=NULL"
                       " WHERE entry_id=? AND language=?",
                       (cur.entry_id, cur.language))
@@ -403,6 +472,7 @@ class VocabularyStore:
         # cheap; the in-op check below is the authoritative one (two
         # concurrent adds that both passed the probe resolve there, as
         # a status — never a raised write failure in the event log).
+        scope_value = entry.scope_value      # canonical form (review Q5)
         if self._canonical_exists(canonical, scope_kind, scope_value):
             self._raise_for("duplicate")
         now = ids.now_utc_iso()
@@ -650,9 +720,11 @@ class VocabularyStore:
                 or not isinstance(doc.get("entries", []), list):
             raise ImportRejected("invalid_document")
         parsed = []
+        provided = []
         for i, d in enumerate(doc.get("entries", [])):
             try:
                 parsed.append(vocab.VocabularyEntry.from_json(d))
+                provided.append(frozenset(d))
             except vocab.AdmissionError as e:
                 raise ImportRejected(e.code, f"entries[{i}].{e.field}") \
                     from None
@@ -670,7 +742,7 @@ class VocabularyStore:
 
         def op(db):
             created = updated = unchanged = 0
-            for e in parsed:
+            for e, keys in zip(parsed, provided):
                 cur_id = _find_identity(db, e.canonical, e.scope_kind,
                                         e.scope_value)
                 if cur_id is None:
@@ -681,12 +753,16 @@ class VocabularyStore:
                     continue
                 cur = _read_entry(db, cur_id)
                 changes = {}
+                # A field the row OMITS keeps the stored value (review
+                # Q4): a partial file never de-approves, unpins or
+                # re-kinds an existing entry through admission defaults.
                 for col in ("language", "kind", "matching_mode", "priority",
                             "pinned", "origin", "enabled", "approved",
                             "verification"):
-                    if getattr(e, col) != getattr(cur, col):
+                    if col in keys and getattr(e, col) != getattr(cur, col):
                         changes[col] = getattr(e, col)
-                if _alias_identity(e) != _alias_identity(cur):
+                if "aliases" in keys \
+                        and _alias_identity(e) != _alias_identity(cur):
                     changes["aliases"] = [(a.alias, a.approved, a.language)
                                           for a in e.aliases]
                 if not changes:

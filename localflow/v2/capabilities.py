@@ -25,6 +25,9 @@ CAPABILITY_FIELDS = (
 _DISABLED_UNTIL_QUALIFIED = "disabled_until_qualified"
 _UNSUPPORTED = "unsupported_by_adapter"
 _NOT_EXPOSED = "not_exposed_on_dictation_path"
+_BASELINE_BIASING_EVIDENCE = (
+    "no qualified biasing implementation exists for this adapter"
+    " (contracts/asr_hints.md baseline)")
 
 
 def asr_capability_manifest(model_id, model_revision=None, runtime=None):
@@ -37,8 +40,7 @@ def asr_capability_manifest(model_id, model_revision=None, runtime=None):
         "capabilities": {
             "contextual_biasing": {
                 "supported": False, "reason": _DISABLED_UNTIL_QUALIFIED,
-                "evidence": "no qualified biasing implementation exists for"
-                            " this adapter (contracts/asr_hints.md baseline)"},
+                "evidence": _BASELINE_BIASING_EVIDENCE},
             "key_terms": {
                 "supported": False, "reason": _DISABLED_UNTIL_QUALIFIED,
                 "evidence": "no qualified key-terms implementation exists for"
@@ -102,10 +104,17 @@ def biasing_qualified(manifest) -> bool:
     ident = cap.get("qualified_identity")
     evidence = cap.get("evidence")
     if not isinstance(ident, dict) or not isinstance(evidence, str) \
-            or not evidence.strip():
+            or not any(ch.isalnum() for ch in evidence):
         return False
-    if manifest.get("model_revision") in (None, ""):
+    # A self-attestation that contradicts itself is not a qualification
+    # (review Q1): the adapter's own baseline "no qualified
+    # implementation" evidence with supported flipped on.
+    if evidence.strip() == _BASELINE_BIASING_EVIDENCE:
         return False
+    for key in ("model_id", "model_revision"):
+        v = manifest.get(key)
+        if not isinstance(v, str) or not v.strip():
+            return False
     return ident == {"adapter": manifest.get("adapter"),
                      "model_id": manifest.get("model_id"),
                      "model_revision": manifest.get("model_revision"),

@@ -756,28 +756,33 @@ def grammar_vocabulary(host):
     ("clod code," → "Claude Code,") while "clod, code" and "clod\ncode"
     stay two clauses.
 
-    Canonical claims (M05-AUDIT-03): a span that already reads as its
-    canonical emits no edit and CLAIMS the span. Claims are collected for
-    the whole text first and arbitrate exactly like proposals (longer
-    span, then earlier start): a claim suppresses every overlapping
-    alias proposal it would beat, wherever that proposal starts — so the
-    winner of the first pass is still the winner on the second and
-    normalization is idempotent ("red status page" → "red Status Page",
-    never "Orange Page" on a later pass)."""
+    Canonical claims (M05-AUDIT-03, review R1/R2/R17): a span whose text
+    is EXACTLY the canonical spelling of an approved, in-scope term emits
+    no edit and is a CLAIM — whatever ``match_index`` resolves its key to
+    (a narrower alias or a same-scope mask cannot rewrite already
+    normalized text). Claims and alias proposals arbitrate TOGETHER, the
+    engine's way (longer first, then earlier start; on the same span the
+    claim first), and only a claim that wins suppresses the proposals it
+    overlaps — a claim beaten by a longer proposal suppresses nothing. A
+    claim is as strong as its entry's longest matchable form, so an
+    alias that lost to the entry on the first pass also loses to its
+    canonical on the second: normalization is idempotent under left and
+    right overlaps ("reddish status page" → "Red Status page", never
+    "Red Orange Page" on a later pass)."""
     snapshot = getattr(host.context, "vocabulary", None) \
         if host.context else None
     if snapshot is None:
         return
     tokens = host.tokens
     n_tok = len(tokens)
+    words_at = host._words
     proposals = []           # (i, j, span, target)
-    claims = []              # (i, j, span)
+    claims = []              # (i, j, span, strength)
     lengths_of = getattr(snapshot, "lengths_by_first_word", None)
     if lengths_of is not None:
         # Exact phrase lookup per distinct alias length (longest first):
         # cost is independent of how many aliases share a first word.
         lengths, index = lengths_of(), snapshot.match_index
-        words_at = host._words
 
         def found(i):
             for n in lengths.get(tokens[i].word, ()):
@@ -795,6 +800,8 @@ def grammar_vocabulary(host):
                 j = i + len(words)
                 if j <= n_tok and [t.word for t in tokens[i:j]] == words:
                     yield j, target
+    canon_of = getattr(snapshot, "canonical_claims", None)
+    canon, canon_lengths = canon_of() if canon_of is not None else ({}, {})
     for i, tok in enumerate(tokens):
         if not tok.is_word:
             continue
@@ -803,23 +810,47 @@ def grammar_vocabulary(host):
                     t.is_word for t in tokens[i:j]):
                 continue
             span = host.core_span(i, j)
-            if host.text[span.start:span.end] == target.canonical:
-                claims.append((i, j, span))
-            else:
-                proposals.append((i, j, span, target))
-    # Per token: the best claim covering it, by the engine's own order
-    # (longer span first, then earlier start).
-    best: list = [None] * n_tok
-    for i, j, span in claims:
-        key = (-(span.end - span.start), span.start)
-        for k in range(i, j):
-            if best[k] is None or key < best[k]:
-                best[k] = key
+            text = host.text[span.start:span.end]
+            if text == target.canonical:
+                if canon_of is None:
+                    claims.append((i, j, span, span.end - span.start))
+                continue         # the canonical pass below claims it
+            proposals.append((i, j, span, target))
+        for n in canon_lengths.get(tok.word, ()):
+            j = i + n
+            if j > n_tok:
+                continue
+            spellings = canon.get(" ".join(words_at[i:j]))
+            if spellings is None or not host.connected(i, j) or not all(
+                    t.is_word for t in tokens[i:j]):
+                continue
+            span = host.core_span(i, j)
+            strength = spellings.get(host.text[span.start:span.end])
+            if strength is not None:
+                claims.append((i, j, span,
+                               max(strength, span.end - span.start)))
+    if claims:
+        # One greedy pass over claims and proposals in engine order
+        # decides which claims survive; proposals a surviving claim
+        # overlaps are withheld, every other proposal goes to the engine
+        # (whose arbitration among them is the same order).
+        cands = [((-strength, span.start, 0), i, j)
+                 for i, j, span, strength in claims]
+        cands += [((-(span.end - span.start), span.start, 1), i, j)
+                  for i, j, span, _ in proposals]
+        cands.sort(key=lambda c: c[0])
+        taken = [False] * n_tok
+        held = [False] * n_tok
+        for key, i, j in cands:
+            if any(taken[k] for k in range(i, j)):
+                continue
+            for k in range(i, j):
+                taken[k] = True
+                if key[2] == 0:
+                    held[k] = True
+        proposals = [p for p in proposals
+                     if not any(held[k] for k in range(p[0], p[1]))]
     for i, j, span, target in proposals:
-        key = (-(span.end - span.start), span.start)
-        if any(best[k] is not None and best[k] < key
-               for k in range(i, j)):
-            continue
         yield Proposal(
             layer=5, cls="vocabulary", op="scoped_alias",
             span=span, input_text=host.text[span.start:span.end],
