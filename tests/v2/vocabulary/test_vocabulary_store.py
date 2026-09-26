@@ -342,8 +342,11 @@ def test_language_and_aliases_combined_update():
         vs.update_entry(eid, language="es", aliases=["survo", "surve"])
         e = vs.entry(eid)
         assert e.language == "es"
-        assert all(a.language == "es" for a in e.aliases), \
-            [a.language for a in e.aliases]
+        # M05 remediation (AUDIT-12): an alias language of None INHERITS
+        # the entry's, so the effective language follows the update; an
+        # explicit per-alias override is stored and kept as given.
+        assert all((a.language or e.language) == "es"
+                   for a in e.aliases), [a.language for a in e.aliases]
         st.close()
     print("ok  alias rows follow an updated language")
 

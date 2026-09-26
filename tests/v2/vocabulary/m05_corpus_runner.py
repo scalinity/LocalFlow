@@ -486,7 +486,17 @@ def h_tokenizer(case):
     want = TOKEN_CHARACTERIZATION[case["input"]]
     check(view["text"] == want,
           f"characterized {want!r}, observed {view['text']!r}")
-    return ok(view, disposition="characterization:m04_tokenizer_limit")
+    if case["input"] == "clod — code":
+        # A spaced em dash is its own token between two clauses: not
+        # matching across it is the intended behavior.
+        return ok(view, disposition="characterization:dash_is_a_token")
+    # Paren/quote-ATTACHED words are not word tokens (retained M04
+    # tokenizer limitation): the alias never matches there. A known
+    # limitation, never counted as a pass.
+    return {"status": "declared_residual", "actual": view,
+            "disposition": "residual:m04_attached_punctuation_tokens",
+            "reason": "paren/quote-attached words are not word tokens"
+                      " (M04 addendum, retained; not an M05 repair)"}
 
 
 @handles("masked-longer-alias")
@@ -2072,6 +2082,13 @@ def h_meta(case):
             o = _norm(snap, f"use clod{w} code then go")
             check(o["text"] == f"use Claude{w} code then go"
                   and vocab_ids(o) == ["E-CL"], o)
+        # The relation holds for EVERY occurrence in one dictation
+        # (no occurrence may be silently skipped).
+        many = "ask clod, clod; clod. clod! clod? clod: clod code, done"
+        o = _norm(snap, many)
+        check(o["text"] == "ask Claude, Claude; Claude. Claude! Claude?"
+              " Claude: Claude Code, done"
+              and vocab_ids(o) == ["E-CL"] * 6 + ["E-CC"], o)
     elif rel == "context isolation":
         g = [ent("E-U", "Unrelated", ["unrel"])]
         for ctx in (None, V.ScopeContext(workspace="A"),

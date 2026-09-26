@@ -204,10 +204,17 @@ class SkillRegistry:
     the destination workspace changed under the manifest set."""
 
     def __init__(self, records, dictionary_skills=None, *,
-                 stale_workspace: bool = False):
+                 stale_workspace: bool = False,
+                 dictionary_provenance=None):
         self.records = tuple(records)
         self.stale_workspace = bool(stale_workspace)
         self.conflicts: tuple[dict, ...] = ()
+        # M05-AUDIT-09: alias → (approving dictionary entry id,
+        # verification) from the M05 snapshot. Carried only for keys the
+        # dictionary actually registered — a manifest skill never gets a
+        # fabricated M05 identity.
+        dict_prov = {k: (str(v[0]), str(v[1]))
+                     for k, v in dict(dictionary_provenance or {}).items()}
         merged: dict[str, list[tuple[str, str]]] = {}
         # key → [(provenance, exact name)]; manifest skills and
         # dictionary skills carry the same layer-3 weight, so a
@@ -242,6 +249,9 @@ class SkillRegistry:
         self._dict_keys = frozenset(
             k for k in dict_keys if k in skills)
         self.policy_skills = MappingProxyType(dict(skills))
+        self.policy_provenance = MappingProxyType({
+            k: dict_prov[k] for k in sorted(self._dict_keys)
+            if k in dict_prov})
         payload = json.dumps({
             "records": [
                 {"name": r.name, "aliases": list(r.aliases),
@@ -252,6 +262,11 @@ class SkillRegistry:
                                 key=lambda r: (r.scope, r.name))],
             "dictionary_skills": dict(dictionary_skills or {}),
             "stale_workspace": self.stale_workspace,
+            # Hashed only when present (manifest-only registries keep
+            # their historical revision).
+            **({"dictionary_provenance": {
+                k: list(v) for k, v in self.policy_provenance.items()}}
+               if self.policy_provenance else {}),
         }, sort_keys=True, ensure_ascii=False)
         self.revision = f"m10skill:{hashlib.sha256(
             payload.encode()).hexdigest()[:12]}"
@@ -265,6 +280,10 @@ class SkillRegistry:
             "revision": self.revision,
             "manifest_skills": self.manifest_count,
             "dictionary_skill_aliases": len(self._dict_keys),
+            # Opaque approving entry ids of the registered dictionary
+            # skills (ids only — no alias text in this summary).
+            "dictionary_rule_ids": sorted({v[0] for v in
+                                           self.policy_provenance.values()}),
             "registered_aliases": len(self._skills),
             "stale_workspace": self.stale_workspace,
             "conflicts": list(self.conflicts),

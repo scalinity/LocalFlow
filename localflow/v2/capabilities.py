@@ -87,6 +87,31 @@ def missing_reason_for(field: str, manifest=None) -> str:
         "not_captured_at_stage"
 
 
+def biasing_qualified(manifest) -> bool:
+    """Contextual biasing is QUALIFIED only for one exact identity
+    (S30.1, M05-AUDIT-19): the capability must be ``supported`` AND
+    carry a ``qualified_identity`` equal to this manifest's own adapter,
+    model id, model revision (checkpoint) and runtime, AND non-empty
+    qualification ``evidence``. A bare ``supported: true``, a missing
+    checkpoint, a changed checkpoint/runtime/model or absent evidence is
+    unqualified — hints are then offered-but-ignored, never sent."""
+    cap = (manifest or {}).get("capabilities", {}).get(
+        "contextual_biasing") or {}
+    if cap.get("supported") is not True:
+        return False
+    ident = cap.get("qualified_identity")
+    evidence = cap.get("evidence")
+    if not isinstance(ident, dict) or not isinstance(evidence, str) \
+            or not evidence.strip():
+        return False
+    if manifest.get("model_revision") in (None, ""):
+        return False
+    return ident == {"adapter": manifest.get("adapter"),
+                     "model_id": manifest.get("model_id"),
+                     "model_revision": manifest.get("model_revision"),
+                     "runtime": manifest.get("runtime")}
+
+
 def hint_disposition(manifest=None, hint_set=None) -> dict:
     """What happens to an offered hint set under this manifest (S30.1).
 
@@ -95,8 +120,7 @@ def hint_disposition(manifest=None, hint_set=None) -> dict:
     ignored — never a fabricated acceptance and never terms silently
     concatenated onto the transcript."""
     manifest = manifest or asr_capability_manifest(None)
-    caps = manifest["capabilities"]
-    biasing_off = not caps["contextual_biasing"]["supported"]
+    biasing_off = not biasing_qualified(manifest)
     offered = len(hint_set.terms) if hint_set is not None else 0
     return {
         "offered_terms": offered,
@@ -120,14 +144,18 @@ def asr_hint_request_fields(hint_set, manifest=None,
     """S30.1 request-field extension point: the engine-neutral fields a
     *qualified* adapter would receive. Returns None on this adapter —
     the dict is built only when the capability manifest actually
-    supports contextual biasing, so no request ever pretends to carry
-    hints the decoder ignored. The wiring is: qualified adapter →
+    supports contextual biasing for THIS exact adapter + checkpoint +
+    runtime identity with evidence (``biasing_qualified``), so no request
+    ever pretends to carry hints the decoder ignored. The wiring is: qualified adapter →
     serialize these fields into the decode request; unqualified adapter
     → None plus the logged hint_disposition above. M06 feeds
     ``context_snapshot_id`` from the frozen pre-decode
     ``context.ContextSnapshot``."""
     manifest = manifest or asr_capability_manifest(None)
-    if not manifest["capabilities"]["contextual_biasing"]["supported"]:
+    if context_snapshot_id is not None \
+            and not isinstance(context_snapshot_id, str):
+        raise TypeError("context_snapshot_id must be a string or None")
+    if not biasing_qualified(manifest):
         return None
     return {
         "hint_set_id": hint_set.hint_set_id,

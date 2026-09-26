@@ -59,9 +59,11 @@ adapter extension point and returns `None` until an adapter +
 checkpoint + runtime is separately qualified — no request ever
 pretends to carry hints the decoder ignored. Post-ASR recovery
 consumes the same snapshot; its repairs are normalization ledger
-edits with rule ids, never decoder hits (AC05). Cleanup consumes
-permitted context from M07 and is not a consumer yet. M06 feeds the
-`context_snapshot_id` field and live scope context.
+edits with rule ids, never decoder hits (AC05). Since M07 cleanup is
+a consumer of permitted context: the frozen set's canonicals (≤40) as
+prompt terms and the snapshot's approved alias pairs (≤40) as
+validator data (`cleanup.md`). M06 feeds the `context_snapshot_id`
+field and live scope context.
 
 ## M06 live status
 
@@ -76,3 +78,18 @@ finalize-time upgrade (`contracts/vocabulary.md`) widens the hotkey-down
 app-only scope when origin/workspace resolve, and the upgraded set is
 what `on_hint_set` stores before recognition. Late context never
 enters the set (AC05).
+
+## M05 remediation (2026-09-25): identity-bound qualification
+
+`capabilities.biasing_qualified(manifest)` is the single gate
+(M05-AUDIT-19): contextual biasing counts as qualified only when the
+capability is `supported`, carries a `qualified_identity` equal to the
+manifest's own `adapter`, `model_id`, `model_revision` (the checkpoint —
+never null) and `runtime`, and names non-empty qualification
+`evidence`. A bare `supported: true`, a missing or changed checkpoint, a
+changed runtime or model, or absent evidence is unqualified:
+`asr_hint_request_fields` returns `None` and `hint_disposition` reports
+offered-but-ignored (`disabled_until_qualified`). `context_snapshot_id`
+must be a string or None and is carried exactly. The production
+manifest is unchanged (every capability unsupported); no decoder
+biasing exists or is claimed.

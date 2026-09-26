@@ -358,7 +358,8 @@ snapshot belonging to no destination — configured profile, global
 dictionary and manifest skills, unscoped vocabulary, never the
 previous job's workspace skills or context; AUDIT-21, review R15) or
 `current_default` (the configured-profile fallback for a job whose
-hotkey-down capture failed). A job's inherited ("inherit" style) profile always
+hotkey-down capture failed — unscoped like the retry default since the
+M05 remediation: never the previous job's cached scope). A job's inherited ("inherit" style) profile always
 resolves against the configuration, never the previous job's
 effective profile (AUDIT-13).
 
@@ -415,3 +416,18 @@ differing outputs at one layer still reject as `ambiguous_same_span`.
 Generated output spans (snippet expansions, resolved filenames) carry
 separate normalized-coordinate protection into cleanup
 (`snippets.protected_output_spans`).
+
+## M05 remediation (2026-09-25): layer-5 vocabulary and skill provenance
+
+`grammar_vocabulary` holds M05's own delimiter rule (the class stays in
+`_BARRIER_EXEMPT` because the rule lives in the grammar): a multiword
+alias matches only connected tokens and edits word cores only
+(M05-AUDIT-01). Canonical no-op claims are collected before proposals
+and arbitrate like proposals (longer span, then earlier start), so the
+layer is idempotent under left overlaps (M05-AUDIT-03). The policy gains
+an optional `skill_provenance` (alias → approving dictionary entry id,
+verification), included in `policy_revision` only when non-empty — a
+policy without dictionary skills keeps its revision; `grammar_skills`
+puts the entry id in `rule_id` and the label in `reason` of a dictionary
+skill proposal (M05-AUDIT-09). Layer precedence, command-position
+guards, quote/code/escape protection and the barrier set are unchanged.

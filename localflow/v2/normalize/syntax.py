@@ -185,6 +185,7 @@ def grammar_skills(host):
     skills = host.policy.registered_skills or {}
     if not skills:
         return
+    provenance = getattr(host.policy, "skill_provenance", None) or {}
     frames = set(host.profile.get("slash_command_frames", ()))
     frames_to = set(host.profile.get("slash_command_frames_to", ()))
     subjects = set(host.profile.get("slash_subject_words", ()))
@@ -202,19 +203,22 @@ def grammar_skills(host):
                 continue
             exact = skills[alias]
             span = host.core_span(i, i + 1 + len(words))
+            # A DICTIONARY skill keeps its approving entry and label
+            # (M05-AUDIT-09); a manifest skill carries none.
+            rule_id, label = provenance.get(alias, (None, None))
             if verb:
                 yield Proposal(
                     layer=3, cls="skill", op="slash_skill_token",
                     span=span, input_text=_text_of(host, span),
                     output_text=f"/{exact}", value=exact,
                     unit="skill_token", reason="no_command_frame",
-                    review=True)
+                    review=True, rule_id=rule_id)
                 break
             yield Proposal(
                 layer=3, cls="skill", op="slash_skill_token",
                 span=span, input_text=_text_of(host, span),
                 output_text=f"/{exact}", value=exact, unit="skill_token",
-                join=JOIN_WORD)
+                join=JOIN_WORD, reason=label, rule_id=rule_id)
             break
         else:
             nxt = _word_at(host, i + 1)
@@ -740,54 +744,88 @@ def grammar_vocabulary(host):
     """Scoped dictionary terms (S11): approved aliases → canonical, token
     boundaries only, never substrings. The snapshot already applied scope
     filtering and conflict masking; each proposal carries the approving
-    entry id (AC04 attribution). An already-canonical span emits nothing
-    and claims the span, so a shorter overlapping alias cannot rewrite
-    inside it on a later pass (idempotence shield). Sits at layer 5:
-    literals, protected syntax, skill intent and the typed grammar all
-    outrank it. Position-driven lookup by the alias's first word keeps
-    this O(tokens × candidates) instead of O(aliases × tokens)."""
+    entry id (AC04 attribution). Sits at layer 5: literals, protected
+    syntax, skill intent and the typed grammar all outrank it.
+    Position-driven lookup by the alias's first word keeps this
+    O(tokens × candidates) instead of O(aliases × tokens).
+
+    Occurrence ownership (M05-AUDIT-01): a multiword alias matches only
+    CONNECTED tokens — no structural delimiter (edge punctuation between
+    its words, any Unicode line separator) may sit inside it — and the
+    edit covers the word cores only, so edge punctuation survives
+    ("clod code," → "Claude Code,") while "clod, code" and "clod\ncode"
+    stay two clauses.
+
+    Canonical claims (M05-AUDIT-03): a span that already reads as its
+    canonical emits no edit and CLAIMS the span. Claims are collected for
+    the whole text first and arbitrate exactly like proposals (longer
+    span, then earlier start): a claim suppresses every overlapping
+    alias proposal it would beat, wherever that proposal starts — so the
+    winner of the first pass is still the winner on the second and
+    normalization is idempotent ("red status page" → "red Status Page",
+    never "Orange Page" on a later pass)."""
     snapshot = getattr(host.context, "vocabulary", None) \
         if host.context else None
     if snapshot is None:
         return
-    by_first = snapshot.by_first_word()
-    claimed: list[Span] = []
     tokens = host.tokens
+    n_tok = len(tokens)
+    proposals = []           # (i, j, span, target)
+    claims = []              # (i, j, span)
+    lengths_of = getattr(snapshot, "lengths_by_first_word", None)
+    if lengths_of is not None:
+        # Exact phrase lookup per distinct alias length (longest first):
+        # cost is independent of how many aliases share a first word.
+        lengths, index = lengths_of(), snapshot.match_index
+        words_at = host._words
+
+        def found(i):
+            for n in lengths.get(tokens[i].word, ()):
+                j = i + n
+                if j <= n_tok:
+                    target = index.get(" ".join(words_at[i:j]))
+                    if target is not None:
+                        yield j, target
+    else:  # a duck-typed snapshot with only the first-word view
+        by_first = snapshot.by_first_word()
+
+        def found(i):
+            for alias, target in by_first.get(tokens[i].word, ()):
+                words = alias.split()
+                j = i + len(words)
+                if j <= n_tok and [t.word for t in tokens[i:j]] == words:
+                    yield j, target
     for i, tok in enumerate(tokens):
-        candidates = by_first.get(tok.word)
-        if not candidates or not tok.is_word:
+        if not tok.is_word:
             continue
-        for alias, target in candidates:
-            words = alias.split()
-            n = len(words)
-            if i + n > len(tokens):
+        for j, target in found(i):
+            if not host.connected(i, j) or not all(
+                    t.is_word for t in tokens[i:j]):
                 continue
-            seq = tokens[i:i + n]
-            if [t.word for t in seq] != words or not all(
-                    t.is_word for t in seq):
-                continue
-            # Match the token CORES: edge punctuation attached to a raw
-            # token ("code,") is not part of the phrase and must survive.
-            raw = host.text[seq[0].start:seq[-1].end]
-            lead = len(raw) - len(raw.lstrip(".,;:!?\"'“”«»()"))
-            trail = len(raw) - len(raw.rstrip(".,;:!?\"'“”«»()"))
-            span = Span(seq[0].start + lead, seq[-1].end - trail)
-            text = host.text[span.start:span.end]
-            if text == target.canonical:
-                # Already canonical: no edit — but CLAIM the span so a
-                # shorter overlapping alias cannot rewrite inside it on
-                # a later pass ("Status Page" must not drift to "Status
-                # Pager"). Candidates iterate longest-first per position.
-                claimed.append(span)
-                continue
-            if any(span.overlaps(c) for c in claimed):
-                continue
-            yield Proposal(
-                layer=5, cls="vocabulary", op="scoped_alias",
-                span=span, input_text=text,
-                output_text=target.canonical, value=target.canonical,
-                unit="term", join=JOIN_WORD,
-                reason=target.verification, rule_id=target.entry_id)
+            span = host.core_span(i, j)
+            if host.text[span.start:span.end] == target.canonical:
+                claims.append((i, j, span))
+            else:
+                proposals.append((i, j, span, target))
+    # Per token: the best claim covering it, by the engine's own order
+    # (longer span first, then earlier start).
+    best: list = [None] * n_tok
+    for i, j, span in claims:
+        key = (-(span.end - span.start), span.start)
+        for k in range(i, j):
+            if best[k] is None or key < best[k]:
+                best[k] = key
+    for i, j, span, target in proposals:
+        key = (-(span.end - span.start), span.start)
+        if any(best[k] is not None and best[k] < key
+               for k in range(i, j)):
+            continue
+        yield Proposal(
+            layer=5, cls="vocabulary", op="scoped_alias",
+            span=span, input_text=host.text[span.start:span.end],
+            output_text=target.canonical, value=target.canonical,
+            unit="term", join=JOIN_WORD,
+            reason=target.verification, rule_id=target.entry_id)
 
 
 ALL_SYNTAX_GRAMMARS = (

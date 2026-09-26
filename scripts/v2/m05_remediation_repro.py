@@ -760,8 +760,17 @@ def a09():
     from localflow.v2.developer import skills as sk
     ents = [E("E-SK", "code-review", ["code review"], kind="skill")]
     snap = V.VocabularySnapshot(ents)
-    reg = sk.SkillRegistry((), dict(snap.skills))
-    pol = NormalizationPolicy(registered_skills=dict(reg.policy_skills))
+    snap_prov = getattr(snap, "skill_provenance", None)
+    reg = sk.SkillRegistry((), dict(snap.skills),
+                           **({"dictionary_provenance": dict(snap_prov)}
+                              if snap_prov is not None else {}))
+    # First-pass aware: when the code root exposes the provenance channel
+    # (registry -> policy), the probe uses it exactly as the app does;
+    # the audited base has neither attribute nor parameter.
+    prov = getattr(reg, "policy_provenance", None)
+    pol = NormalizationPolicy(registered_skills=dict(reg.policy_skills),
+                              **({"skill_provenance": dict(prov)}
+                                 if prov is not None else {}))
     res = normalize("slash code review", pol,
                     ContextSnapshot(vocabulary=snap))
     edits = [{"cls": e.cls, "output": e.output_text, "rule_id": e.rule_id,
@@ -784,9 +793,13 @@ def a09():
         finally:
             r.close()
     lost = any(e["cls"] == "skill" and not e["rule_id"] for e in edits)
+    app_lost = any(e["cls"] == "skill" and not e["rule_id"]
+                   for e in app.get("edits", []))
     return {"text": res.text, "edits": edits, "app_path": app,
             "registry": reg.to_json(), "skill_rule_id_missing": lost,
-            "reproduced": lost}
+            "app_skill_rule_id_missing": app_lost,
+            "provenance_channel": prov is not None,
+            "reproduced": lost or app_lost}
 
 
 # ---------------------------------------------------------------------------
@@ -895,12 +908,21 @@ def a13():
         ctl.phrase.v = "ask clod now"
         ctl.runSandbox_(None)
         panel_text = ctl.sandbox.v
+        # Ask the panel for the entry's scope through its own controls
+        # (a panel that ignores them keeps testing global only).
+        ctl.scope_popup.v = "workspace"
+        ctl.scope_value.v = "X"
+        ctl.runSandbox_(None)
+        chosen_text = ctl.sandbox.v
         scoped = V.sandbox_phrase("ask clod now",
                                   vs.snapshot(V.ScopeContext(workspace="X")))
         out["panel_scope"] = {
             "panel_output_line": panel_text.splitlines()[0]
             if panel_text else None,
             "panel_mentions_scope": "workspace" in (panel_text or ""),
+            "panel_labels_tested_scope": "scope:" in (panel_text or ""),
+            "panel_chosen_scope_output_line":
+                chosen_text.splitlines()[0] if chosen_text else None,
             "scoped_sandbox_output": scoped["output"]}
         st.close()
     # Suggestions inside protected regions vs post-approval engine.
@@ -936,9 +958,11 @@ def a13():
     misleading_suggestion = any(v["suggested"] and
                                 not v["after_approval_vocab_edits"]
                                 for v in sugg.values())
-    panel_global = out["panel_scope"]["panel_output_line"] != \
-        "→ ask WorkspaceName now" and not out["panel_scope"][
-            "panel_mentions_scope"]
+    ps = out["panel_scope"]
+    panel_global = not (
+        (ps["panel_labels_tested_scope"] or ps["panel_mentions_scope"])
+        and ps["panel_chosen_scope_output_line"]
+        == "→ ask WorkspaceName now")
     out.update({"panel_tests_global_only_unlabeled": panel_global,
                 "suggestion_claims_protected_rewrite": misleading_suggestion,
                 "preview_reports_inactive_mask": misleading_preview,
@@ -1177,8 +1201,24 @@ def a17():
                     "ok_lines": sum(1 for ln in p.stdout.splitlines()
                                     if ln.startswith("ok"))}
     green = all(v["exit"] == 0 for v in out.values())
+    pinned = {}
+    for rel in ("tests/v2/vocabulary/test_m05_remediation.py",
+                "tests/v2/vocabulary/test_m05_remediation_app.py"):
+        if not (CODE / rel).exists():
+            pinned[rel] = "absent"
+            continue
+        p = subprocess.run([sys.executable,
+                            str(CODE / "tests/v2/lifecycle/run_with_shims.py"),
+                            str(CODE / rel)], cwd=str(CODE),
+                           capture_output=True, text=True, timeout=1800)
+        pinned[rel] = {"exit": p.returncode,
+                       "ok_lines": sum(1 for ln in p.stdout.splitlines()
+                                       if ln.startswith("ok"))}
+    gap_closed = all(isinstance(v, dict) and v["exit"] == 0
+                     for v in pinned.values())
     return {"inherited_suites": out, "all_green": green,
-            "reproduced": green,
+            "regression_suites": pinned, "gap_closed": gap_closed,
+            "reproduced": green and not gap_closed,
             "note": "test gap: the inherited portable suites are green on"
                     " this code root; a01/a02/a03/a06/a07 show whether"
                     " defects coexist with that green (base) or not"}
@@ -1256,8 +1296,13 @@ def a18():
                     "orphan_alias_rows": orphans[0][0],
                     "store_revision_after": vs2.revision(),
                     "startup_seeding": seeded,
+                    "integrity_report": (
+                        vs2.integrity_report()
+                        if hasattr(vs2, "integrity_report") else None),
                     "vocabulary_integrity_signal": any(
-                        n.startswith("vocabulary.") for n, _ in events)}
+                        n.startswith("vocabulary.") for n, _ in events)
+                    or bool(hasattr(vs2, "integrity_report") and any(
+                        vs2.integrity_report().values()))}
             finally:
                 st2.close()
     silent_loss = out.get("drop_entries", {}).get("opened") and \
@@ -1265,7 +1310,7 @@ def a18():
         out["drop_entries"].get("orphan_alias_rows", 0) > 0
     return {"before": before, "store_revision_before": rev_before,
             "cohorts": out, "entries_table_loss_silent": bool(silent_loss),
-            "reproduced": True,
+            "reproduced": bool(silent_loss),
             "note": "test gap: characterization of repair over populated"
                     " M05 tables (the inherited test used an empty store)"}
 

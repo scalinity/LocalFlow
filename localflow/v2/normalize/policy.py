@@ -81,12 +81,13 @@ class NormalizationPolicy:
     """Immutable input to the engine (S10 architecture contract)."""
 
     __slots__ = ("locale", "profile", "tables", "_profile_table",
-                 "registered_skills", "identifiers", "policy_revision",
-                 "_content_sha256", "_sealed")
+                 "registered_skills", "identifiers", "skill_provenance",
+                 "policy_revision", "_content_sha256", "_sealed")
 
     def __init__(self, locale: str = "en-US", profile: str = "technical",
                  registered_skills: Optional[dict[str, str]] = None,
-                 identifiers: Optional[dict[str, str]] = None):
+                 identifiers: Optional[dict[str, str]] = None,
+                 skill_provenance: Optional[dict] = None):
         # A private, deeply frozen copy of the policy file: nothing a
         # caller (or a later policy) does to its own dictionaries can
         # reach this snapshot.
@@ -108,6 +109,13 @@ class NormalizationPolicy:
         # silently change engine behavior under a stale policy_revision.
         self.registered_skills = freeze(dict(registered_skills or {}))
         self.identifiers = freeze(dict(identifiers or {}))
+        # M05-AUDIT-09: alias → (approving dictionary entry id,
+        # verification label) for DICTIONARY skills only — manifest
+        # skills carry none. Only keys that are registered survive.
+        self.skill_provenance = freeze({
+            k: (str(v[0]), str(v[1]))
+            for k, v in dict(skill_provenance or {}).items()
+            if k in self.registered_skills})
         content = json.dumps(thaw(data), sort_keys=True, ensure_ascii=False)
         self._content_sha256 = hashlib.sha256(
             content.encode("utf-8")).hexdigest()
@@ -138,13 +146,19 @@ class NormalizationPolicy:
         # not its revision string: an edited word table without a bumped
         # revision must never share a policy_revision with the old
         # tables.
-        payload = json.dumps({
+        content = {
             "content_sha256": self._content_sha256,
             "locale": self.locale,
             "profile": self.profile,
             "skills": dict(self.registered_skills),
             "identifiers": dict(self.identifiers),
-        }, sort_keys=True)
+        }
+        if self.skill_provenance:
+            # Hashed only when present, so a policy without dictionary
+            # skills keeps its historical revision.
+            content["skill_provenance"] = {
+                k: list(v) for k, v in self.skill_provenance.items()}
+        payload = json.dumps(content, sort_keys=True)
         digest = hashlib.sha256(payload.encode()).hexdigest()[:12]
         return f"m04:{digest}"
 
@@ -154,6 +168,9 @@ class NormalizationPolicy:
             "profile": self.profile,
             "registered_skills": dict(self.registered_skills),
             "identifiers": dict(self.identifiers),
+            **({"skill_provenance": {k: list(v) for k, v
+                                     in self.skill_provenance.items()}}
+               if self.skill_provenance else {}),
             "policy_revision": self.policy_revision,
         }
 

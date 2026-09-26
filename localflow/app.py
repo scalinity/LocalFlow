@@ -354,11 +354,38 @@ class AppDelegate(NSObject):
         self._hint_selector = None
         self._dict_panel = None
         try:
-            self._vocab = v2.vocabulary_store.VocabularyStore(self.store)
-            self._vocab.seed_from_legacy_artifacts()
-            self._vocab.seed_suggested_coding_terms()
-            self._hint_selector = v2.vocabulary.RelevantVocabularySelector(
-                max_terms=int(cfg.get("hint_term_limit", 100)))
+            vstore = v2.vocabulary_store.VocabularyStore(self.store)
+            # M05-AUDIT-18: a torn dictionary (entries that vanished
+            # without ever being deleted — the entries table was lost
+            # and repaired empty) must not boot as a healthy empty one:
+            # vocabulary stays OFF, nothing is seeded over the surviving
+            # rows, and the counts are reported (content-free).
+            report = vstore.integrity_report()
+            if report["vanished_entries"]:
+                self.v2log.emit(
+                    "vocabulary.integrity_failed", level="ERROR",
+                    reason_code="entries_missing",
+                    detail=f"vanished={report['vanished_entries']}"
+                           f" orphan_aliases={report['orphan_alias_rows']}",
+                    outcome="vocabulary_off")
+                vstore = None
+            else:
+                if report["entries_missing_aliases"] \
+                        or report["orphan_alias_rows"]:
+                    self.v2log.emit(
+                        "vocabulary.integrity_warning", level="WARNING",
+                        reason_code="aliases_missing",
+                        detail="entries_missing_aliases="
+                               f"{report['entries_missing_aliases']}"
+                               " orphan_aliases="
+                               f"{report['orphan_alias_rows']}",
+                        outcome="vocabulary_on_partial")
+                vstore.seed_from_legacy_artifacts()
+                vstore.seed_suggested_coding_terms()
+                self._hint_selector = \
+                    v2.vocabulary.RelevantVocabularySelector(
+                        max_terms=int(cfg.get("hint_term_limit", 100)))
+            self._vocab = vstore
         except Exception as e:
             self._vocab = None
             self.v2log.emit("vocabulary.store_unavailable", level="WARNING",
@@ -566,10 +593,19 @@ class AppDelegate(NSObject):
         profile changed; in-flight jobs hold the objects they captured,
         so a rule edit mid-flight changes only future jobs and the job
         keeps its vocabulary revision (AC03). The hint set is selected
-        fresh per job from the cached snapshot — frozen before
-        decoding, never rebuilt from the answer (S30.1)."""
+        fresh per job from the job's snapshot — frozen before decoding,
+        never rebuilt from the answer (S30.1).
+
+        Failure paths never grant another job's scope (M05-AUDIT-02):
+        the cached state is reused only on a proven key match; when the
+        store cannot be read, this job's OWN scope is rebuilt from the
+        last good frozen entry set (never a live re-read), else the job
+        runs without dictionary vocabulary — with a precise outcome.
+        The optional hint set is selected separately: its failure never
+        undoes a valid vocabulary state."""
         policy, context = self._norm_policy, self._norm_context
         hint_set = None
+        snapshot = None
         scope_key = None if scope_ctx is None else (
             scope_ctx.app_bundle, scope_ctx.site_origin,
             scope_ctx.workspace, scope_ctx.profile)
@@ -585,46 +621,45 @@ class AppDelegate(NSObject):
                 rev = self._vocab.revision()
                 key = (rev, scope_key, m10_skills_rev, norm_profile)
                 if key != self._vocab_state_key:
-                    snapshot = self._vocab.snapshot(scope_ctx)
-                    # M10: the developer registry merges manifest
-                    # skills with dictionary skills (same layer 3; a
-                    # collision masks the alias — never insertion
-                    # order). One merged map feeds the policy.
-                    skills = dict(snapshot.skills)
-                    if m10 is not None:
-                        skills = dict(
-                            self._m10_registry(m10, snapshot).policy_skills)
+                    fresh = self._vocab.snapshot(scope_ctx)
+                    skills, prov = self._policy_skill_inputs(m10, fresh)
                     self._norm_policy = v2_normalize.NormalizationPolicy(
                         locale=policy.locale, profile=norm_profile,
-                        registered_skills=skills)
+                        registered_skills=skills, skill_provenance=prov)
                     self._norm_context = v2_normalize.ContextSnapshot(
-                        vocabulary=snapshot, source="m05_vocabulary")
-                    self._vocab_snapshot = snapshot
+                        vocabulary=fresh, source="m05_vocabulary")
+                    self._vocab_snapshot = fresh
                     self._vocab_state_key = key
                 elif m10 is not None and self._vocab_snapshot is not None:
                     # Cache hit: this job still needs ITS registry under
                     # this scope's snapshot (per-job object).
                     self._m10_registry(m10, self._vocab_snapshot)
                 policy, context = self._norm_policy, self._norm_context
-                if self._hint_selector is not None \
-                        and self._vocab_snapshot is not None:
-                    hint_set = self._hint_selector.select(
-                        self._vocab_snapshot)
+                snapshot = self._vocab_snapshot
             except Exception as e:
-                # A vocabulary failure must never disable normalization:
-                # keep the last good state and say so.
+                policy, context, snapshot, outcome = \
+                    self._vocab_failure_state(scope_ctx, m10, norm_profile,
+                                              policy)
                 self.v2log.emit("vocabulary.refresh_failed", level="WARNING",
                                 reason_code=type(e).__name__,
-                                outcome="last_good_state")
+                                outcome=outcome)
+            if snapshot is not None and self._hint_selector is not None:
+                try:
+                    hint_set = self._hint_selector.select(snapshot)
+                except Exception as e:
+                    self.v2log.emit("vocabulary.refresh_failed",
+                                    level="WARNING",
+                                    reason_code=type(e).__name__,
+                                    outcome="hint_set_skipped")
         elif m10 is not None and m10_skills_rev and policy is not None \
                 and norm_profile != "off":
             # Vocabulary store failed but manifest skills exist: the
             # registry still feeds layer 3 (degraded, per-job rebuild).
             try:
+                skills, prov = self._policy_skill_inputs(m10, None)
                 self._norm_policy = v2_normalize.NormalizationPolicy(
                     locale=policy.locale, profile=norm_profile,
-                    registered_skills=dict(
-                        self._m10_registry(m10, None).policy_skills))
+                    registered_skills=skills, skill_provenance=prov)
                 self._norm_context = v2_normalize.ContextSnapshot(
                     source="m10_skills_only")
                 policy, context = self._norm_policy, self._norm_context
@@ -637,6 +672,52 @@ class AppDelegate(NSObject):
         # the same registry when the cached object disagrees.
         policy = self._policy_with_profile(policy, norm_profile)
         return policy, context, hint_set
+
+    @objc.python_method
+    def _policy_skill_inputs(self, m10, snapshot):
+        """(registered skills, dictionary provenance) for one job: the
+        M10 registry merge when the job froze manifest records, else the
+        snapshot's own dictionary skills (M05-AUDIT-09 keeps the
+        approving entry of every dictionary skill)."""
+        if m10 is not None:
+            reg = self._m10_registry(m10, snapshot)
+            return dict(reg.policy_skills), dict(reg.policy_provenance)
+        if snapshot is not None:
+            return dict(snapshot.skills), dict(snapshot.skill_provenance)
+        return {}, {}
+
+    @objc.python_method
+    def _vocab_failure_state(self, scope_ctx, m10, norm_profile,
+                             cached_policy):
+        """(policy, context, snapshot, outcome) for a job whose store read
+        failed. The cached objects belong to whatever key built them —
+        possibly another destination — so they are never returned as
+        this job's state. THIS job's scope is rebuilt from the last good
+        frozen entry set (the same rescoping M06 finalize performs);
+        with no entry set, the job runs without dictionary vocabulary."""
+        base = getattr(self, "_norm_base_policy", None) or cached_policy
+        last = self._vocab_snapshot
+        if last is not None:
+            try:
+                snap = v2.vocabulary.VocabularySnapshot(last.entries,
+                                                        scope_ctx)
+                skills, prov = self._policy_skill_inputs(m10, snap)
+                pol = v2_normalize.NormalizationPolicy(
+                    locale=base.locale, profile=norm_profile,
+                    registered_skills=skills, skill_provenance=prov)
+                ctx = v2_normalize.ContextSnapshot(
+                    vocabulary=snap, source="m05_last_good_entries")
+                return pol, ctx, snap, "rescoped_last_good_entries"
+            except Exception:
+                pass
+        skills, prov = self._policy_skill_inputs(m10, None) \
+            if m10 is not None else ({}, {})
+        pol = v2_normalize.NormalizationPolicy(
+            locale=base.locale, profile=norm_profile,
+            registered_skills=skills, skill_provenance=prov)
+        ctx = v2_normalize.ContextSnapshot(
+            source="m05_vocabulary_unavailable")
+        return pol, ctx, None, "vocabulary_off"
 
     @objc.python_method
     def _configured_norm_profile(self):
@@ -659,7 +740,8 @@ class AppDelegate(NSObject):
             return v2_normalize.NormalizationPolicy(
                 locale=policy.locale, profile=profile,
                 registered_skills=dict(policy.registered_skills),
-                identifiers=dict(policy.identifiers))
+                identifiers=dict(policy.identifiers),
+                skill_provenance=dict(policy.skill_provenance))
         except Exception as e:
             self.v2log.emit("profiles.refresh_failed", level="WARNING",
                             reason_code=type(e).__name__,
@@ -676,9 +758,18 @@ class AppDelegate(NSObject):
         workspace-scoped skills, identifiers or destination context
         (review R15). A vocabulary failure degrades to the configured
         policy with no context."""
+        return self._unscoped_norm_state("retry_unscoped_default")
+
+    @objc.python_method
+    def _unscoped_norm_state(self, source):
+        """The unscoped default state (``_retry_norm_state``) under the
+        given evidence label — also the fallback for a LIVE job whose
+        hotkey-down capture failed (``current_default``): such a job
+        belongs to no captured destination, so it never inherits the
+        previous job's cached scoped vocabulary (M05-AUDIT-02)."""
         base = getattr(self, "_norm_base_policy", None)
         if base is None or base.profile == "off":
-            return base, None, "retry_unscoped_default"
+            return base, None, source
         snap = None
         if self._vocab is not None:
             try:
@@ -689,18 +780,21 @@ class AppDelegate(NSObject):
                                 reason_code=type(e).__name__,
                                 outcome="retry_without_vocabulary")
         skills = dict(snap.skills) if snap is not None else {}
+        prov = dict(snap.skill_provenance) if snap is not None else {}
         try:
             records = self._m10_skill_records((), None)
-            skills = dict(v2_skills.SkillRegistry(
-                records, skills or None).policy_skills)
+            reg = v2_skills.SkillRegistry(
+                records, skills or None, dictionary_provenance=prov)
+            skills, prov = dict(reg.policy_skills), \
+                dict(reg.policy_provenance)
         except Exception:
             pass
         policy = v2_normalize.NormalizationPolicy(
             locale=base.locale, profile=base.profile,
-            registered_skills=skills)
-        context = v2_normalize.ContextSnapshot(
-            vocabulary=snap, source="retry_unscoped_default")
-        return policy, context, "retry_unscoped_default"
+            registered_skills=skills, skill_provenance=prov)
+        context = v2_normalize.ContextSnapshot(vocabulary=snap,
+                                               source=source)
+        return policy, context, source
 
     @objc.python_method
     def _default_job_policy(self):
@@ -745,6 +839,8 @@ class AppDelegate(NSObject):
             m10["skills"] = v2_skills.SkillRegistry(
                 m10["skill_records"],
                 dict(vocab_snapshot.skills)
+                if vocab_snapshot is not None else None,
+                dictionary_provenance=dict(vocab_snapshot.skill_provenance)
                 if vocab_snapshot is not None else None)
         return m10["skills"]
 
@@ -870,19 +966,26 @@ class AppDelegate(NSObject):
         profile = (m10 or {}).get("norm_profile") or (
             self._configured_norm_profile() if m10 is not None
             else None) or base_policy.profile
-        skills = dict(vocab_snapshot.skills) if vocab_snapshot is not None \
-            else dict(base_policy.registered_skills or {})
+        if vocab_snapshot is not None:
+            skills = dict(vocab_snapshot.skills)
+            prov = dict(vocab_snapshot.skill_provenance)
+        else:
+            skills = dict(base_policy.registered_skills or {})
+            prov = dict(base_policy.skill_provenance or {})
         if m10 is not None:
             registry = v2_skills.SkillRegistry(
                 m10["skill_records"],
                 dict(vocab_snapshot.skills)
                 if vocab_snapshot is not None else None,
-                stale_workspace=stale_workspace)
+                stale_workspace=stale_workspace,
+                dictionary_provenance=dict(vocab_snapshot.skill_provenance)
+                if vocab_snapshot is not None else None)
             m10["skills"] = registry
             skills = dict(registry.policy_skills)
+            prov = dict(registry.policy_provenance)
         return v2_normalize.NormalizationPolicy(
             locale=base_policy.locale, profile=profile,
-            registered_skills=skills)
+            registered_skills=skills, skill_provenance=prov)
 
     @objc.python_method
     def _m10_finalize_upgrade(self, job):
@@ -912,7 +1015,10 @@ class AppDelegate(NSObject):
                      and self._last_ws_skills)
             records = self._m10_skill_records(ws_dirs, workspace)
             rev = v2_skills.records_revision(records)
-            base = job.get("norm_policy") or self._norm_policy
+            # The JOB's own policy only: a job without a stored trio runs
+            # on the unscoped default, never on a policy rebuilt from the
+            # app's cached state (another job's; M05-AUDIT-02).
+            base = job.get("norm_policy")
             job_vocab = getattr(job.get("norm_context"), "vocabulary",
                                 None)
             if rev != m10["skill_records_rev"]:
@@ -963,8 +1069,10 @@ class AppDelegate(NSObject):
                 known, document_name=doc_name)
             self._last_file_resolver = m10["file_resolver"]
         # Attach the frozen registries to the job's engine context
-        # (layer-3 snippet intent + file-tag resolution).
-        ctx = job.get("norm_context") or self._norm_context
+        # (layer-3 snippet intent + file-tag resolution) — the JOB's own
+        # context only, never the app's cached one (another job's scope;
+        # M05-AUDIT-02).
+        ctx = job.get("norm_context")
         if ctx is not None:
             try:
                 job["norm_context"] = dataclasses.replace(
@@ -1794,9 +1902,10 @@ class AppDelegate(NSObject):
         # One snapshot, three consumers (contracts/context.md): the M04
         # engine context gains the destination/path/identifier fields.
         job["norm_context"] = snap.to_engine_context(vocab_snapshot)
-        if job.get("hint_set") is None \
-                or self._hint_selector is None:
-            return
+        # The scope upgrade is independent of the OPTIONAL hint set: a
+        # job whose hotkey-down selection failed (or with no selector)
+        # still rebuilds its vocabulary for the finalized scope
+        # (M05-AUDIT-02).
         m10 = job.get("m10")
         full = snap.to_scope_context()
         if m10 is not None and m10["wp"].profile_name is not None:
@@ -1810,7 +1919,7 @@ class AppDelegate(NSObject):
             return  # origin/workspace never resolved: scope unchanged
         upgraded = v2.vocabulary.VocabularySnapshot(
             vocab_snapshot.entries, full)
-        base_policy = job.get("norm_policy") or self._norm_policy
+        base_policy = job.get("norm_policy")
         if base_policy is None:
             return
         # Build every upgraded value first: an exception anywhere must
@@ -1822,7 +1931,6 @@ class AppDelegate(NSObject):
             upgraded_policy = self._finalized_policy(
                 base_policy, m10, upgraded)
             upgraded_context = snap.to_engine_context(upgraded)
-            upgraded_set = self._hint_selector.select(upgraded)
         except Exception as e:
             self.v2log.emit("vocabulary.refresh_failed", level="WARNING",
                             job_id=job.get("job_id"),
@@ -1831,8 +1939,19 @@ class AppDelegate(NSObject):
             return
         job["norm_policy"] = upgraded_policy
         job["norm_context"] = upgraded_context
-        job["hint_set"] = upgraded_set
         job["scope_upgraded"] = True
+        # The hint set follows the upgraded scope; if selection fails the
+        # job has NO hint set (the hotkey-down set described a narrower
+        # scope) — the vocabulary upgrade above stands either way.
+        job["hint_set"] = None
+        if self._hint_selector is not None:
+            try:
+                job["hint_set"] = self._hint_selector.select(upgraded)
+            except Exception as e:
+                self.v2log.emit("vocabulary.refresh_failed",
+                                level="WARNING", job_id=job.get("job_id"),
+                                reason_code=type(e).__name__,
+                                outcome="hint_set_skipped")
 
     @objc.python_method
     def _pipeline_info(self):
@@ -2746,9 +2865,18 @@ class AppDelegate(NSObject):
             scope_ctx = None
             if identity is not None:
                 from .v2.vocabulary import ScopeContext
-                scope_ctx = ScopeContext(
-                    app_bundle=identity.app_bundle,
-                    profile=m10["wp"].profile_name)
+                try:
+                    scope_ctx = ScopeContext(
+                        app_bundle=identity.app_bundle,
+                        profile=m10["wp"].profile_name)
+                except TypeError:
+                    # An identity that is not a usable string degrades
+                    # like a failed capture: the unscoped default
+                    # (global entries), never vocabulary-off.
+                    self.v2log.emit("vocabulary.scope_unavailable",
+                                    level="WARNING", job_id=job_id,
+                                    reason_code="invalid_identity",
+                                    outcome="unscoped_default")
             self._job.update(dict(
                 zip(("norm_policy", "norm_context", "hint_set"),
                     self._vocab_job_state(scope_ctx, m10=m10))))
@@ -3306,9 +3434,21 @@ class AppDelegate(NSObject):
                 norm_source = job.get("norm_source") or (
                     "job_snapshot" if job.get("norm_policy") is not None
                     else "current_default")
-                norm_policy = job.get("norm_policy") \
-                    or self._default_job_policy()
-                norm_context = job.get("norm_context") or self._norm_context
+                if job.get("norm_policy") is not None:
+                    norm_policy = job["norm_policy"]
+                    norm_context = job.get("norm_context")
+                else:
+                    # A live job whose hotkey-down capture failed belongs
+                    # to no captured destination: it runs on the unscoped
+                    # default (configured profile, global dictionary and
+                    # manifest skills), never on the app's cached state —
+                    # that is another job's scope (M05-AUDIT-02).
+                    try:
+                        norm_policy, norm_context, _src = \
+                            self._unscoped_norm_state(norm_source)
+                    except Exception:
+                        norm_policy, norm_context = \
+                            self._default_job_policy(), None
                 norm_text = raw
                 norm_result = None
                 if raw and not mode_is_raw \
@@ -3352,6 +3492,13 @@ class AppDelegate(NSObject):
                                    if e.cls == "vocabulary" and e.rule_id] \
                         if norm_result is not None else []
                     job["vocab_hits"] = len(vocab_rules)  # M13 usage fact
+                    # An applied DICTIONARY skill is an applied dictionary
+                    # rule too (its edit carries the approving entry id —
+                    # M05-AUDIT-09); manifest skills carry none.
+                    vocab_rules = vocab_rules + [
+                        e.rule_id for e in norm_result.edits
+                        if e.cls == "skill" and e.rule_id] \
+                        if norm_result is not None else vocab_rules
                     if vocab_rules and self._vocab is not None:
                         try:
                             self._vocab.record_hits(vocab_rules)

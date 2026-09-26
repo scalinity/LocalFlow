@@ -83,7 +83,7 @@ def test_01_alias_never_spans_a_delimiter():
             [("E-CC", "Claude Code")], edits
         start = text.index("clod")
         end = text.index("code") + len("code")
-        assert edits[0].input_span.as_pair() == (start, end), \
+        assert tuple(edits[0].input_span.as_pair()) == (start, end), \
             "the edit covers the word cores only"
     # Matched pair: the shorter approved rule still owns its own clause.
     both = [ent("E-CL", "Claude", ["clod"]),
@@ -737,6 +737,87 @@ def test_13_preview_distinguishes_active_from_hypothetical():
           " skill never reported as a mask")
 
 
+def test_13_every_preview_kind_matches_committed_behavior():
+    """Each of the four preview kinds, active and hypothetical, against
+    what the committed dictionary actually does."""
+    ws = V.ScopeContext(workspace="W")
+    # scope_precedence: active → the narrower entry wins where both apply.
+    cand = ent("E-N", "Klaude", ["clod"], scope_kind="workspace",
+               scope_value="W")
+    wide = ent("E-G", "Claude", ["clod"])
+    prev = V.preview_entry_conflicts(cand, [wide])
+    assert [(c["kind"], c["active"]) for c in prev] == \
+        [("scope_precedence", True)], prev
+    assert "workspace-scoped entry wins" in prev[0]["detail"]
+    assert run("ask clod", [cand, wide], ws).text == "ask Klaude"
+    assert run("ask clod", [cand, wide]).text == "ask Claude"
+    prev = V.preview_entry_conflicts(cand, [ent("E-G", "Claude", ["clod"],
+                                                approved=False)])
+    assert [(c["kind"], c["active"]) for c in prev] == \
+        [("scope_precedence", False)], prev
+    # duplicate_canonical: both entries keep applying their own aliases.
+    a = ent("E-1", "Claude", ["clod"])
+    b = ent("E-2", "Claude", ["klod"], scope_kind="workspace",
+            scope_value="W")
+    prev = V.preview_entry_conflicts(b, [a])
+    assert [(c["kind"], c["active"]) for c in prev] == \
+        [("duplicate_canonical", True)], prev
+    assert run("clod and klod", [a, b], ws).text == "Claude and Claude"
+    # skill_wins: the skill owns its slash span, the term the bare word.
+    term = ent("E-T", "Review Doc", ["code review"])
+    skill = ent("E-SK", "code-review", ["code review"], kind="skill")
+    prev = V.preview_entry_conflicts(term, [skill])
+    assert [(c["kind"], c["active"]) for c in prev] == \
+        [("skill_wins", True)], prev
+    snap = V.VocabularySnapshot([term, skill])
+    pol = NormalizationPolicy(registered_skills=dict(snap.skills),
+                              skill_provenance=dict(snap.skill_provenance))
+    assert normalize("slash code review", pol,
+                     ContextSnapshot(vocabulary=snap)).text == "/code-review"
+    assert normalize("a code review today", pol,
+                     ContextSnapshot(vocabulary=snap)).text == \
+        "a Review Doc today"
+    prev = V.preview_entry_conflicts(term, [ent(
+        "E-SK", "code-review", ["code review"], kind="skill",
+        enabled=False)])
+    assert [(c["kind"], c["active"]) for c in prev] == \
+        [("skill_wins", False)], prev
+    print("ok  13 preview kinds (mask, precedence, duplicate canonical,"
+          " skill) each match committed behavior, active and hypothetical")
+
+
+def test_17_hint_budget_matrix():
+    sel = V.RelevantVocabularySelector(100)
+    # Many pins starve an unpinned narrow entry at the budget (D4: rank
+    # order is contractual — pin before scope — and stays as documented).
+    pins = [ent(f"E-P{i:03d}", f"Pin{i:03d}", pinned=True)
+            for i in range(120)]
+    narrow = ent("E-W", "Narrow", scope_kind="workspace", scope_value="W")
+    hs = sel.select(V.VocabularySnapshot(pins + [narrow],
+                                         V.ScopeContext(workspace="W")))
+    assert [t.entry_id for t in hs.terms] == \
+        [f"E-P{i:03d}" for i in range(100)]
+    assert [o["entry_id"] for o in hs.omitted] == \
+        [f"E-P{i:03d}" for i in range(100, 120)] + ["E-W"]
+    # Inactive entries are never offered; duplicates take separate slots;
+    # a masked alias's canonicals are still offered (D3), none rewrite.
+    ents = [ent("E-D", "Disabled", enabled=False),
+            ent("E-O", "OtherScope", scope_kind="workspace",
+                scope_value="X"),
+            ent("E-S", "Suggested", approved=False),
+            ent("E-C1", "Claude"), ent("E-C2", "Claude",
+                                        scope_kind="workspace",
+                                        scope_value="W"),
+            ent("E-M1", "Cloud", ["clod"]), ent("E-M2", "Clown", ["clod"])]
+    snap = V.VocabularySnapshot(ents, V.ScopeContext(workspace="W"))
+    ids = [t.entry_id for t in sel.select(snap).terms]
+    assert "E-D" not in ids and "E-O" not in ids, ids
+    assert {"E-S", "E-C1", "E-C2", "E-M1", "E-M2"} <= set(ids), ids
+    assert run("ask clod", (), snapshot=snap).text == "ask clod"
+    print("ok  17 hint budget: pin starvation recorded, inactive excluded,"
+          " duplicates and masked canonicals offered (never rewriting)")
+
+
 # ---------------------------------------------------------------------------
 # 14 / 15 — evidence
 # ---------------------------------------------------------------------------
@@ -868,6 +949,119 @@ def test_15_applied_rule_state_reconstructable():
 
 
 # ---------------------------------------------------------------------------
+# 16 — the benchmark gates actual vocabulary work before timing
+# ---------------------------------------------------------------------------
+
+def _bench(patch=None):
+    """Run scripts/v2/benchmark_m05.py main() in-process on a small
+    dictionary with a scripted clock (timing trivially met, so the exit
+    code can only reflect WORK validity), optionally with a production
+    mutation applied; everything patched is restored."""
+    import contextlib
+    import importlib.util
+    import io
+    import time as time_mod
+    spec = importlib.util.spec_from_file_location(
+        "bench_m05", ROOT / "scripts" / "v2" / "benchmark_m05.py")
+    bench = importlib.util.module_from_spec(spec)
+    saved_argv = sys.argv
+    sys.argv = ["benchmark_m05.py"]
+    try:
+        spec.loader.exec_module(bench)
+    finally:
+        sys.argv = saved_argv
+    bench.ARGS.entries, bench.ARGS.reps = 800, 5
+    clock = [0.0]
+
+    def mono():
+        clock[0] += 1e-6
+        return clock[0]
+    real_mono = time_mod.monotonic
+    undo = patch() if patch else (lambda: None)
+    time_mod.monotonic = mono
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            return bench.main()
+    finally:
+        time_mod.monotonic = real_mono
+        undo()
+
+
+def test_16_benchmark_rejects_invalid_work():
+    from localflow.v2.normalize import syntax as syn
+
+    def identity_matcher():
+        real = syn.grammar_vocabulary
+        syn.grammar_vocabulary = lambda host: iter(())
+        return lambda: setattr(syn, "grammar_vocabulary", real)
+
+    def skip_fourth():
+        real = syn.grammar_vocabulary
+
+        def g(host):
+            for i, p in enumerate(real(host)):
+                if i % 4 != 3:
+                    yield p
+        syn.grammar_vocabulary = g
+        return lambda: setattr(syn, "grammar_vocabulary", real)
+
+    def wrong_scope_selector():
+        real = V.RelevantVocabularySelector.select
+
+        def sel(self, snap, scope_ctx=None, **kw):
+            return real(self, V.VocabularySnapshot(snap.entries, None),
+                        None, **kw)
+        V.RelevantVocabularySelector.select = sel
+        return lambda: setattr(V.RelevantVocabularySelector, "select",
+                               real)
+
+    def drop_rule_ids():
+        real = syn.grammar_vocabulary
+
+        def g(host):
+            for p in real(host):
+                yield dataclasses.replace(p, rule_id=None)
+        syn.grammar_vocabulary = g
+        return lambda: setattr(syn, "grammar_vocabulary", real)
+    assert _bench() == 0, "the unmodified tree must be work-valid"
+    for name, mut in (("identity_matcher", identity_matcher),
+                      ("skip_every_fourth_edit", skip_fourth),
+                      ("wrong_scope_selector", wrong_scope_selector),
+                      ("drop_rule_ids", drop_rule_ids)):
+        assert _bench(mut) == 2, f"{name} earned a non-invalid verdict"
+    print("ok  16 benchmark: identity matcher, skipped edits, wrong-scope"
+          " selection and dropped rule ids all exit 2 (work_invalid)")
+
+
+def test_15_applied_rule_manifest_is_deleted_with_the_job():
+    from localflow.v2 import capabilities  # noqa: F401
+    with tempfile.TemporaryDirectory() as td:
+        st, col, events, ctx, job = _collector(td)
+        snap = V.VocabularySnapshot([ent("E-CL", "Claude", ["clod"])])
+        col.on_asr_result(ctx, "ask clod", model_id="m",
+                          model_revision=None, stage_duration_ms=0.0)
+        pol = NormalizationPolicy()
+        cctx = ContextSnapshot(vocabulary=snap)
+        res = normalize("ask clod", pol, cctx)
+        col.on_normalization_result(ctx, res, source_text="ask clod",
+                                    policy=pol, context=cctx)
+        col.on_cleanup_result(ctx, res.text)
+        env = st.latest_revision(col.finalize(ctx))
+        aid = env["normalization"]["vocabulary"]["applied_rules_artifact"]
+        assert st.artifact(aid)["role"] == "vocabulary_applied_rules"
+        st.delete_everywhere("job", job)
+        st.sync()
+        con = sqlite3.connect(st.db_path)
+        live = con.execute("SELECT count(*) FROM artifacts WHERE job_id=?"
+                           " AND purged=0", (job,)).fetchone()[0]
+        con.close()
+        st.close()
+    assert live == 0, "delete-everywhere must reach the rule manifest"
+    print("ok  15 the applied-rule manifest is job-keyed: delete-everywhere"
+          " removes it with the job")
+
+
+# ---------------------------------------------------------------------------
 # 18 — populated torn tables are never a silent healthy dictionary
 # ---------------------------------------------------------------------------
 
@@ -995,6 +1189,35 @@ def test_17_selector_limit_is_strict():
     assert V.RelevantVocabularySelector(1).max_terms == 1
     print("ok  17 selector: malformed limits refused, documented default"
           " and positive limits kept")
+
+
+def test_02c_scope_context_rejects_non_string_identity():
+    # Found during first-pass validation: a destination identity whose
+    # bundle is not a string made the snapshot's revision hash raise,
+    # and the job lost EVERY entry (global ones included).
+    class Opaque:
+        def __bool__(self):
+            return False
+    for field in ("app_bundle", "site_origin", "workspace", "profile"):
+        raises(lambda: V.ScopeContext(**{field: Opaque()}), TypeError)
+        raises(lambda: V.ScopeContext(**{field: 7}), TypeError)
+
+    class Bridged(str):  # PyObjC hands NSString over as a str subclass
+        pass
+    ctx = V.ScopeContext(app_bundle=Bridged("app.A"), workspace="ws")
+    assert type(ctx.app_bundle) is str and ctx.app_bundle == "app.A"
+    snap = V.VocabularySnapshot(
+        [ent("E-A", "Claude", ["clod"], scope_kind="app",
+             scope_value="app.A"),
+         ent("E-G", "GlobalTerm", ["glob term"])], ctx)
+    assert run("ask clod glob term", (), snapshot=snap).text == \
+        "ask Claude GlobalTerm"
+    assert snap.revision == V.VocabularySnapshot(
+        snap.entries, V.ScopeContext(app_bundle="app.A",
+                                     workspace="ws")).revision
+    print("ok  02c scope context: non-string identity refused at"
+          " construction; bridged strings normalized, scoped + global"
+          " entries apply")
 
 
 def test_20_active_statements_are_current():
