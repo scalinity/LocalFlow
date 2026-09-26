@@ -1,0 +1,74 @@
+{
+ "code_root_sha": "a41dfccbb09cbd0a255a63ee82e1f85ffbd8589d",
+ "evaluated_utc": "2026-09-26T04:23:47Z",
+ "findings": {
+  "r1": {
+   "lease_granted": false,
+   "reproduced": false,
+   "verification": {
+    "field": "unavailable",
+    "identity": "pass",
+    "selection": "unavailable",
+    "window": "fail"
+   }
+  },
+  "r10": {
+   "field_reason": "permission_unavailable",
+   "recycled_pid_detected_as_changed": true,
+   "reproduced": false
+  },
+  "r2": {
+   "lease_granted": true,
+   "m08": {
+    "field": "pass",
+    "identity": "pass",
+    "selection": "pass",
+    "window": "pass"
+   },
+   "reproduced": false,
+   "selected_range_utf16": null,
+   "selected_text_retained": false
+  },
+  "r3": {
+   "final_policy_profile": "technical",
+   "hotkey_down_policy_profile": "technical",
+   "probe_valid": true,
+   "reproduced": false,
+   "scope_disposition": "widening_deferred",
+   "vocab_site": null,
+   "wp_category": null
+  },
+  "r4": {
+   "m06_denies": true,
+   "raw_config_denies": false,
+   "reproduced": true
+  },
+  "r6": {
+   "captures": [
+    [
+     "alpha.example - Inbox",
+     "https://alpha.example",
+     "{'name': 'site_origin', 'status': 'ok', 'duration_ms': 0.016}"
+    ],
+    [
+     "beta.example - Inbox",
+     "https://beta.example",
+     "{'name': 'site_origin', 'status': 'ok', 'duration_ms': 0.007}"
+    ]
+   ],
+   "reproduced": false
+  },
+  "r7": {
+   "cost_estimate_scales_with_entries": true,
+   "precompute_skips_finalized_handle": true,
+   "reproduced": false
+  },
+  "r8_r9": {
+   "fallback_to_application_focused_window": false,
+   "reproduced": false,
+   "sets_window_timeout": true
+  }
+ },
+ "schema_version": 1,
+ "tool": "scripts/v2/m06_review_repro.py"
+}

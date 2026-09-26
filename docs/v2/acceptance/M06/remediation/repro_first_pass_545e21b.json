@@ -1,0 +1,421 @@
+{
+ "code_root_modified": true,
+ "code_root_sha": "545e21bc4ec559e77456ceaee84ab46097db4d9f",
+ "desktop_isolation": true,
+ "evaluated_utc": "2026-09-26T03:47:09Z",
+ "findings": {
+  "a01": {
+   "reproduced": false,
+   "seconds": 0.001,
+   "v1_focus_switch_before_field": {
+    "b_attrs_read": [],
+    "b_canary_in_snapshot": false,
+    "b_content_reads": 0,
+    "target_app": "com.google.Chrome",
+    "target_denied": false
+   },
+   "v2_switch_after_field": {
+    "a_field_canary": true,
+    "b_origin": null,
+    "b_reads": 0,
+    "hybrid": false,
+    "window_title": null
+   }
+  },
+  "a02": {
+   "first_origin": "https://alpha.example",
+   "reproduced": false,
+   "second_capture_read_url": true,
+   "second_origin": "https://beta.example",
+   "second_origin_source": "ax_url",
+   "seconds": 0.001,
+   "workspace_second": "beta"
+  },
+  "a03": {
+   "controls_ok": true,
+   "reproduced": false,
+   "rows": {
+    "absent_vs_nameonly": false,
+    "bundle_only_absent_vs_absent": false,
+    "control_other_pid": false,
+    "control_same": true,
+    "m08_lease_absent_identity": false,
+    "m08_target_snapshot_absent_identity": "fail",
+    "same_pid_conflicting_bundle": false
+   },
+   "seconds": 0.005
+  },
+  "a04": {
+   "as_range_native_description": [
+    1,
+    2
+   ],
+   "native_evidence": "tests/v2/context/test_native_ax.py",
+   "reproduced": false,
+   "seconds": 0.003,
+   "system_host_raw_cfrange": false,
+   "system_host_window_attr_on_field": false
+  },
+  "a05": {
+   "bytes_changed_total": false,
+   "caller_mutation_changed_bytes": false,
+   "direct_identifiers_mutation": "refused",
+   "direct_provider_row_mutation": "refused",
+   "envelope_changed": false,
+   "id": "ctx-fixed",
+   "reproduced": false,
+   "seconds": 0.0,
+   "to_json_detached": true
+  },
+  "a06": {
+   "abandon": {
+    "api": "revoke",
+    "content_reads_after_revocation": 0,
+    "downstream_after_revocation": false,
+    "thread_alive_after": false
+   },
+   "admission": {
+    "begin_after_shutdown_accepted": false,
+    "blocked_collections_admitted": 4,
+    "shutdown_api": true
+   },
+   "app_paths_touch_context": {
+    "_on_job_deleted": true,
+    "applicationWillTerminate_": true,
+    "cancelDictation": true
+   },
+   "reproduced": false,
+   "seconds": 0.002
+  },
+  "a07": {
+   "clock_excludes_injected_delay": false,
+   "injected_delay_ms": 200.0,
+   "release_event_to_released_mono_ms": 0.023,
+   "reproduced": false,
+   "seconds": 0.5
+  },
+  "a08": {
+   "checks": {
+    "authored_eligible_set_oracle": true,
+    "clock_starts_before_release_event": true,
+    "injected_delay_conservation_gate": true,
+    "off_arm_zero_ax_oracle": true,
+    "packaging_inside_measured_path": true,
+    "separate_exit_codes": true,
+    "workspace_widening_required": true
+   },
+   "reproduced": false,
+   "schema": 2,
+   "seconds": 17.476,
+   "small_run": {
+    "exit": 0,
+    "injected_delay": {
+     "conserved": true,
+     "injected_ms": 50.0,
+     "median_delta_ms": 55.598,
+     "n": [
+      10,
+      10
+     ]
+    },
+    "problems": [],
+    "verdict": "pass"
+   }
+  },
+  "a09": {
+   "negative_range_recorded": null,
+   "oversized_flank_retained_chars": 20,
+   "reproduced": false,
+   "seconds": 0.005,
+   "selected_text_retained_chars": 0,
+   "snapshot_json_chars": 1344
+  },
+  "a10": {
+   "reproduced": false,
+   "rows": {
+    "app_chrome_denied": false,
+    "app_context_enabled": false,
+    "app_deadline_ms": 75.0,
+    "app_retain_context": false,
+    "deadline_inf_accepted": 75.0,
+    "denied_string_is_chrome_denied": false,
+    "denied_string_members": 0,
+    "enabled_string_false": false
+   },
+   "seconds": 0.014
+  },
+  "a11": {
+   "concurrent_ids": [
+    "ctx-1617065072c14f3594fadee527c4c4d4",
+    "ctx-1617065072c14f3594fadee527c4c4d4"
+   ],
+   "distinct_ids": 1,
+   "older_handle_finalize_after_new_begin": "tgt-dc07e187251349dfb75a7c9013707f1e",
+   "older_lost": false,
+   "omitted_target_returns": null,
+   "reproduced": false,
+   "seconds": 0.001
+  },
+  "a12": {
+   "first_downstream": [
+    "focused_field"
+   ],
+   "late_field_workspace": "alpha",
+   "pre_decode_partial": true,
+   "reproduced": false,
+   "second_downstream": false,
+   "second_downstream_ok_providers": [],
+   "seconds": 0.03
+  },
+  "a13": {
+   "cached_absence_ok": false,
+   "failed_subrole_classification": "unclassifiable",
+   "failed_subrole_content_read": false,
+   "field_row_after_window_failure": "{'name': 'focused_field', 'status': 'ok', 'duration_ms': 0.015}",
+   "field_value_present": true,
+   "origin_rows": [
+    "{'name': 'site_origin', 'status': 'omitted', 'reason': 'not_exposed', 'duration_ms': 0.005}",
+    "{'name': 'site_origin', 'status': 'omitted', 'reason': 'not_exposed', 'duration_ms': 0.003}"
+   ],
+   "populated_field_labeled_failed": false,
+   "reproduced": false,
+   "seconds": 0.001
+  },
+  "a14": {
+   "reproduced": false,
+   "seconds": 0.0,
+   "title": {
+    "control": [
+     "https://alpha.example",
+     "window_title"
+    ],
+    "email": [
+     null,
+     null
+    ],
+    "upper_ext": [
+     null,
+     null
+    ],
+    "version": [
+     null,
+     null
+    ]
+   },
+   "url": {
+    "file": null,
+    "javascript": null,
+    "port": "https://alpha.example:8443",
+    "userinfo": "https://alpha.example"
+   }
+  },
+  "a15": {
+   "artifact_insert": {
+    "artifact_rows": 0,
+    "completeness": {
+     "complete": false,
+     "uncommitted_references": [
+      "context.destination.artifact_id"
+     ]
+    },
+    "envelope_artifact_id": null,
+    "envelope_retained": false,
+    "lease_rows": 0,
+    "missing_reasons": [
+     "asr_confidence",
+     "asr_n_best",
+     "asr_token_logprobs",
+     "asr_word_timestamps",
+     "context.destination.artifact_id",
+     "context_snapshot_payload",
+     "outcome_observation",
+     "transform"
+    ]
+   },
+   "lease_insert": {
+    "artifact_rows": 1,
+    "completeness": {
+     "complete": true,
+     "uncommitted_references": []
+    },
+    "envelope_artifact_id": "art-4306fc083bb6445daa2a945eecd75d50",
+    "envelope_retained": false,
+    "lease_rows": 0,
+    "missing_reasons": [
+     "asr_confidence",
+     "asr_n_best",
+     "asr_token_logprobs",
+     "asr_word_timestamps",
+     "context_snapshot_payload",
+     "outcome_observation",
+     "transform"
+    ]
+   },
+   "reproduced": false,
+   "seconds": 0.205
+  },
+  "a16": {
+   "no_vocab": {
+    "engine_destination": "com.microsoft.VSCode",
+    "engine_identifiers": 2,
+    "snapshot_identifiers": 2
+   },
+   "reproduced": false,
+   "seconds": 0.191,
+   "upgrade_failure": {
+    "context_snapshot_finalized": true,
+    "engine_identifiers": 1,
+    "events": [
+     [
+      "vocabulary.prewiden_failed",
+      null,
+      "RuntimeError"
+     ],
+     [
+      "vocabulary.refresh_failed",
+      "captured_scope_kept",
+      "RuntimeError"
+     ]
+    ],
+    "explicit_downgrade_recorded": true,
+    "failing_constructor_calls": 3,
+    "finalized_workspace": "alpha",
+    "hint_set_id": "m05hs:8a3a19305c72",
+    "mixed_tuple_observed": false,
+    "resolved_profile": "coding",
+    "scope_upgraded_flag": null,
+    "vocabulary_scope_workspace": null
+   }
+  },
+  "a17": {
+   "historical_attrs": [
+    "AXPlaceholderValue",
+    "AXSelectedText",
+    "AXStringForRange",
+    "AXValue"
+   ],
+   "independent_oracle_attrs": [
+    "AXDocument",
+    "AXNumberOfCharacters",
+    "AXPlaceholderValue",
+    "AXSelectedText",
+    "AXSelectedTextRange",
+    "AXStringForRange",
+    "AXTitle",
+    "AXURL",
+    "AXValue"
+   ],
+   "kind": "test_gap",
+   "provider_content_surface": [
+    "AXDocument",
+    "AXNumberOfCharacters",
+    "AXPlaceholderValue",
+    "AXSelectedText",
+    "AXSelectedTextRange",
+    "AXStringForRange",
+    "AXURL"
+   ],
+   "reproduced": false,
+   "seconds": 0.001,
+   "uncovered": []
+  },
+  "a18": {
+   "kind": "test_gap",
+   "latch_uses_in_m06_remediation_suites": 13,
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a19": {
+   "full_request_and_rendered_prompt_oracle": true,
+   "kind": "test_gap",
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a20": {
+   "kind": "test_gap",
+   "profile_ab_and_retry_oracles": true,
+   "reproduced": false,
+   "seconds": 0.0
+  },
+  "a21": {
+   "caller_inventory_documented": false,
+   "kind": "test_gap",
+   "local_caller_files": [
+    "localflow/app.py",
+    "localflow/v2/capabilities.py",
+    "localflow/v2/context/__init__.py",
+    "localflow/v2/context/collector.py",
+    "localflow/v2/context/providers.py",
+    "localflow/v2/context/snapshot.py",
+    "localflow/v2/insertion/__init__.py",
+    "localflow/v2/insertion/target_lease.py",
+    "localflow/v2/insertion/validation.py",
+    "localflow/v2/normalize/__init__.py",
+    "localflow/v2/normalize/engine.py",
+    "localflow/v2/normalize/policy.py",
+    "localflow/v2/normalize/scoring.py",
+    "localflow/v2/training.py",
+    "localflow/v2/vocabulary.py",
+    "scripts/v2/benchmark_m05.py",
+    "scripts/v2/benchmark_m06.py",
+    "scripts/v2/benchmark_m08.py",
+    "scripts/v2/benchmark_m10.py",
+    "scripts/v2/m04_remediation_repro.py",
+    "scripts/v2/m05_remediation_repro.py",
+    "scripts/v2/m06_native_probe.py",
+    "scripts/v2/m06_remediation_repro.py"
+   ],
+   "native_suite_present": true,
+   "reproduced": true,
+   "seconds": 0.013
+  },
+  "a22": {
+   "kind": "design",
+   "reproduced": false,
+   "seconds": 0.001,
+   "secure_field_attrs_read": [
+    "AXRole",
+    "AXSubrole",
+    "AXTitle"
+   ],
+   "secure_origin": "https://alpha.example",
+   "secure_origin_source": "window_title",
+   "secure_value_read": false,
+   "secure_window_title_retained": "Sign in \u2014 alpha.example"
+  },
+  "a23": {
+   "kind": "design",
+   "reproduced": false,
+   "scope_equal_direct_vs_title": false,
+   "seconds": 0.0,
+   "workspace_collision": [
+    "project",
+    "project"
+   ]
+  },
+  "a24": {
+   "kind": "design",
+   "late_revision_produced": true,
+   "parent_is_pre_decode": true,
+   "parent_link_in_json": true,
+   "reproduced": false,
+   "revision_kind_in_json": true,
+   "seconds": 0.011
+  },
+  "a25": {
+   "kind": "design",
+   "moved_caret_keeps_authority": true,
+   "other_equal_title_window": {
+    "field": "unavailable",
+    "identity": "pass",
+    "selection": "unavailable",
+    "window": "fail"
+   },
+   "reproduced": false,
+   "seconds": 0.0
+  }
+ },
+ "python": "3.14.7",
+ "schema_version": 1,
+ "tool": "scripts/v2/m06_remediation_repro.py"
+}

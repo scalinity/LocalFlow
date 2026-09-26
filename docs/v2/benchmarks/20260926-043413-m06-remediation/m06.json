@@ -1,0 +1,184 @@
+{
+ "benchmark": "m06-context",
+ "cohorts": {
+  "additional_delay_ms": {
+   "budget_ms": 75.0,
+   "gated": true,
+   "max": 43.202,
+   "n": 60,
+   "p50": 5.517,
+   "p95": 40.476,
+   "p99": 43.202,
+   "timer": "release_path_on run - release_path_off median"
+  },
+  "bounded_payload": {
+   "max": 0.026,
+   "n": 10,
+   "p50": 0.023,
+   "p95": 0.026,
+   "p99": 0.026,
+   "timer": "finalize(handle) over a 200k selection and an oversized flank"
+  },
+  "cache_invalidation": {
+   "max": 0.056,
+   "n": 60,
+   "p50": 0.023,
+   "p95": 0.035,
+   "p99": 0.056,
+   "timer": "finalize(handle), new field/window: re-read"
+  },
+  "cache_reuse": {
+   "max": 0.036,
+   "n": 60,
+   "p50": 0.022,
+   "p95": 0.028,
+   "p99": 0.036,
+   "timer": "finalize(handle), identity-keyed cache hit"
+  },
+  "components": {
+   "finalize_job_context_ms": {
+    "max": 4.657,
+    "n": 60,
+    "p50": 3.882,
+    "p95": 4.219,
+    "p99": 4.657,
+    "timer": "finalize_job_context_ms"
+   },
+   "m10_finalize_upgrade_ms": {
+    "max": 0.086,
+    "n": 60,
+    "p50": 0.072,
+    "p95": 0.084,
+    "p99": 0.086,
+    "timer": "m10_finalize_upgrade_ms"
+   }
+  },
+  "drift_refusal": {
+   "max": 0.025,
+   "n": 60,
+   "p50": 0.016,
+   "p95": 0.023,
+   "p99": 0.025,
+   "timer": "finalize(handle) after frontmost drift"
+  },
+  "finalize_fast": {
+   "max": 0.064,
+   "n": 60,
+   "p50": 0.023,
+   "p95": 0.048,
+   "p99": 0.064,
+   "timer": "finalize(handle) with providers already done"
+  },
+  "finalize_slow_cut": {
+   "max": 85.147,
+   "n": 20,
+   "p50": 85.08,
+   "p95": 85.147,
+   "p99": 85.147,
+   "timer": "finalize(handle) with one provider blocked past the deadline"
+  },
+  "hint_selection": {
+   "max": 20.566,
+   "n": 10,
+   "p50": 7.362,
+   "p95": 20.566,
+   "p99": 20.566,
+   "timer": "select() + hint-set JSON on a fresh widened snapshot"
+  },
+  "identity_capture": {
+   "max": 0.083,
+   "n": 180,
+   "p50": 0.004,
+   "p95": 0.006,
+   "p99": 0.02,
+   "timer": "capture_identity() call only"
+  },
+  "injected_delay_control": {
+   "conserved": true,
+   "injected_ms": 50.0,
+   "median_delta_ms": 50.869,
+   "n": [
+    10,
+    10
+   ]
+  },
+  "release_immediate": {
+   "gated": false,
+   "max": 203.032,
+   "n": 20,
+   "p50": 190.013,
+   "p95": 203.032,
+   "p99": 203.032,
+   "scope_dispositions": {
+    "widened": 6,
+    "widening_deferred": 14
+   },
+   "timer": "release immediately after press (no recording time)"
+  },
+  "release_path_off": {
+   "max": 53.7,
+   "n": 60,
+   "p50": 11.091,
+   "p95": 11.857,
+   "p99": 53.7,
+   "timer": "same boundary, context off"
+  },
+  "release_path_on": {
+   "max": 54.301,
+   "n": 60,
+   "p50": 16.616,
+   "p95": 51.574,
+   "p99": 54.301,
+   "scope_dispositions": {
+    "widened": 60
+   },
+   "timer": "hotkey release event -> job enqueued for ASR (_finishCapture); 300 ms recording; projection cache cleared before every run (a first dictation in this scope)"
+  },
+  "release_path_repeat": {
+   "gated": false,
+   "max": 30.0,
+   "n": 20,
+   "p50": 13.739,
+   "p95": 30.0,
+   "p99": 30.0,
+   "timer": "same boundary; projection cached from the previous job"
+  },
+  "release_to_asr_handoff": {
+   "max": 35.146,
+   "n": 20,
+   "p50": 21.501,
+   "p95": 35.146,
+   "p99": 35.146,
+   "timer": "hotkey release event -> worker transcribe() call"
+  },
+  "widen_build": {
+   "max": 77.848,
+   "n": 10,
+   "p50": 59.194,
+   "p95": 77.848,
+   "p99": 77.848,
+   "timer": "VocabularySnapshot(captured 10,000 entries, widened scope) \u2014 the precomputed projection"
+  }
+ },
+ "environment": {
+  "code_dirty": false,
+  "code_sha": "3a2d8e19d4024403fdb2928708f35b84ee9db9d9",
+  "entries": 10000,
+  "evaluated_utc": "2026-09-26T04:34:13Z",
+  "load_average": "{ 3.12 3.37 3.50 }",
+  "machine": {
+   "arch": "arm64",
+   "cpu": "Apple M5 Pro",
+   "macos": "27.0",
+   "model": "Mac17,8"
+  },
+  "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=22741091)\t100%; charged; 0:00 remaining present: true",
+  "python": "3.14.7",
+  "reps": 60,
+  "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded"
+ },
+ "problems": [],
+ "schema_version": 2,
+ "spec": "S12; M06 target: additional post-release context delay P95 <= 75 ms",
+ "verdict": "pass"
+}

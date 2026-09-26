@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "suite": "tests/v2/context/test_m06_review_round.py",
+  "code_root_sha": "545e21bc4ec559e77456ceaee84ab46097db4d9f",
+  "command": ".venv/bin/python tests/v2/context/run_isolated.py tests/v2/context/test_m06_review_round.py (cwd = a worktree at 545e21b; the final suite and m06_world.py copied in, reverted after)",
+  "python": "3.14.7",
+  "exit": 1,
+  "ok": 0,
+  "fail": 8,
+  "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0",
+  "note": "fail-first record: first-pass production code 88ee303",
+  "lines": [
+    "FAIL test_r1_same_window_other_tab_is_a_changed_target: AssertionError: {'identity': 'pass', 'window': 'pass', 'field': 'pass', 'selection': 'pass'}",
+    "FAIL test_r2_unkept_selection_carries_no_replacement_authority: AssertionError: ",
+    "FAIL test_r3_deferred_widening_keeps_the_captured_profile: AssertionError: ('standard', 'technical')",
+    "FAIL test_r6_title_origin_is_rederived_not_cached: AssertionError: https://alpha.example",
+    "FAIL test_r7_released_handle_cannot_warm_the_projection: AssertionError: ",
+    "FAIL test_r7_widening_cost_scales_with_the_dictionary: AssertionError: ",
+    "FAIL test_r8_r9_window_is_the_fields_own_with_a_timeout: AssertionError: []",
+    "FAIL test_r10_api_disabled_is_permission_and_bundle_change_is_drift: AssertionError: classification_failed",
+    "0/8 M06 review-round regressions passed"
+  ]
+}

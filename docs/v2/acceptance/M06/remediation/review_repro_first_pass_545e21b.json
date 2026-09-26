@@ -1,0 +1,76 @@
+{
+ "code_root_sha": "545e21bc4ec559e77456ceaee84ab46097db4d9f",
+ "evaluated_utc": "2026-09-26T04:09:39Z",
+ "findings": {
+  "r1": {
+   "lease_granted": true,
+   "reproduced": true,
+   "verification": {
+    "field": "pass",
+    "identity": "pass",
+    "selection": "pass",
+    "window": "pass"
+   }
+  },
+  "r10": {
+   "field_reason": "classification_failed",
+   "recycled_pid_detected_as_changed": false,
+   "reproduced": true
+  },
+  "r2": {
+   "lease_granted": false,
+   "m08": {
+    "field": "pass",
+    "identity": "pass",
+    "selection": "fail",
+    "window": "pass"
+   },
+   "reproduced": true,
+   "selected_range_utf16": [
+    4,
+    5004
+   ],
+   "selected_text_retained": false
+  },
+  "r3": {
+   "final_policy_profile": "standard",
+   "hotkey_down_policy_profile": "technical",
+   "reproduced": true,
+   "scope_disposition": "widening_deferred",
+   "vocab_site": null,
+   "wp_category": "ai_prompt"
+  },
+  "r4": {
+   "m06_denies": true,
+   "raw_config_denies": false,
+   "reproduced": true
+  },
+  "r6": {
+   "captures": [
+    [
+     "alpha.example - Inbox",
+     "https://alpha.example",
+     "{'name': 'site_origin', 'status': 'ok', 'duration_ms': 0.026}"
+    ],
+    [
+     "beta.example - Inbox",
+     "https://alpha.example",
+     "{'name': 'site_origin', 'status': 'ok', 'cached': True}"
+    ]
+   ],
+   "reproduced": true
+  },
+  "r7": {
+   "cost_estimate_scales_with_entries": false,
+   "precompute_skips_finalized_handle": false,
+   "reproduced": true
+  },
+  "r8_r9": {
+   "fallback_to_application_focused_window": true,
+   "reproduced": true,
+   "sets_window_timeout": false
+  }
+ },
+ "schema_version": 1,
+ "tool": "scripts/v2/m06_review_repro.py"
+}

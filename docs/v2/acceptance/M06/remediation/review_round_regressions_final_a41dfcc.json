@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "suite": "tests/v2/context/test_m06_review_round.py",
+  "code_root_sha": "a41dfccbb09cbd0a255a63ee82e1f85ffbd8589d",
+  "command": ".venv/bin/python tests/v2/context/run_isolated.py tests/v2/context/test_m06_review_round.py",
+  "python": "3.14.7",
+  "exit": 0,
+  "ok": 8,
+  "fail": 0,
+  "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0",
+  "note": "final production code 4388b52",
+  "lines": [
+    "ok  R1 another tab of the same window is a changed target",
+    "ok  R2 an over-budget selection is a caret, not a refused replacement",
+    "ok  R3 a deferred widening keeps the whole captured tuple",
+    "ok  R6 a title-derived origin follows the current title",
+    "ok  R7 a released handle previews nothing (no late eviction)",
+    "ok  R7 the synchronous-build estimate scales per entry",
+    "ok  R8/R9 the field's own window, with the messaging timeout",
+    "ok  R10 API disabled => permission; a recycled pid is drift",
+    "8/8 M06 review-round regressions passed"
+  ]
+}
