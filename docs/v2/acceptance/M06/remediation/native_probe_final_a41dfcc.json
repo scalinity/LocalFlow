@@ -1,0 +1,453 @@
+{
+ "code_root_api": "job_owned",
+ "code_root_sha": "a41dfccbb09cbd0a255a63ee82e1f85ffbd8589d",
+ "machine": {
+  "arch": "arm64",
+  "macos": "27.0",
+  "python": "3.14.7"
+ },
+ "scenarios": {
+  "ascii_selection": {
+   "AXRole": [
+    0,
+    "AXTextArea"
+   ],
+   "AXSubrole": [
+    -25205,
+    null
+   ],
+   "app_AXFocusedWindow_err": 0,
+   "app_focused_element_err": 0,
+   "collector": {
+    "field_classification": "text",
+    "identifiers": {
+     "foo bar": "fooBar"
+    },
+    "providers": [
+     {
+      "duration_ms": 0.24,
+      "name": "focused_field",
+      "status": "ok"
+     },
+     {
+      "duration_ms": 0.001,
+      "name": "site_origin",
+      "reason": "not_exposed",
+      "status": "omitted"
+     },
+     {
+      "duration_ms": 0.0,
+      "name": "workspace",
+      "reason": "not_exposed",
+      "status": "omitted"
+     }
+    ],
+    "window_title": "LF-M06 synthetic window"
+   },
+   "element_equal_across_fetches": true,
+   "element_hash_equal": true,
+   "element_pid_matches": true,
+   "field_AXFocusedWindow_err": -25205,
+   "field_AXWindow_err": 0,
+   "field_window_equals_app_focused_window": true,
+   "host_as_range": [
+    6,
+    6
+   ],
+   "host_focused_window_found": true,
+   "host_string_for_range_0_3": "alp",
+   "host_window_title": "LF-M06 synthetic window",
+   "number_of_characters": 30,
+   "owned_element_equal_across_fetches": true,
+   "owned_element_pid_matches": true,
+   "python_len": 30,
+   "range_decoded_utf16": [
+    6,
+    6
+   ],
+   "range_type": "AXValueRef",
+   "read_field": {
+    "classification": "text",
+    "content_attrs_read": [
+     "AXDocument",
+     "AXNumberOfCharacters",
+     "AXPlaceholderValue",
+     "AXSelectedText",
+     "AXSelectedTextRange"
+    ],
+    "following_text": " beta fooBar gamma",
+    "preceding_text": "alpha ",
+    "reason": null,
+    "selected_range": [
+     6,
+     12
+    ],
+    "selected_range_utf16": [
+     6,
+     12
+    ],
+    "selected_text": "userId"
+   },
+   "set_timeout_rc": 0,
+   "spec": {
+    "selection": [
+     6,
+     6
+    ],
+    "text": "alpha userId beta fooBar gamma"
+   }
+  },
+  "caret_only": {
+   "AXRole": [
+    0,
+    "AXTextArea"
+   ],
+   "AXSubrole": [
+    -25205,
+    null
+   ],
+   "app_AXFocusedWindow_err": 0,
+   "app_focused_element_err": 0,
+   "collector": {
+    "field_classification": "text",
+    "identifiers": {
+     "foo bar": "fooBar",
+     "user id": "userId"
+    },
+    "providers": [
+     {
+      "duration_ms": 0.324,
+      "name": "focused_field",
+      "status": "ok"
+     },
+     {
+      "duration_ms": 0.002,
+      "name": "site_origin",
+      "reason": "not_exposed",
+      "status": "omitted"
+     },
+     {
+      "duration_ms": 0.0,
+      "name": "workspace",
+      "reason": "not_exposed",
+      "status": "omitted"
+     }
+    ],
+    "window_title": "LF-M06 synthetic window"
+   },
+   "element_equal_across_fetches": true,
+   "element_hash_equal": true,
+   "element_pid_matches": true,
+   "field_AXFocusedWindow_err": -25205,
+   "field_AXWindow_err": 0,
+   "field_window_equals_app_focused_window": true,
+   "host_as_range": [
+    6,
+    0
+   ],
+   "host_focused_window_found": true,
+   "host_string_for_range_0_3": "alp",
+   "host_window_title": "LF-M06 synthetic window",
+   "number_of_characters": 30,
+   "owned_element_equal_across_fetches": true,
+   "owned_element_pid_matches": true,
+   "python_len": 30,
+   "range_decoded_utf16": [
+    6,
+    0
+   ],
+   "range_type": "AXValueRef",
+   "read_field": {
+    "classification": "text",
+    "content_attrs_read": [
+     "AXDocument",
+     "AXNumberOfCharacters",
+     "AXPlaceholderValue",
+     "AXSelectedTextRange"
+    ],
+    "following_text": "userId beta fooBar gamma",
+    "preceding_text": "alpha ",
+    "reason": null,
+    "selected_range": [
+     6,
+     6
+    ],
+    "selected_range_utf16": [
+     6,
+     6
+    ],
+    "selected_text": null
+   },
+   "set_timeout_rc": 0,
+   "spec": {
+    "selection": [
+     6,
+     0
+    ],
+    "text": "alpha userId beta fooBar gamma"
+   }
+  },
+  "plain_field_focused": {
+   "AXRole": [
+    0,
+    "AXTextField"
+   ],
+   "AXSubrole": [
+    -25205,
+    null
+   ],
+   "app_AXFocusedWindow_err": 0,
+   "app_focused_element_err": 0,
+   "collector": {
+    "field_classification": "text",
+    "identifiers": {},
+    "providers": [
+     {
+      "duration_ms": 0.316,
+      "name": "focused_field",
+      "status": "ok"
+     },
+     {
+      "duration_ms": 0.002,
+      "name": "site_origin",
+      "reason": "not_exposed",
+      "status": "omitted"
+     },
+     {
+      "duration_ms": 0.0,
+      "name": "workspace",
+      "reason": "not_exposed",
+      "status": "omitted"
+     }
+    ],
+    "window_title": "LF-M06 synthetic window"
+   },
+   "element_equal_across_fetches": true,
+   "element_hash_equal": true,
+   "element_pid_matches": true,
+   "field_AXFocusedWindow_err": -25205,
+   "field_AXWindow_err": 0,
+   "field_window_equals_app_focused_window": true,
+   "host_as_range": [
+    0,
+    15
+   ],
+   "host_focused_window_found": true,
+   "host_string_for_range_0_3": "syn",
+   "host_window_title": "LF-M06 synthetic window",
+   "number_of_characters": 15,
+   "owned_element_equal_across_fetches": true,
+   "owned_element_pid_matches": true,
+   "python_len": 30,
+   "range_decoded_utf16": [
+    0,
+    15
+   ],
+   "range_type": "AXValueRef",
+   "read_field": {
+    "classification": "text",
+    "content_attrs_read": [
+     "AXDocument",
+     "AXNumberOfCharacters",
+     "AXPlaceholderValue",
+     "AXSelectedText",
+     "AXSelectedTextRange"
+    ],
+    "following_text": null,
+    "preceding_text": "",
+    "reason": null,
+    "selected_range": [
+     0,
+     15
+    ],
+    "selected_range_utf16": [
+     0,
+     15
+    ],
+    "selected_text": "synthetic field"
+   },
+   "set_timeout_rc": 0,
+   "spec": {
+    "first_responder": "field",
+    "selection": [
+     0,
+     0
+    ],
+    "text": "alpha userId beta fooBar gamma"
+   }
+  },
+  "secure_focused": {
+   "AXRole": [
+    0,
+    "AXTextField"
+   ],
+   "AXSubrole": [
+    0,
+    "AXSecureTextField"
+   ],
+   "app_AXFocusedWindow_err": 0,
+   "app_focused_element_err": 0,
+   "collector": {
+    "field_classification": "secure",
+    "identifiers": {},
+    "providers": [
+     {
+      "duration_ms": 0.076,
+      "name": "focused_field",
+      "reason": "secure_field",
+      "status": "omitted"
+     },
+     {
+      "duration_ms": 0.001,
+      "name": "site_origin",
+      "reason": "not_exposed",
+      "status": "omitted"
+     },
+     {
+      "duration_ms": 0.0,
+      "name": "workspace",
+      "reason": "not_exposed",
+      "status": "omitted"
+     }
+    ],
+    "window_title": "LF-M06 synthetic window"
+   },
+   "element_equal_across_fetches": true,
+   "element_hash_equal": true,
+   "element_pid_matches": true,
+   "field_AXFocusedWindow_err": -25205,
+   "field_AXWindow_err": 0,
+   "field_window_equals_app_focused_window": true,
+   "host_as_range": [
+    0,
+    20
+   ],
+   "host_focused_window_found": true,
+   "host_string_for_range_0_3": null,
+   "host_window_title": "LF-M06 synthetic window",
+   "number_of_characters": [
+    -25205
+   ],
+   "owned_element_equal_across_fetches": true,
+   "owned_element_pid_matches": true,
+   "python_len": 30,
+   "range_decoded_utf16": [
+    0,
+    20
+   ],
+   "range_type": "AXValueRef",
+   "read_field": {
+    "classification": "secure",
+    "content_attrs_read": [],
+    "following_text": null,
+    "preceding_text": null,
+    "reason": "secure_field",
+    "selected_range": null,
+    "selected_range_utf16": null,
+    "selected_text": null
+   },
+   "set_timeout_rc": 0,
+   "spec": {
+    "first_responder": "secure",
+    "selection": [
+     0,
+     0
+    ],
+    "text": "alpha userId beta fooBar gamma"
+   }
+  },
+  "unicode_selection": {
+   "AXRole": [
+    0,
+    "AXTextArea"
+   ],
+   "AXSubrole": [
+    -25205,
+    null
+   ],
+   "app_AXFocusedWindow_err": 0,
+   "app_focused_element_err": 0,
+   "collector": {
+    "field_classification": "text",
+    "identifiers": {
+     "user id": "userId"
+    },
+    "providers": [
+     {
+      "duration_ms": 0.358,
+      "name": "focused_field",
+      "status": "ok"
+     },
+     {
+      "duration_ms": 0.001,
+      "name": "site_origin",
+      "reason": "not_exposed",
+      "status": "omitted"
+     },
+     {
+      "duration_ms": 0.0,
+      "name": "workspace",
+      "reason": "not_exposed",
+      "status": "omitted"
+     }
+    ],
+    "window_title": "LF-M06 synthetic window"
+   },
+   "element_equal_across_fetches": true,
+   "element_hash_equal": true,
+   "element_pid_matches": true,
+   "field_AXFocusedWindow_err": -25205,
+   "field_AXWindow_err": 0,
+   "field_window_equals_app_focused_window": true,
+   "host_as_range": [
+    1,
+    2
+   ],
+   "host_focused_window_found": true,
+   "host_string_for_range_0_3": "A\ud83d\ude00",
+   "host_window_title": "LF-M06 synthetic window",
+   "number_of_characters": 23,
+   "owned_element_equal_across_fetches": true,
+   "owned_element_pid_matches": true,
+   "python_len": 22,
+   "range_decoded_utf16": [
+    1,
+    2
+   ],
+   "range_type": "AXValueRef",
+   "read_field": {
+    "classification": "text",
+    "content_attrs_read": [
+     "AXDocument",
+     "AXNumberOfCharacters",
+     "AXPlaceholderValue",
+     "AXSelectedText",
+     "AXSelectedTextRange"
+    ],
+    "following_text": "B e\u0301 caf\u00e9 userId end",
+    "preceding_text": "A",
+    "reason": null,
+    "selected_range": [
+     1,
+     2
+    ],
+    "selected_range_utf16": [
+     1,
+     3
+    ],
+    "selected_text": "\ud83d\ude00"
+   },
+   "set_timeout_rc": 0,
+   "spec": {
+    "selection": [
+     1,
+     2
+    ],
+    "text": "A\ud83d\ude00B e\u0301 caf\u00e9 userId end"
+   }
+  }
+ },
+ "schema_version": 1,
+ "status": "ran",
+ "tool": "scripts/v2/m06_native_probe.py"
+}

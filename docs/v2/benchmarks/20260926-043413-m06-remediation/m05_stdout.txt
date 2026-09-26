@@ -1,0 +1,17 @@
+cold_snapshot                      p50   138.108  p95   160.417  p99   160.417 ms
+cached_retrieval                   p50     0.011  p95     0.016  p99     0.071 ms
+warm_selection                     p50     0.001  p95     0.001  p99     0.005 ms
+scoped_selection                   p50     0.001  p95     0.001  p99     0.012 ms
+fresh_selection                    p50     2.728  p95     3.551  p99     3.551 ms
+fresh_scoped_selection             p50     2.811  p95     3.457  p99     3.457 ms
+normalize_no_hit                   p50     4.288  p95     4.724  p99     6.983 ms
+normalize_positive                 p50     4.589  p95     4.660  p99     4.691 ms
+scope_upgrade_and_packaging        p50   120.949  p95   141.403  p99   141.403 ms
+cold_selection                     p50    16.460  p95    17.040  p99    17.040 ms
+stress_dense_hits                  p50     7.981  p95     8.221  p99     8.221 ms
+stress_shared_first_word_bucket    p50     2.013  p95     2.108  p99     2.108 ms
+stress_overlap_long_aliases        p50     2.699  p95     2.777  p99     2.777 ms
+work validity: valid
+verdict: pass (exit 0)
+report: docs/v2/benchmarks/20260926-043413-m06-remediation/m05/m05_benchmark.json
+[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0]

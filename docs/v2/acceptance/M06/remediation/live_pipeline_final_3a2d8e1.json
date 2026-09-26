@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "suite": "tests/v2/training/test_live_pipeline.py",
+  "code_root_sha": "3a2d8e19d4024403fdb2928708f35b84ee9db9d9",
+  "command": "LOCALFLOW_NO_PROMPT=1 .venv/bin/python tests/v2/context/run_isolated.py tests/v2/training/test_live_pipeline.py",
+  "python": "3.14.7",
+  "exit": 0,
+  "ok": 2,
+  "fail": 0,
+  "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0",
+  "note": "model-backed: Qwen3-4B-Instruct-2507-4bit snapshot 50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b and parakeet-tdt-0.6b-v3 snapshot ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15 from the local Hugging Face cache, offline; MLX 0.31.2, Metal gpu:0; synthetic audio (no speech)",
+  "lines": [
+    "[localflow] cleanup_model_loaded (Qwen3-4B-Instruct-2507-4bit)",
+    "ok  real Qwen cleanup: exact prompt + proposal + applied captured",
+    "ok  real Parakeet on synthetic audio: verbatim output + audio join",
+    "all live-pipeline tests passed"
+  ]
+}

@@ -1,0 +1,396 @@
+{
+ "benchmark_control": {
+  "exit": 0,
+  "problems": [],
+  "seconds": 21.1,
+  "verdict": "pass"
+ },
+ "benchmark_control_pass": true,
+ "benchmark_mutants": {
+  "clock_after_release_work": {
+   "exit": 2,
+   "problems": [
+    "injected 50 ms appeared as 0.0 ms: the release clock does not cover the release path"
+   ],
+   "rejected": true,
+   "seconds": 21.3,
+   "verdict": "work_invalid"
+  },
+  "force_enabled_off_arm": {
+   "exit": 2,
+   "problems": [
+    "release_off: 24 context Accessibility calls with context disabled",
+    "release_off: a context snapshot exists with context off"
+   ],
+   "rejected": true,
+   "seconds": 21.2,
+   "verdict": "work_invalid"
+  },
+  "noop_scope_upgrade": {
+   "exit": 2,
+   "problems": [
+    "release_on: disposition widening_deferred",
+    "release_on: eligible set 1901 != authored 2002",
+    "release_on: the scoped contender did not win",
+    "release_on: selection covers 1901 terms, authored eligible 2002"
+   ],
+   "rejected": true,
+   "seconds": 21.4,
+   "verdict": "work_invalid"
+  },
+  "omit_hint_packaging": {
+   "exit": 2,
+   "problems": [
+    "release_on: the hint set was not packaged pre-decode"
+   ],
+   "rejected": true,
+   "seconds": 21.2,
+   "verdict": "work_invalid"
+  }
+ },
+ "control": {
+  "LF-M06-D001": "pass",
+  "LF-M06-E001": "pass",
+  "LF-M06-E003": "pass",
+  "LF-M06-F002": "pass",
+  "LF-M06-I001": "pass",
+  "LF-M06-I004": "pass",
+  "LF-M06-M005": "delegated_to_benchmark_mutants",
+  "LF-M06-N001": "pass",
+  "LF-M06-Q001": "pass",
+  "LF-M06-R001": "pass",
+  "LF-M06-R002": "pass",
+  "LF-M06-S001": "pass",
+  "LF-M06-S004": "pass",
+  "LF-M06-S005": "pass",
+  "LF-M06-S006": "pass",
+  "LF-M06-S007": "pass",
+  "LF-M06-S008": "pass",
+  "LF-M06-S009": "pass",
+  "LF-M06-S010": "pass",
+  "LF-M06-S011": "pass",
+  "LF-M06-S016": "pass",
+  "regression_suite": {
+   "exit": 0,
+   "summary": "31/31 M06 remediation regressions passed"
+  }
+ },
+ "control_green": true,
+ "mutations": {
+  "M06-MUT-01": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-D001",
+    "LF-M06-S001"
+   ],
+   "killer_cases": [
+    "LF-M06-D001",
+    "LF-M06-S001"
+   ],
+   "results": {
+    "LF-M06-D001": "fail",
+    "LF-M06-S001": "fail",
+    "regression_suite": {
+     "exit": 0,
+     "summary": "31/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-02": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-E001"
+   ],
+   "killer_cases": [
+    "LF-M06-E001"
+   ],
+   "results": {
+    "LF-M06-E001": "fail",
+    "regression_suite": {
+     "exit": 0,
+     "summary": "31/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-03": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-S004",
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-S004",
+    "LF-M06-S005"
+   ],
+   "results": {
+    "LF-M06-S004": "fail",
+    "LF-M06-S005": "pass",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "30/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-04": {
+   "disposition": "killed",
+   "killed_by": [
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-S006"
+   ],
+   "results": {
+    "LF-M06-S006": "pass",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "29/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-05": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-I001",
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-S005",
+    "LF-M06-I001"
+   ],
+   "results": {
+    "LF-M06-I001": "fail",
+    "LF-M06-S005": "pass",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "30/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-06": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-S010"
+   ],
+   "killer_cases": [
+    "LF-M06-S010"
+   ],
+   "results": {
+    "LF-M06-S010": "fail",
+    "regression_suite": {
+     "exit": 0,
+     "summary": "31/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-07": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-S007",
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-S007"
+   ],
+   "results": {
+    "LF-M06-S007": "fail",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "30/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-08": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-S009",
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-S009"
+   ],
+   "results": {
+    "LF-M06-S009": "fail",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "30/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-09": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-S008"
+   ],
+   "killer_cases": [
+    "LF-M06-S008"
+   ],
+   "results": {
+    "LF-M06-S008": "fail",
+    "regression_suite": {
+     "exit": 0,
+     "summary": "31/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-10": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-S011"
+   ],
+   "killer_cases": [
+    "LF-M06-S011"
+   ],
+   "results": {
+    "LF-M06-S011": "fail",
+    "regression_suite": {
+     "exit": 0,
+     "summary": "31/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-11": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-F002",
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-F002"
+   ],
+   "results": {
+    "LF-M06-F002": "fail",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "30/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-12": {
+   "disposition": "killed",
+   "killed_by": [
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-I004"
+   ],
+   "results": {
+    "LF-M06-I004": "pass",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "29/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-13": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-N001"
+   ],
+   "killer_cases": [
+    "LF-M06-N001"
+   ],
+   "results": {
+    "LF-M06-N001": "fail",
+    "regression_suite": {
+     "exit": 0,
+     "summary": "31/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-14": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-E003",
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-E003"
+   ],
+   "results": {
+    "LF-M06-E003": "fail",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "30/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-15": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-S016",
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-S016",
+    "LF-M06-M005"
+   ],
+   "results": {
+    "LF-M06-M005": "delegated_to_benchmark_mutants",
+    "LF-M06-S016": "fail",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "30/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-16": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-S016",
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-S016",
+    "LF-M06-M005"
+   ],
+   "results": {
+    "LF-M06-M005": "delegated_to_benchmark_mutants",
+    "LF-M06-S016": "fail",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "28/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-17": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-Q001",
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-Q001"
+   ],
+   "results": {
+    "LF-M06-Q001": "fail",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "30/31 M06 remediation regressions passed"
+    }
+   }
+  },
+  "M06-MUT-18": {
+   "disposition": "killed",
+   "killed_by": [
+    "LF-M06-R001",
+    "LF-M06-R002",
+    "tests/v2/context/test_m06_remediation.py"
+   ],
+   "killer_cases": [
+    "LF-M06-R001",
+    "LF-M06-R002"
+   ],
+   "results": {
+    "LF-M06-R001": "fail",
+    "LF-M06-R002": "fail",
+    "regression_suite": {
+     "exit": 1,
+     "summary": "30/31 M06 remediation regressions passed"
+    }
+   }
+  }
+ },
+ "rev": "943584663268af5f778a7d6b462af8e1c8757288",
+ "schema_version": 1,
+ "tool": "scripts/v2/m06_mutation_check.py"
+}
