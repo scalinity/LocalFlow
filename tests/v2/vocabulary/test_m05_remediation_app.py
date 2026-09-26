@@ -319,6 +319,12 @@ def test_08_panel_selection_is_a_stable_entry_id():
         if variant == "delete_selected":
             assert approved == [], (variant, approved)
             assert "no longer" in msg or "select" in msg, msg
+        elif variant == "changed_since_selection":
+            # Review Q3: the approval binds to the revision the user saw
+            # when selecting; an entry changed elsewhere since then waits
+            # for a fresh look (the next press acts on what is shown).
+            assert approved == [], (variant, approved, msg)
+            assert "changed since you selected" in msg, msg
         else:
             assert approved == ["Beta"], (variant, approved, msg)
     # Toggle/pin/delete also act on the selected id.

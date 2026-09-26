@@ -74,10 +74,13 @@ def main():
         scratch = pathlib.Path(td) / "tests" / "v2" / "vocabulary"
         scratch.mkdir(parents=True)
         shutil.copy(HERE / "tests/v2/vocabulary/m05_helpers.py", scratch)
+        # Every named module first, so one suite may import another's
+        # helpers (e.g. the review round reuses the collector fixture).
+        for rel in ARGS.tests:
+            shutil.copy(HERE / rel, scratch / pathlib.Path(rel).name)
         for rel in ARGS.tests:
             src = HERE / rel
             dst = scratch / src.name
-            shutil.copy(src, dst)
             text = dst.read_text(encoding="utf-8")
             names = [ln.split("(")[0][4:] for ln in text.splitlines()
                      if ln.startswith("def test_")]

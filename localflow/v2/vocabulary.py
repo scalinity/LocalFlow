@@ -54,6 +54,43 @@ OMISSION_BUDGET = "budget_limit"
 # ScopeContext field each non-global scope kind is compared against.
 _SCOPE_FIELD = {"app": "app_bundle", "site": "site_origin",
                 "profile": "profile", "workspace": "workspace"}
+_FIELD_KIND = {v: k for k, v in _SCOPE_FIELD.items()}
+
+
+class _CanonScope:
+    """A ScopeContext's values in canonical form, computed once per
+    snapshot so filtering many entries compares plain strings."""
+
+    __slots__ = ("app_bundle", "site_origin", "workspace", "profile")
+
+    def __init__(self, ctx):
+        for f in self.__slots__:
+            v = getattr(ctx, f, None)
+            setattr(self, f, None if v is None
+                    else canonical_scope_value(_FIELD_KIND[f], v))
+
+
+def canonical_scope_value(kind: str, value: str) -> str:
+    """The one comparable form of a scope value (review Q5), applied at
+    admission AND to every live ScopeContext so the two sides always
+    compare equal for the same destination: surrounding whitespace is
+    never part of a value; an app bundle id is case-insensitive (as on
+    macOS), so it compares in ASCII lower case; a site origin compares
+    with a lower-case scheme and host and no trailing slash. Workspace
+    and profile names are otherwise exact."""
+    value = value.strip()
+    if kind == "app":
+        return value.lower()
+    if kind == "site":
+        scheme, sep, rest = value.partition("://")
+        if sep:
+            host, slash, path = rest.partition("/")
+            path = path.rstrip("/")
+            value = f"{scheme.lower()}://{host.lower()}" + (
+                f"/{path}" if path else "")
+        else:
+            value = value.lower().rstrip("/")
+    return value
 
 # An alias/canonical must be speakable word tokens — no punctuation runs,
 # digits or symbols (matching runs on word tokens only).
@@ -195,9 +232,18 @@ class VocabularyEntry:
                 f"unknown matching mode: {self.matching_mode}")
         if self.scope_kind not in SCOPE_KINDS:
             raise ValueError(f"unknown scope kind: {self.scope_kind}")
-        if self.scope_kind != "global" and not self.scope_value:
-            raise ValueError(
-                f"scope {self.scope_kind} requires a scope value")
+        if self.scope_kind == "global":
+            # One global identity (review R6): a value on a global entry
+            # would be a separate identity that applies everywhere.
+            if self.scope_value is not None:
+                raise ValueError("a global entry takes no scope value")
+        else:
+            value = canonical_scope_value(self.scope_kind,
+                                          self.scope_value or "")
+            if not value:
+                raise ValueError(
+                    f"scope {self.scope_kind} requires a scope value")
+            object.__setattr__(self, "scope_value", value)
         if self.origin not in ORIGINS:
             raise ValueError(f"unknown origin: {self.origin}")
         if self.verification not in VERIFICATIONS:
@@ -209,8 +255,12 @@ class VocabularyEntry:
             return True
         if ctx is None:
             return False
-        return getattr(ctx, _SCOPE_FIELD[self.scope_kind]) \
-            == self.scope_value
+        v = getattr(ctx, _SCOPE_FIELD[self.scope_kind])
+        if v is None:
+            return False
+        if type(ctx) is not _CanonScope:
+            v = canonical_scope_value(self.scope_kind, v)
+        return v == self.scope_value
 
     def to_json(self) -> dict:
         return {
@@ -265,11 +315,18 @@ class VocabularyEntry:
         if not isinstance(raw_aliases, list):
             raise AdmissionError("not_a_list", "aliases")
         aliases = []
+        seen = set()
         for a in raw_aliases:
             if not isinstance(a, dict):
                 raise AdmissionError("not_an_object", "aliases[]")
+            text = _validate_alias(a.get("alias"))
+            # One alias per match key within an entry — the rule
+            # add_entry/update_entry already enforce (review R5).
+            if text.lower() in seen:
+                raise AdmissionError("duplicate_alias", "aliases[]")
+            seen.add(text.lower())
             aliases.append(Alias(
-                alias=_validate_alias(a.get("alias")),
+                alias=text,
                 approved=require_bool("aliases[].approved",
                                       a["approved"])
                 if "approved" in a else True,
@@ -331,6 +388,8 @@ class ScopeContext:
             if not isinstance(v, str):
                 raise TypeError(f"ScopeContext.{f} must be a str or None")
             object.__setattr__(self, f, str(v))
+        # Values stay EXACTLY as the destination delivered them (M06
+        # identity); matching compares canonical forms (review Q5).
 
     def to_json(self) -> dict:
         return dataclasses.asdict(self)
@@ -376,18 +435,28 @@ class VocabularySnapshot:
     __slots__ = ("entries", "scope_ctx", "conflicts", "match_index",
                  "skills", "skill_provenance", "revision",
                  "_match_items_sorted", "_by_first_word",
-                 "_lengths_by_first", "_ranked", "_by_id",
-                 "_select_memo", "_sealed")
+                 "_lengths_by_first", "_canon_claims",
+                 "_canon_lengths_by_first", "_ranked", "_by_id",
+                 "_select_memo", "_memo_put", "_sealed")
 
     def __init__(self, entries, scope_ctx: ScopeContext | None = None):
         entries = tuple(entries)
         if not all(isinstance(e, VocabularyEntry) for e in entries):
             raise TypeError("snapshot entries must be VocabularyEntry")
         scope_ctx = scope_ctx or ScopeContext()
+        canon_ctx = _CanonScope(scope_ctx)
         in_scope = [e for e in entries
-                    if e.enabled and e.scope_matches(scope_ctx)]
+                    if e.enabled and e.scope_matches(canon_ctx)]
         index: dict[str, list[tuple[int, MatchTarget]]] = {}
         skills: dict[str, list[tuple[int, str, str, str]]] = {}
+        # Canonical claims (review R1/R17): canonical key → {exact
+        # canonical spelling: strength}, over every approved, enabled,
+        # in-scope term — independent of what ``match_index`` resolves
+        # the key to (a narrower alias or a same-scope mask). An entry's
+        # strength is its longest matchable form, so text that already
+        # reads as the canonical is at least as strong as any alias that
+        # could have produced it.
+        canon: dict[str, dict[str, int]] = {}
         for e in in_scope:
             prec = SCOPE_PRECEDENCE[e.scope_kind]
             # An unapproved entry never matches anything, not even its
@@ -414,6 +483,12 @@ class VocabularySnapshot:
                     index[key] = [(prec, target)]
                 else:
                     lst.append((prec, target))
+            strength = max(len(" ".join(k.split()))
+                           for k in alias_keys + [canonical_key])
+            ckey = " ".join(canonical_key.split())
+            spellings = canon.setdefault(ckey, {})
+            if spellings.get(e.canonical, -1) < strength:
+                spellings[e.canonical] = strength
         conflicts = []
         match_index: dict[str, MatchTarget] = {}
         for key, cands in index.items():
@@ -469,6 +544,10 @@ class VocabularySnapshot:
             else:
                 lst.append((alias, target))
                 lengths[first].add(len(words))
+        canon_lengths: dict[str, set] = {}
+        for ckey in canon:
+            words = ckey.split()
+            canon_lengths.setdefault(words[0], set()).add(len(words))
         ranked = sorted([e for e in in_scope], key=lambda e: e.entry_id)
         ranked.sort(key=VocabularySnapshot._rank_key, reverse=True)
         object.__setattr__(self, "entries", entries)
@@ -486,6 +565,11 @@ class VocabularySnapshot:
         object.__setattr__(self, "_lengths_by_first", MappingProxyType(
             {k: tuple(sorted(v, reverse=True))
              for k, v in lengths.items()}))
+        object.__setattr__(self, "_canon_claims", MappingProxyType(
+            {k: MappingProxyType(v) for k, v in canon.items()}))
+        object.__setattr__(self, "_canon_lengths_by_first", MappingProxyType(
+            {k: tuple(sorted(v, reverse=True))
+             for k, v in canon_lengths.items()}))
         object.__setattr__(self, "_ranked", tuple(ranked))
         object.__setattr__(self, "_by_id", MappingProxyType(by_id))
         # Memo of the selector's deterministic output for THIS snapshot
@@ -493,7 +577,12 @@ class VocabularySnapshot:
         # derived from the immutable state above, so it never changes
         # what the snapshot means — it makes repeated selection on a
         # cached snapshot O(1) instead of rebuilding every omission.
-        object.__setattr__(self, "_select_memo", {})
+        # Exposed as a READ-ONLY view (review R13): only the selector's
+        # private write path fills it, so no caller-visible mapping can
+        # poison what select() returns under a trusted id.
+        memo: dict = {}
+        object.__setattr__(self, "_select_memo", MappingProxyType(memo))
+        object.__setattr__(self, "_memo_put", memo.__setitem__)
         object.__setattr__(self, "revision", self._revision())
         object.__setattr__(self, "_sealed", True)
 
@@ -556,6 +645,12 @@ class VocabularySnapshot:
         dict lookup per distinct length, not one comparison per alias."""
         return self._lengths_by_first
 
+    def canonical_claims(self):
+        """(canonical key → {exact spelling: strength}, first word →
+        canonical word counts): the engine's lookup for text that
+        already reads as an approved, in-scope canonical."""
+        return self._canon_claims, self._canon_lengths_by_first
+
     def entry_by_id(self, entry_id: str) -> Optional[VocabularyEntry]:
         return self._by_id.get(entry_id)
 
@@ -587,7 +682,18 @@ class HintTerm:
     score: tuple[int, ...]  # rank components — a score, not a probability
 
     def __post_init__(self):
-        object.__setattr__(self, "score", tuple(self.score))
+        # Scalars only (review R13): a nested mutable value would let one
+        # hint_set_id describe two contents after construction.
+        for name in ("canonical", "entry_id", "scope_kind", "source"):
+            if not isinstance(getattr(self, name), str):
+                raise TypeError(f"hint term {name} must be a string")
+        if self.scope_value is not None \
+                and not isinstance(self.scope_value, str):
+            raise TypeError("hint term scope_value must be a string")
+        score = tuple(self.score)
+        if not all(type(x) in (int, str) for x in score):
+            raise TypeError("hint term score components must be int/str")
+        object.__setattr__(self, "score", score)
 
     def to_json(self) -> dict:
         return {
@@ -598,18 +704,36 @@ class HintTerm:
 
 
 def _hint_set_id(selector_revision, vocabulary_revision, scope, terms,
-                 omitted, term_limit) -> str:
+                 omitted, term_limit, *, _plain_omitted=None) -> str:
     """The content identity of a hint set: ordered terms with scores,
     omissions with reasons, scope, selector/vocabulary revisions and the
     budget — deliberately NOT the creation time (deterministic
-    reconstruction)."""
-    payload = json.dumps({
-        "selector_revision": selector_revision,
-        "vocabulary_revision": vocabulary_revision,
-        "scope": dict(scope),
-        "terms": [t.to_json() for t in terms],
-        "omitted": [dict(o) for o in omitted], "term_limit": term_limit,
-    }, sort_keys=True, ensure_ascii=False)
+    reconstruction). ``_plain_omitted`` is the selector's own list of
+    the same omission dicts (no per-record copy on the hot path); the
+    serialized bytes are identical either way."""
+    if _plain_omitted is None:
+        payload = json.dumps({
+            "selector_revision": selector_revision,
+            "vocabulary_revision": vocabulary_revision,
+            "scope": dict(scope),
+            "terms": [t.to_json() for t in terms],
+            "omitted": [dict(o) for o in omitted],
+            "term_limit": term_limit,
+        }, sort_keys=True, ensure_ascii=False)
+    else:
+        # The same bytes as above, assembled in sorted key order; the
+        # selector builds each omission dict with its keys already in
+        # sorted order, so the large list skips the key sort.
+        def enc(v, sort=True):
+            return json.dumps(v, sort_keys=sort, ensure_ascii=False)
+        payload = (
+            '{"omitted": ' + enc(_plain_omitted, sort=False)
+            + ', "scope": ' + enc(dict(scope))
+            + ', "selector_revision": ' + enc(selector_revision)
+            + ', "term_limit": ' + enc(term_limit)
+            + ', "terms": ' + enc([t.to_json() for t in terms])
+            + ', "vocabulary_revision": ' + enc(vocabulary_revision)
+            + '}')
     return f"m05hs:{hashlib.sha256(payload.encode()).hexdigest()[:12]}"
 
 
@@ -643,9 +767,18 @@ class HintSet:
                 or not isinstance(self.term_limit, int):
             raise TypeError("term_limit must be an int")
         object.__setattr__(self, "terms", terms)
-        object.__setattr__(self, "scope", MappingProxyType(dict(self.scope)))
+        scope = dict(self.scope)
+        omitted = tuple(dict(o) for o in self.omitted)
+        # Every nested value is an immutable scalar (review R13).
+        for m in (scope,) + omitted:
+            for k, v in m.items():
+                if not isinstance(k, str) or not (
+                        v is None or type(v) in (str, int)):
+                    raise TypeError("hint set scope/omission values must"
+                                    " be strings, integers or None")
+        object.__setattr__(self, "scope", MappingProxyType(scope))
         object.__setattr__(self, "omitted", tuple(
-            MappingProxyType(dict(o)) for o in self.omitted))
+            MappingProxyType(o) for o in omitted))
         expected = _hint_set_id(self.selector_revision,
                                 self.vocabulary_revision, self.scope,
                                 self.terms, self.omitted, self.term_limit)
@@ -732,18 +865,18 @@ class RelevantVocabularySelector:
                     source=e.origin, score=self._rank(e))
                 for e in ranked[:self.max_terms])
             # Fresh private dicts behind read-only views: nothing outside
-            # this function holds them.
-            omitted = tuple(
-                MappingProxyType({"canonical": e.canonical,
-                                  "entry_id": e.entry_id,
-                                  "reason": OMISSION_BUDGET})
-                for e in ranked[self.max_terms:])
+            # this function holds them; the id hashes the same dicts.
+            plain = [{"canonical": e.canonical, "entry_id": e.entry_id,
+                      "reason": OMISSION_BUDGET}
+                     for e in ranked[self.max_terms:]]
+            omitted = tuple(map(MappingProxyType, plain))
             scope = MappingProxyType(scope_ctx.to_json())
             hid = _hint_set_id(self.SELECTOR_REVISION, snapshot.revision,
-                               scope, terms, omitted, self.max_terms)
+                               scope, terms, omitted, self.max_terms,
+                               _plain_omitted=plain)
             cached = (hid, scope, terms, omitted)
             if own_scope:
-                snapshot._select_memo[memo_key] = cached
+                snapshot._memo_put(memo_key, cached)
         hid, scope, terms, omitted = cached
         return HintSet._frozen(
             hint_set_id=hid, selector_revision=self.SELECTOR_REVISION,

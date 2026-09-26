@@ -85,8 +85,10 @@ enters the set (AC05).
 (M05-AUDIT-19): contextual biasing counts as qualified only when the
 capability is `supported`, carries a `qualified_identity` equal to the
 manifest's own `adapter`, `model_id`, `model_revision` (the checkpoint —
-never null) and `runtime`, and names non-empty qualification
-`evidence`. A bare `supported: true`, a missing or changed checkpoint, a
+never null or blank; the model id likewise) and `runtime`, and names
+qualification `evidence` with real content (not blank or punctuation
+only, and never the adapter's own baseline "no qualified biasing
+implementation exists" statement — review Q1). A bare `supported: true`, a missing or changed checkpoint, a
 changed runtime or model, or absent evidence is unqualified:
 `asr_hint_request_fields` returns `None` and `hint_disposition` reports
 offered-but-ignored (`disabled_until_qualified`, `accepted_terms: 0`).

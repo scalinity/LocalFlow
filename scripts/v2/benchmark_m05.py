@@ -11,9 +11,15 @@ generator — never by the code under test:
 - cached_retrieval: the per-job cost on a cache hit (the store revision
   read + selection over the cached snapshot) — gated;
 - warm_selection / scoped_selection: RelevantVocabularySelector over the
-  cached global / workspace-scoped snapshot; the selected and omitted
+  cached global / workspace-scoped snapshot (the per-job path: repeat
+  selections on one snapshot are memoized); the selected and omitted
   entry ids must equal an independent ranking of the generator's data
   (pin, scope, recency, frequency, priority, id) — gated;
+- fresh_selection / fresh_scoped_selection: the FIRST selection on each
+  of several freshly built snapshots (built outside the timing), so
+  every timed call does the real ranking, omission and identity work
+  (review R9: a memo hit can never stand in for it) — same oracle —
+  gated;
 - scope_upgrade: the M06 finalize rebuild from the frozen entry set
   under the widened scope + selection + pre-decode packaging
   (disposition, request fields, retained JSON) — reported against the
@@ -114,6 +120,20 @@ def timed(fn, reps):
         val = fn()
         out.append((time.monotonic() - t0) * 1000.0)
     return val, {"iterations": reps, "p50_ms": round(pct(out, .5), 3),
+                 "p95_ms": round(pct(out, .95), 3),
+                 "p99_ms": round(pct(out, .99), 3),
+                 "max_ms": round(max(out), 3)}
+
+
+def timed_each(fn, items):
+    """timed() over distinct inputs: one call per item."""
+    out = []
+    val = None
+    for it in items:
+        t0 = time.monotonic()
+        val = fn(it)
+        out.append((time.monotonic() - t0) * 1000.0)
+    return val, {"iterations": len(out), "p50_ms": round(pct(out, .5), 3),
                  "p95_ms": round(pct(out, .95), 3),
                  "p99_ms": round(pct(out, .99), 3),
                  "max_ms": round(max(out), 3)}
@@ -227,6 +247,29 @@ def main():
             problems.append("scoped selection membership/order differs"
                             " from the independent ranking")
 
+        # Real selection work: the first select() on each fresh snapshot
+        # (snapshots built before the clock starts; review R9).
+        n_fresh = max(8, reps // 10)
+        fresh = [VocabularySnapshot(snap.entries, None)
+                 for _ in range(n_fresh)]
+        hs_f, fresh_t = timed_each(
+            lambda sn: sel.select(sn, now_utc=NOW), fresh)
+        del fresh
+        if [t.entry_id for t in hs_f.terms] != want[:LIMIT] \
+                or [o["entry_id"] for o in hs_f.omitted] != want[LIMIT:]:
+            problems.append("fresh selection membership/order differs"
+                            " from the independent ranking")
+        fresh_s = [VocabularySnapshot(snap.entries,
+                                      ScopeContext(workspace="scope-a"))
+                   for _ in range(n_fresh)]
+        hs_fs, fresh_scoped_t = timed_each(
+            lambda sn: sel.select(sn, now_utc=NOW), fresh_s)
+        del fresh_s
+        if [t.entry_id for t in hs_fs.terms] != want_s[:LIMIT] \
+                or [o["entry_id"] for o in hs_fs.omitted] != want_s[LIMIT:]:
+            problems.append("fresh scoped selection membership/order"
+                            " differs from the independent ranking")
+
         def cached_job():
             vs.revision()                       # the per-job store read
             return sel.select(snap, now_utc=NOW)
@@ -289,6 +332,8 @@ def main():
     work_valid = not problems
     gated = {"cached_retrieval": cached, "warm_selection": warm,
              "scoped_selection": scoped,
+             "fresh_selection": fresh_t,
+             "fresh_scoped_selection": fresh_scoped_t,
              "normalize_no_hit": norm_no_hit,
              "normalize_positive": norm_pos}
     over = {k: v["p95_ms"] for k, v in gated.items()
@@ -328,7 +373,11 @@ def main():
                       "membership_checked_against_independent_rank": True},
         "cache_state": {"cold_snapshot": "fresh store read + build each"
                         " iteration", "cached_retrieval": "store revision"
-                        " read + selection over the cached snapshot"},
+                        " read + selection over the cached snapshot",
+                        "warm_selection": "repeat selection on one"
+                        " snapshot (memoized per snapshot)",
+                        "fresh_selection": "first selection on each of"
+                        " several fresh snapshots (no memo)"},
         "timings": {"cold_snapshot": cold, **gated,
                     "scope_upgrade_and_packaging": {
                         **upgrade_t, "bound_ms": FINALIZE_BOUND_MS,

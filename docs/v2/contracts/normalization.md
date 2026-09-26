@@ -107,7 +107,9 @@ no valid-looking prefix or suffix of a refused candidate converts
 **Structural delimiters (AUDIT-02).** Edge punctuation (`.,;:!?` on a
 word) and line breaks — every separator `str.splitlines()` honors,
 incl. U+2028/U+2029, VT, FF, NEL and the record separators (review
-R14) — separate clauses; spaces, tabs and no-break spaces do not. Every M04 grammar matches within one clause only, and
+R14), plus the unit separator U+001F (M05 review R18) — separate
+clauses; spaces, tabs, no-break spaces and the other Unicode space
+separators (category Zs) do not. Every M04 grammar matches within one clause only, and
 every edit covers token CORES only, so the punctuation outside a
 converted phrase survives ("twelve percent." → `12%.`, "twelve
 dollars, please" → `$12, please`) and two delimited quantities are

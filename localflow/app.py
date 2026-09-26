@@ -384,7 +384,7 @@ class AppDelegate(NSObject):
                 vstore.seed_suggested_coding_terms()
                 self._hint_selector = \
                     v2.vocabulary.RelevantVocabularySelector(
-                        max_terms=int(cfg.get("hint_term_limit", 100)))
+                        max_terms=self._hint_term_limit(cfg))
             self._vocab = vstore
         except Exception as e:
             self._vocab = None
@@ -674,6 +674,21 @@ class AppDelegate(NSObject):
         return policy, context, hint_set
 
     @objc.python_method
+    def _hint_term_limit(self, cfg):
+        """The configured hint budget, strictly (review R12): a positive
+        JSON integer; anything else (a bool, a float, a string, 0) is
+        refused with its own event and the documented default applies —
+        a bad knob never coerces silently and never turns the dictionary
+        off."""
+        value = cfg.get("hint_term_limit", 100)
+        if type(value) is int and value > 0:
+            return value
+        self.v2log.emit("vocabulary.config_invalid", level="WARNING",
+                        reason_code="hint_term_limit",
+                        outcome="default_100")
+        return 100
+
+    @objc.python_method
     def _policy_skill_inputs(self, m10, snapshot):
         """(registered skills, dictionary provenance) for one job: the
         M10 registry merge when the job froze manifest records, else the
@@ -697,6 +712,20 @@ class AppDelegate(NSObject):
         with no entry set, the job runs without dictionary vocabulary."""
         base = getattr(self, "_norm_base_policy", None) or cached_policy
         last = self._vocab_snapshot
+        # Never resurrect what this process has since changed (review
+        # Q2): a last-good set older than the newest revision the app
+        # itself wrote (a disable, delete or edit) is known stale.
+        written = getattr(self._vocab, "last_written_revision", 0) or 0
+        key = self._vocab_state_key
+        if last is not None and (key is None or written > key[0]):
+            skills, prov = self._policy_skill_inputs(m10, None) \
+                if m10 is not None else ({}, {})
+            pol = v2_normalize.NormalizationPolicy(
+                locale=base.locale, profile=norm_profile,
+                registered_skills=skills, skill_provenance=prov)
+            ctx = v2_normalize.ContextSnapshot(
+                source="m05_vocabulary_unavailable")
+            return pol, ctx, None, "vocabulary_off_stale_last_good"
         if last is not None:
             try:
                 snap = v2.vocabulary.VocabularySnapshot(last.entries,
@@ -4819,9 +4848,14 @@ class AppDelegate(NSObject):
         snippet-aware)."""
         if not text:
             return {"input": "", "output": "", "changed": False,
-                    "edits": [], "rejected": []}
-        base = self._norm_policy
-        m10_policy, m10_context = base, self._norm_context
+                    "edits": [], "rejected": [], "scope": "global only"}
+        # An EXPLICIT scope (review R15): the unscoped default — global
+        # dictionary entries and global skills — never the scope of
+        # whatever destination the last dictation had.
+        base, m10_context, _src = self._unscoped_norm_state("hub_preview")
+        if base is None:
+            base, m10_context = self._norm_policy, None
+        m10_policy = base
         try:
             wp = (self._norm_preview_profile() or {}).get("wp")
             # inherit previews the CONFIGURED profile, not the last
@@ -4841,7 +4875,6 @@ class AppDelegate(NSObject):
             # the last job's style (review R18).
             m10_policy = self._policy_with_profile(
                 base, self._configured_norm_profile())
-            m10_context = self._norm_context
         try:
             res = v2_normalize.normalize(text, m10_policy, m10_context)
         except Exception as e:
@@ -4849,6 +4882,7 @@ class AppDelegate(NSObject):
         return {
             "input": text, "output": res.text,
             "changed": res.text != text,
+            "scope": "global only",
             "policy_revision": res.policy_revision,
             "edits": [
                 {"before": e.input_text, "after": e.output_text,

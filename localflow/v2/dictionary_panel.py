@@ -147,6 +147,11 @@ class DictionaryPanelController(NSObject):
         # index into whatever the listing shows after a filter change or
         # a store-driven reorder.
         self._selected_id = None
+        # The revision the user SAW when selecting (review Q3): actions
+        # compare-and-swap against it, so a change made elsewhere after
+        # the selection (an alias added by an import or the Hub) is
+        # never approved, toggled or deleted unseen.
+        self._selected_rev = None
         self.refresh()
 
     # ---- data ------------------------------------------------------------
@@ -167,6 +172,7 @@ class DictionaryPanelController(NSObject):
         if self._selected_id is not None and not any(
                 e.entry_id == self._selected_id for e in self._entries):
             self._selected_id = None      # the selected entry is gone
+            self._selected_rev = None
         lines = [f"{len(self._entries)} entries"
                  f" ({len(shown)} shown) — to select one, type its line"
                  " number in Test phrase and press Test:\n"]
@@ -190,10 +196,11 @@ class DictionaryPanelController(NSObject):
 
     @objc.python_method
     def _selected_entry(self):
-        """The selected entry, RE-READ from the store at action time (its
-        current revision); None — and the selection cleared — when it no
-        longer exists. An action never infers its target from a row
-        position."""
+        """The selected entry, RE-READ from the store at action time;
+        None — and the selection cleared — when it no longer exists, and
+        None (selection kept, listing refreshed) when it CHANGED since
+        the user selected it: the action waits for a fresh look. An
+        action never infers its target from a row position."""
         if self._selected_id is None:
             return None
         try:
@@ -202,9 +209,29 @@ class DictionaryPanelController(NSObject):
             e = None
         if e is None:
             self._selected_id = None
+            self._selected_rev = None
             self.sandbox.setStringValue_(
                 "the selected entry no longer exists — select again")
+            return None
+        if self._selected_rev is not None \
+                and e.revision != self._selected_rev:
+            self._selected_rev = e.revision
+            self.refresh()
+            self.sandbox.setStringValue_(
+                f"{e.canonical} changed since you selected it — review"
+                " the listing, then press the action again")
+            return None
         return e
+
+    @objc.python_method
+    def _acted(self, entry_id):
+        """After this panel's own successful write: the user sees the
+        result in the refreshed listing, so the selection follows it."""
+        try:
+            e = self.vstore.entry(entry_id)
+        except Exception:
+            e = None
+        self._selected_rev = e.revision if e is not None else None
 
     def searchChanged_(self, sender):
         self.refresh()
@@ -224,9 +251,15 @@ class DictionaryPanelController(NSObject):
                 aliases=[alias] if alias else [],
                 scope_kind=scope_kind, scope_value=scope_value,
                 origin="user", approved=False)
+            # Preview against the store as it is NOW (review R14), not
+            # the listing's last read: a contender added elsewhere since
+            # the last refresh is reported too.
             conflicts = vocab.preview_entry_conflicts(
-                self.vstore.entry(entry_id), self._entries)
+                self.vstore.entry(entry_id),
+                [e for e in self.vstore.entries()
+                 if e.entry_id != entry_id])
             self._selected_id = None
+            self._selected_rev = None
             self.refresh()
             if conflicts:
                 self.sandbox.setStringValue_(
@@ -261,6 +294,7 @@ class DictionaryPanelController(NSObject):
             # lands on exactly the state the action was decided on.
             self.vstore.approve_entry(e.entry_id,
                                       expected_revision=e.revision)
+            self._acted(e.entry_id)
             self.refresh()
             self.sandbox.setStringValue_(f"approved {e.canonical}")
         except Exception as ex:
@@ -274,6 +308,7 @@ class DictionaryPanelController(NSObject):
         try:
             self.vstore.set_enabled(e.entry_id, not e.enabled,
                                     expected_revision=e.revision)
+            self._acted(e.entry_id)
             self.refresh()
         except Exception as ex:
             self.sandbox.setStringValue_(f"not toggled: {ex}")
@@ -286,6 +321,7 @@ class DictionaryPanelController(NSObject):
         try:
             self.vstore.update_entry(e.entry_id, pinned=not e.pinned,
                                      expected_revision=e.revision)
+            self._acted(e.entry_id)
             self.refresh()
         except Exception as ex:
             self.sandbox.setStringValue_(f"not pinned: {ex}")
@@ -299,6 +335,7 @@ class DictionaryPanelController(NSObject):
             self.vstore.delete_entry(e.entry_id,
                                      expected_revision=e.revision)
             self._selected_id = None
+            self._selected_rev = None
             self.refresh()
         except Exception as ex:
             self.sandbox.setStringValue_(f"not deleted: {ex}")
@@ -325,6 +362,7 @@ class DictionaryPanelController(NSObject):
             if 0 <= idx < len(self._shown):
                 e = self._shown[idx]
                 self._selected_id = e.entry_id
+                self._selected_rev = e.revision
                 self.sandbox.setStringValue_(
                     f"selected: {e.canonical} ({e.scope_kind}:"
                     f"{e.scope_value or '-'})")
