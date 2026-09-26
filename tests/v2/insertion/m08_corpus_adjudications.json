@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "policy_version": "m08-policy-v1",
+  "about": "Explicit adjudications and expectation mappings for the M08 audit corpus (tests/v2/insertion/m08_audit_corpus.json, sha256 31feb051bc656eb10837edf85f265dc5bb7e0aa3bef10828fa5c4b16723e3f29, never edited). The corpus states semantic expectations, not production enums; each label below says which observed fields the runner (tests/v2/insertion/m08_corpus_runner.py) reads and which values it accepts. Every case is ALSO checked against its family's invariant through the world's own read/effect logs (forbidden reads, forbidden writes, canaries) — a matching state never passes a case whose effects violate the invariant. Policy decisions were taken before grading and are stated in docs/v2/contracts/insertion.md ('Remediation policy'). A case graded under a decision is reported with this policy_version; a residual is never reported as a pass.",
+  "decisions": {
+    "D1_read_capability": {
+      "decision": "Destination content (range, selected text, string-for-range, character count, value) is read only from the owned element of a classifiable TEXT field (role and subrole) in an app that the normalized M06 deny decision does not deny; an invalid deny list denies every app's content. A denied app gets the documented metadata minimum only: element ownership (AXUIElementGetPid), AXWindow identity and settability — no title, role or content read. context_enabled=false alone does not deny (an explicit transform and plain insertion keep their own authority). Insertion stays available without reads and is then posted_unverified; undo, repaste reconciliation and observation need reads and refuse or skip.",
+      "families": ["M08-F05", "M08-F19"],
+      "relations": ["LF-M08-MR-09"]
+    },
+    "D2_recorded_destination": {
+      "decision": "A job with no recorded destination (no TargetSnapshot/ContextSnapshot: context off, identity failed, an explicit repaste) is inserted on faith into the frontmost application's own focused element: it is never confirmed and never observed.",
+      "cases": ["LF-M08-F12-C03", "LF-M08-F15-C04", "LF-M08-F18-C01"]
+    },
+    "D3_destination_binding": {
+      "decision": "Validation acquires ONE element — the focused element of the live frontmost application, accepted only when its owner pid is that application's (a foreign owner is target_changed, destination_unverified). The element is bound for the whole operation: method choice, pre-reads, the write, readbacks, undo and observation act on it. Immediately before each physical effect (AX write, clipboard publication, the paste post) the operation re-checks cancellation/deletion and that the same application is frontmost with the bound element as its focused element; otherwise no effect (target_changed_before_effect). The check and the effect are not atomic: a focus change between them is the documented residual.",
+      "families": ["M08-F01", "M08-F02", "M08-F03"],
+      "cases": ["LF-M08-F16-C04"]
+    },
+    "D4_plain_destination": {
+      "decision": "M06 D5 carries over for plain dictation: a moved caret and another same-role field of the same window at VALIDATION time keep authority, and the field then focused is the one bound. A caret recorded at capture that is a non-empty live selection at validation is not a caret move: replacing text selected after the request has no authority (selection: fail, target_changed).",
+      "cases": ["LF-M08-F03-C01", "LF-M08-F03-C02", "LF-M08-F06-C05"],
+      "relations": ["LF-M08-MR-03"]
+    },
+    "D5_strict_proof": {
+      "decision": "Strict replacement requires, each positively read on the bound element: the recorded window element equal to the live AXWindow AND the recorded title equal to the live title (neither substitutes for the other); role equal; the recorded non-empty selection's range and text equal; and BOTH flanks recorded at capture and read back unchanged. Plain replacement (a recorded non-empty selection without the strict flag) needs the live range and text read back equal and the recorded text kept; anything missing refuses.",
+      "families": ["M08-F02", "M08-F06"],
+      "relations": ["LF-M08-MR-02", "LF-M08-MR-04"]
+    },
+    "D6_confirmation": {
+      "decision": "confirmed = recorded destination + read permission + pre-write read of the owned region (clamped to the field) and field length + post-write readback of the owned range equal to the text + an attributable change (length moved by exactly inserted minus replaced units, and the owned region's content changed). An identical-text AX replacement (length unchanged, content unchanged) is confirmed only by the method-specific proof that the AX selection moved from the replaced range to a caret at the owned end; otherwise match_ambiguous. A clipboard paste over identical pre-existing text is match_ambiguous. Missing pre-read or readback never improves a result.",
+      "families": ["M08-F08", "M08-F12", "M08-F13"],
+      "relations": ["LF-M08-MR-06"]
+    },
+    "D7_bound_readback": {
+      "decision": "Readbacks read the BOUND element, not whatever holds focus. A focus change after a witnessed AX write therefore does not invalidate the readback of the field that received the write: that result may be confirmed, with zero reads of the newly focused field. The observation window, which needs the bound field to stay focused, ends at its first tick without reading.",
+      "cases": ["LF-M08-F03-C05"]
+    },
+    "D8_pending_clipboard_payload": {
+      "decision": "A clipboard paste with no attributable consumption at the settle bound keeps LocalFlow's owned generation for the late consumer (readback_pending/readback_ambiguous) and becomes the service's pending payload. While it is unresolved no later clipboard publication, copy offer or undo recovery offer may replace it: a later clipboard-method job is saved_not_inserted (clipboard_payload_pending) and stays in History; AX-method jobs are unaffected. It resolves when its destination shows the paste landed (the user's original is restored first), when the board moved on (a user copy won), or when its job was deleted (restored away).",
+      "cases": ["LF-M08-F11-C01", "LF-M08-F11-C03", "LF-M08-F11-C04"],
+      "stateful": ["LF-M08-ST-08", "LF-M08-ST-12"]
+    },
+    "D9_ownership_before_post": {
+      "decision": "Immediately before the paste post the clipboard must still hold LocalFlow's published generation; a copy that landed after publication is never pasted by LocalFlow and never restored over (saved_not_inserted, clipboard_ownership_lost).",
+      "cases": ["LF-M08-F10-C01"],
+      "relations": ["LF-M08-MR-05"]
+    },
+    "D10_operation_identity": {
+      "decision": "Each submission carries an operation id: job:<job_id>:<attempt> for a dictation delivery or an accepted transform (candidate id as job id), a fresh id for each explicit repaste. A second delivery of an admitted id has no effect and records no row; a delivery for an attempt older than one already admitted for the job is saved_not_inserted (stale_attempt). A deliberate new repaste is a new id and is never deduplicated by job id. The coordinator settles and retires a job once. The M02 store attempt fence stays unwired (M02's recorded decision).",
+      "families": ["M08-F15"],
+      "cases": ["LF-M08-F01-C05", "LF-M08-F18-C02"]
+    },
+    "D11_cancellation_linearization": {
+      "decision": "Cancellation or deletion is checked at admission, after validation (before any effect), before clipboard publication and before the paste post. Published-but-not-posted text is taken back off the clipboard while it is still LocalFlow's. After the post (or a witnessed AX write) the effect is the truth: a later cancel never reports zero insertion (the coordinator's insertion.cancelled_after_insert).",
+      "families": ["M08-F14"],
+      "relations": ["LF-M08-MR-07"]
+    },
+    "D12_observation": {
+      "decision": "Observation starts only for an attributably confirmed insertion whose destination may be read, whose job has capture-time collection consent (the ctx.collecting of the push-to-talk snapshot, or a retry's original-and-current grant; for an accepted transform, a recorded candidate) and is not deleted. Every tick re-proves, before any content read: not revoked, identity, the application's focused element is the bound element, owner pid, and a classifiable text field (role and subrole). Re-anchoring needs a UNIQUE occurrence in the bounded neighbourhood with no pre-existing equal text; ambiguity, a failed read or an exhausted deadline stops without attribution. A changed-length edit keeps an after-text only when the unchanged text recorded (in memory) on both sides still bounds it; otherwise owned_edit_unbounded without text.",
+      "families": ["M08-F19", "M08-F20", "M08-F21"]
+    },
+    "D13_deletion": {
+      "decision": "revoke_job is flag-only inside the store's deletion op: cached recovery text and undo record cleared, queued deliveries refused (job_deleted), running observers stop before their next read, an unresolved pending payload of the job is restored away by the queue thread. Content-free insertion rows for an effect that happened remain allowed (truth, never payload or read authority); an observation row is never OPENED for a deleted job (writer-side barrier). The M02 artifact barrier is unchanged.",
+      "families": ["M08-F23"],
+      "cases": ["LF-M08-F23-C05", "LF-M08-F17-C05", "LF-M08-F18-C03", "LF-M08-F21-C05"],
+      "relations": ["LF-M08-MR-08"]
+    },
+    "D14_recovery_lifetime": {
+      "decision": "The in-memory recovery cache (the last result's text and its undo record) ends after RECOVERY_CACHE_TTL_SEC (3600 s), at the next insertion, at deletion of its job, or at quit; it is never persisted. History's Paste Again works from the retained store copy under the store's retention.",
+      "cases": ["LF-M08-F24-C05"]
+    },
+    "D15_terminal_text": {
+      "decision": "For a terminal destination, text containing any line separator str.splitlines recognizes (LF, CR, CRLF, VT, FF, FS, GS, RS, NEL, LS, PS) or any C0 control character other than TAB, or DEL, is multi-line/unsafe: copy-only offer (multiline_terminal_unverified). CERTIFIED_BRACKETED_SURFACES stays empty; no generic fixture certifies a terminal; no synthetic Return exists.",
+      "cases": ["LF-M08-F16-C05"]
+    },
+    "D16_substring_reconciliation": {
+      "decision": "Paste Again's reconciliation is an approximate duplicate guard by design: the previous result appearing anywhere in the bounded read of the permitted destination counts as present (already_present, nothing pasted). It is not semantic duplicate certainty.",
+      "cases": ["LF-M08-F18-C05"]
+    },
+    "D17_native_evidence": {
+      "decision": "native_helper cases are never passed by the portable runner: they are NOT_RUN there with this reason and are graded by tests/v2/insertion/test_native_insertion.py against an owned synthetic helper (real AXUIElement, AXValue, NSTextView and NSPasteboard). The paste consumer is emulated by the helper reading a private named pasteboard — no synthetic key event reaches the desktop and the user's clipboard is never used; that emulation is the disclosed limit of the evidence.",
+      "cases": ["LF-M08-F07-C01", "LF-M08-F07-C02", "LF-M08-F07-C03", "LF-M08-F07-C04", "LF-M08-F09-C04", "LF-M08-F09-C05", "LF-M08-F10-C05", "LF-M08-F11-C02", "LF-M08-F12-C04"]
+    },
+    "D18_benchmark_cases": {
+      "decision": "F25 benchmark cases are graded from the work-validity record of scripts/v2/benchmark_m08.py on the reference Mac (per-sample witnesses, cohort boundaries, budgets) when the runner is given --benchmark; otherwise NOT_RUN with that reason.",
+      "cases": ["LF-M08-F25-C01", "LF-M08-F25-C02", "LF-M08-F25-C03", "LF-M08-F25-C04", "LF-M08-F25-C05"]
+    }
+  },
+  "case_adjudications": {
+    "LF-M08-F03-C05": {
+      "literal_expectation": "posted_unverified",
+      "graded_as": "confirmed_or_unverified_bound_readback",
+      "decision": "D7",
+      "why": "The expectation assumes a readback that follows the focus. Readbacks are bound to the written element: after a witnessed AX write to F1 and a focus switch to F2, F1's own readback proving the write is truthful. The invariant graded in full: zero content reads of F2, no F2 write, and any confirmation derived from F1 only."
+    },
+    "LF-M08-F06-C05": {"graded_as": "target_changed", "decision": "D4"},
+    "LF-M08-F16-C05": {"graded_as": "saved_not_inserted_copy_offer_every_variant", "decision": "D15"},
+    "LF-M08-F18-C05": {"graded_as": "already_present_documented_approximation", "decision": "D16"},
+    "LF-M08-F23-C05": {"graded_as": "insertion_row_content_free_observation_refused", "decision": "D13"}
+  },
+  "expectation_mapping": {
+    "confirmed": {"state": ["confirmed"]},
+    "target_changed": {"state": ["target_changed"]},
+    "saved_not_inserted": {"state": ["saved_not_inserted"]},
+    "posted_unverified": {"state": ["posted_unverified"]},
+    "refused_undo": {"undo_outcome": ["no_authority", "stale_range", "unsupported_surface", "nothing_to_undo"]},
+    "confirmed_or_explicit_unverified": {"state": ["confirmed", "posted_unverified"]},
+    "unverified_or_copy_without_content_reads": {"state": ["posted_unverified", "saved_not_inserted", "target_changed"], "plus": "zero destination content reads"},
+    "truthful_partial_or_unverified": {"state": ["posted_unverified"], "plus": "a physical partial effect is never reported as failed-without-effect"},
+    "confirmed_or_unverified_by_method": {"state": ["confirmed", "posted_unverified"]},
+    "confirmed_and_restore_skipped": {"state": ["confirmed", "posted_unverified"], "clipboard": {"restore_skipped_reason": ["user_copy_won"]}},
+    "capture_refused": {"capture": "refused"},
+    "target_changed_or_non_destructive_refusal": {"state": ["target_changed", "saved_not_inserted"], "plus": "no destructive write"},
+    "saved_not_inserted_copy_offer": {"state": ["saved_not_inserted"], "plus": "copy offer holds the text; zero paste posts"},
+    "posted_unverified_or_confirmed_if_proved": {"state": ["posted_unverified", "confirmed"]},
+    "exactly_one_effect": {"effects": 1},
+    "undo_restored": {"undo_outcome": ["undone"]},
+    "undo_restored_old_not_empty": {"undo_outcome": ["undone"], "plus": "the replaced selection text returns exactly"},
+    "uncertain_or_refused_no_restore_over_g2": {"state": ["saved_not_inserted", "posted_unverified"], "plus": "the user's newer generation is never pasted by LocalFlow nor restored over"},
+    "unavailable_no_owned_edit_attribution": {"observation": {"edited": false, "stop_reason": ["target_read_failed"]}},
+    "target_changed_no_post": {"state": ["target_changed"], "plus": "zero paste posts"},
+    "session_locked_no_further_content_reads": {"observation": {"stop_reason": ["session_locked"]}, "plus": "no content read after the lock"},
+    "secure_field_transition_no_content": {"observation": {"stop_reason": ["secure_field_transition"]}, "plus": "no content read after the transition"},
+    "saved_not_inserted_with_clipboard_disclosure": {"state": ["saved_not_inserted"], "plus": "the published text is taken back; the user's original is on the board"},
+    "revoked_observer_stays_revoked": {"observation": {"stop_reason": ["authority_revoked"]}, "plus": "no read after deletion, through lock/wake"},
+    "reanchored_without_owned_edit": {"observation": {"edited": false, "reanchors_min": 1}},
+    "posted_unverified_with_original_transaction_id": {"state": ["posted_unverified"], "plus": "the insertions row carries the same insertion_id and the real method"},
+    "posted_unverified_residual_disclosed": {"state": ["posted_unverified"], "native": true},
+    "posted_unverified_partial": {"state": ["posted_unverified"], "readback": ["partial"]},
+    "posted_unverified_observation_unavailable": {"state": ["posted_unverified"], "plus": "no observer started"},
+    "posted_unverified_no_old_clipboard_insertion": {"state": ["posted_unverified"], "plus": "the late consumer pastes LocalFlow's text, never the user's clipboard"},
+    "posted_unverified_correct_payload_retained": {"state": ["posted_unverified"], "plus": "ownership kept; the late consumer pastes the right text"},
+    "posted_unverified_ambiguous_or_pending": {"state": ["posted_unverified"], "readback": ["mismatch", "match_ambiguous"]},
+    "posted_unverified_ambiguous": {"state": ["posted_unverified"], "readback": ["match_ambiguous"]},
+    "policy_adjudication_no_unsafe_execution_claim": {"decision": "D15"},
+    "policy_adjudication_no_silent_newer_text_loss": {"decision": "D4"},
+    "physical_result_preserved_evidence_failure_disclosed": {"state": ["confirmed"], "plus": "insertion.record_failed emitted; the result keeps its state"},
+    "observation_stopped_before_foreign_read": {"observation": {"stop_reason": ["field_changed", "focus_lost"]}, "plus": "zero reads of the foreign field"},
+    "observation_continues": {"observation": {"stop_reason": ["window_elapsed"]}},
+    "no_wrong_payload_or_duplicate_for_either_job": {"plus": "each payload lands at most once; no user clipboard content is pasted"},
+    "no_unintended_duplicate": {"effects": 1},
+    "no_training_observation_content": {"observation": "none", "plus": "no observation row or observation artifact"},
+    "no_retroactive_training_authorization": {"observation": "none"},
+    "no_expired_payload_reuse": {"plus": "no purged payload is read by mining or recovery"},
+    "no_edit_observed_no_correctness_label": {"observation": {"stop_reason": ["window_elapsed"], "edited": false}, "plus": "correctness stays unreviewed"},
+    "no_approximation_labeled_as_full_tick": {"benchmark": true},
+    "new_dictation_stop": {"observation": {"stop_reason": ["new_dictation"]}},
+    "native_range_exact_or_explicit_unavailable": {"native": true},
+    "jobless_accept_no_training_row": {"plus": "no insertions row and no observation for an accept without a candidate"},
+    "history_retained_training_ineligible": {"plus": "prune keeps the history-leased payload; training lease gone"},
+    "fresh_observer_active": {"observation": {"stop_reason": ["window_elapsed"], "ticks_min": 1}},
+    "failed_without_false_publish_ack": {"state": ["failed"], "native": true},
+    "failed_without_effect": {"state": ["failed"], "plus": "zero effects"},
+    "explicit_new_intent_not_globally_deduplicated": {"effects": 1, "plus": "a second explicit repaste of the same job id runs its own reconciliation"},
+    "expired_or_deleted_cache_not_replayed": {"plus": "nothing to paste/undo after expiry or deletion; zero reads"},
+    "exactly_one_retirement": {"plus": "_pending and active set change once"},
+    "exactly_one_final_observation_callback": {"plus": "one on_observation_closed call"},
+    "exact_owned_edit_or_abstention": {"plus": "after-text equals the independently known edit or is absent"},
+    "effect_truth_preserved_content_not_republished": {"plus": "state reflects the effect; no content artifact for the deleted job"},
+    "documented_residual_not_certified": {"native": true},
+    "documented_approximate_reconciliation": {"decision": "D16"},
+    "deadline_no_owned_edit_attribution": {"observation": {"edited": false, "stop_reason": ["reanchor_deadline"]}},
+    "content_purged_no_future_authority": {"plus": "payload purged; no later read/replay"},
+    "content_free_policy_record_or_refusal": {"decision": "D13"},
+    "conflict_or_consistent_snapshot_no_silent_loss": {"plus": "a consistent one-generation capture or an explicit conflict; the user's newer copy is not lost"},
+    "confirmed_with_restore_failure_disclosed": {"state": ["confirmed"], "native": true},
+    "confirmed_with_cancel_after_effect_disclosure": {"plus": "insertion.cancelled_after_insert; envelope keeps the real state"},
+    "confirmed_only_with_equivalent_method_proof": {"native": true},
+    "confirmed_correctness_unreviewed": {"state": ["confirmed"], "plus": "correctness unreviewed; no labels or preferences"},
+    "capture_refused_or_same_bound_A": {"capture": "refused_or_A_only"},
+    "capture_allowed": {"capture": "allowed"},
+    "candidate_attributed_insertion": {"plus": "insertions row job_id is the candidate id"},
+    "callback_queued_without_AX_on_UI": {"plus": "no AX read on the calling thread; the callback returns promptly"},
+    "authorized_capture_semantics_preserved": {"observation": {"stop_reason": ["window_elapsed", "owned_range_edited"]}},
+    "artifact_publication_refused": {"plus": "the late publication writes no artifact for the deleted job"},
+    "ambiguous_no_owned_edit_attribution": {"observation": {"edited": false, "stop_reason": ["reanchor_ambiguous"]}},
+    "already_present": {"repaste": "already_present", "effects": 0},
+    "valid_only_with_actual_entry_point_witness": {"benchmark": true},
+    "valid_only_if_all_samples_do_work": {"benchmark": true},
+    "valid_separate_callback_queue_execution_metrics": {"benchmark": true},
+    "valid_only_with_population_environment_and_budget_verdict": {"benchmark": true}
+  }
+}

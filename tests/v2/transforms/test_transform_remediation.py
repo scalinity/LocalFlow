@@ -485,9 +485,12 @@ def _strict_snapshot(tgt, *, rng, text, title="Doc A.txt",
     field = FieldContext(role=role, classification="text",
                          selected_text=text, selected_range=rng,
                          preceding_text=preceding, following_text=following)
+    # The field's own window element, as capture_selection records it
+    # (M08 strict proof needs the element AND the title).
     return ContextSnapshot(context_snapshot_id=ids.new_id("ctx"),
                            stage="transform_selection", target=target,
-                           field=field, window_title=title)
+                           field=field, window_title=title,
+                           window_element=tgt.attribute(tgt, "AXWindow"))
 
 
 def _titled(t):
@@ -547,10 +550,21 @@ def f06_strict_replacement_requires_positive_proof():
 
 @case("insertion")
 def f06_plain_dictation_contract_unchanged():
-    """Control: M08 plain dictation keeps its permissive rules (an
-    unreadable recorded selection still gets a lease)."""
+    """Control: M08 plain dictation keeps its permissive rules for a
+    CARET (an unreadable field still gets a lease — plain dictation).
+    A recorded non-empty SELECTION that can no longer be read carries no
+    destructive authority, strict or not (M08 remediation, AUDIT-04:
+    missing proof never keeps replacement authority)."""
     from fixture_target import FixtureTargetApp
     from localflow.v2.insertion.validation import validate_target
+    t = FixtureTargetApp(window_title="Doc A.txt")
+    t.set_content("alpha rewrite this rough sentence omega")
+    t.selection = (6, 6)
+    snap = _strict_snapshot(t, rng=(6, 6), text=None)
+    t.ax_readable = False
+    lease, ver = validate_target(t, snap, {"job_id": "job_1",
+                                           "attempt": 1})
+    assert lease is not None and not lease.replace_selection, ver
     t = FixtureTargetApp(window_title="Doc A.txt")
     t.set_content("alpha rewrite this rough sentence omega")
     t.selection = (6, 33)
@@ -559,7 +573,7 @@ def f06_plain_dictation_contract_unchanged():
     t.ax_readable = False
     lease, ver = validate_target(t, snap, {"job_id": "job_1",
                                            "attempt": 1})
-    assert lease is not None, ver
+    assert lease is None, ("unreadable selection kept replacement", ver)
 
 
 @case("helper", new_interface=True)

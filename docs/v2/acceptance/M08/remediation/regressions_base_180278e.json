@@ -45,14 +45,14 @@
       "finding": "M08-AUDIT-03",
       "status": "fail",
       "detail": "denied-app content reads: [(2, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (3, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (5, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (6, 'string_for_range', 'F1', 101, 'AXStringForRange')] (service ignored ['denied_apps'])",
-      "seconds": 0.006
+      "seconds": 0.005
     },
     {
       "case": "test_a03_denied_app_undo_and_repaste_read_nothing",
       "finding": "M08-AUDIT-03",
       "status": "fail",
       "detail": "denied-app reads by undo/repaste: [(7, 'string_for_range', 'F1', 101, 'AXStringForRange'), (8, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (9, 'string_for_range', 'F1', 101, 'AXStringForRange'), (10, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (11, 'string_for_range', 'F1', 101, 'AXStringForRange')]",
-      "seconds": 0.416
+      "seconds": 0.415
     },
     {
       "case": "test_a03_unclassifiable_field_reads_nothing",
@@ -80,7 +80,7 @@
       "finding": "M08-AUDIT-04",
       "status": "fail",
       "detail": "say new wording now",
-      "seconds": 0.005
+      "seconds": 0.006
     },
     {
       "case": "test_a05_astral_owned_range_in_host_units",
@@ -94,7 +94,7 @@
       "finding": "M08-AUDIT-05",
       "status": "fail",
       "detail": "{'outcome': 'stale_range', 'recovery': 'clipboard_copy'}",
-      "seconds": 0.005
+      "seconds": 0.006
     },
     {
       "case": "test_a06_ax_noop_over_identical_text_is_not_confirmed",
@@ -122,35 +122,35 @@
       "finding": "M08-AUDIT-07",
       "status": "fail",
       "detail": "CANARY_OLD_CLIPBOARDhel",
-      "seconds": 0.175
+      "seconds": 0.172
     },
     {
       "case": "test_a07_next_job_never_changes_a_pending_payload",
       "finding": "M08-AUDIT-07",
       "status": "fail",
       "detail": "TWO TWO ",
-      "seconds": 0.433
+      "seconds": 0.455
     },
     {
       "case": "test_a08_undo_never_writes_another_window",
       "finding": "M08-AUDIT-08",
       "status": "fail",
       "detail": "[(10, 'ax_set_range', 'F2', (0, 3)), (11, 'ax_set_text', 'F2', '')]",
-      "seconds": 0.017
+      "seconds": 0.008
     },
     {
       "case": "test_a09_clipboard_replacement_undo_restores_selection",
       "finding": "M08-AUDIT-09",
       "status": "fail",
       "detail": "('say  now', {'outcome': 'undone'})",
-      "seconds": 0.01
+      "seconds": 0.007
     },
     {
       "case": "test_a10_observer_stops_before_reading_another_field",
       "finding": "M08-AUDIT-10",
       "status": "fail",
       "detail": "[(13, 'number_of_characters', 'F2', 101, 'AXNumberOfCharacters'), (14, 'string_for_range', 'F2', 101, 'AXStringForRange'), (15, 'string_for_range', 'F2', 101, 'AXStringForRange'), (16, 'string_for_range', 'F2', 101, 'AXStringForRange'), (17, 'string_for_range', 'F2', 101, 'AXStringForRange'), (18, 'string_for_range', 'F2', 101, 'AXStringForRange'), (19, 'string_for_range', 'F2', 101, 'AXStringForR",
-      "seconds": 0.526
+      "seconds": 0.516
     },
     {
       "case": "test_a10_secure_subrole_transition_stops_before_read",
@@ -164,49 +164,49 @@
       "finding": "M08-AUDIT-11",
       "status": "fail",
       "detail": "re-anchored onto the pre-existing occurrence (window_elapsed)",
-      "seconds": 1.527
+      "seconds": 1.541
     },
     {
       "case": "test_a11_read_failure_is_not_an_edit",
       "finding": "M08-AUDIT-11",
       "status": "fail",
       "detail": "a failed read was attributed as an edit",
-      "seconds": 0.525
+      "seconds": 0.527
     },
     {
       "case": "test_a11_changed_length_edit_keeps_only_owned_region",
       "finding": "M08-AUDIT-11",
       "status": "fail",
       "detail": "after-text 'tig' for 'tiger'",
-      "seconds": 0.522
+      "seconds": 0.523
     },
     {
       "case": "test_a12_consent_off_capture_writes_no_observation_content",
       "finding": "M08-AUDIT-12",
       "status": "fail",
-      "detail": "([('observation_before_range',), ('observation_after_range',)], [('obs-fce19d484bdc427092ff69b6b996d2ce',)])",
-      "seconds": 0.526
+      "detail": "([('observation_before_range',), ('observation_after_range',)], [('obs-dfc69166a6594c9593071dfc57524f4f',)])",
+      "seconds": 0.52
     },
     {
       "case": "test_a15_cancel_after_validation_prevents_ax_write",
       "finding": "M08-AUDIT-15",
       "status": "fail",
       "detail": "must not land",
-      "seconds": 0.012
+      "seconds": 0.013
     },
     {
       "case": "test_a15_cancel_after_publish_prevents_post",
       "finding": "M08-AUDIT-15",
       "status": "fail",
       "detail": "a paste was posted after cancellation",
-      "seconds": 0.009
+      "seconds": 0.01
     },
     {
       "case": "test_a16_exception_after_ax_write_keeps_effect_facts",
       "finding": "M08-AUDIT-16",
       "status": "fail",
       "detail": "('failed', 'none', 'transaction_error:RuntimeError')",
-      "seconds": 0.008
+      "seconds": 0.007
     },
     {
       "case": "test_a16_exception_during_restore_keeps_post",
@@ -220,72 +220,93 @@
       "finding": "M08-AUDIT-19",
       "status": "fail",
       "detail": "a flavour from another generation reported: ['public.rtf']",
-      "seconds": 0.006
+      "seconds": 0.007
+    },
+    {
+      "case": "test_a19_copy_after_publish_is_never_pasted",
+      "finding": "M08-AUDIT-19",
+      "status": "fail",
+      "detail": "CANARY_USER_COPY",
+      "seconds": 0.178
+    },
+    {
+      "case": "test_terminal_cr_and_separators_are_not_pasted",
+      "finding": "M08-AUDIT-01/D15",
+      "status": "fail",
+      "detail": "('ls\\rrm -rf x', 'ls\\rrm -rf x')",
+      "seconds": 0.012
+    },
+    {
+      "case": "test_a11_edit_after_window_deadline_is_not_attributed",
+      "finding": "M08-AUDIT-11",
+      "status": "fail",
+      "detail": "('owned_range_edited', True)",
+      "seconds": 1.022
     },
     {
       "case": "test_a19_refused_publication_is_not_posted",
       "finding": "M08-AUDIT-19",
       "status": "fail",
       "detail": "posted a paste after a refused publication",
-      "seconds": 0.182
+      "seconds": 0.183
     },
     {
       "case": "test_a12_app_capture_consent_gates_observation",
       "finding": "M08-AUDIT-12",
       "status": "fail",
       "detail": "(1, 2)",
-      "seconds": 1.471
+      "seconds": 1.492
     },
     {
       "case": "test_a03_app_passes_its_deny_policy_to_the_service",
       "finding": "M08-AUDIT-03",
       "status": "fail",
       "detail": "denied-app reads through the app: [(4, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (5, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (7, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (8, 'string_for_range', 'F1', 101, 'AXStringForRange')]",
-      "seconds": 0.427
+      "seconds": 0.448
     },
     {
       "case": "test_a13_deletion_revokes_repaste_undo_and_observer",
       "finding": "M08-AUDIT-13",
       "status": "fail",
       "detail": "([(15, 'ax_set_range', 'F1', (0, 9)), (16, 'ax_set_text', 'F1', '')], '')",
-      "seconds": 1.532
+      "seconds": 1.54
     },
     {
       "case": "test_a14_duplicate_completion_retires_once",
       "finding": "M08-AUDIT-14",
       "status": "fail",
       "detail": "_pending 0 -> -1",
-      "seconds": 0.118
+      "seconds": 0.13
     },
     {
       "case": "test_a14_same_operation_submitted_twice_writes_once",
       "finding": "M08-AUDIT-14",
       "status": "fail",
       "detail": "one operation, effects: 'onceonce'",
-      "seconds": 0.023
+      "seconds": 0.024
     },
     {
       "case": "test_a14_two_repastes_reconcile_serially",
       "finding": "M08-AUDIT-14",
       "status": "fail",
       "detail": "two repastes produced 'hellohello'",
-      "seconds": 0.691
+      "seconds": 0.692
     },
     {
       "case": "test_a17_recovery_and_history_repaste_do_no_ax_on_caller",
       "finding": "M08-AUDIT-17",
       "status": "fail",
       "detail": "2 AX read(s) on the UI thread",
-      "seconds": 1.451
+      "seconds": 1.456
     },
     {
       "case": "test_a18_close_in_subscription_gap_delivers_once",
       "finding": "M08-AUDIT-18",
       "status": "fail",
       "detail": "final observation callbacks: 0",
-      "seconds": 3.94
+      "seconds": 3.937
     }
   ],
   "passed": 1,
-  "total": 40
+  "total": 43
 }

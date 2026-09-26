@@ -189,7 +189,9 @@ def test_repaste_command_records_activity_not_words():
             store=h.d.store, emit=lambda *a, **k: None, settle_sec=0.05)
         out = h.d.hubPasteText("RAW FOR job wav again",
                                job_id=before[0])
-        assert out["outcome"] in ("repaste_submitted", "already_present")
+        # M08 remediation: the reconcile-then-paste runs whole on the
+        # insertion queue; the command answers at once.
+        assert out["outcome"] == "repaste_queued", out
         deadline = time.monotonic() + 5.0
         while "again" not in tgt.content and time.monotonic() < deadline:
             time.sleep(0.02)

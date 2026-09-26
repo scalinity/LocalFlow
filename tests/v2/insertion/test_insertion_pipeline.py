@@ -90,6 +90,13 @@ def enable_collection(h):
     return h.d.collector
 
 
+def _fixture_identity(tgt):
+    from localflow.v2.context.snapshot import TargetSnapshot
+    return TargetSnapshot(target_snapshot_id="tsnap-fixture",
+                          app_bundle=tgt.bundle, app_name="Fixture",
+                          app_pid=tgt.pid, category="editor")
+
+
 def test_app_switch_midprocessing_routes_to_saved():
     """AC01 through the real coordinator: the user switches apps while
     the worker runs; the finished artifact is saved (never inserted
@@ -137,6 +144,10 @@ def test_confirmed_path_settles_states_and_envelope():
     with ImmediateAfter():
         fn, args = h.run_coordinator()
         text, job = args
+        # The recorded destination the PTT identity capture provides
+        # (M08 remediation: an insert with no recorded destination is
+        # on faith and never confirmed).
+        job["target"] = _fixture_identity(tgt)
         h.d._finishWithText_(text, job)
         h.wait_settled()
         h.d.store.sync()
@@ -209,12 +220,15 @@ def test_menu_undo_and_paste_again_actions():
         h.d._finishWithText_(text, job)
         h.wait_settled()
         assert tgt.content == text
-        # Paste-again after a confirmed insert: reconciliation finds
-        # the text already present — no duplicate paste.
+        # Paste-again after a confirmed insert: the whole reconcile-
+        # then-paste runs on the queue (never on the menu callback) and
+        # finds the text already present — no duplicate paste.
         r = h.d._insertion.paste_again()
-        assert r["outcome"] == "already_present", r
-        assert tgt.content == text, "no duplicate insertion"
-        # Undo removes exactly our revision.
+        assert r["outcome"] == "repaste_queued", r
+        # Undo removes exactly our revision (queued after the repaste,
+        # so the reconciliation above has run by the time it returns;
+        # had it pasted a duplicate, undo would remove that one and the
+        # field would still hold the original).
         u = h.d._insertion.undo_last()
         assert u["outcome"] == "undone", u
         assert tgt.content == ""

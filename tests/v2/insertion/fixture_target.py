@@ -110,6 +110,8 @@ class FixtureTargetApp:
         self.frontmost_info = {"bundle": bundle, "name": "Fixture",
                                "pid": pid}
         self.role = role
+        self.subrole = None
+        self._window = ("window", pid)
         self.window_title = window_title
         self.settable = settable
         self.ax_readable = ax_readable
@@ -180,12 +182,24 @@ class FixtureTargetApp:
     def focused_element(self):
         return self if self.ax_readable or self.settable else None
 
+    def focused_element_for(self, pid):
+        """The M06 owned acquisition: this app's focused element."""
+        return self.focused_element() if pid == self.pid else None
+
+    def element_pid(self, el):
+        return self.pid if el is self else None
+
     def attribute(self, el, name):
         if el is not self:
             return None
         with self._state_lock:
             if name == "AXRole":
                 return self.role
+            if name == "AXSubrole":
+                return self.subrole
+            if name == "AXWindow":
+                # The field's own window element (stable per fixture).
+                return self._window
             if name == "AXSelectedTextRange":
                 return _Range(self.selection[0],
                               self.selection[1] - self.selection[0])
@@ -222,7 +236,10 @@ class FixtureTargetApp:
             return True
         if name == "AXSelectedTextRange":
             with self._state_lock:
-                loc, length = int(value.location), int(value.length)
+                if isinstance(value, tuple):
+                    loc, length = int(value[0]), int(value[1])
+                else:
+                    loc, length = int(value.location), int(value.length)
                 self.selection = (loc, loc + length)
                 self.caret = loc + length
             return True

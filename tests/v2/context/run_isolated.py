@@ -13,6 +13,12 @@ reports untrusted, and ``CGEventPost`` posts nothing. Each blocked call
 is counted and the totals are printed on exit, so a suite that silently
 reached for the desktop is visible.
 
+The clipboard is part of the desktop too: ``NSPasteboard.generalPasteboard``
+returns a private, uniquely named pasteboard of this process (a real
+NSPasteboard, change counts and all), so a suite's copy offers, publishes
+and restores never replace the user's clipboard. Each redirection is
+counted.
+
 A pass here is native for imports and object construction; it is NOT
 native Accessibility evidence (that is ``test_native_ax.py``, which
 drives a synthetic window it owns).
@@ -23,11 +29,13 @@ import os
 import runpy
 import sys
 
+import AppKit
 import ApplicationServices as AS
 import Quartz
 
 K_AX_ERROR_API_DISABLED = -25211
-BLOCKED = {"ax": 0, "trust_queries": 0, "cg_event_post": 0}
+BLOCKED = {"ax": 0, "trust_queries": 0, "cg_event_post": 0,
+           "general_pasteboard": 0}
 
 _AX_CALLS = (
     "AXUIElementCopyAttributeValue",
@@ -67,11 +75,32 @@ AS.AXIsProcessTrustedWithOptions = _untrusted
 Quartz.CGEventPost = _blocked_post
 
 
+class _PasteboardClass:
+    """``AppKit.NSPasteboard`` whose general pasteboard is a private one;
+    every other class attribute is the real class's."""
+
+    def __init__(self, real):
+        self._real = real
+        self._private = real.pasteboardWithUniqueName()
+
+    def generalPasteboard(self):
+        BLOCKED["general_pasteboard"] += 1
+        return self._private
+
+    def __getattr__(self, name):
+        return getattr(self._real, name)
+
+
+AppKit.NSPasteboard = _PasteboardClass(AppKit.NSPasteboard)
+
+
 @atexit.register
 def _report():
     print(f"[desktop isolated: ax_calls_blocked={BLOCKED['ax']}"
           f" ax_trust_queries={BLOCKED['trust_queries']}"
-          f" cg_event_posts_blocked={BLOCKED['cg_event_post']}]",
+          f" cg_event_posts_blocked={BLOCKED['cg_event_post']}"
+          f" general_pasteboard_redirected="
+          f"{BLOCKED['general_pasteboard']}]",
           file=sys.stderr, flush=True)
 
 

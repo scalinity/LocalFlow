@@ -181,7 +181,8 @@ def test_delayed_paste_inside_and_beyond_settle():
     env = Env(FixtureTargetApp(settable=False), settle=0.6)            # lag 0.25 < settle
     env.target.paste_lag = 0.25
     env.target.pb.user_copy("user original")
-    r = env.run("lands correctly", {"job_id": "job-lag-in", "attempt": 1})
+    r = env.run("lands correctly", {"job_id": "job-lag-in", "attempt": 1,
+                                    "context_snapshot": snapshot(env.target)})
     assert r.state == "confirmed", (r.state, r.readback)
     assert env.target.content == "lands correctly"
     assert env.target.pb.current_string() == "user original", \
@@ -192,6 +193,8 @@ def test_delayed_paste_inside_and_beyond_settle():
     env2.target.paste_lag = 0.9
     env2.target.pb.user_copy("user original 2")
     r2 = env2.run("still the right text", {"job_id": "job-lag-out",
+                                           "context_snapshot":
+                                               snapshot(env2.target),
                                            "attempt": 1})
     assert r2.state == "posted_unverified", r2.state
     assert r2.readback == "mismatch", r2.readback
@@ -304,7 +307,8 @@ def test_rich_data_preserved_and_unsupported_disclosed():
          ("com.apple.pasteboard.promised-file-url",
           b"file:///Users/x/report.pdf")],
     ])
-    r = env.run("plain insert", {"job_id": "job-rich", "attempt": 1})
+    r = env.run("plain insert", {"job_id": "job-rich", "attempt": 1,
+                                 "context_snapshot": snapshot(env.target)})
     assert r.state == "confirmed"
     restored = set(r.clipboard["restored_types"])
     assert restored == {"public.utf8-plain-text", "public.rtf",
@@ -465,7 +469,9 @@ def test_session_lock_releases_on_wake():
         def on_observation(info):
             box["observer"] = info["observer"]
 
-        env.service.submit(text, {"job_id": job_id, "attempt": 1},
+        env.service.submit(text, {"job_id": job_id, "attempt": 1,
+                                  "context_snapshot": snapshot(env.target),
+                                  "observation_consent": True},
                            on_done, on_observation=on_observation)
         assert done.wait(15)
         return box.get("result"), box.get("observer")
