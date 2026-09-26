@@ -1,0 +1,568 @@
+{
+  "suite": "tests/v2/insertion/test_native_insertion.py",
+  "code_root_sha": "4260fe39f189d551e3474e53b8fac286bae7f549",
+  "tracked_files_modified": false,
+  "python": "3.14.7",
+  "pyobjc": "12.2.1",
+  "accessibility_trusted": true,
+  "passed": 9,
+  "counted": 12,
+  "results": [
+    {
+      "case": "LF-M08-F07-C01",
+      "diagnostic": false,
+      "status": "pass",
+      "witness": {
+        "appkit_text": "A😀BX😀Y",
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "clipboard_transaction",
+          "readback": "match",
+          "owned": [
+            4,
+            8
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": [
+              "public.utf8-plain-text",
+              "public.rtf"
+            ],
+            "publish_failed": false
+          }
+        }
+      },
+      "seconds": 0.834
+    },
+    {
+      "case": "LF-M08-F07-C01",
+      "diagnostic": true,
+      "status": "pass",
+      "witness": {
+        "appkit_text": "A😀BX😀Y",
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "ax_replacement",
+          "readback": "match",
+          "owned": [
+            4,
+            8
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": null,
+            "publish_failed": null
+          }
+        }
+      },
+      "seconds": 0.818
+    },
+    {
+      "case": "LF-M08-F07-C02",
+      "diagnostic": false,
+      "status": "fail",
+      "witness": {
+        "appkit_after": "pre É post",
+        "appkit_after_undo": "pre É post",
+        "undo": {
+          "outcome": "unsupported_surface",
+          "reason_code": "ax_range_write_unsupported",
+          "recovery": "clipboard_copy"
+        },
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "clipboard_transaction",
+          "readback": "match",
+          "owned": [
+            4,
+            5
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": [
+              "public.utf8-plain-text",
+              "public.rtf"
+            ],
+            "publish_failed": false
+          }
+        },
+        "raw_range_type": "AXValueRef"
+      },
+      "seconds": 0.814
+    },
+    {
+      "case": "LF-M08-F07-C02",
+      "diagnostic": true,
+      "status": "pass",
+      "witness": {
+        "appkit_after": "pre É post",
+        "appkit_after_undo": "pre é post",
+        "undo": {
+          "outcome": "undone"
+        },
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "ax_replacement",
+          "readback": "match",
+          "owned": [
+            4,
+            5
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": null,
+            "publish_failed": null
+          }
+        },
+        "raw_range_type": "AXValueRef"
+      },
+      "seconds": 0.81
+    },
+    {
+      "case": "LF-M08-F07-C03",
+      "diagnostic": false,
+      "status": "fail",
+      "witness": {
+        "appkit_after": "before X after",
+        "appkit_after_undo": "before X after",
+        "undo": {
+          "outcome": "unsupported_surface",
+          "reason_code": "ax_range_write_unsupported",
+          "recovery": "clipboard_copy"
+        },
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "clipboard_transaction",
+          "readback": "match",
+          "owned": [
+            7,
+            8
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": [
+              "public.utf8-plain-text",
+              "public.rtf"
+            ],
+            "publish_failed": false
+          }
+        },
+        "raw_range_type": "AXValueRef"
+      },
+      "seconds": 0.817
+    },
+    {
+      "case": "LF-M08-F07-C03",
+      "diagnostic": true,
+      "status": "pass",
+      "witness": {
+        "appkit_after": "before X after",
+        "appkit_after_undo": "before 👩‍💻 after",
+        "undo": {
+          "outcome": "undone"
+        },
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "ax_replacement",
+          "readback": "match",
+          "owned": [
+            7,
+            8
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": null,
+            "publish_failed": null
+          }
+        },
+        "raw_range_type": "AXValueRef"
+      },
+      "seconds": 0.844
+    },
+    {
+      "case": "LF-M08-F07-C04",
+      "diagnostic": false,
+      "status": "fail",
+      "witness": {
+        "appkit_after": "keep NEW words",
+        "appkit_after_undo": "keep NEW words",
+        "undo": {
+          "outcome": "unsupported_surface",
+          "reason_code": "ax_range_write_unsupported",
+          "recovery": "clipboard_copy"
+        },
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "clipboard_transaction",
+          "readback": "match",
+          "owned": [
+            5,
+            8
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": [
+              "public.utf8-plain-text",
+              "public.rtf"
+            ],
+            "publish_failed": false
+          }
+        },
+        "raw_range_type": "AXValueRef"
+      },
+      "seconds": 0.835
+    },
+    {
+      "case": "LF-M08-F07-C04",
+      "diagnostic": true,
+      "status": "pass",
+      "witness": {
+        "appkit_after": "keep NEW words",
+        "appkit_after_undo": "keep OLD words",
+        "undo": {
+          "outcome": "undone"
+        },
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "ax_replacement",
+          "readback": "match",
+          "owned": [
+            5,
+            8
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": null,
+            "publish_failed": null
+          }
+        },
+        "raw_range_type": "AXValueRef"
+      },
+      "seconds": 0.839
+    },
+    {
+      "case": "LF-M08-F12-C04",
+      "diagnostic": false,
+      "status": "pass",
+      "witness": {
+        "appkit": {
+          "text": "say hello now",
+          "sel": [
+            9,
+            0
+          ]
+        },
+        "result": {
+          "state": "posted_unverified",
+          "reason_code": "readback_match_ambiguous",
+          "method": "clipboard_transaction",
+          "readback": "match_ambiguous",
+          "owned": [
+            4,
+            9
+          ],
+          "clipboard": {
+            "restore_skipped_reason": "readback_ambiguous",
+            "restored_types": [],
+            "publish_failed": false
+          }
+        }
+      },
+      "seconds": 1.163
+    },
+    {
+      "case": "LF-M08-F12-C04",
+      "diagnostic": true,
+      "status": "pass",
+      "witness": {
+        "appkit": {
+          "text": "say hello now",
+          "sel": [
+            9,
+            0
+          ]
+        },
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "ax_replacement",
+          "readback": "match",
+          "owned": [
+            4,
+            9
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": null,
+            "publish_failed": null
+          }
+        }
+      },
+      "seconds": 0.828
+    },
+    {
+      "case": "LF-M08-F09-C04",
+      "diagnostic": false,
+      "status": "pass",
+      "witness": {
+        "posts": 0,
+        "appkit_text": "field ",
+        "board": {
+          "string": "CANARY_OLD_CLIPBOARD",
+          "types": [
+            "public.utf8-plain-text",
+            "NSStringPboardType",
+            "public.rtf",
+            "NeXT Rich Text Format v1.0 pasteboard type",
+            "public.utf16-external-plain-text",
+            "CorePasteboardFlavorType 0x75743136"
+          ]
+        },
+        "result": {
+          "state": "failed",
+          "reason_code": "clipboard_publish_failed",
+          "method": "clipboard_transaction",
+          "readback": null,
+          "owned": [
+            null,
+            null
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": [
+              "public.utf8-plain-text",
+              "public.rtf"
+            ],
+            "publish_failed": true
+          }
+        }
+      },
+      "seconds": 0.812
+    },
+    {
+      "case": "LF-M08-F09-C05",
+      "diagnostic": false,
+      "status": "pass",
+      "witness": {
+        "appkit_text": "field dictated",
+        "board_after": {
+          "string": null,
+          "types": []
+        },
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "clipboard_transaction",
+          "readback": "match",
+          "owned": [
+            6,
+            14
+          ],
+          "clipboard": {
+            "restore_skipped_reason": "restore_failed",
+            "restored_types": [],
+            "publish_failed": false
+          }
+        }
+      },
+      "seconds": 0.819
+    },
+    {
+      "case": "LF-M08-F10-C05",
+      "diagnostic": false,
+      "status": "residual",
+      "witness": {
+        "user_copy_overwritten": true,
+        "board_after": {
+          "string": "CANARY_OLD_CLIPBOARD",
+          "types": [
+            "public.utf8-plain-text",
+            "NSStringPboardType",
+            "public.rtf",
+            "NeXT Rich Text Format v1.0 pasteboard type",
+            "public.utf16-external-plain-text",
+            "CorePasteboardFlavorType 0x75743136"
+          ]
+        },
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "clipboard_transaction",
+          "readback": "match",
+          "owned": [
+            6,
+            14
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": [
+              "public.utf8-plain-text",
+              "public.rtf"
+            ],
+            "publish_failed": false
+          }
+        },
+        "note": "generation check then native write is not atomic; documented residual"
+      },
+      "seconds": 0.815
+    },
+    {
+      "case": "LF-M08-F11-C02",
+      "diagnostic": false,
+      "status": "pass",
+      "witness": {
+        "result": {
+          "state": "posted_unverified",
+          "reason_code": "readback_unavailable",
+          "method": "clipboard_transaction",
+          "readback": "unavailable",
+          "owned": [
+            null,
+            null
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": [
+              "public.utf8-plain-text",
+              "public.rtf"
+            ],
+            "publish_failed": false
+          }
+        },
+        "appkit_text_after_late_consumer": "field CANARY_OLD_CLIPBOARD",
+        "residual_old_clipboard_pasted": true
+      },
+      "seconds": 2.321
+    },
+    {
+      "case": "binding-two-processes",
+      "diagnostic": false,
+      "status": "pass",
+      "witness": {
+        "a": "alpha ",
+        "b": "bravo ",
+        "posts": 0,
+        "result": {
+          "state": "target_changed",
+          "reason_code": "target_changed_before_effect",
+          "method": "none",
+          "readback": null,
+          "owned": [
+            null,
+            null
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": null,
+            "publish_failed": null
+          }
+        }
+      },
+      "seconds": 1.582
+    },
+    {
+      "case": "binding-equal-title-windows",
+      "diagnostic": false,
+      "status": "pass",
+      "witness": {
+        "titles_equal": true,
+        "window_elements_differ": true,
+        "verification": {
+          "identity": "pass",
+          "owner": "pass",
+          "read": "allowed",
+          "window_element": "fail",
+          "window_title": "pass",
+          "window": "fail",
+          "field": "unavailable",
+          "selection": "unavailable"
+        },
+        "f1": "one ",
+        "f2": "two ",
+        "result": {
+          "state": "target_changed",
+          "reason_code": "revalidation_failed",
+          "method": "none",
+          "readback": null,
+          "owned": [
+            null,
+            null
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": [],
+            "publish_failed": null
+          }
+        }
+      },
+      "seconds": 0.806
+    },
+    {
+      "case": "binding-secure-field",
+      "diagnostic": false,
+      "status": "pass",
+      "witness": {
+        "calls_on_secure_element": [
+          "AXRole",
+          "AXSubrole",
+          "AXWindow",
+          "AXFocusedWindow"
+        ],
+        "result": {
+          "state": "target_changed",
+          "reason_code": "revalidation_failed",
+          "method": "none",
+          "readback": null,
+          "owned": [
+            null,
+            null
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": [],
+            "publish_failed": null
+          }
+        },
+        "secure_length": 20
+      },
+      "seconds": 0.83
+    },
+    {
+      "case": "binding-observer-field-change",
+      "diagnostic": false,
+      "status": "pass",
+      "witness": {
+        "result": {
+          "state": "confirmed",
+          "reason_code": null,
+          "method": "clipboard_transaction",
+          "readback": "match",
+          "owned": [
+            4,
+            11
+          ],
+          "clipboard": {
+            "restore_skipped_reason": null,
+            "restored_types": [
+              "public.utf8-plain-text",
+              "public.rtf"
+            ],
+            "publish_failed": false
+          }
+        },
+        "stop_reason": "field_changed",
+        "f2_content_reads": [],
+        "ticks": 1
+      },
+      "seconds": 1.325
+    }
+  ]
+}

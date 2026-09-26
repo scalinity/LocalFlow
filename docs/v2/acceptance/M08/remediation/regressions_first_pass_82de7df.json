@@ -1,0 +1,313 @@
+{
+  "suite": "tests/v2/insertion/test_m08_remediation.py",
+  "code_root_sha": "82de7df4d26b380d2fabf8be84c5153c1baa9d4d",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "localflow_imported_from_root": "localflow/__init__.py",
+  "python": "3.14.7",
+  "results": [
+    {
+      "case": "test_a01_write_after_validation_goes_only_to_validated_field",
+      "finding": "M08-AUDIT-01",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.015
+    },
+    {
+      "case": "test_a01_same_app_other_window_after_validation",
+      "finding": "M08-AUDIT-01",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.006
+    },
+    {
+      "case": "test_a01_clipboard_post_bound_to_validated_field",
+      "finding": "M08-AUDIT-01",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.006
+    },
+    {
+      "case": "test_a02_capture_never_reads_other_apps_element",
+      "finding": "M08-AUDIT-02",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "test_a02_capture_flank_reads_stay_on_one_element",
+      "finding": "M08-AUDIT-02",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "test_a03_denied_app_insert_reads_no_destination_content",
+      "finding": "M08-AUDIT-03",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.005
+    },
+    {
+      "case": "test_a03_denied_app_undo_and_repaste_read_nothing",
+      "finding": "M08-AUDIT-03",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.411
+    },
+    {
+      "case": "test_a03_unclassifiable_field_reads_nothing",
+      "finding": "M08-AUDIT-03",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.012
+    },
+    {
+      "case": "test_a04_plain_replacement_needs_live_selection",
+      "finding": "M08-AUDIT-04",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.006
+    },
+    {
+      "case": "test_a04_strict_needs_native_window_element",
+      "finding": "M08-AUDIT-04",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.006
+    },
+    {
+      "case": "test_a04_strict_needs_recorded_surroundings",
+      "finding": "M08-AUDIT-04",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.011
+    },
+    {
+      "case": "test_a05_astral_owned_range_in_host_units",
+      "finding": "M08-AUDIT-05",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.005
+    },
+    {
+      "case": "test_a05_astral_undo_restores_exactly",
+      "finding": "M08-AUDIT-05",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.005
+    },
+    {
+      "case": "test_a06_ax_noop_over_identical_text_is_not_confirmed",
+      "finding": "M08-AUDIT-06",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.005
+    },
+    {
+      "case": "test_a06_missing_preread_cannot_confirm",
+      "finding": "M08-AUDIT-06",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.164
+    },
+    {
+      "case": "test_a06_no_recorded_destination_is_never_confirmed",
+      "finding": "M08-AUDIT-06",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.013
+    },
+    {
+      "case": "test_a07_unchanged_prefix_keeps_ownership",
+      "finding": "M08-AUDIT-07",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.352
+    },
+    {
+      "case": "test_a07_next_job_never_changes_a_pending_payload",
+      "finding": "M08-AUDIT-07",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.328
+    },
+    {
+      "case": "test_a08_undo_never_writes_another_window",
+      "finding": "M08-AUDIT-08",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.025
+    },
+    {
+      "case": "test_a09_clipboard_replacement_undo_restores_selection",
+      "finding": "M08-AUDIT-09",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.008
+    },
+    {
+      "case": "test_a10_observer_stops_before_reading_another_field",
+      "finding": "M08-AUDIT-10",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.516
+    },
+    {
+      "case": "test_a10_secure_subrole_transition_stops_before_read",
+      "finding": "M08-AUDIT-10",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.523
+    },
+    {
+      "case": "test_a11_duplicate_occurrence_is_ambiguous",
+      "finding": "M08-AUDIT-11",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.519
+    },
+    {
+      "case": "test_a11_read_failure_is_not_an_edit",
+      "finding": "M08-AUDIT-11",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.519
+    },
+    {
+      "case": "test_a11_changed_length_edit_keeps_only_owned_region",
+      "finding": "M08-AUDIT-11",
+      "status": "pass",
+      "detail": null,
+      "seconds": 1.042
+    },
+    {
+      "case": "test_a12_consent_off_capture_writes_no_observation_content",
+      "finding": "M08-AUDIT-12",
+      "status": "pass",
+      "detail": null,
+      "seconds": 1.033
+    },
+    {
+      "case": "test_a15_cancel_after_validation_prevents_ax_write",
+      "finding": "M08-AUDIT-15",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.011
+    },
+    {
+      "case": "test_a15_cancel_after_publish_prevents_post",
+      "finding": "M08-AUDIT-15",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.012
+    },
+    {
+      "case": "test_a16_exception_after_ax_write_keeps_effect_facts",
+      "finding": "M08-AUDIT-16",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.006
+    },
+    {
+      "case": "test_a16_exception_during_restore_keeps_post",
+      "finding": "M08-AUDIT-16",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.006
+    },
+    {
+      "case": "test_a19_capture_is_one_generation_or_a_conflict",
+      "finding": "M08-AUDIT-19",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.005
+    },
+    {
+      "case": "test_a19_copy_after_publish_is_never_pasted",
+      "finding": "M08-AUDIT-19",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.006
+    },
+    {
+      "case": "test_terminal_cr_and_separators_are_not_pasted",
+      "finding": "M08-AUDIT-01/D15",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.022
+    },
+    {
+      "case": "test_a11_edit_after_window_deadline_is_not_attributed",
+      "finding": "M08-AUDIT-11",
+      "status": "pass",
+      "detail": null,
+      "seconds": 1.015
+    },
+    {
+      "case": "test_a19_refused_publication_is_not_posted",
+      "finding": "M08-AUDIT-19",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.015
+    },
+    {
+      "case": "test_a12_app_capture_consent_gates_observation",
+      "finding": "M08-AUDIT-12",
+      "status": "pass",
+      "detail": null,
+      "seconds": 1.601
+    },
+    {
+      "case": "test_a03_app_passes_its_deny_policy_to_the_service",
+      "finding": "M08-AUDIT-03",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.425
+    },
+    {
+      "case": "test_a13_deletion_revokes_repaste_undo_and_observer",
+      "finding": "M08-AUDIT-13",
+      "status": "pass",
+      "detail": null,
+      "seconds": 1.532
+    },
+    {
+      "case": "test_a14_duplicate_completion_retires_once",
+      "finding": "M08-AUDIT-14",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.121
+    },
+    {
+      "case": "test_a14_same_operation_submitted_twice_writes_once",
+      "finding": "M08-AUDIT-14",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.024
+    },
+    {
+      "case": "test_a14_two_repastes_reconcile_serially",
+      "finding": "M08-AUDIT-14",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.682
+    },
+    {
+      "case": "test_a17_recovery_and_history_repaste_do_no_ax_on_caller",
+      "finding": "M08-AUDIT-17",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.931
+    },
+    {
+      "case": "test_a18_close_in_subscription_gap_delivers_once",
+      "finding": "M08-AUDIT-18",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.936
+    }
+  ],
+  "passed": 43,
+  "total": 43
+}

@@ -1,0 +1,5393 @@
+{
+ "runner": "tests/v2/insertion/m08_corpus_runner.py",
+ "corpus_sha256": "31feb051bc656eb10837edf85f265dc5bb7e0aa3bef10828fa5c4b16723e3f29",
+ "policy_version": "m08-policy-v1",
+ "code_root_sha": "180278ee8a157e7372ba187cfb0106556114293f",
+ "tracked_files_modified": false,
+ "localflow_imported_from_root": "localflow/__init__.py",
+ "python": "3.14.7",
+ "summary": {
+  "cases": {
+   "pass": 56,
+   "fail": 55,
+   "not_run": 14
+  },
+  "stateful": {
+   "pass": 14,
+   "fail": 4
+  },
+  "metamorphic": {
+   "pass": 6,
+   "fail": 3
+  },
+  "families": {
+   "M08-F01": {
+    "pass": 3,
+    "fail": 2
+   },
+   "M08-F02": {
+    "fail": 3,
+    "pass": 2
+   },
+   "M08-F03": {
+    "pass": 3,
+    "fail": 2
+   },
+   "M08-F04": {
+    "fail": 1,
+    "pass": 4
+   },
+   "M08-F05": {
+    "fail": 4,
+    "pass": 1
+   },
+   "M08-F06": {
+    "pass": 3,
+    "fail": 2
+   },
+   "M08-F07": {
+    "not_run": 4,
+    "fail": 1
+   },
+   "M08-F08": {
+    "pass": 2,
+    "fail": 3
+   },
+   "M08-F09": {
+    "pass": 2,
+    "fail": 1,
+    "not_run": 2
+   },
+   "M08-F10": {
+    "fail": 1,
+    "pass": 3,
+    "not_run": 1
+   },
+   "M08-F11": {
+    "pass": 2,
+    "not_run": 1,
+    "fail": 2
+   },
+   "M08-F12": {
+    "pass": 1,
+    "fail": 3,
+    "not_run": 1
+   },
+   "M08-F13": {
+    "pass": 3,
+    "fail": 2
+   },
+   "M08-F14": {
+    "pass": 3,
+    "fail": 2
+   },
+   "M08-F15": {
+    "fail": 3,
+    "pass": 2
+   },
+   "M08-F16": {
+    "pass": 3,
+    "fail": 2
+   },
+   "M08-F17": {
+    "pass": 2,
+    "fail": 3
+   },
+   "M08-F18": {
+    "pass": 2,
+    "fail": 3
+   },
+   "M08-F19": {
+    "pass": 1,
+    "fail": 4
+   },
+   "M08-F20": {
+    "pass": 1,
+    "fail": 4
+   },
+   "M08-F21": {
+    "pass": 4,
+    "fail": 1
+   },
+   "M08-F22": {
+    "pass": 5
+   },
+   "M08-F23": {
+    "fail": 4,
+    "pass": 1
+   },
+   "M08-F24": {
+    "pass": 3,
+    "fail": 2
+   },
+   "M08-F25": {
+    "not_run": 5
+   }
+  },
+  "denominators": {
+   "cases": 125,
+   "stateful": 18,
+   "metamorphic": 9
+  }
+ },
+ "cases": [
+  {
+   "case_id": "LF-M08-F01-C01",
+   "status": "pass",
+   "expectation": "confirmed",
+   "graded_as": "confirmed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "exact_bytes",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_canary_in_store_or_events",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.01,
+   "family": "M08-F01",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F01-C02",
+   "status": "pass",
+   "expectation": "target_changed",
+   "graded_as": "target_changed",
+   "observed": {
+    "state": "target_changed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "snapshot": "pid101/com.example.a",
+    "live": "pid101/com.example.b"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_content_read_at_all",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.007,
+   "family": "M08-F01",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F01-C03",
+   "status": "pass",
+   "expectation": "target_changed",
+   "graded_as": "target_changed",
+   "observed": {
+    "state": "target_changed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "snapshot": "pid=None,bundle=None",
+    "live": "no frontmost"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F01",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F01-C04",
+   "status": "fail",
+   "expectation": "confirmed_or_unverified_by_method",
+   "graded_as": "confirmed_or_unverified_by_method",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "snapshot": "pid=None,bundle=a",
+    "live": "pid=None,bundle=a"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_ax_write_without_owned_element",
+     "ok": false,
+     "detail": "[(5, 'ax_set_text', 'F1', 'dictated')]"
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": false,
+     "detail": "[(3, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (4, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (6, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (7, 'string_for_range', 'F1', 101, 'AXStringForRange')]"
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F01",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F01-C05",
+   "status": "fail",
+   "expectation": "saved_not_inserted",
+   "graded_as": "saved_not_inserted",
+   "observed": {
+    "results": [
+     [
+      2,
+      "confirmed",
+      null
+     ],
+     [
+      1,
+      "confirmed",
+      null
+     ]
+    ],
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "queue_held"
+   ],
+   "barriers_fired": [
+    "queue_held"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['saved_not_inserted']"
+    },
+    {
+     "check": "stale_reason",
+     "ok": false,
+     "detail": "[(2, 'confirmed', None), (1, 'confirmed', None)]"
+    },
+    {
+     "check": "one_effect",
+     "ok": false,
+     "detail": "[(7, 'ax_set_text', 'F1', 'second attempt'), (15, 'ax_set_text', 'F1', 'first attempt')]"
+    },
+    {
+     "check": "no_old_text",
+     "ok": false,
+     "detail": "SYNTHETIC_OWNED_FIELDsecond attemptfirst attempt"
+    }
+   ],
+   "seconds": 0.016,
+   "family": "M08-F01",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F02-C01",
+   "status": "fail",
+   "expectation": "target_changed",
+   "graded_as": "target_changed",
+   "observed": {
+    "state": "target_changed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "recorded_window": "W1",
+    "live_window": "W2",
+    "equal_titles": true
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "window_element_fail",
+     "ok": false,
+     "detail": "{'identity': 'pass', 'window': 'fail', 'field': 'unavailable', 'selection': 'unavailable'}"
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F02",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F02-C02",
+   "status": "pass",
+   "expectation": "target_changed",
+   "graded_as": "target_changed",
+   "observed": {
+    "state": "target_changed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "window": "W1 unchanged",
+    "title": "Draft -> Another tab"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F02",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F02-C03",
+   "status": "fail",
+   "expectation": "target_changed",
+   "graded_as": "target_changed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "AFTER_VALIDATE"
+   ],
+   "barriers_fired": [
+    "AFTER_VALIDATE"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['target_changed']"
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": false,
+     "detail": "[(7, 'ax_set_text', 'F2', 'dictated')]"
+    },
+    {
+     "check": "F2_unchanged",
+     "ok": false,
+     "detail": "dictated"
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F02",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F02-C04",
+   "status": "fail",
+   "expectation": "target_changed",
+   "graded_as": "target_changed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     0,
+     9
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "live_axwindow": "unavailable",
+    "title": "Draft readable"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['target_changed']"
+    },
+    {
+     "check": "no_replacement",
+     "ok": false,
+     "detail": "REPLACED_OWNED_FIELD"
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F02",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F02-C05",
+   "status": "pass",
+   "expectation": "confirmed",
+   "graded_as": "confirmed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     0,
+     9
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "one_exact_write",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "one_effect",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F02",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F03-C01",
+   "status": "pass",
+   "expectation": "confirmed",
+   "graded_as": "confirmed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     3,
+     3
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "recorded_caret": 3,
+    "live_caret": 9
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "inserted_at_live_caret",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F03",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F03-C02",
+   "status": "pass",
+   "expectation": "confirmed_or_unverified_by_method",
+   "graded_as": "confirmed_or_unverified_by_method",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "recorded": "A/W1/F1",
+    "live": "A/W1/F1b same role/title"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "bound_to_chosen_live_field",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F03",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F03-C03",
+   "status": "fail",
+   "expectation": "target_changed",
+   "graded_as": "target_changed",
+   "observed": {
+    "state": "target_changed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "frontmost": "A pid101",
+    "element": "F2 owner pid202"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "owner_fail",
+     "ok": false,
+     "detail": "{'identity': 'pass', 'window': 'fail', 'field': 'unavailable', 'selection': 'unavailable'}"
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F03",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F03-C04",
+   "status": "fail",
+   "expectation": "refused_undo",
+   "graded_as": "refused_undo",
+   "observed": {
+    "undo_outcome": "undone"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "original": "F1[0:3]=red",
+    "other": "F2[0:3]=red focused"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "undo_accepted",
+     "ok": false,
+     "detail": "undone not in ['no_authority', 'stale_range', 'unsupported_surface', 'nothing_to_undo']"
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": false,
+     "detail": "[(11, 'ax_set_range', 'F2', (0, 3)), (12, 'ax_set_text', 'F2', '')]"
+    },
+    {
+     "check": "F2_unchanged",
+     "ok": false,
+     "detail": ""
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F03",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F03-C05",
+   "status": "pass",
+   "expectation": "posted_unverified",
+   "graded_as": "confirmed_or_unverified_bound_readback",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_READBACK"
+   ],
+   "barriers_fired": [
+    "BEFORE_READBACK"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted_D7",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "write_on_F1_only",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F03",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F04-C01",
+   "status": "fail",
+   "expectation": "capture_refused",
+   "graded_as": "capture_refused",
+   "observed": {
+    "capture": "CANARY_B_SELECTION",
+    "reason": null
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_ELEMENT"
+   ],
+   "barriers_fired": [
+    "BEFORE_ELEMENT"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "capture_refused",
+     "ok": false,
+     "detail": "{'source': 'CANARY_B_SELECTION', 'range': (0, 18), 'snapshot': ContextSnapshot(context_snapshot_id='ctx-f0e159b4b7dc440ea26f8d12c1ee6755', stage='transform_selection', target=TargetSnapshot(target_snapshot_id='tgt-9fbe27ff00924c389faf0046c58c40bc', app_bundle='com.example.a', app_name='A', app_pid=1"
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": false,
+     "detail": "[(4, 'attribute', 'FB', 202, 'AXSelectedTextRange'), (5, 'string_for_range', 'FB', 202, 'AXStringForRange'), (8, 'number_of_characters', 'FB', 202, 'AXNumberOfCharacters')]"
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F04",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F04-C02",
+   "status": "pass",
+   "expectation": "capture_refused",
+   "graded_as": "capture_refused",
+   "observed": {
+    "capture": null,
+    "reason": "no_selection"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_SELECTED_TEXT_READ"
+   ],
+   "barriers_fired": [
+    "BEFORE_SELECTED_TEXT_READ"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "capture_refused",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F04",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F04-C03",
+   "status": "pass",
+   "expectation": "capture_refused_or_same_bound_A",
+   "graded_as": "capture_refused_or_same_bound_A",
+   "observed": {
+    "capture": "SYNTHETIC",
+    "reason": null
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     0,
+     9
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_FLANK_READ"
+   ],
+   "barriers_fired": [
+    "BEFORE_FLANK_READ"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "refused_or_same_bound_A",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F04",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F04-C04",
+   "status": "pass",
+   "expectation": "capture_refused",
+   "graded_as": "capture_refused",
+   "observed": {
+    "capture": null,
+    "reason": "app_denied"
+   },
+   "installed": {
+    "deny_entry": " COM.EXAMPLE.A "
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "capture_refused",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "zero_ax_calls",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.146,
+   "family": "M08-F04",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F04-C05",
+   "status": "pass",
+   "expectation": "confirmed",
+   "graded_as": "confirmed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     0,
+     9
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "capture_allowed",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "exact",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F04",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F05-C01",
+   "status": "fail",
+   "expectation": "unverified_or_copy_without_content_reads",
+   "graded_as": "unverified_or_copy_without_content_reads",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "CANARY_DENIED ",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "denied_apps": "('com.example.a',)",
+    "deny": [
+     "com.example.a"
+    ],
+    "snapshot": "identity-only denied"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['posted_unverified', 'saved_not_inserted', 'target_changed']"
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": false,
+     "detail": "[(3, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (4, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (6, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (7, 'string_for_range', 'F1', 101, 'AXStringForRange')]"
+    },
+    {
+     "check": "insert_still_available",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_canary_in_store_or_events",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F05",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F05-C02",
+   "status": "fail",
+   "expectation": "unverified_or_copy_without_content_reads",
+   "graded_as": "unverified_or_copy_without_content_reads",
+   "observed": {
+    "state": "n/a"
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_content_reads",
+     "ok": false,
+     "detail": "[(2, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (3, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (5, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (6, 'string_for_range', 'F1', 101, 'AXStringForRange')]"
+    }
+   ],
+   "seconds": 0.613,
+   "family": "M08-F05",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F05-C03",
+   "status": "fail",
+   "expectation": "refused_undo",
+   "graded_as": "refused_undo",
+   "observed": {
+    "undo_outcome": "undone"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "denied_apps": "('com.example.a',)"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "undo_accepted",
+     "ok": false,
+     "detail": "undone not in ['no_authority', 'stale_range', 'unsupported_surface', 'nothing_to_undo']"
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": false,
+     "detail": "[(8, 'string_for_range', 'F1', 101, 'AXStringForRange'), (11, 'string_for_range', 'F1', 101, 'AXStringForRange')]"
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F05",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F05-C04",
+   "status": "fail",
+   "expectation": "unverified_or_copy_without_content_reads",
+   "graded_as": "unverified_or_copy_without_content_reads",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "CANARY_UNKNOWN",
+    "f1_sel": null,
+    "role": "AXGroup",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['posted_unverified', 'saved_not_inserted', 'target_changed']"
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": false,
+     "detail": "[(5, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (6, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (8, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (9, 'string_for_range', 'F1', 101, 'AXStringForRange')]"
+    },
+    {
+     "check": "no_canary_in_store_or_events",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F05",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F05-C05",
+   "status": "pass",
+   "expectation": "capture_allowed",
+   "graded_as": "capture_allowed",
+   "observed": {
+    "capture": "SYNTHETIC",
+    "reason": null
+   },
+   "installed": {
+    "context_enabled": false,
+    "request": "explicit transform"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "capture_allowed",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.011,
+   "family": "M08-F05",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F06-C01",
+   "status": "pass",
+   "expectation": "target_changed",
+   "graded_as": "target_changed",
+   "observed": {
+    "state": "target_changed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "xxold old",
+    "f1_sel": [
+     6,
+     9
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "recorded": "[2:5]=old",
+    "live": "[6:9]=old (equal text, non-overlapping: an overlapping equal range cannot exist)"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F06",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F06-C02",
+   "status": "pass",
+   "expectation": "target_changed",
+   "graded_as": "target_changed",
+   "observed": {
+    "state": "target_changed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "xxnew tail",
+    "f1_sel": [
+     2,
+     5
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "recorded": "[2:5]=old",
+    "live": "[2:5]=new"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F06",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F06-C03",
+   "status": "fail",
+   "expectation": "target_changed_or_non_destructive_refusal",
+   "graded_as": "target_changed_or_non_destructive_refusal",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "xxold tail",
+    "f1_sel": [
+     2,
+     5
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "live_selected_range": "unavailable"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "posted_unverified not in ['target_changed', 'saved_not_inserted']"
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": false,
+     "detail": "[(8, 'ax_set_text', 'F1', 'replacement')]"
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F06",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F06-C04",
+   "status": "pass",
+   "expectation": "target_changed_or_non_destructive_refusal",
+   "graded_as": "target_changed_or_non_destructive_refusal",
+   "observed": {
+    "state": "target_changed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "xxold tail",
+    "f1_sel": [
+     2,
+     5
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "snapshot": "range [2:5] kept, selected_text None"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F06",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F06-C05",
+   "status": "fail",
+   "expectation": "policy_adjudication_no_silent_newer_text_loss",
+   "graded_as": "target_changed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "keep NEWER text",
+    "f1_sel": [
+     4,
+     4
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "recorded": "caret 4",
+    "live": "selection [5:10]=NEWER",
+    "decision": "D4"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "D4_target_changed",
+     "ok": false,
+     "detail": "confirmed"
+    },
+    {
+     "check": "no_newer_text_loss",
+     "ok": false,
+     "detail": "keep dictated text"
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F06",
+   "role": "design_probe"
+  },
+  {
+   "case_id": "LF-M08-F07-C01",
+   "status": "not_run",
+   "expectation": "confirmed_or_explicit_unverified",
+   "graded_as": "confirmed_or_explicit_unverified",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "native_helper cases are never passed by the portable runner: they are NOT_RUN there with this reason and are graded by tests/v2/insertion/test_native_insertion.py against an owned synthetic helper (real AXUIElement, AXValue, NSTextView and NSPasteboard). The paste consumer is emulated by the helper ",
+   "seconds": 0.0,
+   "family": "M08-F07",
+   "role": "native_helper"
+  },
+  {
+   "case_id": "LF-M08-F07-C02",
+   "status": "not_run",
+   "expectation": "confirmed_or_explicit_unverified",
+   "graded_as": "confirmed_or_explicit_unverified",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "native_helper cases are never passed by the portable runner: they are NOT_RUN there with this reason and are graded by tests/v2/insertion/test_native_insertion.py against an owned synthetic helper (real AXUIElement, AXValue, NSTextView and NSPasteboard). The paste consumer is emulated by the helper ",
+   "seconds": 0.0,
+   "family": "M08-F07",
+   "role": "native_helper"
+  },
+  {
+   "case_id": "LF-M08-F07-C03",
+   "status": "not_run",
+   "expectation": "confirmed_or_explicit_unverified",
+   "graded_as": "confirmed_or_explicit_unverified",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "native_helper cases are never passed by the portable runner: they are NOT_RUN there with this reason and are graded by tests/v2/insertion/test_native_insertion.py against an owned synthetic helper (real AXUIElement, AXValue, NSTextView and NSPasteboard). The paste consumer is emulated by the helper ",
+   "seconds": 0.0,
+   "family": "M08-F07",
+   "role": "native_helper"
+  },
+  {
+   "case_id": "LF-M08-F07-C04",
+   "status": "not_run",
+   "expectation": "native_range_exact_or_explicit_unavailable",
+   "graded_as": "native_range_exact_or_explicit_unavailable",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "native_helper cases are never passed by the portable runner: they are NOT_RUN there with this reason and are graded by tests/v2/insertion/test_native_insertion.py against an owned synthetic helper (real AXUIElement, AXValue, NSTextView and NSPasteboard). The paste consumer is emulated by the helper ",
+   "seconds": 0.0,
+   "family": "M08-F07",
+   "role": "native_helper"
+  },
+  {
+   "case_id": "LF-M08-F07-C05",
+   "status": "fail",
+   "expectation": "confirmed_or_explicit_unverified",
+   "graded_as": "confirmed_or_explicit_unverified",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀A😀 tail ",
+    "f1_sel": [
+     1206,
+     1206
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "prefix_units": 1206,
+    "prefix_codepoints": 806
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "host_units_exact",
+     "ok": false,
+     "detail": "(1206, 1209)"
+    },
+    {
+     "check": "units_labelled",
+     "ok": false,
+     "detail": "{'insertion_id': 'ins-7cf83c57e4f449499b2c431d3399dc46', 'insertion': 'posted_unverified', 'reason_code': 'readback_partial', 'method': 'ax_replacement', 'attempt': 1, 'inserted_chars': 3, 'owned_start': 1206, 'owned_end': 1209, 'readback': 'partial', 'verification': {'identity': 'pass', 'window': '"
+    },
+    {
+     "check": "no_guessed_codepoint_offsets",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F07",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F08-C01",
+   "status": "pass",
+   "expectation": "confirmed",
+   "graded_as": "confirmed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     0,
+     9
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "ax_method",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_clipboard_calls",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "exact",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.005,
+   "family": "M08-F08",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F08-C02",
+   "status": "pass",
+   "expectation": "failed_without_effect",
+   "graded_as": "failed_without_effect",
+   "observed": {
+    "state": "failed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "settable_at_probe": true,
+    "setter": "refuses"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "exactly_one_result",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_effect",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_clipboard_fallback",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.222,
+   "family": "M08-F08",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F08-C03",
+   "status": "fail",
+   "expectation": "posted_unverified",
+   "graded_as": "posted_unverified",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "hello",
+    "f1_sel": [
+     0,
+     0
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['posted_unverified']"
+    },
+    {
+     "check": "no_effect_witnessed",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.012,
+   "family": "M08-F08",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F08-C04",
+   "status": "fail",
+   "expectation": "truthful_partial_or_unverified",
+   "graded_as": "truthful_partial_or_unverified",
+   "observed": {
+    "state": "failed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "failed not in ['posted_unverified']"
+    },
+    {
+     "check": "effect_kept",
+     "ok": false,
+     "detail": "('lon', 0, 'ax_write_failed')"
+    },
+    {
+     "check": "not_failed",
+     "ok": false,
+     "detail": "failed"
+    }
+   ],
+   "seconds": 0.009,
+   "family": "M08-F08",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F08-C05",
+   "status": "fail",
+   "expectation": "posted_unverified_with_original_transaction_id",
+   "graded_as": "posted_unverified_with_original_transaction_id",
+   "observed": {
+    "state": "failed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "fault": "readback raises after the witnessed write"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "failed not in ['posted_unverified']"
+    },
+    {
+     "check": "original_transaction_id",
+     "ok": false,
+     "detail": "[]"
+    },
+    {
+     "check": "effect_witnessed",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.009,
+   "family": "M08-F08",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F09-C01",
+   "status": "pass",
+   "expectation": "confirmed",
+   "graded_as": "confirmed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "restored_all_supported",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "board_is_user_original",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.009,
+   "family": "M08-F09",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F09-C02",
+   "status": "pass",
+   "expectation": "confirmed_or_unverified_by_method",
+   "graded_as": "confirmed_or_unverified_by_method",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 0
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "promise_disclosed",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "promise_not_claimed",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.007,
+   "family": "M08-F09",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F09-C03",
+   "status": "fail",
+   "expectation": "conflict_or_consistent_snapshot_no_silent_loss",
+   "graded_as": "conflict_or_consistent_snapshot_no_silent_loss",
+   "observed": {
+    "state": "confirmed",
+    "clipboard": {
+     "generation_before": 40,
+     "generation_published": 42,
+     "generation_after_restore": 43,
+     "captured_types": [
+      "public.utf8-plain-text"
+     ],
+     "restored_types": [
+      "public.utf8-plain-text"
+     ],
+     "unsupported_types": [
+      "public.rtf",
+      "public.html"
+     ],
+     "restore_skipped_reason": null
+    }
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "INSIDE_CAPTURE"
+   ],
+   "barriers_fired": [
+    "INSIDE_CAPTURE"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "consistent_or_conflict",
+     "ok": false,
+     "detail": "{'generation_before': 40, 'generation_published': 42, 'generation_after_restore': 43, 'captured_types': ['public.utf8-plain-text'], 'restored_types': ['public.utf8-plain-text'], 'unsupported_types': ['public.rtf', 'public.html'], 'restore_skipped_reason': None}"
+    },
+    {
+     "check": "user_copy_not_lost",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.007,
+   "family": "M08-F09",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F09-C04",
+   "status": "not_run",
+   "expectation": "failed_without_false_publish_ack",
+   "graded_as": "failed_without_false_publish_ack",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "native_helper cases are never passed by the portable runner: they are NOT_RUN there with this reason and are graded by tests/v2/insertion/test_native_insertion.py against an owned synthetic helper (real AXUIElement, AXValue, NSTextView and NSPasteboard). The paste consumer is emulated by the helper ",
+   "seconds": 0.0,
+   "family": "M08-F09",
+   "role": "native_helper"
+  },
+  {
+   "case_id": "LF-M08-F09-C05",
+   "status": "not_run",
+   "expectation": "confirmed_with_restore_failure_disclosed",
+   "graded_as": "confirmed_with_restore_failure_disclosed",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "native_helper cases are never passed by the portable runner: they are NOT_RUN there with this reason and are graded by tests/v2/insertion/test_native_insertion.py against an owned synthetic helper (real AXUIElement, AXValue, NSTextView and NSPasteboard). The paste consumer is emulated by the helper ",
+   "seconds": 0.0,
+   "family": "M08-F09",
+   "role": "native_helper"
+  },
+  {
+   "case_id": "LF-M08-F10-C01",
+   "status": "fail",
+   "expectation": "uncertain_or_refused_no_restore_over_g2",
+   "graded_as": "uncertain_or_refused_no_restore_over_g2",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "AFTER_PUBLISH"
+   ],
+   "barriers_fired": [
+    "AFTER_PUBLISH"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "user_copy_never_pasted",
+     "ok": false,
+     "detail": "CANARY_USER_COPY"
+    },
+    {
+     "check": "no_restore_over_g2",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.168,
+   "family": "M08-F10",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F10-C02",
+   "status": "pass",
+   "expectation": "confirmed_and_restore_skipped",
+   "graded_as": "confirmed_and_restore_skipped",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_RESTORE_GUARD"
+   ],
+   "barriers_fired": [
+    "BEFORE_RESTORE_GUARD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "restore_skipped",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "user_copy_intact",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.011,
+   "family": "M08-F10",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F10-C03",
+   "status": "pass",
+   "expectation": "confirmed_and_restore_skipped",
+   "graded_as": "confirmed_and_restore_skipped",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_RESTORE_GUARD"
+   ],
+   "barriers_fired": [
+    "BEFORE_RESTORE_GUARD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "restore_skipped",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "user_copy_intact",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.008,
+   "family": "M08-F10",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F10-C04",
+   "status": "pass",
+   "expectation": "confirmed_and_restore_skipped",
+   "graded_as": "confirmed_and_restore_skipped",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_RESTORE_GUARD"
+   ],
+   "barriers_fired": [
+    "BEFORE_RESTORE_GUARD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "generation_not_text",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.007,
+   "family": "M08-F10",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F10-C05",
+   "status": "not_run",
+   "expectation": "documented_residual_not_certified",
+   "graded_as": "documented_residual_not_certified",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "native_helper cases are never passed by the portable runner: they are NOT_RUN there with this reason and are graded by tests/v2/insertion/test_native_insertion.py against an owned synthetic helper (real AXUIElement, AXValue, NSTextView and NSPasteboard). The paste consumer is emulated by the helper ",
+   "seconds": 0.0,
+   "family": "M08-F10",
+   "role": "native_helper"
+  },
+  {
+   "case_id": "LF-M08-F11-C01",
+   "status": "pass",
+   "expectation": "posted_unverified_correct_payload_retained",
+   "graded_as": "posted_unverified_correct_payload_retained",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "consumer": "held beyond settle"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "ownership_kept",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "late_consumer_right_payload",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.171,
+   "family": "M08-F11",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F11-C02",
+   "status": "not_run",
+   "expectation": "posted_unverified_residual_disclosed",
+   "graded_as": "posted_unverified_residual_disclosed",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "native_helper cases are never passed by the portable runner: they are NOT_RUN there with this reason and are graded by tests/v2/insertion/test_native_insertion.py against an owned synthetic helper (real AXUIElement, AXValue, NSTextView and NSPasteboard). The paste consumer is emulated by the helper ",
+   "seconds": 0.0,
+   "family": "M08-F11",
+   "role": "native_helper"
+  },
+  {
+   "case_id": "LF-M08-F11-C03",
+   "status": "fail",
+   "expectation": "posted_unverified_no_old_clipboard_insertion",
+   "graded_as": "posted_unverified_no_old_clipboard_insertion",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_old_clipboard_inserted",
+     "ok": false,
+     "detail": "CANARY_OLD_CLIPBOARDhel"
+    }
+   ],
+   "seconds": 0.174,
+   "family": "M08-F11",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F11-C04",
+   "status": "fail",
+   "expectation": "no_wrong_payload_or_duplicate_for_either_job",
+   "graded_as": "no_wrong_payload_or_duplicate_for_either_job",
+   "observed": {
+    "first": "posted_unverified",
+    "second": [
+     "posted_unverified",
+     "readback_mismatch"
+    ]
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "no_user_clipboard_pasted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_duplicate",
+     "ok": false,
+     "detail": "TWO TWO "
+    },
+    {
+     "check": "pending_payload_kept",
+     "ok": false,
+     "detail": "TWO TWO "
+    }
+   ],
+   "seconds": 0.437,
+   "family": "M08-F11",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F11-C05",
+   "status": "pass",
+   "expectation": "confirmed",
+   "graded_as": "confirmed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "CONSUME_BEFORE_DEADLINE"
+   ],
+   "barriers_fired": [
+    "CONSUME_BEFORE_DEADLINE"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "restored_after_attributable_readback",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.123,
+   "family": "M08-F11",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F12-C01",
+   "status": "pass",
+   "expectation": "posted_unverified_ambiguous",
+   "graded_as": "posted_unverified_ambiguous",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "ambiguous",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "ownership_kept",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.174,
+   "family": "M08-F12",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F12-C02",
+   "status": "fail",
+   "expectation": "posted_unverified",
+   "graded_as": "posted_unverified",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "hello",
+    "f1_sel": [
+     0,
+     0
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['posted_unverified']"
+    }
+   ],
+   "seconds": 0.01,
+   "family": "M08-F12",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F12-C03",
+   "status": "fail",
+   "expectation": "posted_unverified",
+   "graded_as": "posted_unverified",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "PRE_READ_FAILS"
+   ],
+   "barriers_fired": [
+    "PRE_READ_FAILS"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['posted_unverified']"
+    }
+   ],
+   "seconds": 0.008,
+   "family": "M08-F12",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F12-C04",
+   "status": "not_run",
+   "expectation": "confirmed_only_with_equivalent_method_proof",
+   "graded_as": "confirmed_only_with_equivalent_method_proof",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "native_helper cases are never passed by the portable runner: they are NOT_RUN there with this reason and are graded by tests/v2/insertion/test_native_insertion.py against an owned synthetic helper (real AXUIElement, AXValue, NSTextView and NSPasteboard). The paste consumer is emulated by the helper ",
+   "seconds": 0.0,
+   "family": "M08-F12",
+   "role": "native_helper"
+  },
+  {
+   "case_id": "LF-M08-F12-C05",
+   "status": "fail",
+   "expectation": "posted_unverified",
+   "graded_as": "posted_unverified",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_READBACK"
+   ],
+   "barriers_fired": [
+    "BEFORE_READBACK"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['posted_unverified']"
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": false,
+     "detail": "[(9, 'string_for_range', 'F2', 101, 'AXStringForRange')]"
+    }
+   ],
+   "seconds": 0.008,
+   "family": "M08-F12",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F13-C01",
+   "status": "pass",
+   "expectation": "posted_unverified_partial",
+   "graded_as": "posted_unverified_partial",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "partial",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "restored_after_consumption",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.167,
+   "family": "M08-F13",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F13-C02",
+   "status": "fail",
+   "expectation": "posted_unverified_ambiguous_or_pending",
+   "graded_as": "posted_unverified_ambiguous_or_pending",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "not_partial",
+     "ok": false,
+     "detail": "partial"
+    },
+    {
+     "check": "ownership_kept",
+     "ok": false,
+     "detail": "CANARY_OLD_CLIPBOARD"
+    }
+   ],
+   "seconds": 0.178,
+   "family": "M08-F13",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F13-C03",
+   "status": "pass",
+   "expectation": "truthful_partial_or_unverified",
+   "graded_as": "truthful_partial_or_unverified",
+   "observed": {
+    "state": "posted_unverified",
+    "undo": "stale_range"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "partial_effect",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "suffix_never_overwritten",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.171,
+   "family": "M08-F13",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F13-C04",
+   "status": "fail",
+   "expectation": "truthful_partial_or_unverified",
+   "graded_as": "truthful_partial_or_unverified",
+   "observed": {
+    "state": "failed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "failed not in ['posted_unverified']"
+    },
+    {
+     "check": "effect_kept",
+     "ok": false,
+     "detail": "('lon', 0, 'ax_write_failed')"
+    },
+    {
+     "check": "not_failed",
+     "ok": false,
+     "detail": "failed"
+    }
+   ],
+   "seconds": 0.009,
+   "family": "M08-F13",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F13-C05",
+   "status": "pass",
+   "expectation": "posted_unverified",
+   "graded_as": "posted_unverified",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "not_partial",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.172,
+   "family": "M08-F13",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F14-C01",
+   "status": "pass",
+   "expectation": "saved_not_inserted",
+   "graded_as": "saved_not_inserted",
+   "observed": {
+    "state": "saved_not_inserted"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_effect",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.009,
+   "family": "M08-F14",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F14-C02",
+   "status": "fail",
+   "expectation": "saved_not_inserted",
+   "graded_as": "saved_not_inserted",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "LEASE_GRANTED"
+   ],
+   "barriers_fired": [
+    "LEASE_GRANTED"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['saved_not_inserted']"
+    },
+    {
+     "check": "no_write",
+     "ok": false,
+     "detail": "must not land"
+    }
+   ],
+   "seconds": 0.008,
+   "family": "M08-F14",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F14-C03",
+   "status": "fail",
+   "expectation": "saved_not_inserted_with_clipboard_disclosure",
+   "graded_as": "saved_not_inserted_with_clipboard_disclosure",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "AFTER_PUBLISH"
+   ],
+   "barriers_fired": [
+    "AFTER_PUBLISH"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['saved_not_inserted']"
+    },
+    {
+     "check": "no_post",
+     "ok": false,
+     "detail": "1"
+    },
+    {
+     "check": "user_original_back",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.007,
+   "family": "M08-F14",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F14-C04",
+   "status": "pass",
+   "expectation": "posted_unverified_or_confirmed_if_proved",
+   "graded_as": "posted_unverified_or_confirmed_if_proved",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "AFTER_POST"
+   ],
+   "barriers_fired": [
+    "AFTER_POST"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "physical_fact_kept",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.165,
+   "family": "M08-F14",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F14-C05",
+   "status": "pass",
+   "expectation": "confirmed_with_cancel_after_effect_disclosure",
+   "graded_as": "confirmed_with_cancel_after_effect_disclosure",
+   "observed": {
+    "events": [
+     "insertion.cancelled_after_insert"
+    ]
+   },
+   "installed": {},
+   "barriers_declared": [
+    "CANCEL_AFTER_WITNESSED_EFFECT"
+   ],
+   "barriers_fired": [
+    "CANCEL_AFTER_WITNESSED_EFFECT"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "effect_kept",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "cancel_after_effect_disclosed",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.11,
+   "family": "M08-F14",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F15-C01",
+   "status": "fail",
+   "expectation": "exactly_one_effect",
+   "graded_as": "exactly_one_effect",
+   "observed": {
+    "results": [
+     [
+      "confirmed",
+      null
+     ],
+     [
+      "confirmed",
+      null
+     ]
+    ]
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "QUEUE_HELD"
+   ],
+   "barriers_fired": [
+    "QUEUE_HELD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "exactly_one_effect",
+     "ok": false,
+     "detail": "onceonce"
+    },
+    {
+     "check": "one_row",
+     "ok": false,
+     "detail": "2"
+    }
+   ],
+   "seconds": 0.017,
+   "family": "M08-F15",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F15-C02",
+   "status": "fail",
+   "expectation": "exactly_one_retirement",
+   "graded_as": "exactly_one_retirement",
+   "observed": {
+    "pending": [
+     0,
+     -1
+    ]
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "exactly_one_retirement",
+     "ok": false,
+     "detail": "(0, -1)"
+    }
+   ],
+   "seconds": 0.105,
+   "family": "M08-F15",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F15-C03",
+   "status": "fail",
+   "expectation": "saved_not_inserted",
+   "graded_as": "saved_not_inserted",
+   "observed": {
+    "results": [
+     [
+      2,
+      "confirmed",
+      null
+     ],
+     [
+      1,
+      "confirmed",
+      null
+     ]
+    ],
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "queue_held"
+   ],
+   "barriers_fired": [
+    "queue_held"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['saved_not_inserted']"
+    },
+    {
+     "check": "stale_reason",
+     "ok": false,
+     "detail": "[(2, 'confirmed', None), (1, 'confirmed', None)]"
+    },
+    {
+     "check": "one_effect",
+     "ok": false,
+     "detail": "[(7, 'ax_set_text', 'F1', 'second attempt'), (15, 'ax_set_text', 'F1', 'first attempt')]"
+    },
+    {
+     "check": "no_old_text",
+     "ok": false,
+     "detail": "SYNTHETIC_OWNED_FIELDsecond attemptfirst attempt"
+    }
+   ],
+   "seconds": 0.02,
+   "family": "M08-F15",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F15-C04",
+   "status": "pass",
+   "expectation": "explicit_new_intent_not_globally_deduplicated",
+   "graded_as": "explicit_new_intent_not_globally_deduplicated",
+   "observed": {
+    "outcome": "repaste_submitted",
+    "repaste": [
+     [
+      "confirmed",
+      null
+     ]
+    ]
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "new_intent_ran",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.02,
+   "family": "M08-F15",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F15-C05",
+   "status": "pass",
+   "expectation": "exactly_one_effect",
+   "graded_as": "exactly_one_effect",
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     0,
+     9
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "QUEUE_HELD"
+   ],
+   "barriers_fired": [
+    "QUEUE_HELD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "exactly_one_effect",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.02,
+   "family": "M08-F15",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F16-C01",
+   "status": "pass",
+   "expectation": "saved_not_inserted_copy_offer",
+   "graded_as": "saved_not_inserted_copy_offer",
+   "observed": {
+    "state": "saved_not_inserted"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "copy_offer",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.007,
+   "family": "M08-F16",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F16-C02",
+   "status": "pass",
+   "expectation": "saved_not_inserted_copy_offer",
+   "graded_as": "saved_not_inserted_copy_offer",
+   "observed": {
+    "state": "saved_not_inserted"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "live_bundle_guard",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F16",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F16-C03",
+   "status": "pass",
+   "expectation": "posted_unverified_or_confirmed_if_proved",
+   "graded_as": "posted_unverified_or_confirmed_if_proved",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_return_synthesized",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F16",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F16-C04",
+   "status": "fail",
+   "expectation": "target_changed_no_post",
+   "graded_as": "target_changed_no_post",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "AFTER_CATEGORY_GUARD"
+   ],
+   "barriers_fired": [
+    "AFTER_CATEGORY_GUARD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['target_changed']"
+    },
+    {
+     "check": "no_post",
+     "ok": false,
+     "detail": "(0, 'echo hi')"
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F16",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F16-C05",
+   "status": "fail",
+   "expectation": "policy_adjudication_no_unsafe_execution_claim",
+   "graded_as": "saved_not_inserted_copy_offer_every_variant",
+   "observed": {},
+   "installed": {
+    "variants": [
+     "'first\\rsecond'",
+     "'first\\r\\nsecond'",
+     "'first\\u2028second'",
+     "'first\\x1bsecond'"
+    ],
+    "decision": "D15",
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "copy_only:'first\\rsecond'",
+     "ok": false,
+     "detail": "('confirmed', 0)"
+    },
+    {
+     "check": "copy_only:'first\\r\\nsecond'",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "copy_only:'first\\u2028second'",
+     "ok": false,
+     "detail": "('confirmed', 0)"
+    },
+    {
+     "check": "copy_only:'first\\x1bsecond'",
+     "ok": false,
+     "detail": "('confirmed', 0)"
+    }
+   ],
+   "seconds": 0.023,
+   "family": "M08-F16",
+   "role": "design_probe"
+  },
+  {
+   "case_id": "LF-M08-F17-C01",
+   "status": "pass",
+   "expectation": "undo_restored",
+   "graded_as": "undo_restored",
+   "observed": {
+    "undo_outcome": "undone"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "keep old part",
+    "f1_sel": [
+     5,
+     8
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "undo_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "exact_restore",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F17",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F17-C02",
+   "status": "fail",
+   "expectation": "refused_undo",
+   "graded_as": "refused_undo",
+   "observed": {
+    "undo_outcome": "undone"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "original": "F1[0:3]=red",
+    "other": "F2[0:3]=red focused"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "undo_accepted",
+     "ok": false,
+     "detail": "undone not in ['no_authority', 'stale_range', 'unsupported_surface', 'nothing_to_undo']"
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": false,
+     "detail": "[(11, 'ax_set_range', 'F2', (0, 3)), (12, 'ax_set_text', 'F2', '')]"
+    },
+    {
+     "check": "F2_unchanged",
+     "ok": false,
+     "detail": ""
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F17",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F17-C03",
+   "status": "pass",
+   "expectation": "refused_undo",
+   "graded_as": "refused_undo",
+   "observed": {
+    "undo_outcome": "stale_range"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "undo_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "newer_bytes_unchanged",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F17",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F17-C04",
+   "status": "fail",
+   "expectation": "undo_restored_old_not_empty",
+   "graded_as": "undo_restored_old_not_empty",
+   "observed": {
+    "undo_outcome": "undone"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "say old wording now",
+    "f1_sel": [
+     4,
+     15
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "clipboard_method",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "undo_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "old_not_empty",
+     "ok": false,
+     "detail": "say  now"
+    }
+   ],
+   "seconds": 0.006,
+   "family": "M08-F17",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F17-C05",
+   "status": "fail",
+   "expectation": "refused_undo",
+   "graded_as": "refused_undo",
+   "observed": {
+    "undo_outcome": "undone"
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "undo_accepted",
+     "ok": false,
+     "detail": "undone not in ['no_authority', 'stale_range', 'unsupported_surface', 'nothing_to_undo']"
+    },
+    {
+     "check": "no_reads_writes_after_delete",
+     "ok": false,
+     "detail": "[(9, 'string_for_range', 'F1', 101, 'AXStringForRange'), (12, 'string_for_range', 'F1', 101, 'AXStringForRange')]"
+    }
+   ],
+   "seconds": 0.113,
+   "family": "M08-F17",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F18-C01",
+   "status": "pass",
+   "expectation": "already_present",
+   "graded_as": "already_present",
+   "observed": {
+    "events": [
+     [
+      "insertion.paste_again",
+      "reconciled_accessible_text",
+      "already_present"
+     ]
+    ]
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "already_present",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "zero_effects",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.573,
+   "family": "M08-F18",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F18-C02",
+   "status": "fail",
+   "expectation": "no_unintended_duplicate",
+   "graded_as": "no_unintended_duplicate",
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BOTH_ADMITTED_WHILE_HELD"
+   ],
+   "barriers_fired": [
+    "BOTH_ADMITTED_WHILE_HELD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "no_unintended_duplicate",
+     "ok": false,
+     "detail": "hellohello"
+    }
+   ],
+   "seconds": 0.867,
+   "family": "M08-F18",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F18-C03",
+   "status": "fail",
+   "expectation": "saved_not_inserted",
+   "graded_as": "saved_not_inserted",
+   "observed": {
+    "state": "inserted"
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "hello app"
+    },
+    {
+     "check": "no_reads_after_delete",
+     "ok": false,
+     "detail": "[(10, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (11, 'string_for_range', 'F1', 101, 'AXStringForRange'), (12, 'attribute', 'F1', 101, 'AXSelectedTextRange')]"
+    }
+   ],
+   "seconds": 0.619,
+   "family": "M08-F18",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F18-C04",
+   "status": "fail",
+   "expectation": "callback_queued_without_AX_on_UI",
+   "graded_as": "callback_queued_without_AX_on_UI",
+   "observed": {
+    "callback_ms": [
+     409.77,
+     0.03
+    ]
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "no_ax_on_ui_thread",
+     "ok": false,
+     "detail": "['MainThread', 'MainThread', 'localflow-v2-insertion', 'localflow-v2-insertion']"
+    },
+    {
+     "check": "callbacks_prompt",
+     "ok": false,
+     "detail": "(0.4097749579959782, 2.7832997147925198e-05)"
+    }
+   ],
+   "seconds": 1.526,
+   "family": "M08-F18",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F18-C05",
+   "status": "pass",
+   "expectation": "documented_approximate_reconciliation",
+   "graded_as": "already_present_documented_approximation",
+   "observed": {
+    "decision": "D16"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "approximate_already_present",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.483,
+   "family": "M08-F18",
+   "role": "design_probe"
+  },
+  {
+   "case_id": "LF-M08-F19-C01",
+   "status": "pass",
+   "expectation": "no_edit_observed_no_correctness_label",
+   "graded_as": "no_edit_observed_no_correctness_label",
+   "observed": {
+    "observation": {
+     "after_artifact_id": null,
+     "before_artifact_id": null,
+     "edited": false,
+     "no_edit_observed": true,
+     "observation_id": "obs-94fdf9ca62cd456e9bf15abd24625e41",
+     "reanchors": 0,
+     "recorded": true,
+     "status": "observed",
+     "stop_reason": "window_elapsed",
+     "ticks": 3,
+     "undo_candidate": false
+    }
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "no_edit_observed",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "correctness_unreviewed",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_labels",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 1.113,
+   "family": "M08-F19",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F19-C02",
+   "status": "fail",
+   "expectation": "observation_stopped_before_foreign_read",
+   "graded_as": "observation_stopped_before_foreign_read",
+   "observed": {
+    "stop_reason": "owned_range_edited"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "stopped",
+     "ok": false,
+     "detail": "owned_range_edited"
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": false,
+     "detail": "[(14, 'number_of_characters', 'F2', 101, 'AXNumberOfCharacters'), (15, 'string_for_range', 'F2', 101, 'AXStringForRange'), (16, 'string_for_range', 'F2', 101, 'AXStringForRange'), (17, 'string_for_range', 'F2', 101, 'AXStringForRange')]"
+    },
+    {
+     "check": "no_canary_in_store_or_events",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.515,
+   "family": "M08-F19",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F19-C03",
+   "status": "fail",
+   "expectation": "secure_field_transition_no_content",
+   "graded_as": "secure_field_transition_no_content",
+   "observed": {
+    "stop_reason": "window_elapsed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "secure_stop",
+     "ok": false,
+     "detail": "window_elapsed"
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": false,
+     "detail": "[(14, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (15, 'string_for_range', 'F1', 101, 'AXStringForRange'), (17, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (18, 'string_for_range', 'F1', 101, 'AXStringForRange')]"
+    }
+   ],
+   "seconds": 1.52,
+   "family": "M08-F19",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F19-C04",
+   "status": "fail",
+   "expectation": "no_training_observation_content",
+   "graded_as": "no_training_observation_content",
+   "observed": {
+    "observer": true,
+    "rows": 1,
+    "artifacts": 2
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "no_training_observation_content",
+     "ok": false,
+     "detail": "(<localflow.v2.insertion.observation.OutcomeObserver object at 0x10df8c290>, 1, 2)"
+    }
+   ],
+   "seconds": 1.416,
+   "family": "M08-F19",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F19-C05",
+   "status": "fail",
+   "expectation": "exactly_one_final_observation_callback",
+   "graded_as": "exactly_one_final_observation_callback",
+   "observed": {
+    "final_callbacks": 0
+   },
+   "installed": {},
+   "barriers_declared": [
+    "CLOSE_IN_GAP"
+   ],
+   "barriers_fired": [
+    "CLOSE_IN_GAP"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "exactly_one",
+     "ok": false,
+     "detail": "0"
+    }
+   ],
+   "seconds": 3.929,
+   "family": "M08-F19",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F20-C01",
+   "status": "pass",
+   "expectation": "reanchored_without_owned_edit",
+   "graded_as": "reanchored_without_owned_edit",
+   "observed": {
+    "stop_reason": "window_elapsed",
+    "reanchors": 1,
+    "start": 7
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "reanchored_no_edit",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 1.523,
+   "family": "M08-F20",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F20-C02",
+   "status": "fail",
+   "expectation": "ambiguous_no_owned_edit_attribution",
+   "graded_as": "ambiguous_no_owned_edit_attribution",
+   "observed": {
+    "stop_reason": "window_elapsed",
+    "start": 0
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "owned words ",
+    "f1_sel": [
+     12,
+     12
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "ambiguous_no_attribution",
+     "ok": false,
+     "detail": "window_elapsed"
+    }
+   ],
+   "seconds": 1.521,
+   "family": "M08-F20",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F20-C03",
+   "status": "fail",
+   "expectation": "unavailable_no_owned_edit_attribution",
+   "graded_as": "unavailable_no_owned_edit_attribution",
+   "observed": {
+    "stop_reason": "owned_range_edited"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "unavailable_no_attribution",
+     "ok": false,
+     "detail": "owned_range_edited"
+    }
+   ],
+   "seconds": 0.512,
+   "family": "M08-F20",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F20-C04",
+   "status": "fail",
+   "expectation": "deadline_no_owned_edit_attribution",
+   "graded_as": "deadline_no_owned_edit_attribution",
+   "observed": {
+    "stop_reason": "owned_range_edited"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "clock": "<__main__.FakeClock object at 0x10de99550>"
+   },
+   "barriers_declared": [
+    "CLOCK_PAST_DEADLINE"
+   ],
+   "barriers_fired": [
+    "CLOCK_PAST_DEADLINE"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "deadline_no_attribution",
+     "ok": false,
+     "detail": "owned_range_edited"
+    }
+   ],
+   "seconds": 0.515,
+   "family": "M08-F20",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F20-C05",
+   "status": "fail",
+   "expectation": "exact_owned_edit_or_abstention",
+   "graded_as": "exact_owned_edit_or_abstention",
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": " CANARY_OUTSIDE",
+    "f1_sel": [
+     0,
+     0
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "exact_or_abstain:tiger",
+     "ok": false,
+     "detail": "tig"
+    },
+    {
+     "check": "exact_or_abstain:ox",
+     "ok": false,
+     "detail": "ox "
+    }
+   ],
+   "seconds": 1.033,
+   "family": "M08-F20",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F21-C01",
+   "status": "pass",
+   "expectation": "session_locked_no_further_content_reads",
+   "graded_as": "session_locked_no_further_content_reads",
+   "observed": {
+    "stop_reason": "session_locked"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "locked_stop",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_read_after_lock_tick",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.517,
+   "family": "M08-F21",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F21-C02",
+   "status": "pass",
+   "expectation": "fresh_observer_active",
+   "graded_as": "fresh_observer_active",
+   "observed": {
+    "first": "session_locked",
+    "second": "window_elapsed",
+    "ticks": 3
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "fresh_observer_active",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 1.02,
+   "family": "M08-F21",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F21-C03",
+   "status": "pass",
+   "expectation": "observation_continues",
+   "graded_as": "observation_continues",
+   "observed": {
+    "stop_reason": "window_elapsed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "continues",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 1.035,
+   "family": "M08-F21",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F21-C04",
+   "status": "pass",
+   "expectation": "new_dictation_stop",
+   "graded_as": "new_dictation_stop",
+   "observed": {
+    "stop_reason": "new_dictation"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "new_dictation_stop",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.517,
+   "family": "M08-F21",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F21-C05",
+   "status": "fail",
+   "expectation": "revoked_observer_stays_revoked",
+   "graded_as": "revoked_observer_stays_revoked",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "revoked_stays_revoked",
+     "ok": false,
+     "detail": "[(12, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (13, 'string_for_range', 'F1', 101, 'AXStringForRange'), (15, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters')]"
+    }
+   ],
+   "seconds": 1.318,
+   "family": "M08-F21",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F22-C01",
+   "status": "pass",
+   "expectation": "confirmed_correctness_unreviewed",
+   "graded_as": "confirmed_correctness_unreviewed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "correctness_unreviewed",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_labels_or_preferences",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.121,
+   "family": "M08-F22",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F22-C02",
+   "status": "pass",
+   "expectation": "posted_unverified_observation_unavailable",
+   "graded_as": "posted_unverified_observation_unavailable",
+   "observed": {
+    "state": "posted_unverified"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_observer",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.009,
+   "family": "M08-F22",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F22-C03",
+   "status": "pass",
+   "expectation": "physical_result_preserved_evidence_failure_disclosed",
+   "graded_as": "physical_result_preserved_evidence_failure_disclosed",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "physical_result_preserved",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "evidence_failure_disclosed",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.007,
+   "family": "M08-F22",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F22-C04",
+   "status": "pass",
+   "expectation": "candidate_attributed_insertion",
+   "graded_as": "candidate_attributed_insertion",
+   "observed": {
+    "rows": [
+     [
+      "tcand-synthetic"
+     ]
+    ],
+    "observations": 1
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "replaced",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "candidate_attributed",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.832,
+   "family": "M08-F22",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F22-C05",
+   "status": "pass",
+   "expectation": "jobless_accept_no_training_row",
+   "graded_as": "jobless_accept_no_training_row",
+   "observed": {
+    "rows": [],
+    "observations": 0
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "replaced",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "jobless_no_row_no_observation",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.827,
+   "family": "M08-F22",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F23-C01",
+   "status": "fail",
+   "expectation": "saved_not_inserted",
+   "graded_as": "saved_not_inserted",
+   "observed": {
+    "state": "confirmed"
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "job_row": "job-85901cefae754b998a20fe8ba3af1d0c",
+    "listener": "none: the service has no revoke_job at this code"
+   },
+   "barriers_declared": [
+    "DELETED_WHILE_QUEUED"
+   ],
+   "barriers_fired": [
+    "DELETED_WHILE_QUEUED"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "state_accepted",
+     "ok": false,
+     "detail": "confirmed not in ['saved_not_inserted']"
+    },
+    {
+     "check": "no_effect",
+     "ok": false,
+     "detail": "[(7, 'ax_set_text', 'F1', 'must not land')]"
+    }
+   ],
+   "seconds": 0.024,
+   "family": "M08-F23",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F23-C02",
+   "status": "fail",
+   "expectation": "effect_truth_preserved_content_not_republished",
+   "graded_as": "effect_truth_preserved_content_not_republished",
+   "observed": {
+    "state": "confirmed",
+    "observer": true
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "job_row": "job-b23d44e09fde4bc4b2c6c7bff4cb75e0",
+    "listener": "none: the service has no revoke_job at this code"
+   },
+   "barriers_declared": [
+    "DELETE_AFTER_EFFECT"
+   ],
+   "barriers_fired": [
+    "DELETE_AFTER_EFFECT"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "effect_truth",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_observer_no_content",
+     "ok": false,
+     "detail": "(<localflow.v2.insertion.observation.OutcomeObserver object at 0x10dfeead0>, 0)"
+    }
+   ],
+   "seconds": 0.013,
+   "family": "M08-F23",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F23-C03",
+   "status": "pass",
+   "expectation": "artifact_publication_refused",
+   "graded_as": "artifact_publication_refused",
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "job_row": "job-d7690e91c02948edb9e8279bd6ae4a03",
+    "listener": "none: the service has no revoke_job at this code"
+   },
+   "barriers_declared": [
+    "PUBLICATION_HELD"
+   ],
+   "barriers_fired": [
+    "PUBLICATION_HELD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "artifact_publication_refused",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.52,
+   "family": "M08-F23",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F23-C04",
+   "status": "fail",
+   "expectation": "content_purged_no_future_authority",
+   "graded_as": "content_purged_no_future_authority",
+   "observed": {
+    "before": 2,
+    "after": 0,
+    "paste_again": {
+     "outcome": "repaste_submitted"
+    }
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "job_row": "job-d1ad0dfa2c2f4963b0622df6936cfc71",
+    "listener": "none: the service has no revoke_job at this code"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "committed_then_purged",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_future_authority",
+     "ok": false,
+     "detail": "{'outcome': 'repaste_submitted'}"
+    }
+   ],
+   "seconds": 0.523,
+   "family": "M08-F23",
+   "role": "positive_control"
+  },
+  {
+   "case_id": "LF-M08-F23-C05",
+   "status": "fail",
+   "expectation": "content_free_policy_record_or_refusal",
+   "graded_as": "insertion_row_content_free_observation_refused",
+   "observed": {
+    "insertion_rows": [
+     [
+      "posted_unverified"
+     ]
+    ],
+    "observation_opened": true
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "job_row": "job-c838bd1588d74d6ab56d73cebb67374e",
+    "listener": "none: the service has no revoke_job at this code",
+    "decision": "D13"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "content_free_row_allowed",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "observation_refused",
+     "ok": false,
+     "detail": "True"
+    }
+   ],
+   "seconds": 0.022,
+   "family": "M08-F23",
+   "role": "design_probe"
+  },
+  {
+   "case_id": "LF-M08-F24-C01",
+   "status": "pass",
+   "expectation": "history_retained_training_ineligible",
+   "graded_as": "history_retained_training_ineligible",
+   "observed": {
+    "artifacts": [
+     [
+      "art-fad478c422f04e9ca824a25b20f80bee",
+      1
+     ],
+     [
+      "art-9b027461a0784c748ef75d219bab3b27",
+      0
+     ]
+    ],
+    "live_training_leases": 0
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "history_retained_training_ineligible",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 1.623,
+   "family": "M08-F24",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F24-C02",
+   "status": "pass",
+   "expectation": "no_expired_payload_reuse",
+   "graded_as": "no_expired_payload_reuse",
+   "observed": {
+    "artifacts": [
+     [
+      "art-30c96bf43f544ee89385f7cdd79ffd73",
+      1
+     ],
+     [
+      "art-c601636f521f45e6b67bc21113cd66d5",
+      1
+     ]
+    ],
+    "live_training_leases": 0
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "no_expired_payload_reuse",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 1.615,
+   "family": "M08-F24",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F24-C03",
+   "status": "pass",
+   "expectation": "authorized_capture_semantics_preserved",
+   "graded_as": "authorized_capture_semantics_preserved",
+   "observed": {
+    "observations": 1
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "authorized_capture_semantics",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 1.621,
+   "family": "M08-F24",
+   "role": "preservation_control"
+  },
+  {
+   "case_id": "LF-M08-F24-C04",
+   "status": "fail",
+   "expectation": "no_retroactive_training_authorization",
+   "graded_as": "no_retroactive_training_authorization",
+   "observed": {
+    "observations": 1,
+    "artifacts": 2
+   },
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "no_retroactive_authorization",
+     "ok": false,
+     "detail": "(1, 2)"
+    }
+   ],
+   "seconds": 1.619,
+   "family": "M08-F24",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F24-C05",
+   "status": "fail",
+   "expectation": "expired_or_deleted_cache_not_replayed",
+   "graded_as": "expired_or_deleted_cache_not_replayed",
+   "observed": {
+    "paste_again": {
+     "outcome": "already_present"
+    },
+    "undo": {
+     "outcome": "undone"
+    }
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "clock": "<__main__.FakeClock object at 0x10dceb390>",
+    "job_row": "job-88a71c22042647b5b82ce12096ee099d",
+    "listener": "none: the service has no revoke_job at this code"
+   },
+   "barriers_declared": [
+    "CACHE_EXPIRED"
+   ],
+   "barriers_fired": [
+    "CACHE_EXPIRED"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "expired_not_replayed",
+     "ok": false,
+     "detail": "({'outcome': 'already_present'}, {'outcome': 'undone'})"
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": false,
+     "detail": "[(10, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters'), (11, 'string_for_range', 'F1', 101, 'AXStringForRange'), (12, 'string_for_range', 'F1', 101, 'AXStringForRange'), (15, 'string_for_range', 'F1', 101, 'AXStringForRange')]"
+    },
+    {
+     "check": "deleted_not_replayed",
+     "ok": false,
+     "detail": "{'outcome': 'already_present'}"
+    }
+   ],
+   "seconds": 0.026,
+   "family": "M08-F24",
+   "role": "negative"
+  },
+  {
+   "case_id": "LF-M08-F25-C01",
+   "status": "not_run",
+   "expectation": "valid_only_with_actual_entry_point_witness",
+   "graded_as": "valid_only_with_actual_entry_point_witness",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "F25 benchmark cases are graded from the work-validity record of scripts/v2/benchmark_m08.py on the reference Mac (per-sample witnesses, cohort boundaries, budgets) when the runner is given --benchmark; otherwise NOT_RUN with that reason.",
+   "seconds": 0.0,
+   "family": "M08-F25",
+   "role": "benchmark"
+  },
+  {
+   "case_id": "LF-M08-F25-C02",
+   "status": "not_run",
+   "expectation": "valid_only_if_all_samples_do_work",
+   "graded_as": "valid_only_if_all_samples_do_work",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "F25 benchmark cases are graded from the work-validity record of scripts/v2/benchmark_m08.py on the reference Mac (per-sample witnesses, cohort boundaries, budgets) when the runner is given --benchmark; otherwise NOT_RUN with that reason.",
+   "seconds": 0.0,
+   "family": "M08-F25",
+   "role": "benchmark"
+  },
+  {
+   "case_id": "LF-M08-F25-C03",
+   "status": "not_run",
+   "expectation": "valid_separate_callback_queue_execution_metrics",
+   "graded_as": "valid_separate_callback_queue_execution_metrics",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "F25 benchmark cases are graded from the work-validity record of scripts/v2/benchmark_m08.py on the reference Mac (per-sample witnesses, cohort boundaries, budgets) when the runner is given --benchmark; otherwise NOT_RUN with that reason.",
+   "seconds": 0.0,
+   "family": "M08-F25",
+   "role": "benchmark"
+  },
+  {
+   "case_id": "LF-M08-F25-C04",
+   "status": "not_run",
+   "expectation": "no_approximation_labeled_as_full_tick",
+   "graded_as": "no_approximation_labeled_as_full_tick",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "F25 benchmark cases are graded from the work-validity record of scripts/v2/benchmark_m08.py on the reference Mac (per-sample witnesses, cohort boundaries, budgets) when the runner is given --benchmark; otherwise NOT_RUN with that reason.",
+   "seconds": 0.0,
+   "family": "M08-F25",
+   "role": "benchmark"
+  },
+  {
+   "case_id": "LF-M08-F25-C05",
+   "status": "not_run",
+   "expectation": "valid_only_with_population_environment_and_budget_verdict",
+   "graded_as": "valid_only_with_population_environment_and_budget_verdict",
+   "observed": {},
+   "installed": {},
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [],
+   "reason": "F25 benchmark cases are graded from the work-validity record of scripts/v2/benchmark_m08.py on the reference Mac (per-sample witnesses, cohort boundaries, budgets) when the runner is given --benchmark; otherwise NOT_RUN with that reason.",
+   "seconds": 0.0,
+   "family": "M08-F25",
+   "role": "benchmark"
+  }
+ ],
+ "stateful": [
+  {
+   "case_id": "LF-M08-ST-01",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s1_snapshot_is_A",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s2_B_frontmost",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s3_refused",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_reads",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.008
+  },
+  {
+   "case_id": "LF-M08-ST-02",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s1_W1",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s2_equal_title",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s3_refused",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_forbidden_writes",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.007
+  },
+  {
+   "case_id": "LF-M08-ST-03",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "abc def",
+    "f1_sel": [
+     0,
+     0
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s2_caret_moved",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s3_once_at_new_caret",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.007
+  },
+  {
+   "case_id": "LF-M08-ST-04",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "keep old part",
+    "f1_sel": [
+     5,
+     8
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s2_changed",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s3_refused",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.006
+  },
+  {
+   "case_id": "LF-M08-ST-05",
+   "status": "fail",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     0,
+     9
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_ELEMENT_READ"
+   ],
+   "barriers_fired": [
+    "BEFORE_ELEMENT_READ"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s4_no_B_read",
+     "ok": false,
+     "detail": "None"
+    },
+    {
+     "check": "s4_capture_is_A_or_refused",
+     "ok": false,
+     "detail": "{'source': 'CANARY_B_SELECTION', 'range': (0, 18), 'snapshot': ContextSnapshot(context_snapshot_id='ctx-df3561f0502447b0a1f981f8147107d3', stage='transform_selection', target=TargetSnapshot(target_snapshot_id='tgt-a62216e31dd94bfc8c897f96e8eb75f2', app_bundle='com.example.a', app_name='A', app_pid=1"
+    }
+   ],
+   "seconds": 0.006
+  },
+  {
+   "case_id": "LF-M08-ST-06",
+   "status": "fail",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "CANARY_DENIED ",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "denied_apps": "('com.example.a',)"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s3_insert_no_read",
+     "ok": false,
+     "detail": "('confirmed', <localflow.v2.insertion.observation.OutcomeObserver object at 0x10dfeff00>)"
+    },
+    {
+     "check": "s4_zero_acquisition",
+     "ok": false,
+     "detail": "[(3, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (4, 'attribute', 'F1', 101, 'AXSelectedTextRange'), (6, 'number_of_characters', 'F1', 101, 'AXNumberOfCharacters')]"
+    }
+   ],
+   "seconds": 0.076
+  },
+  {
+   "case_id": "LF-M08-ST-07",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_RESTORE_GUARD"
+   ],
+   "barriers_fired": [
+    "BEFORE_RESTORE_GUARD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s2_consumed",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s4_restore_skipped",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.008
+  },
+  {
+   "case_id": "LF-M08-ST-08",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s2_not_confirmed",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s3_payload_retained",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s4_right_payload",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.17
+  },
+  {
+   "case_id": "LF-M08-ST-09",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s4_ambiguous",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.171
+  },
+  {
+   "case_id": "LF-M08-ST-10",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s2_prefix_written",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s4_partial_not_confirmed",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.166
+  },
+  {
+   "case_id": "LF-M08-ST-11",
+   "status": "fail",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s2_published",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s5_no_paste_and_restored",
+     "ok": false,
+     "detail": "(1, 'CANARY_OLD_CLIPBOARD', 'confirmed')"
+    }
+   ],
+   "seconds": 0.008
+  },
+  {
+   "case_id": "LF-M08-ST-12",
+   "status": "fail",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {
+    "first": "posted_unverified",
+    "second": [
+     "posted_unverified",
+     "readback_mismatch"
+    ]
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "no_user_clipboard_pasted",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_duplicate",
+     "ok": false,
+     "detail": "TWO TWO "
+    },
+    {
+     "check": "pending_payload_kept",
+     "ok": false,
+     "detail": "TWO TWO "
+    }
+   ],
+   "seconds": 0.428
+  },
+  {
+   "case_id": "LF-M08-ST-13",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s2_edited",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s4_newer_unchanged",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.008
+  },
+  {
+   "case_id": "LF-M08-ST-14",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s2_complete",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s4_no_second_effect",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.379
+  },
+  {
+   "case_id": "LF-M08-ST-15",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {
+    "first": "session_locked",
+    "second": "window_elapsed",
+    "ticks": 3
+   },
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "fresh_observer_active",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 1.024
+  },
+  {
+   "case_id": "LF-M08-ST-16",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s2_later_dictation",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s4_stopped",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.522
+  },
+  {
+   "case_id": "LF-M08-ST-17",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "job_row": "job-b3808a99d30743ae94b985938a9b0e0f",
+    "listener": "none: the service has no revoke_job at this code"
+   },
+   "barriers_declared": [
+    "PUBLICATION_HELD"
+   ],
+   "barriers_fired": [
+    "PUBLICATION_HELD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "artifact_publication_refused",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.524
+  },
+  {
+   "case_id": "LF-M08-ST-18",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     0,
+     9
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "s1_strict_capture",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "s4_no_W2_replacement",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.013
+  }
+ ],
+ "metamorphic": [
+  {
+   "case_id": "LF-M08-MR-01",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "monotone:alpha",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "monotone:beta",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.033
+  },
+  {
+   "case_id": "LF-M08-MR-02",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     0,
+     9
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "title_alone_not_authority",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.016
+  },
+  {
+   "case_id": "LF-M08-MR-03",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "SYNTHETIC_OWNED_FIELD",
+    "f1_sel": [
+     3,
+     3
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "caret_move_positive_control",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.015
+  },
+  {
+   "case_id": "LF-M08-MR-04",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "keep old part",
+    "f1_sel": [
+     5,
+     8
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "weakened_proof_no_authority",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.015
+  },
+  {
+   "case_id": "LF-M08-MR-05",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "BEFORE_RESTORE_GUARD"
+   ],
+   "barriers_fired": [
+    "BEFORE_RESTORE_GUARD"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "ownership_only_prevents",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.013
+  },
+  {
+   "case_id": "LF-M08-MR-06",
+   "status": "pass",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "no_upgrade",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.016
+  },
+  {
+   "case_id": "LF-M08-MR-07",
+   "status": "fail",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "before_effect_prohibited",
+     "ok": false,
+     "detail": "('x', 'confirmed')"
+    },
+    {
+     "check": "after_effect_kept",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.013
+  },
+  {
+   "case_id": "LF-M08-MR-08",
+   "status": "fail",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "job_row": "job-bababd5a579a47e2a78a860befa2a934",
+    "listener": "none: the service has no revoke_job at this code"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "authority_only_decreases",
+     "ok": false,
+     "detail": "(('already_present',), ('already_present',), 0)"
+    }
+   ],
+   "seconds": 0.399
+  },
+  {
+   "case_id": "LF-M08-MR-09",
+   "status": "fail",
+   "expectation": null,
+   "graded_as": null,
+   "observed": {},
+   "installed": {
+    "world": "corpus_base",
+    "f1_text": "text ",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40,
+    "denied_apps": "('com.example.a',)"
+   },
+   "barriers_declared": [],
+   "barriers_fired": [],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "reads_cannot_increase",
+     "ok": false,
+     "detail": "(4, 4)"
+    },
+    {
+     "check": "write_capability_separate",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.024
+  }
+ ]
+}
