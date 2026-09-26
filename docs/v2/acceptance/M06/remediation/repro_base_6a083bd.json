@@ -1,0 +1,420 @@
+{
+ "code_root_modified": false,
+ "code_root_sha": "6a083bd70011988314836164e7d3016da3968490",
+ "desktop_isolation": true,
+ "evaluated_utc": "2026-09-26T03:42:48Z",
+ "findings": {
+  "a01": {
+   "reproduced": true,
+   "seconds": 0.001,
+   "v1_focus_switch_before_field": {
+    "b_attrs_read": [
+     "AXDocument",
+     "AXNumberOfCharacters",
+     "AXPlaceholderValue",
+     "AXSelectedText",
+     "AXSelectedTextRange",
+     "AXStringForRange",
+     "AXTitle",
+     "AXURL"
+    ],
+    "b_canary_in_snapshot": true,
+    "b_content_reads": 9,
+    "target_app": "com.google.Chrome",
+    "target_denied": false
+   },
+   "v2_switch_after_field": {
+    "a_field_canary": true,
+    "b_origin": "https://beta.example",
+    "b_reads": 2,
+    "hybrid": true,
+    "window_title": "Denied B"
+   }
+  },
+  "a02": {
+   "first_origin": "https://alpha.example",
+   "reproduced": true,
+   "second_capture_read_url": false,
+   "second_origin": "https://alpha.example",
+   "second_origin_source": "ax_url",
+   "seconds": 0.0,
+   "workspace_second": "alpha"
+  },
+  "a03": {
+   "controls_ok": true,
+   "reproduced": true,
+   "rows": {
+    "absent_vs_nameonly": true,
+    "bundle_only_absent_vs_absent": true,
+    "control_other_pid": false,
+    "control_same": true,
+    "m08_lease_absent_identity": true,
+    "m08_target_snapshot_absent_identity": "pass",
+    "same_pid_conflicting_bundle": true
+   },
+   "seconds": 0.008
+  },
+  "a04": {
+   "as_range_native_description": [
+    null,
+    null
+   ],
+   "native_evidence": "tests/v2/context/test_native_ax.py",
+   "reproduced": true,
+   "seconds": 0.002,
+   "system_host_raw_cfrange": true,
+   "system_host_window_attr_on_field": true
+  },
+  "a05": {
+   "bytes_changed_total": true,
+   "caller_mutation_changed_bytes": true,
+   "direct_identifiers_mutation": "mutated",
+   "direct_provider_row_mutation": "mutated",
+   "envelope_changed": true,
+   "id": "ctx-fixed",
+   "reproduced": true,
+   "seconds": 0.0,
+   "to_json_detached": true
+  },
+  "a06": {
+   "abandon": {
+    "api": "abandon",
+    "content_reads_after_revocation": 1,
+    "downstream_after_revocation": false,
+    "thread_alive_after": false
+   },
+   "admission": {
+    "begin_after_shutdown_accepted": true,
+    "blocked_collections_admitted": 12,
+    "shutdown_api": false
+   },
+   "app_paths_touch_context": {
+    "_on_job_deleted": false,
+    "applicationWillTerminate_": false,
+    "cancelDictation": false
+   },
+   "reproduced": true,
+   "seconds": 0.002
+  },
+  "a07": {
+   "clock_excludes_injected_delay": true,
+   "injected_delay_ms": 200.0,
+   "release_event_to_released_mono_ms": 207.001,
+   "reproduced": true,
+   "seconds": 0.534
+  },
+  "a08": {
+   "off_arm_ax_reads": 7,
+   "off_arm_installs_enabled_collector": true,
+   "reproduced": true,
+   "scope_cost_gates_exit": false,
+   "scope_entries_global_only": true,
+   "seconds": 0.115,
+   "timer_starts_after_press_release": true,
+   "warm_scope_is_tuple_equality": true
+  },
+  "a09": {
+   "negative_range_recorded": [
+    -5,
+    -2
+   ],
+   "oversized_flank_retained_chars": 588889,
+   "reproduced": true,
+   "seconds": 0.02,
+   "selected_text_retained_chars": 2000000,
+   "snapshot_json_chars": 2001251
+  },
+  "a10": {
+   "reproduced": true,
+   "rows": {
+    "app_chrome_denied": false,
+    "app_context_enabled": true,
+    "app_deadline_ms": 1000000000000.0,
+    "app_retain_context": true,
+    "deadline_inf_accepted": Infinity,
+    "denied_string_is_chrome_denied": false,
+    "denied_string_members": 10,
+    "enabled_string_false": true
+   },
+   "seconds": 0.015
+  },
+  "a11": {
+   "concurrent_ids": [
+    "ctx-d908ecdc760344e99bcb2266b5fa0f93",
+    "ctx-d366f34730954fc7b49a9e08b18572c5"
+   ],
+   "distinct_ids": 2,
+   "older_handle_finalize_after_new_begin": null,
+   "older_lost": true,
+   "omitted_target_returns": "tgt-ebc6888f3f404a35a4f0b97ed81ccf7f",
+   "reproduced": true,
+   "seconds": 0.001
+  },
+  "a12": {
+   "first_downstream": [
+    "focused_field"
+   ],
+   "late_field_workspace": null,
+   "pre_decode_partial": true,
+   "reproduced": true,
+   "second_downstream": true,
+   "second_downstream_ok_providers": [
+    "site_origin"
+   ],
+   "seconds": 0.029
+  },
+  "a13": {
+   "cached_absence_ok": true,
+   "failed_subrole_classification": "text",
+   "failed_subrole_content_read": true,
+   "field_row_after_window_failure": {
+    "name": "focused_field",
+    "reason": "provider_failed",
+    "status": "omitted"
+   },
+   "field_value_present": true,
+   "origin_rows": [
+    {
+     "duration_ms": 0.004,
+     "name": "site_origin",
+     "reason": "not_exposed",
+     "status": "omitted"
+    },
+    {
+     "name": "site_origin",
+     "status": "ok"
+    }
+   ],
+   "populated_field_labeled_failed": true,
+   "reproduced": true,
+   "seconds": 0.001
+  },
+  "a14": {
+   "reproduced": true,
+   "seconds": 0.0,
+   "title": {
+    "control": [
+     "https://alpha.example",
+     "window_title"
+    ],
+    "email": [
+     "https://alpha.example",
+     "window_title"
+    ],
+    "upper_ext": [
+     "https://foo.com.TXT",
+     "window_title"
+    ],
+    "version": [
+     null,
+     null
+    ]
+   },
+   "url": {
+    "file": null,
+    "javascript": null,
+    "port": "https://alpha.example:8443",
+    "userinfo": "https://synthetic-user:CANARY_URL_CRED@alpha.example"
+   }
+  },
+  "a15": {
+   "artifact_insert": {
+    "artifact_rows": 0,
+    "completeness": {
+     "complete": false,
+     "uncommitted_references": [
+      "context.destination.artifact_id"
+     ]
+    },
+    "envelope_artifact_id": null,
+    "envelope_retained": true,
+    "lease_rows": 0,
+    "missing_reasons": [
+     "asr_confidence",
+     "asr_n_best",
+     "asr_token_logprobs",
+     "asr_word_timestamps",
+     "context.destination.artifact_id",
+     "outcome_observation",
+     "transform"
+    ]
+   },
+   "lease_insert": {
+    "artifact_rows": 1,
+    "completeness": {
+     "complete": true,
+     "uncommitted_references": []
+    },
+    "envelope_artifact_id": "art-eb052581227f4971b3392d80285734c0",
+    "envelope_retained": true,
+    "lease_rows": 0,
+    "missing_reasons": [
+     "asr_confidence",
+     "asr_n_best",
+     "asr_token_logprobs",
+     "asr_word_timestamps",
+     "outcome_observation",
+     "transform"
+    ]
+   },
+   "reproduced": true,
+   "seconds": 0.208
+  },
+  "a16": {
+   "no_vocab": {
+    "engine_destination": null,
+    "engine_identifiers": 0,
+    "snapshot_identifiers": 2
+   },
+   "reproduced": true,
+   "seconds": 0.197,
+   "upgrade_failure": {
+    "context_snapshot_finalized": true,
+    "engine_identifiers": 1,
+    "events": [
+     [
+      "context.finalize_failed",
+      "hotkey_down_scope_kept",
+      "RuntimeError"
+     ]
+    ],
+    "explicit_downgrade_recorded": false,
+    "failing_constructor_calls": 2,
+    "finalized_workspace": "alpha",
+    "hint_set_id": "m05hs:217712ca5e1d",
+    "mixed_tuple_observed": true,
+    "resolved_profile": "coding",
+    "scope_upgraded_flag": null,
+    "vocabulary_scope_workspace": null
+   }
+  },
+  "a17": {
+   "historical_attrs": [
+    "AXPlaceholderValue",
+    "AXSelectedText",
+    "AXStringForRange",
+    "AXValue"
+   ],
+   "independent_oracle_attrs": [],
+   "kind": "test_gap",
+   "provider_content_surface": [
+    "AXDocument",
+    "AXNumberOfCharacters",
+    "AXPlaceholderValue",
+    "AXSelectedText",
+    "AXSelectedTextRange",
+    "AXStringForRange",
+    "AXTitle",
+    "AXURL"
+   ],
+   "reproduced": true,
+   "seconds": 0.001,
+   "uncovered": [
+    "AXDocument",
+    "AXNumberOfCharacters",
+    "AXPlaceholderValue",
+    "AXSelectedText",
+    "AXSelectedTextRange",
+    "AXStringForRange",
+    "AXTitle",
+    "AXURL"
+   ]
+  },
+  "a18": {
+   "kind": "test_gap",
+   "latch_uses_in_m06_remediation_suites": 0,
+   "reproduced": true,
+   "seconds": 0.0
+  },
+  "a19": {
+   "full_request_and_rendered_prompt_oracle": false,
+   "kind": "test_gap",
+   "reproduced": true,
+   "seconds": 0.0
+  },
+  "a20": {
+   "kind": "test_gap",
+   "profile_ab_and_retry_oracles": false,
+   "reproduced": true,
+   "seconds": 0.0
+  },
+  "a21": {
+   "caller_inventory_documented": false,
+   "kind": "test_gap",
+   "local_caller_files": [
+    "localflow/app.py",
+    "localflow/v2/capabilities.py",
+    "localflow/v2/context/__init__.py",
+    "localflow/v2/context/collector.py",
+    "localflow/v2/context/snapshot.py",
+    "localflow/v2/insertion/__init__.py",
+    "localflow/v2/insertion/target_lease.py",
+    "localflow/v2/insertion/validation.py",
+    "localflow/v2/normalize/__init__.py",
+    "localflow/v2/normalize/engine.py",
+    "localflow/v2/normalize/policy.py",
+    "localflow/v2/normalize/scoring.py",
+    "localflow/v2/training.py",
+    "localflow/v2/vocabulary.py",
+    "scripts/v2/benchmark_m05.py",
+    "scripts/v2/benchmark_m06.py",
+    "scripts/v2/benchmark_m08.py",
+    "scripts/v2/benchmark_m10.py",
+    "scripts/v2/m04_remediation_repro.py",
+    "scripts/v2/m05_remediation_repro.py"
+   ],
+   "native_suite_present": false,
+   "reproduced": true,
+   "seconds": 0.024
+  },
+  "a22": {
+   "kind": "design",
+   "reproduced": true,
+   "seconds": 0.0,
+   "secure_field_attrs_read": [
+    "AXRole",
+    "AXSubrole",
+    "AXTitle",
+    "AXURL"
+   ],
+   "secure_origin": "https://alpha.example",
+   "secure_origin_source": "ax_url",
+   "secure_value_read": false,
+   "secure_window_title_retained": "Sign in \u2014 alpha.example"
+  },
+  "a23": {
+   "kind": "design",
+   "reproduced": true,
+   "scope_equal_direct_vs_title": true,
+   "seconds": 0.0,
+   "workspace_collision": [
+    "project",
+    "project"
+   ]
+  },
+  "a24": {
+   "kind": "design",
+   "late_revision_produced": true,
+   "parent_is_pre_decode": false,
+   "parent_link_in_json": false,
+   "reproduced": true,
+   "revision_kind_in_json": false,
+   "seconds": 0.013
+  },
+  "a25": {
+   "kind": "design",
+   "moved_caret_keeps_authority": true,
+   "other_equal_title_window": {
+    "field": "pass",
+    "identity": "pass",
+    "selection": "unavailable",
+    "window": "unavailable"
+   },
+   "reproduced": true,
+   "seconds": 0.0
+  }
+ },
+ "python": "3.14.7",
+ "schema_version": 1,
+ "tool": "scripts/v2/m06_remediation_repro.py"
+}

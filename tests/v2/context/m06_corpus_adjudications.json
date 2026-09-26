@@ -1,0 +1,49 @@
+{
+ "schema_version": 1,
+ "policy_version": "m06-policy-v1",
+ "about": "Explicit adjudications for the M06 audit corpus's policy-dependent cases (M06 remediation). The corpus marks these UNADJUDICATED or names a decision it leaves to the local session; each entry records the decision taken BEFORE the case is scored, and points at the contract text that states it (contracts/context.md, section 'Remediation policy'). A case scored under an adjudication is reported with this policy_version; a residual is never reported as a pass.",
+ "decisions": {
+  "D1_secure_unclassifiable_metadata": {
+   "decision": "A secure, unclassifiable or classification-failed element answers AXRole/AXSubrole only (plus the ownership lookup): no value, selection, range, placeholder, document, character count or AXURL. Its window title is allowed destination metadata; an origin can then only come from the title (evidence, never scope - D3).",
+   "cases": ["LF-M06-C001", "LF-M06-C002", "LF-M06-C003", "LF-M06-C004", "LF-M06-C005", "LF-M06-C006", "LF-M06-S002"]
+  },
+  "D2_failed_versus_absent": {
+   "decision": "AXError 0 is a value; kAXErrorAttributeUnsupported/-25205 and kAXErrorNoValue/-25212 are honest absence; kAXErrorAPIDisabled/-25211 is permission_unavailable; every other error is a failed read. A failed role/subrole read makes the field unclassifiable with omission classification_failed - never text. Only a successfully read origin is cached; a reused value is marked cached.",
+   "cases": ["LF-M06-E001", "LF-M06-E002", "LF-M06-E003", "LF-M06-N005"]
+  },
+  "D3_heuristic_authority": {
+   "decision": "Only an origin whose source is not window_title grants site scope (M05 ScopeContext, M10 Destination). A title-derived origin is recorded as provenance-marked evidence. Workspace display names (document directory or IDE title segment) stay opaque scope values as M05/M10 define them; equal names at different paths share scope.",
+   "cases": ["LF-M06-U017"]
+  },
+  "D4_downstream_revisions": {
+   "decision": "A downstream revision is a late DELTA (providers that finished after the cut), with parent_context_snapshot_id = the pre-decode id and revision_kind late_delta. take_downstream seals the handle: one revision at most; a provider still running at the seal is discarded.",
+   "cases": ["LF-M06-F002", "LF-M06-S005"]
+  },
+  "D5_destination_distinctions": {
+   "decision": "Identity needs a usable pid (both sides) or bundle (both sides); a contradiction or absence never matches. M08 additionally compares the M06 window element (in-memory host identity) with the live AXWindow: another window of the same app is a changed target even under an equal title; a moved caret or another field of the same window keeps authority.",
+   "cases": ["LF-M06-I004", "LF-M06-I005", "LF-M06-I006", "LF-M06-S015"]
+  },
+  "D6_configuration": {
+   "decision": "Privacy controls are read once at startup (no hot reload). Non-boolean context_enabled -> context off; non-boolean training_retain_context -> no retention; a deny list that is not a list of non-empty strings -> context off; a deadline outside finite [0, 250] ms -> 75. Problems are content-free events.",
+   "cases": ["LF-M06-Q001", "LF-M06-Q002", "LF-M06-Q003", "LF-M06-S013"]
+  },
+  "D7_budgets": {
+   "decision": "Flanks: 600 UTF-16 units each, host over-returns clipped, cut surrogate pairs dropped. Selection: read only when its range is known, valid and <= 4096 units, and kept only when its length matches the range; otherwise no selected text and no code-point range (selection_unavailable). Placeholder 200, document 2048, title 512 characters - over budget is omitted, not truncated.",
+   "cases": ["LF-M06-B001", "LF-M06-B004", "LF-M06-B005", "LF-M06-B008"]
+  },
+  "D8_native_offsets": {
+   "decision": "selected_range is code points and present only when exact (the whole prefix was read); selected_range_utf16 is the native host range. M08 compares host units with host units.",
+   "cases": ["LF-M06-N001", "LF-M06-N002"]
+  },
+  "D12_origin_forms": {
+   "decision": "An origin is scheme://host[:port] for http/https only, rebuilt from validated parts: userinfo, path, query and fragment dropped; the host kept as written (M05 compares case-insensitively); an explicit port kept; IPv6 literals bracketed. Invalid ports, malformed authorities, non-web schemes and implausible titles (file names in any case, versions, e-mail bylines, single labels) are omitted as not_exposed.",
+   "cases": ["LF-M06-U001", "LF-M06-U002", "LF-M06-U003", "LF-M06-U004", "LF-M06-U005", "LF-M06-U006", "LF-M06-U007", "LF-M06-U008", "LF-M06-U009", "LF-M06-U010", "LF-M06-U011", "LF-M06-U012", "LF-M06-U013", "LF-M06-U014", "LF-M06-U015", "LF-M06-U016", "LF-M06-U018", "LF-M06-U019", "LF-M06-U020"]
+  },
+  "D13_workspace_locators": {
+   "decision": "Only file URLs and scheme-less absolute paths are locators; the workspace is the containing directory name exactly as it appears in the locator (percent-encoding is not decoded), whatever the file URL's authority - nothing is opened, stat'd or listed.",
+   "cases": ["LF-M06-W001", "LF-M06-W002", "LF-M06-W003", "LF-M06-W004", "LF-M06-W005", "LF-M06-W006", "LF-M06-W007", "LF-M06-W008", "LF-M06-W009", "LF-M06-W010"],
+   "W007_expected": "space%20project",
+   "W010_expected": "project"
+  }
+ }
+}

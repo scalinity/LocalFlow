@@ -1,0 +1,2409 @@
+{
+  "cases": {
+    "LF-M06-B001": {
+      "family_id": "F-BOUNDS",
+      "findings": [
+        "M06-AUDIT-09"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "selection beyond the cap retained",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-B002": {
+      "family_id": "F-BOUNDS",
+      "findings": [
+        "M06-AUDIT-09"
+      ],
+      "observed": {
+        "following": "userId after",
+        "preceding": ""
+      },
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-B003": {
+      "family_id": "F-BOUNDS",
+      "findings": [
+        "M06-AUDIT-09"
+      ],
+      "observed": {
+        "following": null,
+        "preceding": "before userId"
+      },
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-B004": {
+      "family_id": "F-BOUNDS",
+      "findings": [
+        "M06-AUDIT-04",
+        "M06-AUDIT-09"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "invalid-range reads [('read', 101, 'AXSelectedText'), ('string_for_range', 101, 'AXStringForRange'), ('string_for_range', 101, 'AXStringForRange')]",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-B005": {
+      "family_id": "F-BOUNDS",
+      "findings": [
+        "M06-AUDIT-04",
+        "M06-AUDIT-09"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "invalid-range reads [('read', 101, 'AXSelectedText'), ('string_for_range', 101, 'AXStringForRange')]",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-B006": {
+      "family_id": "F-BOUNDS",
+      "findings": [
+        "M06-AUDIT-09"
+      ],
+      "observed": {
+        "following": 600,
+        "preceding": 600
+      },
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-B007": {
+      "family_id": "F-IDENTIFIERS",
+      "findings": [
+        "M06-AUDIT-09",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "identifiers": 43
+      },
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-B008": {
+      "family_id": "F-BOUNDS",
+      "findings": [
+        "M06-AUDIT-09"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "oversized host return retained",
+      "role": "adversarial",
+      "seconds": 0.035,
+      "status": "fail"
+    },
+    "LF-M06-C001": {
+      "family_id": "F-CLASSIFICATION",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17",
+        "M06-AUDIT-22"
+      ],
+      "observed": {
+        "element_reads": [
+          "AXRole",
+          "AXSubrole",
+          "AXURL"
+        ],
+        "reads": 2,
+        "rows": [
+          {
+            "duration_ms": 0.005,
+            "name": "focused_field",
+            "reason": "secure_field",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.007,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-C002": {
+      "family_id": "F-CLASSIFICATION",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17",
+        "M06-AUDIT-22"
+      ],
+      "observed": {
+        "element_reads": [
+          "AXRole",
+          "AXSubrole",
+          "AXURL"
+        ],
+        "reads": 2,
+        "rows": [
+          {
+            "duration_ms": 0.004,
+            "name": "focused_field",
+            "reason": "secure_field",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.002,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-C003": {
+      "family_id": "F-CLASSIFICATION",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17",
+        "M06-AUDIT-22"
+      ],
+      "observed": {
+        "element_reads": [
+          "AXRole",
+          "AXSubrole",
+          "AXURL"
+        ],
+        "reads": 2,
+        "rows": [
+          {
+            "duration_ms": 0.005,
+            "name": "focused_field",
+            "reason": "unclassifiable_field",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.002,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-C004": {
+      "family_id": "F-CLASSIFICATION",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17",
+        "M06-AUDIT-22"
+      ],
+      "observed": {
+        "element_reads": [
+          "AXRole",
+          "AXSubrole",
+          "AXURL"
+        ],
+        "reads": 2,
+        "rows": [
+          {
+            "duration_ms": 0.005,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.003,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-C005": {
+      "family_id": "F-CLASSIFICATION",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17",
+        "M06-AUDIT-22"
+      ],
+      "observed": {
+        "element_reads": [
+          "AXRole",
+          "AXSubrole",
+          "AXURL"
+        ],
+        "reads": 2,
+        "rows": [
+          {
+            "duration_ms": 0.004,
+            "name": "focused_field",
+            "reason": "unclassifiable_field",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.002,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-C006": {
+      "family_id": "F-CLASSIFICATION",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17",
+        "M06-AUDIT-22"
+      ],
+      "observed": {
+        "element_reads": [
+          "AXRole",
+          "AXSubrole",
+          "AXURL"
+        ],
+        "reads": 2,
+        "rows": [
+          {
+            "duration_ms": 0.004,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.002,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-D001": {
+      "family_id": "F-DENY-1",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17"
+      ],
+      "observed": {
+        "reads": 0,
+        "rows": [
+          {
+            "duration_ms": 0.0,
+            "name": "focused_field",
+            "reason": "denied_app",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "denied_app",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "denied_app",
+            "status": "omitted"
+          }
+        ]
+      },
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-D002": {
+      "family_id": "F-DENY-2",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17"
+      ],
+      "observed": {
+        "reads": 0,
+        "rows": [
+          {
+            "duration_ms": 0.0,
+            "name": "focused_field",
+            "reason": "denied_app",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "denied_app",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "denied_app",
+            "status": "omitted"
+          }
+        ]
+      },
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-D003": {
+      "family_id": "F-DENY-3",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17"
+      ],
+      "observed": {
+        "reads": 0,
+        "rows": [
+          {
+            "duration_ms": 0.0,
+            "name": "focused_field",
+            "reason": "denied_app",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "denied_app",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "denied_app",
+            "status": "omitted"
+          }
+        ]
+      },
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-D004": {
+      "family_id": "F-DENY-4",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17"
+      ],
+      "observed": {
+        "reads": 0,
+        "rows": [
+          {
+            "duration_ms": 0.0,
+            "name": "focused_field",
+            "reason": "denied_app",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "denied_app",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "denied_app",
+            "status": "omitted"
+          }
+        ]
+      },
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-D005": {
+      "family_id": "F-DENY-5",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17"
+      ],
+      "observed": {
+        "reads": 0,
+        "rows": [
+          {
+            "duration_ms": 0.0,
+            "name": "focused_field",
+            "reason": "denied_app",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "denied_app",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "denied_app",
+            "status": "omitted"
+          }
+        ]
+      },
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-E001": {
+      "family_id": "F-EXCEPTION",
+      "findings": [
+        "M06-AUDIT-13",
+        "M06-AUDIT-17"
+      ],
+      "observed": {
+        "reason": "provider_failed"
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-E002": {
+      "family_id": "F-EXCEPTION",
+      "findings": [
+        "M06-AUDIT-13"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "retained field labeled {'name': 'focused_field', 'status': 'omitted', 'reason': 'provider_failed'}",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-E003": {
+      "family_id": "F-CACHE-STATUS",
+      "findings": [
+        "M06-AUDIT-02",
+        "M06-AUDIT-13"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "absence resurrected as resolved: [{'name': 'site_origin', 'status': 'omitted', 'reason': 'not_exposed', 'duration_ms': 0.003}, {'name': 'site_origin', 'status': 'ok'}]",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-F001": {
+      "family_id": "F-FINALIZE",
+      "findings": [
+        "M06-AUDIT-11"
+      ],
+      "reason": "ids ['ctx-b609a903b1504781b502cc6ec75e2961', 'ctx-4856f13da1eb402daefbdbd34ac0b15d']",
+      "role": "stateful",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-F002": {
+      "family_id": "F-LATE",
+      "findings": [
+        "M06-AUDIT-12",
+        "M06-AUDIT-24"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "a consumed handle produced a second revision",
+      "role": "stateful",
+      "seconds": 0.015,
+      "status": "fail"
+    },
+    "LF-M06-F003": {
+      "family_id": "F-LATE",
+      "findings": [
+        "M06-AUDIT-12"
+      ],
+      "reason": "late workspace None",
+      "role": "stateful",
+      "seconds": 0.013,
+      "status": "fail"
+    },
+    "LF-M06-I001": {
+      "family_id": "F-IMMUTABILITY",
+      "findings": [
+        "M06-AUDIT-05"
+      ],
+      "reason": "bytes changed under a fixed id",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-I002": {
+      "family_id": "F-IMMUTABILITY",
+      "findings": [
+        "M06-AUDIT-05"
+      ],
+      "reason": "bytes changed under a fixed id",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-I003": {
+      "family_id": "F-IMMUTABILITY",
+      "findings": [
+        "M06-AUDIT-05"
+      ],
+      "observed": {
+        "bytes_unchanged": true
+      },
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-I004": {
+      "family_id": "F-IDENTITY",
+      "findings": [
+        "M06-AUDIT-03"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "same_destination True != False",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-I005": {
+      "family_id": "F-IDENTITY",
+      "findings": [
+        "M06-AUDIT-03"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "same_destination True != False",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-I006": {
+      "family_id": "F-IDENTITY",
+      "findings": [
+        "M06-AUDIT-03"
+      ],
+      "observed": {
+        "same_destination": true
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-M001": {
+      "family_id": "F-M07",
+      "findings": [
+        "M06-AUDIT-19"
+      ],
+      "observed": {
+        "profile": "coding",
+        "request_keys": [
+          "attempt",
+          "destination_profile",
+          "job_id",
+          "locale",
+          "protected_spans",
+          "raw_text",
+          "relevant_vocabulary",
+          "vocabulary_pairs"
+        ]
+      },
+      "role": "control",
+      "seconds": 0.1,
+      "status": "pass"
+    },
+    "LF-M06-M002": {
+      "family_id": "F-RETRY",
+      "findings": [
+        "M06-AUDIT-20"
+      ],
+      "observed": {
+        "destination": null,
+        "policy_source": "retry_unscoped_default"
+      },
+      "role": "stateful",
+      "seconds": 0.048,
+      "status": "pass"
+    },
+    "LF-M06-M003": {
+      "family_id": "F-PROFILE",
+      "findings": [
+        "M06-AUDIT-16",
+        "M06-AUDIT-20"
+      ],
+      "observed": {
+        "current": "ProfileA",
+        "next": "ProfileB"
+      },
+      "role": "stateful",
+      "seconds": 0.179,
+      "status": "pass"
+    },
+    "LF-M06-M004": {
+      "family_id": "F-NO-VOCAB",
+      "findings": [
+        "M06-AUDIT-16"
+      ],
+      "reason": "engine idents {}",
+      "role": "adversarial",
+      "seconds": 0.095,
+      "status": "fail"
+    },
+    "LF-M06-M005": {
+      "family_id": "F-BENCHMARK",
+      "findings": [
+        "M06-AUDIT-08"
+      ],
+      "reason": "benchmark mutants run in disposable copies by scripts/v2/m06_mutation_check.py (pass --mutation-report)",
+      "role": "mutation_probe",
+      "seconds": 0.0,
+      "status": "not_run"
+    },
+    "LF-M06-N001": {
+      "family_id": "F-NATIVE-RANGE",
+      "findings": [
+        "M06-AUDIT-04",
+        "M06-AUDIT-21"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "selection: code points None != (1, 2)",
+      "role": "native_probe",
+      "seconds": 0.901,
+      "status": "fail"
+    },
+    "LF-M06-N002": {
+      "family_id": "F-NATIVE-RANGE",
+      "findings": [
+        "M06-AUDIT-04",
+        "M06-AUDIT-21"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "combining: code points None != (1, 3)",
+      "role": "native_probe",
+      "seconds": 0.824,
+      "status": "fail"
+    },
+    "LF-M06-N003": {
+      "family_id": "F-NATIVE-WINDOW",
+      "findings": [
+        "M06-AUDIT-04",
+        "M06-AUDIT-21"
+      ],
+      "reason": "no job-owned window lookup on this code root",
+      "role": "native_probe",
+      "seconds": 0.801,
+      "status": "fail"
+    },
+    "LF-M06-N004": {
+      "family_id": "F-NATIVE-LIFETIME",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-22"
+      ],
+      "reason": "permission revocation/restoration needs System Settings (TCC) — a human action, VERIFICATION.html",
+      "role": "native_probe",
+      "seconds": 0.0,
+      "status": "not_run"
+    },
+    "LF-M06-N005": {
+      "family_id": "F-NATIVE-LIFETIME",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-21"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "no job-owned element lookup on this code root",
+      "role": "native_probe",
+      "seconds": 0.799,
+      "status": "fail"
+    },
+    "LF-M06-N006": {
+      "family_id": "F-NATIVE-TIMEOUT",
+      "findings": [
+        "M06-AUDIT-06",
+        "M06-AUDIT-07",
+        "M06-AUDIT-21"
+      ],
+      "observed": {
+        "app_rc": 0,
+        "systemwide_rc": 0
+      },
+      "role": "native_probe",
+      "seconds": 0.82,
+      "status": "pass"
+    },
+    "LF-M06-P001": {
+      "family_id": "F-POS-browser",
+      "findings": [
+        "M06-AUDIT-17",
+        "M06-AUDIT-19"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.033,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.027,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.003,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "role": "positive_control",
+      "seconds": 0.001,
+      "status": "pass"
+    },
+    "LF-M06-P002": {
+      "family_id": "F-POS-editor",
+      "findings": [
+        "M06-AUDIT-17",
+        "M06-AUDIT-19"
+      ],
+      "observed": {
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.024,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.009,
+            "name": "workspace",
+            "status": "ok"
+          }
+        ]
+      },
+      "role": "positive_control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-P003": {
+      "family_id": "F-POS-ide",
+      "findings": [
+        "M06-AUDIT-17",
+        "M06-AUDIT-19"
+      ],
+      "observed": {
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.012,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.007,
+            "name": "workspace",
+            "status": "ok"
+          }
+        ]
+      },
+      "role": "positive_control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-P004": {
+      "family_id": "F-POS-terminal",
+      "findings": [
+        "M06-AUDIT-17",
+        "M06-AUDIT-19"
+      ],
+      "observed": {
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.009,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "role": "positive_control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-P005": {
+      "family_id": "F-POS-messaging",
+      "findings": [
+        "M06-AUDIT-17",
+        "M06-AUDIT-19"
+      ],
+      "observed": {
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.009,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "role": "positive_control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-P006": {
+      "family_id": "F-POS-mail",
+      "findings": [
+        "M06-AUDIT-17",
+        "M06-AUDIT-19"
+      ],
+      "observed": {
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.014,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "role": "positive_control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-Q001": {
+      "family_id": "F-CONFIG",
+      "findings": [
+        "M06-AUDIT-10"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "string 'false' enabled context",
+      "role": "adversarial",
+      "seconds": 0.022,
+      "status": "fail"
+    },
+    "LF-M06-Q002": {
+      "family_id": "F-CONFIG",
+      "findings": [
+        "M06-AUDIT-10"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "a string deny list allowed Chrome collection",
+      "role": "adversarial",
+      "seconds": 0.016,
+      "status": "fail"
+    },
+    "LF-M06-Q003": {
+      "family_id": "F-CONFIG",
+      "findings": [
+        "M06-AUDIT-10"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "None -> None",
+      "role": "adversarial",
+      "seconds": 0.014,
+      "status": "fail"
+    },
+    "LF-M06-Q004": {
+      "family_id": "F-CONFIG",
+      "findings": [
+        "M06-AUDIT-10",
+        "M06-AUDIT-15"
+      ],
+      "observed": {
+        "artifacts": 0
+      },
+      "role": "control",
+      "seconds": 0.102,
+      "status": "pass"
+    },
+    "LF-M06-R001": {
+      "family_id": "F-RETENTION",
+      "findings": [
+        "M06-AUDIT-15"
+      ],
+      "reason": "insert: retained claimed",
+      "role": "adversarial",
+      "seconds": 0.101,
+      "status": "fail"
+    },
+    "LF-M06-R002": {
+      "family_id": "F-RETENTION",
+      "findings": [
+        "M06-AUDIT-15"
+      ],
+      "reason": "lease: retained claimed",
+      "role": "adversarial",
+      "seconds": 0.099,
+      "status": "fail"
+    },
+    "LF-M06-R003": {
+      "family_id": "F-RETENTION",
+      "findings": [
+        "M06-AUDIT-15",
+        "M06-AUDIT-18"
+      ],
+      "observed": {
+        "examples": 1,
+        "retained": true
+      },
+      "role": "stateful",
+      "seconds": 0.308,
+      "status": "pass"
+    },
+    "LF-M06-S001": {
+      "family_id": "F-STATE-001",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-17"
+      ],
+      "observed": {
+        "ax_calls": 0
+      },
+      "role": "stateful",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-S002": {
+      "family_id": "F-STATE-002",
+      "findings": [
+        "M06-AUDIT-17",
+        "M06-AUDIT-22"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "reads {'AXSubrole', 'AXRole', 'AXURL'}",
+      "role": "stateful",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-S003": {
+      "family_id": "F-STATE-003",
+      "findings": [
+        "M06-AUDIT-11",
+        "M06-AUDIT-18"
+      ],
+      "observed": {
+        "B.context_snapshot": null
+      },
+      "role": "stateful",
+      "seconds": 0.349,
+      "status": "pass"
+    },
+    "LF-M06-S004": {
+      "family_id": "F-STATE-004",
+      "findings": [
+        "M06-AUDIT-11",
+        "M06-AUDIT-18"
+      ],
+      "reason": "A did not get its own snapshot",
+      "role": "stateful",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-S005": {
+      "family_id": "F-STATE-005",
+      "findings": [
+        "M06-AUDIT-06",
+        "M06-AUDIT-12",
+        "M06-AUDIT-18"
+      ],
+      "observed": {
+        "A.downstream.site_origin": "https://beta.example",
+        "B.site_origin": null
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "stateful",
+      "seconds": 0.025,
+      "status": "pass"
+    },
+    "LF-M06-S006": {
+      "family_id": "F-STATE-006",
+      "findings": [
+        "M06-AUDIT-01",
+        "M06-AUDIT-02"
+      ],
+      "reason": "allowed_B: B was read",
+      "role": "stateful",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-S007": {
+      "family_id": "F-STATE-007",
+      "findings": [
+        "M06-AUDIT-02",
+        "M06-AUDIT-13"
+      ],
+      "reason": "cache not positively populated",
+      "role": "stateful",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-S008": {
+      "family_id": "F-STATE-008",
+      "findings": [
+        "M06-AUDIT-16",
+        "M06-AUDIT-20"
+      ],
+      "reason": "no explicit downgrade: None",
+      "role": "stateful",
+      "seconds": 0.288,
+      "status": "fail"
+    },
+    "LF-M06-S009": {
+      "family_id": "F-STATE-009",
+      "findings": [
+        "M06-AUDIT-16",
+        "M06-AUDIT-20"
+      ],
+      "observed": {
+        "output": "the FrozenName works"
+      },
+      "role": "stateful",
+      "seconds": 0.108,
+      "status": "pass"
+    },
+    "LF-M06-S010": {
+      "family_id": "F-STATE-010",
+      "findings": [
+        "M06-AUDIT-12",
+        "M06-AUDIT-15",
+        "M06-AUDIT-18"
+      ],
+      "observed": {
+        "artifacts": 0
+      },
+      "role": "stateful",
+      "seconds": 0.123,
+      "status": "pass"
+    },
+    "LF-M06-S011": {
+      "family_id": "F-STATE-011",
+      "findings": [
+        "M06-AUDIT-06",
+        "M06-AUDIT-15",
+        "M06-AUDIT-18"
+      ],
+      "observed": {
+        "after_artifact_before_lease": {
+          "examples": 0,
+          "live_artifacts": 0
+        },
+        "before_artifact": {
+          "examples": 0,
+          "live_artifacts": 0
+        },
+        "before_example_publication": {
+          "examples": 0,
+          "live_artifacts": 0
+        }
+      },
+      "role": "stateful",
+      "seconds": 0.308,
+      "status": "pass"
+    },
+    "LF-M06-S012": {
+      "family_id": "F-STATE-012",
+      "findings": [
+        "M06-AUDIT-06",
+        "M06-AUDIT-18",
+        "M06-AUDIT-21"
+      ],
+      "reason": "no collector shutdown",
+      "role": "stateful",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-S013": {
+      "family_id": "F-STATE-013",
+      "findings": [
+        "M06-AUDIT-02",
+        "M06-AUDIT-10",
+        "M06-AUDIT-20"
+      ],
+      "observed": {
+        "AX_calls_B": 0
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "stateful",
+      "seconds": 0.195,
+      "status": "pass"
+    },
+    "LF-M06-S014": {
+      "family_id": "F-STATE-014",
+      "findings": [
+        "M06-AUDIT-17",
+        "M06-AUDIT-21"
+      ],
+      "observed": {
+        "output": "12% works"
+      },
+      "role": "stateful",
+      "seconds": 0.102,
+      "status": "pass"
+    },
+    "LF-M06-S015": {
+      "family_id": "F-STATE-015",
+      "findings": [
+        "M06-AUDIT-03",
+        "M06-AUDIT-25"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "wrong-window authority {'identity': 'pass', 'window': 'unavailable', 'field': 'pass', 'selection': 'unavailable'}",
+      "role": "stateful",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-S016": {
+      "family_id": "F-STATE-016",
+      "findings": [
+        "M06-AUDIT-07",
+        "M06-AUDIT-08"
+      ],
+      "reason": "no real widening: None",
+      "role": "stateful",
+      "seconds": 0.258,
+      "status": "fail"
+    },
+    "LF-M06-U001": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.016,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.012,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U002": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.011,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.007,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U003": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.01,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.006,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U004": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.009,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.006,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U005": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "site_origin: 'https://synthetic:CANARY_URL_CRED@alpha.example' != 'https://alpha.example'",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-U006": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.008,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.022,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U007": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.008,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.004,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U008": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.008,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.005,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U009": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "site_origin status ok != omitted",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-U010": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.008,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.005,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U011": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.005,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U012": {
+      "family_id": "F-URI-url",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "site_origin status ok != omitted",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-U013": {
+      "family_id": "F-URI-title",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.006,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U014": {
+      "family_id": "F-URI-title",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.005,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U015": {
+      "family_id": "F-URI-title",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "site_origin status ok != omitted",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-U016": {
+      "family_id": "F-URI-title",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "policy_version": "m06-policy-v1",
+      "reason": "site_origin status ok != omitted",
+      "role": "adversarial",
+      "seconds": 0.0,
+      "status": "fail"
+    },
+    "LF-M06-U017": {
+      "family_id": "F-URI-title",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.011,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.005,
+            "name": "site_origin",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U018": {
+      "family_id": "F-URI-title",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.009,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U019": {
+      "family_id": "F-URI-title",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.003,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-U020": {
+      "family_id": "F-URI-title",
+      "findings": [
+        "M06-AUDIT-14",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "reads": 9,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.001,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-W001": {
+      "family_id": "F-WORKSPACE",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "filesystem_calls": 0,
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.008,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.005,
+            "name": "workspace",
+            "status": "ok"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-W002": {
+      "family_id": "F-WORKSPACE",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "filesystem_calls": 0,
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.002,
+            "name": "workspace",
+            "status": "ok"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-W003": {
+      "family_id": "F-WORKSPACE",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "filesystem_calls": 0,
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-W004": {
+      "family_id": "F-WORKSPACE",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "filesystem_calls": 0,
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-W005": {
+      "family_id": "F-WORKSPACE",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "filesystem_calls": 0,
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-W006": {
+      "family_id": "F-WORKSPACE",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "filesystem_calls": 0,
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "workspace",
+            "reason": "not_exposed",
+            "status": "omitted"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-W007": {
+      "family_id": "F-WORKSPACE",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "filesystem_calls": 0,
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.004,
+            "name": "workspace",
+            "status": "ok"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "design_probe",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-W008": {
+      "family_id": "F-WORKSPACE",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "filesystem_calls": 0,
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.001,
+            "name": "workspace",
+            "status": "ok"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-W009": {
+      "family_id": "F-WORKSPACE",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "filesystem_calls": 0,
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.011,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.006,
+            "name": "workspace",
+            "status": "ok"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "control",
+      "seconds": 0.0,
+      "status": "pass"
+    },
+    "LF-M06-W010": {
+      "family_id": "F-WORKSPACE",
+      "findings": [
+        "M06-AUDIT-21",
+        "M06-AUDIT-23"
+      ],
+      "observed": {
+        "filesystem_calls": 0,
+        "reads": 8,
+        "rows": [
+          {
+            "duration_ms": 0.007,
+            "name": "focused_field",
+            "status": "ok"
+          },
+          {
+            "duration_ms": 0.0,
+            "name": "site_origin",
+            "reason": "not_exposed",
+            "status": "omitted"
+          },
+          {
+            "duration_ms": 0.004,
+            "name": "workspace",
+            "status": "ok"
+          }
+        ]
+      },
+      "policy_version": "m06-policy-v1",
+      "role": "design_probe",
+      "seconds": 0.0,
+      "status": "pass"
+    }
+  },
+  "code_root_localflow_modified": false,
+  "code_root_sha": "6a083bd70011988314836164e7d3016da3968490",
+  "corpus_sha256": "e2a2b561c5119e32f7c10b69c3d8a777aed3add402af067841f2554037efb9c6",
+  "counts": {
+    "fail": 36,
+    "not_run": 2,
+    "pass": 63
+  },
+  "desktop_isolated": true,
+  "evaluated_utc": "2026-09-26T03:43:05Z",
+  "families": {
+    "F-BENCHMARK": {
+      "not_run": 1
+    },
+    "F-BOUNDS": {
+      "fail": 4,
+      "pass": 3
+    },
+    "F-CACHE-STATUS": {
+      "fail": 1
+    },
+    "F-CLASSIFICATION": {
+      "pass": 6
+    },
+    "F-CONFIG": {
+      "fail": 3,
+      "pass": 1
+    },
+    "F-DENY-1": {
+      "pass": 1
+    },
+    "F-DENY-2": {
+      "pass": 1
+    },
+    "F-DENY-3": {
+      "pass": 1
+    },
+    "F-DENY-4": {
+      "pass": 1
+    },
+    "F-DENY-5": {
+      "pass": 1
+    },
+    "F-EXCEPTION": {
+      "fail": 1,
+      "pass": 1
+    },
+    "F-FINALIZE": {
+      "fail": 1
+    },
+    "F-IDENTIFIERS": {
+      "pass": 1
+    },
+    "F-IDENTITY": {
+      "fail": 2,
+      "pass": 1
+    },
+    "F-IMMUTABILITY": {
+      "fail": 2,
+      "pass": 1
+    },
+    "F-LATE": {
+      "fail": 2
+    },
+    "F-M07": {
+      "pass": 1
+    },
+    "F-NATIVE-LIFETIME": {
+      "fail": 1,
+      "not_run": 1
+    },
+    "F-NATIVE-RANGE": {
+      "fail": 2
+    },
+    "F-NATIVE-TIMEOUT": {
+      "pass": 1
+    },
+    "F-NATIVE-WINDOW": {
+      "fail": 1
+    },
+    "F-NO-VOCAB": {
+      "fail": 1
+    },
+    "F-POS-browser": {
+      "pass": 1
+    },
+    "F-POS-editor": {
+      "pass": 1
+    },
+    "F-POS-ide": {
+      "pass": 1
+    },
+    "F-POS-mail": {
+      "pass": 1
+    },
+    "F-POS-messaging": {
+      "pass": 1
+    },
+    "F-POS-terminal": {
+      "pass": 1
+    },
+    "F-PROFILE": {
+      "pass": 1
+    },
+    "F-RETENTION": {
+      "fail": 2,
+      "pass": 1
+    },
+    "F-RETRY": {
+      "pass": 1
+    },
+    "F-STATE-001": {
+      "pass": 1
+    },
+    "F-STATE-002": {
+      "fail": 1
+    },
+    "F-STATE-003": {
+      "pass": 1
+    },
+    "F-STATE-004": {
+      "fail": 1
+    },
+    "F-STATE-005": {
+      "pass": 1
+    },
+    "F-STATE-006": {
+      "fail": 1
+    },
+    "F-STATE-007": {
+      "fail": 1
+    },
+    "F-STATE-008": {
+      "fail": 1
+    },
+    "F-STATE-009": {
+      "pass": 1
+    },
+    "F-STATE-010": {
+      "pass": 1
+    },
+    "F-STATE-011": {
+      "pass": 1
+    },
+    "F-STATE-012": {
+      "fail": 1
+    },
+    "F-STATE-013": {
+      "pass": 1
+    },
+    "F-STATE-014": {
+      "pass": 1
+    },
+    "F-STATE-015": {
+      "fail": 1
+    },
+    "F-STATE-016": {
+      "fail": 1
+    },
+    "F-URI-title": {
+      "fail": 2,
+      "pass": 6
+    },
+    "F-URI-url": {
+      "fail": 3,
+      "pass": 9
+    },
+    "F-WORKSPACE": {
+      "pass": 10
+    }
+  },
+  "policy_version": "m06-policy-v1",
+  "python": "3.14.7",
+  "relations": {
+    "M06-META-01": {
+      "cases": {
+        "LF-M06-C001": "pass",
+        "LF-M06-C002": "pass",
+        "LF-M06-P001": "pass"
+      },
+      "name": "Privacy monotonicity",
+      "status": "pass"
+    },
+    "M06-META-02": {
+      "cases": {
+        "LF-M06-D001": "pass",
+        "LF-M06-P001": "pass"
+      },
+      "name": "Deny monotonicity",
+      "status": "pass"
+    },
+    "M06-META-03": {
+      "cases": {
+        "LF-M06-S004": "fail",
+        "LF-M06-S005": "pass"
+      },
+      "name": "Destination isolation",
+      "status": "fail"
+    },
+    "M06-META-04": {
+      "cases": {
+        "LF-M06-F002": "fail",
+        "LF-M06-S005": "pass"
+      },
+      "name": "Late-result isolation",
+      "status": "fail"
+    },
+    "M06-META-05": {
+      "cases": {
+        "LF-M06-S007": "fail"
+      },
+      "name": "Cache invalidation",
+      "status": "fail"
+    },
+    "M06-META-06": {
+      "cases": {
+        "LF-M06-S009": "pass",
+        "LF-M06-S016": "fail"
+      },
+      "name": "Frozen-entry scope upgrade",
+      "status": "fail"
+    },
+    "M06-META-07": {
+      "cases": {
+        "LF-M06-Q004": "pass",
+        "LF-M06-S010": "pass"
+      },
+      "name": "Independent retention",
+      "status": "pass"
+    },
+    "M06-META-08": {
+      "cases": {
+        "LF-M06-U002": "pass",
+        "LF-M06-U003": "pass"
+      },
+      "name": "Representation equivalence",
+      "status": "pass"
+    },
+    "M06-META-09": {
+      "cases": {
+        "LF-M06-E001": "pass",
+        "LF-M06-E002": "fail",
+        "LF-M06-E003": "fail"
+      },
+      "name": "Failure honesty",
+      "status": "fail"
+    },
+    "M06-META-10": {
+      "cases": {
+        "LF-M06-M005": "not_run",
+        "LF-M06-S016": "fail"
+      },
+      "name": "Measured-delay conservation",
+      "status": "fail"
+    }
+  },
+  "schema_version": 1,
+  "tool": "tests/v2/context/m06_corpus_runner.py",
+  "native_pass": {
+    "desktop_isolated": false,
+    "cases": [
+      "LF-M06-N001",
+      "LF-M06-N002",
+      "LF-M06-N003",
+      "LF-M06-N004",
+      "LF-M06-N005",
+      "LF-M06-N006"
+    ]
+  }
+}

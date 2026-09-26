@@ -122,6 +122,12 @@
         "fixture_files": [
           "tests/v2/context/fixtures_context_targets.json"
         ]
+      },
+      "m06_remediation_created": {
+        "note": "M06 remediation (2026-09-26) committed the read-only audit's authored synthetic challenge corpus verbatim (101 cases / 50 families, 10 metamorphic relations, 18 mutation definitions, every entry NOT_RUN as delivered; sha256 e2a2b561c5119e32f7c10b69c3d8a777aed3add402af067841f2554037efb9c6). Policy decisions for its policy-dependent cases live in tests/v2/context/m06_corpus_adjudications.json; execution results live in separate artifacts under docs/v2/acceptance/M06/remediation/, never in this file. DEVELOPMENT evidence consulted while repairing — not part of this family's 32 planned scenarios, not an unseen holdout, and its variants are not independent samples.",
+        "fixture_files": [
+          "tests/v2/context/m06_audit_corpus.json"
+        ]
       }
     },
     {
