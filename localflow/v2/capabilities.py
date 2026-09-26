@@ -122,13 +122,16 @@ def hint_disposition(manifest=None, hint_set=None) -> dict:
     manifest = manifest or asr_capability_manifest(None)
     biasing_off = not biasing_qualified(manifest)
     offered = len(hint_set.terms) if hint_set is not None else 0
+    ignored = bool(biasing_off and offered)
     return {
         "offered_terms": offered,
-        "accepted_terms": 0,
-        "ignored": bool(biasing_off and offered),
-        "ignored_reason": ("disabled_until_qualified"
-                           if biasing_off else "unsupported_by_adapter")
-        if offered else None,
+        # Unqualified: nothing reaches the decoder, so nothing is
+        # accepted. Qualified: acceptance is the adapter's to report
+        # after decoding — never a fabricated zero, and a set that is
+        # not ignored carries no ignored reason.
+        "accepted_terms": 0 if biasing_off else None,
+        "ignored": ignored,
+        "ignored_reason": "disabled_until_qualified" if ignored else None,
         "hint_set_id": getattr(hint_set, "hint_set_id", None),
         "vocabulary_revision": getattr(hint_set, "vocabulary_revision",
                                        None),

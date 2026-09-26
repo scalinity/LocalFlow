@@ -89,7 +89,10 @@ never null) and `runtime`, and names non-empty qualification
 `evidence`. A bare `supported: true`, a missing or changed checkpoint, a
 changed runtime or model, or absent evidence is unqualified:
 `asr_hint_request_fields` returns `None` and `hint_disposition` reports
-offered-but-ignored (`disabled_until_qualified`). `context_snapshot_id`
+offered-but-ignored (`disabled_until_qualified`, `accepted_terms: 0`).
+Under a qualified manifest the disposition is `ignored: false` with no
+ignored reason and `accepted_terms: null` — acceptance is the adapter's
+to report after decoding, never a fabricated zero. `context_snapshot_id`
 must be a string or None and is carried exactly. The production
 manifest is unchanged (every capability unsupported); no decoder
 biasing exists or is claimed.
