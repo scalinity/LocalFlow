@@ -316,13 +316,18 @@ class World:
 
     def focused_window_title(self, el):
         """The SystemInsertionHost semantics: a field has no
-        AXFocusedWindow of its own, so the system host resolves the
-        FRONTMOST application's focused window — not the field's."""
+        AXFocusedWindow of its own, so the system host asks the
+        application that OWNS the element (its pid) for its focused
+        window — not the field's own window, and not the frontmost
+        application's."""
         self._enter("focused_window_title", el)
         with self.lock:
-            if self.front_app is None:
+            f0 = self.fields.get(getattr(el, "fid", None))
+            if f0 is None:
                 return None
-            fid = self.app_focus.get(self.front_app)
+            app = next((a for a, d in self.apps.items()
+                        if d["pid"] == f0.owner_pid), None)
+            fid = self.app_focus.get(app)
             f = self.fields.get(fid)
             if f is None:
                 return None
