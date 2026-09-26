@@ -1,0 +1,723 @@
+{
+  "schema_version": 1,
+  "runner": "each tracked tests/**/test_*.py (model-backed files excluded and run separately), sequential, .venv/bin/python tests/v2/context/run_isolated.py <file>",
+  "code_root_sha": "9483d1be777ac2fa07111d8e0020e6b1652c5e69",
+  "excluded_model_backed": [
+    "tests/test_cleanup.py",
+    "tests/v2/lifecycle/test_worker_live.py",
+    "tests/v2/training/test_live_pipeline.py",
+    "tests/v2/transforms/test_prompt_engineer_cases.py",
+    "tests/v2/fidelity/test_fidelity.py"
+  ],
+  "files": 88,
+  "exit_zero": 86,
+  "ok_lines": 985,
+  "live_clipboard_changes": [],
+  "note": "Final sweep (production ea83bc1) under the current run_isolated.py (general pasteboard redirected). test_native_ax.py and test_native_insertion.py exit 2 (NOT RUN) under isolation by design; both ran natively as their own records.",
+  "results": [
+    {
+      "file": "tests/test_stuck_overlay.py",
+      "exit": 0,
+      "ok_lines": 5,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=16 cg_event_posts_blocked=0 general_pasteboard_redirected=5"
+    },
+    {
+      "file": "tests/v2/analytics/test_insights_hub.py",
+      "exit": 0,
+      "ok_lines": 7,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=14 cg_event_posts_blocked=0 general_pasteboard_redirected=9"
+    },
+    {
+      "file": "tests/v2/analytics/test_insights_service.py",
+      "exit": 0,
+      "ok_lines": 6,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/analytics/test_usage_store.py",
+      "exit": 0,
+      "ok_lines": 11,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/context/test_context_pipeline.py",
+      "exit": 0,
+      "ok_lines": 12,
+      "seconds": 3,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=16"
+    },
+    {
+      "file": "tests/v2/context/test_context_snapshot.py",
+      "exit": 0,
+      "ok_lines": 27,
+      "seconds": 11,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/context/test_m06_remediation.py",
+      "exit": 0,
+      "ok_lines": 31,
+      "seconds": 2,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=11"
+    },
+    {
+      "file": "tests/v2/context/test_m06_review_round.py",
+      "exit": 0,
+      "ok_lines": 8,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=1"
+    },
+    {
+      "file": "tests/v2/context/test_native_ax.py",
+      "exit": 2,
+      "ok_lines": 0,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=1 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/developer/test_developer_resolution.py",
+      "exit": 0,
+      "ok_lines": 6,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/developer/test_skills.py",
+      "exit": 0,
+      "ok_lines": 6,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/fidelity/test_cleanup_engine.py",
+      "exit": 0,
+      "ok_lines": 18,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/fidelity/test_cleanup_pipeline.py",
+      "exit": 0,
+      "ok_lines": 13,
+      "seconds": 2,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=14 cg_event_posts_blocked=0 general_pasteboard_redirected=9"
+    },
+    {
+      "file": "tests/v2/fidelity/test_cleanup_remediation.py",
+      "exit": 0,
+      "ok_lines": 36,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/fidelity/test_literal.py",
+      "exit": 0,
+      "ok_lines": 0,
+      "seconds": 13,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/insertion/test_insertion_attribution.py",
+      "exit": 0,
+      "ok_lines": 10,
+      "seconds": 12,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/insertion/test_insertion_pipeline.py",
+      "exit": 0,
+      "ok_lines": 5,
+      "seconds": 2,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=2 cg_event_posts_blocked=0 general_pasteboard_redirected=5"
+    },
+    {
+      "file": "tests/v2/insertion/test_insertion_races.py",
+      "exit": 0,
+      "ok_lines": 13,
+      "seconds": 5,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/insertion/test_m08_remediation.py",
+      "exit": 0,
+      "ok_lines": 57,
+      "seconds": 15,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=7"
+    },
+    {
+      "file": "tests/v2/insertion/test_native_insertion.py",
+      "exit": 2,
+      "ok_lines": 0,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=1 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/lifecycle/test_audio_fidelity.py",
+      "exit": 0,
+      "ok_lines": 7,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/lifecycle/test_capture_journal.py",
+      "exit": 0,
+      "ok_lines": 6,
+      "seconds": 6,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/lifecycle/test_lifecycle.py",
+      "exit": 0,
+      "ok_lines": 13,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=24 cg_event_posts_blocked=0 general_pasteboard_redirected=12"
+    },
+    {
+      "file": "tests/v2/lifecycle/test_m03_remediation_app.py",
+      "exit": 0,
+      "ok_lines": 14,
+      "seconds": 4,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=16"
+    },
+    {
+      "file": "tests/v2/lifecycle/test_m03_remediation_journal.py",
+      "exit": 0,
+      "ok_lines": 6,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/lifecycle/test_m03_remediation_supervisor.py",
+      "exit": 0,
+      "ok_lines": 17,
+      "seconds": 8,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/lifecycle/test_m03_remediation_worker.py",
+      "exit": 0,
+      "ok_lines": 10,
+      "seconds": 2,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/lifecycle/test_m03_review_round.py",
+      "exit": 0,
+      "ok_lines": 15,
+      "seconds": 11,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=11"
+    },
+    {
+      "file": "tests/v2/lifecycle/test_worker_protocol.py",
+      "exit": 0,
+      "ok_lines": 11,
+      "seconds": 3,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/logging/test_event_writer.py",
+      "exit": 0,
+      "ok_lines": 13,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/logging/test_m02_remediation_events.py",
+      "exit": 0,
+      "ok_lines": 5,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/normalization/test_m04_audit_corpus.py",
+      "exit": 0,
+      "ok_lines": 2,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/normalization/test_m04_remediation.py",
+      "exit": 0,
+      "ok_lines": 19,
+      "seconds": 2,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/normalization/test_m04_remediation_app.py",
+      "exit": 0,
+      "ok_lines": 6,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=5"
+    },
+    {
+      "file": "tests/v2/normalization/test_m04_review_round.py",
+      "exit": 0,
+      "ok_lines": 22,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=2"
+    },
+    {
+      "file": "tests/v2/normalization/test_normalization_pipeline.py",
+      "exit": 0,
+      "ok_lines": 7,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=12 cg_event_posts_blocked=0 general_pasteboard_redirected=6"
+    },
+    {
+      "file": "tests/v2/normalization/test_normalize_numbers.py",
+      "exit": 0,
+      "ok_lines": 13,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/normalization/test_normalize_syntax.py",
+      "exit": 0,
+      "ok_lines": 13,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/normalization/test_short_command_scoring.py",
+      "exit": 0,
+      "ok_lines": 3,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/notes/test_note_editor.py",
+      "exit": 0,
+      "ok_lines": 4,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/notes/test_note_evidence.py",
+      "exit": 0,
+      "ok_lines": 5,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/notes/test_note_export.py",
+      "exit": 0,
+      "ok_lines": 4,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/notes/test_note_store.py",
+      "exit": 0,
+      "ok_lines": 7,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/notes/test_scratchpad_hub.py",
+      "exit": 0,
+      "ok_lines": 10,
+      "seconds": 11,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=4 cg_event_posts_blocked=0 general_pasteboard_redirected=11"
+    },
+    {
+      "file": "tests/v2/personalization/test_learning.py",
+      "exit": 0,
+      "ok_lines": 11,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/personalization/test_profile.py",
+      "exit": 0,
+      "ok_lines": 9,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/profiles/test_profiles_pipeline.py",
+      "exit": 0,
+      "ok_lines": 13,
+      "seconds": 2,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=13"
+    },
+    {
+      "file": "tests/v2/profiles/test_snippets.py",
+      "exit": 0,
+      "ok_lines": 9,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/profiles/test_style_resolution.py",
+      "exit": 0,
+      "ok_lines": 9,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/storage/test_import.py",
+      "exit": 0,
+      "ok_lines": 7,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/storage/test_m02_remediation_import.py",
+      "exit": 0,
+      "ok_lines": 4,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/storage/test_m02_remediation_store.py",
+      "exit": 0,
+      "ok_lines": 19,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/storage/test_m02_review_round.py",
+      "exit": 0,
+      "ok_lines": 8,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/storage/test_store.py",
+      "exit": 0,
+      "ok_lines": 17,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/structure/test_structure.py",
+      "exit": 0,
+      "ok_lines": 0,
+      "seconds": 52,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/test_baseline_manifest.py",
+      "exit": 0,
+      "ok_lines": 5,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/test_baseline_manifest_producers.py",
+      "exit": 0,
+      "ok_lines": 15,
+      "seconds": 3,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/test_baseline_probe.py",
+      "exit": 0,
+      "ok_lines": 7,
+      "seconds": 2,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/test_legacy_import_boundary.py",
+      "exit": 0,
+      "ok_lines": 6,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/test_legacy_parser.py",
+      "exit": 0,
+      "ok_lines": 18,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/test_m01_verify_summary.py",
+      "exit": 0,
+      "ok_lines": 4,
+      "seconds": 3,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/test_m02_app_wiring.py",
+      "exit": 0,
+      "ok_lines": 4,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/test_registry.py",
+      "exit": 0,
+      "ok_lines": 5,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/test_snapshot_safety.py",
+      "exit": 0,
+      "ok_lines": 19,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/training/test_classification.py",
+      "exit": 0,
+      "ok_lines": 7,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/training/test_collector.py",
+      "exit": 0,
+      "ok_lines": 11,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/training/test_dataset_export.py",
+      "exit": 0,
+      "ok_lines": 6,
+      "seconds": 2,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/training/test_m02_remediation_collector.py",
+      "exit": 0,
+      "ok_lines": 14,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/training/test_sampling.py",
+      "exit": 0,
+      "ok_lines": 3,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/training/test_splits.py",
+      "exit": 0,
+      "ok_lines": 4,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/transforms/test_selection_capture_m06_seam.py",
+      "exit": 0,
+      "ok_lines": 8,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=19"
+    },
+    {
+      "file": "tests/v2/transforms/test_transform_definitions.py",
+      "exit": 0,
+      "ok_lines": 8,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/transforms/test_transform_engine.py",
+      "exit": 0,
+      "ok_lines": 8,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/transforms/test_transform_pipeline.py",
+      "exit": 0,
+      "ok_lines": 10,
+      "seconds": 2,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=9"
+    },
+    {
+      "file": "tests/v2/transforms/test_transform_remediation.py",
+      "exit": 0,
+      "ok_lines": 37,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/transforms/test_transform_remediation_native.py",
+      "exit": 0,
+      "ok_lines": 16,
+      "seconds": 29,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=21"
+    },
+    {
+      "file": "tests/v2/ui/test_diagnostics.py",
+      "exit": 0,
+      "ok_lines": 3,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/ui/test_history_queries.py",
+      "exit": 0,
+      "ok_lines": 11,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/ui/test_hub_shell.py",
+      "exit": 0,
+      "ok_lines": 15,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=10 cg_event_posts_blocked=0 general_pasteboard_redirected=15"
+    },
+    {
+      "file": "tests/v2/ui/test_training_data.py",
+      "exit": 0,
+      "ok_lines": 12,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/ui/test_training_review_hub.py",
+      "exit": 0,
+      "ok_lines": 6,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=6"
+    },
+    {
+      "file": "tests/v2/vocabulary/test_hint_selection.py",
+      "exit": 0,
+      "ok_lines": 9,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/vocabulary/test_m05_remediation.py",
+      "exit": 0,
+      "ok_lines": 28,
+      "seconds": 4,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/vocabulary/test_m05_remediation_app.py",
+      "exit": 0,
+      "ok_lines": 12,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=10"
+    },
+    {
+      "file": "tests/v2/vocabulary/test_m05_review_round.py",
+      "exit": 0,
+      "ok_lines": 31,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=10"
+    },
+    {
+      "file": "tests/v2/vocabulary/test_vocabulary_matching.py",
+      "exit": 0,
+      "ok_lines": 12,
+      "seconds": 0,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    },
+    {
+      "file": "tests/v2/vocabulary/test_vocabulary_pipeline.py",
+      "exit": 0,
+      "ok_lines": 6,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=12 cg_event_posts_blocked=0 general_pasteboard_redirected=5"
+    },
+    {
+      "file": "tests/v2/vocabulary/test_vocabulary_store.py",
+      "exit": 0,
+      "ok_lines": 16,
+      "seconds": 1,
+      "live_clipboard_changes": 0,
+      "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0"
+    }
+  ]
+}

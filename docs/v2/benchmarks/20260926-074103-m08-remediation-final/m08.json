@@ -1,0 +1,633 @@
+{
+ "schema_version": 2,
+ "milestone": "M08",
+ "kind": "insertion-benchmark-work-valid",
+ "tool": "scripts/v2/benchmark_m08.py",
+ "measured_utc": "2026-09-26T11:41:03Z",
+ "duration_sec": 90.7,
+ "scale": 1.0,
+ "environment": {
+  "macos": {
+   "product_version": "27.0",
+   "build": "26A428"
+  },
+  "machine": "arm64",
+  "model": "Mac17,8",
+  "cpu": "Apple M5 Pro",
+  "ncpu": 18,
+  "memory_bytes": 51539607552,
+  "python": "3.14.7",
+  "pyobjc": "12.2.1",
+  "power": [
+   "Now drawing from 'Battery Power'"
+  ],
+  "load_average": [
+   3.45,
+   3.03,
+   2.93
+  ],
+  "desktop_isolated": true,
+  "code_root_kind": "git checkout",
+  "code_root_sha": "9483d1be777ac2fa07111d8e0020e6b1652c5e69",
+  "tracked_files_modified": false,
+  "tracked_modified_paths": [],
+  "benchmark_sha256": "19541c2cc68c8ad9df89acabc80d4df222a236c369296f3a2044704850f6a608",
+  "localflow_imported_from_root": "localflow/__init__.py"
+ },
+ "harness": "tests/v2/insertion/m08_world.py (independent world, UTF-16 host units, own read/effect/clipboard logs); real InsertionService/validation/observer/store; the real AppDelegate for ui_* cohorts",
+ "budgets": {
+  "S24_ui_acknowledgment_p95_ms": 50.0,
+  "PROPOSED-M08-B1_native_ax_transaction_p95_ms": 150.0,
+  "note": "Only the S24 figure is canonical. Fixture (world) timings of AX/clipboard internals measure M08's own code over a Python double and carry no budget."
+ },
+ "injected_delays": {
+  "ui_ax_content_read_sec": 0.2,
+  "settle_inside_consumer_sec": 0.12,
+  "settle_beyond_consumer_sec": 0.45
+ },
+ "work_valid": true,
+ "cohorts": {
+  "ax_transaction": {
+   "boundary": "enqueue = submit() on the caller; queue_wait = enqueue end -> worker start; worker_exec = the whole transaction on the queue thread; validation = validate_target inside it on the bound element; ax_write = the AXSelectedText set (world double)",
+   "warmth": "warm",
+   "n": 60,
+   "invalid_samples": 0,
+   "problems": [],
+   "enqueue": {
+    "n": 60,
+    "p50_ms": 0.002,
+    "p95_ms": 0.003,
+    "p99_ms": 0.006,
+    "max_ms": 0.006
+   },
+   "queue_wait": {
+    "n": 60,
+    "p50_ms": 0.004,
+    "p95_ms": 0.008,
+    "p99_ms": 0.01,
+    "max_ms": 0.01
+   },
+   "worker_exec": {
+    "n": 60,
+    "p50_ms": 0.313,
+    "p95_ms": 0.397,
+    "p99_ms": 0.503,
+    "max_ms": 0.503
+   },
+   "validation": {
+    "n": 60,
+    "p50_ms": 0.015,
+    "p95_ms": 0.026,
+    "p99_ms": 0.04,
+    "max_ms": 0.04
+   },
+   "pre_read": {
+    "n": 60,
+    "p50_ms": 0.003,
+    "p95_ms": 0.005,
+    "p99_ms": 0.007,
+    "max_ms": 0.007
+   },
+   "ax_write": {
+    "n": 60,
+    "p50_ms": 0.003,
+    "p95_ms": 0.005,
+    "p99_ms": 0.006,
+    "max_ms": 0.006
+   },
+   "budget": {
+    "enqueue_p95_ms_max": 50.0,
+    "source": "S24"
+   }
+  },
+  "clipboard_transaction": {
+   "boundary": "clipboard path, instant consumer; readback = the settle-bounded poll that ends at the first attributable match; clip_restore = the generation-checked restore (every 4th sample contends: a user copy lands before the check and must survive)",
+   "warmth": "warm",
+   "n": 60,
+   "invalid_samples": 0,
+   "problems": [],
+   "enqueue": {
+    "n": 60,
+    "p50_ms": 0.002,
+    "p95_ms": 0.003,
+    "p99_ms": 0.004,
+    "max_ms": 0.004
+   },
+   "queue_wait": {
+    "n": 60,
+    "p50_ms": 0.004,
+    "p95_ms": 0.008,
+    "p99_ms": 0.01,
+    "max_ms": 0.01
+   },
+   "worker_exec": {
+    "n": 60,
+    "p50_ms": 0.324,
+    "p95_ms": 0.368,
+    "p99_ms": 0.407,
+    "max_ms": 0.407
+   },
+   "validation": {
+    "n": 60,
+    "p50_ms": 0.016,
+    "p95_ms": 0.022,
+    "p99_ms": 0.038,
+    "max_ms": 0.038
+   },
+   "pre_read": {
+    "n": 60,
+    "p50_ms": 0.004,
+    "p95_ms": 0.005,
+    "p99_ms": 0.005,
+    "max_ms": 0.005
+   },
+   "clip_snapshot": {
+    "n": 60,
+    "p50_ms": 0.003,
+    "p95_ms": 0.004,
+    "p99_ms": 0.009,
+    "max_ms": 0.009
+   },
+   "clip_publish": {
+    "n": 60,
+    "p50_ms": 0.001,
+    "p95_ms": 0.002,
+    "p99_ms": 0.003,
+    "max_ms": 0.003
+   },
+   "clip_post": {
+    "n": 60,
+    "p50_ms": 0.004,
+    "p95_ms": 0.005,
+    "p99_ms": 0.009,
+    "max_ms": 0.009
+   },
+   "readback": {
+    "n": 60,
+    "p50_ms": 0.005,
+    "p95_ms": 0.006,
+    "p99_ms": 0.007,
+    "max_ms": 0.007
+   },
+   "clip_restore": {
+    "n": 60,
+    "p50_ms": 0.002,
+    "p95_ms": 0.002,
+    "p99_ms": 0.004,
+    "max_ms": 0.004
+   },
+   "budget": {
+    "enqueue_p95_ms_max": 50.0,
+    "source": "S24"
+   }
+  },
+  "clipboard_settle_inside": {
+   "boundary": "consumer delayed 120 ms, settle 300 ms: the readback clock contains the delay, the caller's does not",
+   "warmth": "warm",
+   "n": 10,
+   "invalid_samples": 0,
+   "problems": [],
+   "enqueue": {
+    "n": 10,
+    "p50_ms": 0.007,
+    "p95_ms": 0.014,
+    "p99_ms": 0.014,
+    "max_ms": 0.014
+   },
+   "readback": {
+    "n": 10,
+    "p50_ms": 165.291,
+    "p95_ms": 173.869,
+    "p99_ms": 173.869,
+    "max_ms": 173.869
+   },
+   "worker_exec": {
+    "n": 10,
+    "p50_ms": 166.577,
+    "p95_ms": 176.286,
+    "p99_ms": 176.286,
+    "max_ms": 176.286
+   }
+  },
+  "clipboard_settle_beyond": {
+   "boundary": "consumer delayed 450 ms, settle 250 ms: readback = the deliberate settle wait; ownership kept; the late paste lands the right text",
+   "warmth": "warm",
+   "n": 10,
+   "invalid_samples": 0,
+   "problems": [],
+   "enqueue": {
+    "n": 10,
+    "p50_ms": 0.006,
+    "p95_ms": 0.022,
+    "p99_ms": 0.022,
+    "max_ms": 0.022
+   },
+   "readback": {
+    "n": 10,
+    "p50_ms": 267.15,
+    "p95_ms": 298.131,
+    "p99_ms": 298.131,
+    "max_ms": 298.131
+   },
+   "worker_exec": {
+    "n": 10,
+    "p50_ms": 270.792,
+    "p95_ms": 300.425,
+    "p99_ms": 300.425,
+    "max_ms": 300.425
+   }
+  },
+  "observer_tick": {
+   "boundary": "one FULL observer tick (identity, owned element, owner pid, role+subrole, length, owned-range read) between two compressed sleeps; no approximation",
+   "warmth": "warm",
+   "n": 246,
+   "invalid_samples": 0,
+   "problems": [],
+   "tick": {
+    "n": 246,
+    "p50_ms": 0.115,
+    "p95_ms": 0.191,
+    "p99_ms": 0.245,
+    "max_ms": 0.47
+   }
+  },
+  "observer_reanchor_tick": {
+   "boundary": "a tick that re-anchors (one bounded window read) after typing before the owned range",
+   "warmth": "warm",
+   "n": 24,
+   "invalid_samples": 0,
+   "problems": [],
+   "tick": {
+    "n": 24,
+    "p50_ms": 0.144,
+    "p95_ms": 0.253,
+    "p99_ms": 0.366,
+    "max_ms": 0.366
+   }
+  },
+  "observer_stop": {
+   "boundary": "user edit -> the tick that records the bounded edit (artifacts, lease) -> close callback",
+   "warmth": "warm",
+   "n": 6,
+   "invalid_samples": 0,
+   "problems": [],
+   "stop_tick": {
+    "n": 6,
+    "p50_ms": 6.225,
+    "p95_ms": 7.787,
+    "p99_ms": 7.787,
+    "max_ms": 7.787
+   }
+  },
+  "undo": {
+   "boundary": "target-bound undo; undo_exec = on the queue thread",
+   "warmth": "warm",
+   "n": 20,
+   "invalid_samples": 0,
+   "problems": [],
+   "undo_call": {
+    "n": 20,
+    "p50_ms": 0.069,
+    "p95_ms": 0.101,
+    "p99_ms": 0.103,
+    "max_ms": 0.103
+   },
+   "undo_exec": {
+    "n": 20,
+    "p50_ms": 0.043,
+    "p95_ms": 0.059,
+    "p99_ms": 0.06,
+    "max_ms": 0.06
+   }
+  },
+  "repaste_absent": {
+   "boundary": "History/Recovery engine: repaste_call = the caller's cost; repaste_exec = reconcile + transaction on the queue thread",
+   "warmth": "warm",
+   "n": 20,
+   "invalid_samples": 0,
+   "problems": [],
+   "repaste_call": {
+    "n": 20,
+    "p50_ms": 0.034,
+    "p95_ms": 0.055,
+    "p99_ms": 0.055,
+    "max_ms": 0.055
+   },
+   "repaste_exec": {
+    "n": 20,
+    "p50_ms": 1.582,
+    "p95_ms": 1.942,
+    "p99_ms": 2.04,
+    "max_ms": 2.04
+   }
+  },
+  "repaste_present": {
+   "boundary": "reconcile finds the text: no effect",
+   "warmth": "warm",
+   "n": 20,
+   "invalid_samples": 0,
+   "problems": [],
+   "repaste_call": {
+    "n": 20,
+    "p50_ms": 0.069,
+    "p95_ms": 0.095,
+    "p99_ms": 0.098,
+    "max_ms": 0.098
+   },
+   "repaste_exec": {
+    "n": 20,
+    "p50_ms": 0.11,
+    "p95_ms": 0.127,
+    "p99_ms": 0.127,
+    "max_ms": 0.127
+   }
+  },
+  "ui_finish_with_text": {
+   "boundary": "AppDelegate._finishWithText_ on the calling thread, each call while earlier transactions execute, 200 ms injected per AX content read on the worker",
+   "warmth": "warm",
+   "n": 20,
+   "invalid_samples": 0,
+   "problems": [],
+   "callback": {
+    "n": 20,
+    "p50_ms": 0.005,
+    "p95_ms": 0.01,
+    "p99_ms": 0.014,
+    "max_ms": 0.014
+   },
+   "to_worker_end": {
+    "n": 20,
+    "p50_ms": 6135.277,
+    "p95_ms": 11648.882,
+    "p99_ms": 12259.882,
+    "max_ms": 12259.882
+   },
+   "budget": {
+    "callback_p95_ms_max": 50.0,
+    "source": "S24 UI acknowledgment / hotkey response; no model or disk work on the UI callback"
+   }
+  },
+  "ui_recovery_paste_again": {
+   "boundary": "AppDelegate.pasteLastResultAgain_ (Recovery) on the calling thread; to_effect = call -> witnessed repaste effect",
+   "warmth": "warm",
+   "n": 20,
+   "invalid_samples": 0,
+   "problems": [],
+   "callback": {
+    "n": 20,
+    "p50_ms": 0.043,
+    "p95_ms": 0.104,
+    "p99_ms": 0.117,
+    "max_ms": 0.117
+   },
+   "to_effect": {
+    "n": 20,
+    "p50_ms": 614.946,
+    "p95_ms": 619.467,
+    "p99_ms": 620.254,
+    "max_ms": 620.254
+   },
+   "budget": {
+    "callback_p95_ms_max": 50.0,
+    "source": "S24 UI acknowledgment / hotkey response; no model or disk work on the UI callback"
+   }
+  },
+  "ui_history_paste_text": {
+   "boundary": "AppDelegate.hubPasteText (History) on the calling thread",
+   "warmth": "warm",
+   "n": 20,
+   "invalid_samples": 0,
+   "problems": [],
+   "callback": {
+    "n": 20,
+    "p50_ms": 0.085,
+    "p95_ms": 0.111,
+    "p99_ms": 0.199,
+    "max_ms": 0.199
+   },
+   "to_effect": {
+    "n": 20,
+    "p50_ms": 615.45,
+    "p95_ms": 620.017,
+    "p99_ms": 621.185,
+    "max_ms": 621.185
+   },
+   "budget": {
+    "callback_p95_ms_max": 50.0,
+    "source": "S24 UI acknowledgment / hotkey response; no model or disk work on the UI callback"
+   }
+  },
+  "ui_undo_last_insertion": {
+   "boundary": "AppDelegate.undoLastInsertion_ on the calling thread",
+   "warmth": "warm",
+   "n": 20,
+   "invalid_samples": 0,
+   "problems": [],
+   "callback": {
+    "n": 20,
+    "p50_ms": 0.039,
+    "p95_ms": 0.045,
+    "p99_ms": 0.051,
+    "max_ms": 0.051
+   },
+   "to_effect": {
+    "n": 20,
+    "p50_ms": 411.548,
+    "p95_ms": 415.662,
+    "p99_ms": 416.302,
+    "max_ms": 416.302
+   },
+   "budget": {
+    "callback_p95_ms_max": 50.0,
+    "source": "S24 UI acknowledgment / hotkey response; no model or disk work on the UI callback"
+   }
+  },
+  "ui_insertion_done_callback": {
+   "boundary": "AppDelegate._insertionDone_ on the main thread (completion bookkeeping: job states, usage, evidence \u2014 store writes); reported, not an S24 acknowledgment path",
+   "warmth": "warm",
+   "n": 20,
+   "invalid_samples": 0,
+   "problems": [],
+   "callback": {
+    "n": 20,
+    "p50_ms": 0.72,
+    "p95_ms": 1.876,
+    "p99_ms": 1.978,
+    "max_ms": 1.978
+   }
+  },
+  "cold_process": {
+   "boundary": "a fresh desktop-isolated process per sample: cold import + setup, then its FIRST AX and clipboard transactions",
+   "warmth": "cold",
+   "n": 12,
+   "invalid_samples": 0,
+   "problems": [],
+   "import_and_setup": {
+    "n": 12,
+    "p50_ms": 45.356,
+    "p95_ms": 47.41,
+    "p99_ms": 47.41,
+    "max_ms": 47.41
+   },
+   "ax_worker_exec": {
+    "n": 12,
+    "p50_ms": 0.486,
+    "p95_ms": 0.524,
+    "p99_ms": 0.524,
+    "max_ms": 0.524
+   },
+   "clipboard_worker_exec": {
+    "n": 12,
+    "p50_ms": 0.42,
+    "p95_ms": 0.485,
+    "p99_ms": 0.485,
+    "max_ms": 0.485
+   },
+   "ax_validation": {
+    "n": 12,
+    "p50_ms": 0.034,
+    "p95_ms": 0.037,
+    "p99_ms": 0.037,
+    "max_ms": 0.037
+   }
+  }
+ },
+ "native": {
+  "cohorts": {
+   "native_ax": {
+    "boundary": "real SystemInsertionHost: validation (owned element + AXUIElementGetPid) -> AXSelectedText write -> AX readback, into the helper's NSTextView; AppKit-side text is the witness",
+    "warmth": "warm",
+    "n": 29,
+    "invalid_samples": 0,
+    "problems": [],
+    "enqueue": {
+     "n": 29,
+     "p50_ms": 0.003,
+     "p95_ms": 0.006,
+     "p99_ms": 0.006,
+     "max_ms": 0.006
+    },
+    "queue_wait": {
+     "n": 29,
+     "p50_ms": 0.005,
+     "p95_ms": 0.012,
+     "p99_ms": 0.014,
+     "max_ms": 0.014
+    },
+    "worker_exec": {
+     "n": 29,
+     "p50_ms": 0.634,
+     "p95_ms": 1.111,
+     "p99_ms": 1.534,
+     "max_ms": 1.534
+    },
+    "validation": {
+     "n": 29,
+     "p50_ms": 0.115,
+     "p95_ms": 0.183,
+     "p99_ms": 0.26,
+     "max_ms": 0.26
+    },
+    "pre_read": {
+     "n": 29,
+     "p50_ms": 0.044,
+     "p95_ms": 0.073,
+     "p99_ms": 0.076,
+     "max_ms": 0.076
+    },
+    "ax_write": {
+     "n": 29,
+     "p50_ms": 0.074,
+     "p95_ms": 0.124,
+     "p99_ms": 0.141,
+     "max_ms": 0.141
+    },
+    "budget": {
+     "worker_exec_p95_ms_max": 150.0,
+     "source": "PROPOSED-M08-B1 (not canonical)"
+    }
+   },
+   "native_ax_cold": {
+    "boundary": "the FIRST transaction of a fresh process against a fresh helper",
+    "warmth": "cold",
+    "n": 6,
+    "invalid_samples": 0,
+    "problems": [],
+    "enqueue": {
+     "n": 6,
+     "p50_ms": 0.022,
+     "p95_ms": 0.033,
+     "p99_ms": 0.033,
+     "max_ms": 0.033
+    },
+    "queue_wait": {
+     "n": 6,
+     "p50_ms": 0.029,
+     "p95_ms": 0.042,
+     "p99_ms": 0.042,
+     "max_ms": 0.042
+    },
+    "worker_exec": {
+     "n": 6,
+     "p50_ms": 33.519,
+     "p95_ms": 42.605,
+     "p99_ms": 42.605,
+     "max_ms": 42.605
+    },
+    "validation": {
+     "n": 6,
+     "p50_ms": 20.599,
+     "p95_ms": 29.562,
+     "p99_ms": 29.562,
+     "max_ms": 29.562
+    },
+    "pre_read": {
+     "n": 6,
+     "p50_ms": 0.199,
+     "p95_ms": 0.259,
+     "p99_ms": 0.259,
+     "max_ms": 0.259
+    },
+    "ax_write": {
+     "n": 6,
+     "p50_ms": 5.548,
+     "p95_ms": 6.561,
+     "p99_ms": 6.561,
+     "max_ms": 6.561
+    },
+    "budget": {
+     "worker_exec_p95_ms_max": 150.0,
+     "source": "PROPOSED-M08-B1 (not canonical)"
+    }
+   }
+  },
+  "helper": "benchmark_m08.py --helper (owned, off-screen, accessory policy, never activated; reached by pid)",
+  "keyboard": "none (a post attempt is a failure)",
+  "pasteboard": "a private uniquely named NSPasteboard",
+  "warm_exit": 0,
+  "states": [
+   "confirmed"
+  ],
+  "astral_samples": 10
+ },
+ "verdicts": {
+  "ax_transaction": "pass",
+  "clipboard_transaction": "pass",
+  "clipboard_settle_inside": "reported (no declared budget)",
+  "clipboard_settle_beyond": "reported (no declared budget)",
+  "observer_tick": "reported (no declared budget)",
+  "observer_reanchor_tick": "reported (no declared budget)",
+  "observer_stop": "reported (no declared budget)",
+  "undo": "reported (no declared budget)",
+  "repaste_absent": "reported (no declared budget)",
+  "repaste_present": "reported (no declared budget)",
+  "ui_finish_with_text": "pass",
+  "ui_recovery_paste_again": "pass",
+  "ui_history_paste_text": "pass",
+  "ui_undo_last_insertion": "pass",
+  "ui_insertion_done_callback": "reported (no declared budget)",
+  "cold_process": "reported (no declared budget)",
+  "native_ax": "pass (PROPOSED-M08-B1)",
+  "native_ax_cold": "pass (PROPOSED-M08-B1)"
+ }
+}
