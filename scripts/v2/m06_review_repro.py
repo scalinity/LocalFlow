@@ -143,17 +143,46 @@ def r3():
 
 
 def r4():
-    """A deny entry with surrounding spaces: M06 vs the raw-config reader
-    (M11 selection capture)."""
+    """A deny entry with surrounding spaces: the M06 decision vs the M11
+    selection capture itself (``_m11_capture_selection``), driven over a
+    host that records every Accessibility call. Reproduced when the
+    capture reaches Accessibility for the app the entry names."""
+    import types
     from test_normalization_pipeline import Harness, RecordingSupervisor
+    calls = []
+
+    class Host:
+        def frontmost(self):
+            return {"bundle": "com.google.Chrome", "name": "B", "pid": 101}
+
+        def focused_element(self):
+            calls.append("focused_element")
+            return "field"
+
+        def attribute(self, el, name):
+            calls.append(name)
+            return {"AXRole": "AXTextArea",
+                    "AXSelectedTextRange": (0, 5)}.get(name)
+
+        def string_for_range(self, el, start, length):
+            calls.append("string_for_range")
+            return "hello"[start:start + length]
+
+        def number_of_characters(self, el):
+            calls.append("number_of_characters")
+            return 5
+
     h = Harness([1.0], cfg={"context_denied_apps": [" com.google.Chrome"]},
                 supervisor=RecordingSupervisor("x"))
-    m06 = h.d._context is not None and \
-        "com.google.Chrome" in h.d._context.denied_apps
-    raw = "com.google.Chrome" in (h.d.cfg.get("context_denied_apps") or ())
-    h.close()
-    return {"m06_denies": m06, "raw_config_denies": raw,
-            "reproduced": m06 != raw}
+    try:
+        m06 = h.d._context is not None and \
+            "com.google.Chrome" in h.d._context.denied_apps
+        h.d._insertion = types.SimpleNamespace(host=Host())
+        _cap, reason = h.d._m11_capture_selection()
+    finally:
+        h.close()
+    return {"m06_denies": m06, "m11_capture_calls": calls,
+            "m11_reason": reason, "reproduced": bool(calls)}
 
 
 def r6():
