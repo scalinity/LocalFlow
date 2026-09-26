@@ -150,6 +150,21 @@ class MatchHost:
             return []
         return self._words[i:min(i + n, self.run_end[i])]
 
+    def hard_break_before(self, k: int) -> bool:
+        """A HARD delimiter separates token k-1 from token k: a line
+        break in the gap, or edge punctuation other than a comma on
+        either side (a sentence end, a quote, a parenthesis). A comma
+        alone is soft. The M10 slot continuation stops here (its own
+        owned boundary, M10-AUDIT-14); every other grammar keeps the
+        full ``brk`` barrier."""
+        if k <= 0 or k >= len(self.tokens):
+            return False
+        a, b = self.tokens[k - 1], self.tokens[k]
+        if any(ch in _LINE_BREAKS for ch in self.text[a.end:b.start]):
+            return True
+        edges = self.text[a.core_end:a.end] + self.text[b.start:b.core_start]
+        return any(ch != "," for ch in edges)
+
     def crosses_barrier(self, span: Span) -> bool:
         """The span covers a structural delimiter between two of its
         tokens (the delimiter is outside every token core)."""

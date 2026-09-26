@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import re
 
-from ..snippets import expand, split_slots
+from ..snippets import SLOT_SEPARATOR, expand
 from .span_types import (
     JOIN_ATTACH_LEFT,
     JOIN_ATTACH_RIGHT,
@@ -255,7 +255,19 @@ def grammar_snippets(host):
     trigger colliding with a registered skill on the same span loses
     to the same-span ambiguity rule (both stay literal). A placeholder
     continuation longer than ``_SNIPPET_SLOT_WORD_CAP`` words reads as
-    prose, not intent: no expansion, words stay literal."""
+    prose, not intent: no expansion, words stay literal.
+
+    Owned boundaries (M10-AUDIT-14; the engine's barrier net leaves
+    this class to these rules): the trigger's words must be CONNECTED
+    (no punctuation or line break between them) and the edit covers
+    their cores only, so edge punctuation — a sentence's period — stays
+    outside the expansion. The slot continuation is the run of word
+    tokens after the trigger up to the first HARD delimiter (a line
+    break, a sentence end, a quote or parenthesis edge); a written
+    comma is soft: between the trigger and its first value it is the
+    trigger/value delimiter (the written form of the leading spoken
+    comma), and inside a value it stays part of the value verbatim.
+    Only the spoken word "comma" separates slots."""
     snapshot = getattr(host.context, "snippets", None) \
         if host.context else None
     if snapshot is None:
@@ -271,11 +283,11 @@ def grammar_snippets(host):
             n = len(words)
             seq = tokens[i:i + n]
             if [t.word for t in seq] != words or not all(
-                    t.is_word for t in seq):
+                    t.is_word for t in seq) or not host.connected(i, i + n):
                 continue
             placeholders = snippet.placeholders
             if not placeholders:
-                span = Span(tok.start, tokens[i + n - 1].end)
+                span = host.core_span(i, i + n)
                 yield Proposal(
                     layer=3, cls="snippet", op="snippet_expansion",
                     span=span, input_text=_text_of(host, span),
@@ -283,19 +295,19 @@ def grammar_snippets(host):
                     value=snippet.snippet_id, unit="snippet",
                     join=JOIN_WORD, rule_id=snippet.snippet_id)
                 break
-            # Slot continuation: the maximal word-token run after the
-            # trigger, to the end of the utterance. Values keep their
-            # spoken casing (the token's raw form, edge punctuation
-            # stripped) — a signature slot must not decapitalize a name.
+            # Slot continuation: word tokens after the trigger up to the
+            # first hard delimiter. Values keep their spoken casing and
+            # exact source text (cores; interior written commas kept).
             j = i + n
-            while j < len(tokens) and tokens[j].is_word:
+            while j < len(tokens) and tokens[j].is_word \
+                    and not host.hard_break_before(j):
                 j += 1
-            cont = [(t.raw.strip(".,;:!?\"'“”«»()") or t.word)
-                    for t in tokens[i + n:j]]
-            if len(cont) > _SNIPPET_SLOT_WORD_CAP:
+            if j - (i + n) > _SNIPPET_SLOT_WORD_CAP:
                 break
-            span = Span(tok.start, tokens[j - 1].end)
-            values = split_slots(cont, len(placeholders))
+            span = host.core_span(i, j)
+            groups = _split_slot_tokens(tokens[i + n:j], len(placeholders))
+            values = [host.text[g[0].core_start:g[-1].core_end] if g
+                      else "" for g in groups]
             yield Proposal(
                 layer=3, cls="snippet", op="snippet_expansion",
                 span=span, input_text=_text_of(host, span),
@@ -303,6 +315,25 @@ def grammar_snippets(host):
                 value=snippet.snippet_id, unit="snippet",
                 join=JOIN_WORD, rule_id=snippet.snippet_id)
             break
+
+
+def _split_slot_tokens(toks, count: int):
+    """``split_slots`` over tokens — the same documented rule: leading
+    spoken separators are the trigger/value delimiter, the run splits on
+    the spoken separator while fewer than ``count`` slots exist, and any
+    later separator stays in the last slot's text."""
+    if count <= 0:
+        return []
+    toks = list(toks)
+    while toks and toks[0].word == SLOT_SEPARATOR:
+        toks.pop(0)
+    groups = [[]]
+    for t in toks:
+        if t.word == SLOT_SEPARATOR and len(groups) < count:
+            groups.append([])
+        else:
+            groups[-1].append(t)
+    return groups[:count]
 
 
 def grammar_file_tags(host):
@@ -313,21 +344,27 @@ def grammar_file_tags(host):
     invented: ambiguous or unresolved references stay literal with a
     retained review suggestion. Layer 3; the attachment ACTION half (a
     real file chip) belongs to a certified surface adapter, not to
-    text normalization."""
+    text normalization.
+
+    Owned boundaries (M10-AUDIT-15): "attach file" must be connected,
+    the spoken reference runs only while no structural delimiter (any
+    punctuation or line break) intervenes, and the edit covers token
+    cores — a sentence-final period stays outside the filename."""
     resolver = getattr(host.context, "file_resolver", None) \
         if host.context else None
     tokens = host.tokens
     for i, tok in enumerate(tokens):
         if tok.word != "attach" or not tok.is_word:
             continue
-        if _word_at(host, i + 1) != "file":
+        if _word_at(host, i + 1) != "file" \
+                or not tokens[i + 1].is_word or not host.connected(i, i + 2):
             continue
         j = i + 2
         while j < len(tokens) and tokens[j].is_word \
+                and not host.brk[j] \
                 and j - (i + 2) < _FILE_REF_WORD_CAP:
             j += 1
-        span_end = tokens[j - 1].end if j > i + 2 else tokens[i + 1].end
-        span = Span(tok.start, span_end)
+        span = host.core_span(i, max(j, i + 2))
         spoken = [t.word for t in tokens[i + 2:j]]
         if not spoken or resolver is None:
             yield Proposal(
@@ -339,9 +376,7 @@ def grammar_file_tags(host):
             continue
         res = resolver.resolve(spoken)
         if res.status == "resolved":
-            end = tokens[i + 2 + res.matched_words - 1].end \
-                if res.matched_words else tokens[i + 1].end
-            span = Span(tok.start, end)
+            span = host.core_span(i, i + 2 + max(res.matched_words, 0))
             yield Proposal(
                 layer=3, cls="file_tag", op="attach_file",
                 span=span, input_text=_text_of(host, span),
