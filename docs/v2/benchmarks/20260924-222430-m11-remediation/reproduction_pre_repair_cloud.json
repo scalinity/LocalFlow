@@ -1,0 +1,245 @@
+{
+ "suite": "tests/v2/transforms/test_transform_remediation.py",
+ "passed": 5,
+ "total": 34,
+ "cases": [
+  {
+   "case": "f01_unrepresented_requirements_not_applied",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[prompt_engineer] applied: 'Only update the tests if the implementation changes.' -> 'Update the tests and implementation.'"
+  },
+  {
+   "case": "f01_same_losses_under_polish_and_concise",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[polish] applied: 'Only update the tests if the implementation changes.' -> 'Update the tests and implementation.'"
+  },
+  {
+   "case": "f02_polarity_ordering_hedge_quantity",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[prompt_engineer] applied: 'Do not modify the database schema.' -> 'Modify the database schema.'"
+  },
+  {
+   "case": "f02_negative_control_recognized_comparator",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f02_wrong_occurrence_and_argument_swaps",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[prompt_engineer] applied: 'Do not modify app.py. Explain why app.py owns startup. You may modify tests for app.py.' -> 'Modify app.py. Explain why app.py owns startup. Modify its tests.'"
+  },
+  {
+   "case": "f03_coverage_serializes_every_status",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "error",
+   "detail": "AttributeError: 'Coverage' object has no attribute 'kind'"
+  },
+  {
+   "case": "f03_real_worker_round_trip_nonempty_coverage",
+   "layer": "worker",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "{'v': 1, 'op': 'fault', 'req_id': 'r1', 'job_id': None, 'stage': 'transform', 'error_type': 'AttributeError', 'reason_code': \"AttributeError: 'Coverage' object has no attribute 'kind'\"}"
+  },
+  {
+   "case": "f03_real_worker_fallbacks_still_answer",
+   "layer": "worker",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f04_case_distinct_literals_stay_distinct",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[polish] applied: 'Keep ABC.py and abc.py unchanged.' -> 'Keep ABC.py unchanged.'"
+  },
+  {
+   "case": "f04_technical_tokens_carry_verbatim",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[polish] applied: 'Use Qwen3-4B-Instruct-2507 for this.' -> 'Use another model for this.'"
+  },
+  {
+   "case": "f04_literals_allow_surrounding_prose_edits",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[polish] needs_review: 'please read https://docs.example.com/spec.' -> 'Please read https://docs.example.com/spec' excerpts=('https://docs.example.com/spec.', 'docs.example.com/spec.')"
+  },
+  {
+   "case": "f05_oracle_never_reports_fallback_as_applied",
+   "layer": "oracle",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "loading mlx-community/Qwen3-4B-Instruct-2507-4bit …\nmodel ready in 0.0s\nok   PE-DEV-001 [dev] applied, all atoms survive (0 ms)\nok   PE-DEV-002 [dev] applied, all atoms survive (0 ms)\nok   PE-DEV-003 [dev] applied, all atoms survive (0 ms)\n3/3 passed (3 applied, 0 honestly flagged for review), total inference 0.0s\nall prompt engineer cases passed (zero silent losses)\n"
+  },
+  {
+   "case": "f05_oracle_fixture_relations",
+   "layer": "oracle",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "('PE-DEV-010', 'applied')"
+  },
+  {
+   "case": "f05_oracle_checks_review_addresses_the_loss",
+   "layer": "oracle",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "oracle has no independent judge"
+  },
+  {
+   "case": "f06_strict_replacement_requires_positive_proof",
+   "layer": "insertion",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "('unreadable selection granted strict', {'identity': 'pass', 'window': 'unavailable', 'field': 'pass', 'selection': 'unavailable'})"
+  },
+  {
+   "case": "f06_plain_dictation_contract_unchanged",
+   "layer": "insertion",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f06_capture_classifies_before_reading",
+   "layer": "helper",
+   "new_interface": true,
+   "status": "error",
+   "detail": "ModuleNotFoundError: No module named 'localflow.v2.insertion.selection'"
+  },
+  {
+   "case": "f06_capture_records_window_and_surroundings",
+   "layer": "helper",
+   "new_interface": true,
+   "status": "error",
+   "detail": "ModuleNotFoundError: No module named 'localflow.v2.insertion.selection'"
+  },
+  {
+   "case": "f07_note_destination_identity_and_region",
+   "layer": "helper",
+   "new_interface": true,
+   "status": "error",
+   "detail": "ImportError: cannot import name 'note_destination_check' from 'localflow.v2.notes' (/tmp/claude-0/-home-user-LocalFlow/a749e9fa-7b57-589f-b4bd-effda5b346c5/scratchpad/pre/localflow/v2/notes.py)"
+  },
+  {
+   "case": "f07_utf16_offsets_convert",
+   "layer": "helper",
+   "new_interface": true,
+   "status": "error",
+   "detail": "ImportError: cannot import name 'utf16_range_to_codepoints' from 'localflow.v2.notes' (/tmp/claude-0/-home-user-LocalFlow/a749e9fa-7b57-589f-b4bd-effda5b346c5/scratchpad/pre/localflow/v2/notes.py)"
+  },
+  {
+   "case": "f08_store_candidate_respects_collection_consent",
+   "layer": "store",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "(None, 'tcand-045d438123bf48389fef1742e7d75dc0')"
+  },
+  {
+   "case": "f08_dictation_candidate_follows_captured_consent",
+   "layer": "store",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "no captured-consent parameter for the dictation path"
+  },
+  {
+   "case": "f09_selected_candidate_retains_prompt_and_decision",
+   "layer": "store",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "applied"
+  },
+  {
+   "case": "f09_note_candidate_records_destination_revision",
+   "layer": "store",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "{'task_key': 'ttask:7729f03a3baaa19840235e52', 'source_kind': 'selection'}"
+  },
+  {
+   "case": "f09_dictation_decision_map_retained",
+   "layer": "store",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "dict_keys(['transform_prompt', 'transform_output'])"
+  },
+  {
+   "case": "f10_retry_lineage_recorded_on_the_new_candidate",
+   "layer": "store",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "{'task_key': 'ttask:7729f03a3baaa19840235e52', 'path': 'applied'}"
+  },
+  {
+   "case": "f12_unchanged_quoted_literal_applies",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[polish] needs_review: 'Keep \"foo\" unchanged.' -> 'Keep \"foo\" unchanged.' excerpts=('\"foo\"',)"
+  },
+  {
+   "case": "pc_faithful_reorganizations_apply",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "tg01_dense_ten_requirement_prompt",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[prompt_engineer] applied: 'Summarize the incident report for the on-call channel. Keep it under 200 words. Do not name the customer. Mention the start time and the end time. Explain why the alert fired late. List exactly two follow-up actions. Only cover the payment service. If the root cause is unknown, say so plainly. Ask whether the status page was updated. Write it in plain language.' -> 'Kee"
+  },
+  {
+   "case": "tg01_nested_exception_and_compound_clauses",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[prompt_engineer] applied: 'Return only JSON with exactly four keys and no prose.' -> 'Return JSON with exactly four keys and explanatory prose.'"
+  },
+  {
+   "case": "tg02_modality_and_speech_act_changes",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[prompt_engineer] applied: 'Add a benchmark.' -> 'Optionally add a benchmark.'"
+  },
+  {
+   "case": "tg01_near_limit_source_and_truncation",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[polish] applied: 'The service keeps working as expected. The service keeps working as expected. The service keeps working as expected. The service keeps working as expected. The service keeps working as expected. The service keeps working as expected. The service keeps working as expected. The service keeps working as expected. The service keeps working as expected. The service keeps working as e"
+  },
+  {
+   "case": "tg07_conflicting_requirements_surface",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "fail",
+   "detail": "[prompt_engineer] applied: 'Keep the wording verbatim but shorten the paragraph.' -> 'Shorten the paragraph.'"
+  },
+  {
+   "case": "tg_task_identity_inputs_pinned",
+   "layer": "engine",
+   "new_interface": false,
+   "status": "pass",
+   "detail": null
+  }
+ ]
+}

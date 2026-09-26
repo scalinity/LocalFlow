@@ -29,6 +29,16 @@ replacement authority is still valid. The settled matrix
   (S12: "if selected text changes... invalidate replacement
   authority").
 
+Strict replacement (``job["strict_replacement"]``, set only by an
+accepted selected-text transform, M11-AC03): replacing text the user
+reviewed needs POSITIVE proof, so every "unavailable" above refuses —
+the recorded window title must be recorded and read back equal, the
+role must read back equal, the recorded non-empty selection must read
+back with the same range and text, and the bounded text recorded on
+either side of it must read back unchanged (a second document in the
+same app can match title, role, range and text). Plain dictation keeps
+the permissive matrix.
+
 Validation runs on the insertion thread, budgeted by the host's
 messaging timeout — never on the UI callback, never on the hotkey path.
 """
@@ -58,6 +68,45 @@ def validate_target(host: InsertionHost,
                     job: dict) -> tuple[Optional[TargetLease], dict]:
     """Return ``(lease, verification)`` — lease None means the target
     changed and the artifact must be routed to saved history."""
+    lease, verification = _validate(host, snapshot, job)
+    if lease is None or not job.get("strict_replacement"):
+        return lease, verification
+    field = snapshot.field if isinstance(snapshot, ContextSnapshot) \
+        else None
+    proven = (verification.get("identity") == VERIFICATION_PASS
+              and verification.get("window") == VERIFICATION_PASS
+              and verification.get("field") == VERIFICATION_PASS
+              and verification.get("selection") == VERIFICATION_PASS
+              and lease.replace_selection)
+    if proven and field is not None and (
+            field.preceding_text is not None
+            or field.following_text is not None):
+        verification["surroundings"] = _surroundings_verdict(
+            host, field)
+        proven = verification["surroundings"] == VERIFICATION_PASS
+    if not proven:
+        verification["strict"] = VERIFICATION_FAIL
+        return None, verification
+    verification["strict"] = VERIFICATION_PASS
+    return lease, verification
+
+
+def _surroundings_verdict(host, field) -> str:
+    from .selection import surroundings
+    el = host.focused_element()
+    if el is None:
+        return VERIFICATION_UNAVAILABLE
+    s, e = field.selected_range
+    pre, fol = surroundings(host, el, s, e)
+    if (field.preceding_text is not None and pre is None) or \
+            (field.following_text is not None and fol is None):
+        return VERIFICATION_UNAVAILABLE
+    same = (field.preceding_text is None or pre == field.preceding_text) \
+        and (field.following_text is None or fol == field.following_text)
+    return VERIFICATION_PASS if same else VERIFICATION_FAIL
+
+
+def _validate(host, snapshot, job):
     verification: dict = {}
     if isinstance(snapshot, TargetSnapshot) and not isinstance(
             snapshot, ContextSnapshot):
