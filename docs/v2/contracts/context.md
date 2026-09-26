@@ -360,10 +360,12 @@ Constructors and consumers of the M06 types in `localflow/` and
 - Identifier resolution is the bounded nearby window only; a full
   visible-symbol provider would need the optional IDE/browser extension
   channel (S12) — not shipped.
-- Within one window, M08 does not distinguish two fields of the same
-  role (a moved caret or a field change keeps authority by design);
-  element identity is reliable only within one process lifetime, so the
-  window element is never persisted.
+- At validation time, M08 does not distinguish two fields of the same
+  role within one window (a moved caret or a field change keeps plain
+  dictation authority by design); the field then focused is bound for
+  the rest of the operation (contracts/insertion.md). Element identity
+  is reliable only within one process lifetime, so neither the window
+  nor the field element is ever persisted.
 - The jobs table has no `target_snapshot_id` column; the ids live on the
   job dict and in the evidence context block, and M08's insertion rows
   carry them where persistence needs them.

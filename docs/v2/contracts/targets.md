@@ -44,6 +44,9 @@ posted"); the legacy collector entry preserves that semantic.
 
 1. Revalidate the target immediately before writing; on change or
    uncertainty save the output and offer a one-action paste instead.
+   The element validation proved the target's own is the one written,
+   read back, undone and observed — never whatever holds the focus
+   later.
 2. Clipboard restore only if the pasteboard still holds LocalFlow's owned
    generation; a user copy always wins.
 3. One parent-owned insertion queue; completed jobs never interleave
