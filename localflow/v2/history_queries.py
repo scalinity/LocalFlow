@@ -135,6 +135,8 @@ class HistoryQueryService:
 
     def _search_op(self, conn, text, app, mode, limit):
         out = []
+        # 0 = no limit; SQLite reads a negative LIMIT as unbounded.
+        sql_limit = limit if limit > 0 else -1
         # -- V2 jobs ----------------------------------------------------
         # Delete-everywhere removes a job from History immediately (the
         # row itself waits for metadata pruning as an operational record).
@@ -174,7 +176,7 @@ class HistoryQueryService:
                f" JOIN job_targets t ON t.job_id = j.job_id{where}"
                " ORDER BY j.captured_at_utc IS NULL, j.captured_at_utc DESC,"
                " j.rowid DESC LIMIT ?")
-        job_rows = conn.execute(sql, [*params, limit]).fetchall()
+        job_rows = conn.execute(sql, [*params, sql_limit]).fetchall()
         manifests = self._manifests(conn, [r[0] for r in job_rows])
         for (job_id, captured, tq, state, reason, app_name, app_bundle) \
                 in job_rows:
@@ -211,7 +213,7 @@ class HistoryQueryService:
             sql = ("SELECT id, captured_at_utc, app_name, app_bundle, kind,"
                    " raw_text, cleaned_text FROM legacy_dictations"
                    f"{where} ORDER BY ts DESC LIMIT ?")
-            params.append(limit)
+            params.append(sql_limit)
             for (rid, captured, app_name, app_bundle, kind, raw, cleaned) \
                     in conn.execute(sql, params).fetchall():
                 instant = parse_instant(captured)
@@ -246,7 +248,7 @@ class HistoryQueryService:
                    f" WHERE {' AND '.join(clauses)} GROUP BY root"
                    " ORDER BY first LIMIT ?")
             for (root, _first) in conn.execute(
-                    sql, [*params, limit]).fetchall():
+                    sql, [*params, sql_limit]).fetchall():
                 raw, cleaned = self._legacy_halves(conn, root)
                 out.append({
                     "kind": "legacy_log", "id": root,
