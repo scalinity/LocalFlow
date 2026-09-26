@@ -2213,6 +2213,451 @@ def test_a11_flush_before_busy_decrement_is_not_lost():
         w.d._insertion = None
 
 
+# ---- independent review round (first pass 4166806) ---------------------------
+
+@case("M09-AUDIT-11")
+def test_r01_idle_between_pending_read_and_flag_still_shows_hub():
+    """Review R-01: Open Hub reads ``pending`` (True); the queue thread
+    finishes its last operation — a no-op reconciliation — before
+    openHub_ records the deferred show. The idle wake-up must still
+    deliver the show."""
+    from localflow.v2.insertion.service import InsertionService
+
+    class RacePending(InsertionService):
+        hook = None
+
+        @property
+        def pending(self):
+            value = InsertionService.pending.fget(self)
+            hook, self.hook = self.hook, None
+            if hook is not None:
+                hook()
+            return value
+
+    with World(build=False) as w:
+        tgt = _HeldTarget(settable=False, ax_readable=True)
+        tgt.set_content("text already here m09")  # nothing to paste
+        svc = RacePending(host=tgt, pasteboard=tgt.pb, keyboard=tgt,
+                          store=w.store, emit=lambda *a, **k: None,
+                          settle_sec=0.05)
+        w.d._insertion = svc
+        try:
+            assert w.d.hubPasteText("already here m09")["outcome"] == \
+                "repaste_queued"
+            assert tgt.arrived.wait(5) and svc.pending
+            idle = threading.Event()
+
+            def finish_between_read_and_flag():
+                # Registered after the coordinator's own listener, so it
+                # fires once that listener has already run.
+                svc.add_idle_listener(idle.set)
+                tgt.hold.set()
+                assert idle.wait(5), "the queue never went idle"
+            svc.hook = finish_between_read_and_flag
+            w.d.openHub_(None)
+            w.drain()
+            shown = w.d._hub is not None and w.d._hub.state.visible
+        finally:
+            w.d._insertion = None
+        assert shown, "deferred Open Hub lost: the service went idle" \
+            " between the pending read and the deferred flag"
+
+
+def _readmission_window(state):
+    """Hold the query worker when it re-admits a request OUTSIDE the
+    state lock — the only place a request admitted by the user can slip
+    in between the re-admission decision and the re-admission. Inside
+    the lock there is no window, and nothing is held."""
+    real = state._spawn
+    gate = {"arrived": threading.Event(), "release": threading.Event()}
+
+    def spawn(key, fn, **inputs):
+        if threading.current_thread().name.startswith(
+                "localflow-hub-query") and not state._lock._is_owned() \
+                and not gate["arrived"].is_set():
+            gate["arrived"].set()
+            gate["release"].wait(10)
+        return real(key, fn, **inputs)
+    state._spawn = spawn
+    return gate
+
+
+@case("M09-AUDIT-03")
+def test_r02_readmitted_detail_never_overrides_newer_selection():
+    """Review R-02: A's detail read raced an unrelated revocation, so its
+    publication re-admits it. B is selected around that re-admission; B's
+    detail must be the one that renders."""
+    with World() as w:
+        ja, _, _ = seed_job(w.store, CANARY_A, captured=iso(T0))
+        jb, _, _ = seed_job(w.store, CANARY_B, captured=iso(T0 + 60))
+        jc, _, _ = seed_job(w.store, "unrelated row", captured=iso(T0 + 1))
+        lat = latch_history(w)
+        open_view(w.hub, w.mq, "history")
+        gate_a = lat.hold("job_detail", when=lambda jid: jid == ja,
+                          after=True)
+        w.hub.state.select_history_row("job", ja)
+        assert gate_a.arrived.wait(5)
+        w.store.delete_everywhere("job", jc)          # epoch advances
+        window = _readmission_window(w.hub.state)
+        gate_b = lat.hold("job_detail", when=lambda jid: jid == jb,
+                          after=False)
+
+        def reads_of_a():
+            return sum(1 for c in lat.calls
+                       if c[0] == "job_detail" and c[1] == (ja,))
+        gate_a.release.set()
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and not window["arrived"].is_set() \
+                and reads_of_a() < 2:
+            time.sleep(0.005)
+        w.hub.state.select_history_row("job", jb)     # the user clicks B
+        assert gate_b.arrived.wait(5), "B's detail never started"
+        window["release"].set()
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and reads_of_a() < 2:
+            time.sleep(0.005)
+        gate_b.release.set()
+        w.drain()
+        view = w.hub.state.views["history"]
+        assert (view.get("detail") or {}).get("job_id") == jb, \
+            f"B selected, detail {(view.get('detail') or {}).get('job_id')}" \
+            f" loading={view.get('detail_loading')}"
+        assert CANARY_B in rendered_text(w.hub.history_detail)
+
+
+@case("M09-AUDIT-03")
+def test_r02_readmitted_search_never_overrides_newer_search():
+    """Review R-02 (list): search A raced a revocation and is re-admitted;
+    the user's newer search B must keep the list."""
+    with World() as w:
+        ja, _, _ = seed_job(w.store, "one " + CANARY_A, captured=iso(T0))
+        jb, _, _ = seed_job(w.store, "two " + CANARY_B,
+                            captured=iso(T0 + 60))
+        jc, _, _ = seed_job(w.store, "unrelated row", captured=iso(T0 + 1))
+        lat = latch_history(w)
+        open_view(w.hub, w.mq, "history")
+        gate = lat.hold("search", when=lambda **kw: kw.get("text") ==
+                        CANARY_A, after=True)
+        w.hub.state.set_history_search(CANARY_A)
+        assert gate.arrived.wait(5)
+        w.store.delete_everywhere("job", jc)
+        window = _readmission_window(w.hub.state)
+
+        def searches_of_a():
+            return sum(1 for c in lat.calls if c[0] == "search"
+                       and c[2].get("text") == CANARY_A)
+        gate.release.set()
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and not window["arrived"].is_set() \
+                and searches_of_a() < 2:
+            time.sleep(0.005)
+        w.hub.state.set_history_search(CANARY_B)
+        window["release"].set()
+        w.drain()
+        view = w.hub.state.views["history"]
+        ids = [r["id"] for r in history_rows(w.hub)]
+        assert view["search"] == CANARY_B and ids == [jb], \
+            f"search {view['search'][:20]!r} shows {ids}"
+
+
+class _QueueReview:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def queue(self):
+        return list(self.rows)
+
+    def preference_pairs(self):
+        return []
+
+
+class _RecordingLearning:
+    def __init__(self):
+        self.approved, self.rejected = [], []
+
+    def approve(self, cid, counterexamples=()):
+        self.approved.append(cid)
+        return {"flips": []}
+
+    def reject(self, cid):
+        self.rejected.append(cid)
+        return {}
+
+
+@case("M09-AUDIT-01")
+def test_r03_approve_refuses_when_selection_has_no_queue_row():
+    """Review: example A is selected; the rendered queue holds only X's
+    candidate. Approve/Reject must refuse — never act on X, a row the
+    user did not select."""
+    other = {"example_id": "ex-" + "7" * 32, "job_id": "job-" + "7" * 32,
+             "kind": "candidate", "candidate_id": "cand-other",
+             "candidate_status": "pending", "classification": {},
+             "suggestion": None}
+    learning = _RecordingLearning()
+    with World(review_service=_QueueReview([other]),
+               learning_service=learning) as w:
+        a = seed_example(w.store, CANARY_A)
+        w.hub.state.review_service = w.hub.spec["review_service"]
+        open_training(w)
+        select_training(w, a["example_id"])
+        w.hub.state.select_training_tab("review")
+        w.drain()
+        w.hub.reviewApprove_(None)
+        w.hub.reviewReject_(None)
+        w.drain()
+        assert not learning.approved and not learning.rejected, \
+            f"acted on an unselected row: {learning.approved}" \
+            f" {learning.rejected}"
+
+
+@case("M09-AUDIT-20")
+def test_r04_export_is_the_rendered_window_not_newer_state():
+    """Review: window S1 is on screen; a reload has published S2 to state
+    but its refresh has not run yet when the user clicks Export — the
+    file must be S1, the window the user sees."""
+    with World() as w:
+        ed = _events_dir(w)
+        log = "events-20260926-m09.jsonl"
+        write_events(ed, log, [event(i, f"2026-09-26T10:00:0{i}.000Z",
+                                     name=f"m09.shown.{i}")
+                               for i in (1, 2, 3)])
+        open_view(w.hub, w.mq, "diagnostics")
+        with open(pathlib.Path(ed) / log, "a", encoding="utf-8") as f:
+            f.write(json.dumps(event(9, "2026-09-26T10:00:09.000Z",
+                                     name="m09.not.yet.shown")) + "\n")
+        w.hub.state.reload_current()
+        assert w.hub.state.wait_for_queries(5)    # S2 in state, not drawn
+        assert "m09.not.yet.shown" not in rendered_text(w.hub.diag_text)
+        out = w.h.tmp / "export.jsonl"
+        undo = patch_appkit("NSSavePanel", _fake_save_panel(out))
+        try:
+            w.hub.diagnosticsExport_(None)
+        finally:
+            undo()
+        w.drain()
+        names = [json.loads(ln).get("event")
+                 for ln in out.read_text().splitlines() if ln.strip()]
+        assert "m09.shown.1" in names and "m09.not.yet.shown" not in names, \
+            names
+
+
+@case("M09-AUDIT-06")
+def test_r05_span_fields_clear_when_the_stage_under_them_changes():
+    """Review: offsets typed against R1 'alpha beta'; the source stage
+    becomes R2 'gamma beta' and the same example re-renders. The typed
+    span must not be saved as a correction of R2's 'gamma'."""
+    with World() as w:
+        a = seed_example(w.store, "alpha beta")
+        open_training(w)
+        select_training(w, a["example_id"])
+        w.hub.span_start.setStringValue_("0")
+        w.hub.span_end.setStringValue_("5")
+        w.hub.span_stage.selectItemWithTitle_("source_text")
+        w.hub.span_corrected.setStringValue_("delta")   # typed vs 'alpha'
+        advance_stage(w.store, a["example_id"], "source_text", "gamma beta")
+        w.hub.state.reload_current(detail_only=True)   # same example
+        w.drain()
+        assert "gamma beta" in rendered_text(w.hub.training_detail)
+        w.hub.trainingSpan_(None)
+        w.drain()
+        assert annotation_kinds(w.store, a["example_id"]) == [], \
+            "R1-typed offsets were saved against R2"
+
+
+@case("M09-AUDIT-06", kind="control")
+def test_r05_span_fields_survive_an_unrelated_revision():
+    """Control: a revision that leaves the displayed stages unchanged
+    keeps what the user typed, and the span saves."""
+    with World() as w:
+        a = seed_example(w.store, "alpha beta")
+        open_training(w)
+        select_training(w, a["example_id"])
+        w.hub.span_start.setStringValue_("0")
+        w.hub.span_end.setStringValue_("5")
+        w.hub.span_stage.selectItemWithTitle_("source_text")
+        w.hub.span_corrected.setStringValue_("delta")
+        env = json.loads(json.dumps(w.store.latest_revision(
+            a["example_id"])))
+        parent = env.pop("revision_id", None)
+        env["outcome"] = dict(env.get("outcome") or {}, note="m09")
+        w.store.append_revision(a["example_id"], env,
+                                parent_revision_id=parent)
+        w.store.sync()
+        w.hub.state.reload_current(detail_only=True)
+        w.drain()
+        assert str(w.hub.span_corrected.stringValue()) == "delta"
+        w.hub.trainingSpan_(None)
+        w.drain()
+        assert annotation_kinds(w.store, a["example_id"]) == \
+            ["span_correction"]
+
+
+@case("M09-AUDIT-12")
+def test_r06_merged_limit_follows_instants_not_strings():
+    """Review: the per-source SQL cut must follow the same instants as
+    the merge — an explicit-offset timestamp is placed by its instant,
+    and a malformed or zone-less value never takes a dated row's
+    place under the limit."""
+    import datetime as dt
+    from localflow.v2.history_queries import HistoryQueryService
+    with World(build=False) as w:
+        newest, _ = w.store.create_job(
+            captured_at_utc="2026-09-25T23:30:00-04:00",  # 03:30Z on 26th
+            time_quality="known")
+        w.store.create_job(captured_at_utc="2026-09-26T01:00:00.000Z",
+                           time_quality="known")
+        w.store.sync()
+        svc = HistoryQueryService(w.store, tz=dt.timezone.utc)
+        one = [r["id"] for g in svc.search(limit=1)["groups"]
+               for r in g["rows"]]
+        assert one == [newest], "offset instant cut by string order"
+    with World(build=False) as w:
+        dated, _ = w.store.create_job(
+            captured_at_utc="2026-09-26T10:00:00.000Z", time_quality="known")
+        for bad in ("not-a-date", "2026-09-26T12:00:00"):
+            w.store.create_job(captured_at_utc=bad, time_quality="known")
+        w.store.sync()
+        svc = HistoryQueryService(w.store, tz=dt.timezone.utc)
+        one = [r["id"] for g in svc.search(limit=1)["groups"]
+               for r in g["rows"]]
+        assert one == [dated], "an undated value displaced the dated row"
+
+
+@case("M09-AUDIT-02")
+def test_r07_retention_pass_keeps_a_hidden_selection_usable():
+    """Review: a row is selected in History; the user is on another view
+    when a retention pass revalidates; back in History the still
+    highlighted row shows its detail again and its actions work."""
+    with World() as w:
+        ja, _, _ = seed_job(w.store, CANARY_A, captured=iso(T0))
+        open_view(w.hub, w.mq, "history")
+        select_history(w, "job", ja)
+        open_view(w.hub, w.mq, "home")
+        w.hub.state.revalidate()
+        w.drain()
+        open_view(w.hub, w.mq, "history")
+        copies, _ = record_coordinator(w.d, "hubCopyText", None)
+        w.hub.historyCopy_(None)
+        assert CANARY_A in rendered_text(w.hub.history_detail), \
+            rendered_text(w.hub.history_detail)[:80]
+        assert copies, "the highlighted row's actions refuse"
+
+
+@case("M09-AUDIT-17")
+def test_r08_teach_refuses_when_the_final_text_is_a_transform():
+    """Review: the displayed final text is an applied transform, while
+    Teach measures a correction against the cleaned output. Teach must
+    refuse visibly rather than record the transform's rewrite as the
+    user's correction."""
+    with World() as w:
+        jid, fam = w.store.create_job(captured_at_utc=iso(T0),
+                                      time_quality="known",
+                                      state="insertion_confirmed")
+        _publish_attempt(
+            w.store, jid, fam, 1, "please send the report today",
+            "please send the report today",
+            transform={"output": "Please send the quarterly report today.",
+                       "path": "applied", "reason": "validated",
+                       "applied": True})
+        open_view(w.hub, w.mq, "history")
+        select_history(w, "job", jid)
+        calls = []
+        svc = w.hub.spec["learning_service"]
+        real = svc.teach_correction
+        svc.teach_correction = lambda *a, **k: calls.append(a) or real(
+            *a, **k)
+        try:
+            w.hub.teach_field.setStringValue_(
+                "Please send the quarterly report tomorrow.")
+            w.hub.historyTeach_(None)
+        finally:
+            svc.teach_correction = real
+        assert not calls, "teach measured against text the user never saw"
+        assert "Teach" in rendered_text(w.hub.history_detail)
+
+
+@case("M09-AUDIT-17")
+def test_r09_final_text_is_never_the_source_transcript():
+    """Review: the cleaned output expired while an independent History
+    lease keeps the raw transcript. Copy and Paste Again must refuse —
+    the raw transcript is not the text that was inserted."""
+    with World() as w:
+        c = seed_example(w.store, "raw words " + CANARY_C,
+                         applied="Cleaned Words " + CANARY_C)
+        w.store.grant_lease(c["raw"], "history", days=400)
+        days = w.store.retention_days["training_buffer"]
+        w.store.prune_training(now=time.time() + (days + 2) * 86400)
+        open_view(w.hub, w.mq, "history")
+        select_history(w, "job", c["job_id"])
+        copies, _ = record_coordinator(w.d, "hubCopyText", None)
+        pastes, _ = record_coordinator(w.d, "hubPasteText",
+                                       {"outcome": "repaste_queued"})
+        w.hub.historyCopy_(None)
+        w.hub.historyPasteAgain_(None)
+        assert not copies and not pastes, (copies, pastes)
+        assert "raw words" in rendered_text(w.hub.history_detail)
+
+
+@case("M09-AUDIT-02")
+def test_r10_hidden_training_detail_is_cleared_on_delete():
+    """Review: A's detail was rendered in Training, then the Models view
+    switched to Engines; deleting A clears the hidden detail too."""
+    with World() as w:
+        a = seed_example(w.store, "hidden " + CANARY_A)
+        open_training(w)
+        select_training(w, a["example_id"])
+        w.hub.state.select_models_subview("engines")
+        w.drain()
+        w.store.delete_everywhere("job", a["job_id"])
+        w.drain()
+        assert CANARY_A not in everything_rendered(w.hub), \
+            "a hidden widget kept the deleted transcript"
+
+
+@case("M09-AUDIT-02")
+def test_r10_voice_pane_drops_a_profile_invalidated_by_delete():
+    """A generated Your Voice profile lists a phrase drawn from example
+    A; deleting A drops the cached profile, and the pane stops showing
+    it instead of keeping the old rendering."""
+    phrase = "weekly budget summary"
+    with World() as w:
+        exs = [seed_example(w.store, f"send the {phrase} now {i}")
+               for i in range(3)]
+        open_view(w.hub, w.mq, "insights")
+        w.hub.state.select_insights_subview("voice")
+        w.drain()
+        w.hub.voiceGenerate_(None)
+        w.drain()
+        w.hub.state.reload_insights()
+        w.drain()
+        before = str(w.hub.voice_pane.text.string())
+        assert phrase in before, f"precondition: no phrase shown: {before}"
+        w.store.delete_everywhere("job", exs[0]["job_id"])
+        w.drain()
+        assert phrase not in str(w.hub.voice_pane.text.string()), \
+            "the invalidated profile is still rendered"
+
+
+@case("M09-AUDIT-07")
+def test_r11_retention_purge_stops_active_replay():
+    """Review (AUDIT-07 retention half): A's audio plays; a retention
+    pass purges it and revalidates the Hub. Playback stops and the
+    buffer is released."""
+    with World() as w:
+        a = seed_example(w.store, CANARY_A)
+        open_training(w)
+        select_training(w, a["example_id"])
+        w.hub.trainingReplay_(None)
+        assert _playing(w.sounds), "precondition: A playing"
+        days = w.store.retention_days["training_buffer"]
+        w.store.prune_training(now=time.time() + (days + 2) * 86400)
+        assert w.store.artifact(a["audio"])["purged"]
+        w.hub.state.revalidate()
+        w.drain()
+        assert not _playing(w.sounds), "purged audio still playing"
+        assert w.hub.replay._sound is None
+
+
 # ---- runner ----------------------------------------------------------------
 
 def main(argv):

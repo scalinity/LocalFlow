@@ -64,14 +64,12 @@ MUTANTS = [
      "name": "Move generation check outside the atomic publication"
              " boundary",
      "edits": [(STATE,
-                "        readmit = False\n"
                 "        with self._lock:\n"
                 "            if self._closed:\n"
                 "                return False\n"
                 "            if req is not None:\n"
                 "                if self._gens.get(req.key) != req.gen:\n"
                 "                    return False\n",
-                "        readmit = False\n"
                 "        if req is not None and \\\n"
                 "                self._gens.get(req.key) != req.gen:\n"
                 "            return False\n"
@@ -248,9 +246,9 @@ MUTANTS = [
      "edits": [(STATE,
                 "                if req.epoch is not None and req.epoch !="
                 " self._epoch:\n"
-                "                    readmit = True\n"
-                "                elif not self._target_current(req):\n",
-                "                if not self._target_current(req):\n"),
+                "                    self._spawn(req.key, req.fn,"
+                " **req.inputs)\n"
+                "                    return False\n", ""),
                (STATE,
                 "        revoked = self._revoked_jobs\n"
                 "        if not revoked:\n",
