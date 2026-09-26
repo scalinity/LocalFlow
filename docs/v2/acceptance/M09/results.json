@@ -14,7 +14,12 @@
     "asr_model": "parakeet-tdt-0.6b-v3 (MLX)",
     "offline": "both models cached; HF_HUB_OFFLINE in the worker"
   },
-  "requirements": ["LF-R13", "LF-R28", "LF-R30", "LF-R31"],
+  "requirements": [
+    "LF-R13",
+    "LF-R28",
+    "LF-R30",
+    "LF-R31"
+  ],
   "acceptance_criteria": {
     "M09-AC01": {
       "statement": "History shows source→normalized→cleaned→transformed lineage without flattening them into one ambiguous field.",
@@ -197,5 +202,171 @@
     ],
     "post_address_verification": "all 33 fast suites (incl. the four new M09 suites with the regression tests above) and all six model-backed checks re-ran green on the fixed code; the benchmark re-run (20260922-170952-m09) stays within every budget. No findings rejected as incorrect."
   },
-  "privacy": "Nothing private entered Git: the committed benchmark JSON carries latencies/counts only and its synthetic store lives in a temp dir; tests are synthetic in-code (the baseline-manifest privacy scan passes over every new path); annotation payload texts are lease-governed store artifacts with content-free envelope entries; Hub events (hub.*) carry counts/char-lengths/day values only; the live store's v5 migration is additive with a pre-migration backup; live data stays under Application Support."
+  "privacy": "Nothing private entered Git: the committed benchmark JSON carries latencies/counts only and its synthetic store lives in a temp dir; tests are synthetic in-code (the baseline-manifest privacy scan passes over every new path); annotation payload texts are lease-governed store artifacts with content-free envelope entries; Hub events (hub.*) carry counts/char-lengths/day values only; the live store's v5 migration is additive with a pre-migration backup; live data stays under Application Support.",
+  "remediation_2026_09_26": {
+    "kind": "post-audit local remediation (reference Mac)",
+    "state": "LOCAL_REMEDIATION_COMPLETE_PENDING_MANUAL_VERIFICATION",
+    "state_note": "Every automatable, native-local, benchmark and independent-review step ran on the reference Mac; seven human checks remain (M09-V001..V007, instructions M09-r1). One declared residual outside M09: M12's own note-transform test fails intermittently (about 1 in 7 runs, identically on 7cd1111), attributed to M12's autosave commit by corpus case M09-C110. The 2026-09-22 records above are preserved unchanged and describe the historical code; this block supersedes only their claims about the current code.",
+    "branch": "m09-local-remediation-20260926",
+    "merge": "not merged: the task's push-and-stop instruction overrides the repository's auto-merge rule for completed remediations; the owner merges",
+    "inherited_base_sha": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+    "first_pass_sha": {
+      "evidence": "4166806ec6b37bb213a178e56aada3a772b89cda",
+      "production": "272f3d9 (identical tree)"
+    },
+    "final_code_revision": "caec49141d4b756bcba3ff26d614d2854d0b139b",
+    "final_evidence_head": "4dea5f6 (runs at dbeee1c and 33ec09d; production identical to caec491)",
+    "audit": {
+      "report": "LocalFlow V2 — M09 Read-Only Deep Audit (sha256 12276b07a35d1f08f31698af1d44245ae5ccb17189abf9f28242a966d89333da)",
+      "audited_sha": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+      "findings": "29 (2 critical, 7 high, 14 medium, 3 test, 3 design)",
+      "corpus": "tests/v2/ui/m09_audit_corpus.json, byte-identical to the supplied file (sha256 a00f6618121e9881592be7d25cb4a03696ab298af9c16eefda8df697399dbcb8): 135 cases, 14 metamorphic relations, 28 mutations, all NOT_RUN as supplied",
+      "findings_register": "LocalFlow_M09_Findings.json and LocalFlow_M09_Source_Index.json not found locally; the audit text was the authority"
+    },
+    "synchronization": {
+      "local_main_before": "7cd1111 (clean, one worktree)",
+      "remote_main_at_sync": "7cd1111",
+      "drift_from_audit": "none",
+      "m08_gate": "145488c and ea83bc1 are ancestors of origin/main (exit 0)",
+      "branch_correction": "the first six commits landed on local main by mistake (the branch existed but was not checked out); moved to the branch by fast-forward before any push, local main returned to origin/main; no rewrite"
+    },
+    "adjudications": "remediation/adjudications.json",
+    "disposition_counts": {
+      "reproduced": 23,
+      "narrowed": 1,
+      "test_gap_only": 1,
+      "manual_native_unresolved": 1,
+      "design_only": 3,
+      "refuted": 0,
+      "already_fixed": 0,
+      "local_findings": 2
+    },
+    "caller_inventory": "remediation/caller_inventory.json",
+    "reproduction_evidence": {
+      "regressions_base_original": "remediation/regressions_base_7cd1111.json (55 cases: 44 defect/design fail, 11 controls pass)",
+      "regressions_base_final_suite": "remediation/regressions_base_7cd1111_final_suite.json (17/84)",
+      "benchmark_base": "remediation/benchmark_base_mutant_7cd1111.json (qualified with History returning no rows)",
+      "environment": "remediation/environment.json"
+    },
+    "regressions": {
+      "suite": "tests/v2/ui/test_m09_remediation.py",
+      "base_7cd1111": "17/84",
+      "first_pass_4166806": "63/84",
+      "final_dbeee1c": "84/84",
+      "review_fail_first": [
+        "remediation/review_regressions_first_pass_4166806.json (63/77)",
+        "remediation/review_regressions_second_batch_e681981.json (77/84)"
+      ],
+      "earlier_fail_first": "remediation/regressions_firstpass_4772348.json (56/62: the corpus-found defects)"
+    },
+    "independent_review": {
+      "record": "remediation/review_first_pass_4166806.json",
+      "method": "fresh-context agent in its own read-only worktree at 4166806; audit, corpus, claimed decisions, changed files; no author rationale, no instruction to approve; probes outside the repository",
+      "allegations": "14 (6 medium, 8 low; 12 executed) plus 11 oracle weaknesses; all re-run by the author and given fail-first regressions; 2 recorded as leads (M12 typo, M14 teach staleness)",
+      "repair": "e681981, caec491 (production); 1dcab90, dbeee1c, 8144528 (regressions, drivers, mutation check)"
+    },
+    "corpus_results": {
+      "runner": "tests/v2/ui/m09_corpus_runner.py (oracle m09-corpus-oracles-r1, policy m09-policy-r1)",
+      "base_7cd1111": {
+        "cases": {
+          "PASS": 38,
+          "FAIL": 59,
+          "ERROR": 26,
+          "NARROWED": 5,
+          "MANUAL_PENDING": 7
+        },
+        "relations": {
+          "PASS": 6,
+          "FAIL": 5,
+          "ERROR": 3
+        },
+        "file": "remediation/corpus_base_7cd1111.json"
+      },
+      "first_pass_4166806": {
+        "cases": {
+          "PASS": 99,
+          "FAIL": 16,
+          "ERROR": 7,
+          "NARROWED": 6,
+          "MANUAL_PENDING": 7
+        },
+        "relations": {
+          "PASS": 13,
+          "ERROR": 1
+        },
+        "file": "remediation/corpus_first_pass_4166806.json"
+      },
+      "final_33ec09d": {
+        "cases": {
+          "PASS": 123,
+          "NARROWED": 5,
+          "MANUAL_PENDING": 7
+        },
+        "relations": {
+          "PASS": 14
+        },
+        "file": "remediation/corpus_final_33ec09d.json"
+      },
+      "narrowed": {
+        "M09-C005": "deferred show delivered; insertion over the fixture target",
+        "M09-C018": "synchronous CRUD stalls main for the writer hold (measured, documented)",
+        "M09-C063": "600 s decode + start 10 ms; audibility manual",
+        "M09-C113": "stall measured at 100 and 1000 ms holds",
+        "M09-C124": "window bounds; a real display change is manual"
+      },
+      "stateful_probes_c001_c020": "18 pass, 2 narrowed (C005, C018)",
+      "base_and_first_pass_errors": "benchmark-bound cases have no record for those trees; remaining errors are APIs absent on the base"
+    },
+    "mutation_results": {
+      "tool": "scripts/v2/m09_mutation_check.py",
+      "final_dbeee1c": "23/24 killed; MUT05 equivalent by probe (both defenses removed: killed; reset alone removed: survived); supplementary 4/4 killed",
+      "first_run_3d4ec97": "22/24 killed (MUT05, MUT10 survived; MUT10 exposed a C054 oracle gap, closed in cefa1bf)",
+      "files": [
+        "remediation/mutation_final_dbeee1c.json",
+        "remediation/mutation_first_run_3d4ec97.json",
+        "remediation/mutation_survivors_rerun_cefa1bf.json"
+      ],
+      "benchmark_mutants": "8/8 killed on the first pass (6b55015) and the final code (dbeee1c); injected 50 ms moved every search p50 by 52.5–57.7 ms (MUT25–28)"
+    },
+    "benchmark": {
+      "final": "docs/v2/benchmarks/20260926-120724-m09-remediation-final/ (work_valid, timing_qualified; History search p95 4.6–57.1 ms of 200; shell full pass p95 327 ms of 1000)",
+      "first_pass": "docs/v2/benchmarks/20260926-112149-m09-remediation/ (work_valid; three budgets exceeded — fixed in 0083466)",
+      "load": "other sessions active (load average about 3.5 and 7.9)"
+    },
+    "portable_tests": {
+      "sweep": "remediation/sweep_final_dbeee1c.json: 86/89 files exit 0 (two native suites not run in isolation by design; test_scratchpad_hub.py hit the M12 flake)",
+      "live_clipboard_note": "one change logged during test_m03_remediation_supervisor.py, which has no clipboard code; three reruns changed nothing (an outside copy on the shared machine)"
+    },
+    "native_tests": {
+      "record": "remediation/native_suites_final_4dea5f6.json",
+      "test_native_insertion": "12/12 native M08 cases (1 residual characterized, 5 diagnostic)",
+      "test_native_ax": "all passed",
+      "conditions": "run natively with the owner away from the keyboard"
+    },
+    "desktop_isolation": "every portable run under tests/v2/context/run_isolated.py: no Accessibility read/write, no CGEventPost, general pasteboard redirected",
+    "model_backed": "none: no M09 check loads a model",
+    "pending_manual_verification": {
+      "runbook": "docs/v2/VERIFICATION.html → M09 (instructions M09-r1, code caec491)",
+      "checks": [
+        "M09-V001 every view at two text sizes, both appearances",
+        "M09-V002 keyboard only",
+        "M09-V003 audible replay; a real recoverable retry",
+        "M09-V004 where Paste Again lands when pressed in the Hub",
+        "M09-V005 move, resize, relaunch, a second display",
+        "M09-V006 Training review experience",
+        "M09-V007 Diagnostics filters and redacted export"
+      ],
+      "replaces": "native-m09-hub-trial",
+      "data": "synthetic sandbox home seeded by scripts/v2/m09_trial_seed.py"
+    },
+    "declared_residuals": [
+      "M12: test_note_transform_never_external reads before its autosave commit (intermittent; pre-existing; attributed by M09-C110)",
+      "M12: History Move→Scratchpad calls a misspelled method (pre-existing, d2ef224)",
+      "M14: teach_correction takes no expected artifact identity (retry staleness, source prediction)",
+      "Paste Again pressed inside the Hub: destination policy open (M09-V004)",
+      "synchronous CRUD blocks main for the writer hold (documented)",
+      "a revocation is not undone if its delete rolls back (fails safe)"
+    ],
+    "privacy": "synthetic data only; the branch diff scan found no credentials and no personal identifiers beyond synthetic fixture values (e.g. /Users/someone in the C102 fixture) — see the final report"
+  }
 }

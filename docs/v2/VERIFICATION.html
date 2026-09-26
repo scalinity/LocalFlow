@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M08 section added by the M08 remediation · code <code>ea83bc1</code> (M11 checks unchanged at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M09 section added by the M09 remediation · code <code>caec491</code> (M08 checks unchanged at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -2946,7 +2946,380 @@ lf08_evidence() { ( cd "$LF_M08" &amp;&amp; "$PY" "$OUT08/m08_evidence.py" ); }<
           </details>
         </article>
       </section>
-      <section class="milestone" id="M09" data-milestone="M09" data-title="Hub"><div class="ms-head"><span class="mid">M09</span><h2>Hub</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M09-V001).</p></section>
+      <section class="milestone" id="M09" data-milestone="M09" data-title="Hub">
+        <div class="ms-head">
+          <span class="mid">M09</span><h2>Hub</h2>
+          <span class="meta">instructions M09-r1 · code caec491 · local remediation of the audit at 7cd1111</span>
+        </div>
+        <p class="ms-intro">The M09 remediation makes every Hub action act on the item you are looking at: a button uses the row or example whose detail is on screen, a half-loaded selection refuses instead of guessing, and text you type into a field belongs to the item you typed it against. Deleting something removes it from every open view, replay included. History orders dictations by when they happened, Training keeps a flagged or expired example flagged, and Diagnostics exports only the typed, content-free fields. The machine checks cover the state, the services and the real coordinator; these seven checks are the parts only you can judge — how it looks, how it feels under the keyboard, what you hear, and where pasted text really lands.</p>
+        <p class="ms-intro">Instruction revision M09-r1 replaces the pending <code>native-m09-hub-trial</code> (<code>handoffs/M09.md</code>): its screens-at-two-scales item is M09-V001, keyboard-only navigation M09-V002, replay and retry M09-V003, move/resize/relaunch M09-V005, the review pair, span correction and excluded/deleted records M09-V006, and the Diagnostics filters and export M09-V007. M09-V004 (Paste Again into a real app) is new. Everything runs on synthetic data in a sandbox — never your real History.</p>
+
+        <div class="callout">
+          <h3>M09 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The remediated code gets its own worktree, and the dev app runs with a <b>sandbox home folder</b> (<code>$SANDBOX09</code>) filled with synthetic History, Training examples and a diagnostics log by <code>scripts/v2/m09_trial_seed.py</code>; the seeded audio is macOS speech from <code>say</code>. Your real Application Support data and the installed app are never touched, and the seeder refuses your real home folder. The trial document lives in <code>$OUT09/lf-m09-trial</code>.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># Remediated M09 code in its own worktree (first time only)</span>
+export LF_M09="$(dirname "$LF_MAIN")/LocalFlow-m09-verify"
+git -C "$LF_MAIN" fetch origin m09-local-remediation-20260926
+[ -d "$LF_M09" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M09" origin/m09-local-remediation-20260926
+<span class="c">#   (after the merge, use origin/main instead)</span>
+git -C "$LF_M09" merge-base --is-ancestor caec491 HEAD &amp;&amp; echo "M09 repairs present"
+export OUT09="$EV/m09-verification"; mkdir -p "$OUT09"/lf-m09-trial "$OUT09"/screens &amp;&amp; chmod 700 "$OUT09"
+printf 'First line stays.\nPaste Again lands below this line.\n\nLast line stays.\n' &gt; "$OUT09/lf-m09-trial/draft.txt"
+
+<span class="c"># Sandbox home, synthetic data and config for the dev app</span>
+export REAL_HOME="$HOME"
+export SANDBOX09="$OUT09/sandbox-home"; mkdir -p "$SANDBOX09" &amp;&amp; chmod 700 "$SANDBOX09"
+"$PY" "$LF_M09/scripts/v2/m09_trial_seed.py" --home "$SANDBOX09" | tee "$OUT09/seed.json"
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M09"], "config.json").read_text())
+c = dict(cfg, log_transcripts=False)
+p = pathlib.Path(os.environ["OUT09"], "sandbox-config.json")
+p.write_text(json.dumps(c, indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app; $LF09_PID is its process</span>
+lf09_start() { ( cd "$LF_M09" &amp;&amp; exec env HOME="$SANDBOX09" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT09/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT09/app-console.txt" 2&gt;&amp;1 &amp;
+  LF09_PID=$!; echo "dev app pid $LF09_PID"; }
+export SDB09="$SANDBOX09/Library/Application Support/LocalFlow/v2.db"
+
+<span class="c"># Evidence reader: states, methods, reasons and annotation kinds — no text</span>
+cat &gt; "$OUT09/m09_evidence.py" &lt;&lt;'EOF'
+import json, os, sqlite3
+db = sqlite3.connect(os.environ["SDB09"])
+print("jobs by state:", dict(db.execute(
+    "select state, count(*) from jobs group by state").fetchall()))
+for n, (state, method, reason) in enumerate(db.execute(
+        "select state, method, reason_code from insertions"
+        " order by rowid").fetchall(), 1):
+    print(f"#{n} insertion={state} method={method} reason={reason}")
+for ex, state in db.execute(
+        "select example_id, state from training_examples order by rowid"):
+    row = db.execute(
+        "select envelope_json from training_revisions where example_id=?"
+        " order by rowid desc limit 1", (ex,)).fetchone()
+    env = json.loads(row[0]) if row and row[0] else {}
+    kinds = [a.get("kind") for a in env.get("annotations") or []]
+    print(f"example {ex[:15]}… state={state} annotations={kinds}")
+EOF
+lf09_evidence() { SDB09="$SDB09" "$PY" "$OUT09/m09_evidence.py"; }</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M09 repairs present”; <code>seed.json</code> lists 12 History jobs, 4 legacy rows, 2 legacy log pairs and five Training examples (A–E) with their ids; the dev app prints its pid when started. Open the Hub from the LocalFlow menu-bar icon → Open Hub… (⌘L in the menu). Quit the dev app from its menu when a check says so. When finished with M09, remove the worktree with <code>git -C "$LF_MAIN" worktree remove "$LF_M09"</code>; the sandbox stays under <code>$OUT09</code> until you delete it.</p>
+        </div>
+
+        <h3 class="group">Seeing and reaching every part of the Hub</h3>
+
+        <article class="check" id="M09-V001" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M09-V001</span>
+            <h4>Look at every view at normal and larger text, in light and dark; keep screenshots privately</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~15 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The whole Hub — all ten views and the Models and Insights subviews — renders without clipped controls, overlapping buttons, text you cannot read or a sidebar row that says one view while another is shown, at both text sizes and in both appearances. The headless suites build every view and check its state; only you can see it.</p>
+          <p class="plain"><b>In plain terms.</b> You click through every screen twice at normal text and once more with larger text, in light and in dark mode, and note anything cut off, overlapping or confusing.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · sandbox home with seeded data · System Settings</dd>
+              <dt>Preconditions</dt><dd>M09 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M09 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf09_start</code>; wait for “ASR: ready”; open the Hub.</li>
+              <li>With the system in Light appearance, click each sidebar row in turn: Home, History, Styles, Snippets, Transforms, Scratchpad, Insights (then its Usage and Your Voice subviews), Diagnostics, Models (then Engines, and Training Data with its Evidence, Review, Splits and Export tabs), Settings. In History and Training, click a row so a detail is shown. Take a screenshot of each (⌘⇧4, then Space, then click the window) into <code>$OUT09/screens</code>.</li>
+              <li>Switch to Dark appearance (System Settings → Appearance) and repeat step 2 without screenshots unless something looks wrong.</li>
+              <li>Make text larger (System Settings → Accessibility → Display → Text size, one step or more larger; or Displays → a “Larger Text” resolution) and repeat step 2 once more. Put the setting back afterwards.</li>
+              <li>Resize the Hub window to its smallest size and look at History and Training once more.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Every view opens; the highlighted sidebar row always names the view on screen.</li>
+              <li>No button, field or label is cut off or drawn over another at any size or appearance; all text is readable in both appearances.</li>
+              <li>History shows dated groups with the two Undated imported rows last; a selected row shows four stages (source, normalized, cleaned, transformed) with an honest reason for any absent one.</li>
+              <li>Empty or loading states say what they are (for example “No history yet” or “Loading…”), never a stale value.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A control you need is unreachable or unreadable at the smallest window or larger text: <b>Failed</b> — keep the screenshot and note view, appearance and size.</li>
+              <li>A cosmetic flaw that hides nothing (uneven spacing, a truncated long id): <b>Needs follow-up</b> with the screenshot; it belongs to the design pass, not to M09.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: the screenshots in <code>$OUT09/screens</code> (synthetic data only). Nothing from this check goes into Git.</p>
+            <h5>Contract relevance</h5>
+            <p>M09-AC01, M09-AC03; corpus case M09-C129; M09-AUDIT-22/26; <code>contracts/hub.md</code> → Window behavior, History.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M09-V002" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M09-V002</span>
+            <h4>Use the Hub with the keyboard alone: reach every control, type into every field</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The real keyboard reaches the sidebar, search fields, tables, detail panes and buttons; focus is always visible; and text you type lands in the field that has focus. State-only tests cannot stand in for focus rings and first-responder behavior.</p>
+          <p class="plain"><b>In plain terms.</b> You put the mouse aside and move around the Hub with Tab, the arrow keys and Space, typing a search and an annotation along the way.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · sandbox dev app running · keyboard only</dd>
+              <dt>Preconditions</dt><dd>M09-V001 done (dev app still running, Hub open). If Tab skips buttons, turn on System Settings → Keyboard → Keyboard navigation first.</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Click once into the Hub's sidebar, then leave the mouse alone.</li>
+              <li>Move between views with ↑/↓ in the sidebar; stop at History.</li>
+              <li>Tab to the search field and type <code>train</code>; Tab to the table and move with ↑/↓; Tab through the detail and the action buttons (Replay, Copy, Paste Again, Retry, Diff, Save→Scratchpad, Move→Scratchpad, Delete Usage) to the Teach field; type <code>test words</code>; press ↑ in the table to change row and watch the Teach field.</li>
+              <li>Go to Models → Training Data and repeat for the Evidence tab: table, detail, the Verbatim field and the span fields (start, end, corrected text). Type into each.</li>
+              <li>Go to Diagnostics: Tab to the job field, the level menu (open it with Space, choose with arrows) and the UTC switch (Space toggles).</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Every field and button is reached by Tab/Shift-Tab and shows a visible focus ring; Space or Return activates the focused button.</li>
+              <li>Everything you type appears in the focused field — none of it is lost or lands elsewhere.</li>
+              <li>After changing the History row in step 3 the Teach field is empty: text typed for one row never follows you to another.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A visible field does not accept typing, or typing lands in another field: <b>Failed</b> — note the view and field.</li>
+              <li>A control is only reachable with the mouse: <b>Needs follow-up</b> — note it.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: a short note in <code>$OUT09/V002-notes.txt</code> listing any unreachable control or field.</p>
+            <h5>Contract relevance</h5>
+            <p>M09-AC03; corpus case M09-C130; M09-AUDIT-01 (buffers bound to their item), M09-AUDIT-26; <code>contracts/hub.md</code> → Actions use the rendered item.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Acting on a dictation from History</h3>
+
+        <article class="check" id="M09-V003" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human hardware model">
+          <header class="check-head">
+            <span class="cid">M09-V003</span>
+            <h4>Replay the row you selected and hear it; retry a real recoverable failure once</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~12 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Replay plays the selected row's own recording — a new replay stops the previous one, and a row with no audio says so and stops what was playing. Retry runs a genuinely recoverable dictation once through the real coordinator: a second click reports that it is already being retried, and nothing is inserted twice.</p>
+          <p class="plain"><b>In plain terms.</b> You play two seeded recordings and listen that each says its row's words. Then you make LocalFlow fail mid-dictation on purpose, restart it, and retry that dictation from History.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · speakers or headphones · microphone · models cached (offline) · sandbox home · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M09 set-up done; dev app running; <code>$OUT09/lf-m09-trial/draft.txt</code> open in TextEdit.</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>In History, clear the search. Select the row “the quarterly planning notes are ready for review” and press Replay; listen.</li>
+              <li>While it plays, select “please move the design sync to thursday afternoon” and press Replay.</li>
+              <li>While that plays, select “the draft needs one more pass on the introduction” (it has no audio) and press Replay.</li>
+              <li>Make a recoverable failure: click at the end of TextEdit's last line, hold fn and say “recovery test sentence”, release fn and <em>immediately</em> run <code>kill -9 $LF09_PID</code> in Terminal (before the words appear).</li>
+              <li>Run <code>lf09_start</code> again, open the Hub, find the newest History row (state <code>failed_recoverable</code>) and select it.</li>
+              <li>Click into TextEdit's last line, then open the Hub again, select the row and press Retry — then press Retry again at once.</li>
+              <li>Wait ten seconds, look at TextEdit, quit the dev app from its menu and run the command block.</li>
+            </ol>
+            <h5>Commands (after step 7)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf09_evidence | tee "$OUT09/V003-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Steps 1–2: you hear the sentence shown in each selected row; the first stops when the second starts.</li>
+              <li>Step 3: the detail says audio is unavailable (with a reason) and nothing keeps playing.</li>
+              <li>Step 6: the first Retry says it was queued; the second says the dictation is already being retried. Note where the words appear: at most once, in TextEdit — or nothing is typed and the result stays in History and on the clipboard (the Hub was in front when the result was ready). Words typed into a Hub field are the destination question of M09-V004; record it there too.</li>
+              <li>If step 4 was too slow and the words were inserted, there is no failed row: repeat step 4 faster (not a failure).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Replay plays a different row's words, or two recordings play at once: <b>Failed</b>.</li>
+              <li>The words are inserted twice, or the second Retry queues a second run: <b>Failed</b> — keep <code>V003-evidence.txt</code> and <code>app-console.txt</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT09/V003-evidence.txt</code> (states, methods and reasons — no text), <code>$OUT09/app-console.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M09-AC02; corpus case M09-C131; M09-AUDIT-07/22; <code>contracts/hub.md</code> → History actions, Revocation.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M09-V004" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M09-V004</span>
+            <h4>Press Paste Again in History and record exactly where the text lands</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~8 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Where History's Paste Again delivers text when you press it inside the Hub. The engine pastes into whatever app is in front when it runs — the same rule as the menu's Paste Last Result Again — and pressing a Hub button puts the Hub itself in front. This check records what actually happens so the destination policy can be decided on evidence; it is not graded against an assumed answer.</p>
+          <p class="plain"><b>In plain terms.</b> You select a seeded dictation in History, press Paste Again, and write down where the words appear — the Hub's own search or Teach field, TextEdit, the clipboard only, or nowhere.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · sandbox dev app running · TextEdit with the trial document</dd>
+              <dt>Preconditions</dt><dd>M09 set-up done; dev app running; nothing else being dictated.</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>In TextEdit click on the empty line under “Paste Again lands below this line.”</li>
+              <li>Open the Hub (menu-bar icon → Open Hub…), go to History, clear the search, click once into the search field, then select the newest seeded row.</li>
+              <li>Press Paste Again. Look at the Hub's search field, the Teach field, the detail pane and then TextEdit.</li>
+              <li>Click into TextEdit's empty line again and use the menu-bar icon → Recovery → Paste Last Result Again (the menu path, for comparison).</li>
+              <li>Quit the dev app from its menu and run the command block.</li>
+            </ol>
+            <h5>Commands (after step 5)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf09_evidence | tee "$OUT09/V004-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Record where the step 3 text appeared (a Hub field, TextEdit, nowhere) and the note the detail pane showed. The acceptable outcomes are the words in the app you were working in, or a clear “copied — paste where you want it”; text typed into the Hub's own fields is the outcome this check exists to catch.</li>
+              <li>Step 4: the menu path pastes into TextEdit's line (or reports a changed target), unchanged from M08.</li>
+              <li>Nothing is inserted twice, and focus does not jump to a third app.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>The words land in a Hub field (search, Teach) or in an app you did not choose: <b>Failed</b> — note exactly where; this decides the Paste Again destination policy (see <code>handoffs/M09.md</code>).</li>
+              <li>The words appear twice anywhere: <b>Failed</b> — keep <code>V004-evidence.txt</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT09/V004-evidence.txt</code> (insertion states, methods, reasons — no text) and a one-line note of where the text landed.</p>
+            <h5>Contract relevance</h5>
+            <p>M09-AC02; corpus case M09-C132; M09-AUDIT-26/28; <code>contracts/hub.md</code> → History actions; <code>contracts/insertion.md</code> → Paste Again (M08, not re-graded here).</p>
+          </details>
+        </article>
+
+        <h3 class="group">The window through a working day</h3>
+
+        <article class="check" id="M09-V005" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human hardware model">
+          <header class="check-head">
+            <span class="cid">M09-V005</span>
+            <h4>Move, resize, close and relaunch the Hub, and move it to another display if you have one</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Closing the Hub hides it without stopping dictation; reopening restores the same view, selection and search; a relaunch restores the window's frame; and the window stays reachable when displays change.</p>
+          <p class="plain"><b>In plain terms.</b> You move and shrink the window, close it, dictate once, reopen it, restart the app, and check the window comes back where you left it.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · microphone · models cached · sandbox home · TextEdit · a second display (optional)</dd>
+              <dt>Preconditions</dt><dd>M09 set-up done; dev app running; Hub open on History with a row selected and <code>train</code> in the search field.</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Move the Hub to a new place and resize it; then drag it as small as it goes.</li>
+              <li>Close it with ⌘W. Click into TextEdit's last line and dictate “still dictating with the hub closed”.</li>
+              <li>Reopen the Hub from the menu-bar icon.</li>
+              <li>Quit the dev app from its menu, run <code>lf09_start</code>, open the Hub again.</li>
+              <li>With a second display: move the Hub onto it, then change the arrangement or disconnect it and open the Hub again.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 1: the window stops at its minimum size with every control still usable.</li>
+              <li>Step 2: the words appear in TextEdit; the dictation service kept running with the Hub closed.</li>
+              <li>Step 3: the same view, the same selected row and <code>train</code> in the search field.</li>
+              <li>Step 4: the window reopens at the frame you left it in (inside the visible screen).</li>
+              <li>Step 5: the Hub opens on a visible screen, never off-screen.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Dictation stops while the Hub is closed, or the Hub opens off-screen: <b>Failed</b>.</li>
+              <li>Selection or search is lost on reopen: <b>Needs follow-up</b> — note which.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: a short note in <code>$OUT09/V005-notes.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M09-AC03, M09-AC04; corpus case M09-C133; <code>contracts/hub.md</code> → Window behavior.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Reviewing training evidence</h3>
+
+        <article class="check" id="M09-V006" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human hardware">
+          <header class="check-head">
+            <span class="cid">M09-V006</span>
+            <h4>Review seeded examples: listen before a verbatim, on the right example, and see restrictions hold</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Hardware / audio</li><li>~12 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A verbatim reference is accepted only after you replayed that same example; a correct and an incorrect judgment each land on the example on screen; a span correction changes only its span and never marks the recording verified; a flagged or excluded example refuses review and restoring it never lifts the flag; and deleting an example removes its text everywhere, the playing audio included.</p>
+          <p class="plain"><b>In plain terms.</b> You play example A, switch to B and try to save a verbatim (it refuses), play B and save (it works), judge two examples, correct one word in C, try to review the flagged and excluded ones, and delete one while it plays.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · speakers or headphones · sandbox home with seeded examples A–E (ids in <code>$OUT09/seed.json</code>)</dd>
+              <dt>Preconditions</dt><dd>M09 set-up done; dev app running; Hub on Models → Training Data → Evidence.</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Select example A (“alpha example …”) and press Replay Audio; listen.</li>
+              <li>Select example B, type <code>bravo example for the verbatim reference</code> into the Verbatim field and press Save Verbatim.</li>
+              <li>Press Replay Audio on B, listen, and press Save Verbatim again.</li>
+              <li>Select A and press Mark Correct; select C and press Mark Incorrect.</li>
+              <li>On C (“charlie example with one wrong word”), correct the word “one”: start <code>21</code>, end <code>24</code>, corrected text <code>won</code>, and press Save Span. Read C's detail, including its transform line.</li>
+              <li>Select D (flagged as sensitive) and press Exclude/Include twice; then press Mark Correct. Select E (excluded), press Replay Audio, type <code>echo</code> into the Verbatim field and press Save Verbatim; then press Exclude/Include.</li>
+              <li>Select B, press Replay Audio and, while it plays, press Delete Everywhere and confirm.</li>
+              <li>Quit the dev app from its menu and run the command block.</li>
+            </ol>
+            <h5>Commands (after step 8)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf09_evidence | tee "$OUT09/V006-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 2 refuses with “replay this example's audio first”; step 3 saves.</li>
+              <li>Step 4: A shows the correct judgment, C the incorrect one — never the other way round.</li>
+              <li>Step 5: C shows a partial span correction; its correctness is not changed to verified. The transform line says the proposal needed review and was not applied.</li>
+              <li>Step 6: D stays <code>quarantined_sensitive</code> through both presses and refuses the judgment, each with a reason on screen. E refuses the verbatim because it is excluded (an annotation never re-includes it); the Exclude/Include press then includes it again.</li>
+              <li>Step 7: the audio stops, and B disappears from the table and detail; its text is nowhere on screen.</li>
+              <li>The evidence lists B as deleted, D as <code>quarantined_sensitive</code>, and annotation kinds only on A, C (and B before deletion).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A verbatim saves without replaying that example, a judgment lands on another example, D loses its flag, or B's text or audio survives the delete: <b>Failed</b> — keep <code>V006-evidence.txt</code>.</li>
+              <li>A label or refusal is technically right but confusing: <b>Needs follow-up</b> with the wording you would expect.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT09/V006-evidence.txt</code> (example states and annotation kinds — no text).</p>
+            <h5>Contract relevance</h5>
+            <p>M09-AC05, M09-AC06; corpus case M09-C134; M09-AUDIT-01/02/04/05/06/07; <code>contracts/hub.md</code> → Models → Training Data, Revocation.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Diagnostics</h3>
+
+        <article class="check" id="M09-V007" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human privacy terminal">
+          <header class="check-head">
+            <span class="cid">M09-V007</span>
+            <h4>Filter the seeded diagnostics log and check the redacted support export privately</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Privacy / data</li><li>Terminal</li><li>~8 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The Diagnostics filters (job, level with an explicit All, UTC or local time) change what is shown and say so; malformed log lines are skipped and counted; and Export Redacted writes the records on screen with only typed, content-free fields — the seeded private sentence, nested detail and home-folder model path are absent.</p>
+          <p class="plain"><b>In plain terms.</b> You filter the seeded log a few ways, export it, and search the exported file for the private words that must not be there.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · sandbox dev app running</dd>
+              <dt>Preconditions</dt><dd>M09 set-up done; dev app running; Hub on Diagnostics.</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Read the skipped-lines note, then choose ERROR in the level menu, then All levels.</li>
+              <li>Copy a job id from a shown record into the job field; toggle UTC on and off.</li>
+              <li>Clear the job field, choose All levels, press Export Redacted… and save to <code>$OUT09/V007-export.jsonl</code>.</li>
+              <li>Run the command block.</li>
+            </ol>
+            <h5>Commands (after step 4)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>grep -c . "$OUT09/V007-export.jsonl"
+grep -E -c 'synthetic private sentence|synthetic nested detail|/Users/example' "$OUT09/V007-export.jsonl" || true
+head -c 600 "$OUT09/V007-export.jsonl"; echo</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 1: the note reports 2 skipped lines (the seeded malformed ones); ERROR shows only error records; All levels shows them all again. Records the dev app wrote itself since it started appear too — that is expected.</li>
+              <li>Step 2: only that job's records remain, in time order; the UTC switch changes the shown times.</li>
+              <li>Step 4: the export has one line per record shown in the pane; the private-words count is <code>0</code>; each record carries <code>redaction_version</code> 2 and an <code>omitted_fields</code> count; the Diagnostics pane reports the export written.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>The private-words count is not 0: <b>Failed</b> — keep the export privately and do not share it.</li>
+              <li>A filter shows records it should hide, or the skipped count is missing: <b>Needs follow-up</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT09/V007-export.jsonl</code> (synthetic records only).</p>
+            <h5>Contract relevance</h5>
+            <p>Corpus case M09-C135; M09-AUDIT-08/18/19/20; <code>contracts/hub.md</code> → Diagnostics; <code>contracts/events.md</code> → redacted export.</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M10" data-milestone="M10" data-title="Developer mode & profiles"><div class="ms-head"><span class="mid">M10</span><h2>Developer mode &amp; profiles</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M10-V001).</p></section>
       <section class="milestone" id="M11" data-milestone="M11" data-title="Transforms & Prompt Engineer">
         <div class="ms-head">
