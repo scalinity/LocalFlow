@@ -313,6 +313,26 @@ def n02p_click_focus_typing_and_popup_while_inactive():
         nw.close()
 
 
+@case()
+def n02t_tab_moves_focus_while_inactive():
+    """Tab leaves a focused field for the pane's next control: the Hub
+    window derives its key-view loop from the views it shows."""
+    nw = NativeWorld()
+    try:
+        hub = nw.hub
+        nw.open("styles", 2)
+        nw.d.click(hub.style_name)
+        assert nw.d.editing(hub.style_name), \
+            "a click did not focus the Name field"
+        nw.d.type("Tab probe")
+        nw.d.key("\t", 48)
+        assert not nw.d.editing(hub.style_name), "Tab did not move focus"
+        assert hub.style_name.stringValue() == "Tab probe", \
+            hub.style_name.stringValue()
+    finally:
+        nw.close()
+
+
 @case("active")
 def n02_styles_text_entry_select_all_and_tab():
     nw = NativeWorld(active=True)

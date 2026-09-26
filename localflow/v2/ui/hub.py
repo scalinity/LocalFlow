@@ -366,6 +366,10 @@ class HubController(NSObject):
         self.content.setAutoresizingMask_(2 | 16)  # flexible, left-anchored
         content.addSubview_(self.content)
         self.window.setInitialFirstResponder_(self.sidebar)
+        # Tab and Shift-Tab move between a pane's fields and controls:
+        # the window derives its key-view loop from the views it shows
+        # (no view sets nextKeyView, and panes are swapped in and out).
+        self.window.setAutorecalculatesKeyViewLoop_(True)
         _ensure_edit_menu()
         self._select_view_index(0, initial=True)
 
