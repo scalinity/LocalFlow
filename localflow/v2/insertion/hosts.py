@@ -142,8 +142,11 @@ class SystemInsertionHost:
     def is_settable(self, el, name) -> bool:
         import ApplicationServices as AS
         try:
+            # The trailing None is PyObjC's out-parameter placeholder:
+            # without it the call raises TypeError, which would make
+            # every surface look unsettable (no AX method, no undo).
             err, settable = AS.AXUIElementIsAttributeSettable(
-                el, name)
+                el, name, None)
         except Exception:
             return False
         return err == 0 and bool(settable)
