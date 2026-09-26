@@ -2007,30 +2007,88 @@ def c109_editor_selection_survives_refresh():
     return {}
 
 
+def _m12_accept(arm):
+    """The real note-transform accept on M12's own harness, with ONE
+    barrier held: ``commit`` holds the note revision write (the editor's
+    autosave thread), ``publication`` never drains the Hub's queued
+    main-thread callbacks. Returns the stored note content observed
+    right after the accept and after the commit completed."""
+    sys.path.insert(0, str(HERE.parents[1] / "notes"))
+    import test_scratchpad_hub as T
+    from localflow.v2.ui.state import VIEWS
+    with T.MainThreadAfter() as after:
+        h = T.Harness(durations=[1.0], supervisor=T.TFSupervisor())
+        try:
+            h.d.consent.set("enabled", note="m09 c110")
+            hub = T.make_hub(h)
+            h.d._hub = hub
+            notes = h.d._notes_store
+            out = notes.create_note("polish this messy text")
+            hub._select_view_index(VIEWS.index("scratchpad"))
+            hub.state.select_scratchpad_note(out["note_id"])
+            hub.state.wait_for_queries()
+            after.flush()
+            T.focus_editor(hub)
+            hub.scratchpad_transforms.selectItemAtIndex_(0)
+            hub.scratchpadTransform_(None)
+            deadline = time.monotonic() + 5
+            while h.d._tf_active is not None and time.monotonic() < deadline:
+                time.sleep(0.01)
+            after.flush()
+            assert h.d._tf_panel is not None, "preview panel never opened"
+
+            def stored():
+                return notes.open_note(out["note_id"])["revision"]["content"]
+            gate = {"arrived": threading.Event(),
+                    "release": threading.Event()}
+            if arm == "commit":
+                real = notes.append_revision
+
+                def held(*a, **k):
+                    gate["arrived"].set()
+                    gate["release"].wait(10)
+                    return real(*a, **k)
+                notes.append_revision = held
+            before_n = len(after.queue)
+            h.d._tf_panel.panelAccept_(None)
+            if arm == "commit":
+                assert gate["arrived"].wait(5), "no revision write started"
+            right_after = stored()
+            gate["release"].set()
+            for t in threading.enumerate():
+                if t.name == "localflow-notes-autosave":
+                    t.join(10)
+            committed = stored()
+            held_callbacks = len(after.queue) - before_n \
+                if arm == "publication" else None
+            return {"right_after_accept": right_after,
+                    "after_commit": committed,
+                    "hub_callbacks_left_undrained": held_callbacks}
+        finally:
+            h.close()
+            after.discard_pending()
+
+
 @case("M09-C110", env="native_appkit_main_queue")
 def c110_m12_note_revision_race_ownership():
-    """Run the M12 Scratchpad suite (its own main-drained harness) a few
-    times: the historical note-revision race is M12-owned unless it
-    reproduces here through the shared M09 publication path."""
-    import subprocess
-    root = HERE.parents[3]
-    runs, fails = 3, []
-    for _ in range(runs):
-        p = subprocess.run([sys.executable, str(root / "tests/v2/context/"
-                            "run_isolated.py"),
-                            str(root / "tests/v2/notes/"
-                                "test_scratchpad_hub.py")],
-                           capture_output=True, text=True, timeout=600)
-        if p.returncode != 0:
-            fails.append((p.stdout + p.stderr)[-400:])
-    if fails:
-        raise AssertionError(f"{len(fails)}/{runs} M12 runs failed:"
-                             f" {fails[0]}")
-    raise Narrowed(f"{runs}/{runs} M12 Scratchpad suite runs green on the"
-                   " repaired shared shell (its note-transform acceptance"
-                   " included); no shared-publication race observed",
-                   "ownership of the historical intermittent revision"
-                   " race stays with M12 (not reproduced here)")
+    """Corpus C110: the historical intermittent failure of M12's note-
+    transform test (the note still holds the old text when the test
+    reads it) is attributed by barrier. Holding only the revision
+    commit reproduces it deterministically and releasing the commit
+    resolves it; holding only the Hub's publication changes nothing.
+    The decisive barrier is M12's autosave commit, which the M12 test
+    reads before it completes — not the shared M09 publication."""
+    new = "TRANSFORMED OUTPUT"
+    commit = _m12_accept("commit")
+    assert commit["right_after_accept"] == "polish this messy text", \
+        commit
+    assert commit["after_commit"] == new, commit
+    publication = _m12_accept("publication")
+    assert publication["after_commit"] == new, publication
+    return {"decisive_barrier": "note revision commit (M12 autosave"
+                                " thread)",
+            "owner": "M12",
+            "commit_arm": commit, "publication_arm": publication}
 
 
 def _stall_probe(w, hold_s):
