@@ -261,7 +261,14 @@ repaste records no row.
 text and its undo record) ends after `RECOVERY_CACHE_TTL_SEC` (3600 s),
 at the next insertion, at deletion of its job (a job deleted while its
 transaction ran never enters it), or at quit; it is never persisted. **`busy`** reports whether an operation is executing on the
-queue thread — the coordinator's focus-steal guard (see `hub.md`).
+queue thread (the Transforms pipeline guard). **`pending`** counts
+operations from admission — queued or executing — until they finish,
+and `add_idle_listener(fn)` calls `fn` on the queue thread each time
+the last outstanding operation finishes, whatever its outcome (a
+reconciliation that ran no transaction included). The coordinator's
+focus-steal guard registers its listener and then reads `pending`
+(see `hub.md`); a clipboard payload left pending by a finished
+transaction is not pending work.
 
 ## S29.8 bounded outcome observation (starts here, not in M14)
 
@@ -424,7 +431,8 @@ Production consumers, classified:
   `selection.capture_selection`, `tfAcceptTransform` (strict submit,
   candidate attribution, `observation_consent`), `undoLastInsertion_`
   (`undo_last`), `pasteLastResultAgain_` (`paste_again`), `hubPasteText`
-  (`paste_text`), `_tf_pipeline_busy`/`_hub_blocks_show` (`busy`).
+  (`paste_text`), `_tf_pipeline_busy` (`busy`), `_hub_blocks_show`
+  (`add_idle_listener`, then `pending`) → `_insertion_idle`.
 - **Hub (`v2/ui/hub.py`):** `historyPasteAgain_` → `hubPasteText`.
 - **Evidence (`v2/training.py`):** `on_insertion_result`,
   `on_observation_closed`, `_observation_block` (content-free blocks).

@@ -36,14 +36,20 @@ deduplicable), `timestamp_utc` (RFC 3339 ms), `timezone`,
 ## M02 remediation (export, ordering, retention, shutdown)
 
 - **Redacted export is a versioned typed allowlist**
-  (`scripts/v2/view_events.py::REDACTION_ALLOWLIST`, `redaction_version`
-  1): only listed envelope fields survive, each only when its value
-  passes that field's type/shape check (minted-id shapes, code tokens,
-  numbers, UTC instants); `detail`, unknown/future fields, nested
-  values, wrong types and secret-scanner hits are omitted and counted in
-  `omitted_fields`. A new field is exported only after it is added to
-  the allowlist with its check.
-- **View order.** A stream is one writer instance (boot_id, session_id,
+  (`localflow/v2/event_view.py::REDACTION_ALLOWLIST`, `redaction_version`
+  2), the one policy for both `scripts/v2/view_events.py
+  --export-redacted` and the Hub's Diagnostics → Export Redacted: only
+  listed envelope fields survive, each only when its value passes that
+  field's type/shape check, matched against the whole value (a trailing
+  newline fails) — minted-id shapes, code tokens, numbers, UTC
+  instants; `model_id` only as a hub id, `name` or `org/name`, never a
+  filesystem path (which would carry a home folder) and never a
+  dot-only segment such as `..`; `detail`,
+  unknown/future fields, nested values, wrong types and secret-scanner
+  hits are omitted and counted in `omitted_fields`. A new field is
+  exported only after it is added to the allowlist with its check.
+- **View order** (`event_view.order_records`, shared by the CLI and the
+  Hub). A stream is one writer instance (boot_id, session_id,
   process_id). Within a stream the writer `sequence` is authoritative;
   across streams, records merge by UTC instant; file names (active,
   `.2`, `.10`, pid-prefixed) never decide order. A wall-clock rollback
