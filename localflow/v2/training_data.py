@@ -462,7 +462,13 @@ class TrainingDataService:
                 raise ValueError(f"stage {stage} unavailable")
             return row[0] or ""
 
-        text = self.store.submit(span_op)
+        try:
+            text = self.store.submit(span_op)
+        except TimeoutError:
+            # Nothing was submitted yet: a definite "not saved", not an
+            # unknown outcome.
+            raise ValueError("store_busy: the span was not saved — try"
+                             " again") from None
         if not (0 <= start < end <= len(text)):
             raise ValueError(
                 f"span [{start},{end}) out of range for {len(text)}"

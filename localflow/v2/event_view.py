@@ -84,7 +84,7 @@ def _is_num(v):
 
 def _match(pattern):
     rx = re.compile(pattern)
-    return lambda v: isinstance(v, str) and bool(rx.match(v))
+    return lambda v: isinstance(v, str) and bool(rx.fullmatch(v))
 
 
 def _id_of(*kinds):
@@ -92,7 +92,7 @@ def _id_of(*kinds):
 
 
 def _code(v):
-    return isinstance(v, str) and bool(_CODE.match(v))
+    return isinstance(v, str) and bool(_CODE.fullmatch(v))
 
 
 def _opt(check):
@@ -122,12 +122,15 @@ REDACTION_ALLOWLIST = {
     "duration_ms": _opt(_is_num),
     "queue_wait_ms": _opt(_is_num),
     # A hub id ("name" or "org/name"), never a filesystem path: a
-    # locally configured model directory would carry a home path.
-    "model_id": _opt(_match(r"^[A-Za-z0-9_.\-]{1,64}"
-                            r"(?:/[A-Za-z0-9_.\-]{1,64})?$")),
+    # locally configured model directory would carry a home path, and a
+    # dot-only segment (".", "..") is a path, not a name.
+    "model_id": _opt(_match(r"(?!\.+(?:/|$))[A-Za-z0-9_.\-]{1,64}"
+                            r"(?:/(?!\.+$)[A-Za-z0-9_.\-]{1,64})?")),
     "model_revision": _opt(_code),
-    "config_hash": _opt(lambda v: isinstance(v, str) and bool(_HEX.match(v))),
-    "prompt_hash": _opt(lambda v: isinstance(v, str) and bool(_HEX.match(v))),
+    "config_hash": _opt(lambda v: isinstance(v, str)
+                        and bool(_HEX.fullmatch(v))),
+    "prompt_hash": _opt(lambda v: isinstance(v, str)
+                        and bool(_HEX.fullmatch(v))),
     "artifact_ids": _opt(lambda v: isinstance(v, list) and len(v) <= 64
                          and all(_id_of("art")(a) for a in v)),
 }

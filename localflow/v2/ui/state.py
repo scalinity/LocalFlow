@@ -944,7 +944,11 @@ class HubState:
                 self.views[view]["loading"] = True
             else:
                 self.views[view]["detail_loading"] = True
-        self._executor.submit(req, self._before_run)
+            # Submitted under the same lock that ordered the generation:
+            # admissions from two threads reach the executor in
+            # generation order, so an older one never replaces a newer
+            # pending request (the executor keeps the last submitted).
+            self._executor.submit(req, self._before_run)
         return req
 
     def _before_run(self, req):

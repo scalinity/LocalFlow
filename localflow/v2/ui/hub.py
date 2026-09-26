@@ -2155,7 +2155,8 @@ class HubController(NSObject):
         timeline = data.get("timeline") or []
         if timeline:
             lines.append("")
-            lines.append(f"— job timeline ({view['job_filter']}) —")
+            lines.append("— job timeline ("
+                         f"{(data.get('filters') or {}).get('job')}) —")
             lines.extend(timeline)
         lines.append("")
         lines.append(f"— events ({data.get('count')}) —")
@@ -2540,7 +2541,13 @@ class HubController(NSObject):
                         "splits": getattr(self, "splits_text", view),
                         "export": getattr(self, "export_text", view)
                         }.get(tab, view)
-            view.setString_(f"action failed: {type(e).__name__}: {e}")
+            if isinstance(e, TimeoutError):
+                # The store was busy; the change may still commit.
+                view.setString_("outcome unknown: the store is busy and the"
+                                " change may still complete — check this"
+                                " item before repeating it.")
+            else:
+                view.setString_(f"action failed: {type(e).__name__}: {e}")
             return None
 
     def trainingMarkCorrect_(self, sender):
@@ -2608,8 +2615,12 @@ class HubController(NSObject):
             alert.addButtonWithTitle_("Cancel")
             if alert.runModal() != NSAlertFirstButtonReturn:
                 return
-        except Exception:
-            pass  # headless/test path: the guarded action runs directly
+        except Exception as e:
+            # No confirmation, no delete: this cannot be undone.
+            self._training_note(f"Delete needs a confirmation that could"
+                                f" not be shown ({type(e).__name__}); nothing"
+                                " was deleted.")
+            return
         self._delete_example(ex)
 
     @objc.python_method
@@ -2777,9 +2788,9 @@ class HubController(NSObject):
     @objc.python_method
     def _selected_queue_row(self):
         """The queue row an Approve/Reject acts on: the selected
-        example's row in the RENDERED queue, else the rendered first
-        row — refused while a newer queue is not yet on screen, so a
-        reordered backing list can never redirect the action."""
+        example's row in the RENDERED queue — refused with no selection,
+        when the selection has no row, and while a newer queue is not
+        yet on screen, so nothing but the chosen row is ever acted on."""
         view = self.state.views["models"]
         current = (view.get("data") or {}).get("queue")
         rows = self._rendered_rows.get("review_queue")
@@ -2789,16 +2800,19 @@ class HubController(NSObject):
                 "The review queue is refreshing — try again.")
             return None
         sel = view.get("selected_id")
-        if sel:
-            for row in rows:
-                if row.get("example_id") == sel:
-                    return row
-            # Never another row than the one the user chose.
+        if not sel:
+            # Only the row the user chose — never a first-row default.
             self.review_text.setString_(
-                "The example selected in Evidence has no row in the"
-                " review queue, so nothing was approved or rejected.")
+                "Select the example to approve or reject in Evidence"
+                " first; nothing was approved or rejected.")
             return None
-        return rows[0] if rows else None
+        for row in rows:
+            if row.get("example_id") == sel:
+                return row
+        self.review_text.setString_(
+            "The example selected in Evidence has no row in the review"
+            " queue, so nothing was approved or rejected.")
+        return None
 
     def reviewApprove_(self, sender):
         learning = self.spec.get("learning_service")
@@ -2844,8 +2858,10 @@ class HubController(NSObject):
 
     def reviewLabel_(self, sender):
         review = self.spec.get("review_service")
+        # A typed id is explicit; otherwise the RENDERED example — never
+        # a selection whose detail is not on screen yet.
         ex = (self.review_example.stringValue() or "").strip() \
-            or self._selected_example_id()
+            or (self._training_ctx(quiet=True) or {}).get("example_id")
         if review is None or not ex:
             return
         kind = self.review_kind.titleOfSelectedItem() or "unknown"
