@@ -2305,9 +2305,13 @@ def mr01_newer_query_wins():
                 gate.release.set()
                 w.drain()
             w.hub.state.set_history_search(CANARY_B)
-            w.drain() if variant == "a_first" else _wait(
-                lambda: not w.hub.state.views["history"]["loading"]
-                or w.hub.state.views["history"].get("error"), 5)
+            if variant == "a_first":
+                w.drain()
+            else:
+                assert _wait(
+                    lambda: not w.hub.state.views["history"]["loading"]
+                    or w.hub.state.views["history"].get("error"), 5), \
+                    f"{variant}: B never settled while A was held"
             gate.release.set()
             w.drain()
             v = w.hub.state.views["history"]

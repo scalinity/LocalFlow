@@ -593,6 +593,8 @@ def test_a03_publication_check_and_mutation_atomic():
         while not any(jb in s for _v, s in probe["seen"]) \
                 and time.monotonic() < deadline:
             time.sleep(0.01)
+        assert any(jb in s for _v, s in probe["seen"]), \
+            "B never reached publication while A was held"
         probe["release"].set()
         w.drain()
         ids = [r["id"] for r in history_rows(w.hub)]
@@ -618,6 +620,8 @@ def test_a03_old_error_after_new_success():
         while [r["id"] for r in history_rows(w.hub)] != [jb] \
                 and time.monotonic() < deadline:
             time.sleep(0.01)
+        assert [r["id"] for r in history_rows(w.hub)] == [jb], \
+            "B never published while A was held"
         gate.release.set()
         w.drain()
         view = w.hub.state.views["history"]
@@ -647,6 +651,8 @@ def test_a03_old_success_after_new_error():
         while not w.hub.state.views["history"].get("error") \
                 and time.monotonic() < deadline:
             time.sleep(0.01)
+        assert w.hub.state.views["history"].get("error"), \
+            "B's error never published while A was held"
         gate_a.release.set()
         w.drain()
         view = w.hub.state.views["history"]
@@ -675,6 +681,8 @@ def test_a03_old_detail_error_after_newer_detail():
         while (w.hub.state.views["history"].get("detail") or {}).get(
                 "job_id") != jb and time.monotonic() < deadline:
             time.sleep(0.01)
+        assert (w.hub.state.views["history"].get("detail") or {}).get(
+            "job_id") == jb, "B's detail never published while A was held"
         gate.release.set()
         w.drain()
         view = w.hub.state.views["history"]
@@ -2098,6 +2106,8 @@ def test_a21_older_export_cannot_overwrite_newer_status():
             w.hub.state.wait_for_queries(1)
             w.mq.flush()
             time.sleep(0.01)
+        assert any(e == "exp-B" for e, _ in after_done), \
+            "the newer export never completed while the older was held"
         fx.gates[dest["A"]][1].set()
         w.drain()
         at_a = [s for e, s in after_done if e == "exp-A"]
@@ -2853,6 +2863,64 @@ def test_r15_store_timeout_on_an_action_is_unknown_not_failed():
             pane = rendered_text(w.hub.training_detail)
             assert "unknown" in pane and "action failed" not in pane, \
                 (name, pane[-160:])
+
+
+@case("M09-AUDIT-17")
+def test_r16_applied_transform_without_its_output_has_no_final_text():
+    """Review R-06 (related): the recorded decision says a transform was
+    applied but its output artifact no longer resolves. The final text
+    was that output — Copy and Paste Again refuse rather than use the
+    cleaned text, which was not what was inserted."""
+    with World() as w:
+        jid, fam = w.store.create_job(captured_at_utc=iso(T0),
+                                      time_quality="known",
+                                      state="insertion_confirmed")
+        out = _publish_attempt(w.store, jid, fam, 1, "raw words m09",
+                               "Cleaned words " + CANARY_B)
+        env = json.loads(json.dumps(w.store.latest_revision(out["example"])))
+        parent = env.pop("revision_id", None)
+        env["transform"] = {"transform_id": "tf-m09", "path": "applied",
+                            "reason": "validated", "applied": True,
+                            "artifact_ids": {"output": "art-" + "e" * 32}}
+        w.store.append_revision(out["example"], env,
+                                parent_revision_id=parent)
+        w.store.sync()
+        open_view(w.hub, w.mq, "history")
+        select_history(w, "job", jid)
+        copies, _ = record_coordinator(w.d, "hubCopyText", None)
+        pastes, _ = record_coordinator(w.d, "hubPasteText",
+                                       {"outcome": "repaste_queued"})
+        w.hub.historyCopy_(None)
+        w.hub.historyPasteAgain_(None)
+        assert not copies and not pastes, \
+            f"cleaned text used as the final text: {copies} {pastes}"
+
+
+@case("M09-AUDIT-02")
+def test_r10_hidden_review_queue_is_cleared_on_delete():
+    """Review R-10 (same shape): the Review queue rendered a candidate of
+    job A with its suggested words; the user moved to Evidence; deleting
+    A clears the hidden queue text too."""
+    with World() as w:
+        a = seed_example(w.store, "review " + CANARY_A)
+        row = {"example_id": a["example_id"], "job_id": a["job_id"],
+               "kind": "candidate", "candidate_id": "cand-m09-r10",
+               "candidate_status": "pending", "classification": {},
+               "suggestion": {"alias": "m09aliasword",
+                              "canonical": CANARY_A}}
+        w.hub.spec["review_service"] = _QueueReview([row])
+        w.hub.state.review_service = w.hub.spec["review_service"]
+        open_training(w)
+        w.hub.state.select_training_tab("review")
+        w.drain()
+        assert CANARY_A in str(w.hub.review_text.string()), \
+            "precondition: the queue shows the suggestion"
+        w.hub.state.select_training_tab("evidence")
+        w.drain()
+        w.store.delete_everywhere("job", a["job_id"])
+        w.drain()
+        assert CANARY_A not in str(w.hub.review_text.string()), \
+            "the hidden review queue kept the deleted job's words"
 
 
 # ---- runner ----------------------------------------------------------------
