@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "suite": "tests/v2/training/test_live_pipeline.py",
+  "command": ".venv/bin/python tests/v2/context/run_isolated.py tests/v2/training/test_live_pipeline.py (HF_HUB_OFFLINE=1)",
+  "code_root_sha": "9483d1be777ac2fa07111d8e0020e6b1652c5e69",
+  "production_sha": "ea83bc1",
+  "result": "2/2 pass, exit 0",
+  "cases": ["real Qwen cleanup: exact prompt + proposal + applied captured", "real Parakeet on synthetic audio: verbatim output + audio join"],
+  "models": {
+    "asr": "mlx-community/parakeet-tdt-0.6b-v3 snapshot ed2b7e8c",
+    "cleanup": "mlx-community/Qwen3-4B-Instruct-2507-4bit snapshot 50d42775"
+  },
+  "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
+  "note": "synthetic audio only; a compatibility control for the capture-to-store seam around insertion; M08's own behavior needs no model"
+}

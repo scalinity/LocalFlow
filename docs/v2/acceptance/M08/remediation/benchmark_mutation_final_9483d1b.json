@@ -1,0 +1,359 @@
+{
+ "benchmark_overlay": null,
+ "control": {
+  "exit": 0,
+  "import_files": [
+   "localflow/v2/insertion/service.py",
+   "localflow/v2/insertion/clipboard.py"
+  ],
+  "import_inside_copy": true,
+  "imported_from": "localflow/__init__.py",
+  "invalid_cohorts": {},
+  "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=1]",
+  "seconds": 21.3,
+  "verdicts_failed": [],
+  "work_valid": true
+ },
+ "control_green": true,
+ "mutants": {
+  "LF-M08-BMUT-01": {
+   "applied": true,
+   "apply_error": null,
+   "benchmark": {
+    "exit": 2,
+    "imported_from": "localflow/__init__.py",
+    "invalid_cohorts": {
+     "ax_transaction": [
+      "validation of the actual target not witnessed",
+      "no validation timing"
+     ],
+     "clipboard_settle_beyond": [
+      "validation of the actual target not witnessed",
+      "validation of the actual target not witnessed"
+     ],
+     "clipboard_settle_inside": [
+      "validation of the actual target not witnessed",
+      "validation of the actual target not witnessed"
+     ],
+     "clipboard_transaction": [
+      "validation of the actual target not witnessed",
+      "no validation timing"
+     ],
+     "cold_process": [
+      "ax: validation of the actual target not witnessed",
+      "ax: no validation timing"
+     ],
+     "ui_finish_with_text": [
+      "validation of the actual target not witnessed",
+      "validation of the actual target not witnessed"
+     ],
+     "undo": [
+      "setup insert: ['validation of the actual target not witnessed', 'no validation timing']",
+      "setup insert: ['validation of the actual target not witnessed', 'no validation timing']"
+     ]
+    },
+    "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=1]",
+    "seconds": 21.2,
+    "verdicts_failed": [],
+    "work_valid": false
+   },
+   "import_files": [
+    "localflow/v2/insertion/service.py",
+    "localflow/v2/insertion/clipboard.py"
+   ],
+   "import_inside_copy": true,
+   "name": "Remove target validation",
+   "outcome": "killed",
+   "patched_files": {
+    "localflow/v2/insertion/service.py": {
+     "after": "0bfcdfb6e1d9e98f",
+     "before": "edf3122496fe78b8"
+    }
+   }
+  },
+  "LF-M08-BMUT-02": {
+   "applied": true,
+   "apply_error": null,
+   "benchmark": {
+    "exit": 2,
+    "imported_from": "localflow/__init__.py",
+    "invalid_cohorts": {
+     "ax_transaction": [
+      "result posted_unverified/ax_replacement",
+      "effects []"
+     ],
+     "clipboard_settle_beyond": [
+      "the late paste did not land exactly",
+      "the late paste did not land exactly"
+     ],
+     "clipboard_settle_inside": [
+      "inside-settle result posted_unverified",
+      "field bytes differ"
+     ],
+     "clipboard_transaction": [
+      "result posted_unverified/clipboard_transaction",
+      "publish->post->consume not witnessed: [(9, 'write_text', 'cb-000ddafb8 ')] []"
+     ],
+     "cold_process": [
+      "ax: result posted_unverified/ax_replacement",
+      "ax: effects []"
+     ],
+     "observer_tick": [
+      "no observer started",
+      "no observer started"
+     ],
+     "repaste_absent": [
+      "repaste effect []",
+      "repaste effect []"
+     ],
+     "repaste_present": [
+      "already-present pasted []",
+      "already-present pasted []"
+     ],
+     "ui_finish_with_text": [
+      "effect []",
+      "effect []"
+     ],
+     "ui_history_paste_text": [
+      "history: effect never witnessed",
+      "history: effect never witnessed"
+     ],
+     "ui_recovery_paste_again": [
+      "recovery: effect never witnessed",
+      "recovery repaste count != 1"
+     ],
+     "ui_undo_last_insertion": [
+      "undo: effect never witnessed",
+      "undo: effect never witnessed"
+     ],
+     "undo": [
+      "setup insert: ['result posted_unverified/ax_replacement', 'effects []', 'field bytes differ from the expected insert', 'pre-read and readback not both witnessed', 'no ax_write timing']",
+      "setup insert: ['result posted_unverified/ax_replacement', 'effects []', 'field bytes differ from the expected insert', 'pre-read and readback not both witnessed', 'no ax_write timing']"
+     ]
+    },
+    "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=1]",
+    "seconds": 472.4,
+    "verdicts_failed": [],
+    "work_valid": false
+   },
+   "import_files": [
+    "localflow/v2/insertion/service.py",
+    "localflow/v2/insertion/clipboard.py"
+   ],
+   "import_inside_copy": true,
+   "name": "Make insertion a no-op",
+   "outcome": "killed",
+   "patched_files": {
+    "localflow/v2/insertion/service.py": {
+     "after": "bfbb54399241bc0f",
+     "before": "edf3122496fe78b8"
+    }
+   }
+  },
+  "LF-M08-BMUT-03": {
+   "applied": true,
+   "apply_error": null,
+   "benchmark": {
+    "exit": 2,
+    "imported_from": "localflow/__init__.py",
+    "invalid_cohorts": {
+     "clipboard_settle_beyond": [
+      "the late paste did not land exactly",
+      "owned payload replaced before the late consumer"
+     ],
+     "clipboard_settle_inside": [
+      "inside-settle result posted_unverified",
+      "field bytes differ"
+     ],
+     "clipboard_transaction": [
+      "result posted_unverified/clipboard_transaction",
+      "publish->post->consume not witnessed: [] [(9, 'post', 'F1', None), (10, 'paste_consumed', 'F1', 'USER-ORIGINAL-0002b744f')]"
+     ],
+     "cold_process": [
+      "clipboard: result posted_unverified/clipboard_transaction",
+      "clipboard: publish->post->consume not witnessed: [] [(9, 'post', 'F1', None), (10, 'paste_consumed', 'F1', 'USER-ORIGINAL-00047a00c')]"
+     ]
+    },
+    "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=1]",
+    "seconds": 38.9,
+    "verdicts_failed": [],
+    "work_valid": false
+   },
+   "import_files": [
+    "localflow/v2/insertion/service.py",
+    "localflow/v2/insertion/clipboard.py"
+   ],
+   "import_inside_copy": true,
+   "name": "Skip clipboard publication",
+   "outcome": "killed",
+   "patched_files": {
+    "localflow/v2/insertion/service.py": {
+     "after": "703d4578fa8d9955",
+     "before": "edf3122496fe78b8"
+    }
+   }
+  },
+  "LF-M08-BMUT-04": {
+   "applied": true,
+   "apply_error": null,
+   "benchmark": {
+    "exit": 2,
+    "imported_from": "localflow/__init__.py",
+    "invalid_cohorts": {
+     "ax_transaction": [
+      "pre-read and readback not both witnessed",
+      "pre-read and readback not both witnessed"
+     ],
+     "clipboard_settle_beyond": [
+      "no readback timing",
+      "beyond-settle ownership not kept"
+     ],
+     "clipboard_settle_inside": [
+      "no readback timing",
+      "field bytes differ"
+     ],
+     "clipboard_transaction": [
+      "destination readback after consumption not witnessed",
+      "no readback timing"
+     ],
+     "cold_process": [
+      "ax: pre-read and readback not both witnessed",
+      "clipboard: destination readback after consumption not witnessed"
+     ],
+     "undo": [
+      "setup insert: ['pre-read and readback not both witnessed']",
+      "setup insert: ['pre-read and readback not both witnessed']"
+     ]
+    },
+    "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=1]",
+    "seconds": 19.7,
+    "verdicts_failed": [],
+    "work_valid": false
+   },
+   "import_files": [
+    "localflow/v2/insertion/service.py",
+    "localflow/v2/insertion/clipboard.py"
+   ],
+   "import_inside_copy": true,
+   "name": "Skip destination readback",
+   "outcome": "killed",
+   "patched_files": {
+    "localflow/v2/insertion/service.py": {
+     "after": "7fc2c1c2ba4598ea",
+     "before": "edf3122496fe78b8"
+    }
+   }
+  },
+  "LF-M08-BMUT-05": {
+   "applied": true,
+   "apply_error": null,
+   "benchmark": {
+    "exit": 2,
+    "imported_from": "localflow/__init__.py",
+    "invalid_cohorts": {
+     "ax_transaction": [
+      "transaction ran on 'MainThread'",
+      "transaction ran on 'MainThread'"
+     ],
+     "clipboard_settle_beyond": [
+      "transaction ran on 'MainThread'",
+      "the caller's clock carries the delay"
+     ],
+     "clipboard_settle_inside": [
+      "transaction ran on 'MainThread'",
+      "the caller's clock carries the delay"
+     ],
+     "clipboard_transaction": [
+      "transaction ran on 'MainThread'",
+      "transaction ran on 'MainThread'"
+     ],
+     "cold_process": [
+      "ax: transaction ran on 'MainThread'",
+      "clipboard: transaction ran on 'MainThread'"
+     ],
+     "repaste_absent": [
+      "repaste ran on MainThread",
+      "reconciliation reads not witnessed"
+     ],
+     "repaste_present": [
+      "repaste ran on MainThread",
+      "reconciliation reads not witnessed"
+     ],
+     "ui_finish_with_text": [
+      "AX call on the calling thread",
+      "delay in the callback clock"
+     ],
+     "ui_history_paste_text": [
+      "24 AX call(s) on the calling thread",
+      "the injected delay is in the callback clock"
+     ],
+     "ui_recovery_paste_again": [
+      "24 AX call(s) on the calling thread",
+      "the injected delay is in the callback clock"
+     ],
+     "ui_undo_last_insertion": [
+      "11 AX call(s) on the calling thread",
+      "the injected delay is in the callback clock"
+     ],
+     "undo": [
+      "setup insert: [\"transaction ran on 'MainThread'\"]",
+      "setup insert: [\"transaction ran on 'MainThread'\"]"
+     ]
+    },
+    "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=1]",
+    "seconds": 21.1,
+    "verdicts_failed": [],
+    "work_valid": false
+   },
+   "import_files": [
+    "localflow/v2/insertion/service.py",
+    "localflow/v2/insertion/clipboard.py"
+   ],
+   "import_inside_copy": true,
+   "name": "Bypass queue and run inline",
+   "outcome": "killed",
+   "patched_files": {
+    "localflow/v2/insertion/service.py": {
+     "after": "6e84dea0dc6d87b7",
+     "before": "edf3122496fe78b8"
+    }
+   }
+  },
+  "LF-M08-BMUT-06": {
+   "applied": true,
+   "apply_error": null,
+   "benchmark": {
+    "exit": 2,
+    "imported_from": "localflow/__init__.py",
+    "invalid_cohorts": {
+     "clipboard_transaction": [
+      "generation guard not witnessed: board='USER-ORIGINAL-0036d4148' clip={'generation_before': 10, 'generation_published': 11, 'generation_after_restore': 13, 'captured_types': ['public.utf8-plain-text', 'public.rtf'], 'restored_types': ['public.utf8-plain-text', 'public.rtf'], 'unsupported_types': [], 'restore_skipped_reason': None, 'capture_conflict': False, 'publish_failed': False}",
+      "generation guard not witnessed: board='USER-ORIGINAL-0075f1cdf' clip={'generation_before': 23, 'generation_published': 24, 'generation_after_restore': 26, 'captured_types': ['public.utf8-plain-text', 'public.rtf'], 'restored_types': ['public.utf8-plain-text', 'public.rtf'], 'unsupported_types': [], 'restore_skipped_reason': None, 'capture_conflict': False, 'publish_failed': False}"
+     ]
+    },
+    "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=1]",
+    "seconds": 21.2,
+    "verdicts_failed": [],
+    "work_valid": false
+   },
+   "import_files": [
+    "localflow/v2/insertion/service.py",
+    "localflow/v2/insertion/clipboard.py"
+   ],
+   "import_inside_copy": true,
+   "name": "Remove ownership check",
+   "outcome": "killed",
+   "patched_files": {
+    "localflow/v2/insertion/clipboard.py": {
+     "after": "c9094c720aa35ac5",
+     "before": "947497338a06fd94"
+    }
+   }
+  }
+ },
+ "rev": "9483d1be777ac2fa07111d8e0020e6b1652c5e69",
+ "rule": "killed = work invalid (exit 2) or a declared gate failed (exit 1, work valid); a harness error, un-applied patch, wrong import tree, failing control or timeout is never a kill",
+ "scale": 0.25,
+ "schema_version": 1,
+ "tool": "scripts/v2/m08_benchmark_mutation_check.py"
+}

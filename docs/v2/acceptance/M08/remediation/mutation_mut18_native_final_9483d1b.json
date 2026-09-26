@@ -1,0 +1,60 @@
+{
+ "tool": "scripts/v2/m08_mutation_check.py",
+ "code_sha": "9483d1be777ac2fa07111d8e0020e6b1652c5e69",
+ "control": {
+  "exit": 0,
+  "imported_from": "localflow/__init__.py",
+  "cases": {
+   "LF-M08-F07-C05": "pass"
+  }
+ },
+ "native_control": {
+  "exit": 0,
+  "cases": {
+   "LF-M08-F07-C01": "pass"
+  },
+  "witness": {}
+ },
+ "summary": {
+  "killed": 1
+ },
+ "results": [
+  {
+   "mutation_id": "LF-M08-MUT-18",
+   "name": "Use code-point length as UTF-16 length",
+   "file": "localflow/v2/insertion/service.py",
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     2
+    ],
+    "sha_before": "edf3122496fe78b8",
+    "sha_after": "8c30c6461a66ef0a"
+   },
+   "killers": [
+    "LF-M08-F07-C05"
+   ],
+   "control": {
+    "LF-M08-F07-C05": "pass"
+   },
+   "mutant": {
+    "LF-M08-F07-C05": "fail"
+   },
+   "imported_from": "localflow/__init__.py",
+   "outcome": "killed",
+   "reason": null,
+   "native": {
+    "control": {
+     "LF-M08-F07-C01": "pass"
+    },
+    "mutant": {
+     "LF-M08-F07-C01": "fail"
+    },
+    "witness": {
+     "LF-M08-F07-C01": "{\"appkit_text\": \"A\ud83d\ude00BX\ud83d\ude00Y\", \"result\": {\"state\": \"posted_unverified\", \"reason_code\": \"readback_partial\", \"method\": \"ax_replacement\", \"readback\": \"partial\", \"owned\": [4, 7], \"clipboard\": {\"restore_skipped_reason\": null, \"restored_types\": null, \"publish_failed\": null}}}"
+    },
+    "outcome": "killed"
+   }
+  }
+ ]
+}

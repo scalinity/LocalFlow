@@ -1,0 +1,200 @@
+{
+ "runner": "tests/v2/insertion/m08_corpus_runner.py",
+ "corpus_sha256": "31feb051bc656eb10837edf85f265dc5bb7e0aa3bef10828fa5c4b16723e3f29",
+ "policy_version": "m08-policy-v1",
+ "code_root_sha": "7f27262883885eb9933be3c0a3cad945e5ccbd39",
+ "tracked_files_modified": false,
+ "production_tree_modified": false,
+ "localflow_imported_from_root": "localflow/__init__.py",
+ "python": "3.14.7",
+ "summary": {
+  "cases": {
+   "fail": 2
+  },
+  "stateful": {},
+  "metamorphic": {},
+  "families": {
+   "M08-F06": {
+    "fail": 1
+   },
+   "M08-F16": {
+    "fail": 1
+   }
+  },
+  "denominators": {
+   "cases": 2,
+   "stateful": 0,
+   "metamorphic": 0
+  }
+ },
+ "cases": [
+  {
+   "case_id": "LF-M08-F06-C05",
+   "status": "fail",
+   "expectation": "policy_adjudication_no_silent_newer_text_loss",
+   "graded_as": "target_changed",
+   "observed": {
+    "before_validation": [
+     "target_changed",
+     "revalidation_failed"
+    ],
+    "after_validation:ax": [
+     "confirmed",
+     null
+    ],
+    "after_validation:clipboard": [
+     "confirmed",
+     null
+    ]
+   },
+   "installed": {
+    "recorded": "caret 4",
+    "live": "selection [5:10]=NEWER",
+    "timings": [
+     "before_validation",
+     "after_validation:ax",
+     "after_validation:clipboard"
+    ],
+    "decision": "D4",
+    "world": "corpus_base",
+    "f1_text": "keep NEWER text",
+    "f1_sel": [
+     4,
+     4
+    ],
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "HOLD_BEFORE_WRITE:after_validation:ax",
+    "HOLD_BEFORE_WRITE:after_validation:clipboard",
+    "MOVED_CARET_CONTROL"
+   ],
+   "barriers_fired": [
+    "HOLD_BEFORE_WRITE:after_validation:ax",
+    "HOLD_BEFORE_WRITE:after_validation:clipboard",
+    "MOVED_CARET_CONTROL"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "D4_target_changed:before_validation",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "no_newer_text_loss:before_validation",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "D4_target_changed:after_validation:ax",
+     "ok": false,
+     "detail": "('confirmed', None)"
+    },
+    {
+     "check": "no_newer_text_loss:after_validation:ax",
+     "ok": false,
+     "detail": "keep dictated text"
+    },
+    {
+     "check": "D4_target_changed:after_validation:clipboard",
+     "ok": false,
+     "detail": "('confirmed', None)"
+    },
+    {
+     "check": "no_newer_text_loss:after_validation:clipboard",
+     "ok": false,
+     "detail": "keep dictated text"
+    },
+    {
+     "check": "moved_caret_control_inserts",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.023,
+   "family": "M08-F06",
+   "role": "design_probe"
+  },
+  {
+   "case_id": "LF-M08-F16-C04",
+   "status": "fail",
+   "expectation": "target_changed_no_post",
+   "graded_as": "target_changed_no_post",
+   "observed": {
+    "snapshot": [
+     "target_changed",
+     "target_changed_before_effect"
+    ],
+    "live_1": [
+     "saved_not_inserted",
+     "multiline_terminal_unverified"
+    ],
+    "live_2": [
+     "posted_unverified",
+     "destination_not_recorded"
+    ],
+    "live_3": [
+     "target_changed",
+     "target_changed_before_effect"
+    ]
+   },
+   "installed": {
+    "text": "'echo one\\nrm -rf scratch\\n'",
+    "snapshot_variant": "editor category recorded",
+    "live_variant": "no snapshot; switch at frontmost read 1..3",
+    "world": "corpus_base",
+    "f1_text": "",
+    "f1_sel": null,
+    "role": "AXTextField",
+    "clipboard_generation": 40
+   },
+   "barriers_declared": [
+    "AFTER_CATEGORY_GUARD:snapshot",
+    "SWITCH_AT_FRONTMOST_READ_1",
+    "SWITCH_AT_FRONTMOST_READ_2",
+    "SWITCH_AT_FRONTMOST_READ_3"
+   ],
+   "barriers_fired": [
+    "AFTER_CATEGORY_GUARD:snapshot",
+    "SWITCH_AT_FRONTMOST_READ_1",
+    "SWITCH_AT_FRONTMOST_READ_2",
+    "SWITCH_AT_FRONTMOST_READ_3"
+   ],
+   "missing_barriers": [],
+   "checks": [
+    {
+     "check": "snapshot:terminal_untouched",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "live_1:terminal_untouched",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "live_2:terminal_untouched",
+     "ok": false,
+     "detail": "('echo one\\nrm -rf scratch\\n', 'destination_not_recorded')"
+    },
+    {
+     "check": "live_3:terminal_untouched",
+     "ok": true,
+     "detail": null
+    },
+    {
+     "check": "control_editor_receives",
+     "ok": true,
+     "detail": null
+    }
+   ],
+   "seconds": 0.026,
+   "family": "M08-F16",
+   "role": "negative"
+  }
+ ],
+ "stateful": [],
+ "metamorphic": []
+}
