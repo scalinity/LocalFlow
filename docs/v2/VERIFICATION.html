@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M11 section added at the pre-M08 integration · code <code>9a049b3</code> (M06 checks unchanged at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M08 section added by the M08 remediation · code <code>ea83bc1</code> (M11 checks unchanged at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -2512,7 +2512,440 @@ grep -h '"context.provider_failed"' "$SANDBOX6"/Library/Logs/LocalFlow/events-*.
         <p class="ms-intro">Related: <b>M05-V003</b> (the reference-Mac vocabulary benchmark) is pinned to M05 code <code>01a1f3c</code> and stays yours to record. The M06 session ran the same benchmark on this Mac against the M06 code, whose release path it changed (<code>docs/v2/benchmarks/20260926-043413-m06-remediation/m05/</code>, 10,000 entries): work validity valid, verdict pass, and <code>scope_upgrade_and_packaging</code> p50 121 ms / p95 141 ms — still above 75 ms as a stand-alone build. M06 now runs that build while you speak instead of after you release fn; the release-path addition measured by the M06 benchmark in the same run is p95 40.5 ms. That run informs M05-V003; it does not record it.</p>
       </section>
       <section class="milestone" id="M07" data-milestone="M07" data-title="Faithful cleanup"><div class="ms-head"><span class="mid">M07</span><h2>Faithful cleanup</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M07-V001).</p></section>
-      <section class="milestone" id="M08" data-milestone="M08" data-title="Insertion"><div class="ms-head"><span class="mid">M08</span><h2>Insertion</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M08-V001).</p></section>
+      <section class="milestone" id="M08" data-milestone="M08" data-title="Insertion">
+        <div class="ms-head">
+          <span class="mid">M08</span><h2>Insertion</h2>
+          <span class="meta">instructions M08-r1 · code ea83bc1 · local remediation of the audit at 180278e</span>
+        </div>
+        <p class="ms-intro">The M08 remediation ties every insertion to the one field it was checked against: the text is typed, read back, undone and watched only in the field that belonged to the app you dictated into, and if another app, window, tab or field is in front by the time the text is ready, nothing is typed there — the words stay in History and on the clipboard. LocalFlow reads a field's text only when it may: never in an app on your deny list, a password box or a field it cannot classify, where it still types your words but reports them as unconfirmed. A clipboard paste keeps your own copy safe: a copy you make while LocalFlow works always wins, and a paste that has not landed yet keeps its text on the clipboard for a few seconds so a slow app still receives the right words. Undo only touches the text LocalFlow itself typed, in the same field, and never newer edits. Watching for your corrections needs Collect Training Evidence on when you started speaking. On this Mac the session ran the regression suite, the 125-case audit corpus, the mutation checks and a native suite against its own helper window; the checks below cover real apps, your own clipboard and your own eyes. Carries the September 22 pending item <code>native-m08-insertion-trial</code> under instruction revision M08-r1. Detail: <code>docs/v2/handoffs/M08.md</code> (remediation addendum) and <code>docs/v2/acceptance/M08/results.json</code>.</p>
+
+        <div class="callout">
+          <h3>M08 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The remediated code gets its own worktree, and the dev app runs with a <b>sandbox home folder</b> (<code>$SANDBOX08</code>), so its store, logs and records land in a throw-away folder — never your real Application Support data or the installed app. The sandbox config puts Notes on the deny list. Test documents live in <code>$OUT08/lf-m08-trial</code>; folders <code>b</code> and <code>c</code> hold two documents with the same name and the same text, so only the window tells them apart. Quit the installed LocalFlow.app first. The evidence reader prints states, methods, reasons and stop reasons — never the text of a document, a dictation or your clipboard. Nothing here presses Return in Terminal; you never need to either.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># Remediated M08 code in its own worktree (first time only)</span>
+export LF_M08="$(dirname "$LF_MAIN")/LocalFlow-m08-verify"
+git -C "$LF_MAIN" fetch origin m08-local-remediation-20260926
+[ -d "$LF_M08" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M08" origin/m08-local-remediation-20260926
+<span class="c">#   (after the merge, use origin/main instead)</span>
+git -C "$LF_M08" merge-base --is-ancestor ea83bc1 HEAD &amp;&amp; echo "M08 repairs present"
+export OUT08="$EV/m08-verification"; mkdir -p "$OUT08"/lf-m08-trial/{a,b,c} &amp;&amp; chmod 700 "$OUT08"
+for d in a b c; do printf 'First line stays.\nThe meeting is on Thursday.\nLast line stays.\n' \
+  &gt; "$OUT08/lf-m08-trial/$d/draft.txt"; done
+
+<span class="c"># Sandbox home and config for the dev app</span>
+export REAL_HOME="$HOME"
+export SANDBOX08="$OUT08/sandbox-home"; mkdir -p "$SANDBOX08" &amp;&amp; chmod 700 "$SANDBOX08"
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M08"], "config.json").read_text())
+c = dict(cfg, log_transcripts=False, context_enabled=True, restore_clipboard=True,
+         outcome_observation_sec=30, context_denied_apps=["com.apple.Notes"])
+p = pathlib.Path(os.environ["OUT08"], "sandbox-config.json")
+p.write_text(json.dumps(c, indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app; $LF08_PID is its process</span>
+lf08_start() { ( cd "$LF_M08" &amp;&amp; exec env HOME="$SANDBOX08" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT08/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT08/app-console.txt" 2&gt;&amp;1 &amp;
+  LF08_PID=$!; echo "dev app pid $LF08_PID"; }
+export SDB08="$SANDBOX08/Library/Application Support/LocalFlow/v2.db"
+
+<span class="c"># Evidence reader: insertions, observations and insertion events, oldest first (no text)</span>
+cat &gt; "$OUT08/m08_evidence.py" &lt;&lt;'EOF'
+import glob, json, os, sqlite3
+db = sqlite3.connect(os.environ["SDB08"])
+for n, (state, method, reason, clip) in enumerate(db.execute(
+        "select state, method, reason_code, clipboard_json from insertions"
+        " order by rowid").fetchall(), 1):
+    c = json.loads(clip or "{}")
+    print(f"#{n} insertion={state} method={method} reason={reason}"
+          f" restore={c.get('restore_skipped_reason') or ('restored' if c.get('restored_types') else '-')}"
+          f" offer={c.get('offer', '-')}")
+for stop, edited, re, meta in db.execute(
+        "select stop_reason, edited, reanchors, meta_json from insertion_observations"
+        " order by rowid").fetchall():
+    m = json.loads(meta or "{}")
+    print(f"  observation stop={stop} edited={edited} reanchors={re}"
+          f" after_region={m.get('after_region')}")
+logs = os.path.join(os.environ["SANDBOX08"], "Library/Logs/LocalFlow/events-*.jsonl")
+for f in sorted(glob.glob(logs)):
+    for line in open(f, encoding="utf-8"):
+        e = json.loads(line)
+        if e["event"].startswith("insertion."):
+            print(" ", e["timestamp_utc"][11:19], e["event"],
+                  e.get("outcome"), e.get("reason_code"))
+EOF
+lf08_evidence() { ( cd "$LF_M08" &amp;&amp; "$PY" "$OUT08/m08_evidence.py" ); }</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M08 repairs present” and one “wrote …/sandbox-config.json” line. Wait for “ASR: ready” after each <code>lf08_start</code>. The app gets Accessibility through Terminal, which already holds the permission. Remove the sandbox when finished: <code>rm -rf "$SANDBOX08"</code> (test documents and test dictations only).</p>
+        </div>
+
+        <h3 class="group">Where the text lands</h3>
+
+        <article class="check" id="M08-V001" data-milestone="M08" data-rev="M08-r1" data-code="ea83bc1" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M08-V001</span>
+            <h4>Dictate into real apps, and switch app right after releasing fn; record which destinations confirm</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~15 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Each dictation lands only in the field it was checked against, in real apps: switching to another app between releasing fn and the text arriving leaves the new app untouched and keeps the words on the clipboard and in History. It also records, per destination, whether LocalFlow could prove the text landed (<code>confirmed</code>) or honestly could not (<code>posted_unverified</code>) — the supported/unverified matrix no synthetic test can produce. A Save dialog's file-name box is included because its field may belong to a separate system process; LocalFlow then refuses rather than guessing. Window and tab switches within one app are M06-V003; this check adds the app switch. Carries the app-switch item of <code>native-m08-insertion-trial</code>.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate a short sentence into a few everyday places and note what LocalFlow says about each. Then you dictate once more and, right after letting go of fn, jump to another app — the words must not appear there.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home · TextEdit · Safari · Messages (or any chat app)</dd>
+              <dt>Preconditions</dt><dd>M08 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M08 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf08_start</code>; wait for “ASR: ready”.</li>
+              <li>Open <code>"$OUT08/lf-m08-trial/a/draft.txt"</code> in TextEdit, click at the end of the last line and dictate “this is a test sentence”.</li>
+              <li>In Safari open <code>about:blank</code>, click the address bar's search suggestions away, then click into Safari's address bar and dictate “test address”. Press Escape afterwards (never Return).</li>
+              <li>In Messages (or another chat app) click into a new message box to nobody and dictate “test message”. Delete it afterwards; never send.</li>
+              <li>In TextEdit press ⌘⇧S to open the Save dialog, click into its file-name box and dictate “test name”. Cancel the dialog.</li>
+              <li>Back in <code>a/draft.txt</code>, dictate “this must stay here” and, <em>right</em> after releasing fn, press ⌘Tab to Safari. Wait five seconds, then look at Safari and TextEdit.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 7)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf08_evidence | tee "$OUT08/V001-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Steps 2–4: the words appear where you dictated. Evidence lines #1–#3 read <code>insertion=confirmed</code> or <code>posted_unverified</code>; note which one each app got (that is the matrix this check records).</li>
+              <li>Step 5: the words appear in the file-name box, <em>or</em> nothing is typed and evidence line #4 reads <code>target_changed</code> with the words on the clipboard. Both are acceptable; note which.</li>
+              <li>Step 6: nothing new appears in Safari or TextEdit. The last evidence line reads <code>insertion=target_changed</code> (any reason); the dictated words are on the clipboard (⌘V into a new TextEdit document to see them, then close it without saving).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Step 6 typed anything into Safari: <b>Failed</b> — keep <code>V001-evidence.txt</code> and <code>app-console.txt</code>.</li>
+              <li>An app from steps 2–4 got <code>target_changed</code> with nothing typed and no switch: <b>Needs follow-up</b> — note the app and the reason.</li>
+              <li>Step 6 still typed into TextEdit because the switch came too late: repeat faster; not a failure.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT08/V001-evidence.txt</code> (states, methods and reasons — no text), <code>$OUT08/app-console.txt</code>. The test sentences stay in the trial document and the sandbox store.</p>
+            <h5>Contract relevance</h5>
+            <p>M08-AC01, M08-AC03; M08-AUDIT-01/06; <code>contracts/insertion.md</code> → destination binding, result states; cross-reference M06-V003 (window and tab switches — not re-graded here).</p>
+          </details>
+        </article>
+
+        <h3 class="group">Your clipboard</h3>
+
+        <article class="check" id="M08-V002" data-milestone="M08" data-rev="M08-r1" data-code="ea83bc1" data-tags="native human model privacy">
+          <header class="check-head">
+            <span class="cid">M08-V002</span>
+            <h4>Copy styled text or an image while a dictation is processing; your copy must survive, and your clipboard must come back</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>Privacy / data</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> When LocalFlow pastes through the clipboard it puts your previous clipboard back afterwards — styled text keeps its styling, an image stays an image — and a copy you make while it works always wins: LocalFlow never restores its old copy over yours, and never pastes your new copy by mistake. The flavours it can restore are plain text, RTF, HTML, PDF, PNG and TIFF, restored as one item; anything else (a copied file, for instance) is reported as not restorable rather than claimed. Carries the “copy image/rich text during processing” item of <code>native-m08-insertion-trial</code>.</p>
+          <p class="plain"><b>In plain terms.</b> You copy something, dictate, and check the clipboard still holds what you copied. Then, while a dictation is still being processed, you copy something new — afterwards the clipboard should hold that new thing.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home · TextEdit · Preview</dd>
+              <dt>Preconditions</dt><dd>M08 set-up done; installed LocalFlow.app quit. Messages (or a chat app whose box LocalFlow pastes into rather than types) helps here: V001 shows which app used <code>method=clipboard_transaction</code>; use that one.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M08 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf08_start</code>; wait for “ASR: ready”.</li>
+              <li>In a new TextEdit document (Format → Make Rich Text) type <code>bold words</code>, make them bold, select them and press ⌘C.</li>
+              <li>Click into the V001 app that used the clipboard method and dictate “first clipboard test”. Afterwards, press ⌘V into the rich TextEdit document: the pasted words must be bold.</li>
+              <li>Open any picture in Preview, press ⌘A then ⌘C. Dictate “second clipboard test” into the same app, and <em>while the LocalFlow pill still says it is processing</em>, select <code>bold words</code> in TextEdit and press ⌘C. Afterwards press ⌘V into the TextEdit document.</li>
+              <li>Quit from the menu, run the command block, and close the TextEdit document without saving.</li>
+            </ol>
+            <h5>Commands (after step 5)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf08_evidence | tee "$OUT08/V002-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 3: the paste is <b>bold</b> (your styled copy came back). Its evidence line shows <code>method=clipboard_transaction</code> and <code>restore=restored</code>.</li>
+              <li>Step 4: the final paste is <code>bold words</code> (your newest copy), not the picture and not the dictation. Its evidence line shows <code>restore=user_copy_won</code> — or, if your copy landed before the paste went out, <code>insertion=saved_not_inserted reason=clipboard_ownership_lost</code> with nothing typed; both keep your copy.</li>
+              <li>If an app never used the clipboard method, the check cannot run there: pick another app from V001.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Step 3 pasted plain text or the dictation, or step 4 pasted the picture or the dictation: <b>Failed</b> — keep <code>V002-evidence.txt</code>.</li>
+              <li>The picture was pasted into the chat box instead of the dictation: <b>Failed</b> (a wrong payload).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT08/V002-evidence.txt</code> (no clipboard content is ever printed). Never save a screenshot of your clipboard contents.</p>
+            <h5>Contract relevance</h5>
+            <p>M08-AC02; M08-AUDIT-07/19; <code>contracts/insertion.md</code> → clipboard ownership, the pending payload, ownership before the post.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Undo</h3>
+
+        <article class="check" id="M08-V003" data-milestone="M08" data-rev="M08-r1" data-code="ea83bc1" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M08-V003</span>
+            <h4>Undo after a manual edit, and undo while a look-alike document is in front; nothing newer may be lost</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Undo Last Insertion removes exactly what LocalFlow typed, in the field it typed it into, while that field is in front — and nothing else. After you edit inside the dictated words, undo leaves your edit alone; with another window in front that holds the same words at the same place, undo touches neither window. No Backspace is ever sent. Carries the “undo after a manual edit” item of <code>native-m08-insertion-trial</code>.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate a few words and undo them. Then you dictate again, change a word yourself, and undo: your change stays. Finally you dictate into one of two identical-looking documents, click the other one, and undo: neither document changes.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M08 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M08 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf08_start</code>; wait for “ASR: ready”. Open <code>"$OUT08/lf-m08-trial/a/draft.txt"</code> and click at the end of the last line.</li>
+              <li>Dictate “remove me please”. In the LocalFlow menu choose <b>Recovery → Undo Last Insertion</b>.</li>
+              <li>Dictate “keep my edit”. Double-click <code>my</code> and type <code>your</code>. Choose <b>Undo Last Insertion</b>.</li>
+              <li>Run <code>open -a TextEdit "$OUT08/lf-m08-trial/b/draft.txt" "$OUT08/lf-m08-trial/c/draft.txt"</code> (two windows, both titled <code>draft.txt</code>). In <code>b</code>, click at the end of the last line and dictate “same words”. In <code>c</code>, click at the end of the last line and type <code>same words</code> yourself. With <code>c</code> in front, choose <b>Undo Last Insertion</b>.</li>
+              <li>Quit from the menu, run the command block, and close the documents without saving.</li>
+            </ol>
+            <h5>Commands (after step 5)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf08_evidence | tee "$OUT08/V003-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 2: “remove me please” disappears; the rest of the document is unchanged. The events include <code>insertion.undo undone</code>.</li>
+              <li>Step 3: the line still reads “keep your edit” (your change survived). The events include <code>insertion.undo stale_range</code>.</li>
+              <li>Step 4: both <code>b</code> and <code>c</code> still end with “same words”. The events include <code>insertion.undo no_authority</code> (reason <code>target_changed</code>).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Your edit in step 3, or any text in <code>c</code>, was removed: <b>Failed</b> — the one promise this check exists for.</li>
+              <li>Step 2 did not remove the words and the event reads <code>unsupported_surface</code>: <b>Needs follow-up</b> (TextEdit did not accept the undo write; nothing was lost).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT08/V003-evidence.txt</code>, <code>$OUT08/app-console.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M08-AC04; M08-AUDIT-08/09; <code>contracts/insertion.md</code> → undo.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Order and retries</h3>
+
+        <article class="check" id="M08-V004" data-milestone="M08" data-rev="M08-r1" data-code="ea83bc1" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M08-V004</span>
+            <h4>Two rapid dictations land once each, in order; Paste Again never doubles text</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~8 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Two dictations finished close together are inserted one after the other, in the order spoken, each exactly once. Paste Last Result Again checks the field first — on a queue, not while the menu is open — and pastes nothing when the text is already there, but pastes once into a field that lacks it. Carries the “two rapid dictations” item of <code>native-m08-insertion-trial</code>.</p>
+          <p class="plain"><b>In plain terms.</b> You say two short sentences back to back and check they appear once each, in the right order. Then you ask LocalFlow to paste the last result again, first where it already is (nothing should happen) and then somewhere empty (it should appear once).</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M08 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M08 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf08_start</code>; wait for “ASR: ready”. Open <code>"$OUT08/lf-m08-trial/a/draft.txt"</code> and click at the end of the last line.</li>
+              <li>Dictate “one alpha”, release, and immediately dictate “two bravo”.</li>
+              <li>Choose <b>Recovery → Paste Last Result Again</b> with the cursor still in the same document.</li>
+              <li>Make a new TextEdit document, click into it and choose <b>Paste Last Result Again</b>.</li>
+              <li>Quit from the menu, run the command block, and close the documents without saving.</li>
+            </ol>
+            <h5>Commands (after step 5)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf08_evidence | tee "$OUT08/V004-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 2: the document ends with “one alpha” then “two bravo”, each once.</li>
+              <li>Step 3: nothing new appears. The events include <code>insertion.paste_again already_present</code>.</li>
+              <li>Step 4: “two bravo” appears once in the new document. The events include <code>insertion.paste_again repaste_submitted</code>; its insertion line reads <code>posted_unverified</code> (a repaste is never counted as confirmed).</li>
+              <li>The menu never froze while it checked.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Either sentence appears twice, or out of order: <b>Failed</b>.</li>
+              <li>Step 3 pasted a second copy: <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT08/V004-evidence.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M08-AC01; M08-AUDIT-14/17; <code>contracts/insertion.md</code> → the serialized queue, retry reconciliation.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Terminal</h3>
+
+        <article class="check" id="M08-V005" data-milestone="M08" data-rev="M08-r1" data-code="ea83bc1" data-tags="native human model terminal">
+          <header class="check-head">
+            <span class="cid">M08-V005</span>
+            <h4>Dictate one harmless line and a two-line command into Terminal; nothing ever runs</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>Terminal</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A single line of text is typed into Terminal without being run — LocalFlow never presses Return. Text a shell could act on (more than one line, or a control character) is never pasted into Terminal at all: it goes to the clipboard for you to paste deliberately. No terminal is treated as safe for multi-line text until a check like this one says so; this check does not certify one. Carries the “multi-line into Terminal vs single-line” item of <code>native-m08-insertion-trial</code>.</p>
+          <p class="plain"><b>In plain terms.</b> In a fresh Terminal window you dictate a harmless one-line command: it appears but does not run. Then you dictate two commands on two lines: nothing appears, and the commands are waiting on the clipboard instead.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal (a second, empty window) · microphone · models cached (offline) · sandbox home</dd>
+              <dt>Preconditions</dt><dd>M08 set-up done; installed LocalFlow.app quit. Use a new Terminal window in your home folder for dictation — not the window running the set-up.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M08 set-up (for <code>lf08_start</code> and the evidence)</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf08_start</code>; wait for “ASR: ready”. Open a new Terminal window (⌘N) and click into it.</li>
+              <li>Dictate “echo hello”. Do not press Return. Look at the prompt, then press ⌃U to clear the line.</li>
+              <li>Dictate “echo one new line echo two” (say “new line” so the result has two lines). Look at the window.</li>
+              <li>Close that window, go back to the set-up window, quit LocalFlow from its menu and run the command block.</li>
+            </ol>
+            <h5>Commands (after step 4)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf08_evidence | tee "$OUT08/V005-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 2: <code>echo hello</code> sits at the prompt, not run (no “hello” line printed).</li>
+              <li>Step 3: nothing appears at the prompt and nothing runs. The last evidence line reads <code>insertion=saved_not_inserted reason=multiline_terminal_unverified offer=clipboard_copy</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Anything ran (a “hello”, “one” or “two” line printed): <b>Failed</b> — stop and keep the evidence.</li>
+              <li>Step 3 put <code>echo one</code> and <code>echo two</code> at the prompt as two lines, even without running them: <b>Failed</b> (multi-line text must never reach a terminal).</li>
+              <li>Step 3 arrived as one line reading “echo one new line echo two”, not run: <b>Blocked</b> — the spoken command did not become a line break under this profile, so the multi-line half cannot be driven by speech here; note it.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT08/V005-evidence.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M08-AC04; <code>contracts/insertion.md</code> → method matrix (terminal text, <code>CERTIFIED_BRACKETED_SURFACES</code> stays empty).</p>
+          </details>
+        </article>
+
+        <h3 class="group">Privacy boundaries</h3>
+
+        <article class="check" id="M08-V006" data-milestone="M08" data-rev="M08-r1" data-code="ea83bc1" data-tags="native human model privacy">
+          <header class="check-head">
+            <span class="cid">M08-V006</span>
+            <h4>Dictate into a denied app and a password box: the words are typed but nothing there is read; a transform accept into another app is refused</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>Privacy / data</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> In an app on the deny list (Notes, in the sandbox config) and in a password box, dictation still types your words, but LocalFlow reads nothing of the field to check them — so they are never counted as confirmed, never watched afterwards, and Undo declines rather than read. A selected-text transform accepted after you moved to another app is refused and nothing is typed. The transform model and its gate are M11's business and are not re-graded here; M11-V001/V002 cover the transform side.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate into a note and into a password box on a login page, and check the words arrive but LocalFlow reports it did not look. Then you polish a sentence, switch app before accepting, and check nothing is typed.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home · Notes · Safari · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M08 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M08 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf08_start</code>; wait for “ASR: ready”. In its menu choose <b>Training → Collect Training Evidence</b> (the sandbox store only).</li>
+              <li>Open Notes, make a new note and dictate “private note words”. Then choose <b>Recovery → Undo Last Insertion</b>. Delete the note afterwards.</li>
+              <li>In Safari open <code>https://github.com/login</code>, click into the <b>Password</b> box (leave the username empty) and dictate “test”. Clear the box; never submit the form.</li>
+              <li>Open <code>"$OUT08/lf-m08-trial/a/draft.txt"</code>, select <code>The meeting is on Thursday.</code> and choose <b>Transforms → Polish</b>. When the preview panel shows, ⌘Tab to Safari, then click <b>Accept</b> in the panel.</li>
+              <li>Quit from the menu, run the command block, and close the document without saving.</li>
+            </ol>
+            <h5>Commands (after step 5)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf08_evidence | tee "$OUT08/V006-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 2: the words appear in the note; its insertion line reads <code>posted_unverified</code> with reason <code>readback_not_permitted:denied_app</code>; no <code>observation</code> line follows it; Undo left the words (event <code>insertion.undo</code> with nothing undone, or no undo event).</li>
+              <li>Step 3: dots appear in the password box; its line reads <code>posted_unverified</code> with <code>readback_not_permitted:secure_field</code>.</li>
+              <li>Step 4: nothing is typed into Safari or TextEdit; the transform's insertion line reads <code>target_changed</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Step 2 or 3 reads <code>confirmed</code>, or an <code>observation</code> line follows either: <b>Failed</b> — LocalFlow read a field it may not read.</li>
+              <li>Step 4 typed anything: <b>Failed</b>.</li>
+              <li>The password box refused the typed words entirely (nothing appears, <code>posted_unverified</code>): <b>Passed</b> for M08 — the page decides what its box accepts.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT08/V006-evidence.txt</code>. Never type a real password for this check.</p>
+            <h5>Contract relevance</h5>
+            <p>S12; M08-AUDIT-02/03/04; <code>contracts/insertion.md</code> → read capability, strict replacement; cross-reference M11-V001 and M11-V002 (not re-graded here).</p>
+          </details>
+        </article>
+
+        <h3 class="group">Watching for corrections</h3>
+
+        <article class="check" id="M08-V007" data-milestone="M08" data-rev="M08-r1" data-code="ea83bc1" data-tags="native human model privacy">
+          <header class="check-head">
+            <span class="cid">M08-V007</span>
+            <h4>Correct a dictated word, type elsewhere, and switch document; only the dictated words are watched</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>Privacy / data</li><li>~12 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> For about 30 seconds after a confirmed dictation, LocalFlow watches only the words it typed, in that field: correcting one of them is recorded as an edit of exactly those words; typing before them is not; moving to another document, or a password box, stops the watching before anything there is read. Nothing is watched when Collect Training Evidence was off when you started speaking — turning it on afterwards does not change that. A watched window never marks your text correct or incorrect.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate, then fix a word within half a minute, and check LocalFlow noticed only that fix. Then you check that typing elsewhere, switching documents, or having training collection off does not get watched.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M08 set-up done; installed LocalFlow.app quit. Use a fresh sandbox for clean evidence: <code>rm -rf "$SANDBOX08"; mkdir -p "$SANDBOX08"</code>.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M08 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf08_start</code>; wait for “ASR: ready”. Choose <b>Training → Collect Training Evidence</b>.</li>
+              <li>Open <code>"$OUT08/lf-m08-trial/a/draft.txt"</code>, click at the end of the last line and dictate “the report is due on monday”. Within 20 seconds, double-click <code>monday</code> and type <code>Friday</code>. Wait 40 seconds.</li>
+              <li>Dictate “another sentence here”. Within 20 seconds, click at the very start of the first line and type <code>X </code>. Wait 40 seconds.</li>
+              <li>Dictate “third sentence here” and, within 10 seconds, open <code>"$OUT08/lf-m08-trial/b/draft.txt"</code> and type anything there. Wait 40 seconds.</li>
+              <li>Choose <b>Training → Pause Collection</b> (or turn collection off). Dictate “fourth sentence here” into <code>a</code>; within 20 seconds change a word in it. Turn collection back on right away. Wait 40 seconds.</li>
+              <li>Quit from the menu, run the command block, and close the documents without saving.</li>
+            </ol>
+            <h5>Commands (after step 6)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf08_evidence | tee "$OUT08/V007-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 2: an <code>observation stop=owned_range_edited edited=1 after_region=exact</code> line (or <code>owned_edit_unbounded</code> if TextEdit changed the neighbouring text too — acceptable).</li>
+              <li>Step 3: <code>observation stop=window_elapsed edited=0</code> with <code>reanchors</code> of 1 or more.</li>
+              <li>Step 4: <code>observation stop=field_changed</code> or <code>focus_lost</code>, <code>edited=0</code>.</li>
+              <li>Step 5: the fourth insertion has <em>no</em> observation line (collection was off when you started speaking).</li>
+              <li>Only insertions whose line reads <code>confirmed</code> have observation lines at all; a <code>posted_unverified</code> insertion is never watched.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>An observation line for step 5, or an <code>edited=1</code> for steps 3 or 4: <b>Failed</b>.</li>
+              <li>TextEdit's insertions are all <code>posted_unverified</code>, so nothing is watched: <b>Needs follow-up</b> (safe; note it — the watching cannot be judged on this Mac's TextEdit).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT08/V007-evidence.txt</code> (stop reasons and counts — the watched words live only in the sandbox store).</p>
+            <h5>Contract relevance</h5>
+            <p>S29.8; M08-AC05/AC06; M08-AUDIT-10/11/12; <code>contracts/insertion.md</code> → outcome observation; <code>contracts/training_evidence.md</code> → capture-time consent.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Recovery and History</h3>
+
+        <article class="check" id="M08-V008" data-milestone="M08" data-rev="M08-r1" data-code="ea83bc1" data-tags="native human model privacy">
+          <header class="check-head">
+            <span class="cid">M08-V008</span>
+            <h4>Paste Again from History stays responsive; after deleting a dictation, nothing of it can be pasted or undone</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>Privacy / data</li><li>~8 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> History's Paste Again and the Recovery menu answer at once — the checking happens off the window you are using — even with a long document in front. Deleting a dictation everywhere also takes away LocalFlow's own short-lived copy of it: Recovery can no longer paste or undo it, and a watch still running on it stops. This check runs against the sandbox store only.</p>
+          <p class="plain"><b>In plain terms.</b> You paste an old dictation again from History and check nothing freezes. Then you delete a dictation and check the Recovery menu cannot bring it back.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home · TextEdit · LocalFlow Hub</dd>
+              <dt>Preconditions</dt><dd>M08 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M08 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>"$PY" -c "print('lorem ipsum dolor sit amet ' * 20000)" &gt; "$OUT08/lf-m08-trial/long.txt"</code>, then <code>lf08_start</code>; wait for “ASR: ready”. Choose <b>Training → Collect Training Evidence</b> (the sandbox store only — deletion works on collected dictations).</li>
+              <li>Open <code>long.txt</code> in TextEdit, click at the end and dictate “history test sentence”.</li>
+              <li>Open the Hub (<b>Open Hub…</b> in the menu) → <b>History</b>, select that dictation and click <b>Paste Again</b> while <code>long.txt</code> is behind the Hub. Then click into <code>long.txt</code> and use <b>Recovery → Paste Last Result Again</b>.</li>
+              <li>In the Hub go to <b>Models → Training Data</b>, select the newest example (this dictation), click <b>Delete Everywhere</b> and confirm <b>Delete</b>. Then, with <code>long.txt</code> in front, choose <b>Recovery → Paste Last Result Again</b> and <b>Recovery → Undo Last Insertion</b>.</li>
+              <li>Quit from the menu, run the command block, close <code>long.txt</code> without saving and delete it.</li>
+            </ol>
+            <h5>Commands (after step 5)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf08_evidence | tee "$OUT08/V008-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 3: the Hub and the menu respond immediately (no beach ball). Recovery's Paste Again adds nothing (the text is already in <code>long.txt</code>): the events include <code>insertion.paste_again already_present</code>.</li>
+              <li>Step 4: nothing is pasted and nothing is removed from <code>long.txt</code>; no new <code>insertion.paste_again</code> or <code>insertion.undo undone</code> event follows the deletion.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>The menu or Hub froze for more than a moment: <b>Needs follow-up</b> — note which action and for how long.</li>
+              <li>Step 4 pasted or removed text: <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT08/V008-evidence.txt</code>. The dictation is deleted from the sandbox store in step 4.</p>
+            <h5>Contract relevance</h5>
+            <p>S24 (UI-thread rule); S29.14; M08-AUDIT-13/17; <code>contracts/insertion.md</code> → retry reconciliation, deletion; <code>contracts/hub.md</code>.</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M09" data-milestone="M09" data-title="Hub"><div class="ms-head"><span class="mid">M09</span><h2>Hub</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M09-V001).</p></section>
       <section class="milestone" id="M10" data-milestone="M10" data-title="Developer mode & profiles"><div class="ms-head"><span class="mid">M10</span><h2>Developer mode &amp; profiles</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M10-V001).</p></section>
       <section class="milestone" id="M11" data-milestone="M11" data-title="Transforms & Prompt Engineer">
