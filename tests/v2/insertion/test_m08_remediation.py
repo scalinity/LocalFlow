@@ -93,7 +93,8 @@ class Env:
         finally:
             self.tmp.cleanup()
 
-    def run(self, text, job, timeout=10.0, on_observation=None):
+    def run(self, text, job, timeout=10.0, on_observation=None,
+            injected_fault=False):
         box, done = {}, threading.Event()
 
         def on_done(r):
@@ -102,7 +103,13 @@ class Env:
 
         self.svc.submit(text, job, on_done, on_observation=on_observation)
         assert done.wait(timeout), "transaction did not finish"
-        return box["r"]
+        r = box["r"]
+        if not injected_fault and \
+                (r.reason_code or "").startswith("transaction_error:"):
+            # A fault before any effect is a harness/code error — never
+            # evidence that an effect was (correctly) avoided.
+            raise RuntimeError(f"transaction error: {r.reason_code}")
+        return r
 
     def rows(self, sql, *args):
         return self.store.submit(
@@ -152,8 +159,8 @@ class after_validation:
         self._real = service_mod.validate_target
         real, fn = self._real, self.fn
 
-        def wrapped(host, snapshot, job):
-            out = real(host, snapshot, job)
+        def wrapped(host, snapshot, job, **kw):
+            out = real(host, snapshot, job, **kw)
             fn(job)
             return out
         service_mod.validate_target = wrapped
@@ -192,7 +199,7 @@ def test_a01_write_after_validation_goes_only_to_validated_field():
     assert writes_on(w, {"FB", "F2"}) == [], \
         f"foreign write: {writes_on(w, {'FB', 'F2'})}"
     assert w.text("FB") == "CANARY_B_SELECTION", w.text("FB")
-    assert r.state != "confirmed", r.state
+    assert r.state == "target_changed", (r.state, r.reason_code)
     env.close()
     # Positive control: unchanged destination inserts once, confirmed.
     env = Env()
@@ -215,7 +222,7 @@ def test_a01_same_app_other_window_after_validation():
         r = env.run("dictated", job(s=s))
     assert writes_on(w, {"F2"}) == [], writes_on(w, {"F2"})
     assert w.text("F2") == "", w.text("F2")
-    assert r.state != "confirmed", r.state
+    assert r.state == "target_changed", (r.state, r.reason_code)
     env.close()
 
 
@@ -231,7 +238,7 @@ def test_a01_clipboard_post_bound_to_validated_field():
         r = env.run("dictated", job(s=s))
     assert writes_on(w, {"FB"}) == [], writes_on(w, {"FB"})
     assert env.kb.posts == 0, f"{env.kb.posts} paste(s) posted into B"
-    assert r.state != "confirmed", r.state
+    assert r.state == "target_changed", (r.state, r.reason_code)
     env.close()
 
 
@@ -765,7 +772,7 @@ def test_a16_exception_after_ax_write_keeps_effect_facts():
             raise RuntimeError("controlled readback fault")
         return real(el)
     w.number_of_characters = boom
-    r = env.run("landed", job(s=snap(w)))
+    r = env.run("landed", job(s=snap(w)), injected_fault=True)
     assert w.text("F1") == "landed"
     assert r.method == "ax_replacement", (r.state, r.method, r.reason_code)
     assert r.state == "posted_unverified", (r.state, r.reason_code)
@@ -784,7 +791,7 @@ def test_a16_exception_during_restore_keeps_post():
     def boom(_pb):
         raise RuntimeError("controlled restore fault")
     env.pb.on("clear_and_write_items", boom)
-    r = env.run("landed", job(s=snap(w)))
+    r = env.run("landed", job(s=snap(w)), injected_fault=True)
     assert w.text("F1") == "landed"
     assert r.method == "clipboard_transaction", (r.method, r.reason_code)
     assert r.state in ("posted_unverified", "confirmed"), r.state
@@ -819,6 +826,60 @@ def test_a19_capture_is_one_generation_or_a_conflict():
                 ), f"user copy lost: board={env.pb.plain()!r} ops={ops}"
     assert "public.rtf" not in disclosed, \
         f"a flavour from another generation reported: {disclosed}"
+    env.close()
+
+
+@case("M08-AUDIT-19")
+def test_a19_copy_after_publish_is_never_pasted():
+    """A user copy lands after LocalFlow published and before the paste
+    post (corpus F10-C01): posting now would paste THEIR content."""
+    env = Env()
+    w = env.w
+    w.fields["F1"].settable = False
+    env.pb.user_copy("CANARY_OLD_CLIPBOARD")
+    env.svc._on_post_begin = lambda: env.pb.user_copy("CANARY_USER_COPY")
+    r = env.run("dictated", job(s=snap(w)))
+    assert "CANARY_USER_COPY" not in w.text("F1"), w.text("F1")
+    assert env.pb.plain() == "CANARY_USER_COPY", env.pb.plain()
+    assert r.state in ("saved_not_inserted", "posted_unverified"), r.state
+    env.close()
+
+
+@case("M08-AUDIT-01/D15")
+def test_terminal_cr_and_separators_are_not_pasted():
+    """A terminal destination: a bare CR (or a Unicode line separator,
+    or a control character) executes like a newline — copy offer only
+    (corpus F16-C05, policy D15). A single plain line still inserts."""
+    for text in ("ls\rrm -rf x", "one two", "a\x1b[0m"):
+        env = Env()
+        w = env.w
+        w.apps["A"]["bundle"] = "com.apple.Terminal"
+        r = env.run(text, job(s=snap(w, category="terminal")))
+        assert w.text("F1") == "", (text, w.text("F1"))
+        assert env.kb.posts == 0 and r.state == "saved_not_inserted", \
+            (text, r.state, r.reason_code)
+        env.close()
+    env = Env()
+    env.w.apps["A"]["bundle"] = "com.apple.Terminal"
+    r = env.run("git status", job(s=snap(env.w, category="terminal")))
+    assert env.w.text("F1") == "git status", env.w.text("F1")
+    env.close()
+
+
+@case("M08-AUDIT-11")
+def test_a11_edit_after_window_deadline_is_not_attributed():
+    """The window's deadline has passed when the next tick sees the
+    owned text changed (corpus F20-C04): deadline exhaustion is never
+    edit evidence."""
+    env = Env(window=0.6, text_f1="")
+    w = env.w
+    r, obs = observed(env, "owned words")
+    assert obs is not None
+    time.sleep(0.75)                  # after the deadline, before a tick
+    w.user_replace("F1", 0, 5, "OWNED")
+    obs.join(5)
+    assert obs.edited is False, (obs.stop_reason, obs.edited)
+    assert obs.after_artifact is None
     env.close()
 
 
@@ -1073,7 +1134,10 @@ def test_a18_close_in_subscription_gap_delivers_once():
             self.signals = observation_mod.StopSignals()
 
         def _gap(self):
-            if not self._gap_fired:
+            # Only the APP's subscription (from _observationStarted_) is
+            # the gap under test; the close lands just before it.
+            caller = sys._getframe(2).f_code.co_name
+            if not self._gap_fired and caller == "_observationStarted_":
                 self._gap_fired = True
                 self.signals.note_session_locked()
                 self._thread.join(3)

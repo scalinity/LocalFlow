@@ -71,6 +71,15 @@ class Host:
         self.calls.append("focused_element")
         return "field"
 
+    def focused_element_for(self, pid):
+        # The app-owned acquisition the M08 remediation's capture uses.
+        self.calls.append("focused_element_for")
+        return "field" if pid == self.app["pid"] else None
+
+    def element_pid(self, el):
+        self.calls.append("element_pid")
+        return self.app["pid"] if el == "field" else None
+
     def attribute(self, el, name):
         self.calls.append(name)
         s, e = self.selection

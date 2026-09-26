@@ -68,8 +68,15 @@ class Env:
         def on_observation(info):
             box["observer"] = info["observer"]
 
+        # A recorded destination and capture-time collection consent:
+        # the observer's admission conditions (M08 remediation — an
+        # insert with no recorded destination is never confirmed, and a
+        # capture without consent is never observed).
+        from test_insertion_races import snapshot
         self.service.submit(
-            text, {"job_id": job_id, "attempt": 1}, on_done,
+            text, {"job_id": job_id, "attempt": 1,
+                   "context_snapshot": snapshot(self.target),
+                   "observation_consent": True}, on_done,
             on_observation=on_observation)
         assert done.wait(15), "insertion did not finish"
         obs = box.get("observer")

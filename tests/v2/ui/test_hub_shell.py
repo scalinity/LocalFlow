@@ -273,15 +273,15 @@ def test_busy_flag_and_paste_gating_real_service():
         assert h.d._hub_show_pending is True
         assert done.wait(5.0)
         assert h.d._insertion.busy is False
-        # Idle again: the paste command reconciles then submits through
-        # the real service (the fixture field gets the text).
+        # Idle again: the paste command queues the reconcile-then-paste
+        # on the real service (M08 remediation: none of it runs on the
+        # UI callback); wait for the queue to settle.
         out = h.d.hubPasteText("hello hub")
-        assert out["outcome"] in ("repaste_submitted", "already_present")
-        if out["outcome"] == "repaste_submitted":
-            deadline = time.monotonic() + 5.0
-            while "hello hubhello hub" not in tgt.content \
-                    and time.monotonic() < deadline:
-                time.sleep(0.02)
+        assert out["outcome"] == "repaste_queued", out
+        time.sleep(0.05)
+        deadline = time.monotonic() + 5.0
+        while h.d._insertion.busy and time.monotonic() < deadline:
+            time.sleep(0.02)
         h.d._insertion = None
     finally:
         h.close()
@@ -369,7 +369,7 @@ def test_repaste_keeps_insertion_attribution():
             store=h.d.store, emit=lambda *a, **k: rec.append(a),
             settle_sec=0.05)
         out = h.d.hubPasteText("repasted text", job_id=jid)
-        assert out["outcome"] in ("repaste_submitted", "already_present")
+        assert out["outcome"] == "repaste_queued", out  # M08: queued
         deadline = time.monotonic() + 5.0
         while "repasted text" not in tgt.content \
                 and time.monotonic() < deadline:
@@ -384,7 +384,7 @@ def test_repaste_keeps_insertion_attribution():
         # attribution row — no warning noise either.
         rec.clear()
         out2 = h.d.hubPasteText("legacy re-paste")
-        assert out2["outcome"] in ("repaste_submitted", "already_present")
+        assert out2["outcome"] == "repaste_queued", out2
         deadline = time.monotonic() + 5.0
         while "legacy re-paste" not in tgt.content \
                 and time.monotonic() < deadline:
