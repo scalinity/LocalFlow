@@ -83,12 +83,17 @@ FAILED_PILL_SEC = 1.8
 # M06 (Spec S12, M06-AUDIT-07): the additional post-release context budget
 # (the milestone's P95 target), measured from the release instant; the
 # widened-vocabulary step waits or builds only inside what remains of it.
-# A build whose last measured cost is under the floor always runs (a small
+# A build whose estimated cost is under the floor always runs (a small
 # dictionary never loses its scope to a budget spent elsewhere). The
-# precompute waits this long for its collection before giving up.
+# precompute waits this long for its collection before giving up. The
+# synchronous-build estimate scales the last measured cost PER ENTRY to
+# this dictionary's size.
 RELEASE_CONTEXT_BUDGET_MS = 75.0
 SYNC_WIDEN_FLOOR_MS = 5.0
 PREWIDEN_WAIT_S = 10.0
+# The projection's cost per entry before any build has been measured
+# (conservative: 5.5–7.3 µs/entry measured on the reference Mac).
+DEFAULT_WIDEN_MS_PER_ENTRY = 0.01
 
 # M03 remediation: the capture-provenance sidecar written next to a job's
 # recovery audio (content-free: timing, rate, sample counts, completeness).
@@ -526,7 +531,7 @@ class AppDelegate(NSObject):
         # post-release budget. Guarded: precompute threads write it.
         self._widen_lock = threading.Lock()
         self._widen_cache = None       # (entries, scope, snapshot)
-        self._widen_cost_ms = None     # last measured projection build
+        self._widen_ms_per_entry = None  # last measured build cost
         # M06 (Spec S12): destination-aware context. Identity is read
         # cheaply at PTT start (after the overlay), providers collect
         # asynchronously during recording, and the finalize at release is
@@ -1957,7 +1962,8 @@ class AppDelegate(NSObject):
         t0 = time.perf_counter()
         snap = v2.vocabulary.VocabularySnapshot(entries, scope)
         with self._widen_lock:
-            self._widen_cost_ms = (time.perf_counter() - t0) * 1000.0
+            self._widen_ms_per_entry = (time.perf_counter() - t0) \
+                * 1000.0 / max(1, len(entries))
             self._widen_cache = (entries, scope, snap)
         return snap
 
@@ -2017,8 +2023,9 @@ class AppDelegate(NSObject):
         """The widened projection inside the M06 post-release budget
         (RELEASE_CONTEXT_BUDGET_MS from the release instant): the
         precomputed one when ready — waiting only for what remains of the
-        budget — else a synchronous build when its last measured cost
-        fits; otherwise None: the job keeps its captured narrower scope as
+        budget — else a synchronous build when its estimated cost (the
+        last measured cost per entry × this entry count) fits; otherwise
+        None: the job keeps its captured narrower scope (and profile) as
         an explicit downgrade and the projection warms in the background
         for the next job."""
         hit = self._cached_widening(entries, scope)
@@ -2036,9 +2043,9 @@ class AppDelegate(NSObject):
             hit = self._cached_widening(entries, scope)
             if hit is not None:
                 return hit
-        cost = self._widen_cost_ms
-        if cost is None or cost <= max(remaining_s() * 1000.0,
-                                       SYNC_WIDEN_FLOOR_MS):
+        cost = (self._widen_ms_per_entry or DEFAULT_WIDEN_MS_PER_ENTRY) \
+            * len(entries)
+        if cost <= max(remaining_s() * 1000.0, SYNC_WIDEN_FLOOR_MS):
             return self._widened_vocabulary(entries, scope)
         threading.Thread(target=self._warm_widening,
                          args=(entries, scope, job.get("job_id")),
@@ -2081,6 +2088,13 @@ class AppDelegate(NSObject):
         # destination FIRST — the widened scope below carries the
         # resolved profile name (profile-scoped vocabulary) and the
         # upgraded policy uses the final style-derived number policy.
+        # The captured profile state is kept aside: if the widening
+        # fails or is deferred it comes back, so the job runs entirely on
+        # its hotkey-down tuple — never a finalized profile over captured
+        # vocabulary.
+        m10 = job.get("m10")
+        captured_m10 = None if m10 is None else {
+            k: m10.get(k) for k in ("wp", "norm_profile", "skills")}
         try:
             self._m10_re_resolve(job, snap)
         except Exception as e:
@@ -2102,13 +2116,13 @@ class AppDelegate(NSObject):
         # job whose hotkey-down selection failed (or with no selector)
         # still rebuilds its vocabulary for the finalized scope
         # (M05-AUDIT-02).
-        m10 = job.get("m10")
         full = self._widened_scope(
             snap, m10["wp"].profile_name if m10 is not None else None)
         if full is None:
             return  # origin/workspace never resolved: scope unchanged
         base_policy = job.get("norm_policy")
         if base_policy is None:
+            job["scope_disposition"] = "no_policy"   # normalization off
             return
         # Build every upgraded value first; the skills merge (which also
         # refreshes the M10 registry) runs last. The M10 skills merge
@@ -2124,12 +2138,16 @@ class AppDelegate(NSObject):
                     base_policy, m10, upgraded)
         except Exception as e:
             job["scope_disposition"] = "widening_failed"
+            if captured_m10 is not None:
+                m10.update(captured_m10)
             self.v2log.emit("vocabulary.refresh_failed", level="WARNING",
                             job_id=job.get("job_id"),
                             reason_code=type(e).__name__,
                             outcome="captured_scope_kept")
             return
         if upgraded is None:
+            if captured_m10 is not None:
+                m10.update(captured_m10)
             # The projection could not be ready inside the post-release
             # budget: an explicit, recorded downgrade — never a silent
             # stall and never a partial mix.
