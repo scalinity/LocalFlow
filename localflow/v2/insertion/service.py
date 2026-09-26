@@ -842,26 +842,29 @@ class InsertionService:
                 **common))
         readback = self._await_readback(el, pre, text)
         restored = None
-        if self.restore_clipboard:
-            if readback in ("match", "partial") or readback is None:
-                # match: the paste landed; partial: the target consumed
-                # it (the field grew). None (unobservable) restores per
-                # the V1 protocol — the documented residual.
+        consumed = readback in ("match", "partial") or readback is None
+        if consumed:
+            # match: the paste landed; partial: the target consumed it
+            # (the field grew). None (unobservable) restores per the V1
+            # protocol — the documented residual.
+            if self.restore_clipboard:
                 restored = txn.restore_if_owned()
-            else:
-                # No attributable consumption yet (unchanged, ambiguous,
-                # mismatch): the paste may not have landed. Keep the
-                # owned generation so a late target read still pastes
-                # the right text; the sacrificed user clipboard is
-                # disclosed via restore_skipped_reason (wrong-insert
-                # prevention outranks restore on observable surfaces).
+        else:
+            # No attributable consumption yet (unchanged, ambiguous,
+            # mismatch): the paste may not have landed. The payload is
+            # pending whether or not restoring is enabled — a later job
+            # must not replace what a late target read still pastes;
+            # with restoring on, the sacrificed user clipboard is
+            # disclosed via restore_skipped_reason (wrong-insert
+            # prevention outranks restore on observable surfaces).
+            if self.restore_clipboard:
                 txn.restore_skipped_reason = (
                     "readback_ambiguous" if readback == "match_ambiguous"
                     else "readback_pending")
-                with self._lock:
-                    self._pending_paste = {
-                        "txn": txn, "lease": lease, "pre": pre,
-                        "text": text, "job_id": job.get("job_id")}
+            with self._lock:
+                self._pending_paste = {
+                    "txn": txn, "lease": lease, "pre": pre,
+                    "text": text, "job_id": job.get("job_id")}
         state, reason = self._outcome(lease, readback)
         owned = facts["owned"]
         result = InsertionResult(
