@@ -204,5 +204,34 @@
       "the undo outcome carries no job id (TG-05)",
       "held-out exposure: PE-HOLD-001..010 are exposed; PE-BLIND-001..010 are blind until their first run"
     ]
+  },
+  "integration_2026_09_26": {
+    "kind": "local reconciliation onto the M01-M06 tree (append-only; remediation_2026_09_24 above is unchanged and describes the cloud run at 1ee8e44)",
+    "state": "RECONCILED_ON_MAIN_PENDING_LOCAL_VERIFICATION",
+    "historical_source": {"branch": "origin/claude/localflow-m11-remediation-spdq35", "head": "1be42ee9e148afa84e0a1dd51dae02146db546da", "remediation_commit": "aa03af7d3759dc76a4e3724876696398ab8fb339", "overview_commit": "1be42ee (not replayed)", "merge_base_with_main": "1ee8e449ad21382378785c7ca9c309f55020d44f (31 commits behind main)"},
+    "method": "git cherry-pick -n aa03af7 onto cb05ca9 (the M06 remediation head, itself on accepted main 6a083bd); a merge would have offered pre-M01..M06 app.py, insertion/validation.py, training.py and transforms_store.py; aa03af7 and 1be42ee are not ancestors of main, their content is",
+    "commits": {"replay": "1545de9", "r4_and_authority_seam": "46ecd5b", "accept_callback": "9a049b3 (final production)", "review_probe": "cbf5ae4", "suites_agree": "f8bf7e5", "runbook": "d401161"},
+    "conflict_resolution": "TransformStore.record_candidate: consent read inside the writer op, then the M02 deletion barrier; every artifact (source, output, transform_prompt, transform_decision) uses the barrier-checked job reference",
+    "review_r4": "closed: one deny rule (snapshot.app_denied) for the M06 collector and the M11 capture over the validated context_policy list, before any Accessibility call; malformed list refuses every app (deny_list_invalid). Regression test_selection_capture_m06_seam.py 2/8 at 1be42ee, cb05ca9, 1545de9; 8/8 integrated",
+    "authority_model": "capture records selected_range_utf16 (host units; code points only when exact) and the field's own window element; strict surroundings re-read in host units",
+    "found_on_first_mac_run": "_tfInsertDone_ raised AttributeError on every successful insert (original M11 code f2137ef); native module 14/16 at 1be42ee, 16/16 after 9a049b3",
+    "environment": "reference Mac (Apple M5 Pro, macOS 27.0); .venv CPython 3.14.7; PyObjC 12.2.1; MLX 0.31.2 Metal; Qwen3-4B-Instruct-2507-4bit 50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b and parakeet-tdt-0.6b-v3 ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15 from the local Hugging Face cache, offline; every run desktop-isolated (tests/v2/context/run_isolated.py, 0 Accessibility calls blocked)",
+    "code_root": "f8bf7e5bfc03c916850bb8c3e54d9acf3a2136d2 (production 9a049b3)",
+    "results": {
+      "portable_remediation_suite": "37/37 (integration/remediation_portable_f8bf7e5.json)",
+      "native_remediation_module": "16/16 (integration/remediation_native_f8bf7e5.json; historical head 14/16)",
+      "engine_definitions_pipeline_scratchpad_hub": "8 / 8 / 10 / 10 ok lines, exit 0",
+      "seam_regression": "8/8 (integration/seam_regression_four_roots.json)",
+      "prompt_engineer_v2_model_run": {"exit": 1, "cases": 40, "applied": 10, "applied_semantic_failure": 0, "review_addresses_loss": 1, "review_misdirected": 1, "misdirected_case": "PE-BLIND-008 (intent:implement)", "review_no_loss": 14, "fallback": 14, "fallback_reason": "output_limit (all 14)", "error": 0, "held_out": "0 applied, 5 review_no_loss, 4 fallback, 1 misdirected", "latency_ms": {"p50": 2159.1, "p95": 2874.2}, "comparison": "per-case verdicts identical at 1be42ee and in two further integrated runs", "record": "integration/prompt_engineer_cases_f8bf7e5.json"},
+      "model_backed_regressions": "test_worker_live 2/2, test_live_pipeline 2/2, test_cleanup 51/51, test_fidelity 60/60 (integration/model_backed_f8bf7e5.json); test_cleanup_pipeline 13 ok",
+      "sweep": "86 files, 85 exit 0, 928 ok lines, 0 FAIL (acceptance/M06/remediation/sweep_integration_f8bf7e5.json)",
+      "m08_baseline": "insertion races 13, attribution 10, pipeline 5, all exit 0"
+    },
+    "against_own_bar": "zero semantic failures holds; zero misdirected reviews does not (1); 14/40 generations ended at the output limit",
+    "held_out_exposure": "PE-BLIND-001..010 were run against the real model on 2026-09-26 (verdicts recorded, case texts not read); exposed for any later tuning",
+    "not_run": ["scripts/v2/benchmark_m11.py on the Mac", "Polish/Concise measurement under the gate (no harness exists)"],
+    "pending_human": "VERIFICATION.html M11-V001..V006 (instructions M11-r1, code 9a049b3), carrying native-m11-transform-trial and the extended native trial; all Not run",
+    "gates": "M15 stays gated on the model-backed criterion, the benchmark, the Polish/Concise measurement and the human trial; none of these invalidates a static read-only M08 audit",
+    "recorded_for_other_owners": ["M12: test_scratchpad_hub.py::test_note_transform_never_external fails under parallel load (1/18 integrated, 3/18 cb05ca9, 2/18 1be42ee; 6/6 alone) - the accept runs (notes.transform_applied), the test reads the store before the revision write lands", "M08 audit: insertion/selection.py decides denial on the NSWorkspace frontmost app and reads the system-wide focused element without checking its owning process; the insertion and observation readers do not consult the deny policy"]
   }
 }

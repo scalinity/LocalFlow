@@ -411,5 +411,31 @@
       "M14 hub suite off-main-thread refresh race (test harness)"
     ],
     "privacy": "synthetic fixtures, synthetic helper windows and temporary stores only; no installed app, real destination, private text, browser history, dictionary, audio or screenshot read or committed; branch diff and evidence scanned for user paths (none)"
+  },
+  "integration_2026_09_26": {
+    "kind": "pre-M08 canonical integration (append-only; remediation_2026_09_26 above is unchanged and describes 3a2d8e1/a41dfcc)",
+    "base": "cb05ca9571e5662ec1275530a892b4c1c604a130 (this milestone's remediation head; production 4388b52)",
+    "branch": "integration/m06-m11-pre-m08, fast-forwarded to main",
+    "m11_reconciliation": {"replay": "1545de9", "r4_and_authority_seam": "46ecd5b", "final_production": "9a049b3", "review_probe": "cbf5ae4", "suites_agree": "f8bf7e5"},
+    "review_r4": {
+      "state": "closed",
+      "repair": "46ecd5b: snapshot.app_denied (trimmed, case-insensitive; CFBundleIdentifier is case-insensitive) decides for the collector and _m11_capture_selection over the validated _context_policy list, before any Accessibility call; a malformed deny list refuses every app for transforms (deny_list_invalid)",
+      "regression": "tests/v2/transforms/test_selection_capture_m06_seam.py: 2/8 at 1be42ee, cb05ca9 and 1545de9; 8/8 integrated (acceptance/M11/integration/seam_regression_four_roots.json)",
+      "review_probe_r4": "reproduced at 1be42ee (7 Accessibility calls) and cb05ca9 (4); not reproduced integrated (0 calls, app_denied)",
+      "context_effect": "a differently cased deny entry now also denies its app for context (strictly more denial); no corpus or regression expectation changed"
+    },
+    "code_root": "f8bf7e5bfc03c916850bb8c3e54d9acf3a2136d2 (production 9a049b3)",
+    "results": {
+      "regressions": "31/31",
+      "review_round_regressions": "8/8",
+      "review_repro": "r1-r10 none reproduced (remediation/review_repro_integration_f8bf7e5.json)",
+      "corpus": {"pass": 100, "fail": 0, "not_run": 1, "not_run_case": "LF-M06-N004 (M06-V004)", "metamorphic": "10/10", "record": "remediation/corpus_integration_f8bf7e5.json"},
+      "mutation": {"control_green": true, "killed": "18/18", "benchmark_mutants_rejected": "4/4", "record": "remediation/mutation_integration_f8bf7e5.json", "note": "one earlier run's control failed on native case N001 while keyboard input was typed at the Mac; interleaved reruns passed 10/10 on f8bf7e5 and cb05ca9; the recorded run is the clean rerun"},
+      "native": "test_native_ax.py 7/7 (remediation/native_suite_integration_f8bf7e5.json)",
+      "model_backed": "test_live_pipeline.py 2/2 (remediation/live_pipeline_integration_f8bf7e5.json)",
+      "sweep": "86 files, 85 exit 0 (native AX exits 2 by design), 928 ok lines, 0 FAIL, 0 Accessibility calls blocked (remediation/sweep_integration_f8bf7e5.json)",
+      "downstream": "M02 store 17, remediation store 19, collector 11, remediation collector 14, review round 8 · M03 remediation app 14, supervisor 17, worker 10, journal 6, review round 15 · M05 remediation 28, app seams 12, review round 31, vocabulary store 16, pipeline 6, hint selection 9 · M07 cleanup pipeline 13 · M08 insertion races 13, attribution 10, pipeline 5 · M10 profiles pipeline 13, style resolution 9, snippets 9 · M14 learning 11, hub 6"
+    },
+    "unchanged": "R5 remains open under M06-V001; M06-V001..V004 remain Not run at M06-r1 (runbook section untouched); benchmark figures not re-measured (release path unchanged; the one dictation-path change is the identity decision at press)"
   }
 }

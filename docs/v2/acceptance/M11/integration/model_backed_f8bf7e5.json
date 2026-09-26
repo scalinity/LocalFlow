@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "code_root_sha": "f8bf7e5bfc03c916850bb8c3e54d9acf3a2136d2",
+  "environment": "reference Mac (Apple M5 Pro, macOS 27.0); .venv CPython 3.14.7; MLX 0.31.2 on Metal gpu:0; models from the local Hugging Face cache, offline: Qwen3-4B-Instruct-2507-4bit 50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b, parakeet-tdt-0.6b-v3 ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15; every run under tests/v2/context/run_isolated.py (ax_calls_blocked=0)",
+  "runs": [
+    {
+      "suite": "tests/v2/training/test_live_pipeline.py",
+      "exit": 0,
+      "result": "2/2",
+      "seconds": 5
+    },
+    {
+      "suite": "tests/v2/transforms/test_prompt_engineer_cases.py",
+      "exit": 1,
+      "result": "40 cases: applied 10, applied_semantic_failure 0, review_addresses_loss 1, review_misdirected 1 (PE-BLIND-008, intent:implement), review_no_loss 14, fallback 14 (every one reason output_limit), error 0",
+      "seconds": 81,
+      "record": "prompt_engineer_cases_f8bf7e5.json",
+      "comparison": "identical per-case verdicts at the historical M11 head 1be42ee (prompt_engineer_cases_historical_1be42ee.json) and in two further runs of the integrated tree: the model result belongs to the M11 remediation, not to the integration"
+    },
+    {
+      "suite": "tests/v2/lifecycle/test_worker_live.py",
+      "exit": 0,
+      "result": "2/2",
+      "seconds": 5
+    },
+    {
+      "suite": "tests/test_cleanup.py",
+      "exit": 0,
+      "result": "51/51 (V1 control)",
+      "seconds": 48
+    },
+    {
+      "suite": "tests/v2/fidelity/test_fidelity.py",
+      "exit": 0,
+      "result": "60/60, 11 fallback-window jobs",
+      "seconds": 40
+    }
+  ]
+}

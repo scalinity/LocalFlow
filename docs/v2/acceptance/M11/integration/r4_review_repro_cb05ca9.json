@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "tool": "scripts/v2/m06_review_repro.py",
+  "code_root_sha": "cb05ca9571e5662ec1275530a892b4c1c604a130",
+  "evaluated_utc": "2026-09-26T06:39:36Z",
+  "note": "Reduced to the r4 finding (the other probes target M06 and are recorded in acceptance/M06/remediation/). The probe calls AppDelegate._m11_capture_selection over a host that records every Accessibility call, with the deny entry \" com.google.Chrome\"; reproduced when the capture reaches Accessibility for that app.",
+  "findings": {
+    "r4": {
+      "m06_denies": true,
+      "m11_capture_calls": [
+        "focused_element",
+        "AXSelectedTextRange",
+        "string_for_range",
+        "AXRole"
+      ],
+      "m11_reason": null,
+      "reproduced": true
+    }
+  }
+}

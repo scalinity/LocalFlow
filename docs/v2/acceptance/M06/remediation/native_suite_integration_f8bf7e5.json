@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "suite": "tests/v2/context/test_native_ax.py",
+  "code_root_sha": "f8bf7e5bfc03c916850bb8c3e54d9acf3a2136d2",
+  "command": ".venv/bin/python tests/v2/context/test_native_ax.py",
+  "python": "3.14.7",
+  "exit": 0,
+  "ok": 7,
+  "fail": 0,
+  "isolation": null,
+  "note": "native, not isolated: synthetic helper window of its own, reached by pid",
+  "lines": [
+    "ok  native AXValue range decodes/boxes; offsets are UTF-16 units",
+    "ok  native field: flanks read, emoji selection converted exactly, identifiers extracted",
+    "ok  native secure field: role/subrole only, zero content reads",
+    "ok  native window via AXWindow; element identity stable; timeout configuration returns kAXErrorSuccess",
+    "ok  native collector: owned element, window, flanks, identifiers end to end",
+    "ok  M08 native bridge: live AXValue range decoded, AXStringForRange boxed",
+    "ok  element of a dead process: classification_failed; no content read",
+    "all native Accessibility tests passed"
+  ]
+}
