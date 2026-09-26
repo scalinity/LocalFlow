@@ -247,9 +247,13 @@ def run_native(root, killers, timeout=900):
                 "stderr": p.stderr[-400:]}
     d = json.loads(out.read_text())
     out.unlink()
+    counted = [r for r in d["results"] if not r.get("diagnostic")]
     return {"exit": p.returncode,
-            "cases": {r["case"]: r["status"] for r in d["results"]
-                      if not r.get("diagnostic")}}
+            "cases": {r["case"]: r["status"] for r in counted},
+            "witness": {r["case"]: json.dumps(r.get("witness"),
+                                              ensure_ascii=False,
+                                              default=str)[:400]
+                        for r in counted if r["status"] != "pass"}}
 
 
 def verdict(control, mutant, killers):
@@ -316,16 +320,21 @@ def main(argv):
                     rec["native"] = {"control": (native_control or {})
                                      .get("cases", native_control),
                                      "mutant": nm.get("cases", nm)}
+                    rec["native"]["witness"] = nm.get("witness")
                     if "cases" in nm and (native_control or {}).get(
                             "cases"):
                         nc = native_control["cases"]
-                        rec["native"]["outcome"] = (
-                            "killed" if all(nc.get(k) == "pass" for k in nk)
-                            and any(nm["cases"].get(k) == "fail"
-                                    for k in nk)
-                            else "survived" if all(
-                                nm["cases"].get(k) == "pass" for k in nk)
-                            else "harness_error")
+                        if not all(nc.get(k) == "pass" for k in nk):
+                            rec["native"]["outcome"] = "harness_error"
+                            rec["native"]["reason"] = (
+                                "native control not green: "
+                                f"{native_control.get('witness')}")
+                        elif any(nm["cases"].get(k) == "fail" for k in nk):
+                            rec["native"]["outcome"] = "killed"
+                        elif all(nm["cases"].get(k) == "pass" for k in nk):
+                            rec["native"]["outcome"] = "survived"
+                        else:
+                            rec["native"]["outcome"] = "harness_error"
                     else:
                         rec["native"]["outcome"] = "not_run"
             shutil.rmtree(root, ignore_errors=True)

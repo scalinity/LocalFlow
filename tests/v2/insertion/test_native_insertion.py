@@ -361,9 +361,12 @@ def _astral(host_cls):
         r = env.run("X\U0001F600Y", job(snapshot(host, h, el, sel=(4, 4))))
         text = h.view("F1")["text"]
         env.close()
+        # Any owned range reported — confirmed or not — must be exact in
+        # host units: a mixed-unit range is the invariant violation even
+        # under an honest unverified state.
         ok = (text == "A\U0001F600BX\U0001F600Y"
               and r.state in ("confirmed", "posted_unverified")
-              and (r.state != "confirmed"
+              and (r.owned_start is None
                    or (r.owned_start, r.owned_end) == (4, 8)))
         return ok, {"appkit_text": text, "result": res(r)}
     finally:
