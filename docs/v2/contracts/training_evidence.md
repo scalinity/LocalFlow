@@ -174,12 +174,17 @@ posted_unverified · target_changed · saved_not_inserted · failed) with
 method, readback, verification and clipboard disclosure — posted/
 confirmed/unknown stays independent of correctness labels, and the
 legacy `on_insertion` keeps the V1 baseline semantics the M02 suite
-pins. The S29.8 bounded observation (certified = readback-consistent
-surfaces only) writes window rows (`insertion_observations`, store
-schema v4) with stop reason, reanchors and lease-governed before/after
-range artifacts; the envelope's observation block is interim at insert
-time and finalized by `on_observation_closed`. Uncertified surfaces
-report `outcome_observation_unavailable` (`unreliable_target`);
+pins. The S29.8 bounded observation is a producer like every other
+here: it runs only for a capture whose collection consent was granted
+at capture time (the job's push-to-talk snapshot, or a retry's
+original-and-current grant; a transform accept only with a recorded
+candidate), on an attributably confirmed destination whose content may
+be read, and never for a deleted job. It writes window rows
+(`insertion_observations`) with stop reason, reanchors and
+lease-governed before/after range artifacts (host-unit ranges); the
+envelope's observation block is interim at insert time and finalized
+by `on_observation_closed` (delivered exactly once). Uncertified
+surfaces report `outcome_observation_unavailable` (`unreliable_target`);
 `no_edit_observed` never becomes a correctness label or preference
 (M08-AC05/AC06). See `contracts/insertion.md`.
 
