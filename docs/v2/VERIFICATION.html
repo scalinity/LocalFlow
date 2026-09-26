@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M06 remediation · code <code>4388b52</code> (M05 checks unchanged at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M11 section added at the pre-M08 integration · code <code>9a049b3</code> (M06 checks unchanged at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -2515,7 +2515,343 @@ grep -h '"context.provider_failed"' "$SANDBOX6"/Library/Logs/LocalFlow/events-*.
       <section class="milestone" id="M08" data-milestone="M08" data-title="Insertion"><div class="ms-head"><span class="mid">M08</span><h2>Insertion</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M08-V001).</p></section>
       <section class="milestone" id="M09" data-milestone="M09" data-title="Hub"><div class="ms-head"><span class="mid">M09</span><h2>Hub</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M09-V001).</p></section>
       <section class="milestone" id="M10" data-milestone="M10" data-title="Developer mode & profiles"><div class="ms-head"><span class="mid">M10</span><h2>Developer mode &amp; profiles</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M10-V001).</p></section>
-      <section class="milestone" id="M11" data-milestone="M11" data-title="Transforms & Prompt Engineer"><div class="ms-head"><span class="mid">M11</span><h2>Transforms &amp; Prompt Engineer</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M11-V001).</p></section>
+      <section class="milestone" id="M11" data-milestone="M11" data-title="Transforms & Prompt Engineer">
+        <div class="ms-head">
+          <span class="mid">M11</span><h2>Transforms &amp; Prompt Engineer</h2>
+          <span class="meta">instructions M11-r1 · code 9a049b3 · remediation of audit at 1ee8e44, reconciled on main</span>
+        </div>
+        <p class="ms-intro">The M11 remediation makes a transform keep what you asked for: every clause of your text is a requirement, and a rewrite that drops a “not”, a condition, a number or a quoted phrase is shown for review instead of being applied. Replacing a selection now needs proof that it is still the same selection in the same place — the same app, window, field, words and the text around them — otherwise the result goes to the clipboard and nothing is overwritten. A Scratchpad transform only ever replaces the note region it came from. Transform records follow Collect Training Evidence, and a password field or an app on your deny list is refused before anything in it is read, using exactly the deny rule dictation context uses (spacing and capitals in the deny list do not matter). On this Mac the integration session ran the portable suite, the AppKit suite against the real app coordinator, the deny-rule regressions and the model-backed Prompt Engineer cases; the checks below cover what only real apps, real windows and your own eyes can show. Carries the September 23 pending item <code>native-m11-transform-trial</code> and the remediation's extended trial under instruction revision M11-r1. Detail: <code>docs/v2/handoffs/M11.md</code> (remediation and integration addenda) and <code>docs/v2/acceptance/M11/results.json</code>.</p>
+
+        <div class="callout">
+          <h3>M11 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The integrated code gets its own worktree, and the dev app runs with a <b>sandbox home folder</b> (<code>$SANDBOX11</code>), so its store, logs and transform records land in a throw-away folder — never your real Application Support data or the installed app. The sandbox config puts Notes on the deny list written with extra spaces and lower-case letters on purpose, so M11-V002 also checks that the deny rule ignores both. Test documents live in <code>$OUT11/lf-m11-trial</code>; folders <code>b</code> and <code>c</code> hold two documents with the same name and the same text, so only the window itself tells them apart. Quit the installed LocalFlow.app first. The evidence reader prints kinds, paths, states and reasons — never the text of a document or a transform.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># Integrated M11 code in its own worktree (first time only)</span>
+export LF_M11="$(dirname "$LF_MAIN")/LocalFlow-m11-verify"
+git -C "$LF_MAIN" fetch origin main
+[ -d "$LF_M11" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M11" origin/main
+git -C "$LF_M11" merge-base --is-ancestor 9a049b3 HEAD &amp;&amp; echo "M11 repairs present"
+export OUT11="$EV/m11-verification"; mkdir -p "$OUT11"/lf-m11-trial/{a,b,c} &amp;&amp; chmod 700 "$OUT11"
+for d in a b c; do printf 'Keep this line.\nplease make this sentence a bit clearer\nKeep this line too.\n' \
+  &gt; "$OUT11/lf-m11-trial/$d/draft.txt"; done
+printf '%s\n' 'can you write three unit tests for the parse_config function, do not change the public API, keep the error message "config missing" exactly, and only add a fixture if the tests need one. see https://example.com/spec' \
+  &gt; "$OUT11/lf-m11-trial/prompt.txt"
+
+<span class="c"># Sandbox home and config for the dev app</span>
+export REAL_HOME="$HOME"
+export SANDBOX11="$OUT11/sandbox-home"; mkdir -p "$SANDBOX11" &amp;&amp; chmod 700 "$SANDBOX11"
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M11"], "config.json").read_text())
+c = dict(cfg, log_transcripts=False, context_enabled=True,
+         context_denied_apps=["  com.apple.notes "])
+p = pathlib.Path(os.environ["OUT11"], "sandbox-config.json")
+p.write_text(json.dumps(c, indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app; $LF11_PID is its process</span>
+lf11_start() { ( cd "$LF_M11" &amp;&amp; exec env HOME="$SANDBOX11" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT11/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT11/app-console.txt" 2&gt;&amp;1 &amp;
+  LF11_PID=$!; echo "dev app pid $LF11_PID"; }
+export SDB11="$SANDBOX11/Library/Application Support/LocalFlow/v2.db"
+
+<span class="c"># Evidence reader: transform records and transform events, oldest first (no text)</span>
+cat &gt; "$OUT11/m11_evidence.py" &lt;&lt;'EOF'
+import glob, json, os, sqlite3
+db = sqlite3.connect(os.environ["SDB11"])
+rows = db.execute("select candidate_id, task_kind, transform_id, path,"
+                  " output_artifact_id from transform_candidates order by rowid")
+for n, (cid, kind, tid, path, out) in enumerate(rows.fetchall(), 1):
+    ins = db.execute("select state, reason_code from insertions where job_id=?"
+                     " order by rowid desc limit 1", (cid,)).fetchone()
+    meta = db.execute("select meta_json from artifacts where artifact_id=?",
+                      (out,)).fetchone()
+    retry = bool(json.loads(meta[0]).get("retry_of")) if meta else False
+    print(f"#{n} {kind} {tid} path={path} retry_of={retry}"
+          f" insertion={ins[0] if ins else None}/{ins[1] if ins else None}")
+print("judgments:", db.execute("select count(*) from preference_observations").fetchone()[0])
+logs = os.path.join(os.environ["SANDBOX11"], "Library/Logs/LocalFlow/events-*.jsonl")
+for f in sorted(glob.glob(logs)):
+    for line in open(f, encoding="utf-8"):
+        e = json.loads(line)
+        if e["event"].startswith(("transforms.", "notes.transform")):
+            print(" ", e["timestamp_utc"][11:19], e["event"],
+                  e.get("outcome"), e.get("reason_code"))
+EOF
+lf11_evidence() { ( cd "$LF_M11" &amp;&amp; "$PY" "$OUT11/m11_evidence.py" ); }</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M11 repairs present” and one “wrote …/sandbox-config.json” line. Transforms run on the cleanup model, so wait for “ASR: ready” after each <code>lf11_start</code>. Remove the sandbox when finished: <code>rm -rf "$SANDBOX11"</code> (test documents and test transforms only).</p>
+        </div>
+
+        <h3 class="group">Replacing a selection</h3>
+
+        <article class="check" id="M11-V001" data-milestone="M11" data-rev="M11-r1" data-code="9a049b3" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M11-V001</span>
+            <h4>Accept a transform over a real selection, then try to accept one into a look-alike document and over a moved selection</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Model-backed</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> An accepted transform replaces the selection it was made from — and only that. Accepting while another document is in front, even one with the same name, the same text and the same selected words, refuses and leaves the result on the clipboard: only the window itself tells the two apart, which is the rule dictation insertion uses and the part a synthetic test cannot show for TextEdit. A selection that moved before you pressed Accept refuses the same way. Each accept's insertion is recorded against its transform. Covers FLOW-02 and FLOW-03 of the remediation's extended trial and the accept step of <code>native-m11-transform-trial</code>.</p>
+          <p class="plain"><b>In plain terms.</b> You polish one sentence in a text document and accept it. Then you try twice to accept a polished sentence when the place it came from has changed — a different window that looks identical, and a selection you clicked away from. Both times nothing in any document should change.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · models cached (offline) · sandbox home · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M11 set-up done; installed LocalFlow.app quit; Terminal holds the Accessibility permission.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M11 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf11_start</code>; wait for “ASR: ready”. In its menu choose <b>Training → Collect Training Evidence</b> (the sandbox store only).</li>
+              <li>Run <code>open -a TextEdit "$OUT11/lf-m11-trial/a/draft.txt"</code>. Drag to select <code>make this sentence a bit clearer</code>. In the menu choose <b>Transforms → Polish</b>. When the <b>Transform Preview</b> panel shows, click <b>Accept</b>.</li>
+              <li>Run <code>open -a TextEdit "$OUT11/lf-m11-trial/b/draft.txt" "$OUT11/lf-m11-trial/c/draft.txt"</code> (two windows, both titled <code>draft.txt</code>). In the <code>b</code> window select the same words and choose <b>Transforms → Polish</b>. When the panel shows, click into the <code>c</code> window, select the same words there, then click <b>Accept</b> in the panel.</li>
+              <li>Back in the <code>b</code> window, select the same words again and choose <b>Transforms → Polish</b>. When the panel shows, click once at the end of the last line of <code>b</code> (the selection disappears), then click <b>Accept</b>.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 5)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf11_evidence | tee "$OUT11/V001-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 2: the selected words in <code>a</code> were replaced by the polished sentence; the lines around them are unchanged. Evidence line #1: <code>transform_selection builtin:polish</code>, and <code>insertion=confirmed</code> or <code>posted_unverified</code>.</li>
+              <li>Steps 3 and 4: neither <code>b</code> nor <code>c</code> changed at all, and the polished sentence was on the clipboard afterwards. Evidence lines #2 and #3: <code>insertion=target_changed</code> (with any reason).</li>
+              <li>The event list shows <code>transforms.accepted</code> three times and a <code>transforms.insertion_done</code> for each, matching those states.</li>
+              <li>A <code>path=needs_review</code> instead of <code>applied</code> is fine here (the panel shows what it kept); Accept still decides.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Any text changed in <code>b</code> or <code>c</code>: <b>Failed</b> — the one promise this check exists for. Keep <code>V001-evidence.txt</code> and <code>app-console.txt</code>.</li>
+              <li>Step 2 did not replace the selection and line #1 shows <code>target_changed</code>: <b>Needs follow-up</b> (safe, but TextEdit did not give the proof a real accept needs); note the reason.</li>
+              <li>No evidence lines at all: Collect Training Evidence was off — turn it on and repeat.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT11/V001-evidence.txt</code> (kinds, paths, states and reasons — no text), <code>$OUT11/app-console.txt</code>. The test sentences stay in the trial documents and the sandbox store.</p>
+            <h5>Contract relevance</h5>
+            <p>M11-AC03; M11-AUDIT-06/07; <code>contracts/insertion.md</code> → strict replacement; <code>contracts/transforms.md</code> → selection capture; M06 review R1 (window element and title).</p>
+          </details>
+        </article>
+
+        <h3 class="group">Privacy boundaries</h3>
+
+        <article class="check" id="M11-V002" data-milestone="M11" data-rev="M11-r1" data-code="9a049b3" data-tags="native human privacy">
+          <header class="check-head">
+            <span class="cid">M11-V002</span>
+            <h4>Ask for a transform in a password field and in a denied app; confirm both are refused before anything is read</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Privacy / data</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A real password field is recognised from its role alone and a transform refuses before its contents are read; an app on the deny list is refused before any Accessibility call is made — here Notes, listed in the sandbox config as <code>"  com.apple.notes "</code> with extra spaces and lower-case letters, while its real identity is <code>com.apple.Notes</code>. The deny list is matched with spacing trimmed and capitals ignored, which is how bundle identifiers are defined, and dictation context uses the same rule (M06 review R4, closed at the integration). No transform record is written for either. Covers TG-04 of the extended trial.</p>
+          <p class="plain"><b>In plain terms.</b> You select something in a login page's password box and in a note, and ask LocalFlow to polish it. Both times it should decline straight away and keep nothing.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · sandbox home · Safari · Notes</dd>
+              <dt>Preconditions</dt><dd>M11 set-up done; M11-V001 done in this sandbox (its records come first); installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M11 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf11_start</code>; wait for “ASR: ready”. Collect Training Evidence stays on from M11-V001.</li>
+              <li>In Safari open <code>https://github.com/login</code>, click into the <b>Password</b> box (leave the username empty), type <code>abc</code>, press ⌘A, then choose <b>Transforms → Polish</b>. Then clear the box; never submit the form.</li>
+              <li>Open Notes, make a new note, type <code>alpha beta gamma</code>, double-click <code>beta</code>, then choose <b>Transforms → Polish</b>. Delete the note afterwards.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 4)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf11_evidence | tee "$OUT11/V002-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>No Transform Preview panel opened in either step.</li>
+              <li>The event list ends with two <code>transforms.selection_unavailable</code> lines: reason <code>secure_field</code>, then reason <code>app_denied</code>.</li>
+              <li>The candidate lines are exactly the three from M11-V001 — nothing new.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A preview panel opened for either, or a fourth candidate line appears: <b>Failed</b> — keep the evidence and <code>app-console.txt</code>; do not repeat on a real account.</li>
+              <li>Notes shows reason <code>no_selection</code> or anything but <code>app_denied</code>: <b>Failed</b> (check that <code>sandbox-config.json</code> lists <code>"  com.apple.notes "</code>).</li>
+              <li>The password box shows reason <code>no_selection</code> and no panel opened: <b>Needs follow-up</b> — no transform ran, but Safari did not report the field as secure, so its selection range was asked for.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT11/V002-evidence.txt</code> (event names and reasons). Nothing typed into the password box was submitted anywhere.</p>
+            <h5>Contract relevance</h5>
+            <p>M11-AUDIT-06; TG-04; <code>contracts/transforms.md</code> → selection capture; <code>contracts/context.md</code> → sensitive-field rule 5 and the caller inventory.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Prompt Engineer and the preview panel's actions</h3>
+
+        <article class="check" id="M11-V003" data-milestone="M11" data-rev="M11-r1" data-code="9a049b3" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M11-V003</span>
+            <h4>Run a draft prompt through Prompt Engineer, use Retry Original, Apply Another and Transform Output, accept, edit, then undo</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Model-backed</li><li>~15 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> With the real model, a draft's requirements — the count, the “do not”, the quoted message, the condition and the link — either survive in the rewrite or are listed for review in their original wording; the panel opens without taking focus from your document; Retry Original makes a second attempt without recording a rejection of the first; Apply Another and Transform Output make new transforms whose accept still replaces the original selection; and Undo Last Insertion restores the original text after an unrelated edit elsewhere in the document. Carries steps 1–5 of <code>native-m11-transform-trial</code> (September 23) and FLOW-09 of the extended trial.</p>
+          <p class="plain"><b>In plain terms.</b> You ask Prompt Engineer to tidy a rough request, read what it changed, try each of the panel's other buttons once, accept, type a word somewhere else, and undo. Nothing you asked for should quietly disappear, and undo should bring your original back.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · models cached (offline) · sandbox home · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M11 set-up done; M11-V001 and V002 done in this sandbox; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M11 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf11_start</code>; wait for “ASR: ready”. Run <code>open -a TextEdit "$OUT11/lf-m11-trial/prompt.txt"</code> and press ⌘A.</li>
+              <li>Choose <b>Transforms → Prompt Engineer</b>. Watch the pill show the transforming stage. When the panel opens, look at the menu bar: the app name next to the Apple menu must still read <b>TextEdit</b> (the panel did not take focus). Do not type into the document yet.</li>
+              <li>In the panel, compare the rewrite with the draft: three tests, <code>parse_config</code>, “do not change the public API”, <code>"config missing"</code> exactly, the fixture condition, and the link. Note any that are missing and whether each missing one is listed in the panel's review section in its original words.</li>
+              <li>Click <b>Retry Original</b> once. On the new result click <b>Apply Another…</b> and choose Concise. On that result click <b>Transform Output…</b> and choose Polish. Click <b>Accept</b>.</li>
+              <li>Click at the very end of the document and type <code> ok</code>. Then choose <b>Recovery → Undo Last Insertion</b>.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 6)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf11_evidence | tee "$OUT11/V003-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 3: every requirement is either in the rewrite with its meaning intact, or listed for review with its original wording. A “not” turned positive, or a condition, number or quoted phrase missing without a review entry, is a failure.</li>
+              <li>Step 5: the draft's original text is back in place and your typed <code> ok</code> is still at the end.</li>
+              <li>New candidate lines after M11-V002: the Prompt Engineer attempt, its retry with <code>retry_of=True</code>, then the Concise and Polish transforms; the last one has an <code>insertion=</code> of <code>confirmed</code> or <code>posted_unverified</code>. <code>judgments: 0</code> — a retry is not a rejection.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A requirement changed meaning or disappeared without a review entry: <b>Failed</b> — write down which one (not the text of the draft beyond it) and keep <code>V003-evidence.txt</code>.</li>
+              <li>The menu bar showed LocalFlow or Python instead of TextEdit in step 2: <b>Failed</b> (the panel took focus).</li>
+              <li>Undo left the rewrite in place and put the original on the clipboard instead: <b>Needs follow-up</b> — safe, but the edit elsewhere should not have blocked it.</li>
+              <li><code>judgments:</code> above 0: <b>Failed</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT11/V003-evidence.txt</code>, your note of any missing requirement, <code>$OUT11/app-console.txt</code>. The draft is synthetic.</p>
+            <h5>Contract relevance</h5>
+            <p>M11-AC01–AC03; M11-AUDIT-01/02/04/10/12; <code>contracts/transforms.md</code> → requirement gate, candidates, Retry Original; <code>contracts/insertion.md</code> → undo.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Scratchpad transforms</h3>
+
+        <article class="check" id="M11-V004" data-milestone="M11" data-rev="M11-r1" data-code="9a049b3" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M11-V004</span>
+            <h4>Transform part of a Scratchpad note; switch notes or move the caret before accepting; transform text after an emoji</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Model-backed</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A note transform's result can only replace the region of the note it was made from: accepting after switching to another note writes nothing; after Transform Output and a moved caret, accepting still replaces exactly the original region and never inserts at the caret; and a selection after an emoji transforms exactly the selected words (the editor's positions are converted correctly). Covers FLOW-04, FLOW-05 and FLOW-10 of the extended trial.</p>
+          <p class="plain"><b>In plain terms.</b> In the Scratchpad you polish a few words, then switch notes before accepting — nothing should change. You try again after clicking elsewhere in the note — only the words you picked should change. Last, you polish a word that comes after an emoji.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · models cached (offline) · sandbox home · LocalFlow Hub</dd>
+              <dt>Preconditions</dt><dd>M11 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M11 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf11_start</code>; wait for “ASR: ready”. Choose <b>Open Hub…</b>, go to the Scratchpad, and make two notes: A with <code>one two three four</code> and B with <code>five six</code>.</li>
+              <li>In A select <code>two three</code>, pick Polish in the transform menu next to <b>Transform…</b>, and click <b>Transform…</b>. When the panel shows, open note B, then click <b>Accept</b>.</li>
+              <li>Open A, select <code>two three</code> again and click <b>Transform…</b>. In the panel click <b>Transform Output…</b> and choose Concise. Click at the end of A so the caret moves, then click <b>Accept</b>.</li>
+              <li>Make note C with an emoji, a space and <code>alpha beta</code> (for example 😀 then <code> alpha beta</code>). Double-click <code>beta</code>, click <b>Transform…</b>, check that the panel's original text is exactly <code>beta</code>, and click <b>Accept</b>.</li>
+              <li>Quit from the menu, then run the command block.</li>
+            </ol>
+            <h5>Commands (after step 5)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf11_evidence | tee "$OUT11/V004-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 2: neither A nor B changed; the event list shows <code>notes.transform_target_lost</code> with a reason such as <code>note_changed</code>.</li>
+              <li>Step 3: in A only <code>two three</code> was replaced, <code>one</code> and <code>four</code> are unchanged, and nothing was added at the caret; the event list shows <code>notes.transform_applied</code>.</li>
+              <li>Step 4: only <code>beta</code> was replaced; the emoji and <code>alpha</code> are unchanged.</li>
+              <li>With Collect Training Evidence on, the note transforms appear as <code>transform_note</code> candidate lines; with it off there are none, and the transforms still worked.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>B changed in step 2, or text appeared at the caret in step 3: <b>Failed</b>.</li>
+              <li>Step 4's panel showed more or less than <code>beta</code> as the original: <b>Failed</b> (offset conversion).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT11/V004-evidence.txt</code>. The notes live in the sandbox store only.</p>
+            <h5>Contract relevance</h5>
+            <p>M11-AUDIT-07; <code>contracts/scratchpad.md</code> → note transforms; <code>contracts/transforms.md</code> → destination.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Custom transforms and preserved definitions</h3>
+
+        <article class="check" id="M11-V005" data-milestone="M11" data-rev="M11-r1" data-code="9a049b3" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M11-V005</span>
+            <h4>Create a custom transform with a writing sample and auto-apply; confirm the legacy definitions are preserved</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~12 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A custom transform with one writing sample can be created in the Hub and set to apply automatically; a dictation whose destination rule selects it is transformed, while its Clean result is still kept in History's cleaned stage; and the two definitions that existed before M11 are still available as preserved revisions with their prompts unchanged. Carries steps 6–7 of <code>native-m11-transform-trial</code>.</p>
+          <p class="plain"><b>In plain terms.</b> You make your own transform with one before-and-after example, switch it on for one app, dictate there, and check both versions are kept. Then you check the older built-in transforms are still listed as they were.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home · TextEdit · LocalFlow Hub</dd>
+              <dt>Preconditions</dt><dd>M11 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M11 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf11_start</code>; wait for “ASR: ready”. Choose <b>Open Hub…</b> → Transforms. Create a custom transform with a short instruction (for example “answer in a friendly tone”), add one writing sample (a before and after pair) in its editor, and tick <b>Auto-apply before insertion (opt-in)</b>.</li>
+              <li>Add a destination rule that selects this custom transform for TextEdit.</li>
+              <li>Open <code>"$OUT11/lf-m11-trial/a/draft.txt"</code> in TextEdit, click at the end, hold fn and say “thanks for the update I will look tomorrow”, release.</li>
+              <li>In the Hub open History for that dictation and look at its stages.</li>
+              <li>In Transforms, look for the Polish and Prompt Engineer definitions that existed before M11 and open their history.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 3 inserted the custom transform's result; History shows the dictation's cleaned stage with the Clean text kept separately from the transform stage.</li>
+              <li>Step 5: both legacy definitions are listed as preserved revisions and their prompts are shown unchanged.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>The cleaned stage is missing or equals the transform output: <b>Failed</b>.</li>
+              <li>A legacy definition is missing or its prompt was rewritten: <b>Failed</b>.</li>
+              <li>You could not find how to add the destination rule: <b>Blocked</b> — say where you looked.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: a note of what History showed (stage names, not their text); <code>$OUT11/app-console.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M11-AC01, AC04; <code>contracts/transforms.md</code> → definitions, auto-apply; <code>contracts/profiles.md</code>.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Preview panel</h3>
+
+        <article class="check" id="M11-V006" data-milestone="M11" data-rev="M11-r1" data-code="9a049b3" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M11-V006</span>
+            <h4>Check the preview panel's buttons at default and minimum size, by mouse and keyboard, at two text sizes</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~8 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The panel's six actions sit side by side without overlapping at its default and minimum width, each one responds to a click on its own label, and every one is reachable with the keyboard; the same holds with larger text. The layout was checked by geometry in the suites; only a real screen shows how it looks and reads. Covers the panel step of the extended trial (M11-AUDIT-11) and the screenshots requested by <code>native-m11-transform-trial</code>.</p>
+          <p class="plain"><b>In plain terms.</b> You open the preview panel, make it as narrow as it goes, and check every button can be seen, clicked and reached with Tab — once at normal text size and once with bigger text — taking a screenshot each time.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · models cached (offline) · sandbox home · TextEdit · System Settings</dd>
+              <dt>Preconditions</dt><dd>M11 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M11 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf11_start</code>; wait for “ASR: ready”. Open <code>"$OUT11/lf-m11-trial/a/draft.txt"</code>, select a line and choose <b>Transforms → Polish</b>.</li>
+              <li>With the panel open, take a screenshot (⇧⌘4, then Space, then click the panel) and save it as <code>$OUT11/V006-default.png</code>. Drag the panel's edge to make it as narrow as it goes and take <code>V006-minimum.png</code>.</li>
+              <li>At minimum width, click each button's label once, closing or undoing whatever it opens. Then press Tab repeatedly and confirm each button gets a visible focus ring in turn.</li>
+              <li>In System Settings → Accessibility → Display, choose a larger text size, repeat steps 1–3 and save <code>V006-large-default.png</code> and <code>V006-large-minimum.png</code>. Set the text size back afterwards.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>In all four screenshots the six buttons — Accept, Copy, Retry Original, Apply Another…, Transform Output…, Save to Scratchpad — are fully visible and do not overlap.</li>
+              <li>Each click did what its label says; each button was reached by Tab.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Overlapping or clipped buttons, or a click that triggered a neighbouring button: <b>Failed</b> — keep the screenshots.</li>
+              <li>A button Tab never reaches: <b>Needs follow-up</b>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: the four screenshots in <code>$OUT11</code> (they show the synthetic trial text only).</p>
+            <h5>Contract relevance</h5>
+            <p>M11-AUDIT-11; <code>contracts/transforms.md</code> → preview panel.</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M12" data-milestone="M12" data-title="Scratchpad"><div class="ms-head"><span class="mid">M12</span><h2>Scratchpad</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M12-V001).</p></section>
       <section class="milestone" id="M13" data-milestone="M13" data-title="Usage analytics"><div class="ms-head"><span class="mid">M13</span><h2>Usage analytics</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M13-V001).</p></section>
       <section class="milestone" id="M14" data-milestone="M14" data-title="Learning & datasets"><div class="ms-head"><span class="mid">M14</span><h2>Learning &amp; datasets</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M14-V001).</p></section>
