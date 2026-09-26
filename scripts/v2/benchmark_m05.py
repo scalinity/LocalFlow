@@ -125,14 +125,18 @@ def timed(fn, reps):
                  "max_ms": round(max(out), 3)}
 
 
-def timed_each(fn, items):
-    """timed() over distinct inputs: one call per item."""
+def timed_each(fn, make, n):
+    """timed() over ``n`` distinct inputs, each built by ``make()`` just
+    before its (timed) call and released after it — only one extra large
+    input is alive at a time, as in the app."""
     out = []
     val = None
-    for it in items:
+    for _ in range(n):
+        it = make()
         t0 = time.monotonic()
         val = fn(it)
         out.append((time.monotonic() - t0) * 1000.0)
+        del it
     return val, {"iterations": len(out), "p50_ms": round(pct(out, .5), 3),
                  "p95_ms": round(pct(out, .95), 3),
                  "p99_ms": round(pct(out, .99), 3),
@@ -250,25 +254,29 @@ def main():
         # Real selection work: the first select() on each fresh snapshot
         # (snapshots built before the clock starts; review R9).
         n_fresh = max(8, reps // 10)
-        fresh = [VocabularySnapshot(snap.entries, None)
-                 for _ in range(n_fresh)]
         hs_f, fresh_t = timed_each(
-            lambda sn: sel.select(sn, now_utc=NOW), fresh)
-        del fresh
+            lambda sn: sel.select(sn, now_utc=NOW),
+            lambda: VocabularySnapshot(snap.entries, None), n_fresh)
         if [t.entry_id for t in hs_f.terms] != want[:LIMIT] \
                 or [o["entry_id"] for o in hs_f.omitted] != want[LIMIT:]:
             problems.append("fresh selection membership/order differs"
                             " from the independent ranking")
-        fresh_s = [VocabularySnapshot(snap.entries,
-                                      ScopeContext(workspace="scope-a"))
-                   for _ in range(n_fresh)]
         hs_fs, fresh_scoped_t = timed_each(
-            lambda sn: sel.select(sn, now_utc=NOW), fresh_s)
-        del fresh_s
+            lambda sn: sel.select(sn, now_utc=NOW),
+            lambda: VocabularySnapshot(snap.entries,
+                                       ScopeContext(workspace="scope-a")),
+            n_fresh)
         if [t.entry_id for t in hs_fs.terms] != want_s[:LIMIT] \
                 or [o["entry_id"] for o in hs_fs.omitted] != want_s[LIMIT:]:
             problems.append("fresh scoped selection membership/order"
                             " differs from the independent ranking")
+
+        # Informational: the first selection over entries freshly READ
+        # from the store (per-entry caches cold) — what a job pays once
+        # after a dictionary edit, next to the cold snapshot build.
+        _, cold_sel_t = timed_each(
+            lambda sn: sel.select(sn, now_utc=NOW),
+            lambda: vs.snapshot(None), max(3, reps // 40))
 
         def cached_job():
             vs.revision()                       # the per-job store read
@@ -377,13 +385,17 @@ def main():
                         "warm_selection": "repeat selection on one"
                         " snapshot (memoized per snapshot)",
                         "fresh_selection": "first selection on each of"
-                        " several fresh snapshots (no memo)"},
+                        " several fresh snapshots over the frozen entries"
+                        " (no memo; the scope-upgrade path)",
+                        "cold_selection": "first selection over entries"
+                        " freshly read from the store (informational)"},
         "timings": {"cold_snapshot": cold, **gated,
                     "scope_upgrade_and_packaging": {
                         **upgrade_t, "bound_ms": FINALIZE_BOUND_MS,
                         "within_bound": upgrade_t["p95_ms"]
                         <= FINALIZE_BOUND_MS,
                         "gated": False},
+                    "cold_selection": {**cold_sel_t, "gated": False},
                     "stress_dense_hits": stress_dense,
                     "stress_shared_first_word_bucket": stress_bucket,
                     "stress_overlap_long_aliases": stress_overlap},
