@@ -1,0 +1,1013 @@
+{
+ "tool": "scripts/v2/m09_mutation_check.py",
+ "runner": "tests/v2/ui/m09_corpus_runner.py",
+ "code_sha": "3d4ec97898ad7509abd1cad4d9fed9dca18bb251",
+ "control": {
+  "exit": 0,
+  "imported_from": "control",
+  "cases": {
+   "M09-C001": "PASS",
+   "M09-C002": "PASS",
+   "M09-C005": "NARROWED",
+   "M09-C006": "PASS",
+   "M09-C007": "PASS",
+   "M09-C008": "PASS",
+   "M09-C009": "PASS",
+   "M09-C011": "PASS",
+   "M09-C014": "PASS",
+   "M09-C015": "PASS",
+   "M09-C017": "PASS",
+   "M09-C018": "NARROWED",
+   "M09-C020": "PASS",
+   "M09-C021": "PASS",
+   "M09-C022": "PASS",
+   "M09-C023": "PASS",
+   "M09-C024": "PASS",
+   "M09-C025": "PASS",
+   "M09-C034": "PASS",
+   "M09-C035": "PASS",
+   "M09-C039": "PASS",
+   "M09-C040": "PASS",
+   "M09-C044": "PASS",
+   "M09-C054": "PASS",
+   "M09-C055": "PASS",
+   "M09-C056": "PASS",
+   "M09-C059": "PASS",
+   "M09-C064": "PASS",
+   "M09-C068": "PASS",
+   "M09-C069": "PASS",
+   "M09-C070": "PASS",
+   "M09-C076": "PASS",
+   "M09-C079": "PASS",
+   "M09-C081": "PASS",
+   "M09-C083": "PASS",
+   "M09-C084": "PASS",
+   "M09-C086": "PASS",
+   "M09-C087": "PASS",
+   "M09-C090": "PASS",
+   "M09-C094": "PASS",
+   "M09-C095": "PASS",
+   "M09-C099": "PASS",
+   "M09-C100": "PASS",
+   "M09-C101": "PASS",
+   "M09-C105": "PASS",
+   "M09-C108": "PASS",
+   "M09-C118": "PASS",
+   "M09-C122": "PASS",
+   "M09-C128": "PASS"
+  },
+  "details": {}
+ },
+ "summary": {
+  "killed": 22,
+  "survived": 2
+ },
+ "results": [
+  {
+   "mutation_id": "M09-MUT01",
+   "name": "Remove the generation comparison",
+   "files": [
+    "localflow/v2/ui/state.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/state.py": {
+      "sha_before": "350dd606eb1b5fd5",
+      "sha_after": "f44826d280bd6db3",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C001",
+    "M09-C021",
+    "M09-C022"
+   ],
+   "control": {
+    "M09-C001": "PASS",
+    "M09-C021": "PASS",
+    "M09-C022": "PASS"
+   },
+   "mutant": {
+    "M09-C001": "FAIL",
+    "M09-C021": "FAIL",
+    "M09-C022": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C001": "a late A completion changed B's state",
+    "M09-C021": "stale A error overwrote B: RuntimeError",
+    "M09-C022": "B's error lost"
+   },
+   "imported_from": "M09-MUT01",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT02",
+   "name": "Move generation check outside the atomic publication boundary",
+   "files": [
+    "localflow/v2/ui/state.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/state.py": {
+      "sha_before": "350dd606eb1b5fd5",
+      "sha_after": "2f480d4dc77f1501",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C023"
+   ],
+   "control": {
+    "M09-C023": "PASS"
+   },
+   "mutant": {
+    "M09-C023": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C023": "stale A overwrote newer B: ['job-0fdbce933513467fad29d3a85c7fbc61']"
+   },
+   "imported_from": "M09-MUT02",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT03",
+   "name": "Publish stale detail after a new selected ID (History: selection keeps the old detail, which renders and acts)",
+   "files": [
+    "localflow/v2/ui/hub.py",
+    "localflow/v2/ui/state.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/state.py": {
+      "sha_before": "350dd606eb1b5fd5",
+      "sha_after": "f56c62cb99f0e003",
+      "changed": true
+     },
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "26fd3d59043d7e66",
+      "sha_after": "393e5357a854a340",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C002",
+    "M09-C024"
+   ],
+   "control": {
+    "M09-C002": "PASS",
+    "M09-C024": "PASS"
+   },
+   "mutant": {
+    "M09-C002": "FAIL",
+    "M09-C024": "PASS"
+   },
+   "mutant_details": {
+    "M09-C002": "wrong-record action on A while B selected: [(('M09_CANARY_A_not_user_data',), {'job_id': 'job-602725544cf54ecda9b72b115587be8b'}), (('job-602725544cf54ecda9b72b115587be8b',), {}), (('M09_CANARY_A_not_user_data',), {})]"
+   },
+   "imported_from": "M09-MUT03",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT04",
+   "name": "Dispatch refresh inline from a query worker",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "26fd3d59043d7e66",
+      "sha_after": "75677a2678865e32",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C020",
+    "M09-C118",
+    "M09-C122"
+   ],
+   "control": {
+    "M09-C020": "PASS",
+    "M09-C118": "PASS",
+    "M09-C122": "PASS"
+   },
+   "mutant": {
+    "M09-C020": "FAIL",
+    "M09-C118": "PASS",
+    "M09-C122": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C020": "[{'entry': '_refresh', 'args': ('models',), 'main': False, 'thread': 'localflow-hub-query-worker'}, {'entry': '_refresh', 'args': ('models',), 'main': False, 'thread': 'localflow-hub-query-worker'}, {'entry': '_refresh', 'args': ('models',), 'main': False, 'thread': 'localflow-hub-query-worker'}, {'",
+    "M09-C122": "[{'entry': '_refresh', 'args': ('history',), 'main': False, 'thread': 'localflow-hub-query-worker'}, {'entry': '_refresh', 'args': ('history',), 'main': False, 'thread': 'localflow-hub-query-worker'}, {'entry': '_refresh', 'args': ('models',), 'main': False, 'thread': 'localflow-hub-query-worker'}, "
+   },
+   "imported_from": "M09-MUT04",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT05",
+   "name": "Replace per-example listening identity with one boolean",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "26fd3d59043d7e66",
+      "sha_after": "ac25e90ee3371325",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C007",
+    "M09-C064"
+   ],
+   "control": {
+    "M09-C007": "PASS",
+    "M09-C064": "PASS"
+   },
+   "mutant": {
+    "M09-C007": "PASS",
+    "M09-C064": "PASS"
+   },
+   "mutant_details": {},
+   "imported_from": "M09-MUT05",
+   "outcome": "survived",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT06",
+   "name": "Grant listen token before sound.play succeeds",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "26fd3d59043d7e66",
+      "sha_after": "227fc95c2f024528",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C008"
+   ],
+   "control": {
+    "M09-C008": "PASS"
+   },
+   "mutant": {
+    "M09-C008": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C008": "test_m09_remediation.py:1347 assert w.hub.state.views[\"models\"].get(\"listened_for\") is None"
+   },
+   "imported_from": "M09-MUT06",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT07",
+   "name": "Allow Retry despite active retry claim",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "47dcaa08929e83d1",
+      "sha_after": "da2b28cee01c9fde",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C009",
+    "M09-C068"
+   ],
+   "control": {
+    "M09-C009": "PASS",
+    "M09-C068": "PASS"
+   },
+   "mutant": {
+    "M09-C009": "FAIL",
+    "M09-C068": "PASS"
+   },
+   "mutant_details": {
+    "M09-C009": "\u2500\u2500 Source (raw transcript) \u2500\u2500\n(not captured)\n\n\u2500\u2500 Normalized \u2500\u2500\n(not captured)\n\n\u2500\u2500 Cleaned (applied output) \u2500\u2500\n(not captured)\n\n\u2500\u2500 Transformed \u2500\u2500\n(not_applicable)\n\nRetry refused: not retryable (queued)."
+   },
+   "imported_from": "M09-MUT07",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT08",
+   "name": "Omit V2 job ID from actual History Paste Again",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "26fd3d59043d7e66",
+      "sha_after": "689b061e0d50083c",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C069"
+   ],
+   "control": {
+    "M09-C069": "PASS"
+   },
+   "mutant": {
+    "M09-C069": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C069": "[]"
+   },
+   "imported_from": "M09-MUT08",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT09",
+   "name": "Fabricate a job ID for jobless legacy row",
+   "files": [
+    "localflow/v2/history_queries.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/history_queries.py": {
+      "sha_before": "b8c744e3b47abb2d",
+      "sha_after": "1261e25717372601",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C070"
+   ],
+   "control": {
+    "M09-C070": "PASS"
+   },
+   "mutant": {
+    "M09-C070": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C070": "a jobless repaste wrote an attributed row"
+   },
+   "imported_from": "M09-MUT09",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT10",
+   "name": "Flatten missing lineage stage to preceding text",
+   "files": [
+    "localflow/v2/history_queries.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/history_queries.py": {
+      "sha_before": "b8c744e3b47abb2d",
+      "sha_after": "1cc2facb6a13f5e4",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C054",
+    "M09-C059"
+   ],
+   "control": {
+    "M09-C054": "PASS",
+    "M09-C059": "PASS"
+   },
+   "mutant": {
+    "M09-C054": "PASS",
+    "M09-C059": "PASS"
+   },
+   "mutant_details": {},
+   "imported_from": "M09-MUT10",
+   "outcome": "survived",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT11",
+   "name": "Restore quarantined/expired evidence after exclude toggle",
+   "files": [
+    "localflow/v2/training_data.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/training_data.py": {
+      "sha_before": "4d89ee9f74735757",
+      "sha_after": "f43dc78faa297894",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C083",
+    "M09-C084"
+   ],
+   "control": {
+    "M09-C083": "PASS",
+    "M09-C084": "PASS"
+   },
+   "mutant": {
+    "M09-C083": "FAIL",
+    "M09-C084": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C083": "quarantine laundered through exclusion: captured_unreviewed",
+    "M09-C084": "expired evidence reactivated: captured_unreviewed"
+   },
+   "imported_from": "M09-MUT11",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT12",
+   "name": "Make annotation state update include excluded as live",
+   "files": [
+    "localflow/v2/training_data.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     3
+    ],
+    "files": {
+     "localflow/v2/training_data.py": {
+      "sha_before": "4d89ee9f74735757",
+      "sha_after": "03c995ffdd0267b8",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C086",
+    "M09-C087"
+   ],
+   "control": {
+    "M09-C086": "PASS",
+    "M09-C087": "PASS"
+   },
+   "mutant": {
+    "M09-C086": "FAIL",
+    "M09-C087": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C086": "span save re-included: annotated",
+    "M09-C087": "verbatim save re-included: annotated"
+   },
+   "imported_from": "M09-MUT12",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT13",
+   "name": "Remove reviewed artifact/hash comparison from span save",
+   "files": [
+    "localflow/v2/training_data.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/training_data.py": {
+      "sha_before": "4d89ee9f74735757",
+      "sha_after": "baa787310f40d0cb",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C014",
+    "M09-C076",
+    "M09-C079"
+   ],
+   "control": {
+    "M09-C014": "PASS",
+    "M09-C076": "PASS",
+    "M09-C079": "PASS"
+   },
+   "mutant": {
+    "M09-C014": "FAIL",
+    "M09-C076": "PASS",
+    "M09-C079": "PASS"
+   },
+   "mutant_details": {
+    "M09-C014": "R1 offsets reinterpreted against R2: [{'corrected': 'delta', 'end': 5, 'original': 'gamma', 'stage': 'source_text', 'start': 0}]"
+   },
+   "imported_from": "M09-MUT13",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT14",
+   "name": "Revoke review annotation lease during user unpin",
+   "files": [
+    "localflow/v2/training_data.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/training_data.py": {
+      "sha_before": "4d89ee9f74735757",
+      "sha_after": "b385a26cd55b0d0f",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C015",
+    "M09-C081"
+   ],
+   "control": {
+    "M09-C015": "PASS",
+    "M09-C081": "PASS"
+   },
+   "mutant": {
+    "M09-C015": "FAIL",
+    "M09-C081": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C015": "[]",
+    "M09-C081": "m09_drivers.py:1523 assert _live_leases(w.store, a[\"job_id\"], roles) == before"
+   },
+   "imported_from": "M09-MUT14",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT15",
+   "name": "Export all event fields except detail",
+   "files": [
+    "localflow/v2/event_view.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/event_view.py": {
+      "sha_before": "51ad1e59a0f594e2",
+      "sha_after": "92dc6e42bcdf08cf",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C100",
+    "M09-C101"
+   ],
+   "control": {
+    "M09-C100": "PASS",
+    "M09-C101": "PASS"
+   },
+   "mutant": {
+    "M09-C100": "FAIL",
+    "M09-C101": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C100": "M09_PRIVATE_CANARY survived Hub export",
+    "M09-C101": "M09_DICT_CANARY"
+   },
+   "imported_from": "M09-MUT15",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT16",
+   "name": "Perform History service query on UI thread",
+   "files": [
+    "localflow/v2/ui/state.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/state.py": {
+      "sha_before": "350dd606eb1b5fd5",
+      "sha_after": "ae7e71b5460be0eb",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C018",
+    "M09-C122"
+   ],
+   "control": {
+    "M09-C018": "NARROWED",
+    "M09-C122": "PASS"
+   },
+   "mutant": {
+    "M09-C018": "FAIL",
+    "M09-C122": "PASS"
+   },
+   "mutant_details": {
+    "M09-C018": "{'hold_ms': 1000.0, 'search_admission_main_ms': 6005.6, 'sync_annotation_main_blocked_ms': 0.8, 'search_threads': ['MainThread']}"
+   },
+   "imported_from": "M09-MUT16",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT17",
+   "name": "Ignore active insertion focus guard",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "47dcaa08929e83d1",
+      "sha_after": "4e0609384383f08a",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C005",
+    "M09-C006"
+   ],
+   "control": {
+    "M09-C005": "NARROWED",
+    "M09-C006": "PASS"
+   },
+   "mutant": {
+    "M09-C005": "FAIL",
+    "M09-C006": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C005": "Hub activated mid-insertion",
+    "M09-C006": "test_m09_remediation.py:2108 assert w.d._hub is None and w.d._hub_show_pending"
+   },
+   "imported_from": "M09-MUT17",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT18",
+   "name": "Omit idle notification after no-op reconciliation (every idle notification)",
+   "files": [
+    "localflow/v2/insertion/service.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/insertion/service.py": {
+      "sha_before": "bb4c283372e1acb5",
+      "sha_after": "affafcf3dee7cb33",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C034",
+    "M09-C035"
+   ],
+   "control": {
+    "M09-C034": "PASS",
+    "M09-C035": "PASS"
+   },
+   "mutant": {
+    "M09-C034": "FAIL",
+    "M09-C035": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C034": "deferred Open Hub never delivered after a no-op repaste",
+    "M09-C035": "deferred show lost: the only flush saw busy"
+   },
+   "imported_from": "M09-MUT18",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT19",
+   "name": "Skip deletion epoch/token check before late publication",
+   "files": [
+    "localflow/v2/ui/state.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/state.py": {
+      "sha_before": "350dd606eb1b5fd5",
+      "sha_after": "4cbb0a6c8a574035",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C011",
+    "M09-C090",
+    "M09-C128"
+   ],
+   "control": {
+    "M09-C011": "PASS",
+    "M09-C090": "PASS",
+    "M09-C128": "PASS"
+   },
+   "mutant": {
+    "M09-C011": "FAIL",
+    "M09-C090": "PASS",
+    "M09-C128": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C011": "late pre-deletion detail republished deleted text",
+    "M09-C128": "m09_drivers.py:1678 assert CANARY_A not in json.dumps(pastes + copies)"
+   },
+   "imported_from": "M09-MUT19",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT20",
+   "name": "Resolve action from current row index instead of rendered stable ID",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "26fd3d59043d7e66",
+      "sha_after": "5b4ad0321c657752",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C025",
+    "M09-C108"
+   ],
+   "control": {
+    "M09-C025": "PASS",
+    "M09-C108": "PASS"
+   },
+   "mutant": {
+    "M09-C025": "FAIL",
+    "M09-C108": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C025": "click on rendered row 0 (ex-8a3da387c) selected ex-fc4c234f7b63480cbb43d13d444c5542",
+    "M09-C108": "approved ['cand-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'], not the rendered first row"
+   },
+   "imported_from": "M09-MUT20",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT21",
+   "name": "Choose first same-role artifact across attempts",
+   "files": [
+    "localflow/v2/history_queries.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/history_queries.py": {
+      "sha_before": "b8c744e3b47abb2d",
+      "sha_after": "e8727e03fbe0f371",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C055",
+    "M09-C056"
+   ],
+   "control": {
+    "M09-C055": "PASS",
+    "M09-C056": "PASS"
+   },
+   "mutant": {
+    "M09-C055": "FAIL",
+    "M09-C056": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C055": "{'source': 'ATTEMPT ONE raw', 'normalized': None, 'cleaned': 'RAW FOR JOB-JOB-F8B410D01F7C4D29A17F54A05DFA5411.WAV', 'transformed': None}",
+    "M09-C056": "{'source': 'attempt one raw', 'normalized': None, 'cleaned': 'attempt one applied', 'transformed': None}"
+   },
+   "imported_from": "M09-MUT21",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT22",
+   "name": "Sort merged history by date plus ID only",
+   "files": [
+    "localflow/v2/history_queries.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/history_queries.py": {
+      "sha_before": "b8c744e3b47abb2d",
+      "sha_after": "e7310d2f3cda3225",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C039",
+    "M09-C040",
+    "M09-C044"
+   ],
+   "control": {
+    "M09-C039": "PASS",
+    "M09-C040": "PASS",
+    "M09-C044": "PASS"
+   },
+   "mutant": {
+    "M09-C039": "FAIL",
+    "M09-C040": "FAIL",
+    "M09-C044": "PASS"
+   },
+   "mutant_details": {
+    "M09-C039": "['legacy-db:5', 'job-ffffffffffffffffffffffffffffffff', 'job-00000000000000000000000000000000']",
+    "M09-C040": "(['legacy-db:3', 'job-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'job-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'], ['legacy-db:3', 'job-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'job-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'], ['job-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'job-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'legacy-db:3'])"
+   },
+   "imported_from": "M09-MUT22",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT23",
+   "name": "Use filename ordering for diagnostics",
+   "files": [
+    "localflow/v2/diagnostics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/diagnostics.py": {
+      "sha_before": "05b6107ee32c62d3",
+      "sha_after": "5a993e32a14eaf1c",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C094",
+    "M09-C095",
+    "M09-C099"
+   ],
+   "control": {
+    "M09-C094": "PASS",
+    "M09-C095": "PASS",
+    "M09-C099": "PASS"
+   },
+   "mutant": {
+    "M09-C094": "FAIL",
+    "M09-C095": "PASS",
+    "M09-C099": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C094": "(('events-1.jsonl', 'events-2.jsonl'), ['evt-00000000000000000000000000000003a', 'evt-00000000000000000000000000000001b', 'evt-00000000000000000000000000000002b', 'evt-00000000000000000000000000000003b'], ['evt-00000000000000000000000000000002a', 'evt-00000000000000000000000000000002b', 'evt-0000000",
+    "M09-C099": "m09_drivers.py:1726 assert [r[\"event_id\"] + r[\"boot_id\"][-1] for r in got] == \\"
+   },
+   "imported_from": "M09-MUT23",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M09-MUT24",
+   "name": "Unconditionally navigate to Review on Mine completion",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "26fd3d59043d7e66",
+      "sha_after": "691f18005f9dd313",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M09-C017",
+    "M09-C105"
+   ],
+   "control": {
+    "M09-C017": "PASS",
+    "M09-C105": "PASS"
+   },
+   "mutant": {
+    "M09-C017": "FAIL",
+    "M09-C105": "FAIL"
+   },
+   "mutant_details": {
+    "M09-C017": "late Mine completion navigated to review",
+    "M09-C105": "late Mine completion navigated to review"
+   },
+   "imported_from": "M09-MUT24",
+   "outcome": "killed",
+   "reason": null
+  }
+ ]
+}

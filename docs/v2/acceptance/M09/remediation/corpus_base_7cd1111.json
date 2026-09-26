@@ -1,0 +1,1929 @@
+{
+  "schema_version": 1,
+  "runner": "tests/v2/ui/m09_corpus_runner.py",
+  "corpus": "tests/v2/ui/m09_audit_corpus.json",
+  "corpus_sha256": "a00f6618121e9881592be7d25cb4a03696ab298af9c16eefda8df697399dbcb8",
+  "oracle_version": "m09-corpus-oracles-r1",
+  "policy_revision": "m09-policy-r1",
+  "suite": "tests/v2/ui/m09_corpus_runner.py",
+  "suite_sha256": "274d3742eb9f9ed77fa7393ff2ff0b36f91739f9578a87497eb404b0924ba39e",
+  "code_root_sha": null,
+  "tracked_files_modified": null,
+  "production_tree_modified": null,
+  "localflow_imported_from_root": "ev-base-7cd1111",
+  "python": "3.14.7",
+  "environment": {
+    "mac_model": "Mac17,8",
+    "chip": "Apple M5 Pro",
+    "macos": "27.0",
+    "python": "3.14.7",
+    "dispatcher": "m09_world.MainQueue (callAfter queued, drained on the script's main thread)",
+    "desktop_isolation": "tests/v2/context/run_isolated.py"
+  },
+  "case_counts": {
+    "PASS": 38,
+    "FAIL": 59,
+    "ERROR": 26,
+    "NARROWED": 5,
+    "MANUAL_PENDING": 7
+  },
+  "relation_counts": {
+    "PASS": 6,
+    "FAIL": 5,
+    "ERROR": 3
+  },
+  "cases": {
+    "M09-C001": {
+      "name": "History A→B late completion",
+      "finding_ids": [
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "final": "B"
+      },
+      "seconds": 0.217,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C002": {
+      "name": "A→B detail and actual-action binding",
+      "finding_ids": [
+        "M09-AUDIT-01",
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "wrong-record action on A while B selected: [(('M09_CANARY_A_not_user_data',), {'job_id': 'job-4e6ceaae2cd64d97890ae0bc9a111c8a'}), (('job-4e6ceaae2cd64d97890ae0bc9a111c8a',), {}), (('M09_CANARY_A_not_user_data',), {})]",
+      "where": "test_m09_remediation.py:241 assert not wrong, f\"wrong-record action on A while B selected: {wrong}\"",
+      "seconds": 0.035,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C003": {
+      "name": "History result after switching to Training",
+      "finding_ids": [
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "policy": "per-key generations"
+      },
+      "seconds": 15.064,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C004": {
+      "name": "Close and reopen during query",
+      "finding_ids": [
+        "M09-AUDIT-03",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "controllers": 1
+      },
+      "seconds": 0.048,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C005": {
+      "name": "Open Hub while insertion executes",
+      "finding_ids": [
+        "M09-AUDIT-26",
+        "M09-AUDIT-28"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "FAIL",
+      "detail": "",
+      "where": "m09_drivers.py:557 assert w.d._hub is not None and w.d._hub.state.visible",
+      "seconds": 0.017,
+      "environment_run": "portable_real_framework+fixture_target"
+    },
+    "M09-C006": {
+      "name": "Repeated deferred Open Hub is delivered once",
+      "finding_ids": [
+        "M09-AUDIT-11",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "deferred Open Hub never delivered after a no-op repaste",
+      "where": "test_m09_remediation.py:2168 assert w.d._hub is not None and w.d._hub.state.visible, \\",
+      "seconds": 0.025,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C007": {
+      "name": "Replay A then select B cannot certify B",
+      "finding_ids": [
+        "M09-AUDIT-01",
+        "M09-AUDIT-07"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "regressions": [
+          "test_a07_listen_gate_is_per_example_through_current_hub"
+        ]
+      },
+      "seconds": 0.054,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C008": {
+      "name": "Playback failure after audio resolution grants no authorization",
+      "finding_ids": [
+        "M09-AUDIT-07",
+        "M09-AUDIT-25"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "regressions": [
+          "test_a07_failed_playback_grants_no_listening"
+        ]
+      },
+      "seconds": 0.054,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C009": {
+      "name": "Actual Retry double click uses one exclusive retry claim",
+      "finding_ids": [
+        "M09-AUDIT-01"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "audio: unavailable (no_audio_artifact)\n\n── Source (raw transcript) ──\n(not captured)\n\n── Normalized ──\n(not captured)\n\n── Cleaned (applied output) ──\n(not captured)\n\n── Transformed ──\n(not_applicable)",
+      "where": "m09_drivers.py:668 assert \"Retry queued\" in first, first[-200:]",
+      "seconds": 0.043,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C010": {
+      "name": "Repeated delivery versus two deliberate Paste Again requests",
+      "finding_ids": [
+        "M09-AUDIT-01",
+        "M09-AUDIT-28"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "ERROR",
+      "detail": "AttributeError: 'InsertionService' object has no attribute 'pending'",
+      "seconds": 0.037,
+      "environment_run": "native_appkit_main_queue+fixture_target"
+    },
+    "M09-C011": {
+      "name": "Delete while detail result is pending",
+      "finding_ids": [
+        "M09-AUDIT-02",
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "late pre-deletion detail republished deleted text",
+      "where": "test_m09_remediation.py:497 assert CANARY_A not in json.dumps(w.hub.state.views, default=str), \\",
+      "seconds": 0.04,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C012": {
+      "name": "Delete during active replay",
+      "finding_ids": [
+        "M09-AUDIT-07"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "A still playing after delete",
+      "where": "test_m09_remediation.py:1284 assert not _playing(w.sounds), \"A still playing after delete\"",
+      "seconds": 0.055,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C013": {
+      "name": "Fail after each annotation stage",
+      "finding_ids": [
+        "M09-AUDIT-24"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "regressions": [
+          "test_a24_annotation_failpoints_roll_back_completely"
+        ]
+      },
+      "seconds": 0.035,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C014": {
+      "name": "R1 offsets saved after R2 stage replacement",
+      "finding_ids": [
+        "M09-AUDIT-06"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "R1 offsets reinterpreted against R2: [{'corrected': 'delta', 'end': 5, 'original': 'gamma', 'stage': 'source_text', 'start': 0}]",
+      "where": "test_m09_remediation.py:1072 assert not any(s[\"original\"] == \"gamma\" for s in spans), \\",
+      "seconds": 0.052,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C015": {
+      "name": "Unpin cannot revoke annotation retention",
+      "finding_ids": [
+        "M09-AUDIT-24"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.017,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C016": {
+      "name": "Filter/window changes while export starts",
+      "finding_ids": [
+        "M09-AUDIT-20"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "export re-queried past the displayed snapshot: ['store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'usage.aggregates_rebuilt', 'm09.s1.1', 'm09.s1.2', 'm09.s1.3', 'm09.s2.late']",
+      "where": "test_m09_remediation.py:2000 assert \"m09.s2.late\" not in names, \\",
+      "seconds": 0.031,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C017": {
+      "name": "Long action finishes after view switch",
+      "finding_ids": [
+        "M09-AUDIT-21"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "late Mine completion navigated to review",
+      "where": "test_m09_remediation.py:2028 assert tab == \"export\", f\"late Mine completion navigated to {tab}\"",
+      "seconds": 0.048,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C018": {
+      "name": "Slow Store while dictation work continues",
+      "finding_ids": [
+        "M09-AUDIT-10",
+        "M09-AUDIT-24",
+        "M09-AUDIT-27"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "NARROWED",
+      "detail": "History query ran off main (threads ['localflow-hub-query']); search admission 0.1 ms on main; a synchronous annotation blocked main 1006.5 ms for a 1000 ms writer hold (documented limitation, M09-AUDIT-27); dictation completed after the stall",
+      "remainder": "hotkey acknowledgement against a real stalled app: manual (not constructible headless)",
+      "seconds": 1.142,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C019": {
+      "name": "100 rapid searches and complete drain",
+      "finding_ids": [
+        "M09-AUDIT-10",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "101 query threads admitted for 101 searches",
+      "where": "test_m09_remediation.py:721 assert peak <= 2, f\"{peak} query threads admitted for 101 searches\"",
+      "seconds": 0.05,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C020": {
+      "name": "M14 callback thread identity with real dispatch",
+      "finding_ids": [
+        "M09-AUDIT-25"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "regressions": [
+          "test_a25_refresh_and_completions_run_on_main"
+        ]
+      },
+      "seconds": 0.066,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C021": {
+      "name": "Old error after new success",
+      "finding_ids": [
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "stale A error overwrote B: RuntimeError",
+      "where": "test_m09_remediation.py:625 assert not view.get(\"error\"), \\",
+      "seconds": 0.045,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C022": {
+      "name": "Old success after new error",
+      "finding_ids": [
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "regressions": [
+          "test_a03_old_success_after_new_error"
+        ]
+      },
+      "seconds": 0.036,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C023": {
+      "name": "Pre-publication generation check race",
+      "finding_ids": [
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "stale A overwrote newer B: ['job-4759768316f240e1814b23912f0c73cd']",
+      "where": "test_m09_remediation.py:599 assert ids == [jb], f\"stale A overwrote newer B: {ids}\"",
+      "seconds": 0.046,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C024": {
+      "name": "Training editor A cannot annotate B",
+      "finding_ids": [
+        "M09-AUDIT-01"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "A's span buffer saved onto B: [('add_span_correction', ('ex-91415c8a8aa64c43a2c5fbb2c89565e1', 'source_text', 0, 5, 'ALPHA'), {}, 'MainThread'), ('add_span_correction', ('ex-91415c8a8aa64c43a2c5fbb2c89565e1', 'source_text', 0, 5, 'ALPHA'), {}, 'MainThread')]",
+      "where": "test_m09_remediation.py:310 assert not spans, f\"A's span buffer saved onto B: {spans}\"",
+      "seconds": 0.053,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C025": {
+      "name": "Rendered table row versus replaced data list",
+      "finding_ids": [
+        "M09-AUDIT-01",
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "click on rendered row 0 (ex-98215f28d) selected ex-7dcfc7f2966348db9398facc4f0144eb",
+      "where": "test_m09_remediation.py:342 assert sel in (b[\"example_id\"], None), \\",
+      "seconds": 0.053,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C026": {
+      "name": "Delete confirmation identity is captured before modal",
+      "finding_ids": [
+        "M09-AUDIT-01"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "confirmed Delete did not delete the confirmed example",
+      "where": "test_m09_remediation.py:412 assert example_state(w.store, a[\"example_id\"]) == \"deleted\", \\",
+      "seconds": 0.053,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C027": {
+      "name": "Search removes current selection",
+      "finding_ids": [
+        "M09-AUDIT-01",
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.042,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C028": {
+      "name": "Global generation policy preserves valid revisits",
+      "finding_ids": [
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.038,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C029": {
+      "name": "Request captures filter values at admission",
+      "finding_ids": [
+        "M09-AUDIT-03"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "AttributeError: 'HubState' object has no attribute 'query_stats'",
+      "seconds": 10.138,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C030": {
+      "name": "on_update callback does not run under state lock",
+      "finding_ids": [
+        "M09-AUDIT-03",
+        "M09-AUDIT-25"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "notification ran under the lock: [False]",
+      "where": "m09_drivers.py:436 assert seen and all(seen), f\"notification ran under the lock: {seen}\"",
+      "seconds": 19.905,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C031": {
+      "name": "Queued-before-busy Hub activation seam",
+      "finding_ids": [
+        "M09-AUDIT-26",
+        "M09-AUDIT-28"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "ERROR",
+      "detail": "AttributeError: 'InsertionService' object has no attribute 'pending'",
+      "seconds": 0.037,
+      "environment_run": "portable_real_framework+fixture_target"
+    },
+    "M09-C032": {
+      "name": "Pending clipboard younger than five seconds",
+      "finding_ids": [
+        "M09-AUDIT-28"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.09,
+      "environment_run": "portable_real_framework+fixture_target"
+    },
+    "M09-C033": {
+      "name": "Lapsed pending clipboard is not an eternal Hub block",
+      "finding_ids": [
+        "M09-AUDIT-11",
+        "M09-AUDIT-28"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.091,
+      "environment_run": "portable_real_framework+fixture_target"
+    },
+    "M09-C034": {
+      "name": "No-op repaste settles deferred show",
+      "finding_ids": [
+        "M09-AUDIT-11"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "deferred Open Hub never delivered after a no-op repaste",
+      "where": "test_m09_remediation.py:2168 assert w.d._hub is not None and w.d._hub.state.visible, \\",
+      "seconds": 0.026,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C035": {
+      "name": "Completion callback runs before busy decrement",
+      "finding_ids": [
+        "M09-AUDIT-11"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "deferred show lost: the only flush saw busy",
+      "where": "test_m09_remediation.py:2211 assert w.d._hub is not None and w.d._hub.state.visible, \\",
+      "seconds": 0.027,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C036": {
+      "name": "Quit cancels pending show and quick-open",
+      "finding_ids": [
+        "M09-AUDIT-11",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "window activated after quit began",
+      "where": "m09_drivers.py:498 assert w.d._hub is None, \"window activated after quit began\"",
+      "seconds": 0.053,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C037": {
+      "name": "Repeated open and menu actions keep one controller",
+      "finding_ids": [
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "controllers": 1
+      },
+      "seconds": 0.188,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C038": {
+      "name": "Shutdown drains or safely revokes all query tails",
+      "finding_ids": [
+        "M09-AUDIT-10",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "ERROR",
+      "detail": "AttributeError: 'HubState' object has no attribute 'shutdown'",
+      "seconds": 10.05,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C039": {
+      "name": "Same-day chronological merge",
+      "finding_ids": [
+        "M09-AUDIT-12"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "['legacy-db:5', 'job-ffffffffffffffffffffffffffffffff', 'job-00000000000000000000000000000000']",
+      "where": "test_m09_remediation.py:1522 assert ids == [new_id, \"legacy-db:5\", old_id], ids",
+      "seconds": 10.017,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C040": {
+      "name": "Equal timestamps have stable source-qualified tie-break",
+      "finding_ids": [
+        "M09-AUDIT-12"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "(['legacy-db:3', 'job-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'job-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'], ['legacy-db:3', 'job-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'job-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'], ['job-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'job-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'legacy-db:3'])",
+      "where": "m09_drivers.py:1062 assert first == again == expected, (first, again, expected)",
+      "seconds": 9.987,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C041": {
+      "name": "Production default timezone across DST seasons",
+      "finding_ids": [
+        "M09-AUDIT-13"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "('2026-01-15T04:30:00.000Z', '2026-01-14', '2026-01-15')",
+      "where": "test_m09_remediation.py:1608 assert rows and rows[0][\"date\"] == expected, \\",
+      "seconds": 0.015,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C042": {
+      "name": "Malformed/missing/legacy unknown time stays Undated",
+      "finding_ids": [
+        "M09-AUDIT-13"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.014,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C043": {
+      "name": "Valid explicit-offset timestamp policy",
+      "finding_ids": [
+        "M09-AUDIT-13"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "{'job-bdea6fc001a344f9ba7a133679a88c26': '2026-09-26', 'job-31a0afc454fd458886ccb8330be27662': None, 'job-2e2874f75c3441d680d23496531165e4': None}",
+      "where": "test_m09_remediation.py:1635 assert dates[a] == dates[b] == \"2026-09-26\", dates",
+      "seconds": 0.013,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C044": {
+      "name": "Merged limit across all three source classes",
+      "finding_ids": [
+        "M09-AUDIT-12",
+        "M09-AUDIT-15"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "0",
+      "where": "m09_drivers.py:1115 assert len(zero) == 3 * n, len(zero)  # documented: 0 = no limit",
+      "seconds": 0.217,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C045": {
+      "name": "LIKE special characters are literal",
+      "finding_ids": [
+        "M09-AUDIT-16"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.041,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C046": {
+      "name": "Large common-substring hit avoids parameter cliff",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "AttributeError: module 'benchmark_m09' has no attribute 'seed_history'",
+      "seconds": 0.017,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C047": {
+      "name": "History app and mode controls are reachable",
+      "finding_ids": [
+        "M09-AUDIT-16"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "no app/mode filter control in History: ['_doScroller:', 'historyCopy:', 'historyDeleteUsage:', 'historyDiff:', 'historyMoveToScratchpad:', 'historyPasteAgain:', 'historyReload:', 'historyReplay:', 'historyRetry:', 'historySearchChanged:', 'historyTeach:', 'historyToScratchpad:']",
+      "where": "test_m09_remediation.py:1725 assert app_ctrl is not None and mode_ctrl is not None, \\",
+      "seconds": 0.059,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C048": {
+      "name": "Unknown destination and legacy app privacy",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.016,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C049": {
+      "name": "Malformed metadata and future mode degrade honestly",
+      "finding_ids": [
+        "M09-AUDIT-22"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "RuntimeError: OperationalError: malformed JSON",
+      "seconds": 0.017,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C050": {
+      "name": "Purged text is not a search hit",
+      "finding_ids": [
+        "M09-AUDIT-02"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "AttributeError: 'HubState' object has no attribute 'revalidate'",
+      "seconds": 0.043,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C051": {
+      "name": "Legacy database list-to-detail-to-action",
+      "finding_ids": [
+        "M09-AUDIT-14"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "Select a row to see its lineage, outcome and actions.",
+      "where": "test_m09_remediation.py:1657 assert CANARY_A in shown and CANARY_B in shown, shown[:200]",
+      "seconds": 0.037,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C052": {
+      "name": "Raw-only legacy pair search preserves identity",
+      "finding_ids": [
+        "M09-AUDIT-15"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "(['art-3dfc7858bb8c4aeb891b5fe0e0f924c1'], ['art-92c4346bcd624126adb752d20bc429eb'], ['art-92c4346bcd624126adb752d20bc429eb'])",
+      "where": "test_m09_remediation.py:1680 assert by_raw == by_clean == browse and len(browse) == 1, \\",
+      "seconds": 0.014,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C053": {
+      "name": "Legacy pair with absent or purged half",
+      "finding_ids": [
+        "M09-AUDIT-15"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "",
+      "where": "m09_drivers.py:1276 assert [r[\"id\"] for r in rows] == [raw_id]",
+      "seconds": 0.013,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C054": {
+      "name": "Four distinct stages and honest absence",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.015,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C055": {
+      "name": "Real retry retains authoritative current attempt",
+      "finding_ids": [
+        "M09-AUDIT-09"
+      ],
+      "corpus_environment": "portable_service_with_declared_coordinator_fixture",
+      "status": "FAIL",
+      "detail": "{'source': 'ATTEMPT ONE raw', 'normalized': None, 'cleaned': 'RAW FOR JOB-JOB-2AC0AC9C2DC84484BD460056E9F5CEEE.WAV', 'transformed': None}",
+      "where": "m09_drivers.py:1360 assert texts[\"source\"] and \"ATTEMPT ONE\" not in texts[\"source\"], \\",
+      "seconds": 0.108,
+      "environment_run": "portable_service_with_declared_coordinator_fixture"
+    },
+    "M09-C056": {
+      "name": "Purged early role cannot shadow current retained stage",
+      "finding_ids": [
+        "M09-AUDIT-09"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "{'source': 'attempt one raw', 'normalized': None, 'cleaned': 'attempt one applied', 'transformed': None}",
+      "where": "test_m09_remediation.py:1447 assert got[\"source\"] == \"attempt two raw\" and \\",
+      "seconds": 0.015,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C057": {
+      "name": "Transform applied/fallback/review are distinct",
+      "finding_ids": [
+        "M09-AUDIT-17"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "fallback_original transform shown without its decision",
+      "where": "test_m09_remediation.py:1490 assert path in shown[path] and \"not applied\" in \\",
+      "seconds": 0.041,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C058": {
+      "name": "Equal stage texts do not imply identical artifacts",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.014,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C059": {
+      "name": "Unicode/long-text diff remains private",
+      "finding_ids": [
+        "M09-AUDIT-02",
+        "M09-AUDIT-22"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.016,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C060": {
+      "name": "Successful replacement stops prior sound",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.029,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C061": {
+      "name": "Unavailable replacement cannot masquerade as current playback",
+      "finding_ids": [
+        "M09-AUDIT-07"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "A kept playing as if it were B",
+      "where": "test_m09_remediation.py:1333 assert not _playing(w.sounds), \"A kept playing as if it were B\"",
+      "seconds": 0.032,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C062": {
+      "name": "Deletion between decode and native play",
+      "finding_ids": [
+        "M09-AUDIT-07"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "deleted audio started: {'available': True, 'status': 'playing', 'artifact_id': 'art-fe5f4667af364638ac0f74a2ccd32fe5'}",
+      "where": "test_m09_remediation.py:1317 assert not _playing(w.sounds), f\"deleted audio started: {out}\"",
+      "seconds": 0.029,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C063": {
+      "name": "Large audio and rapid switching resource bound",
+      "finding_ids": [
+        "M09-AUDIT-07",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "NARROWED",
+      "detail": "100 switches + one 600 s decode; retained after stop 0.03 MB (tracemalloc current), peak 115.2 MB; 600 s decode+start 11 ms on the calling thread; originals unchanged",
+      "remainder": "audible NSSound behavior and main-thread feel with real sound: M09-V003",
+      "seconds": 0.155,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C064": {
+      "name": "Selection away and back closes authorization",
+      "finding_ids": [
+        "M09-AUDIT-01"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.06,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C065": {
+      "name": "Verbatim and intended-writing remain independent",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.016,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C066": {
+      "name": "Retry refusal matrix reaches visible UI",
+      "finding_ids": [
+        "M09-AUDIT-22"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "",
+      "where": "m09_drivers.py:712 assert \"not retryable (saved_not_inserted)\" in shown[\"nonretryable\"]",
+      "seconds": 0.047,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C067": {
+      "name": "Retry is unscoped and ignores current Hub profile/destination",
+      "finding_ids": [],
+      "corpus_environment": "portable_service_with_declared_coordinator_fixture",
+      "status": "ERROR",
+      "detail": "AttributeError: 'HubState' object has no attribute 'set_history_filters'",
+      "seconds": 0.039,
+      "environment_run": "portable_real_framework+coordinator"
+    },
+    "M09-C068": {
+      "name": "Retry races deletion and stale attempt",
+      "finding_ids": [
+        "M09-AUDIT-01"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "final_state": "queued"
+      },
+      "seconds": 0.037,
+      "environment_run": "portable_real_framework+coordinator"
+    },
+    "M09-C069": {
+      "name": "V2 Paste Again attribution",
+      "finding_ids": [
+        "M09-AUDIT-01"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "ERROR",
+      "detail": "AttributeError: 'InsertionService' object has no attribute 'pending'",
+      "seconds": 0.036,
+      "environment_run": "native_appkit_main_queue+fixture_target"
+    },
+    "M09-C070": {
+      "name": "Legacy Paste Again remains honestly jobless",
+      "finding_ids": [
+        "M09-AUDIT-14"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "ERROR",
+      "detail": "AttributeError: 'InsertionService' object has no attribute 'pending'",
+      "seconds": 0.037,
+      "environment_run": "native_appkit_main_queue+fixture_target"
+    },
+    "M09-C071": {
+      "name": "Busy/recording/pending/deleted refusals are visible",
+      "finding_ids": [
+        "M09-AUDIT-22",
+        "M09-AUDIT-28"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "ERROR",
+      "detail": "AttributeError: 'InsertionService' object has no attribute 'pending'",
+      "seconds": 0.034,
+      "environment_run": "native_appkit_main_queue+fixture_target"
+    },
+    "M09-C072": {
+      "name": "Late deletion revokes queued History payload",
+      "finding_ids": [
+        "M09-AUDIT-02"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "ERROR",
+      "detail": "AttributeError: 'InsertionService' object has no attribute 'pending'",
+      "seconds": 0.036,
+      "environment_run": "native_appkit_main_queue+fixture_target"
+    },
+    "M09-C073": {
+      "name": "Successful annotation has one complete revision transaction",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.016,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C074": {
+      "name": "Writer callback never nests Store.submit",
+      "finding_ids": [
+        "M09-AUDIT-24"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.019,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C075": {
+      "name": "Timeout then late commit is reconciled",
+      "finding_ids": [
+        "M09-AUDIT-24",
+        "M09-AUDIT-27"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "timeout reported as certain failure: 'verbatim not saved: TimeoutError'",
+      "where": "test_m09_remediation.py:1243 assert \"not saved\" not in shown.lower(), \\",
+      "seconds": 0.356,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C076": {
+      "name": "Stage deleted between read and write",
+      "finding_ids": [
+        "M09-AUDIT-06"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.017,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C077": {
+      "name": "Emoji code-point span differs from UTF-16 units",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "regressions": [
+          "test_a06_emoji_code_point_offsets"
+        ]
+      },
+      "seconds": 0.055,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C078": {
+      "name": "Invalid and empty spans refuse atomically",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.015,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C079": {
+      "name": "Unrelated revision with unchanged reviewed artifact",
+      "finding_ids": [
+        "M09-AUDIT-06"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "regressions": [
+          "test_a06_unrelated_revision_keeps_same_reviewed_artifact"
+        ]
+      },
+      "seconds": 0.053,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C080": {
+      "name": "Partial correction never grants full-example correctness",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.017,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C081": {
+      "name": "User pin does not double-pin annotation artifacts",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "annotation_leases": 2
+      },
+      "seconds": 0.017,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C082": {
+      "name": "Independent History lease survives training expiry",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "AttributeError: 'HubState' object has no attribute 'revalidate'",
+      "seconds": 0.075,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C083": {
+      "name": "Quarantine→exclude→restore does not reactivate",
+      "finding_ids": [
+        "M09-AUDIT-04"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "quarantine laundered through exclusion: captured_unreviewed",
+      "where": "test_m09_remediation.py:943 assert st == \"quarantined_sensitive\", \\",
+      "seconds": 0.06,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C084": {
+      "name": "Expired→exclude→restore does not reactivate",
+      "finding_ids": [
+        "M09-AUDIT-04"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "expired evidence reactivated: captured_unreviewed",
+      "where": "test_m09_remediation.py:957 assert st == \"expired\", f\"expired evidence reactivated: {st}\"",
+      "seconds": 0.017,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C085": {
+      "name": "Deleted remains terminal through every UI mutation",
+      "finding_ids": [
+        "M09-AUDIT-04",
+        "M09-AUDIT-05"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "AttributeError: 'HubController' object has no attribute '_rendered'",
+      "seconds": 0.055,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C086": {
+      "name": "Span save does not re-include excluded example",
+      "finding_ids": [
+        "M09-AUDIT-05"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "span save re-included: annotated",
+      "where": "test_m09_remediation.py:988 assert st == \"excluded\", f\"span save re-included: {st}\"",
+      "seconds": 0.057,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C087": {
+      "name": "Verbatim save does not re-include excluded example",
+      "finding_ids": [
+        "M09-AUDIT-05"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "verbatim save re-included: annotated",
+      "where": "test_m09_remediation.py:1005 assert st == \"excluded\", f\"verbatim save re-included: {st}\"",
+      "seconds": 0.056,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C088": {
+      "name": "Intended-writing non-reviewable guard is preserved",
+      "finding_ids": [],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "judgment written on non-reviewable evidence: {'excluded': (1, 'excluded'), 'expired': (1, 'expired'), 'quarantined_sensitive': (1, 'quarantined_sensitive')}",
+      "where": "test_m09_remediation.py:1037 assert all(v[0] == 0 for v in wrote.values()), \\",
+      "seconds": 0.024,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C089": {
+      "name": "Open Training detail/editor clears immediately on delete",
+      "finding_ids": [
+        "M09-AUDIT-02"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "deleted text still in Training state",
+      "where": "test_m09_remediation.py:451 assert CANARY_A not in now, \"deleted text still in Training state\"",
+      "seconds": 0.064,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C090": {
+      "name": "Cross-view cached payload and invalid profile stay revoked",
+      "finding_ids": [
+        "M09-AUDIT-02"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "history",
+      "where": "m09_drivers.py:1673 assert CANARY_A not in json.dumps(w.hub.state.views,",
+      "seconds": 0.079,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C091": {
+      "name": "Quarantine/expiry publication policy is revocation-aware",
+      "finding_ids": [
+        "M09-AUDIT-02"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "AttributeError: 'HubState' object has no attribute 'revalidate'",
+      "seconds": 10.142,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C092": {
+      "name": "Deleted job target and metadata pruning policy",
+      "finding_ids": [
+        "M09-AUDIT-29"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "(['job-b7f2edb498a34cd5bf5e7a7d8d77a1f0'], ['job-b7f2edb498a34cd5bf5e7a7d8d77a1f0'])",
+      "where": "test_m09_remediation.py:1761 assert jid not in by_app and jid not in browse, (by_app, browse)",
+      "seconds": 10.019,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C093": {
+      "name": "Missing/orphan target metadata degrades honestly",
+      "finding_ids": [
+        "M09-AUDIT-29"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 9.879,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C094": {
+      "name": "Multi-stream ordering independent of filenames",
+      "finding_ids": [
+        "M09-AUDIT-18"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "(('events-1.jsonl', 'events-2.jsonl'), ['evt-00000000000000000000000000000003a', 'evt-00000000000000000000000000000001b', 'evt-00000000000000000000000000000002b', 'evt-00000000000000000000000000000003b'], ['evt-00000000000000000000000000000002a', 'evt-00000000000000000000000000000002b', 'evt-00000000000000000000000000000003a', 'evt-00000000000000000000000000000003b'])",
+      "where": "test_m09_remediation.py:1885 assert got == expected[-4:], (names, got, expected[-4:])",
+      "seconds": 0.001,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C095": {
+      "name": "Clock rollback preserves within-stream causality",
+      "finding_ids": [
+        "M09-AUDIT-18"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.0,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C096": {
+      "name": "Non-object valid JSON and malformed lines are safe",
+      "finding_ids": [
+        "M09-AUDIT-19"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "AttributeError",
+      "where": "test_m09_remediation.py:1932 assert not view.get(\"error\"), view.get(\"error\")",
+      "seconds": 0.031,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C097": {
+      "name": "Level All resets an existing filter",
+      "finding_ids": [
+        "M09-AUDIT-19"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "All levels left the ERROR filter in place",
+      "where": "test_m09_remediation.py:1912 assert w.hub.state.views[\"diagnostics\"][\"level_filter\"] is None, \\",
+      "seconds": 0.034,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C098": {
+      "name": "UTC toggle applies to job timeline",
+      "finding_ids": [
+        "M09-AUDIT-19"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "['2026-09-25 23:30:00.000 -04:00 INFO job=job-dddddddd m09.t1']",
+      "where": "test_m09_remediation.py:1956 assert tl and all(\"+00:00\" in ln for ln in tl), tl",
+      "seconds": 0.038,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C099": {
+      "name": "Last-N occurs after accepted ordering and filters",
+      "finding_ids": [
+        "M09-AUDIT-18"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "",
+      "where": "m09_drivers.py:1781 assert [r[\"event_id\"] + r[\"boot_id\"][-1] for r in got] == \\",
+      "seconds": 0.001,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C100": {
+      "name": "Typed allowlist rejects unknown and nested payloads",
+      "finding_ids": [
+        "M09-AUDIT-08"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "M09_PRIVATE_CANARY survived Hub export",
+      "where": "test_m09_remediation.py:1824 assert canary not in text, f\"{canary} survived Hub export\"",
+      "seconds": 0.034,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C101": {
+      "name": "Known field with wrong type cannot leak content",
+      "finding_ids": [
+        "M09-AUDIT-08"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "M09_DICT_CANARY",
+      "where": "m09_drivers.py:1804 assert canary not in text, canary",
+      "seconds": 0.0,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C102": {
+      "name": "Safe local engine/build display versus support export",
+      "finding_ids": [
+        "M09-AUDIT-08",
+        "M09-AUDIT-22"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "/Users/someone",
+      "where": "m09_drivers.py:1829 assert leak not in text, leak",
+      "seconds": 0.033,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C103": {
+      "name": "Large retained log does not parse on main",
+      "finding_ids": [
+        "M09-AUDIT-20"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "log parsed on the main thread",
+      "where": "m09_drivers.py:1862 assert not any(main_parses), \"log parsed on the main thread\"",
+      "seconds": 0.563,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C104": {
+      "name": "Read/redaction/write failure reports safe item-bound error",
+      "finding_ids": [
+        "M09-AUDIT-20",
+        "M09-AUDIT-22"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "ERROR",
+      "detail": "OSError: disk full M09_PRIVATE_PATH",
+      "seconds": 5.036,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C105": {
+      "name": "Mine completion cannot force Review after user navigated",
+      "finding_ids": [
+        "M09-AUDIT-21"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "late Mine completion navigated to review",
+      "where": "test_m09_remediation.py:2028 assert tab == \"export\", f\"late Mine completion navigated to {tab}\"",
+      "seconds": 0.057,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C106": {
+      "name": "Older export cannot overwrite newer export status",
+      "finding_ids": [
+        "M09-AUDIT-21"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "older export presented as current: 'export finalized · exp-A\\ncounts: {}\\nfingerprint: ffffffffffffffff…'",
+      "where": "test_m09_remediation.py:2105 assert \"exp-A\" not in at_a[0], \\",
+      "seconds": 0.078,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C107": {
+      "name": "Your Voice completion after invalidation",
+      "finding_ids": [
+        "M09-AUDIT-02",
+        "M09-AUDIT-21"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "ERROR",
+      "detail": "AttributeError: 'HubController' object has no attribute '_action_notes'",
+      "seconds": 10.043,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C108": {
+      "name": "M14 Approve/Reject uses stable candidate ID",
+      "finding_ids": [
+        "M09-AUDIT-01"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "approved ['cand-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'] with nothing selected",
+      "where": "m09_drivers.py:1964 assert calls == [], f\"approved {calls} with nothing selected\"",
+      "seconds": 20.005,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C109": {
+      "name": "M10/M11 editor selection token survives refresh",
+      "finding_ids": [
+        "M09-AUDIT-01"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "ERROR",
+      "detail": "AttributeError: 'HubController' object has no attribute '_rendered_rows'",
+      "seconds": 0.04,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C110": {
+      "name": "M12 note revision race is isolated from shared query publication",
+      "finding_ids": [
+        "M09-AUDIT-03",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "NARROWED",
+      "detail": "3/3 M12 Scratchpad suite runs green on the repaired shared shell (its note-transform acceptance included); no shared-publication race observed",
+      "remainder": "ownership of the historical intermittent revision race stays with M12 (not reproduced here)",
+      "seconds": 33.461,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C111": {
+      "name": "Models failure cannot look like fresh previous success",
+      "finding_ids": [
+        "M09-AUDIT-22"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "failure invisible: '1 examples · audio 1 · verbatim 0 · spans 0 · unreviewed 1 · storage 62 KiBSelect an example to inspect stages, completeness and annotations.'",
+      "where": "test_m09_remediation.py:860 assert \"RuntimeError\" in shown or \"failed\" in shown.lower(), \\",
+      "seconds": 0.069,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C112": {
+      "name": "Loading is an actual state transition",
+      "finding_ids": [
+        "M09-AUDIT-22"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "FAIL",
+      "detail": "admitted outstanding query not loading",
+      "where": "test_m09_remediation.py:812 assert loading is True, \"admitted outstanding query not loading\"",
+      "seconds": 0.039,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C113": {
+      "name": "Slow synchronous mutation measures Hub and worker separately",
+      "finding_ids": [
+        "M09-AUDIT-27"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "NARROWED",
+      "detail": "[{\"hold_ms\": 100.0, \"search_admission_main_ms\": 0.1, \"sync_annotation_main_blocked_ms\": 104.8, \"search_threads\": [\"localflow-hub-query\"]}, {\"hold_ms\": 1000.0, \"search_admission_main_ms\": 0.1, \"sync_annotation_main_blocked_ms\": 1006.3, \"search_threads\": [\"localflow-hub-query\"]}]",
+      "remainder": "timeout-scale (15 s) hold not run to keep the suite bounded; the timeout path itself is covered by C075",
+      "seconds": 1.246,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C114": {
+      "name": "Search empty-result mutant fails work validity",
+      "finding_ids": [
+        "M09-AUDIT-23"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "RuntimeError: set M09_BENCH_MUTATION_JSON to the m09_benchmark_mutation_check record",
+      "seconds": 0.0,
+      "environment_run": "benchmark_quick_isolated_process"
+    },
+    "M09-C115": {
+      "name": "Missing current view/subtab fails shell validity",
+      "finding_ids": [
+        "M09-AUDIT-23"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "ERROR",
+      "detail": "RuntimeError: set M09_BENCH_MUTATION_JSON to the m09_benchmark_mutation_check record",
+      "seconds": 0.0,
+      "environment_run": "benchmark_quick_isolated_process"
+    },
+    "M09-C116": {
+      "name": "Zero-example inspector cannot pass",
+      "finding_ids": [
+        "M09-AUDIT-23"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "RuntimeError: set M09_BENCH_MUTATION_JSON to the m09_benchmark_mutation_check record",
+      "seconds": 0.0,
+      "environment_run": "benchmark_quick_isolated_process"
+    },
+    "M09-C117": {
+      "name": "Stale-generation/no-publication shortcut cannot qualify",
+      "finding_ids": [
+        "M09-AUDIT-23"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "RuntimeError: set M09_BENCH_MUTATION_JSON to the m09_benchmark_mutation_check record",
+      "seconds": 0.0,
+      "environment_run": "benchmark_quick_isolated_process"
+    },
+    "M09-C118": {
+      "name": "Inline dispatcher rejected without unsafe AppKit call",
+      "finding_ids": [
+        "M09-AUDIT-23",
+        "M09-AUDIT-25"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "regressions": [
+          "test_a25_inline_dispatch_negative_control_is_intercepted"
+        ]
+      },
+      "seconds": 0.037,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C119": {
+      "name": "Timer covers real work and actual settle",
+      "finding_ids": [
+        "M09-AUDIT-23"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "ERROR",
+      "detail": "RuntimeError: set M09_BENCH_MUTATION_JSON to the m09_benchmark_mutation_check record",
+      "seconds": 0.0,
+      "environment_run": "benchmark_quick_isolated_process"
+    },
+    "M09-C120": {
+      "name": "Memory method reports current population and retained tails",
+      "finding_ids": [
+        "M09-AUDIT-23",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "ERROR",
+      "detail": "RuntimeError: set M09_BENCH_MUTATION_JSON to the m09_benchmark_mutation_check record",
+      "seconds": 0.0,
+      "environment_run": "benchmark_quick_isolated_process"
+    },
+    "M09-C121": {
+      "name": "Isolated reference-Mac qualification",
+      "finding_ids": [
+        "M09-AUDIT-23",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "reference_mac",
+      "status": "ERROR",
+      "detail": "RuntimeError: set M09_BENCH_JSON to the full benchmark_m09 record",
+      "seconds": 0.0,
+      "environment_run": "reference_mac_isolated"
+    },
+    "M09-C122": {
+      "name": "Query and long-action errors remain on main",
+      "finding_ids": [
+        "M09-AUDIT-25"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "ERROR",
+      "detail": "AttributeError: 'HubController' object has no attribute '_finish_action'",
+      "seconds": 0.063,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C123": {
+      "name": "Public coordinator-to-Hub callbacks carry thread ownership",
+      "finding_ids": [
+        "M09-AUDIT-25",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "entry_points_observed": [
+          "scratchpad_editor_active",
+          "scratchpad_note_created",
+          "scratchpad_quick_open"
+        ]
+      },
+      "seconds": 0.144,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C124": {
+      "name": "Frame restore after monitor/scaling change",
+      "finding_ids": [
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_helper",
+      "status": "NARROWED",
+      "detail": "build-time frame and minimum size clamp to the visible screen (test_window_bounds_and_min_size)",
+      "remainder": "restoring a saved frame after a display change/removal needs a real display change: M09-V005",
+      "seconds": 0.035,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C125": {
+      "name": "Delete beats in-flight annotation transaction",
+      "finding_ids": [
+        "M09-AUDIT-02",
+        "M09-AUDIT-24"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {},
+      "seconds": 0.021,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C126": {
+      "name": "Pure-state tests cannot certify native behavior",
+      "finding_ids": [
+        "M09-AUDIT-25"
+      ],
+      "corpus_environment": "portable_state_or_service",
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "checked": 128
+      },
+      "seconds": 0.001,
+      "environment_run": "portable_real_framework"
+    },
+    "M09-C127": {
+      "name": "Empty/degraded store is an honest usable Hub",
+      "finding_ids": [
+        "M09-AUDIT-22",
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "Select a row to see its lineage, outcome and actions.",
+      "where": "m09_drivers.py:2212 assert \"No history yet\" in txt, txt[:300]",
+      "seconds": 0.121,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C128": {
+      "name": "Invalidated action buffers cannot copy deleted text",
+      "finding_ids": [
+        "M09-AUDIT-02"
+      ],
+      "corpus_environment": "native_appkit_adapter",
+      "status": "FAIL",
+      "detail": "",
+      "where": "m09_drivers.py:1733 assert CANARY_A not in json.dumps(pastes + copies)",
+      "seconds": 0.045,
+      "environment_run": "native_appkit_main_queue"
+    },
+    "M09-C129": {
+      "name": "Current full Hub layout",
+      "finding_ids": [
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "daniel_manual",
+      "status": "MANUAL_PENDING",
+      "detail": "M09-V001 — full layout, scale, appearance (Daniel)",
+      "environment_run": null
+    },
+    "M09-C130": {
+      "name": "Real keyboard and focus",
+      "finding_ids": [
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "daniel_manual",
+      "status": "MANUAL_PENDING",
+      "detail": "M09-V002 — real keyboard/focus (Daniel)",
+      "environment_run": null
+    },
+    "M09-C131": {
+      "name": "Real replay and recovery interaction",
+      "finding_ids": [
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "daniel_manual",
+      "status": "MANUAL_PENDING",
+      "detail": "M09-V003 — audible replay and retry experience (Daniel)",
+      "environment_run": null
+    },
+    "M09-C132": {
+      "name": "Real History Paste Again destination",
+      "finding_ids": [
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "daniel_manual",
+      "status": "MANUAL_PENDING",
+      "detail": "M09-V004 — History Paste Again into a real destination, observed focus (Daniel)",
+      "environment_run": null
+    },
+    "M09-C133": {
+      "name": "Move/resize/relaunch",
+      "finding_ids": [
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "daniel_manual",
+      "status": "MANUAL_PENDING",
+      "detail": "M09-V005 — move/resize/relaunch and display change (Daniel)",
+      "environment_run": null
+    },
+    "M09-C134": {
+      "name": "Training review experience",
+      "finding_ids": [
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "daniel_manual",
+      "status": "MANUAL_PENDING",
+      "detail": "M09-V006 — Training review experience (Daniel)",
+      "environment_run": null
+    },
+    "M09-C135": {
+      "name": "Diagnostics and redacted support export experience",
+      "finding_ids": [
+        "M09-AUDIT-26"
+      ],
+      "corpus_environment": "daniel_manual",
+      "status": "MANUAL_PENDING",
+      "detail": "M09-V007 — Diagnostics filters and redacted export usability (Daniel)",
+      "environment_run": null
+    }
+  },
+  "relations": {
+    "M09-MR01": {
+      "name": "Newer query wins",
+      "case_ids": [
+        "M09-C001",
+        "M09-C021",
+        "M09-C022",
+        "M09-C023"
+      ],
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "a_first": true,
+        "a_after_b": true,
+        "a_raises_after_b": true,
+        "a_after_b_error": true
+      },
+      "seconds": 0.163
+    },
+    "M09-MR02": {
+      "name": "Selection binding",
+      "case_ids": [
+        "M09-C002",
+        "M09-C024",
+        "M09-C025",
+        "M09-C026",
+        "M09-C108",
+        "M09-C109"
+      ],
+      "status": "FAIL",
+      "detail": "('detail_held', ['job-fb5f09d76b424855b7f39a41e7ecdc62'])",
+      "where": "m09_drivers.py:2294 assert ja not in targets, (variant, targets)",
+      "seconds": 0.04
+    },
+    "M09-MR03": {
+      "name": "Delete monotonicity",
+      "case_ids": [
+        "M09-C011",
+        "M09-C012",
+        "M09-C062",
+        "M09-C089",
+        "M09-C090",
+        "M09-C125",
+        "M09-C128"
+      ],
+      "status": "FAIL",
+      "detail": "('before_read', [6, 6, 6])",
+      "where": "m09_drivers.py:2337 assert counts == sorted(counts, reverse=True) and \\",
+      "seconds": 0.077
+    },
+    "M09-MR04": {
+      "name": "Listening isolation",
+      "case_ids": [
+        "M09-C007",
+        "M09-C008",
+        "M09-C064",
+        "M09-C065"
+      ],
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "replay_other": [],
+        "replay_fails": [],
+        "replay_self": [
+          "verbatim_reference"
+        ]
+      },
+      "seconds": 0.183
+    },
+    "M09-MR05": {
+      "name": "Retry idempotence",
+      "case_ids": [
+        "M09-C009",
+        "M09-C066",
+        "M09-C068"
+      ],
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "1": [
+          1,
+          1
+        ],
+        "2": [
+          1,
+          1
+        ],
+        "3": [
+          1,
+          1
+        ]
+      },
+      "seconds": 0.362
+    },
+    "M09-MR06": {
+      "name": "Repaste intent identity",
+      "case_ids": [
+        "M09-C010",
+        "M09-C069",
+        "M09-C070",
+        "M09-C072"
+      ],
+      "status": "ERROR",
+      "detail": "AttributeError: 'InsertionService' object has no attribute 'pending'",
+      "seconds": 0.041
+    },
+    "M09-MR07": {
+      "name": "Retention cannot manufacture lineage",
+      "case_ids": [
+        "M09-C050",
+        "M09-C053",
+        "M09-C054",
+        "M09-C056",
+        "M09-C059"
+      ],
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "source": "absent, no borrowing",
+        "normalized": "absent, no borrowing",
+        "cleaned": "absent, no borrowing",
+        "transformed": "absent, no borrowing"
+      },
+      "seconds": 0.061
+    },
+    "M09-MR08": {
+      "name": "Main-thread invariant",
+      "case_ids": [
+        "M09-C020",
+        "M09-C118",
+        "M09-C122",
+        "M09-C123"
+      ],
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "drain_each": {
+          "refreshes": 5,
+          "off_main": 0
+        },
+        "accumulate_then_drain": {
+          "refreshes": 3,
+          "off_main": 0
+        },
+        "inline_guard": {
+          "refreshes": 3,
+          "off_main": 1
+        }
+      },
+      "seconds": 0.115
+    },
+    "M09-MR09": {
+      "name": "Pin/review-lease separation",
+      "case_ids": [
+        "M09-C015",
+        "M09-C081",
+        "M09-C082"
+      ],
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "(True,)": {
+          "annotation_leases": 2,
+          "pinned": true
+        },
+        "(True, False)": {
+          "annotation_leases": 2,
+          "pinned": false
+        },
+        "(False,)": {
+          "annotation_leases": 2,
+          "pinned": false
+        },
+        "(True, True, False)": {
+          "annotation_leases": 2,
+          "pinned": false
+        },
+        "(False, False)": {
+          "annotation_leases": 2,
+          "pinned": false
+        }
+      },
+      "seconds": 0.082
+    },
+    "M09-MR10": {
+      "name": "Legacy search identity",
+      "case_ids": [
+        "M09-C051",
+        "M09-C052",
+        "M09-C053"
+      ],
+      "status": "FAIL",
+      "detail": "",
+      "where": "m09_drivers.py:2516 assert texts == [\"clean M09_CQ shared\", \"raw M09_RQ shared\"]",
+      "seconds": 0.013
+    },
+    "M09-MR11": {
+      "name": "Filename-independent diagnostics",
+      "case_ids": [
+        "M09-C094",
+        "M09-C095",
+        "M09-C099"
+      ],
+      "status": "FAIL",
+      "detail": "order changed with filenames",
+      "where": "m09_drivers.py:2545 assert len(results) == 1, \"order changed with filenames\"",
+      "seconds": 0.004
+    },
+    "M09-MR12": {
+      "name": "Redaction extension safety",
+      "case_ids": [
+        "M09-C100",
+        "M09-C101",
+        "M09-C102"
+      ],
+      "status": "ERROR",
+      "detail": "ModuleNotFoundError: No module named 'localflow.v2.event_view'",
+      "seconds": 0.0
+    },
+    "M09-MR13": {
+      "name": "Lifecycle restriction monotonicity",
+      "case_ids": [
+        "M09-C083",
+        "M09-C084",
+        "M09-C085",
+        "M09-C086",
+        "M09-C087",
+        "M09-C088"
+      ],
+      "status": "FAIL",
+      "detail": "('quarantined_sensitive', ('exclude_on', 'exclude_off', 'span', 'verbatim', 'mark'), [('exclude_on', 'excluded')])",
+      "where": "m09_drivers.py:2612 assert st == start, (start, order, trace)",
+      "seconds": 0.016
+    },
+    "M09-MR14": {
+      "name": "Benchmark work sensitivity",
+      "case_ids": [
+        "M09-C114",
+        "M09-C115",
+        "M09-C116",
+        "M09-C117",
+        "M09-C118",
+        "M09-C119",
+        "M09-C120"
+      ],
+      "status": "ERROR",
+      "detail": "RuntimeError: set M09_BENCH_MUTATION_JSON to the m09_benchmark_mutation_check record",
+      "seconds": 0.0
+    }
+  },
+  "declared_code_sha": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+  "code_root": "git archive export of the declared SHA (no .git)",
+  "tests_overlaid_from": "dbeee1cbcae7b3115d7c80a9599cfd8a50ba5d3a",
+  "note": "the final suite, drivers and frozen corpus run against the declared code; benchmark-bound cases have no record for this code and report ERROR with that reason"
+}

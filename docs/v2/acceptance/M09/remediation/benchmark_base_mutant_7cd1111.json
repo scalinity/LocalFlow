@@ -1,0 +1,49 @@
+{
+  "finding": "M09-AUDIT-23",
+  "disposition": "reproduced",
+  "code_sha": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+  "code_root": "git archive export of the declared SHA (disposable copy)",
+  "mutation": {
+    "file": "localflow/v2/history_queries.py",
+    "edit": "HistoryQueryService.search returns {\"groups\": [], \"total\": 0} without running the query (lines 68-70 replaced)",
+    "sha256_before_prefix": "cad002a36371b5f0",
+    "sha256_after_prefix": "dee79c070bf657a2"
+  },
+  "command": ".venv/bin/python tests/v2/context/run_isolated.py scripts/v2/benchmark_m09.py <out-dir>  (base benchmark, unmodified)",
+  "exit_code": 0,
+  "base_benchmark_qualifies_when": "every History search case and the shell case is within_budget; rows returned and the dispatch harness are not checked (bench_shell replaces AppHelper.callAfter with an inline call)",
+  "observed": {
+    "history_search_50k": {
+      "text_hit": {
+        "rows_returned": 0,
+        "p95_ms": 0.0,
+        "within_budget": true
+      },
+      "text_miss": {
+        "rows_returned": 0,
+        "p95_ms": 0.0,
+        "within_budget": true
+      },
+      "app_filter": {
+        "rows_returned": 0,
+        "p95_ms": 0.0,
+        "within_budget": true
+      },
+      "mode_filter": {
+        "rows_returned": 0,
+        "p95_ms": 0.0,
+        "within_budget": true
+      },
+      "browse_no_filters": {
+        "rows_returned": 0,
+        "p95_ms": 0.0,
+        "within_budget": true
+      }
+    },
+    "interactive_shell": {
+      "p95_ms": 47.43,
+      "within_budget": true
+    }
+  },
+  "conclusion": "The base benchmark qualifies a History that returns no rows at all (text_hit must return the seeded hit jobs). The repaired benchmark checks each cohort's work before timing can qualify; m09_benchmark_mutation_check.py shows the same empty-hit weakening is rejected (M09-C114/MUT26)."
+}

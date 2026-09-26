@@ -1,0 +1,327 @@
+{
+ "milestone": "M09",
+ "rewritten_by": "M09 remediation",
+ "generated_utc": "2026-09-26T16:07:24Z",
+ "synthetic": true,
+ "quick": false,
+ "mutant": null,
+ "mutant_description": null,
+ "environment": {
+  "code_sha": "dbeee1cbcae7b3115d7c80a9599cfd8a50ba5d3a",
+  "production_tree_clean": true,
+  "mac_model": "Mac17,8",
+  "chip": "Apple M5 Pro",
+  "macos": "27.0",
+  "python": "3.14.7",
+  "loadavg_at_start": "{ 7.88 7.84 7.80 }"
+ },
+ "population": {
+  "jobs": 50000,
+  "hit_jobs": 516,
+  "legacy_db_rows": 5000,
+  "legacy_log_pairs": 1000,
+  "training_examples": 1000,
+  "events": 2000,
+  "styles": 5,
+  "snippets": 5,
+  "notes": 5,
+  "dictations": 5,
+  "build_s": 2.8
+ },
+ "memory": {
+  "method": "tracemalloc (Python heap only: current and peak since start) + ps rss (process-wide current resident, native included); not an isolated allocation count",
+  "views_visited": 10,
+  "python_heap_current_mb_with_hub": 1.3,
+  "python_heap_peak_mb": 12.8,
+  "python_heap_retained_after_shutdown_mb": 1.3,
+  "rss_current_mb_before": 135.9,
+  "rss_current_mb_with_hub": 167.1,
+  "valid": true
+ },
+ "history_search": {
+  "text_hit": {
+   "n": 50,
+   "p50_ms": 28.13,
+   "p95_ms": 32.62,
+   "p99_ms": 33.19,
+   "max_ms": 33.19,
+   "valid": true,
+   "work": "200/200 hits",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "text_miss": {
+   "n": 50,
+   "p50_ms": 27.18,
+   "p95_ms": 30.06,
+   "p99_ms": 31.59,
+   "max_ms": 31.59,
+   "valid": true,
+   "work": "0 rows",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "app_filter": {
+   "n": 50,
+   "p50_ms": 27.13,
+   "p95_ms": 29.81,
+   "p99_ms": 31.08,
+   "max_ms": 31.08,
+   "valid": true,
+   "work": "182 job rows",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "mode_filter": {
+   "n": 50,
+   "p50_ms": 43.99,
+   "p95_ms": 49.51,
+   "p99_ms": 51.99,
+   "max_ms": 51.99,
+   "valid": true,
+   "work": "200 rows",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "browse_mixed": {
+   "n": 50,
+   "p50_ms": 53.72,
+   "p95_ms": 57.06,
+   "p99_ms": 61.57,
+   "max_ms": 61.57,
+   "valid": true,
+   "work": "200 rows, kinds ['job', 'legacy_db']",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "legacy_mode": {
+   "n": 50,
+   "p50_ms": 3.66,
+   "p95_ms": 4.61,
+   "p99_ms": 4.89,
+   "max_ms": 4.89,
+   "valid": true,
+   "work": "200 rows",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  }
+ },
+ "shell": {
+  "construction": {
+   "n": 10,
+   "p50_ms": 15.31,
+   "p95_ms": 16.39,
+   "p99_ms": 16.39,
+   "max_ms": 16.39
+  },
+  "first_usable_result": {
+   "n": 10,
+   "p50_ms": 16.43,
+   "p95_ms": 17.67,
+   "p99_ms": 17.67,
+   "max_ms": 17.67
+  },
+  "full_pass": {
+   "n": 10,
+   "p50_ms": 319.09,
+   "p95_ms": 327.0,
+   "p99_ms": 327.0,
+   "max_ms": 327.0,
+   "budget_p95_ms": 1000.0,
+   "within_budget": true
+  },
+  "view_switch": {
+   "home": {
+    "n": 10,
+    "p50_ms": 1.05,
+    "p95_ms": 1.7,
+    "p99_ms": 1.7,
+    "max_ms": 1.7
+   },
+   "history": {
+    "n": 10,
+    "p50_ms": 69.94,
+    "p95_ms": 74.22,
+    "p99_ms": 74.22,
+    "max_ms": 74.22
+   },
+   "styles": {
+    "n": 10,
+    "p50_ms": 9.64,
+    "p95_ms": 10.34,
+    "p99_ms": 10.34,
+    "max_ms": 10.34
+   },
+   "snippets": {
+    "n": 10,
+    "p50_ms": 9.32,
+    "p95_ms": 10.58,
+    "p99_ms": 10.58,
+    "max_ms": 10.58
+   },
+   "transforms": {
+    "n": 10,
+    "p50_ms": 8.94,
+    "p95_ms": 10.23,
+    "p99_ms": 10.23,
+    "max_ms": 10.23
+   },
+   "scratchpad": {
+    "n": 10,
+    "p50_ms": 10.94,
+    "p95_ms": 12.42,
+    "p99_ms": 12.42,
+    "max_ms": 12.42
+   },
+   "insights": {
+    "n": 10,
+    "p50_ms": 22.22,
+    "p95_ms": 25.41,
+    "p99_ms": 25.41,
+    "max_ms": 25.41
+   },
+   "diagnostics": {
+    "n": 10,
+    "p50_ms": 37.94,
+    "p95_ms": 41.35,
+    "p99_ms": 41.35,
+    "max_ms": 41.35
+   },
+   "models": {
+    "n": 10,
+    "p50_ms": 23.06,
+    "p95_ms": 25.0,
+    "p99_ms": 25.0,
+    "max_ms": 25.0
+   },
+   "settings": {
+    "n": 10,
+    "p50_ms": 7.19,
+    "p95_ms": 7.97,
+    "p99_ms": 7.97,
+    "max_ms": 7.97
+   },
+   "training:evidence": {
+    "n": 10,
+    "p50_ms": 18.82,
+    "p95_ms": 20.83,
+    "p99_ms": 20.83,
+    "max_ms": 20.83
+   },
+   "training:review": {
+    "n": 10,
+    "p50_ms": 14.77,
+    "p95_ms": 15.97,
+    "p99_ms": 15.97,
+    "max_ms": 15.97
+   },
+   "training:splits": {
+    "n": 10,
+    "p50_ms": 13.99,
+    "p95_ms": 15.47,
+    "p99_ms": 15.47,
+    "max_ms": 15.47
+   },
+   "training:export": {
+    "n": 10,
+    "p50_ms": 13.92,
+    "p95_ms": 15.0,
+    "p99_ms": 15.0,
+    "max_ms": 15.0
+   },
+   "training:detail": {
+    "n": 10,
+    "p50_ms": 0.66,
+    "p95_ms": 0.71,
+    "p99_ms": 0.71,
+    "max_ms": 0.71
+   },
+   "insights:voice": {
+    "n": 10,
+    "p50_ms": 0.49,
+    "p95_ms": 0.71,
+    "p99_ms": 0.71,
+    "max_ms": 0.71
+   }
+  },
+  "clock": "HubController init \u2192 every view/tab publication rendered on the main thread",
+  "valid": true,
+  "problems": []
+ },
+ "rapid_search": {
+  "search_changes": 100,
+  "admission_main_ms": 0.37,
+  "drain_ms": 39.1,
+  "new_hub_query_threads_peak": 0,
+  "hub_query_threads_total": 1,
+  "admitted": 100,
+  "superseded_before_start": 99,
+  "service_search_calls": 1,
+  "all_admitted_accounted": true,
+  "final_result_is_latest": true,
+  "dictation_idle_ms": 13.3,
+  "dictation_during_burst_ms": 42.0,
+  "valid": true
+ },
+ "training_diagnostics": {
+  "training": {
+   "examples": 1000,
+   "list": {
+    "n": 20,
+    "p50_ms": 4.09,
+    "p95_ms": 4.86,
+    "p99_ms": 6.07,
+    "max_ms": 6.07
+   },
+   "detail": {
+    "n": 20,
+    "p50_ms": 0.09,
+    "p95_ms": 0.12,
+    "p99_ms": 0.16,
+    "max_ms": 0.16
+   },
+   "readiness": {
+    "n": 20,
+    "p50_ms": 12.16,
+    "p95_ms": 13.14,
+    "p99_ms": 13.63,
+    "max_ms": 13.63
+   },
+   "valid": true
+  },
+  "diagnostics": {
+   "events": 2000,
+   "filtered_window_last500": {
+    "n": 20,
+    "p50_ms": 26.33,
+    "p95_ms": 27.13,
+    "p99_ms": 28.54,
+    "max_ms": 28.54
+   },
+   "redacted_export_500": {
+    "n": 20,
+    "p50_ms": 6.0,
+    "p95_ms": 6.31,
+    "p99_ms": 6.69,
+    "max_ms": 6.69
+   },
+   "valid": true
+  }
+ },
+ "validity": {
+  "history_search": true,
+  "shell": true,
+  "rapid_search": true,
+  "training": true,
+  "diagnostics": true,
+  "memory": true
+ },
+ "work_valid": true,
+ "timing_qualified": true
+}
