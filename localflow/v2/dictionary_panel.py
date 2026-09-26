@@ -168,7 +168,8 @@ class DictionaryPanelController(NSObject):
                 e.entry_id == self._selected_id for e in self._entries):
             self._selected_id = None      # the selected entry is gone
         lines = [f"{len(self._entries)} entries"
-                 f" ({len(shown)} shown) — click a line to select:\n"]
+                 f" ({len(shown)} shown) — to select one, type its line"
+                 " number in Test phrase and press Test:\n"]
         for i, e in enumerate(shown):
             state = []
             if not e.enabled:
