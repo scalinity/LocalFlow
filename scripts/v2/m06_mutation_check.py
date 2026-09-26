@@ -214,7 +214,9 @@ def evaluate(dst, cases):
 
 
 def verdict(result, cases):
-    killed_by = [c for c in cases if result.get(c) in ("fail", "error")]
+    # Only a FAILED oracle kills; an "error" is the harness breaking,
+    # which the corpus runner documents as never a kill.
+    killed_by = [c for c in cases if result.get(c) == "fail"]
     if result["regression_suite"]["exit"] != 0:
         killed_by.append("tests/v2/context/test_m06_remediation.py")
     return killed_by
@@ -272,6 +274,9 @@ def main():
                     "survived" if green else "control_invalid")
             report["mutations"][mid] = {"disposition": disp,
                                         "killed_by": killed_by,
+                                        "errors_under_mutation": [
+                                            c for c in kmap[mid]
+                                            if res.get(c) == "error"],
                                         "killer_cases": kmap[mid],
                                         "results": res}
             print(f"{mid}: {disp} by {killed_by}", flush=True)

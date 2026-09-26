@@ -171,6 +171,13 @@ class WorldHost:
     def window_token(self, win):
         return win[2] if win is not None else None
 
+    def focused_window_title(self, el):
+        """The insertion host's live title lookup (the system host reads
+        the application's focused window): the owning app's title."""
+        self._enter("focused_window_title", el[1] if el else None, "AXTitle")
+        a = self._app_of(el)
+        return a.window_title if a is not None else None
+
     def read(self, el, name):
         owner = el[1] if el is not None else None
         self._enter("read", owner, name)

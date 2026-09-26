@@ -503,7 +503,7 @@ def test_a07_unready_projection_is_an_explicit_bounded_downgrade():
     gate = threading.Event()
     with _CountingWiden(gate) as cw:
         job = _press(h)
-        h.d._widen_cost_ms = 1000.0      # a measured build over budget
+        h.d._widen_ms_per_entry = 1000.0  # a measured cost over budget
         job, release_ms = _release(h)
         gate.set()
         assert job["prewiden_done"].wait(5)
