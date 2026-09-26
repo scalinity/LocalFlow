@@ -12,7 +12,13 @@ the same title, role, range and text differs there).
 
 Denial is the M06 rule (``snapshot.app_denied`` over the validated
 ``config.context_policy`` list) and is decided before any Accessibility
-call. The selection is recorded in the host's own units
+call. The element read is the focused element OF the authorized
+application (``focused_element_for(pid)``, the M06 ownership rule),
+accepted only when ``element_pid`` names that application: a focus
+change after the decision can never make the capture read another
+app's field — it is refused unread (``destination_unverified``), and
+every later read of the capture uses that one element. The selection
+is recorded in the host's own units
 (``selected_range_utf16``, exactly as ``validate_target`` reads it
 back) and in code points only when exactly derivable (the M06 field
 convention); the field's own window element is recorded so the M06/M08
@@ -27,9 +33,10 @@ from typing import Optional
 from .. import ids
 from ..context.providers import (_LONE_SURROGATE, NEARBY_CHARS, categorize,
                                  utf16_len)
-from ..context.snapshot import (FIELD_SECURE, ContextSnapshot, FieldContext,
-                                TargetSnapshot, app_denied, classify_field)
-from .validation import _as_range
+from ..context.snapshot import (FIELD_SECURE, FIELD_TEXT, ContextSnapshot,
+                                FieldContext, TargetSnapshot, app_denied,
+                                classify_field)
+from .validation import _as_range, acquire_destination
 
 SURROUNDING_CHARS = min(NEARBY_CHARS, 200)
 
@@ -74,7 +81,9 @@ def capture_selection(host, *, denied_apps=()):
     bundle = fm.get("bundle")
     if app_denied(bundle, denied_apps or ()):
         return None, "app_denied"
-    el = host.focused_element()
+    el, owned = acquire_destination(host, fm.get("pid"))
+    if not owned:
+        return None, "destination_unverified"
     if el is None:
         return None, "no_focused_element"
     role = host.attribute(el, "AXRole")
@@ -85,6 +94,10 @@ def capture_selection(host, *, denied_apps=()):
     if classification == FIELD_SECURE:
         # Absolute rule: nothing of a secure field is read.
         return None, "secure_field"
+    if classification != FIELD_TEXT:
+        # S12: an unclassifiable field gets no content read — an
+        # explicit transform needs a classified text field.
+        return None, "unclassifiable_field"
     raw = host.attribute(el, "AXSelectedTextRange")
     if isinstance(raw, tuple) and len(raw) == 2:
         # The repo convention (providers._as_range): a plain tuple is

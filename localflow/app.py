@@ -570,6 +570,11 @@ class AppDelegate(NSObject):
                 restore_clipboard=bool(cfg.get("restore_clipboard", True)),
                 observation_window_sec=float(
                     cfg.get("outcome_observation_sec", 30)),
+                # S12: M08's destination-content readers take the same
+                # validated deny decision as M06/M11 (an invalid list
+                # denies every app's content).
+                denied_apps=self._context_policy["context_denied_apps"],
+                deny_invalid=self._context_deny_invalid,
                 on_post_begin=lambda: setattr(self, "_injecting", True),
                 on_post_end=lambda: AppHelper.callAfter(
                     self._armInjectingClear_))
@@ -1495,11 +1500,16 @@ class AppDelegate(NSObject):
         # proof it is still the same selection in the same document;
         # otherwise it routes to the copy offer. The insertion row is
         # attributed to the candidate (contracts/insertion.md).
+        # A recorded candidate means collection consent held when this
+        # transform's evidence was captured; without one nothing of the
+        # accept is observed. A repeated accept of the same candidate is
+        # the same operation (one effect).
         self._insertion.submit(
             result.output,
             {"job_id": candidate_id, "attempt": 1,
              "context_snapshot": capture["snapshot"],
-             "strict_replacement": True},
+             "strict_replacement": True,
+             "observation_consent": candidate_id is not None},
             on_done=lambda r, j=None: AppHelper.callAfter(
                 self._tfInsertDone_, r))
         self.v2log.emit("transforms.accepted", level="INFO",
@@ -2420,6 +2430,15 @@ class AppDelegate(NSObject):
                 or last is not None and last.get("job_id") == job_id:
             AppHelper.callAfter(self._drop_recovery_item, job_id)
         revoke = getattr(self.supervisor, "revoke_job", None)
+        if revoke is not None:
+            try:
+                revoke(job_id)
+            except Exception:
+                pass
+        # M08: the insertion service's cached recovery text, undo record,
+        # queued work and running observers for the job (flag-only).
+        revoke = getattr(getattr(self, "_insertion", None), "revoke_job",
+                         None)
         if revoke is not None:
             try:
                 revoke(job_id)
@@ -4286,6 +4305,12 @@ class AppDelegate(NSObject):
                 self._retire_active_job(job)
                 self._settle_state()
                 return
+            # S29.2/M02: passive outcome observation needs the collection
+            # consent this capture was granted at push-to-talk (a retry
+            # carries its original-and-current grant) — never a later
+            # change of the global setting.
+            job["observation_consent"] = bool(
+                ctx is not None and getattr(ctx, "collecting", False))
             self._insertion.submit(
                 text, job,
                 on_done=lambda result, j=job: AppHelper.callAfter(
@@ -4398,7 +4423,11 @@ class AppDelegate(NSObject):
         """One job leaves the active set exactly once, in whichever
         branch terminates it (the text branch defers this to
         _insertionDone_ so cancel authority holds until the insertion
-        transaction starts)."""
+        transaction starts). A second call for the same job changes
+        nothing."""
+        if job.get("_retired"):
+            return
+        job["_retired"] = True
         self._pending -= 1
         if job in self._active_jobs:
             self._active_jobs.remove(job)
@@ -4410,7 +4439,11 @@ class AppDelegate(NSObject):
         """The insertion transaction finished (main thread): record the
         honest outcome state, evidence and journal policy. Confirmed and
         posted results consumed the artifact; every other terminal state
-        keeps the recovery audio for retry."""
+        keeps the recovery audio for retry. One job settles once: a
+        second completion for it (a duplicate delivery) is ignored."""
+        if job.get("_insertion_settled"):
+            return
+        job["_insertion_settled"] = True
         self._retire_active_job(job)
         job_id, ctx = job["job_id"], job["ctx"]
         if job.get("cancelled"):
@@ -4527,14 +4560,12 @@ class AppDelegate(NSObject):
         self._starting_observation = obs
         ctx = job.get("ctx")
         result = info.get("insertion")
-        if obs.stop_reason is not None:
-            # The window already closed before this callback ran (e.g.
-            # an instant focus loss): finish it here so the final
-            # revision is not lost to the race.
-            self._observationFinished_(obs, result, job, ctx)
-            return
-        obs.on_closed = lambda: AppHelper.callAfter(
-            self._observationFinished_, obs, result, job, ctx)
+        # Subscribe-or-deliver in one step: a window that closed before,
+        # during or after this subscription produces exactly one final
+        # revision (a separate "already closed?" check and a later
+        # assignment would lose a close landing between them).
+        obs.subscribe_close(lambda: AppHelper.callAfter(
+            self._observationFinished_, obs, result, job, ctx))
 
     @objc.python_method
     def _observationFinished_(self, obs, result, job, ctx):
