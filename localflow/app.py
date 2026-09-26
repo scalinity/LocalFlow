@@ -16,6 +16,7 @@ import queue
 import signal
 import threading
 import time
+import urllib.parse
 
 import objc
 from AppKit import (
@@ -44,6 +45,7 @@ from .v2 import note_export as v2_note_export
 from .v2 import snippets as v2_snippets
 from .v2.developer import file_tags as v2_file_tags
 from .v2.developer import skills as v2_skills
+from .v2.developer import surfaces as v2_surfaces
 from .audio import Recorder
 from .hotkey import DISPLAY_NAMES, HotkeyListener, MouseTriggerListener
 from .inject import copy_text
@@ -94,6 +96,15 @@ PREWIDEN_WAIT_S = 10.0
 # The projection's cost per entry before any build has been measured
 # (conservative: 5.5–7.3 µs/entry measured on the reference Mac).
 DEFAULT_WIDEN_MS_PER_ENTRY = 0.01
+
+# M10: "no override passed" for _m10_freeze's historical call shape (the
+# freeze then takes the pending one-job mode itself).
+_M10_OVERRIDE_UNSET = object()
+# The declared scope every Hub preview runs in (M10-AUDIT-19): the
+# unscoped default — no destination, no workspace, no file listing.
+M10_PREVIEW_SCOPE = "global only"
+M10_PREVIEW_SCOPE_DETAIL = ("no destination, no workspace skills, no"
+                            " workspace files")
 
 # M03 remediation: the capture-provenance sidecar written next to a job's
 # recovery audio (content-free: timing, rate, sample counts, completeness).
@@ -429,15 +440,22 @@ class AppDelegate(NSObject):
         self._snip_store = None
         self._snippet_snapshot = None
         self._snippet_state_key = None
-        self._skill_manifest_paths = tuple(
-            cfg.get("skill_manifest_paths") or ())
-        self._workspace_skill_dirs = tuple(
-            cfg.get("workspace_skill_dirs") or ())
-        self._dev_listing = bool(
-            cfg.get("developer_workspace_listing", True))
+        # M10-AUDIT-07: one validated, immutable developer policy — a
+        # malformed path collection reads nothing (never a string split
+        # into one-character paths) and a non-Boolean listing switch
+        # lists nothing (content-free: key + reason).
+        dev_policy, dev_problems = config_mod.developer_policy(cfg)
+        for key, reason in dev_problems:
+            self.v2log.emit("config.developer_invalid", level="WARNING",
+                            reason_code=reason, outcome="fail_closed",
+                            detail=key)
+        self._skill_manifest_paths = dev_policy.skill_manifest_paths
+        self._workspace_skill_dirs = dev_policy.workspace_skill_dirs
+        self._dev_listing = dev_policy.developer_workspace_listing
         self._skill_records = []
         self._skill_cache_key = None
-        self._last_file_resolver = None
+        self._skill_discovery = None      # the frozen global discovery
+        self._ws_skill_cache = {}         # workspace sources → discovery
         self._last_wp = None       # last resolved profile (Hub panel)
         self._last_skill_workspace = None  # stale-workspace provenance
         self._last_ws_skills = False    # last finalized set had ws skills
@@ -880,24 +898,65 @@ class AppDelegate(NSObject):
     @objc.python_method
     def _m10_skill_records(self, workspace_dirs=(), workspace_name=None):
         """Configured-manifest discovery (S17): reads only the
-        configured paths (+ the job's workspace dirs), frontmatter
-        identity only, nothing executed. Cached by (path, mtime) so an
-        unchanged manifest set never re-reads on the dictation path."""
-        paths = list(self._skill_manifest_paths) + list(workspace_dirs)
+        configured paths (+ the given workspace dirs), frontmatter
+        identity only, nothing executed."""
+        records = list(self._m10_global_discovery().records)
+        if workspace_dirs:
+            records += list(self._m10_workspace_discovery(
+                workspace_dirs, workspace_name).records)
+        return records
 
-        def stat_key(p):
-            try:
-                return (str(p), pathlib.Path(p).expanduser().stat()
-                        .st_mtime_ns)
-            except OSError:
-                return (str(p), None)
-        key = (tuple(stat_key(p) for p in paths), workspace_name)
-        if key != self._skill_cache_key:
-            self._skill_records = v2_skills.discover(
-                self._skill_manifest_paths, workspace_dirs,
-                workspace_name)
-            self._skill_cache_key = key
-        return self._skill_records
+    @objc.python_method
+    def _m10_global_discovery(self):
+        """The configured global manifests' discovery, reused only while
+        nothing it admitted has changed (M10-AUDIT-10): the key is the
+        fingerprint of every listing and file discovery read (device,
+        inode, size, mtime and ctime — an in-place child edit, a
+        replacement or a restored mtime all change it), never the
+        configured paths' own mtimes."""
+        paths = tuple(self._skill_manifest_paths)
+        key = self._skill_cache_key
+        if key is not None and self._skill_discovery is not None \
+                and key[0] == paths \
+                and key[1] == v2_skills.fingerprint(paths):
+            return self._skill_discovery
+        res = v2_skills.discover_detailed(paths)
+        self._skill_discovery = res
+        self._skill_records = list(res.records)
+        self._skill_cache_key = (paths, res.fingerprint)
+        self._m10_report_sources(res)
+        return res
+
+    @objc.python_method
+    def _m10_workspace_discovery(self, workspace_dirs, workspace_name):
+        """Workspace manifests (read at release, when the workspace is
+        first known — a separate, recorded snapshot, never a reread of
+        the job's frozen global manifests), cached per source set on the
+        same fingerprint rule."""
+        dirs = tuple(workspace_dirs)
+        cache_key = (dirs, workspace_name)
+        hit = self._ws_skill_cache.get(cache_key)
+        if hit is not None and hit[0] == v2_skills.fingerprint((), dirs):
+            return hit[1]
+        res = v2_skills.discover_detailed((), dirs, workspace_name)
+        # One entry per source set; a workspace switch replaces it.
+        self._ws_skill_cache = {cache_key: (res.fingerprint, res)}
+        self._m10_report_sources(res)
+        return res
+
+    @objc.python_method
+    def _m10_report_sources(self, res):
+        """Content-free outcome of every refused/invalid manifest source
+        (kind and index, never a path, name or alias)."""
+        for o in res.outcomes:
+            if o["outcome"] in ("refused", "invalid") \
+                    or o.get("refused_children"):
+                self.v2log.emit(
+                    "profiles.manifest_refused", level="WARNING",
+                    reason_code=o.get("reason") or "child_refused",
+                    outcome=o["outcome"],
+                    detail=f"{o['kind']}:{o['source']}"
+                           f":refused_children={o.get('refused_children', 0)}")
 
     @objc.python_method
     def _m10_registry(self, m10, vocab_snapshot):
@@ -929,13 +988,43 @@ class AppDelegate(NSObject):
         return self._tf_snapshot
 
     @objc.python_method
-    def _m10_freeze(self, dest):
+    def _take_next_job_mode(self, job_id=None):
+        """The S15 one-job override is taken by exactly one admitted
+        capture, here — before any fallible optional work, so a later
+        fault can never lose it (M10-AUDIT-13). Content-free ownership
+        record: which job took which mode."""
+        mode, self._next_job_mode = self._next_job_mode, None
+        if mode is not None:
+            self.v2log.emit("profiles.override_taken", level="INFO",
+                            job_id=job_id, outcome=mode)
+        return mode
+
+    @objc.python_method
+    def _m10_degraded(self, override, reason):
+        """A complete, honest M10 tuple for a job whose freeze failed:
+        the job-owned override still applies (requested Raw stays Raw),
+        with zero rules, no snippets and no manifest skills, and the
+        failure is recorded for the evidence."""
+        wp = v2_profiles.resolve(override, [], v2_profiles.Destination())
+        return {"override": override, "file_resolver": None, "rules": [],
+                "transforms": None, "wp": wp, "snippet_snapshot": None,
+                "skill_records": [], "global_skill_records": [],
+                "skill_records_rev": v2_skills.records_revision([]),
+                "skill_sources": None, "norm_profile": None,
+                "degraded": reason}
+
+    @objc.python_method
+    def _m10_freeze(self, dest, override=_M10_OVERRIDE_UNSET):
         """Freeze the M10 per-job state at hotkey-down: the style rule
         set, the resolved writing profile (S15 precedence), the snippet
-        registry and the manifest skill records. Everything here rides
-        the job frozen — a mid-flight edit changes only future jobs."""
-        m10 = {"override": self._next_job_mode, "file_resolver": None}
-        self._next_job_mode = None  # a one-job override is consumed
+        registry and the configured global manifest records. Everything
+        here rides the job frozen — a mid-flight edit changes only future
+        jobs. ``override`` is the job-owned one-job mode the caller took
+        at admission; each optional part below degrades on its own, so no
+        optional fault loses it."""
+        if override is _M10_OVERRIDE_UNSET:
+            override = self._take_next_job_mode()
+        m10 = {"override": override, "file_resolver": None}
         rules = []
         if self._styles is not None:
             try:
@@ -950,9 +1039,23 @@ class AppDelegate(NSObject):
                                 outcome="last_good_state")
                 rules = list(self._style_rules)
         m10["rules"] = rules
-        m10["transforms"] = self._transforms_snapshot()
-        m10["wp"] = v2_profiles.resolve(m10["override"], rules, dest,
-                                        transforms=m10["transforms"])
+        try:
+            m10["transforms"] = self._transforms_snapshot()
+        except Exception as e:
+            # Transform-backed modes then fall back to Clean with their
+            # honest reason; Raw and Clean are unaffected.
+            self.v2log.emit("transforms.snapshot_failed", level="WARNING",
+                            reason_code=type(e).__name__,
+                            outcome="transforms_off_for_job")
+            m10["transforms"] = None
+        try:
+            m10["wp"] = v2_profiles.resolve(m10["override"], rules, dest,
+                                            transforms=m10["transforms"])
+        except Exception as e:
+            self.v2log.emit("profiles.refresh_failed", level="WARNING",
+                            reason_code=type(e).__name__,
+                            outcome="zero_rule_profile")
+            m10["wp"] = v2_profiles.resolve(m10["override"], [], dest)
         if self._snip_store is not None:
             try:
                 rev = self._snip_store.revision()
@@ -965,32 +1068,66 @@ class AppDelegate(NSObject):
                                 reason_code=type(e).__name__,
                                 outcome="snippets_last_good_state")
         m10["snippet_snapshot"] = self._snippet_snapshot
-        records = self._m10_skill_records()
+        # The configured global manifests freeze HERE, once: the release
+        # path adds workspace records beside them but never rereads them
+        # (M10-AUDIT-11).
+        try:
+            disc = self._m10_global_discovery()
+            records = list(disc.records)
+            m10["skill_sources"] = disc.summary()
+        except Exception as e:
+            self.v2log.emit("profiles.refresh_failed", level="WARNING",
+                            reason_code=type(e).__name__,
+                            outcome="manifest_skills_off_for_job")
+            records = []
+            m10["skill_sources"] = {"sources": None,
+                                    "reason": "discovery_failed"}
         m10["skill_records"] = records
+        m10["global_skill_records"] = tuple(records)
         m10["skill_records_rev"] = v2_skills.records_revision(records)
         wp = m10["wp"]
         m10["norm_profile"] = (
             wp.number_policy if wp.number_policy != "inherit" else None)
         return m10
 
+    @staticmethod
+    def _m10_document_path(url):
+        """The active document's filesystem path from its M06 locator,
+        decoded explicitly: an absolute path, or a ``file:`` URL with an
+        empty or ``localhost`` host whose path is percent-decoded. Any
+        other scheme or a relative path is a recorded string only — no
+        path is ever guessed (S12)."""
+        if not isinstance(url, str) or not url:
+            return None
+        if url.startswith("/"):
+            path = url
+        else:
+            parsed = urllib.parse.urlsplit(url)
+            if parsed.scheme != "file" or parsed.netloc not in (
+                    "", "localhost"):
+                return None
+            path = urllib.parse.unquote(parsed.path)
+        if not path.startswith("/") or "\x00" in path:
+            return None
+        return pathlib.Path(path)
+
     @objc.python_method
     def _m10_workspace_sources(self, snap):
         """(workspace skill dirs, listing root) for a finalized context:
         resolved from the active document's directory only when the
-        locator is a real filesystem path (S12 — a URL locator yields
-        nothing; no path is ever guessed)."""
+        locator is a real filesystem path. Each workspace dir is the
+        document's directory plus a validated relative name, opened
+        component by component without following links below it."""
         if snap is None or snap.field is None:
             return (), None
-        url = snap.field.document_url
-        if not url:
+        doc = self._m10_document_path(snap.field.document_url)
+        if doc is None:
             return (), None
-        raw = url[7:] if url.startswith("file://") else url
-        if url.startswith("file://") is False and not raw.startswith("/"):
-            return (), None  # an http locator is a recorded string only
-        doc_dir = pathlib.Path(raw).expanduser().parent
+        doc_dir = doc.parent
         if not doc_dir.is_dir():
             return (), None
-        ws_dirs = [doc_dir / name for name in self._workspace_skill_dirs]
+        ws_dirs = [v2_skills.WorkspaceDir(str(doc_dir), name)
+                   for name in self._workspace_skill_dirs]
         return tuple(ws_dirs), doc_dir
 
     @objc.python_method
@@ -1030,13 +1167,17 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def _finalized_policy(self, base_policy, m10, vocab_snapshot,
-                          *, stale_workspace: bool = False):
+                          *, stale_workspace: bool = False, records=None,
+                          registry_out=None):
         """The finalized normalization policy for a job: the M05/M06
         scope-upgraded snapshot's dictionary skills MERGED with the
-        job's frozen manifest skills (one SkillRegistry — collisions
-        masked), under the style-derived profile. Single owner of the
-        upgraded policy's skill set so no path can silently drop the
-        manifest half (review C2)."""
+        job's manifest skills (``records``, else the job's frozen ones;
+        one SkillRegistry — collisions masked), under the style-derived
+        profile. Single owner of the upgraded policy's skill set so no
+        path can silently drop the manifest half (review C2). Pure: it
+        mutates nothing; the registry it built is handed back through
+        ``registry_out`` and the CALLER commits policy and registry
+        together, or neither (M10-AUDIT-12)."""
         # "inherit" at finalize resolves against the configuration, not
         # against the hotkey-down policy's (possibly explicit) profile
         # (M04-AUDIT-13).
@@ -1049,20 +1190,23 @@ class AppDelegate(NSObject):
         else:
             skills = dict(base_policy.registered_skills or {})
             prov = dict(base_policy.skill_provenance or {})
+        registry = None
         if m10 is not None:
             registry = v2_skills.SkillRegistry(
-                m10["skill_records"],
+                m10["skill_records"] if records is None else records,
                 dict(vocab_snapshot.skills)
                 if vocab_snapshot is not None else None,
                 stale_workspace=stale_workspace,
                 dictionary_provenance=dict(vocab_snapshot.skill_provenance)
                 if vocab_snapshot is not None else None)
-            m10["skills"] = registry
             skills = dict(registry.policy_skills)
             prov = dict(registry.policy_provenance)
-        return v2_normalize.NormalizationPolicy(
+        policy = v2_normalize.NormalizationPolicy(
             locale=base_policy.locale, profile=profile,
             registered_skills=skills, skill_provenance=prov)
+        if registry_out is not None and registry is not None:
+            registry_out["registry"] = registry
+        return policy
 
     @objc.python_method
     def _m10_finalize_upgrade(self, job):
@@ -1073,7 +1217,16 @@ class AppDelegate(NSObject):
         _finalize_job_context (_m10_re_resolve); this pass catches the
         cases the M06 scope upgrade did not cover (no scope widening,
         or skill records that changed) so the job's policy always
-        matches its frozen registries and style. Strictly pre-decode."""
+        matches its frozen registries and style. Strictly pre-decode.
+
+        Composition with M06 (M10-AUDIT-11/12): the job's GLOBAL manifest
+        records froze at hotkey-down and are never reread here; workspace
+        records are read now (the first moment the workspace is known —
+        a separate, recorded snapshot). When M06 refused or deferred the
+        widening (``scope_disposition``) the job keeps its captured tuple
+        whole — no workspace registry is added. The candidate (records,
+        registry, policy) is built off to the side and committed at once;
+        any failure commits nothing."""
         m10 = job.get("m10")
         if m10 is None:
             return
@@ -1081,6 +1234,8 @@ class AppDelegate(NSObject):
         if snap is not None:
             ws_dirs, doc_dir = self._m10_workspace_sources(snap)
             workspace = snap.workspace
+            refused = job.get("scope_disposition") in (
+                "widening_failed", "widening_deferred")
             # Stale-workspace provenance: the PREVIOUS job's finalized
             # registry carried workspace-scoped skills from a DIFFERENT
             # workspace — this job's rebuild invalidates them (the
@@ -1090,7 +1245,20 @@ class AppDelegate(NSObject):
                      and self._last_skill_workspace is not None
                      and workspace != self._last_skill_workspace
                      and self._last_ws_skills)
-            records = self._m10_skill_records(ws_dirs, workspace)
+            records = list(m10.get("global_skill_records",
+                                   m10.get("skill_records")) or ())
+            ws_summary = None
+            if ws_dirs and not refused:
+                try:
+                    disc = self._m10_workspace_discovery(ws_dirs, workspace)
+                    records += list(disc.records)
+                    ws_summary = disc.summary()
+                except Exception as e:
+                    self.v2log.emit(
+                        "profiles.refresh_failed", level="WARNING",
+                        job_id=job.get("job_id"),
+                        reason_code=type(e).__name__,
+                        outcome="workspace_skills_off_for_job")
             rev = v2_skills.records_revision(records)
             # The JOB's own policy only: a job without a stored trio runs
             # on the unscoped default, never on a policy rebuilt from the
@@ -1098,53 +1266,49 @@ class AppDelegate(NSObject):
             base = job.get("norm_policy")
             job_vocab = getattr(job.get("norm_context"), "vocabulary",
                                 None)
-            if rev != m10["skill_records_rev"]:
-                m10["skill_records"] = records
-                m10["skill_records_rev"] = rev
-                if base is not None and base.profile != "off":
-                    try:
-                        job["norm_policy"] = self._finalized_policy(
-                            base, m10, job_vocab,
-                            stale_workspace=stale)
-                    except Exception as e:
-                        self.v2log.emit(
-                            "profiles.refresh_failed", level="WARNING",
-                            job_id=job.get("job_id"),
-                            reason_code=type(e).__name__,
-                            outcome="hotkey_down_policy_kept")
-            elif base is not None and base.profile != "off" \
-                    and base.profile != (
-                        m10.get("norm_profile")
-                        or self._configured_norm_profile()
-                        or base.profile):
+            rebuild = base is not None and base.profile != "off" and (
+                rev != m10["skill_records_rev"]
                 # A rule that only matched at finalize (site/category
                 # widened) — or an explicit hotkey-down rule that
                 # re-resolved to inherit: the number policy must reach
                 # the pipeline, not only the envelope.
+                or base.profile != (m10.get("norm_profile")
+                                    or self._configured_norm_profile()
+                                    or base.profile))
+            if rebuild:
+                out = {}
                 try:
-                    job["norm_policy"] = self._finalized_policy(
-                        base, m10, job_vocab)
+                    policy = self._finalized_policy(
+                        base, m10, job_vocab, records=records,
+                        stale_workspace=stale, registry_out=out)
                 except Exception as e:
+                    policy = None
                     self.v2log.emit(
                         "profiles.refresh_failed", level="WARNING",
                         job_id=job.get("job_id"),
                         reason_code=type(e).__name__,
-                        outcome="hotkey_down_policy_kept")
+                        outcome="captured_tuple_kept")
+                if policy is not None:
+                    # One commit: records, registry and policy together.
+                    m10["skill_records"] = records
+                    m10["skill_records_rev"] = rev
+                    m10["skills"] = out["registry"]
+                    m10["workspace_skill_sources"] = ws_summary
+                    job["norm_policy"] = policy
             self._last_skill_workspace = workspace
             self._last_ws_skills = any(
                 r.scope != "global" for r in m10["skill_records"])
             # The file-tag resolver: the open document plus the bounded
-            # name-only listing of its directory (config-gated).
+            # name-only listing of its directory (config-gated) — names
+            # only, from the job's own finalized locator.
             known = ()
             if self._dev_listing and doc_dir is not None:
                 known = v2_file_tags.list_workspace_files(doc_dir)
-            doc_name = None
-            if snap.field is not None and snap.field.document_url:
-                doc_name = pathlib.Path(
-                    snap.field.document_url).name
+            doc = self._m10_document_path(
+                snap.field.document_url if snap.field is not None
+                else None)
             m10["file_resolver"] = v2_file_tags.FileTagResolver(
-                known, document_name=doc_name)
-            self._last_file_resolver = m10["file_resolver"]
+                known, document_name=doc.name if doc is not None else None)
         # Attach the frozen registries to the job's engine context
         # (layer-3 snippet intent + file-tag resolution) — the JOB's own
         # context only, never the app's cached one (another job's scope;
@@ -1157,8 +1321,9 @@ class AppDelegate(NSObject):
                     file_resolver=m10.get("file_resolver"))
             except TypeError:
                 pass  # a test double without the M10 fields: skip attach
-        self._last_wp = m10["wp"]
-        self._set_mode_menu(m10["wp"])
+        if m10.get("wp") is not None:
+            self._last_wp = m10["wp"]
+            self._set_mode_menu(m10["wp"])
 
     # ---- M11: transforms (Spec S16) --------------------------------------
 
@@ -1880,6 +2045,19 @@ class AppDelegate(NSObject):
                                 reason_code=type(e).__name__)
 
     @objc.python_method
+    def _note_file_references(self, refs):
+        """The quick menu says what a file reference did (M10-AC04): the
+        resolved filename went in as text and no attachment was created
+        (main thread; counts and the reason only)."""
+        if self.mode_menu_item is None or refs.get("attachment_created"):
+            return
+        n = refs.get("count", 0)
+        self.mode_menu_item.setTitle_(
+            f"{self.mode_menu_item.title()} · {n} file reference"
+            f"{'s' if n != 1 else ''} inserted as text — no attachment"
+            " (surface not certified)")
+
+    @objc.python_method
     def _set_mode_menu(self, wp):
         """The S15 quick-menu exposure: the effective mode/profile for
         the most recent destination (a fallback mode says so — never a
@@ -2104,13 +2282,15 @@ class AppDelegate(NSObject):
         # through the single owner (_finalized_policy) so the scope
         # upgrade can never drop the manifest skills the job froze at
         # hotkey-down.
+        upgraded_registry = {}
         try:
             upgraded = self._widened_for_release(
                 job, vocab_snapshot.entries, full)
             if upgraded is not None:
                 upgraded_context = snap.to_engine_context(upgraded)
                 upgraded_policy = self._finalized_policy(
-                    base_policy, m10, upgraded)
+                    base_policy, m10, upgraded,
+                    registry_out=upgraded_registry)
         except Exception as e:
             job["scope_disposition"] = "widening_failed"
             if captured_m10 is not None:
@@ -2134,6 +2314,8 @@ class AppDelegate(NSObject):
             return
         job["norm_policy"] = upgraded_policy
         job["norm_context"] = upgraded_context
+        if m10 is not None and "registry" in upgraded_registry:
+            m10["skills"] = upgraded_registry["registry"]
         job["scope_upgraded"] = True
         job["scope_disposition"] = "widened"
         # The hint set follows the upgraded scope; if selection fails the
@@ -3080,6 +3262,11 @@ class AppDelegate(NSObject):
         # resolves first — its writing-profile name widens the M05
         # scope (profile-scoped vocabulary entries apply in their
         # destinations now, closing the M05 limitation).
+        # The one-job override belongs to THIS admitted capture from here
+        # on (M10-AUDIT-13): taken into job-owned state before any
+        # fallible optional work, so a later fault cannot lose it.
+        override = self._take_next_job_mode(job_id)
+        self._job["m10_override"] = override
         try:
             m10 = self._m10_freeze(v2_profiles.Destination(
                 app_bundle=identity.app_bundle if identity is not None
@@ -3092,7 +3279,7 @@ class AppDelegate(NSObject):
                 category=v2_profiles.derive_category(
                     identity.category if identity is not None else None,
                     identity.app_bundle if identity is not None
-                    else None)))
+                    else None)), override=override)
             self._job["m10"] = m10
             scope_ctx = None
             if identity is not None:
@@ -3118,6 +3305,16 @@ class AppDelegate(NSObject):
         except Exception as e:
             self.v2log.emit("vocabulary.refresh_failed", level="WARNING",
                             job_id=job_id, reason_code=type(e).__name__)
+            if self._job.get("m10") is None:
+                # The freeze itself failed: the job still carries its own
+                # override (requested Raw stays Raw) over zero rules, and
+                # says so — never a silent switch to ordinary cleanup.
+                try:
+                    self._job["m10"] = self._m10_degraded(
+                        override, type(e).__name__)
+                    self._set_mode_menu(self._job["m10"]["wp"])
+                except Exception:
+                    pass
         self._start_prewiden(self._job)
         if hands_free or float(self.cfg["max_duration_sec"]) > 0:
             cap = (float(self.cfg["max_duration_sec"])
@@ -3328,9 +3525,17 @@ class AppDelegate(NSObject):
             if ctx is not None and job.get("m10") is not None:
                 try:
                     m10 = job["m10"]
+                    block = m10["wp"].to_json()
+                    # Honest limits of what this job's M10 state is: a
+                    # degraded freeze, and each manifest source's
+                    # content-free outcome (counts and reason codes).
+                    if m10.get("degraded"):
+                        block["m10_degraded"] = m10["degraded"]
+                    for key in ("skill_sources", "workspace_skill_sources"):
+                        if m10.get(key) is not None:
+                            block[key] = m10[key]
                     self.collector.on_writing_profile(
-                        ctx, m10["wp"].to_json(),
-                        skill_registry=m10.get("skills"))
+                        ctx, block, skill_registry=m10.get("skills"))
                 except Exception as e:
                     self.v2log.emit("training.capture_failed", level="ERROR",
                                     job_id=job["job_id"],
@@ -3756,6 +3961,27 @@ class AppDelegate(NSObject):
                                      if e.cls == "snippet" and e.rule_id] \
                         if norm_result is not None else []
                     job["snippet_hits"] = len(snippet_rules)  # M13 fact
+                    # M10-AUDIT-24: an applied file reference is a
+                    # resolved filename inserted as TEXT — no surface is
+                    # certified for file chips — and says so on the
+                    # job, in an event (counts/reasons only) and in the
+                    # quick menu.
+                    file_refs = sum(1 for e in norm_result.edits
+                                    if e.cls == "file_tag") \
+                        if norm_result is not None else 0
+                    if file_refs:
+                        plan = v2_file_tags.attachment_plan(
+                            None, v2_surfaces.certified_file_chip_surfaces())
+                        job["file_references"] = {
+                            "count": file_refs, "method": plan["method"],
+                            "attachment_created":
+                                plan["attachment_created"],
+                            "reason": plan.get("reason")}
+                        self.v2log.emit(
+                            "developer.file_reference", level="INFO",
+                            job_id=job_id, outcome=plan["method"],
+                            reason_code=plan.get("reason"),
+                            detail=f"count={file_refs}")
                     if snippet_rules and self._snip_store is not None:
                         try:
                             self._snip_store.record_hits(snippet_rules)
@@ -4232,6 +4458,8 @@ class AppDelegate(NSObject):
             self._record_dictation_usage(job, "failed")
             self._show_failed_pill()
         elif text:
+            if job.get("file_references"):
+                self._note_file_references(job["file_references"])
             if self.cfg["append_space"] and not text.endswith(("\n", " ")):
                 text += " "
             job["final_text"] = text  # the usage fact's final words
@@ -5101,50 +5329,64 @@ class AppDelegate(NSObject):
         return {"outcome": "set"}
 
     @objc.python_method
-    def hubPreviewPhrase(self, text):
-        """M10 Styles/Snippets sandbox: what the CURRENT frozen
-        registries and the resolved style's normalization policy would
-        do to a phrase — pure local computation, no pipeline touch, no
-        hit recording (the M05 sandbox_pattern, now style- and
-        snippet-aware)."""
+    def _preview_snippet_snapshot(self):
+        """The snippet registry as stored NOW (keyed on the store's own
+        revision — the same freshness rule the next dictation applies),
+        never an older cached job registry."""
+        if self._snip_store is None:
+            return None
+        rev = self._snip_store.revision()
+        if rev != self._snippet_state_key or self._snippet_snapshot is None:
+            self._snippet_snapshot = v2_snippets.SnippetSnapshot(
+                self._snip_store.snippets())
+            self._snippet_state_key = rev
+        return self._snippet_snapshot
+
+    @objc.python_method
+    def hubPreviewPhrase(self, text, mode=None, number_policy=None):
+        """M10 Styles/Snippets sandbox: what a dictation in the DECLARED
+        preview scope (``PREVIEW_SCOPE``: global dictionary entries and
+        global skills, the snippets as stored now, no workspace files)
+        would do to a phrase, under the requested mode and number policy
+        (the Styles editor's selection; default Clean with the configured
+        policy) — pure local computation, no pipeline touch, no hit,
+        usage or evidence recording (the M05 sandbox pattern). The
+        result names its inputs: scope, snippet and policy revisions."""
+        scope = {"scope": M10_PREVIEW_SCOPE,
+                 "scope_detail": M10_PREVIEW_SCOPE_DETAIL,
+                 "mode": mode or "clean"}
         if not text:
             return {"input": "", "output": "", "changed": False,
-                    "edits": [], "rejected": [], "scope": "global only"}
-        # An EXPLICIT scope (review R15): the unscoped default — global
-        # dictionary entries and global skills — never the scope of
-        # whatever destination the last dictation had.
-        base, m10_context, _src = self._unscoped_norm_state("hub_preview")
+                    "edits": [], "rejected": [], **scope}
+        if mode == "raw":
+            return {"input": text, "output": text, "changed": False,
+                    "edits": [], "rejected": [], **scope,
+                    "note": "raw mode: no normalization or cleanup"}
+        base, context, _src = self._unscoped_norm_state("hub_preview")
         if base is None:
-            base, m10_context = self._norm_policy, None
-        m10_policy = base
+            base, context = self._norm_policy, None
+        target = number_policy if number_policy in ("technical",
+                                                    "standard") \
+            else self._configured_norm_profile()
+        policy = self._policy_with_profile(base, target)
+        snippets = None
         try:
-            wp = (self._norm_preview_profile() or {}).get("wp")
-            # inherit previews the CONFIGURED profile, not the last
-            # job's style (M04-AUDIT-13).
-            target = wp.number_policy if wp is not None \
-                and wp.number_policy != "inherit" \
-                else self._configured_norm_profile()
-            m10_policy = self._policy_with_profile(base, target)
-            if m10_context is not None:
-                m10_context = dataclasses.replace(
-                    m10_context,
-                    snippets=self._snippet_snapshot,
-                    file_resolver=getattr(self, "_last_file_resolver",
-                                          None))
-        except Exception:
-            # Even the fallback previews the configured profile, never
-            # the last job's style (review R18).
-            m10_policy = self._policy_with_profile(
-                base, self._configured_norm_profile())
-        try:
-            res = v2_normalize.normalize(text, m10_policy, m10_context)
+            snippets = self._preview_snippet_snapshot()
+            context = dataclasses.replace(
+                context or v2_normalize.ContextSnapshot(
+                    source="hub_preview"),
+                snippets=snippets, file_resolver=None)
         except Exception as e:
-            return {"input": text, "error": type(e).__name__}
+            return {"input": text, "error": type(e).__name__, **scope}
+        try:
+            res = v2_normalize.normalize(text, policy, context)
+        except Exception as e:
+            return {"input": text, "error": type(e).__name__, **scope}
         return {
             "input": text, "output": res.text,
-            "changed": res.text != text,
-            "scope": "global only",
+            "changed": res.text != text, **scope,
             "policy_revision": res.policy_revision,
+            "snippets_revision": getattr(snippets, "revision", None),
             "edits": [
                 {"before": e.input_text, "after": e.output_text,
                  "cls": e.cls, "rule_id": e.rule_id}
@@ -5156,42 +5398,40 @@ class AppDelegate(NSObject):
         }
 
     @objc.python_method
-    def _norm_preview_profile(self):
-        """The last job's frozen m10 state, if one is still around (the
-        preview explains the policy a real destination resolved)."""
-        job = getattr(self, "_job", None)
-        if isinstance(job, dict) and job.get("m10") is not None:
-            return job["m10"]
-        return None
-
-    @objc.python_method
-    def hubSnippetCollisionPreview(self, trigger):
-        """S17 collision preview for a trigger against dictionary
-        aliases and the currently registered skills — before the edit
-        lands. Pure computation over live state."""
+    def hubSnippetCollisionPreview(self, trigger, snippet_id=None,
+                                   content="", kind="plain", enabled=True):
+        """S17 collision preview for a snippet form, answered by the same
+        engine call dictation makes (M10-AUDIT-18), in the declared
+        preview scope: the candidate replaces the selected snippet
+        (``snippet_id`` — an edit never collides with itself), the
+        registered skills and eligible dictionary entries are exactly
+        the unscoped runtime ones. Pure computation: nothing recorded."""
         try:
             candidate = v2_snippets.Snippet(
-                snippet_id="preview", trigger=trigger,
-                name="preview", content="")
-        except ValueError as e:
-            return [{"kind": "invalid_trigger", "trigger": trigger,
-                     "detail": str(e)}]
-        entries = []
-        if self._vocab is not None:
+                snippet_id=snippet_id or "preview", trigger=trigger,
+                name="preview", content=content or "", kind=kind,
+                enabled=bool(enabled))
+        except ValueError:
             try:
-                entries = self._vocab.entries()
-            except Exception:
-                entries = []
-        skills = dict(self._norm_policy.registered_skills) \
-            if self._norm_policy is not None else {}
+                candidate = v2_snippets.Snippet(
+                    snippet_id=snippet_id or "preview", trigger=trigger,
+                    name="preview", content="")
+            except ValueError as e:
+                return [{"kind": "invalid_trigger", "trigger": trigger,
+                         "detail": str(e)}]
+        policy, context, _src = self._unscoped_norm_state("hub_preview")
+        if policy is None:
+            policy = v2_normalize.NormalizationPolicy()
         stored = []
         if self._snip_store is not None:
             try:
                 stored = self._snip_store.snippets()
             except Exception:
                 stored = []
-        return v2_snippets.preview_conflicts(
-            candidate, stored, entries, skills)
+        return v2_snippets.preview_collisions(
+            candidate, stored, policy=policy,
+            vocabulary=getattr(context, "vocabulary", None),
+            selected_id=snippet_id)
 
     @objc.python_method
     def hubApplyRetention(self, values):

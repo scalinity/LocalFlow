@@ -551,6 +551,12 @@ class EvidenceCollector:
         if not ctx.collecting or profile is None or ctx.example_id:
             return
         block = dict(profile)
+        # M10-AUDIT-30: a user-declared profile name is private
+        # configuration, not content-free metadata — the envelope keeps
+        # the opaque rule id and the name's source; a built-in category
+        # name (fixed vocabulary) stays.
+        if block.get("profile_name_source") == "rule":
+            block["profile_name"] = None
         if skill_registry is not None:
             reg = skill_registry.to_json()
             block["skill_registry_revision"] = reg["revision"]
@@ -578,6 +584,54 @@ class EvidenceCollector:
                           job_id=ctx.job_id, reason_code=type(e).__name__,
                           outcome="skill_registry_not_retained")
         ctx.profile = block
+
+    def _retain_snippet_definitions(self, ctx, result, snapshot, block):
+        """M10-AUDIT-23 (S29.4, E19.2 "hash-only references to deleted
+        context are insufficient"): the exact definitions this job
+        applied — from its frozen snippet registry, never the current
+        store — retained as a lease-governed artifact, so a later edit
+        or deletion of the snippet cannot erase which bytes were
+        template and which were spoken, or whether rewriting was
+        allowed. The envelope carries only the artifact id (verified at
+        publication: an unwritten artifact reads as missing, never as
+        complete) or an explicit ``not_captured`` reason."""
+        from . import snippets as snip_mod
+        edits = [e for e in result.edits if e.cls == "snippet"]
+        defs = []
+        for e in edits:
+            s = snapshot.entry_by_id(e.rule_id) \
+                if snapshot is not None and e.rule_id else None
+            if s is None:
+                block["definitions"] = "not_captured"
+                block["definitions_reason"] = "frozen_definition_unavailable"
+                return
+            defs.append(snip_mod.applied_definition(s, e))
+        try:
+            art = self.store.write_text_artifact(
+                job_id=ctx.job_id, stage="normalization",
+                role="snippet_definitions", kind="snippet_definitions_json",
+                retention_class="training",
+                parent_artifact_id=ctx.raw_artifact,
+                text=json.dumps({"schema_version": 1,
+                                 "registry_revision": snapshot.revision,
+                                 "applied": defs},
+                                ensure_ascii=False, sort_keys=True),
+                meta={"definitions": len(defs)})
+            self.store.grant_lease(
+                art, "training",
+                days=self.store.retention_days["training_buffer"])
+        except Exception as e:
+            block["definitions"] = "not_captured"
+            block["definitions_reason"] = "retention_write_failed"
+            self.emit("training.capture_failed", level="ERROR",
+                      job_id=ctx.job_id, reason_code=type(e).__name__,
+                      stage="normalization", detail="snippet_definitions",
+                      outcome="snippet_definitions_not_retained")
+            return
+        # A reference, not a claim: publication checks the artifact and
+        # records it under missing_reasons if the write did not land.
+        block["definitions_artifact_id"] = art
+        block["definitions"] = "artifact_ref"
 
     def on_cleaner_observation(self, obs: dict):
         """Sink for TranscriptCleaner.observer — exact model inputs/outputs."""
@@ -746,6 +800,21 @@ class EvidenceCollector:
                                   if e.cls == "snippet"),
                 "rule_ids": snippet_rule_ids,
             }
+            self._retain_snippet_definitions(ctx, result, snippet_snapshot,
+                                             snippet_block)
+        # M10-AUDIT-24: every applied file reference is recorded as what
+        # it is — a resolved filename inserted as TEXT, no attachment
+        # (no surface is certified for file chips); counts and reasons
+        # only, the filename stays in the governed ledger.
+        file_refs = sum(1 for e in result.edits if e.cls == "file_tag")
+        file_block = None
+        if file_refs:
+            from .developer import file_tags as _ft, surfaces as _sf
+            plan = _ft.attachment_plan(None,
+                                       _sf.certified_file_chip_surfaces())
+            file_block = {"count": file_refs, "method": plan["method"],
+                          "attachment_created": plan["attachment_created"],
+                          "reason": plan.get("reason")}
         # Envelope values: typed numbers/dates only. String-valued
         # command classes (emails, paths, skill tokens, codes…) carry
         # transcript-derived text in their value; those strings live in
@@ -755,6 +824,7 @@ class EvidenceCollector:
             "policy_revision": result.policy_revision,
             "vocabulary": vocabulary_block,
             "snippets": snippet_block,
+            "file_references": file_block,
             "edits_count": len(result.edits),
             "rejected_count": len(result.rejected),
             "protected_count": len(result.protected),
