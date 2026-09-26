@@ -343,6 +343,51 @@ def test_a01_training_table_click_uses_rendered_row():
             f"click on rendered row 0 ({b['example_id'][:12]}) selected {sel}"
 
 
+@case("M09-AUDIT-01")
+def test_a01_history_teach_buffer_bound_to_rendered_row():
+    """C128 (local): a correction typed against History row A is not
+    carried to row B, where Teach would submit it against B."""
+    with World() as w:
+        a = seed_example(w.store, "buffer " + CANARY_A)
+        b = seed_example(w.store, "buffer " + CANARY_B)
+        open_view(w.hub, w.mq, "history")
+        select_history(w, "job", a["job_id"])
+        w.hub.teach_field.setStringValue_("typed for " + CANARY_A)
+        select_history(w, "job", b["job_id"])
+        assert CANARY_A not in str(w.hub.teach_field.stringValue()), \
+            "A's typed correction carried to row B"
+
+
+@case("M09-AUDIT-02")
+def test_a02_history_teach_buffer_cleared_on_delete():
+    """C128: deleting the selected job clears the correction typed
+    against it, although the revocation's own queued refresh has
+    already cleared the rendered detail."""
+    with World() as w:
+        a = seed_example(w.store, "buffer " + CANARY_A)
+        open_view(w.hub, w.mq, "history")
+        select_history(w, "job", a["job_id"])
+        w.hub.teach_field.setStringValue_("typed for " + CANARY_A)
+        w.store.delete_everywhere("job", a["job_id"])
+        w.drain()
+        assert CANARY_A not in everything_rendered(w.hub), \
+            "a deleted row's typed correction survived"
+
+
+@case("M09-AUDIT-01", kind="control")
+def test_a01_history_teach_buffer_survives_same_row_reload():
+    """Control: a reload of the same row keeps what the user typed."""
+    with World() as w:
+        a = seed_example(w.store, "buffer " + CANARY_A)
+        open_view(w.hub, w.mq, "history")
+        select_history(w, "job", a["job_id"])
+        w.hub.teach_field.setStringValue_("typed for " + CANARY_A)
+        w.hub.state.reload_history()
+        w.drain()
+        assert str(w.hub.teach_field.stringValue()) == \
+            "typed for " + CANARY_A
+
+
 @case("M09-LOCAL-01")
 def test_local01_training_delete_confirm_deletes_confirmed_identity():
     """C026 + local finding: the real Delete Everywhere button with the
@@ -650,6 +695,73 @@ def test_a10_hundred_searches_bounded_and_fully_drained():
 
 
 # ---- M09-AUDIT-22: truthful loading / refusal / failure ---------------------
+
+@case("M09-AUDIT-10")
+def test_a10_held_query_in_one_view_never_blocks_another():
+    """C003 (local): a Training load held inside its service must not
+    delay History — another key's latest request still runs and
+    publishes while the held one waits."""
+    with World() as w:
+        ja, _, _ = seed_job(w.store, CANARY_A, captured=iso(T0))
+        seed_example(w.store, CANARY_C)
+        open_view(w.hub, w.mq, "history")
+        lat = latch_training(w)
+        gate = lat.hold("examples", after=False)
+        w.hub.state.select_view("models")
+        w.hub.state.select_models_subview("training")
+        assert gate.arrived.wait(5), "Training load never started"
+        w.hub.state.set_history_search(CANARY_A)
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and \
+                [r["id"] for r in history_rows(w.hub)] != [ja]:
+            time.sleep(0.005)
+        published = [r["id"] for r in history_rows(w.hub)]
+        gate.release.set()
+        w.drain()
+        assert published == [ja], \
+            "History waited behind a held Training load"
+
+
+@case("M09-AUDIT-03")
+def test_a03_newest_request_runs_while_stale_one_is_held():
+    """C001 (local): request A for History is held inside the service;
+    the newer B for the same key runs and publishes without waiting
+    for A, and A's late result is refused."""
+    with World() as w:
+        seed_job(w.store, CANARY_A, captured=iso(T0))
+        jb, _, _ = seed_job(w.store, CANARY_B, captured=iso(T0 + 60))
+        lat = latch_history(w)
+        open_view(w.hub, w.mq, "history")
+        gate = lat.hold("search", when=lambda **kw: kw.get("text") ==
+                        CANARY_A, after=True)
+        w.hub.state.set_history_search(CANARY_A)
+        assert gate.arrived.wait(5)
+        w.hub.state.set_history_search(CANARY_B)
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and \
+                [r["id"] for r in history_rows(w.hub)] != [jb]:
+            time.sleep(0.005)
+        published = [r["id"] for r in history_rows(w.hub)]
+        gate.release.set()
+        w.drain()
+        assert published == [jb], "B waited behind the held stale A"
+        assert [r["id"] for r in history_rows(w.hub)] == [jb]
+
+
+@case("M09-AUDIT-22")
+def test_a22_empty_history_is_an_honest_empty_state():
+    """C127: an empty store says so, and a filter matching nothing says
+    that — never "select a row" over an empty table."""
+    with World() as w:
+        open_view(w.hub, w.mq, "history")
+        txt = rendered_text(w.hub.history_detail)
+        assert "No history yet" in txt, txt
+        seed_job(w.store, CANARY_A, captured=iso(T0))
+        w.hub.state.set_history_search("M09_NO_SUCH_TEXT")
+        w.drain()
+        txt = rendered_text(w.hub.history_detail)
+        assert "Nothing matches" in txt, txt
+
 
 @case("M09-AUDIT-22")
 def test_a22_loading_is_a_real_transition():
@@ -1626,6 +1738,38 @@ def test_a08_hub_export_uses_typed_allowlist():
         recs = [json.loads(ln) for ln in text.splitlines() if ln.strip()]
         assert recs and all("redaction_version" in r and
                             "omitted_fields" in r for r in recs), recs[:1]
+
+
+@case("M09-AUDIT-08")
+def test_a08_model_path_never_exports_but_hub_id_does():
+    """C102 (local): a locally configured model directory in
+    ``model_id`` carries a home path; the support export omits it and
+    counts the omission, while a hub id ("org/name") survives."""
+    with World() as w:
+        ed = _events_dir(w)
+        write_events(ed, "events-20260926-m09.jsonl", [
+            event(9001, "2026-09-26T10:00:00.000Z",
+                  model_id="/Users/m09-someone/models/private-model"),
+            event(9002, "2026-09-26T10:00:01.000Z",
+                  model_id="mlx-community/Qwen3-4B")])
+        open_view(w.hub, w.mq, "diagnostics")
+        out = w.h.tmp / "export.jsonl"
+        undo = patch_appkit("NSSavePanel", _fake_save_panel(out))
+        try:
+            w.hub.diagnosticsExport_(None)
+            w.drain()
+        finally:
+            undo()
+        text = out.read_text()
+        assert "m09-someone" not in text, "a home path left in the export"
+        recs = [json.loads(ln) for ln in text.splitlines() if ln.strip()]
+        # Keyed by the fixture's own event ids (the app writes events too).
+        by_id = {r["event_id"]: r for r in recs}
+        path_rec = by_id["evt-" + f"{9001:032x}"]
+        hub_rec = by_id["evt-" + f"{9002:032x}"]
+        assert "model_id" not in path_rec and \
+            path_rec["omitted_fields"] >= 1, path_rec
+        assert hub_rec["model_id"] == "mlx-community/Qwen3-4B", hub_rec
 
 
 @case("M09-AUDIT-18")

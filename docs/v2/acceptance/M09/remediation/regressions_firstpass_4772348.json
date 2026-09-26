@@ -1,0 +1,512 @@
+{
+  "suite": "tests/v2/ui/test_m09_remediation.py",
+  "suite_sha256": "39dc6afbcd5b040523955dd165fa7d54b2ec9e0f4d84207a84677617359a0a3a",
+  "code_root_sha": null,
+  "tracked_files_modified": null,
+  "production_tree_modified": null,
+  "localflow_imported_from_root": "fp-4772348",
+  "python": "3.14.7",
+  "results": [
+    {
+      "case": "test_a01_history_actions_during_selection_interval",
+      "finding": "M09-AUDIT-01",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.197
+    },
+    {
+      "case": "test_a01_training_mark_during_selection_interval",
+      "finding": "M09-AUDIT-01",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.051
+    },
+    {
+      "case": "test_a01_training_editor_buffers_bound_to_rendered_example",
+      "finding": "M09-AUDIT-01",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.046
+    },
+    {
+      "case": "test_a01_training_table_click_uses_rendered_row",
+      "finding": "M09-AUDIT-01",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.045
+    },
+    {
+      "case": "test_a01_history_teach_buffer_bound_to_rendered_row",
+      "finding": "M09-AUDIT-01",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "A's typed correction carried to row B",
+      "seconds": 0.033
+    },
+    {
+      "case": "test_a02_history_teach_buffer_cleared_on_delete",
+      "finding": "M09-AUDIT-02",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "a deleted row's typed correction survived",
+      "seconds": 0.033
+    },
+    {
+      "case": "test_a01_history_teach_buffer_survives_same_row_reload",
+      "finding": "M09-AUDIT-01",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.031
+    },
+    {
+      "case": "test_local01_training_delete_confirm_deletes_confirmed_identity",
+      "finding": "M09-LOCAL-01",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.048
+    },
+    {
+      "case": "test_local01_training_delete_cancel_deletes_nothing",
+      "finding": "M09-LOCAL-01",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.044
+    },
+    {
+      "case": "test_a02_training_delete_clears_detail_and_editor",
+      "finding": "M09-AUDIT-02",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.051
+    },
+    {
+      "case": "test_a02_cross_view_history_cache_after_training_delete",
+      "finding": "M09-AUDIT-02",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.056
+    },
+    {
+      "case": "test_a02_late_detail_publication_after_delete",
+      "finding": "M09-AUDIT-02",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.034
+    },
+    {
+      "case": "test_a02_independent_history_lease_survives_training_expiry",
+      "finding": "M09-AUDIT-02",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.031
+    },
+    {
+      "case": "test_a03_publication_check_and_mutation_atomic",
+      "finding": "M09-AUDIT-03",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 5.039
+    },
+    {
+      "case": "test_a03_old_error_after_new_success",
+      "finding": "M09-AUDIT-03",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 5.061
+    },
+    {
+      "case": "test_a03_old_success_after_new_error",
+      "finding": "M09-AUDIT-03",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 5.038
+    },
+    {
+      "case": "test_a03_old_detail_error_after_newer_detail",
+      "finding": "M09-AUDIT-03",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 5.047
+    },
+    {
+      "case": "test_a10_hundred_searches_bounded_and_fully_drained",
+      "finding": "M09-AUDIT-10",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.048
+    },
+    {
+      "case": "test_a10_held_query_in_one_view_never_blocks_another",
+      "finding": "M09-AUDIT-10",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "History waited behind a held Training load",
+      "seconds": 5.044
+    },
+    {
+      "case": "test_a03_newest_request_runs_while_stale_one_is_held",
+      "finding": "M09-AUDIT-03",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "B waited behind the held stale A",
+      "seconds": 5.052
+    },
+    {
+      "case": "test_a22_empty_history_is_an_honest_empty_state",
+      "finding": "M09-AUDIT-22",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "Select a row to see its lineage, outcome and actions.",
+      "seconds": 0.039
+    },
+    {
+      "case": "test_a22_loading_is_a_real_transition",
+      "finding": "M09-AUDIT-22",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.033
+    },
+    {
+      "case": "test_a22_retry_and_paste_refusals_are_visible",
+      "finding": "M09-AUDIT-22",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.036
+    },
+    {
+      "case": "test_a22_models_failure_is_visible_not_stale_success",
+      "finding": "M09-AUDIT-22",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.044
+    },
+    {
+      "case": "test_a25_refresh_and_completions_run_on_main",
+      "finding": "M09-AUDIT-25",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.067
+    },
+    {
+      "case": "test_a25_inline_dispatch_negative_control_is_intercepted",
+      "finding": "M09-AUDIT-25",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.032
+    },
+    {
+      "case": "test_a04_quarantine_survives_exclude_then_restore_via_hub",
+      "finding": "M09-AUDIT-04",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.045
+    },
+    {
+      "case": "test_a04_expired_survives_exclude_then_restore",
+      "finding": "M09-AUDIT-04",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.014
+    },
+    {
+      "case": "test_a04_ordinary_exclusion_stays_reversible",
+      "finding": "M09-AUDIT-04",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.012
+    },
+    {
+      "case": "test_a05_span_save_never_reincludes_excluded",
+      "finding": "M09-AUDIT-05",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.044
+    },
+    {
+      "case": "test_a05_verbatim_save_never_reincludes_excluded",
+      "finding": "M09-AUDIT-05",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.044
+    },
+    {
+      "case": "test_a05_intended_mark_refuses_non_reviewable",
+      "finding": "M09-AUDIT-05",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.019
+    },
+    {
+      "case": "test_a06_span_after_same_length_stage_replacement",
+      "finding": "M09-AUDIT-06",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.043
+    },
+    {
+      "case": "test_a06_unrelated_revision_keeps_same_reviewed_artifact",
+      "finding": "M09-AUDIT-06",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.049
+    },
+    {
+      "case": "test_a06_emoji_code_point_offsets",
+      "finding": "M09-AUDIT-06",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.053
+    },
+    {
+      "case": "test_a24_annotation_failpoints_roll_back_completely",
+      "finding": "M09-AUDIT-24",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.026
+    },
+    {
+      "case": "test_a24_timeout_is_unknown_not_failure_and_retry_is_idempotent",
+      "finding": "M09-AUDIT-24",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.352
+    },
+    {
+      "case": "test_a07_delete_stops_active_replay_and_refuses_again",
+      "finding": "M09-AUDIT-07",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.066
+    },
+    {
+      "case": "test_a07_prepared_buffer_cannot_start_after_delete",
+      "finding": "M09-AUDIT-07",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.028
+    },
+    {
+      "case": "test_a07_unavailable_replacement_stops_previous",
+      "finding": "M09-AUDIT-07",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.032
+    },
+    {
+      "case": "test_a07_failed_playback_grants_no_listening",
+      "finding": "M09-AUDIT-07",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.049
+    },
+    {
+      "case": "test_a07_listen_gate_is_per_example_through_current_hub",
+      "finding": "M09-AUDIT-07",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.055
+    },
+    {
+      "case": "test_a09_history_shows_current_attempt_not_first_row",
+      "finding": "M09-AUDIT-09",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.018
+    },
+    {
+      "case": "test_a17_transform_decision_is_displayed_and_final_text_authorized",
+      "finding": "M09-AUDIT-17",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.04
+    },
+    {
+      "case": "test_a12_same_day_merge_is_by_instant_with_one_limit",
+      "finding": "M09-AUDIT-12",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.011
+    },
+    {
+      "case": "test_a13_default_zone_honors_historical_dst",
+      "finding": "M09-AUDIT-13",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.011
+    },
+    {
+      "case": "test_a13_explicit_offset_timestamp_policy",
+      "finding": "M09-AUDIT-13",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.011
+    },
+    {
+      "case": "test_a14_legacy_db_row_detail_and_jobless_actions",
+      "finding": "M09-AUDIT-14",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.03
+    },
+    {
+      "case": "test_a15_legacy_pair_identity_stable_across_matching_half",
+      "finding": "M09-AUDIT-15",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.012
+    },
+    {
+      "case": "test_a16_history_app_and_mode_controls_reachable",
+      "finding": "M09-AUDIT-16",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.058
+    },
+    {
+      "case": "test_a29_deleted_job_leaves_history_immediately",
+      "finding": "M09-AUDIT-29",
+      "kind": "design",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.013
+    },
+    {
+      "case": "test_a08_hub_export_uses_typed_allowlist",
+      "finding": "M09-AUDIT-08",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.026
+    },
+    {
+      "case": "test_a08_model_path_never_exports_but_hub_id_does",
+      "finding": "M09-AUDIT-08",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "a home path left in the export",
+      "seconds": 0.026
+    },
+    {
+      "case": "test_a18_ordering_is_stream_aware_and_filename_independent",
+      "finding": "M09-AUDIT-18",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "test_a19_level_all_resets_filter_via_popup",
+      "finding": "M09-AUDIT-19",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.028
+    },
+    {
+      "case": "test_a19_non_object_json_lines_are_skipped_safely",
+      "finding": "M09-AUDIT-19",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.025
+    },
+    {
+      "case": "test_a19_utc_toggle_applies_to_job_timeline",
+      "finding": "M09-AUDIT-19",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.026
+    },
+    {
+      "case": "test_a20_export_is_the_displayed_snapshot_and_parses_off_main",
+      "finding": "M09-AUDIT-20",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.027
+    },
+    {
+      "case": "test_a21_mine_completion_never_forces_review_tab",
+      "finding": "M09-AUDIT-21",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.042
+    },
+    {
+      "case": "test_a21_older_export_cannot_overwrite_newer_status",
+      "finding": "M09-AUDIT-21",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.064
+    },
+    {
+      "case": "test_a11_noop_repaste_still_delivers_deferred_open",
+      "finding": "M09-AUDIT-11",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.047
+    },
+    {
+      "case": "test_a11_flush_before_busy_decrement_is_not_lost",
+      "finding": "M09-AUDIT-11",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.045
+    }
+  ],
+  "passed": 56,
+  "total": 62,
+  "declared_code_sha": "4772348bf620c2fc949ca6468c5f07a745488570",
+  "code_root": "git archive export of the declared SHA (no .git); test files overlaid from the working tree at the suite_sha256 recorded here",
+  "purpose": "first-pass fail-first for the corpus-found defects (M09-C001, C003, C102, C127, C128)"
+}
