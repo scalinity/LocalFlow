@@ -407,9 +407,14 @@ def listing_race(c):
         finally:
             os.open = real_open
             os.chmod(fx.allowed / "locked", 0o755)
+    # The locked directory exists but cannot be read: its names are
+    # missing, so the listing must say it is partial (the swapped child
+    # is refused, never walked — its original names moved away).
     return verdict({"no_outside_traversal": all(
         "secret" not in n for n in res.names),
         "positive_kept": "alpha.py" in res.names,
+        "partial_labeled": res.truncated
+        and res.reason == "unreadable_directory",
         "seam_reached": len(barriers) == 2},
         {"names": list(res.names), "truncated": res.truncated,
          "reason": res.reason}, barriers)
@@ -1288,16 +1293,37 @@ def bench_noop(c):
 
 @driver("M10-C198")
 def bench_adversarial(c):
+    """Adversarial work is graded on work, not on population counts:
+    the same-first-word input (50 decoys walking a 300-snippet bucket)
+    must still expand exactly its one real trigger and keep every decoy
+    literal; the ambiguity controls must really be ambiguous; the
+    adversarial pass sits under the same budget as the ordinary one, so
+    a cliff cannot hide behind it."""
     code, doc = _bench_cached()
     pop = doc.get("population") or {}
     t = doc.get("timing") or {}
+    v = doc.get("validity") or {}
+    budget = doc.get("budget") or {}
     return verdict({"populations": pop.get("snippets_same_first_word")
                     == 300 and pop.get("same_scope_rules") == 200
-                    and pop.get("wide_directory_entries") == 5000,
-                    "percentiles_reported": all(
-                        {"p50_ms", "p95_ms", "p99_ms"} <= set(v)
-                        for v in t.values()),
-                    "work_counts": "file_listing_wide_5000" in t})
+                    and pop.get("wide_directory_entries") == 5000
+                    and pop.get("same_prefix_decoys") == 50
+                    and pop.get("same_prefix_input_words") == 500,
+                    "adversarial_positive_work": v.get(
+                        "matching_500_words_same_prefix", {}).get("valid")
+                    is True,
+                    "ambiguity_work": all(v.get(k, {}).get("valid") is True
+                                          for k in (
+                                              "file_resolution_ambiguous",
+                                              "style_resolution_same_scope")),
+                    "percentiles_reported": bool(t) and all(
+                        {"p50_ms", "p95_ms", "p99_ms"} <= set(x)
+                        for x in t.values()),
+                    "adversarial_budgeted": "matching_500_words_same_prefix"
+                    in (budget.get("budgeted_components") or ())},
+                   {"exit": code,
+                    "same_prefix": t.get("matching_500_words_same_prefix"),
+                    "ordinary": t.get("matching_500_words")})
 
 
 @driver("M10-C199")
@@ -1498,36 +1524,86 @@ def m11_between_jobs(c):
 
 @driver("M10-C216")
 def preview_runtime_parity(c):
-    from localflow.v2.vocabulary import VocabularyEntry, VocabularySnapshot
-    cases = {"bare": ("code review", "REVIEW", {"code review":
-                                                "code-review"}),
-             "same_span": ("slash brainstorm", "SNIP",
-                           {"brainstorm": "brainstorm"})}
-    rows = {}
-    for label, (trig, content, skills) in cases.items():
-        sn = snip_mod.Snippet(snippet_id=f"s:{label}", trigger=trig,
-                              name="n", content=content)
-        pol = NormalizationPolicy(registered_skills=skills)
-        runtime = normalize(trig, pol, ContextSnapshot(
-            snippets=snip_mod.SnippetSnapshot([sn])))
-        prev = snip_mod.preview_collisions(sn, [], policy=pol)
-        expanded = runtime.text == content
-        amb = any(p["kind"].startswith("ambiguous") for p in prev)
-        rows[label] = (expanded, amb)
-    disabled = VocabularyEntry(entry_id="v", canonical="x-y",
-                               kind="skill", enabled=False, approved=True,
-                               aliases=())
-    sn = snip_mod.Snippet(snippet_id="s:d", trigger="x y", name="n",
-                          content="Z")
-    prev_dis = snip_mod.preview_collisions(
-        sn, [], policy=NormalizationPolicy(),
-        vocabulary=VocabularySnapshot([disabled], None))
-    return verdict({"bare_agrees": rows["bare"] == (True, False),
-                    "same_span_agrees": rows["same_span"] == (False, True),
-                    "disabled_no_conflict": not any(
-                        p["kind"].startswith("ambiguous") for p in prev_dis)},
-                   {"rows": {k: list(v) for k, v in rows.items()}},
-                   ["freeze common registry"])
+    """The app's own collision preview (hubSnippetCollisionPreview) and
+    real dictations through the coordinator, over one set of stores:
+    a configured manifest (bare alias + explicit slash, same-span), a
+    DISABLED dictionary skill and a dictionary skill scoped to another
+    app. The preview's registry is captured at its engine call and must
+    be the registry a dictation in this (unscoped) destination freezes."""
+    with FixtureRoot() as fx:
+        gm = write(fx.allowed / "global.json", json_manifest(
+            [{"name": "code-review"}, {"name": "brainstorm"}]))
+        h, *_ = harness(durations=12)
+        barriers = []
+        seen = {}
+        real_preview = app_mod.v2_snippets.preview_collisions
+
+        def capturing(candidate, snippets, *, policy, **kw):
+            seen.setdefault("preview", dict(policy.registered_skills))
+            barriers.append("freeze common registry") \
+                if "freeze common registry" not in barriers else None
+            return real_preview(candidate, snippets, policy=policy, **kw)
+        try:
+            w.set_manifests(h, [gm])
+            h.d._vocab.add_entry("x-y", ["x y"], kind="skill",
+                                 approved=True, enabled=False)
+            h.d._vocab.add_entry("deploy-tool", ["deploy tool"],
+                                 kind="skill", approved=True,
+                                 scope_kind="app",
+                                 scope_value="com.other.app")
+            store = h.d._snip_store
+            ids = {label: store.add_snippet(trigger=trig, name=label,
+                                            content=content)
+                   for label, trig, content in (
+                       ("bare", "code review", "REVIEW"),
+                       ("same_span", "slash brainstorm", "SNIP"),
+                       ("disabled", "x y", "XY"),
+                       ("wrong_scope", "slash deploy tool", "DEPLOY"))}
+            usage = w.raw_rows(h.d.store, "snippets", "snippet_id")
+            app_mod.v2_snippets.preview_collisions = capturing
+            try:
+                prev = {label: h.d.hubSnippetCollisionPreview(
+                            trig, snippet_id=ids[label], content=content)
+                        for label, trig, content in (
+                            ("bare", "code review", "REVIEW"),
+                            ("same_span", "slash brainstorm", "SNIP"),
+                            ("disabled", "x y", "XY"),
+                            ("wrong_scope", "slash deploy tool", "DEPLOY"))}
+            finally:
+                app_mod.v2_snippets.preview_collisions = real_preview
+            usage_after = w.raw_rows(h.d.store, "snippets", "snippet_id")
+            run = {}
+            for label, spoken in (("bare", "code review"),
+                                  ("slash", "slash code review now"),
+                                  ("same_span", "slash brainstorm"),
+                                  ("disabled", "x y"),
+                                  ("wrong_scope", "slash deploy tool")):
+                text, job = run_job(h, spoken)
+                run[label] = text
+                seen.setdefault("runtime", dict(
+                    job["norm_policy"].registered_skills))
+        finally:
+            h.close()
+
+    def ambiguous(label):
+        return any(p["kind"].startswith("ambiguous") for p in prev[label])
+    return verdict({
+        "same_registry": seen.get("preview") == seen.get("runtime")
+        and "code review" in (seen.get("runtime") or {}),
+        "bare_expands_no_conflict": run["bare"] == "REVIEW"
+        and not ambiguous("bare"),
+        "explicit_slash_is_the_skill": run["slash"] == "/code-review now"
+        and any(p["kind"] == "skill_on_slash" for p in prev["bare"]),
+        "same_span_literal_and_ambiguous": run["same_span"]
+        == "slash brainstorm" and ambiguous("same_span"),
+        "disabled_contender_absent": run["disabled"] == "XY"
+        and not prev["disabled"],
+        "wrong_scope_contender_absent": run["wrong_scope"] == "DEPLOY"
+        and not ambiguous("wrong_scope"),
+        "preview_records_nothing": usage == usage_after},
+        {"runtime": run,
+         "preview": {k: [p["kind"] for p in v] for k, v in prev.items()}},
+        barriers)
 
 
 @driver("M10-C217")

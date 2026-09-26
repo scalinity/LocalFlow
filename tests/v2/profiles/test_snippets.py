@@ -44,19 +44,19 @@ def test_exact_stored_content_and_placeholders():
     s = N("s1", "sign off", "Best,\n{{name}}\nLocalFlow",
           kind="signature")
     snap = snip.SnippetSnapshot([s])
-    res = norm("please sign off comma Danny", snap)
-    assert "Best,\nDanny\nLocalFlow" in res.text, res.text
+    res = norm("please sign off comma Ada", snap)
+    assert "Best,\nAda\nLocalFlow" in res.text, res.text
     # Two slots, spoken casing preserved, separator-split.
     s2 = N("s2", "sign off", "{{a}} | {{b}}")
-    res = norm("sign off comma Danny comma LocalFlow Inc",
+    res = norm("sign off comma Ada comma LocalFlow Inc",
                snip.SnippetSnapshot([s2]))
-    assert res.text == "Danny | LocalFlow Inc", res.text
+    assert res.text == "Ada | LocalFlow Inc", res.text
     # The SPACED declared form substitutes too (review W1: the
     # declaration regex and the substitution must agree).
     s_spaced = N("s4", "sign off", "Hi {{ name }}, thanks")
-    res = norm("sign off comma Danny",
+    res = norm("sign off comma Ada",
                snip.SnippetSnapshot([s_spaced]))
-    assert res.text == "Hi Danny, thanks", repr(res.text)
+    assert res.text == "Hi Ada, thanks", repr(res.text)
     # No continuation: the empty value applies.
     res = norm("sign off", snip.SnippetSnapshot([s2]))
     assert res.text == " | ", repr(res.text)
@@ -176,15 +176,15 @@ def test_duplicate_trigger_masks_and_disabled_never_fires():
 def test_protection_spans_for_later_stages():
     s = N("s1", "sign off", "Best, {{name}}")
     snap = snip.SnippetSnapshot([s])
-    res = norm("sign off comma Danny", snap)
+    res = norm("sign off comma Ada", snap)
     spans = snip.protected_output_spans(res, snap)
     assert len(spans) == 1
-    assert res.text[spans[0][0]:spans[0][1]] == "Best, Danny"
+    assert res.text[spans[0][0]:spans[0][1]] == "Best, Ada"
     # allow_rewrite explicitly configured → NOT protected (AC02's
     # "unless rewriting was explicitly configured").
     s2 = N("s2", "sign off", "Best, {{name}}", allow_rewrite=True)
     snap2 = snip.SnippetSnapshot([s2])
-    res2 = norm("sign off comma Danny", snap2)
+    res2 = norm("sign off comma Ada", snap2)
     assert snip.protected_output_spans(res2, snap2) == []
     print("ok  protected output spans; allow_rewrite is explicit")
 

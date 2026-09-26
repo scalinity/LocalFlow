@@ -364,8 +364,19 @@ def slot_policy(c):
     res, _ = _slot(s["trigger"], s["content"], s["spoken"])
     want = {"M10-C089": "Ada | ", "M10-C090": "Ada | Review comma Tomorrow",
             "M10-C091": "Review | "}[c["id"]]
-    return verdict({"documented_slot_policy": res.text == want},
-                   {"output": repr(res.text)})
+    checks = {"documented_slot_policy": res.text == want}
+    seen = {"output": repr(res.text)}
+    if c["id"] == "M10-C090":
+        # The surplus final slot stops at a line or clause boundary —
+        # written, or spoken as a structure/sentence command.
+        for label, tail, out in (
+                ("written_line", "\nShip it", "\nShip it"),
+                ("spoken_line", " new line ship it", "\nship it"),
+                ("sentence_end", ". Ship it", ". Ship it")):
+            r, _ = _slot(s["trigger"], s["content"], s["spoken"] + tail)
+            checks[f"no_{label}_consumption"] = r.text == want + out
+            seen[label] = repr(r.text)
+    return verdict(checks, seen)
 
 
 @driver("M10-C092")

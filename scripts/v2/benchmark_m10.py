@@ -67,6 +67,7 @@ N_SNIPPETS = 300
 N_SKILLS = 50
 N_FILES = 498             # + the duplicate-basename pair = the 500 cap
 N_WIDE = 5000
+N_DECOYS = 50             # same-first-word decoys in the adversarial input
 RUNS = 200
 WARM = 10
 
@@ -135,9 +136,9 @@ def build_snippets():
 
 
 def expected_expansion():
-    # The slot snippet is followed by "comma Danny comma Lin." — a
+    # The slot snippet is followed by "comma Ada comma Lin." — a
     # sentence end bounds the continuation (well under the 24-word cap).
-    return "Line one Danny and Lin\nLine two fixed"
+    return "Line one Ada and Lin\nLine two fixed"
 
 
 def build_files(root: pathlib.Path):
@@ -169,16 +170,21 @@ def build_skill_tree(root: pathlib.Path):
     return skills_dir, manifest
 
 
-def hit_input(file_spoken):
+def hit_input(file_spoken, decoys=0):
     """500 words: a slot snippet bounded by its sentence end (far below
     the 24-word continuation cap), a slash skill at the START of a
     sentence (its command position — mid-sentence "slash" is the
     ordinary verb and stays literal) and a file tag with a letters-only
-    name (spoken digits are not a filename form)."""
+    name (spoken digits are not a filename form). ``decoys`` filler
+    words become "trigger" — the first word of all 300 snippets,
+    opening none of them — so each walks the whole first-word bucket:
+    the prefix-sensitive matching cost, with the word count unchanged."""
     words = [FILLER[i % len(FILLER)] for i in range(483)]   # 500 in all
+    for k in range(decoys):
+        words[5 + 9 * k] = "trigger"
     words[299] += "."
     parts = (words[:150]
-             + [f"trigger {letters(HIT_SNIPPET)} phrase comma Danny comma"
+             + [f"trigger {letters(HIT_SNIPPET)} phrase comma Ada comma"
                 f" Lin."]
              + words[150:300]
              + [f"Slash alias {letters(HIT_SKILL)} now."]
@@ -321,11 +327,15 @@ def main(argv):
             registered_skills=dict(registry.policy_skills))
         ctx = ContextSnapshot(snippets=snapshot, file_resolver=resolver)
         text = hit_input(file_spoken)
+        text_prefix = hit_input(file_spoken, decoys=N_DECOYS)
         plain = " ".join(FILLER[i % len(FILLER)] for i in range(500))
         bare_policy = NormalizationPolicy()
 
         def c_match():
             return normalize(text, policy, ctx)
+
+        def c_match_same_prefix():
+            return normalize(text_prefix, policy, ctx)
 
         def c_match_without_m10():
             return normalize(text, bare_policy, ContextSnapshot())
@@ -344,6 +354,7 @@ def main(argv):
             "file_resolution": c_resolve,
             "file_resolution_ambiguous": c_resolve_dup,
             "matching_500_words": c_match,
+            "matching_500_words_same_prefix": c_match_same_prefix,
             "matching_500_words_without_m10": c_match_without_m10,
             "matching_plain_500": c_match_plain,
         }
@@ -417,6 +428,16 @@ def main(argv):
               and f"{target_file} now." in out
               and {"snippet", "skill", "file_tag"} <= cls,
               f"edit classes {sorted(cls)}")
+        ms = components["matching_500_words_same_prefix"]()
+        out_s = getattr(ms, "text", "") or ""
+        n_exp = sum(1 for e in getattr(ms, "edits", ())
+                    if e.cls == "snippet")
+        n_lit = out_s.split().count("trigger")
+        check("matching_500_words_same_prefix",
+              n_exp == 1 and expected_expansion() in out_s
+              and n_lit == N_DECOYS,
+              f"{n_exp} expansion(s), {n_lit} decoys kept literal"
+              f" (expected 1 and {N_DECOYS})")
         m0 = components["matching_500_words_without_m10"]()
         check("matching_500_words_without_m10",
               m0 is not None and not ({"snippet", "skill", "file_tag"}
@@ -437,7 +458,10 @@ def main(argv):
                            "skill_dirs": N_SKILLS, "json_manifests": 1,
                            "workspace_files": N_FILES + 2,
                            "wide_directory_entries": N_WIDE,
-                           "input_words": len(text.split())},
+                           "input_words": len(text.split()),
+                           "same_prefix_input_words":
+                               len(text_prefix.split()),
+                           "same_prefix_decoys": N_DECOYS},
             "validity": validity, "work_valid": work_valid,
             "switches": {"noop": noop, "delay": args.delay,
                          "outside_delay_ms": args.outside_delay},
@@ -482,18 +506,22 @@ def main(argv):
         timing["combined_job_cold"] = measure(job_cold, max(40,
                                                             args.runs // 4),
                                               0.0, outside_s)
-        within = timing["matching_500_words"]["p95_ms"] \
-            <= BUDGET_MATCHING_P95_MS
+        budgeted = ("matching_500_words", "matching_500_words_same_prefix")
+        within = all(timing[k]["p95_ms"] <= BUDGET_MATCHING_P95_MS
+                     for k in budgeted)
         result.update({
             "timing": timing,
             "m10_matching_contribution_p95_ms": m10_delta,
             "budget": {"matching_500_words_p95_ms": BUDGET_MATCHING_P95_MS,
+                       "budgeted_components": list(budgeted),
                        "within_budget": within,
                        "note": "the budget applies to the M10-populated"
                                " normalization pass (policy/snippet"
-                               " matching); adapter work (listing,"
-                               " discovery, registry) is reported"
-                               " separately and in the combined job"},
+                               " matching) on the ordinary and the"
+                               " adversarial same-first-word input;"
+                               " adapter work (listing, discovery,"
+                               " registry) is reported separately and in"
+                               " the combined job"},
             "qualified": within,
             "verdict": "VALID_WITHIN_BUDGET" if within
             else "VALID_BUDGET_MISSED",

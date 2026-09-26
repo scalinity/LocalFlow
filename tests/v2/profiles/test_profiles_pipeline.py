@@ -382,7 +382,7 @@ def test_one_job_override_consumed_once():
 
 
 def test_snippet_expansion_and_protection_through_pipeline():
-    sup = M10Supervisor("please sign off comma Danny")
+    sup = M10Supervisor("please sign off comma Ada")
     ctx = FakeContextCollector("com.apple.mail", "mail")
     h = Harness([1.0], supervisor=sup, context=ctx)
     try:
@@ -391,7 +391,7 @@ def test_snippet_expansion_and_protection_through_pipeline():
             content="Best,\n{{name}}\nLocalFlow", kind="signature")
         fn, args = (h.press_release(), h.run_coordinator())[1]
         text, job = args
-        assert "Best,\nDanny\nLocalFlow" in text, text
+        assert "Best,\nAda\nLocalFlow" in text, text
         # The expansion is protected for cleanup: the exact content is
         # a protected span the clean op received.
         spans = sup.clean_kwargs.get("protected_spans") or []

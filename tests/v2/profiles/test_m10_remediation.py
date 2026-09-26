@@ -976,6 +976,12 @@ def r13_transform_snapshot_fault_keeps_requested_raw():
 
 @case("M10-AUDIT-13")
 def r13_malformed_manifest_keeps_requested_raw():
+    """A wrong-shaped manifest must not cost the job its requested Raw.
+    On the base the shape error escaped the freeze and took the override
+    with it; the repair contains it inside discovery (the source is
+    refused), so this case now proves containment. The override
+    surviving a fault that DOES escape the freeze is proven by the
+    corpus driver for M10-C027/C218 (a fault at the freeze's return)."""
     with FixtureRoot() as fx:
         bad = write(fx.allowed / "bad.json", "17")
         h, *_ = harness()
@@ -1550,6 +1556,348 @@ def c31_coordinator_runs_one_normalization_pass():
     finally:
         h.close()
     assert text == "beta phrase", f"generated trigger chained: {text!r}"
+
+
+# ===========================================================================
+# Review round — the independent review of the frozen first pass a897257
+# (review_first_pass_a897257.md). Each defect case fails there for the
+# reviewer's reason and passes on the final production.
+# ===========================================================================
+
+REVIEW_NUM = "we retried three times today"
+
+
+def _double_tap_harness():
+    from m10_world import FakeContextCollector, Harness, M10Supervisor
+    sup = M10Supervisor(REVIEW_NUM)
+    ctx = FakeContextCollector("com.example.editor", "editor")
+    # The first tap is below min_duration_sec; the captures after it
+    # are not.
+    return Harness([0.05, 1.0, 1.0], supervisor=sup, context=ctx,
+                   cfg={"hands_free": "double_tap"})
+
+
+@case("M10-REVIEW-R01")
+def rr01_double_tap_hands_free_keeps_next_mode():
+    h = _double_tap_harness()
+    try:
+        h.d.hubSetNextJobMode("raw")
+        h.press_release()                      # tap one: short
+        assert h.d._tap_pending is not None, "double-tap window not open"
+        h.press_release()                      # tap two: hands-free
+        assert h.d._hands_free_active, "hands-free capture not started"
+        h.hk.held = True
+        h.hk.on_press()                        # tap three ends it
+        h.hk.held = False
+        h.hk.on_release()
+        _fn, (text, job) = h.run_coordinator()
+    finally:
+        h.close()
+    assert job.get("hands_free") is True, job.get("hands_free")
+    assert job.get("m10_override") == "raw" and text == REVIEW_NUM, \
+        "Next Dictation Mode lost to the gesture's first tap:" \
+        f" override={job.get('m10_override')!r} text={text!r}"
+
+
+@case("M10-REVIEW-R01", kind="control")
+def rc01_expired_tap_window_consumes_the_mode():
+    h = _double_tap_harness()
+    try:
+        h.d.hubSetNextJobMode("raw")
+        h.press_release()                      # a lone short tap
+        h.d.tapWindowExpired_(None)            # its window closes
+        pending = h.d._next_job_mode
+        text, _job = run_job(h, REVIEW_NUM)
+    finally:
+        h.close()
+    assert pending is None, pending
+    assert text == "we retried 3 times today", text
+
+
+SIGN_OFF = snippet("s:sign", "sign off", "Best,\n{{name}}")
+
+
+@case("M10-REVIEW-R02")
+def rr02_spoken_structure_commands_end_a_slot():
+    for spoken, command in (
+            ("sign off comma Ada new line do not deploy tonight",
+             "new line"),
+            ("sign off comma Ada new paragraph do not deploy",
+             "new paragraph"),
+            ("sign off comma Ada period do not deploy", "period"),
+            ("sign off comma Ada question mark do not deploy",
+             "question mark"),
+            ("sign off comma Ada open quote do not deploy close quote",
+             "open quote")):
+        res = norm(spoken, [SIGN_OFF])
+        generated = [e.output_text for e in edits_of(res, "snippet")]
+        assert generated == ["Best,\nAda"] and command not in res.text, \
+            f"the slot swallowed the spoken {command!r}: {res.text!r}"
+
+
+@case("M10-REVIEW-R02")
+def rr02_spoken_period_ends_a_slot_in_standard():
+    res = normalize(
+        "sign off comma Ada period do not deploy",
+        NormalizationPolicy(profile="standard"),
+        ContextSnapshot(snippets=snip_mod.SnippetSnapshot([SIGN_OFF])))
+    generated = [e.output_text for e in edits_of(res, "snippet")]
+    assert generated == ["Best,\nAda"] and "period" not in res.text, \
+        f"the slot swallowed the spoken 'period': {res.text!r}"
+
+
+@case("M10-REVIEW-R02", kind="control")
+def rc02_nouns_and_inline_symbols_stay_slot_words():
+    guarded = norm("sign off comma the period ends", [SIGN_OFF])
+    assert [e.output_text for e in edits_of(guarded, "snippet")] == [
+        "Best,\nthe period ends"], guarded.text
+    inline = norm("sign off comma Ada hyphen Lee", [SIGN_OFF])
+    assert [e.output_text for e in edits_of(inline, "snippet")] == [
+        "Best,\nAda hyphen Lee"], inline.text
+
+
+def _capped_tree(fx):
+    """a/config.json, then 600 files in b/ (past the 500-name cap), then
+    c/config.json — which the listing never reaches."""
+    proj = fx.allowed / "proj"
+    write(proj / "main.py", "x")
+    write(proj / "a" / "config.json", "x")
+    for i in range(600):
+        write(proj / "b" / f"f{i:03d}.txt", "x")
+    write(proj / "c" / "config.json", "x")
+    return proj
+
+
+@case("M10-REVIEW-R03")
+def rr03_partial_listing_never_makes_a_basename_unique():
+    with FixtureRoot() as fx:
+        proj = _capped_tree(fx)
+        listing = file_tags.list_workspace_files_bounded(proj)
+        h, *_ = harness(bundle="com.microsoft.VSCode", category="ide",
+                        workspace="proj",
+                        document_url=str(proj / "main.py"))
+        try:
+            text, job = run_job(h, "attach file config dot json now")
+        finally:
+            h.close()
+    assert listing.truncated and "c/config.json" not in listing.names, \
+        (listing.truncated, listing.reason)
+    assert text == "attach file config dot json now", \
+        f"a partial listing made the basename unique: {text!r}"
+    assert (job.get("file_listing") or {}).get("complete") is False, \
+        f"the job does not say its listing was partial:" \
+        f" {job.get('file_listing')!r}"
+
+
+@case("M10-REVIEW-R03")
+def rr03_unreadable_directory_marks_the_listing_partial():
+    with FixtureRoot() as fx:
+        proj = fx.allowed / "proj"
+        write(proj / "src" / "config.json", "x")
+        write(proj / "locked" / "config.json", "x")
+        os.chmod(proj / "locked", 0)
+        try:
+            res = file_tags.list_workspace_files_bounded(proj)
+        finally:
+            os.chmod(proj / "locked", 0o755)
+    assert res.truncated and res.reason == "unreadable_directory", \
+        f"an unreadable directory was dropped silently: truncated=" \
+        f"{res.truncated} reason={res.reason} names={res.names}"
+
+
+@case("M10-REVIEW-R03", kind="control")
+def rc03_spoken_path_resolves_under_a_partial_listing():
+    with FixtureRoot() as fx:
+        proj = _capped_tree(fx)
+        h, *_ = harness(bundle="com.microsoft.VSCode", category="ide",
+                        workspace="proj",
+                        document_url=str(proj / "main.py"))
+        try:
+            text, _job = run_job(h, "attach file a slash config dot json"
+                                    " now")
+        finally:
+            h.close()
+    assert text == "a/config.json now", text
+
+
+@case("M10-REVIEW-R04")
+def rr04_snapshot_fault_is_not_reported_as_the_users_setting():
+    h, *_ = harness()
+    try:
+        h.d._tf_store.update_transform("builtin:polish", auto_apply=True)
+        h.d.hubSetNextJobMode("polish")
+        real = h.d._tf_store.revision
+
+        def boom():
+            raise RuntimeError("synthetic transform snapshot fault")
+        h.d._tf_store.revision = boom
+        text, job = run_job(h, REVIEW_NUM)
+        h.d._tf_store.revision = real
+    finally:
+        h.close()
+    wp = job["m10"]["wp"]
+    assert wp.effective_mode == "clean", wp.effective_mode
+    assert wp.fallback_reason == "transform_registry_unavailable:polish" \
+        and job.get("transform_note") == wp.fallback_reason, \
+        f"a snapshot fault reads as the user's setting:" \
+        f" {wp.fallback_reason!r} note={job.get('transform_note')!r}"
+
+
+@case("M10-REVIEW-R05")
+def rr05_unicode_case_variant_trigger_refused():
+    h, *_ = harness()
+    try:
+        h.d._snip_store.add_snippet(trigger="Éclair time", name="a",
+                                    content="A")
+        try:
+            h.d._snip_store.add_snippet(trigger="éclair time", name="b",
+                                        content="B")
+            admitted = True
+        except ValueError:
+            admitted = False
+        text, _job = run_job(h, "éclair time")
+    finally:
+        h.close()
+    assert not admitted, \
+        "a case-variant trigger was admitted (the snapshot masks both)"
+    assert text == "A", text
+
+
+@case("M10-REVIEW-R06")
+def rr06_preview_names_a_holder_the_store_refuses():
+    h, *_ = harness()
+    try:
+        a = h.d._snip_store.add_snippet(trigger="quick reply", name="a",
+                                        content="A")
+        h.d._snip_store.set_enabled(a, False)
+        b = h.d._snip_store.add_snippet(trigger="other words", name="b",
+                                        content="B")
+        preview = h.d.hubSnippetCollisionPreview("quick reply",
+                                                 snippet_id=b, content="B")
+        try:
+            h.d._snip_store.update_snippet(b, trigger="quick reply")
+            refusal = None
+        except ValueError as e:
+            refusal = str(e)
+    finally:
+        h.close()
+    assert refusal is not None, "the store admitted a held trigger"
+    assert any(p.get("other_id") == a for p in preview), \
+        f"the preview promised a save the store refuses: {preview}"
+    assert "keep both literal" not in refusal, refusal
+
+
+@case("M10-REVIEW-R07")
+def rr07_refused_source_fingerprint_matches_discovery():
+    with FixtureRoot() as fx:
+        bad = write(fx.allowed / "bad.json", "{not json")
+        res = skills_mod.discover_detailed([str(bad)])
+        warm = skills_mod.fingerprint([str(bad)])
+        d = fx.allowed / "skills"
+        write(d / "alpha" / "SKILL.md", skill_md("alpha"))
+        write(d / "beta" / "SKILL.md", skill_md("beta"))
+        os.chmod(d / "beta" / "SKILL.md", 0)
+        try:
+            res2 = skills_mod.discover_detailed([str(d)])
+            warm2 = skills_mod.fingerprint([str(d)])
+        finally:
+            os.chmod(d / "beta" / "SKILL.md", 0o644)
+        h, *_ = harness()
+        calls = []
+        real = app_mod.v2_skills.discover_detailed
+
+        def counting(*a, **k):
+            calls.append(1)
+            return real(*a, **k)
+        app_mod.v2_skills.discover_detailed = counting
+        try:
+            set_manifests(h, [bad])
+            for _ in range(3):
+                run_job(h, "ok")
+        finally:
+            app_mod.v2_skills.discover_detailed = real
+            h.close()
+    assert res.fingerprint == warm and res2.fingerprint == warm2, \
+        f"the warm fingerprint disagrees with discovery:" \
+        f" {res.fingerprint} vs {warm}; {res2.fingerprint} vs {warm2}"
+    assert len(calls) == 1, \
+        f"an unchanged refused manifest was re-read by {len(calls)} jobs"
+
+
+@case("M10-REVIEW-R08")
+def rr08_nul_path_refused_alone():
+    from localflow import config as config_mod
+    with FixtureRoot() as fx:
+        good = fx.allowed / "skills"
+        write(good / "alpha" / "SKILL.md", skill_md("alpha"))
+        bad = str(fx.allowed / "x\x00y")
+        pol, problems = config_mod.developer_policy(
+            {"skill_manifest_paths": [str(good), bad]})
+        try:
+            res = skills_mod.discover_detailed([str(good), bad])
+            fp = skills_mod.fingerprint([str(good), bad])
+        except ValueError as e:
+            raise AssertionError(
+                f"one NUL path aborted every source: {e}") from None
+    assert problems and pol.skill_manifest_paths == (), (problems, pol)
+    assert [r.name for r in res.records] == ["alpha"], res.records
+    assert [o["outcome"] for o in res.outcomes] == ["read", "refused"], \
+        res.outcomes
+    assert len(fp) == 2, fp
+
+
+def _style_update_unknown(h, mq, hub):
+    """Select a rule, edit its name, and Update while the writer is held
+    past the caller's deadline; then let the write commit."""
+    rid = h.d._styles.add_rule(name="Own rule", mode="raw")
+    _open(hub, mq, "styles", 2)
+    _select_row(hub, mq, "styles_table", "rule_id", rid)
+    hub.style_name.setStringValue_("Own rule renamed")
+    hold = WriterHold(h.d.store)
+    with short_submit_timeout(h.d.store, 0.2):
+        hub.stylesUpdate_(None)                 # admitted, times out
+    status = hub.styles_status.stringValue()
+    hold.release()
+    h.d.store.sync()                            # the late commit
+    return rid, status
+
+
+@case("M10-REVIEW-HUB")
+def rr10_unknown_update_names_the_update_action():
+    h, *_ = harness()
+    try:
+        with MainQueue() as mq:
+            hub = _hub(h)
+            mq.drain(hub.state)
+            _rid, status = _style_update_unknown(h, mq, hub)
+            mq.discard()
+    finally:
+        h.close()
+    assert "unknown" in status.lower() and "Update again" in status, \
+        f"the Update path names another action: {status!r}"
+
+
+@case("M10-REVIEW-HUB")
+def rr11_own_committed_update_is_not_changed_elsewhere():
+    h, *_ = harness()
+    try:
+        with MainQueue() as mq:
+            hub = _hub(h)
+            mq.drain(hub.state)
+            rid, _status = _style_update_unknown(h, mq, hub)
+            hub.state.reload_styles()
+            mq.drain(hub.state)
+            note = hub.styles_status.stringValue()
+            editor = dict(hub._style_editor or {})
+            row = next(r for r in raw_rows(h.d.store, "style_rules",
+                                           "rule_id") if r[0] == rid)
+            mq.discard()
+    finally:
+        h.close()
+    assert row[1] == "Own rule renamed", row
+    assert "changed since you opened it" not in note, \
+        f"the user's own committed save reads as a foreign edit: {note!r}"
+    assert editor.get("revision") == row[8], (editor, row)
 
 
 # ---------------------------------------------------------------------------

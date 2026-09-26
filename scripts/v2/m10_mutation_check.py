@@ -189,7 +189,8 @@ EDITS = {
                    "            placeholders = snippet.placeholders\n"),
                   (SYNTAX,
                    "            while j < len(tokens) and tokens[j].is_word \\\n"
-                   "                    and not host.hard_break_before(j):\n",
+                   "                    and not host.hard_break_before(j) \\\n"
+                   "                    and j not in hard_spoken:\n",
                    "            while j < len(tokens) and tokens[j].is_word:\n")],
     "M10-MUT08": [(APP,
                    "                        norm_result = v2_normalize.normalize(\n"

@@ -474,10 +474,25 @@ def short_capture(c):
         pastes = list(h.d._insertion.pastes)
     finally:
         h.close()
+
+    def holds(fn):
+        try:
+            fn()
+            return True
+        except AssertionError:
+            return False
+    # Under hands_free="double_tap" a short tap may be the gesture's
+    # first half: its mode belongs to the hands-free capture; a lone
+    # short tap whose window expires consumes it (capture-bound).
+    import test_m10_remediation as rem
     return verdict({"no_a_insertion": a_pastes == [],
                     "only_b_inserted": pastes == [NUM_TECH],
                     "consumed_by_a": pending is None,
-                    "b_not_raw_again": tb == NUM_TECH})
+                    "b_not_raw_again": tb == NUM_TECH,
+                    "double_tap_gesture_keeps_mode": holds(
+                        rem.rr01_double_tap_hands_free_keeps_next_mode),
+                    "expired_tap_consumes_mode": holds(
+                        rem.rc01_expired_tap_window_consumes_the_mode)})
 
 
 @driver("M10-C031")

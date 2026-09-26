@@ -14,7 +14,7 @@
   },
   "D3_one_shot_override": {
    "findings": ["M10-AUDIT-13", "M10-AUDIT-32"],
-   "decision": "Kept: Next Dictation Mode is in-memory and one-shot. The capture that is admitted takes it into job-owned state at admission, including a capture that ends up cancelled or too short (capture-bound consumption). It is never persisted, so a restart starts with no pending mode. An optional-freeze failure after admission keeps the taken mode (AUDIT-13)."
+   "decision": "Kept: Next Dictation Mode is in-memory and one-shot. The capture that is admitted takes it into job-owned state at admission, including a capture that ends up cancelled or too short (capture-bound consumption). Under hands_free=\"double_tap\" the short first tap of the gesture is not a capture of its own: when the second tap arrives inside the window, the mode that tap took belongs to the hands-free capture it starts (recorded as override_taken with reason double_tap_gesture); a lone short tap whose window expires consumes it. It is never persisted, so a restart starts with no pending mode. An optional-freeze failure after admission keeps the taken mode (AUDIT-13)."
   },
   "D4_override_number_policy": {
    "findings": ["M10-AUDIT-32"],
@@ -30,7 +30,7 @@
   },
   "D7_written_comma": {
    "findings": ["M10-AUDIT-14", "M10-AUDIT-32"],
-   "decision": "Only the spoken word 'comma' separates slots. A written comma between the trigger and the first value is the trigger/value delimiter (the written form of the leading spoken comma); a written comma inside a value stays part of the value verbatim; a line break or hard edge punctuation (. ! ? ; : quotes, brackets) ends the slot span, and sentence punctuation stays outside the edit."
+   "decision": "Only the spoken word 'comma' separates slots. A written comma between the trigger and the first value is the trigger/value delimiter (the written form of the leading spoken comma); a written comma inside a value stays part of the value verbatim. A hard delimiter ends the slot span, written or spoken: a line break or hard edge punctuation (. ! ? ; : quotes, brackets), or a spoken command the structure/symbol grammars would convert to one ('new line', 'new paragraph', every structure command, 'period', 'question mark', 'open quote', 'close paren' …), decided by those grammars' own profile switches, tables and noun guards ('the period ends' stays slot words). Inline symbols ('hyphen', 'at sign') stay slot words, as their written forms do. Sentence punctuation stays outside the edit."
   },
   "D8_slot_content": {
    "findings": ["M10-AUDIT-14"],
@@ -56,6 +56,10 @@
    "findings": ["M10-AUDIT-23"],
    "decision": "The M03 recovery contract applies unchanged: a cleanup worker failure makes the job recoverable and nothing is inserted. The job's exact expansion is retained on the job and in the normalized_text artifact. An explicit retry runs under the fresh unscoped default (retry_unscoped_default), which carries no snippets, so today's snippet set never re-expands the old audio."
   },
+  "D15_partial_listing": {
+   "findings": ["M10-AUDIT-16", "M10-AUDIT-22"],
+   "decision": "A partial listing never establishes uniqueness. A listing is partial when a bound cut it (visit_budget_reached, name_cap) or a directory that exists could not be read (unreadable_directory; a child that vanished or was replaced by a link since it was listed is refused, not missing). Over a partial listing only a spoken full relative path — unique by construction — resolves; a bare name that matches stays literal with a review record (incomplete, listing_incomplete), because an unlisted file may share it. The job's file_listing record, the evidence's file_references.listing and a developer.listing_partial event (counts and reason codes only) say the listing was partial. With the listing switched off, the candidate set is the open document by configuration, not a partial listing."
+  },
   "D14_builtin_mode": {
    "findings": ["M10-AUDIT-27"],
    "decision": "A built-in transform's mode is fixed by the M11 contract: a built-in carrying a different mode cannot be stored, so the 'mode-mismatched definition' variant is graded on the admission refusal together with the disabled and missing variants' honest fallback reasons."
@@ -80,6 +84,14 @@
   "M10-C181": {"decision": "D12_profile_name_privacy"},
   "M10-C109": {"decision": "D13_cleanup_worker_failure",
                "why": "Not marked policy-dependent by the corpus; its expectation 'normalized ACK is preserved' is graded as retained on the job and in evidence, because the M03 contract inserts nothing after a cleanup worker failure."},
+  "M10-C030": {"decision": "D3_one_shot_override",
+               "why": "Also graded on the double-tap gesture: the first tap's mode belongs to the hands-free capture; an expired lone tap consumes it."},
+  "M10-C090": {"decision": "D7_written_comma",
+               "why": "Its 'no cross-line/clause consumption' assertion is graded on written and spoken line and sentence boundaries."},
+  "M10-C137": {"decision": "D15_partial_listing",
+               "why": "Its 'partial/missing result is labeled honestly' assertion is graded on the unreadable directory marking the listing partial."},
+  "M10-C214": {"decision": "D15_partial_listing",
+               "why": "Same driver as M10-C137."},
   "M10-C162": {"decision": "D14_builtin_mode",
                "why": "Not marked policy-dependent by the corpus; recorded because one of its three variants is graded on admission refusal."}
  },
