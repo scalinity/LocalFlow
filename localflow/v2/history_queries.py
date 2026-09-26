@@ -452,6 +452,7 @@ class HistoryQueryService:
             detail["lineage_source"] = info.get("source")
             detail["lineage_ambiguous"] = bool(
                 info.get("ambiguous_attempts"))
+            applied_tf = bool(decision and decision.get("applied"))
             detail["lineage"] = [
                 {"stage": "source", "label": "Source (raw transcript)",
                  "artifact": raw},
@@ -465,13 +466,16 @@ class HistoryQueryService:
                 # the cleaned text).
                 {"stage": "transformed", "label": "Transformed",
                  "artifact": transformed, "decision": decision,
-                 "reason": None if transformed else "not_applicable"},
+                 "reason": None if transformed else (
+                     "output_unavailable" if applied_tf
+                     else "not_applicable")},
             ]
-            # What was actually inserted: the transform output only when
-            # its recorded decision says applied.
-            detail["final_stage"] = (
-                "transformed" if transformed and decision
-                and decision.get("applied") else "cleaned")
+            # What was actually inserted follows the recorded decision:
+            # an applied transform's output — even when it no longer
+            # resolves (then there is no final text, never the cleaned
+            # text in its place) — else the cleaned output.
+            detail["final_stage"] = "transformed" if applied_tf \
+                else "cleaned"
             if audio is None:
                 detail["audio"] = {"available": False,
                                    "reason": "no_audio_artifact"}

@@ -237,6 +237,17 @@ class HubController(NSObject):
             # screen; a hidden Training detail is cleared here.
             if getattr(self, "training_detail", None) is not None:
                 self.training_detail.setString_(self._training_pane_text())
+        queue = self._rendered_rows.get("review_queue") or []
+        if any(r.get("job_id") == job_id for r in queue):
+            # A rendered Review queue listing the job (on screen or not)
+            # drops its text and rows; it reloads when the tab is shown,
+            # and Approve/Reject refuse until then.
+            self._rendered_rows["review_queue"] = None
+            self._rendered["review_queue_src"] = None
+            if getattr(self, "review_text", None) is not None:
+                self.review_text.setString_(
+                    "A dictation in this queue was deleted; the queue"
+                    " reloads when this tab is shown.")
         if self._rendered.get("voice") and \
                 self.state.views["insights"].get("data") is None:
             # The state dropped the cached profile (it may draw on the
