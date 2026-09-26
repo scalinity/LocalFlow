@@ -1,7 +1,7 @@
 {
  "tool": "scripts/v2/m09_mutation_check.py",
  "runner": "tests/v2/ui/m09_corpus_runner.py",
- "code_sha": "dbeee1cbcae7b3115d7c80a9599cfd8a50ba5d3a",
+ "code_sha": "18ff4f5da6b52131e7d3d221739bd500ed11ce09",
  "control": {
   "exit": 0,
   "imported_from": "control",
@@ -136,7 +136,7 @@
     "M09-C023": "FAIL"
    },
    "mutant_details": {
-    "M09-C023": "stale A overwrote newer B: ['job-84a331ca7b1743c287c1191f859898ca']"
+    "M09-C023": "stale A overwrote newer B: ['job-c390ff8ead70470dbfc6b9e89619ac72']"
    },
    "imported_from": "M09-MUT02",
    "outcome": "killed",
@@ -163,8 +163,8 @@
       "changed": true
      },
      "localflow/v2/ui/hub.py": {
-      "sha_before": "5ba19677d75999a1",
-      "sha_after": "41d15eecc36ea7dd",
+      "sha_before": "069c51455ad8dbef",
+      "sha_after": "0621b2c88512f90e",
       "changed": true
      }
     }
@@ -182,7 +182,7 @@
     "M09-C024": "PASS"
    },
    "mutant_details": {
-    "M09-C002": "wrong-record action on A while B selected: [(('M09_CANARY_A_not_user_data',), {'job_id': 'job-c3dd735ab75143428adbbd6dee970ba9'}), (('job-c3dd735ab75143428adbbd6dee970ba9',), {}), (('M09_CANARY_A_not_user_data',), {})]"
+    "M09-C002": "wrong-record action on A while B selected: [(('M09_CANARY_A_not_user_data',), {'job_id': 'job-2bf1d99fd71447ab8c0718bfdd871a47'}), (('job-2bf1d99fd71447ab8c0718bfdd871a47',), {}), (('M09_CANARY_A_not_user_data',), {})]"
    },
    "imported_from": "M09-MUT03",
    "outcome": "killed",
@@ -201,8 +201,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "5ba19677d75999a1",
-      "sha_after": "a98a24b4c8f42661",
+      "sha_before": "069c51455ad8dbef",
+      "sha_after": "761a90833affa026",
       "changed": true
      }
     }
@@ -243,8 +243,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "5ba19677d75999a1",
-      "sha_after": "5df3ef5a37658fd1",
+      "sha_before": "069c51455ad8dbef",
+      "sha_after": "cbcf5a052324a458",
       "changed": true
      }
     }
@@ -280,8 +280,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "5ba19677d75999a1",
-      "sha_after": "9d08da4724ec3ff3",
+      "sha_before": "069c51455ad8dbef",
+      "sha_after": "c32e6b0a01d1b734",
       "changed": true
      }
     }
@@ -296,7 +296,7 @@
     "M09-C008": "FAIL"
    },
    "mutant_details": {
-    "M09-C008": "test_m09_remediation.py:1348 assert w.hub.state.views[\"models\"].get(\"listened_for\") is None"
+    "M09-C008": "test_m09_remediation.py:1356 assert w.hub.state.views[\"models\"].get(\"listened_for\") is None"
    },
    "imported_from": "M09-MUT06",
    "outcome": "killed",
@@ -354,8 +354,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "5ba19677d75999a1",
-      "sha_after": "d9b31dfae23ef14e",
+      "sha_before": "069c51455ad8dbef",
+      "sha_after": "d0f79b140036330f",
       "changed": true
      }
     }
@@ -389,8 +389,8 @@
     ],
     "files": {
      "localflow/v2/history_queries.py": {
-      "sha_before": "b370eee56c73c6ed",
-      "sha_after": "228aa4ad75f5b0d6",
+      "sha_before": "ec355e27fc356df9",
+      "sha_after": "2ba1c74c7ff92ebf",
       "changed": true
      }
     }
@@ -425,8 +425,8 @@
     ],
     "files": {
      "localflow/v2/history_queries.py": {
-      "sha_before": "b370eee56c73c6ed",
-      "sha_after": "199a0aa4f19046c6",
+      "sha_before": "ec355e27fc356df9",
+      "sha_after": "490fbd94ded31eb0",
       "changed": true
      }
     }
@@ -444,7 +444,7 @@
     "M09-C059": "PASS"
    },
    "mutant_details": {
-    "M09-C054": "{'stage': 'normalized', 'label': 'Normalized', 'artifact': {'artifact_id': 'art-c6da6c8567a5468f949dabab58c18b37', 'stage': 'asr', 'purged': False, 'created_at_utc': '2026-09-26T16:11:08.723Z', 'present': True, 'text': 'only raw'}}"
+    "M09-C054": "{'stage': 'normalized', 'label': 'Normalized', 'artifact': {'artifact_id': 'art-45fcec32b1eb481785ed87b5389e2f0a', 'stage': 'asr', 'purged': False, 'created_at_utc': '2026-09-26T17:11:07.400Z', 'present': True, 'text': 'only raw'}}"
    },
    "imported_from": "M09-MUT10",
    "outcome": "killed",
@@ -681,7 +681,7 @@
     "M09-C122": "PASS"
    },
    "mutant_details": {
-    "M09-C018": "{'hold_ms': 1000.0, 'search_admission_main_ms': 6005.5, 'sync_annotation_main_blocked_ms': 1.3, 'search_threads': ['MainThread']}"
+    "M09-C018": "{'hold_ms': 1000.0, 'search_admission_main_ms': 6005.5, 'sync_annotation_main_blocked_ms': 0.8, 'search_threads': ['MainThread']}"
    },
    "imported_from": "M09-MUT16",
    "outcome": "killed",
@@ -720,7 +720,7 @@
    },
    "mutant_details": {
     "M09-C005": "Hub activated mid-insertion",
-    "M09-C006": "test_m09_remediation.py:2164 assert w.d._hub is None and w.d._hub_show_pending"
+    "M09-C006": "test_m09_remediation.py:2174 assert w.d._hub is None and w.d._hub_show_pending"
    },
    "imported_from": "M09-MUT17",
    "outcome": "killed",
@@ -822,8 +822,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "5ba19677d75999a1",
-      "sha_after": "2e855a106f319d6a",
+      "sha_before": "069c51455ad8dbef",
+      "sha_after": "563cbee40fd19940",
       "changed": true
      }
     }
@@ -841,7 +841,7 @@
     "M09-C108": "FAIL"
    },
    "mutant_details": {
-    "M09-C025": "click on rendered row 0 (ex-65e64e7d7) selected ex-c49edb4900c941fcbf8f973968f9cf1d",
+    "M09-C025": "click on rendered row 0 (ex-d85380004) selected ex-bb0ef33afe6645c9834f148900b64239",
     "M09-C108": "approved ['cand-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'] against an unrendered queue"
    },
    "imported_from": "M09-MUT20",
@@ -863,8 +863,8 @@
     ],
     "files": {
      "localflow/v2/history_queries.py": {
-      "sha_before": "b370eee56c73c6ed",
-      "sha_after": "5ef41461ef0a61c3",
+      "sha_before": "ec355e27fc356df9",
+      "sha_after": "ec8ed2dc610968cc",
       "changed": true
      }
     }
@@ -882,7 +882,7 @@
     "M09-C056": "FAIL"
    },
    "mutant_details": {
-    "M09-C055": "{'source': 'ATTEMPT ONE raw', 'normalized': None, 'cleaned': 'RAW FOR JOB-JOB-F743AC98905F4BE280B09FCCABD1E200.WAV', 'transformed': None}",
+    "M09-C055": "{'source': 'ATTEMPT ONE raw', 'normalized': None, 'cleaned': 'RAW FOR JOB-JOB-856A58BD767148708D7666A4001EF2DA.WAV', 'transformed': None}",
     "M09-C056": "{'source': 'attempt one raw', 'normalized': None, 'cleaned': 'attempt one applied', 'transformed': None}"
    },
    "imported_from": "M09-MUT21",
@@ -902,8 +902,8 @@
     ],
     "files": {
      "localflow/v2/history_queries.py": {
-      "sha_before": "b370eee56c73c6ed",
-      "sha_after": "bbfebba1291381fc",
+      "sha_before": "ec355e27fc356df9",
+      "sha_after": "a20f6c99420ca466",
       "changed": true
      }
     }
@@ -987,8 +987,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "5ba19677d75999a1",
-      "sha_after": "3401990a93b9fddb",
+      "sha_before": "069c51455ad8dbef",
+      "sha_after": "532cf1555220cb05",
       "changed": true
      }
     }
@@ -1030,8 +1030,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "5ba19677d75999a1",
-      "sha_after": "5df3ef5a37658fd1",
+      "sha_before": "069c51455ad8dbef",
+      "sha_after": "cbcf5a052324a458",
       "changed": true
      },
      "localflow/v2/ui/state.py": {
@@ -1051,7 +1051,7 @@
     "M09-C007": "FAIL"
    },
    "mutant_details": {
-    "M09-C007": "test_m09_remediation.py:1372 assert annotation_kinds(w.store, b[\"example_id\"]) == []"
+    "M09-C007": "test_m09_remediation.py:1380 assert annotation_kinds(w.store, b[\"example_id\"]) == []"
    },
    "imported_from": "M09-MUT05-EQ-both",
    "outcome": "killed",
@@ -1198,7 +1198,7 @@
     "M09-C011": "FAIL"
    },
    "mutant_details": {
-    "M09-C011": "newest search displaced: rows ['job-a57e11ab188743f690db4201d98a572c', 'job-5616a1952e704498869f20c7b08988bf'], loading True"
+    "M09-C011": "newest search displaced: rows ['job-1b0fdc11581c498d8227f1b815e60867', 'job-5fa2c0c8b4fa47908bd2e61538d4b77b'], loading True"
    },
    "imported_from": "M09-LMUT-R02b",
    "outcome": "killed",
@@ -1218,8 +1218,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "5ba19677d75999a1",
-      "sha_after": "d1cf294876079c19",
+      "sha_before": "069c51455ad8dbef",
+      "sha_after": "86b53852d7f16fb1",
       "changed": true
      }
     }

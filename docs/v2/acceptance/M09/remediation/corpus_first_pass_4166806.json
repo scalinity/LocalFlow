@@ -10,7 +10,7 @@
   "code_root_sha": null,
   "tracked_files_modified": null,
   "production_tree_modified": null,
-  "localflow_imported_from_root": "ev-firstpass-4166806",
+  "localflow_imported_from_root": "ev2-firstpass-4166806",
   "python": "3.14.7",
   "environment": {
     "mac_model": "Mac17,8",
@@ -21,9 +21,9 @@
     "desktop_isolation": "tests/v2/context/run_isolated.py"
   },
   "case_counts": {
-    "PASS": 99,
+    "PASS": 100,
     "FAIL": 16,
-    "NARROWED": 6,
+    "NARROWED": 5,
     "ERROR": 7,
     "MANUAL_PENDING": 7
   },
@@ -43,7 +43,7 @@
       "evidence": {
         "final": "B"
       },
-      "seconds": 0.238,
+      "seconds": 0.24,
       "environment_run": "portable_real_framework"
     },
     "M09-C002": {
@@ -54,9 +54,9 @@
       ],
       "corpus_environment": "native_appkit_adapter",
       "status": "FAIL",
-      "detail": "labeled during the interval: ['ex-db2c665993d14ba8bc91501af3310a80']",
-      "where": "test_m09_remediation.py:2834 assert not interval, f\"labeled during the interval: {interval}\"",
-      "seconds": 0.155,
+      "detail": "labeled during the interval: ['ex-56ad0060e6c7470ba373fffb9f65e20b']",
+      "where": "test_m09_remediation.py:2844 assert not interval, f\"labeled during the interval: {interval}\"",
+      "seconds": 0.159,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C003": {
@@ -70,7 +70,7 @@
       "evidence": {
         "policy": "per-key generations"
       },
-      "seconds": 20.07,
+      "seconds": 20.066,
       "environment_run": "portable_real_framework"
     },
     "M09-C004": {
@@ -85,7 +85,7 @@
       "evidence": {
         "controllers": 1
       },
-      "seconds": 0.051,
+      "seconds": 0.052,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C005": {
@@ -98,7 +98,7 @@
       "status": "NARROWED",
       "detail": "deferred show delivered once after the transaction; insertion unchanged (fixture target)",
       "remainder": "real window activation/focus against a native app: M09-V004/M09-V005",
-      "seconds": 0.038,
+      "seconds": 0.034,
       "environment_run": "portable_real_framework+fixture_target"
     },
     "M09-C006": {
@@ -110,8 +110,8 @@
       "corpus_environment": "native_appkit_adapter",
       "status": "FAIL",
       "detail": "deferred Open Hub lost: the service went idle between the pending read and the deferred flag",
-      "where": "test_m09_remediation.py:2263 assert shown, \"deferred Open Hub lost: the service went idle\" \\",
-      "seconds": 0.056,
+      "where": "test_m09_remediation.py:2273 assert shown, \"deferred Open Hub lost: the service went idle\" \\",
+      "seconds": 0.058,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C007": {
@@ -128,7 +128,7 @@
           "test_a07_listen_gate_is_per_example_through_current_hub"
         ]
       },
-      "seconds": 0.056,
+      "seconds": 0.058,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C008": {
@@ -145,7 +145,7 @@
           "test_a07_failed_playback_grants_no_listening"
         ]
       },
-      "seconds": 0.053,
+      "seconds": 0.05,
       "environment_run": "portable_real_framework"
     },
     "M09-C009": {
@@ -159,7 +159,7 @@
       "evidence": {
         "retries_admitted": 1
       },
-      "seconds": 0.122,
+      "seconds": 0.12,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C010": {
@@ -175,7 +175,7 @@
         "op_ids_distinct": true,
         "insertion_rows": 1
       },
-      "seconds": 0.05,
+      "seconds": 0.049,
       "environment_run": "native_appkit_main_queue+fixture_target"
     },
     "M09-C011": {
@@ -187,8 +187,8 @@
       "corpus_environment": "portable_state_or_service",
       "status": "FAIL",
       "detail": "B selected, detail None loading=True",
-      "where": "test_m09_remediation.py:2323 assert (view.get(\"detail\") or {}).get(\"job_id\") == jb, \\",
-      "seconds": 0.096,
+      "where": "test_m09_remediation.py:2333 assert (view.get(\"detail\") or {}).get(\"job_id\") == jb, \\",
+      "seconds": 0.093,
       "environment_run": "portable_real_framework"
     },
     "M09-C012": {
@@ -204,7 +204,7 @@
           "test_a07_delete_stops_active_replay_and_refuses_again"
         ]
       },
-      "seconds": 0.06,
+      "seconds": 0.066,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C013": {
@@ -220,7 +220,7 @@
           "test_a24_annotation_failpoints_roll_back_completely"
         ]
       },
-      "seconds": 0.035,
+      "seconds": 0.041,
       "environment_run": "portable_real_framework"
     },
     "M09-C014": {
@@ -231,8 +231,8 @@
       "corpus_environment": "portable_state_or_service",
       "status": "FAIL",
       "detail": "R1-typed offsets were saved against R2",
-      "where": "test_m09_remediation.py:2464 assert annotation_kinds(w.store, a[\"example_id\"]) == [], \\",
-      "seconds": 0.106,
+      "where": "test_m09_remediation.py:2474 assert annotation_kinds(w.store, a[\"example_id\"]) == [], \\",
+      "seconds": 0.112,
       "environment_run": "portable_real_framework"
     },
     "M09-C015": {
@@ -244,7 +244,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.019,
+      "seconds": 0.025,
       "environment_run": "portable_real_framework"
     },
     "M09-C016": {
@@ -255,8 +255,8 @@
       "corpus_environment": "native_appkit_adapter",
       "status": "FAIL",
       "detail": "['m09.shown.1', 'm09.shown.2', 'm09.shown.3', 'm09.not.yet.shown', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'store.migrated', 'usage.aggregates_rebuilt']",
-      "where": "test_m09_remediation.py:2441 assert \"m09.shown.1\" in names and \"m09.not.yet.shown\" not in names, \\",
-      "seconds": 0.067,
+      "where": "test_m09_remediation.py:2451 assert \"m09.shown.1\" in names and \"m09.not.yet.shown\" not in names, \\",
+      "seconds": 0.071,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C017": {
@@ -272,7 +272,7 @@
           "test_a21_mine_completion_never_forces_review_tab"
         ]
       },
-      "seconds": 0.047,
+      "seconds": 0.058,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C018": {
@@ -284,9 +284,9 @@
       ],
       "corpus_environment": "native_helper",
       "status": "NARROWED",
-      "detail": "History query ran off main (threads ['localflow-hub-query-worker']); search admission 0.0 ms on main; a synchronous annotation blocked main 1002.9 ms for a 1000 ms writer hold (documented limitation, M09-AUDIT-27); dictation completed after the stall",
+      "detail": "History query ran off main (threads ['localflow-hub-query-worker']); search admission 0.0 ms on main; a synchronous annotation blocked main 1006.2 ms for a 1000 ms writer hold (documented limitation, M09-AUDIT-27); dictation completed after the stall",
       "remainder": "hotkey acknowledgement against a real stalled app: manual (not constructible headless)",
-      "seconds": 1.144,
+      "seconds": 1.149,
       "environment_run": "portable_real_framework"
     },
     "M09-C019": {
@@ -303,7 +303,7 @@
           "test_a10_hundred_searches_bounded_and_fully_drained"
         ]
       },
-      "seconds": 0.041,
+      "seconds": 0.04,
       "environment_run": "portable_real_framework"
     },
     "M09-C020": {
@@ -319,7 +319,7 @@
           "test_a25_refresh_and_completions_run_on_main"
         ]
       },
-      "seconds": 0.079,
+      "seconds": 0.07,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C021": {
@@ -335,7 +335,7 @@
           "test_a03_old_error_after_new_success"
         ]
       },
-      "seconds": 0.054,
+      "seconds": 0.048,
       "environment_run": "portable_real_framework"
     },
     "M09-C022": {
@@ -351,7 +351,7 @@
           "test_a03_old_success_after_new_error"
         ]
       },
-      "seconds": 0.053,
+      "seconds": 0.047,
       "environment_run": "portable_real_framework"
     },
     "M09-C023": {
@@ -367,7 +367,7 @@
           "test_a03_publication_check_and_mutation_atomic"
         ]
       },
-      "seconds": 0.051,
+      "seconds": 0.047,
       "environment_run": "portable_real_framework"
     },
     "M09-C024": {
@@ -383,7 +383,7 @@
           "test_a01_training_editor_buffers_bound_to_rendered_example"
         ]
       },
-      "seconds": 0.054,
+      "seconds": 0.053,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C025": {
@@ -400,7 +400,7 @@
           "test_a01_training_table_click_uses_rendered_row"
         ]
       },
-      "seconds": 0.055,
+      "seconds": 0.053,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C026": {
@@ -411,8 +411,8 @@
       "corpus_environment": "native_appkit_adapter",
       "status": "FAIL",
       "detail": "deleted without a confirmation",
-      "where": "test_m09_remediation.py:2731 assert state != \"deleted\", \"deleted without a confirmation\"",
-      "seconds": 0.165,
+      "where": "test_m09_remediation.py:2741 assert state != \"deleted\", \"deleted without a confirmation\"",
+      "seconds": 0.157,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C027": {
@@ -425,7 +425,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.039,
+      "seconds": 0.037,
       "environment_run": "portable_real_framework"
     },
     "M09-C028": {
@@ -437,7 +437,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.04,
+      "seconds": 0.037,
       "environment_run": "portable_real_framework"
     },
     "M09-C029": {
@@ -451,7 +451,7 @@
       "evidence": {
         "search_calls": 1
       },
-      "seconds": 0.05,
+      "seconds": 0.048,
       "environment_run": "portable_real_framework"
     },
     "M09-C030": {
@@ -466,7 +466,7 @@
       "evidence": {
         "notifications": 1
       },
-      "seconds": 0.038,
+      "seconds": 0.034,
       "environment_run": "portable_real_framework"
     },
     "M09-C031": {
@@ -481,7 +481,7 @@
       "evidence": {
         "policy": "queued work defers Hub activation"
       },
-      "seconds": 0.042,
+      "seconds": 0.038,
       "environment_run": "portable_real_framework+fixture_target"
     },
     "M09-C032": {
@@ -493,7 +493,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.084,
+      "seconds": 0.08,
       "environment_run": "portable_real_framework+fixture_target"
     },
     "M09-C033": {
@@ -506,7 +506,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.083,
+      "seconds": 0.081,
       "environment_run": "portable_real_framework+fixture_target"
     },
     "M09-C034": {
@@ -517,8 +517,8 @@
       "corpus_environment": "native_appkit_adapter",
       "status": "FAIL",
       "detail": "deferred Open Hub lost: the service went idle between the pending read and the deferred flag",
-      "where": "test_m09_remediation.py:2263 assert shown, \"deferred Open Hub lost: the service went idle\" \\",
-      "seconds": 0.059,
+      "where": "test_m09_remediation.py:2273 assert shown, \"deferred Open Hub lost: the service went idle\" \\",
+      "seconds": 0.052,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C035": {
@@ -534,7 +534,7 @@
           "test_a11_flush_before_busy_decrement_is_not_lost"
         ]
       },
-      "seconds": 0.042,
+      "seconds": 0.039,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C036": {
@@ -549,7 +549,7 @@
       "evidence": {
         "quit": "applicationWillTerminate_"
       },
-      "seconds": 0.021,
+      "seconds": 0.018,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C037": {
@@ -563,7 +563,7 @@
       "evidence": {
         "controllers": 1
       },
-      "seconds": 0.176,
+      "seconds": 0.15,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C038": {
@@ -589,7 +589,7 @@
           "per_key": 2
         }
       },
-      "seconds": 0.044,
+      "seconds": 0.04,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C039": {
@@ -619,7 +619,7 @@
       "evidence": {
         "tie_break": "V2 job before legacy row, then id"
       },
-      "seconds": 0.014,
+      "seconds": 0.015,
       "environment_run": "portable_real_framework"
     },
     "M09-C041": {
@@ -635,7 +635,7 @@
           "test_a13_default_zone_honors_historical_dst"
         ]
       },
-      "seconds": 0.015,
+      "seconds": 0.014,
       "environment_run": "portable_real_framework"
     },
     "M09-C042": {
@@ -647,7 +647,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.017,
+      "seconds": 0.015,
       "environment_run": "portable_real_framework"
     },
     "M09-C043": {
@@ -658,8 +658,8 @@
       "corpus_environment": "portable_state_or_service",
       "status": "FAIL",
       "detail": "offset instant cut by string order",
-      "where": "test_m09_remediation.py:2514 assert one == [newest], \"offset instant cut by string order\"",
-      "seconds": 0.03,
+      "where": "test_m09_remediation.py:2524 assert one == [newest], \"offset instant cut by string order\"",
+      "seconds": 0.028,
       "environment_run": "portable_real_framework"
     },
     "M09-C044": {
@@ -679,7 +679,7 @@
           0
         ]
       },
-      "seconds": 0.269,
+      "seconds": 0.22,
       "environment_run": "portable_real_framework"
     },
     "M09-C045": {
@@ -691,7 +691,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.043,
+      "seconds": 0.041,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C046": {
@@ -705,9 +705,9 @@
         "hits_returned": 200,
         "max_bound_params": 200,
         "statements": 204,
-        "ms": 87.5
+        "ms": 90.9
       },
-      "seconds": 0.777,
+      "seconds": 0.797,
       "environment_run": "portable_real_framework"
     },
     "M09-C047": {
@@ -723,7 +723,7 @@
           "test_a16_history_app_and_mode_controls_reachable"
         ]
       },
-      "seconds": 0.062,
+      "seconds": 0.064,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C048": {
@@ -745,7 +745,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.015,
+      "seconds": 0.016,
       "environment_run": "portable_real_framework"
     },
     "M09-C050": {
@@ -757,7 +757,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.04,
+      "seconds": 0.042,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C051": {
@@ -773,7 +773,7 @@
           "test_a14_legacy_db_row_detail_and_jobless_actions"
         ]
       },
-      "seconds": 0.035,
+      "seconds": 0.037,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C052": {
@@ -789,7 +789,7 @@
           "test_a15_legacy_pair_identity_stable_across_matching_half"
         ]
       },
-      "seconds": 0.014,
+      "seconds": 0.016,
       "environment_run": "portable_real_framework"
     },
     "M09-C053": {
@@ -801,7 +801,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.013,
+      "seconds": 0.015,
       "environment_run": "portable_real_framework"
     },
     "M09-C054": {
@@ -825,7 +825,7 @@
       "evidence": {
         "attempt": 2
       },
-      "seconds": 0.11,
+      "seconds": 0.108,
       "environment_run": "portable_service_with_declared_coordinator_fixture"
     },
     "M09-C056": {
@@ -841,7 +841,7 @@
           "test_a09_history_shows_current_attempt_not_first_row"
         ]
       },
-      "seconds": 0.019,
+      "seconds": 0.018,
       "environment_run": "portable_real_framework"
     },
     "M09-C057": {
@@ -852,8 +852,8 @@
       "corpus_environment": "portable_state_or_service",
       "status": "FAIL",
       "detail": "teach measured against text the user never saw",
-      "where": "test_m09_remediation.py:2576 assert not calls, \"teach measured against text the user never saw\"",
-      "seconds": 0.087,
+      "where": "test_m09_remediation.py:2586 assert not calls, \"teach measured against text the user never saw\"",
+      "seconds": 0.088,
       "environment_run": "portable_real_framework"
     },
     "M09-C058": {
@@ -863,7 +863,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.015,
+      "seconds": 0.016,
       "environment_run": "portable_real_framework"
     },
     "M09-C059": {
@@ -876,7 +876,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.017,
+      "seconds": 0.019,
       "environment_run": "portable_real_framework"
     },
     "M09-C060": {
@@ -902,7 +902,7 @@
           "test_a07_unavailable_replacement_stops_previous"
         ]
       },
-      "seconds": 0.03,
+      "seconds": 0.031,
       "environment_run": "portable_real_framework"
     },
     "M09-C062": {
@@ -913,8 +913,8 @@
       "corpus_environment": "portable_state_or_service",
       "status": "FAIL",
       "detail": "purged audio still playing",
-      "where": "test_m09_remediation.py:2658 assert not _playing(w.sounds), \"purged audio still playing\"",
-      "seconds": 0.094,
+      "where": "test_m09_remediation.py:2668 assert not _playing(w.sounds), \"purged audio still playing\"",
+      "seconds": 0.09,
       "environment_run": "portable_real_framework"
     },
     "M09-C063": {
@@ -925,9 +925,9 @@
       ],
       "corpus_environment": "native_helper",
       "status": "NARROWED",
-      "detail": "100 switches + one 600 s decode; retained after stop 0.02 MB (tracemalloc current), peak 115.2 MB; 600 s decode+start 12 ms on the calling thread; originals unchanged",
+      "detail": "100 switches + one 600 s decode; retained after stop 0.02 MB (tracemalloc current), peak 115.2 MB; 600 s decode+start 11 ms on the calling thread; originals unchanged",
       "remainder": "audible NSSound behavior and main-thread feel with real sound: M09-V003",
-      "seconds": 0.165,
+      "seconds": 0.163,
       "environment_run": "portable_real_framework"
     },
     "M09-C064": {
@@ -939,7 +939,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.064,
+      "seconds": 0.062,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C065": {
@@ -949,7 +949,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.018,
+      "seconds": 0.019,
       "environment_run": "portable_real_framework"
     },
     "M09-C066": {
@@ -969,7 +969,7 @@
           "valid"
         ]
       },
-      "seconds": 0.056,
+      "seconds": 0.05,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C067": {
@@ -979,7 +979,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.049,
+      "seconds": 0.043,
       "environment_run": "portable_real_framework+coordinator"
     },
     "M09-C068": {
@@ -993,7 +993,7 @@
       "evidence": {
         "final_state": "queued"
       },
-      "seconds": 0.045,
+      "seconds": 0.038,
       "environment_run": "portable_real_framework+coordinator"
     },
     "M09-C069": {
@@ -1005,7 +1005,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.051,
+      "seconds": 0.049,
       "environment_run": "native_appkit_main_queue+fixture_target"
     },
     "M09-C070": {
@@ -1017,7 +1017,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.053,
+      "seconds": 0.049,
       "environment_run": "native_appkit_main_queue+fixture_target"
     },
     "M09-C071": {
@@ -1042,7 +1042,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.05,
+      "seconds": 0.051,
       "environment_run": "native_appkit_main_queue+fixture_target"
     },
     "M09-C073": {
@@ -1064,7 +1064,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.02,
+      "seconds": 0.021,
       "environment_run": "portable_real_framework"
     },
     "M09-C075": {
@@ -1075,8 +1075,8 @@
       ],
       "corpus_environment": "portable_state_or_service",
       "status": "FAIL",
-      "detail": "─\nalpha beta\n\n1 revisions (latest rev-ebbff075a03b4af9ab78fa355ee7d1f6)\n\nspan save outcome unknown: the store is busy and the save may still complete. Saving the same text again will not duplicate it.",
-      "where": "test_m09_remediation.py:2761 assert \"not saved\" in pane and \"may still complete\" not in pane, \\",
+      "detail": "─\nalpha beta\n\n1 revisions (latest rev-c7ee41d19a7947528d12968df6a5ad47)\n\nspan save outcome unknown: the store is busy and the save may still complete. Saving the same text again will not duplicate it.",
+      "where": "test_m09_remediation.py:2771 assert \"not saved\" in pane and \"may still complete\" not in pane, \\",
       "seconds": 0.413,
       "environment_run": "portable_real_framework"
     },
@@ -1129,7 +1129,7 @@
           "test_a06_unrelated_revision_keeps_same_reviewed_artifact"
         ]
       },
-      "seconds": 0.059,
+      "seconds": 0.055,
       "environment_run": "portable_real_framework"
     },
     "M09-C080": {
@@ -1139,7 +1139,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.016,
+      "seconds": 0.017,
       "environment_run": "portable_real_framework"
     },
     "M09-C081": {
@@ -1160,7 +1160,7 @@
       "corpus_environment": "portable_state_or_service",
       "status": "FAIL",
       "detail": "Select a row to see its lineage, outcome and actions.\n\nSelect a row and wait for",
-      "where": "test_m09_remediation.py:2542 assert CANARY_A in rendered_text(w.hub.history_detail), \\",
+      "where": "test_m09_remediation.py:2552 assert CANARY_A in rendered_text(w.hub.history_detail), \\",
       "seconds": 0.081,
       "environment_run": "portable_real_framework"
     },
@@ -1193,7 +1193,7 @@
           "test_a04_expired_survives_exclude_then_restore"
         ]
       },
-      "seconds": 0.015,
+      "seconds": 0.016,
       "environment_run": "portable_real_framework"
     },
     "M09-C085": {
@@ -1206,7 +1206,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.055,
+      "seconds": 0.056,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C086": {
@@ -1222,7 +1222,7 @@
           "test_a05_span_save_never_reincludes_excluded"
         ]
       },
-      "seconds": 0.05,
+      "seconds": 0.059,
       "environment_run": "portable_real_framework"
     },
     "M09-C087": {
@@ -1238,7 +1238,7 @@
           "test_a05_verbatim_save_never_reincludes_excluded"
         ]
       },
-      "seconds": 0.054,
+      "seconds": 0.056,
       "environment_run": "portable_real_framework"
     },
     "M09-C088": {
@@ -1252,7 +1252,7 @@
           "test_a05_intended_mark_refuses_non_reviewable"
         ]
       },
-      "seconds": 0.022,
+      "seconds": 0.026,
       "environment_run": "portable_real_framework"
     },
     "M09-C089": {
@@ -1263,8 +1263,8 @@
       "corpus_environment": "native_appkit_adapter",
       "status": "FAIL",
       "detail": "a hidden widget kept the deleted transcript",
-      "where": "test_m09_remediation.py:2614 assert CANARY_A not in everything_rendered(w.hub), \\",
-      "seconds": 0.119,
+      "where": "test_m09_remediation.py:2624 assert CANARY_A not in everything_rendered(w.hub), \\",
+      "seconds": 0.122,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C090": {
@@ -1278,7 +1278,7 @@
       "evidence": {
         "profile_cached_before": false
       },
-      "seconds": 0.1,
+      "seconds": 0.103,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C091": {
@@ -1290,7 +1290,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.049,
+      "seconds": 0.046,
       "environment_run": "portable_real_framework"
     },
     "M09-C092": {
@@ -1306,7 +1306,7 @@
           "test_a29_deleted_job_leaves_history_immediately"
         ]
       },
-      "seconds": 0.017,
+      "seconds": 0.019,
       "environment_run": "portable_real_framework"
     },
     "M09-C093": {
@@ -1318,7 +1318,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.018,
+      "seconds": 0.017,
       "environment_run": "portable_real_framework"
     },
     "M09-C094": {
@@ -1362,7 +1362,7 @@
           "test_a19_non_object_json_lines_are_skipped_safely"
         ]
       },
-      "seconds": 0.034,
+      "seconds": 0.035,
       "environment_run": "portable_real_framework"
     },
     "M09-C097": {
@@ -1378,7 +1378,7 @@
           "test_a19_level_all_resets_filter_via_popup"
         ]
       },
-      "seconds": 0.034,
+      "seconds": 0.04,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C098": {
@@ -1389,8 +1389,8 @@
       "corpus_environment": "native_appkit_adapter",
       "status": "FAIL",
       "detail": "— engines / build —\nasr_model: test\nasr_revision: None\nasr_state: ready\ncleanup_model: test-llm\ncleanup_revision: None\ncleanup_state: ready\nconfig_hash: 648d4f130a5d12ce10a2c6fe94c3a84514ac861cd3bdd45",
-      "where": "test_m09_remediation.py:2780 assert f\"job timeline ({job})\" in text, text[:200]",
-      "seconds": 0.07,
+      "where": "test_m09_remediation.py:2790 assert f\"job timeline ({job})\" in text, text[:200]",
+      "seconds": 0.073,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C099": {
@@ -1413,8 +1413,8 @@
       "corpus_environment": "portable_state_or_service",
       "status": "FAIL",
       "detail": "('reason_code', 'valid_code\\n', {'schema_version': 1, 'event': 'stage.done', 'level': 'INFO', 'reason_code': 'valid_code\\n', 'redaction_version': 2, 'omitted_fields': 0})",
-      "where": "test_m09_remediation.py:2796 assert field not in out, (field, value, out)",
-      "seconds": 0.032,
+      "where": "test_m09_remediation.py:2806 assert field not in out, (field, value, out)",
+      "seconds": 0.035,
       "environment_run": "portable_real_framework"
     },
     "M09-C101": {
@@ -1439,7 +1439,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.033,
+      "seconds": 0.035,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C103": {
@@ -1455,7 +1455,7 @@
         "exported": 500,
         "export_click_main_ms": 0.1
       },
-      "seconds": 1.249,
+      "seconds": 1.322,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C104": {
@@ -1468,7 +1468,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.033,
+      "seconds": 0.036,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C105": {
@@ -1484,7 +1484,7 @@
           "test_a21_mine_completion_never_forces_review_tab"
         ]
       },
-      "seconds": 0.051,
+      "seconds": 0.055,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C106": {
@@ -1500,7 +1500,7 @@
           "test_a21_older_export_cannot_overwrite_newer_status"
         ]
       },
-      "seconds": 0.079,
+      "seconds": 0.077,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C107": {
@@ -1515,7 +1515,7 @@
       "evidence": {
         "schedule": "A held; B computed and published; A fails late"
       },
-      "seconds": 0.046,
+      "seconds": 0.045,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C108": {
@@ -1527,7 +1527,7 @@
       "status": "FAIL",
       "detail": "approved ['cand-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'] with nothing selected",
       "where": "m09_drivers.py:1964 assert calls == [], f\"approved {calls} with nothing selected\"",
-      "seconds": 0.052,
+      "seconds": 0.055,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C109": {
@@ -1539,7 +1539,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.043,
+      "seconds": 0.044,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C110": {
@@ -1549,10 +1549,23 @@
         "M09-AUDIT-26"
       ],
       "corpus_environment": "native_appkit_adapter",
-      "status": "NARROWED",
-      "detail": "3/3 M12 Scratchpad suite runs green on the repaired shared shell (its note-transform acceptance included); no shared-publication race observed",
-      "remainder": "ownership of the historical intermittent revision race stays with M12 (not reproduced here)",
-      "seconds": 33.584,
+      "status": "PASS",
+      "detail": null,
+      "evidence": {
+        "decisive_barrier": "note revision commit (M12 autosave thread)",
+        "owner": "M12",
+        "commit_arm": {
+          "right_after_accept": "polish this messy text",
+          "after_commit": "TRANSFORMED OUTPUT",
+          "hub_callbacks_left_undrained": null
+        },
+        "publication_arm": {
+          "right_after_accept": "TRANSFORMED OUTPUT",
+          "after_commit": "TRANSFORMED OUTPUT",
+          "hub_callbacks_left_undrained": 0
+        }
+      },
+      "seconds": 10.252,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C111": {
@@ -1568,7 +1581,7 @@
           "test_a22_models_failure_is_visible_not_stale_success"
         ]
       },
-      "seconds": 0.074,
+      "seconds": 0.055,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C112": {
@@ -1584,7 +1597,7 @@
           "test_a22_loading_is_a_real_transition"
         ]
       },
-      "seconds": 0.039,
+      "seconds": 0.038,
       "environment_run": "portable_real_framework"
     },
     "M09-C113": {
@@ -1594,9 +1607,9 @@
       ],
       "corpus_environment": "native_helper",
       "status": "NARROWED",
-      "detail": "[{\"hold_ms\": 100.0, \"search_admission_main_ms\": 0.0, \"sync_annotation_main_blocked_ms\": 101.9, \"search_threads\": [\"localflow-hub-query-worker\"]}, {\"hold_ms\": 1000.0, \"search_admission_main_ms\": 0.0, \"sync_annotation_main_blocked_ms\": 1006.5, \"search_threads\": [\"localflow-hub-query-worker\"]}]",
+      "detail": "[{\"hold_ms\": 100.0, \"search_admission_main_ms\": 0.0, \"sync_annotation_main_blocked_ms\": 106.1, \"search_threads\": [\"localflow-hub-query-worker\"]}, {\"hold_ms\": 1000.0, \"search_admission_main_ms\": 0.0, \"sync_annotation_main_blocked_ms\": 1006.2, \"search_threads\": [\"localflow-hub-query-worker\"]}]",
       "remainder": "timeout-scale (15 s) hold not run to keep the suite bounded; the timeout path itself is covered by C075",
-      "seconds": 1.256,
+      "seconds": 1.254,
       "environment_run": "portable_real_framework"
     },
     "M09-C114": {
@@ -1657,7 +1670,7 @@
           "test_a25_inline_dispatch_negative_control_is_intercepted"
         ]
       },
-      "seconds": 0.041,
+      "seconds": 0.053,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C119": {
@@ -1706,7 +1719,7 @@
       "evidence": {
         "refreshes": 9
       },
-      "seconds": 0.066,
+      "seconds": 0.07,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C123": {
@@ -1725,7 +1738,7 @@
           "scratchpad_quick_open"
         ]
       },
-      "seconds": 0.148,
+      "seconds": 0.145,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C124": {
@@ -1750,7 +1763,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.022,
+      "seconds": 0.032,
       "environment_run": "portable_real_framework"
     },
     "M09-C126": {
@@ -1764,7 +1777,7 @@
       "evidence": {
         "checked": 128
       },
-      "seconds": 0.002,
+      "seconds": 0.001,
       "environment_run": "portable_real_framework"
     },
     "M09-C127": {
@@ -1779,7 +1792,7 @@
       "evidence": {
         "views": 10
       },
-      "seconds": 0.135,
+      "seconds": 0.13,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C128": {
@@ -1791,7 +1804,7 @@
       "status": "PASS",
       "detail": null,
       "evidence": {},
-      "seconds": 0.048,
+      "seconds": 0.05,
       "environment_run": "native_appkit_main_queue"
     },
     "M09-C129": {
@@ -1882,7 +1895,7 @@
         "a_raises_after_b": true,
         "a_after_b_error": true
       },
-      "seconds": 0.183
+      "seconds": 0.19
     },
     "M09-MR02": {
       "name": "Selection binding",
@@ -1899,13 +1912,13 @@
       "evidence": {
         "detail_held": [],
         "detail_done": [
-          "job-fe259de1f8c64957a90bb7d59b1dd7ec"
+          "job-1be2ba2e94d94b5eacb7e38693d19232"
         ],
         "reselect_same": [
-          "job-326bfe3e160f4133905c31c4a198ca00"
+          "job-ab6827366b174eb98bb00f305aa8a313"
         ]
       },
-      "seconds": 0.123
+      "seconds": 0.129
     },
     "M09-MR03": {
       "name": "Delete monotonicity",
@@ -1942,7 +1955,7 @@
           0
         ]
       },
-      "seconds": 0.325
+      "seconds": 0.437
     },
     "M09-MR04": {
       "name": "Listening isolation",
@@ -1961,7 +1974,7 @@
           "verbatim_reference"
         ]
       },
-      "seconds": 0.174
+      "seconds": 0.2
     },
     "M09-MR05": {
       "name": "Retry idempotence",
@@ -1986,7 +1999,7 @@
           1
         ]
       },
-      "seconds": 0.37
+      "seconds": 0.367
     },
     "M09-MR06": {
       "name": "Repaste intent identity",
@@ -2003,18 +2016,18 @@
           "ops": 1,
           "distinct": 1,
           "attribution": [
-            "job-5305b7d020e440d8a4670e2f66adac56"
+            "job-835fc04f8792409d832f2786510d717a"
           ]
         },
         "2": {
           "ops": 2,
           "distinct": 2,
           "attribution": [
-            "job-62dc5640db634e88b30e611efcbd86da"
+            "job-b0f18a8a01ea4085b2b3f154aa30a679"
           ]
         }
       },
-      "seconds": 0.105
+      "seconds": 0.1
     },
     "M09-MR07": {
       "name": "Retention cannot manufacture lineage",
@@ -2033,7 +2046,7 @@
         "cleaned": "absent, no borrowing",
         "transformed": "absent, no borrowing"
       },
-      "seconds": 0.06
+      "seconds": 0.065
     },
     "M09-MR08": {
       "name": "Main-thread invariant",
@@ -2059,7 +2072,7 @@
           "off_main": 1
         }
       },
-      "seconds": 0.126
+      "seconds": 0.12
     },
     "M09-MR09": {
       "name": "Pin/review-lease separation",
@@ -2092,7 +2105,7 @@
           "pinned": false
         }
       },
-      "seconds": 0.085
+      "seconds": 0.087
     },
     "M09-MR10": {
       "name": "Legacy search identity",
@@ -2105,16 +2118,16 @@
       "detail": null,
       "evidence": {
         "M09_RQ": [
-          "art-e83a82a97da2468f8e1587927be5b098"
+          "art-b8ec44c5c0854226ac770b02ec84e318"
         ],
         "M09_CQ": [
-          "art-e83a82a97da2468f8e1587927be5b098"
+          "art-b8ec44c5c0854226ac770b02ec84e318"
         ],
         "shared": [
-          "art-e83a82a97da2468f8e1587927be5b098"
+          "art-b8ec44c5c0854226ac770b02ec84e318"
         ],
         "None": [
-          "art-e83a82a97da2468f8e1587927be5b098"
+          "art-b8ec44c5c0854226ac770b02ec84e318"
         ]
       },
       "seconds": 0.015
@@ -2131,7 +2144,7 @@
       "evidence": {
         "permutations": 6
       },
-      "seconds": 0.004
+      "seconds": 0.005
     },
     "M09-MR12": {
       "name": "Redaction extension safety",
@@ -2169,7 +2182,7 @@
         "excluded:exclude_on": "annotated",
         "excluded:mark": "excluded"
       },
-      "seconds": 0.039
+      "seconds": 0.04
     },
     "M09-MR14": {
       "name": "Benchmark work sensitivity",
@@ -2189,6 +2202,6 @@
   },
   "declared_code_sha": "4166806ec6b37bb213a178e56aada3a772b89cda",
   "code_root": "git archive export of the declared SHA (no .git)",
-  "tests_overlaid_from": "dbeee1cbcae7b3115d7c80a9599cfd8a50ba5d3a",
+  "tests_overlaid_from": "18ff4f5da6b52131e7d3d221739bd500ed11ce09",
   "note": "the final suite, drivers and frozen corpus run against the declared code; benchmark-bound cases have no record for this code and report ERROR with that reason"
 }

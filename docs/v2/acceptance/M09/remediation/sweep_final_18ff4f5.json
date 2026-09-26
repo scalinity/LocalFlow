@@ -2,7 +2,7 @@
  "schema_version": 1,
  "tool": "scripts/v2/m09_test_sweep.py",
  "runner": ".venv/bin/python tests/v2/context/run_isolated.py <file>, sequential",
- "code_root_sha": "dbeee1cbcae7b3115d7c80a9599cfd8a50ba5d3a",
+ "code_root_sha": "18ff4f5da6b52131e7d3d221739bd500ed11ce09",
  "code_root_is_export": false,
  "code_root_modified": true,
  "python": "3.14.7",
@@ -15,10 +15,8 @@
  ],
  "files": 89,
  "exit_zero": 86,
- "ok_lines": 1062,
- "live_clipboard_changes": [
-  "tests/v2/lifecycle/test_m03_remediation_supervisor.py"
- ],
+ "ok_lines": 1064,
+ "live_clipboard_changes": [],
  "results": [
   {
    "file": "tests/test_stuck_overlay.py",
@@ -26,8 +24,8 @@
    "ok_lines": 5,
    "seconds": 0.5,
    "live_clipboard_changes": 0,
-   "isolation": "ax_calls_blocked=0 ax_trust_queries=16 cg_event_posts_blocked=0 general_pasteboard_redirected=5",
-   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=16 cg_event_posts_blocked=0 general_pasteboard_redirected=5]"
+   "isolation": "ax_calls_blocked=0 ax_trust_queries=24 cg_event_posts_blocked=0 general_pasteboard_redirected=5",
+   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=24 cg_event_posts_blocked=0 general_pasteboard_redirected=5]"
   },
   {
    "file": "tests/v2/analytics/test_insights_hub.py",
@@ -35,14 +33,14 @@
    "ok_lines": 7,
    "seconds": 1.3,
    "live_clipboard_changes": 0,
-   "isolation": "ax_calls_blocked=0 ax_trust_queries=14 cg_event_posts_blocked=0 general_pasteboard_redirected=9",
-   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=14 cg_event_posts_blocked=0 general_pasteboard_redirected=9]"
+   "isolation": "ax_calls_blocked=0 ax_trust_queries=21 cg_event_posts_blocked=0 general_pasteboard_redirected=9",
+   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=21 cg_event_posts_blocked=0 general_pasteboard_redirected=9]"
   },
   {
    "file": "tests/v2/analytics/test_insights_service.py",
    "exit": 0,
    "ok_lines": 6,
-   "seconds": 0.3,
+   "seconds": 0.4,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -51,7 +49,7 @@
    "file": "tests/v2/analytics/test_usage_store.py",
    "exit": 0,
    "ok_lines": 11,
-   "seconds": 0.3,
+   "seconds": 0.7,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -78,7 +76,7 @@
    "file": "tests/v2/context/test_m06_remediation.py",
    "exit": 0,
    "ok_lines": 31,
-   "seconds": 1.8,
+   "seconds": 1.7,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=11",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=11]"
@@ -87,7 +85,7 @@
    "file": "tests/v2/context/test_m06_review_round.py",
    "exit": 0,
    "ok_lines": 8,
-   "seconds": 0.6,
+   "seconds": 1.7,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=1",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=1]"
@@ -134,8 +132,8 @@
    "ok_lines": 13,
    "seconds": 1.3,
    "live_clipboard_changes": 0,
-   "isolation": "ax_calls_blocked=0 ax_trust_queries=14 cg_event_posts_blocked=0 general_pasteboard_redirected=9",
-   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=14 cg_event_posts_blocked=0 general_pasteboard_redirected=9]"
+   "isolation": "ax_calls_blocked=0 ax_trust_queries=21 cg_event_posts_blocked=0 general_pasteboard_redirected=9",
+   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=21 cg_event_posts_blocked=0 general_pasteboard_redirected=9]"
   },
   {
    "file": "tests/v2/fidelity/test_cleanup_remediation.py",
@@ -150,7 +148,7 @@
    "file": "tests/v2/fidelity/test_literal.py",
    "exit": 0,
    "ok_lines": 0,
-   "seconds": 13.9,
+   "seconds": 13.8,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -170,14 +168,14 @@
    "ok_lines": 5,
    "seconds": 2.0,
    "live_clipboard_changes": 0,
-   "isolation": "ax_calls_blocked=0 ax_trust_queries=2 cg_event_posts_blocked=0 general_pasteboard_redirected=5",
-   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=2 cg_event_posts_blocked=0 general_pasteboard_redirected=5]"
+   "isolation": "ax_calls_blocked=0 ax_trust_queries=3 cg_event_posts_blocked=0 general_pasteboard_redirected=5",
+   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=3 cg_event_posts_blocked=0 general_pasteboard_redirected=5]"
   },
   {
    "file": "tests/v2/insertion/test_insertion_races.py",
    "exit": 0,
    "ok_lines": 13,
-   "seconds": 5.0,
+   "seconds": 5.1,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -186,7 +184,7 @@
    "file": "tests/v2/insertion/test_m08_remediation.py",
    "exit": 0,
    "ok_lines": 57,
-   "seconds": 14.8,
+   "seconds": 14.7,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=7",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=7]"
@@ -204,7 +202,7 @@
    "file": "tests/v2/lifecycle/test_audio_fidelity.py",
    "exit": 0,
    "ok_lines": 7,
-   "seconds": 0.4,
+   "seconds": 0.3,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -213,7 +211,7 @@
    "file": "tests/v2/lifecycle/test_capture_journal.py",
    "exit": 0,
    "ok_lines": 6,
-   "seconds": 5.4,
+   "seconds": 5.3,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -222,16 +220,16 @@
    "file": "tests/v2/lifecycle/test_lifecycle.py",
    "exit": 0,
    "ok_lines": 13,
-   "seconds": 1.4,
+   "seconds": 1.2,
    "live_clipboard_changes": 0,
-   "isolation": "ax_calls_blocked=0 ax_trust_queries=24 cg_event_posts_blocked=0 general_pasteboard_redirected=12",
-   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=24 cg_event_posts_blocked=0 general_pasteboard_redirected=12]"
+   "isolation": "ax_calls_blocked=0 ax_trust_queries=36 cg_event_posts_blocked=0 general_pasteboard_redirected=12",
+   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=36 cg_event_posts_blocked=0 general_pasteboard_redirected=12]"
   },
   {
    "file": "tests/v2/lifecycle/test_m03_remediation_app.py",
    "exit": 0,
    "ok_lines": 14,
-   "seconds": 4.3,
+   "seconds": 4.0,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=16",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=16]"
@@ -249,8 +247,8 @@
    "file": "tests/v2/lifecycle/test_m03_remediation_supervisor.py",
    "exit": 0,
    "ok_lines": 17,
-   "seconds": 8.7,
-   "live_clipboard_changes": 1,
+   "seconds": 8.0,
+   "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
   },
@@ -258,7 +256,7 @@
    "file": "tests/v2/lifecycle/test_m03_remediation_worker.py",
    "exit": 0,
    "ok_lines": 10,
-   "seconds": 2.2,
+   "seconds": 2.0,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -267,7 +265,7 @@
    "file": "tests/v2/lifecycle/test_m03_review_round.py",
    "exit": 0,
    "ok_lines": 15,
-   "seconds": 11.6,
+   "seconds": 11.3,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=11",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=11]"
@@ -276,7 +274,7 @@
    "file": "tests/v2/lifecycle/test_worker_protocol.py",
    "exit": 0,
    "ok_lines": 11,
-   "seconds": 2.9,
+   "seconds": 2.4,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -285,7 +283,7 @@
    "file": "tests/v2/logging/test_event_writer.py",
    "exit": 0,
    "ok_lines": 13,
-   "seconds": 1.0,
+   "seconds": 1.3,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -294,7 +292,7 @@
    "file": "tests/v2/logging/test_m02_remediation_events.py",
    "exit": 0,
    "ok_lines": 5,
-   "seconds": 0.5,
+   "seconds": 0.4,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -312,7 +310,7 @@
    "file": "tests/v2/normalization/test_m04_remediation.py",
    "exit": 0,
    "ok_lines": 19,
-   "seconds": 1.7,
+   "seconds": 1.5,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -321,7 +319,7 @@
    "file": "tests/v2/normalization/test_m04_remediation_app.py",
    "exit": 0,
    "ok_lines": 6,
-   "seconds": 0.9,
+   "seconds": 0.8,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=5",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=5]"
@@ -330,7 +328,7 @@
    "file": "tests/v2/normalization/test_m04_review_round.py",
    "exit": 0,
    "ok_lines": 22,
-   "seconds": 0.8,
+   "seconds": 0.6,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=2",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=2]"
@@ -339,7 +337,7 @@
    "file": "tests/v2/normalization/test_normalization_pipeline.py",
    "exit": 0,
    "ok_lines": 7,
-   "seconds": 1.0,
+   "seconds": 0.9,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=18 cg_event_posts_blocked=0 general_pasteboard_redirected=6",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=18 cg_event_posts_blocked=0 general_pasteboard_redirected=6]"
@@ -357,7 +355,7 @@
    "file": "tests/v2/normalization/test_normalize_syntax.py",
    "exit": 0,
    "ok_lines": 13,
-   "seconds": 0.4,
+   "seconds": 0.3,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -384,7 +382,7 @@
    "file": "tests/v2/notes/test_note_evidence.py",
    "exit": 0,
    "ok_lines": 5,
-   "seconds": 0.3,
+   "seconds": 0.2,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -393,7 +391,7 @@
    "file": "tests/v2/notes/test_note_export.py",
    "exit": 0,
    "ok_lines": 4,
-   "seconds": 0.3,
+   "seconds": 0.2,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -402,7 +400,7 @@
    "file": "tests/v2/notes/test_note_store.py",
    "exit": 0,
    "ok_lines": 7,
-   "seconds": 0.3,
+   "seconds": 0.2,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -411,7 +409,7 @@
    "file": "tests/v2/notes/test_scratchpad_hub.py",
    "exit": 1,
    "ok_lines": 3,
-   "seconds": 5.9,
+   "seconds": 5.8,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=4 cg_event_posts_blocked=0 general_pasteboard_redirected=5",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=4 cg_event_posts_blocked=0 general_pasteboard_redirected=5]"
@@ -429,7 +427,7 @@
    "file": "tests/v2/personalization/test_profile.py",
    "exit": 0,
    "ok_lines": 9,
-   "seconds": 0.5,
+   "seconds": 0.4,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -438,7 +436,7 @@
    "file": "tests/v2/profiles/test_profiles_pipeline.py",
    "exit": 0,
    "ok_lines": 13,
-   "seconds": 2.0,
+   "seconds": 1.9,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=13",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=13]"
@@ -447,7 +445,7 @@
    "file": "tests/v2/profiles/test_snippets.py",
    "exit": 0,
    "ok_lines": 9,
-   "seconds": 0.3,
+   "seconds": 0.2,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -456,7 +454,7 @@
    "file": "tests/v2/profiles/test_style_resolution.py",
    "exit": 0,
    "ok_lines": 9,
-   "seconds": 0.3,
+   "seconds": 0.2,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -474,7 +472,7 @@
    "file": "tests/v2/storage/test_m02_remediation_import.py",
    "exit": 0,
    "ok_lines": 4,
-   "seconds": 0.3,
+   "seconds": 0.2,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -483,7 +481,7 @@
    "file": "tests/v2/storage/test_m02_remediation_store.py",
    "exit": 0,
    "ok_lines": 19,
-   "seconds": 1.3,
+   "seconds": 1.1,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -501,7 +499,7 @@
    "file": "tests/v2/storage/test_store.py",
    "exit": 0,
    "ok_lines": 17,
-   "seconds": 0.7,
+   "seconds": 0.6,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -510,7 +508,7 @@
    "file": "tests/v2/structure/test_structure.py",
    "exit": 0,
    "ok_lines": 0,
-   "seconds": 58.7,
+   "seconds": 53.6,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -519,7 +517,7 @@
    "file": "tests/v2/test_baseline_manifest.py",
    "exit": 0,
    "ok_lines": 5,
-   "seconds": 0.4,
+   "seconds": 0.3,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -528,7 +526,7 @@
    "file": "tests/v2/test_baseline_manifest_producers.py",
    "exit": 0,
    "ok_lines": 15,
-   "seconds": 4.1,
+   "seconds": 3.2,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -537,7 +535,7 @@
    "file": "tests/v2/test_baseline_probe.py",
    "exit": 0,
    "ok_lines": 7,
-   "seconds": 4.3,
+   "seconds": 2.5,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -546,7 +544,7 @@
    "file": "tests/v2/test_legacy_import_boundary.py",
    "exit": 0,
    "ok_lines": 6,
-   "seconds": 0.3,
+   "seconds": 0.2,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -564,7 +562,7 @@
    "file": "tests/v2/test_m01_verify_summary.py",
    "exit": 0,
    "ok_lines": 4,
-   "seconds": 2.6,
+   "seconds": 2.4,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -591,7 +589,7 @@
    "file": "tests/v2/test_snapshot_safety.py",
    "exit": 0,
    "ok_lines": 19,
-   "seconds": 0.8,
+   "seconds": 0.6,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -600,7 +598,7 @@
    "file": "tests/v2/training/test_classification.py",
    "exit": 0,
    "ok_lines": 7,
-   "seconds": 1.4,
+   "seconds": 1.0,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -609,7 +607,7 @@
    "file": "tests/v2/training/test_collector.py",
    "exit": 0,
    "ok_lines": 11,
-   "seconds": 0.4,
+   "seconds": 0.3,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -618,7 +616,7 @@
    "file": "tests/v2/training/test_dataset_export.py",
    "exit": 0,
    "ok_lines": 6,
-   "seconds": 2.2,
+   "seconds": 1.6,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -627,7 +625,7 @@
    "file": "tests/v2/training/test_m02_remediation_collector.py",
    "exit": 0,
    "ok_lines": 14,
-   "seconds": 0.6,
+   "seconds": 0.5,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -654,7 +652,7 @@
    "file": "tests/v2/transforms/test_selection_capture_m06_seam.py",
    "exit": 0,
    "ok_lines": 8,
-   "seconds": 0.7,
+   "seconds": 0.5,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=19",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=19]"
@@ -681,7 +679,7 @@
    "file": "tests/v2/transforms/test_transform_pipeline.py",
    "exit": 0,
    "ok_lines": 10,
-   "seconds": 1.4,
+   "seconds": 1.3,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=9",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=9]"
@@ -690,7 +688,7 @@
    "file": "tests/v2/transforms/test_transform_remediation.py",
    "exit": 0,
    "ok_lines": 37,
-   "seconds": 0.6,
+   "seconds": 0.5,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -699,7 +697,7 @@
    "file": "tests/v2/transforms/test_transform_remediation_native.py",
    "exit": 0,
    "ok_lines": 16,
-   "seconds": 28.6,
+   "seconds": 28.4,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=21",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=21]"
@@ -726,7 +724,7 @@
    "file": "tests/v2/ui/test_hub_shell.py",
    "exit": 0,
    "ok_lines": 15,
-   "seconds": 1.4,
+   "seconds": 1.2,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=10 cg_event_posts_blocked=0 general_pasteboard_redirected=15",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=10 cg_event_posts_blocked=0 general_pasteboard_redirected=15]"
@@ -734,17 +732,17 @@
   {
    "file": "tests/v2/ui/test_m09_remediation.py",
    "exit": 0,
-   "ok_lines": 84,
-   "seconds": 4.6,
+   "ok_lines": 86,
+   "seconds": 4.2,
    "live_clipboard_changes": 0,
-   "isolation": "ax_calls_blocked=0 ax_trust_queries=3 cg_event_posts_blocked=0 general_pasteboard_redirected=83",
-   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=3 cg_event_posts_blocked=0 general_pasteboard_redirected=83]"
+   "isolation": "ax_calls_blocked=0 ax_trust_queries=3 cg_event_posts_blocked=0 general_pasteboard_redirected=85",
+   "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=3 cg_event_posts_blocked=0 general_pasteboard_redirected=85]"
   },
   {
    "file": "tests/v2/ui/test_training_data.py",
    "exit": 0,
    "ok_lines": 12,
-   "seconds": 0.4,
+   "seconds": 0.3,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -753,7 +751,7 @@
    "file": "tests/v2/ui/test_training_review_hub.py",
    "exit": 0,
    "ok_lines": 6,
-   "seconds": 1.1,
+   "seconds": 1.0,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=6",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=6]"
@@ -762,7 +760,7 @@
    "file": "tests/v2/vocabulary/test_hint_selection.py",
    "exit": 0,
    "ok_lines": 9,
-   "seconds": 0.5,
+   "seconds": 0.4,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -771,7 +769,7 @@
    "file": "tests/v2/vocabulary/test_m05_remediation.py",
    "exit": 0,
    "ok_lines": 28,
-   "seconds": 5.9,
+   "seconds": 4.1,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"
@@ -780,7 +778,7 @@
    "file": "tests/v2/vocabulary/test_m05_remediation_app.py",
    "exit": 0,
    "ok_lines": 12,
-   "seconds": 1.2,
+   "seconds": 1.0,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=10",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=10]"
@@ -789,7 +787,7 @@
    "file": "tests/v2/vocabulary/test_m05_review_round.py",
    "exit": 0,
    "ok_lines": 31,
-   "seconds": 1.5,
+   "seconds": 1.2,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=10",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=10]"
@@ -807,7 +805,7 @@
    "file": "tests/v2/vocabulary/test_vocabulary_pipeline.py",
    "exit": 0,
    "ok_lines": 6,
-   "seconds": 1.1,
+   "seconds": 1.0,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=18 cg_event_posts_blocked=0 general_pasteboard_redirected=5",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=18 cg_event_posts_blocked=0 general_pasteboard_redirected=5]"
@@ -816,7 +814,7 @@
    "file": "tests/v2/vocabulary/test_vocabulary_store.py",
    "exit": 0,
    "ok_lines": 16,
-   "seconds": 0.4,
+   "seconds": 0.3,
    "live_clipboard_changes": 0,
    "isolation": "ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0",
    "last_line": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0 general_pasteboard_redirected=0]"

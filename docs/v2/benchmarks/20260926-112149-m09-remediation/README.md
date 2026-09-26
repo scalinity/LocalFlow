@@ -4,7 +4,7 @@ The rewritten, work-valid M09 benchmark (`scripts/v2/benchmark_m09.py`)
 at full size on the frozen first pass. It is kept because it failed:
 every cohort's work was valid, but three timing budgets were exceeded,
 which led to the History pair fix in `0083466`. The final run is
-`../20260926-120724-m09-remediation-final/`; the historical fixture runs
+`../20260926-130913-m09-remediation-final/`; the historical fixture runs
 (`../20260922-*-m09/`) describe the pre-remediation code.
 
 ## Provenance

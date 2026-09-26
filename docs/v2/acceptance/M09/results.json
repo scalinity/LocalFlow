@@ -214,8 +214,8 @@
       "evidence": "4166806ec6b37bb213a178e56aada3a772b89cda",
       "production": "272f3d9 (identical tree)"
     },
-    "final_code_revision": "caec49141d4b756bcba3ff26d614d2854d0b139b",
-    "final_evidence_head": "4dea5f6 (runs at dbeee1c and 33ec09d; production identical to caec491)",
+    "final_code_revision": "a304d48c3adf0ef7639fe66986d8affe41a2264a",
+    "final_evidence_head": "18ff4f5 (production a304d48; tests, drivers and tooling final)",
     "audit": {
       "report": "LocalFlow V2 — M09 Read-Only Deep Audit (sha256 12276b07a35d1f08f31698af1d44245ae5ccb17189abf9f28242a966d89333da)",
       "audited_sha": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
@@ -250,29 +250,30 @@
     },
     "regressions": {
       "suite": "tests/v2/ui/test_m09_remediation.py",
-      "base_7cd1111": "17/84",
-      "first_pass_4166806": "63/84",
-      "final_dbeee1c": "84/84",
+      "base_7cd1111": "17/86",
+      "first_pass_4166806": "63/86",
       "review_fail_first": [
         "remediation/review_regressions_first_pass_4166806.json (63/77)",
-        "remediation/review_regressions_second_batch_e681981.json (77/84)"
+        "remediation/review_regressions_second_batch_e681981.json (77/84)",
+        "remediation/review_regressions_third_batch_caec491.json (84/86)"
       ],
-      "earlier_fail_first": "remediation/regressions_firstpass_4772348.json (56/62: the corpus-found defects)"
+      "earlier_fail_first": "remediation/regressions_firstpass_4772348.json (56/62: the corpus-found defects)",
+      "final_18ff4f5": "86/86"
     },
     "independent_review": {
       "record": "remediation/review_first_pass_4166806.json",
       "method": "fresh-context agent in its own read-only worktree at 4166806; audit, corpus, claimed decisions, changed files; no author rationale, no instruction to approve; probes outside the repository",
-      "allegations": "14 (6 medium, 8 low; 12 executed) plus 11 oracle weaknesses; all re-run by the author and given fail-first regressions; 2 recorded as leads (M12 typo, M14 teach staleness)",
-      "repair": "e681981, caec491 (production); 1dcab90, dbeee1c, 8144528 (regressions, drivers, mutation check)"
+      "allegations": "14 alleged defects (6 medium, 8 low; 12 executed) and 11 oracle weaknesses, plus three source predictions from the full written report; all re-run by the author with fail-first regressions; 2 recorded as leads (M12 typo, M14 teach identity) and 1 accepted as designed (revocation before commit)",
+      "repair": "e681981, caec491, a304d48 (production); 1dcab90, dbeee1c, 8144528, 18ff4f5 (regressions, drivers, mutation check)"
     },
     "corpus_results": {
       "runner": "tests/v2/ui/m09_corpus_runner.py (oracle m09-corpus-oracles-r1, policy m09-policy-r1)",
       "base_7cd1111": {
         "cases": {
-          "PASS": 38,
+          "PASS": 39,
           "FAIL": 59,
           "ERROR": 26,
-          "NARROWED": 5,
+          "NARROWED": 4,
           "MANUAL_PENDING": 7
         },
         "relations": {
@@ -284,10 +285,10 @@
       },
       "first_pass_4166806": {
         "cases": {
-          "PASS": 99,
+          "PASS": 100,
           "FAIL": 16,
           "ERROR": 7,
-          "NARROWED": 6,
+          "NARROWED": 5,
           "MANUAL_PENDING": 7
         },
         "relations": {
@@ -296,7 +297,16 @@
         },
         "file": "remediation/corpus_first_pass_4166806.json"
       },
-      "final_33ec09d": {
+      "narrowed": {
+        "M09-C005": "deferred show delivered; insertion over the fixture target",
+        "M09-C018": "synchronous CRUD stalls main for the writer hold (measured: 1002.6 ms for a 1000 ms hold; documented)",
+        "M09-C063": "600 s decode + start 10 ms; audibility manual",
+        "M09-C113": "stall measured at 100 and 1000 ms holds",
+        "M09-C124": "window bounds; a real display change is manual"
+      },
+      "stateful_probes_c001_c020": "18 pass, 2 narrowed (C005, C018)",
+      "base_and_first_pass_errors": "benchmark-bound cases have no record for those trees; remaining errors are APIs absent on the base",
+      "final_18ff4f5": {
         "cases": {
           "PASS": 123,
           "NARROWED": 5,
@@ -305,48 +315,39 @@
         "relations": {
           "PASS": 14
         },
-        "file": "remediation/corpus_final_33ec09d.json"
-      },
-      "narrowed": {
-        "M09-C005": "deferred show delivered; insertion over the fixture target",
-        "M09-C018": "synchronous CRUD stalls main for the writer hold (measured, documented)",
-        "M09-C063": "600 s decode + start 10 ms; audibility manual",
-        "M09-C113": "stall measured at 100 and 1000 ms holds",
-        "M09-C124": "window bounds; a real display change is manual"
-      },
-      "stateful_probes_c001_c020": "18 pass, 2 narrowed (C005, C018)",
-      "base_and_first_pass_errors": "benchmark-bound cases have no record for those trees; remaining errors are APIs absent on the base"
+        "file": "remediation/corpus_final_18ff4f5.json"
+      }
     },
     "mutation_results": {
       "tool": "scripts/v2/m09_mutation_check.py",
-      "final_dbeee1c": "23/24 killed; MUT05 equivalent by probe (both defenses removed: killed; reset alone removed: survived); supplementary 4/4 killed",
       "first_run_3d4ec97": "22/24 killed (MUT05, MUT10 survived; MUT10 exposed a C054 oracle gap, closed in cefa1bf)",
       "files": [
-        "remediation/mutation_final_dbeee1c.json",
+        "remediation/mutation_final_18ff4f5.json",
         "remediation/mutation_first_run_3d4ec97.json",
         "remediation/mutation_survivors_rerun_cefa1bf.json"
       ],
-      "benchmark_mutants": "8/8 killed on the first pass (6b55015) and the final code (dbeee1c); injected 50 ms moved every search p50 by 52.5–57.7 ms (MUT25–28)"
+      "benchmark_mutants": "8/8 killed on the first pass (6b55015) and the final code (18ff4f5); injected 50 ms moved every search p50 by 50.7–51.2 ms (MUT25–28)",
+      "final_18ff4f5": "23/24 killed; MUT05 equivalent by probe (both defenses removed: killed; reset alone removed: survived); supplementary 4/4 killed"
     },
     "benchmark": {
-      "final": "docs/v2/benchmarks/20260926-120724-m09-remediation-final/ (work_valid, timing_qualified; History search p95 4.6–57.1 ms of 200; shell full pass p95 327 ms of 1000)",
+      "final": "docs/v2/benchmarks/20260926-130913-m09-remediation-final/ (work_valid, timing_qualified; History search p95 4.8–60.7 ms of 200; shell full pass p95 325 ms of 1000)",
       "first_pass": "docs/v2/benchmarks/20260926-112149-m09-remediation/ (work_valid; three budgets exceeded — fixed in 0083466)",
-      "load": "other sessions active (load average about 3.5 and 7.9)"
+      "load": "other sessions active (load average about 3.5 for the first pass, 9.4 for the final run)"
     },
     "portable_tests": {
-      "sweep": "remediation/sweep_final_dbeee1c.json: 86/89 files exit 0 (two native suites not run in isolation by design; test_scratchpad_hub.py hit the M12 flake)",
-      "live_clipboard_note": "one change logged during test_m03_remediation_supervisor.py, which has no clipboard code; three reruns changed nothing (an outside copy on the shared machine)"
+      "sweep": "remediation/sweep_final_18ff4f5.json: 86/89 files exit 0 (two native suites not run in isolation by design; test_scratchpad_hub.py hit the M12 flake)",
+      "live_clipboard_note": "no live clipboard change in the final sweep; one change in an earlier sweep came from outside the tests (the suite has no clipboard code and three reruns changed nothing)"
     },
     "native_tests": {
-      "record": "remediation/native_suites_final_4dea5f6.json",
+      "record": "remediation/native_suites_final_18ff4f5.json",
       "test_native_insertion": "12/12 native M08 cases (1 residual characterized, 5 diagnostic)",
       "test_native_ax": "all passed",
-      "conditions": "run natively with the owner away from the keyboard"
+      "conditions": "run natively on the final production a304d48 with the owner away from the keyboard (also run on caec491 before the last review fix, same result)"
     },
     "desktop_isolation": "every portable run under tests/v2/context/run_isolated.py: no Accessibility read/write, no CGEventPost, general pasteboard redirected",
     "model_backed": "none: no M09 check loads a model",
     "pending_manual_verification": {
-      "runbook": "docs/v2/VERIFICATION.html → M09 (instructions M09-r1, code caec491)",
+      "runbook": "docs/v2/VERIFICATION.html → M09 (instructions M09-r1, code a304d48)",
       "checks": [
         "M09-V001 every view at two text sizes, both appearances",
         "M09-V002 keyboard only",

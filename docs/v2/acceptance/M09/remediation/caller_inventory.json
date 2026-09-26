@@ -1,56 +1,470 @@
 {
- "schema_version": 1,
- "purpose": "M09-AUDIT-26 caller/resource inventory: every caller of the M09 shared Hub state/query/action seams, how it reaches AppKit, and the test that covers it. Locations are path::symbol (stable across edits); the tree is the one named in code_sha.",
- "code_sha": "caec49141d4b756bcba3ff26d614d2854d0b139b",
- "method": [
-  "rg -n --glob '*.py' 'HubState|HubController|HistoryQueryService|TrainingDataService|ReplayService|hubRetryJob|hubPasteText|listened_for|AppHelper\\.callAfter|on_update|on_revoked|_spawn\\b|_publish_locked|revoke_job|revalidate\\(|add_idle_listener|_in_background' localflow tests scripts",
-  "rg -n --glob '*.py' 'set_verbatim|mark_intended|add_span_correction|delete_everywhere|add_job_deletion_listener|_conn_append_revision|_conn_latest|_hub_blocks_show|_flush_pending_hub_show|conn_assert_reviewable' localflow tests scripts",
-  "rg -n --glob '*.py' 'trainingDelete|trainingExclude|trainingPin|historyRetry|historyReplay|historyPaste|_in_background|run_background|set_excluded|\\.pin\\(|AppHelper\\.callAfter\\s*=|ImmediateAfter' localflow tests scripts",
-  "The expressions were adapted to the current symbol names (e.g. set_excluded does not exist; the service method is exclude). Zero hits for a guessed alias were not taken as proof of no callers: each production hit was read in context."
- ],
- "threads": {
-  "main": "AppKit main thread (NSApp run loop); every widget mutation",
-  "localflow-hub-query-worker": "HubState.QueryExecutor pool (<= 4 threads, <= 2 running per key); runs loaders, publishes through _publish_locked",
-  "localflow-hub-work": "HubController._in_background worker, one per long action",
-  "store-writer": "Store single writer thread (Store.submit ops, deletion listeners)",
-  "localflow-v2-insertion": "InsertionService queue thread (one operation at a time; idle listeners)",
-  "coordinator-worker": "AppDelegate._worker (ASR/cleanup pipeline)"
- },
- "appkit_mutation_paths": [
-  {"path": "query publication", "route": "loader on localflow-hub-query-worker -> HubState._publish_locked (guarded, lock) -> HubState._publish -> on_update = HubController._state_updated -> AppHelper.callAfter(_refresh, view) -> main", "covers_success_error_loading_clear": true, "tests": ["test_a25_refresh_and_completions_run_on_main", "test_a03_old_error_after_new_success", "test_a22_loading_is_a_real_transition", "M09-C020", "M09-C122"]},
-  {"path": "revocation", "route": "Store deletion listener (store-writer) -> HubController._store_job_deleted: HubState.revoke_job + ReplayService.revoke_job (flags only) -> on_revoked = _state_revoked -> AppHelper.callAfter(_revoke_rendered) -> main; replay stop via AppHelper.callAfter(replay.stop_revoked)", "tests": ["test_a02_training_delete_clears_detail_and_editor", "test_a02_late_detail_publication_after_delete", "test_a02_history_teach_buffer_cleared_on_delete", "test_a07_delete_stops_active_replay_and_refuses_again", "M09-C011", "M09-C090", "M09-C128"]},
-  {"path": "retention", "route": "AppDelegate._retention_pass (after Store.prune) -> HubState.revalidate() -> reloads under the fence -> query publication path", "tests": ["test_a02_independent_history_lease_survives_training_expiry", "M09-C050", "M09-C091"]},
-  {"path": "long actions", "route": "HubController._in_background(work, done, key) -> thread localflow-hub-work -> AppHelper.callAfter(_finish_action, done, key, token, ...) -> main; done(out, err, current) reports only when current", "callers": ["reviewMine_", "exportRun_", "voiceGenerate_", "diagnosticsExport_"], "tests": ["test_a21_mine_completion_never_forces_review_tab", "test_a21_older_export_cannot_overwrite_newer_status", "test_a20_export_is_the_displayed_snapshot_and_parses_off_main", "M09-C107"]},
-  {"path": "replay", "route": "button on main -> ReplayService.play_artifact (reads artifact, builds NSSound, plays; synchronous on main) -> status dict; revocation stops on main", "note": "decode+start measured 10 ms for a 600 s recording (M09-C063, NARROWED: audibility is manual M09-V003)", "tests": ["test_a07_unavailable_replacement_stops_previous", "test_a07_prepared_buffer_cannot_start_after_delete", "M09-C061", "M09-C062", "M09-C063"]},
-  {"path": "deferred Hub show", "route": "AppDelegate.openHub_ -> _hub_blocks_show (registers _insertion_idle, then reads InsertionService.pending) -> defer; InsertionService idle listener (localflow-v2-insertion) -> _insertion_idle -> AppHelper.callAfter(_flush_pending_hub_show) -> main", "tests": ["test_a11_flush_before_busy_decrement_is_not_lost", "test_a11_noop_repaste_still_delivers_deferred_open", "M09-C005", "M09-C006", "M09-C034", "M09-C035", "M09-C036"]},
-  {"path": "synchronous CRUD", "route": "button on main -> service op via Store.submit (blocks main for the writer's hold, <= 15 s timeout)", "callers": ["training intended/verbatim/span/pin/exclude/delete", "M10 styles/snippets CRUD", "M11 transforms CRUD", "M12 note CRUD"], "note": "documented limitation (M09-AUDIT-27): a 1000 ms writer hold blocked main 1004-1005 ms; History searches admitted meanwhile stayed off main (M09-C018, M09-C113, NARROWED)", "tests": ["M09-C018", "M09-C113", "test_a24_timeout_is_unknown_not_failure_and_retry_is_idempotent"]}
- ],
- "entries": [
-  {"symbol": "localflow/v2/ui/state.py::HubState._spawn / QueryExecutor.submit", "callers": "reload_history, reload_training, reload_insights, reload_current, select_* (every view load)", "owner": "M09", "thread": "admission on the caller's thread (main), run on localflow-hub-query-worker", "sync": "async", "identity": "immutable _Request(key, gen, fn, inputs, epoch); generation taken and executor submission made under one lock", "revocation": "newer gen for the key; revoke_job epoch; shutdown closes admission", "tests": ["test_a10_hundred_searches_bounded_and_fully_drained", "test_a10_held_query_in_one_view_never_blocks_another", "test_a03_newest_request_runs_while_stale_one_is_held", "M09-C001", "M09-C003", "M09-C019", "M09-C038"]},
-  {"symbol": "localflow/v2/ui/state.py::HubState._publish_locked", "callers": "every loader: _load_home, _load_history, _load_history_detail, _load_training, _load_training_detail, _load_training_review, _load_training_splits, _load_training_export, _load_models_engines, _load_diagnostics, _load_insights, _load_settings; M10 _load_styles/_load_snippets, M11 _load_transforms, M12 _load_scratchpad*", "owner": "M09", "thread": "localflow-hub-query-worker (also main for synchronous selection clears)", "sync": "sync under RLock; observers notified after release", "identity": "request gen + detail target + epoch", "revocation": "_fence scrubs revoked jobs; an epoch mismatch re-admits inside the same critical section as the generation and target checks", "tests": ["test_a03_publication_check_and_mutation_atomic", "test_a03_old_error_after_new_success", "test_a03_old_success_after_new_error", "test_a03_old_detail_error_after_newer_detail", "M09-C021", "M09-C022", "M09-C023", "M09-MUT01", "M09-MUT02"]},
-  {"symbol": "localflow/v2/ui/state.py::HubState.revoke_job", "callers": "HubController._store_job_deleted (Store deletion listener)", "owner": "M09", "thread": "store-writer (inside the delete op)", "sync": "flags only; no Store call", "identity": "job_id", "revocation": "adds to the revoked set, advances the epoch, scrubs cached rows/detail, calls on_revoked", "tests": ["test_a02_late_detail_publication_after_delete", "test_a02_cross_view_history_cache_after_training_delete", "M09-C011", "M09-C090", "M09-MUT19"]},
-  {"symbol": "localflow/v2/ui/state.py::HubState.revalidate", "callers": "localflow/app.py::AppDelegate._retention_pass", "owner": "M09 (consumed by the M02/M13 retention pass)", "thread": "retention pass thread -> query worker", "sync": "async reload", "identity": "per view key", "revocation": "retention-purged payload leaves every open view; on_revalidated stops replay of purged audio; a kept hidden selection reloads its detail when shown", "tests": ["M09-C050", "M09-C091", "test_a02_independent_history_lease_survives_training_expiry"]},
-  {"symbol": "localflow/v2/ui/state.py::HubState.shutdown", "callers": "localflow/app.py::AppDelegate.applicationWillTerminate_", "owner": "M09", "thread": "main", "sync": "sync; closes admission, drops pending (counted superseded)", "identity": "n/a", "revocation": "no later publication or notification", "tests": ["M09-C036", "M09-C038"]},
-  {"symbol": "localflow/v2/ui/hub.py::HubController._history_ctx", "callers": "historyReplay_, historyCopy_, historyPasteAgain_, historyRetry_, historyDiff_, historyTeach_, historyToScratchpad_ (via _history_to_scratchpad), historyDeleteUsage_", "owner": "M09 (Teach M14, Scratchpad M12, Delete Usage M13 consume it)", "thread": "main", "sync": "sync", "identity": "rendered detail is view.detail and detail_key == (selected_kind, selected_id)", "revocation": "_revoke_rendered clears the rendered detail and the teach buffer keyed to the deleted job", "tests": ["test_a01_history_actions_during_selection_interval", "test_a01_history_teach_buffer_bound_to_rendered_row", "M09-C002", "M09-C069", "M09-C070", "M09-MUT03", "M09-MUT08", "M09-MUT09"]},
-  {"symbol": "localflow/v2/ui/hub.py::HubController._training_ctx", "callers": "trainingMarkCorrect_, trainingMarkIncorrect_, trainingVerbatim_, trainingSpan_, trainingPin_, trainingExclude_, trainingDelete_, trainingReplay_", "owner": "M09", "thread": "main", "sync": "sync (service ops block on the writer)", "identity": "rendered detail example_id == selected_id == detail_key; editors bound through _editor_bound", "revocation": "_revoke_rendered clears the detail and editors; listened_for reset on selection change and revocation", "tests": ["test_a01_training_mark_during_selection_interval", "test_a01_training_editor_buffers_bound_to_rendered_example", "test_local01_training_delete_confirm_deletes_confirmed_identity", "test_a07_listen_gate_is_per_example_through_current_hub", "M09-C007", "M09-C024", "M09-C026", "M09-MUT05 (equivalent by probe)"]},
-  {"symbol": "localflow/v2/ui/hub.py::HubController._rows_of / _render_rows / _selected_queue_row", "callers": "tableView delegate methods, reviewApprove_, reviewReject_", "owner": "M09 (Review queue M14)", "thread": "main", "sync": "sync", "identity": "the rendered table snapshot, by stable id", "revocation": "no selection, a selection without a row, or a queue not yet rendered refuses — never a first-row default", "tests": ["test_a01_training_table_click_uses_rendered_row", "M09-C025", "M09-C108", "M09-MUT20"]},
-  {"symbol": "localflow/v2/ui/hub.py::HubController._in_background", "callers": "reviewMine_ (M14), exportRun_ (M14), voiceGenerate_ (M14), diagnosticsExport_ (M09)", "owner": "M09 shared helper", "thread": "localflow-hub-work -> main via callAfter", "sync": "async", "identity": "key + token; done(out, err, current)", "revocation": "a newer action of the same key makes the older completion silent; never navigates", "tests": ["test_a21_mine_completion_never_forces_review_tab", "test_a21_older_export_cannot_overwrite_newer_status", "M09-C105", "M09-C106", "M09-C107", "M09-MUT24"]},
-  {"symbol": "localflow/v2/ui/replay.py::ReplayService", "callers": "historyReplay_, trainingReplay_, HubController._store_job_deleted (revoke_job), _revoke_rendered (stop_revoked)", "owner": "M09", "thread": "main (revoke_job flag on store-writer)", "sync": "sync", "identity": "current (job_id, artifact_id)", "revocation": "revoked jobs refuse to start and stop if playing; an unavailable request stops the current sound; after a retention pass (on_revalidated) audio no longer available stops (stop_unavailable)", "tests": ["test_a07_delete_stops_active_replay_and_refuses_again", "test_a07_prepared_buffer_cannot_start_after_delete", "test_a07_unavailable_replacement_stops_previous", "test_a07_failed_playback_grants_no_listening", "M09-C008", "M09-MUT06"]},
-  {"symbol": "localflow/app.py::AppDelegate.hubPasteText", "callers": "localflow/v2/ui/hub.py::HubController.historyPasteAgain_", "owner": "M09 trigger seam over the M08 engine (InsertionService.paste_text)", "thread": "main -> localflow-v2-insertion", "sync": "async (queued operation)", "identity": "fresh operation id per click; job_id rides along (None for legacy rows)", "revocation": "refused for a revoked job; refused while recording or while insertion work is pending", "tests": ["test_a22_retry_and_paste_refusals_are_visible", "M09-C069", "M09-C071", "M09-MUT08"], "open": "destination when pressed inside the Hub: the engine binds the frontmost app at run time, which is LocalFlow itself (source reading, not observed live) — M09-V004"},
-  {"symbol": "localflow/app.py::AppDelegate.hubRetryJob", "callers": "localflow/v2/ui/hub.py::HubController.historyRetry_", "owner": "M09 trigger seam over the M03 recovery path (_retry_job)", "thread": "main -> coordinator-worker", "sync": "async (requeue)", "identity": "job_id; exclusive _claim_job; in-memory active-job check", "revocation": "deleted jobs refuse; a requeued job deleted before the worker runs is never delivered", "tests": ["test_a22_retry_and_paste_refusals_are_visible", "M09-C009", "M09-C066", "M09-C068", "M09-MUT07"]},
-  {"symbol": "localflow/app.py::AppDelegate._hub_blocks_show / _insertion_idle / _flush_pending_hub_show", "callers": "openHub_, quickOpenScratchpad_ (M12), hubPasteText", "owner": "M09 (consumes M08 InsertionService.pending/add_idle_listener)", "thread": "main; idle listener on localflow-v2-insertion", "sync": "sync check; async wake", "identity": "one pending show intent", "revocation": "quit (_closing) cancels a deferred show", "tests": ["test_a11_flush_before_busy_decrement_is_not_lost", "test_a11_noop_repaste_still_delivers_deferred_open", "M09-C005", "M09-C006", "M09-C034", "M09-C035", "M09-C036", "M09-MUT17", "M09-MUT18"]},
-  {"symbol": "localflow/v2/training_data.py::conn_assert_reviewable", "callers": "conn_mark_intended, TrainingDataService.set_verbatim, TrainingDataService.add_span_correction (inside each writer op)", "owner": "M09", "thread": "store-writer", "sync": "sync inside the op", "identity": "example_id", "revocation": "deleted/expired/quarantined_sensitive/excluded refuse before any write", "tests": ["test_a05_intended_mark_refuses_non_reviewable", "test_a05_span_save_never_reincludes_excluded", "test_a05_verbatim_save_never_reincludes_excluded", "M09-C086", "M09-C087", "M09-C088", "M09-MUT12"]},
-  {"symbol": "localflow/v2/training.py::EvidenceCollector.mark_last_correct", "callers": "localflow/app.py::AppDelegate.markLastCorrect_ (menu \"Mark Last Dictation Correct\", the AC05 path outside the Hub)", "owner": "M09", "thread": "main", "sync": "sync", "identity": "last example", "revocation": "skips training_data.NON_REVIEWABLE_STATES", "tests": ["tests/v2/training/test_collector.py", "tests/v2/training/test_m02_remediation_collector.py"]},
-  {"symbol": "localflow/v2/history_queries.py::HistoryQueryService", "callers": "HubState._load_history/_load_history_detail, scripts/v2/benchmark_m09.py, tests", "owner": "M09", "thread": "store-writer (read ops through Store.submit)", "sync": "sync op", "identity": "job / legacy-db:<id> / legacy pair root artifact", "revocation": "job_deletions excluded; purged text never matches", "tests": ["tests/v2/ui/test_history_queries.py", "test_a09_history_shows_current_attempt_not_first_row", "test_a12_same_day_merge_is_by_instant_with_one_limit", "test_local02_pairs_fetched_only_with_room_and_hydrated_in_batch", "M09-C039..C058", "M09-MUT21", "M09-MUT22"]},
-  {"symbol": "localflow/v2/event_view.py::order_records / redact", "callers": "localflow/v2/diagnostics.py (load_events, job_timeline, redacted_export), scripts/v2/view_events.py", "owner": "M02 policy, shared location since M09", "thread": "query worker (view) / localflow-hub-work (export) / CLI", "sync": "sync", "identity": "per writer stream (boot, session, pid) by sequence; UTC across streams", "revocation": "n/a", "tests": ["tests/v2/logging/test_m02_remediation_events.py", "test_a08_hub_export_uses_typed_allowlist", "test_a08_model_path_never_exports_but_hub_id_does", "test_a18_ordering_is_stream_aware_and_filename_independent", "M09-C094..C104", "M09-MUT15", "M09-MUT23"]},
-  {"symbol": "localflow/v2/ui/scratchpad.py::ScratchpadEditor.flush_async", "callers": "autosave timer (M12)", "owner": "M12", "thread": "localflow-notes-autosave", "sync": "async", "identity": "note model", "revocation": "n/a", "note": "no AppKit mutation from the worker; not an M09 dispatch seam", "tests": ["tests/v2/notes/test_scratchpad_hub.py"]},
-  {"symbol": "localflow/v2/ui/hub.py::HubController.historyMoveToScratchpad_", "callers": "History 'Move→Scratchpad' button", "owner": "M12", "thread": "main", "sync": "sync", "identity": "via _history_ctx", "revocation": "n/a", "note": "M12-owned lead, verified through the real button (probe outside Git): calls self._historyToScratchpad, which does not exist -> AttributeError, no coordinator call; present on 7cd1111 (introduced by d2ef224). Save→Scratchpad reaches hubSaveHistoryRow(move=False). Not repaired under M09.", "tests": []}
- ],
- "harness_monkeypatches": [
-  {"location": "tests/v2/ui/m09_world.py::MainQueue", "kind": "callAfter queued and drained on the test's main thread", "valid_for_dispatch": true, "users": ["tests/v2/ui/test_m09_remediation.py", "tests/v2/ui/m09_drivers.py", "tests/v2/ui/test_hub_shell.py", "tests/v2/ui/test_training_review_hub.py", "tests/v2/analytics/test_insights_hub.py (delete-usage test)", "scripts/v2/benchmark_m09.py"]},
-  {"location": "tests/v2/analytics/test_insights_hub.py::ImmediateAfter", "kind": "inline callAfter", "valid_for_dispatch": false, "scope": "drive_dictation and the transform-fact test: coordinator pipeline only, no Hub built inside the patch", "owner": "M13"},
-  {"location": "tests/v2/normalization/test_normalization_pipeline.py", "kind": "captured callAfter", "valid_for_dispatch": false, "scope": "coordinator pipeline; no Hub", "owner": "M04"},
-  {"location": "scripts/v2/benchmark_m06.py, scripts/v2/benchmark_m08.py, scripts/v2/benchmark_m11.py", "kind": "inline or dropped callAfter", "valid_for_dispatch": false, "scope": "coordinator pipeline benchmarks; no Hub", "owner": "M06/M08/M11"},
-  {"location": "tests/v2/ui/m09_drivers.py::c068_retry_races_deletion", "kind": "captured callAfter around the coordinator worker, drained explicitly after the worker's shutdown sentinel", "valid_for_dispatch": true, "scope": "coordinator worker; no Hub publication"}
- ]
+  "schema_version": 1,
+  "purpose": "M09-AUDIT-26 caller/resource inventory: every caller of the M09 shared Hub state/query/action seams, how it reaches AppKit, and the test that covers it. Locations are path::symbol (stable across edits); the tree is the one named in code_sha.",
+  "code_sha": "a304d48c3adf0ef7639fe66986d8affe41a2264a",
+  "method": [
+    "rg -n --glob '*.py' 'HubState|HubController|HistoryQueryService|TrainingDataService|ReplayService|hubRetryJob|hubPasteText|listened_for|AppHelper\\.callAfter|on_update|on_revoked|_spawn\\b|_publish_locked|revoke_job|revalidate\\(|add_idle_listener|_in_background' localflow tests scripts",
+    "rg -n --glob '*.py' 'set_verbatim|mark_intended|add_span_correction|delete_everywhere|add_job_deletion_listener|_conn_append_revision|_conn_latest|_hub_blocks_show|_flush_pending_hub_show|conn_assert_reviewable' localflow tests scripts",
+    "rg -n --glob '*.py' 'trainingDelete|trainingExclude|trainingPin|historyRetry|historyReplay|historyPaste|_in_background|run_background|set_excluded|\\.pin\\(|AppHelper\\.callAfter\\s*=|ImmediateAfter' localflow tests scripts",
+    "The expressions were adapted to the current symbol names (e.g. set_excluded does not exist; the service method is exclude). Zero hits for a guessed alias were not taken as proof of no callers: each production hit was read in context."
+  ],
+  "threads": {
+    "main": "AppKit main thread (NSApp run loop); every widget mutation",
+    "localflow-hub-query-worker": "HubState.QueryExecutor pool (<= 4 threads, <= 2 running per key); runs loaders, publishes through _publish_locked",
+    "localflow-hub-work": "HubController._in_background worker, one per long action",
+    "store-writer": "Store single writer thread (Store.submit ops, deletion listeners)",
+    "localflow-v2-insertion": "InsertionService queue thread (one operation at a time; idle listeners)",
+    "coordinator-worker": "AppDelegate._worker (ASR/cleanup pipeline)"
+  },
+  "appkit_mutation_paths": [
+    {
+      "path": "query publication",
+      "route": "loader on localflow-hub-query-worker -> HubState._publish_locked (guarded, lock) -> HubState._publish -> on_update = HubController._state_updated -> AppHelper.callAfter(_refresh, view) -> main",
+      "covers_success_error_loading_clear": true,
+      "tests": [
+        "test_a25_refresh_and_completions_run_on_main",
+        "test_a03_old_error_after_new_success",
+        "test_a22_loading_is_a_real_transition",
+        "M09-C020",
+        "M09-C122"
+      ]
+    },
+    {
+      "path": "revocation",
+      "route": "Store deletion listener (store-writer) -> HubController._store_job_deleted: HubState.revoke_job + ReplayService.revoke_job (flags only) -> on_revoked = _state_revoked -> AppHelper.callAfter(_revoke_rendered) -> main; replay stop via AppHelper.callAfter(replay.stop_revoked); _revoke_rendered also clears a hidden Training detail, a rendered Review queue listing the job and an invalidated Your Voice rendering",
+      "tests": [
+        "test_a02_training_delete_clears_detail_and_editor",
+        "test_a02_late_detail_publication_after_delete",
+        "test_a02_history_teach_buffer_cleared_on_delete",
+        "test_a07_delete_stops_active_replay_and_refuses_again",
+        "M09-C011",
+        "M09-C090",
+        "M09-C128",
+        "test_r10_hidden_training_detail_is_cleared_on_delete",
+        "test_r10_hidden_review_queue_is_cleared_on_delete",
+        "test_r10_voice_pane_drops_a_profile_invalidated_by_delete"
+      ]
+    },
+    {
+      "path": "retention",
+      "route": "AppDelegate._retention_pass (after Store.prune) -> HubState.revalidate() -> reloads under the fence -> query publication path",
+      "tests": [
+        "test_a02_independent_history_lease_survives_training_expiry",
+        "M09-C050",
+        "M09-C091"
+      ]
+    },
+    {
+      "path": "long actions",
+      "route": "HubController._in_background(work, done, key) -> thread localflow-hub-work -> AppHelper.callAfter(_finish_action, done, key, token, ...) -> main; done(out, err, current) reports only when current",
+      "callers": [
+        "reviewMine_",
+        "exportRun_",
+        "voiceGenerate_",
+        "diagnosticsExport_"
+      ],
+      "tests": [
+        "test_a21_mine_completion_never_forces_review_tab",
+        "test_a21_older_export_cannot_overwrite_newer_status",
+        "test_a20_export_is_the_displayed_snapshot_and_parses_off_main",
+        "M09-C107"
+      ]
+    },
+    {
+      "path": "replay",
+      "route": "button on main -> ReplayService.play_artifact (reads artifact, builds NSSound, plays; synchronous on main) -> status dict; revocation stops on main",
+      "note": "decode+start measured 10 ms for a 600 s recording (M09-C063, NARROWED: audibility is manual M09-V003)",
+      "tests": [
+        "test_a07_unavailable_replacement_stops_previous",
+        "test_a07_prepared_buffer_cannot_start_after_delete",
+        "M09-C061",
+        "M09-C062",
+        "M09-C063"
+      ]
+    },
+    {
+      "path": "deferred Hub show",
+      "route": "AppDelegate.openHub_ -> _hub_blocks_show (registers _insertion_idle, then reads InsertionService.pending) -> defer; InsertionService idle listener (localflow-v2-insertion) -> _insertion_idle -> AppHelper.callAfter(_flush_pending_hub_show) -> main",
+      "tests": [
+        "test_a11_flush_before_busy_decrement_is_not_lost",
+        "test_a11_noop_repaste_still_delivers_deferred_open",
+        "M09-C005",
+        "M09-C006",
+        "M09-C034",
+        "M09-C035",
+        "M09-C036"
+      ]
+    },
+    {
+      "path": "synchronous CRUD",
+      "route": "button on main -> service op via Store.submit (blocks main for the writer's hold, <= 15 s timeout)",
+      "callers": [
+        "training intended/verbatim/span/pin/exclude/delete",
+        "M10 styles/snippets CRUD",
+        "M11 transforms CRUD",
+        "M12 note CRUD"
+      ],
+      "note": "documented limitation (M09-AUDIT-27): a 1000 ms writer hold blocked main 1004-1005 ms; History searches admitted meanwhile stayed off main (M09-C018, M09-C113, NARROWED)",
+      "tests": [
+        "M09-C018",
+        "M09-C113",
+        "test_a24_timeout_is_unknown_not_failure_and_retry_is_idempotent"
+      ]
+    }
+  ],
+  "entries": [
+    {
+      "symbol": "localflow/v2/ui/state.py::HubState._spawn / QueryExecutor.submit",
+      "callers": "reload_history, reload_training, reload_insights, reload_current, select_* (every view load)",
+      "owner": "M09",
+      "thread": "admission on the caller's thread (main), run on localflow-hub-query-worker",
+      "sync": "async",
+      "identity": "immutable _Request(key, gen, fn, inputs, epoch); generation taken and executor submission made under one lock",
+      "revocation": "newer gen for the key; revoke_job epoch; shutdown closes admission",
+      "tests": [
+        "test_a10_hundred_searches_bounded_and_fully_drained",
+        "test_a10_held_query_in_one_view_never_blocks_another",
+        "test_a03_newest_request_runs_while_stale_one_is_held",
+        "M09-C001",
+        "M09-C003",
+        "M09-C019",
+        "M09-C038"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/state.py::HubState._publish_locked",
+      "callers": "every loader: _load_home, _load_history, _load_history_detail, _load_training, _load_training_detail, _load_training_review, _load_training_splits, _load_training_export, _load_models_engines, _load_diagnostics, _load_insights, _load_settings; M10 _load_styles/_load_snippets, M11 _load_transforms, M12 _load_scratchpad*",
+      "owner": "M09",
+      "thread": "localflow-hub-query-worker (also main for synchronous selection clears)",
+      "sync": "sync under RLock; observers notified after release",
+      "identity": "request gen + detail target + epoch",
+      "revocation": "_fence scrubs revoked jobs; an epoch mismatch re-admits inside the same critical section as the generation and target checks",
+      "tests": [
+        "test_a03_publication_check_and_mutation_atomic",
+        "test_a03_old_error_after_new_success",
+        "test_a03_old_success_after_new_error",
+        "test_a03_old_detail_error_after_newer_detail",
+        "M09-C021",
+        "M09-C022",
+        "M09-C023",
+        "M09-MUT01",
+        "M09-MUT02"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/state.py::HubState.revoke_job",
+      "callers": "HubController._store_job_deleted (Store deletion listener)",
+      "owner": "M09",
+      "thread": "store-writer (inside the delete op)",
+      "sync": "flags only; no Store call",
+      "identity": "job_id",
+      "revocation": "adds to the revoked set, advances the epoch, scrubs cached rows/detail, calls on_revoked",
+      "tests": [
+        "test_a02_late_detail_publication_after_delete",
+        "test_a02_cross_view_history_cache_after_training_delete",
+        "M09-C011",
+        "M09-C090",
+        "M09-MUT19"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/state.py::HubState.revalidate",
+      "callers": "localflow/app.py::AppDelegate._retention_pass",
+      "owner": "M09 (consumed by the M02/M13 retention pass)",
+      "thread": "retention pass thread -> query worker",
+      "sync": "async reload",
+      "identity": "per view key",
+      "revocation": "retention-purged payload leaves every open view; on_revalidated stops replay of purged audio; a kept hidden selection reloads its detail when shown",
+      "tests": [
+        "M09-C050",
+        "M09-C091",
+        "test_a02_independent_history_lease_survives_training_expiry"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/state.py::HubState.shutdown",
+      "callers": "localflow/app.py::AppDelegate.applicationWillTerminate_",
+      "owner": "M09",
+      "thread": "main",
+      "sync": "sync; closes admission, drops pending (counted superseded)",
+      "identity": "n/a",
+      "revocation": "no later publication or notification",
+      "tests": [
+        "M09-C036",
+        "M09-C038"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/hub.py::HubController._history_ctx",
+      "callers": "historyReplay_, historyCopy_, historyPasteAgain_, historyRetry_, historyDiff_, historyTeach_, historyToScratchpad_ (via _history_to_scratchpad), historyDeleteUsage_",
+      "owner": "M09 (Teach M14, Scratchpad M12, Delete Usage M13 consume it)",
+      "thread": "main",
+      "sync": "sync",
+      "identity": "rendered detail is view.detail and detail_key == (selected_kind, selected_id)",
+      "revocation": "_revoke_rendered clears the rendered detail and the teach buffer keyed to the deleted job",
+      "tests": [
+        "test_a01_history_actions_during_selection_interval",
+        "test_a01_history_teach_buffer_bound_to_rendered_row",
+        "M09-C002",
+        "M09-C069",
+        "M09-C070",
+        "M09-MUT03",
+        "M09-MUT08",
+        "M09-MUT09"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/hub.py::HubController._training_ctx",
+      "callers": "trainingMarkCorrect_, trainingMarkIncorrect_, trainingVerbatim_, trainingSpan_, trainingPin_, trainingExclude_, trainingDelete_, trainingReplay_",
+      "owner": "M09",
+      "thread": "main",
+      "sync": "sync (service ops block on the writer)",
+      "identity": "rendered detail example_id == selected_id == detail_key; editors bound through _editor_bound",
+      "revocation": "_revoke_rendered clears the detail and editors; listened_for reset on selection change and revocation",
+      "tests": [
+        "test_a01_training_mark_during_selection_interval",
+        "test_a01_training_editor_buffers_bound_to_rendered_example",
+        "test_local01_training_delete_confirm_deletes_confirmed_identity",
+        "test_a07_listen_gate_is_per_example_through_current_hub",
+        "M09-C007",
+        "M09-C024",
+        "M09-C026",
+        "M09-MUT05 (equivalent by probe)"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/hub.py::HubController._rows_of / _render_rows / _selected_queue_row",
+      "callers": "tableView delegate methods, reviewApprove_, reviewReject_",
+      "owner": "M09 (Review queue M14)",
+      "thread": "main",
+      "sync": "sync",
+      "identity": "the rendered table snapshot, by stable id",
+      "revocation": "no selection, a selection without a row, or a queue not yet rendered refuses — never a first-row default",
+      "tests": [
+        "test_a01_training_table_click_uses_rendered_row",
+        "M09-C025",
+        "M09-C108",
+        "M09-MUT20"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/hub.py::HubController._in_background",
+      "callers": "reviewMine_ (M14), exportRun_ (M14), voiceGenerate_ (M14), diagnosticsExport_ (M09)",
+      "owner": "M09 shared helper",
+      "thread": "localflow-hub-work -> main via callAfter",
+      "sync": "async",
+      "identity": "key + token; done(out, err, current)",
+      "revocation": "a newer action of the same key makes the older completion silent; never navigates",
+      "tests": [
+        "test_a21_mine_completion_never_forces_review_tab",
+        "test_a21_older_export_cannot_overwrite_newer_status",
+        "M09-C105",
+        "M09-C106",
+        "M09-C107",
+        "M09-MUT24"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/replay.py::ReplayService",
+      "callers": "historyReplay_, trainingReplay_, HubController._store_job_deleted (revoke_job), _revoke_rendered (stop_revoked)",
+      "owner": "M09",
+      "thread": "main (revoke_job flag on store-writer)",
+      "sync": "sync",
+      "identity": "current (job_id, artifact_id)",
+      "revocation": "revoked jobs refuse to start and stop if playing; an unavailable request stops the current sound; after a retention pass (on_revalidated) audio no longer available stops (stop_unavailable)",
+      "tests": [
+        "test_a07_delete_stops_active_replay_and_refuses_again",
+        "test_a07_prepared_buffer_cannot_start_after_delete",
+        "test_a07_unavailable_replacement_stops_previous",
+        "test_a07_failed_playback_grants_no_listening",
+        "M09-C008",
+        "M09-MUT06"
+      ]
+    },
+    {
+      "symbol": "localflow/app.py::AppDelegate.hubPasteText",
+      "callers": "localflow/v2/ui/hub.py::HubController.historyPasteAgain_",
+      "owner": "M09 trigger seam over the M08 engine (InsertionService.paste_text)",
+      "thread": "main -> localflow-v2-insertion",
+      "sync": "async (queued operation)",
+      "identity": "fresh operation id per click; job_id rides along (None for legacy rows)",
+      "revocation": "refused for a revoked job; refused while recording or while insertion work is pending",
+      "tests": [
+        "test_a22_retry_and_paste_refusals_are_visible",
+        "M09-C069",
+        "M09-C071",
+        "M09-MUT08"
+      ],
+      "open": "destination when pressed inside the Hub: the engine binds the frontmost app at run time, which is LocalFlow itself (source reading, not observed live) — M09-V004"
+    },
+    {
+      "symbol": "localflow/app.py::AppDelegate.hubRetryJob",
+      "callers": "localflow/v2/ui/hub.py::HubController.historyRetry_",
+      "owner": "M09 trigger seam over the M03 recovery path (_retry_job)",
+      "thread": "main -> coordinator-worker",
+      "sync": "async (requeue)",
+      "identity": "job_id; exclusive _claim_job; in-memory active-job check",
+      "revocation": "deleted jobs refuse; a requeued job deleted before the worker runs is never delivered",
+      "tests": [
+        "test_a22_retry_and_paste_refusals_are_visible",
+        "M09-C009",
+        "M09-C066",
+        "M09-C068",
+        "M09-MUT07"
+      ]
+    },
+    {
+      "symbol": "localflow/app.py::AppDelegate._hub_blocks_show / _insertion_idle / _flush_pending_hub_show",
+      "callers": "openHub_, quickOpenScratchpad_ (M12), hubPasteText",
+      "owner": "M09 (consumes M08 InsertionService.pending/add_idle_listener)",
+      "thread": "main; idle listener on localflow-v2-insertion",
+      "sync": "sync check; async wake",
+      "identity": "one pending show intent",
+      "revocation": "quit (_closing) cancels a deferred show",
+      "tests": [
+        "test_a11_flush_before_busy_decrement_is_not_lost",
+        "test_a11_noop_repaste_still_delivers_deferred_open",
+        "M09-C005",
+        "M09-C006",
+        "M09-C034",
+        "M09-C035",
+        "M09-C036",
+        "M09-MUT17",
+        "M09-MUT18"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/training_data.py::conn_assert_reviewable",
+      "callers": "conn_mark_intended, TrainingDataService.set_verbatim, TrainingDataService.add_span_correction (inside each writer op)",
+      "owner": "M09",
+      "thread": "store-writer",
+      "sync": "sync inside the op",
+      "identity": "example_id",
+      "revocation": "deleted/expired/quarantined_sensitive/excluded refuse before any write",
+      "tests": [
+        "test_a05_intended_mark_refuses_non_reviewable",
+        "test_a05_span_save_never_reincludes_excluded",
+        "test_a05_verbatim_save_never_reincludes_excluded",
+        "M09-C086",
+        "M09-C087",
+        "M09-C088",
+        "M09-MUT12"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/training.py::EvidenceCollector.mark_last_correct",
+      "callers": "localflow/app.py::AppDelegate.markLastCorrect_ (menu \"Mark Last Dictation Correct\", the AC05 path outside the Hub)",
+      "owner": "M09",
+      "thread": "main",
+      "sync": "sync",
+      "identity": "last example",
+      "revocation": "skips training_data.NON_REVIEWABLE_STATES",
+      "tests": [
+        "tests/v2/training/test_collector.py",
+        "tests/v2/training/test_m02_remediation_collector.py"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/history_queries.py::HistoryQueryService",
+      "callers": "HubState._load_history/_load_history_detail, scripts/v2/benchmark_m09.py, tests",
+      "owner": "M09",
+      "thread": "store-writer (read ops through Store.submit)",
+      "sync": "sync op",
+      "identity": "job / legacy-db:<id> / legacy pair root artifact",
+      "revocation": "job_deletions excluded; purged text never matches",
+      "tests": [
+        "tests/v2/ui/test_history_queries.py",
+        "test_a09_history_shows_current_attempt_not_first_row",
+        "test_a12_same_day_merge_is_by_instant_with_one_limit",
+        "test_local02_pairs_fetched_only_with_room_and_hydrated_in_batch",
+        "M09-C039..C058",
+        "M09-MUT21",
+        "M09-MUT22"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/event_view.py::order_records / redact",
+      "callers": "localflow/v2/diagnostics.py (load_events, job_timeline, redacted_export), scripts/v2/view_events.py",
+      "owner": "M02 policy, shared location since M09",
+      "thread": "query worker (view) / localflow-hub-work (export) / CLI",
+      "sync": "sync",
+      "identity": "per writer stream (boot, session, pid) by sequence; UTC across streams",
+      "revocation": "n/a",
+      "tests": [
+        "tests/v2/logging/test_m02_remediation_events.py",
+        "test_a08_hub_export_uses_typed_allowlist",
+        "test_a08_model_path_never_exports_but_hub_id_does",
+        "test_a18_ordering_is_stream_aware_and_filename_independent",
+        "M09-C094..C104",
+        "M09-MUT15",
+        "M09-MUT23"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/scratchpad.py::ScratchpadEditor.flush_async",
+      "callers": "autosave timer (M12)",
+      "owner": "M12",
+      "thread": "localflow-notes-autosave",
+      "sync": "async",
+      "identity": "note model",
+      "revocation": "n/a",
+      "note": "no AppKit mutation from the worker; not an M09 dispatch seam",
+      "tests": [
+        "tests/v2/notes/test_scratchpad_hub.py"
+      ]
+    },
+    {
+      "symbol": "localflow/v2/ui/hub.py::HubController.historyMoveToScratchpad_",
+      "callers": "History 'Move→Scratchpad' button",
+      "owner": "M12",
+      "thread": "main",
+      "sync": "sync",
+      "identity": "via _history_ctx",
+      "revocation": "n/a",
+      "note": "M12-owned lead, verified through the real button (probe outside Git): calls self._historyToScratchpad, which does not exist -> AttributeError, no coordinator call; present on 7cd1111 (introduced by d2ef224). Save→Scratchpad reaches hubSaveHistoryRow(move=False). Not repaired under M09.",
+      "tests": []
+    }
+  ],
+  "harness_monkeypatches": [
+    {
+      "location": "tests/v2/ui/m09_world.py::MainQueue",
+      "kind": "callAfter queued and drained on the test's main thread",
+      "valid_for_dispatch": true,
+      "users": [
+        "tests/v2/ui/test_m09_remediation.py",
+        "tests/v2/ui/m09_drivers.py",
+        "tests/v2/ui/test_hub_shell.py",
+        "tests/v2/ui/test_training_review_hub.py",
+        "tests/v2/analytics/test_insights_hub.py (delete-usage test)",
+        "scripts/v2/benchmark_m09.py"
+      ]
+    },
+    {
+      "location": "tests/v2/analytics/test_insights_hub.py::ImmediateAfter",
+      "kind": "inline callAfter",
+      "valid_for_dispatch": false,
+      "scope": "drive_dictation and the transform-fact test: coordinator pipeline only, no Hub built inside the patch",
+      "owner": "M13"
+    },
+    {
+      "location": "tests/v2/normalization/test_normalization_pipeline.py",
+      "kind": "captured callAfter",
+      "valid_for_dispatch": false,
+      "scope": "coordinator pipeline; no Hub",
+      "owner": "M04"
+    },
+    {
+      "location": "scripts/v2/benchmark_m06.py, scripts/v2/benchmark_m08.py, scripts/v2/benchmark_m11.py",
+      "kind": "inline or dropped callAfter",
+      "valid_for_dispatch": false,
+      "scope": "coordinator pipeline benchmarks; no Hub",
+      "owner": "M06/M08/M11"
+    },
+    {
+      "location": "tests/v2/ui/m09_drivers.py::c068_retry_races_deletion",
+      "kind": "captured callAfter around the coordinator worker, drained explicitly after the worker's shutdown sentinel",
+      "valid_for_dispatch": true,
+      "scope": "coordinator worker; no Hub publication"
+    }
+  ]
 }

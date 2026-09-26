@@ -1,60 +1,590 @@
 {
- "schema_version": 1,
- "milestone": "M09",
- "policy_revision": "m09-policy-r1",
- "audit": {"report": "LocalFlow V2 — M09 Read-Only Deep Audit (sha256 12276b07a35d1f08f31698af1d44245ae5ccb17189abf9f28242a966d89333da)", "audited_sha": "7cd1111f0499e14bf110d2089c69fe4fa4075507", "findings": "29 (2 critical, 7 high, 14 medium, 3 test, 3 design)", "corpus": "tests/v2/ui/m09_audit_corpus.json, byte-identical to the supplied file (sha256 a00f6618121e9881592be7d25cb4a03696ab298af9c16eefda8df697399dbcb8): 135 cases, 14 metamorphic relations, 28 mutations, all NOT_RUN as supplied", "input_limitation": "LocalFlow_M09_Findings.json and LocalFlow_M09_Source_Index.json were not found on the reference Mac; the audit text was the authority for the docket, and nothing was reconstructed in their place"},
- "method": {
-  "base": "7cd1111 (== origin/main at sync, the audited SHA)",
-  "reproduction": "tests/v2/ui/test_m09_remediation.py — independent world (tests/v2/ui/m09_world.py: synthetic store/audio/events, the real Harness coordinator, HubController/HubState/services, MainQueue dispatch drained on the test's main thread, latches at service seams, never sleeps); defect cases fail on the base and pass after repair, controls pass on both",
-  "commands": {
-   "regressions": ".venv/bin/python tests/v2/context/run_isolated.py tests/v2/ui/test_m09_remediation.py --json OUT",
-   "corpus": "M09_BENCH_JSON=<full record> M09_BENCH_MUTATION_JSON=<mutation record> .venv/bin/python tests/v2/context/run_isolated.py tests/v2/ui/m09_corpus_runner.py --json OUT",
-   "mutations": ".venv/bin/python scripts/v2/m09_mutation_check.py --json OUT",
-   "benchmark": ".venv/bin/python tests/v2/context/run_isolated.py scripts/v2/benchmark_m09.py --out DIR",
-   "benchmark_mutations": ".venv/bin/python scripts/v2/m09_benchmark_mutation_check.py --json OUT"
+  "schema_version": 1,
+  "milestone": "M09",
+  "policy_revision": "m09-policy-r1",
+  "audit": {
+    "report": "LocalFlow V2 — M09 Read-Only Deep Audit (sha256 12276b07a35d1f08f31698af1d44245ae5ccb17189abf9f28242a966d89333da)",
+    "audited_sha": "7cd1111f0499e14bf110d2089c69fe4fa4075507",
+    "findings": "29 (2 critical, 7 high, 14 medium, 3 test, 3 design)",
+    "corpus": "tests/v2/ui/m09_audit_corpus.json, byte-identical to the supplied file (sha256 a00f6618121e9881592be7d25cb4a03696ab298af9c16eefda8df697399dbcb8): 135 cases, 14 metamorphic relations, 28 mutations, all NOT_RUN as supplied",
+    "input_limitation": "LocalFlow_M09_Findings.json and LocalFlow_M09_Source_Index.json were not found on the reference Mac; the audit text was the authority for the docket, and nothing was reconstructed in their place"
   },
-  "shims_declared": "desktop isolation (no Accessibility, key events or general pasteboard) for every run; AppHelper.callAfter queued and drained on the main thread (MainQueue); NSSavePanel/NSAlert replaced by recorded fakes where a modal would block; synthetic sound factory for replay. A shim pass is never counted as native or audible evidence (manual M09-V001..V007).",
-  "records": {"base": "regressions_base_7cd1111_final_suite.json (17/84)", "first_pass": "regressions_first_pass_4166806_final_suite.json (63/84)", "final": "regressions_final_dbeee1c.json (84/84)", "original_base": "regressions_base_7cd1111.json (the 55-case reproduction layer at 5b64011: 11 controls pass, 44 fail)"}
- },
- "regression_outcomes_by_finding": "computed from the three records: fail count on base / first pass / final",
- "findings": [
-  {"id": "M09-AUDIT-01", "severity": "CRITICAL", "classification": "reproduced", "regressions": "8 (7 defect, 1 control): 7/1/0 failing", "observed_on_base": "History Paste Again/Retry/Copy acted on A while B was selected; Mark Correct/Pin/Exclude attached to B while A rendered; A's span buffer saved onto B; a click on the rendered row resolved to the backing list's row", "repair": ["4772348 rendered action context, rendered table rows, editors bound to the rendered example", "ed34496 History teach buffer bound to its row", "e681981/caec491 review: editors bound to the stage texts, Approve/Reject only on the chosen row, Record Label on the rendered example"], "corpus": ["M09-C002", "M09-C024", "M09-C025", "M09-C108"], "remaining": "M09-V002 (real keyboard/focus)"},
-  {"id": "M09-AUDIT-02", "severity": "CRITICAL", "classification": "reproduced", "regressions": "8 (7 defect, 1 control): 7/3/0", "observed_on_base": "deleted example's text stayed in state, rendered detail and editor buffers; a History cache kept it; a detail read held across the delete published it", "repair": ["4772348 revocation: flag-only store listener, fence and epoch, main-thread widget clearing", "ed34496 teach buffer cleared on delete", "e681981 hidden Training detail and invalidated Your Voice rendering cleared; retention re-selection"], "corpus": ["M09-C011", "M09-C089", "M09-C090", "M09-C128", "M09-MR03"], "remaining": null},
-  {"id": "M09-AUDIT-03", "severity": "HIGH", "classification": "reproduced", "regressions": "8 (7 defect, 1 control): 6/3/0", "observed_on_base": "A overwrote B after passing its check before B published; an old error replaced B's result; an old detail error replaced a newer detail", "repair": ["4772348 guarded publication (check and mutation in one critical section)", "6c0e484 bounded pool (the newest request runs while a stale one is held)", "e681981 re-admission inside the critical section", "caec491 admission submitted under the same lock"], "corpus": ["M09-C001", "M09-C021", "M09-C022", "M09-C023", "M09-C029", "M09-MR01"], "remaining": null, "note": "one defect case passes on the base: its per-query threads let a newer request run while an older one was held; the single worker of the first pass did not (fixed in 6c0e484)"},
-  {"id": "M09-AUDIT-04", "severity": "HIGH", "classification": "reproduced", "regressions": "3 (2 defect, 1 control): 2/0/0", "observed_on_base": "exclude then restore turned quarantined_sensitive and expired examples into reviewable ones", "repair": ["35b1941 exclude leaves deleted/expired/quarantined untouched in both directions"], "corpus": ["M09-C083", "M09-C084"], "remaining": null},
-  {"id": "M09-AUDIT-05", "severity": "HIGH", "classification": "reproduced", "regressions": "3: 3/0/0", "observed_on_base": "span and verbatim saves moved an excluded example back to annotated", "repair": ["35b1941 writer-time reviewability predicate before any write"], "corpus": ["M09-C086", "M09-C087", "M09-C088"], "remaining": null},
-  {"id": "M09-AUDIT-06", "severity": "HIGH", "classification": "reproduced", "regressions": "5 (2 defect, 3 control): 2/1/0", "observed_on_base": "a span typed against R1 was recorded against R2 after a same-length stage replacement", "repair": ["35b1941 reviewed artifact id and sha256 checked inside the writer op", "e681981 editors bound to the displayed stage artifacts (review R-04)"], "corpus": ["M09-C014", "M09-C076", "M09-C077", "M09-C079"], "remaining": "M09-V006"},
-  {"id": "M09-AUDIT-07", "severity": "HIGH", "classification": "reproduced", "regressions": "6 (4 defect, 2 control): 4/1/0", "observed_on_base": "deleting a playing example kept it playing; a prepared buffer started after the delete; an unavailable replacement left the previous sound playing", "repair": ["4772348 replay revocation, start gate, unavailable request stops the current sound", "e681981 retention purge stops playback (review R-11)"], "corpus": ["M09-C012", "M09-C061", "M09-C062", "M09-C063"], "remaining": "M09-V003 (audible)"},
-  {"id": "M09-AUDIT-08", "severity": "HIGH", "classification": "reproduced", "regressions": "3: 3/1/0", "observed_on_base": "the Hub export kept private_text, nested payload and a wrong-type reason_code", "repair": ["2436027 the Hub export uses the shared typed allowlist (localflow/v2/event_view.py)", "272f3d9 model_id accepts hub ids only (redaction_version 2)", "caec491 whole-value shape checks; dot-only model_id segments rejected"], "corpus": ["M09-C100", "M09-C101", "M09-C102"], "remaining": "M09-V007", "local_finding": "a locally configured model directory (a home path) passed model_id and was exported (found by the corpus, C102)"},
-  {"id": "M09-AUDIT-09", "severity": "HIGH", "classification": "reproduced", "regressions": "1: 1/0/0", "observed_on_base": "History showed the first attempt's artifacts after a retry", "repair": ["682dd2a current attempt from the example manifest (else the highest recorded attempt)"], "corpus": ["M09-C055", "M09-C056"], "remaining": null},
-  {"id": "M09-AUDIT-10", "severity": "MEDIUM", "classification": "reproduced", "regressions": "2: 1/0/0", "observed_on_base": "100 searches started up to 100 threads and superseded searches still ran on the store", "repair": ["4772348 executor with per-key coalescing and full accounting", "6c0e484 bounded pool (<= 4 threads, <= 2 running per key)"], "corpus": ["M09-C019", "M09-C003"], "remaining": null, "note": "the second case (a held Training load must not delay History) passes on the base and failed on the single-worker first pass 4772348 — a first-pass regression caught by the corpus (C001/C003)"},
-  {"id": "M09-AUDIT-11", "severity": "MEDIUM", "classification": "reproduced", "regressions": "3: 3/1/0", "observed_on_base": "a deferred Open Hub was lost when the only wake-up flushed while the service still counted the operation busy, and after a no-op repaste", "repair": ["d3ea5aa pending counted from admission; idle listeners", "4772348 coordinator registers before reading pending", "e681981 the idle listener always posts the flush (review R-01)"], "corpus": ["M09-C005", "M09-C006", "M09-C034", "M09-C035", "M09-C036"], "remaining": null},
-  {"id": "M09-AUDIT-12", "severity": "MEDIUM", "classification": "reproduced", "regressions": "2: 2/1/0", "observed_on_base": "same-day rows ordered by id, not instant; each source limited separately", "repair": ["682dd2a merge by instant with one limit", "f558d1c limit 0 = no limit in every source query (latent on the base)", "e681981 per-source SQL cut by the same instant (review R-08)"], "corpus": ["M09-C039", "M09-C040", "M09-C043", "M09-C044"], "remaining": null},
-  {"id": "M09-AUDIT-13", "severity": "MEDIUM", "classification": "reproduced", "regressions": "2: 2/0/0", "observed_on_base": "grouping used today's fixed offset across a DST boundary; explicit-offset timestamps mishandled", "repair": ["682dd2a IANA default zone; RFC 3339 offsets placed by instant; zone-less values Undated"], "corpus": ["M09-C041", "M09-C042", "M09-C043"], "remaining": null},
-  {"id": "M09-AUDIT-14", "severity": "MEDIUM", "classification": "reproduced", "regressions": "1: 1/0/0", "observed_on_base": "a legacy analytics row had no detail route and its actions ran as if it were a job", "repair": ["682dd2a legacy_db_detail", "4772348 jobless actions refuse with the reason"], "corpus": ["M09-C051", "M09-C070"], "remaining": null},
-  {"id": "M09-AUDIT-15", "severity": "MEDIUM", "classification": "reproduced", "regressions": "1: 1/0/0", "observed_on_base": "a legacy pair's identity changed with the half that matched and the unmatched half was lost", "repair": ["682dd2a pair identity is its root artifact; both halves hydrated"], "corpus": ["M09-C052", "M09-C053"], "remaining": null},
-  {"id": "M09-AUDIT-16", "severity": "MEDIUM", "classification": "reproduced", "regressions": "1: 1/0/0", "observed_on_base": "app and mode filters existed in the service but not in the Hub", "repair": ["4772348 App field and Mode popup"], "corpus": ["M09-C047"], "remaining": "M09-V001/V002"},
-  {"id": "M09-AUDIT-17", "severity": "MEDIUM", "classification": "reproduced", "regressions": "3: 3/2/0", "observed_on_base": "transform artifacts shown without their decision; Copy/Paste used a proposal that was not applied", "repair": ["682dd2a decision and final stage", "4772348 decision labels and final text", "e681981 no source substitute for a missing final text; Teach refuses a transformed final (review R-05/R-06)"], "corpus": ["M09-C054", "M09-C057", "M09-C059"], "remaining": null, "m14_lead": "learning.teach_correction measures against applied_output and takes no expected artifact identity; a retry that changes the final text after render (source prediction) is M14's to close"},
-  {"id": "M09-AUDIT-18", "severity": "MEDIUM", "classification": "reproduced", "regressions": "1: 1/0/0", "observed_on_base": "Diagnostics ordered by file name and a global sequence across writer streams", "repair": ["2436027 shared per-stream/UTC ordering (event_view.order_records)"], "corpus": ["M09-C094", "M09-C095", "M09-C099"], "remaining": null},
-  {"id": "M09-AUDIT-19", "severity": "MEDIUM", "classification": "reproduced", "regressions": "4: 4/1/0", "observed_on_base": "a non-object JSON line raised; level could not be reset to all; UTC did not apply to the timeline", "repair": ["2436027 skipped and counted lines", "4772348 All levels, UTC for the timeline", "caec491 timeline header names the loaded filter"], "corpus": ["M09-C096", "M09-C097", "M09-C098"], "remaining": "M09-V007"},
-  {"id": "M09-AUDIT-20", "severity": "MEDIUM", "classification": "reproduced", "regressions": "2: 2/1/0", "observed_on_base": "Export re-read the full logs on the main thread and was not the displayed window", "repair": ["4772348 export of the displayed snapshot off main", "e681981 the window last drawn, not a newer state load (review R-07)"], "corpus": ["M09-C016"], "remaining": null},
-  {"id": "M09-AUDIT-21", "severity": "MEDIUM", "classification": "reproduced", "regressions": "2: 2/0/0", "observed_on_base": "Mine completion navigated to Review; an older export overwrote a newer status", "repair": ["4772348 keyed, tokened long actions that never navigate"], "corpus": ["M09-C017", "M09-C105", "M09-C106", "M09-C107"], "remaining": null},
-  {"id": "M09-AUDIT-22", "severity": "MEDIUM", "classification": "reproduced", "regressions": "5: 5/1/0", "observed_on_base": "loading never became true; Retry/Paste refusals invisible; a Models failure showed stale success; an empty store said 'select a row'", "repair": ["4772348 loading/error states, visible refusals", "ed34496 honest empty and filtered-out states (latent on the base)", "caec491 store timeouts read as unknown outcomes"], "corpus": ["M09-C071", "M09-C111", "M09-C112", "M09-C127"], "remaining": null},
-  {"id": "M09-AUDIT-23", "severity": "MEDIUM", "classification": "reproduced", "evidence": "benchmark_base_mutant_7cd1111.json: with every History search returning zero rows the base benchmark still qualified (exit 0)", "repair": ["6b55015 validity-checked benchmark; 8 benchmark mutants killed (first pass 6b55015 and final dbeee1c)"], "corpus": ["M09-C114", "M09-C115", "M09-C116", "M09-C117", "M09-C119", "M09-C120", "M09-C121", "M09-MR14"], "remaining": null},
-  {"id": "M09-AUDIT-24", "severity": "TEST", "classification": "narrowed", "regressions": "3 (2 defect, 1 control): 1/1/0", "observed_on_base": "annotation rollback at each failpoint held on the base (the control passes: a test gap only); a timeout was reported as a failure while the write could still commit (reproduced)", "repair": ["35b1941 idempotent annotation ids", "4772348 timeout reported as unknown", "caec491 a pre-read timeout is a definite refusal"], "corpus": ["M09-C013", "M09-C075"], "remaining": null},
-  {"id": "M09-AUDIT-25", "severity": "TEST", "classification": "test_gap_only", "regressions": "2 controls: 0/0/0", "observed_on_base": "production dispatch was already correct (the refresh and completions run on main); the M14 suite's inline callAfter shim and the historical headless shims were invalid oracles", "repair": ["4772348 MainQueue dispatch in the M09, M13 (delete-usage) and M14 suites; inventory of the remaining coordinator-pipeline shims"], "corpus": ["M09-C020", "M09-C118", "M09-C122", "M09-C126"], "remaining": null},
-  {"id": "M09-AUDIT-26", "severity": "TEST", "classification": "manual_native_unresolved", "evidence": "caller_inventory.json (full local inventory at the final production SHA); the review round's own residue closed", "repair": [], "corpus": ["M09-C124", "M09-C127", "M09-C129", "M09-C130", "M09-C133"], "remaining": "native focus and lifecycle: M09-V002, M09-V004, M09-V005 (the M08 native suites ran natively and passed: native_suites_final_4dea5f6.json)"},
-  {"id": "M09-AUDIT-27", "severity": "DESIGN", "classification": "design_only", "evidence": "measured (C018/C113, NARROWED): a 1000 ms writer hold blocks the main thread about 1005 ms during a synchronous annotation, while admitted History searches stay off main", "policy": "documented limitation (contracts/hub.md → Limitations); a timeout is an unknown outcome and repeating is idempotent", "repair": [], "corpus": ["M09-C018", "M09-C113"], "remaining": null},
-  {"id": "M09-AUDIT-28", "severity": "DESIGN", "classification": "design_only", "policy": "queued or executing insertion work defers the Hub (pending from admission); a clipboard payload left pending after a finished transaction does not; every deliberate Paste Again is a fresh operation (no job-id dedup)", "repair": ["d3ea5aa", "4772348"], "corpus": ["M09-C005", "M09-C006", "M09-C034", "M09-C035"], "remaining": "M09-V004 — the destination of a Paste Again pressed inside the Hub (source reading: the engine binds the app in front when it runs, which is the Hub itself; not observed live)"},
-  {"id": "M09-AUDIT-29", "severity": "DESIGN", "classification": "design_only", "policy": "a job deleted everywhere leaves History at once; the metadata row waits for metadata pruning as an operational record", "regressions": "1: 1/0/0", "repair": ["682dd2a"], "corpus": ["M09-C092"], "remaining": null},
-  {"id": "M09-LOCAL-01", "severity": "HIGH", "classification": "reproduced (local finding)", "regressions": "3 (2 defect, 1 control): 2/1/0", "observed_on_base": "Training Delete Everywhere's legacy alert returned 1 for Delete while the code expected 1000: the confirmed delete never ran; the id was read after the modal", "repair": ["4772348 modern alert, identity captured before the modal", "caec491 no confirmation, no delete (review R-13)"], "corpus": ["M09-C026"], "remaining": "M09-V006"},
-  {"id": "M09-LOCAL-02", "severity": "MEDIUM", "classification": "first-pass regression (local finding)", "regressions": "1: 0/1/0", "observed": "the full 50k benchmark on the first pass: browse p95 1500.7 ms, legacy mode 1350.9 ms, shell 1633.4 ms against 200/200/1000 ms — per-pair unindexed hydration introduced in 682dd2a", "repair": ["0083466 pairs fetched only for the room under the limit; batched hydration"], "corpus": ["M09-C046", "M09-C121"], "remaining": null}
- ],
- "leads_not_repaired": [
-  {"owner": "M12", "item": "History Move→Scratchpad calls self._historyToScratchpad (misspelled): AttributeError, nothing reaches the coordinator; present on 7cd1111 (introduced by d2ef224). Verified through the real button with a synthetic store."},
-  {"owner": "M12", "item": "test_note_transform_never_external reads the note before the editor's autosave commit (an intermittent failure, about 1 in 7 runs on both 7cd1111 and the final tree with the same signature). M09-C110 attributes it by barrier: holding only the revision commit reproduces it deterministically; holding only the Hub's publication changes nothing."},
-  {"owner": "M14", "item": "teach_correction measures against applied_output with no expected artifact identity (M09 refuses Teach on transformed final text at its seam)."},
-  {"owner": "M09 design / Daniel", "item": "Paste Again pressed inside the Hub: the destination policy (paste into the previously frontmost app, or copy with a note) — M09-V004 records what happens first."}
- ],
- "counts": {"reproduced": 23, "narrowed": 1, "test_gap_only": 1, "manual_native_unresolved": 1, "design_only": 3, "refuted": 0, "already_fixed": 0, "local_findings": 2}
+  "method": {
+    "base": "7cd1111 (== origin/main at sync, the audited SHA)",
+    "reproduction": "tests/v2/ui/test_m09_remediation.py — independent world (tests/v2/ui/m09_world.py: synthetic store/audio/events, the real Harness coordinator, HubController/HubState/services, MainQueue dispatch drained on the test's main thread, latches at service seams, never sleeps); defect cases fail on the base and pass after repair, controls pass on both",
+    "commands": {
+      "regressions": ".venv/bin/python tests/v2/context/run_isolated.py tests/v2/ui/test_m09_remediation.py --json OUT",
+      "corpus": "M09_BENCH_JSON=<full record> M09_BENCH_MUTATION_JSON=<mutation record> .venv/bin/python tests/v2/context/run_isolated.py tests/v2/ui/m09_corpus_runner.py --json OUT",
+      "mutations": ".venv/bin/python scripts/v2/m09_mutation_check.py --json OUT",
+      "benchmark": ".venv/bin/python tests/v2/context/run_isolated.py scripts/v2/benchmark_m09.py --out DIR",
+      "benchmark_mutations": ".venv/bin/python scripts/v2/m09_benchmark_mutation_check.py --json OUT"
+    },
+    "shims_declared": "desktop isolation (no Accessibility, key events or general pasteboard) for every run; AppHelper.callAfter queued and drained on the main thread (MainQueue); NSSavePanel/NSAlert replaced by recorded fakes where a modal would block; synthetic sound factory for replay. A shim pass is never counted as native or audible evidence (manual M09-V001..V007).",
+    "records": {
+      "base": "regressions_base_7cd1111_final_suite.json (17/86)",
+      "first_pass": "regressions_first_pass_4166806_final_suite.json (63/86)",
+      "final": "regressions_final_18ff4f5.json (86/86; production a304d48)",
+      "original_base": "regressions_base_7cd1111.json (the 55-case reproduction layer at 5b64011: 11 controls pass, 44 fail)"
+    }
+  },
+  "regression_outcomes_by_finding": "computed from the three records: fail count on base / first pass / final",
+  "findings": [
+    {
+      "id": "M09-AUDIT-01",
+      "severity": "CRITICAL",
+      "classification": "reproduced",
+      "regressions": "8 (7 defect, 1 control): 7/1/0 failing",
+      "observed_on_base": "History Paste Again/Retry/Copy acted on A while B was selected; Mark Correct/Pin/Exclude attached to B while A rendered; A's span buffer saved onto B; a click on the rendered row resolved to the backing list's row",
+      "repair": [
+        "4772348 rendered action context, rendered table rows, editors bound to the rendered example",
+        "ed34496 History teach buffer bound to its row",
+        "e681981/caec491 review: editors bound to the stage texts, Approve/Reject only on the chosen row, Record Label on the rendered example"
+      ],
+      "corpus": [
+        "M09-C002",
+        "M09-C024",
+        "M09-C025",
+        "M09-C108"
+      ],
+      "remaining": "M09-V002 (real keyboard/focus)"
+    },
+    {
+      "id": "M09-AUDIT-02",
+      "severity": "CRITICAL",
+      "classification": "reproduced",
+      "regressions": "9 (8 defect, 1 control): 8/4/0",
+      "observed_on_base": "deleted example's text stayed in state, rendered detail and editor buffers; a History cache kept it; a detail read held across the delete published it",
+      "repair": [
+        "4772348 revocation: flag-only store listener, fence and epoch, main-thread widget clearing",
+        "ed34496 teach buffer cleared on delete",
+        "e681981 hidden Training detail and invalidated Your Voice rendering cleared; retention re-selection",
+        "a304d48 revocation clears a hidden Review queue listing the job (review R-10b)"
+      ],
+      "corpus": [
+        "M09-C011",
+        "M09-C089",
+        "M09-C090",
+        "M09-C128",
+        "M09-MR03"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-03",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "regressions": "8 (7 defect, 1 control): 6/3/0",
+      "observed_on_base": "A overwrote B after passing its check before B published; an old error replaced B's result; an old detail error replaced a newer detail",
+      "repair": [
+        "4772348 guarded publication (check and mutation in one critical section)",
+        "6c0e484 bounded pool (the newest request runs while a stale one is held)",
+        "e681981 re-admission inside the critical section",
+        "caec491 admission submitted under the same lock"
+      ],
+      "corpus": [
+        "M09-C001",
+        "M09-C021",
+        "M09-C022",
+        "M09-C023",
+        "M09-C029",
+        "M09-MR01"
+      ],
+      "remaining": null,
+      "note": "one defect case passes on the base: its per-query threads let a newer request run while an older one was held; the single worker of the first pass did not (fixed in 6c0e484)"
+    },
+    {
+      "id": "M09-AUDIT-04",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "regressions": "3 (2 defect, 1 control): 2/0/0",
+      "observed_on_base": "exclude then restore turned quarantined_sensitive and expired examples into reviewable ones",
+      "repair": [
+        "35b1941 exclude leaves deleted/expired/quarantined untouched in both directions"
+      ],
+      "corpus": [
+        "M09-C083",
+        "M09-C084"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-05",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "regressions": "3: 3/0/0",
+      "observed_on_base": "span and verbatim saves moved an excluded example back to annotated",
+      "repair": [
+        "35b1941 writer-time reviewability predicate before any write"
+      ],
+      "corpus": [
+        "M09-C086",
+        "M09-C087",
+        "M09-C088"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-06",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "regressions": "5 (2 defect, 3 control): 2/1/0",
+      "observed_on_base": "a span typed against R1 was recorded against R2 after a same-length stage replacement",
+      "repair": [
+        "35b1941 reviewed artifact id and sha256 checked inside the writer op",
+        "e681981 editors bound to the displayed stage artifacts (review R-04)"
+      ],
+      "corpus": [
+        "M09-C014",
+        "M09-C076",
+        "M09-C077",
+        "M09-C079"
+      ],
+      "remaining": "M09-V006"
+    },
+    {
+      "id": "M09-AUDIT-07",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "regressions": "6 (4 defect, 2 control): 4/1/0",
+      "observed_on_base": "deleting a playing example kept it playing; a prepared buffer started after the delete; an unavailable replacement left the previous sound playing",
+      "repair": [
+        "4772348 replay revocation, start gate, unavailable request stops the current sound",
+        "e681981 retention purge stops playback (review R-11)"
+      ],
+      "corpus": [
+        "M09-C012",
+        "M09-C061",
+        "M09-C062",
+        "M09-C063"
+      ],
+      "remaining": "M09-V003 (audible)"
+    },
+    {
+      "id": "M09-AUDIT-08",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "regressions": "3: 3/1/0",
+      "observed_on_base": "the Hub export kept private_text, nested payload and a wrong-type reason_code",
+      "repair": [
+        "2436027 the Hub export uses the shared typed allowlist (localflow/v2/event_view.py)",
+        "272f3d9 model_id accepts hub ids only (redaction_version 2)",
+        "caec491 whole-value shape checks; dot-only model_id segments rejected"
+      ],
+      "corpus": [
+        "M09-C100",
+        "M09-C101",
+        "M09-C102"
+      ],
+      "remaining": "M09-V007",
+      "local_finding": "a locally configured model directory (a home path) passed model_id and was exported (found by the corpus, C102)"
+    },
+    {
+      "id": "M09-AUDIT-09",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "regressions": "1: 1/0/0",
+      "observed_on_base": "History showed the first attempt's artifacts after a retry",
+      "repair": [
+        "682dd2a current attempt from the example manifest (else the highest recorded attempt)"
+      ],
+      "corpus": [
+        "M09-C055",
+        "M09-C056"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-10",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "2: 1/0/0",
+      "observed_on_base": "100 searches started up to 100 threads and superseded searches still ran on the store",
+      "repair": [
+        "4772348 executor with per-key coalescing and full accounting",
+        "6c0e484 bounded pool (<= 4 threads, <= 2 running per key)"
+      ],
+      "corpus": [
+        "M09-C019",
+        "M09-C003"
+      ],
+      "remaining": null,
+      "note": "the second case (a held Training load must not delay History) passes on the base and failed on the single-worker first pass 4772348 — a first-pass regression caught by the corpus (C001/C003)"
+    },
+    {
+      "id": "M09-AUDIT-11",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "3: 3/1/0",
+      "observed_on_base": "a deferred Open Hub was lost when the only wake-up flushed while the service still counted the operation busy, and after a no-op repaste",
+      "repair": [
+        "d3ea5aa pending counted from admission; idle listeners",
+        "4772348 coordinator registers before reading pending",
+        "e681981 the idle listener always posts the flush (review R-01)"
+      ],
+      "corpus": [
+        "M09-C005",
+        "M09-C006",
+        "M09-C034",
+        "M09-C035",
+        "M09-C036"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-12",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "2: 2/1/0",
+      "observed_on_base": "same-day rows ordered by id, not instant; each source limited separately",
+      "repair": [
+        "682dd2a merge by instant with one limit",
+        "f558d1c limit 0 = no limit in every source query (latent on the base)",
+        "e681981 per-source SQL cut by the same instant (review R-08)"
+      ],
+      "corpus": [
+        "M09-C039",
+        "M09-C040",
+        "M09-C043",
+        "M09-C044"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-13",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "2: 2/0/0",
+      "observed_on_base": "grouping used today's fixed offset across a DST boundary; explicit-offset timestamps mishandled",
+      "repair": [
+        "682dd2a IANA default zone; RFC 3339 offsets placed by instant; zone-less values Undated"
+      ],
+      "corpus": [
+        "M09-C041",
+        "M09-C042",
+        "M09-C043"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-14",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "1: 1/0/0",
+      "observed_on_base": "a legacy analytics row had no detail route and its actions ran as if it were a job",
+      "repair": [
+        "682dd2a legacy_db_detail",
+        "4772348 jobless actions refuse with the reason"
+      ],
+      "corpus": [
+        "M09-C051",
+        "M09-C070"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-15",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "1: 1/0/0",
+      "observed_on_base": "a legacy pair's identity changed with the half that matched and the unmatched half was lost",
+      "repair": [
+        "682dd2a pair identity is its root artifact; both halves hydrated"
+      ],
+      "corpus": [
+        "M09-C052",
+        "M09-C053"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-16",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "1: 1/0/0",
+      "observed_on_base": "app and mode filters existed in the service but not in the Hub",
+      "repair": [
+        "4772348 App field and Mode popup"
+      ],
+      "corpus": [
+        "M09-C047"
+      ],
+      "remaining": "M09-V001/V002"
+    },
+    {
+      "id": "M09-AUDIT-17",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "4: 4/3/0",
+      "observed_on_base": "transform artifacts shown without their decision; Copy/Paste used a proposal that was not applied",
+      "repair": [
+        "682dd2a decision and final stage",
+        "4772348 decision labels and final text",
+        "e681981 no source substitute for a missing final text; Teach refuses a transformed final (review R-05/R-06)",
+        "a304d48 the final stage follows the recorded decision (review R-06b)"
+      ],
+      "corpus": [
+        "M09-C054",
+        "M09-C057",
+        "M09-C059"
+      ],
+      "remaining": null,
+      "m14_lead": "learning.teach_correction measures against applied_output and takes no expected artifact identity; a retry that changes the final text after render (source prediction) is M14's to close"
+    },
+    {
+      "id": "M09-AUDIT-18",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "1: 1/0/0",
+      "observed_on_base": "Diagnostics ordered by file name and a global sequence across writer streams",
+      "repair": [
+        "2436027 shared per-stream/UTC ordering (event_view.order_records)"
+      ],
+      "corpus": [
+        "M09-C094",
+        "M09-C095",
+        "M09-C099"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-19",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "4: 4/1/0",
+      "observed_on_base": "a non-object JSON line raised; level could not be reset to all; UTC did not apply to the timeline",
+      "repair": [
+        "2436027 skipped and counted lines",
+        "4772348 All levels, UTC for the timeline",
+        "caec491 timeline header names the loaded filter"
+      ],
+      "corpus": [
+        "M09-C096",
+        "M09-C097",
+        "M09-C098"
+      ],
+      "remaining": "M09-V007"
+    },
+    {
+      "id": "M09-AUDIT-20",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "2: 2/1/0",
+      "observed_on_base": "Export re-read the full logs on the main thread and was not the displayed window",
+      "repair": [
+        "4772348 export of the displayed snapshot off main",
+        "e681981 the window last drawn, not a newer state load (review R-07)"
+      ],
+      "corpus": [
+        "M09-C016"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-21",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "2: 2/0/0",
+      "observed_on_base": "Mine completion navigated to Review; an older export overwrote a newer status",
+      "repair": [
+        "4772348 keyed, tokened long actions that never navigate"
+      ],
+      "corpus": [
+        "M09-C017",
+        "M09-C105",
+        "M09-C106",
+        "M09-C107"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-22",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "regressions": "5: 5/1/0",
+      "observed_on_base": "loading never became true; Retry/Paste refusals invisible; a Models failure showed stale success; an empty store said 'select a row'",
+      "repair": [
+        "4772348 loading/error states, visible refusals",
+        "ed34496 honest empty and filtered-out states (latent on the base)",
+        "caec491 store timeouts read as unknown outcomes"
+      ],
+      "corpus": [
+        "M09-C071",
+        "M09-C111",
+        "M09-C112",
+        "M09-C127"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-23",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "evidence": "benchmark_base_mutant_7cd1111.json: with every History search returning zero rows the base benchmark still qualified (exit 0)",
+      "repair": [
+        "6b55015 validity-checked benchmark; 8 benchmark mutants killed (first pass 6b55015 and final dbeee1c)"
+      ],
+      "corpus": [
+        "M09-C114",
+        "M09-C115",
+        "M09-C116",
+        "M09-C117",
+        "M09-C119",
+        "M09-C120",
+        "M09-C121",
+        "M09-MR14"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-24",
+      "severity": "TEST",
+      "classification": "narrowed",
+      "regressions": "3 (2 defect, 1 control): 1/1/0",
+      "observed_on_base": "annotation rollback at each failpoint held on the base (the control passes: a test gap only); a timeout was reported as a failure while the write could still commit (reproduced)",
+      "repair": [
+        "35b1941 idempotent annotation ids",
+        "4772348 timeout reported as unknown",
+        "caec491 a pre-read timeout is a definite refusal"
+      ],
+      "corpus": [
+        "M09-C013",
+        "M09-C075"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-25",
+      "severity": "TEST",
+      "classification": "test_gap_only",
+      "regressions": "2 controls: 0/0/0",
+      "observed_on_base": "production dispatch was already correct (the refresh and completions run on main); the M14 suite's inline callAfter shim and the historical headless shims were invalid oracles",
+      "repair": [
+        "4772348 MainQueue dispatch in the M09, M13 (delete-usage) and M14 suites; inventory of the remaining coordinator-pipeline shims"
+      ],
+      "corpus": [
+        "M09-C020",
+        "M09-C118",
+        "M09-C122",
+        "M09-C126"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-26",
+      "severity": "TEST",
+      "classification": "manual_native_unresolved",
+      "evidence": "caller_inventory.json (full local inventory at the final production SHA); the review round's own residue closed",
+      "repair": [],
+      "corpus": [
+        "M09-C124",
+        "M09-C127",
+        "M09-C129",
+        "M09-C130",
+        "M09-C133"
+      ],
+      "remaining": "native focus and lifecycle: M09-V002, M09-V004, M09-V005 (the M08 native suites ran natively on the final production and passed: native_suites_final_18ff4f5.json)"
+    },
+    {
+      "id": "M09-AUDIT-27",
+      "severity": "DESIGN",
+      "classification": "design_only",
+      "evidence": "measured (C018/C113, NARROWED): a 1000 ms writer hold blocks the main thread about 1005 ms during a synchronous annotation, while admitted History searches stay off main",
+      "policy": "documented limitation (contracts/hub.md → Limitations); a timeout is an unknown outcome and repeating is idempotent",
+      "repair": [],
+      "corpus": [
+        "M09-C018",
+        "M09-C113"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-AUDIT-28",
+      "severity": "DESIGN",
+      "classification": "design_only",
+      "policy": "queued or executing insertion work defers the Hub (pending from admission); a clipboard payload left pending after a finished transaction does not; every deliberate Paste Again is a fresh operation (no job-id dedup)",
+      "repair": [
+        "d3ea5aa",
+        "4772348"
+      ],
+      "corpus": [
+        "M09-C005",
+        "M09-C006",
+        "M09-C034",
+        "M09-C035"
+      ],
+      "remaining": "M09-V004 — the destination of a Paste Again pressed inside the Hub (source reading: the engine binds the app in front when it runs, which is the Hub itself; not observed live)"
+    },
+    {
+      "id": "M09-AUDIT-29",
+      "severity": "DESIGN",
+      "classification": "design_only",
+      "policy": "a job deleted everywhere leaves History at once; the metadata row waits for metadata pruning as an operational record",
+      "regressions": "1: 1/0/0",
+      "repair": [
+        "682dd2a"
+      ],
+      "corpus": [
+        "M09-C092"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M09-LOCAL-01",
+      "severity": "HIGH",
+      "classification": "reproduced (local finding)",
+      "regressions": "3 (2 defect, 1 control): 2/1/0",
+      "observed_on_base": "Training Delete Everywhere's legacy alert returned 1 for Delete while the code expected 1000: the confirmed delete never ran; the id was read after the modal",
+      "repair": [
+        "4772348 modern alert, identity captured before the modal",
+        "caec491 no confirmation, no delete (review R-13)"
+      ],
+      "corpus": [
+        "M09-C026"
+      ],
+      "remaining": "M09-V006"
+    },
+    {
+      "id": "M09-LOCAL-02",
+      "severity": "MEDIUM",
+      "classification": "first-pass regression (local finding)",
+      "regressions": "1: 0/1/0",
+      "observed": "the full 50k benchmark on the first pass: browse p95 1500.7 ms, legacy mode 1350.9 ms, shell 1633.4 ms against 200/200/1000 ms — per-pair unindexed hydration introduced in 682dd2a",
+      "repair": [
+        "0083466 pairs fetched only for the room under the limit; batched hydration"
+      ],
+      "corpus": [
+        "M09-C046",
+        "M09-C121"
+      ],
+      "remaining": null
+    }
+  ],
+  "leads_not_repaired": [
+    {
+      "owner": "M12",
+      "item": "History Move→Scratchpad calls self._historyToScratchpad (misspelled): AttributeError, nothing reaches the coordinator; present on 7cd1111 (introduced by d2ef224). Verified through the real button with a synthetic store."
+    },
+    {
+      "owner": "M12",
+      "item": "test_note_transform_never_external reads the note before the editor's autosave commit (an intermittent failure, about 1 in 7 runs on both 7cd1111 and the final tree with the same signature). M09-C110 attributes it by barrier: holding only the revision commit reproduces it deterministically; holding only the Hub's publication changes nothing."
+    },
+    {
+      "owner": "M14",
+      "item": "teach_correction measures against applied_output with no expected artifact identity (M09 refuses Teach on transformed final text at its seam)."
+    },
+    {
+      "owner": "M09 design / Daniel",
+      "item": "Paste Again pressed inside the Hub: the destination policy (paste into the previously frontmost app, or copy with a note) — M09-V004 records what happens first."
+    }
+  ],
+  "counts": {
+    "reproduced": 23,
+    "narrowed": 1,
+    "test_gap_only": 1,
+    "manual_native_unresolved": 1,
+    "design_only": 3,
+    "refuted": 0,
+    "already_fixed": 0,
+    "local_findings": 2
+  }
 }

@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M09 section added by the M09 remediation · code <code>caec491</code> (M08 checks unchanged at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M09 section added by the M09 remediation · code <code>a304d48</code> (M08 checks unchanged at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -2949,7 +2949,7 @@ lf08_evidence() { ( cd "$LF_M08" &amp;&amp; "$PY" "$OUT08/m08_evidence.py" ); }<
       <section class="milestone" id="M09" data-milestone="M09" data-title="Hub">
         <div class="ms-head">
           <span class="mid">M09</span><h2>Hub</h2>
-          <span class="meta">instructions M09-r1 · code caec491 · local remediation of the audit at 7cd1111</span>
+          <span class="meta">instructions M09-r1 · code a304d48 · local remediation of the audit at 7cd1111</span>
         </div>
         <p class="ms-intro">The M09 remediation makes every Hub action act on the item you are looking at: a button uses the row or example whose detail is on screen, a half-loaded selection refuses instead of guessing, and text you type into a field belongs to the item you typed it against. Deleting something removes it from every open view, replay included. History orders dictations by when they happened, Training keeps a flagged or expired example flagged, and Diagnostics exports only the typed, content-free fields. The machine checks cover the state, the services and the real coordinator; these seven checks are the parts only you can judge — how it looks, how it feels under the keyboard, what you hear, and where pasted text really lands.</p>
         <p class="ms-intro">Instruction revision M09-r1 replaces the pending <code>native-m09-hub-trial</code> (<code>handoffs/M09.md</code>): its screens-at-two-scales item is M09-V001, keyboard-only navigation M09-V002, replay and retry M09-V003, move/resize/relaunch M09-V005, the review pair, span correction and excluded/deleted records M09-V006, and the Diagnostics filters and export M09-V007. M09-V004 (Paste Again into a real app) is new. Everything runs on synthetic data in a sandbox — never your real History.</p>
@@ -2962,7 +2962,7 @@ export LF_M09="$(dirname "$LF_MAIN")/LocalFlow-m09-verify"
 git -C "$LF_MAIN" fetch origin m09-local-remediation-20260926
 [ -d "$LF_M09" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M09" origin/m09-local-remediation-20260926
 <span class="c">#   (after the merge, use origin/main instead)</span>
-git -C "$LF_M09" merge-base --is-ancestor caec491 HEAD &amp;&amp; echo "M09 repairs present"
+git -C "$LF_M09" merge-base --is-ancestor a304d48 HEAD &amp;&amp; echo "M09 repairs present"
 export OUT09="$EV/m09-verification"; mkdir -p "$OUT09"/lf-m09-trial "$OUT09"/screens &amp;&amp; chmod 700 "$OUT09"
 printf 'First line stays.\nPaste Again lands below this line.\n\nLast line stays.\n' &gt; "$OUT09/lf-m09-trial/draft.txt"
 
@@ -3010,7 +3010,7 @@ lf09_evidence() { SDB09="$SDB09" "$PY" "$OUT09/m09_evidence.py"; }</code></pre><
 
         <h3 class="group">Seeing and reaching every part of the Hub</h3>
 
-        <article class="check" id="M09-V001" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human">
+        <article class="check" id="M09-V001" data-milestone="M09" data-rev="M09-r1" data-code="a304d48" data-tags="native human">
           <header class="check-head">
             <span class="cid">M09-V001</span>
             <h4>Look at every view at normal and larger text, in light and dark; keep screenshots privately</h4>
@@ -3052,7 +3052,7 @@ lf09_evidence() { SDB09="$SDB09" "$PY" "$OUT09/m09_evidence.py"; }</code></pre><
           </details>
         </article>
 
-        <article class="check" id="M09-V002" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human">
+        <article class="check" id="M09-V002" data-milestone="M09" data-rev="M09-r1" data-code="a304d48" data-tags="native human">
           <header class="check-head">
             <span class="cid">M09-V002</span>
             <h4>Use the Hub with the keyboard alone: reach every control, type into every field</h4>
@@ -3094,7 +3094,7 @@ lf09_evidence() { SDB09="$SDB09" "$PY" "$OUT09/m09_evidence.py"; }</code></pre><
 
         <h3 class="group">Acting on a dictation from History</h3>
 
-        <article class="check" id="M09-V003" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human hardware model">
+        <article class="check" id="M09-V003" data-milestone="M09" data-rev="M09-r1" data-code="a304d48" data-tags="native human hardware model">
           <header class="check-head">
             <span class="cid">M09-V003</span>
             <h4>Replay the row you selected and hear it; retry a real recoverable failure once</h4>
@@ -3139,7 +3139,7 @@ lf09_evidence() { SDB09="$SDB09" "$PY" "$OUT09/m09_evidence.py"; }</code></pre><
           </details>
         </article>
 
-        <article class="check" id="M09-V004" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human">
+        <article class="check" id="M09-V004" data-milestone="M09" data-rev="M09-r1" data-code="a304d48" data-tags="native human">
           <header class="check-head">
             <span class="cid">M09-V004</span>
             <h4>Press Paste Again in History and record exactly where the text lands</h4>
@@ -3183,7 +3183,7 @@ lf09_evidence() { SDB09="$SDB09" "$PY" "$OUT09/m09_evidence.py"; }</code></pre><
 
         <h3 class="group">The window through a working day</h3>
 
-        <article class="check" id="M09-V005" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human hardware model">
+        <article class="check" id="M09-V005" data-milestone="M09" data-rev="M09-r1" data-code="a304d48" data-tags="native human hardware model">
           <header class="check-head">
             <span class="cid">M09-V005</span>
             <h4>Move, resize, close and relaunch the Hub, and move it to another display if you have one</h4>
@@ -3227,7 +3227,7 @@ lf09_evidence() { SDB09="$SDB09" "$PY" "$OUT09/m09_evidence.py"; }</code></pre><
 
         <h3 class="group">Reviewing training evidence</h3>
 
-        <article class="check" id="M09-V006" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human hardware">
+        <article class="check" id="M09-V006" data-milestone="M09" data-rev="M09-r1" data-code="a304d48" data-tags="native human hardware">
           <header class="check-head">
             <span class="cid">M09-V006</span>
             <h4>Review seeded examples: listen before a verbatim, on the right example, and see restrictions hold</h4>
@@ -3277,7 +3277,7 @@ lf09_evidence() { SDB09="$SDB09" "$PY" "$OUT09/m09_evidence.py"; }</code></pre><
 
         <h3 class="group">Diagnostics</h3>
 
-        <article class="check" id="M09-V007" data-milestone="M09" data-rev="M09-r1" data-code="caec491" data-tags="native human privacy terminal">
+        <article class="check" id="M09-V007" data-milestone="M09" data-rev="M09-r1" data-code="a304d48" data-tags="native human privacy terminal">
           <header class="check-head">
             <span class="cid">M09-V007</span>
             <h4>Filter the seeded diagnostics log and check the redacted support export privately</h4>

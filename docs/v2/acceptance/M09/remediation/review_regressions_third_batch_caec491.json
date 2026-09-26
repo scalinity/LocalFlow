@@ -1,10 +1,10 @@
 {
   "suite": "tests/v2/ui/test_m09_remediation.py",
-  "suite_sha256": "4c7dfbdec6ea59e6288b08bdd64d6c866ca3cbc140464f0b021a9e4de5a1258c",
-  "code_root_sha": "dbeee1cbcae7b3115d7c80a9599cfd8a50ba5d3a",
-  "tracked_files_modified": true,
-  "production_tree_modified": false,
-  "localflow_imported_from_root": "LocalFlow",
+  "suite_sha256": "d0349a90b8c087ed1017c5d9735a8e2da345c61a17c8a9b67fb5df3116eee36c",
+  "code_root_sha": null,
+  "tracked_files_modified": null,
+  "production_tree_modified": null,
+  "localflow_imported_from_root": "fp-caec491",
   "python": "3.14.7",
   "results": [
     {
@@ -13,7 +13,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.261
+      "seconds": 0.375
     },
     {
       "case": "test_a01_training_mark_during_selection_interval",
@@ -21,7 +21,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.061
+      "seconds": 0.064
     },
     {
       "case": "test_a01_training_editor_buffers_bound_to_rendered_example",
@@ -29,7 +29,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.058
+      "seconds": 0.057
     },
     {
       "case": "test_a01_training_table_click_uses_rendered_row",
@@ -37,7 +37,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.059
+      "seconds": 0.055
     },
     {
       "case": "test_a01_history_teach_buffer_bound_to_rendered_row",
@@ -53,7 +53,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.043
+      "seconds": 0.04
     },
     {
       "case": "test_a01_history_teach_buffer_survives_same_row_reload",
@@ -61,7 +61,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.041
+      "seconds": 0.038
     },
     {
       "case": "test_local01_training_delete_confirm_deletes_confirmed_identity",
@@ -77,7 +77,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.055
+      "seconds": 0.049
     },
     {
       "case": "test_a02_training_delete_clears_detail_and_editor",
@@ -85,7 +85,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.062
+      "seconds": 0.056
     },
     {
       "case": "test_a02_cross_view_history_cache_after_training_delete",
@@ -93,7 +93,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.073
+      "seconds": 0.067
     },
     {
       "case": "test_a02_late_detail_publication_after_delete",
@@ -109,7 +109,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.04
+      "seconds": 0.044
     },
     {
       "case": "test_a03_publication_check_and_mutation_atomic",
@@ -117,7 +117,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.053
+      "seconds": 0.051
     },
     {
       "case": "test_a03_old_error_after_new_success",
@@ -125,7 +125,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.053
+      "seconds": 0.049
     },
     {
       "case": "test_a03_old_success_after_new_error",
@@ -133,7 +133,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.055
+      "seconds": 0.047
     },
     {
       "case": "test_a03_old_detail_error_after_newer_detail",
@@ -141,7 +141,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.053
+      "seconds": 0.048
     },
     {
       "case": "test_a10_hundred_searches_bounded_and_fully_drained",
@@ -149,7 +149,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.04
+      "seconds": 0.037
     },
     {
       "case": "test_a10_held_query_in_one_view_never_blocks_another",
@@ -157,7 +157,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.048
+      "seconds": 0.045
     },
     {
       "case": "test_a03_newest_request_runs_while_stale_one_is_held",
@@ -165,7 +165,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.044
+      "seconds": 0.045
     },
     {
       "case": "test_a22_empty_history_is_an_honest_empty_state",
@@ -181,7 +181,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.04
+      "seconds": 0.036
     },
     {
       "case": "test_a22_retry_and_paste_refusals_are_visible",
@@ -189,7 +189,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.046
+      "seconds": 0.04
     },
     {
       "case": "test_a22_models_failure_is_visible_not_stale_success",
@@ -197,7 +197,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.058
+      "seconds": 0.048
     },
     {
       "case": "test_a25_refresh_and_completions_run_on_main",
@@ -205,7 +205,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.08
+      "seconds": 0.074
     },
     {
       "case": "test_a25_inline_dispatch_negative_control_is_intercepted",
@@ -213,7 +213,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.038
+      "seconds": 0.037
     },
     {
       "case": "test_a04_quarantine_survives_exclude_then_restore_via_hub",
@@ -229,7 +229,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.016
+      "seconds": 0.017
     },
     {
       "case": "test_a04_ordinary_exclusion_stays_reversible",
@@ -253,7 +253,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.057
+      "seconds": 0.051
     },
     {
       "case": "test_a05_intended_mark_refuses_non_reviewable",
@@ -261,7 +261,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.024
+      "seconds": 0.023
     },
     {
       "case": "test_a06_span_after_same_length_stage_replacement",
@@ -269,7 +269,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.05
+      "seconds": 0.051
     },
     {
       "case": "test_a06_unrelated_revision_keeps_same_reviewed_artifact",
@@ -277,7 +277,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.058
+      "seconds": 0.055
     },
     {
       "case": "test_a06_emoji_code_point_offsets",
@@ -285,7 +285,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.055
+      "seconds": 0.052
     },
     {
       "case": "test_a24_annotation_failpoints_roll_back_completely",
@@ -301,7 +301,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.358
+      "seconds": 0.355
     },
     {
       "case": "test_a07_delete_stops_active_replay_and_refuses_again",
@@ -309,7 +309,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.056
+      "seconds": 0.057
     },
     {
       "case": "test_a07_prepared_buffer_cannot_start_after_delete",
@@ -317,7 +317,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.029
+      "seconds": 0.031
     },
     {
       "case": "test_a07_unavailable_replacement_stops_previous",
@@ -333,7 +333,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.052
+      "seconds": 0.053
     },
     {
       "case": "test_a07_listen_gate_is_per_example_through_current_hub",
@@ -341,7 +341,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.061
+      "seconds": 0.057
     },
     {
       "case": "test_a09_history_shows_current_attempt_not_first_row",
@@ -357,7 +357,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.043
+      "seconds": 0.044
     },
     {
       "case": "test_a12_same_day_merge_is_by_instant_with_one_limit",
@@ -365,7 +365,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.014
+      "seconds": 0.016
     },
     {
       "case": "test_local02_pairs_fetched_only_with_room_and_hydrated_in_batch",
@@ -381,7 +381,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.015
+      "seconds": 0.014
     },
     {
       "case": "test_a13_explicit_offset_timestamp_policy",
@@ -405,7 +405,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.016
+      "seconds": 0.015
     },
     {
       "case": "test_a16_history_app_and_mode_controls_reachable",
@@ -413,7 +413,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.063
+      "seconds": 0.06
     },
     {
       "case": "test_a29_deleted_job_leaves_history_immediately",
@@ -421,7 +421,7 @@
       "kind": "design",
       "status": "pass",
       "detail": null,
-      "seconds": 0.017
+      "seconds": 0.016
     },
     {
       "case": "test_a08_hub_export_uses_typed_allowlist",
@@ -437,7 +437,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.033
+      "seconds": 0.03
     },
     {
       "case": "test_a18_ordering_is_stream_aware_and_filename_independent",
@@ -461,7 +461,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.03
+      "seconds": 0.031
     },
     {
       "case": "test_a19_utc_toggle_applies_to_job_timeline",
@@ -469,7 +469,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.031
+      "seconds": 0.033
     },
     {
       "case": "test_a20_export_is_the_displayed_snapshot_and_parses_off_main",
@@ -477,7 +477,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.03
+      "seconds": 0.033
     },
     {
       "case": "test_a21_mine_completion_never_forces_review_tab",
@@ -485,7 +485,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.049
+      "seconds": 0.05
     },
     {
       "case": "test_a21_older_export_cannot_overwrite_newer_status",
@@ -493,7 +493,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.069
+      "seconds": 0.071
     },
     {
       "case": "test_a11_noop_repaste_still_delivers_deferred_open",
@@ -501,7 +501,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.05
+      "seconds": 0.048
     },
     {
       "case": "test_a11_flush_before_busy_decrement_is_not_lost",
@@ -509,7 +509,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.044
+      "seconds": 0.048
     },
     {
       "case": "test_r01_idle_between_pending_read_and_flag_still_shows_hub",
@@ -525,7 +525,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.045
+      "seconds": 0.048
     },
     {
       "case": "test_r02_readmitted_search_never_overrides_newer_search",
@@ -533,7 +533,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.044
+      "seconds": 0.048
     },
     {
       "case": "test_r03_approve_refuses_when_selection_has_no_queue_row",
@@ -541,7 +541,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.05
+      "seconds": 0.053
     },
     {
       "case": "test_r04_export_is_the_rendered_window_not_newer_state",
@@ -549,7 +549,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.035
+      "seconds": 0.034
     },
     {
       "case": "test_r05_span_fields_clear_when_the_stage_under_them_changes",
@@ -557,7 +557,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.051
+      "seconds": 0.063
     },
     {
       "case": "test_r05_span_fields_survive_an_unrelated_revision",
@@ -565,7 +565,7 @@
       "kind": "control",
       "status": "pass",
       "detail": null,
-      "seconds": 0.058
+      "seconds": 0.055
     },
     {
       "case": "test_r06_merged_limit_follows_instants_not_strings",
@@ -573,7 +573,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.03
+      "seconds": 0.029
     },
     {
       "case": "test_r07_retention_pass_keeps_a_hidden_selection_usable",
@@ -581,7 +581,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.044
+      "seconds": 0.045
     },
     {
       "case": "test_r08_teach_refuses_when_the_final_text_is_a_transform",
@@ -589,7 +589,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.041
+      "seconds": 0.038
     },
     {
       "case": "test_r09_final_text_is_never_the_source_transcript",
@@ -597,7 +597,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.042
+      "seconds": 0.041
     },
     {
       "case": "test_r10_hidden_training_detail_is_cleared_on_delete",
@@ -605,7 +605,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.058
+      "seconds": 0.059
     },
     {
       "case": "test_r10_voice_pane_drops_a_profile_invalidated_by_delete",
@@ -613,7 +613,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.058
+      "seconds": 0.055
     },
     {
       "case": "test_r11_retention_purge_stops_active_replay",
@@ -621,7 +621,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.053
+      "seconds": 0.057
     },
     {
       "case": "test_r02_older_admission_never_displaces_a_newer_pending_one",
@@ -629,7 +629,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.036
+      "seconds": 0.038
     },
     {
       "case": "test_r13_delete_is_refused_when_confirmation_cannot_show",
@@ -637,7 +637,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.05
+      "seconds": 0.053
     },
     {
       "case": "test_r13_span_preread_timeout_is_a_refusal_not_unknown",
@@ -645,7 +645,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.055
+      "seconds": 0.054
     },
     {
       "case": "test_r13_timeline_header_names_the_loaded_filter",
@@ -653,7 +653,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.031
+      "seconds": 0.032
     },
     {
       "case": "test_r13_redaction_shapes_are_whole_value_matches",
@@ -669,7 +669,7 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.056
+      "seconds": 0.055
     },
     {
       "case": "test_r15_store_timeout_on_an_action_is_unknown_not_failed",
@@ -677,9 +677,28 @@
       "kind": "defect",
       "status": "pass",
       "detail": null,
-      "seconds": 0.052
+      "seconds": 0.054
+    },
+    {
+      "case": "test_r16_applied_transform_without_its_output_has_no_final_text",
+      "finding": "M09-AUDIT-17",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "cleaned text used as the final text: [(('Cleaned words M09_CANARY_B_not_user_data',), {})] [(('Cleaned words M09_CANARY_B_not_user_data',), {'job_id': 'job-0bbdf6dc42d0488e82427bf70d41a01b'})]",
+      "seconds": 0.037
+    },
+    {
+      "case": "test_r10_hidden_review_queue_is_cleared_on_delete",
+      "finding": "M09-AUDIT-02",
+      "kind": "defect",
+      "status": "fail",
+      "detail": "the hidden review queue kept the deleted job's words",
+      "seconds": 0.056
     }
   ],
   "passed": 84,
-  "total": 84
+  "total": 86,
+  "declared_code_sha": "caec49141d4b756bcba3ff26d614d2854d0b139b",
+  "code_root": "git archive export of the declared SHA (no .git); test files overlaid from the working tree at the suite_sha256 recorded here",
+  "purpose": "review round, third batch fail-first: the two items from the full written report (final stage from the decision; a hidden Review queue after a delete) against the production before them"
 }

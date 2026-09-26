@@ -7,8 +7,8 @@
  "policy_revision": "m09-policy-r1",
  "suite": "tests/v2/ui/m09_corpus_runner.py",
  "suite_sha256": "274d3742eb9f9ed77fa7393ff2ff0b36f91739f9578a87497eb404b0924ba39e",
- "code_root_sha": "33ec09dbe19e557db65f477d1e55b01d1de7ba9b",
- "tracked_files_modified": false,
+ "code_root_sha": "18ff4f5da6b52131e7d3d221739bd500ed11ce09",
+ "tracked_files_modified": true,
  "production_tree_modified": false,
  "localflow_imported_from_root": "LocalFlow",
  "python": "3.14.7",
@@ -40,7 +40,7 @@
    "evidence": {
     "final": "B"
    },
-   "seconds": 0.266,
+   "seconds": 0.246,
    "environment_run": "portable_real_framework"
   },
   "M09-C002": {
@@ -59,7 +59,7 @@
      "test_r14_label_during_selection_interval_attaches_to_nothing"
     ]
    },
-   "seconds": 0.19,
+   "seconds": 0.155,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C003": {
@@ -73,7 +73,7 @@
    "evidence": {
     "policy": "per-key generations"
    },
-   "seconds": 20.077,
+   "seconds": 20.064,
    "environment_run": "portable_real_framework"
   },
   "M09-C004": {
@@ -88,7 +88,7 @@
    "evidence": {
     "controllers": 1
    },
-   "seconds": 0.083,
+   "seconds": 0.052,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C005": {
@@ -101,7 +101,7 @@
    "status": "NARROWED",
    "detail": "deferred show delivered once after the transaction; insertion unchanged (fixture target)",
    "remainder": "real window activation/focus against a native app: M09-V004/M09-V005",
-   "seconds": 0.074,
+   "seconds": 0.031,
    "environment_run": "portable_real_framework+fixture_target"
   },
   "M09-C006": {
@@ -119,7 +119,7 @@
      "test_r01_idle_between_pending_read_and_flag_still_shows_hub"
     ]
    },
-   "seconds": 0.1,
+   "seconds": 0.072,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C007": {
@@ -136,7 +136,7 @@
      "test_a07_listen_gate_is_per_example_through_current_hub"
     ]
    },
-   "seconds": 0.079,
+   "seconds": 0.06,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C008": {
@@ -153,7 +153,7 @@
      "test_a07_failed_playback_grants_no_listening"
     ]
    },
-   "seconds": 0.08,
+   "seconds": 0.054,
    "environment_run": "portable_real_framework"
   },
   "M09-C009": {
@@ -167,7 +167,7 @@
    "evidence": {
     "retries_admitted": 1
    },
-   "seconds": 0.134,
+   "seconds": 0.118,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C010": {
@@ -183,7 +183,7 @@
     "op_ids_distinct": true,
     "insertion_rows": 1
    },
-   "seconds": 0.055,
+   "seconds": 0.048,
    "environment_run": "native_appkit_main_queue+fixture_target"
   },
   "M09-C011": {
@@ -203,7 +203,7 @@
      "test_r02_older_admission_never_displaces_a_newer_pending_one"
     ]
    },
-   "seconds": 0.191,
+   "seconds": 0.167,
    "environment_run": "portable_real_framework"
   },
   "M09-C012": {
@@ -219,7 +219,7 @@
      "test_a07_delete_stops_active_replay_and_refuses_again"
     ]
    },
-   "seconds": 0.063,
+   "seconds": 0.052,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C013": {
@@ -235,7 +235,7 @@
      "test_a24_annotation_failpoints_roll_back_completely"
     ]
    },
-   "seconds": 0.048,
+   "seconds": 0.036,
    "environment_run": "portable_real_framework"
   },
   "M09-C014": {
@@ -253,7 +253,7 @@
      "test_r05_span_fields_survive_an_unrelated_revision"
     ]
    },
-   "seconds": 0.176,
+   "seconds": 0.16,
    "environment_run": "portable_real_framework"
   },
   "M09-C015": {
@@ -265,7 +265,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.021,
+   "seconds": 0.018,
    "environment_run": "portable_real_framework"
   },
   "M09-C016": {
@@ -282,7 +282,7 @@
      "test_r04_export_is_the_rendered_window_not_newer_state"
     ]
    },
-   "seconds": 0.075,
+   "seconds": 0.069,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C017": {
@@ -298,7 +298,7 @@
      "test_a21_mine_completion_never_forces_review_tab"
     ]
    },
-   "seconds": 0.054,
+   "seconds": 0.05,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C018": {
@@ -310,9 +310,9 @@
    ],
    "corpus_environment": "native_helper",
    "status": "NARROWED",
-   "detail": "History query ran off main (threads ['localflow-hub-query-worker']); search admission 0.0 ms on main; a synchronous annotation blocked main 1006.4 ms for a 1000 ms writer hold (documented limitation, M09-AUDIT-27); dictation completed after the stall",
+   "detail": "History query ran off main (threads ['localflow-hub-query-worker']); search admission 0.0 ms on main; a synchronous annotation blocked main 1002.6 ms for a 1000 ms writer hold (documented limitation, M09-AUDIT-27); dictation completed after the stall",
    "remainder": "hotkey acknowledgement against a real stalled app: manual (not constructible headless)",
-   "seconds": 1.157,
+   "seconds": 1.145,
    "environment_run": "portable_real_framework"
   },
   "M09-C019": {
@@ -329,7 +329,7 @@
      "test_a10_hundred_searches_bounded_and_fully_drained"
     ]
    },
-   "seconds": 0.045,
+   "seconds": 0.041,
    "environment_run": "portable_real_framework"
   },
   "M09-C020": {
@@ -345,7 +345,7 @@
      "test_a25_refresh_and_completions_run_on_main"
     ]
    },
-   "seconds": 0.082,
+   "seconds": 0.075,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C021": {
@@ -361,7 +361,7 @@
      "test_a03_old_error_after_new_success"
     ]
    },
-   "seconds": 0.05,
+   "seconds": 0.048,
    "environment_run": "portable_real_framework"
   },
   "M09-C022": {
@@ -377,7 +377,7 @@
      "test_a03_old_success_after_new_error"
     ]
    },
-   "seconds": 0.053,
+   "seconds": 0.049,
    "environment_run": "portable_real_framework"
   },
   "M09-C023": {
@@ -393,7 +393,7 @@
      "test_a03_publication_check_and_mutation_atomic"
     ]
    },
-   "seconds": 0.053,
+   "seconds": 0.05,
    "environment_run": "portable_real_framework"
   },
   "M09-C024": {
@@ -409,7 +409,7 @@
      "test_a01_training_editor_buffers_bound_to_rendered_example"
     ]
    },
-   "seconds": 0.061,
+   "seconds": 0.055,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C025": {
@@ -426,7 +426,7 @@
      "test_a01_training_table_click_uses_rendered_row"
     ]
    },
-   "seconds": 0.067,
+   "seconds": 0.057,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C026": {
@@ -444,7 +444,7 @@
      "test_r13_delete_is_refused_when_confirmation_cannot_show"
     ]
    },
-   "seconds": 0.186,
+   "seconds": 0.168,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C027": {
@@ -457,7 +457,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.043,
+   "seconds": 0.039,
    "environment_run": "portable_real_framework"
   },
   "M09-C028": {
@@ -469,7 +469,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.042,
+   "seconds": 0.039,
    "environment_run": "portable_real_framework"
   },
   "M09-C029": {
@@ -483,7 +483,7 @@
    "evidence": {
     "search_calls": 1
    },
-   "seconds": 0.052,
+   "seconds": 0.049,
    "environment_run": "portable_real_framework"
   },
   "M09-C030": {
@@ -498,7 +498,7 @@
    "evidence": {
     "notifications": 1
    },
-   "seconds": 0.04,
+   "seconds": 0.036,
    "environment_run": "portable_real_framework"
   },
   "M09-C031": {
@@ -513,7 +513,7 @@
    "evidence": {
     "policy": "queued work defers Hub activation"
    },
-   "seconds": 0.047,
+   "seconds": 0.044,
    "environment_run": "portable_real_framework+fixture_target"
   },
   "M09-C032": {
@@ -525,7 +525,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.085,
+   "seconds": 0.09,
    "environment_run": "portable_real_framework+fixture_target"
   },
   "M09-C033": {
@@ -538,7 +538,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.09,
+   "seconds": 0.081,
    "environment_run": "portable_real_framework+fixture_target"
   },
   "M09-C034": {
@@ -555,7 +555,7 @@
      "test_r01_idle_between_pending_read_and_flag_still_shows_hub"
     ]
    },
-   "seconds": 0.075,
+   "seconds": 0.068,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C035": {
@@ -571,7 +571,7 @@
      "test_a11_flush_before_busy_decrement_is_not_lost"
     ]
    },
-   "seconds": 0.042,
+   "seconds": 0.041,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C036": {
@@ -586,7 +586,7 @@
    "evidence": {
     "quit": "applicationWillTerminate_"
    },
-   "seconds": 0.02,
+   "seconds": 0.019,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C037": {
@@ -600,7 +600,7 @@
    "evidence": {
     "controllers": 1
    },
-   "seconds": 0.17,
+   "seconds": 0.159,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C038": {
@@ -626,7 +626,7 @@
      "per_key": 2
     }
    },
-   "seconds": 0.044,
+   "seconds": 0.041,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C039": {
@@ -642,7 +642,7 @@
      "test_a12_same_day_merge_is_by_instant_with_one_limit"
     ]
    },
-   "seconds": 0.017,
+   "seconds": 0.016,
    "environment_run": "portable_real_framework"
   },
   "M09-C040": {
@@ -672,7 +672,7 @@
      "test_a13_default_zone_honors_historical_dst"
     ]
    },
-   "seconds": 0.017,
+   "seconds": 0.015,
    "environment_run": "portable_real_framework"
   },
   "M09-C042": {
@@ -684,7 +684,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.017,
+   "seconds": 0.016,
    "environment_run": "portable_real_framework"
   },
   "M09-C043": {
@@ -701,7 +701,7 @@
      "test_r06_merged_limit_follows_instants_not_strings"
     ]
    },
-   "seconds": 0.045,
+   "seconds": 0.046,
    "environment_run": "portable_real_framework"
   },
   "M09-C044": {
@@ -721,7 +721,7 @@
      0
     ]
    },
-   "seconds": 0.26,
+   "seconds": 0.22,
    "environment_run": "portable_real_framework"
   },
   "M09-C045": {
@@ -733,7 +733,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.049,
+   "seconds": 0.043,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C046": {
@@ -747,9 +747,9 @@
     "hits_returned": 200,
     "max_bound_params": 200,
     "statements": 203,
-    "ms": 139.6
+    "ms": 97.3
    },
-   "seconds": 1.148,
+   "seconds": 0.853,
    "environment_run": "portable_real_framework"
   },
   "M09-C047": {
@@ -765,7 +765,7 @@
      "test_a16_history_app_and_mode_controls_reachable"
     ]
    },
-   "seconds": 0.072,
+   "seconds": 0.063,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C048": {
@@ -775,7 +775,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.022,
+   "seconds": 0.017,
    "environment_run": "portable_real_framework"
   },
   "M09-C049": {
@@ -787,7 +787,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.021,
+   "seconds": 0.016,
    "environment_run": "portable_real_framework"
   },
   "M09-C050": {
@@ -799,7 +799,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.048,
+   "seconds": 0.038,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C051": {
@@ -815,7 +815,7 @@
      "test_a14_legacy_db_row_detail_and_jobless_actions"
     ]
    },
-   "seconds": 0.046,
+   "seconds": 0.039,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C052": {
@@ -831,7 +831,7 @@
      "test_a15_legacy_pair_identity_stable_across_matching_half"
     ]
    },
-   "seconds": 0.02,
+   "seconds": 0.016,
    "environment_run": "portable_real_framework"
   },
   "M09-C053": {
@@ -843,7 +843,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.027,
+   "seconds": 0.016,
    "environment_run": "portable_real_framework"
   },
   "M09-C054": {
@@ -853,7 +853,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.034,
+   "seconds": 0.018,
    "environment_run": "portable_real_framework"
   },
   "M09-C055": {
@@ -867,7 +867,7 @@
    "evidence": {
     "attempt": 2
    },
-   "seconds": 0.137,
+   "seconds": 0.107,
    "environment_run": "portable_service_with_declared_coordinator_fixture"
   },
   "M09-C056": {
@@ -883,7 +883,7 @@
      "test_a09_history_shows_current_attempt_not_first_row"
     ]
    },
-   "seconds": 0.036,
+   "seconds": 0.017,
    "environment_run": "portable_real_framework"
   },
   "M09-C057": {
@@ -901,7 +901,7 @@
      "test_r09_final_text_is_never_the_source_transcript"
     ]
    },
-   "seconds": 0.167,
+   "seconds": 0.125,
    "environment_run": "portable_real_framework"
   },
   "M09-C058": {
@@ -911,7 +911,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.022,
+   "seconds": 0.015,
    "environment_run": "portable_real_framework"
   },
   "M09-C059": {
@@ -924,7 +924,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.031,
+   "seconds": 0.018,
    "environment_run": "portable_real_framework"
   },
   "M09-C060": {
@@ -934,7 +934,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.087,
+   "seconds": 0.032,
    "environment_run": "portable_real_framework"
   },
   "M09-C061": {
@@ -950,7 +950,7 @@
      "test_a07_unavailable_replacement_stops_previous"
     ]
    },
-   "seconds": 0.053,
+   "seconds": 0.029,
    "environment_run": "portable_real_framework"
   },
   "M09-C062": {
@@ -967,7 +967,7 @@
      "test_r11_retention_purge_stops_active_replay"
     ]
    },
-   "seconds": 0.112,
+   "seconds": 0.088,
    "environment_run": "portable_real_framework"
   },
   "M09-C063": {
@@ -978,9 +978,9 @@
    ],
    "corpus_environment": "native_helper",
    "status": "NARROWED",
-   "detail": "100 switches + one 600 s decode; retained after stop 0.02 MB (tracemalloc current), peak 115.2 MB; 600 s decode+start 12 ms on the calling thread; originals unchanged",
+   "detail": "100 switches + one 600 s decode; retained after stop 0.02 MB (tracemalloc current), peak 115.2 MB; 600 s decode+start 11 ms on the calling thread; originals unchanged",
    "remainder": "audible NSSound behavior and main-thread feel with real sound: M09-V003",
-   "seconds": 0.201,
+   "seconds": 0.163,
    "environment_run": "portable_real_framework"
   },
   "M09-C064": {
@@ -992,7 +992,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.078,
+   "seconds": 0.059,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C065": {
@@ -1002,7 +1002,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.022,
+   "seconds": 0.018,
    "environment_run": "portable_real_framework"
   },
   "M09-C066": {
@@ -1022,7 +1022,7 @@
      "valid"
     ]
    },
-   "seconds": 0.068,
+   "seconds": 0.051,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C067": {
@@ -1032,7 +1032,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.055,
+   "seconds": 0.05,
    "environment_run": "portable_real_framework+coordinator"
   },
   "M09-C068": {
@@ -1046,7 +1046,7 @@
    "evidence": {
     "final_state": "queued"
    },
-   "seconds": 0.056,
+   "seconds": 0.036,
    "environment_run": "portable_real_framework+coordinator"
   },
   "M09-C069": {
@@ -1058,7 +1058,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.071,
+   "seconds": 0.05,
    "environment_run": "native_appkit_main_queue+fixture_target"
   },
   "M09-C070": {
@@ -1070,7 +1070,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.061,
+   "seconds": 0.047,
    "environment_run": "native_appkit_main_queue+fixture_target"
   },
   "M09-C071": {
@@ -1083,7 +1083,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.064,
+   "seconds": 0.055,
    "environment_run": "native_appkit_main_queue+fixture_target"
   },
   "M09-C072": {
@@ -1095,7 +1095,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.064,
+   "seconds": 0.05,
    "environment_run": "native_appkit_main_queue+fixture_target"
   },
   "M09-C073": {
@@ -1105,7 +1105,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.027,
+   "seconds": 0.018,
    "environment_run": "portable_real_framework"
   },
   "M09-C074": {
@@ -1117,7 +1117,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.042,
+   "seconds": 0.02,
    "environment_run": "portable_real_framework"
   },
   "M09-C075": {
@@ -1136,7 +1136,7 @@
      "test_r15_store_timeout_on_an_action_is_unknown_not_failed"
     ]
    },
-   "seconds": 0.533,
+   "seconds": 0.469,
    "environment_run": "portable_real_framework"
   },
   "M09-C076": {
@@ -1148,7 +1148,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.022,
+   "seconds": 0.017,
    "environment_run": "portable_real_framework"
   },
   "M09-C077": {
@@ -1162,7 +1162,7 @@
      "test_a06_emoji_code_point_offsets"
     ]
    },
-   "seconds": 0.076,
+   "seconds": 0.057,
    "environment_run": "portable_real_framework"
   },
   "M09-C078": {
@@ -1172,7 +1172,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.021,
+   "seconds": 0.016,
    "environment_run": "portable_real_framework"
   },
   "M09-C079": {
@@ -1188,7 +1188,7 @@
      "test_a06_unrelated_revision_keeps_same_reviewed_artifact"
     ]
    },
-   "seconds": 0.08,
+   "seconds": 0.059,
    "environment_run": "portable_real_framework"
   },
   "M09-C080": {
@@ -1198,7 +1198,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.023,
+   "seconds": 0.017,
    "environment_run": "portable_real_framework"
   },
   "M09-C081": {
@@ -1210,7 +1210,7 @@
    "evidence": {
     "annotation_leases": 2
    },
-   "seconds": 0.025,
+   "seconds": 0.018,
    "environment_run": "portable_real_framework"
   },
   "M09-C082": {
@@ -1225,7 +1225,7 @@
      "test_r07_retention_pass_keeps_a_hidden_selection_usable"
     ]
    },
-   "seconds": 0.142,
+   "seconds": 0.084,
    "environment_run": "portable_real_framework"
   },
   "M09-C083": {
@@ -1241,7 +1241,7 @@
      "test_a04_quarantine_survives_exclude_then_restore_via_hub"
     ]
    },
-   "seconds": 0.091,
+   "seconds": 0.055,
    "environment_run": "portable_real_framework"
   },
   "M09-C084": {
@@ -1257,7 +1257,7 @@
      "test_a04_expired_survives_exclude_then_restore"
     ]
    },
-   "seconds": 0.024,
+   "seconds": 0.016,
    "environment_run": "portable_real_framework"
   },
   "M09-C085": {
@@ -1270,7 +1270,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.075,
+   "seconds": 0.061,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C086": {
@@ -1286,7 +1286,7 @@
      "test_a05_span_save_never_reincludes_excluded"
     ]
    },
-   "seconds": 0.072,
+   "seconds": 0.056,
    "environment_run": "portable_real_framework"
   },
   "M09-C087": {
@@ -1302,7 +1302,7 @@
      "test_a05_verbatim_save_never_reincludes_excluded"
     ]
    },
-   "seconds": 0.074,
+   "seconds": 0.059,
    "environment_run": "portable_real_framework"
   },
   "M09-C088": {
@@ -1316,7 +1316,7 @@
      "test_a05_intended_mark_refuses_non_reviewable"
     ]
    },
-   "seconds": 0.034,
+   "seconds": 0.024,
    "environment_run": "portable_real_framework"
   },
   "M09-C089": {
@@ -1334,7 +1334,7 @@
      "test_r10_voice_pane_drops_a_profile_invalidated_by_delete"
     ]
    },
-   "seconds": 0.213,
+   "seconds": 0.187,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C090": {
@@ -1348,7 +1348,7 @@
    "evidence": {
     "profile_cached_before": false
    },
-   "seconds": 0.119,
+   "seconds": 0.103,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C091": {
@@ -1360,7 +1360,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.053,
+   "seconds": 0.048,
    "environment_run": "portable_real_framework"
   },
   "M09-C092": {
@@ -1376,7 +1376,7 @@
      "test_a29_deleted_job_leaves_history_immediately"
     ]
    },
-   "seconds": 0.02,
+   "seconds": 0.018,
    "environment_run": "portable_real_framework"
   },
   "M09-C093": {
@@ -1388,7 +1388,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.018,
+   "seconds": 0.017,
    "environment_run": "portable_real_framework"
   },
   "M09-C094": {
@@ -1432,7 +1432,7 @@
      "test_a19_non_object_json_lines_are_skipped_safely"
     ]
    },
-   "seconds": 0.038,
+   "seconds": 0.032,
    "environment_run": "portable_real_framework"
   },
   "M09-C097": {
@@ -1448,7 +1448,7 @@
      "test_a19_level_all_resets_filter_via_popup"
     ]
    },
-   "seconds": 0.046,
+   "seconds": 0.039,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C098": {
@@ -1465,7 +1465,7 @@
      "test_r13_timeline_header_names_the_loaded_filter"
     ]
    },
-   "seconds": 0.08,
+   "seconds": 0.069,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C099": {
@@ -1494,7 +1494,7 @@
      "test_r13_redaction_shapes_are_whole_value_matches"
     ]
    },
-   "seconds": 0.041,
+   "seconds": 0.033,
    "environment_run": "portable_real_framework"
   },
   "M09-C101": {
@@ -1519,7 +1519,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.041,
+   "seconds": 0.034,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C103": {
@@ -1533,9 +1533,9 @@
    "evidence": {
     "input_lines": 100000,
     "exported": 500,
-    "export_click_main_ms": 0.2
+    "export_click_main_ms": 0.1
    },
-   "seconds": 1.48,
+   "seconds": 1.37,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C104": {
@@ -1548,7 +1548,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.043,
+   "seconds": 0.036,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C105": {
@@ -1564,7 +1564,7 @@
      "test_a21_mine_completion_never_forces_review_tab"
     ]
    },
-   "seconds": 0.065,
+   "seconds": 0.06,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C106": {
@@ -1580,7 +1580,7 @@
      "test_a21_older_export_cannot_overwrite_newer_status"
     ]
    },
-   "seconds": 0.087,
+   "seconds": 0.077,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C107": {
@@ -1595,7 +1595,7 @@
    "evidence": {
     "schedule": "A held; B computed and published; A fails late"
    },
-   "seconds": 0.062,
+   "seconds": 0.054,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C108": {
@@ -1611,7 +1611,7 @@
      "cand-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     ]
    },
-   "seconds": 0.072,
+   "seconds": 0.058,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C109": {
@@ -1623,7 +1623,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.053,
+   "seconds": 0.046,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C110": {
@@ -1644,12 +1644,12 @@
      "hub_callbacks_left_undrained": null
     },
     "publication_arm": {
-     "right_after_accept": "polish this messy text",
+     "right_after_accept": "TRANSFORMED OUTPUT",
      "after_commit": "TRANSFORMED OUTPUT",
      "hub_callbacks_left_undrained": 0
     }
    },
-   "seconds": 10.195,
+   "seconds": 10.167,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C111": {
@@ -1665,7 +1665,7 @@
      "test_a22_models_failure_is_visible_not_stale_success"
     ]
    },
-   "seconds": 0.061,
+   "seconds": 0.053,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C112": {
@@ -1681,7 +1681,7 @@
      "test_a22_loading_is_a_real_transition"
     ]
    },
-   "seconds": 0.043,
+   "seconds": 0.038,
    "environment_run": "portable_real_framework"
   },
   "M09-C113": {
@@ -1691,9 +1691,9 @@
    ],
    "corpus_environment": "native_helper",
    "status": "NARROWED",
-   "detail": "[{\"hold_ms\": 100.0, \"search_admission_main_ms\": 0.0, \"sync_annotation_main_blocked_ms\": 106.0, \"search_threads\": [\"localflow-hub-query-worker\"]}, {\"hold_ms\": 1000.0, \"search_admission_main_ms\": 0.0, \"sync_annotation_main_blocked_ms\": 1004.1, \"search_threads\": [\"localflow-hub-query-worker\"]}]",
+   "detail": "[{\"hold_ms\": 100.0, \"search_admission_main_ms\": 0.0, \"sync_annotation_main_blocked_ms\": 104.9, \"search_threads\": [\"localflow-hub-query-worker\"]}, {\"hold_ms\": 1000.0, \"search_admission_main_ms\": 0.0, \"sync_annotation_main_blocked_ms\": 1005.6, \"search_threads\": [\"localflow-hub-query-worker\"]}]",
    "remainder": "timeout-scale (15 s) hold not run to keep the suite bounded; the timeout path itself is covered by C075",
-   "seconds": 1.259,
+   "seconds": 1.238,
    "environment_run": "portable_real_framework"
   },
   "M09-C114": {
@@ -1707,9 +1707,9 @@
    "evidence": {
     "mutant": "empty_hit",
     "why": "history_search validity failed",
-    "record": "bench_mutation_final_dbeee1c.json"
+    "record": "bench_mutation.json"
    },
-   "seconds": 0.029,
+   "seconds": 0.027,
    "environment_run": "benchmark_quick_isolated_process"
   },
   "M09-C115": {
@@ -1723,7 +1723,7 @@
    "evidence": {
     "mutant": "skip_view",
     "why": "shell validity failed",
-    "record": "bench_mutation_final_dbeee1c.json"
+    "record": "bench_mutation.json"
    },
    "seconds": 0.02,
    "environment_run": "benchmark_quick_isolated_process"
@@ -1739,9 +1739,9 @@
    "evidence": {
     "mutant": "zero_examples",
     "why": "training validity failed",
-    "record": "bench_mutation_final_dbeee1c.json"
+    "record": "bench_mutation.json"
    },
-   "seconds": 0.021,
+   "seconds": 0.019,
    "environment_run": "benchmark_quick_isolated_process"
   },
   "M09-C117": {
@@ -1755,9 +1755,9 @@
    "evidence": {
     "mutant": "drop_publication",
     "why": "shell validity failed",
-    "record": "bench_mutation_final_dbeee1c.json"
+    "record": "bench_mutation.json"
    },
-   "seconds": 0.02,
+   "seconds": 0.018,
    "environment_run": "benchmark_quick_isolated_process"
   },
   "M09-C118": {
@@ -1774,7 +1774,7 @@
      "test_a25_inline_dispatch_negative_control_is_intercepted"
     ]
    },
-   "seconds": 0.047,
+   "seconds": 0.043,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C119": {
@@ -1787,16 +1787,16 @@
    "detail": null,
    "evidence": {
     "p50_delta_ms": {
-     "text_hit": 52.9,
-     "text_miss": 52.5,
-     "app_filter": 55.9,
-     "mode_filter": 53.7,
-     "browse_mixed": 57.7,
-     "legacy_mode": 52.8
+     "text_hit": 50.7,
+     "text_miss": 51.1,
+     "app_filter": 51.1,
+     "mode_filter": 50.7,
+     "browse_mixed": 50.9,
+     "legacy_mode": 51.2
     },
     "injected_ms": 50.0
    },
-   "seconds": 0.023,
+   "seconds": 0.021,
    "environment_run": "benchmark_quick_isolated_process"
   },
   "M09-C120": {
@@ -1811,9 +1811,9 @@
    "evidence": {
     "mutant": "memory_five_views",
     "why": "memory validity failed",
-    "record": "bench_mutation_final_dbeee1c.json"
+    "record": "bench_mutation.json"
    },
-   "seconds": 0.021,
+   "seconds": 0.02,
    "environment_run": "benchmark_quick_isolated_process"
   },
   "M09-C121": {
@@ -1827,16 +1827,16 @@
    "detail": null,
    "evidence": {
     "search_p95_ms": {
-     "text_hit": 32.62,
-     "text_miss": 30.06,
-     "app_filter": 29.81,
-     "mode_filter": 49.51,
-     "browse_mixed": 57.06,
-     "legacy_mode": 4.61
+     "text_hit": 33.86,
+     "text_miss": 32.73,
+     "app_filter": 33.14,
+     "mode_filter": 50.98,
+     "browse_mixed": 60.74,
+     "legacy_mode": 4.83
     },
-    "shell_full_pass_p95_ms": 327.0
+    "shell_full_pass_p95_ms": 325.26
    },
-   "seconds": 0.021,
+   "seconds": 0.019,
    "environment_run": "reference_mac_isolated"
   },
   "M09-C122": {
@@ -1850,7 +1850,7 @@
    "evidence": {
     "refreshes": 9
    },
-   "seconds": 0.079,
+   "seconds": 0.069,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C123": {
@@ -1869,7 +1869,7 @@
      "scratchpad_quick_open"
     ]
    },
-   "seconds": 0.144,
+   "seconds": 0.135,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C124": {
@@ -1881,7 +1881,7 @@
    "status": "NARROWED",
    "detail": "build-time frame and minimum size clamp to the visible screen (test_window_bounds_and_min_size)",
    "remainder": "restoring a saved frame after a display change/removal needs a real display change: M09-V005",
-   "seconds": 0.033,
+   "seconds": 0.029,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C125": {
@@ -1894,7 +1894,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.024,
+   "seconds": 0.021,
    "environment_run": "portable_real_framework"
   },
   "M09-C126": {
@@ -1923,7 +1923,7 @@
    "evidence": {
     "views": 10
    },
-   "seconds": 0.14,
+   "seconds": 0.125,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C128": {
@@ -1935,7 +1935,7 @@
    "status": "PASS",
    "detail": null,
    "evidence": {},
-   "seconds": 0.051,
+   "seconds": 0.042,
    "environment_run": "native_appkit_main_queue"
   },
   "M09-C129": {
@@ -2026,7 +2026,7 @@
     "a_raises_after_b": true,
     "a_after_b_error": true
    },
-   "seconds": 0.203
+   "seconds": 0.172
   },
   "M09-MR02": {
    "name": "Selection binding",
@@ -2043,13 +2043,13 @@
    "evidence": {
     "detail_held": [],
     "detail_done": [
-     "job-4c8a4110f9b542509b4731a26a22e99a"
+     "job-eb683fc608bf4dc6b6b8a84829da2319"
     ],
     "reselect_same": [
-     "job-749267746e004b0983086556080616e4"
+     "job-70a5bbf781444248ae680d26f436a81f"
     ]
    },
-   "seconds": 0.139
+   "seconds": 0.12
   },
   "M09-MR03": {
    "name": "Delete monotonicity",
@@ -2086,7 +2086,7 @@
      0
     ]
    },
-   "seconds": 0.361
+   "seconds": 0.301
   },
   "M09-MR04": {
    "name": "Listening isolation",
@@ -2105,7 +2105,7 @@
      "verbatim_reference"
     ]
    },
-   "seconds": 0.214
+   "seconds": 0.18
   },
   "M09-MR05": {
    "name": "Retry idempotence",
@@ -2130,7 +2130,7 @@
      1
     ]
    },
-   "seconds": 0.377
+   "seconds": 0.357
   },
   "M09-MR06": {
    "name": "Repaste intent identity",
@@ -2147,18 +2147,18 @@
      "ops": 1,
      "distinct": 1,
      "attribution": [
-      "job-911b69f6f51f4c1e9c8cb88ac1bb26b1"
+      "job-23922aa03b6b4771923b45cdce7bda0f"
      ]
     },
     "2": {
      "ops": 2,
      "distinct": 2,
      "attribution": [
-      "job-ae7a021bda5c4467b4c2f0b3cfb333e9"
+      "job-54d9c40110aa4b91ab418fa5463c3a7c"
      ]
     }
    },
-   "seconds": 0.114
+   "seconds": 0.102
   },
   "M09-MR07": {
    "name": "Retention cannot manufacture lineage",
@@ -2177,7 +2177,7 @@
     "cleaned": "absent, no borrowing",
     "transformed": "absent, no borrowing"
    },
-   "seconds": 0.07
+   "seconds": 0.061
   },
   "M09-MR08": {
    "name": "Main-thread invariant",
@@ -2203,7 +2203,7 @@
      "off_main": 1
     }
    },
-   "seconds": 0.135
+   "seconds": 0.128
   },
   "M09-MR09": {
    "name": "Pin/review-lease separation",
@@ -2236,7 +2236,7 @@
      "pinned": false
     }
    },
-   "seconds": 0.099
+   "seconds": 0.085
   },
   "M09-MR10": {
    "name": "Legacy search identity",
@@ -2249,19 +2249,19 @@
    "detail": null,
    "evidence": {
     "M09_RQ": [
-     "art-3d43753366ca48079c20c773015c5015"
+     "art-8a2c6f038d134cd4835905ee32c29a8a"
     ],
     "M09_CQ": [
-     "art-3d43753366ca48079c20c773015c5015"
+     "art-8a2c6f038d134cd4835905ee32c29a8a"
     ],
     "shared": [
-     "art-3d43753366ca48079c20c773015c5015"
+     "art-8a2c6f038d134cd4835905ee32c29a8a"
     ],
     "None": [
-     "art-3d43753366ca48079c20c773015c5015"
+     "art-8a2c6f038d134cd4835905ee32c29a8a"
     ]
    },
-   "seconds": 0.017
+   "seconds": 0.015
   },
   "M09-MR11": {
    "name": "Filename-independent diagnostics",
@@ -2313,7 +2313,7 @@
     "excluded:exclude_on": "annotated",
     "excluded:mark": "excluded"
    },
-   "seconds": 0.048
+   "seconds": 0.039
   },
   "M09-MR14": {
    "name": "Benchmark work sensitivity",
