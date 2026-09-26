@@ -33,9 +33,10 @@ killed and nothing blocks waiting for them.
 Cache. A single-slot, short-lived (``CACHE_TTL_S``) origin cache keyed by
 the validated identity of what was read — target pid/bundle, the field
 element, its window element and document locator — never by a title.
-Only a successfully read origin is cached; reuse is disabled when any
-identity signal is unavailable, and a reused value is marked ``cached``
-in its provider row. Everything the collector emits is content-free
+Only an origin read from the element's URL is cached (a title-derived
+one is re-derived every capture); reuse is disabled when any identity
+signal is unavailable, and a reused value is marked ``cached`` in its
+provider row. Everything the collector emits is content-free
 (counts, reasons, durations); snapshot text lives only in the snapshot
 object handed to the job and its lease-governed artifact.
 """
@@ -331,12 +332,12 @@ class ContextCollector:
         far — UNPUBLISHED: never the pre-decode snapshot, never evidence,
         never cached, no event. The app uses it only to precompute
         scope-dependent immutable projections while recording. None once
-        the handle is revoked."""
+        the handle is revoked or finalized (released)."""
         if coll is None:
             return None
         with coll.lock:
-            if coll.revoked:
-                return None
+            if coll.revoked or coll.finalized:
+                return None     # released: nothing left to precompute for
             return self._compose(coll, dict(coll.data), "preview",
                                  deadline_cut=False, t0=time.monotonic())
 
@@ -496,6 +497,9 @@ class ContextCollector:
         cur = self.frontmost()
         if cur is None:
             return False        # cannot tell; reads stay pid-bound
+        if target.app_bundle and cur.get("bundle") \
+                and cur["bundle"] != target.app_bundle:
+            return True         # another app, whatever the pid says
         if target.app_pid is not None and cur.get("pid") is not None:
             return cur["pid"] != target.app_pid
         if cur.get("bundle") is not None and target.app_bundle:
@@ -516,8 +520,10 @@ class ContextCollector:
         """Cache a SUCCESSFULLY READ origin under the validated identity
         it was read from (never a cached or absent one)."""
         if key is None or origin is None or origin.reason is not None \
-                or origin.value is None or getattr(origin, "cached", False):
-            return
+                or origin.value is None or getattr(origin, "cached", False) \
+                or origin.provenance != "ax_url":
+            return          # a title-derived origin can change with no
+            #                 identity change: it is re-derived, never reused
         with self._cache_lock:
             if key[0] != self._cache_pid:
                 return

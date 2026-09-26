@@ -13,9 +13,9 @@ replacement authority is still valid. The settled matrix
   target_changed.
 - window: the M06 window element (in-memory, compared by host
   identity) when both sides expose it — another window of the same app
-  is target_changed even under an equal title; otherwise the window
-  title when the snapshot recorded one and it is readable, mismatch ⇒
-  target_changed (a different document is not the same destination
+  is target_changed even under an equal title; the window title check
+  also applies when the snapshot recorded one and it is readable
+  (tabs share one window element), mismatch ⇒ target_changed (a different document is not the same destination
   even in the same app); unreadable ⇒ ``unavailable``, identity alone
   governs (plain-dictation contract).
 - field classification/role: mismatch ⇒ target_changed. A snapshot
@@ -101,20 +101,20 @@ def validate_target(host: InsertionHost,
         return None, verification
 
     el = host.focused_element()
-    # The M06 window identity (an in-memory host element; equal titles
-    # are not unique): when both sides expose it, it decides — a
-    # different window of the same app is a changed target; a moved
-    # caret or another field of the SAME window is not.
+    # The M06 window identity (an in-memory host element) ADDS to the
+    # title check: a different window element is a changed target even
+    # under an equal title; the same element still fails on a different
+    # readable title (tabs share one window). A moved caret or another
+    # field of the same window and title is not a change.
     recorded_win = getattr(snapshot, "window_element", None) \
         if isinstance(snapshot, ContextSnapshot) else None
     live_win = host.attribute(el, "AXWindow") \
         if recorded_win is not None and el is not None else None
-    if live_win is not None:
-        verification["window"] = (VERIFICATION_PASS
-                                  if live_win == recorded_win
-                                  else VERIFICATION_FAIL)
+    if live_win is not None and live_win != recorded_win:
+        verification["window"] = VERIFICATION_FAIL
     elif window_title is None:
-        verification["window"] = VERIFICATION_NOT_RECORDED
+        verification["window"] = (VERIFICATION_PASS if live_win is not None
+                                  else VERIFICATION_NOT_RECORDED)
     elif el is None:
         verification["window"] = VERIFICATION_UNAVAILABLE
     else:

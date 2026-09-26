@@ -231,17 +231,16 @@ class SystemAXHost:
         return el
 
     def window_of(self, el):
-        """The window that contains ``el`` (AXWindow); else the owning
-        application's focused window. ``el`` is already ownership-
-        verified by the caller, so its application is the target."""
+        """The window that contains ``el`` (its AXWindow), or None. The
+        application's focused window is NOT a substitute: nothing proves
+        it contains this field. The element gets the same messaging
+        timeout as the field."""
         win, err = self.read(el, "AXWindow")
-        if err == AX_OK and win is not None:
-            return win
-        pid = self.element_pid(el)
-        if pid is None:
+        if err != AX_OK or win is None:
             return None
-        win, err = self.read(self._app(pid), "AXFocusedWindow")
-        return win if err == AX_OK else None
+        import ApplicationServices as AS
+        AS.AXUIElementSetMessagingTimeout(win, self.messaging_timeout)
+        return win
 
     def window_token(self, win):
         return win
@@ -316,6 +315,13 @@ def _str(value, limit) -> Optional[str]:
     return value if len(value) <= limit else None
 
 
+def _failure(err) -> str:
+    """The omission for a failed classification read: API disabled is
+    missing permission; anything else a failed classification."""
+    return OMISSION_PERMISSION if err == AX_ERR_API_DISABLED \
+        else OMISSION_CLASSIFICATION_FAILED
+
+
 def classify_element(host, el) -> tuple[str, Optional[str],
                                         Optional[str], Optional[str]]:
     """(classification, role, subrole, failure reason) from AXRole and
@@ -324,14 +330,12 @@ def classify_element(host, el) -> tuple[str, Optional[str],
     role, rerr = host.read(el, "AXRole")
     role = role if isinstance(role, str) else None
     if rerr != AX_OK and rerr not in _ABSENT:
-        return FIELD_UNCLASSIFIABLE, None, None, \
-            OMISSION_CLASSIFICATION_FAILED
+        return FIELD_UNCLASSIFIABLE, None, None, _failure(rerr)
     subrole, serr = host.read(el, "AXSubrole")
     subrole = subrole if isinstance(subrole, str) else None
     cls = classify_field(role, subrole)
     if cls == FIELD_TEXT and serr != AX_OK and serr not in _ABSENT:
-        return FIELD_UNCLASSIFIABLE, role, None, \
-            OMISSION_CLASSIFICATION_FAILED
+        return FIELD_UNCLASSIFIABLE, role, None, _failure(serr)
     return cls, role, subrole, None
 
 
@@ -395,6 +399,11 @@ def read_field(host, denied: bool, el=None) -> ProviderResult:
             else:
                 notes.append({"field": "selected_text",
                               "reason": OMISSION_SELECTION_UNAVAILABLE})
+        if length and selected_text is None:
+            # An unkept selection carries no range at all: without its
+            # text there is no replacement authority (M08 then treats
+            # the field like a caret).
+            utf16_range = None
         p_start = max(0, loc - NEARBY_CHARS)
         preceding = _flank(host, el, p_start, loc - p_start)
         if total is not None and loc + length < total:
@@ -448,7 +457,10 @@ def read_site_origin(host, category: str, window_title: Optional[str],
     if not host.is_trusted():
         return ProviderResult(name, reason=OMISSION_PERMISSION,
                               duration_ms=_ms(t0))
-    url = host.read(el, "AXURL")[0] if el is not None else None
+    url, err = host.read(el, "AXURL") if el is not None else (None, AX_OK)
+    if err == AX_ERR_API_DISABLED:
+        return ProviderResult(name, reason=OMISSION_PERMISSION,
+                              duration_ms=_ms(t0))
     origin = _url_origin(url if isinstance(url, str) else None)
     if origin is not None:
         return ProviderResult(name, value=origin, provenance="ax_url",

@@ -495,7 +495,8 @@ class EvidenceCollector:
             return
         block = snapshot.to_envelope_block()
         if scope_disposition is not None:
-            # widened | unchanged | widening_failed (captured scope kept)
+            # widened | unchanged | no_policy | widening_failed or
+            # widening_deferred (the captured scope and profile kept)
             block["scope_disposition"] = scope_disposition
         if downstream:
             ctx.context_downstream = block
