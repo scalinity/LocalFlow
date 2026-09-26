@@ -2584,17 +2584,28 @@ def _bench_module():
     return mod
 
 
-def _head():
+_BENCH_CODE = ("localflow", "scripts/v2/benchmark_m09.py",
+               "scripts/v2/m09_benchmark_mutation_check.py")
+
+
+def _record_matches(env):
+    """A benchmark record counts for the tree under test when it was
+    made from a clean production tree whose code — production and the
+    benchmark scripts — is identical to HEAD's (a later docs/evidence
+    commit does not invalidate it; any code change does)."""
     import subprocess
-    return subprocess.run(["git", "-C", str(HERE.parents[3]), "rev-parse",
-                           "HEAD"], capture_output=True,
-                          text=True).stdout.strip()
+    sha = (env or {}).get("code_sha")
+    if not sha or not (env or {}).get("production_tree_clean"):
+        return False, f"record not from a clean tree: {sha}"
+    p = subprocess.run(["git", "-C", str(HERE.parents[3]), "diff",
+                        "--quiet", sha, "HEAD", "--", *_BENCH_CODE])
+    return p.returncode == 0, (f"code differs between the record ({sha})"
+                               " and HEAD" if p.returncode else None)
 
 
 def _bench_record(env_var, default_name):
-    """A benchmark record, accepted only if it was produced by the tree
-    under test (its control/run environment names HEAD with a clean
-    production tree)."""
+    """The benchmark record named by ``env_var``; callers accept it only
+    through ``_record_matches``."""
     import os
     path = os.environ.get(env_var)
     if not path:
@@ -2610,10 +2621,8 @@ def _mutant_case(name):
                                  "m09_benchmark_mutation_check")
         if doc is None:
             raise RuntimeError(why)
-        env = (doc.get("control_environment") or {})
-        assert env.get("code_sha") == _head() and \
-            env.get("production_tree_clean"), \
-            f"mutation record is for {env.get('code_sha')}, not HEAD"
+        ok, why = _record_matches(doc.get("control_environment"))
+        assert ok, why
         r = doc["results"][name]
         assert r["outcome"] == "killed", r
         return {"mutant": name, "why": r["why"],
@@ -2639,7 +2648,8 @@ def c119_timer_covers_real_work():
     if doc is None:
         raise RuntimeError(why)
     env = doc.get("control_environment") or {}
-    assert env.get("code_sha") == _head(), "record not for HEAD"
+    ok, why = _record_matches(env)
+    assert ok, why
     assert doc["results"]["enqueue_timer"]["outcome"] == "killed"
     t = doc["results"]["timer_sensitivity"]
     assert t["sensitive"], t
@@ -2653,7 +2663,8 @@ def c121_reference_mac_qualification():
     if doc is None:
         raise RuntimeError(why)
     env = doc["environment"]
-    assert env["code_sha"] == _head() and env["production_tree_clean"], env
+    ok, why = _record_matches(env)
+    assert ok, why
     assert not doc["quick"] and doc["mutant"] is None
     assert doc["work_valid"], doc["validity"]
     assert doc["timing_qualified"], "a budget was exceeded"
@@ -2669,7 +2680,8 @@ def mr14_benchmark_work_sensitivity():
     if doc is None:
         raise RuntimeError(why)
     env = doc.get("control_environment") or {}
-    assert env.get("code_sha") == _head(), "record not for HEAD"
+    ok, why = _record_matches(env)
+    assert ok, why
     assert doc["results"]["control"]["work_valid"]
     outcomes = {k: v["outcome"] for k, v in doc["results"].items()
                 if k not in ("control", "timer_sensitivity")}
