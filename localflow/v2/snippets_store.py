@@ -45,6 +45,8 @@ _IDENTITY = _EDITABLE
 
 DUPLICATE_TRIGGER = ("another snippet already uses this trigger (the"
                      " engine would keep both literal)")
+DUPLICATE_TRIGGER_DISABLED = ("a disabled snippet already uses this"
+                              " trigger (rename or delete it first)")
 
 
 def _row_to_snippet(row) -> snip_mod.Snippet:
@@ -71,11 +73,21 @@ def _admit_changes(changes: dict) -> dict:
     return dict(changes)
 
 
-def _trigger_holder(db, trigger: str) -> Optional[str]:
-    row = db.execute(
-        "SELECT snippet_id FROM snippets WHERE trigger=? COLLATE NOCASE",
-        (trigger,)).fetchone()
-    return row[0] if row else None
+def _trigger_holder(db, trigger: str) -> Optional[tuple]:
+    """(snippet_id, enabled) of the row already holding ``trigger``,
+    folded exactly as the snapshot folds it (``str.lower``: Unicode case,
+    not SQLite's ASCII-only NOCASE), else None."""
+    fold = trigger.lower()
+    for sid, trig, enabled in db.execute(
+            "SELECT snippet_id, trigger, enabled FROM snippets"):
+        if trig.lower() == fold:
+            return sid, bool(enabled)
+    return None
+
+
+def _duplicate(holder) -> ValueError:
+    return ValueError(DUPLICATE_TRIGGER if holder[1]
+                      else DUPLICATE_TRIGGER_DISABLED)
 
 
 class SnippetStore:
@@ -155,8 +167,9 @@ class SnippetStore:
                 same = all(getattr(cur, f) == getattr(snippet, f)
                            for f in _IDENTITY)
                 return "already_applied" if same else "id_in_use"
-            if _trigger_holder(db, snippet.trigger) is not None:
-                return "duplicate_trigger"
+            holder = _trigger_holder(db, snippet.trigger)
+            if holder is not None:
+                return ("duplicate_trigger", holder)
             db.execute(
                 f"INSERT INTO snippets({', '.join(_SNIPPET_COLS)})"
                 f" VALUES({', '.join('?' * len(_SNIPPET_COLS))})",
@@ -167,8 +180,8 @@ class SnippetStore:
             self._bump(db.cursor())
             return "created"
         outcome = self._run(op, "add", snippet.snippet_id)
-        if outcome == "duplicate_trigger":
-            raise ValueError(DUPLICATE_TRIGGER)
+        if isinstance(outcome, tuple):
+            raise _duplicate(outcome[1])
         if outcome == "id_in_use":
             raise ValueError("id_in_use")
         return snippet.snippet_id
@@ -202,8 +215,8 @@ class SnippetStore:
             except ValueError as e:
                 return ("invalid", e)
             holder = _trigger_holder(db, updated.trigger)
-            if holder is not None and holder != snippet_id:
-                return ("invalid", ValueError(DUPLICATE_TRIGGER))
+            if holder is not None and holder[0] != snippet_id:
+                return ("invalid", _duplicate(holder))
             cols = [c for c in _EDITABLE if c in changes]
             vals = [int(getattr(updated, c))
                     if c in ("allow_rewrite", "enabled")

@@ -1005,9 +1005,12 @@ class AppDelegate(NSObject):
         the job-owned override still applies (requested Raw stays Raw),
         with zero rules, no snippets and no manifest skills, and the
         failure is recorded for the evidence."""
-        wp = v2_profiles.resolve(override, [], v2_profiles.Destination())
+        transforms = v2_transforms.UnavailableTransforms()
+        wp = v2_profiles.resolve(override, [], v2_profiles.Destination(),
+                                 transforms=transforms)
         return {"override": override, "file_resolver": None, "rules": [],
-                "transforms": None, "wp": wp, "snippet_snapshot": None,
+                "transforms": transforms, "wp": wp,
+                "snippet_snapshot": None,
                 "skill_records": [], "global_skill_records": [],
                 "skill_records_rev": v2_skills.records_revision([]),
                 "skill_sources": None, "norm_profile": None,
@@ -1042,12 +1045,12 @@ class AppDelegate(NSObject):
         try:
             m10["transforms"] = self._transforms_snapshot()
         except Exception as e:
-            # Transform-backed modes then fall back to Clean with their
-            # honest reason; Raw and Clean are unaffected.
+            # Transform-backed modes then fall back to Clean saying the
+            # registry was unavailable; Raw and Clean are unaffected.
             self.v2log.emit("transforms.snapshot_failed", level="WARNING",
                             reason_code=type(e).__name__,
                             outcome="transforms_off_for_job")
-            m10["transforms"] = None
+            m10["transforms"] = v2_transforms.UnavailableTransforms()
         try:
             m10["wp"] = v2_profiles.resolve(m10["override"], rules, dest,
                                             transforms=m10["transforms"])
@@ -1301,14 +1304,30 @@ class AppDelegate(NSObject):
             # The file-tag resolver: the open document plus the bounded
             # name-only listing of its directory (config-gated) — names
             # only, from the job's own finalized locator.
-            known = ()
+            # A listing cut short keeps saying so: its resolver never
+            # treats the listed part as the complete candidate set.
+            known, complete, listing_reason = (), True, None
             if self._dev_listing and doc_dir is not None:
-                known = v2_file_tags.list_workspace_files(doc_dir)
+                listing = v2_file_tags.list_workspace_files_bounded(doc_dir)
+                known = listing.names
+                complete = not listing.truncated
+                listing_reason = listing.reason
+                job["file_listing"] = {
+                    "complete": complete, "reason": listing_reason,
+                    "names": len(known), "visited": listing.visited}
+                if not complete:
+                    self.v2log.emit(
+                        "developer.listing_partial", level="INFO",
+                        job_id=job.get("job_id"),
+                        reason_code=listing_reason,
+                        detail=f"names={len(known)}"
+                               f":visited={listing.visited}")
             doc = self._m10_document_path(
                 snap.field.document_url if snap.field is not None
                 else None)
             m10["file_resolver"] = v2_file_tags.FileTagResolver(
-                known, document_name=doc.name if doc is not None else None)
+                known, document_name=doc.name if doc is not None else None,
+                complete=complete, listing_reason=listing_reason)
         # Attach the frozen registries to the job's engine context
         # (layer-3 snippet intent + file-tag resolution) — the JOB's own
         # context only, never the app's cached one (another job's scope;
@@ -2070,7 +2089,8 @@ class AppDelegate(NSObject):
             reason = (wp.fallback_reason or "").split(":", 1)
             why = {"transform_auto_apply_disabled":
                    "auto-apply off", "transform_not_bound":
-                   "no bound transform"}.get(
+                   "no bound transform", "transform_registry_unavailable":
+                   "transforms unavailable"}.get(
                 reason[0] if reason else "", "not applied")
             mode += f" (asked {wp.mode}, {why})"
         profile = wp.profile_name or "default"
@@ -3111,11 +3131,15 @@ class AppDelegate(NSObject):
             self._finishCapture()
             return
         hands_free = False
+        gesture_override = None
         if self._tap_pending is not None:
             # Second tap inside the double-tap window: the short first tap
             # is discarded and continuous capture begins (when enabled).
+            # The one-job mode that first tap took belongs to the
+            # gesture's capture, not to the discarded tap.
             pending, self._tap_pending = self._tap_pending, None
             pending["timer"].invalidate()
+            gesture_override = pending["job"].get("m10_override")
             self._discard_short(pending["job"])
             if self.cfg.get("hands_free") == "double_tap":
                 hands_free = True
@@ -3265,7 +3289,13 @@ class AppDelegate(NSObject):
         # The one-job override belongs to THIS admitted capture from here
         # on (M10-AUDIT-13): taken into job-owned state before any
         # fallible optional work, so a later fault cannot lose it.
-        override = self._take_next_job_mode(job_id)
+        if gesture_override is not None:
+            override = gesture_override
+            self.v2log.emit("profiles.override_taken", level="INFO",
+                            job_id=job_id, outcome=override,
+                            reason_code="double_tap_gesture")
+        else:
+            override = self._take_next_job_mode(job_id)
         self._job["m10_override"] = override
         try:
             m10 = self._m10_freeze(v2_profiles.Destination(
@@ -3976,7 +4006,10 @@ class AppDelegate(NSObject):
                             "count": file_refs, "method": plan["method"],
                             "attachment_created":
                                 plan["attachment_created"],
-                            "reason": plan.get("reason")}
+                            "reason": plan.get("reason"),
+                            "listing_complete": (job.get("file_listing")
+                                                 or {}).get("complete",
+                                                            True)}
                         self.v2log.emit(
                             "developer.file_reference", level="INFO",
                             job_id=job_id, outcome=plan["method"],

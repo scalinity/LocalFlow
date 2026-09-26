@@ -47,7 +47,7 @@ _NAME_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
 
 # Spoken slot separator: continuation words after the trigger fill
 # declared placeholders in order, split on this word ("sign off comma
-# Danny comma LocalFlow"). The separator only exists inside the
+# Ada comma LocalFlow"). The separator only exists inside the
 # consumed span — the layer-3 snippet claim protects it from the
 # symbol grammar, so "comma" never becomes a stray "," there.
 SLOT_SEPARATOR = "comma"
@@ -181,8 +181,8 @@ def split_slots(continuation_words, count: int) -> list[str]:
     """Split the post-trigger continuation into ``count`` slot values on
     the spoken separator; surplus values join the last slot, missing
     slots stay absent (the caller applies defaults). A LEADING
-    separator is the trigger/value delimiter ("sign off comma Danny" →
-    one slot, "Danny"), not an empty first slot."""
+    separator is the trigger/value delimiter ("sign off comma Ada" →
+    one slot, "Ada"), not an empty first slot."""
     if count <= 0:
         return []
     words = [w for w in continuation_words]
@@ -281,6 +281,10 @@ def preview_collisions(candidate: Snippet, snippets, *, policy,
 
     - ``duplicate_trigger`` — another ENABLED snippet shares the trigger
       (both are masked at runtime).
+    - ``trigger_in_use`` — another snippet holds the trigger while one
+      of the two is disabled: nothing is masked at runtime, but the
+      store refuses the save (one snippet per trigger, whatever its
+      state).
     - ``ambiguous_with_skill`` / ``ambiguous_same_span`` — the engine
       rejects the snippet on the same span (the words stay literal).
     - ``blocked`` — the trigger does not expand for another recorded
@@ -297,14 +301,23 @@ def preview_collisions(candidate: Snippet, snippets, *, policy,
     others = [s for s in snippets if s.snippet_id not in drop]
     trig = candidate.trigger.lower()
     out = []
-    if candidate.enabled:
-        for other in others:
-            if other.enabled and other.trigger.lower() == trig:
-                out.append({
-                    "trigger": trig, "other_id": other.snippet_id,
-                    "kind": "duplicate_trigger",
-                    "detail": "two enabled snippets share the trigger;"
-                              " both stay literal until one is renamed"})
+    for other in others:
+        if other.trigger.lower() != trig:
+            continue
+        if candidate.enabled and other.enabled:
+            out.append({
+                "trigger": trig, "other_id": other.snippet_id,
+                "kind": "duplicate_trigger",
+                "detail": "two enabled snippets share the trigger;"
+                          " both stay literal until one is renamed"})
+        else:
+            out.append({
+                "trigger": trig, "other_id": other.snippet_id,
+                "kind": "trigger_in_use",
+                "detail": ("a disabled snippet" if not other.enabled
+                           else "another snippet")
+                + " already holds this trigger; saving is refused"
+                  " until one of them is renamed or deleted"})
     ctx = ContextSnapshot(snippets=SnippetSnapshot(others + [candidate]),
                           vocabulary=vocabulary)
     bare = normalize(candidate.trigger, policy, ctx)

@@ -280,6 +280,8 @@ def _configured_path(spec) -> str:
         raise ManifestRefused("path_not_a_string")
     if not isinstance(path, str) or not path:
         raise ManifestRefused("path_not_a_string")
+    if "\x00" in path:
+        raise ManifestRefused("path_invalid")
     path = os.path.expanduser(path)
     if not os.path.isabs(path):
         raise ManifestRefused("path_not_absolute")
@@ -345,6 +347,15 @@ def _read_skill_dir(fd: int, source_path: str, scope: str, fp: list):
                 continue
             except OSError:
                 refused += 1   # a SKILL.md link, or unreadable
+                # An unreadable regular file still keys the fingerprint
+                # as the pre-pass sees it (its metadata, not its bytes).
+                try:
+                    lst = os.stat("SKILL.md", dir_fd=cfd,
+                                  follow_symlinks=False)
+                    if stat_mod.S_ISREG(lst.st_mode):
+                        fp.append(("file", name, _stat_key(lst)))
+                except OSError:
+                    pass
                 continue
             try:
                 st = os.fstat(mfd)
@@ -388,6 +399,8 @@ def _read_json_fd(fd: int, st, source_path: str, scope: str, fp: list):
 def _open_workspace_dir(wd: WorkspaceDir) -> int:
     """Open ``wd.relative`` under ``wd.base`` one component at a time
     without following any link below the base."""
+    if "\x00" in str(wd.base) or "\x00" in str(wd.relative):
+        raise ManifestRefused("path_invalid")
     rel = pathlib.PurePosixPath(wd.relative)
     if rel.is_absolute() or not rel.parts or any(
             p in ("..", "") for p in rel.parts):
@@ -434,11 +447,21 @@ def _discover_source(kind: str, index: int, spec, scope: str):
     except ManifestRefused as e:
         outcome.update(outcome="invalid" if e.code.startswith(
             ("manifest_", "frontmatter_")) else "refused", reason=e.code)
-        return [], outcome, (index, "refused", e.code, tuple(fp))
+        # The fingerprint names what was READ, not what it parsed to: a
+        # source read and then refused keys exactly as the warm pre-pass
+        # sees it, so an unchanged bad manifest is not re-read per job.
+        if fp:
+            return [], outcome, (index, "read", tuple(fp))
+        return [], outcome, (index, "refused", e.code, ())
     except OSError as e:
         outcome.update(outcome="refused",
                        reason=f"os_error:{type(e).__name__}")
         return [], outcome, (index, "oserror", type(e).__name__)
+    except ValueError:
+        # Anything else this source cannot be opened with (one bad
+        # path never aborts the other sources).
+        outcome.update(outcome="refused", reason="path_invalid")
+        return [], outcome, (index, "refused", "path_invalid", ())
     finally:
         if fd is not None:
             os.close(fd)
@@ -528,6 +551,8 @@ def fingerprint(manifest_paths=(), workspace_dirs=()) -> tuple:
             return (index, "refused", e.code, tuple(fp))
         except OSError as e:
             return (index, "oserror", type(e).__name__)
+        except ValueError:
+            return (index, "refused", "path_invalid", ())
         finally:
             if fd is not None:
                 os.close(fd)

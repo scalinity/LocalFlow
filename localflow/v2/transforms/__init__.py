@@ -9,6 +9,7 @@ Persistence lives in ``localflow.v2.transforms_store`` (schema v7).
 
 from . import atoms, definitions, diffview, engine, prompts
 from .definitions import (TransformDefinition, TransformSnapshot,
+                          UnavailableTransforms,
                           built_ins, definitions_revision,
                           from_legacy_json, shortcut_conflicts)
 from .engine import (PATH_APPLIED, PATH_FALLBACK_ORIGINAL,
@@ -18,7 +19,8 @@ from .engine import (PATH_APPLIED, PATH_FALLBACK_ORIGINAL,
 
 __all__ = [
     "atoms", "definitions", "diffview", "engine", "prompts",
-    "TransformDefinition", "TransformSnapshot", "built_ins",
+    "TransformDefinition", "TransformSnapshot", "UnavailableTransforms",
+    "built_ins",
     "definitions_revision", "from_legacy_json", "shortcut_conflicts",
     "PATH_APPLIED", "PATH_FALLBACK_ORIGINAL", "PATH_NEEDS_REVIEW",
     "TransformJob", "TransformResult", "changed_source",

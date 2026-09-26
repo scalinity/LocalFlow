@@ -808,13 +808,26 @@ class EvidenceCollector:
         # only, the filename stays in the governed ledger.
         file_refs = sum(1 for e in result.edits if e.cls == "file_tag")
         file_block = None
+        # Whether the names behind the resolution were the complete
+        # candidate set (a partial listing resolves no bare name).
+        resolver = getattr(context, "file_resolver", None)
+        listing = None if resolver is None else {
+            "complete": getattr(resolver, "complete", True),
+            "reason": getattr(resolver, "listing_reason", None)}
         if file_refs:
             from .developer import file_tags as _ft, surfaces as _sf
             plan = _ft.attachment_plan(None,
                                        _sf.certified_file_chip_surfaces())
             file_block = {"count": file_refs, "method": plan["method"],
                           "attachment_created": plan["attachment_created"],
-                          "reason": plan.get("reason")}
+                          "reason": plan.get("reason"),
+                          "listing": listing}
+        elif listing is not None and not listing["complete"] and any(
+                r.cls == "file_tag" for r in result.rejected):
+            file_block = {"count": 0, "method": None,
+                          "attachment_created": False,
+                          "reason": "listing_incomplete",
+                          "listing": listing}
         # Envelope values: typed numbers/dates only. String-valued
         # command classes (emails, paths, skill tokens, codes…) carry
         # transcript-derived text in their value; those strings live in

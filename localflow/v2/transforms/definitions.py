@@ -248,3 +248,24 @@ class TransformSnapshot:
                 label = "declared_profile"
             return d, f"transform_profile_not_targeted:{label}"
         return d, None
+
+
+class UnavailableTransforms:
+    """The job's registry when its snapshot could not be frozen: every
+    transform-backed mode falls back to Clean with that reason — never
+    reported as the definition's own auto-apply setting."""
+
+    revision = None
+    definitions = ()
+
+    def by_id(self, transform_id):
+        return None
+
+    def for_mode(self, mode):
+        return None
+
+    def auto_apply_decision(self, mode: str, profile_name=None,
+                            category=None):
+        if mode in ("raw", "clean"):
+            return None, None
+        return None, f"transform_registry_unavailable:{mode}"

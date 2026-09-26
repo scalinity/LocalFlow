@@ -19,6 +19,7 @@ chip appeared.
 from __future__ import annotations
 
 import dataclasses
+import errno
 import os
 import pathlib
 from typing import Optional
@@ -52,7 +53,8 @@ _SPOKEN_SLASH = {"slash"}
 class FileResolution:
     """Outcome of resolving one spoken file reference."""
 
-    status: str                    # resolved | ambiguous | unresolved
+    status: str                    # resolved | ambiguous | incomplete
+                                   # | unresolved
     filename: Optional[str] = None
     candidates: tuple[str, ...] = ()
     matched_words: int = 0         # how many trailing spoken words the
@@ -131,7 +133,12 @@ def list_workspace_files_bounded(root, *, depth: int = LISTING_DEPTH,
             try:
                 cfd = os.open(name, os.O_RDONLY | _O_DIRECTORY
                               | _O_NOFOLLOW | _O_CLOEXEC, dir_fd=fd)
-            except OSError:
+            except OSError as e:
+                if e.errno not in (errno.ENOENT, errno.ELOOP,
+                                   errno.ENOTDIR):
+                    # A directory that exists but cannot be read: its
+                    # names are missing, so the listing is partial.
+                    stop("unreadable_directory")
                 continue   # vanished, or replaced by a link: not walked
             try:
                 walk(cfd, child_rel, level + 1)
@@ -186,11 +193,20 @@ class FileTagResolver:
     matched by several files is ambiguous unless the full relative path
     was spoken; nothing is ever invented. Lookup structures are
     precomputed once (lowered full-path set + basename map) so a
-    prefix walk costs O(k) set hits, not O(k·m) path constructions."""
+    prefix walk costs O(k) set hits, not O(k·m) path constructions.
 
-    def __init__(self, known_files=(), *, document_name: Optional[str] = None):
+    ``complete`` is False when the listing behind ``known_files`` was
+    cut short (``listing_reason``): an unlisted file may share any name,
+    so only a spoken full relative path — unique by construction — can
+    resolve; a name matched otherwise is ``incomplete``."""
+
+    def __init__(self, known_files=(), *, document_name: Optional[str] = None,
+                 complete: bool = True,
+                 listing_reason: Optional[str] = None):
         self.known_files = tuple(known_files)
         self.document_name = document_name
+        self.complete = complete
+        self.listing_reason = listing_reason
         self._by_full = {f.lower(): f for f in self.known_files}
         self._by_base: dict[str, tuple[str, ...]] = {}
         for f in self.known_files:
@@ -233,14 +249,24 @@ class FileTagResolver:
                            and "/" not in f for f in found):
                     found.add(doc)
             matches = tuple(sorted(found))
+            if not matches:
+                continue
+            if not self.complete and not (
+                    "/" in spoken and len(matches) == 1
+                    and matches[0].lower() == low):
+                return FileResolution(
+                    "incomplete", candidates=matches, matched_words=k,
+                    reason="listing_incomplete")
             if len(matches) == 1:
                 return FileResolution("resolved", filename=matches[0],
                                       matched_words=k)
-            if len(matches) > 1:
-                return FileResolution(
-                    "ambiguous", candidates=matches, matched_words=k,
-                    reason="duplicate_basename")
-        return FileResolution("unresolved", reason="no_exact_match")
+            return FileResolution(
+                "ambiguous", candidates=matches, matched_words=k,
+                reason="duplicate_basename")
+        return FileResolution(
+            "unresolved",
+            reason="no_exact_match" if self.complete
+            else "listing_incomplete")
 
 
 def attachment_plan(surface_id: Optional[str],

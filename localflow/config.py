@@ -304,7 +304,7 @@ def developer_policy(cfg) -> tuple[DeveloperPolicy, list]:
     if paths is None:
         paths = []
     if not isinstance(paths, list) or not all(
-            isinstance(p, str) and p.strip()
+            isinstance(p, str) and p.strip() and "\x00" not in p
             and os.path.isabs(os.path.expanduser(p.strip()))
             for p in paths):
         problems.append(("skill_manifest_paths",
@@ -315,7 +315,7 @@ def developer_policy(cfg) -> tuple[DeveloperPolicy, list]:
         dirs = []
 
     def relative_ok(d):
-        if not isinstance(d, str) or not d.strip():
+        if not isinstance(d, str) or not d.strip() or "\x00" in d:
             return False
         d = d.strip()
         parts = pathlib.PurePosixPath(d).parts

@@ -731,6 +731,13 @@ class HubController(NSObject):
             if form() == editor["baseline"]:
                 fill(row)
                 return None
+            if self._row_form(f"{view}s", row) == form():
+                # The row already holds exactly what is typed (the
+                # user's own save committed after an unknown outcome):
+                # nothing foreign to warn about — rebind to it.
+                editor["revision"] = row.get("revision")
+                editor["baseline"] = form()
+                return None
             return "changed_elsewhere"
         return None
 
@@ -1275,30 +1282,43 @@ class HubController(NSObject):
         self._m10_update("styles")
 
     @objc.python_method
-    def _m10_outcome(self, view, verb, e):
-        """One honest status line per failure class: an admitted write
-        whose caller stopped waiting is UNKNOWN (it may still commit —
-        repeating the same action is safe), a vanished row is gone, and
-        everything else was refused before or by the writer (nothing
-        committed)."""
+    def _m10_outcome(self, view, action, e):
+        """One honest status line per failure class, naming the button
+        that was pressed (``action``: add | update | delete | toggle): an
+        admitted write whose caller stopped waiting is UNKNOWN (it may
+        still commit), a vanished row is gone, and everything else was
+        refused before or by the writer (nothing committed). Repeating
+        Add or Update with the same fields is safe; repeating a toggle
+        is not (it would flip the stored state back), so an unknown
+        toggle points at the reloaded row instead."""
         from .. import profiles_store as ps
         status = self.styles_status if view == "styles" \
             else self.snippets_status
+        button, done = {"add": ("Add", "saved"),
+                        "update": ("Update", "updated"),
+                        "delete": ("Delete", "deleted"),
+                        "toggle": ("Enable/Disable", "changed")}[action]
         if isinstance(e, ps.OutcomeUnknownError):
-            status.setStringValue_(
-                f"outcome unknown: the {verb} was queued and may still"
-                f" complete — press {verb.capitalize()} again with the"
-                " same fields to confirm (no duplicate is created)")
+            if action == "toggle":
+                status.setStringValue_(
+                    "outcome unknown: the change was queued and may still"
+                    " complete — check the reloaded row before pressing"
+                    " Enable/Disable again")
+            else:
+                status.setStringValue_(
+                    f"outcome unknown: the {action} was queued and may"
+                    f" still complete — press {button} again with the"
+                    " same fields to confirm (no duplicate is created)")
         elif isinstance(e, ps.NotFoundError):
             status.setStringValue_(
-                f"not {verb}d: the selected item no longer exists")
+                f"not {done}: the selected item no longer exists")
         elif isinstance(e, ps.StaleRevisionError):
             status.setStringValue_(
-                f"not {verb}d: it changed elsewhere — reloaded")
+                f"not {done}: it changed elsewhere — reloaded")
         elif isinstance(e, (ValueError, KeyError)):
-            status.setStringValue_(f"not saved: {e}")
+            status.setStringValue_(f"not {done}: {e}")
         else:
-            status.setStringValue_(f"not saved: {type(e).__name__}")
+            status.setStringValue_(f"not {done}: {type(e).__name__}")
 
     @objc.python_method
     def _m10_add(self, view):
@@ -1336,7 +1356,7 @@ class HubController(NSObject):
             from .. import profiles_store as ps
             if not isinstance(e, ps.OutcomeUnknownError):
                 self._pending_adds.pop(view, None)
-            self._m10_outcome(view, "save", e)
+            self._m10_outcome(view, "add", e)
             return
         self._pending_adds.pop(view, None)
         status.setStringValue_(
@@ -1378,7 +1398,7 @@ class HubController(NSObject):
             if isinstance(e, ps.NotFoundError):
                 (self._clear_style_editor if view == "styles"
                  else self._clear_snippet_editor)()
-            self._m10_outcome(view, "save", e)
+            self._m10_outcome(view, "update", e)
             getattr(self.state, f"reload_{view}")()
             return
         binding = {"id": editor["id"], "revision": updated.revision,
@@ -1433,7 +1453,7 @@ class HubController(NSObject):
             svc.set_enabled(editor["id"], not row.get("enabled", True),
                             expected_revision=row.get("revision"))
         except Exception as e:
-            self._m10_outcome(view, "save", e)
+            self._m10_outcome(view, "toggle", e)
             getattr(self.state, f"reload_{view}")()
             return
         getattr(self.state, f"reload_{view}")()

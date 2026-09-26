@@ -263,17 +263,21 @@ def grammar_snippets(host):
     their cores only, so edge punctuation — a sentence's period — stays
     outside the expansion. The slot continuation is the run of word
     tokens after the trigger up to the first HARD delimiter (a line
-    break, a sentence end, a quote or parenthesis edge); a written
-    comma is soft: between the trigger and its first value it is the
-    trigger/value delimiter (the written form of the leading spoken
-    comma), and inside a value it stays part of the value verbatim.
-    Only the spoken word "comma" separates slots."""
+    break, a sentence end, a quote or parenthesis edge) — written, or
+    SPOKEN as a command the structure/symbol grammars would convert
+    ("new line", "period", "open quote"; their own guards decide, so
+    "the period ends" stays words); a written comma is soft: between
+    the trigger and its first value it is the trigger/value delimiter
+    (the written form of the leading spoken comma), and inside a value
+    it stays part of the value verbatim. Only the spoken word "comma"
+    separates slots."""
     snapshot = getattr(host.context, "snippets", None) \
         if host.context else None
     if snapshot is None:
         return
     by_first = snapshot.by_first_word()
     tokens = host.tokens
+    hard_spoken = None
     for i, tok in enumerate(tokens):
         candidates = by_first.get(tok.word)
         if not candidates or not tok.is_word:
@@ -299,8 +303,11 @@ def grammar_snippets(host):
             # first hard delimiter. Values keep their spoken casing and
             # exact source text (cores; interior written commas kept).
             j = i + n
+            if hard_spoken is None:
+                hard_spoken = _hard_spoken_starts(host)
             while j < len(tokens) and tokens[j].is_word \
-                    and not host.hard_break_before(j):
+                    and not host.hard_break_before(j) \
+                    and j not in hard_spoken:
                 j += 1
             if j - (i + n) > _SNIPPET_SLOT_WORD_CAP:
                 break
@@ -315,6 +322,46 @@ def grammar_snippets(host):
                 value=snippet.snippet_id, unit="snippet",
                 join=JOIN_WORD, rule_id=snippet.snippet_id)
             break
+
+
+# The spoken forms of the written HARD delimiters: every structure
+# command (each opens a new line) and the sentence, clause, quote and
+# bracket symbols. "comma" is the slot separator and inline symbols
+# ("hyphen", "at sign") stay slot words, as their written forms do.
+_HARD_SYMBOL_CHARS = frozenset('.?!:;()[]{}"')
+
+
+def _hard_spoken_starts(host) -> frozenset:
+    """Token indices where a spoken hard-delimiter command begins —
+    exactly where grammar_symbols/grammar_markdown would propose one
+    (same profile switches, phrase tables and noun guards)."""
+    tables = []
+    if host.profile.get("punctuation_commands"):
+        for words, spec in _phrase_tables(host, host.profile.get("symbols")):
+            out = spec.get("out", "")
+            if out and out != "," and set(out) <= _HARD_SYMBOL_CHARS:
+                tables.append((words, spec, "symbol"))
+    if host.profile.get("markdown_commands"):
+        for words, spec in _phrase_tables(
+                host, host.profile.get("markdown_commands")):
+            tables.append((words, spec, "markdown"))
+    tokens = host.tokens
+    starts = set()
+    for words, spec, kind in tables:
+        n = len(words)
+        for i in range(len(tokens) - n + 1):
+            seq = tokens[i:i + n]
+            if [t.word for t in seq] != words \
+                    or not all(t.is_word for t in seq) \
+                    or not host.connected(i, i + n):
+                continue
+            if kind == "symbol" and _guard_blocks(
+                    host, i, words, join=spec.get("join", JOIN_WORD)):
+                continue
+            if kind == "markdown" and _markdown_guard_blocks(host, i, words):
+                continue
+            starts.add(i)
+    return frozenset(starts)
 
 
 def _split_slot_tokens(toks, count: int):
