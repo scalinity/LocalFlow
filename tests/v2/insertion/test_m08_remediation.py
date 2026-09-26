@@ -542,6 +542,27 @@ def test_a07_next_job_never_changes_a_pending_payload():
     env.close()
 
 
+@case("M08-AUDIT-07/author-A1")
+def test_a07_pending_payload_kept_with_restore_disabled():
+    """restore_clipboard=false changes whether LocalFlow puts the user's
+    clipboard back — not whether a paste still waiting for a slow
+    consumer may be replaced by the next job's payload."""
+    env = Env(text_f1="", settle=0.1, restore_clipboard=False)
+    w = env.w
+    w.fields["F1"].settable = False
+    env.pb.user_copy("CANARY_OLD_CLIPBOARD")
+    env.kb.mode = "gate"
+    env.run("ONE ", job("job-one", snap(w)))
+    env.run("TWO ", job("job-two", snap(w)))
+    env.kb.release()
+    wait_for(lambda: sum(1 for e in w.effects
+                         if e[1] == "paste_consumed") >= env.kb.posts, 3)
+    time.sleep(0.2)
+    txt = w.text("F1")
+    env.close()
+    assert txt.count("TWO") <= 1 and "ONE" in txt, txt
+
+
 # ---- M08-AUDIT-08: undo is bound to the original field --------------------
 
 @case("M08-AUDIT-08")
