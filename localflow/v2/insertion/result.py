@@ -62,9 +62,10 @@ class InsertionResult:
     owned_start: Optional[int] = None      # host units (UTF-16 on macOS);
                                            # None when not read
     owned_end: Optional[int] = None
-    inserted_chars: int = 0
+    inserted_chars: int = 0                # code points
     readback: Optional[str] = None         # match | match_ambiguous |
-                                           # partial | mismatch | changed |
+                                           # partial | normalized |
+                                           # mismatch | changed |
                                            # unavailable
     clipboard: dict = dataclasses.field(default_factory=dict)
     target_snapshot_id: Optional[str] = None

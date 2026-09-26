@@ -117,16 +117,18 @@ class SystemInsertionHost:
     def focused_window_title(self, el) -> Optional[str]:
         """The focused window's title. On the real AX API the window
         lives on the APPLICATION element, not the focused field: the
-        system host resolves it there (the fixture answers on the
-        field element — both paths land here)."""
+        system host resolves it on the element's OWNER application —
+        never on whichever application is frontmost by then, whose
+        title may be one that must not be read (the fixture answers on
+        the field element — both paths land here)."""
         import ApplicationServices as AS
         win = self.attribute(el, "AXFocusedWindow")
         if win is None:
-            fm = self.frontmost()
-            if fm is None or fm.get("pid") is None:
+            pid = self.element_pid(el)
+            if pid is None:
                 return None
             try:
-                app_el = AS.AXUIElementCreateApplication(fm["pid"])
+                app_el = AS.AXUIElementCreateApplication(pid)
                 AS.AXUIElementSetMessagingTimeout(
                     app_el, self.messaging_timeout)
                 err, val = AS.AXUIElementCopyAttributeValue(

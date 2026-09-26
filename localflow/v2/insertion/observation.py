@@ -355,8 +355,9 @@ class OutcomeObserver:
 
     def _reanchor(self, el, total: int, span: int, deadline: float) -> str:
         """``unique`` (re-anchored), ``none`` (not in the neighbourhood),
-        ``ambiguous`` (more than one candidate, or an equal text was
-        already there), ``unavailable`` (the read failed) or
+        ``ambiguous`` (more than one candidate, an equal text was
+        already there, or the one candidate lacks both recorded
+        neighbours), ``unavailable`` (the read failed) or
         ``deadline``."""
         if span <= 0:
             return "none"
@@ -374,12 +375,38 @@ class OutcomeObserver:
             return "ambiguous"
         if not found:
             return "none"
+        if not self._anchored(window, lo, hi, total, found[0], span):
+            # Unique, but neither recorded neighbour sits beside it: an
+            # equal text written since (a same-length edit leaves the
+            # field length, and so the duplicate check, unchanged) — not
+            # provably ours.
+            return "ambiguous"
         # Our text, intact at its new offset: its provenance comes from
         # this same read (the field as it is now).
         self.start, self.end = found[0], found[0] + span
         self._provenance_from(window, lo)
         self._base_total = total
         return "unique"
+
+    def _anchored(self, window, lo, hi, total, start, span) -> bool:
+        """Whether the candidate at ``start`` carries our provenance: the
+        unchanged text recorded on at least one side still sits right
+        beside it. A side recorded shorter than ``BOUNDARY_ANCHOR`` was
+        the field's edge and must still be that edge."""
+        if self._anchors is None:
+            return False
+        before, after = self._anchors
+        preceding = window[:self._cp(window, start - lo)]
+        following = window[self._cp(window, start + span - lo):]
+        if len(before) >= BOUNDARY_ANCHOR:
+            before_ok = preceding.endswith(before)
+        else:
+            before_ok = lo == 0 and preceding == before
+        if len(after) >= BOUNDARY_ANCHOR:
+            after_ok = following.startswith(after)
+        else:
+            after_ok = hi == total and following == after
+        return before_ok or after_ok
 
     def _bounded_after(self, el, total: int):
         """The owned region after a changed-length edit, or None when
