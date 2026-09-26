@@ -632,6 +632,24 @@ def test_R8_applied_rule_manifest_holds_only_applied_rules():
           " rules, never the dictionary")
 
 
+def test_R8_a_job_counts_one_hit_per_applied_entry():
+    # Usage is per job and entry: two occurrences of one approved alias
+    # in a dictation are one hit (mutation witness: hits_per_occurrence).
+    r = __import__("m05_helpers").AppRun("ask clod and clod and klod")
+    try:
+        v = r.d._vocab
+        a = v.add_entry("Claude", ["clod", "klod"], approved=True)
+        b = v.add_entry("Other", ["other"], approved=True)
+        out = r.job("app.X")
+        usage = (v.entry(a).usage_count, v.entry(b).usage_count)
+    finally:
+        r.close()
+    assert out["text"] == "ask Claude and Claude and Claude", out["text"]
+    assert usage == (1, 0), usage
+    print("ok  R8 one dictation records one hit per applied entry, not per"
+          " occurrence")
+
+
 def test_R9_selection_identity_fast_path_equals_generic():
     # The selector hashes cached per-entry omission fragments; the id
     # must equal the generic (checked-constructor) encoding exactly,
