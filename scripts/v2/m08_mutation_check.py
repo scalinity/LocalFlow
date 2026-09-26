@@ -102,11 +102,11 @@ MUTANTS = [
     {"id": "LF-M08-MUT-08", "name": "Confirm from LocalFlow clipboard",
      "file": SVC, "edits": [(
          "            cls = self._classify(el, pre, text)\n"
-         "            if cls == \"match\" or time.monotonic() >= deadline:",
+         "            if cls in (\"match\", \"normalized\") \\\n",
          "            cls = (\"match\" if self.pasteboard.string_for_type(\n"
          "                \"public.utf8-plain-text\") == text\n"
          "                else self._classify(el, pre, text))\n"
-         "            if cls == \"match\" or time.monotonic() >= deadline:")],
+         "            if cls in (\"match\", \"normalized\") \\\n")],
      "killers": ["LF-M08-F11-C01"]},
     {"id": "LF-M08-MUT-09", "name": "Always restore", "file": CLIP,
      "edits": [(
@@ -133,8 +133,7 @@ MUTANTS = [
      "killers": ["LF-M08-F13-C01"]},
     {"id": "LF-M08-MUT-12", "name": "Bypass terminal guard without context",
      "file": SVC, "edits": [(
-         "            category = categorize(live_bundle) if live_bundle"
-         " else \"unknown\"",
+         "            category = categorize(bundle) if bundle else \"unknown\"",
          "            category = \"unknown\"")],
      "killers": ["LF-M08-F16-C02"]},
     {"id": "LF-M08-MUT-13", "name": "Do not rearm wake signal", "file": OBS,
