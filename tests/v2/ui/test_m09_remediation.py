@@ -696,7 +696,9 @@ def test_a10_hundred_searches_bounded_and_fully_drained():
                 for i in range(3)]
         lat = latch_history(w)
         open_view(w.hub, w.mq, "history")
-        gate = lat.hold("search", when=lambda **kw: kw.get("text") == "q0",
+        # Every search but the last is held: at most the two a slot started
+        # can reach the store before row2, whatever the scheduling.
+        gate = lat.hold("search", when=lambda **kw: kw.get("text") != "row2",
                         after=False)
         before = {t.ident for t in threading.enumerate()}
         w.hub.state.set_history_search("q0")
@@ -719,10 +721,9 @@ def test_a10_hundred_searches_bounded_and_fully_drained():
         assert peak <= 2, f"{peak} query threads admitted for 101 searches"
         assert len(searches) <= 3, \
             f"{len(searches)} superseded searches still ran on the store"
-        leftover = [t.name for t in threading.enumerate()
-                    if t.ident not in before and t.is_alive()
-                    and t.name == "localflow-hub-query"]
-        assert not leftover, leftover
+        stats = w.hub.state.query_stats()
+        assert stats["started"] + stats["superseded_before_start"] == \
+            stats["admitted"] and w.hub.state.queries_idle(), stats
 
 
 # ---- M09-AUDIT-22: truthful loading / refusal / failure ---------------------
@@ -2656,6 +2657,202 @@ def test_r11_retention_purge_stops_active_replay():
         w.drain()
         assert not _playing(w.sounds), "purged audio still playing"
         assert w.hub.replay._sound is None
+
+
+@case("M09-AUDIT-03")
+def test_r02_older_admission_never_displaces_a_newer_pending_one():
+    """Review R-02 (second route): two searches hold the key's running
+    slots, so the user's newest search B waits pending. A reload
+    admitted on another thread (as a retention pass does) took its
+    generation before B but reaches the executor after it; B must still
+    run and render, never be displaced by the older request."""
+    with World() as w:
+        seed_job(w.store, "held one", captured=iso(T0))
+        jb, _, _ = seed_job(w.store, "two " + CANARY_B, captured=iso(T0 + 9))
+        lat = latch_history(w)
+        open_view(w.hub, w.mq, "history")
+        state = w.hub.state
+        held = [lat.hold("search", when=lambda t=t, **kw: kw.get("text") == t,
+                         after=False) for t in ("m09held1", "m09held2")]
+        for t, g in zip(("m09held1", "m09held2"), held):
+            state.set_history_search(t)
+            assert g.arrived.wait(5)
+        real_submit = state._executor.submit
+        gap = {"arrived": threading.Event(), "release": threading.Event()}
+
+        def submit(req, before_run):
+            if threading.current_thread().name == "m09-second-admitter" \
+                    and not state._lock._is_owned():
+                gap["arrived"].set()
+                gap["release"].wait(10)
+            return real_submit(req, before_run)
+        state._executor.submit = submit
+        t = threading.Thread(target=state.reload_history,
+                             name="m09-second-admitter", daemon=True)
+        t.start()
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and t.is_alive() and \
+                not gap["arrived"].is_set():
+            time.sleep(0.005)
+        state.set_history_search(CANARY_B)       # newest; pending
+        gap["release"].set()
+        t.join(5)
+        for g in held:
+            g.release.set()
+        w.drain()
+        view = state.views["history"]
+        ids = [r["id"] for r in history_rows(w.hub)]
+        assert ids == [jb] and view.get("loading") is False, \
+            f"newest search displaced: rows {ids}, loading" \
+            f" {view.get('loading')}"
+
+
+@case("M09-LOCAL-01")
+def test_r13_delete_is_refused_when_confirmation_cannot_show():
+    """Review R-13: if the confirmation alert cannot be created, Delete
+    Everywhere must not proceed unconfirmed."""
+    class _NoAlert:
+        @staticmethod
+        def alloc():
+            raise RuntimeError("synthetic: no alert available")
+    with World() as w:
+        a = seed_example(w.store, CANARY_A)
+        open_training(w)
+        select_training(w, a["example_id"])
+        undo = patch_appkit("NSAlert", _NoAlert)
+        try:
+            w.hub.trainingDelete_(None)
+        finally:
+            undo()
+        w.drain()
+        state = w.store.submit(lambda c: c.execute(
+            "SELECT state FROM training_examples WHERE example_id=?",
+            (a["example_id"],)).fetchone()[0])
+        assert state != "deleted", "deleted without a confirmation"
+        assert "nothing was deleted" in rendered_text(w.hub.training_detail)
+
+
+@case("M09-AUDIT-24")
+def test_r13_span_preread_timeout_is_a_refusal_not_unknown():
+    """Review R-13: a timeout in the span save's range pre-read happens
+    before anything is submitted — the save is not saved, and must not
+    be reported as a write that may still complete."""
+    with World() as w:
+        a = seed_example(w.store, "alpha beta")
+        open_training(w)
+        select_training(w, a["example_id"])
+        w.hub.span_start.setStringValue_("0")
+        w.hub.span_end.setStringValue_("5")
+        w.hub.span_stage.selectItemWithTitle_("source_text")
+        w.hub.span_corrected.setStringValue_("delta")
+        real = w.store.submit
+
+        def submit(op, *args, **kw):
+            if getattr(op, "__name__", "") == "span_op":
+                raise TimeoutError("synthetic: store busy")
+            return real(op, *args, **kw)
+        w.store.submit = submit
+        try:
+            w.hub.trainingSpan_(None)
+        finally:
+            w.store.submit = real
+        w.drain()
+        pane = rendered_text(w.hub.training_detail)
+        assert "not saved" in pane and "may still complete" not in pane, \
+            pane[-200:]
+        assert annotation_kinds(w.store, a["example_id"]) == []
+
+
+@case("M09-AUDIT-19")
+def test_r13_timeline_header_names_the_loaded_filter():
+    """Review R-13: the job-timeline header names the filter the shown
+    records were loaded with, not a filter typed since."""
+    with World() as w:
+        job = "job-" + "d" * 32
+        write_events(_events_dir(w), "events-20260926-m09.jsonl",
+                     [event(1, "2026-09-26T10:00:01.000Z", job=job)])
+        open_view(w.hub, w.mq, "diagnostics")
+        w.hub.state.set_diagnostics_filters(job=job)
+        w.drain()
+        w.hub.state.views["diagnostics"]["job_filter"] = "job-" + "e" * 32
+        w.hub._refresh_diagnostics_view()
+        text = rendered_text(w.hub.diag_text)
+        assert f"job timeline ({job})" in text, text[:200]
+
+
+@case("M09-AUDIT-08")
+def test_r13_redaction_shapes_are_whole_value_matches():
+    """Review R-13: a typed field matches its whole value — a trailing
+    newline does not pass, and model_id never carries a dot-only path
+    segment."""
+    from localflow.v2.event_view import redact
+    base = {"schema_version": 1, "event": "stage.done", "level": "INFO"}
+    for field, value in (("reason_code", "valid_code\n"),
+                         ("model_id", "mlx-community/x\n"),
+                         ("model_id", "../.."),
+                         ("model_id", "./models"),
+                         ("event_id", "evt-" + "a" * 32 + "\n")):
+        out = redact(dict(base, **{field: value}))
+        assert field not in out, (field, value, out)
+    out = redact(dict(base, model_id="mlx-community/Qwen3-4B",
+                      reason_code="valid_code"))
+    assert out["model_id"] == "mlx-community/Qwen3-4B" and \
+        out["reason_code"] == "valid_code"
+
+
+class _RecordingReview(_QueueReview):
+    def __init__(self):
+        super().__init__([])
+        self.labels = []
+
+    def record_label(self, example_id, edit_kind=None):
+        self.labels.append(example_id)
+        return {}
+
+
+@case("M09-AUDIT-01")
+def test_r14_label_during_selection_interval_attaches_to_nothing():
+    """Review (AUDIT-01 residue): with the example field empty, Record
+    Label uses the rendered example — while B is selected and A still
+    rendered it refuses rather than labeling either."""
+    review = _RecordingReview()
+    with World(review_service=review) as w:
+        a = seed_example(w.store, CANARY_A)
+        b = seed_example(w.store, CANARY_B)
+        open_training(w)
+        lat = latch_training(w)
+        select_training(w, a["example_id"])
+        gate = lat.hold("example_detail",
+                        when=lambda ex: ex == b["example_id"], after=False)
+        w.hub.state.select_training_example(b["example_id"])
+        assert gate.arrived.wait(5)
+        w.mq.flush()
+        w.hub.reviewLabel_(None)
+        interval = list(review.labels)
+        gate.release.set()
+        w.drain()
+        assert not interval, f"labeled during the interval: {interval}"
+        w.hub.reviewLabel_(None)                   # B rendered now
+        assert review.labels == [b["example_id"]], review.labels
+
+
+@case("M09-AUDIT-22")
+def test_r15_store_timeout_on_an_action_is_unknown_not_failed():
+    """Review (AUDIT-22 residue): a store timeout on Pin/Exclude/Mark may
+    still commit — the pane says the outcome is unknown, not failed."""
+    with World() as w:
+        a = seed_example(w.store, CANARY_A)
+        open_training(w)
+        lat = latch_training(w)
+        select_training(w, a["example_id"])
+        for name, action in (("pin", w.hub.trainingPin_),
+                             ("exclude", w.hub.trainingExclude_),
+                             ("mark_intended", w.hub.trainingMarkCorrect_)):
+            lat.fail(name, TimeoutError("synthetic: store busy"))
+            action(None)
+            pane = rendered_text(w.hub.training_detail)
+            assert "unknown" in pane and "action failed" not in pane, \
+                (name, pane[-160:])
 
 
 # ---- runner ----------------------------------------------------------------

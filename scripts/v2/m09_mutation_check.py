@@ -219,7 +219,7 @@ MUTANTS = [
      "killers": ["M09-C100", "M09-C101"]},
     {"id": "M09-MUT16", "name": "Perform History service query on UI thread",
      "edits": [(STATE,
-                "        self._executor.submit(req, self._before_run)\n"
+                "            self._executor.submit(req, self._before_run)\n"
                 "        return req\n",
                 "        self._before_run(req)\n"
                 "        fn(req)\n"
@@ -341,6 +341,96 @@ PROBES = [
     {"id": "M09-MUT05-EQ-reset", "for": "M09-MUT05", "expect": "survived",
      "name": "No reset on selection change (per-example comparison kept)",
      "edits": [_RESET], "killers": ["M09-C007"]},
+]
+
+# Local mutants for the defects the independent review reproduced (no
+# corpus mutation targets them); each must be killed like the corpus's.
+SUPPLEMENTARY = [
+    {"id": "M09-LMUT-R01", "name": "Idle wake-up posted only when the"
+     " deferred flag is already set",
+     "edits": [(APP,
+                "        flush reads it on main, after openHub_ has"
+                " returned.\"\"\"\n"
+                "        AppHelper.callAfter(self._flush_pending_hub_show)\n",
+                "        flush reads it on main, after openHub_ has"
+                " returned.\"\"\"\n"
+                "        if self._hub_show_pending:\n"
+                "            AppHelper.callAfter("
+                "self._flush_pending_hub_show)\n")],
+     "killers": ["M09-C006"]},
+    {"id": "M09-LMUT-R02a", "name": "Re-admission spawned after the lock"
+     " is released",
+     "edits": [(STATE,
+                "        with self._lock:\n"
+                "            if self._closed:\n"
+                "                return False\n"
+                "            if req is not None:\n"
+                "                if self._gens.get(req.key) != req.gen:\n",
+                "        readmit = False\n"
+                "        with self._lock:\n"
+                "            if self._closed:\n"
+                "                return False\n"
+                "            if req is not None:\n"
+                "                if self._gens.get(req.key) != req.gen:\n"),
+               (STATE,
+                "                if req.epoch is not None and req.epoch !="
+                " self._epoch:\n"
+                "                    self._spawn(req.key, req.fn,"
+                " **req.inputs)\n"
+                "                    return False\n"
+                "            self.views[view].update(self._fence(view,"
+                " changes))\n"
+                "            if after is not None:\n"
+                "                after(self.views[view])\n"
+                "        self._publish()\n",
+                "                if req.epoch is not None and req.epoch !="
+                " self._epoch:\n"
+                "                    readmit = True\n"
+                "            if not readmit:\n"
+                "                self.views[view].update(self._fence(view,"
+                " changes))\n"
+                "                if after is not None:\n"
+                "                    after(self.views[view])\n"
+                "        if readmit:\n"
+                "            self._spawn(req.key, req.fn, **req.inputs)\n"
+                "            return False\n"
+                "        self._publish()\n")],
+     "killers": ["M09-C011"]},
+    {"id": "M09-LMUT-R02b", "name": "Admission submitted to the executor"
+     " outside the lock that ordered its generation",
+     "edits": [(STATE,
+                "            self._executor.submit(req, self._before_run)\n"
+                "        return req\n",
+                "        self._executor.submit(req, self._before_run)\n"
+                "        return req\n")],
+     "killers": ["M09-C011"]},
+    {"id": "M09-LMUT-R03", "name": "Approve/Reject default to the first"
+     " queue row",
+     "edits": [(HUB,
+                "        for row in rows:\n"
+                "            if row.get(\"example_id\") == sel:\n"
+                "                return row\n"
+                "        self.review_text.setString_(\n"
+                "            \"The example selected in Evidence has no row"
+                " in the review\"\n"
+                "            \" queue, so nothing was approved or"
+                " rejected.\")\n"
+                "        return None\n",
+                "        for row in rows:\n"
+                "            if row.get(\"example_id\") == sel:\n"
+                "                return row\n"
+                "        return rows[0] if rows else None\n"),
+               (HUB,
+                "        if not sel:\n"
+                "            # Only the row the user chose — never a"
+                " first-row default.\n"
+                "            self.review_text.setString_(\n"
+                "                \"Select the example to approve or reject"
+                " in Evidence\"\n"
+                "                \" first; nothing was approved or"
+                " rejected.\")\n"
+                "            return None\n", "")],
+     "killers": ["M09-C108"]},
 ]
 
 
@@ -467,15 +557,17 @@ def main(argv):
     todo = [m for m in MUTANTS if not only or m["id"] in only]
     probes = [p for p in PROBES if not only or p["id"] in only
               or p["for"] in only]
+    extra = [m for m in SUPPLEMENTARY if not only or m["id"] in only]
     if "--check-edits" in argv:
-        return check_edits(todo + probes)
+        return check_edits(todo + probes + extra)
     work = pathlib.Path(tempfile.mkdtemp(prefix="m09-mut-"))
-    results, probe_results = [], []
+    results, probe_results, extra_results = [], [], []
     try:
         base = work / "control"
         base.mkdir()
         head = export(base)
-        killers = sorted({k for m in todo + probes for k in m["killers"]})
+        killers = sorted({k for m in todo + probes + extra
+                          for k in m["killers"]})
         t0 = time.monotonic()
         control = run_killers(base, killers, timeout=1800)
         if control.get("imported_from") not in (None, base.name):
@@ -489,6 +581,8 @@ def main(argv):
             rec.update({"for": p["for"], "expect": p["expect"],
                         "as_expected": rec["outcome"] == p["expect"]})
             probe_results.append(rec)
+        for m in extra:
+            extra_results.append(run_one(base, control, m))
     finally:
         shutil.rmtree(work, ignore_errors=True)
     # A survivor is annotated equivalent only when every probe for it
@@ -508,9 +602,14 @@ def main(argv):
             "tool": "scripts/v2/m09_mutation_check.py",
             "runner": RUNNER, "code_sha": head, "control": control,
             "summary": tally, "results": results,
-            "equivalence_probes": probe_results}, indent=1) + "\n")
+            "equivalence_probes": probe_results,
+            "supplementary": extra_results,
+            "supplementary_killed": sum(r["outcome"] == "killed"
+                                        for r in extra_results)},
+            indent=1) + "\n")
     unexplained = [r for r in results if r["outcome"] != "killed"
                    and not r.get("equivalent_by_probe")]
+    unexplained += [r for r in extra_results if r["outcome"] != "killed"]
     return 0 if not unexplained else 1
 
 

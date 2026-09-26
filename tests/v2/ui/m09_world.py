@@ -478,14 +478,24 @@ class World:
         assert self.mq.drain(self._state()), "work did not drain"
 
     def __exit__(self, *exc):
+        drained = True
         try:
-            self.mq.drain(self._state(), 10)
+            drained = self.mq.drain(self._state(), 10)
         finally:
             try:
-                self.h.close()
+                if getattr(self.d, "_closing", False):
+                    # The app really quit (applicationWillTerminate_):
+                    # its store and event writer are already closed.
+                    self.h._tmp.cleanup()
+                else:
+                    self.h.close()
             finally:
                 self.mq.discard()
                 self.mq.__exit__()
+        # A request still stuck at the end is a failure the test's own
+        # asserts may not see (unless the test is already failing).
+        if exc[0] is None and not drained:
+            raise AssertionError("admitted work never drained")
         return False
 
 

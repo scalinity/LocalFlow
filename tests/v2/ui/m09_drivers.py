@@ -130,6 +130,34 @@ _REG = {
     "M09-C118": ["test_a25_inline_dispatch_negative_control_is_intercepted"],
 }
 
+# Regressions from the independent review of the frozen first pass
+# (4166806) that strengthen these cases' oracles.
+_REVIEW_REG = {
+    "M09-C002": ["test_r14_label_during_selection_interval_attaches_to_nothing"],
+    "M09-C006": ["test_r01_idle_between_pending_read_and_flag_still_shows_hub"],
+    "M09-C011": ["test_r02_readmitted_detail_never_overrides_newer_selection",
+                 "test_r02_readmitted_search_never_overrides_newer_search",
+                 "test_r02_older_admission_never_displaces_a_newer_pending_one"],
+    "M09-C014": ["test_r05_span_fields_clear_when_the_stage_under_them_changes",
+                 "test_r05_span_fields_survive_an_unrelated_revision"],
+    "M09-C016": ["test_r04_export_is_the_rendered_window_not_newer_state"],
+    "M09-C026": ["test_r13_delete_is_refused_when_confirmation_cannot_show"],
+    "M09-C034": ["test_r01_idle_between_pending_read_and_flag_still_shows_hub"],
+    "M09-C043": ["test_r06_merged_limit_follows_instants_not_strings"],
+    "M09-C057": ["test_r08_teach_refuses_when_the_final_text_is_a_transform",
+                 "test_r09_final_text_is_never_the_source_transcript"],
+    "M09-C062": ["test_r11_retention_purge_stops_active_replay"],
+    "M09-C075": ["test_r13_span_preread_timeout_is_a_refusal_not_unknown",
+                 "test_r15_store_timeout_on_an_action_is_unknown_not_failed"],
+    "M09-C082": ["test_r07_retention_pass_keeps_a_hidden_selection_usable"],
+    "M09-C089": ["test_r10_hidden_training_detail_is_cleared_on_delete",
+                 "test_r10_voice_pane_drops_a_profile_invalidated_by_delete"],
+    "M09-C098": ["test_r13_timeline_header_names_the_loaded_filter"],
+    "M09-C100": ["test_r13_redaction_shapes_are_whole_value_matches"],
+}
+for _cid, _names in _REVIEW_REG.items():
+    _REG[_cid] = _REG[_cid] + _names
+
 _NATIVE_REG = {"M09-C002", "M09-C006", "M09-C007", "M09-C012", "M09-C016",
                "M09-C017", "M09-C020", "M09-C024", "M09-C025", "M09-C026",
                "M09-C034", "M09-C035", "M09-C047", "M09-C051", "M09-C089",
@@ -283,6 +311,7 @@ def c003_history_result_after_switch_to_training():
 def c004_close_reopen_during_query():
     with World() as w:
         seed_job(w.store, CANARY_A, captured=iso(T0))
+        service_state = w.d.state  # the dictation service, untouched
         lat = R.latch_history(w)
         open_view(w.hub, w.mq, "history")
         w.hub.showWindow_(None)
@@ -302,7 +331,7 @@ def c004_close_reopen_during_query():
         w.drain()
         assert w.hub is controller and w.hub.window is window
         assert w.hub.state.visible is True
-        assert w.d.state == "idle" or w.d.state is not None
+        assert w.d.state == service_state, (service_state, w.d.state)
     return {"controllers": 1}
 
 
@@ -352,20 +381,31 @@ def c029_request_inputs_captured_at_admission():
         jb, _, _ = seed_job(w.store, CANARY_B, captured=iso(T0 + 60))
         lat = R.latch_history(w)
         open_view(w.hub, w.mq, "history")
-        # Occupy the worker so A is queued, not started.
-        hold = lat.hold("home_summary", after=False)
-        w.hub.state._spawn(("home", "list"), w.hub.state._load_home)
-        assert hold.arrived.wait(5)
+        # Fill the History list key's two running slots, so A is
+        # admitted and queued — not started.
+        held = lat.hold("search", when=lambda **k: k.get("text") in (
+            "m09slot1", "m09slot2"), after=False)
+        for n, text in enumerate(("m09slot1", "m09slot2"), 1):
+            w.hub.state.set_history_search(text)
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline and held.hits < n:
+                time.sleep(0.005)
+        assert held.hits == 2, "the two slots never filled"
         n0 = len(lat.calls)
-        w.hub.state.set_history_search(CANARY_A)  # admitted, not started
-        w.hub.state.set_history_search(CANARY_B)
-        hold.release.set()
+        before = w.hub.state.query_stats()
+        w.hub.state.set_history_search(CANARY_A)  # admitted, queued
+        w.hub.state.set_history_search(CANARY_B)  # replaces A unstarted
+        held.release.set()
         w.drain()
-        calls = [c for c in lat.calls[n0:] if c[0] == "search"]
-        texts = [c[2].get("text") for c in calls]
-        assert CANARY_A not in texts or texts.index(CANARY_A) == 0, texts
-        assert texts[-1] == CANARY_B and _ids(w.hub) == [jb], texts
-    return {"search_calls": len(calls)}
+        texts = [c[2].get("text") for c in lat.calls[n0:]
+                 if c[0] == "search"]
+        after = w.hub.state.query_stats()
+        # A never ran under any generation; B ran with B's own input.
+        assert texts == [CANARY_B], texts
+        assert after["superseded_before_start"] - \
+            before["superseded_before_start"] == 1, (before, after)
+        assert _ids(w.hub) == [jb]
+    return {"search_calls": len(texts)}
 
 
 @case("M09-C030")
@@ -452,14 +492,13 @@ def c036_quit_cancels_deferred_show():
         w.d.openHub_(None)
         w.d.quickOpenScratchpad_(None)
         assert w.d._hub_show_pending
-        w.d._closing = True  # the first step of applicationWillTerminate_
-        w.h.release(delivered=False)
+        w.d.applicationWillTerminate_(None)   # the real, ordered quit
         w.d._flush_pending_hub_show()
-        w.drain()
+        w.mq.flush()
         assert w.d._hub is None, "window activated after quit began"
-        assert not w.d._hub_show_pending
-        w.d._closing = False
-    return {}
+        assert not w.d._hub_show_pending and \
+            w.d._hub_pending_action is None
+    return {"quit": "applicationWillTerminate_"}
 
 
 # ---- focus admission (real InsertionService over the fixture target) --------
@@ -1916,15 +1955,23 @@ def c108_approve_uses_rendered_queue():
         lat.approve = lambda cid, **k: calls.append(cid) or {}
         w.hub.spec["learning_service"] = lat
         view = w.hub.state.views["models"]
-        # Render the queue [A, B] with no selection (first-row fallback).
+        # Render the queue [A, B] with no selection: nothing was chosen,
+        # so nothing is approved (no first-row default).
         view["data"] = {**(view.get("data") or {}), "queue": list(rows),
                         "training_tab": "review"}
         w.hub._refresh_models_view()
-        # The backing queue is replaced by [B, A]; not yet rendered.
+        w.hub.reviewApprove_(None)
+        assert calls == [], f"approved {calls} with nothing selected"
+        # A selected; the backing queue is replaced by [B, A] and not
+        # yet rendered: the action refuses rather than redirect.
+        view["selected_id"] = rows[0]["example_id"]
         view["data"] = {**view["data"], "queue": list(reversed(rows))}
         w.hub.reviewApprove_(None)
-        assert calls in ([], [rows[0]["candidate_id"]]), \
-            f"approved {calls}, not the rendered first row"
+        assert calls == [], f"approved {calls} against an unrendered queue"
+        # Positive control: the queue on screen, A selected -> A exactly.
+        w.hub._refresh_models_view()
+        w.hub.reviewApprove_(None)
+        assert calls == [rows[0]["candidate_id"]], calls
     return {"approved": calls}
 
 
