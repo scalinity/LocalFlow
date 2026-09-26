@@ -125,8 +125,17 @@ JSON as a lease-governed artifact (`pre_decode_context`/
 Retention is the independent `training_retain_context` knob: off ⇒ no
 payload artifact even with collection enabled, `retained: false` with
 reason in the block and `missing_reasons.context_snapshot_payload`
-marking replay inputs incomplete. Secure-field snapshots retain no
-field content anywhere (M06-AC01). See `contracts/context.md`.
+marking replay inputs incomplete. `retained: true` is decided at
+publication: `publish_example` keeps it only when the context artifact
+committed for the job and holds a live training lease; otherwise the
+block carries `retained: false`, `retention_reason:
+retention_write_failed` and `missing_reasons.context_snapshot_payload:
+retention_write_failed` (the existing reason, applied additively; older
+envelopes are unchanged). The destination block also records the job's
+`scope_disposition`; a downstream block names its parent pre-decode
+snapshot (`parent_context_snapshot_id`, `revision_kind: late_delta`).
+Secure-field snapshots retain no field content anywhere (M06-AC01). See
+`contracts/context.md`.
 
 ## M07 live status (cleanup family)
 
