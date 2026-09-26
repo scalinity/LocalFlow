@@ -401,6 +401,8 @@ def release_cohorts(n):
             on_ms.append(ms)
             d = job.get("scope_disposition")
             disp_on[d] = disp_on.get(d, 0) + 1
+            # Every gated run must have done the named widening work.
+            check(d == "widened", f"release_on run {i}: disposition {d}")
             if i == 0:
                 validate_on(on, job)
     finally:
@@ -571,8 +573,9 @@ def widen_components(n):
         sel.append((time.perf_counter() - t0) * 1000)
     check(len(snap.match_index) == 2 * len(rows),
           "widen_build: widened population differs from the authored set")
-    return (summary(build, "VocabularySnapshot(captured 10k, widened "
-                           "scope) — the precomputed projection"),
+    return (summary(build, f"VocabularySnapshot(captured {ARGS.entries:,} "
+                           "entries, widened scope) — the precomputed "
+                           "projection"),
             summary(sel, "select() + hint-set JSON on a fresh widened "
                          "snapshot"))
 
