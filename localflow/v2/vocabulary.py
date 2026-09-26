@@ -57,6 +57,13 @@ _SCOPE_FIELD = {"app": "app_bundle", "site": "site_origin",
 _FIELD_KIND = {v: k for k, v in _SCOPE_FIELD.items()}
 
 
+def _desc(lengths: set) -> tuple:
+    """Distinct word counts, longest first (a single count needs no
+    sort — the common case for 10,000 distinct first words)."""
+    return tuple(lengths) if len(lengths) == 1 \
+        else tuple(sorted(lengths, reverse=True))
+
+
 class _CanonScope:
     """A ScopeContext's values in canonical form, computed once per
     snapshot so filtering many entries compares plain strings."""
@@ -483,9 +490,13 @@ class VocabularySnapshot:
                     index[key] = [(prec, target)]
                 else:
                     lst.append((prec, target))
-            strength = max(len(" ".join(k.split()))
-                           for k in alias_keys + [canonical_key])
+            # Aliases are whitespace-normalized at admission; only the
+            # canonical may carry irregular spacing.
             ckey = " ".join(canonical_key.split())
+            strength = len(ckey)
+            for k in alias_keys:
+                if len(k) > strength:
+                    strength = len(k)
             spellings = canon.setdefault(ckey, {})
             if spellings.get(e.canonical, -1) < strength:
                 spellings[e.canonical] = strength
@@ -563,13 +574,11 @@ class VocabularySnapshot:
         object.__setattr__(self, "_by_first_word", MappingProxyType(
             {k: tuple(v) for k, v in by_first.items()}))
         object.__setattr__(self, "_lengths_by_first", MappingProxyType(
-            {k: tuple(sorted(v, reverse=True))
-             for k, v in lengths.items()}))
+            {k: _desc(v) for k, v in lengths.items()}))
         object.__setattr__(self, "_canon_claims", MappingProxyType(
             {k: MappingProxyType(v) for k, v in canon.items()}))
         object.__setattr__(self, "_canon_lengths_by_first", MappingProxyType(
-            {k: tuple(sorted(v, reverse=True))
-             for k, v in canon_lengths.items()}))
+            {k: _desc(v) for k, v in canon_lengths.items()}))
         object.__setattr__(self, "_ranked", tuple(ranked))
         object.__setattr__(self, "_by_id", MappingProxyType(by_id))
         # Memo of the selector's deterministic output for THIS snapshot
@@ -703,15 +712,30 @@ class HintTerm:
         }
 
 
+def _omission(entry: VocabularyEntry) -> tuple:
+    """(read-only record, JSON fragment) of an entry omitted for budget,
+    computed once per frozen entry (like ``_revision_json``) — a pure
+    function of immutable state, shared safely by every hint set."""
+    cached = entry.__dict__.get("_omission")
+    if cached is None:
+        d = {"canonical": entry.canonical, "entry_id": entry.entry_id,
+             "reason": OMISSION_BUDGET}
+        # Keys inserted in sorted order: the fragment equals the
+        # sort_keys encoding the generic id path produces.
+        cached = (MappingProxyType(d), json.dumps(d, ensure_ascii=False))
+        object.__setattr__(entry, "_omission", cached)
+    return cached
+
+
 def _hint_set_id(selector_revision, vocabulary_revision, scope, terms,
-                 omitted, term_limit, *, _plain_omitted=None) -> str:
+                 omitted, term_limit, *, _omitted_json=None) -> str:
     """The content identity of a hint set: ordered terms with scores,
     omissions with reasons, scope, selector/vocabulary revisions and the
     budget — deliberately NOT the creation time (deterministic
-    reconstruction). ``_plain_omitted`` is the selector's own list of
-    the same omission dicts (no per-record copy on the hot path); the
+    reconstruction). ``_omitted_json`` is the selector's own encoding
+    of the same omission list (per-entry cached fragments); the
     serialized bytes are identical either way."""
-    if _plain_omitted is None:
+    if _omitted_json is None:
         payload = json.dumps({
             "selector_revision": selector_revision,
             "vocabulary_revision": vocabulary_revision,
@@ -721,13 +745,11 @@ def _hint_set_id(selector_revision, vocabulary_revision, scope, terms,
             "term_limit": term_limit,
         }, sort_keys=True, ensure_ascii=False)
     else:
-        # The same bytes as above, assembled in sorted key order; the
-        # selector builds each omission dict with its keys already in
-        # sorted order, so the large list skips the key sort.
-        def enc(v, sort=True):
-            return json.dumps(v, sort_keys=sort, ensure_ascii=False)
+        # The same bytes as above, assembled in sorted key order.
+        def enc(v):
+            return json.dumps(v, sort_keys=True, ensure_ascii=False)
         payload = (
-            '{"omitted": ' + enc(_plain_omitted, sort=False)
+            '{"omitted": ' + _omitted_json
             + ', "scope": ' + enc(dict(scope))
             + ', "selector_revision": ' + enc(selector_revision)
             + ', "term_limit": ' + enc(term_limit)
@@ -864,16 +886,15 @@ class RelevantVocabularySelector:
                     scope_kind=e.scope_kind, scope_value=e.scope_value,
                     source=e.origin, score=self._rank(e))
                 for e in ranked[:self.max_terms])
-            # Fresh private dicts behind read-only views: nothing outside
-            # this function holds them; the id hashes the same dicts.
-            plain = [{"canonical": e.canonical, "entry_id": e.entry_id,
-                      "reason": OMISSION_BUDGET}
-                     for e in ranked[self.max_terms:]]
-            omitted = tuple(map(MappingProxyType, plain))
+            # Read-only omission records cached per frozen entry (no
+            # caller holds their dicts); the id hashes their fragments.
+            recs = [_omission(e) for e in ranked[self.max_terms:]]
+            omitted = tuple(r[0] for r in recs)
             scope = MappingProxyType(scope_ctx.to_json())
-            hid = _hint_set_id(self.SELECTOR_REVISION, snapshot.revision,
-                               scope, terms, omitted, self.max_terms,
-                               _plain_omitted=plain)
+            hid = _hint_set_id(
+                self.SELECTOR_REVISION, snapshot.revision, scope, terms,
+                omitted, self.max_terms,
+                _omitted_json="[" + ", ".join(r[1] for r in recs) + "]")
             cached = (hid, scope, terms, omitted)
             if own_scope:
                 snapshot._memo_put(memo_key, cached)

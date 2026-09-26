@@ -632,6 +632,27 @@ def test_R8_applied_rule_manifest_holds_only_applied_rules():
           " rules, never the dictionary")
 
 
+def test_R9_selection_identity_fast_path_equals_generic():
+    # The selector hashes cached per-entry omission fragments; the id
+    # must equal the generic (checked-constructor) encoding exactly,
+    # including non-ASCII and quoted canonicals, and repeat selections
+    # over the same frozen entries must reuse the same records.
+    ents = [ent(f"E{i}", c) for i, c in enumerate(
+        ["Éclair", 'Quo"te', "日本語", "Plain", "Back\\slash"])]
+    for lim in (1, 2, 4, 5):
+        a = V.RelevantVocabularySelector(lim).select(
+            V.VocabularySnapshot(ents), now_utc="t")
+        assert a.hint_set_id == V._hint_set_id(
+            a.selector_revision, a.vocabulary_revision, a.scope, a.terms,
+            a.omitted, a.term_limit), lim
+        b = V.RelevantVocabularySelector(lim).select(
+            V.VocabularySnapshot(ents), now_utc="t")
+        assert b.hint_set_id == a.hint_set_id
+        assert all(x is y for x, y in zip(a.omitted, b.omitted))
+    print("ok  R9 the selector's fast identity equals the generic encoding;"
+          " omission records are reused across fresh snapshots")
+
+
 def test_R10_a_crashed_control_is_never_green():
     import importlib.util
     import json
