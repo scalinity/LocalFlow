@@ -4,8 +4,13 @@ Reads the same JSONL event files the writer persists (one
 implementation of the human view, layered with the viewer's UTC/local
 display choice — changing display timezone never changes stored
 instants), assembles dated job timelines, and writes the content-free
-redacted export (every record verbatim except ``detail``, the one
-free-text field, which is dropped — the M02 belt-and-suspenders rule).
+redacted export.
+
+Ordering and redaction are the accepted M02 policy shared with the CLI
+viewer (``localflow/v2/event_view.py``): records merge per writer
+stream by sequence and across streams by UTC instant — never by
+filename order — and the export keeps only typed, allowlisted fields
+with a redaction version and an omitted-field count.
 """
 
 from __future__ import annotations
@@ -13,57 +18,77 @@ from __future__ import annotations
 import json
 import pathlib
 
+from .event_view import order_records, redact
 from .eventlog import EventWriter
 
 
 def load_events(events_dir, date=None, job_id=None, level=None,
-                last=None) -> list[dict]:
-    """Filtered event records, oldest first. Unparsable lines warn to
-    stderr and are skipped (a transcript can never break the reader)."""
+                last=None, stats=None) -> list[dict]:
+    """Filtered event records in the accepted view order. Unparsable
+    lines and valid JSON that is not an event object are skipped with a
+    content-free warning (a transcript can never break the reader, and
+    the warning never echoes the line); ``stats['skipped']`` counts
+    them. ``last`` is the last N of the ordered, filtered set."""
     import sys
     files = sorted(pathlib.Path(events_dir).glob("events-*.jsonl*"))
     if date:
         files = [f for f in files if date in f.name]
     recs = []
+    skipped = 0
     for f in files:
         for line in f.read_text(encoding="utf-8",
                                 errors="replace").splitlines():
-            try:
-                recs.append(json.loads(line))
-            except json.JSONDecodeError:
-                print(f"warning: unparsable line in {f.name}",
-                      file=sys.stderr)
+            if not line.strip():
                 continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                rec = None
+            if not isinstance(rec, dict):
+                skipped += 1
+                continue
+            recs.append(rec)
+    if skipped:
+        print(f"warning: {skipped} unparsable or non-event line(s)"
+              " skipped", file=sys.stderr)
+    if stats is not None:
+        stats["skipped"] = stats.get("skipped", 0) + skipped
+    return select_events(order_records(recs, warn=False), job_id=job_id,
+                         level=level, last=last)
+
+
+def select_events(records, job_id=None, level=None, last=None):
+    """Filter then window an already ordered record list."""
     if job_id:
-        recs = [r for r in recs if r.get("job_id") == job_id]
+        records = [r for r in records if r.get("job_id") == job_id]
     if level:
-        recs = [r for r in recs if r.get("level") == level]
+        records = [r for r in records if r.get("level") == level]
     if last:
-        recs = recs[-last:]
-    return recs
+        records = records[-last:]
+    return list(records)
 
 
 def render(rec, utc: bool) -> str:
     return EventWriter.human_line(rec, utc=utc)
 
 
-def job_timeline(events, job_id) -> list[str]:
+def job_timeline(events, job_id, utc: bool = False) -> list[str]:
     """One job's dated timeline: stage transitions, failures and the
-    insertion outcome, rendered in sequence order."""
-    rows = [r for r in events if r.get("job_id") == job_id]
-    rows.sort(key=lambda r: (r.get("sequence") or 0,))
-    return [render(r, utc=False) for r in rows]
+    insertion outcome, in the accepted view order, shown in the same
+    UTC/local policy as the event list."""
+    rows = [r for r in order_records(list(events), warn=False)
+            if r.get("job_id") == job_id]
+    return [render(r, utc=utc) for r in rows]
 
 
 def redacted_export(records, path) -> int:
-    """Write the content-free JSONL export (drops ``detail``)."""
+    """Write the content-free JSONL export: every record through the
+    accepted typed allowlist (``event_view.redact``)."""
     path = pathlib.Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         for r in records:
-            red = dict(r)
-            red.pop("detail", None)
-            f.write(json.dumps(red, ensure_ascii=True,
+            f.write(json.dumps(redact(r), ensure_ascii=True,
                                separators=(",", ":")) + "\n")
     return len(records)
 
