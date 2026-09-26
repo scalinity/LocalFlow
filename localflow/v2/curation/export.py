@@ -351,7 +351,7 @@ class DatasetExporter:
             cand = conn.execute(
                 "SELECT transform_id, transform_revision,"
                 " prompt_revision, source_artifact_id,"
-                " output_artifact_id FROM transform_candidates WHERE"
+                " output_artifact_id, path FROM transform_candidates WHERE"
                 " candidate_id=? AND task_key=?",
                 (candidate_id, task_key)).fetchone()
             if cand is None:
@@ -367,6 +367,13 @@ class DatasetExporter:
                     {"candidate_id": candidate_id,
                      "reason": "transform_inputs_unavailable"})
                 continue
+            # The gate's automated status stays beside the human accept
+            # (a reviewed-then-accepted candidate is legitimate evidence,
+            # but never indistinguishable from an applied one).
+            decision = conn.execute(
+                "SELECT artifact_id FROM artifacts WHERE"
+                " parent_artifact_id=? AND role='transform_decision'"
+                " AND purged=0 LIMIT 1", (cand[4],)).fetchone()
             rows.append({
                 "task_key": task_key,
                 "transform_id": cand[0], "transform_revision": cand[1],
@@ -375,6 +382,8 @@ class DatasetExporter:
                 "transform_definition": json.loads(definition[0]),
                 "source_text": source["text"],
                 "desired_output_text": output["text"],
+                "automated_path": cand[5],
+                "decision_artifact_id": decision[0] if decision else None,
             })
         return rows
 
@@ -620,6 +629,8 @@ class DatasetExporter:
                     "input_text": row["source_text"],
                     "output_text": row["desired_output_text"],
                     "transform_definition": row["transform_definition"],
+                    "automated_path": row.get("automated_path"),
+                    "decision_artifact_id": row.get("decision_artifact_id"),
                 })
             preferences = []
             for row in snap["preferences"]:

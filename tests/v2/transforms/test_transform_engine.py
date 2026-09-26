@@ -32,7 +32,10 @@ def _defn(mode="prompt_engineer", **kw):
 
 
 def _gen_ok(prompt, max_tokens):
-    return {"text": "# Task\nDiagnose the parser failure on empty"
+    # "Diagnose why …" keeps the draft's question ("tell me why it
+    # fails"); the earlier fixture's "Diagnose the parser failure"
+    # dropped it, which the M11 remediation gate rightly reviews.
+    return {"text": "# Task\nDiagnose why the parser fails on empty"
                     " input.\n\n# Constraints\n- Do not edit any files"
                     " yet.\n- Scope: empty-input failure path.\n\n"
                     "# Deliverables\n1. The root cause.\n2. Exactly two"
@@ -72,11 +75,15 @@ def test_task_identity_and_retry_semantics():
 
 
 def test_atoms_extraction_finds_s16_example():
-    found = {a.kind for a in tf_atoms.extract_atoms(PE_SOURCE)}
-    assert {"negation", "edit_constraint", "count"} <= found, found
-    counts = [a for a in tf_atoms.extract_atoms(PE_SOURCE)
-              if a.kind == "count"]
-    assert any("two" in c.excerpt.lower() for c in counts)
+    # Every clause is a requirement atom carrying its operator profile
+    # (the M11 remediation replaced the cue-family kinds, which left
+    # unrecognized requirements with no atom at all).
+    reqs = [a for a in tf_atoms.extract_atoms(PE_SOURCE)
+            if a.kind == "requirement"]
+    assert len(reqs) == 4, [a.excerpt for a in reqs]
+    by_ops = {op for a in reqs for op in a.ops}
+    assert {"negation", "interrogative"} <= by_ops, by_ops
+    assert any("two possible fixes" in a.excerpt for a in reqs)
     # Quoted spans and links carry exactly.
     src = 'Use the phrase "ship small, ship often" and cite ' \
           "https://docs.example.com/spec plus src/pipeline/stage3.py"
@@ -93,9 +100,12 @@ def test_atoms_extraction_finds_s16_example():
 def test_coverage_three_valued_and_review_policy():
     src = 'Keep "the exact phrase" and the count two options and ' \
           "don't drop the deadline by Friday."
-    good = ('# Requirements\n- Keep "the exact phrase" verbatim.\n'
-            "- Offer two options.\n- Deadline: by Friday.\n"
-            "- Do not drop anything.")
+    # The earlier "good" output split "don't drop" from its object
+    # ("Do not drop anything." / "Deadline: by Friday.") and lost
+    # "count"; the remediation gate reviews that, so the faithful
+    # output keeps the prohibition bound to the deadline.
+    good = ('# Requirements\n- Keep "the exact phrase" and the count of'
+            " two options.\n- Do not drop the deadline by Friday.")
     cov = tf_atoms.coverage_map(src, good)
     assert all(c.status == "covered" for c in cov), \
         [(c.atom.kind, c.status) for c in cov]
@@ -104,8 +114,10 @@ def test_coverage_three_valued_and_review_policy():
     # uncertain/missing — a review issue, never silently applied.
     bad = "Two options, nicely formatted."
     cov2 = tf_atoms.coverage_map(src, bad)
-    missing_kinds = {c.atom.kind for c in tf_atoms.review_issues(cov2)}
-    assert {"quoted", "deadline"} <= missing_kinds, missing_kinds
+    issues = tf_atoms.review_issues(cov2)
+    missing_kinds = {c.atom.kind for c in issues}
+    assert {"quoted", "requirement"} <= missing_kinds, missing_kinds
+    assert any("deadline by Friday" in c.atom.excerpt for c in issues)
     summary = tf_atoms.coverage_summary(cov2)
     assert summary["atoms"] == len(cov2) \
         and summary["missing"] + summary["uncertain"] > 0

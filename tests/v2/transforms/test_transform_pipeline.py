@@ -461,15 +461,18 @@ def test_changed_selection_never_overwritten():
         time.sleep(0.3)
         assert tgt.content == \
             "the user typed something entirely different", tgt.content
-        # The honest outcome: saved, offered on the clipboard; a
-        # jobless transform accept records no attribution row (the M09
-        # repaste pattern) — the outcome is the event + the clipboard.
+        # The honest outcome: saved, offered on the clipboard. The
+        # accept is attributed to its candidate (M11 remediation F09:
+        # the insertion row's job_id is the candidate id) and records
+        # a non-insertion state.
         assert tgt.pb.current_string() == "rewrite this refined sentence"
 
         def ins(db):
             return db.execute(
-                "SELECT COUNT(*) FROM insertions").fetchone()[0]
-        assert h.d.store.submit(ins) == 0
+                "SELECT job_id, state FROM insertions").fetchall()
+        rows = h.d.store.submit(ins)
+        assert len(rows) == 1 and rows[0][0] == "cand-1", rows
+        assert rows[0][1] not in ("confirmed", "posted_unverified"), rows
     finally:
         h.close()
     print("ok  AC03: changed selection preserved; result saved + offered")
@@ -481,6 +484,9 @@ def test_preference_same_task_invariants():
     from localflow.v2 import transforms as tf
     h = Harness([1.0], supervisor=M11Supervisor("x"))
     try:
+        # Candidates are training evidence, recorded only under
+        # collection consent (M11 remediation F08).
+        h.d.consent.set("enabled", note="test")
         ts = h.d._tf_store
         d = tf.TransformDefinition(transform_id="t", name="T",
                                    mode="polish")

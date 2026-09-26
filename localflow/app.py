@@ -1210,35 +1210,10 @@ class AppDelegate(NSObject):
     @staticmethod
     @objc.python_method
     def _m11_result_from_message(job, res):
-        """Rebuild the worker's TransformResult from its message."""
-        from .v2.transforms import atoms as tf_atoms
+        """Rebuild the worker's TransformResult from its message (the
+        portable rebuild in the transforms engine)."""
         from .v2.transforms import engine as tf_engine
-        coverage = tuple(
-            tf_atoms.Coverage(
-                atom=tf_atoms.Atom(
-                    kind=c.get("kind", ""),
-                    excerpt=c.get("kept_excerpt", ""),
-                    anchors=tuple(c.get("anchors", ())),
-                    start=c.get("source_start", 0),
-                    end=c.get("source_end", 0)),
-                status=c.get("status", "missing"),
-                output_start=c.get("output_start"),
-                output_end=c.get("output_end"),
-                evidence=c.get("evidence", ""))
-            for c in res.get("coverage") or [])
-        meta = res.get("result") or {}
-        return tf_engine.TransformResult(
-            job=job, output=res.get("output") or job.source,
-            path=meta.get("path", tf_engine.PATH_FALLBACK_ORIGINAL),
-            reason=meta.get("reason"),
-            coverage=coverage,
-            coverage_summary=meta.get("coverage"),
-            diff_stats=meta.get("diff"),
-            review_excerpts=tuple(res.get("review_excerpts") or ()),
-            output_tokens=meta.get("output_tokens", 0),
-            limit_hit=bool(meta.get("limit_hit")),
-            duration_ms=meta.get("duration_ms", 0.0),
-            prompt=res.get("prompt") or "")
+        return tf_engine.result_from_message(job, res)
 
     @objc.python_method
     def _m11_apply_transform(self, job, clean_text, ctx):
@@ -1306,10 +1281,13 @@ class AppDelegate(NSObject):
                     # Dictation-path candidates reference no payload
                     # artifacts here: the collector retains the exact
                     # texts lease-governed (below), so the rows stay
-                    # id/hash-only by design.
+                    # id/hash-only by design. The row follows the
+                    # consent this job captured at its start (S29.2).
                     self._tf_store.record_candidate(
                         result, task_kind="dictation_auto_apply",
-                        model_id=self.cfg.get("cleanup_model"))
+                        model_id=self.cfg.get("cleanup_model"),
+                        collecting=bool(ctx is not None
+                                        and ctx.collecting))
                     if applied:
                         self._tf_store.record_hits([defn.transform_id])
             except Exception as e:
@@ -1335,63 +1313,18 @@ class AppDelegate(NSObject):
     @objc.python_method
     def _m11_capture_selection(self):
         """Capture the focused selection for a selected-text transform
-        (S16): source selection, range and a snapshot-shaped target
-        identity the M08 revalidation consumes at accept time. Runs on
-        the transform thread — bounded AX reads never touch the UI
+        (S16): classify the field first (a secure field is never read),
+        then the selection, its range, the window title and bounded
+        surrounding text — the identity the strict accept-time
+        revalidation proves (insertion/selection.py). Runs on the
+        transform thread — bounded AX reads never touch the UI
         callback."""
         if self._insertion is None:
             return None, "insertion_service_unavailable"
-        host = self._insertion.host
-        fm = host.frontmost()
-        if not fm:
-            return None, "no_frontmost_application"
-        bundle = fm.get("bundle")
-        if bundle and bundle in (self.cfg.get("context_denied_apps")
-                                 or ()):
-            return None, "app_denied"
-        el = host.focused_element()
-        if el is None:
-            return None, "no_focused_element"
-        rng = None
-        raw_range = host.attribute(el, "AXSelectedTextRange")
-        try:
-            if isinstance(raw_range, tuple):
-                # The repo convention (providers._as_range): a plain
-                # tuple is (location, length), never (start, end).
-                rng = (int(raw_range[0]),
-                       int(raw_range[0]) + int(raw_range[1]))
-            elif raw_range is not None:
-                rng = (int(raw_range.location),
-                       int(raw_range.location) + int(raw_range.length))
-        except (AttributeError, TypeError, ValueError):
-            rng = None
-        text = None
-        if rng is not None and rng[1] > rng[0]:
-            text = host.string_for_range(
-                el, rng[0], rng[1] - rng[0])
-        if not text or not text.strip():
-            return None, "no_selection"
-        role = host.attribute(el, "AXRole")
-        from .v2 import ids as v2_ids_m11
-        from .v2.context.snapshot import (ContextSnapshot, FieldContext,
-                                          TargetSnapshot)
-        from .v2.context.providers import categorize
-        target = TargetSnapshot(
-            target_snapshot_id=v2_ids_m11.new_id("tgt"),
-            app_bundle=bundle, app_name=fm.get("name"),
-            app_pid=fm.get("pid"),
-            category=categorize(bundle) if bundle else "unknown",
-            captured_at_utc=v2_ids_m11.now_utc_iso())
-        field = FieldContext(
-            role=str(role) if role else None,
-            classification="text", selected_text=text,
-            selected_range=tuple(rng))
-        snap = ContextSnapshot(
-            context_snapshot_id=v2_ids_m11.new_id("ctx"),
-            stage="transform_selection", target=target, field=field,
-            captured_at_utc=v2_ids_m11.now_utc_iso())
-        return {"source": text, "range": tuple(rng), "snapshot": snap,
-                "target": target}, None
+        from .v2.insertion.selection import capture_selection
+        return capture_selection(
+            self._insertion.host,
+            denied_apps=self.cfg.get("context_denied_apps") or ())
 
     def runTransform_(self, sender):
         """Status-menu action: transform the current selection with the
@@ -1481,6 +1414,7 @@ class AppDelegate(NSObject):
                 self.v2log.emit("usage.record_failed", level="WARNING",
                                 reason_code=type(e).__name__)
         candidate_id = None
+        retry_of = capture.pop("retry_of", None)
         if result.job is not None:
             try:
                 if self._tf_store is not None:
@@ -1488,17 +1422,26 @@ class AppDelegate(NSObject):
                     # (S29.10), not results across the process. A note-
                     # scope capture is its own task kind (truthful
                     # provenance, never labeled a selection transform).
+                    # Collection consent is read INSIDE the store's
+                    # writer op (S29.2): with collection off nothing is
+                    # recorded and the preview still works
+                    # (candidate_id None).
                     order = len(self._tf_store.candidates_for_task(
                         result.job.task_key())) + 1
+                    note = (capture or {}).get("note")
                     candidate_id = self._tf_store.record_candidate(
                         result, task_kind=(
-                            "transform_note"
-                            if (capture or {}).get("note") is not None
+                            "transform_note" if note is not None
                             else "transform_selection"),
                         source_artifact_text=capture["source"],
                         output_artifact_text=result.output,
                         model_id=self.cfg.get("cleanup_model"),
-                        display_order=order)
+                        display_order=order,
+                        source_meta=({"note_id": note.get("note_id"),
+                                      "note_revision_id":
+                                          note.get("revision_id")}
+                                     if note is not None else None),
+                        retry_of=retry_of)
             except Exception as e:
                 self.v2log.emit("transforms.record_failed",
                                 level="WARNING",
@@ -1539,10 +1482,16 @@ class AppDelegate(NSObject):
         if capture.get("note") is not None:
             self.tfApplyNoteTransform(result, capture)
             return
+        # Strict replacement (insertion/validation.py): the reviewed
+        # output replaces the captured selection only with positive
+        # proof it is still the same selection in the same document;
+        # otherwise it routes to the copy offer. The insertion row is
+        # attributed to the candidate (contracts/insertion.md).
         self._insertion.submit(
             result.output,
-            {"job_id": None, "attempt": 1,
-             "context_snapshot": capture["snapshot"]},
+            {"job_id": candidate_id, "attempt": 1,
+             "context_snapshot": capture["snapshot"],
+             "strict_replacement": True},
             on_done=lambda r, j=None: AppHelper.callAfter(
                 self._tfInsertDone_, r))
         self.v2log.emit("transforms.accepted", level="INFO",
@@ -1566,32 +1515,25 @@ class AppDelegate(NSObject):
     @objc.python_method
     def tfRetryOriginal(self, result, capture, defn, candidate_id):
         """Retry-original: the SAME task, fresh attempt (S16 task 7) —
-        the new candidate joins the task key and may be compared."""
+        the new candidate joins the task key and may be compared. A
+        retry is not a judgment: nothing is recorded against the first
+        candidate; the new candidate names it as ``retry_of``."""
         if result.job is None:
             return  # a refused job has no task to retry
         if self._tf_pipeline_busy():
             self.v2log.emit("transforms.busy", level="INFO",
                             reason_code="pipeline_active")
             return
-        if candidate_id and self._tf_store is not None:
-            try:
-                self._tf_store.record_observation(
-                    task_key=result.job.task_key(),
-                    candidate_id=candidate_id, judgment="reject",
-                    provenance="user_action",
-                    reason_code="retry_original",
-                    source_event_id="transforms.retry")
-            except Exception as e:
-                self.v2log.emit("transforms.record_failed",
-                                level="WARNING",
-                                reason_code=type(e).__name__)
         self._tf_active = {"transform_id": defn.transform_id}
         self.overlay.showWithMode_(MODE_TRANSFORMING)
         job = v2_transforms.retry_original(result.job)
+        retry_capture = dict(capture)
+        retry_capture["retry_of"] = candidate_id
 
         def work():
             res = self._m11_run_job(job)
-            AppHelper.callAfter(self._tfShowResult_, res, capture, defn)
+            AppHelper.callAfter(self._tfShowResult_, res, retry_capture,
+                                defn)
         self._tf_spawn(work)
 
     @objc.python_method
@@ -1620,7 +1562,11 @@ class AppDelegate(NSObject):
     @objc.python_method
     def tfTransformOfResult(self, result, capture, defn_id):
         """Transform-the-result: the previous output becomes the source
-        (a different task, never a preference pair with the original)."""
+        (a different task, never a preference pair with the original).
+        The DESTINATION does not move: an accept still replaces the
+        originally captured selection/note region (the snapshot and the
+        note ``destination`` are carried unchanged) or refuses to the
+        copy offer — never an insertion at wherever the caret is now."""
         if self._tf_pipeline_busy():
             self.v2log.emit("transforms.busy", level="INFO",
                             reason_code="pipeline_active")
@@ -1633,7 +1579,7 @@ class AppDelegate(NSObject):
         self.overlay.showWithMode_(MODE_TRANSFORMING)
         new_capture = dict(capture)
         new_capture["source"] = result.output
-        new_capture["range"] = None
+        new_capture.pop("retry_of", None)
 
         def work():
             res = self._m11_run_transform(
@@ -1699,8 +1645,15 @@ class AppDelegate(NSObject):
         # content (an insertion at the caret would leave the original
         # beside its own transformation — S20's whole-note scope).
         rng = tuple(range_) if range_ else (0, len(source))
+        # The immutable destination (code-point range in the note's
+        # content): acceptance — including after Transform Output —
+        # replaces exactly this region of exactly this note or refuses.
+        destination = {"note_id": (note or {}).get("note_id"),
+                       "revision_id": (note or {}).get("revision_id"),
+                       "range": rng, "text": source}
         capture = {"source": source, "range": rng,
-                   "snapshot": None, "note": note}
+                   "snapshot": None, "note": note,
+                   "destination": destination}
 
         def work():
             result = self._m11_run_transform(

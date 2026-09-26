@@ -254,6 +254,9 @@ def test_note_transform_never_external(after):
     (review C1: the picker + action, not the coordinator method)."""
     h = Harness(durations=[1.0], supervisor=TFSupervisor())
     try:
+        # The candidate row asserted below is training evidence: it is
+        # recorded only under collection consent (M11 remediation F08).
+        h.d.consent.set("enabled", note="test")
         hub = make_hub(h)
         h.d._hub = hub  # the production wiring openHub_ installs
         out = h.d._notes_store.create_note("polish this messy text")

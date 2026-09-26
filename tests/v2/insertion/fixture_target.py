@@ -197,6 +197,14 @@ class FixtureTargetApp:
             return el[1]
         return None
 
+    def focused_window_title(self, el):
+        """The SystemInsertionHost method shape (the real AX API hangs
+        AXFocusedWindow off the application; ``attribute`` above only
+        answers for the field element, so AXTitle never read there)."""
+        if el is not self or not self.ax_readable:
+            return None
+        return self.window_title
+
     def is_settable(self, el, name) -> bool:
         if el is not self:
             return False

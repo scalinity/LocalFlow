@@ -30,9 +30,19 @@ texts in lease-governed artifacts inside the same writer op; explicit
 observations join candidates **only under one task key** — the store
 refuses cross-task pairs at write time (M11-AC05). Retry-original
 joins the task; transform-of-result and changed-source retries are
-different tasks by construction. The dictation auto-apply path
-records candidates only — an automatic application is not a judgment.
-No preference-training algorithm exists (S16 deliverable boundary).
+different tasks by construction. **A retry is not a judgment:** Retry
+Original records no observation against the earlier candidate; the new
+candidate's output artifact carries `retry_of` (lineage only).
+Historical `reject` rows with `reason_code='retry_original'` mean
+"retry requested" and are never rewritten (none exist on the reference
+Mac). The dictation auto-apply path records candidates only — an
+automatic application is not a judgment. Candidates exist only under
+collection consent (contracts/training_evidence.md). An automated
+`needs_review` never becomes a preference by itself; an explicit human
+accept of a reviewed candidate is a legitimate judgment, and the
+candidate's `transform_decision` record keeps the automated status
+beside it. No preference-training algorithm exists (S16 deliverable
+boundary).
 
 ## Baseline status (M01)
 
