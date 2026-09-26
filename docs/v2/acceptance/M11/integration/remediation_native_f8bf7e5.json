@@ -1,0 +1,87 @@
+{
+ "suite": "tests/v2/transforms/test_transform_remediation_native.py",
+ "passed": 16,
+ "total": 16,
+ "cases": [
+  {
+   "case": "f03_coordinator_uses_worker_result_not_fault",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f06_same_app_other_document_not_replaced",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f06_unreadable_selection_is_not_replacement_proof",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f06_accept_replaces_with_positive_proof",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f06_secure_field_classified_before_any_content_read",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f07_accept_checks_the_captured_note_identity",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f07_chained_transform_keeps_destination_authority",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f07_selection_offsets_are_utf16_converted",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f08_selected_preview_respects_collection_state",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f08_dictation_candidate_follows_captured_consent",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f09_selected_candidate_retains_decision_inputs",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f09_dictation_decision_map_retained",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f09_note_candidate_records_destination_revision",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f09_selected_accept_is_attributed_to_its_candidate",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f10_retry_original_records_no_rejection",
+   "status": "pass",
+   "detail": null
+  },
+  {
+   "case": "f11_panel_actions_do_not_overlap_and_hit_test",
+   "status": "pass",
+   "detail": null
+  }
+ ]
+}

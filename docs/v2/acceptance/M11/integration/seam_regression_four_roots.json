@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "suite": "tests/v2/transforms/test_selection_capture_m06_seam.py",
+  "command": ".venv/bin/python tests/v2/context/run_isolated.py tests/v2/transforms/test_selection_capture_m06_seam.py --code-root <root>",
+  "note": "One test file judged against four code roots: the historical M11 head, the M06 head (its in-tree M11 reader), the M11 replay before the R4 repair, and the integrated tree (d401161: production code identical to 9a049b3, tests to f8bf7e5). The two cases that pass on the stale roots are the allowed-app control and the exactly-listed denial.",
+  "runs": [
+    {
+      "code_root_sha": "1be42ee9e148afa84e0a1dd51dae02146db546da",
+      "exit": 1,
+      "cases": [
+        {
+          "status": "pass",
+          "line": "R4 control: an allowed app's selection is read"
+        },
+        {
+          "status": "pass",
+          "line": "R4 an exactly listed app: no Accessibility call"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_padded_deny_entry_reads_nothing: AssertionError: deny=[' com.example.vault']: a capture was returned"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_case_variant_deny_entry_reads_nothing: AssertionError: deny=['COM.Example.VAULT']: a capture was returned"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_malformed_deny_list_denies_every_app_for_transforms: AssertionError: deny='com.example.vault': a capture was returned"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_m06_collector_and_m11_capture_agree: AssertionError: deny=[' com.example.vault '] bundle='com.example.vault': M06 denied=False, M11 read nothing=False"
+        },
+        {
+          "status": "fail",
+          "line": "test_seam_capture_records_host_units_and_exact_code_points: AttributeError: 'FieldContext' object has no attribute 'selected_range_utf16'"
+        },
+        {
+          "status": "fail",
+          "line": "test_seam_other_window_with_equal_title_refuses_strict_accept: AssertionError: positive control: same window {'identity': 'pass', 'window': 'pass', 'field': 'pass', 'selection': 'unavailable', 'strict': 'fail'}"
+        }
+      ],
+      "summary": "2/8 selection-capture M06 seam regressions passed",
+      "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0]"
+    },
+    {
+      "code_root_sha": "cb05ca9571e5662ec1275530a892b4c1c604a130",
+      "exit": 1,
+      "cases": [
+        {
+          "status": "pass",
+          "line": "R4 control: an allowed app's selection is read"
+        },
+        {
+          "status": "pass",
+          "line": "R4 an exactly listed app: no Accessibility call"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_padded_deny_entry_reads_nothing: AssertionError: deny=[' com.example.vault']: a capture was returned"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_case_variant_deny_entry_reads_nothing: AssertionError: deny=['COM.Example.VAULT']: a capture was returned"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_malformed_deny_list_denies_every_app_for_transforms: AssertionError: deny='com.example.vault': a capture was returned"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_m06_collector_and_m11_capture_agree: AssertionError: deny=[' com.example.vault '] bundle='com.example.vault': M06 denied=True, M11 read nothing=False"
+        },
+        {
+          "status": "fail",
+          "line": "test_seam_capture_records_host_units_and_exact_code_points: AssertionError: None"
+        },
+        {
+          "status": "fail",
+          "line": "test_seam_other_window_with_equal_title_refuses_strict_accept: AssertionError: {'identity': 'pass', 'window': 'not_recorded', 'field': 'pass', 'selection': 'pass'}"
+        }
+      ],
+      "summary": "2/8 selection-capture M06 seam regressions passed",
+      "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0]"
+    },
+    {
+      "code_root_sha": "1545de9fbbd736c062c8c619202be7d7a27701cd",
+      "exit": 1,
+      "cases": [
+        {
+          "status": "pass",
+          "line": "R4 control: an allowed app's selection is read"
+        },
+        {
+          "status": "pass",
+          "line": "R4 an exactly listed app: no Accessibility call"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_padded_deny_entry_reads_nothing: AssertionError: deny=[' com.example.vault']: a capture was returned"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_case_variant_deny_entry_reads_nothing: AssertionError: deny=['COM.Example.VAULT']: a capture was returned"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_malformed_deny_list_denies_every_app_for_transforms: AssertionError: deny='com.example.vault': a capture was returned"
+        },
+        {
+          "status": "fail",
+          "line": "test_r4_m06_collector_and_m11_capture_agree: AssertionError: deny=[' com.example.vault '] bundle='com.example.vault': M06 denied=True, M11 read nothing=False"
+        },
+        {
+          "status": "fail",
+          "line": "test_seam_capture_records_host_units_and_exact_code_points: AssertionError: None"
+        },
+        {
+          "status": "fail",
+          "line": "test_seam_other_window_with_equal_title_refuses_strict_accept: AssertionError: {'identity': 'pass', 'window': 'pass', 'field': 'pass', 'selection': 'pass', 'surroundings': 'pass', 'strict': 'pass'}"
+        }
+      ],
+      "summary": "2/8 selection-capture M06 seam regressions passed",
+      "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0]"
+    },
+    {
+      "code_root_sha": "d4011611f5c86be918f0375608b4a9e759fd145f",
+      "exit": 0,
+      "cases": [
+        {
+          "status": "pass",
+          "line": "R4 control: an allowed app's selection is read"
+        },
+        {
+          "status": "pass",
+          "line": "R4 an exactly listed app: no Accessibility call"
+        },
+        {
+          "status": "pass",
+          "line": "R4 a padded deny entry: no Accessibility call"
+        },
+        {
+          "status": "pass",
+          "line": "R4 a case-variant deny entry or bundle: no Accessibility call"
+        },
+        {
+          "status": "pass",
+          "line": "R4 a malformed deny list: transforms read no app"
+        },
+        {
+          "status": "pass",
+          "line": "R4 the M06 collector and the M11 capture take one decision"
+        },
+        {
+          "status": "pass",
+          "line": "seam: host units recorded, code points only when exact"
+        },
+        {
+          "status": "pass",
+          "line": "seam: another window under an equal title refuses"
+        }
+      ],
+      "summary": "8/8 selection-capture M06 seam regressions passed",
+      "isolation": "[desktop isolated: ax_calls_blocked=0 ax_trust_queries=0 cg_event_posts_blocked=0]"
+    }
+  ]
+}

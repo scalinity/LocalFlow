@@ -1,0 +1,555 @@
+{
+ "summary": {
+  "total": 40,
+  "verdicts": {
+   "applied": 10,
+   "applied_semantic_failure": 0,
+   "review_addresses_loss": 1,
+   "review_misdirected": 1,
+   "review_no_loss": 14,
+   "fallback": 14,
+   "error": 0
+  },
+  "by_split": {
+   "dev": {
+    "applied": 6,
+    "applied_semantic_failure": 0,
+    "review_addresses_loss": 0,
+    "review_misdirected": 0,
+    "review_no_loss": 4,
+    "fallback": 5,
+    "error": 0
+   },
+   "validation": {
+    "applied": 2,
+    "applied_semantic_failure": 0,
+    "review_addresses_loss": 0,
+    "review_misdirected": 0,
+    "review_no_loss": 3,
+    "fallback": 0,
+    "error": 0
+   },
+   "regression": {
+    "applied": 2,
+    "applied_semantic_failure": 0,
+    "review_addresses_loss": 1,
+    "review_misdirected": 0,
+    "review_no_loss": 2,
+    "fallback": 5,
+    "error": 0
+   },
+   "held-out": {
+    "applied": 0,
+    "applied_semantic_failure": 0,
+    "review_addresses_loss": 0,
+    "review_misdirected": 1,
+    "review_no_loss": 5,
+    "fallback": 4,
+    "error": 0
+   }
+  },
+  "latency_all_cases": {
+   "n": 40,
+   "mean_ms": 2053.1,
+   "p50_ms": 2288.0,
+   "p95_ms": 2784.5,
+   "max_ms": 3008.4
+  },
+  "allow_fallback": false,
+  "fixtures": "m11-prompt-engineer-cases/2",
+  "model": "mlx-community/Qwen3-4B-Instruct-2507-4bit"
+ },
+ "cases": [
+  {
+   "case_id": "PE-DEV-001",
+   "split": "dev",
+   "blind": false,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2487.7,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-DEV-002",
+   "split": "dev",
+   "blind": false,
+   "verdict": "applied",
+   "path": "applied",
+   "reason": null,
+   "failures": [],
+   "duration_ms": 1998.7,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-DEV-003",
+   "split": "dev",
+   "blind": false,
+   "verdict": "applied",
+   "path": "applied",
+   "reason": null,
+   "failures": [],
+   "duration_ms": 901.5,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-DEV-004",
+   "split": "dev",
+   "blind": false,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2427.0,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-DEV-005",
+   "split": "dev",
+   "blind": false,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2499.0,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-DEV-006",
+   "split": "dev",
+   "blind": false,
+   "verdict": "applied",
+   "path": "applied",
+   "reason": null,
+   "failures": [],
+   "duration_ms": 1673.5,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-DEV-007",
+   "split": "dev",
+   "blind": false,
+   "verdict": "applied",
+   "path": "applied",
+   "reason": null,
+   "failures": [],
+   "duration_ms": 1868.7,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-DEV-008",
+   "split": "dev",
+   "blind": false,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 1000.2,
+   "review_excerpts": [
+    "then critique the outline,"
+   ]
+  },
+  {
+   "case_id": "PE-DEV-009",
+   "split": "dev",
+   "blind": false,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2470.0,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-DEV-010",
+   "split": "dev",
+   "blind": false,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2297.7,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-DEV-011",
+   "split": "dev",
+   "blind": false,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 2288.0,
+   "review_excerpts": [
+    "Turn this into a prompt that asks the support bot: what is the default timeout on the retry queue",
+    "and can it be raised per tenant"
+   ]
+  },
+  {
+   "case_id": "PE-DEV-012",
+   "split": "dev",
+   "blind": false,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 1235.6,
+   "review_excerpts": [
+    "Make a prompt asking for a critique of my essay's structure"
+   ]
+  },
+  {
+   "case_id": "PE-DEV-013",
+   "split": "dev",
+   "blind": false,
+   "verdict": "applied",
+   "path": "applied",
+   "reason": null,
+   "failures": [],
+   "duration_ms": 830.0,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-DEV-014",
+   "split": "dev",
+   "blind": false,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 1590.3,
+   "review_excerpts": [
+    "do not write the full document yet",
+    "that comes later"
+   ]
+  },
+  {
+   "case_id": "PE-DEV-015",
+   "split": "dev",
+   "blind": false,
+   "verdict": "applied",
+   "path": "applied",
+   "reason": null,
+   "failures": [],
+   "duration_ms": 1258.6,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-VAL-001",
+   "split": "validation",
+   "blind": false,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 1398.4,
+   "review_excerpts": [
+    "and say up front that a tie is acceptable"
+   ]
+  },
+  {
+   "case_id": "PE-VAL-002",
+   "split": "validation",
+   "blind": false,
+   "verdict": "applied",
+   "path": "applied",
+   "reason": null,
+   "failures": [],
+   "duration_ms": 1518.9,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-VAL-003",
+   "split": "validation",
+   "blind": false,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 2273.4,
+   "review_excerpts": [
+    "Prompt for the vendor email: request the updated SLA doc",
+    "mention our account is the one ending 4471",
+    "we think maybe not"
+   ]
+  },
+  {
+   "case_id": "PE-VAL-004",
+   "split": "validation",
+   "blind": false,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 2675.5,
+   "review_excerpts": [
+    "then for each give a one-sentence answer hint"
+   ]
+  },
+  {
+   "case_id": "PE-VAL-005",
+   "split": "validation",
+   "blind": false,
+   "verdict": "applied",
+   "path": "applied",
+   "reason": null,
+   "failures": [],
+   "duration_ms": 2329.6,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-HOLD-001",
+   "split": "regression",
+   "blind": false,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 2305.2,
+   "review_excerpts": [
+    "don't guess at causes"
+   ]
+  },
+  {
+   "case_id": "PE-HOLD-002",
+   "split": "regression",
+   "blind": false,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2538.4,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-HOLD-003",
+   "split": "regression",
+   "blind": false,
+   "verdict": "review_addresses_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [
+    "no_archive_without_say"
+   ],
+   "duration_ms": 2157.4,
+   "review_excerpts": [
+    "flag anything from legal as urgent same-day",
+    "everything else can wait until Monday",
+    "and nothing gets archived without my say",
+    "and content criteria"
+   ]
+  },
+  {
+   "case_id": "PE-HOLD-004",
+   "split": "regression",
+   "blind": false,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2535.7,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-HOLD-005",
+   "split": "regression",
+   "blind": false,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2522.3,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-HOLD-006",
+   "split": "regression",
+   "blind": false,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2501.3,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-HOLD-007",
+   "split": "regression",
+   "blind": false,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2571.4,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-HOLD-008",
+   "split": "regression",
+   "blind": false,
+   "verdict": "applied",
+   "path": "applied",
+   "reason": null,
+   "failures": [],
+   "duration_ms": 1106.2,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-HOLD-009",
+   "split": "regression",
+   "blind": false,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 2256.2,
+   "review_excerpts": [
+    "WCAG Level AA compliance"
+   ]
+  },
+  {
+   "case_id": "PE-HOLD-010",
+   "split": "regression",
+   "blind": false,
+   "verdict": "applied",
+   "path": "applied",
+   "reason": null,
+   "failures": [],
+   "duration_ms": 2044.4,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-BLIND-001",
+   "split": "held-out",
+   "blind": true,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 875.3,
+   "review_excerpts": [
+    "and stop there — no schema design"
+   ]
+  },
+  {
+   "case_id": "PE-BLIND-002",
+   "split": "held-out",
+   "blind": true,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2582.8,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-BLIND-003",
+   "split": "held-out",
+   "blind": true,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 2784.5,
+   "review_excerpts": [
+    "Don't agree to anything on our behalf",
+    "addressing three specific questions",
+    "commitments",
+    "commitment",
+    "Include all three questions directly and clearly",
+    "List the three questions in the order above",
+    "The message is complete when all three questions are included"
+   ]
+  },
+  {
+   "case_id": "PE-BLIND-004",
+   "split": "held-out",
+   "blind": true,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2452.1,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-BLIND-005",
+   "split": "held-out",
+   "blind": true,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 2386.4,
+   "review_excerpts": [
+    "1.",
+    "2."
+   ]
+  },
+  {
+   "case_id": "PE-BLIND-006",
+   "split": "held-out",
+   "blind": true,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 1829.6,
+   "review_excerpts": [
+    "Write a prompt telling the helper to back up the photos folder first,"
+   ]
+  },
+  {
+   "case_id": "PE-BLIND-007",
+   "split": "held-out",
+   "blind": true,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 2589.6,
+   "review_excerpts": []
+  },
+  {
+   "case_id": "PE-BLIND-008",
+   "split": "held-out",
+   "blind": true,
+   "verdict": "review_misdirected",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [
+    "intent:implement"
+   ],
+   "duration_ms": 2042.1,
+   "review_excerpts": [
+    "not a patch",
+    "fixes"
+   ]
+  },
+  {
+   "case_id": "PE-BLIND-009",
+   "split": "held-out",
+   "blind": true,
+   "verdict": "review_no_loss",
+   "path": "needs_review",
+   "reason": "requirement_coverage_uncertain",
+   "failures": [],
+   "duration_ms": 2010.8,
+   "review_excerpts": [
+    "and flag any idiom you're unsure about"
+   ]
+  },
+  {
+   "case_id": "PE-BLIND-010",
+   "split": "held-out",
+   "blind": true,
+   "verdict": "fallback",
+   "path": "fallback_original",
+   "reason": "output_limit",
+   "failures": [],
+   "duration_ms": 3008.4,
+   "review_excerpts": []
+  }
+ ]
+}
