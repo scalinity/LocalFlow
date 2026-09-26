@@ -184,5 +184,210 @@
     ],
     "post_address_verification": "all 28 fast suites + the three insertion suites (13/10/5) re-ran green on the fixed code, plus all 6 model-backed checks (worker_live 2/2, fidelity 60/60, literal 20/20, structure 40/40, live pipeline 2/2, V1 control 51/51) and the benchmark re-run (20260922-131238-m08). No findings rejected as incorrect."
   },
-  "privacy": "Nothing private entered Git: insertion rows and envelope blocks carry ids, ranges, counts, reason codes and pasteboard type names only; observation before/after texts are lease-governed store artifacts under the training-buffer lease; events are content-free (chars/method/reason); the benchmark JSON carries latencies and counts only; the baseline-manifest privacy scan passes over every new path; live data stays under Application Support."
+  "privacy": "Nothing private entered Git: insertion rows and envelope blocks carry ids, ranges, counts, reason codes and pasteboard type names only; observation before/after texts are lease-governed store artifacts under the training-buffer lease; events are content-free (chars/method/reason); the benchmark JSON carries latencies and counts only; the baseline-manifest privacy scan passes over every new path; live data stays under Application Support.",
+  "remediation_2026_09_26": {
+    "kind": "post-audit local remediation (reference Mac)",
+    "state": "LOCAL_REMEDIATION_COMPLETE_PENDING_MANUAL_VERIFICATION",
+    "state_note": "Every automatable, native-local, benchmark and independent-review step ran on the reference Mac; eight human checks remain (M08-V001..V008, instructions M08-r1). The 2026-09-22 records above are preserved unchanged and describe the historical code; this block supersedes only their claims about the current code.",
+    "audit": {
+      "report": "LocalFlow V2 — M08 Read-Only Deep Audit (sha256 32e31ab6f27f17e500d92c1baca6fd7887058d2e4edaed56129b8d779e216071)",
+      "audited_sha": "180278ee8a157e7372ba187cfb0106556114293f",
+      "verdict": "C",
+      "findings": "19 defect findings (4 Critical, 12 High, 3 Medium) and 2 proof gaps",
+      "corpus": "tests/v2/insertion/m08_audit_corpus.json, byte-identical to the supplied file (sha256 31feb051bc656eb10837edf85f265dc5bb7e0aa3bef10828fa5c4b16723e3f29): 125 cases / 25 categories, 18 stateful probes, 9 metamorphic relations, 20 implementation and 6 benchmark mutation definitions, all NOT_RUN as supplied",
+      "findings_register": "not supplied; the audit text was the authority"
+    },
+    "synchronization": {
+      "local_main_before": "180278ee8a157e7372ba187cfb0106556114293f (clean tree, one worktree)",
+      "remote_main_at_sync": "180278ee8a157e7372ba187cfb0106556114293f",
+      "drift_from_audit": "none; no fast-forward needed",
+      "foundations_verified_as_ancestors": [
+        "M01 3db7406",
+        "M02 bfbc63c",
+        "M03 3e0d1ab",
+        "M04 4ef219c",
+        "M05 01a1f3c",
+        "M06 4388b52",
+        "M06 R4 closure 46ecd5b",
+        "M07 52edc47",
+        "M11 9a049b3 (replay 1545de9; cloud heads aa03af7/1be42ee not ancestors by design)"
+      ]
+    },
+    "inherited_base_sha": "180278ee8a157e7372ba187cfb0106556114293f",
+    "branch": "m08-local-remediation-20260926",
+    "commits": {
+      "f0af82a": "base reproduction, frozen corpus and fail-first regressions (no production change)",
+      "b2cb243": "production: insertion authority bound to the validated destination",
+      "4260fe3": "tests: seams, desktop clipboard isolation in run_isolated.py, adjudications",
+      "846fd2c": "production: AXUIElementIsAttributeSettable out-parameter (found natively) — first-pass production, frozen for review",
+      "a50032c": "tools: corpus runner, owned-native suite, mutation checker",
+      "221c172": "tools: exact owned range in the native astral case; native mutation verdicts",
+      "6c733fa": "contracts: insertion, targets, context, training_evidence",
+      "82de7df": "tools: work-valid benchmark, benchmark mutants, F25 grading",
+      "7f27262": "first-pass evidence — frozen first-pass head",
+      "10802d0": "production: author review A1 (pending payload with restoring off)",
+      "4541652": "tests: A1 regression",
+      "ea83bc1": "production: independent-review findings R1-R10 and the units note — final production code",
+      "261bfc7": "tests: review regressions, corpus drivers F06-C05/F16-C04, world title rule",
+      "d4d739a": "contracts: insertion (review round)",
+      "9483d1b": "docs: runbook M08-V001..V008",
+      "75fcb80": "tools: MUT-08 and MUT-12 re-anchored on the final code — final test/tool head",
+      "4ea2389": "evidence: review round and final gates"
+    },
+    "first_pass_sha": {
+      "evidence": "7f27262883885eb9933be3c0a3cad945e5ccbd39",
+      "production": "846fd2c1985ce2b0c0e8fa7aaa346a1395a7c9c9"
+    },
+    "final_code_revision": "ea83bc198567d001e3d770ae5103ca369701825d",
+    "final_test_head": "75fcb800b604580c6dd0a7efeff48b1c22cb9581",
+    "environment": "reference Mac: Apple M5 Pro, Mac17,8, 18 CPUs, 48 GiB, macOS 27.0 (26A428) arm64; .venv CPython 3.14.7; PyObjC 12.2.1; numpy 2.4.6; MLX 0.31.2 / mlx-lm 0.31.3 (model-backed control only); Accessibility trusted for the terminal; sanitized record remediation/environment.json. Final benchmark on battery power; other sessions active (load 2.0-3.7), disclosed.",
+    "desktop_isolation": "every suite, the corpus, the mutations and the benchmark ran under tests/v2/context/run_isolated.py, which blocks live-desktop Accessibility reads/writes and synthetic events and, since 4260fe3, redirects the general pasteboard to a private named one (three app-level suites had written synthetic text to the live clipboard in the base sweep); every record reports ax_calls_blocked=0 and zero live-clipboard changes; native suites reached only their own helper processes by pid",
+    "reproduction_evidence": {
+      "suite": "tests/v2/insertion/test_m08_remediation.py over tests/v2/insertion/m08_world.py",
+      "base": "remediation/regressions_base_180278e.json (1/43; the pass is the AUDIT-02 flank control)",
+      "corpus_base": "remediation/corpus_base_180278e.json"
+    },
+    "disposition_counts": {
+      "reproduced": 18,
+      "reproduced_narrowed": 1,
+      "proof_gap_confirmed": 2,
+      "refuted": 0,
+      "already_fixed": 0
+    },
+    "author_review": "A1: with restore_clipboard off no pending payload was recorded, so a slow target received the next job's payload ('TWO TWO', ONE lost); fixed in 10802d0; test_a07_pending_payload_kept_with_restore_disabled fails on 7f27262",
+    "native_discovery": "SystemInsertionHost.is_settable called AXUIElementIsAttributeSettable without PyObjC's out-parameter and answered False for every element (AX method never chosen natively; undo unsupported); fixed in 846fd2c; native_suite_4260fe3.json 9/12 before, every native benchmark sample invalid before",
+    "adjudications": {
+      "policy_version": "m08-policy-v1",
+      "file": "tests/v2/insertion/m08_corpus_adjudications.json",
+      "decisions": [
+        "D1 read capability",
+        "D2 recorded destination",
+        "D3 destination binding and the effect boundary",
+        "D4 plain destination",
+        "D5 strict proof",
+        "D6 confirmation",
+        "D7 bound readback",
+        "D8 the pending clipboard payload",
+        "D9 ownership before the post",
+        "D10 operation identity",
+        "D11 cancellation linearization",
+        "D12 observation",
+        "D13 deletion",
+        "D14 recovery lifetime",
+        "D15 terminal text",
+        "D16 substring reconciliation",
+        "D17 native evidence",
+        "D18 benchmark cases"
+      ]
+    },
+    "regressions": {
+      "suite": "tests/v2/insertion/test_m08_remediation.py",
+      "base": "remediation/regressions_base_180278e.json (1/43)",
+      "first_pass": "remediation/regressions_first_pass_82de7df.json (43/43)",
+      "review_first_pass": "remediation/review_regressions_first_pass_7f27262.json (43/57: the 13 review cases and A1 fail)",
+      "final": "remediation/regressions_final_9483d1b.json (57/57)"
+    },
+    "independent_review": {
+      "record": "remediation/review_first_pass_7f27262.json",
+      "method": "fresh-context code-auditor agent in its own read-only worktree at 7f27262; audit, corpus, adjudications, contracts, the 180278e..7f27262 diff and the commands/evidence only; no author rationale, no instruction to approve; probes outside the repository",
+      "allegations": "13 (10 production, 3 test gaps) plus one units note; all reproduced by the author on 7f27262; all confirmed, none refuted",
+      "repair": "ea83bc1 (production), 261bfc7 (regressions, corpus drivers), 75fcb80 (mutant re-anchors)"
+    },
+    "corpus_results": {
+      "runner": "tests/v2/insertion/m08_corpus_runner.py",
+      "base_180278e": {
+        "cases": {
+          "pass": 56,
+          "fail": 55,
+          "not_run": 14
+        },
+        "stateful": "14/18",
+        "metamorphic": "6/9",
+        "file": "remediation/corpus_base_180278e.json"
+      },
+      "first_pass_82de7df": {
+        "cases": {
+          "pass": 116,
+          "not_run": 9
+        },
+        "stateful": "18/18",
+        "metamorphic": "9/9",
+        "file": "remediation/corpus_first_pass_82de7df.json"
+      },
+      "final_9483d1b": {
+        "cases": {
+          "pass": 116,
+          "not_run": 9
+        },
+        "stateful": "18/18",
+        "metamorphic": "9/9",
+        "file": "remediation/corpus_final_9483d1b.json"
+      },
+      "not_run_reason": "the 9 native_helper cases (F07-C01..C04, F09-C04/C05, F10-C05, F11-C02, F12-C04) are graded by the owned-native suite, never passed by the portable runner (D17)",
+      "review_drivers": "F06-C05 and F16-C04 rewritten in 261bfc7 to run the interleavings their frozen cases name; both fail on 7f27262 (remediation/review_drivers_first_pass_7f27262.json) and pass on the final code with every declared barrier fired"
+    },
+    "mutation_results": {
+      "tool": "scripts/v2/m08_mutation_check.py",
+      "first_pass": "remediation/mutation_first_pass_82de7df.json: control green, 20/20 killed (MUT-18 natively)",
+      "final": "remediation/mutation_final_75fcb80.json: control green, 20/20 killed (portable killers; MUT-08 and MUT-12 re-anchored on the final code after reporting 'mutation not applied' at 9483d1b — never counted as kills)",
+      "mut18_native_final": "remediation/mutation_mut18_native_final_9483d1b.json: native control F07-C01 pass, mutant fail (owned (4, 7) mixed units)",
+      "benchmark_mutants": "remediation/benchmark_mutation_final_9483d1b.json: control green, BMUT-01..06 rejected (work invalid, exit 2)",
+      "review_mutant": "the reviewer's bounded_after_always_none survived the regression suite at 7f27262; killed by it after 261bfc7 (control 57/57, mutant 56/57)"
+    },
+    "portable_tests": {
+      "sweeps": [
+        "remediation/sweep_base_180278e.json (86 files, 85 exit 0)",
+        "remediation/sweep_first_pass_82de7df.json (88 files, 86 exit 0)",
+        "remediation/sweep_final_9483d1b.json (88 files, 86 exit 0; the two native suites exit 2 NOT RUN under isolation by design)"
+      ],
+      "pre_existing_failures": "none in the final sweep; no M12/M14 harness race was encountered"
+    },
+    "native_tests": {
+      "suite": "tests/v2/insertion/test_native_insertion.py (owned synthetic helper native_insertion_target.py, reached by pid; real AXUIElement, AXValue, NSTextView, NSPasteboard)",
+      "final": "remediation/native_suite_final_9483d1b.json: 12/12 counted, 1 residual characterized (F10-C05: a copy between the generation check and the native restore is overwritten), 5 diagnostic",
+      "m06_native_ax": "tests/v2/context/test_native_ax.py: 7/7 at 9483d1b"
+    },
+    "model_backed": {
+      "suite": "tests/v2/training/test_live_pipeline.py",
+      "result": "2/2 pass at 9483d1b",
+      "file": "remediation/live_pipeline_final_9483d1b.json",
+      "note": "synthetic audio; a compatibility control only — M08's behavior needs no model"
+    },
+    "benchmark": {
+      "first_pass": "docs/v2/benchmarks/20260926-062315-m08-remediation/ (production 846fd2c, AC power)",
+      "final": "docs/v2/benchmarks/20260926-074103-m08-remediation-final/ (9483d1b, production ea83bc1, battery power)",
+      "work_validity": "valid (0 invalid samples)",
+      "verdicts": "S24 UI acknowledgment p95 <= 50 ms: pass for every UI callback (max p95 0.111 ms); PROPOSED-M08-B1 native validation -> write -> readback p95 <= 150 ms: pass (warm 1.111 ms, cold 42.6 ms)",
+      "note": "undo call -> effect p95 rose by one injected 200 ms delay (the pre-write length read for the 'undone' proof); the callback clock is unchanged"
+    },
+    "runbook": {
+      "page": "docs/v2/VERIFICATION.html",
+      "section": "M08",
+      "instructions_revision": "M08-r1",
+      "code": "ea83bc1",
+      "frontend_skill": "frontend-design:frontend-design",
+      "scope_proof": "with the M08 section and the last-updated line masked, the page is byte-identical to 180278e's (sha256 f1216df1...): script, storage key, navigation and every other milestone's checks unchanged"
+    },
+    "pending_manual_verification": [
+      "M08-V001 real destination classes; app switch right after releasing fn (cross-reference M06-V003)",
+      "M08-V002 copy styled text or an image while a dictation is processing; the copy survives and the clipboard comes back",
+      "M08-V003 undo after a manual edit and in a look-alike document (cross-reference M11-V003)",
+      "M08-V004 two rapid dictations in order; Paste Again never doubles text",
+      "M08-V005 single-line versus multi-line into Terminal; nothing ever runs; no surface certified",
+      "M08-V006 denied app, password box and a transform accept into another app (cross-reference M11-V001/V002)",
+      "M08-V007 observation stops on field change and records only the dictated words",
+      "M08-V008 Recovery/History responsiveness and delete/replay on a sandbox store"
+    ],
+    "historical_records_2026_09_22": "preserved unchanged; the pending item native-m08-insertion-trial is carried by M08-V001..V005 (instructions M08-r1)",
+    "declared_residuals": [
+      "the effect-boundary checks and the effects are not atomic (focus, selection or a copy landing in between)",
+      "the pasteboard generation check and the native restore write are not atomic (native F10-C05 characterization)",
+      "a consumer later than the settle bound on a surface that may not be read pastes after restore; on readable surfaces ownership lasts PENDING_PAYLOAD_SEC (5 s)",
+      "the paste post goes to the key focus; the bound check before it narrows but cannot close a switch",
+      "CERTIFIED_BRACKETED_SURFACES is empty: every multi-line terminal insert is copy-only",
+      "Paste Again's substring reconciliation is approximate by design (D16)",
+      "the native suite covers the AX path and pasteboard ownership on owned helpers; real applications and the ⌘V path on real destinations are the manual checks"
+    ],
+    "privacy": "synthetic worlds, synthetic helper windows, private named pasteboards and temporary stores only; no installed app, real destination, real clipboard content, transcript, audio or database read or committed; every evidence file and the branch diff scanned for user paths (none); the reviewer's probe sources stayed outside the repository"
+  }
 }
