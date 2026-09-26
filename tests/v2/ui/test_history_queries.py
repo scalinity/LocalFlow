@@ -177,11 +177,19 @@ def test_audio_and_purged_reasons():
         detail = e.svc.job_detail(j1)
         assert detail["audio"]["available"] is True
         assert detail["audio"]["artifact_id"] == art
-        e.store.delete_everywhere("job", j1, reason="test purge")
+        # Retention purges the audio: the job stays in History and says
+        # why the audio is gone.
+        import time
+        e.store.prune(now=time.time() + 3650 * 86400)
         detail = e.svc.job_detail(j1)
         assert detail["audio"]["available"] is False
         assert detail["audio"]["reason"] == "purged"
-        print("ok  AC02: audio unavailable reasons (none/purged)")
+        # Delete-everywhere removes the job from History altogether
+        # (M09-AUDIT-29 adjudicated policy).
+        e.store.delete_everywhere("job", j1, reason="test purge")
+        assert e.svc.job_detail(j1) is None
+        print("ok  AC02: audio unavailable reasons (none/purged); a deleted"
+              " job leaves History")
 
 
 def test_insertion_outcome_in_detail():
