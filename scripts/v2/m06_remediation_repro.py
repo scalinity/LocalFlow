@@ -1267,8 +1267,9 @@ def main():
     sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=CODE,
                          capture_output=True, text=True).stdout.strip()
     dirty = bool(subprocess.run(
-        ["git", "status", "--porcelain", "--", "localflow", "scripts",
-         "tests"], cwd=CODE, capture_output=True, text=True).stdout.strip())
+        ["git", "status", "--porcelain", "--untracked-files=no", "--",
+         "localflow", "scripts", "tests"],
+        cwd=CODE, capture_output=True, text=True).stdout.strip())
     results = {}
     for key, fn in PROBES.items():
         if only and key not in only:
