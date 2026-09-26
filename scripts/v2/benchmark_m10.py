@@ -228,6 +228,13 @@ def environment(argv):
     prod_dirty = sh("git", "-C", str(ROOT), "status", "--porcelain",
                     "--untracked-files=no", "--", "localflow")
     mem = sh("sysctl", "-n", "hw.memsize")
+    # The interpreter relative to the repository (or its name alone): a
+    # committed record never carries the home folder's path.
+    exe = pathlib.Path(sys.executable)
+    try:
+        exe_label = str(exe.relative_to(ROOT))
+    except ValueError:
+        exe_label = exe.name
     return {
         "utc": dt.datetime.now(dt.timezone.utc).isoformat(
             timespec="seconds"),
@@ -238,7 +245,7 @@ def environment(argv):
         "cores": os.cpu_count(),
         "memory_gib": round(int(mem) / 2 ** 30, 1) if mem else None,
         "macos": f"{platform.mac_ver()[0]} ({sh('sw_vers', '-buildVersion')})",
-        "python": sys.version.split()[0], "executable": sys.executable,
+        "python": sys.version.split()[0], "executable": exe_label,
         "power_source": (power.splitlines()[0].split("'")[1]
                          if "'" in power else None),
         "load_avg_1_5_15": [round(x, 2) for x in os.getloadavg()],
