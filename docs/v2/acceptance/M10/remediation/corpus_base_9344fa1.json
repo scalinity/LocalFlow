@@ -1,0 +1,5290 @@
+{
+ "suite": "tests/v2/profiles/m10_corpus_runner.py",
+ "suite_sha256": "ab25e082acfa34bb2e677dbd3930b74e62ae1529b557b18d80c4cc331847c1fb",
+ "code_root_sha": "9344fa14e2d013b5c9befef88663fcd03d3c6ef1",
+ "tracked_files_modified": false,
+ "production_tree_modified": false,
+ "localflow_imported_from_root": "base-9344fa1",
+ "python": "3.14.7",
+ "oracle_version": "m10-corpus-oracles-r1",
+ "corpus": "tests/v2/profiles/m10_audit_corpus.json",
+ "corpus_sha256": "3cc5a9288f432a45ddf85c0ecaa7b1c1f83c0e550ea774a4a326f5e23780f755",
+ "adjudications": {
+  "path": "docs/v2/acceptance/M10/remediation/adjudications.json",
+  "sha256": "51714f36e29195749d17d3f999838299705e3735a6cd313320c650ef656b5a4b",
+  "policy_revision": "m10-policy-r1"
+ },
+ "summary": {
+  "cases": 220,
+  "counts": {
+   "PASS": 96,
+   "ERROR": 41,
+   "FAIL": 80,
+   "NOT_RUN": 3
+  },
+  "metamorphic": {
+   "PASS": 7,
+   "FAIL": 4,
+   "ERROR": 1
+  },
+  "stateful": {
+   "PASS": 9,
+   "FAIL": 4,
+   "ERROR": 7,
+   "NOT_RUN": 0
+  }
+ },
+ "results": [
+  {
+   "id": "M10-C001",
+   "category": "profile_precedence",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-32"
+   ],
+   "driver": "precedence",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "raw",
+     "effective_mode": "raw",
+     "source": "rule:workspace",
+     "rule_id": "r:workspace",
+     "category": "coding",
+     "profile_name": "coding",
+     "number_policy": "inherit",
+     "style_revision": "m10:29f45f7aea5b",
+     "fallback_reason": null
+    },
+    "checks": {
+     "winner": true,
+     "source": true,
+     "number_policy_same_choice": true,
+     "profile_same_choice": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C002",
+   "category": "profile_precedence",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-32"
+   ],
+   "driver": "precedence",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "clean",
+     "effective_mode": "clean",
+     "source": "rule:site",
+     "rule_id": "r:site",
+     "category": "coding",
+     "profile_name": "coding",
+     "number_policy": "inherit",
+     "style_revision": "m10:108883778f63",
+     "fallback_reason": null
+    },
+    "checks": {
+     "winner": true,
+     "source": true,
+     "number_policy_same_choice": true,
+     "profile_same_choice": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C003",
+   "category": "profile_precedence",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-32"
+   ],
+   "driver": "precedence",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "raw",
+     "effective_mode": "raw",
+     "source": "rule:app",
+     "rule_id": "r:app",
+     "category": "coding",
+     "profile_name": "coding",
+     "number_policy": "inherit",
+     "style_revision": "m10:2e3e9770e646",
+     "fallback_reason": null
+    },
+    "checks": {
+     "winner": true,
+     "source": true,
+     "number_policy_same_choice": true,
+     "profile_same_choice": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C004",
+   "category": "profile_precedence",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-32"
+   ],
+   "driver": "precedence",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "clean",
+     "effective_mode": "clean",
+     "source": "rule:category",
+     "rule_id": "r:category",
+     "category": "coding",
+     "profile_name": "coding",
+     "number_policy": "inherit",
+     "style_revision": "m10:2c844261be73",
+     "fallback_reason": null
+    },
+    "checks": {
+     "winner": true,
+     "source": true,
+     "number_policy_same_choice": true,
+     "profile_same_choice": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C005",
+   "category": "profile_precedence",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-32"
+   ],
+   "driver": "precedence",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "clean",
+     "effective_mode": "clean",
+     "source": "job_override",
+     "rule_id": null,
+     "category": "coding",
+     "profile_name": "coding",
+     "number_policy": "inherit",
+     "style_revision": "m10:29f45f7aea5b",
+     "fallback_reason": null
+    },
+    "checks": {
+     "winner": true,
+     "source": true,
+     "number_policy_same_choice": true,
+     "profile_same_choice": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C006",
+   "category": "profile_precedence",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "disabled_narrower",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "clean",
+     "effective_mode": "clean",
+     "source": "rule:site",
+     "rule_id": "r:site",
+     "category": "coding",
+     "profile_name": "coding",
+     "number_policy": "inherit",
+     "style_revision": "m10:19c9cd1f8222",
+     "fallback_reason": null
+    },
+    "checks": {
+     "winner_site": true,
+     "disabled_not_applied": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C007",
+   "category": "profile_precedence",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-32"
+   ],
+   "driver": "category_default",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "clean",
+     "effective_mode": "clean",
+     "source": "category_default",
+     "rule_id": null,
+     "category": "coding",
+     "profile_name": "coding",
+     "number_policy": "inherit",
+     "style_revision": "m10:e74d6a180175",
+     "fallback_reason": null
+    },
+    "checks": {
+     "clean": true,
+     "category_default": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C008",
+   "category": "profile_precedence",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-32"
+   ],
+   "driver": "unknown_destination",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "raw",
+     "effective_mode": "raw",
+     "source": "rule:global",
+     "rule_id": "r:global",
+     "category": null,
+     "profile_name": null,
+     "number_policy": "inherit",
+     "style_revision": "m10:e74d6a180175",
+     "fallback_reason": null
+    },
+    "checks": {
+     "raw": true,
+     "global_rule": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C009",
+   "category": "profile_precedence",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "missing_site",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "clean",
+     "effective_mode": "clean",
+     "source": "global_default",
+     "rule_id": null,
+     "category": null,
+     "profile_name": null,
+     "number_policy": "inherit",
+     "style_revision": "m10:debac0dd1d9f",
+     "fallback_reason": null
+    },
+    "checks": {
+     "site_not_winning": true,
+     "global_clean": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C010",
+   "category": "duplicate_rules",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-29",
+    "M10-AUDIT-21"
+   ],
+   "driver": "duplicates",
+   "status": "ERROR",
+   "note": "AttributeError: 'WritingProfile' object has no attribute 'equal_authority_rule_ids'",
+   "adjudication": {
+    "decision": "D1_equal_authority_rules",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C011",
+   "category": "duplicate_rules",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-29",
+    "M10-AUDIT-21"
+   ],
+   "driver": "duplicates",
+   "status": "ERROR",
+   "note": "AttributeError: 'WritingProfile' object has no attribute 'equal_authority_rule_ids'",
+   "adjudication": {
+    "decision": "D1_equal_authority_rules",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C012",
+   "category": "duplicate_rules",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-29",
+    "M10-AUDIT-21"
+   ],
+   "driver": "duplicates",
+   "status": "ERROR",
+   "note": "AttributeError: 'WritingProfile' object has no attribute 'equal_authority_rule_ids'",
+   "adjudication": {
+    "decision": "D1_equal_authority_rules",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C013",
+   "category": "duplicate_rules",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-29",
+    "M10-AUDIT-21"
+   ],
+   "driver": "duplicates",
+   "status": "ERROR",
+   "note": "AttributeError: 'WritingProfile' object has no attribute 'equal_authority_rule_ids'",
+   "adjudication": {
+    "decision": "D1_equal_authority_rules",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C014",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "canonical_equivalents",
+   "status": "FAIL",
+   "note": "failed: ['m10_rule_matches']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "m05_equivalent": true,
+     "m10_rule_matches": false,
+     "m05_entry_matches": true,
+     "different_identity_misses": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C015",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "canonical_equivalents",
+   "status": "FAIL",
+   "note": "failed: ['m10_rule_matches']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "m05_equivalent": true,
+     "m10_rule_matches": false,
+     "m05_entry_matches": true,
+     "different_identity_misses": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C016",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "canonical_equivalents",
+   "status": "FAIL",
+   "note": "failed: ['m10_rule_matches']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "m05_equivalent": true,
+     "m10_rule_matches": false,
+     "m05_entry_matches": true,
+     "different_identity_misses": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C017",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "canonical_equivalents",
+   "status": "FAIL",
+   "note": "failed: ['m10_rule_matches']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "m05_equivalent": true,
+     "m10_rule_matches": false,
+     "m05_entry_matches": true,
+     "different_identity_misses": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C018",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "canonical_equivalents",
+   "status": "FAIL",
+   "note": "failed: ['m10_rule_matches']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "m05_equivalent": true,
+     "m10_rule_matches": false,
+     "m05_entry_matches": true,
+     "different_identity_misses": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C019",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "canonical_profile",
+   "status": "FAIL",
+   "note": "failed: ['profile_identity_trimmed']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "clean",
+     "effective_mode": "clean",
+     "source": "rule:global",
+     "rule_id": "r:p",
+     "category": null,
+     "profile_name": " WritingA ",
+     "number_policy": "inherit",
+     "style_revision": "m10:c3b1fc6d7c79",
+     "fallback_reason": null
+    },
+    "checks": {
+     "profile_identity_trimmed": false,
+     "vocabulary_scope_matches": true,
+     "other_profile_misses": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C020",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "non_equivalent",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "no_rule_activated": true,
+     "m05_distinct": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C021",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "non_equivalent",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "no_rule_activated": true,
+     "m05_distinct": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C022",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "non_equivalent",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "distinct": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C023",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-27"
+   ],
+   "driver": "heuristic_title_origin",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "weak": {
+     "app_bundle": "com.example.browser",
+     "site_origin": null,
+     "workspace": null,
+     "category": null
+    },
+    "strong": {
+     "app_bundle": "com.example.browser",
+     "site_origin": "https://chatgpt.com",
+     "workspace": null,
+     "category": "ai_prompt"
+    },
+    "checks": {
+     "no_site_rule_from_title": true,
+     "no_ai_prompt_from_title": true,
+     "positive_authoritative_ai_prompt": true
+    }
+   },
+   "seconds": 0.048
+  },
+  {
+   "id": "M10-C024",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "driver": "ai_origin_case",
+   "status": "FAIL",
+   "note": "failed: ['both_ai_prompt']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "categories": [
+     "ai_prompt",
+     null
+    ],
+    "checks": {
+     "both_ai_prompt": false,
+     "unknown_uncategorized": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C025",
+   "category": "scope_canonicalization",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-30"
+   ],
+   "driver": "profile_name_admission",
+   "status": "FAIL",
+   "note": "failed: ['empty_and_blank_refused']",
+   "adjudication": {
+    "decision": "D2_profile_name_admission",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "empty_and_blank_refused": false,
+     "unicode_exact": true,
+     "duplicate_name_is_one_identity": true,
+     "rename_keeps_profile_identity": true,
+     "delete_leaves_other": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C026",
+   "category": "per_job_override",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13"
+   ],
+   "driver": "override_once",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "a_raw": true,
+     "a_no_cleanup": true,
+     "b_ordinary_clean": true
+    }
+   },
+   "seconds": 0.161
+  },
+  {
+   "id": "M10-C027",
+   "category": "per_job_override",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13",
+    "M10-AUDIT-09"
+   ],
+   "driver": "override_fault",
+   "status": "ERROR",
+   "note": "AttributeError: 'AppDelegate' object has no attribute '_take_next_job_mode'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.014
+  },
+  {
+   "id": "M10-C028",
+   "category": "per_job_override",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13"
+   ],
+   "driver": "recorder_start_failure",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "not_consumed_by_failed_start": true,
+     "healthy_capture_raw": true
+    }
+   },
+   "seconds": 0.087
+  },
+  {
+   "id": "M10-C029",
+   "category": "per_job_override",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13",
+    "M10-AUDIT-32"
+   ],
+   "driver": "cancelled_capture",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A ownership missing"
+   ],
+   "observed": {
+    "checks": {
+     "a_no_insertion": true,
+     "a_consumed_at_capture_boundary": true,
+     "b_ordinary": true
+    }
+   },
+   "seconds": 0.09
+  },
+  {
+   "id": "M10-C030",
+   "category": "per_job_override",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13",
+    "M10-AUDIT-32"
+   ],
+   "driver": "short_capture",
+   "status": "FAIL",
+   "note": "failed: ['double_tap_gesture_keeps_mode']",
+   "adjudication": {
+    "decision": "D3_one_shot_override",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "no_a_insertion": true,
+     "only_b_inserted": true,
+     "consumed_by_a": true,
+     "b_not_raw_again": true,
+     "double_tap_gesture_keeps_mode": false,
+     "expired_tap_consumes_mode": true
+    }
+   },
+   "seconds": 0.274
+  },
+  {
+   "id": "M10-C031",
+   "category": "per_job_override",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13"
+   ],
+   "driver": "identity_failure",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "raw_kept": true,
+     "no_other_destination": true
+    }
+   },
+   "seconds": 0.092
+  },
+  {
+   "id": "M10-C032",
+   "category": "per_job_override",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13",
+    "M10-AUDIT-27"
+   ],
+   "driver": "second_start_refused",
+   "status": "FAIL",
+   "note": "failed: ['one_owner']",
+   "adjudication": null,
+   "barriers_reached": [
+    "A admission",
+    "B start attempt"
+   ],
+   "observed": {
+    "checks": {
+     "one_owner": false,
+     "no_second_admission": true,
+     "a_raw": true
+    }
+   },
+   "seconds": 0.093
+  },
+  {
+   "id": "M10-C033",
+   "category": "per_job_override",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13",
+    "M10-AUDIT-27"
+   ],
+   "driver": "worker_retry_keeps_tuple",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "attempt 1 crashed",
+    "attempt 2 answered"
+   ],
+   "observed": {
+    "attempt": 2,
+    "checks": {
+     "a_keeps_captured_tuple": true,
+     "retry_attempt_recorded": true,
+     "pending_left_for_next": true,
+     "single_usage": true,
+     "next_job_sees_b": true
+    }
+   },
+   "seconds": 0.17
+  },
+  {
+   "id": "M10-C034",
+   "category": "per_job_override",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-32"
+   ],
+   "driver": "restart_no_persistence",
+   "status": "PASS",
+   "note": "",
+   "adjudication": {
+    "decision": "D3_one_shot_override",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "no_persisted_one_shot": true
+    }
+   },
+   "seconds": 0.024
+  },
+  {
+   "id": "M10-C035",
+   "category": "raw_mode",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13",
+    "M10-AUDIT-27"
+   ],
+   "driver": "raw_skips",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "delegated": "c27_raw_skips_every_m10_stage"
+   },
+   "seconds": 0.09
+  },
+  {
+   "id": "M10-C036",
+   "category": "raw_mode",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06",
+    "M10-AUDIT-13"
+   ],
+   "driver": "raw_beats_transform",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "no_transform_call": true,
+     "raw_text": true,
+     "no_transform_evidence": true
+    }
+   },
+   "seconds": 0.093
+  },
+  {
+   "id": "M10-C037",
+   "category": "raw_mode",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "clean_positive",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "delegated": "c27_clean_positive_expands_once"
+   },
+   "seconds": 0.092
+  },
+  {
+   "id": "M10-C038",
+   "category": "number_policy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-12"
+   ],
+   "driver": "number_policy",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "text": "12 retries",
+    "checks": {
+     "profile_and_policy_same_rule": true,
+     "output": true
+    }
+   },
+   "seconds": 0.092
+  },
+  {
+   "id": "M10-C039",
+   "category": "number_policy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-12"
+   ],
+   "driver": "number_policy",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "text": "12 retries",
+    "checks": {
+     "profile_and_policy_same_rule": true,
+     "output": true
+    }
+   },
+   "seconds": 0.093
+  },
+  {
+   "id": "M10-C040",
+   "category": "number_policy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-12"
+   ],
+   "driver": "number_policy",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "text": "twelve retries",
+    "checks": {
+     "profile_and_policy_same_rule": true,
+     "output": true
+    }
+   },
+   "seconds": 0.093
+  },
+  {
+   "id": "M10-C041",
+   "category": "number_policy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-12"
+   ],
+   "driver": "failed_widening_tuple",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "text": "bee term twelve retries",
+    "checks": {
+     "disposition_failed": true,
+     "profile_a_and_standard": true,
+     "b_vocabulary_absent": true,
+     "evidence_names_used_tuple": true
+    }
+   },
+   "seconds": 0.099
+  },
+  {
+   "id": "M10-C042",
+   "category": "number_policy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-32"
+   ],
+   "driver": "override_composition",
+   "status": "PASS",
+   "note": "",
+   "adjudication": {
+    "decision": "D4_override_number_policy",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "profile": {
+     "mode": "clean",
+     "effective_mode": "clean",
+     "source": "job_override",
+     "rule_id": null,
+     "category": null,
+     "profile_name": null,
+     "number_policy": "inherit",
+     "style_revision": "m10:715299c4141b",
+     "fallback_reason": null
+    },
+    "checks": {
+     "override_mode": true,
+     "default_policy_not_rule": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C043",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-03"
+   ],
+   "driver": "correlated_style",
+   "status": "ERROR",
+   "note": "RuntimeError: ValueError: unknown category: com.example.beta",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.017
+  },
+  {
+   "id": "M10-C044",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-03"
+   ],
+   "driver": "disjoint_style",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "delegated": "c03_disjoint_patches_both_survive",
+    "policy": "changed-field merge; revisions distinct and monotonic"
+   },
+   "seconds": 0.014
+  },
+  {
+   "id": "M10-C045",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-04"
+   ],
+   "driver": "correlated_snippet",
+   "status": "ERROR",
+   "note": "RuntimeError: ValueError: url snippet content must be one address token",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C046",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-05",
+    "M10-AUDIT-20"
+   ],
+   "driver": "style_update_delete",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.profiles_store' has no attribute 'NotFoundError'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C047",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-05",
+    "M10-AUDIT-20"
+   ],
+   "driver": "snippet_update_delete",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.profiles_store' has no attribute 'NotFoundError'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C048",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "'false'",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C049",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "'0'",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C050",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "[]",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C051",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "{}",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C052",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "'false'",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C053",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "'0'",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C054",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "[]",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.016
+  },
+  {
+   "id": "M10-C055",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "{}",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.013
+  },
+  {
+   "id": "M10-C056",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "'false'",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C057",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "'0'",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C058",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "[]",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C059",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "{}",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C060",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "'false'",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C061",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "'0'",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C062",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "[]",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C063",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "{}",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C064",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "'false'",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C065",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "'0'",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C066",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "[]",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C067",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "driver": "malformed_boolean",
+   "status": "FAIL",
+   "note": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "malformed": "{}",
+    "checks": {
+     "refused_before_mutation": false,
+     "row_unchanged": false,
+     "revision_unchanged": false,
+     "true_updates": true,
+     "false_updates": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C068",
+   "category": "store_concurrency",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-05",
+    "M10-AUDIT-21"
+   ],
+   "driver": "same_trigger_creates",
+   "status": "FAIL",
+   "note": "failed: ['explicit_duplicate_conflict']",
+   "adjudication": null,
+   "barriers_reached": [
+    "first_admitted",
+    "second_admitted",
+    "first_committed"
+   ],
+   "observed": {
+    "second": "RuntimeError",
+    "checks": {
+     "one_logical_trigger": true,
+     "explicit_duplicate_conflict": false,
+     "no_content_in_events": true
+    }
+   },
+   "seconds": 0.015
+  },
+  {
+   "id": "M10-C069",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_separator",
+   "status": "FAIL",
+   "note": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "input": "'quick\\nreply'",
+    "output": "'ACK'",
+    "checks": {
+     "no_edit_across_separator": false,
+     "words_and_separator_kept": false,
+     "positive_control_expands": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C070",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_separator",
+   "status": "FAIL",
+   "note": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "input": "'quick\\rreply'",
+    "output": "'ACK'",
+    "checks": {
+     "no_edit_across_separator": false,
+     "words_and_separator_kept": false,
+     "positive_control_expands": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C071",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_separator",
+   "status": "FAIL",
+   "note": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "input": "'quick\\r\\nreply'",
+    "output": "'ACK'",
+    "checks": {
+     "no_edit_across_separator": false,
+     "words_and_separator_kept": false,
+     "positive_control_expands": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C072",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_separator",
+   "status": "FAIL",
+   "note": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "input": "'quick\\u2028reply'",
+    "output": "'ACK'",
+    "checks": {
+     "no_edit_across_separator": false,
+     "words_and_separator_kept": false,
+     "positive_control_expands": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C073",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_separator",
+   "status": "FAIL",
+   "note": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "input": "'quick\\u2029reply'",
+    "output": "'ACK'",
+    "checks": {
+     "no_edit_across_separator": false,
+     "words_and_separator_kept": false,
+     "positive_control_expands": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C074",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_separator",
+   "status": "FAIL",
+   "note": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "input": "'quick. reply'",
+    "output": "'ACK'",
+    "checks": {
+     "no_edit_across_separator": false,
+     "words_and_separator_kept": false,
+     "positive_control_expands": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C075",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_separator",
+   "status": "FAIL",
+   "note": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "input": "'quick; reply'",
+    "output": "'ACK'",
+    "checks": {
+     "no_edit_across_separator": false,
+     "words_and_separator_kept": false,
+     "positive_control_expands": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C076",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_ordinary",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "exact_payload": true,
+     "one_rule": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C077",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_ordinary",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "exact_payload": true,
+     "one_rule": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C078",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_ordinary",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "exact_payload": true,
+     "one_rule": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C079",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "trigger_edge_punct",
+   "status": "FAIL",
+   "note": "failed: ['period_kept', 'span_owns_phrase']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "period_kept": false,
+     "span_owns_phrase": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C080",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-27"
+   ],
+   "driver": "trigger_literal",
+   "status": "PASS",
+   "note": "recognized forms: a double-quoted zone and the literal escape 'write the words'",
+   "adjudication": {
+    "decision": "D5_literal_forms",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "output": "\"quick reply\"",
+    "checks": {
+     "zero_snippet_edits": true,
+     "no_ack": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C081",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-27"
+   ],
+   "driver": "trigger_literal",
+   "status": "PASS",
+   "note": "recognized forms: a double-quoted zone and the literal escape 'write the words'",
+   "adjudication": {
+    "decision": "D5_literal_forms",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "output": "quick reply",
+    "checks": {
+     "zero_snippet_edits": true,
+     "no_ack": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C082",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-17",
+    "M10-AUDIT-18"
+   ],
+   "driver": "disabled_duplicate",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "ack_from_alpha": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C083",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-17",
+    "M10-AUDIT-18"
+   ],
+   "driver": "enabled_duplicate",
+   "status": "ERROR",
+   "note": "AttributeError: 'SnippetSnapshot' object has no attribute 'conflicts_json'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C084",
+   "category": "snippet_triggers",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-31"
+   ],
+   "driver": "second_pass",
+   "status": "PASS",
+   "note": "",
+   "adjudication": {
+    "decision": "D6_second_pass",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "second_pass": "FINAL",
+    "checks": {
+     "first_pass_beta": true,
+     "text_only_second_pass_documented": true,
+     "coordinator_one_pass": true
+    }
+   },
+   "seconds": 0.086
+  },
+  {
+   "id": "M10-C085",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-32"
+   ],
+   "driver": "one_slot",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "output": "'Dear Ada'",
+    "checks": {
+     "exact_payload": true,
+     "protected_generated_span": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C086",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-32"
+   ],
+   "driver": "one_slot",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "output": "'Dear '",
+    "checks": {
+     "exact_payload": true,
+     "protected_generated_span": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C087",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-32"
+   ],
+   "driver": "one_slot",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "output": "'Dear Ada comma Lin'",
+    "checks": {
+     "exact_payload": true,
+     "protected_generated_span": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C088",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-23"
+   ],
+   "driver": "two_slots_template",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.snippets' has no attribute 'applied_definition'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C089",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-32"
+   ],
+   "driver": "slot_policy",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "output": "'Ada | '",
+    "checks": {
+     "documented_slot_policy": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C090",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-32"
+   ],
+   "driver": "slot_policy",
+   "status": "FAIL",
+   "note": "failed: ['no_written_line_consumption', 'no_spoken_line_consumption', 'no_sentence_end_consumption']",
+   "adjudication": {
+    "decision": "D7_written_comma",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "output": "'Ada | Review comma Tomorrow'",
+    "written_line": "'Ada | Review comma Tomorrow Ship it'",
+    "spoken_line": "'Ada | Review comma Tomorrow new line ship it'",
+    "sentence_end": "'Ada | Review comma Tomorrow Ship it'",
+    "checks": {
+     "documented_slot_policy": true,
+     "no_written_line_consumption": false,
+     "no_spoken_line_consumption": false,
+     "no_sentence_end_consumption": false
+    }
+   },
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C091",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-32"
+   ],
+   "driver": "slot_policy",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "output": "'Review | '",
+    "checks": {
+     "documented_slot_policy": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C092",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-32"
+   ],
+   "driver": "written_comma",
+   "status": "FAIL",
+   "note": "failed: ['written_comma_in_value', 'newline_not_swallowed']",
+   "adjudication": {
+    "decision": "D7_written_comma",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "output": "'Ada Review | '",
+    "newline": "'Ada Review | '",
+    "checks": {
+     "written_comma_in_value": false,
+     "newline_not_swallowed": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C093",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-32"
+   ],
+   "driver": "slot_cap",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "words": 24,
+    "checks": {
+     "cap_policy": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C094",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-32"
+   ],
+   "driver": "slot_cap",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "words": 25,
+    "checks": {
+     "cap_policy": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C095",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "slot_newline",
+   "status": "FAIL",
+   "note": "failed: ['line_not_swallowed']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "output": "'Ada Do not deploy'",
+    "checks": {
+     "line_not_swallowed": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C096",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "driver": "slot_quote",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "output": "'Ada \"Do not deploy\"'",
+    "checks": {
+     "quote_not_consumed": true,
+     "one_expansion": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C097",
+   "category": "placeholders",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-14",
+    "M10-AUDIT-23"
+   ],
+   "driver": "slot_unicode",
+   "status": "PASS",
+   "note": "no correction rule applies to slot text in the fixture; the spoken value is kept verbatim",
+   "adjudication": {
+    "decision": "D8_slot_content",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "output": "Name: Zo\u00eb actually Zora!",
+    "checks": {
+     "template_exact": true,
+     "value_spoken_verbatim": true,
+     "generated_span_protected": true
+    }
+   },
+   "seconds": 0.089
+  },
+  {
+   "id": "M10-C098",
+   "category": "snippet_skill_collisions",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-18"
+   ],
+   "driver": "bare_alias_vs_slash",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.snippets' has no attribute 'preview_collisions'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C099",
+   "category": "snippet_skill_collisions",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-18"
+   ],
+   "driver": "bare_alias_vs_slash",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.snippets' has no attribute 'preview_collisions'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C100",
+   "category": "snippet_skill_collisions",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-18"
+   ],
+   "driver": "slash_trigger_same_span",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.snippets' has no attribute 'preview_collisions'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C101",
+   "category": "snippet_skill_collisions",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-18",
+    "M10-AUDIT-27"
+   ],
+   "driver": "snippet_beats_term",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "snippet_wins": true,
+     "usage_only_applied": true
+    }
+   },
+   "seconds": 0.092
+  },
+  {
+   "id": "M10-C102",
+   "category": "snippet_skill_collisions",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-17",
+    "M10-AUDIT-18"
+   ],
+   "driver": "two_equal_skills",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "no_arbitrary_token": true,
+     "ambiguity_retained": true
+    }
+   },
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C103",
+   "category": "snippet_skill_collisions",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-18"
+   ],
+   "driver": "inactive_vocab_preview",
+   "status": "ERROR",
+   "note": "TypeError: AppDelegate.hubSnippetCollisionPreview() got an unexpected keyword argument 'snippet_id'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.093
+  },
+  {
+   "id": "M10-C104",
+   "category": "rich_snippets",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-23",
+    "M10-AUDIT-24"
+   ],
+   "driver": "rich_plain_honest",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "rtf_round_trips": true,
+     "plain_inserted": true,
+     "no_rtf_claim": true
+    }
+   },
+   "seconds": 0.096
+  },
+  {
+   "id": "M10-C105",
+   "category": "rich_snippets",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-17"
+   ],
+   "driver": "rich_export_detached",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "payload_unchanged": true,
+     "revision_unchanged": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C106",
+   "category": "allow_rewrite",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06",
+    "M10-AUDIT-17",
+    "M10-AUDIT-23"
+   ],
+   "driver": "captured_rewrite",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A frozen snippet",
+    "before cleanup protection mapping"
+   ],
+   "observed": {
+    "protected": [
+     [
+      0,
+      37,
+      "generated"
+     ]
+    ],
+    "checks": {
+     "a_expanded_exactly": true,
+     "captured_authorization_governs": true,
+     "b_follows_current_store": true
+    }
+   },
+   "seconds": 0.169
+  },
+  {
+   "id": "M10-C107",
+   "category": "allow_rewrite",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06",
+    "M10-AUDIT-17",
+    "M10-AUDIT-23"
+   ],
+   "driver": "captured_rewrite",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A frozen snippet",
+    "before cleanup protection mapping"
+   ],
+   "observed": {
+    "protected": [],
+    "checks": {
+     "a_expanded_exactly": true,
+     "captured_authorization_governs": true,
+     "b_follows_current_store": true
+    }
+   },
+   "seconds": 0.173
+  },
+  {
+   "id": "M10-C108",
+   "category": "allow_rewrite",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-23",
+    "M10-AUDIT-27"
+   ],
+   "driver": "missing_snapshot_protects",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "unavailable_definition_protects": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C109",
+   "category": "allow_rewrite",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-23",
+    "M10-AUDIT-27"
+   ],
+   "driver": "cleanup_failure_keeps_expansion",
+   "status": "PASS",
+   "note": "",
+   "adjudication": {
+    "decision": "D13_cleanup_worker_failure",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "retry": {
+     "outcome": "requeued",
+     "job_id": "job-9b325b50c64b4931a5aaf73648859709"
+    },
+    "retry_text": "quick reply",
+    "checks": {
+     "job_recoverable_not_inserted": true,
+     "exact_expansion_retained": true,
+     "retry_never_reexpands": true
+    }
+   },
+   "seconds": 0.181
+  },
+  {
+   "id": "M10-C110",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-08",
+    "M10-AUDIT-27"
+   ],
+   "driver": "fm_valid",
+   "status": "FAIL",
+   "note": "flow-list aliases dropped the whole skill: []",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C111",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-08"
+   ],
+   "driver": "fm_body",
+   "status": "FAIL",
+   "note": "body metadata became identity: ['body-canary']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C112",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-08"
+   ],
+   "driver": "fm_unclosed",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.skills' has no attribute 'discover_detailed'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C113",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-09",
+    "M10-AUDIT-13"
+   ],
+   "driver": "wrong_shape",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.skills' has no attribute 'discover_detailed'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C114",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-09",
+    "M10-AUDIT-13"
+   ],
+   "driver": "wrong_shape",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.skills' has no attribute 'discover_detailed'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C115",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-09",
+    "M10-AUDIT-13"
+   ],
+   "driver": "wrong_shape",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.skills' has no attribute 'discover_detailed'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C116",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-09",
+    "M10-AUDIT-13"
+   ],
+   "driver": "wrong_shape",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.skills' has no attribute 'discover_detailed'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C117",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-09"
+   ],
+   "driver": "invalid_encoding",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.skills' has no attribute 'discover_detailed'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C118",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-01"
+   ],
+   "driver": "symlink_dir",
+   "status": "FAIL",
+   "note": "outside skill loaded: ['inside-skill', 'outside-canary']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C119",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-01"
+   ],
+   "driver": "symlink_file",
+   "status": "FAIL",
+   "note": "outside skill loaded: ['inside-skill', 'outside-canary']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C120",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-01",
+    "M10-AUDIT-07"
+   ],
+   "driver": "no_fallback_scan",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.skills' has no attribute 'discover_detailed'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C121",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-07"
+   ],
+   "driver": "malformed_config",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.config' has no attribute 'developer_policy'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C122",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-07"
+   ],
+   "driver": "malformed_config",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.config' has no attribute 'developer_policy'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C123",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-07"
+   ],
+   "driver": "malformed_config",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.config' has no attribute 'developer_policy'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C124",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-07"
+   ],
+   "driver": "malformed_config",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.config' has no attribute 'developer_policy'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C125",
+   "category": "manifest_parsing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-07"
+   ],
+   "driver": "malformed_config",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.config' has no attribute 'developer_policy'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C126",
+   "category": "manifest_cache",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-10",
+    "M10-AUDIT-11"
+   ],
+   "driver": "cache_child",
+   "status": "FAIL",
+   "note": "new job kept the stale registry: 'slash bravo phrase now'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.167
+  },
+  {
+   "id": "M10-C127",
+   "category": "manifest_cache",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-10"
+   ],
+   "driver": "cache_same_mtime",
+   "status": "FAIL",
+   "note": "stale data claimed fresh: 'slash bravo phrase now'",
+   "adjudication": {
+    "decision": "D9_manifest_freshness",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.17
+  },
+  {
+   "id": "M10-C128",
+   "category": "manifest_cache",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-10",
+    "M10-AUDIT-11"
+   ],
+   "driver": "cache_deletion",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "old_job_frozen": true,
+     "new_job_no_authority": true,
+     "missing_reason_no_path": true
+    }
+   },
+   "seconds": 0.176
+  },
+  {
+   "id": "M10-C129",
+   "category": "manifest_cache",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-22"
+   ],
+   "driver": "parse_hash",
+   "status": "FAIL",
+   "note": "header of A carries another revision (2 opens)",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.004
+  },
+  {
+   "id": "M10-C130",
+   "category": "workspace_switch",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-10",
+    "M10-AUDIT-11",
+    "M10-AUDIT-12"
+   ],
+   "driver": "workspace_switch",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A frozen",
+    "workspace B context ready"
+   ],
+   "observed": {
+    "b": "slash alpha review now. /beta-review then /global-review",
+    "checks": {
+     "a_uses_its_skill": true,
+     "b_excludes_a": true,
+     "b_has_b_and_global": true,
+     "a_unchanged_after_b": true
+    }
+   },
+   "seconds": 0.18
+  },
+  {
+   "id": "M10-C131",
+   "category": "workspace_switch",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-07",
+    "M10-AUDIT-12"
+   ],
+   "driver": "display_name_not_path",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "no_guessed_path": true
+    }
+   },
+   "seconds": 0.096
+  },
+  {
+   "id": "M10-C132",
+   "category": "workspace_switch",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-07",
+    "M10-AUDIT-27"
+   ],
+   "driver": "locator_decoding",
+   "status": "ERROR",
+   "note": "AttributeError: 'AppDelegate' object has no attribute '_m10_document_path'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.02
+  },
+  {
+   "id": "M10-C133",
+   "category": "workspace_switch",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-12"
+   ],
+   "driver": "deferred_no_b",
+   "status": "FAIL",
+   "note": "workspace skill added after a deferred widening: '/ws-alpha now'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.09
+  },
+  {
+   "id": "M10-C134",
+   "category": "file_listing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-22"
+   ],
+   "driver": "listing_positive",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.file_tags' has no attribute 'list_workspace_files_bounded'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C135",
+   "category": "file_listing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-01",
+    "M10-AUDIT-22"
+   ],
+   "driver": "listing_symlink",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.file_tags' has no attribute 'list_workspace_files_bounded'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C136",
+   "category": "file_listing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-22",
+    "M10-AUDIT-25"
+   ],
+   "driver": "listing_budget",
+   "status": "FAIL",
+   "note": "listing visited 5000 entries for 500 returned names (work budget 2000)",
+   "adjudication": {
+    "decision": "D10_listing_budget",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.377
+  },
+  {
+   "id": "M10-C137",
+   "category": "file_listing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-22",
+    "M10-AUDIT-27"
+   ],
+   "driver": "listing_race",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.file_tags' has no attribute 'list_workspace_files_bounded'",
+   "adjudication": {
+    "decision": "D15_partial_listing",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "M10-C138",
+   "category": "file_listing",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-07",
+    "M10-AUDIT-22"
+   ],
+   "driver": "listing_dotdot_package",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.config' has no attribute 'developer_policy'",
+   "adjudication": {
+    "decision": "D11_listing_escape_and_packages",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C139",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-16",
+    "M10-AUDIT-27"
+   ],
+   "driver": "spoken_path",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "resolved": true,
+     "matched_words": true,
+     "grammar": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C140",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-16"
+   ],
+   "driver": "duplicate_basename",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "results": [
+     [
+      "ambiguous",
+      [
+       "src/config.json",
+       "tests/config.json"
+      ]
+     ],
+     [
+      "ambiguous",
+      [
+       "src/config.json",
+       "tests/config.json"
+      ]
+     ]
+    ],
+    "checks": {
+     "ambiguous_both_orders": true,
+     "both_candidates": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C141",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-16"
+   ],
+   "driver": "duplicate_basename",
+   "status": "FAIL",
+   "note": "failed: ['ambiguous_both_orders', 'both_candidates']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "results": [
+     [
+      "resolved",
+      []
+     ],
+     [
+      "resolved",
+      []
+     ]
+    ],
+    "checks": {
+     "ambiguous_both_orders": false,
+     "both_candidates": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C142",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-16"
+   ],
+   "driver": "duplicate_basename",
+   "status": "FAIL",
+   "note": "failed: ['ambiguous_both_orders', 'both_candidates']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "results": [
+     [
+      "resolved",
+      []
+     ],
+     [
+      "resolved",
+      []
+     ]
+    ],
+    "checks": {
+     "ambiguous_both_orders": false,
+     "both_candidates": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C143",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-16",
+    "M10-AUDIT-27"
+   ],
+   "driver": "progressive_prefix",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "longest_exact_prefix": true,
+     "prose_kept": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C144",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "spoken_digits",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "unresolved": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C145",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-15"
+   ],
+   "driver": "disconnected_attach",
+   "status": "FAIL",
+   "note": "failed: ['no_file_tag', 'literal']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "output": "alpha.py",
+    "checks": {
+     "no_file_tag": false,
+     "literal": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C146",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-15"
+   ],
+   "driver": "disconnected_attach",
+   "status": "FAIL",
+   "note": "failed: ['no_file_tag', 'literal']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "output": "alpha.py",
+    "checks": {
+     "no_file_tag": false,
+     "literal": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C147",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-15"
+   ],
+   "driver": "disconnected_attach",
+   "status": "FAIL",
+   "note": "failed: ['no_file_tag', 'literal']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "output": "alpha.py",
+    "checks": {
+     "no_file_tag": false,
+     "literal": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C148",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-15",
+    "M10-AUDIT-24"
+   ],
+   "driver": "two_refs",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "delegated": "c15_two_references_keep_trailing_prose"
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C149",
+   "category": "file_tag_resolution",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-24"
+   ],
+   "driver": "runtime_attachment",
+   "status": "FAIL",
+   "note": "no attachment_created=false outcome on the runtime path",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.092
+  },
+  {
+   "id": "M10-C150",
+   "category": "surface_safety",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "terminal_separator",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "state": "saved_not_inserted",
+    "reason": "multiline_terminal_unverified",
+    "checks": {
+     "payload_is_exact_snippet": true,
+     "copy_only": true,
+     "no_paste_or_return": true,
+     "positive_editor_delivery": true
+    }
+   },
+   "seconds": 0.023
+  },
+  {
+   "id": "M10-C151",
+   "category": "surface_safety",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "terminal_separator",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "state": "saved_not_inserted",
+    "reason": "multiline_terminal_unverified",
+    "checks": {
+     "payload_is_exact_snippet": true,
+     "copy_only": true,
+     "no_paste_or_return": true,
+     "positive_editor_delivery": true
+    }
+   },
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C152",
+   "category": "surface_safety",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "terminal_separator",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "state": "saved_not_inserted",
+    "reason": "multiline_terminal_unverified",
+    "checks": {
+     "payload_is_exact_snippet": true,
+     "copy_only": true,
+     "no_paste_or_return": true,
+     "positive_editor_delivery": true
+    }
+   },
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C153",
+   "category": "surface_safety",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "terminal_separator",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "state": "saved_not_inserted",
+    "reason": "multiline_terminal_unverified",
+    "checks": {
+     "payload_is_exact_snippet": true,
+     "copy_only": true,
+     "no_paste_or_return": true,
+     "positive_editor_delivery": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C154",
+   "category": "surface_safety",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "terminal_separator",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "state": "saved_not_inserted",
+    "reason": "multiline_terminal_unverified",
+    "checks": {
+     "payload_is_exact_snippet": true,
+     "copy_only": true,
+     "no_paste_or_return": true,
+     "positive_editor_delivery": true
+    }
+   },
+   "seconds": 0.01
+  },
+  {
+   "id": "M10-C155",
+   "category": "surface_safety",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "terminal_separator",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "state": "saved_not_inserted",
+    "reason": "multiline_terminal_unverified",
+    "checks": {
+     "payload_is_exact_snippet": true,
+     "copy_only": true,
+     "no_paste_or_return": true,
+     "positive_editor_delivery": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C156",
+   "category": "surface_safety",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "terminal_separator",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "state": "saved_not_inserted",
+    "reason": "multiline_terminal_unverified",
+    "checks": {
+     "payload_is_exact_snippet": true,
+     "copy_only": true,
+     "no_paste_or_return": true,
+     "positive_editor_delivery": true
+    }
+   },
+   "seconds": 0.011
+  },
+  {
+   "id": "M10-C157",
+   "category": "surface_safety",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "operators_single_line",
+   "status": "PASS",
+   "note": "current M08 policy: a single plain line inserts; no blanket operator ban",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "state": "confirmed",
+    "checks": {
+     "operators_exact": true,
+     "no_return_synthesized": true
+    }
+   },
+   "seconds": 0.005
+  },
+  {
+   "id": "M10-C158",
+   "category": "surface_safety",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "surface_table",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "display_follows_enforcement": true,
+     "fixture_certification_not_kept": true,
+     "live_sets_empty": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C159",
+   "category": "m11_auto_apply",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06",
+    "M10-AUDIT-27"
+   ],
+   "driver": "m11_optin",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "results": {
+     "False": [
+      "hello there team",
+      0,
+      "transform_auto_apply_disabled:polish",
+      "hello there team"
+     ],
+     "True": [
+      "TRANSFORMED",
+      1,
+      null,
+      "hello there team"
+     ]
+    },
+    "checks": {
+     "false_no_generation": true,
+     "true_generates": true,
+     "applied_reaches_insertion": true,
+     "clean_source_retained": true
+    }
+   },
+   "seconds": 0.183
+  },
+  {
+   "id": "M10-C160",
+   "category": "m11_auto_apply",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06",
+    "M10-AUDIT-27"
+   ],
+   "driver": "m11_optin",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "results": {
+     "False": [
+      "hello there team",
+      0,
+      "transform_auto_apply_disabled:concise",
+      "hello there team"
+     ],
+     "True": [
+      "TRANSFORMED",
+      1,
+      null,
+      "hello there team"
+     ]
+    },
+    "checks": {
+     "false_no_generation": true,
+     "true_generates": true,
+     "applied_reaches_insertion": true,
+     "clean_source_retained": true
+    }
+   },
+   "seconds": 0.189
+  },
+  {
+   "id": "M10-C161",
+   "category": "m11_auto_apply",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06",
+    "M10-AUDIT-27"
+   ],
+   "driver": "m11_optin",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "results": {
+     "False": [
+      "hello there team",
+      0,
+      "transform_auto_apply_disabled:prompt_engineer",
+      "hello there team"
+     ],
+     "True": [
+      "TRANSFORMED",
+      1,
+      null,
+      "hello there team"
+     ]
+    },
+    "checks": {
+     "false_no_generation": true,
+     "true_generates": true,
+     "applied_reaches_insertion": true,
+     "clean_source_retained": true
+    }
+   },
+   "seconds": 0.19
+  },
+  {
+   "id": "M10-C162",
+   "category": "m11_auto_apply",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "m11_unbound",
+   "status": "PASS",
+   "note": "a built-in carrying a wrong mode cannot be stored: a built-in's mode is fixed (M11 contract)",
+   "adjudication": {
+    "decision": "D14_builtin_mode",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {
+    "out": {
+     "missing": [
+      0,
+      "transform_not_bound:custom",
+      "hello there"
+     ],
+     "disabled": [
+      0,
+      "transform_not_bound:polish",
+      "hello there"
+     ]
+    },
+    "checks": {
+     "missing_no_call": true,
+     "disabled_no_call": true,
+     "honest_reasons": true
+    }
+   },
+   "seconds": 0.168
+  },
+  {
+   "id": "M10-C163",
+   "category": "m11_auto_apply",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06",
+    "M10-AUDIT-30"
+   ],
+   "driver": "m11_target_profile_private",
+   "status": "ERROR",
+   "note": "KeyError: 'profile_name_source'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.098
+  },
+  {
+   "id": "M10-C164",
+   "category": "m11_auto_apply",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "m11_custom_counts",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "res": {
+     "0": [
+      0,
+      "hello there"
+     ],
+     "1": [
+      1,
+      "CUSTOM"
+     ],
+     "2": [
+      0,
+      "hello there"
+     ]
+    },
+    "checks": {
+     "unique_executes": true,
+     "zero_falls_back": true,
+     "multiple_falls_back": true
+    }
+   },
+   "seconds": 0.278
+  },
+  {
+   "id": "M10-C165",
+   "category": "m11_auto_apply",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27",
+    "M10-AUDIT-28"
+   ],
+   "driver": "m11_review_failure",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "out": {
+     "needs_review": [
+      "hello there team",
+      "requirement_coverage_uncertain"
+     ],
+     "worker_error": [
+      "hello there team",
+      "transform_request_failed:worker_crash"
+     ]
+    },
+    "checks": {
+     "clean_inserted": true,
+     "not_applied_reason": true
+    }
+   },
+   "seconds": 0.186
+  },
+  {
+   "id": "M10-C166",
+   "category": "hub_crud",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27"
+   ],
+   "driver": "hub_services",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "rows_render": true,
+     "services_available": true,
+     "add_reaches_store": true
+    }
+   },
+   "seconds": 0.105
+  },
+  {
+   "id": "M10-C167",
+   "category": "hub_crud",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-20"
+   ],
+   "driver": "hub_reorder",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A form rendered",
+    "reordered rows published on MainQueue"
+   ],
+   "observed": {
+    "order": [
+     "r:B",
+     "r:A"
+    ],
+    "checks": {
+     "reordered": true,
+     "only_a_mutated": true,
+     "editor_revision_respected": true
+    }
+   },
+   "seconds": 0.035
+  },
+  {
+   "id": "M10-C168",
+   "category": "hub_crud",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-20",
+    "M10-AUDIT-03"
+   ],
+   "driver": "hub_stale_form",
+   "status": "FAIL",
+   "note": "stale form overwrote the external edit: technical",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.035
+  },
+  {
+   "id": "M10-C169",
+   "category": "hub_crud",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-20",
+    "M10-AUDIT-05"
+   ],
+   "driver": "hub_deleted_editor",
+   "status": "FAIL",
+   "note": "deleted editor still bound: selected='style-4584e59aa4f8499380eb5766ba573b81' name='Doomed'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.031
+  },
+  {
+   "id": "M10-C170",
+   "category": "hub_crud",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-21"
+   ],
+   "driver": "hub_add_timeout_style",
+   "status": "FAIL",
+   "note": "admitted timeout reported as definite: 'not saved: TimeoutError'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.238
+  },
+  {
+   "id": "M10-C171",
+   "category": "hub_crud",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-21"
+   ],
+   "driver": "hub_add_timeout_snippet",
+   "status": "FAIL",
+   "note": "failed: ['unknown_not_failed']",
+   "adjudication": null,
+   "barriers_reached": [
+    "mutation enqueued",
+    "caller deadline elapsed",
+    "late commit"
+   ],
+   "observed": {
+    "statuses": [
+     "not saved: TimeoutError",
+     "1 snippets"
+    ],
+    "checks": {
+     "unknown_not_failed": false,
+     "one_item": true,
+     "confirmed_not_collision": true
+    }
+   },
+   "seconds": 0.269
+  },
+  {
+   "id": "M10-C172",
+   "category": "hub_crud",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-21"
+   ],
+   "driver": "hub_pre_admission",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "status": "not saved: RuntimeError",
+    "checks": {
+     "no_mutation_queued": true,
+     "definite_not_unknown": true
+    }
+   },
+   "seconds": 0.051
+  },
+  {
+   "id": "M10-C173",
+   "category": "hub_crud",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-18",
+    "M10-AUDIT-19"
+   ],
+   "driver": "preview_no_use",
+   "status": "FAIL",
+   "note": "failed: ['preview_real']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "preview": "quick reply Term",
+    "checks": {
+     "preview_real": false,
+     "counters_unchanged": true
+    }
+   },
+   "seconds": 0.015
+  },
+  {
+   "id": "M10-C174",
+   "category": "hub_crud",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-18"
+   ],
+   "driver": "hub_self_collision",
+   "status": "FAIL",
+   "note": "the selected snippet collided with itself: 'duplicate_trigger: two enabled snippets share the trigger; both stay literal until one is renamed'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.034
+  },
+  {
+   "id": "M10-C175",
+   "category": "hub_crud",
+   "execution_kind": "NATIVE_AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-26",
+    "M10-AUDIT-20"
+   ],
+   "driver": "native_panes",
+   "status": "NOT_RUN",
+   "note": "native active-tier record absent",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "record": "docs/v2/acceptance/M10/remediation/native_panes_final.json"
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C176",
+   "category": "hub_crud",
+   "execution_kind": "NATIVE_AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-26",
+    "M10-AUDIT-20"
+   ],
+   "driver": "native_panes",
+   "status": "NOT_RUN",
+   "note": "native active-tier record absent",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "record": "docs/v2/acceptance/M10/remediation/native_panes_final.json"
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C177",
+   "category": "evidence_privacy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-23",
+    "M10-AUDIT-28"
+   ],
+   "driver": "generated_not_raw",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "raw_is_asr": true,
+     "generated_in_snippet_lineage": true,
+     "no_vocabulary_hit": true,
+     "output_generated": true
+    }
+   },
+   "seconds": 0.091
+  },
+  {
+   "id": "M10-C178",
+   "category": "evidence_privacy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-23"
+   ],
+   "driver": "definitions_evidence",
+   "status": "FAIL",
+   "note": "the applied template is neither retained nor declared missing",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.096
+  },
+  {
+   "id": "M10-C179",
+   "category": "evidence_privacy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-28"
+   ],
+   "driver": "registry_lease_delete",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "retained_under_lease": true,
+     "delete_revokes_content": true,
+     "tombstone_content_free": true
+    }
+   },
+   "seconds": 0.095
+  },
+  {
+   "id": "M10-C180",
+   "category": "evidence_privacy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-30"
+   ],
+   "driver": "registry_no_path",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "no_manifest_path": true,
+     "counts_usable": true
+    }
+   },
+   "seconds": 0.091
+  },
+  {
+   "id": "M10-C181",
+   "category": "evidence_privacy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-30"
+   ],
+   "driver": "m11_target_profile_private",
+   "status": "ERROR",
+   "note": "KeyError: 'profile_name_source'",
+   "adjudication": {
+    "decision": "D12_profile_name_privacy",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.092
+  },
+  {
+   "id": "M10-C182",
+   "category": "evidence_privacy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06",
+    "M10-AUDIT-09",
+    "M10-AUDIT-30"
+   ],
+   "driver": "validation_no_content",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "refused": true,
+     "canary_absent_from_events": true
+    }
+   },
+   "seconds": 0.012
+  },
+  {
+   "id": "M10-C183",
+   "category": "evidence_privacy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-24",
+    "M10-AUDIT-30"
+   ],
+   "driver": "runtime_attachment",
+   "status": "FAIL",
+   "note": "no attachment_created=false outcome on the runtime path",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.091
+  },
+  {
+   "id": "M10-C184",
+   "category": "evidence_privacy",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-28"
+   ],
+   "driver": "eligibility_seam",
+   "status": "PASS",
+   "note": "the verbatim reference is the independently reviewed spoken words, never the generated text",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "reasons": [
+     "no_audio_reviewed_verbatim",
+     "no_audio_reviewed_verbatim",
+     null
+    ],
+    "checks": {
+     "no_review_not_eligible": true,
+     "intended_only_not_eligible": true,
+     "independent_verbatim_eligible": true
+    }
+   },
+   "seconds": 0.094
+  },
+  {
+   "id": "M10-C185",
+   "category": "retry",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27",
+    "M10-AUDIT-32"
+   ],
+   "driver": "retry_unscoped",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "current ProjectB active",
+    "old job retained"
+   ],
+   "observed": {
+    "text": "quick reply slash b only then /global-review 12 retries",
+    "checks": {
+     "requeued": true,
+     "retry_unscoped_default": true,
+     "b_only_absent": true,
+     "fresh_global_skill": true,
+     "no_original_config_claim": true
+    }
+   },
+   "seconds": 0.175
+  },
+  {
+   "id": "M10-C186",
+   "category": "retry",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13",
+    "M10-AUDIT-27"
+   ],
+   "driver": "retry_keeps_pending",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "checks": {
+     "retry_did_not_take_slot": true,
+     "new_capture_takes_raw_once": true
+    }
+   },
+   "seconds": 0.241
+  },
+  {
+   "id": "M10-C187",
+   "category": "retry",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-11",
+    "M10-AUDIT-27"
+   ],
+   "driver": "worker_retry_keeps_tuple",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "attempt 1 crashed",
+    "attempt 2 answered"
+   ],
+   "observed": {
+    "attempt": 2,
+    "checks": {
+     "a_keeps_captured_tuple": true,
+     "retry_attempt_recorded": true,
+     "pending_left_for_next": true,
+     "single_usage": true,
+     "next_job_sees_b": true
+    }
+   },
+   "seconds": 0.167
+  },
+  {
+   "id": "M10-C188",
+   "category": "retry",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-23",
+    "M10-AUDIT-27",
+    "M10-AUDIT-32"
+   ],
+   "driver": "retry_unscoped",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "current ProjectB active",
+    "old job retained"
+   ],
+   "observed": {
+    "text": "quick reply slash b only then /global-review 12 retries",
+    "checks": {
+     "requeued": true,
+     "retry_unscoped_default": true,
+     "b_only_absent": true,
+     "fresh_global_skill": true,
+     "no_original_config_claim": true
+    }
+   },
+   "seconds": 0.172
+  },
+  {
+   "id": "M10-C189",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_positive",
+   "status": "FAIL",
+   "note": "failed: ['work_valid_overall', 'valid:style_resolution']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "exit": 0,
+    "checks": {
+     "work_valid_overall": false,
+     "valid:style_resolution": false
+    }
+   },
+   "seconds": 0.605
+  },
+  {
+   "id": "M10-C190",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_positive",
+   "status": "FAIL",
+   "note": "failed: ['work_valid_overall', 'valid:matching_500_words', 'valid:snippet_snapshot']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "exit": 0,
+    "checks": {
+     "work_valid_overall": false,
+     "valid:matching_500_words": false,
+     "valid:snippet_snapshot": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C191",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_positive",
+   "status": "FAIL",
+   "note": "failed: ['work_valid_overall', 'valid:manifest_discovery_cold', 'valid:matching_500_words']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "exit": 0,
+    "checks": {
+     "work_valid_overall": false,
+     "valid:manifest_discovery_cold": false,
+     "valid:matching_500_words": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C192",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_positive",
+   "status": "FAIL",
+   "note": "failed: ['work_valid_overall', 'valid:file_resolution', 'valid:file_listing_500']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "exit": 0,
+    "checks": {
+     "work_valid_overall": false,
+     "valid:file_resolution": false,
+     "valid:file_listing_500": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C193",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_positive",
+   "status": "FAIL",
+   "note": "failed: ['work_valid_overall', 'valid:file_resolution_ambiguous', 'valid:style_resolution_same_scope']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "exit": 0,
+    "checks": {
+     "work_valid_overall": false,
+     "valid:file_resolution_ambiguous": false,
+     "valid:style_resolution_same_scope": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C194",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_noop",
+   "status": "FAIL",
+   "note": "failed: ['invalid_work_exit', 'no_timing_accepted']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "exit": 0,
+    "verdict": null,
+    "checks": {
+     "invalid_work_exit": false,
+     "no_timing_accepted": false
+    }
+   },
+   "seconds": 0.602
+  },
+  {
+   "id": "M10-C195",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_noop",
+   "status": "FAIL",
+   "note": "failed: ['invalid_work_exit', 'no_timing_accepted']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "exit": 0,
+    "verdict": null,
+    "checks": {
+     "invalid_work_exit": false,
+     "no_timing_accepted": false
+    }
+   },
+   "seconds": 0.585
+  },
+  {
+   "id": "M10-C196",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_noop",
+   "status": "FAIL",
+   "note": "failed: ['invalid_work_exit', 'no_timing_accepted']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "exit": 0,
+    "verdict": null,
+    "checks": {
+     "invalid_work_exit": false,
+     "no_timing_accepted": false
+    }
+   },
+   "seconds": 0.569
+  },
+  {
+   "id": "M10-C197",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_noop",
+   "status": "FAIL",
+   "note": "failed: ['invalid_work_exit', 'no_timing_accepted']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "exit": 0,
+    "verdict": null,
+    "checks": {
+     "invalid_work_exit": false,
+     "no_timing_accepted": false
+    }
+   },
+   "seconds": 0.571
+  },
+  {
+   "id": "M10-C198",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_adversarial",
+   "status": "FAIL",
+   "note": "failed: ['populations', 'adversarial_positive_work', 'ambiguity_work', 'percentiles_reported', 'adversarial_budgeted']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "exit": 0,
+    "same_prefix": null,
+    "ordinary": null,
+    "checks": {
+     "populations": false,
+     "adversarial_positive_work": false,
+     "ambiguity_work": false,
+     "percentiles_reported": false,
+     "adversarial_budgeted": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C199",
+   "category": "benchmark_validity",
+   "execution_kind": "REFERENCE_MAC_BENCHMARK",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_reference",
+   "status": "NOT_RUN",
+   "note": "isolated reference-Mac run record absent",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "M10-C200",
+   "category": "benchmark_validity",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "driver": "bench_delay",
+   "status": "FAIL",
+   "note": "failed: ['delay_measured', 'work_valid_both']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "delta_inside_ms": 0,
+    "delta_outside_ms": 0,
+    "checks": {
+     "delay_measured": false,
+     "work_valid_both": false,
+     "outside_delay_not_measured": true
+    }
+   },
+   "seconds": 1.15
+  },
+  {
+   "id": "M10-C201",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-12"
+   ],
+   "driver": "style_in_flight",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A M10 freeze complete",
+    "A finalization pending"
+   ],
+   "observed": {
+    "checks": {
+     "a_rev1_tuple": true,
+     "b_rev2_tuple": true
+    }
+   },
+   "seconds": 0.165
+  },
+  {
+   "id": "M10-C202",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-17",
+    "M10-AUDIT-23"
+   ],
+   "driver": "snippet_in_flight",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A snippet snapshot complete"
+   ],
+   "observed": {
+    "checks": {
+     "a_old": true,
+     "b_new": true,
+     "usage_both_jobs": true,
+     "a_captured_revision": true
+    }
+   },
+   "seconds": 0.163
+  },
+  {
+   "id": "M10-C203",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-11"
+   ],
+   "driver": "manifest_in_flight",
+   "status": "FAIL",
+   "note": "A reread its manifest: 'slash alpha phrase now'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.169
+  },
+  {
+   "id": "M10-C204",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-03"
+   ],
+   "driver": "correlated_style",
+   "status": "ERROR",
+   "note": "RuntimeError: ValueError: unknown category: com.example.beta",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.017
+  },
+  {
+   "id": "M10-C205",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-05"
+   ],
+   "driver": "style_update_delete",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.profiles_store' has no attribute 'NotFoundError'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.014
+  },
+  {
+   "id": "M10-C206",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-04"
+   ],
+   "driver": "correlated_snippet",
+   "status": "ERROR",
+   "note": "RuntimeError: ValueError: url snippet content must be one address token",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.013
+  },
+  {
+   "id": "M10-C207",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13",
+    "M10-AUDIT-32"
+   ],
+   "driver": "cancelled_capture",
+   "status": "ERROR",
+   "note": "barriers not reached: ['A override ownership recorded']",
+   "adjudication": null,
+   "barriers_reached": [
+    "A ownership missing"
+   ],
+   "observed": {
+    "checks": {
+     "a_no_insertion": true,
+     "a_consumed_at_capture_boundary": true,
+     "b_ordinary": true
+    }
+   },
+   "seconds": 0.087
+  },
+  {
+   "id": "M10-C208",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-10",
+    "M10-AUDIT-11",
+    "M10-AUDIT-12"
+   ],
+   "driver": "workspace_switch",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A frozen",
+    "workspace B context ready"
+   ],
+   "observed": {
+    "b": "slash alpha review now. /beta-review then /global-review",
+    "checks": {
+     "a_uses_its_skill": true,
+     "b_excludes_a": true,
+     "b_has_b_and_global": true,
+     "a_unchanged_after_b": true
+    }
+   },
+   "seconds": 0.172
+  },
+  {
+   "id": "M10-C209",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-02",
+    "M10-AUDIT-12"
+   ],
+   "driver": "profile_vocab_switch",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A captured profile",
+    "B final destination resolved"
+   ],
+   "observed": {
+    "texts": [
+     "AlphaTerm twelve retries",
+     "BetaTerm 12 retries"
+    ],
+    "checks": {
+     "a_profile_entry": true,
+     "b_profile_entry": true,
+     "no_hybrid": true
+    }
+   },
+   "seconds": 0.172
+  },
+  {
+   "id": "M10-C210",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-12",
+    "M10-AUDIT-27"
+   ],
+   "driver": "upgrade_keeps_manifest",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "initial global registry",
+    "authorized scope upgrade"
+   ],
+   "observed": {
+    "text": "/brainstorm now. /code-review too",
+    "checks": {
+     "upgraded": true,
+     "both_emitted": true,
+     "registry_is_policy": true
+    }
+   },
+   "seconds": 0.098
+  },
+  {
+   "id": "M10-C211",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-06",
+    "M10-AUDIT-27"
+   ],
+   "driver": "m11_between_jobs",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A transform snapshot frozen"
+   ],
+   "observed": {
+    "checks": {
+     "a_frozen_enabled": true,
+     "b_zero_calls_reason": true,
+     "clean_retained": true
+    }
+   },
+   "seconds": 0.171
+  },
+  {
+   "id": "M10-C212",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-20"
+   ],
+   "driver": "hub_reorder",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A form rendered",
+    "reordered rows published on MainQueue"
+   ],
+   "observed": {
+    "order": [
+     "r:B",
+     "r:A"
+    ],
+    "checks": {
+     "reordered": true,
+     "only_a_mutated": true,
+     "editor_revision_respected": true
+    }
+   },
+   "seconds": 0.05
+  },
+  {
+   "id": "M10-C213",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-21"
+   ],
+   "driver": "hub_add_timeout_style",
+   "status": "FAIL",
+   "note": "admitted timeout reported as definite: 'not saved: TimeoutError'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.246
+  },
+  {
+   "id": "M10-C214",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-01",
+    "M10-AUDIT-22"
+   ],
+   "driver": "listing_race",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.developer.file_tags' has no attribute 'list_workspace_files_bounded'",
+   "adjudication": {
+    "decision": "D15_partial_listing",
+    "policy_revision": "m10-policy-r1"
+   },
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.002
+  },
+  {
+   "id": "M10-C215",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-27",
+    "M10-AUDIT-32"
+   ],
+   "driver": "retry_unscoped",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "current ProjectB active",
+    "old job retained"
+   ],
+   "observed": {
+    "text": "quick reply slash b only then /global-review 12 retries",
+    "checks": {
+     "requeued": true,
+     "retry_unscoped_default": true,
+     "b_only_absent": true,
+     "fresh_global_skill": true,
+     "no_original_config_claim": true
+    }
+   },
+   "seconds": 0.181
+  },
+  {
+   "id": "M10-C216",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-18",
+    "M10-AUDIT-19"
+   ],
+   "driver": "preview_runtime_parity",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.snippets' has no attribute 'preview_collisions'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.018
+  },
+  {
+   "id": "M10-C217",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-12"
+   ],
+   "driver": "builder_failure",
+   "status": "FAIL",
+   "note": "registry claimed != policy used: ['ws alpha', 'ws-alpha'] vs []",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.094
+  },
+  {
+   "id": "M10-C218",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-13",
+    "M10-AUDIT-09"
+   ],
+   "driver": "override_fault",
+   "status": "ERROR",
+   "note": "AttributeError: 'AppDelegate' object has no attribute '_take_next_job_mode'",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {},
+   "seconds": 0.015
+  },
+  {
+   "id": "M10-C219",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-17",
+    "M10-AUDIT-23"
+   ],
+   "driver": "captured_rewrite",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_reached": [
+    "A frozen snippet",
+    "before cleanup protection mapping"
+   ],
+   "observed": {
+    "protected": [
+     [
+      0,
+      37,
+      "generated"
+     ]
+    ],
+    "checks": {
+     "a_expanded_exactly": true,
+     "captured_authorization_governs": true,
+     "b_follows_current_store": true
+    }
+   },
+   "seconds": 0.164
+  },
+  {
+   "id": "M10-C220",
+   "category": "stateful_integration",
+   "execution_kind": "AUTOMATED",
+   "related_findings": [
+    "M10-AUDIT-23",
+    "M10-AUDIT-28"
+   ],
+   "driver": "definitions_evidence",
+   "status": "FAIL",
+   "note": "failed: ['missing_is_explicit']",
+   "adjudication": null,
+   "barriers_reached": [],
+   "observed": {
+    "block": {
+     "expansions": 1,
+     "registry_revision": "m10snip:654dea2db643",
+     "rule_ids": [
+      "snip-f81b4c5129154db8b0efb38a58cd261c"
+     ]
+    },
+    "checks": {
+     "dictation_kept": true,
+     "missing_is_explicit": false,
+     "no_false_reference": true,
+     "no_private_fallback_log": true
+    }
+   },
+   "seconds": 0.099
+  }
+ ],
+ "metamorphic": [
+  {
+   "id": "M10-MR01",
+   "status": "PASS",
+   "note": ""
+  },
+  {
+   "id": "M10-MR02",
+   "status": "PASS",
+   "note": ""
+  },
+  {
+   "id": "M10-MR03",
+   "status": "FAIL",
+   "note": "A reread its manifest: 'slash alpha phrase now'"
+  },
+  {
+   "id": "M10-MR04",
+   "status": "PASS",
+   "note": ""
+  },
+  {
+   "id": "M10-MR05",
+   "status": "PASS",
+   "note": ""
+  },
+  {
+   "id": "M10-MR06",
+   "status": "PASS",
+   "note": ""
+  },
+  {
+   "id": "M10-MR07",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.snippets' has no attribute 'preview_collisions'"
+  },
+  {
+   "id": "M10-MR08",
+   "status": "PASS",
+   "note": ""
+  },
+  {
+   "id": "M10-MR09",
+   "status": "FAIL",
+   "note": ""
+  },
+  {
+   "id": "M10-MR10",
+   "status": "FAIL",
+   "note": "the applied template is neither retained nor declared missing"
+  },
+  {
+   "id": "M10-MR11",
+   "status": "FAIL",
+   "note": ""
+  },
+  {
+   "id": "M10-MR12",
+   "status": "PASS",
+   "note": ""
+  }
+ ],
+ "stateful": [
+  {
+   "id": "M10-S001",
+   "case_id": "M10-C201",
+   "status": "PASS",
+   "required_barriers": [
+    "A M10 freeze complete",
+    "A finalization pending"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [],
+   "barriers_reached": [
+    "A M10 freeze complete",
+    "A finalization pending"
+   ]
+  },
+  {
+   "id": "M10-S002",
+   "case_id": "M10-C202",
+   "status": "PASS",
+   "required_barriers": [
+    "A snippet snapshot complete"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [],
+   "barriers_reached": [
+    "A snippet snapshot complete"
+   ]
+  },
+  {
+   "id": "M10-S003",
+   "case_id": "M10-C203",
+   "status": "FAIL",
+   "required_barriers": [
+    "A registry frozen",
+    "before M10 finalizer"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [
+    "A registry frozen",
+    "before M10 finalizer"
+   ],
+   "barriers_reached": []
+  },
+  {
+   "id": "M10-S004",
+   "case_id": "M10-C204",
+   "status": "ERROR",
+   "required_barriers": [
+    "both reads complete",
+    "A writer committed",
+    "B writer admitted"
+   ],
+   "barrier_bindings": {
+    "both reads complete": "structural: the repaired style patch reads, merges and validates inside its single writer op (AUDIT-03), so there is no separate caller-side read to hold; the probe holds the writer and admits both patches instead",
+    "A writer committed": "first_committed",
+    "B writer admitted": "second_admitted"
+   },
+   "barriers_missing": [
+    "A writer committed",
+    "B writer admitted"
+   ],
+   "barriers_reached": []
+  },
+  {
+   "id": "M10-S005",
+   "case_id": "M10-C205",
+   "status": "ERROR",
+   "required_barriers": [
+    "update read complete",
+    "delete committed"
+   ],
+   "barrier_bindings": {
+    "update read complete": "structural: the repaired update reads its row inside the writer op (AUDIT-05); the probe admits the update behind the delete instead"
+   },
+   "barriers_missing": [
+    "delete committed"
+   ],
+   "barriers_reached": []
+  },
+  {
+   "id": "M10-S006",
+   "case_id": "M10-C206",
+   "status": "ERROR",
+   "required_barriers": [
+    "both reads complete",
+    "kind=url committed"
+   ],
+   "barrier_bindings": {
+    "both reads complete": "structural: the repaired snippet patch reads, merges and validates inside its single writer op (AUDIT-04)",
+    "kind=url committed": "first_committed"
+   },
+   "barriers_missing": [
+    "kind=url committed"
+   ],
+   "barriers_reached": []
+  },
+  {
+   "id": "M10-S007",
+   "case_id": "M10-C207",
+   "status": "ERROR",
+   "required_barriers": [
+    "A override ownership recorded"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [
+    "A override ownership recorded"
+   ],
+   "barriers_reached": [
+    "A ownership missing"
+   ]
+  },
+  {
+   "id": "M10-S008",
+   "case_id": "M10-C208",
+   "status": "PASS",
+   "required_barriers": [
+    "A frozen",
+    "workspace B context ready"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [],
+   "barriers_reached": [
+    "A frozen",
+    "workspace B context ready"
+   ]
+  },
+  {
+   "id": "M10-S009",
+   "case_id": "M10-C209",
+   "status": "PASS",
+   "required_barriers": [
+    "A captured profile",
+    "B final destination resolved"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [],
+   "barriers_reached": [
+    "A captured profile",
+    "B final destination resolved"
+   ]
+  },
+  {
+   "id": "M10-S010",
+   "case_id": "M10-C210",
+   "status": "PASS",
+   "required_barriers": [
+    "initial global registry",
+    "authorized scope upgrade"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [],
+   "barriers_reached": [
+    "initial global registry",
+    "authorized scope upgrade"
+   ]
+  },
+  {
+   "id": "M10-S011",
+   "case_id": "M10-C211",
+   "status": "PASS",
+   "required_barriers": [
+    "A transform snapshot frozen"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [],
+   "barriers_reached": [
+    "A transform snapshot frozen"
+   ]
+  },
+  {
+   "id": "M10-S012",
+   "case_id": "M10-C212",
+   "status": "PASS",
+   "required_barriers": [
+    "A form rendered",
+    "reordered rows published on MainQueue"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [],
+   "barriers_reached": [
+    "A form rendered",
+    "reordered rows published on MainQueue"
+   ]
+  },
+  {
+   "id": "M10-S013",
+   "case_id": "M10-C213",
+   "status": "FAIL",
+   "required_barriers": [
+    "mutation enqueued",
+    "caller deadline elapsed",
+    "late commit"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [
+    "mutation enqueued",
+    "caller deadline elapsed",
+    "late commit"
+   ],
+   "barriers_reached": []
+  },
+  {
+   "id": "M10-S014",
+   "case_id": "M10-C214",
+   "status": "ERROR",
+   "required_barriers": [
+    "child listed",
+    "before descent/classification"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [
+    "child listed",
+    "before descent/classification"
+   ],
+   "barriers_reached": []
+  },
+  {
+   "id": "M10-S015",
+   "case_id": "M10-C215",
+   "status": "PASS",
+   "required_barriers": [
+    "old job retained",
+    "current ProjectB active"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [],
+   "barriers_reached": [
+    "current ProjectB active",
+    "old job retained"
+   ]
+  },
+  {
+   "id": "M10-S016",
+   "case_id": "M10-C216",
+   "status": "ERROR",
+   "required_barriers": [
+    "freeze common registry"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [
+    "freeze common registry"
+   ],
+   "barriers_reached": []
+  },
+  {
+   "id": "M10-S017",
+   "case_id": "M10-C217",
+   "status": "FAIL",
+   "required_barriers": [
+    "candidate registry selected",
+    "before _finalized_policy returns"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [
+    "candidate registry selected",
+    "before _finalized_policy returns"
+   ],
+   "barriers_reached": []
+  },
+  {
+   "id": "M10-S018",
+   "case_id": "M10-C218",
+   "status": "ERROR",
+   "required_barriers": [
+    "next-mode taken",
+    "before M10 snapshot return"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [
+    "next-mode taken",
+    "before M10 snapshot return"
+   ],
+   "barriers_reached": []
+  },
+  {
+   "id": "M10-S019",
+   "case_id": "M10-C219",
+   "status": "PASS",
+   "required_barriers": [
+    "A frozen snippet",
+    "before cleanup protection mapping"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [],
+   "barriers_reached": [
+    "A frozen snippet",
+    "before cleanup protection mapping"
+   ]
+  },
+  {
+   "id": "M10-S020",
+   "case_id": "M10-C220",
+   "status": "FAIL",
+   "required_barriers": [
+    "candidate evidence selected",
+    "artifact writer fails"
+   ],
+   "barrier_bindings": {},
+   "barriers_missing": [
+    "candidate evidence selected",
+    "artifact writer fails"
+   ],
+   "barriers_reached": []
+  }
+ ]
+}

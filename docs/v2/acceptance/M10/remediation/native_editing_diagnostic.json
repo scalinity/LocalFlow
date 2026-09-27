@@ -1,0 +1,30 @@
+{
+ "active": true,
+ "editing": {
+  "filled": "Alpha",
+  "typed": "Alpha",
+  "first_responder_at_click": "NSTextView",
+  "status_after_update": "<before>",
+  "row_name": "Alpha",
+  "row_rev": 1,
+  "preview_detail": "<before>"
+ },
+ "after_tab": {
+  "filled": "Alpha",
+  "typed": "Alpha",
+  "first_responder_at_click": "NSTextView",
+  "status_after_update": "<before>",
+  "row_name": "Alpha",
+  "row_rev": 1,
+  "preview_detail": "<before>"
+ },
+ "after_resign": {
+  "filled": "Alpha",
+  "typed": "Alpha",
+  "first_responder_at_click": "NSWindow",
+  "status_after_update": "<before>",
+  "row_name": "Alpha",
+  "row_rev": 1,
+  "preview_detail": "<before>"
+ }
+}

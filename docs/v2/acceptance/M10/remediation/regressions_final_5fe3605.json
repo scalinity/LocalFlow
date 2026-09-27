@@ -1,0 +1,693 @@
+{
+  "suite": "tests/v2/profiles/test_m10_remediation.py",
+  "suite_sha256": "a9aae067edfd7c73fffdfd9f4de306508b9c68cd094ceeff75ee5933397f3d90",
+  "code_root_sha": "5fe36050d937bcc365e30a32beeeb7d59a91ffb7",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "localflow_imported_from_root": "LocalFlow",
+  "python": "3.14.7",
+  "results": [
+    {
+      "case": "r01_child_directory_symlink_not_followed",
+      "finding": "M10-AUDIT-01",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.002
+    },
+    {
+      "case": "r01_child_manifest_symlink_not_followed",
+      "finding": "M10-AUDIT-01",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "r01_link_swap_after_listing_not_followed",
+      "finding": "M10-AUDIT-01",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.002
+    },
+    {
+      "case": "c01_configured_json_manifest_and_dir_load",
+      "finding": "M10-AUDIT-01",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "r07_string_manifest_path_never_becomes_character_paths",
+      "finding": "M10-AUDIT-07",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.127
+    },
+    {
+      "case": "r07_workspace_dirs_string_never_becomes_character_dirs",
+      "finding": "M10-AUDIT-07",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.088
+    },
+    {
+      "case": "r07_listing_string_false_disables_listing",
+      "finding": "M10-AUDIT-07",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.089
+    },
+    {
+      "case": "c07_valid_config_lists_and_reads",
+      "finding": "M10-AUDIT-07",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.167
+    },
+    {
+      "case": "r08_body_horizontal_rule_is_not_frontmatter",
+      "finding": "M10-AUDIT-08",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.002
+    },
+    {
+      "case": "r08_unclosed_frontmatter_refused",
+      "finding": "M10-AUDIT-08",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "c08_valid_header_hostile_body_inert",
+      "finding": "M10-AUDIT-08",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "r_local01_flow_list_aliases_load",
+      "finding": "LOCAL-M10-01",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "r09_null_manifest",
+      "finding": "M10-AUDIT-09",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "r09_scalar_manifest",
+      "finding": "M10-AUDIT-09",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "r09_skills_of_scalars",
+      "finding": "M10-AUDIT-09",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "r09_aliases_not_a_list",
+      "finding": "M10-AUDIT-09",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "r22_huge_skill_body_not_materialized",
+      "finding": "M10-AUDIT-22",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.006
+    },
+    {
+      "case": "r22_listing_visits_are_bounded",
+      "finding": "M10-AUDIT-22",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.356
+    },
+    {
+      "case": "r22_parse_and_fingerprint_are_one_read",
+      "finding": "M10-AUDIT-22",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.002
+    },
+    {
+      "case": "r06_style_enabled_string_false",
+      "finding": "M10-AUDIT-06",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.012
+    },
+    {
+      "case": "r06_snippet_allow_rewrite_string_false",
+      "finding": "M10-AUDIT-06",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.011
+    },
+    {
+      "case": "r06_snippet_enabled_empty_list",
+      "finding": "M10-AUDIT-06",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.01
+    },
+    {
+      "case": "r06_transform_auto_apply_string_false_runs_no_transform",
+      "finding": "M10-AUDIT-06",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.085
+    },
+    {
+      "case": "c06_real_booleans_update",
+      "finding": "M10-AUDIT-06",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.015
+    },
+    {
+      "case": "r03_correlated_style_patches_never_commit_invalid_row",
+      "finding": "M10-AUDIT-03",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.011
+    },
+    {
+      "case": "c03_disjoint_patches_both_survive",
+      "finding": "M10-AUDIT-03",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.011
+    },
+    {
+      "case": "r04_correlated_snippet_patches_never_commit_invalid_row",
+      "finding": "M10-AUDIT-04",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.012
+    },
+    {
+      "case": "r05_update_racing_delete_is_explicit_not_found",
+      "finding": "M10-AUDIT-05",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.011
+    },
+    {
+      "case": "r10_child_manifest_edit_reaches_next_job",
+      "finding": "M10-AUDIT-10",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.162
+    },
+    {
+      "case": "r10_same_mtime_json_replacement_reaches_next_job",
+      "finding": "M10-AUDIT-10",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.171
+    },
+    {
+      "case": "c10_manifest_deletion_removes_authority",
+      "finding": "M10-AUDIT-10",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.175
+    },
+    {
+      "case": "r11_manifest_edit_after_freeze_never_reaches_the_job",
+      "finding": "M10-AUDIT-11",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.188
+    },
+    {
+      "case": "r12_deferred_widening_adds_no_workspace_registry",
+      "finding": "M10-AUDIT-12",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.105
+    },
+    {
+      "case": "r12_failed_widening_adds_no_workspace_registry",
+      "finding": "M10-AUDIT-12",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.1
+    },
+    {
+      "case": "c12_widened_job_gets_workspace_skill",
+      "finding": "M10-AUDIT-12",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.095
+    },
+    {
+      "case": "r12_builder_failure_leaves_no_half_tuple",
+      "finding": "M10-AUDIT-12",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.096
+    },
+    {
+      "case": "r13_transform_snapshot_fault_keeps_requested_raw",
+      "finding": "M10-AUDIT-13",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.166
+    },
+    {
+      "case": "r13_malformed_manifest_keeps_requested_raw",
+      "finding": "M10-AUDIT-13",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.17
+    },
+    {
+      "case": "c13_healthy_override_consumed_once",
+      "finding": "M10-AUDIT-13",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.168
+    },
+    {
+      "case": "r17_snippet_snapshot_export_is_detached",
+      "finding": "M10-AUDIT-17",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r17_skill_registry_export_is_detached",
+      "finding": "M10-AUDIT-17",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r02_app_bundle_case",
+      "finding": "M10-AUDIT-02",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r02_site_host_case_and_trailing_slash",
+      "finding": "M10-AUDIT-02",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r02_workspace_padding",
+      "finding": "M10-AUDIT-02",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r02_authoritative_ai_origin_case",
+      "finding": "M10-AUDIT-02",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "c02_non_equivalent_identities_stay_distinct",
+      "finding": "M10-AUDIT-02",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r14_trigger_cannot_cross_period",
+      "finding": "M10-AUDIT-14",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r14_trigger_cannot_cross_newline",
+      "finding": "M10-AUDIT-14",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r14_trigger_cannot_cross_crlf_and_separators",
+      "finding": "M10-AUDIT-14",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r14_edge_punctuation_stays_outside",
+      "finding": "M10-AUDIT-14",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r14_newline_ends_slot_authority",
+      "finding": "M10-AUDIT-14",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "c14_ordinary_whitespace_and_case_match",
+      "finding": "M10-AUDIT-14",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "c14_slot_semantics_preserved",
+      "finding": "M10-AUDIT-14",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "r15_attach_command_cannot_cross_sentence",
+      "finding": "M10-AUDIT-15",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "c15_two_references_keep_trailing_prose",
+      "finding": "M10-AUDIT-15",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r16_open_document_basename_is_not_a_tie_breaker",
+      "finding": "M10-AUDIT-16",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "c16_spoken_path_disambiguates_and_no_document_is_ambiguous",
+      "finding": "M10-AUDIT-16",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "r18_bare_alias_preview_matches_runtime",
+      "finding": "M10-AUDIT-18",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.171
+    },
+    {
+      "case": "r18_disabled_dictionary_skill_is_not_preview_authority",
+      "finding": "M10-AUDIT-18",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.016
+    },
+    {
+      "case": "r18_editing_a_snippet_does_not_collide_with_itself",
+      "finding": "M10-AUDIT-18",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.104
+    },
+    {
+      "case": "r19_phrase_preview_uses_current_snippets",
+      "finding": "M10-AUDIT-19",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.09
+    },
+    {
+      "case": "r19_global_preview_has_no_last_workspace_files",
+      "finding": "M10-AUDIT-19",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.092
+    },
+    {
+      "case": "r20_stale_style_form_keeps_external_edit",
+      "finding": "M10-AUDIT-20",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.043
+    },
+    {
+      "case": "r20_deleted_selection_clears_the_editor",
+      "finding": "M10-AUDIT-20",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.034
+    },
+    {
+      "case": "r21_admitted_add_timeout_is_unknown_and_retry_is_idempotent",
+      "finding": "M10-AUDIT-21",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.24
+    },
+    {
+      "case": "r23_applied_definition_survives_config_deletion",
+      "finding": "M10-AUDIT-23",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.101
+    },
+    {
+      "case": "r24_runtime_file_reference_reports_no_attachment",
+      "finding": "M10-AUDIT-24",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.096
+    },
+    {
+      "case": "c27_raw_skips_every_m10_stage",
+      "finding": "M10-AUDIT-27",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.092
+    },
+    {
+      "case": "c27_clean_positive_expands_once",
+      "finding": "M10-AUDIT-27",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.089
+    },
+    {
+      "case": "c31_coordinator_runs_one_normalization_pass",
+      "finding": "M10-AUDIT-31",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.087
+    },
+    {
+      "case": "rr01_double_tap_hands_free_keeps_next_mode",
+      "finding": "M10-REVIEW-R01",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.095
+    },
+    {
+      "case": "rc01_expired_tap_window_consumes_the_mode",
+      "finding": "M10-REVIEW-R01",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.089
+    },
+    {
+      "case": "rr02_spoken_structure_commands_end_a_slot",
+      "finding": "M10-REVIEW-R02",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.002
+    },
+    {
+      "case": "rr02_spoken_period_ends_a_slot_in_standard",
+      "finding": "M10-REVIEW-R02",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "rc02_nouns_and_inline_symbols_stay_slot_words",
+      "finding": "M10-REVIEW-R02",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "rr03_partial_listing_never_makes_a_basename_unique",
+      "finding": "M10-REVIEW-R03",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.156
+    },
+    {
+      "case": "rr03_unreadable_directory_marks_the_listing_partial",
+      "finding": "M10-REVIEW-R03",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.001
+    },
+    {
+      "case": "rc03_spoken_path_resolves_under_a_partial_listing",
+      "finding": "M10-REVIEW-R03",
+      "kind": "control",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.15
+    },
+    {
+      "case": "rr04_snapshot_fault_is_not_reported_as_the_users_setting",
+      "finding": "M10-REVIEW-R04",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.088
+    },
+    {
+      "case": "rr05_unicode_case_variant_trigger_refused",
+      "finding": "M10-REVIEW-R05",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.089
+    },
+    {
+      "case": "rr06_preview_names_a_holder_the_store_refuses",
+      "finding": "M10-REVIEW-R06",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.016
+    },
+    {
+      "case": "rr07_refused_source_fingerprint_matches_discovery",
+      "finding": "M10-REVIEW-R07",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.24
+    },
+    {
+      "case": "rr08_nul_path_refused_alone",
+      "finding": "M10-REVIEW-R08",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.002
+    },
+    {
+      "case": "rr10_unknown_update_names_the_update_action",
+      "finding": "M10-REVIEW-HUB",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.269
+    },
+    {
+      "case": "rr11_own_committed_update_is_not_changed_elsewhere",
+      "finding": "M10-REVIEW-HUB",
+      "kind": "defect",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.269
+    }
+  ],
+  "passed": 85,
+  "total": 85
+}

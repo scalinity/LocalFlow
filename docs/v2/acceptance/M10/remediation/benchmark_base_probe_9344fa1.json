@@ -1,0 +1,1 @@
+{"localflow_from_base": true, "base_file": "scripts/v2/benchmark_m10.py", "hit_input_edit_classes": ["symbol"], "plain_edit_classes": [], "real_exit": null, "noop_exit": null, "noop_output_mentions_invalid": false}

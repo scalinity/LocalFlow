@@ -3320,7 +3320,235 @@ head -c 600 "$OUT09/V007-export.jsonl"; echo</code></pre></div>
           </details>
         </article>
       </section>
-      <section class="milestone" id="M10" data-milestone="M10" data-title="Developer mode & profiles"><div class="ms-head"><span class="mid">M10</span><h2>Developer mode &amp; profiles</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M10-V001).</p></section>
+      <section class="milestone" id="M10" data-milestone="M10" data-title="Developer mode & profiles">
+        <div class="ms-head">
+          <span class="mid">M10</span><h2>Developer mode &amp; profiles</h2>
+          <span class="meta">instructions M10-r1 · code ed5e206 · local remediation of the audit at 9344fa1</span>
+        </div>
+        <p class="ms-intro">The M10 remediation makes styles, snippets and developer commands behave the same way every time: a rule matches the app, site or workspace you are really in, a one-time mode belongs to the dictation that took it, a snippet stops at the end of its line or sentence, LocalFlow reads skills only from folders you named and never follows a link out of them, and a filename is typed only when it is the one file that name can mean. The Styles and Snippets views were qualified natively on this Mac by an owned test window — clicks, typing, ⌘A, Tab, popups, the checkbox and every button, before and after a resize. These four checks are what only real dictation into real apps can show.</p>
+        <p class="ms-intro">Instruction revision M10-r1 replaces the pending <code>native-m10-developer-trial</code> (<code>handoffs/M10.md</code>): its destination-style, raw-rule and snippet steps are M10-V001, the real skill manifest M10-V002, the file reference M10-V003 and the multi-line Terminal snippet M10-V004. Its Hub-editing step is covered by the native pane qualification; how the Styles and Snippets views look at other sizes and under the keyboard stays with M09-V001 and M09-V002, and how context is captured for a destination with M06-V001. Everything runs in a sandbox home with rules and snippets you create for the check — never your real LocalFlow data.</p>
+
+        <div class="callout">
+          <h3>M10 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The remediated code gets its own worktree, and the dev app runs with an empty <b>sandbox home folder</b> (<code>$SANDBOX10</code>); you add the rules and snippets each check asks for in its Hub. Recognition uses the models already on this Mac, offline. The trial folder <code>$OUT10/lf-m10-trial</code> holds a few empty synthetic files for the file-reference check. Your real Application Support data and the installed app are never touched.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># Remediated M10 code in its own worktree (first time only)</span>
+export LF_M10="$(dirname "$LF_MAIN")/LocalFlow-m10-verify"
+git -C "$LF_MAIN" fetch origin m10-local-remediation-20260926
+[ -d "$LF_M10" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M10" origin/m10-local-remediation-20260926
+<span class="c">#   (after the merge, use origin/main instead)</span>
+git -C "$LF_M10" merge-base --is-ancestor ed5e206 HEAD &amp;&amp; echo "M10 repairs present"
+export OUT10="$EV/m10-verification"; mkdir -p "$OUT10"/lf-m10-trial/a "$OUT10"/lf-m10-trial/b "$OUT10"/screens &amp;&amp; chmod 700 "$OUT10"
+: &gt; "$OUT10/lf-m10-trial/notes.txt"; : &gt; "$OUT10/lf-m10-trial/alpha.py"
+: &gt; "$OUT10/lf-m10-trial/a/config.json"; : &gt; "$OUT10/lf-m10-trial/b/config.json"
+
+<span class="c"># Sandbox home and config for the dev app (double-tap hands-free on)</span>
+export REAL_HOME="$HOME"
+export SANDBOX10="$OUT10/sandbox-home"; mkdir -p "$SANDBOX10" &amp;&amp; chmod 700 "$SANDBOX10"
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M10"], "config.json").read_text())
+c = dict(cfg, log_transcripts=False, hands_free="double_tap",
+         skill_manifest_paths=[], developer_workspace_listing=True)
+p = pathlib.Path(os.environ["OUT10"], "sandbox-config.json")
+p.write_text(json.dumps(c, indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app; $LF10_PID is its process</span>
+lf10_start() { ( cd "$LF_M10" &amp;&amp; exec env HOME="$SANDBOX10" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT10/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT10/app-console.txt" 2&gt;&amp;1 &amp;
+  LF10_PID=$!; echo "dev app pid $LF10_PID"; }
+export SDB10="$SANDBOX10/Library/Application Support/LocalFlow/v2.db"
+
+<span class="c"># Evidence reader: event names, outcomes and reason codes; insertion methods — no text</span>
+cat &gt; "$OUT10/m10_evidence.py" &lt;&lt;'EOF'
+import json, os, pathlib, sqlite3
+logs = pathlib.Path(os.environ["SANDBOX10"], "Library", "Logs", "LocalFlow")
+keep = ("profiles.", "developer.", "transforms.not_applied")
+for f in sorted(logs.glob("*.jsonl")):
+    for line in f.read_text().splitlines():
+        e = json.loads(line)
+        if e.get("event", "").startswith(keep):
+            print(e["event"], e.get("outcome"), e.get("reason_code"))
+db = sqlite3.connect(os.environ["SDB10"])
+for n, (state, method, reason) in enumerate(db.execute(
+        "select state, method, reason_code from insertions"
+        " order by rowid").fetchall(), 1):
+    print(f"#{n} insertion={state} method={method} reason={reason}")
+EOF
+lf10_evidence() { SANDBOX10="$SANDBOX10" SDB10="$SDB10" "$PY" "$OUT10/m10_evidence.py"; }</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M10 repairs present”; the config path printed; the dev app prints its pid when started. Open the Hub from the LocalFlow menu-bar icon → Open Hub… (⌘L in the menu). The menu's first line shows the mode, profile and rule each dictation used (“Mode: … · profile … · …”). Quit the dev app from its menu when a check says so. When finished with M10, remove the worktree with <code>git -C "$LF_MAIN" worktree remove "$LF_M10"</code>; the sandbox stays under <code>$OUT10</code> until you delete it.</p>
+        </div>
+
+        <h3 class="group">Styles, one-time modes and snippets in real apps</h3>
+
+        <article class="check" id="M10-V001" data-milestone="M10" data-rev="M10-r1" data-code="ed5e206" data-tags="native human hardware model">
+          <header class="check-head">
+            <span class="cid">M10-V001</span>
+            <h4>Give two real apps their own style, use a one-time mode, and dictate a snippet</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~15 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Rules made in the Styles view apply to the app you really dictate into and to nothing else, the menu line names the rule that won, Next Dictation Mode applies to exactly one dictation (also when that dictation is a double-tap hands-free one), and a snippet types its exact stored text — line break included — and stops where your sentence or spoken “new line” ends. The machine checks drive the real coordinator with a scripted destination and recognizer; only a real dictation shows the whole path.</p>
+          <p class="plain"><b>In plain terms.</b> You make TextEdit keep your exact words, make Notes spell numbers out, check that Stickies still turns “three” into “3”, try a one-time Raw dictation, and dictate a two-line sign-off.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · TextEdit, Notes and Stickies</dd>
+              <dt>Preconditions</dt><dd>M10 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M10 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf10_start</code>; wait for “ASR: ready”; open the Hub and go to Styles.</li>
+              <li>Add a rule: scope <b>app</b>, value <code>com.apple.TextEdit</code>, mode <b>raw</b>. Add a second: scope <b>app</b>, value <code>com.apple.Notes</code>, mode <b>clean</b>, number policy <b>standard</b>.</li>
+              <li>In a new TextEdit document, in a new Notes note and in a new Stickies note, dictate “we retried three times today” once each. After each, open the LocalFlow menu and read its first line.</li>
+              <li>From the LocalFlow menu choose Next Dictation Mode → Raw, then dictate the same sentence into Stickies twice.</li>
+              <li>Choose Next Dictation Mode → Raw again. In Stickies, tap fn twice quickly, say the sentence, and tap fn once to stop (double-tap hands-free).</li>
+              <li>In the Hub's Snippets view add trigger <code>sign off</code> with content “Best,” then a line break (Return in the content box) then <code>{{name}}</code>. In Stickies, dictate “sign off comma Ada”, then on a new line “sign off comma Ada new line see you tomorrow”.</li>
+              <li>Run <code>lf10_evidence &gt; "$OUT10/v001.txt"</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>TextEdit gets your words as recognized, with “three” as a word; the menu line reads Mode: Raw with source rule: app.</li>
+              <li>Notes gets a cleaned sentence with “three” spelled out; Stickies gets “3”; each menu line names the rule (or the category default for Stickies).</li>
+              <li>The first Raw Stickies dictation keeps “three”; the second shows “3” again. The double-tap dictation keeps “three” too.</li>
+              <li>The snippet types “Best,” and “Ada” on the next line (a full stop the recognizer added stays after Ada, outside the snippet); the second dictation puts “see you tomorrow” on a third line — the words “new line” never appear.</li>
+              <li><code>v001.txt</code> shows <code>profiles.override_taken raw</code> for each one-time mode you chose; the double-tap one appears twice — taken by the first tap, then carried to the hands-free dictation with reason <code>double_tap_gesture</code> — and there are no refused or failed profile events.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A dictation follows another app's rule, a one-time mode applies twice or not at all, or a snippet swallows the next line: <b>Failed</b> — note the app, the menu line and the <code>v001.txt</code> lines.</li>
+              <li>The recognizer mishears the phrase (for example no “comma”): repeat once; if it keeps mishearing, <b>Needs follow-up</b> — that is recognition, not styles.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT10/v001.txt</code> (event names and reason codes only) and any screenshots in <code>$OUT10/screens</code>. Nothing from this check goes into Git.</p>
+            <h5>Contract relevance</h5>
+            <p>M10-AC01, M10-AC02; corpus cases M10-C001–C009, C026–C036, C069–C097; M10-AUDIT-02/13/14, review R-01/R-02; decisions D3, D7 (<code>acceptance/M10/remediation/adjudications.json</code>); <code>contracts/profiles.md</code> → Modes and styles, Snippets.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Developer commands</h3>
+
+        <article class="check" id="M10-V002" data-milestone="M10" data-rev="M10-r1" data-code="ed5e206" data-tags="native human hardware model privacy terminal">
+          <header class="check-head">
+            <span class="cid">M10-V002</span>
+            <h4>Point LocalFlow at a skill folder you choose, and dictate a slash command into Terminal</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~8 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> LocalFlow reads skills only from the folder or manifest you name, turns “slash &lt;skill&gt;” into that skill's exact token only where a command can start, and never runs anything. The machine checks use synthetic skill folders; only your own shows it works with a real one.</p>
+          <p class="plain"><b>In plain terms.</b> You tell the sandboxed app about one skills folder, restart it, say “slash” and a skill name at a Terminal prompt, and check that the token is typed and nothing happens until you act.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · a skills folder or JSON manifest of your choosing</dd>
+              <dt>Preconditions</dt><dd>M10 set-up done; you are comfortable with LocalFlow reading that folder's skill names (only names and aliases are read).</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M10 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Quit the dev app. Name the folder (or manifest) with an absolute path: <code>"$PY" - "/absolute/path/you/choose" &lt;&lt;'EOF'</code> ⏎ <code>import json, os, pathlib, sys</code> ⏎ <code>p = pathlib.Path(os.environ["OUT10"], "sandbox-config.json")</code> ⏎ <code>c = json.loads(p.read_text()); c["skill_manifest_paths"] = [sys.argv[1]]</code> ⏎ <code>p.write_text(json.dumps(c, indent=1)); print("configured")</code> ⏎ <code>EOF</code>.</li>
+              <li>Run <code>lf10_start</code> and wait for “ASR: ready”.</li>
+              <li>Open a second Terminal window. At its empty prompt, dictate “slash” followed by one of your skill names as you would say it (a hyphen is spoken as a space: “code review” for <code>code-review</code>).</li>
+              <li>Clear the line (⌃U). Dictate “we should really slash costs”. Clear the line again.</li>
+              <li>Run <code>lf10_evidence &gt; "$OUT10/v002.txt"</code> in the first window.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>The prompt shows the exact token, for example <code>/code-review</code>, and nothing runs — there is no new prompt line until you press Return yourself.</li>
+              <li>“we should really slash costs” stays words: “slash” in the middle of a sentence is the verb.</li>
+              <li><code>v002.txt</code> shows no <code>profiles.manifest_refused</code> line for your folder, or one with a reason code you recognise (for example a skill whose header is not at the top of its SKILL.md).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Anything runs, or a token appears for a word you did not say after “slash”: <b>Failed</b>.</li>
+              <li>A skill you expected is missing and <code>v002.txt</code> names a reason: <b>Needs follow-up</b> with the reason code (the skill file may use a form LocalFlow refuses on purpose).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT10/v002.txt</code>. Your skill names and folder path are yours; do not copy them into Git or into the results files.</p>
+            <h5>Contract relevance</h5>
+            <p>M10-AC03; corpus cases M10-C110–C135; M10-AUDIT-01/07/08/09/10; <code>contracts/profiles.md</code> → Developer skills; <code>contracts/normalization.md</code> → Slash skills.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M10-V003" data-milestone="M10" data-rev="M10-r1" data-code="ed5e206" data-tags="native human hardware model">
+          <header class="check-head">
+            <span class="cid">M10-V003</span>
+            <h4>Say “attach file” next to an open document; the filename is typed and no attachment is claimed</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~8 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A spoken file reference becomes the one file that name can mean in the open document's folder, typed as text; two files with the same name stay literal until you say the folder too; and LocalFlow says no attachment was made, because no app is certified for real file chips yet. The machine checks use synthetic folders and a scripted document; only a real editor shows the locator LocalFlow gets.</p>
+          <p class="plain"><b>In plain terms.</b> You open an empty text file in TextEdit and dictate three file references: one that is unique, one that exists twice, and the same one with its folder spoken.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M10 set-up done; the TextEdit raw rule from M10-V001 deleted or disabled in Styles.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M10 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>With the dev app running, run <code>open -a TextEdit "$OUT10/lf-m10-trial/notes.txt"</code> and click into the document.</li>
+              <li>Dictate “attach file alpha dot py please”. Open the LocalFlow menu and read its first line to the end.</li>
+              <li>On a new line, dictate “attach file config dot json”.</li>
+              <li>On a new line, dictate “attach file a slash config dot json”.</li>
+              <li>Run <code>lf10_evidence &gt; "$OUT10/v003.txt"</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>The first line reads “alpha.py please”; the menu's first line ends “1 file reference inserted as text — no attachment (surface not certified)”.</li>
+              <li>“attach file config dot json” stays as words: two files share that name.</li>
+              <li>The third line reads <code>a/config.json</code>.</li>
+              <li><code>v003.txt</code> shows <code>developer.file_reference literal_filename uncertified_file_chip_surface</code> for each resolved reference and no <code>developer.listing_partial</code> line (the trial folder is small).</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>“config dot json” resolves to one of the two files, a name that is not in the folder is typed, or the menu claims an attachment: <b>Failed</b>.</li>
+              <li>Nothing resolves and <code>v003.txt</code> shows no file-reference line: <b>Blocked</b> — TextEdit did not report the document's path; note it (other editors are an M06 destination question, M06-V001).</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT10/v003.txt</code> (synthetic filenames only; the events carry counts and reason codes).</p>
+            <h5>Contract relevance</h5>
+            <p>M10-AC04; corpus cases M10-C139–C149, C183; M10-AUDIT-15/16/24, review R-03; decision D15; <code>contracts/profiles.md</code> → File tags and identifiers.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M10-V004" data-milestone="M10" data-rev="M10-r1" data-code="ed5e206" data-tags="native human hardware model terminal">
+          <header class="check-head">
+            <span class="cid">M10-V004</span>
+            <h4>Dictate a two-line snippet at a Terminal prompt; it is offered to copy and never runs</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A snippet whose text spans two lines is held back from a terminal and offered to copy instead, exactly as a dictated two-line command is (M08-V005): a snippet's line break is never a Return. The insertion guard is covered by the M08 suites; this is the same guard reached through a snippet.</p>
+          <p class="plain"><b>In plain terms.</b> You make a harmless two-line snippet, say its trigger at an empty Terminal prompt, and check that nothing is typed or run.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone</dd>
+              <dt>Preconditions</dt><dd>M10 set-up done; the dev app running.</dd>
+              <dt>Working dir</dt><dd>any Terminal window with an empty prompt</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>In the Hub's Snippets view add trigger <code>trial note</code> with content <code>echo M10 trial line one</code>, a line break, then <code>echo M10 trial line two</code>.</li>
+              <li>Click into a Terminal window at an empty prompt and dictate “trial note”. Do not press Return.</li>
+              <li>Run <code>lf10_evidence &gt; "$OUT10/v004.txt"</code> in the set-up window.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Nothing is typed at the prompt and no echo output appears; LocalFlow offers the text to copy.</li>
+              <li><code>v004.txt</code>'s last insertion line reads <code>insertion=saved_not_inserted</code> with <code>reason=multiline_terminal_unverified</code> — saved and offered, not pasted or typed.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Any line runs, or two lines are typed at the prompt: <b>Failed</b> — this is the M08 guard; record it here and in M08-V005.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT10/v004.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M10-AC02; corpus cases M10-C150–C156; <code>contracts/insertion.md</code> → terminal text; <code>contracts/profiles.md</code> → Snippets (multi-line content); see also M08-V005.</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M11" data-milestone="M11" data-title="Transforms & Prompt Engineer">
         <div class="ms-head">
           <span class="mid">M11</span><h2>Transforms &amp; Prompt Engineer</h2>

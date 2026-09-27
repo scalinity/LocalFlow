@@ -13,7 +13,13 @@
     "transformers": "5.10.4",
     "installed_app": "unchanged pre-M02 code (no build authorized); M10 exists in dev runs and tests"
   },
-  "requirements": ["LF-R14", "LF-R15", "LF-R16", "LF-R28", "LF-R30"],
+  "requirements": [
+    "LF-R14",
+    "LF-R15",
+    "LF-R16",
+    "LF-R28",
+    "LF-R30"
+  ],
   "acceptance_criteria": {
     "M10-AC01_casual_style_never_deletes_constraint": {
       "status": "pass (automated)",
@@ -135,7 +141,10 @@
   ],
   "benchmark_summary": {
     "budget_ms": 25.0,
-    "matching_p95_ms": {"hits": 3.51, "plain_500": 3.31},
+    "matching_p95_ms": {
+      "hits": 3.51,
+      "plain_500": 3.31
+    },
     "adapter_overhead_p95_ms": {
       "style_resolve_200_rules": 0.207,
       "snippet_snapshot_300": 0.443,
@@ -179,5 +188,116 @@
     ],
     "post_address_verification": "35/35 fast suites + all six model-backed checks re-ran green on the fixed code; the benchmark re-ran post-address (hits p95 3.51 ms ≤ 25 ms; resolve p95 0.011 ms). No findings rejected as incorrect."
   },
-  "privacy": "Nothing private entered Git: the committed benchmark JSONs carry latencies/counts only (synthetic state in temp dirs); tests are synthetic in-code (origin-tagged fixture discipline unchanged); style rules/snippets are user configuration in the live store, never in events (event detail carries reason codes and mode enums only); skill names/manifest paths live exclusively in the lease-governed skill_registry artifact with counts/revisions in the content-free envelope block; the workspace file listing is names-only, local, and never persisted outside lease-governed artifacts; the baseline-manifest privacy scan passes over every new path; live data stays under Application Support."
+  "privacy": "Nothing private entered Git: the committed benchmark JSONs carry latencies/counts only (synthetic state in temp dirs); tests are synthetic in-code (origin-tagged fixture discipline unchanged); style rules/snippets are user configuration in the live store, never in events (event detail carries reason codes and mode enums only); skill names/manifest paths live exclusively in the lease-governed skill_registry artifact with counts/revisions in the content-free envelope block; the workspace file listing is names-only, local, and never persisted outside lease-governed artifacts; the baseline-manifest privacy scan passes over every new path; live data stays under Application Support.",
+  "remediation_2026_09_26": {
+    "state": "LOCAL_REMEDIATION_COMPLETE_PENDING_MANUAL_VERIFICATION",
+    "state_note": "Every automatable, native-local, benchmark and independent-review step ran on the reference Mac; four human checks remain (M10-V001..V004, instructions M10-r1). The records above describe the M10 code as first accepted and are preserved unchanged; this block supersedes only their claims about the current code.",
+    "kind": "post-audit local remediation (reference Mac)",
+    "audit": {
+      "sha": "9344fa14e2d013b5c9befef88663fcd03d3c6ef1",
+      "records": "32 (1 critical, 14 high, 9 medium, 4 test gaps, 4 design concerns)",
+      "corpus": "tests/v2/profiles/m10_audit_corpus.json (sha256 3cc5a928…755, byte-identical to the supplied file): 220 cases, 20 stateful probes, 12 metamorphic relations, 26 mutations"
+    },
+    "synchronization": {
+      "local_main_before": "9344fa1 (main, clean, one worktree)",
+      "remote_main_at_sync": "9344fa1",
+      "drift_from_audit": "none",
+      "local_main_after_ff": "9344fa1",
+      "branch_created_at": "9344fa1"
+    },
+    "branch": "m10-local-remediation-20260926",
+    "first_pass_sha": {
+      "evidence": "a89725701b05aff62e13fe394d31539242f28dc5",
+      "production": "409c436396f40d0c094a256dfdd77f3b70e6eb36 (identical localflow tree)"
+    },
+    "final_code_revision": "ed5e20631529e063564b151555215485ec316a53",
+    "final_records": "aaa1f3f (corpus, sweep; adjudications final) and 5fe3605 (regressions, mutations, benchmark); production identical to ed5e206 in both",
+    "disposition_counts": {
+      "reproduced": 25,
+      "test_gap_only": 3,
+      "narrowed": 1,
+      "design_only": 3,
+      "refuted": 0,
+      "already_fixed": 0,
+      "native_manual_unresolved": 0,
+      "local_findings": 2
+    },
+    "adjudications": "remediation/adjudications.json (m10-policy-r1, decisions D1-D15; one disposition per finding; the review round)",
+    "caller_inventory": "remediation/caller_inventory.json",
+    "reproduction_evidence": {
+      "regressions_base": "remediation/regressions_base_9344fa1.json (54/54 defect FAIL, 16/16 controls pass, 0 ERROR)",
+      "benchmark_base_probe": "remediation/benchmark_base_probe_9344fa1.json (base hit input did no M10 work; a no-op matcher was accepted)",
+      "native_base": "remediation/native_base_9344fa1_passive.json (0/3), remediation/native_base_9344fa1_active.json (0/7, app-launched, activation granted)"
+    },
+    "regressions": {
+      "first_pass": "remediation/regressions_first_pass_a897257.json (70/70)",
+      "review_fail_first": "remediation/review_regressions_first_pass_a897257.json (73/84: the 11 review defect cases fail)",
+      "final_suite_on_base": "remediation/regressions_base_9344fa1_final_suite.json (19/85; 0 controls fail; 7 review cases ERROR on first-pass-only interfaces)",
+      "final_suite_on_first_pass": "remediation/regressions_first_pass_a897257_final_suite.json (73/85: exactly the 12 review cases fail)",
+      "final": "remediation/regressions_final_5fe3605.json (85/85)"
+    },
+    "corpus_results": {
+      "final": "remediation/corpus_final_aaa1f3f.json: 220 PASS (18 graded under recorded decisions), 20/20 stateful with every required barrier reached or bound, 12/12 metamorphic",
+      "first_pass": "remediation/corpus_first_pass_a897257.json (217 PASS, 3 NOT_RUN: records absent) and remediation/corpus_first_pass_a897257_final_drivers.json (212 PASS, 5 FAIL — C030, C090, C137, C198, C214, the review-strengthened cases — 3 NOT_RUN)",
+      "base": "remediation/corpus_base_9344fa1.json (96 PASS, 80 FAIL, 41 ERROR, 3 NOT_RUN; ERRORs are drivers bound to interfaces the base lacks)"
+    },
+    "mutation_results": {
+      "final": "remediation/mutation_final_5fe3605.json: 26/26 killed (control green on 199 killer cases)",
+      "first_run": "remediation/mutation_first_run_1032947.json: 24 killed, 2 survived (MUT16, MUT21) — both coverage gaps, closed by strengthened drivers",
+      "first_pass": "remediation/mutation_first_pass_a897257.json: 26/26 killed"
+    },
+    "independent_review": {
+      "sha": "a89725701b05aff62e13fe394d31539242f28dc5",
+      "record": "remediation/review_first_pass_a897257.md",
+      "allegations": 9,
+      "author_reproduced": "all 9 plus two unrated Hub observations; repaired in cd06f44 (and 1e9c6c9 for the benchmark cohort)",
+      "refuted_hypotheses": 18,
+      "weak_tests_repaired": 7
+    },
+    "native_tests": {
+      "record": "remediation/native_panes_final.json: 10/10 at a011ce9 (production ed5e206)",
+      "passive": "remediation/native_passive_final_a011ce9.json: 3/3, the app never activated, frontmost app checked unchanged",
+      "active": "remediation/native_active_final_a011ce9.json: 7/7, launched as an app by a local launcher bundle, activation granted, prior frontmost app restored",
+      "first_pass": "remediation/native_first_pass_a897257_passive.json: 2/3 (Tab)",
+      "diagnostics": "remediation/native_delivery_diagnostic.json, remediation/native_editing_diagnostic.json (which delivery paths reach the product under activation)",
+      "found": "Tab never moved focus (no key-view loop) — repaired ed5e206"
+    },
+    "benchmark": {
+      "record": "docs/v2/benchmarks/20260926-235618-m10-remediation-final/m10.json",
+      "verdict": "VALID_WITHIN_BUDGET",
+      "matching_500_words_p95_ms": 6.61,
+      "matching_500_words_same_prefix_p95_ms": 7.81,
+      "budget_p95_ms": 25.0,
+      "m10_matching_contribution_p95_ms": 2.29,
+      "combined_job_cold_p95_ms": 11.13,
+      "conditions": "run alone on Mac17,8 / Apple M5 Pro / 48 GiB, macOS 27.0 (26A428), load average about 2.4 from other sessions"
+    },
+    "portable_tests": {
+      "sweep": "remediation/sweep_final_aaa1f3f.json: 89/91 files exit 0, 1159 ok lines (the two native suites are not run in isolation by design), no live clipboard change",
+      "owning_suites": "style_resolution, snippets, profiles_pipeline, skills, developer_resolution, hub_shell, transform_pipeline: all exit 0"
+    },
+    "desktop_isolation": "every portable run under tests/v2/context/run_isolated.py: no Accessibility read/write, no CGEventPost, general pasteboard redirected; the native pane runs deliver events only to their own window",
+    "declared_residuals": [
+      "M08's native insertion and AX suites were not rerun: localflow/v2/insertion is unchanged since their accepted native runs; M10-C150..C156 exercise the real InsertionService over M08's fixture world",
+      "pre-existing private strings outside M10 ownership: M04 grammar docstrings and contracts/normalization.md examples (a spoken home-folder path and address), scripts/v2/benchmark_m04.py fixture paths, and the absolute working_directory in the M09 and M10 historical results records"
+    ],
+    "pending_manual_verification": {
+      "runbook": "docs/v2/VERIFICATION.html → M10 (instructions M10-r1, code ed5e206)",
+      "checks": [
+        "M10-V001 styles by real destination, a one-time mode (also double-tap), a snippet with a line break",
+        "M10-V002 a skill folder you choose; a slash command in Terminal",
+        "M10-V003 attach file next to an open document; no attachment claimed",
+        "M10-V004 a two-line snippet at a Terminal prompt is offered to copy"
+      ],
+      "replaces": "native-m10-developer-trial",
+      "cross_references": [
+        "M06-V001",
+        "M08-V005",
+        "M09-V001",
+        "M09-V002"
+      ]
+    },
+    "privacy": "synthetic fixtures and sanitized aggregate evidence only; every added line of the branch diff was scanned for home paths, usernames and session paths before commit; the fixture name standing in for a person is a neutral synthetic one",
+    "merge": "merged onto main in-session per the project CLAUDE.md rule for completed remediations (owner confirmed over the handoff's push-only instruction)"
+  }
 }

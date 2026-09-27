@@ -1,0 +1,89 @@
+{
+ "launched": true,
+ "active": true,
+ "key": true,
+ "pressed_buttons": 0,
+ "push_button": {
+  "current": {
+   "delivered": true,
+   "err": null,
+   "active": true,
+   "key": true
+  },
+  "both_posted": {
+   "delivered": false,
+   "err": null,
+   "active": true,
+   "key": true
+  },
+  "window_send": {
+   "delivered": false,
+   "err": null,
+   "active": true,
+   "key": true
+  },
+  "up_first_at_start": {
+   "delivered": false,
+   "err": null,
+   "active": true,
+   "key": true
+  },
+  "space_key": {
+   "delivered": true,
+   "err": null,
+   "active": true,
+   "key": true
+  },
+  "performClick": {
+   "delivered": true,
+   "err": null,
+   "active": true,
+   "key": true
+  }
+ },
+ "checkbox": {
+  "current": {
+   "delivered": true,
+   "err": null
+  },
+  "both_posted": {
+   "delivered": false,
+   "err": null
+  },
+  "window_send": {
+   "delivered": false,
+   "err": null
+  },
+  "up_first_at_start": {
+   "delivered": false,
+   "err": null
+  },
+  "space_key": {
+   "delivered": true,
+   "err": null
+  },
+  "performClick": {
+   "delivered": true,
+   "err": null
+  }
+ },
+ "popup": {
+  "target": "raw",
+  "click": {
+   "selected": "clean",
+   "delivered": false,
+   "err": null
+  },
+  "space_key": {
+   "selected": "raw",
+   "delivered": true,
+   "err": null
+  },
+  "performClick": {
+   "selected": "raw",
+   "delivered": true,
+   "err": null
+  }
+ },
+ "full_keyboard_access": false
+}

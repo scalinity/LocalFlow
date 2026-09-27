@@ -1,0 +1,90 @@
+{
+  "suite": "tests/v2/ui/test_native_m10_panes.py",
+  "suite_sha256": "5120dddbfbde984e0e5a4a8c4118bf9b2ae6dee7e3b8d47c8d589efae91805b2",
+  "code_root_sha": "a011ce92f9e26d050c56dd60872318f79611fca1",
+  "tracked_files_modified": true,
+  "production_tree_modified": false,
+  "localflow_imported_from_root": "LocalFlow",
+  "python": "3.14.7",
+  "kind": "NATIVE_AUTOMATED",
+  "active_tier_run": true,
+  "launched_as_app": true,
+  "launch_activation_granted": true,
+  "prior_frontmost_restored": true,
+  "window": "owned by this process, off-screen; events via this app's own dispatch; passive tier never activates the app, the active tier (--activate) activates it and restores the prior frontmost application afterwards",
+  "results": [
+    {
+      "case": "n01_every_input_is_hittable_in_both_panes",
+      "tier": "passive",
+      "status": "not_run",
+      "detail": "passive cases run unlaunched (a launched app is active by design)",
+      "seconds": 0.0
+    },
+    {
+      "case": "n02p_click_focus_typing_and_popup_while_inactive",
+      "tier": "passive",
+      "status": "not_run",
+      "detail": "passive cases run unlaunched (a launched app is active by design)",
+      "seconds": 0.0
+    },
+    {
+      "case": "n02t_tab_moves_focus_while_inactive",
+      "tier": "passive",
+      "status": "not_run",
+      "detail": "passive cases run unlaunched (a launched app is active by design)",
+      "seconds": 0.0
+    },
+    {
+      "case": "n02_styles_text_entry_select_all_and_tab",
+      "tier": "active",
+      "status": "pass",
+      "detail": null,
+      "seconds": 1.28
+    },
+    {
+      "case": "n03_styles_add_from_the_controls",
+      "tier": "active",
+      "status": "pass",
+      "detail": null,
+      "seconds": 2.78
+    },
+    {
+      "case": "n04_styles_update_toggle_delete_by_rendered_row",
+      "tier": "active",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.96
+    },
+    {
+      "case": "n05_snippets_add_from_the_controls",
+      "tier": "active",
+      "status": "pass",
+      "detail": null,
+      "seconds": 1.91
+    },
+    {
+      "case": "n06_snippets_collisions_update_toggle_delete",
+      "tier": "active",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.61
+    },
+    {
+      "case": "n07_phrase_sandbox_preview_button",
+      "tier": "active",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.72
+    },
+    {
+      "case": "n08_resize_and_repeat",
+      "tier": "active",
+      "status": "pass",
+      "detail": null,
+      "seconds": 0.76
+    }
+  ],
+  "passed": 7,
+  "ran": 7,
+  "total": 10
+}

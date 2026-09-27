@@ -1,0 +1,2068 @@
+{
+ "tool": "scripts/v2/m10_mutation_check.py",
+ "runner": "tests/v2/profiles/m10_corpus_runner.py",
+ "native_suite": "tests/v2/ui/test_native_m10_panes.py",
+ "code_sha": "a89725701b05aff62e13fe394d31539242f28dc5",
+ "corpus_sha256": "3cc5a9288f432a45ddf85c0ecaa7b1c1f83c0e550ea774a4a326f5e23780f755",
+ "killer_rule": "every corpus case sharing a related finding, minus M10-C175, M10-C176, M10-C199; MUT26: passive native pane cases",
+ "control": {
+  "imported_from": "control",
+  "cases": {
+   "M10-C001": "PASS",
+   "M10-C002": "PASS",
+   "M10-C003": "PASS",
+   "M10-C004": "PASS",
+   "M10-C005": "PASS",
+   "M10-C006": "PASS",
+   "M10-C009": "PASS",
+   "M10-C010": "PASS",
+   "M10-C011": "PASS",
+   "M10-C012": "PASS",
+   "M10-C013": "PASS",
+   "M10-C014": "PASS",
+   "M10-C015": "PASS",
+   "M10-C016": "PASS",
+   "M10-C017": "PASS",
+   "M10-C018": "PASS",
+   "M10-C019": "PASS",
+   "M10-C020": "PASS",
+   "M10-C021": "PASS",
+   "M10-C022": "PASS",
+   "M10-C023": "PASS",
+   "M10-C024": "PASS",
+   "M10-C025": "PASS",
+   "M10-C026": "PASS",
+   "M10-C027": "PASS",
+   "M10-C028": "PASS",
+   "M10-C029": "PASS",
+   "M10-C030": "PASS",
+   "M10-C031": "PASS",
+   "M10-C032": "PASS",
+   "M10-C033": "PASS",
+   "M10-C035": "PASS",
+   "M10-C036": "PASS",
+   "M10-C037": "PASS",
+   "M10-C038": "PASS",
+   "M10-C039": "PASS",
+   "M10-C040": "PASS",
+   "M10-C041": "PASS",
+   "M10-C043": "PASS",
+   "M10-C044": "PASS",
+   "M10-C045": "PASS",
+   "M10-C046": "PASS",
+   "M10-C047": "PASS",
+   "M10-C048": "PASS",
+   "M10-C049": "PASS",
+   "M10-C050": "PASS",
+   "M10-C051": "PASS",
+   "M10-C052": "PASS",
+   "M10-C053": "PASS",
+   "M10-C054": "PASS",
+   "M10-C055": "PASS",
+   "M10-C056": "PASS",
+   "M10-C057": "PASS",
+   "M10-C058": "PASS",
+   "M10-C059": "PASS",
+   "M10-C060": "PASS",
+   "M10-C061": "PASS",
+   "M10-C062": "PASS",
+   "M10-C063": "PASS",
+   "M10-C064": "PASS",
+   "M10-C065": "PASS",
+   "M10-C066": "PASS",
+   "M10-C067": "PASS",
+   "M10-C068": "PASS",
+   "M10-C069": "PASS",
+   "M10-C070": "PASS",
+   "M10-C071": "PASS",
+   "M10-C072": "PASS",
+   "M10-C073": "PASS",
+   "M10-C074": "PASS",
+   "M10-C075": "PASS",
+   "M10-C076": "PASS",
+   "M10-C077": "PASS",
+   "M10-C078": "PASS",
+   "M10-C079": "PASS",
+   "M10-C080": "PASS",
+   "M10-C081": "PASS",
+   "M10-C082": "PASS",
+   "M10-C083": "PASS",
+   "M10-C084": "PASS",
+   "M10-C085": "PASS",
+   "M10-C086": "PASS",
+   "M10-C087": "PASS",
+   "M10-C088": "PASS",
+   "M10-C091": "PASS",
+   "M10-C092": "PASS",
+   "M10-C093": "PASS",
+   "M10-C094": "PASS",
+   "M10-C095": "PASS",
+   "M10-C096": "PASS",
+   "M10-C097": "PASS",
+   "M10-C098": "PASS",
+   "M10-C099": "PASS",
+   "M10-C100": "PASS",
+   "M10-C101": "PASS",
+   "M10-C102": "PASS",
+   "M10-C103": "PASS",
+   "M10-C104": "PASS",
+   "M10-C105": "PASS",
+   "M10-C106": "PASS",
+   "M10-C107": "PASS",
+   "M10-C108": "PASS",
+   "M10-C109": "PASS",
+   "M10-C110": "PASS",
+   "M10-C111": "PASS",
+   "M10-C112": "PASS",
+   "M10-C113": "PASS",
+   "M10-C114": "PASS",
+   "M10-C115": "PASS",
+   "M10-C116": "PASS",
+   "M10-C118": "PASS",
+   "M10-C119": "PASS",
+   "M10-C120": "PASS",
+   "M10-C121": "PASS",
+   "M10-C122": "PASS",
+   "M10-C123": "PASS",
+   "M10-C124": "PASS",
+   "M10-C125": "PASS",
+   "M10-C126": "PASS",
+   "M10-C127": "PASS",
+   "M10-C128": "PASS",
+   "M10-C130": "PASS",
+   "M10-C131": "PASS",
+   "M10-C132": "PASS",
+   "M10-C133": "PASS",
+   "M10-C135": "PASS",
+   "M10-C136": "PASS",
+   "M10-C137": "PASS",
+   "M10-C138": "PASS",
+   "M10-C139": "PASS",
+   "M10-C140": "PASS",
+   "M10-C141": "PASS",
+   "M10-C142": "PASS",
+   "M10-C143": "PASS",
+   "M10-C144": "PASS",
+   "M10-C148": "PASS",
+   "M10-C149": "PASS",
+   "M10-C150": "PASS",
+   "M10-C151": "PASS",
+   "M10-C152": "PASS",
+   "M10-C153": "PASS",
+   "M10-C154": "PASS",
+   "M10-C155": "PASS",
+   "M10-C156": "PASS",
+   "M10-C157": "PASS",
+   "M10-C158": "PASS",
+   "M10-C159": "PASS",
+   "M10-C160": "PASS",
+   "M10-C161": "PASS",
+   "M10-C162": "PASS",
+   "M10-C163": "PASS",
+   "M10-C164": "PASS",
+   "M10-C165": "PASS",
+   "M10-C166": "PASS",
+   "M10-C167": "PASS",
+   "M10-C168": "PASS",
+   "M10-C169": "PASS",
+   "M10-C170": "PASS",
+   "M10-C171": "PASS",
+   "M10-C172": "PASS",
+   "M10-C173": "PASS",
+   "M10-C174": "PASS",
+   "M10-C182": "PASS",
+   "M10-C183": "PASS",
+   "M10-C185": "PASS",
+   "M10-C186": "PASS",
+   "M10-C187": "PASS",
+   "M10-C188": "PASS",
+   "M10-C189": "PASS",
+   "M10-C190": "PASS",
+   "M10-C191": "PASS",
+   "M10-C192": "PASS",
+   "M10-C193": "PASS",
+   "M10-C194": "PASS",
+   "M10-C195": "PASS",
+   "M10-C196": "PASS",
+   "M10-C197": "PASS",
+   "M10-C198": "PASS",
+   "M10-C200": "PASS",
+   "M10-C201": "PASS",
+   "M10-C202": "PASS",
+   "M10-C203": "PASS",
+   "M10-C204": "PASS",
+   "M10-C206": "PASS",
+   "M10-C207": "PASS",
+   "M10-C208": "PASS",
+   "M10-C209": "PASS",
+   "M10-C210": "PASS",
+   "M10-C211": "PASS",
+   "M10-C212": "PASS",
+   "M10-C213": "PASS",
+   "M10-C214": "PASS",
+   "M10-C215": "PASS",
+   "M10-C216": "PASS",
+   "M10-C217": "PASS",
+   "M10-C218": "PASS",
+   "M10-C219": "PASS",
+   "native:n01_every_input_is_hittable_in_both_panes": "PASS",
+   "native:n02p_click_focus_typing_and_popup_while_inactive": "PASS"
+  },
+  "details": {}
+ },
+ "summary": {
+  "killed": 26
+ },
+ "results": [
+  {
+   "mutation_id": "M10-MUT01",
+   "name": "Reverse workspace/site/app authority.",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "files": [
+    "localflow/v2/profiles.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/profiles.py": {
+      "sha_before": "287085b28d44a33a",
+      "sha_after": "111d82398a205b33",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C001",
+    "M10-C002",
+    "M10-C003",
+    "M10-C004",
+    "M10-C005",
+    "M10-C006",
+    "M10-C009",
+    "M10-C014",
+    "M10-C015",
+    "M10-C016",
+    "M10-C017",
+    "M10-C018",
+    "M10-C019",
+    "M10-C020",
+    "M10-C021",
+    "M10-C022",
+    "M10-C023",
+    "M10-C024",
+    "M10-C025",
+    "M10-C038",
+    "M10-C039",
+    "M10-C040",
+    "M10-C201",
+    "M10-C209"
+   ],
+   "seconds": 1.0,
+   "mutant": {
+    "M10-C001": "FAIL",
+    "M10-C002": "FAIL",
+    "M10-C003": "PASS",
+    "M10-C004": "PASS",
+    "M10-C005": "PASS",
+    "M10-C006": "FAIL",
+    "M10-C009": "PASS",
+    "M10-C014": "PASS",
+    "M10-C015": "PASS",
+    "M10-C016": "PASS",
+    "M10-C017": "PASS",
+    "M10-C018": "PASS",
+    "M10-C019": "PASS",
+    "M10-C020": "PASS",
+    "M10-C021": "PASS",
+    "M10-C022": "PASS",
+    "M10-C023": "PASS",
+    "M10-C024": "PASS",
+    "M10-C025": "PASS",
+    "M10-C038": "PASS",
+    "M10-C039": "PASS",
+    "M10-C040": "PASS",
+    "M10-C201": "PASS",
+    "M10-C209": "PASS"
+   },
+   "failed_killers": [
+    "M10-C001",
+    "M10-C002",
+    "M10-C006"
+   ],
+   "mutant_details": {
+    "M10-C001": "failed: ['winner', 'source']",
+    "M10-C002": "failed: ['winner', 'source']",
+    "M10-C006": "failed: ['winner_site']"
+   },
+   "imported_from": "M10-MUT01",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT02",
+   "name": "Bypass accepted bundle/site comparison normalization.",
+   "related_findings": [
+    "M10-AUDIT-02"
+   ],
+   "files": [
+    "localflow/v2/profiles.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/profiles.py": {
+      "sha_before": "287085b28d44a33a",
+      "sha_after": "9ac432d4f5fd40ec",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C001",
+    "M10-C002",
+    "M10-C003",
+    "M10-C004",
+    "M10-C005",
+    "M10-C006",
+    "M10-C009",
+    "M10-C014",
+    "M10-C015",
+    "M10-C016",
+    "M10-C017",
+    "M10-C018",
+    "M10-C019",
+    "M10-C020",
+    "M10-C021",
+    "M10-C022",
+    "M10-C023",
+    "M10-C024",
+    "M10-C025",
+    "M10-C038",
+    "M10-C039",
+    "M10-C040",
+    "M10-C201",
+    "M10-C209"
+   ],
+   "seconds": 1.0,
+   "mutant": {
+    "M10-C001": "PASS",
+    "M10-C002": "PASS",
+    "M10-C003": "PASS",
+    "M10-C004": "PASS",
+    "M10-C005": "PASS",
+    "M10-C006": "PASS",
+    "M10-C009": "PASS",
+    "M10-C014": "FAIL",
+    "M10-C015": "FAIL",
+    "M10-C016": "FAIL",
+    "M10-C017": "FAIL",
+    "M10-C018": "FAIL",
+    "M10-C019": "PASS",
+    "M10-C020": "PASS",
+    "M10-C021": "PASS",
+    "M10-C022": "PASS",
+    "M10-C023": "PASS",
+    "M10-C024": "PASS",
+    "M10-C025": "PASS",
+    "M10-C038": "PASS",
+    "M10-C039": "PASS",
+    "M10-C040": "PASS",
+    "M10-C201": "PASS",
+    "M10-C209": "PASS"
+   },
+   "failed_killers": [
+    "M10-C014",
+    "M10-C015",
+    "M10-C016",
+    "M10-C017",
+    "M10-C018"
+   ],
+   "mutant_details": {
+    "M10-C014": "failed: ['m10_rule_matches']",
+    "M10-C015": "failed: ['m10_rule_matches']",
+    "M10-C016": "failed: ['m10_rule_matches']",
+    "M10-C017": "failed: ['m10_rule_matches']",
+    "M10-C018": "failed: ['m10_rule_matches']"
+   },
+   "imported_from": "M10-MUT02",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT03",
+   "name": "Re-read style rules after A freezes.",
+   "related_findings": [
+    "M10-AUDIT-11",
+    "M10-AUDIT-12"
+   ],
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "7e15f77aff5610bf",
+      "sha_after": "ee182fcfd98482e9",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C038",
+    "M10-C039",
+    "M10-C040",
+    "M10-C041",
+    "M10-C126",
+    "M10-C128",
+    "M10-C130",
+    "M10-C131",
+    "M10-C133",
+    "M10-C187",
+    "M10-C201",
+    "M10-C203",
+    "M10-C208",
+    "M10-C209",
+    "M10-C210",
+    "M10-C217"
+   ],
+   "seconds": 2.4,
+   "mutant": {
+    "M10-C038": "PASS",
+    "M10-C039": "PASS",
+    "M10-C040": "PASS",
+    "M10-C041": "PASS",
+    "M10-C126": "PASS",
+    "M10-C128": "PASS",
+    "M10-C130": "PASS",
+    "M10-C131": "PASS",
+    "M10-C133": "PASS",
+    "M10-C187": "PASS",
+    "M10-C201": "FAIL",
+    "M10-C203": "PASS",
+    "M10-C208": "PASS",
+    "M10-C209": "PASS",
+    "M10-C210": "PASS",
+    "M10-C217": "PASS"
+   },
+   "failed_killers": [
+    "M10-C201"
+   ],
+   "mutant_details": {
+    "M10-C201": "failed: ['a_rev1_tuple']"
+   },
+   "imported_from": "M10-MUT03",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT04",
+   "name": "Replace strict Boolean validation with bool(value).",
+   "related_findings": [
+    "M10-AUDIT-06",
+    "M10-AUDIT-07"
+   ],
+   "files": [
+    "localflow/v2/profiles.py",
+    "localflow/v2/snippets.py",
+    "localflow/v2/transforms/definitions.py",
+    "localflow/v2/transforms_store.py",
+    "localflow/v2/vocabulary.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/vocabulary.py": {
+      "sha_before": "d75fe2f7e9428723",
+      "sha_after": "78055c80237582ff",
+      "changed": true
+     },
+     "localflow/v2/profiles.py": {
+      "sha_before": "287085b28d44a33a",
+      "sha_after": "32030bc2cbc5b16b",
+      "changed": true
+     },
+     "localflow/v2/snippets.py": {
+      "sha_before": "e74c5bd658dbdafb",
+      "sha_after": "5e1eb4a74a45bf7e",
+      "changed": true
+     },
+     "localflow/v2/transforms/definitions.py": {
+      "sha_before": "8f67c3e8e8293244",
+      "sha_after": "cc5fb3035b95ce8f",
+      "changed": true
+     },
+     "localflow/v2/transforms_store.py": {
+      "sha_before": "3808d5465866adb2",
+      "sha_after": "42b41275a60581f7",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C036",
+    "M10-C048",
+    "M10-C049",
+    "M10-C050",
+    "M10-C051",
+    "M10-C052",
+    "M10-C053",
+    "M10-C054",
+    "M10-C055",
+    "M10-C056",
+    "M10-C057",
+    "M10-C058",
+    "M10-C059",
+    "M10-C060",
+    "M10-C061",
+    "M10-C062",
+    "M10-C063",
+    "M10-C064",
+    "M10-C065",
+    "M10-C066",
+    "M10-C067",
+    "M10-C106",
+    "M10-C107",
+    "M10-C120",
+    "M10-C121",
+    "M10-C122",
+    "M10-C123",
+    "M10-C124",
+    "M10-C125",
+    "M10-C131",
+    "M10-C132",
+    "M10-C138",
+    "M10-C159",
+    "M10-C160",
+    "M10-C161",
+    "M10-C163",
+    "M10-C182",
+    "M10-C211"
+   ],
+   "seconds": 2.5,
+   "mutant": {
+    "M10-C036": "PASS",
+    "M10-C048": "FAIL",
+    "M10-C049": "FAIL",
+    "M10-C050": "FAIL",
+    "M10-C051": "FAIL",
+    "M10-C052": "FAIL",
+    "M10-C053": "FAIL",
+    "M10-C054": "FAIL",
+    "M10-C055": "FAIL",
+    "M10-C056": "FAIL",
+    "M10-C057": "FAIL",
+    "M10-C058": "FAIL",
+    "M10-C059": "FAIL",
+    "M10-C060": "FAIL",
+    "M10-C061": "FAIL",
+    "M10-C062": "FAIL",
+    "M10-C063": "FAIL",
+    "M10-C064": "FAIL",
+    "M10-C065": "FAIL",
+    "M10-C066": "FAIL",
+    "M10-C067": "FAIL",
+    "M10-C106": "PASS",
+    "M10-C107": "PASS",
+    "M10-C120": "PASS",
+    "M10-C121": "PASS",
+    "M10-C122": "PASS",
+    "M10-C123": "PASS",
+    "M10-C124": "PASS",
+    "M10-C125": "PASS",
+    "M10-C131": "PASS",
+    "M10-C132": "PASS",
+    "M10-C138": "PASS",
+    "M10-C159": "PASS",
+    "M10-C160": "PASS",
+    "M10-C161": "PASS",
+    "M10-C163": "PASS",
+    "M10-C182": "PASS",
+    "M10-C211": "PASS"
+   },
+   "failed_killers": [
+    "M10-C048",
+    "M10-C049",
+    "M10-C050",
+    "M10-C051",
+    "M10-C052",
+    "M10-C053",
+    "M10-C054",
+    "M10-C055",
+    "M10-C056",
+    "M10-C057",
+    "M10-C058",
+    "M10-C059",
+    "M10-C060",
+    "M10-C061",
+    "M10-C062",
+    "M10-C063",
+    "M10-C064",
+    "M10-C065",
+    "M10-C066",
+    "M10-C067"
+   ],
+   "mutant_details": {
+    "M10-C048": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C049": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C050": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C051": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C052": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C053": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C054": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C055": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C056": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C057": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C058": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C059": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C060": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C061": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C062": "failed: ['refused_before_mutation']",
+    "M10-C063": "failed: ['refused_before_mutation']",
+    "M10-C064": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C065": "failed: ['refused_before_mutation', 'row_unchanged', 'revision_unchanged']",
+    "M10-C066": "failed: ['refused_before_mutation']",
+    "M10-C067": "failed: ['refused_before_mutation']"
+   },
+   "imported_from": "M10-MUT04",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT05",
+   "name": "Move read/merge/validate back before writer admission.",
+   "related_findings": [
+    "M10-AUDIT-03",
+    "M10-AUDIT-04"
+   ],
+   "files": [
+    "localflow/v2/profiles_store.py",
+    "localflow/v2/snippets_store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/profiles_store.py": {
+      "sha_before": "7dd618e8dcfc3ea3",
+      "sha_after": "e0f21f2ce41009bd",
+      "changed": true
+     },
+     "localflow/v2/snippets_store.py": {
+      "sha_before": "fbf37c8e07bf9628",
+      "sha_after": "b0bcee02818c80c6",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C043",
+    "M10-C044",
+    "M10-C045",
+    "M10-C168",
+    "M10-C204",
+    "M10-C206"
+   ],
+   "seconds": 0.5,
+   "mutant": {
+    "M10-C043": "FAIL",
+    "M10-C044": "PASS",
+    "M10-C045": "FAIL",
+    "M10-C168": "PASS",
+    "M10-C204": "FAIL",
+    "M10-C206": "FAIL"
+   },
+   "failed_killers": [
+    "M10-C043",
+    "M10-C045",
+    "M10-C204",
+    "M10-C206"
+   ],
+   "mutant_details": {
+    "M10-C043": "failed: ['no_invalid_tuple', 'stale_patch_refused_explicitly', 'public_rules_usable']",
+    "M10-C045": "failed: ['no_invalid_url_row', 'stale_patch_refused', 'revisions_monotonic', 'snapshot_valid']",
+    "M10-C204": "failed: ['no_invalid_tuple', 'stale_patch_refused_explicitly', 'public_rules_usable']",
+    "M10-C206": "failed: ['no_invalid_url_row', 'stale_patch_refused', 'revisions_monotonic', 'snapshot_valid']"
+   },
+   "imported_from": "M10-MUT05",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT06",
+   "name": "Choose the first enabled duplicate trigger.",
+   "related_findings": [
+    "M10-AUDIT-17",
+    "M10-AUDIT-18"
+   ],
+   "files": [
+    "localflow/v2/snippets.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/snippets.py": {
+      "sha_before": "e74c5bd658dbdafb",
+      "sha_after": "c31a0b69cdbd89c2",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C082",
+    "M10-C083",
+    "M10-C098",
+    "M10-C099",
+    "M10-C100",
+    "M10-C101",
+    "M10-C102",
+    "M10-C103",
+    "M10-C105",
+    "M10-C106",
+    "M10-C107",
+    "M10-C173",
+    "M10-C174",
+    "M10-C202",
+    "M10-C216",
+    "M10-C219"
+   ],
+   "seconds": 1.3,
+   "mutant": {
+    "M10-C082": "PASS",
+    "M10-C083": "FAIL",
+    "M10-C098": "PASS",
+    "M10-C099": "PASS",
+    "M10-C100": "PASS",
+    "M10-C101": "PASS",
+    "M10-C102": "PASS",
+    "M10-C103": "PASS",
+    "M10-C105": "PASS",
+    "M10-C106": "PASS",
+    "M10-C107": "PASS",
+    "M10-C173": "PASS",
+    "M10-C174": "PASS",
+    "M10-C202": "PASS",
+    "M10-C216": "PASS",
+    "M10-C219": "PASS"
+   },
+   "failed_killers": [
+    "M10-C083"
+   ],
+   "mutant_details": {
+    "M10-C083": "failed: ['no_arbitrary_expansion']"
+   },
+   "imported_from": "M10-MUT06",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT07",
+   "name": "Remove trigger/slot connected-boundary guard.",
+   "related_findings": [
+    "M10-AUDIT-14"
+   ],
+   "files": [
+    "localflow/v2/normalize/syntax.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/normalize/syntax.py": {
+      "sha_before": "77d5c507343f08b1",
+      "sha_after": "115571358a1c95fd",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C069",
+    "M10-C070",
+    "M10-C071",
+    "M10-C072",
+    "M10-C073",
+    "M10-C074",
+    "M10-C075",
+    "M10-C076",
+    "M10-C077",
+    "M10-C078",
+    "M10-C079",
+    "M10-C080",
+    "M10-C081",
+    "M10-C085",
+    "M10-C086",
+    "M10-C087",
+    "M10-C088",
+    "M10-C091",
+    "M10-C092",
+    "M10-C093",
+    "M10-C094",
+    "M10-C095",
+    "M10-C096",
+    "M10-C097"
+   ],
+   "seconds": 0.5,
+   "mutant": {
+    "M10-C069": "FAIL",
+    "M10-C070": "FAIL",
+    "M10-C071": "FAIL",
+    "M10-C072": "FAIL",
+    "M10-C073": "FAIL",
+    "M10-C074": "FAIL",
+    "M10-C075": "FAIL",
+    "M10-C076": "PASS",
+    "M10-C077": "PASS",
+    "M10-C078": "PASS",
+    "M10-C079": "PASS",
+    "M10-C080": "PASS",
+    "M10-C081": "PASS",
+    "M10-C085": "PASS",
+    "M10-C086": "PASS",
+    "M10-C087": "PASS",
+    "M10-C088": "PASS",
+    "M10-C091": "PASS",
+    "M10-C092": "FAIL",
+    "M10-C093": "PASS",
+    "M10-C094": "PASS",
+    "M10-C095": "PASS",
+    "M10-C096": "PASS",
+    "M10-C097": "PASS"
+   },
+   "failed_killers": [
+    "M10-C069",
+    "M10-C070",
+    "M10-C071",
+    "M10-C072",
+    "M10-C073",
+    "M10-C074",
+    "M10-C075",
+    "M10-C092"
+   ],
+   "mutant_details": {
+    "M10-C069": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+    "M10-C070": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+    "M10-C071": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+    "M10-C072": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+    "M10-C073": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+    "M10-C074": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+    "M10-C075": "failed: ['no_edit_across_separator', 'words_and_separator_kept']",
+    "M10-C092": "failed: ['newline_not_swallowed']"
+   },
+   "imported_from": "M10-MUT07",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT08",
+   "name": "Normalize generated output again in the same job without provenance.",
+   "related_findings": [
+    "M10-AUDIT-31"
+   ],
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "7e15f77aff5610bf",
+      "sha_after": "12780a2bba29913f",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C084"
+   ],
+   "seconds": 0.5,
+   "mutant": {
+    "M10-C084": "FAIL"
+   },
+   "failed_killers": [
+    "M10-C084"
+   ],
+   "mutant_details": {
+    "M10-C084": "generated trigger chained: 'FINAL'"
+   },
+   "imported_from": "M10-MUT08",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT09",
+   "name": "Find an arbitrary later header and accept it as frontmatter.",
+   "related_findings": [
+    "M10-AUDIT-08"
+   ],
+   "files": [
+    "localflow/v2/developer/skills.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/developer/skills.py": {
+      "sha_before": "1305518888cdb884",
+      "sha_after": "d2d7916b666ef346",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C110",
+    "M10-C111",
+    "M10-C112"
+   ],
+   "seconds": 0.3,
+   "mutant": {
+    "M10-C110": "PASS",
+    "M10-C111": "FAIL",
+    "M10-C112": "PASS"
+   },
+   "failed_killers": [
+    "M10-C111"
+   ],
+   "mutant_details": {
+    "M10-C111": "body metadata became identity: ['body-canary']"
+   },
+   "imported_from": "M10-MUT09",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT10",
+   "name": "Discover a synthetic fake-home skill when configured paths are empty.",
+   "related_findings": [
+    "M10-AUDIT-01",
+    "M10-AUDIT-07"
+   ],
+   "files": [
+    "localflow/v2/developer/skills.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/developer/skills.py": {
+      "sha_before": "1305518888cdb884",
+      "sha_after": "907df0985090bc7e",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C118",
+    "M10-C119",
+    "M10-C120",
+    "M10-C121",
+    "M10-C122",
+    "M10-C123",
+    "M10-C124",
+    "M10-C125",
+    "M10-C131",
+    "M10-C132",
+    "M10-C135",
+    "M10-C138",
+    "M10-C214"
+   ],
+   "seconds": 1.1,
+   "mutant": {
+    "M10-C118": "PASS",
+    "M10-C119": "PASS",
+    "M10-C120": "FAIL",
+    "M10-C121": "PASS",
+    "M10-C122": "PASS",
+    "M10-C123": "PASS",
+    "M10-C124": "PASS",
+    "M10-C125": "PASS",
+    "M10-C131": "PASS",
+    "M10-C132": "PASS",
+    "M10-C135": "PASS",
+    "M10-C138": "PASS",
+    "M10-C214": "PASS"
+   },
+   "failed_killers": [
+    "M10-C120"
+   ],
+   "mutant_details": {
+    "M10-C120": "failed: ['no_unconfigured_read', 'honest_provenance']"
+   },
+   "imported_from": "M10-MUT10",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT11",
+   "name": "Keep A-only skills when B starts.",
+   "related_findings": [
+    "M10-AUDIT-10",
+    "M10-AUDIT-11",
+    "M10-AUDIT-12"
+   ],
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "7e15f77aff5610bf",
+      "sha_after": "f63382e0e75d5c80",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C038",
+    "M10-C039",
+    "M10-C040",
+    "M10-C041",
+    "M10-C126",
+    "M10-C127",
+    "M10-C128",
+    "M10-C130",
+    "M10-C131",
+    "M10-C133",
+    "M10-C187",
+    "M10-C201",
+    "M10-C203",
+    "M10-C208",
+    "M10-C209",
+    "M10-C210",
+    "M10-C217"
+   ],
+   "seconds": 2.6,
+   "mutant": {
+    "M10-C038": "PASS",
+    "M10-C039": "PASS",
+    "M10-C040": "PASS",
+    "M10-C041": "PASS",
+    "M10-C126": "PASS",
+    "M10-C127": "PASS",
+    "M10-C128": "PASS",
+    "M10-C130": "FAIL",
+    "M10-C131": "PASS",
+    "M10-C133": "PASS",
+    "M10-C187": "PASS",
+    "M10-C201": "PASS",
+    "M10-C203": "PASS",
+    "M10-C208": "FAIL",
+    "M10-C209": "PASS",
+    "M10-C210": "PASS",
+    "M10-C217": "PASS"
+   },
+   "failed_killers": [
+    "M10-C130",
+    "M10-C208"
+   ],
+   "mutant_details": {
+    "M10-C130": "failed: ['b_excludes_a']",
+    "M10-C208": "failed: ['b_excludes_a']"
+   },
+   "imported_from": "M10-MUT11",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT12",
+   "name": "Return a candidate before ambiguity union.",
+   "related_findings": [
+    "M10-AUDIT-16"
+   ],
+   "files": [
+    "localflow/v2/developer/file_tags.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/developer/file_tags.py": {
+      "sha_before": "4a13d39fb6a3082e",
+      "sha_after": "1e4b21953133ac12",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C139",
+    "M10-C140",
+    "M10-C141",
+    "M10-C142",
+    "M10-C143"
+   ],
+   "seconds": 0.3,
+   "mutant": {
+    "M10-C139": "PASS",
+    "M10-C140": "PASS",
+    "M10-C141": "FAIL",
+    "M10-C142": "FAIL",
+    "M10-C143": "PASS"
+   },
+   "failed_killers": [
+    "M10-C141",
+    "M10-C142"
+   ],
+   "mutant_details": {
+    "M10-C141": "failed: ['ambiguous_both_orders', 'both_candidates']",
+    "M10-C142": "failed: ['ambiguous_both_orders', 'both_candidates']"
+   },
+   "imported_from": "M10-MUT12",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT13",
+   "name": "Set attachment_created true on an uncertified runtime fallback.",
+   "related_findings": [
+    "M10-AUDIT-24"
+   ],
+   "files": [
+    "localflow/v2/developer/file_tags.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/developer/file_tags.py": {
+      "sha_before": "4a13d39fb6a3082e",
+      "sha_after": "c06674aa1b6679a3",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C104",
+    "M10-C148",
+    "M10-C149",
+    "M10-C183"
+   ],
+   "seconds": 0.7,
+   "mutant": {
+    "M10-C104": "PASS",
+    "M10-C148": "PASS",
+    "M10-C149": "FAIL",
+    "M10-C183": "FAIL"
+   },
+   "failed_killers": [
+    "M10-C149",
+    "M10-C183"
+   ],
+   "mutant_details": {
+    "M10-C149": "no attachment_created=false outcome on the runtime path",
+    "M10-C183": "no attachment_created=false outcome on the runtime path"
+   },
+   "imported_from": "M10-MUT13",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT14",
+   "name": "Run a bound transform even when auto_apply is false.",
+   "related_findings": [
+    "M10-AUDIT-06"
+   ],
+   "files": [
+    "localflow/v2/transforms/definitions.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/transforms/definitions.py": {
+      "sha_before": "8f67c3e8e8293244",
+      "sha_after": "9deda1da6077d78a",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C036",
+    "M10-C048",
+    "M10-C049",
+    "M10-C050",
+    "M10-C051",
+    "M10-C052",
+    "M10-C053",
+    "M10-C054",
+    "M10-C055",
+    "M10-C056",
+    "M10-C057",
+    "M10-C058",
+    "M10-C059",
+    "M10-C060",
+    "M10-C061",
+    "M10-C062",
+    "M10-C063",
+    "M10-C064",
+    "M10-C065",
+    "M10-C066",
+    "M10-C067",
+    "M10-C106",
+    "M10-C107",
+    "M10-C159",
+    "M10-C160",
+    "M10-C161",
+    "M10-C163",
+    "M10-C182",
+    "M10-C211"
+   ],
+   "seconds": 1.9,
+   "mutant": {
+    "M10-C036": "PASS",
+    "M10-C048": "PASS",
+    "M10-C049": "PASS",
+    "M10-C050": "PASS",
+    "M10-C051": "PASS",
+    "M10-C052": "PASS",
+    "M10-C053": "PASS",
+    "M10-C054": "PASS",
+    "M10-C055": "PASS",
+    "M10-C056": "PASS",
+    "M10-C057": "PASS",
+    "M10-C058": "PASS",
+    "M10-C059": "PASS",
+    "M10-C060": "PASS",
+    "M10-C061": "PASS",
+    "M10-C062": "PASS",
+    "M10-C063": "PASS",
+    "M10-C064": "PASS",
+    "M10-C065": "PASS",
+    "M10-C066": "PASS",
+    "M10-C067": "PASS",
+    "M10-C106": "PASS",
+    "M10-C107": "PASS",
+    "M10-C159": "FAIL",
+    "M10-C160": "FAIL",
+    "M10-C161": "FAIL",
+    "M10-C163": "PASS",
+    "M10-C182": "PASS",
+    "M10-C211": "PASS"
+   },
+   "failed_killers": [
+    "M10-C159",
+    "M10-C160",
+    "M10-C161"
+   ],
+   "mutant_details": {
+    "M10-C159": "failed: ['false_no_generation']",
+    "M10-C160": "failed: ['false_no_generation']",
+    "M10-C161": "failed: ['false_no_generation']"
+   },
+   "imported_from": "M10-MUT14",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT15",
+   "name": "Build final policy using dictionary skills only.",
+   "related_findings": [
+    "M10-AUDIT-12",
+    "M10-AUDIT-27"
+   ],
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "7e15f77aff5610bf",
+      "sha_after": "139734abb54aaffb",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C023",
+    "M10-C032",
+    "M10-C033",
+    "M10-C035",
+    "M10-C037",
+    "M10-C038",
+    "M10-C039",
+    "M10-C040",
+    "M10-C041",
+    "M10-C080",
+    "M10-C081",
+    "M10-C101",
+    "M10-C108",
+    "M10-C109",
+    "M10-C110",
+    "M10-C130",
+    "M10-C131",
+    "M10-C132",
+    "M10-C133",
+    "M10-C137",
+    "M10-C139",
+    "M10-C143",
+    "M10-C150",
+    "M10-C151",
+    "M10-C152",
+    "M10-C153",
+    "M10-C154",
+    "M10-C155",
+    "M10-C156",
+    "M10-C157",
+    "M10-C158",
+    "M10-C159",
+    "M10-C160",
+    "M10-C161",
+    "M10-C162",
+    "M10-C164",
+    "M10-C165",
+    "M10-C166",
+    "M10-C185",
+    "M10-C186",
+    "M10-C187",
+    "M10-C188",
+    "M10-C201",
+    "M10-C208",
+    "M10-C209",
+    "M10-C210",
+    "M10-C211",
+    "M10-C215",
+    "M10-C217"
+   ],
+   "seconds": 4.9,
+   "mutant": {
+    "M10-C023": "PASS",
+    "M10-C032": "PASS",
+    "M10-C033": "PASS",
+    "M10-C035": "PASS",
+    "M10-C037": "PASS",
+    "M10-C038": "PASS",
+    "M10-C039": "PASS",
+    "M10-C040": "PASS",
+    "M10-C041": "PASS",
+    "M10-C080": "PASS",
+    "M10-C081": "PASS",
+    "M10-C101": "PASS",
+    "M10-C108": "PASS",
+    "M10-C109": "PASS",
+    "M10-C110": "PASS",
+    "M10-C130": "FAIL",
+    "M10-C131": "PASS",
+    "M10-C132": "PASS",
+    "M10-C133": "PASS",
+    "M10-C137": "PASS",
+    "M10-C139": "PASS",
+    "M10-C143": "PASS",
+    "M10-C150": "PASS",
+    "M10-C151": "PASS",
+    "M10-C152": "PASS",
+    "M10-C153": "PASS",
+    "M10-C154": "PASS",
+    "M10-C155": "PASS",
+    "M10-C156": "PASS",
+    "M10-C157": "PASS",
+    "M10-C158": "PASS",
+    "M10-C159": "PASS",
+    "M10-C160": "PASS",
+    "M10-C161": "PASS",
+    "M10-C162": "PASS",
+    "M10-C164": "PASS",
+    "M10-C165": "PASS",
+    "M10-C166": "PASS",
+    "M10-C185": "PASS",
+    "M10-C186": "PASS",
+    "M10-C187": "PASS",
+    "M10-C188": "PASS",
+    "M10-C201": "PASS",
+    "M10-C208": "FAIL",
+    "M10-C209": "PASS",
+    "M10-C210": "FAIL",
+    "M10-C211": "PASS",
+    "M10-C215": "PASS",
+    "M10-C217": "PASS"
+   },
+   "failed_killers": [
+    "M10-C130",
+    "M10-C208",
+    "M10-C210"
+   ],
+   "mutant_details": {
+    "M10-C130": "failed: ['a_uses_its_skill', 'b_has_b_and_global']",
+    "M10-C208": "failed: ['a_uses_its_skill', 'b_has_b_and_global']",
+    "M10-C210": "failed: ['both_emitted', 'registry_is_policy']"
+   },
+   "imported_from": "M10-MUT15",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT16",
+   "name": "Bind an action to the current numeric table index instead of rendered stable ID.",
+   "related_findings": [
+    "M10-AUDIT-20"
+   ],
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "f422862fe1d4c636",
+      "sha_after": "f1a80702570c5e2e",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C046",
+    "M10-C047",
+    "M10-C167",
+    "M10-C168",
+    "M10-C169",
+    "M10-C212"
+   ],
+   "seconds": 0.7,
+   "mutant": {
+    "M10-C046": "PASS",
+    "M10-C047": "PASS",
+    "M10-C167": "FAIL",
+    "M10-C168": "PASS",
+    "M10-C169": "PASS",
+    "M10-C212": "FAIL"
+   },
+   "failed_killers": [
+    "M10-C167",
+    "M10-C212"
+   ],
+   "mutant_details": {
+    "M10-C167": "failed: ['only_a_mutated', 'editor_revision_respected']",
+    "M10-C212": "failed: ['only_a_mutated', 'editor_revision_respected']"
+   },
+   "imported_from": "M10-MUT16",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT17",
+   "name": "Record snippet/vocabulary usage during preview.",
+   "related_findings": [
+    "M10-AUDIT-18",
+    "M10-AUDIT-19"
+   ],
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "7e15f77aff5610bf",
+      "sha_after": "7bc7115a77abf27c",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C082",
+    "M10-C083",
+    "M10-C098",
+    "M10-C099",
+    "M10-C100",
+    "M10-C101",
+    "M10-C102",
+    "M10-C103",
+    "M10-C173",
+    "M10-C174",
+    "M10-C216"
+   ],
+   "seconds": 0.7,
+   "mutant": {
+    "M10-C082": "PASS",
+    "M10-C083": "PASS",
+    "M10-C098": "PASS",
+    "M10-C099": "PASS",
+    "M10-C100": "PASS",
+    "M10-C101": "PASS",
+    "M10-C102": "PASS",
+    "M10-C103": "PASS",
+    "M10-C173": "FAIL",
+    "M10-C174": "PASS",
+    "M10-C216": "PASS"
+   },
+   "failed_killers": [
+    "M10-C173"
+   ],
+   "mutant_details": {
+    "M10-C173": "failed: ['counters_unchanged']"
+   },
+   "imported_from": "M10-MUT17",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT18",
+   "name": "Ignore child content changes in new-job registry invalidation.",
+   "related_findings": [
+    "M10-AUDIT-10"
+   ],
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "7e15f77aff5610bf",
+      "sha_after": "c3df09ddc81479b6",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C126",
+    "M10-C127",
+    "M10-C128",
+    "M10-C130",
+    "M10-C208"
+   ],
+   "seconds": 1.2,
+   "mutant": {
+    "M10-C126": "FAIL",
+    "M10-C127": "FAIL",
+    "M10-C128": "FAIL",
+    "M10-C130": "PASS",
+    "M10-C208": "PASS"
+   },
+   "failed_killers": [
+    "M10-C126",
+    "M10-C127",
+    "M10-C128"
+   ],
+   "mutant_details": {
+    "M10-C126": "new job kept the stale registry: 'slash bravo phrase now'",
+    "M10-C127": "stale data claimed fresh: 'slash bravo phrase now'",
+    "M10-C128": "failed: ['new_job_no_authority']"
+   },
+   "imported_from": "M10-MUT18",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT19",
+   "name": "Follow an unconfigured out-of-root manifest child.",
+   "related_findings": [
+    "M10-AUDIT-01"
+   ],
+   "files": [
+    "localflow/v2/developer/skills.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/developer/skills.py": {
+      "sha_before": "1305518888cdb884",
+      "sha_after": "b62b021409ab92a3",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C118",
+    "M10-C119",
+    "M10-C120",
+    "M10-C135",
+    "M10-C214"
+   ],
+   "seconds": 0.5,
+   "mutant": {
+    "M10-C118": "FAIL",
+    "M10-C119": "PASS",
+    "M10-C120": "PASS",
+    "M10-C135": "PASS",
+    "M10-C214": "PASS"
+   },
+   "failed_killers": [
+    "M10-C118"
+   ],
+   "mutant_details": {
+    "M10-C118": "outside skill loaded: ['inside-skill', 'outside-canary']"
+   },
+   "imported_from": "M10-MUT19",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT20",
+   "name": "Assign candidate registry before an injected builder failure.",
+   "related_findings": [
+    "M10-AUDIT-12"
+   ],
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "7e15f77aff5610bf",
+      "sha_after": "1b6f9a967117ff21",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C038",
+    "M10-C039",
+    "M10-C040",
+    "M10-C041",
+    "M10-C130",
+    "M10-C131",
+    "M10-C133",
+    "M10-C201",
+    "M10-C208",
+    "M10-C209",
+    "M10-C210",
+    "M10-C217"
+   ],
+   "seconds": 1.7,
+   "mutant": {
+    "M10-C038": "PASS",
+    "M10-C039": "PASS",
+    "M10-C040": "PASS",
+    "M10-C041": "PASS",
+    "M10-C130": "PASS",
+    "M10-C131": "PASS",
+    "M10-C133": "PASS",
+    "M10-C201": "PASS",
+    "M10-C208": "PASS",
+    "M10-C209": "PASS",
+    "M10-C210": "PASS",
+    "M10-C217": "FAIL"
+   },
+   "failed_killers": [
+    "M10-C217"
+   ],
+   "mutant_details": {
+    "M10-C217": "registry claimed != policy used: ['ws alpha', 'ws-alpha'] vs []"
+   },
+   "imported_from": "M10-MUT20",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT21",
+   "name": "Clear override without retaining job-owned state before optional work.",
+   "related_findings": [
+    "M10-AUDIT-13"
+   ],
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "7e15f77aff5610bf",
+      "sha_after": "3393a4c9b34f26d2",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C026",
+    "M10-C027",
+    "M10-C028",
+    "M10-C029",
+    "M10-C030",
+    "M10-C031",
+    "M10-C032",
+    "M10-C033",
+    "M10-C035",
+    "M10-C036",
+    "M10-C113",
+    "M10-C114",
+    "M10-C115",
+    "M10-C116",
+    "M10-C186",
+    "M10-C207",
+    "M10-C218"
+   ],
+   "seconds": 2.5,
+   "mutant": {
+    "M10-C026": "PASS",
+    "M10-C027": "FAIL",
+    "M10-C028": "PASS",
+    "M10-C029": "PASS",
+    "M10-C030": "PASS",
+    "M10-C031": "PASS",
+    "M10-C032": "PASS",
+    "M10-C033": "PASS",
+    "M10-C035": "PASS",
+    "M10-C036": "PASS",
+    "M10-C113": "PASS",
+    "M10-C114": "PASS",
+    "M10-C115": "PASS",
+    "M10-C116": "PASS",
+    "M10-C186": "PASS",
+    "M10-C207": "PASS",
+    "M10-C218": "FAIL"
+   },
+   "failed_killers": [
+    "M10-C027",
+    "M10-C218"
+   ],
+   "mutant_details": {
+    "M10-C027": "failed: ['raw_kept_outer_fault']",
+    "M10-C218": "failed: ['raw_kept_outer_fault']"
+   },
+   "imported_from": "M10-MUT21",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT22",
+   "name": "Report an admitted mutation timeout as definitely not saved.",
+   "related_findings": [
+    "M10-AUDIT-21"
+   ],
+   "files": [
+    "localflow/v2/profiles_store.py",
+    "localflow/v2/snippets_store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/profiles_store.py": {
+      "sha_before": "7dd618e8dcfc3ea3",
+      "sha_after": "e3bcafd8e38b76ec",
+      "changed": true
+     },
+     "localflow/v2/snippets_store.py": {
+      "sha_before": "fbf37c8e07bf9628",
+      "sha_after": "80be4971d678b4b6",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C010",
+    "M10-C011",
+    "M10-C012",
+    "M10-C013",
+    "M10-C068",
+    "M10-C170",
+    "M10-C171",
+    "M10-C172",
+    "M10-C213"
+   ],
+   "seconds": 1.2,
+   "mutant": {
+    "M10-C010": "PASS",
+    "M10-C011": "PASS",
+    "M10-C012": "PASS",
+    "M10-C013": "PASS",
+    "M10-C068": "PASS",
+    "M10-C170": "FAIL",
+    "M10-C171": "FAIL",
+    "M10-C172": "PASS",
+    "M10-C213": "FAIL"
+   },
+   "failed_killers": [
+    "M10-C170",
+    "M10-C171",
+    "M10-C213"
+   ],
+   "mutant_details": {
+    "M10-C170": "admitted timeout reported as definite: 'not saved: RuntimeError'",
+    "M10-C171": "failed: ['unknown_not_failed', 'confirmed_not_collision']",
+    "M10-C213": "admitted timeout reported as definite: 'not saved: RuntimeError'"
+   },
+   "imported_from": "M10-MUT22",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT23",
+   "name": "Remove expected-revision/editor-diff protection.",
+   "related_findings": [
+    "M10-AUDIT-20"
+   ],
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "f422862fe1d4c636",
+      "sha_after": "a6fe7a37fa65f124",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C046",
+    "M10-C047",
+    "M10-C167",
+    "M10-C168",
+    "M10-C169",
+    "M10-C212"
+   ],
+   "seconds": 0.7,
+   "mutant": {
+    "M10-C046": "PASS",
+    "M10-C047": "PASS",
+    "M10-C167": "PASS",
+    "M10-C168": "FAIL",
+    "M10-C169": "PASS",
+    "M10-C212": "PASS"
+   },
+   "failed_killers": [
+    "M10-C168"
+   ],
+   "mutant_details": {
+    "M10-C168": "stale form overwrote the external edit: technical"
+   },
+   "imported_from": "M10-MUT23",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT24",
+   "name": "Discard validity assertions and return unchanged/unresolved results.",
+   "related_findings": [
+    "M10-AUDIT-25"
+   ],
+   "files": [
+    "scripts/v2/benchmark_m10.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "scripts/v2/benchmark_m10.py": {
+      "sha_before": "50d183e467c9c67f",
+      "sha_after": "561b934a768540cd",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C136",
+    "M10-C144",
+    "M10-C189",
+    "M10-C190",
+    "M10-C191",
+    "M10-C192",
+    "M10-C193",
+    "M10-C194",
+    "M10-C195",
+    "M10-C196",
+    "M10-C197",
+    "M10-C198",
+    "M10-C200"
+   ],
+   "seconds": 32.8,
+   "mutant": {
+    "M10-C136": "PASS",
+    "M10-C144": "PASS",
+    "M10-C189": "PASS",
+    "M10-C190": "PASS",
+    "M10-C191": "PASS",
+    "M10-C192": "PASS",
+    "M10-C193": "PASS",
+    "M10-C194": "FAIL",
+    "M10-C195": "FAIL",
+    "M10-C196": "FAIL",
+    "M10-C197": "FAIL",
+    "M10-C198": "PASS",
+    "M10-C200": "PASS"
+   },
+   "failed_killers": [
+    "M10-C194",
+    "M10-C195",
+    "M10-C196",
+    "M10-C197"
+   ],
+   "mutant_details": {
+    "M10-C194": "failed: ['invalid_work_exit', 'no_timing_accepted']",
+    "M10-C195": "failed: ['invalid_work_exit', 'no_timing_accepted']",
+    "M10-C196": "failed: ['invalid_work_exit', 'no_timing_accepted']",
+    "M10-C197": "failed: ['invalid_work_exit', 'no_timing_accepted']"
+   },
+   "imported_from": "M10-MUT24",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT25",
+   "name": "Return shared mutable conflict lists from snapshot export.",
+   "related_findings": [
+    "M10-AUDIT-17"
+   ],
+   "files": [
+    "localflow/v2/snippets.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/snippets.py": {
+      "sha_before": "e74c5bd658dbdafb",
+      "sha_after": "8ecea62493cd9a7c",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M10-C082",
+    "M10-C083",
+    "M10-C102",
+    "M10-C105",
+    "M10-C106",
+    "M10-C107",
+    "M10-C202",
+    "M10-C219"
+   ],
+   "seconds": 1.0,
+   "mutant": {
+    "M10-C082": "PASS",
+    "M10-C083": "PASS",
+    "M10-C102": "PASS",
+    "M10-C105": "FAIL",
+    "M10-C106": "PASS",
+    "M10-C107": "PASS",
+    "M10-C202": "PASS",
+    "M10-C219": "PASS"
+   },
+   "failed_killers": [
+    "M10-C105"
+   ],
+   "mutant_details": {
+    "M10-C105": "failed: ['payload_unchanged']"
+   },
+   "imported_from": "M10-MUT25",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M10-MUT26",
+   "name": "Remove a reproduced required pane sizing/responder repair.",
+   "related_findings": [
+    "M10-AUDIT-26"
+   ],
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "f422862fe1d4c636",
+      "sha_after": "8dd80b61697bdab2",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "native:n01_every_input_is_hittable_in_both_panes",
+    "native:n02p_click_focus_typing_and_popup_while_inactive"
+   ],
+   "seconds": 0.7,
+   "mutant": {
+    "native:n01_every_input_is_hittable_in_both_panes": "FAIL",
+    "native:n02p_click_focus_typing_and_popup_while_inactive": "FAIL"
+   },
+   "failed_killers": [
+    "native:n01_every_input_is_hittable_in_both_panes",
+    "native:n02p_click_focus_typing_and_popup_while_inactive"
+   ],
+   "mutant_details": {
+    "native:n01_every_input_is_hittable_in_both_panes": "styles pane has a zero frame: (0.0, 0.0)",
+    "native:n02p_click_focus_typing_and_popup_while_inactive": "a click did not focus the Trigger field"
+   },
+   "imported_from": "M10-MUT26",
+   "outcome": "killed",
+   "reason": null
+  }
+ ]
+}
