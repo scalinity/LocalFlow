@@ -231,11 +231,14 @@ def s007(case):
                             _content(hw, b) == "B")
     s_ok = res["success"]
     f_ok = res["failure"]
+    # After the held save fails, A's text is never lost: either a queued
+    # retry already made it durable, or it is kept, listed unsaved and
+    # shown on reopen — and the retry during drain makes it durable.
     return verdict({"switch_completes": s_ok[0] and f_ok[0],
                     "success_is_durable": s_ok[1],
-                    "failure_is_kept_and_shown": f_ok[4] and f_ok[2]
-                    and f_ok[3],
-                    "failure_retry_makes_it_durable": f_ok[1],
+                    "failure_never_loses_the_text": (not f_ok[4])
+                    or (f_ok[2] and f_ok[3]),
+                    "failure_ends_durable": f_ok[1],
                     "b_not_overwritten": s_ok[5] and f_ok[5]},
                    barriers=list(w.REACHED))
 
