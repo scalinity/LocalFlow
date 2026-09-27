@@ -132,16 +132,23 @@ def tree_digest(root) -> dict:
 
 # ---- store seams -----------------------------------------------------------
 
+# Every seam a latch or writer hold actually reached, in order (drivers
+# clear it before a probe and report it: a declared barrier that is not
+# here was never reached).
+REACHED = []
+
+
 class WriterHold:
     """Block the store's single writer with an admitted op until
     released: everything submitted afterwards queues behind it (FIFO)."""
 
-    def __init__(self, store):
+    def __init__(self, store, name="writer_held"):
         self.store = store
         self.entered = threading.Event()
         self._go = threading.Event()
 
         def op():
+            REACHED.append(name)
             self.entered.set()
             self._go.wait(30)
         store._submit(op, wait=False)
@@ -212,6 +219,7 @@ class Latch:
             self._go.set()
 
     def _hold(self):
+        REACHED.append(self.name)
         self.reached.set()
         if self.on_reach is not None:
             self.on_reach()

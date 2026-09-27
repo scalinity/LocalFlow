@@ -764,10 +764,14 @@ def f09_note_candidate_records_destination_revision():
     st, consent, ts = _tstore()
     try:
         consent.set("enabled", note="test")
+        # M12 remediation: a note-scope candidate publishes only while
+        # its note is live (M12-AUDIT-15), so the fixture note exists.
+        from localflow.v2.notes import NoteStore
+        note = NoteStore(st).create_note(src)
         kw = {}
         if "source_meta" in inspect.signature(ts.record_candidate).parameters:
-            kw["source_meta"] = {"note_id": "note_A",
-                                 "note_revision_id": "rev_1"}
+            kw["source_meta"] = {"note_id": note["note_id"],
+                                 "note_revision_id": note["revision"]}
         cid = ts.record_candidate(res, task_kind="transform_note",
                                   source_artifact_text=src,
                                   output_artifact_text=res.output, **kw)
@@ -775,8 +779,8 @@ def f09_note_candidate_records_destination_revision():
             st, "SELECT a.meta_json FROM artifacts a JOIN"
                 " transform_candidates c ON c.source_artifact_id ="
                 " a.artifact_id WHERE c.candidate_id=?", (cid,))[0][0])
-        assert meta.get("note_id") == "note_A", meta
-        assert meta.get("note_revision_id") == "rev_1", meta
+        assert meta.get("note_id") == note["note_id"], meta
+        assert meta.get("note_revision_id") == note["revision"], meta
     finally:
         st.close()
 

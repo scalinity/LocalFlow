@@ -284,7 +284,9 @@ def f07_accept_checks_the_captured_note_identity():
             assert _content(h, a) == "alpha beta gamma"
             applied, reason = hub.scratchpad_apply_transform(
                 st["result"], st["capture"])
-            assert applied is False and reason == "note_changed", reason
+            # M12 remediation: the first value is the arrival receipt when
+            # applied, else None.
+            assert not applied and reason == "note_changed", reason
     finally:
         h.close()
 

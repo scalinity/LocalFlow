@@ -1335,7 +1335,9 @@ def r18_old_save_cannot_clear_a_newer_generation():
         assert latch.wait()
         hw.type("m0 A B")                      # newer, unsaved generation
         latch.release()
-        assert _wait_revision(hw, n, lambda r: r.get("content") == "m0 A")
+        # A commits (a repaired flush may go on to save B as well).
+        assert _wait_revision(hw, n, lambda r: r.get("content") in
+                              ("m0 A", "m0 A B"))
         w.wait_for(lambda: not any(t.name == "localflow-notes-autosave"
                                    and t.is_alive()
                                    for t in threading.enumerate()), 5)
@@ -1627,6 +1629,37 @@ def l01_legacy_row_transfer_is_honest():
         assert out.get("outcome") == "move_degrades_to_copy_legacy"
 
 
+@case("LOCAL-M12-02")
+def l02_populated_m12_table_loss_is_refused():
+    """A populated Scratchpad table missing at open is corruption: the
+    repair path must refuse (after its backup), never recreate it empty
+    and present the survivors as intact."""
+    from localflow.v2 import store as store_mod
+    silent = []
+    for table in ("notes", "note_revisions", "note_attachments"):
+        with w.NoteWorld() as nw:
+            for i in range(2):
+                n = nw.notes.create_note(f"note {i} r1")["note_id"]
+                for r in (2, 3):
+                    nw.notes.append_revision(
+                        n, f"note {i} r{r}", origin=ORIGIN_TYPED,
+                        trigger=TRIGGER_AUTOSAVE)
+                nw.notes.add_attachment(n, w.PNG, "image/png", "p.png")
+            db = nw.store.db_path
+            nw.store.close()
+            c = sqlite3.connect(db)
+            c.execute(f"DROP TABLE {table}")
+            c.commit()
+            c.close()
+            try:
+                s = store_mod.Store(db, backup_dir=nw.app / "backups")
+            except RuntimeError:
+                continue          # refused: the honest outcome
+            s.close()
+            silent.append(table)
+    assert not silent, f"recreated empty and opened as intact: {silent}"
+
+
 # ============================================================================
 # CONTROLS — behavior the repair must keep (pass on base AND repair)
 # ============================================================================
@@ -1764,6 +1797,7 @@ def run(select=None, json_out=None):
         if select and not any(s in fn.__name__ for s in select):
             continue
         t0 = time.monotonic()
+        wall0 = time.time()
         try:
             fn()
             status, note = "PASS", ""
@@ -1774,7 +1808,12 @@ def run(select=None, json_out=None):
             traceback.print_exc()
         results.append({"id": fn.__name__, "finding": fn.finding,
                         "status": status, "note": note,
-                        "seconds": round(time.monotonic() - t0, 2)})
+                        "seconds": round(time.monotonic() - t0, 2),
+                        # Wall-clock window: lets an outside monitor of
+                        # the live pasteboard's change COUNT attribute
+                        # any change to a case (or to none).
+                        "window_epoch": [round(wall0, 3),
+                                         round(time.time(), 3)]})
         print(f"{status:5} {fn.__name__}"
               + (f" — {note}" if note else ""), flush=True)
     counts = {}

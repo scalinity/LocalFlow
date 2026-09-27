@@ -198,6 +198,11 @@ def test_dictation_into_note_internal_destination(after):
         fn(*args)   # _finishWithText_ runs the note branch inline
         job = args[1]
         job_id = job["job_id"]
+        # M12 remediation (M12-AUDIT-07): delivery is a buffer receipt;
+        # the job is confirmed only when the note revision commits. Let
+        # the editor's owned save finish, then run the deferred receipt.
+        hub.editor.drain()
+        after.flush()
         assert h.d.store.job(job_id)["state"] == "insertion_confirmed"
         assert h.pastes == [], "note dictation hit the external queue"
         note = h.d._notes_store.open_note(out["note_id"])
@@ -284,6 +289,8 @@ def test_note_transform_never_external(after):
             "whole-note scope must capture the full range"
         # Accept through the panel's own action (the production path).
         h.d._tf_panel.panelAccept_(None)
+        hub.editor.drain()   # the accepted text commits on an owned save
+        after.flush()
         content = h.d._notes_store.open_note(out["note_id"])[
             "revision"]["content"]
         assert content == "TRANSFORMED OUTPUT", \
@@ -316,7 +323,8 @@ def test_note_transform_never_external(after):
         hub.editor.model.flush(h.d._notes_store)
         applied, reason = hub.scratchpad_apply_transform(
             st["result"], st["capture"])
-        assert applied is False and reason == "note_range_changed"
+        # (applied is the arrival receipt when applied, else None.)
+        assert not applied and reason == "note_range_changed"
     finally:
         h.close()
         after.discard_pending()
@@ -471,7 +479,11 @@ def test_history_copy_and_move():
             " raw_text, cleaned_text, imported_from_sha256)"
             " VALUES(9401, 1000.0, '2026-09-23T08:00:00.000Z',"
             " 'raw legacy', 'clean legacy', 'sha')"))
-        r_legacy = h.d.hubSaveHistoryRow("legacy", "9401", move=True)
+        # The key History actually uses for an imported database row
+        # (kind "legacy_db", id "legacy-db:<id>") — the transfer resolves
+        # it through the same detail the History pane shows.
+        r_legacy = h.d.hubSaveHistoryRow("legacy_db", "legacy-db:9401",
+                                         move=True)
         assert r_legacy["outcome"] == "move_degrades_to_copy_legacy"
         assert h.d._notes_store.open_note(r_legacy["note_id"])[
             "revision"]["origin"] == "typed"

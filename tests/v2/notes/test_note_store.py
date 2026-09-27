@@ -254,13 +254,17 @@ def test_attachments_managed_lifecycle():
                                trigger=TRIGGER_EXPLICIT)
             d = ns.delete_note(note_id)
             assert d["purged_attachments"] == 1
+            # M12 remediation: the unlink runs after the commit and the
+            # result says whether any payload is still pending removal.
+            assert d["pending_purges"] == 0
             assert not payload_path.exists()
             assert ns.attachment_payload(att["attachment_id"]) is None
             # Individual attachment deletion (row purged + unlinked).
             out2 = ns.create_note("second")
             att2 = ns.add_attachment(out2["note_id"], b"GIF-fake",
                                      "image/gif", "a.gif")
-            assert ns.delete_attachment(att2["attachment_id"]) is True
+            gone = ns.delete_attachment(att2["attachment_id"])
+            assert gone["deleted"] is True and gone["pending_purges"] == 0
             assert not (ns.attachments_dir /
                         f"{att2['attachment_id']}.gif").exists()
             assert ns.delete_attachment(att2["attachment_id"]) is False
