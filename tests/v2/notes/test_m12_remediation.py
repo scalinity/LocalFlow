@@ -119,14 +119,18 @@ def _usage_outcome(hw, job_id):
 
 
 def _events(hw):
-    """Record coordinator events (name, kwargs) from now on."""
+    """Record coordinator and evidence-collector events (name, kwargs)
+    from now on (the collector holds its own emit reference)."""
     log = []
-    real = hw.d.v2log.emit
+    for owner in (hw.d.v2log, getattr(hw.d, "collector", None)):
+        if owner is None or not hasattr(owner, "emit"):
+            continue
+        real = owner.emit
 
-    def emit(name, *a, **kw):
-        log.append((name, kw))
-        return real(name, *a, **kw)
-    hw.d.v2log.emit = emit
+        def emit(name, *a, _real=real, **kw):
+            log.append((name, kw))
+            return _real(name, *a, **kw)
+        owner.emit = emit
     return log
 
 
@@ -1658,6 +1662,37 @@ def l02_populated_m12_table_loss_is_refused():
             s.close()
             silent.append(table)
     assert not silent, f"recreated empty and opened as intact: {silent}"
+
+
+@case("LOCAL-M12-03")
+def l03_identical_version_labels_restore_the_chosen_revision():
+    """Autosaves in the same second with the same word count get the
+    same label; the versions popup must still map every shown item to
+    its own revision (NSPopUpButton.addItemWithTitle_ drops an item
+    whose title already exists)."""
+    from localflow.v2 import ids as ids_mod
+    with w.HubWorld() as hw:
+        real_now = ids_mod.now_utc_iso
+        ids_mod.now_utc_iso = lambda *a: "2026-09-26T12:00:00.000Z"
+        try:
+            n = hw.notes.create_note("created words")["note_id"]
+            for t in ("two", "three", "four", "latest text"):
+                hw.notes.append_revision(n, t, origin=ORIGIN_TYPED,
+                                         trigger=TRIGGER_AUTOSAVE)
+        finally:
+            ids_mod.now_utc_iso = real_now
+        hw.open_note(n)
+        pop = hw.hub.scratchpad_versions
+        shown = int(pop.numberOfItems())
+        mapped = len(hw.hub._scratchpad_version_ids)
+        pop.selectItemAtIndex_(shown - 1)   # the oldest: the created one
+        hw.hub.scratchpadRestore_(None)
+        hw.drain()
+        hw.settle_notes()
+        assert shown == mapped, \
+            f"the popup shows {shown} versions for {mapped} revisions"
+        assert _latest(hw, n)["content"] == "created words", \
+            "Restore restored a different version than the one chosen"
 
 
 # ============================================================================

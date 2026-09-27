@@ -1,0 +1,121 @@
+{
+ "schema_version": 1,
+ "milestone": "M12",
+ "policy_revision": "m12-policy-r1",
+ "audit": {
+  "title": "LocalFlow V2 — M12 Read-Only Deep Audit",
+  "audited_sha": "114ba5831c2581d28c96d427ac866c2f92c1b24a",
+  "audit_markdown_sha256": "6f928b802ac12589a99040d9b1c549b694fb12981ffb66343efeab15ba44d2a0",
+  "corpus": "tests/v2/notes/m12_audit_corpus.json",
+  "corpus_sha256": "0c1e9cc51d82da29e1e4d3ad91097a8532a9c078eb6c3ce31ca1509349fc5be9"
+ },
+ "decisions": {
+  "D01": {
+   "title": "Note-bound dictation authority after PTT",
+   "decision": "The PTT binding captures the note id, the caret as a code-point anchor from the one validated UTF-16 conversion, and a hash of the note text before the anchor. Delivery requires the same note open in the editor AND the text before the anchor unchanged; then the result is inserted at the anchor. Edits after the anchor keep the authority (the dictation lands before them); an edit before the anchor, a different note, a closed editor or an unreadable native range remove it. A nonzero selection anchors at its start and is never replaced. Switching away and back keeps the authority while the prefix is unchanged. A refusal is a retained saved_not_inserted result (History keeps the text; nothing is written to the clipboard).",
+   "expected": ["edit before anchor -> saved_not_inserted/note_changed_during_dictation, note unchanged, pasteboard count unchanged", "edit after anchor -> inserted at the anchor, confirmed after commit", "switch away and back, prefix unchanged -> inserted, confirmed", "closed/deleted note -> saved_not_inserted, no resurrection, no clipboard", "selection (1,2) in 'A😀B' -> anchor 1, 'AX😀B'", "two jobs anchored at 10 and 20, B finishing first -> both inserted at their anchors, one revision per job"]
+  },
+  "D02": {
+   "title": "Restore linearization",
+   "decision": "Restore first saves the editor buffer through the generation current at the click (a bounded barrier that waits for a save already in progress). When that save completes, the restore copies the old content forward on top of the writer-current revision. When it does not (failed, unknown, or still pending at the bound), the restore is refused with that reason and the buffer is kept and retried. already_flushing is never returned to a durable action.",
+   "expected": ["save then restore -> chain ends typed(buffer), restore(old) with parent = the typed revision", "restore while an autosave is held past the bound -> 'restore not done', no restore revision, buffer committed when the save completes"]
+  },
+  "D03": {
+   "title": "Two attributed arrivals",
+   "decision": "Every attributed arrival is an immutable record (preimage, content, provenance, generation) captured under the same lock as the buffer change and committed as its own revision; typed text an arrival landed in is committed first as a typed revision. The historical 'second arrival wins the slot' limitation is repaired, not grandfathered.",
+   "expected": ["dictation A then transform B before any save -> revisions dictated(A) then transform(B); spans resolve to exactly A's and B's words", "a failed A attempt never overwrites B's identity"]
+  },
+  "D04": {
+   "title": "Whitespace-word spans",
+   "decision": "Spans are half-open whitespace-split word ranges (str.split semantics, including NBSP and other Unicode whitespace). An arrival's span covers only the words lying wholly inside its characters: a word merging typed and dictated characters is not attributed (the mid-word case abstains). A rebase whose covered word sequence changes its occurrence count or rank is ambiguous and abstains. Grapheme clusters and linguistic tokens are not modelled.",
+   "expected": ["'typed one a ' + 'D' at 12 -> dictated words ['D']", "'echo echo' deleting the dictated first -> no dictated span", "CJK run is one word; ZWJ emoji sequence is one word per whitespace run"]
+  },
+  "D05": {
+   "title": "Revision growth",
+   "decision": "Unchanged: every save stores full content; no coalescing or retention pass; no schema migration (the store stays at v11). The versions list stays bounded at 200 with the truncated flag.",
+   "expected": ["201 revisions -> 200 headers + versions_truncated"]
+  },
+  "D06": {
+   "title": "Export publication and managed-copy boundary",
+   "decision": "The file chosen in the save panel is the one approved for replacement: it is written as a private temporary file beside it and renamed into place last (a symlink there is replaced as a link, its target untouched). Attachment copies are created exclusively (O_EXCL, no-follow) under the first free name stem-NN[-k].ext and never overwrite an existing file. Only attachments referenced by a marker in the exported content are copied; a live attachment without a marker is counted as unreferenced_attachments. Any failure removes exactly the files the export created. Exported copies are user-managed and are not recalled by note deletion; the note-derived managed transform artifacts are purged with the note.",
+   "expected": ["pre-existing main + sibling -> main replaced, sibling byte-identical, copies under free names", "failure after the first copy -> ok False, tree byte-identical", "destination symlink -> link replaced, target intact", "markerless live attachment -> not copied, unreferenced_attachments 1"]
+  },
+  "T01": {
+   "title": "Autosave timer run-loop mode",
+   "decision": "The autosave timer is registered in NSRunLoopCommonModes (default, modal panel and event tracking): a typed tail still saves while a menu or a modal panel is open. The tick only reads the model and starts an owned worker thread. The editor invalidates the timer at shutdown.",
+   "expected": ["typed tail committed by running the ordinary default-mode run loop, without calling autosave_tick"]
+  },
+  "E01": {
+   "title": "Optional note evidence completeness",
+   "decision": "Note evidence is optional and consent-gated. A callback failure never rolls back the note revision and is reported as training.note_capture_failed. The evidence writer admits an observation only for a live revision of a live note, and records one observation per (revision, kind) within the envelope's retained window (32 entries). A crash between a revision commit and its callback is NOT reconciled: that observation is missing, and this is a documented limitation, not a promise.",
+   "expected": ["late callback after deletion -> no open link", "redelivered event -> observation count unchanged", "failed callback -> revision committed, failure event emitted"]
+  },
+  "U01": {
+   "title": "Admitted mutations with unknown outcome",
+   "decision": "A store call that timed out after admission is 'unknown': it may still commit. Note creation, restore and attachments carry preallocated identities (the later read reconciles; a retried append with the same revision id is one logical effect); pin is idempotent; delete is idempotent. Status lines say pending/unknown, never failed; only a proven noncommit is 'failed'; an admission refusal ('store is closing') is 'not done'. History Move never deletes after an unknown note creation (outcome create_unknown).",
+   "expected": ["held writer + short caller wait on Pin/New -> status without 'failed'", "Move with unknown create -> source job kept"]
+  },
+  "S01": {
+   "title": "Snapshot during a running autosave",
+   "decision": "Snapshot is a barrier for the generation current at the click. When an autosave already committed that generation, no second revision is written and the status says everything is already saved; the committed revision keeps the autosave trigger (an autosave never claims to be explicit, and an explicit request that found nothing new does not relabel it).",
+   "expected": ["Snapshot while autosave A is held and B typed -> at return B is committed or the status says pending"]
+  },
+  "X01": {
+   "title": "Attachment marker removal",
+   "decision": "The Hub has no attachment-removal action. Removing a marker by typing is an ordinary typed revision: the attachment stays live and owned (retained until the note is deleted) and is reported as unreferenced by export. Payload deletion happens only with the note, through post-commit purge intents.",
+   "expected": ["marker typed away -> payload readable, export unreferenced_attachments 1"]
+  },
+  "L01": {
+   "title": "History transfer resolution",
+   "decision": "History copy/move resolves the row through the same detail History displays (job_detail, legacy_detail, legacy_db_detail) and the one final_text rule: the applied transform output of the current attempt, else its cleaned output; a missing final stage is refused, never replaced by an earlier stage. The Hub passes the sha256 of the text it shows; a changed row is refused (history_changed). Legacy rows copy their cleaned text as typed-origin notes; Move on a legacy row degrades to copy.",
+   "expected": ["distinct raw/cleaned/transform + retained older attempt -> note = current attempt's transform output", "purged transform output -> no note", "legacy_db / legacy_log rows -> cleaned text copied, move degrades"]
+  }
+ },
+ "finding_dispositions": {
+  "M12-AUDIT-01": {"disposition": "reproduced", "regressions": ["r01a", "r01b", "r01c", "r01d", "r01e"], "evidence": "base: the outside sentinel was read through ../ traversal, an absolute path and a directory/final symlink, a FIFO read blocked, and delete_attachment/delete_note unlinked the outside sentinel"},
+  "M12-AUDIT-02": {"disposition": "reproduced", "regressions": ["r02a", "r02b", "r02c", "r02d"], "evidence": "base: a third-write failure unlinked two pre-existing files; a chmod failure left the pre-existing main file replaced; export wrote through a destination symlink; an unapproved sibling was overwritten"},
+  "M12-AUDIT-03": {"disposition": "reproduced", "regressions": ["r03a", "r03b"], "evidence": "base: a failed (or held-then-failed) outgoing save discarded the only newest tail on switch"},
+  "M12-AUDIT-04": {"disposition": "reproduced", "regressions": ["r04"], "evidence": "base: the dictated span covered the typed word 'one' (the audit's exact witness)"},
+  "M12-AUDIT-05": {"disposition": "reproduced", "regressions": ["r05a", "r05b", "r05c"], "evidence": "base: a rolled-back delete left live rows with their payload unlinked; a failed unlink left the payload with no durable pending purge"},
+  "M12-AUDIT-06": {"disposition": "reproduced", "regressions": ["r06a", "r06b", "r06c"], "evidence": "base: a deleted note gained a live attachment; a timed-out caller's cleanup unlinked the payload of a row that then committed; a crash after the write left an unowned payload"},
+  "M12-AUDIT-07": {"disposition": "reproduced", "regressions": ["r07a", "r07b", "r07c"], "evidence": "base: insertion_confirmed and a confirmed usage fact while the revision was held; confirmed after a failed save; transform_applied before the revision committed"},
+  "M12-AUDIT-08": {"disposition": "reproduced", "regressions": ["r08a", "r08b", "r08c"], "evidence": "base: Snapshot reported saved while generation B was uncommitted; quit closed the store under admitted note work; close during a flush dropped generation B"},
+  "M12-AUDIT-09": {"disposition": "reproduced", "regressions": ["r09a", "r09b"], "evidence": "base: arrival A's provenance was replaced by B's; a failed A restored its pending over B's identity"},
+  "M12-AUDIT-10": {"disposition": "reproduced", "regressions": ["r10"], "evidence": "base: the timer registered under the literal 'default' mode never fired while the ordinary default-mode run loop ran (typed autosave never ran through the installed timer)"},
+  "M12-AUDIT-11": {"disposition": "reproduced", "regressions": ["r11a", "r11b"], "evidence": "base: Pin and Delete acted on the selected, unrendered note; Add Image attached to A and put the marker in B"},
+  "M12-AUDIT-12": {"disposition": "reproduced", "regressions": ["r12"], "evidence": "base: with 'A😀B' and the native caret at UTF-16 3 the dictation landed after B"},
+  "M12-AUDIT-13": {"disposition": "reproduced", "regressions": ["r13"], "evidence": "base: a whole-note capture of 'alpha' accepted after the note grew, replacing the prefix"},
+  "M12-AUDIT-14": {"disposition": "reproduced", "regressions": ["r14a", "r14b"], "evidence": "base: the transfer copied a stale cleaned artifact instead of the current attempt's transform output, and substituted an earlier stage for a purged final"},
+  "M12-AUDIT-15": {"disposition": "reproduced", "regressions": ["r15a", "r15b"], "evidence": "base: note-derived candidate artifacts survived note deletion; a late record_candidate recreated a deleted note's text"},
+  "M12-AUDIT-16": {"disposition": "reproduced", "regressions": ["r16a", "r16b"], "evidence": "base: a late callback reopened a deleted note's evidence link; a redelivered event added a second observation"},
+  "M12-AUDIT-17": {"disposition": "reproduced", "regressions": ["r17"], "evidence": "base: after deleting the dictated first 'echo', the surviving typed 'echo' kept the dictated span"},
+  "M12-AUDIT-18": {"disposition": "reproduced", "regressions": ["r18"], "evidence": "base: an older save cleared the unsaved marker while generation B was unsaved"},
+  "M12-AUDIT-19": {"disposition": "reproduced", "regressions": ["r19a", "r19b"], "evidence": "base: the private pasteboard's change count moved on a refused note dictation and on a refused note transform"},
+  "M12-AUDIT-20": {"disposition": "reproduced", "regressions": ["r20"], "evidence": "base: the Move selector raised AttributeError"},
+  "M12-AUDIT-21": {"disposition": "reproduced", "regressions": ["r21"], "evidence": "base: Export .txt and Delete lay outside the pane at the default size, five actions at the minimum size"},
+  "M12-AUDIT-22": {"disposition": "reproduced", "regressions": ["r22"], "evidence": "base: seven malformed native ranges were clamped into neighbouring slices"},
+  "M12-AUDIT-23": {"disposition": "reproduced", "regressions": ["r23"], "evidence": "base: the chosen transform and version reset on refresh"},
+  "M12-AUDIT-24": {"disposition": "reproduced", "regressions": ["r24a", "r24b"], "evidence": "base: Pin/New reported failed for admitted-unknown writes; History Move reported create_failed for an unknown creation"},
+  "M12-AUDIT-25": {"disposition": "reproduced", "regressions": ["r25"], "evidence": "base: the '10,000-word' fixture had 11,250 words and the benchmark had no work-validity oracle; its acknowledgment timer wrapped a synchronous flush"},
+  "M12-AUDIT-26": {"disposition": "reproduced", "regressions": ["r26"], "evidence": "base: two fields of the historical M12 results held the absolute repository path (field names only recorded)"},
+  "LOCAL-M12-01": {"disposition": "reproduced", "regressions": ["l01"], "title": "History transfer of legacy rows raised", "evidence": "base: hubSaveHistoryRow converted History's legacy key ('legacy-db:N' or an artifact id) with int(), so the real legacy Copy/Move raised"},
+  "LOCAL-M12-02": {"disposition": "reproduced", "regressions": ["l02"], "title": "A populated Scratchpad table lost at open was recreated empty", "evidence": "base: dropping notes, note_revisions or note_attachments from a populated store and reopening opened it as intact with the table empty"},
+  "LOCAL-M12-03": {"disposition": "reproduced", "regressions": ["l03"], "title": "Identical version labels collapse the versions popup", "evidence": "base and first pass: NSPopUpButton.addItemWithTitle_ drops an item whose title exists, so autosaves in one second with equal word counts showed 2 items for 4 revisions and Restore used a different revision than the one chosen (found by corpus probe LF-M12-S006)"}
+ },
+ "case_adjudications": {
+  "LF-M12-C028": {"decision": "D01"}, "LF-M12-C052": {"decision": "D01"}, "LF-M12-C053": {"decision": "D01"}, "LF-M12-C054": {"decision": "D01"}, "LF-M12-C055": {"decision": "D01"}, "LF-M12-C056": {"decision": "D01"}, "LF-M12-C057": {"decision": "D01"}, "LF-M12-S002": {"decision": "D01"},
+  "LF-M12-C046": {"decision": "D04"}, "LF-M12-C047": {"decision": "D04"}, "LF-M12-C048": {"decision": "D04"}, "LF-M12-C049": {"decision": "D04"}, "LF-M12-C050": {"decision": "D04"}, "LF-M12-C051": {"decision": "D04"},
+  "LF-M12-C095": {"decision": "D06"},
+  "LF-M12-S006": {"decision": "D02"}
+ },
+ "barrier_bindings": {
+  "LF-M12-S008": {"before_commit": "after_content_snapshot"},
+  "LF-M12-S013": {"delete_after_unlink_before_commit": "structural: no unlink precedes the commit in the repaired design (post-commit purge intents); the probe fails the commit itself (delete_before_commit)"},
+  "LF-M12-S014": {"note_delete_after_unlink_before_commit": "structural: no unlink precedes the commit in the repaired design (post-commit purge intents); the probe fails the commit itself (note_delete_before_commit)"},
+  "LF-M12-S023": {"insert_admitted_before_commit": "writer_held"},
+  "LF-M12-S024": {"snapshot_A_before_commit_A": "A_before_commit"},
+  "LF-M12-S025": {"after_content_read_before_pending_read": "structural: the buffer and the arrival are captured under one lock (no separate pending read exists); the probe holds a captured arrival's persistence (A_captured)"},
+  "LF-M12-S026": {"before_evidence_writer": "evidence_before_admission"},
+  "LF-M12-S027": {"flush_before_store_admission": "autosave_before_admission"}
+ }
+}
