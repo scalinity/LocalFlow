@@ -2538,9 +2538,19 @@ class Store:
             for intent_id, root, path, reason in rows:
                 err = None
                 if root == "notes":
-                    if reason == "attachment_staging" \
-                            and not include_staging:
-                        continue
+                    if reason == "attachment_staging":
+                        if not include_staging:
+                            continue
+                        if self._db.execute(
+                                "SELECT 1 FROM note_attachments WHERE"
+                                " content_path=? AND purged=0",
+                                (path,)).fetchone():
+                            # A live row owns it: the staging finished.
+                            self._db.execute(
+                                "UPDATE purge_intents SET completed_at_utc=?,"
+                                " attempts=attempts+1, last_error=NULL"
+                                " WHERE intent_id=?", (now_iso, intent_id))
+                            continue
                     err = unlink_managed_file(self.notes_dir, path)
                     if err in (PATH_REFUSED, NONREGULAR_REFUSED):
                         self._db.execute(

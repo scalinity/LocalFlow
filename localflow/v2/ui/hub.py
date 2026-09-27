@@ -2028,7 +2028,8 @@ class HubController(NSObject):
         self.scratchpad_status.setStringValue_({
             "unknown": f"{verb}: pending — the store has not answered"
                        " yet; the list shows the result when it does",
-            "refused": f"{verb}: not done — LocalFlow is closing",
+            "refused": f"{verb}: not done — the store did not take it"
+                       " (busy or closing); try again",
         }.get(kind, f"{verb} failed ({type(exc).__name__})"))
         return kind
 
@@ -2188,9 +2189,15 @@ class HubController(NSObject):
         try:
             svc.restore(note_id, revision_id,
                         new_revision_id=ids.new_id("nrev"))
+            # Bind the restored text NOW, before anything else can reach
+            # the buffer (an arrival into the pre-restore buffer would
+            # commit on top of the restore and undo it).
+            restored = svc.open_note(note_id)
         except Exception as e:
             self._scratchpad_outcome("restore", e)
             return
+        if restored is not None and self.editor.note_id == note_id:
+            self.editor.bind_note(restored)
         self.scratchpad_status.setStringValue_(
             "restored — the previous version stays in the history")
         self.state.reload_scratchpad()
@@ -2296,6 +2303,9 @@ class HubController(NSObject):
             sub.removeFromSuperview()
         open_ids = view.get("open_ids") or []
         by_id = {n["note_id"]: n for n in notes}
+        # A chip closes the note it SHOWS (open_ids may move on before
+        # the next render).
+        self._scratchpad_tab_ids = list(open_ids)
         for i, nid in enumerate(open_ids):
             title = (by_id.get(nid, {}).get("title") or "untitled")[:16]
             btn = _button(f"{title} ×", self, "scratchpadTabClose:",
@@ -2310,9 +2320,13 @@ class HubController(NSObject):
             # revision moved under a CLEAN editor (restore, dictation
             # insert elsewhere). A dirty buffer is newer than the
             # store — it keeps the editor until its own flush lands.
+            # A detail naming a revision this buffer already had (or
+            # committed past) is OLDER than the buffer: a reload that
+            # read before an arrival committed must not rebind to it.
             rebind = self.editor.note_id != wanted or (
                 model is not None and not model.dirty
-                and model.revision_id != current_rev)
+                and model.revision_id != current_rev
+                and not model.knows(current_rev))
             if rebind:
                 self.editor.bind_note(detail)
             risk = detail.get("unsaved_tail_risk")
@@ -2381,14 +2395,13 @@ class HubController(NSObject):
             popup.selectItemAtIndex_(-1)
 
     def scratchpadTabClose_(self, sender):
-        view = self.state.views["scratchpad"]
-        open_ids = view.get("open_ids") or []
+        shown = list(getattr(self, "_scratchpad_tab_ids", []))
         idx = int(sender.tag())
-        if 0 <= idx < len(open_ids):
+        if 0 <= idx < len(shown):
             # bind_note/clear save the outgoing model first and retain it
             # when that save does not settle — closing a tab never
             # discards unsaved content.
-            self.state.close_scratchpad_tab(open_ids[idx])
+            self.state.close_scratchpad_tab(shown[idx])
             self._refresh("scratchpad")
 
     # ---- scratchpad editor surface for the coordinator ---------------------

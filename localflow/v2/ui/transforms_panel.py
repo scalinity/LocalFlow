@@ -145,11 +145,13 @@ class TransformPreviewPanel(NSObject):
         self.panel.orderFrontRegardless()
 
     @objc.python_method
-    def reoffer(self, message):
+    def reoffer(self, message, result):
         """M12-AUDIT-19: an accept that could not be applied keeps the
         result here — Copy and Save to Scratchpad stay the explicit
-        recovery choices; nothing is published on the user's behalf."""
-        if self._state.get("result") is None:
+        recovery choices; nothing is published on the user's behalf.
+        Only while the panel still shows THAT result: a later preview
+        is never relabelled by an earlier one's outcome."""
+        if self._state.get("result") is not result:
             return
         defn = self._state.get("defn")
         self.panel.setTitle_(f"{defn.name if defn else 'Transform'} —"

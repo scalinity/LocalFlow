@@ -112,9 +112,12 @@ class ScratchpadEditor(NSObject):
             if kept is not None and not kept.deleted:
                 self.model = kept
             else:
-                self.model = NotesEditorModel(
+                model = NotesEditorModel(
                     note_id, rev.get("revision_id"),
-                    rev.get("content") or "", on_dirty=self._mark_dirty)
+                    rev.get("content") or "")
+                model.on_dirty = \
+                    lambda nid, m=model: self._mark_dirty(nid, m)
+                self.model = model
             self.note_id = note_id
             self.text.setString_(self.model.content)
         finally:
@@ -146,16 +149,16 @@ class ScratchpadEditor(NSObject):
 
     @objc.python_method
     def _release_outgoing(self):
-        """Save the outgoing model (bounded); retain it when the save did
-        not settle everything it holds."""
-        model, svc = self.model, self._service()
+        """Save the outgoing model on an owned thread, waiting at most
+        SWITCH_WAIT_SEC on the main thread; retain the model when that
+        save did not settle everything it holds (the tick, a reopen or
+        quit finishes it)."""
+        model = self.model
         if model is None or not model.dirty:
             return
-        if svc is not None:
-            try:
-                model.flush(svc, timeout=SWITCH_WAIT_SEC)
-            except Exception:
-                pass
+        t = self.flush_async(model=model)
+        if t is not None:
+            t.join(SWITCH_WAIT_SEC)
         if model.dirty and not model.deleted:
             with self._ops_lock:
                 self._retained[model.note_id] = model
@@ -172,11 +175,15 @@ class ScratchpadEditor(NSObject):
         return out
 
     @objc.python_method
-    def _mark_dirty(self, note_id):
+    def _mark_dirty(self, note_id, model):
+        """Arm the unsaved-tail marker without waiting on the store, and
+        only if this buffer is still unsaved when the write runs (a
+        marker landing after the save of the same edit is a no-op)."""
         svc = self._service()
         if svc is not None:
             try:
-                svc.mark_dirty(note_id)
+                svc.mark_dirty(note_id, only_if=lambda: model.dirty,
+                               wait=False)
             except Exception:
                 pass
 

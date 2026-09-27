@@ -1989,7 +1989,8 @@ class AppDelegate(NSObject):
             arrival.on_settled(lambda a: AppHelper.callAfter(
                 self._noteTransformSettled_, a, result))
         else:
-            self._note_transform_reoffer(reason or "note_range_changed")
+            self._note_transform_reoffer(reason or "note_range_changed",
+                                         result)
         self._settle_state()
 
     @objc.python_method
@@ -2002,10 +2003,10 @@ class AppDelegate(NSObject):
         else:
             self._note_transform_reoffer(
                 "note_deleted" if arrival.outcome == "discarded"
-                else "note_save_failed")
+                else "note_save_failed", result)
 
     @objc.python_method
-    def _note_transform_reoffer(self, reason):
+    def _note_transform_reoffer(self, reason, result):
         """A note transform that was not applied: the preview keeps the
         result as a retained offer (Copy / Save to Scratchpad are the
         user's explicit choices) — never an automatic clipboard write
@@ -2022,7 +2023,7 @@ class AppDelegate(NSObject):
                     "note_content_changed": "the note changed",
                     "note_deleted": "the note was deleted",
                     "note_save_failed": "the note could not be saved",
-                }.get(reason, reason))
+                }.get(reason, reason), result)
             except Exception:
                 pass
 
@@ -2135,13 +2136,20 @@ class AppDelegate(NSObject):
                 and v2.ids.sha256_text(text) != expected_sha256:
             return {"outcome": "history_changed"}
         source_job = row_id if kind == "job" else None
+        # What the final text IS: an applied transform's output is model
+        # text (never acoustic), cleaned output is the dictation, and a
+        # legacy row is honest typed text.
+        if kind != "job":
+            origin = v2_notes.ORIGIN_TYPED
+        elif detail.get("final_stage") == "transformed":
+            origin = v2_notes.ORIGIN_TRANSFORM
+        else:
+            origin = v2_notes.ORIGIN_DICTATED
         note_id = v2.ids.new_id("note")
         try:
             out = self._notes_store.create_note(
-                text,
-                origin=(v2_notes.ORIGIN_DICTATED if kind == "job"
-                        else v2_notes.ORIGIN_TYPED),
-                source_job_id=source_job, note_id=note_id)
+                text, origin=origin, source_job_id=source_job,
+                note_id=note_id)
         except Exception as e:
             if v2_notes.failure_kind(e) == "unknown":
                 # Admitted, unanswered: the note may still appear. A

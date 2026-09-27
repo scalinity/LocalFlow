@@ -189,6 +189,11 @@ def rebase_spans(parent_text: str, parent_spans: list, new_text: str):
         if tag == "equal":
             for k in range(i2 - i1):
                 mapping[i1 + k] = j1 + k
+    pos_a, pos_b = {}, {}
+    for i, word in enumerate(a):
+        pos_a.setdefault(word, []).append(i)
+    for i, word in enumerate(b):
+        pos_b.setdefault(word, []).append(i)
     surviving = []
     for span in parent_spans:
         s, e, origin = int(span[0]), int(span[1]), span[2]
@@ -198,7 +203,14 @@ def rebase_spans(parent_text: str, parent_spans: list, new_text: str):
             if all(mapping[w] == w + shift for w in covered):
                 seq = a[s:e]
                 occ_a, occ_b = _occurrences(a, seq), _occurrences(b, seq)
-                if len(occ_a) == len(occ_b) and \
+                # ...and every covered WORD keeps its own occurrence count
+                # and rank: deleting one "world" of "hello world world"
+                # cannot tell which one went, whatever the phrase count.
+                words_same = all(
+                    len(pos_a[a[k]]) == len(pos_b.get(a[k], ()))
+                    and pos_a[a[k]].index(k)
+                    == pos_b[a[k]].index(mapping[k]) for k in covered)
+                if words_same and len(occ_a) == len(occ_b) and \
                         occ_a.index(s) == occ_b.index(s + shift):
                     # Extra elements (the producing job) ride along.
                     surviving.append([s + shift, e + shift, origin,
@@ -245,6 +257,12 @@ class NoteMissing(KeyError):
     written."""
 
 
+class NoteNotStarted(RuntimeError):
+    """The mutation never began: its preparatory read (or its
+    admission) got no answer in time, so nothing it would write was
+    submitted. Not unknown, not failed — simply not done."""
+
+
 class NoteOutcomeUnknown(RuntimeError):
     """A mutation was admitted to the store writer but its caller stopped
     waiting before the answer (M02: a timeout never cancels the op). The
@@ -262,6 +280,8 @@ def failure_kind(exc) -> str:
     """How a failed store call ended (M12-AUDIT-24): ``unknown`` (admitted,
     unanswered — it may still commit), ``refused`` (never admitted: the
     store is closing) or ``failed`` (the op ran and rolled back)."""
+    if isinstance(exc, NoteNotStarted):
+        return "refused"
     if isinstance(exc, (TimeoutError, NoteOutcomeUnknown)):
         return "unknown"
     if isinstance(exc, RuntimeError) and str(exc).startswith("store is "):
@@ -518,7 +538,11 @@ class NoteStore:
                 " WHERE revision_id=? AND note_id=? AND purged=0",
                 (revision_id, note_id)).fetchone()
             return row
-        row = self.store.submit(op)
+        try:
+            row = self.store.submit(op)
+        except TimeoutError:
+            # Only a read was waiting: nothing was written.
+            raise NoteNotStarted("restore") from None
         if row is None:
             raise KeyError(f"no revision {revision_id} for note {note_id}")
         content, spans = row[0], json.loads(row[1] or "[]")
@@ -545,18 +569,29 @@ class NoteStore:
         except TimeoutError:
             raise NoteOutcomeUnknown("set_pinned", note_id) from None
 
-    def mark_dirty(self, note_id):
+    def mark_dirty(self, note_id, *, only_if=None, wait=True):
         """Arm the unsaved-tail-risk marker: called on the FIRST edit of
         a burst (cheap single UPDATE), cleared by the commit that saves
         the newest generation. After a forced interruption the marker
         says edits began and no save followed (M12-AC01). Returns False
-        for a note that no longer exists (an honest no-op)."""
+        for a note that no longer exists (an honest no-op).
+
+        ``only_if`` runs inside the writer op: the editor arms the
+        marker only while its buffer is still unsaved THEN, so a marker
+        write that lands after the save of that same edit is a no-op.
+        ``wait=False`` queues the write without blocking the caller (the
+        main thread never waits on the store to type or receive)."""
         now = ids.now_utc_iso()
 
         def op(db):
+            if only_if is not None and not only_if():
+                return 0
             return db.execute(
                 "UPDATE notes SET dirty_at_utc=? WHERE note_id=?",
                 (now, note_id)).rowcount
+        if not wait:
+            self.store.submit(op, wait=False)
+            return None
         return bool(self.store.submit(op))
 
     def clear_dirty(self, note_id, only_if=None):
@@ -611,9 +646,10 @@ class NoteStore:
         try:
             self.store.submit(admit)
         except TimeoutError:
-            # Nothing is on disk; a late intent drains harmlessly at open.
-            raise NoteOutcomeUnknown("add_attachment", attachment_id) \
-                from None
+            # No payload was written and no row can follow: the
+            # attachment was not added (a late intent drains harmlessly
+            # at open).
+            raise NoteNotStarted("add_attachment") from None
         self._write_payload(rel, data)   # O_EXCL; raises on failure
 
         def publish(db):
@@ -625,9 +661,13 @@ class NoteStore:
                 " created_at_utc) VALUES(?,?,?,?,?,?,?,?,0,?)",
                 (attachment_id, note_id, "image", mime, filename,
                  len(data), ids.sha256_bytes(data), rel, now))
+            # Every staging intent for this payload retires with the row
+            # (an earlier admission of the same id may have left one).
             db.execute(
                 "UPDATE purge_intents SET completed_at_utc=?, last_error=NULL"
-                " WHERE intent_id=?", (now, intent_id))
+                " WHERE root='notes' AND path=? AND"
+                " reason='attachment_staging' AND completed_at_utc IS NULL",
+                (now, rel))
             return attachment_id
         try:
             self.store.submit(publish)
@@ -1113,6 +1153,9 @@ class NotesEditorModel:
         self.retry_at = None        # monotonic backoff for the autosave tick
         self._failures = 0
         self._typed_ids = {}        # generation -> preallocated revision id
+        # Every revision this buffer has been based on or has committed:
+        # a loaded detail naming one of these is OLDER than the buffer.
+        self._known = {revision_id} if revision_id else set()
         self._lock = threading.Condition()
         self._flushing = False
 
@@ -1130,6 +1173,12 @@ class NotesEditorModel:
     def flushing(self) -> bool:
         with self._lock:
             return self._flushing
+
+    def knows(self, revision_id) -> bool:
+        """Whether this buffer was based on or committed that revision
+        (so a detail naming it is not newer than the buffer)."""
+        with self._lock:
+            return revision_id in self._known
 
     # ---- editing (main thread) ------------------------------------------
 
@@ -1210,7 +1259,7 @@ class NotesEditorModel:
 
     def due(self, now=None) -> bool:
         with self._lock:
-            if self.deleted or not self._pending_locked():
+            if self.deleted or self._flushing or not self._pending_locked():
                 return False
             if self.retry_at is not None \
                     and time.monotonic() < self.retry_at:
@@ -1339,6 +1388,7 @@ class NotesEditorModel:
             self.saved_content = content
             self.saved_generation = max(self.saved_generation, gen)
             self.revision_id = rev["revision_id"]
+            self._known.add(rev["revision_id"])
         return rev
 
     def _commit_arrival(self, store, a):
@@ -1356,6 +1406,7 @@ class NotesEditorModel:
             self.saved_content = a.content
             self.saved_generation = max(self.saved_generation, a.generation)
             self.revision_id = rev["revision_id"]
+            self._known.add(rev["revision_id"])
         a._settle("committed")
         return rev
 
