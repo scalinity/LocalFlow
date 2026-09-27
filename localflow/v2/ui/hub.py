@@ -2366,8 +2366,14 @@ class HubController(NSObject):
         if new_ids == old_ids and titles == list(popup.itemTitles()):
             return
         popup.removeAllItems()
-        for t in titles:
-            popup.addItemWithTitle_(t)
+        # Through the MENU: NSPopUpButton.addItemWithTitle_ drops an
+        # existing item with the same title, which would shift every
+        # later item off its id (LOCAL-M12-03) — two autosaves in one
+        # second share a label; two definitions may share a name.
+        menu = popup.menu()
+        for stable_id, t in items:
+            item = menu.addItemWithTitle_action_keyEquivalent_(t, None, "")
+            item.setRepresentedObject_(stable_id)
         setattr(self, ids_attr, new_ids)
         if chosen in new_ids:
             popup.selectItemAtIndex_(new_ids.index(chosen))
