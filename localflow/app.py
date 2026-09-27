@@ -629,6 +629,9 @@ class AppDelegate(NSObject):
         self._job = None
         # Last failed/recoverable dictation for the retry/raw-export menu
         self._last_failed = None
+        # M12: note-bound deliveries whose revision has not committed yet
+        # (arrival op id -> (job, ctx, text)); settled on the receipt.
+        self._note_deliveries = {}
         self._recoverable = []  # crash-recovered items waiting for retry
         # Hands-free double-tap state (off unless cfg hands_free enables it)
         self._hands_free_active = False
@@ -1715,8 +1718,25 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def tfCopyTransform(self, result):
-        copy_text(result.output)
+        if not self._guarded_copy(result.output):
+            self.v2log.emit("transforms.copy_refused", level="INFO",
+                            reason_code="clipboard_payload_pending")
+            return
         self.v2log.emit("transforms.copied", level="INFO")
+
+    @objc.python_method
+    def _guarded_copy(self, text) -> bool:
+        """An explicitly chosen copy (a recovery action) publishes only
+        while no insertion owns the clipboard: an M08 payload still
+        waiting for its late consumer, or an admitted insertion, keeps
+        the board (M12-AUDIT-19 — the M08 late-consumer guard)."""
+        ins = self._insertion
+        if ins is not None and (getattr(ins, "pending", False)
+                                or getattr(ins, "clipboard_payload_pending",
+                                           False)):
+            return False
+        copy_text(text)
+        return True
 
     @objc.python_method
     def tfRetryOriginal(self, result, capture, defn, candidate_id):
@@ -1822,15 +1842,89 @@ class AppDelegate(NSObject):
                 reason=f"transform_refused:{res['refused'][:60]}")
         return self._m11_result_from_message(job, res)
 
+    # ---- M12: note delivery settlement (M12-AUDIT-07) ------------------
+
+    @objc.python_method
+    def _noteDeliverySettled_(self, arrival):
+        """Main thread: a note-bound dictation's arrival settled. Only a
+        committed revision confirms the insertion (with that revision
+        named); anything else is a retained, not-inserted result. One
+        logical dictation, one usage fact, recorded once (M13-AC02)."""
+        entry = self._note_deliveries.pop(arrival.op_id, None)
+        if entry is None:
+            return
+        job, ctx, text, _arrival = entry
+        job_id = job.get("job_id")
+        if arrival.outcome != "committed":
+            self._note_not_inserted(
+                job, ctx, text, "note_deleted_before_save"
+                if arrival.outcome == "discarded" else "note_save_failed")
+            return
+        if job_id:
+            self.v2log.emit(
+                "notes.dictation_inserted", level="INFO", job_id=job_id,
+                detail=f"note={arrival.note_id}"
+                       f" revision={arrival.revision_id}"
+                       f" {len(text)} chars")
+            self._job_state(job_id, "insertion_confirmed",
+                            reason="scratchpad_note")
+        self._record_dictation_usage(
+            job, "confirmed", text, end_to_end=True,
+            meta={"destination": "scratchpad_note",
+                  "note_revision_id": arrival.revision_id})
+        if ctx is not None:
+            try:
+                self.collector.on_insertion(ctx, True, len(text))
+            except Exception as e:
+                self.v2log.emit("training.capture_failed", level="ERROR",
+                                job_id=job_id,
+                                reason_code=type(e).__name__)
+
+    @objc.python_method
+    def _note_not_inserted(self, job, ctx, text, reason):
+        job_id = job.get("job_id")
+        if job_id:
+            self.v2log.emit(
+                "insertion.saved_not_inserted", level="WARNING",
+                job_id=job_id, outcome="saved_not_inserted",
+                reason_code=reason,
+                detail="kept in History — Copy or → Scratchpad from there")
+            self._job_state(job_id, "saved_not_inserted", reason=reason)
+        self._record_dictation_usage(job, "saved_not_inserted", text,
+                                     meta={"reason": reason})
+        if ctx is not None:
+            try:
+                self.collector.on_insertion(ctx, False, 0)
+            except Exception as e:
+                self.v2log.emit("training.capture_failed", level="ERROR",
+                                job_id=job_id,
+                                reason_code=type(e).__name__)
+
+    @objc.python_method
+    def _settle_note_deliveries_now(self):
+        """Quit: the main loop no longer runs deferred callbacks, so every
+        delivery is recorded here, before the store closes — committed
+        ones as confirmed, anything else as not saved."""
+        for op_id in list(self._note_deliveries):
+            arrival = self._note_deliveries[op_id][3]
+            if arrival.settled:
+                self._noteDeliverySettled_(arrival)
+            else:
+                job, ctx, text, _a = self._note_deliveries.pop(op_id)
+                self._note_not_inserted(job, ctx, text, "note_save_failed")
+
     # ---- M12: the Scratchpad coordinator commands (Spec S20) -----------
 
     @objc.python_method
-    def tfRunNoteTransform(self, transform_id, source, range_, note):
+    def tfRunNoteTransform(self, transform_id, source, range_, note,
+                           scope=None):
         """Note-scope transform (S20): the note's selection — or the
         whole note when nothing is selected — under the M11 engine,
         with visible scope. The capture is note-bound; accept applies
         in the editor and the M08 external queue is never involved (a
-        note transform never overwrites an external target)."""
+        note transform never overwrites an external target).
+        ``scope`` is ``"whole"`` (no range: the whole note, accepted
+        only while the whole note is unchanged) or ``"selection"``."""
         if self._tf_pipeline_busy():
             self.v2log.emit("transforms.busy", level="INFO",
                             reason_code="pipeline_active")
@@ -1851,12 +1945,15 @@ class AppDelegate(NSObject):
         # content (an insertion at the caret would leave the original
         # beside its own transformation — S20's whole-note scope).
         rng = tuple(range_) if range_ else (0, len(source))
+        scope = scope or ("selection" if range_ else "whole")
         # The immutable destination (code-point range in the note's
         # content): acceptance — including after Transform Output —
-        # replaces exactly this region of exactly this note or refuses.
+        # replaces exactly this region of exactly this note or refuses;
+        # a whole-note destination also requires the whole note to be
+        # unchanged (M12-AUDIT-13).
         destination = {"note_id": (note or {}).get("note_id"),
                        "revision_id": (note or {}).get("revision_id"),
-                       "range": rng, "text": source}
+                       "range": rng, "text": source, "scope": scope}
         capture = {"source": source, "range": rng,
                    "snapshot": None, "note": note,
                    "destination": destination}
@@ -1875,24 +1972,59 @@ class AppDelegate(NSObject):
         must still match at the range, else the copy offer (a changed
         note region is never blindly overwritten, the M08 discipline
         applied to the internal destination)."""
-        applied = False
+        arrival = None
         reason = None
         try:
             if self._hub is not None:
-                applied, reason = \
+                arrival, reason = \
                     self._hub.scratchpad_apply_transform(result, capture)
         except Exception as e:
             reason = type(e).__name__
-        if applied:
-            self.v2log.emit("notes.transform_applied", level="INFO",
+        if arrival:
+            # In the buffer now; "applied" is published only when the
+            # revision holding it commits (M12-AUDIT-07).
+            self.v2log.emit("notes.transform_received", level="INFO",
                             outcome=result.path,
                             detail=f"{len(result.output)} chars")
+            arrival.on_settled(lambda a: AppHelper.callAfter(
+                self._noteTransformSettled_, a, result))
         else:
-            copy_text(result.output)
-            self.v2log.emit("notes.transform_target_lost", level="INFO",
-                            reason_code=reason or "note_range_changed",
-                            outcome="copy_offered")
+            self._note_transform_reoffer(reason or "note_range_changed")
         self._settle_state()
+
+    @objc.python_method
+    def _noteTransformSettled_(self, arrival, result):
+        if arrival.outcome == "committed":
+            self.v2log.emit("notes.transform_applied", level="INFO",
+                            outcome=result.path,
+                            detail=f"revision={arrival.revision_id}"
+                                   f" {len(result.output)} chars")
+        else:
+            self._note_transform_reoffer(
+                "note_deleted" if arrival.outcome == "discarded"
+                else "note_save_failed")
+
+    @objc.python_method
+    def _note_transform_reoffer(self, reason):
+        """A note transform that was not applied: the preview keeps the
+        result as a retained offer (Copy / Save to Scratchpad are the
+        user's explicit choices) — never an automatic clipboard write
+        (M12-AUDIT-19)."""
+        self.v2log.emit("notes.transform_target_lost", level="INFO",
+                        reason_code=reason, outcome="retained_offer")
+        panel = self._tf_panel
+        if panel is not None:
+            try:
+                panel.reoffer({
+                    "note_changed": "another note is open",
+                    "note_not_open": "the note is not open",
+                    "note_range_changed": "the selected text changed",
+                    "note_content_changed": "the note changed",
+                    "note_deleted": "the note was deleted",
+                    "note_save_failed": "the note could not be saved",
+                }.get(reason, reason))
+            except Exception:
+                pass
 
     @objc.python_method
     def tfSaveToScratchpad(self, result, defn):
@@ -1970,7 +2102,8 @@ class AppDelegate(NSObject):
         return report
 
     @objc.python_method
-    def hubSaveHistoryRow(self, kind, row_id, move=False):
+    def hubSaveHistoryRow(self, kind, row_id, move=False,
+                          expected_sha256=None):
         """Explicit copy/move from History into the Scratchpad (S20).
         Copy creates a note from the row's retained final text (origin
         dictated, source job attributed when a V2 example exists).
@@ -1980,44 +2113,43 @@ class AppDelegate(NSObject):
         lossless by contract)."""
         if self._notes_store is None:
             return {"outcome": "notes_unavailable"}
-        text = None
-        source_job = None
+        # M12-AUDIT-14: the text is the FINAL stage of the CURRENT
+        # attempt, resolved exactly as History displays it (one shared
+        # rule); a missing final stage is refused, never replaced by an
+        # earlier one. ``expected_sha256`` binds the transfer to the text
+        # the user saw — a row that changed since is refused.
+        from .v2 import history_queries
+        hq = history_queries.HistoryQueryService(self.store)
         if kind == "job":
-            def read(db):
-                # The retained FINAL text: applied output first, then
-                # the cleaned/raw artifacts (a saved_not_inserted job
-                # keeps its text there — exactly what a user rescues
-                # into a note).
-                for role in ("applied_output", "cleaned_transcript",
-                             "raw_transcript"):
-                    row = db.execute(
-                        "SELECT content_text FROM artifacts WHERE job_id=?"
-                        " AND role=? AND purged=0"
-                        " ORDER BY rowid DESC LIMIT 1",
-                        (row_id, role)).fetchone()
-                    if row is not None:
-                        return row
-                return None
-            row = self.store.submit(read)
-            text = row[0] if row else None
-            source_job = row_id if text else None
+            detail = hq.job_detail(row_id)
+        elif kind == "legacy_db":
+            detail = hq.legacy_db_detail(row_id)
         else:
-            def read_legacy(db):
-                return db.execute(
-                    "SELECT COALESCE(cleaned_text, raw_text) FROM"
-                    " legacy_dictations WHERE id=?",
-                    (int(row_id),)).fetchone()
-            row = self.store.submit(read_legacy)
-            text = row[0] if row else None
+            detail = hq.legacy_detail(row_id)
+        if detail is None:
+            return {"outcome": "no_retained_text"}
+        text = history_queries.final_text(detail)
         if not text:
             return {"outcome": "no_retained_text"}
+        if expected_sha256 is not None \
+                and v2.ids.sha256_text(text) != expected_sha256:
+            return {"outcome": "history_changed"}
+        source_job = row_id if kind == "job" else None
+        note_id = v2.ids.new_id("note")
         try:
             out = self._notes_store.create_note(
                 text,
                 origin=(v2_notes.ORIGIN_DICTATED if kind == "job"
                         else v2_notes.ORIGIN_TYPED),
-                source_job_id=source_job)
+                source_job_id=source_job, note_id=note_id)
         except Exception as e:
+            if v2_notes.failure_kind(e) == "unknown":
+                # Admitted, unanswered: the note may still appear. A
+                # Move never deletes its source after an unknown create.
+                self.v2log.emit("notes.note_create_unknown",
+                                level="WARNING",
+                                reason_code=type(e).__name__)
+                return {"outcome": "create_unknown", "note_id": note_id}
             self.v2log.emit("notes.note_create_failed", level="WARNING",
                             reason_code=type(e).__name__)
             return {"outcome": "create_failed"}
@@ -2049,6 +2181,8 @@ class AppDelegate(NSObject):
         action, deferred by the focus-steal guard exactly like Open Hub
         — quick-open must never steal the external insertion target
         (M12 regression requirement)."""
+        if getattr(self, "_closing", False):
+            return  # quitting: no new note is admitted
         if self._hub_blocks_show():
             self._hub_show_pending = True
             self._hub_pending_action = "scratchpad"
@@ -2506,6 +2640,26 @@ class AppDelegate(NSObject):
             self.v2log.emit("app.shutdown_incomplete", level="ERROR",
                             reason_code="coordinator_busy",
                             outcome="store_closes_with_producer_alive")
+        # M12-AUDIT-08: the Scratchpad's admitted note work (owned saves,
+        # retained buffers) settles while the store still accepts it;
+        # then every note-bound delivery is recorded as what it became.
+        if self._hub is not None:
+            try:
+                status = self._hub.scratchpad_shutdown(timeout=3.0)
+                self.v2log.emit(
+                    "notes.shutdown",
+                    level="INFO" if status.get("drained") else "ERROR",
+                    outcome="drained" if status.get("drained")
+                    else "unsaved_at_quit",
+                    detail=f"unsaved_notes={len(status.get('unsaved') or [])}")
+            except Exception as e:
+                self.v2log.emit("notes.shutdown_failed", level="ERROR",
+                                reason_code=type(e).__name__)
+        try:
+            self._settle_note_deliveries_now()
+        except Exception as e:
+            self.v2log.emit("notes.shutdown_failed", level="ERROR",
+                            reason_code=type(e).__name__)
         self._shutdown_persistence()
         for attr in ("_journal_root_lock", "_boot_lock"):
             fd = getattr(self, attr, None)
@@ -3223,11 +3377,12 @@ class AppDelegate(NSObject):
         # anchor promised at hotkey-down is the anchor that receives.
         if self._hub is not None:
             try:
-                if self._hub.scratchpad_editor_active():
-                    self._job["note_target"] = {
-                        "note_id": self._hub.editor.note_id,
-                        "insertion_point":
-                            self._hub.editor.insertion_point()}
+                target = self._hub.scratchpad_capture_target() \
+                    if self._hub.scratchpad_editor_active() else None
+                if target is not None:
+                    # A code-point anchor from the one validated UTF-16
+                    # conversion, plus the text before it (D01).
+                    self._job["note_target"] = target
                     self.v2log.emit(
                         "notes.dictation_bound", level="INFO",
                         job_id=job_id,
@@ -4504,62 +4659,41 @@ class AppDelegate(NSObject):
             # never a paste into whatever app is now focused.
             note_target = job.get("note_target")
             if note_target is not None:
-                delivered = False
+                arrival = None
                 try:
-                    delivered = (
-                        self._hub is not None
-                        and self._hub.scratchpad_receive(text, job))
+                    arrival = (self._hub.scratchpad_receive(text, job)
+                               if self._hub is not None else None)
                 except Exception as e:
                     self.v2log.emit("notes.receive_failed",
                                     level="WARNING", job_id=job_id,
                                     reason_code=type(e).__name__)
                 self._retire_active_job(job)
-                if delivered:
+                if arrival:
+                    # The text is in the editor buffer: that is a receipt,
+                    # not durability (M12-AUDIT-07). The job stays posted
+                    # until the revision holding exactly this arrival
+                    # commits; then — and only then — it is confirmed.
                     if job_id:
                         self.v2log.emit(
-                            "notes.dictation_inserted", level="INFO",
+                            "notes.dictation_received", level="INFO",
                             job_id=job_id,
                             detail=f"note={note_target['note_id']}"
                                    f" {len(text)} chars")
                         self._job_state(job_id, "insertion_posted")
-                        self._job_state(job_id, "insertion_confirmed",
-                                        reason="scratchpad_note")
-                    # The internal destination is still ONE logical
-                    # dictation (M13-AC02): one fact, outcome confirmed.
-                    self._record_dictation_usage(
-                        job, "confirmed", text, end_to_end=True,
-                        meta={"destination": "scratchpad_note"})
-                    if ctx is not None:
-                        try:
-                            self.collector.on_insertion(ctx, True,
-                                                        len(text))
-                        except Exception as e:
-                            self.v2log.emit(
-                                "training.capture_failed", level="ERROR",
-                                job_id=job_id,
-                                reason_code=type(e).__name__)
+                    self._note_deliveries[arrival.op_id] = (job, ctx, text,
+                                                            arrival)
+                    arrival.on_settled(
+                        lambda a: AppHelper.callAfter(
+                            self._noteDeliverySettled_, a))
                 else:
-                    copy_text(text)
-                    if job_id:
-                        self.v2log.emit(
-                            "insertion.saved_not_inserted", level="WARNING",
-                            job_id=job_id, outcome="saved_not_inserted",
-                            reason_code="note_closed_during_dictation",
-                            detail="transcript left on the clipboard for"
-                                   " a manual ⌘V")
-                        self._job_state(job_id, "saved_not_inserted",
-                                        reason="note_closed_during_dictation")
-                    self._record_dictation_usage(
-                        job, "saved_not_inserted", text,
-                        meta={"reason": "note_closed_during_dictation"})
-                    if ctx is not None:
-                        try:
-                            self.collector.on_insertion(ctx, False, 0)
-                        except Exception as e:
-                            self.v2log.emit(
-                                "training.capture_failed", level="ERROR",
-                                job_id=job_id,
-                                reason_code=type(e).__name__)
+                    # Refused (another note, a closed editor, a changed
+                    # anchor): a retained result — the text stays in
+                    # History for an explicit Copy or → Scratchpad; the
+                    # clipboard is never written on the user's behalf
+                    # (M12-AUDIT-19).
+                    reason = job.get("note_refusal") \
+                        or "note_closed_during_dictation"
+                    self._note_not_inserted(job, ctx, text, reason)
                 self._delete_journal_files(job_id, job)
                 self._settle_state()
                 return
@@ -5244,10 +5378,16 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def hubCopyText(self, text):
-        copy_text(text)
+        """History's Copy — the explicit recovery action for a retained
+        result — through the clipboard ownership guard."""
+        if not self._guarded_copy(text):
+            self.v2log.emit("hub.copy_refused", level="INFO",
+                            reason_code="clipboard_payload_pending")
+            return {"outcome": "clipboard_busy"}
         self.v2log.emit("hub.text_copied", level="INFO",
                         reason_code="history_action",
                         detail=f"{len(text)} chars")
+        return {"outcome": "copied"}
 
     @objc.python_method
     def hubPasteText(self, text, job_id=None):

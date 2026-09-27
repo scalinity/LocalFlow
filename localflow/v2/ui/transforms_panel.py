@@ -140,7 +140,21 @@ class TransformPreviewPanel(NSObject):
             NSSize(frame.size.width - 24, frame.size.height - 142))
         # Retry needs a task (a refused job has none to re-run).
         self._buttons["panelRetry:"].setEnabled_(result.job is not None)
+        self._buttons["panelAccept:"].setEnabled_(True)
         self.panel.center()
+        self.panel.orderFrontRegardless()
+
+    @objc.python_method
+    def reoffer(self, message):
+        """M12-AUDIT-19: an accept that could not be applied keeps the
+        result here — Copy and Save to Scratchpad stay the explicit
+        recovery choices; nothing is published on the user's behalf."""
+        if self._state.get("result") is None:
+            return
+        defn = self._state.get("defn")
+        self.panel.setTitle_(f"{defn.name if defn else 'Transform'} —"
+                             f" not applied: {message}")
+        self._buttons["panelAccept:"].setEnabled_(False)
         self.panel.orderFrontRegardless()
 
     # ---- actions (main thread; the generation runs off it) -------------

@@ -124,6 +124,27 @@ def _meta(meta_json) -> dict:
     return out if isinstance(out, dict) else {}
 
 
+def final_text(detail) -> str | None:
+    """The text a History detail shows as what was actually inserted:
+    the transform output when its recorded decision says applied, else
+    the cleaned output — of the CURRENT attempt, as ``job_detail`` /
+    ``legacy_detail`` / ``legacy_db_detail`` resolved it. A final stage
+    that is gone yields None; an earlier stage is never a substitute.
+    History's Copy/Paste Again and the Scratchpad transfer share this
+    one rule (M12-AUDIT-14)."""
+    if not detail:
+        return None
+    stages = {s["stage"]: s for s in detail.get("lineage") or []}
+
+    def text(name):
+        art = (stages.get(name) or {}).get("artifact")
+        return art["text"] if art and art.get("present") \
+            and art.get("text") else None
+    if detail.get("final_stage") == "transformed":
+        return text("transformed")
+    return text("cleaned")
+
+
 class HistoryQueryService:
     """All reads through the store's writer thread; safe to call from any
     thread (the Hub calls from its query thread, never the UI callback)."""

@@ -887,7 +887,11 @@ class HubController(NSObject):
             self._history_note("Nothing to copy: this row has no retained"
                                " final text.")
             return
-        self.coordinator.hubCopyText(text)
+        out = self.coordinator.hubCopyText(text) or {}
+        if out.get("outcome") == "clipboard_busy":
+            self._history_note("Not copied: an insertion still owns the"
+                               " clipboard. Try again in a moment.")
+            return
         self._history_note("Copied the final text.")
 
     _PASTE_NOTES = {
@@ -1005,20 +1009,29 @@ class HubController(NSObject):
         self._history_to_scratchpad(move=False)
 
     def historyMoveToScratchpad_(self, sender):
-        self._historyToScratchpad(move=True)
+        self._history_to_scratchpad(move=True)
 
     @objc.python_method
     def _history_to_scratchpad(self, move):
         """M12 (S20 task 4): explicit copy/move from History into the
         Scratchpad. Move's delete-everywhere only applies to V2 jobs —
-        legacy rows degrade honestly to copy (reported in the detail)."""
+        legacy rows degrade honestly to copy (reported in the detail).
+        The transfer is bound to the final text this detail SHOWS: the
+        coordinator re-resolves it and refuses when it differs."""
         if self.coordinator is None:
             return
         ctx = self._history_ctx()
         if ctx is None:
             return
+        from .. import ids
+        shown = self._final_text(ctx)
+        if shown is None:
+            self._history_note("→ Scratchpad: this row has no retained"
+                               " final text.")
+            return
         kind, row_id = self.state.views["history"].get("detail_key")
-        out = self.coordinator.hubSaveHistoryRow(kind, row_id, move=move)
+        out = self.coordinator.hubSaveHistoryRow(
+            kind, row_id, move=move, expected_sha256=ids.sha256_text(shown))
         note = {"copied": "saved to a new Scratchpad note",
                 "moved": "moved — the History row's content was deleted"
                          " everywhere (the note keeps it)",
@@ -1028,6 +1041,12 @@ class HubController(NSObject):
                 "move_failed_note_copied":
                     "the note was created but the History deletion"
                     " failed — row kept",
+                "create_unknown":
+                    "saving the note is pending (the store has not"
+                    " answered yet); the row was kept",
+                "history_changed":
+                    "the row changed since it was shown — nothing was"
+                    " saved; select it again",
                 }.get(out.get("outcome"), out.get("outcome"))
         self._history_note(f"→ Scratchpad: {note}")
         if kind == "job" and out.get("outcome") == "moved":
@@ -1055,15 +1074,8 @@ class HubController(NSObject):
         when its recorded decision says applied, else the cleaned
         output. A final stage that is gone yields None — the source
         transcript is never a substitute for it."""
-        stages = {s["stage"]: s for s in detail.get("lineage") or []}
-
-        def text(name):
-            art = (stages.get(name) or {}).get("artifact")
-            return art["text"] if art and art.get("present") \
-                and art.get("text") else None
-        if detail.get("final_stage") == "transformed":
-            return text("transformed")
-        return text("cleaned")
+        from ..history_queries import final_text
+        return final_text(detail)
 
     @objc.python_method
     def _current_detail_text(self):
@@ -1890,128 +1902,212 @@ class HubController(NSObject):
 
     # ---- Scratchpad (M12, Spec S20) ----------------------------------------
 
+    # The action rows (M12-AUDIT-21): two rows that fit the minimum
+    # window's content width, laid out again at every pane size.
+    _SP_ROW_A = (("New", "scratchpadNew:", 60.0),
+                 ("Pin", "scratchpadPin:", 54.0),
+                 ("Snapshot", "scratchpadSnapshot:", 92.0),
+                 ("Add Image…", "scratchpadAttach:", 96.0),
+                 ("Transform…", "scratchpadTransform:", 100.0),
+                 ("Restore", "scratchpadRestore:", 74.0))
+    _SP_ROW_B = (("Export .md", "scratchpadExportMD:", 88.0),
+                 ("Export .txt", "scratchpadExportTXT:", 88.0),
+                 ("Delete", "scratchpadDelete:", 66.0))
+
     @objc.python_method
     def _build_scratchpad_view(self):
         """M12 (Spec S20): notes list + tab strip + editor + actions.
         The editor is the ScratchpadEditor NSObject (ui/scratchpad.py);
         the shell owns no note logic — actions go through notes_service
         and coordinator commands."""
-        from .scratchpad import ScratchpadEditor
-        v = NSView.alloc().init()
-        cw = self.content.bounds().size.width
-        ch = self.content.bounds().size.height
-        self.scratchpad_status = _label(
-            NSMakeRect(8, ch - 24, cw * 0.6, 18), "")
+        from .scratchpad import ScratchpadEditor, ScratchpadPane
+        v = ScratchpadPane.alloc().initWithFrame_(self.content.bounds())
+        z = NSMakeRect(0, 0, 10, 10)
+        self.scratchpad_status = _label(z, "")
         v.addSubview_(self.scratchpad_status)
-        self.scratchpad_search = NSSearchField.alloc().initWithFrame_(
-            NSMakeRect(cw * 0.62, ch - 26, cw * 0.36, 22))
+        self.scratchpad_search = NSSearchField.alloc().initWithFrame_(z)
         self.scratchpad_search.setTarget_(self)
         self.scratchpad_search.setAction_("scratchpadSearchChanged:")
         v.addSubview_(self.scratchpad_search)
         self.scratchpad_table = NSTableView.alloc().initWithFrame_(
-            NSMakeRect(0, 0, cw * 0.26, 10))
+            NSMakeRect(0, 0, 200, 10))
         for ident, width in (("title", 150.0), ("words", 52.0)):
             c = NSTableColumn.alloc().initWithIdentifier_(ident)
             c.setWidth_(width)
             self.scratchpad_table.addTableColumn_(c)
         self.scratchpad_table.setDataSource_(self)
         self.scratchpad_table.setDelegate_(self)
-        stc = _scroll(NSMakeRect(8, 118, cw * 0.28, ch - 150),
-                      self.scratchpad_table)
-        stc.setAutoresizingMask_(2)
-        v.addSubview_(stc)
+        self._scratchpad_list_scroll = _scroll(z, self.scratchpad_table)
+        v.addSubview_(self._scratchpad_list_scroll)
         # Tab strip over open notes (S20 tabs): one chip per open note.
-        self.scratchpad_tabs = NSView.alloc().initWithFrame_(
-            NSMakeRect(cw * 0.30, ch - 52, cw * 0.68, 24))
+        self.scratchpad_tabs = NSView.alloc().initWithFrame_(z)
         v.addSubview_(self.scratchpad_tabs)
         self.editor = ScratchpadEditor.alloc().init_editor(self)
-        ecw = cw * 0.68
-        self.editor.scroll.setFrame_(
-            NSMakeRect(cw * 0.30, 96, ecw - 8, ch - 152))
-        self.editor.scroll.setAutoresizingMask_(2 | 16)
         v.addSubview_(self.editor.scroll)
-        x = cw * 0.30
-        for title, action, w in (
-                ("New", "scratchpadNew:", 60.0),
-                ("Pin", "scratchpadPin:", 54.0),
-                ("Snapshot", "scratchpadSnapshot:", 92.0),
-                ("Add Image…", "scratchpadAttach:", 96.0),
-                ("Transform…", "scratchpadTransform:", 100.0),
-                ("Restore", "scratchpadRestore:", 74.0),
-                ("Export .md", "scratchpadExportMD:", 88.0),
-                ("Export .txt", "scratchpadExportTXT:", 88.0),
-                ("Delete", "scratchpadDelete:", 66.0)):
-            v.addSubview_(_button(title, self, action,
-                                  NSMakeRect(x, 62, w, 24)))
-            x += w + 8
-        self.scratchpad_versions = NSPopUpButton.alloc().initWithFrame_(
-            NSMakeRect(cw * 0.30, 30, cw * 0.42, 24))
+        self._scratchpad_rows = []
+        for row in (self._SP_ROW_A, self._SP_ROW_B):
+            buttons = []
+            for title, action, w in row:
+                b = _button(title, self, action, NSMakeRect(0, 0, w, 24))
+                v.addSubview_(b)
+                buttons.append((b, w))
+            self._scratchpad_rows.append(buttons)
+        self.scratchpad_versions = NSPopUpButton.alloc().initWithFrame_(z)
         self.scratchpad_versions.setTarget_(self)
         self.scratchpad_versions.setAction_("scratchpadVersionChosen:")
         v.addSubview_(self.scratchpad_versions)
         self._scratchpad_version_ids = []
         # The note-scope transform picker (S20 visible scope): one item
         # per enabled definition; the Transform… action resolves it.
-        self.scratchpad_transforms = NSPopUpButton.alloc().initWithFrame_(
-            NSMakeRect(cw * 0.30 + cw * 0.44, 30, cw * 0.20, 24))
+        self.scratchpad_transforms = NSPopUpButton.alloc().initWithFrame_(z)
         v.addSubview_(self.scratchpad_transforms)
         self._scratchpad_transform_ids = []
+        self._scratchpad_pane = v
+        v.layout_cb = self._layout_scratchpad
+        self._layout_scratchpad()
         return v
+
+    @objc.python_method
+    def _layout_scratchpad(self):
+        """Frames for the pane's current size: the header rows stay at
+        the top, the list and editor fill the middle, the two action
+        rows sit at the bottom from the left edge."""
+        pane = getattr(self, "_scratchpad_pane", None)
+        if pane is None:
+            return
+        b = pane.bounds()
+        w, h = b.size.width, b.size.height
+        self.scratchpad_status.setFrame_(
+            NSMakeRect(8, h - 24, max(40.0, w * 0.60 - 8), 18))
+        self.scratchpad_search.setFrame_(
+            NSMakeRect(w * 0.62, h - 26, w * 0.36, 22))
+        self._scratchpad_list_scroll.setFrame_(
+            NSMakeRect(8, 102, w * 0.28, max(40.0, h - 134)))
+        self.scratchpad_tabs.setFrame_(
+            NSMakeRect(w * 0.30, h - 52, w * 0.68, 24))
+        self.editor.scroll.setFrame_(
+            NSMakeRect(w * 0.30, 102, w * 0.68 - 8, max(40.0, h - 160)))
+        self.editor.fit_to_scroll()
+        for y, row in ((66.0, self._scratchpad_rows[0]),
+                       (34.0, self._scratchpad_rows[1])):
+            x = 8.0
+            for btn, bw in row:
+                btn.setFrame_(NSMakeRect(x, y, bw, 24))
+                x += bw + 8
+        rest = max(160.0, w - 8 - x)
+        vw = (rest - 8) * 0.6
+        self.scratchpad_versions.setFrame_(NSMakeRect(x, 32, vw, 26))
+        self.scratchpad_transforms.setFrame_(
+            NSMakeRect(x + vw + 8, 32, rest - vw - 8, 26))
+
+    @objc.python_method
+    def _scratchpad_rendered(self):
+        """``(note_id, detail)`` of the note the Scratchpad SHOWS: the
+        editor's binding, and only while the selection and the loaded
+        detail agree with it (M12-AUDIT-11). During a list/detail gap an
+        action is refused with the reason shown — it never acts on a
+        selected note the editor does not display."""
+        view = self.state.views["scratchpad"]
+        ed = getattr(self, "editor", None)
+        detail = view.get("detail") or {}
+        nid = ed.note_id if ed is not None else None
+        if nid is None or ed.model is None \
+                or view.get("selected_id") != nid \
+                or detail.get("note_id") != nid:
+            self.scratchpad_status.setStringValue_(
+                "The note is still loading — try again when it shows.")
+            return None
+        return nid, detail
+
+    @objc.python_method
+    def _scratchpad_outcome(self, verb, exc):
+        """Status for a failed note mutation, by how it ended
+        (M12-AUDIT-24): only a proven noncommit is called failed."""
+        from ..notes import failure_kind
+        kind = failure_kind(exc)
+        self.scratchpad_status.setStringValue_({
+            "unknown": f"{verb}: pending — the store has not answered"
+                       " yet; the list shows the result when it does",
+            "refused": f"{verb}: not done — LocalFlow is closing",
+        }.get(kind, f"{verb} failed ({type(exc).__name__})"))
+        return kind
 
     def scratchpadSearchChanged_(self, sender):
         self.state.set_scratchpad_search(
             sender.stringValue() or "")
 
     def scratchpadNew_(self, sender):
+        from .. import ids
         svc = self.spec.get("notes_service")
         if svc is None:
             return
+        # A preallocated id: an admitted create whose answer never came
+        # is the same note when (if) it commits — never a second one.
+        note_id = ids.new_id("note")
         try:
-            out = svc.create_note("")
+            svc.create_note("", note_id=note_id)
         except Exception as e:
-            self.scratchpad_status.setStringValue_(
-                f"new note failed: {type(e).__name__}")
-            return
+            if self._scratchpad_outcome("new note", e) != "unknown":
+                return
         self.state.views["scratchpad"]["search"] = ""
         self.scratchpad_search.setStringValue_("")
         self.state.reload_scratchpad()
-        self.state.select_scratchpad_note(out["note_id"])
+        self.state.select_scratchpad_note(note_id)
 
     def scratchpadPin_(self, sender):
         svc = self.spec.get("notes_service")
-        note_id = self.state.views["scratchpad"].get("selected_id")
-        detail = self.state.views["scratchpad"].get("detail") or {}
-        if svc is None or not note_id:
+        rendered = self._scratchpad_rendered()
+        if svc is None or rendered is None:
             return
+        note_id, detail = rendered
         try:
             svc.set_pinned(note_id, not detail.get("pinned"))
         except Exception as e:
-            self.scratchpad_status.setStringValue_(
-                f"pin failed: {type(e).__name__}")
+            self._scratchpad_outcome("pin", e)
             return
         self.state.reload_scratchpad()
 
+    _SNAPSHOT_NOTES = {
+        "flushed": "snapshot saved",
+        "no_change": "snapshot: everything is already saved",
+        "pending": "snapshot pending — an earlier save is still running",
+        "unknown": "snapshot pending — the store has not answered yet",
+        "failed": "snapshot not saved — the text is kept here and"
+                  " retried",
+        "note_deleted": "snapshot: this note was deleted",
+    }
+
     def scratchpadSnapshot_(self, sender):
-        """Explicit snapshot: flush the buffer as trigger=explicit (an
-        autosave-debounce revision never claims to be one)."""
-        if self.editor.model is None:
+        """Explicit snapshot: a barrier for the buffer as it is NOW
+        (trigger=explicit when this call commits it). The status never
+        says saved for a generation that is not committed."""
+        if self._scratchpad_rendered() is None:
             return
         out = self.editor.flush_now(trigger="explicit")
-        self.scratchpad_status.setStringValue_(
-            f"snapshot saved ({out.get('outcome')})")
+        self.scratchpad_status.setStringValue_(self._SNAPSHOT_NOTES.get(
+            out.get("outcome"), f"snapshot: {out.get('outcome')}"))
         self.state.reload_scratchpad()
 
     def scratchpadAttach_(self, sender):
         from AppKit import NSOpenPanel
         svc = self.spec.get("notes_service")
-        note_id = self.state.views["scratchpad"].get("selected_id")
-        if svc is None or not note_id or self.editor.model is None:
+        rendered = self._scratchpad_rendered()
+        if svc is None or rendered is None:
             return
+        note_id, _detail = rendered
+        model = self.editor.model
         panel = NSOpenPanel.openPanel()
         panel.setCanChooseDirectories_(False)
         panel.setCanChooseFiles_(True)
         panel.setAllowsMultipleSelection_(False)
         if panel.runModal() != 1 or not panel.URLs():
+            return
+        # The dialog is modal: the editor may show another note now. The
+        # attachment's owner and its marker must be the same note.
+        if self.editor.note_id != note_id or self.editor.model is not model:
+            self.scratchpad_status.setStringValue_(
+                "The note changed while the image was chosen — nothing"
+                " was added.")
             return
         url = panel.URLs()[0]
         try:
@@ -2020,20 +2116,21 @@ class HubController(NSObject):
             mime = "image/" + (url.pathExtension() or "png").lower()
             out = svc.add_attachment(note_id, data, mime,
                                      str(url.lastPathComponent()))
-            self.editor.insert_attachment_marker(out["marker"])
-            self.state.reload_scratchpad()
         except Exception as e:
-            self.scratchpad_status.setStringValue_(
-                f"attachment failed: {type(e).__name__}")
+            self._scratchpad_outcome("add image", e)
+            return
+        self.editor.insert_attachment_marker(out["marker"])
+        self.state.reload_scratchpad()
 
     def scratchpadTransform_(self, sender):
         """Note-scope transform (S20): the definition chosen in the
         picker, applied to the selection — or the WHOLE NOTE when
-        nothing is selected (accept then replaces the note's full
-        range). Visible scope, through the M11 engine; never the M08
-        external queue."""
+        nothing is selected (accept then replaces the note only if it
+        is still exactly the captured text). Visible scope, through the
+        M11 engine; never the M08 external queue. A native selection
+        that cannot be read is refused, never widened."""
         coordinator = self.coordinator
-        if coordinator is None or self.editor.model is None:
+        if coordinator is None or self._scratchpad_rendered() is None:
             return
         idx = self.scratchpad_transforms.indexOfSelectedItem()
         chosen = self._scratchpad_transform_ids[idx] \
@@ -2044,19 +2141,20 @@ class HubController(NSObject):
             self.scratchpad_status.setStringValue_(
                 "choose a transform first")
             return
-        source = self.editor.selected_text()
-        rng = None
-        if source is None:
-            source = self.editor.current_content()
-            rng = (0, len(source))  # whole-note scope: accept replaces
+        kind, rng = self.editor.selection()
+        if kind == "invalid":
+            self.scratchpad_status.setStringValue_(
+                "The selection could not be read — select the text again.")
+            return
+        content = self.editor.model.content
+        if kind == "range":
+            source, scope = content[rng[0]:rng[1]], "selection"
         else:
-            # NSRange counts UTF-16 units; the captured range is in the
-            # content's code points (what acceptance slices).
-            rng = self.editor.selected_range()
+            source, rng, scope = content, None, "whole"
         coordinator.tfRunNoteTransform(
             defn.transform_id, source, rng,
             {"note_id": self.editor.note_id,
-             "revision_id": self.editor.model.revision_id})
+             "revision_id": self.editor.model.revision_id}, scope=scope)
 
     def scratchpadVersionChosen_(self, sender):
         # Selecting a version only arms the Restore button; restore is
@@ -2065,27 +2163,33 @@ class HubController(NSObject):
         pass
 
     def scratchpadRestore_(self, sender):
+        from .. import ids
         svc = self.spec.get("notes_service")
-        note_id = self.state.views["scratchpad"].get("selected_id")
-        idx = self.scratchpad_versions.indexOfSelectedItem()
-        if svc is None or not note_id:
+        rendered = self._scratchpad_rendered()
+        if svc is None or rendered is None:
             return
+        note_id, _detail = rendered
+        idx = self.scratchpad_versions.indexOfSelectedItem()
         if not (0 <= idx < len(self._scratchpad_version_ids)):
             self.scratchpad_status.setStringValue_(
                 "choose a version first")
             return
         revision_id = self._scratchpad_version_ids[idx]
-        # Persist the buffer first (bounded), then restore: the refresh
-        # rebinds the editor to the restored revision (the rebind-when-
-        # moved guard below) so the next keystroke cannot silently
-        # revert the restore.
-        if self.editor.model is not None and self.editor.note_id == note_id:
-            self.editor.flush_now()
-        try:
-            svc.restore(note_id, revision_id)
-        except Exception as e:
+        # D02: the buffer is saved first; the restore then parents
+        # whatever the writer holds (the copy lands on top of it). A
+        # buffer that could not be saved blocks the restore — it is
+        # never overwritten or dropped.
+        out = self.editor.flush_now()
+        if out.get("outcome") not in ("flushed", "no_change"):
             self.scratchpad_status.setStringValue_(
-                f"restore failed: {type(e).__name__}")
+                "restore not done — the current text is not saved yet"
+                " (it is kept and retried); try again")
+            return
+        try:
+            svc.restore(note_id, revision_id,
+                        new_revision_id=ids.new_id("nrev"))
+        except Exception as e:
+            self._scratchpad_outcome("restore", e)
             return
         self.scratchpad_status.setStringValue_(
             "restored — the previous version stays in the history")
@@ -2109,14 +2213,17 @@ class HubController(NSObject):
     @objc.python_method
     def _scratchpad_export(self, fmt):
         coordinator = self.coordinator
-        note_id = self.state.views["scratchpad"].get("selected_id")
-        detail = self.state.views["scratchpad"].get("detail") or {}
-        if coordinator is None or not note_id:
+        rendered = self._scratchpad_rendered()
+        if coordinator is None or rendered is None:
             return
-        # Export the buffer the user sees: flush the debounce tail so
-        # the last ≤1.5 s of edits are included.
-        if self.editor.model is not None:
-            self.editor.flush_now()
+        note_id, detail = rendered
+        # Export the buffer the user sees: the barrier saves it first; a
+        # buffer that is not saved yet is never exported as if it were.
+        out = self.editor.flush_now()
+        if out.get("outcome") not in ("flushed", "no_change"):
+            self.scratchpad_status.setStringValue_(
+                "export not done — the latest text is not saved yet")
+            return
         from ..note_export import _slug
         title = _slug(detail.get("title") or "", "note")[:40]
         path = self._scratchpad_save_panel(
@@ -2132,25 +2239,31 @@ class HubController(NSObject):
                    if n else ""))
         else:
             self.scratchpad_status.setStringValue_(
-                f"export failed ({report.get('reason')}) — note kept")
+                f"export failed ({report.get('reason')}) — note kept,"
+                " nothing in the folder was changed")
 
     def scratchpadDelete_(self, sender):
         svc = self.spec.get("notes_service")
         coordinator = self.coordinator
-        note_id = self.state.views["scratchpad"].get("selected_id")
-        if svc is None or not note_id:
+        rendered = self._scratchpad_rendered()
+        if svc is None or rendered is None:
             return
+        note_id, _detail = rendered
         try:
             payload = svc.delete_note(note_id)
         except Exception as e:
-            self.scratchpad_status.setStringValue_(
-                f"delete failed: {type(e).__name__}")
+            self._scratchpad_outcome("delete", e)
             return
         if coordinator is not None:
-            coordinator.hubNoteDeleted(payload)
-        self.editor.clear()
+            coordinator.hubNoteDeleted(payload or {"note_id": note_id})
+        self.editor.forget_note(note_id)
         self.state.close_scratchpad_tab(note_id)
         self.state.reload_scratchpad()
+        pending = (payload or {}).get("pending_purges") or 0
+        if pending:
+            self.scratchpad_status.setStringValue_(
+                f"deleted — {pending} image file(s) are still being"
+                " removed (retried automatically)")
 
     @objc.python_method
     def _refresh_scratchpad_view(self):
@@ -2166,17 +2279,18 @@ class HubController(NSObject):
                           self.state.views["scratchpad"].get("selected_id"))
         notes = (data or {}).get("notes") or []
         detail = view.get("detail")
-        # Transform picker: rebuild from the frozen snapshot (ids ride
-        # the parallel list — the title is display-only).
-        self.scratchpad_transforms.removeAllItems()
-        self._scratchpad_transform_ids = []
+        # Transform picker (M12-AUDIT-23): ids ride the parallel list
+        # (the title is display-only); the chosen id survives a refresh,
+        # and a choice whose definition vanished is cleared, never
+        # silently replaced by another definition.
         snapshot = self.coordinator._transforms_snapshot() \
             if self.coordinator is not None else None
-        for d in (snapshot.definitions if snapshot else []):
-            if not d.enabled:
-                continue
-            self.scratchpad_transforms.addItemWithTitle_(d.name)
-            self._scratchpad_transform_ids.append(d.transform_id)
+        defs = [(d.transform_id, d.name)
+                for d in (snapshot.definitions if snapshot else [])
+                if d.enabled]
+        self._scratchpad_repick(self.scratchpad_transforms,
+                                "_scratchpad_transform_ids", defs,
+                                default_first=True)
         # Tab strip: rebuild chips for open notes.
         for sub in list(self.scratchpad_tabs.subviews()):
             sub.removeFromSuperview()
@@ -2202,7 +2316,12 @@ class HubController(NSObject):
             if rebind:
                 self.editor.bind_note(detail)
             risk = detail.get("unsaved_tail_risk")
-            if risk:
+            unsaved = self.editor.unsaved_notes()
+            if unsaved:
+                self.scratchpad_status.setStringValue_(
+                    f"⚠ unsaved changes are kept for {len(unsaved)}"
+                    " note(s) — saving is being retried")
+            elif risk:
                 self.scratchpad_status.setStringValue_(
                     "⚠ unsaved changes may have been lost — edits started "
                     f"{risk['editing_started_utc']}; last saved version "
@@ -2215,15 +2334,16 @@ class HubController(NSObject):
                     f" versions"
                     + (f" · {len(atts)} image(s)" if atts else ""))
             # Versions popup (newest first; restore copies content
-            # forward — nothing is discarded).
-            self.scratchpad_versions.removeAllItems()
-            self._scratchpad_version_ids = []
-            for ver in (detail.get("versions") or [])[1:]:
-                label = (f"{ver['origin']}/{ver['trigger']} · "
-                         f"{ver['word_count']}w · "
-                         f"{(ver['created_at_utc'] or '')[11:19]}")
-                self.scratchpad_versions.addItemWithTitle_(label)
-                self._scratchpad_version_ids.append(ver["revision_id"])
+            # forward — nothing is discarded). The chosen version
+            # survives a refresh; a vanished one clears the choice.
+            vers = [(ver["revision_id"],
+                     f"{ver['origin']}/{ver['trigger']} · "
+                     f"{ver['word_count']}w · "
+                     f"{(ver['created_at_utc'] or '')[11:19]}")
+                    for ver in (detail.get("versions") or [])[1:]]
+            self._scratchpad_repick(self.scratchpad_versions,
+                                    "_scratchpad_version_ids", vers,
+                                    default_first=True)
         else:
             self.editor.clear()
             if not notes:
@@ -2232,13 +2352,36 @@ class HubController(NSObject):
                     " one; dictation with this editor focused inserts at the"
                     " caret.")
 
+    @objc.python_method
+    def _scratchpad_repick(self, popup, ids_attr, items, default_first):
+        """Rebuild a popup of ``(stable id, title)`` items only when they
+        changed, keeping the chosen id selected; a chosen id that is no
+        longer offered leaves nothing selected (the action then asks
+        for a choice) rather than a different item."""
+        old_ids = list(getattr(self, ids_attr))
+        idx = popup.indexOfSelectedItem()
+        chosen = old_ids[idx] if 0 <= idx < len(old_ids) else None
+        titles = [t for _i, t in items]
+        new_ids = [i for i, _t in items]
+        if new_ids == old_ids and titles == list(popup.itemTitles()):
+            return
+        popup.removeAllItems()
+        for t in titles:
+            popup.addItemWithTitle_(t)
+        setattr(self, ids_attr, new_ids)
+        if chosen in new_ids:
+            popup.selectItemAtIndex_(new_ids.index(chosen))
+        elif chosen is not None or not default_first or not new_ids:
+            popup.selectItemAtIndex_(-1)
+
     def scratchpadTabClose_(self, sender):
         view = self.state.views["scratchpad"]
         open_ids = view.get("open_ids") or []
         idx = int(sender.tag())
         if 0 <= idx < len(open_ids):
-            # bind_note/clear flush the outgoing model's dirty tail, so
-            # closing a tab never discards unsaved content.
+            # bind_note/clear save the outgoing model first and retain it
+            # when that save does not settle — closing a tab never
+            # discards unsaved content.
             self.state.close_scratchpad_tab(open_ids[idx])
             self._refresh("scratchpad")
 
@@ -2250,38 +2393,74 @@ class HubController(NSObject):
         return editor is not None and editor.editor_active()
 
     @objc.python_method
+    def scratchpad_capture_target(self):
+        """The PTT-time note binding (D01): the note, the caret as a
+        validated CODE-POINT anchor (a selection anchors at its start —
+        a dictation never replaces selected text), and a hash of the
+        text before the anchor. None when no note is open; an unreadable
+        native range binds with no anchor (delivery then refuses)."""
+        from .. import ids
+        ed = getattr(self, "editor", None)
+        if ed is None or ed.model is None or ed.note_id is None:
+            return None
+        kind, rng = ed.selection()
+        if rng is None:
+            return {"note_id": ed.note_id, "insertion_point": None}
+        anchor = rng[0]
+        return {"note_id": ed.note_id, "insertion_point": anchor,
+                "selection_length": rng[1] - rng[0],
+                "prefix_sha256": ids.sha256_text(ed.model.content[:anchor])}
+
+    @objc.python_method
     def scratchpad_receive(self, text, job):
         """Coordinator command: a note-bound dictation's final text lands
-        at the PTT-time anchor — the note captured at hotkey-down, at
-        the insertion point captured then (the M08 discipline: the
-        anchor promised at request time is the anchor that receives). A
-        different note now open, or the note closed, returns False —
-        the coordinator routes to saved_not_inserted, never an external
-        paste."""
+        at the PTT-time anchor — in the note captured at hotkey-down, and
+        only while the text before the anchor is still exactly what it
+        was (D01: edits after the anchor keep it; an edit before it, a
+        different note, a closed editor or an unreadable anchor remove
+        the authority). Returns the arrival's receipt, or None with
+        ``job["note_refusal"]`` naming why (the coordinator then records
+        a retained result — never an external paste)."""
+        from .. import ids
         from ..notes import ORIGIN_DICTATED
         editor = getattr(self, "editor", None)
-        note_target = (job or {}).get("note_target") or {}
+        target = (job or {}).get("note_target") or {}
+
+        def refuse(reason):
+            if job is not None:
+                job["note_refusal"] = reason
+            return None
         if editor is None or editor.model is None:
-            return False
-        if editor.note_id != note_target.get("note_id"):
-            return False
-        return editor.receive(
+            return refuse("note_closed_during_dictation")
+        if editor.note_id != target.get("note_id"):
+            return refuse("note_changed_during_dictation")
+        anchor = target.get("insertion_point")
+        if anchor is None:
+            return refuse("note_anchor_invalid")
+        content = editor.model.content
+        if anchor > len(content) or target.get("prefix_sha256") != \
+                ids.sha256_text(content[:anchor]):
+            return refuse("note_changed_during_dictation")
+        arrival = editor.receive(
             text, origin=ORIGIN_DICTATED,
-            source_job_id=(job or {}).get("job_id"),
-            at_chars=note_target.get("insertion_point"))
+            source_job_id=(job or {}).get("job_id"), at_chars=anchor)
+        return arrival if arrival is not None else \
+            refuse("note_closed_during_dictation")
 
     @objc.python_method
     def scratchpad_apply_transform(self, result, capture):
         """Note-scope transform accept: revalidate the captured
-        destination — the SAME note, and its captured text still at the
-        captured range (a changed region or another open note is never
-        written) — then replace exactly that region. A chained
-        Transform Output carries the original destination unchanged.
-        Returns (applied, reason)."""
+        destination — the SAME note, and (selection) its captured text
+        still at the captured range or (whole note) the whole note
+        still exactly the captured text — then replace exactly that
+        region. A chained Transform Output carries the original
+        destination unchanged. Returns ``(receipt, reason)``: the
+        arrival receipt when applied to the buffer (durable when it
+        commits), else None and the refusal reason."""
         from ..notes import ORIGIN_TRANSFORM, note_destination_check
         editor = getattr(self, "editor", None)
         if editor is None or editor.model is None:
-            return False, "note_not_open"
+            return None, "note_not_open"
         dest = capture.get("destination")
         if dest is None and capture.get("range") is not None:
             # A capture recorded before destinations existed.
@@ -2289,12 +2468,12 @@ class HubController(NSObject):
                     "range": capture.get("range"),
                     "text": capture.get("source")}
         ok, reason = note_destination_check(
-            dest, editor.note_id, editor.current_content())
+            dest, editor.note_id, editor.model.content)
         if not ok:
-            return False, reason
+            return None, reason
         rng = tuple(dest["range"])
         job = result.job
-        ok = editor.receive(
+        arrival = editor.receive(
             result.output, origin=ORIGIN_TRANSFORM,
             source_job_id=job.parent_job_id if job is not None else None,
             task_key=job.task_key() if job is not None else None,
@@ -2302,7 +2481,17 @@ class HubController(NSObject):
             transform_revision=(job.transform_revision
                                 if job is not None else None),
             replace_range=rng)
-        return (True, None) if ok else (False, "note_not_open")
+        return (arrival, None) if arrival is not None \
+            else (None, "note_not_open")
+
+    @objc.python_method
+    def scratchpad_shutdown(self, timeout=3.0):
+        """Quit: settle the Scratchpad's admitted note work before the
+        store closes (the editor's owned saves, retained buffers)."""
+        editor = getattr(self, "editor", None)
+        if editor is None:
+            return {"drained": True, "unsaved": []}
+        return editor.shutdown(timeout)
 
     @objc.python_method
     def scratchpad_note_created(self, note_id):

@@ -194,6 +194,14 @@ class InsertionService:
         transaction is not pending work: it lapses on its own terms."""
         return self._outstanding > 0
 
+    @property
+    def clipboard_payload_pending(self) -> bool:
+        """True while an earlier clipboard payload is still kept for its
+        late consumer (read-only; nothing is resolved here). Other
+        publications — a recovery copy — must not replace it (M12)."""
+        with self._lock:
+            return self._pending_paste is not None
+
     def add_idle_listener(self, fn: Callable) -> None:
         """``fn()`` runs on the queue thread each time the last
         outstanding operation finishes, whatever its outcome (a
