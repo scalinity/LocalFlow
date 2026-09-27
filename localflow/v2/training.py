@@ -1367,6 +1367,16 @@ class EvidenceCollector:
         # level only — no cycle).
 
         def op(db):
+            # M12-AUDIT-16: the evidence writer admits an observation only
+            # for a revision that is still live in a live note — a late
+            # callback after deletion cannot reopen the note's authority
+            # (checked inside this op, the deletion's own ordering).
+            if db.execute(
+                    "SELECT 1 FROM note_revisions r JOIN notes n ON"
+                    " n.note_id = r.note_id WHERE r.revision_id=? AND"
+                    " r.purged=0", (event.get("revision_id"),)
+            ).fetchone() is None:
+                return 0
             targets = {}
             if event.get("source_job_id"):
                 row = db.execute(
@@ -1418,6 +1428,14 @@ class EvidenceCollector:
                 if env is None:
                     continue
                 notes = list(env.get("notes") or [])
+                # One logical revision event is one observation: a
+                # redelivery of the same (revision, kind) adds nothing
+                # (checked over the envelope's retained window).
+                if any(o.get("note_revision_id") ==
+                       observation["note_revision_id"]
+                       and o.get("kind") == observation["kind"]
+                       for o in notes):
+                    continue
                 notes.append(dict(observation, observed_at_utc=now))
                 env["notes"] = notes[-self._NOTE_OBSERVATIONS_MAX:]
                 td._conn_append_revision(db, ex_id, env, parent_rev)

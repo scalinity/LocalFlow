@@ -426,6 +426,15 @@ class TransformStore:
                     " DESC LIMIT 1").fetchone()
                 if (row[0] if row else "disabled") != "enabled":
                     return None
+            # M12-AUDIT-15: a note-scope candidate publishes only while its
+            # note is live — a late producer cannot recreate a deleted
+            # note's text (checked here, inside the writer op, so a
+            # deletion either precedes it or purges what it wrote).
+            note_id = (source_meta or {}).get("note_id")
+            if note_id and db.execute(
+                    "SELECT 1 FROM notes WHERE note_id=?",
+                    (note_id,)).fetchone() is None:
+                return None
             # M02 deletion barrier: a transform of text whose originating
             # dictation was deleted everywhere (e.g. moved to the
             # Scratchpad) is not evidence OF that job — its artifacts are
