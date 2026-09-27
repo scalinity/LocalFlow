@@ -21,7 +21,9 @@ import json
 import os
 import pathlib
 import queue
+import re
 import sqlite3
+import stat
 import struct
 import threading
 import time
@@ -679,7 +681,106 @@ _CORE_DEPENDENTS = {
     # (re-applied by the repair path); a lost purge_intents table loses
     # only unfinished unlinks, which the orphan sweep still surfaces —
     # neither is refused.
+    # M12 (LOCAL-M12-02): a populated Scratchpad table recreated empty
+    # would present notes without their text (or text without its
+    # images) as intact — refused like the core tables.
+    "notes": ("SELECT 1 FROM note_revisions LIMIT 1",
+              "SELECT 1 FROM note_attachments LIMIT 1"),
+    "note_revisions": ("SELECT 1 FROM notes WHERE current_revision_id"
+                       " IS NOT NULL LIMIT 1",),
+    "note_attachments": ("SELECT 1 FROM note_revisions WHERE purged=0"
+                         " AND content_text LIKE '%](attachment:%'"
+                         " LIMIT 1",),
+    "note_evidence_links": ("SELECT 1 FROM training_revisions WHERE"
+                            " envelope_json LIKE '%\"note_revision_id\"%'"
+                            " LIMIT 1",),
 }
+
+
+# M12-AUDIT-01: a managed Scratchpad payload is ONE plain file name inside
+# the managed notes directory, reached only through a descriptor on that
+# directory with no-follow opens — a persisted row can never widen what is
+# read or unlinked (no separators, no parent references, no symlink hop,
+# nothing but a regular file).
+_MANAGED_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+PATH_REFUSED = "path_refused"
+NONREGULAR_REFUSED = "nonregular_refused"
+
+
+def managed_name_ok(name) -> bool:
+    return isinstance(name, str) and bool(_MANAGED_NAME_RE.match(name))
+
+
+def _managed_dir_fd(directory):
+    return os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+
+
+def read_managed_file(directory, name):
+    """The bytes of regular file ``name`` directly inside ``directory``,
+    or None (refused name, missing, a symlink, a FIFO, a directory …).
+    Nonblocking open, so a FIFO can never stall the reader."""
+    if not managed_name_ok(name):
+        return None
+    try:
+        dfd = _managed_dir_fd(directory)
+    except OSError:
+        return None
+    try:
+        try:
+            fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                         dir_fd=dfd)
+        except OSError:
+            return None
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                return None
+            chunks = []
+            while True:
+                chunk = os.read(fd, 1 << 20)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+            return b"".join(chunks)
+        except OSError:
+            return None
+        finally:
+            os.close(fd)
+    finally:
+        os.close(dfd)
+
+
+def unlink_managed_file(directory, name):
+    """Remove regular file ``name`` directly inside ``directory``.
+    Returns None when it is gone (removed now or already absent), else a
+    content-free code: ``path_refused`` / ``nonregular_refused`` (never
+    retried) or an errno name (retried). ``unlink`` through the
+    directory descriptor never follows a final symlink."""
+    if not managed_name_ok(name):
+        return PATH_REFUSED
+    try:
+        dfd = _managed_dir_fd(directory)
+    except FileNotFoundError:
+        return None
+    except OSError as e:
+        return errno.errorcode.get(e.errno, "OSError")
+    try:
+        try:
+            st = os.stat(name, dir_fd=dfd, follow_symlinks=False)
+        except FileNotFoundError:
+            return None
+        except OSError as e:
+            return errno.errorcode.get(e.errno, "OSError")
+        if not stat.S_ISREG(st.st_mode):
+            return NONREGULAR_REFUSED
+        try:
+            os.unlink(name, dir_fd=dfd)
+        except FileNotFoundError:
+            return None
+        except OSError as e:
+            return errno.errorcode.get(e.errno, "OSError")
+        return None
+    finally:
+        os.close(dfd)
 
 
 class JobDeletedError(RuntimeError):
@@ -1017,7 +1118,10 @@ class Store:
             pass
         # A crash between a purge commit and its unlink leaves the intent
         # pending; finish that deletion work before anything else runs.
-        self._drain_purge_intents()
+        # Only here do Scratchpad staging intents drain too: at open no
+        # attachment write of this process can still be in progress, so
+        # a staging intent left pending names a crash-left payload.
+        self._drain_purge_intents(include_staging=True)
         self._thread = threading.Thread(
             target=self._run, name="localflow-v2-store", daemon=True)
         self._thread.start()
@@ -1237,6 +1341,15 @@ class Store:
                             break
                     except sqlite3.DatabaseError:
                         continue  # the dependent table is gone too
+            # Managed Scratchpad payloads on disk are owned only through
+            # note_attachments: recreating it empty would orphan them.
+            if "note_attachments" in missing_tables \
+                    and "note_attachments" not in corrupt:
+                try:
+                    if any(self.notes_dir.iterdir()):
+                        corrupt.append("note_attachments")
+                except OSError:
+                    pass
             if self.backup_dir is not None:
                 self._backup(label="pre-repair")
             if corrupt:
@@ -2385,6 +2498,11 @@ class Store:
         self._purge_pending = True
         return intent_id
 
+    @property
+    def notes_dir(self) -> pathlib.Path:
+        """The managed Scratchpad attachment directory (M12)."""
+        return self.db_path.parent / "v2-notes"
+
     def _intent_paths(self, root, path):
         if root == "artifacts":
             # A payload the pre-remediation sweep moved to orphans/ is
@@ -2393,15 +2511,23 @@ class Store:
                     self.artifacts_dir / "orphans" / path]
         return [pathlib.Path(path)]
 
-    def _drain_purge_intents(self):
+    def _drain_purge_intents(self, include_staging=False):
         """Writer-thread (or pre-thread) only: attempt every pending purge
         intent. A removed or already-absent file completes its intent; a
         failure keeps it pending with an errno code (content-free) and an
-        attempt count. Never raises."""
+        attempt count. Never raises.
+
+        ``notes`` intents name one managed Scratchpad payload and are
+        removed only through the confined no-follow path (M12-AUDIT-01);
+        a refused name or a non-regular file is never touched and its
+        intent completes with that code recorded. ``attachment_staging``
+        intents belong to an attachment write that may still be running
+        in this process — they drain only at open (``include_staging``),
+        when no such write can be."""
         try:
             rows = self._db.execute(
-                "SELECT intent_id, root, path FROM purge_intents WHERE"
-                " completed_at_utc IS NULL").fetchall()
+                "SELECT intent_id, root, path, reason FROM purge_intents"
+                " WHERE completed_at_utc IS NULL").fetchall()
         except sqlite3.DatabaseError:
             return
         if not rows:
@@ -2409,14 +2535,26 @@ class Store:
         now_iso = ids.now_utc_iso(self.now_fn())
         failed = 0
         try:
-            for intent_id, root, path in rows:
+            for intent_id, root, path, reason in rows:
                 err = None
-                for p in self._intent_paths(root, path):
-                    try:
-                        p.unlink(missing_ok=True)
-                    except OSError as e:
-                        err = errno.errorcode.get(e.errno, "OSError") \
-                            if e.errno else type(e).__name__
+                if root == "notes":
+                    if reason == "attachment_staging" \
+                            and not include_staging:
+                        continue
+                    err = unlink_managed_file(self.notes_dir, path)
+                    if err in (PATH_REFUSED, NONREGULAR_REFUSED):
+                        self._db.execute(
+                            "UPDATE purge_intents SET completed_at_utc=?,"
+                            " attempts=attempts+1, last_error=? WHERE"
+                            " intent_id=?", (now_iso, err, intent_id))
+                        continue
+                else:
+                    for p in self._intent_paths(root, path):
+                        try:
+                            p.unlink(missing_ok=True)
+                        except OSError as e:
+                            err = errno.errorcode.get(e.errno, "OSError") \
+                                if e.errno else type(e).__name__
                 if err is None:
                     self._db.execute(
                         "UPDATE purge_intents SET completed_at_utc=?,"
