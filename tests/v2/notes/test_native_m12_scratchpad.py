@@ -89,7 +89,7 @@ class NativeWorld:
         restore = os.environ.get("LF_NATIVE_RESTORE_PID", "")
         self.front = int(restore) if active and restore.isdigit() \
             else frontmost_pid()
-        self.hw = w.HubWorld(consent=consent)
+        self.hw = w.HubWorld(consent=consent, durations=(1.0,) * 8)
         self.hub, self.h, self.d = self.hw.hub, self.hw.h, self.hw.d
         self.win = self.hub.window
         self.win.setFrameOrigin_(NSMakePoint(-20000, -20000))
@@ -100,6 +100,13 @@ class NativeWorld:
             while not (APP.isActive() and self.win.isKeyWindow()) \
                     and time.monotonic() < deadline:
                 pump(0.05)
+            if not self.win.isKeyWindow():
+                key = APP.keyWindow()
+                print(f"[diag] active={bool(APP.isActive())}"
+                      f" key_window={type(key).__name__ if key else None}"
+                      f" visible_windows={sum(1 for x in APP.windows() if x.isVisible())}"
+                      f" front_is_self={frontmost_pid() == os.getpid()}",
+                      flush=True)
             assert self.win.isKeyWindow(), "the owned window is not key"
         else:
             self.win.orderFrontRegardless()
@@ -190,7 +197,7 @@ def n09_every_control_reachable_at_default_minimum_and_large_font():
 
 @case("LF-M12-N001", "active")
 def n01_click_type_and_ordinary_loop_autosave():
-    nw = NativeWorld()
+    nw = NativeWorld(active=True)
     try:
         hub = nw.hub
         n = nw.note("native base")
@@ -219,7 +226,7 @@ def n01_click_type_and_ordinary_loop_autosave():
 
 @case("LF-M12-N010", "active")
 def n10_reopened_hub_keeps_one_editor_and_timer():
-    nw = NativeWorld()
+    nw = NativeWorld(active=True)
     try:
         hub = nw.hub
         ed = hub.editor
@@ -356,8 +363,9 @@ def n06_picker_selection_and_whole_note_transforms():
         n = nw.note("alpha beta gamma")
         titles = list(hub.scratchpad_transforms.itemTitles())
         assert len(titles) >= 2, titles
-        assert k.popup(hub.scratchpad_transforms, titles[1]) == titles[1]
-        chosen = hub._scratchpad_transform_ids[1]
+        got = k.popup(hub.scratchpad_transforms, titles[-1])
+        assert got == titles[-1], f"picker shows {got!r}, wanted {titles[-1]!r}"
+        chosen = hub._scratchpad_transform_ids[-1]
         k.click(hub.editor.text, k.centre(hub.editor.text))
         hub.editor.text.setSelectedRange_((6, 0))
         k.arrow("right", shift=True, times=4)          # 'beta'
@@ -366,14 +374,16 @@ def n06_picker_selection_and_whole_note_transforms():
         nw.drain()
         st = nw.d._tf_panel._state
         dest = st["capture"]["destination"]
-        assert st["defn"].transform_id == chosen
+        assert st["defn"].transform_id == chosen, \
+            f"ran {st['defn'].transform_id}, chose {chosen}"
         assert (tuple(dest["range"]), dest["scope"], dest["text"]) == \
             ((6, 10), "selection", "beta"), dest
         pk = Driver(nw.d._tf_panel.panel)
         pk.click(nw.d._tf_panel._buttons["panelAccept:"])
         hub.editor.drain()
         nw.drain()
-        assert _latest(nw.hw, n)[0] == "alpha TRANSFORMED OUTPUT gamma"
+        got = _latest(nw.hw, n)[0]
+        assert got == "alpha TRANSFORMED OUTPUT gamma", repr(got)
         # Whole note: a caret only.
         k.click(hub.editor.text, k.centre(hub.editor.text))
         k.arrow("left")
@@ -385,7 +395,8 @@ def n06_picker_selection_and_whole_note_transforms():
         pk.click(nw.d._tf_panel._buttons["panelAccept:"])
         hub.editor.drain()
         nw.drain()
-        assert _latest(nw.hw, n)[0] == "TRANSFORMED OUTPUT"
+        got = _latest(nw.hw, n)[0]
+        assert got == "TRANSFORMED OUTPUT", repr(got)
     finally:
         nw.close()
 
@@ -520,11 +531,33 @@ def n05_another_app_in_front_removes_the_note_binding():
         nw.note("front note")
         k.click(hub.editor.text, k.centre(hub.editor.text))
         assert hub.scratchpad_editor_active()
+        # macOS activation is cooperative: the active app yields to the
+        # owned helper so the helper's own activation request is granted.
+        yield_to = getattr(APP, "yieldActivationToApplicationWithBundle"
+                                "Identifier_", None)
+        if yield_to is not None:
+            yield_to("local.localflow.m12-helper")
         helper = _launch_helper_app()
-        deadline = time.monotonic() + 8.0
-        while APP.isActive() and time.monotonic() < deadline:
+        # The system's own record of the frontmost app decides; then the
+        # pending app-level events are dispatched as NSApp.run would, so
+        # this process's AppKit state (isActive, key window) catches up.
+        from AppKit import NSEventMaskAny
+        deadline = time.monotonic() + 12.0
+        while frontmost_pid() == os.getpid() \
+                and time.monotonic() < deadline:
             pump(0.1)
-        assert not APP.isActive(), "the owned helper app never came front"
+        while APP.isActive() and time.monotonic() < deadline:
+            ev = APP.nextEventMatchingMask_untilDate_inMode_dequeue_(
+                NSEventMaskAny, NSDate.dateWithTimeIntervalSinceNow_(0.05),
+                NSDefaultRunLoopMode, True)
+            if ev is not None:
+                APP.sendEvent_(ev)
+        if APP.isActive():
+            helper.wait(20)
+            log = _launch_helper_app.log
+            detail = log.read_text()[-300:] if log.is_file() else "no log"
+            raise AssertionError("the owned helper app never came front"
+                                 f" ({detail!r})")
         nw.h.press()
         bound = "note_target" in (nw.d._job or {})
         nw.h.release()
@@ -552,17 +585,21 @@ HELPER_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 HELPER_RUN = """#!/bin/zsh
-exec "$1" -c 'import time
+exec "$1" -c 'import time, sys
 from AppKit import NSApplication, NSWindow, NSMakeRect
 app = NSApplication.sharedApplication(); app.setActivationPolicy_(1)
+app.finishLaunching()
 w = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
     NSMakeRect(-18000, -18000, 200, 100), 1, 2, False)
-w.makeKeyAndOrderFront_(None); app.activateIgnoringOtherApps_(True)
+w.makeKeyAndOrderFront_(None)
+act = getattr(app, "activate", None)
+act() if act is not None else app.activateIgnoringOtherApps_(True)
 from Foundation import NSRunLoop, NSDate
 end = time.time() + 12
 while time.time() < end:
     NSRunLoop.currentRunLoop().runUntilDate_(
-        NSDate.dateWithTimeIntervalSinceNow_(0.1))'
+        NSDate.dateWithTimeIntervalSinceNow_(0.1))
+print("helper active at exit:", app.isActive())' > "$2" 2>&1
 """
 
 
@@ -577,8 +614,9 @@ def _launch_helper_app():
     run = app / "Contents" / "MacOS" / "run"
     run.write_text(HELPER_RUN)
     run.chmod(0o755)
+    _launch_helper_app.log = tmp / "helper.log"
     return subprocess.Popen(["open", "-W", "-n", str(app), "--args",
-                             sys.executable])
+                             sys.executable, str(tmp / "helper.log")])
 
 
 # ---------------------------------------------------------------------------
@@ -596,7 +634,8 @@ def production_tree(root):
 
 def main(argv):
     out_json = argv[argv.index("--json") + 1] if "--json" in argv else None
-    only = argv[argv.index("-k") + 1] if "-k" in argv else None
+    only = argv[argv.index("-k") + 1] if "-k" in argv \
+        else (os.environ.get("LF_NATIVE_ONLY") or None)
     results = []
     activated = None
     if LAUNCHED:
@@ -605,7 +644,7 @@ def main(argv):
             pump(0.05)
         activated = bool(APP.isActive())
     for fn in CASES:
-        if only and only not in fn.__name__:
+        if only and not any(o in fn.__name__ for o in only.split(",")):
             continue
         rec = {"id": fn.__name__, "corpus_id": fn.corpus_id,
                "tier": fn.tier}

@@ -47,6 +47,7 @@ INFO_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
 RUN = """#!/bin/zsh
 cd "$1" || exit 90
 export LF_NATIVE_RESTORE_PID="$3"
+export LF_NATIVE_ONLY="$4"
 exec "$1/.venv/bin/python" tests/v2/context/run_isolated.py \\
     tests/v2/notes/test_native_m12_scratchpad.py --activate --json "$2" \\
     > "$2.log" 2>&1
@@ -63,6 +64,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", required=True)
     ap.add_argument("--tree", default=str(ROOT))
+    ap.add_argument("--only", default="",
+                    help="run only the cases whose name contains this")
     args = ap.parse_args()
     out = pathlib.Path(args.json).resolve()
     tree = pathlib.Path(args.tree).resolve()
@@ -74,7 +77,8 @@ def main() -> int:
         run.write_text(RUN)
         run.chmod(0o755)
         subprocess.run(["open", "-W", "-n", str(app), "--args", str(tree),
-                        str(out), str(frontmost_pid())], check=True)
+                        str(out), str(frontmost_pid()), args.only],
+                       check=True)
     if not out.is_file():
         print(f"no result; see {out}.log")
         return 2
