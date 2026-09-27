@@ -413,6 +413,14 @@ class HubWorld:
                 self.mq.drain(self.hub.state, 5)
             except Exception:
                 pass
+            try:
+                # Close the Hub's query admission and wait for what it
+                # admitted (production's quit order), so no late refresh
+                # of this world reaches the next world's main queue.
+                self.hub.state.shutdown()
+                self.hub.state.wait_for_queries(5)
+            except Exception:
+                pass
             self.mq.discard()
         finally:
             self.mq.__exit__(None, None, None)

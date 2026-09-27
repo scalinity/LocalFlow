@@ -2014,15 +2014,17 @@ def v10_reoffer_names_only_its_own_result():
         hw.drain()
         latch = w.Latch("t1_commit_held").install(hw.notes,
                                                   "append_revision")
-        hw.d._tf_panel.panelAccept_(None)          # T1 accepted
-        assert latch.wait()
-        _transform_note(hw, b)                     # T2 now in the panel
-        hw.drain()
-        t2 = hw.d._tf_panel._state["result"]
-        hw.notes.delete_note(a)
-        hw.hub.editor.forget_note(a)               # T1's arrival discarded
-        latch.release()
-        latch.remove()
+        try:
+            hw.d._tf_panel.panelAccept_(None)      # T1 accepted
+            assert latch.wait()
+            _transform_note(hw, b)                 # T2 now in the panel
+            hw.drain()
+            t2 = hw.d._tf_panel._state["result"]
+            hw.notes.delete_note(a)
+            hw.hub.editor.forget_note(a)           # T1's arrival discarded
+        finally:
+            latch.release()      # never leave a held save behind
+            latch.remove()
         hw.settle_notes()
         hw.drain()
         panel = hw.d._tf_panel
