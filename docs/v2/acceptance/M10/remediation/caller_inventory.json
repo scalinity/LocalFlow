@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "milestone": "M10",
+  "method": {
+    "base": "9344fa14e2d013b5c9befef88663fcd03d3c6ef1 (pre-edit; the searches first ran in the session before any production edit and are regenerated here on the base tree)",
+    "commands": [
+      "rg -c 'WritingProfile|StyleRule|StyleRuleStore|SnippetSnapshot|SnippetStore|SkillRegistry' localflow scripts tests docs/v2",
+      "rg -c 'hubEffectiveProfile|hubSetNextJobMode|hubPreviewPhrase|hubSnippetCollisionPreview' localflow scripts tests docs/v2",
+      "rg -c '_m10_|_finalized_policy|attachment_plan|FileTagResolver|list_workspace_files' localflow scripts tests docs/v2",
+      "rg -c 'Snippet|grammar_snippets|grammar_file_tags|auto_apply|allow_rewrite' localflow scripts tests docs/v2"
+    ],
+    "note": "Counts per file (occurrence lines). The remediation suite files are excluded (they postdate the base)."
+  },
+  "base_occurrences": {
+    "WritingProfile|StyleRule|StyleRuleStore|SnippetSnapshot|SnippetStore|SkillRegistry": {
+      "docs/v2/acceptance/M05/results.json": 1,
+      "docs/v2/acceptance/M10/results.json": 2,
+      "docs/v2/contracts/profiles.md": 2,
+      "docs/v2/contracts/store.md": 2,
+      "docs/v2/contracts/vocabulary.md": 1,
+      "docs/v2/handoffs/M10.md": 1,
+      "localflow/app.py": 7,
+      "localflow/v2/developer/skills.py": 1,
+      "localflow/v2/normalize/policy.py": 1,
+      "localflow/v2/profiles.py": 8,
+      "localflow/v2/profiles_store.py": 8,
+      "localflow/v2/snippets.py": 3,
+      "localflow/v2/snippets_store.py": 1,
+      "localflow/v2/ui/state.py": 1,
+      "scripts/v2/benchmark_m10.py": 5,
+      "scripts/v2/m05_remediation_repro.py": 2,
+      "tests/v2/developer/test_developer_resolution.py": 1,
+      "tests/v2/developer/test_skills.py": 4,
+      "tests/v2/normalization/test_m04_remediation.py": 2,
+      "tests/v2/profiles/test_snippets.py": 18,
+      "tests/v2/profiles/test_style_resolution.py": 5,
+      "tests/v2/vocabulary/m05_corpus_runner.py": 4,
+      "tests/v2/vocabulary/test_m05_remediation.py": 3
+    },
+    "hubEffectiveProfile|hubSetNextJobMode|hubPreviewPhrase|hubSnippetCollisionPreview": {
+      "docs/v2/acceptance/M05/remediation/review_round.json": 1,
+      "docs/v2/acceptance/M05/remediation/review_round_probes/p14_hub_preview_scope.py": 4,
+      "docs/v2/acceptance/M10/results.json": 1,
+      "docs/v2/contracts/hub.md": 2,
+      "docs/v2/contracts/profiles.md": 1,
+      "docs/v2/contracts/vocabulary.md": 1,
+      "docs/v2/handoffs/M10.md": 3,
+      "localflow/app.py": 4,
+      "localflow/v2/ui/hub.py": 3,
+      "localflow/v2/ui/state.py": 1,
+      "tests/v2/normalization/test_m04_remediation_app.py": 3,
+      "tests/v2/normalization/test_m04_review_round.py": 1,
+      "tests/v2/profiles/test_profiles_pipeline.py": 4,
+      "tests/v2/ui/test_hub_shell.py": 1,
+      "tests/v2/vocabulary/test_m05_review_round.py": 1
+    },
+    "_m10_|_finalized_policy|attachment_plan|FileTagResolver|list_workspace_files": {
+      "docs/v2/acceptance/M04/remediation/repro_base_1c9d981.json": 1,
+      "docs/v2/acceptance/M04/remediation/repro_first_pass_d31245f.json": 1,
+      "docs/v2/acceptance/M04/remediation/repro_repaired_4ef219c.json": 1,
+      "docs/v2/acceptance/M10/results.json": 3,
+      "docs/v2/contracts/context.md": 1,
+      "docs/v2/contracts/profiles.md": 2,
+      "docs/v2/handoffs/M04.md": 1,
+      "docs/v2/handoffs/M10.md": 4,
+      "localflow/app.py": 26,
+      "localflow/v2/developer/file_tags.py": 3,
+      "localflow/v2/developer/surfaces.py": 1,
+      "scripts/v2/benchmark_m06.py": 3,
+      "scripts/v2/benchmark_m10.py": 3,
+      "scripts/v2/m04_remediation_repro.py": 3,
+      "scripts/v2/m05_remediation_repro.py": 3,
+      "scripts/v2/m06_mutation_check.py": 2,
+      "tests/v2/context/m06_audit_corpus.json": 1,
+      "tests/v2/context/m06_corpus_runner.py": 3,
+      "tests/v2/developer/test_developer_resolution.py": 8,
+      "tests/v2/normalization/test_m04_remediation_app.py": 5,
+      "tests/v2/ui/test_native_m10_panes.py": 3,
+      "tests/v2/vocabulary/test_m05_remediation_app.py": 6
+    },
+    "Snippet|grammar_snippets|grammar_file_tags|auto_apply|allow_rewrite": {
+      "docs/v2/LOCALFLOW_V2_SPEC.md": 5,
+      "docs/v2/VERIFICATION.html": 1,
+      "docs/v2/acceptance/M05/remediation/corpus_base_267d1c2.json": 3,
+      "docs/v2/acceptance/M05/remediation/corpus_final_4adda7d.json": 3,
+      "docs/v2/acceptance/M05/remediation/corpus_first_pass_a164456.json": 3,
+      "docs/v2/acceptance/M10/results.json": 4,
+      "docs/v2/contracts/INDEX.md": 1,
+      "docs/v2/contracts/hub.md": 3,
+      "docs/v2/contracts/normalization.md": 2,
+      "docs/v2/contracts/profiles.md": 8,
+      "docs/v2/contracts/store.md": 1,
+      "docs/v2/contracts/transforms.md": 2,
+      "docs/v2/handoffs/M09.md": 2,
+      "docs/v2/handoffs/M10.md": 4,
+      "docs/v2/handoffs/M11.md": 2,
+      "localflow/app.py": 8,
+      "localflow/v2/normalize/policy.py": 1,
+      "localflow/v2/normalize/syntax.py": 4,
+      "localflow/v2/profile.py": 1,
+      "localflow/v2/profiles.py": 2,
+      "localflow/v2/snippets.py": 19,
+      "localflow/v2/snippets_store.py": 20,
+      "localflow/v2/store.py": 2,
+      "localflow/v2/transforms/definitions.py": 7,
+      "localflow/v2/transforms_store.py": 10,
+      "localflow/v2/ui/hub.py": 10,
+      "localflow/v2/ui/state.py": 3,
+      "scripts/v2/benchmark_m09.py": 1,
+      "scripts/v2/benchmark_m10.py": 3,
+      "tests/v2/developer/test_developer_resolution.py": 2,
+      "tests/v2/fidelity/test_cleanup_pipeline.py": 1,
+      "tests/v2/lifecycle/test_m03_review_round.py": 1,
+      "tests/v2/normalization/test_m04_remediation.py": 3,
+      "tests/v2/notes/test_note_store.py": 1,
+      "tests/v2/personalization/test_learning.py": 1,
+      "tests/v2/profiles/test_profiles_pipeline.py": 1,
+      "tests/v2/profiles/test_snippets.py": 22,
+      "tests/v2/profiles/test_style_resolution.py": 5,
+      "tests/v2/transforms/test_transform_definitions.py": 19,
+      "tests/v2/transforms/test_transform_pipeline.py": 9,
+      "tests/v2/transforms/test_transform_remediation.py": 2,
+      "tests/v2/transforms/test_transform_remediation_native.py": 2,
+      "tests/v2/ui/test_hub_shell.py": 4,
+      "tests/v2/ui/test_native_m10_panes.py": 1,
+      "tests/v2/vocabulary/m05_audit_corpus.json": 2,
+      "tests/v2/vocabulary/m05_corpus_runner.py": 6
+    }
+  },
+  "interface_changes": [
+    {
+      "interface": "developer.skills: discover_detailed() and fingerprint() added; discover() kept as the records of discover_detailed; SkillRegistry sealed, conflicts exported as fresh lists",
+      "findings": [
+        "M10-AUDIT-01",
+        "M10-AUDIT-08",
+        "M10-AUDIT-09",
+        "M10-AUDIT-10",
+        "M10-AUDIT-17",
+        "M10-AUDIT-22",
+        "M10-REVIEW-R07",
+        "M10-REVIEW-R08"
+      ],
+      "callers_moved": [
+        "localflow/app.py (_m10_global_discovery, _m10_workspace_discovery, _m10_skill_records, _finalized_policy)",
+        "localflow/v2/training.py (on_writing_profile reads to_json)",
+        "scripts/v2/benchmark_m10.py"
+      ],
+      "compatibility_tests": [
+        "tests/v2/developer/test_skills.py (conflicts shape)",
+        "tests/v2/developer/test_developer_resolution.py",
+        "tests/v2/profiles/test_profiles_pipeline.py"
+      ]
+    },
+    {
+      "interface": "developer.file_tags: list_workspace_files_bounded() -> ListingResult; list_workspace_files() kept as its names; FileTagResolver(complete=, listing_reason=) and status 'incomplete'; resolve() decides over the complete candidate set",
+      "findings": [
+        "M10-AUDIT-16",
+        "M10-AUDIT-22",
+        "M10-REVIEW-R03"
+      ],
+      "callers_moved": [
+        "localflow/app.py (_m10_finalize_upgrade)",
+        "localflow/v2/normalize/syntax.py (grammar_file_tags reads res.status)",
+        "localflow/v2/training.py (file_references.listing)",
+        "scripts/v2/benchmark_m10.py"
+      ],
+      "compatibility_tests": [
+        "tests/v2/developer/test_developer_resolution.py",
+        "tests/v2/profiles/test_profiles_pipeline.py"
+      ]
+    },
+    {
+      "interface": "config.developer_policy(cfg) -> (DeveloperPolicy, problems): validated path lists and listing Boolean",
+      "findings": [
+        "M10-AUDIT-07",
+        "M10-REVIEW-R08"
+      ],
+      "callers_moved": [
+        "localflow/app.py (configure keeps _skill_manifest_paths, _workspace_skill_dirs, _dev_listing attribute names that tests assign)"
+      ],
+      "compatibility_tests": [
+        "tests/v2/profiles/test_profiles_pipeline.py",
+        "tests/v2/context/m06_corpus_runner.py (sets _skill_manifest_paths)"
+      ]
+    },
+    {
+      "interface": "profiles_store / snippets_store: writer-authoritative update/delete/set_enabled with expected_revision; typed NotFoundError, StaleRevisionError, OutcomeUnknownError; add with a pre-allocated id (already_applied); trigger fold by str.lower",
+      "findings": [
+        "M10-AUDIT-03",
+        "M10-AUDIT-04",
+        "M10-AUDIT-05",
+        "M10-AUDIT-06",
+        "M10-AUDIT-21",
+        "M10-REVIEW-R05",
+        "M10-REVIEW-R06"
+      ],
+      "callers_moved": [
+        "localflow/v2/ui/hub.py (_m10_add/_m10_update/_m10_delete/_m10_toggle, _m10_outcome)",
+        "localflow/v2/ui/state.py",
+        "localflow/app.py (record_hits unchanged)"
+      ],
+      "compatibility_tests": [
+        "tests/v2/profiles/test_style_resolution.py",
+        "tests/v2/profiles/test_snippets.py",
+        "tests/v2/ui/test_hub_shell.py"
+      ]
+    },
+    {
+      "interface": "profiles: StyleRule strict Booleans and profile_name admission; canonical scope comparison via vocabulary.canonical_scope_value; WritingProfile.equal_authority_rule_ids and profile_name_source",
+      "findings": [
+        "M10-AUDIT-02",
+        "M10-AUDIT-06",
+        "M10-AUDIT-29",
+        "M10-AUDIT-30"
+      ],
+      "callers_moved": [
+        "localflow/app.py (hubEffectiveProfile, _set_mode_menu)",
+        "localflow/v2/training.py (profile block)",
+        "localflow/v2/ui/hub.py (Styles pane tie disclosure)"
+      ],
+      "compatibility_tests": [
+        "tests/v2/profiles/test_style_resolution.py",
+        "tests/v2/vocabulary/test_m05_remediation.py (canonical comparator)"
+      ]
+    },
+    {
+      "interface": "snippets: SnippetSnapshot sealed with detached exports; preview_collisions(candidate, snippets, *, policy, vocabulary=None, selected_id=None) derived from the engine; applied_definition() for provenance",
+      "findings": [
+        "M10-AUDIT-17",
+        "M10-AUDIT-18",
+        "M10-AUDIT-23",
+        "M10-REVIEW-R06"
+      ],
+      "callers_moved": [
+        "localflow/app.py (hubSnippetCollisionPreview, _preview_snippet_snapshot)",
+        "localflow/v2/training.py (_retain_snippet_definitions)",
+        "localflow/v2/ui/state.py (conflicts_json into view data)"
+      ],
+      "compatibility_tests": [
+        "tests/v2/profiles/test_snippets.py (preview expectations)",
+        "tests/v2/profiles/test_profiles_pipeline.py (collision expectations)",
+        "tests/v2/normalization/test_m04_remediation_app.py (CALLERS inventory lists preview_collisions as a preview-only normalize caller)"
+      ]
+    },
+    {
+      "interface": "normalize: grammar_snippets connected triggers, core spans, hard written and spoken slot delimiters; grammar_file_tags connected command and owned reference span; engine MatchHost.hard_break_before",
+      "findings": [
+        "M10-AUDIT-14",
+        "M10-AUDIT-15",
+        "M10-REVIEW-R02"
+      ],
+      "callers_moved": [],
+      "compatibility_tests": [
+        "tests/v2/normalization/* (M04 suites)",
+        "tests/v2/profiles/test_snippets.py",
+        "tests/v2/vocabulary/test_vocabulary_matching.py"
+      ]
+    },
+    {
+      "interface": "app coordinator: _take_next_job_mode at admission (job m10_override; double-tap gesture carry); _m10_freeze(dest, override=); _m10_degraded; _finalized_policy pure with registry_out (name kept: the M06 runner patches it); hubPreviewPhrase(text, mode=, number_policy=); hubSnippetCollisionPreview(trigger, snippet_id=, content=, kind=, enabled=)",
+      "findings": [
+        "M10-AUDIT-11",
+        "M10-AUDIT-12",
+        "M10-AUDIT-13",
+        "M10-AUDIT-18",
+        "M10-AUDIT-19",
+        "M10-REVIEW-R01"
+      ],
+      "callers_moved": [
+        "localflow/v2/ui/hub.py (Preview passes the editor's mode and number policy; Collisions passes the selected id)",
+        "scripts/v2/m05_remediation_repro.py (patches _m10_freeze; signature compatible)"
+      ],
+      "compatibility_tests": [
+        "tests/v2/context/m06_corpus_runner.py",
+        "tests/v2/vocabulary/test_m05_remediation_app.py",
+        "tests/v2/normalization/test_m04_remediation_app.py",
+        "tests/v2/ui/test_m09_remediation.py"
+      ]
+    },
+    {
+      "interface": "transforms: strict Booleans in TransformDefinition and TransformStore.update_transform; UnavailableTransforms when a job's registry cannot be frozen",
+      "findings": [
+        "M10-AUDIT-06",
+        "M10-REVIEW-R04"
+      ],
+      "callers_moved": [
+        "localflow/app.py (_m10_freeze, _m10_degraded, _set_mode_menu)"
+      ],
+      "compatibility_tests": [
+        "tests/v2/transforms/test_transform_pipeline.py",
+        "tests/v2/transforms/* (M11 suites)"
+      ]
+    },
+    {
+      "interface": "training: profile block (profile_name null for rule-declared names, equal-authority ids, source outcomes, m10_degraded), snippet_definitions artifact, file_references block with listing",
+      "findings": [
+        "M10-AUDIT-23",
+        "M10-AUDIT-24",
+        "M10-AUDIT-30",
+        "M10-REVIEW-R03"
+      ],
+      "callers_moved": [
+        "localflow/app.py (on_writing_profile, on_normalization_result callers)"
+      ],
+      "compatibility_tests": [
+        "tests/v2/training/* (M14 eligibility seam)",
+        "tests/v2/profiles/test_profiles_pipeline.py"
+      ]
+    },
+    {
+      "interface": "Hub: Styles/Snippets editors bound to stable id and revision; field-diff updates; stale toggles refused; deleted rows clear editors; pane frame follows content bounds; Edit menu for key equivalents; key-view loop recalculated",
+      "findings": [
+        "M10-AUDIT-20",
+        "M10-AUDIT-21",
+        "M10-AUDIT-26",
+        "M10-REVIEW-HUB"
+      ],
+      "callers_moved": [
+        "localflow/v2/ui/state.py"
+      ],
+      "compatibility_tests": [
+        "tests/v2/ui/test_hub_shell.py",
+        "tests/v2/ui/test_m09_remediation.py",
+        "tests/v2/ui/test_native_m10_panes.py"
+      ]
+    }
+  ],
+  "prior_mutation_anchors_on_final": {
+    "M05": "19 mutations; every patched module attribute exists",
+    "M06": "20 edits, each matches exactly once",
+    "M08": "24 edits, each matches exactly once except LF-M08-MUT-18 (declared replace_all, matches twice; insertion/service.py unchanged by M10)",
+    "M09": "30 edits, --check-edits ok"
+  }
+}

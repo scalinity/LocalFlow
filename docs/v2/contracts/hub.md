@@ -37,6 +37,23 @@ live as of M13, the refusal check uses any unregistered name).
   state the services cannot see); the M10/M11/M12 stores ride the
   spec as `styles_service`/`snippets_service`/`transforms_service`/
   `notes_service` (the training_service pattern).
+- **Styles and Snippets editors (M10):** an action acts on the SELECTED
+  item as rendered — its editor binding (stable id, revision and the
+  form it was filled with) when the editor was filled from it, else the
+  rendered row, never an index. Update writes only the fields changed
+  since the fill and the store validates the merge against the row as
+  it is now; Enable/Disable sends the rendered row's revision and a
+  stale one is refused; Add carries a pre-allocated id so repeating it
+  after an unknown outcome confirms or performs the write once. A
+  refresh clears the editor of a vanished row, refills an unedited one,
+  flags an edited one whose row changed elsewhere, and silently rebinds
+  one whose row already holds exactly what is typed. Status lines name
+  the button pressed and the outcome class (unknown after admission,
+  gone, stale, refused); an unknown Enable/Disable points at the
+  reloaded row rather than inviting a flip back. Each pane fills the
+  content area and follows it on resize; the window derives its
+  key-view loop from the views it shows (Tab/Shift-Tab), and a minimal
+  Edit menu carries the text key equivalents for an accessory app.
   M12 adds the note commands `hubNoteDeleted`, `hubExportNote`,
   `hubSaveHistoryRow` and `quickOpenScratchpad_` (the quick-open
   action, behind the same focus-steal guard as Open Hub with the

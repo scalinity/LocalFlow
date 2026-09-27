@@ -418,6 +418,14 @@ differing outputs at one layer still reject as `ambiguous_same_span`.
 Generated output spans (snippet expansions, resolved filenames) carry
 separate normalized-coordinate protection into cleanup
 (`snippets.protected_output_spans`).
+The two M10 grammars are exempt from the engine's barrier net and own
+their boundaries: a snippet trigger and "attach file" must be
+connected, edits cover token cores (a sentence's period stays
+outside), and a snippet's slot continuation stops at a hard delimiter
+— written (`MatchHost.hard_break_before`: a line break or edge
+punctuation other than a comma) or spoken as a structure/symbol
+command those grammars would convert, under their own switches and
+noun guards. A file reference stops at any punctuation or line break.
 
 ## M05 remediation (2026-09-25): layer-5 vocabulary and skill provenance
 

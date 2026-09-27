@@ -195,10 +195,18 @@ beside `on_hint_set`, after the finalize re-resolution — writes the
 frozen skill registry as a lease-governed `skill_registry` artifact
 (names/paths are local configuration, never envelope content) and
 fills the envelope's `profile` block (mode, effective mode, source +
-rule id, category, profile name, number policy, style revision,
-fallback reason, skill-registry revision/counts/conflicts, stale-
-workspace flag — content-free). The normalization block gains
-`snippets` (registry revision, expansion count, rule ids) so generated
+rule id, category, number policy, style revision, equal-authority rule
+ids, fallback reason, skill-registry revision/counts/conflicts, stale-
+workspace flag, each manifest source's outcome, the degraded-freeze
+marker — content-free). A built-in category profile name stays; a
+rule-declared profile name is private configuration: `profile_name` is
+null with `profile_name_source: "rule"` and the opaque rule id. The
+normalization block gains `snippets` (registry revision, expansion
+count, rule ids and a reference to the governed `snippet_definitions`
+artifact — the exact definitions applied, from the job's frozen
+snapshot, or an explicit `not_captured` reason) and `file_references`
+(count, method, `attachment_created: false` with its reason, and
+whether the listing behind the resolution was complete), so generated
 text is distinguishable from acoustic speech in every export;
 snippet-expanded examples keep the M09 per-example verbatim listen
 gate (M10-AC05). See `contracts/profiles.md`.

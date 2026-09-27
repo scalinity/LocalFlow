@@ -190,9 +190,15 @@ All six S15 modes are executable. A transform-backed mode resolves
 finds its bound definition opted in and targeting the resolved
 profile; otherwise Clean with the honest `fallback_reason`
 (`transform_auto_apply_disabled:<mode>`,
-`transform_profile_not_targeted:<profile>`,
+`transform_profile_not_targeted:<label>`,
 `transform_not_bound:<mode>` — two auto-applicable custom transforms
-are ambiguous, never guessed).
+are ambiguous, never guessed; `transform_registry_unavailable:<mode>`
+when the job's snapshot could not be frozen, never reported as the
+definition's own setting). The profile label is a built-in category
+name or `declared_profile`: a user-declared profile name never enters
+a reason. `auto_apply` and `enabled` are real Booleans at every
+boundary (definitions and `update_transform`): a truthy string never
+opts a definition in.
 
 ## Store (schema v7, additive; the vocabulary pattern)
 

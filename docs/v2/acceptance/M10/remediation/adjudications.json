@@ -1,120 +1,798 @@
 {
- "schema_version": 1,
- "milestone": "M10",
- "policy_revision": "m10-policy-r1",
- "about": "Explicit adjudications for the M10 audit corpus (tests/v2/profiles/m10_audit_corpus.json, sha256 3cc5a9288f432a45ddf85c0ecaa7b1c1f83c0e550ea774a4a326f5e23780f755, never edited). The corpus marks a case policy-dependent with a non-null expected.policy_adjudication; the runner (tests/v2/profiles/m10_corpus_runner.py) refuses to grade such a case PASS unless it is listed under case_adjudications with a decision defined here, and reports the decision and this policy_revision beside the result. Input bindings record where a driver chooses the utterance for a declaratively stated case, and the contract clause that choice follows. Barrier bindings map a stateful probe's required barrier to the label its driver reports, or state why the barrier is structural in the repaired design; a required barrier with neither is ERROR, never a pass.",
- "decisions": {
-  "D1_equal_authority_rules": {
-   "findings": ["M10-AUDIT-29"],
-   "decision": "Kept: among enabled rules of equal authority (same scope step) the lexically smallest rule_id wins, in every input order. The tie is disclosed, not hidden: WritingProfile.equal_authority_rule_ids names the other rules and the Styles pane shows them. Existing duplicate rules are neither merged nor deleted; admission does not refuse a second rule for the same scope."
+  "schema_version": 1,
+  "milestone": "M10",
+  "policy_revision": "m10-policy-r1",
+  "about": "Explicit adjudications for the M10 audit corpus (tests/v2/profiles/m10_audit_corpus.json, sha256 3cc5a9288f432a45ddf85c0ecaa7b1c1f83c0e550ea774a4a326f5e23780f755, never edited). The corpus marks a case policy-dependent with a non-null expected.policy_adjudication; the runner (tests/v2/profiles/m10_corpus_runner.py) refuses to grade such a case PASS unless it is listed under case_adjudications with a decision defined here, and reports the decision and this policy_revision beside the result. Input bindings record where a driver chooses the utterance for a declaratively stated case, and the contract clause that choice follows. Barrier bindings map a stateful probe's required barrier to the label its driver reports, or state why the barrier is structural in the repaired design; a required barrier with neither is ERROR, never a pass.",
+  "decisions": {
+    "D1_equal_authority_rules": {
+      "findings": [
+        "M10-AUDIT-29"
+      ],
+      "decision": "Kept: among enabled rules of equal authority (same scope step) the lexically smallest rule_id wins, in every input order. The tie is disclosed, not hidden: WritingProfile.equal_authority_rule_ids names the other rules and the Styles pane shows them. Existing duplicate rules are neither merged nor deleted; admission does not refuse a second rule for the same scope."
+    },
+    "D2_profile_name_admission": {
+      "findings": [
+        "M10-AUDIT-02"
+      ],
+      "decision": "profile_name is stripped (the M05 strip-only rule for profile scope) and refused when empty or whitespace-only (AdmissionError empty_profile_name). There is no Unicode normalization and no case folding: the stored name is otherwise exact. The same name on two rules is one profile identity; renaming a rule's display name never changes its profile identity; deleting one rule leaves the others."
+    },
+    "D3_one_shot_override": {
+      "findings": [
+        "M10-AUDIT-13",
+        "M10-AUDIT-32"
+      ],
+      "decision": "Kept: Next Dictation Mode is in-memory and one-shot. The capture that is admitted takes it into job-owned state at admission, including a capture that ends up cancelled or too short (capture-bound consumption). Under hands_free=\"double_tap\" the short first tap of the gesture is not a capture of its own: when the second tap arrives inside the window, the mode that tap took belongs to the hands-free capture it starts (recorded as override_taken with reason double_tap_gesture); a lone short tap whose window expires consumes it. It is never persisted, so a restart starts with no pending mode. An optional-freeze failure after admission keeps the taken mode (AUDIT-13)."
+    },
+    "D4_override_number_policy": {
+      "findings": [
+        "M10-AUDIT-32"
+      ],
+      "decision": "Kept: an explicit override selects the mode only; the number policy is the configured default_number_policy, not the destination rule's, and the profile carries no rule_id. Destination inheritance for overrides would be a contract change and is not made."
+    },
+    "D5_literal_forms": {
+      "findings": [
+        "M10-AUDIT-14"
+      ],
+      "decision": "The recognized literal forms are the M04 double-quoted zone and the literal escape 'write the word(s)/phrase X' (docs/v2/contracts/normalization.md, Literal escape). Both keep a snippet trigger literal. No other paraphrase is claimed as an escape."
+    },
+    "D6_second_pass": {
+      "findings": [
+        "M10-AUDIT-31"
+      ],
+      "decision": "Narrowed text-only idempotence: the coordinator makes exactly one normalization pass per job (pinned by test_m10_remediation c31). A text-only second call to normalize() has no generated-span provenance and may expand a trigger that a previous expansion produced; repeat processing is not a supported API, and the contract says so. Expansion semantics are unchanged."
+    },
+    "D7_written_comma": {
+      "findings": [
+        "M10-AUDIT-14",
+        "M10-AUDIT-32"
+      ],
+      "decision": "Only the spoken word 'comma' separates slots. A written comma between the trigger and the first value is the trigger/value delimiter (the written form of the leading spoken comma); a written comma inside a value stays part of the value verbatim. A hard delimiter ends the slot span, written or spoken: a line break or hard edge punctuation (. ! ? ; : quotes, brackets), or a spoken command the structure/symbol grammars would convert to one ('new line', 'new paragraph', every structure command, 'period', 'question mark', 'open quote', 'close paren' …), decided by those grammars' own profile switches, tables and noun guards ('the period ends' stays slot words). Inline symbols ('hyphen', 'at sign') stay slot words, as their written forms do. Sentence punctuation stays outside the edit."
+    },
+    "D8_slot_content": {
+      "findings": [
+        "M10-AUDIT-14"
+      ],
+      "decision": "Spoken slot content is inserted verbatim: no correction rule applies to slot text, and the template bytes are exact. The whole expansion is a generated span that cleanup must keep verbatim (S17 protection)."
+    },
+    "D9_manifest_freshness": {
+      "findings": [
+        "M10-AUDIT-10"
+      ],
+      "decision": "Strong freshness, not best-effort: the cache key is the fingerprint (device, inode, size, mtime_ns, ctime_ns) of every file actually read plus each configured directory's child name set. utime can restore mtime but not ctime, so an in-place replacement with a preserved mtime still invalidates for the next job. Jobs already captured keep their frozen registry. Residual: forging an unchanged ctime needs the system clock changed, which is outside this threat model."
+    },
+    "D10_listing_budget": {
+      "findings": [
+        "M10-AUDIT-22"
+      ],
+      "decision": "The names-only workspace listing walks at most depth 2 and examines at most LISTING_VISIT_BUDGET = 2000 directory entries across the whole walk, returning at most LISTING_CAP = 500 names. A directory is read lazily, so work stops at the budget and is not only the result count. A cut listing reports truncated=True with reason visit_budget_reached or name_cap. Within a directory the examined entries are sorted before admission; which entries are examined at the budget follows the filesystem's directory order, which is stable for an unchanged tree."
+    },
+    "D11_listing_escape_and_packages": {
+      "findings": [
+        "M10-AUDIT-07",
+        "M10-AUDIT-22"
+      ],
+      "decision": "workspace_skill_dirs entries must be relative, with no '..', absolute or '~' component; otherwise the whole list is disabled with a content-free config problem. An explicitly configured absolute skill_manifest_paths entry is separate, named authority, and the two controls are not interchangeable. A package directory (for example Bundle.app) is an ordinary directory for the names-only listing: its names are listed and its contents are never opened."
+    },
+    "D12_profile_name_privacy": {
+      "findings": [
+        "M10-AUDIT-30"
+      ],
+      "decision": "A user-declared profile name is private configuration, not content-free metadata. The evidence envelope keeps profile_name only for a built-in category profile (profile_name_source 'category'); for a rule-declared name it records profile_name null, profile_name_source 'rule' and the opaque rule_id. The M11 fallback reason uses the label 'declared_profile' and never the name, and events never carry it. The name is not hashed."
+    },
+    "D13_cleanup_worker_failure": {
+      "findings": [
+        "M10-AUDIT-23"
+      ],
+      "decision": "The M03 recovery contract applies unchanged: a cleanup worker failure makes the job recoverable and nothing is inserted. The job's exact expansion is retained on the job and in the normalized_text artifact. An explicit retry runs under the fresh unscoped default (retry_unscoped_default), which carries no snippets, so today's snippet set never re-expands the old audio."
+    },
+    "D15_partial_listing": {
+      "findings": [
+        "M10-AUDIT-16",
+        "M10-AUDIT-22"
+      ],
+      "decision": "A partial listing never establishes uniqueness. A listing is partial when a bound cut it (visit_budget_reached, name_cap) or a directory that exists could not be read (unreadable_directory; a child that vanished or was replaced by a link since it was listed is refused, not missing). Over a partial listing only a spoken full relative path — unique by construction — resolves; a bare name that matches stays literal with a review record (incomplete, listing_incomplete), because an unlisted file may share it. The job's file_listing record, the evidence's file_references.listing and a developer.listing_partial event (counts and reason codes only) say the listing was partial. With the listing switched off, the candidate set is the open document by configuration, not a partial listing."
+    },
+    "D14_builtin_mode": {
+      "findings": [
+        "M10-AUDIT-27"
+      ],
+      "decision": "A built-in transform's mode is fixed by the M11 contract: a built-in carrying a different mode cannot be stored, so the 'mode-mismatched definition' variant is graded on the admission refusal together with the disabled and missing variants' honest fallback reasons."
+    }
   },
-  "D2_profile_name_admission": {
-   "findings": ["M10-AUDIT-02"],
-   "decision": "profile_name is stripped (the M05 strip-only rule for profile scope) and refused when empty or whitespace-only (AdmissionError empty_profile_name). There is no Unicode normalization and no case folding: the stored name is otherwise exact. The same name on two rules is one profile identity; renaming a rule's display name never changes its profile identity; deleting one rule leaves the others."
+  "case_adjudications": {
+    "M10-C010": {
+      "decision": "D1_equal_authority_rules"
+    },
+    "M10-C011": {
+      "decision": "D1_equal_authority_rules"
+    },
+    "M10-C012": {
+      "decision": "D1_equal_authority_rules"
+    },
+    "M10-C013": {
+      "decision": "D1_equal_authority_rules"
+    },
+    "M10-C025": {
+      "decision": "D2_profile_name_admission"
+    },
+    "M10-C034": {
+      "decision": "D3_one_shot_override"
+    },
+    "M10-C042": {
+      "decision": "D4_override_number_policy"
+    },
+    "M10-C080": {
+      "decision": "D5_literal_forms"
+    },
+    "M10-C081": {
+      "decision": "D5_literal_forms"
+    },
+    "M10-C084": {
+      "decision": "D6_second_pass"
+    },
+    "M10-C092": {
+      "decision": "D7_written_comma"
+    },
+    "M10-C097": {
+      "decision": "D8_slot_content"
+    },
+    "M10-C127": {
+      "decision": "D9_manifest_freshness"
+    },
+    "M10-C136": {
+      "decision": "D10_listing_budget"
+    },
+    "M10-C138": {
+      "decision": "D11_listing_escape_and_packages"
+    },
+    "M10-C181": {
+      "decision": "D12_profile_name_privacy"
+    },
+    "M10-C109": {
+      "decision": "D13_cleanup_worker_failure",
+      "why": "Not marked policy-dependent by the corpus; its expectation 'normalized ACK is preserved' is graded as retained on the job and in evidence, because the M03 contract inserts nothing after a cleanup worker failure."
+    },
+    "M10-C030": {
+      "decision": "D3_one_shot_override",
+      "why": "Also graded on the double-tap gesture: the first tap's mode belongs to the hands-free capture; an expired lone tap consumes it."
+    },
+    "M10-C090": {
+      "decision": "D7_written_comma",
+      "why": "Its 'no cross-line/clause consumption' assertion is graded on written and spoken line and sentence boundaries."
+    },
+    "M10-C137": {
+      "decision": "D15_partial_listing",
+      "why": "Its 'partial/missing result is labeled honestly' assertion is graded on the unreadable directory marking the listing partial."
+    },
+    "M10-C214": {
+      "decision": "D15_partial_listing",
+      "why": "Same driver as M10-C137."
+    },
+    "M10-C162": {
+      "decision": "D14_builtin_mode",
+      "why": "Not marked policy-dependent by the corpus; recorded because one of its three variants is graded on admission refusal."
+    }
   },
-  "D3_one_shot_override": {
-   "findings": ["M10-AUDIT-13", "M10-AUDIT-32"],
-   "decision": "Kept: Next Dictation Mode is in-memory and one-shot. The capture that is admitted takes it into job-owned state at admission, including a capture that ends up cancelled or too short (capture-bound consumption). Under hands_free=\"double_tap\" the short first tap of the gesture is not a capture of its own: when the second tap arrives inside the window, the mode that tap took belongs to the hands-free capture it starts (recorded as override_taken with reason double_tap_gesture); a lone short tap whose window expires consumes it. It is never persisted, so a restart starts with no pending mode. An optional-freeze failure after admission keeps the taken mode (AUDIT-13)."
+  "input_bindings": {
+    "M10-C130": "Workspace B's utterance puts each slash in a command position ('... now. Slash beta review then slash global review'): under the accepted M04 rule (docs/v2/contracts/normalization.md, Slash skills) a mid-sentence 'slash' is the ordinary verb and stays literal.",
+    "M10-C208": "Same driver and binding as M10-C130.",
+    "M10-C209": "The utterance uses a counted noun ('twelve retries'): a bare trailing 'twelve' stays a word under both Standard and Technical, so only a counted noun distinguishes the two profiles' number policies.",
+    "M10-C185": "The retried job is given its own training example (as tests/v2/context/m06_corpus_runner.py run_retry does) and its envelope is read by job id.",
+    "M10-C188": "Same driver and binding as M10-C185.",
+    "M10-C215": "Same driver and binding as M10-C185."
   },
-  "D4_override_number_policy": {
-   "findings": ["M10-AUDIT-32"],
-   "decision": "Kept: an explicit override selects the mode only; the number policy is the configured default_number_policy, not the destination rule's, and the profile carries no rule_id. Destination inheritance for overrides would be a contract change and is not made."
+  "barrier_bindings": {
+    "M10-S004": {
+      "both reads complete": "structural: the repaired style patch reads, merges and validates inside its single writer op (AUDIT-03), so there is no separate caller-side read to hold; the probe holds the writer and admits both patches instead",
+      "A writer committed": "first_committed",
+      "B writer admitted": "second_admitted"
+    },
+    "M10-S005": {
+      "update read complete": "structural: the repaired update reads its row inside the writer op (AUDIT-05); the probe admits the update behind the delete instead"
+    },
+    "M10-S006": {
+      "both reads complete": "structural: the repaired snippet patch reads, merges and validates inside its single writer op (AUDIT-04)",
+      "kind=url committed": "first_committed"
+    }
   },
-  "D5_literal_forms": {
-   "findings": ["M10-AUDIT-14"],
-   "decision": "The recognized literal forms are the M04 double-quoted zone and the literal escape 'write the word(s)/phrase X' (docs/v2/contracts/normalization.md, Literal escape). Both keep a snippet trigger literal. No other paraphrase is claimed as an escape."
+  "audit": {
+    "sha": "9344fa14e2d013b5c9befef88663fcd03d3c6ef1",
+    "records": 32,
+    "critical": 1,
+    "high": 14,
+    "medium": 9,
+    "test_gaps": 4,
+    "design_concerns": 4
   },
-  "D6_second_pass": {
-   "findings": ["M10-AUDIT-31"],
-   "decision": "Narrowed text-only idempotence: the coordinator makes exactly one normalization pass per job (pinned by test_m10_remediation c31). A text-only second call to normalize() has no generated-span provenance and may expand a trigger that a previous expansion produced; repeat processing is not a supported API, and the contract says so. Expansion semantics are unchanged."
+  "counts": {
+    "reproduced": 25,
+    "test_gap_only": 3,
+    "narrowed": 1,
+    "design_only": 3,
+    "refuted": 0,
+    "already_fixed": 0,
+    "native_manual_unresolved": 0,
+    "local_findings": 2
   },
-  "D7_written_comma": {
-   "findings": ["M10-AUDIT-14", "M10-AUDIT-32"],
-   "decision": "Only the spoken word 'comma' separates slots. A written comma between the trigger and the first value is the trigger/value delimiter (the written form of the leading spoken comma); a written comma inside a value stays part of the value verbatim. A hard delimiter ends the slot span, written or spoken: a line break or hard edge punctuation (. ! ? ; : quotes, brackets), or a spoken command the structure/symbol grammars would convert to one ('new line', 'new paragraph', every structure command, 'period', 'question mark', 'open quote', 'close paren' …), decided by those grammars' own profile switches, tables and noun guards ('the period ends' stays slot words). Inline symbols ('hyphen', 'at sign') stay slot words, as their written forms do. Sentence punctuation stays outside the edit."
+  "findings": [
+    {
+      "id": "M10-AUDIT-01",
+      "severity": "CRITICAL",
+      "classification": "reproduced",
+      "base": "3 defect cases fail, 1 control passes",
+      "observed_on_base": "a symlinked skill child directory, a symlinked child SKILL.md and a child swapped for a link after listing each loaded the outside canary skill",
+      "repair": [
+        "88aab40 descriptor-relative O_NOFOLLOW discovery; configured path opened as named"
+      ],
+      "corpus": [
+        "M10-C118",
+        "M10-C119",
+        "M10-C120",
+        "M10-C135",
+        "M10-C214"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-02",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "4 defect cases fail, 1 control passes",
+      "observed_on_base": "an equivalent bundle id (case), site origin (host case, trailing slash), padded workspace and a case-variant AI origin each missed the rule",
+      "repair": [
+        "95f7e3d M05 comparator for rule scopes; admission strips; empty profile_name refused (D2)"
+      ],
+      "corpus": [
+        "M10-C014",
+        "M10-C015",
+        "M10-C016",
+        "M10-C017",
+        "M10-C018",
+        "M10-C025"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-03",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "1 defect case fails, 1 control passes",
+      "observed_on_base": "two individually valid style patches committed an invalid category/app-bundle tuple",
+      "repair": [
+        "95f7e3d read, merge, validate and affected-row check in one writer op; expected_revision"
+      ],
+      "corpus": [
+        "M10-C043",
+        "M10-C204"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-04",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "1 defect case fails",
+      "observed_on_base": "a url-kind snippet committed with content 'two words'",
+      "repair": [
+        "95f7e3d writer-authoritative snippet merge and validation"
+      ],
+      "corpus": [
+        "M10-C044",
+        "M10-C206"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-05",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "1 defect case fails",
+      "observed_on_base": "an update racing a delete returned no explicit not-found outcome",
+      "repair": [
+        "95f7e3d affected rows checked in the writer; typed NotFoundError/StaleRevisionError"
+      ],
+      "corpus": [
+        "M10-C045",
+        "M10-C205"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-06",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "4 defect cases fail, 1 control passes",
+      "observed_on_base": "the string 'false' enabled a rule, granted rewriting and stored auto_apply=True; a container enabled a snippet",
+      "repair": [
+        "95f7e3d strict Booleans at the store, Snippet, StyleRule and M11 transform boundaries"
+      ],
+      "corpus": [
+        "M10-C048..C067",
+        "M10-C159..C161"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-07",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "3 defect cases fail, 1 control passes",
+      "observed_on_base": "a string path list scanned character paths including '/'; a string workspace-dir list granted a one-character path authority; the string 'false' enabled the listing",
+      "repair": [
+        "88aab40 config.developer_policy: one immutable validated policy"
+      ],
+      "corpus": [
+        "M10-C121..C125",
+        "M10-C138"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-08",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "2 defect cases fail, 1 control passes",
+      "observed_on_base": "a body horizontal rule made body metadata the skill identity; an unclosed header was accepted",
+      "repair": [
+        "88aab40 bounded leading, closed frontmatter with a supported-field schema"
+      ],
+      "corpus": [
+        "M10-C110",
+        "M10-C111",
+        "M10-C112"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-09",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "4 defect cases fail",
+      "observed_on_base": "null, a scalar, a list of scalars and non-list aliases each escaped discovery as an AttributeError/TypeError",
+      "repair": [
+        "88aab40 JSON shapes validated per source; typed per-source outcomes"
+      ],
+      "corpus": [
+        "M10-C113..C117"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-10",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "2 defect cases fail, 1 control passes",
+      "observed_on_base": "a child manifest edit and a same-mtime JSON replacement never reached the next job",
+      "repair": [
+        "88aab40 fingerprint of every file read (dev, ino, size, mtime, ctime) and listings",
+        "4f089f6 the app's cache keyed on it",
+        "cd06f44 refused sources keyed by what was read (R-07)"
+      ],
+      "corpus": [
+        "M10-C126",
+        "M10-C127",
+        "M10-C128"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-11",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "1 defect case fails",
+      "observed_on_base": "job A reread its manifest after the freeze",
+      "repair": [
+        "4f089f6 global manifests frozen at hotkey-down; workspace records a separate release-time snapshot"
+      ],
+      "corpus": [
+        "M10-C201",
+        "M10-C203"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-12",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "3 defect cases fail, 1 control passes",
+      "observed_on_base": "a deferred or failed widening still added a workspace skill; a builder failure left the registry claiming skills the policy lacked",
+      "repair": [
+        "4f089f6 scope_disposition honoured; candidate built off to the side and committed once; _finalized_policy pure"
+      ],
+      "corpus": [
+        "M10-C210",
+        "M10-C217"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-13",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "2 defect cases fail, 1 control passes",
+      "observed_on_base": "a transform-snapshot fault and a malformed manifest each turned requested Raw into cleanup",
+      "repair": [
+        "4f089f6 override taken into job-owned state at admission; optional parts degrade alone; degraded tuple keeps the override",
+        "cd06f44 the double-tap gesture keeps it (R-01)"
+      ],
+      "corpus": [
+        "M10-C026..C036",
+        "M10-C207",
+        "M10-C218"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-14",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "5 defect cases fail, 2 controls pass",
+      "observed_on_base": "a trigger crossed a period, a newline, CR/CRLF and separators; the sentence period was consumed; a slot swallowed the next line",
+      "repair": [
+        "5af0040 connected triggers, core spans, hard slot delimiters",
+        "cd06f44 spoken hard delimiters end a slot (R-02)"
+      ],
+      "corpus": [
+        "M10-C069..C097"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-15",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "1 defect case fails, 1 control passes",
+      "observed_on_base": "'attach. file alpha dot py' resolved alpha.py across a sentence",
+      "repair": [
+        "5af0040 connected command and owned reference span"
+      ],
+      "corpus": [
+        "M10-C145",
+        "M10-C146",
+        "M10-C147"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-16",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "1 defect case fails, 1 control passes",
+      "observed_on_base": "the open document's basename manufactured uniqueness over a duplicate",
+      "repair": [
+        "88aab40 the complete candidate set decides; the document never breaks a tie",
+        "cd06f44 a partial listing never makes a name unique (R-03, D15)"
+      ],
+      "corpus": [
+        "M10-C139..C143"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-17",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "2 defect cases fail",
+      "observed_on_base": "mutating an export changed the snippet snapshot and the skill registry",
+      "repair": [
+        "95f7e3d/88aab40 sealed snapshots; fresh copies on export"
+      ],
+      "corpus": [
+        "M10-C105",
+        "M10-C202"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-18",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "3 defect cases fail",
+      "observed_on_base": "the preview claimed an ambiguity runtime never has; a disabled dictionary entry created a conflict; an edited snippet collided with itself",
+      "repair": [
+        "95f7e3d preview_collisions derived from the engine; the candidate replaces the selected id",
+        "4f089f6 hubSnippetCollisionPreview on the unscoped runtime registries",
+        "cd06f44 trigger_in_use for a holder the store refuses (R-06)"
+      ],
+      "corpus": [
+        "M10-C098..C103",
+        "M10-C173",
+        "M10-C216"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-19",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "2 defect cases fail",
+      "observed_on_base": "a stale snippet previewed; a global preview resolved a previous workspace's file",
+      "repair": [
+        "4f089f6 explicit preview request: global scope, current snippets, no files, labelled revisions"
+      ],
+      "corpus": [
+        "M10-C174"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-20",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "2 defect cases fail",
+      "observed_on_base": "a stale Styles form overwrote an external edit; a deleted selection kept its editor bound",
+      "repair": [
+        "409c436 editors bound to stable id and revision; field-diff updates; cleared on disappearance",
+        "cd06f44 own committed save rebinds without a false warning"
+      ],
+      "corpus": [
+        "M10-C046",
+        "M10-C047",
+        "M10-C167..C169",
+        "M10-C212"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-21",
+      "severity": "HIGH",
+      "classification": "reproduced",
+      "base": "1 defect case fails",
+      "observed_on_base": "an admitted add that timed out was reported as 'not saved: TimeoutError'",
+      "repair": [
+        "95f7e3d OutcomeUnknownError after admission; idempotent add by pre-allocated id",
+        "409c436 Hub keeps the pending id and says the outcome is unknown",
+        "cd06f44 status names the pressed button; unknown toggles point at the reloaded row"
+      ],
+      "corpus": [
+        "M10-C068",
+        "M10-C170..C172",
+        "M10-C213"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-22",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "3 defect cases fail",
+      "observed_on_base": "discovery materialized 8.4 MB for a small header; the listing visited 5000 entries for 500 names; parse and fingerprint came from different reads",
+      "repair": [
+        "88aab40 bounded reads and lazy enumeration with a visit budget; parse and revision from one read",
+        "cd06f44 an unreadable directory marks the listing partial"
+      ],
+      "corpus": [
+        "M10-C134",
+        "M10-C136",
+        "M10-C137"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-23",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "1 defect case fails",
+      "observed_on_base": "the applied template was neither retained nor declared missing after the snippet was deleted",
+      "repair": [
+        "4f089f6 governed snippet_definitions artifact from the frozen snapshot; explicit not_captured"
+      ],
+      "corpus": [
+        "M10-C108",
+        "M10-C109",
+        "M10-C219",
+        "M10-C220"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-24",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "1 defect case fails",
+      "observed_on_base": "no attachment_created=false outcome existed on the runtime path",
+      "repair": [
+        "4f089f6 file_references outcome on the job, the evidence, an event and the quick menu"
+      ],
+      "corpus": [
+        "M10-C104",
+        "M10-C148",
+        "M10-C149",
+        "M10-C183"
+      ],
+      "remaining": "M10-V003 (real-editor filename fallback)"
+    },
+    {
+      "id": "M10-AUDIT-25",
+      "severity": "TEST GAP",
+      "classification": "test_gap_only",
+      "base": "reproduced on the base benchmark itself: audit25_base_probe.json",
+      "observed_on_base": "the 500-word hit input produced only a symbol edit (no snippet, skill or file-tag work) and a no-op matcher ran to completion with no invalid-work signal",
+      "repair": [
+        "17cabf7 validity-gated benchmark (independent oracles, --noop exits 3, injected-delay witness)",
+        "1e9c6c9 adversarial same-first-word cohort, budgeted (R-09)"
+      ],
+      "corpus": [
+        "M10-C189..C200"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-26",
+      "severity": "TEST GAP",
+      "classification": "reproduced",
+      "base": "native: passive 0/3, active 0/7 on 9344fa1 (app-launched, activation granted)",
+      "observed_on_base": "both panes had a zero frame, so no click reached their controls; no Edit menu for key equivalents; rows could not be selected by click",
+      "repair": [
+        "409c436 pane frame follows the content area; Edit menu installed",
+        "ed5e206 key-view loop (Tab) — found by the native qualification"
+      ],
+      "corpus": [
+        "M10-C175",
+        "M10-C176"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-27",
+      "severity": "TEST GAP",
+      "classification": "test_gap_only",
+      "base": "the owning tests had no stateful seams for these consumers",
+      "observed_on_base": null,
+      "repair": [
+        "767284f, 1032947, a897257, 1e9c6c9 regressions, 220 bound corpus cases and 20 stateful probes with reached barriers"
+      ],
+      "corpus": [
+        "M10-C023",
+        "M10-C032",
+        "M10-C150..C166",
+        "M10-C185..C188"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-28",
+      "severity": "TEST GAP",
+      "classification": "test_gap_only",
+      "base": "no M10-owned omission found: the producer already distinguishes generated from raw text",
+      "observed_on_base": null,
+      "repair": [
+        "1032947 end-to-end eligibility witnesses (generated snippet text never becomes a verified verbatim reference without listened audio)"
+      ],
+      "corpus": [
+        "M10-C165",
+        "M10-C177",
+        "M10-C179",
+        "M10-C184",
+        "M10-C220"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-29",
+      "severity": "DESIGN CONCERN",
+      "classification": "design_only",
+      "decision": "D1_equal_authority_rules",
+      "repair": [
+        "95f7e3d/409c436 tie kept by rule id and disclosed (equal_authority_rule_ids, Styles pane)"
+      ],
+      "corpus": [
+        "M10-C010..C013"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-30",
+      "severity": "DESIGN CONCERN",
+      "classification": "design_only",
+      "decision": "D12_profile_name_privacy",
+      "repair": [
+        "4f089f6 rule-declared profile names left out of the envelope and events; declared_profile label"
+      ],
+      "corpus": [
+        "M10-C025",
+        "M10-C163",
+        "M10-C180..C183"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-31",
+      "severity": "DESIGN CONCERN",
+      "classification": "narrowed",
+      "decision": "D6_second_pass",
+      "repair": [
+        "no behavior change; one pass per job pinned by c31"
+      ],
+      "corpus": [
+        "M10-C084"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "M10-AUDIT-32",
+      "severity": "DESIGN CONCERN",
+      "classification": "design_only",
+      "decision": "D3/D4/D7/D8",
+      "repair": [
+        "documented in contracts/profiles.md; no default changed"
+      ],
+      "corpus": [
+        "M10-C001..C008",
+        "M10-C029",
+        "M10-C030",
+        "M10-C034",
+        "M10-C042",
+        "M10-C085..C094"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "LOCAL-M10-01",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "1 defect case fails",
+      "observed_on_base": "a flow-list aliases line ([a, b]) dropped the whole skill",
+      "repair": [
+        "88aab40 supported alias forms: comma list, flow list, indented block"
+      ],
+      "corpus": [
+        "M10-C110"
+      ],
+      "remaining": null
+    },
+    {
+      "id": "LOCAL-M10-02",
+      "severity": "MEDIUM",
+      "classification": "reproduced",
+      "base": "native n02t fails on 9344fa1 and on the first pass a897257",
+      "observed_on_base": "Tab left focus in the Styles Name field (no next key view; the window never recalculated its key-view loop)",
+      "repair": [
+        "ed5e206 the Hub window recalculates its key-view loop"
+      ],
+      "corpus": [
+        "M10-C175"
+      ],
+      "remaining": null
+    }
+  ],
+  "review": {
+    "frozen_review_sha": "a89725701b05aff62e13fe394d31539242f28dc5",
+    "first_pass_production": "409c436",
+    "reviewer": "fresh-context agent that authored none of the remediation, in its own detached read-only worktree; inputs: audit, corpus, adjudications as claims, contracts, changed-file list",
+    "record": "review_first_pass_a897257.md",
+    "allegations": 9,
+    "confirmed_by_reviewer_reproduction": 8,
+    "static_only": 1,
+    "refuted_hypotheses": 18,
+    "weak_tests_reported": 7,
+    "author_reproduction": "review_regressions_first_pass_a897257.json: every allegation re-run by the author; 11 defect cases fail on the frozen first pass for the reviewer's reason (plus rr02 standard added after), 3 controls pass; R-09 reproduced through the strengthened C198 driver on the first pass",
+    "dispositions": {
+      "R-01": "reproduced, repaired cd06f44",
+      "R-02": "reproduced, repaired cd06f44",
+      "R-03": "reproduced, repaired cd06f44 (D15)",
+      "R-04": "reproduced, repaired cd06f44",
+      "R-05": "reproduced, repaired cd06f44",
+      "R-06": "reproduced, repaired cd06f44",
+      "R-07": "reproduced, repaired cd06f44",
+      "R-08": "reproduced, repaired cd06f44",
+      "R-09": "reproduced (static claim confirmed: one decoy-free occurrence), repaired 1e9c6c9",
+      "unrated (i) own save reported as foreign": "reproduced, repaired cd06f44",
+      "unrated (ii) Update path says Save": "reproduced, repaired cd06f44 (Add and Enable/Disable wording too)"
+    },
+    "weak_tests_repaired": [
+      "C137/C214 partial label",
+      "C216 app preview vs runtime with five contenders and a real seam",
+      "C198 adversarial work",
+      "r13 docstring states containment; outer fault in C027/C218",
+      "C090 line and clause boundaries",
+      "C030 double-tap gesture"
+    ]
   },
-  "D8_slot_content": {
-   "findings": ["M10-AUDIT-14"],
-   "decision": "Spoken slot content is inserted verbatim: no correction rule applies to slot text, and the template bytes are exact. The whole expansion is a generated span that cleanup must keep verbatim (S17 protection)."
-  },
-  "D9_manifest_freshness": {
-   "findings": ["M10-AUDIT-10"],
-   "decision": "Strong freshness, not best-effort: the cache key is the fingerprint (device, inode, size, mtime_ns, ctime_ns) of every file actually read plus each configured directory's child name set. utime can restore mtime but not ctime, so an in-place replacement with a preserved mtime still invalidates for the next job. Jobs already captured keep their frozen registry. Residual: forging an unchanged ctime needs the system clock changed, which is outside this threat model."
-  },
-  "D10_listing_budget": {
-   "findings": ["M10-AUDIT-22"],
-   "decision": "The names-only workspace listing walks at most depth 2 and examines at most LISTING_VISIT_BUDGET = 2000 directory entries across the whole walk, returning at most LISTING_CAP = 500 names. A directory is read lazily, so work stops at the budget and is not only the result count. A cut listing reports truncated=True with reason visit_budget_reached or name_cap. Within a directory the examined entries are sorted before admission; which entries are examined at the budget follows the filesystem's directory order, which is stable for an unchanged tree."
-  },
-  "D11_listing_escape_and_packages": {
-   "findings": ["M10-AUDIT-07", "M10-AUDIT-22"],
-   "decision": "workspace_skill_dirs entries must be relative, with no '..', absolute or '~' component; otherwise the whole list is disabled with a content-free config problem. An explicitly configured absolute skill_manifest_paths entry is separate, named authority, and the two controls are not interchangeable. A package directory (for example Bundle.app) is an ordinary directory for the names-only listing: its names are listed and its contents are never opened."
-  },
-  "D12_profile_name_privacy": {
-   "findings": ["M10-AUDIT-30"],
-   "decision": "A user-declared profile name is private configuration, not content-free metadata. The evidence envelope keeps profile_name only for a built-in category profile (profile_name_source 'category'); for a rule-declared name it records profile_name null, profile_name_source 'rule' and the opaque rule_id. The M11 fallback reason uses the label 'declared_profile' and never the name, and events never carry it. The name is not hashed."
-  },
-  "D13_cleanup_worker_failure": {
-   "findings": ["M10-AUDIT-23"],
-   "decision": "The M03 recovery contract applies unchanged: a cleanup worker failure makes the job recoverable and nothing is inserted. The job's exact expansion is retained on the job and in the normalized_text artifact. An explicit retry runs under the fresh unscoped default (retry_unscoped_default), which carries no snippets, so today's snippet set never re-expands the old audio."
-  },
-  "D15_partial_listing": {
-   "findings": ["M10-AUDIT-16", "M10-AUDIT-22"],
-   "decision": "A partial listing never establishes uniqueness. A listing is partial when a bound cut it (visit_budget_reached, name_cap) or a directory that exists could not be read (unreadable_directory; a child that vanished or was replaced by a link since it was listed is refused, not missing). Over a partial listing only a spoken full relative path — unique by construction — resolves; a bare name that matches stays literal with a review record (incomplete, listing_incomplete), because an unlisted file may share it. The job's file_listing record, the evidence's file_references.listing and a developer.listing_partial event (counts and reason codes only) say the listing was partial. With the listing switched off, the candidate set is the open document by configuration, not a partial listing."
-  },
-  "D14_builtin_mode": {
-   "findings": ["M10-AUDIT-27"],
-   "decision": "A built-in transform's mode is fixed by the M11 contract: a built-in carrying a different mode cannot be stored, so the 'mode-mismatched definition' variant is graded on the admission refusal together with the disabled and missing variants' honest fallback reasons."
+  "records": {
+    "base": "regressions_base_9344fa1.json (54/54 defect FAIL, 16/16 controls pass; 0 ERROR)",
+    "first_pass": "regressions_first_pass_a897257.json (70/70), review_regressions_first_pass_a897257.json (73/84)",
+    "final_suite_on_each_tree": "regressions_base_9344fa1_final_suite.json (19/85: 66 defect fail — 7 of them review cases erroring on first-pass-only interfaces — 0 control fail), regressions_first_pass_a897257_final_suite.json (73/85: exactly the 12 review cases fail), regressions_final.json (85/85)",
+    "corpus": "corpus_base_9344fa1.json (96 PASS / 80 FAIL / 41 ERROR / 3 NOT_RUN; ERRORs are drivers bound to interfaces the base lacks or barriers it cannot reach, never counted as fail-first), corpus_first_pass_a897257_final_drivers.json (212 PASS / 5 FAIL — C030, C090, C137, C198, C214, exactly the review-strengthened cases — / 3 NOT_RUN: records absent on that tree), corpus_final.json (220/220)"
   }
- },
- "case_adjudications": {
-  "M10-C010": {"decision": "D1_equal_authority_rules"},
-  "M10-C011": {"decision": "D1_equal_authority_rules"},
-  "M10-C012": {"decision": "D1_equal_authority_rules"},
-  "M10-C013": {"decision": "D1_equal_authority_rules"},
-  "M10-C025": {"decision": "D2_profile_name_admission"},
-  "M10-C034": {"decision": "D3_one_shot_override"},
-  "M10-C042": {"decision": "D4_override_number_policy"},
-  "M10-C080": {"decision": "D5_literal_forms"},
-  "M10-C081": {"decision": "D5_literal_forms"},
-  "M10-C084": {"decision": "D6_second_pass"},
-  "M10-C092": {"decision": "D7_written_comma"},
-  "M10-C097": {"decision": "D8_slot_content"},
-  "M10-C127": {"decision": "D9_manifest_freshness"},
-  "M10-C136": {"decision": "D10_listing_budget"},
-  "M10-C138": {"decision": "D11_listing_escape_and_packages"},
-  "M10-C181": {"decision": "D12_profile_name_privacy"},
-  "M10-C109": {"decision": "D13_cleanup_worker_failure",
-               "why": "Not marked policy-dependent by the corpus; its expectation 'normalized ACK is preserved' is graded as retained on the job and in evidence, because the M03 contract inserts nothing after a cleanup worker failure."},
-  "M10-C030": {"decision": "D3_one_shot_override",
-               "why": "Also graded on the double-tap gesture: the first tap's mode belongs to the hands-free capture; an expired lone tap consumes it."},
-  "M10-C090": {"decision": "D7_written_comma",
-               "why": "Its 'no cross-line/clause consumption' assertion is graded on written and spoken line and sentence boundaries."},
-  "M10-C137": {"decision": "D15_partial_listing",
-               "why": "Its 'partial/missing result is labeled honestly' assertion is graded on the unreadable directory marking the listing partial."},
-  "M10-C214": {"decision": "D15_partial_listing",
-               "why": "Same driver as M10-C137."},
-  "M10-C162": {"decision": "D14_builtin_mode",
-               "why": "Not marked policy-dependent by the corpus; recorded because one of its three variants is graded on admission refusal."}
- },
- "input_bindings": {
-  "M10-C130": "Workspace B's utterance puts each slash in a command position ('... now. Slash beta review then slash global review'): under the accepted M04 rule (docs/v2/contracts/normalization.md, Slash skills) a mid-sentence 'slash' is the ordinary verb and stays literal.",
-  "M10-C208": "Same driver and binding as M10-C130.",
-  "M10-C209": "The utterance uses a counted noun ('twelve retries'): a bare trailing 'twelve' stays a word under both Standard and Technical, so only a counted noun distinguishes the two profiles' number policies.",
-  "M10-C185": "The retried job is given its own training example (as tests/v2/context/m06_corpus_runner.py run_retry does) and its envelope is read by job id.",
-  "M10-C188": "Same driver and binding as M10-C185.",
-  "M10-C215": "Same driver and binding as M10-C185."
- },
- "barrier_bindings": {
-  "M10-S004": {
-   "both reads complete": "structural: the repaired style patch reads, merges and validates inside its single writer op (AUDIT-03), so there is no separate caller-side read to hold; the probe holds the writer and admits both patches instead",
-   "A writer committed": "first_committed",
-   "B writer admitted": "second_admitted"
-  },
-  "M10-S005": {
-   "update read complete": "structural: the repaired update reads its row inside the writer op (AUDIT-05); the probe admits the update behind the delete instead"
-  },
-  "M10-S006": {
-   "both reads complete": "structural: the repaired snippet patch reads, merges and validates inside its single writer op (AUDIT-04)",
-   "kind=url committed": "first_committed"
-  }
- }
 }
