@@ -211,7 +211,7 @@
       "production": "409c436396f40d0c094a256dfdd77f3b70e6eb36 (identical localflow tree)"
     },
     "final_code_revision": "ed5e20631529e063564b151555215485ec316a53",
-    "final_records": "aaa1f3f (corpus, sweep; adjudications final) and 5fe3605 (regressions, mutations, benchmark); production identical to ed5e206 in both",
+    "final_records": "aaa1f3f (corpus, sweep; adjudications final), 5fe3605 (regressions, mutations), 87602ba (benchmark, committed in 5fe3605), a011ce9 (native); production identical to ed5e206 in all",
     "disposition_counts": {
       "reproduced": 25,
       "test_gap_only": 3,
