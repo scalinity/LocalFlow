@@ -153,8 +153,19 @@ orphan payload files.
   `note_evidence_links` (note↔training-example references with closure
   state — note deletion closes them). All access through `NoteStore`
   over `Store.submit`; the torn-write repair path covers the v8
-  tables. Post-close submits now fail fast (`store is closed`)
-  instead of hanging on the dead writer.
+  tables, and a populated `notes`, `note_revisions` or
+  `note_attachments` table missing at open is corruption (refused
+  after the pre-repair backup, never recreated empty). Post-close
+  submits fail fast (`store is closed`) instead of hanging on the dead
+  writer.
+- Managed note payloads (`Store.notes_dir`, `v2-notes/`) are reached
+  only through `read_managed_file` / `unlink_managed_file`: one plain
+  file name inside the directory, a no-follow descriptor on the
+  directory, regular files only. Their deletion is a `notes`-root purge
+  intent drained after the commit through that confined unlink (a
+  refused name or a non-regular file completes its intent with that
+  code, untouched). `attachment_staging` intents own a payload before
+  its row exists and drain only at open.
 
 ## M14 additions (schema v10; no frozen identity changed)
 

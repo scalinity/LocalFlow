@@ -20,7 +20,10 @@ a counter reset.
   bumped), and re-pastes record `kind='repaste'` activity rows with no
   word counts. Note text NEVER feeds word counts (contracts/
   scratchpad.md's boundary: usage reads jobs; repeated saved versions
-  are revisions of one dictation, never new dictations).
+  are revisions of one dictation, never new dictations). A note-bound
+  dictation's row is written once, when its note revision's receipt
+  settles: `confirmed` only after that revision committed, otherwise
+  `saved_not_inserted`.
 - **Explicit transforms are a separate activity kind.** Selection- and
   note-scope runs record `kind='transform'` facts (task key, path,
   source/output words) at the coordinator's completion seam. A

@@ -176,7 +176,10 @@ while it is unresolved no later clipboard publication, copy offer or
 undo recovery offer may replace it — a later clipboard-method job is
 `saved_not_inserted/clipboard_payload_pending` and stays in History (a
 copy offer is withheld: `offer: withheld_payload_pending`); AX-method
-jobs are unaffected. It resolves when its destination shows the paste
+jobs are unaffected. The service exposes the state read-only
+(`clipboard_payload_pending`): the coordinator's explicit recovery
+copies (History Copy, the transform preview's Copy) publish only while
+it is False and no operation is admitted (contracts/scratchpad.md). It resolves when its destination shows the paste
 landed — `match`, `partial` or `normalized` (the user's original is
 restored first, so the next capture sees it) — when the board moved on
 (a user copy won), when its job was deleted (restored away; its

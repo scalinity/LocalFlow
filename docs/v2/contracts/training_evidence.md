@@ -258,7 +258,12 @@ Entries carry ids/origins/counts with `asr_example: false` and
 TEXT never enters an envelope. No example is ever minted and no
 correctness label is ever granted — repeated saved versions of one
 dictation are revisions, not new dictations (M12-AC05; M13/M14 join
-through `note_evidence_links` + `source_job_id`). Note deletion
+through `note_evidence_links` + `source_job_id`). The writer admits an
+observation only for a live revision of a live note, and records one
+observation per (revision, kind) within the retained window — a late or
+repeated callback adds nothing. A callback failure never rolls back the
+note and is reported (`training.note_capture_failed`); a crash between
+a revision's commit and its callback is not reconciled. Note deletion
 closes the links and appends a final `note_deleted` observation;
 links whose example died elsewhere close as `example_unavailable`.
 See `contracts/scratchpad.md`.

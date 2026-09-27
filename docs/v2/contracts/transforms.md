@@ -220,7 +220,10 @@ candidate retains two children of it: `transform_prompt` (the exact
 rendered prompt) and `transform_decision` (JSON: path, reason,
 validator revision, task key, the full coverage map and the review
 excerpts shown). A note candidate's source artifact carries `note_id`
-and `note_revision_id`. Every one of these artifacts follows the M02
+and `note_revision_id`; it is published only while that note is live
+(checked inside the writer op), and the note's deletion purges the
+candidate's source/output artifacts and their children
+(contracts/scratchpad.md). Every one of these artifacts follows the M02
 deletion barrier: when the originating job was deleted everywhere
 they are written detached (`job_id` NULL — contracts/store.md).
 

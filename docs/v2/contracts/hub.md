@@ -55,9 +55,16 @@ live as of M13, the refusal check uses any unregistered name).
   key-view loop from the views it shows (Tab/Shift-Tab), and a minimal
   Edit menu carries the text key equivalents for an accessory app.
   M12 adds the note commands `hubNoteDeleted`, `hubExportNote`,
-  `hubSaveHistoryRow` and `quickOpenScratchpad_` (the quick-open
+  `hubSaveHistoryRow` (bound to the final text the History detail
+  shows: `expected_sha256`) and `quickOpenScratchpad_` (the quick-open
   action, behind the same focus-steal guard as Open Hub with the
-  deferred intent carried to the settle flush).
+  deferred intent carried to the settle flush, refused once quitting
+  began), and the Scratchpad surface for the coordinator:
+  `scratchpad_capture_target`, `scratchpad_receive` and
+  `scratchpad_apply_transform` (each returning the arrival's receipt),
+  and `scratchpad_shutdown`. Scratchpad actions act on the note the
+  editor shows (contracts/scratchpad.md); `hubCopyText` passes the
+  clipboard ownership guard.
   M13 adds the usage commands `hubUsageInfo`,
   `hubApplyUsageRetention`, `hubDeleteAllUsage` and
   `hubDeleteUsageForJob` (contracts/analytics.md; the Insights view
