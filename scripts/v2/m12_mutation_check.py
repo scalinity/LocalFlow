@@ -85,11 +85,17 @@ EDITS = {
                       "        rng = (0, 0) if dest.get(\"scope\") == \"whole\""
                       " else tuple(dest[\"range\"])\n"
                       "        job = result.job\n")],
+    # Keep the old editor text after a restore: both rebind paths (the
+    # restore's own binding and the refresh's clean-editor rebind).
     "LF-M12-MUT05": [(HUB,
                       "            rebind = self.editor.note_id != wanted or (\n"
                       "                model is not None and not model.dirty\n"
-                      "                and model.revision_id != current_rev)\n",
-                      "            rebind = self.editor.note_id != wanted\n")],
+                      "                and model.revision_id != current_rev\n"
+                      "                and not model.knows(current_rev))\n",
+                      "            rebind = self.editor.note_id != wanted\n"),
+                     (HUB,
+                      "        if restored is not None and self.editor.note_id == note_id:\n"
+                      "            self.editor.bind_note(restored)\n", "")],
     "LF-M12-MUT06": [(NOTES,
                       "            while self._flushing:\n"
                       "                if deadline is None:\n",
