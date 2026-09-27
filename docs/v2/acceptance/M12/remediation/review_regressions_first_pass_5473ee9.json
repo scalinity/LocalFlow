@@ -1,0 +1,213 @@
+{
+ "suite": "tests/v2/notes/test_m12_remediation.py",
+ "suite_sha256": "1ef10fa6d59db0c464fef6098968014fd4f56c19fc450460b559f4746488ea99",
+ "code_root_sha": "5473ee99c789be0d4d919a7c5e0e41a45a0c34eb",
+ "tracked_files_modified": true,
+ "production_tree_modified": false,
+ "localflow_imported_from_root": "review-5473ee9",
+ "python": "3.14.7",
+ "counts": {
+  "PASS": 4,
+  "FAIL": 14
+ },
+ "results": [
+  {
+   "id": "r07a_held_commit_is_not_confirmed",
+   "finding": "M12-AUDIT-07",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.41,
+   "window_epoch": [
+    1790480546.56,
+    1790480546.969
+   ]
+  },
+  {
+   "id": "r07b_failed_commit_is_never_confirmed",
+   "finding": "M12-AUDIT-07",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790480546.969,
+    1790480547.108
+   ]
+  },
+  {
+   "id": "r10_timer_fires_in_the_default_run_loop",
+   "finding": "M12-AUDIT-10",
+   "status": "PASS",
+   "note": "",
+   "seconds": 2.11,
+   "window_epoch": [
+    1790480547.108,
+    1790480549.216
+   ]
+  },
+  {
+   "id": "r11b_add_image_revalidates_after_the_dialog",
+   "finding": "M12-AUDIT-11",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.07,
+   "window_epoch": [
+    1790480549.216,
+    1790480549.284
+   ]
+  },
+  {
+   "id": "v01a_stale_detail_never_rebinds_over_a_committed_arrival",
+   "finding": "REVIEW-01",
+   "status": "FAIL",
+   "note": "the editor rebound to a stale detail",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790480549.284,
+    1790480549.335
+   ]
+  },
+  {
+   "id": "v01b_restore_is_bound_before_the_next_arrival",
+   "finding": "REVIEW-01",
+   "status": "FAIL",
+   "note": "the arrival undid the restore (current 'version two DICT')",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790480549.335,
+    1790480549.385
+   ]
+  },
+  {
+   "id": "v02a_per_word_ambiguity_abstains",
+   "finding": "REVIEW-02",
+   "status": "FAIL",
+   "note": "the surviving typed 'world' was claimed as dictated",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790480549.385,
+    1790480549.385
+   ]
+  },
+  {
+   "id": "v02b_single_edit_fuzz_never_claims_a_typed_word",
+   "finding": "REVIEW-02",
+   "status": "FAIL",
+   "note": "107 surviving spans covered typed words",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790480549.385,
+    1790480549.404
+   ]
+  },
+  {
+   "id": "v03_history_transform_output_is_not_labelled_dictated",
+   "finding": "REVIEW-03",
+   "status": "FAIL",
+   "note": "applied transform output was labelled dictated speech",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790480549.404,
+    1790480549.435
+   ]
+  },
+  {
+   "id": "v04_marker_write_never_blocks_the_main_thread",
+   "finding": "REVIEW-04",
+   "status": "FAIL",
+   "note": "the dictation acknowledgment blocked 1.01s on the store",
+   "seconds": 1.05,
+   "window_epoch": [
+    1790480549.435,
+    1790480550.49
+   ]
+  },
+  {
+   "id": "v05_late_marker_write_never_flags_a_saved_note",
+   "finding": "REVIEW-05",
+   "status": "FAIL",
+   "note": "a late marker write flagged a fully saved note",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790480550.49,
+    1790480550.539
+   ]
+  },
+  {
+   "id": "v06_retried_attachment_id_survives_reopen",
+   "finding": "REVIEW-06",
+   "status": "FAIL",
+   "note": "a committed attachment lost its payload at open",
+   "seconds": 0.11,
+   "window_epoch": [
+    1790480550.539,
+    1790480550.649
+   ]
+  },
+  {
+   "id": "v07_autosave_ticks_do_not_pile_up_threads",
+   "finding": "REVIEW-07",
+   "status": "FAIL",
+   "note": "10 save threads for one note",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790480550.649,
+    1790480550.694
+   ]
+  },
+  {
+   "id": "v08_restore_that_never_started_is_not_pending",
+   "finding": "REVIEW-08",
+   "status": "FAIL",
+   "note": "a restore whose write never started was reported pending",
+   "seconds": 0.15,
+   "window_epoch": [
+    1790480550.694,
+    1790480550.84
+   ]
+  },
+  {
+   "id": "v09_tab_chip_closes_the_note_it_shows",
+   "finding": "REVIEW-09",
+   "status": "FAIL",
+   "note": "the chip showing one note closed another",
+   "seconds": 0.12,
+   "window_epoch": [
+    1790480550.84,
+    1790480550.956
+   ]
+  },
+  {
+   "id": "v10_reoffer_names_only_its_own_result",
+   "finding": "REVIEW-10",
+   "status": "FAIL",
+   "note": "T1's refusal relabelled T2's preview",
+   "seconds": 20.36,
+   "window_epoch": [
+    1790480550.956,
+    1790480571.315
+   ]
+  },
+  {
+   "id": "v11_switch_does_not_block_the_main_thread",
+   "finding": "REVIEW-11",
+   "status": "FAIL",
+   "note": "switching blocked the main thread 1.50s",
+   "seconds": 1.55,
+   "window_epoch": [
+    1790480571.315,
+    1790480572.865
+   ]
+  },
+  {
+   "id": "v13_suites_refuse_to_run_unisolated",
+   "finding": "REVIEW-13",
+   "status": "FAIL",
+   "note": "the M12 world loaded without the desktop isolation",
+   "seconds": 0.15,
+   "window_epoch": [
+    1790480572.865,
+    1790480573.016
+   ]
+  }
+ ]
+}

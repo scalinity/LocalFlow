@@ -32,6 +32,15 @@ for p in (ROOT, HERE.parent, HERE.parents[1] / "ui",
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
+import AppKit  # noqa: E402
+
+# Everything that loads this world drives the real Hub and coordinator:
+# refuse to run without the desktop isolation (a private pasteboard, no
+# Accessibility, no posted events) instead of trusting every caller.
+if type(AppKit.NSPasteboard).__name__ != "_PasteboardClass":
+    sys.exit("m12_world: run under tests/v2/context/run_isolated.py"
+             " (the desktop-isolating runner); refusing to start")
+
 from localflow.v2 import store as store_mod  # noqa: E402
 from localflow.v2 import notes as notes_mod  # noqa: E402
 
@@ -204,7 +213,7 @@ class Latch:
     for ``release()``; ``fault`` (an exception) is raised instead of
     calling through when set before release."""
 
-    def __init__(self, name, times=1, on_reach=None):
+    def __init__(self, name, times=1, on_reach=None, off_main=False):
         self.name = name
         self.reached = threading.Event()
         self._go = threading.Event()
@@ -215,6 +224,9 @@ class Latch:
         # Run the interleaving INSIDE the seam on the reaching thread
         # (deterministic, no second thread): the seam proceeds after it.
         self.on_reach = on_reach
+        # Hold only calls made off the main thread (a query or worker
+        # thread), letting main-thread calls of the same method through.
+        self.off_main = off_main
         if on_reach is not None:
             self._go.set()
 
@@ -232,6 +244,9 @@ class Latch:
         latch = self
 
         def wrapped(*a, **kw):
+            if latch.off_main and \
+                    threading.current_thread() is threading.main_thread():
+                return real(*a, **kw)
             latch.calls += 1
             held = latch.calls <= latch.times
             if held and not after:
@@ -342,12 +357,14 @@ class HubWorld:
     through the production shutdown seam when it exists, then drains
     queries, then closes the store — the intended lifecycle order."""
 
-    def __init__(self, consent=False, select_scratchpad=True):
+    def __init__(self, consent=False, select_scratchpad=True,
+                 durations=(1.0, 1.0, 1.0, 1.0)):
         from test_lifecycle import Harness
         import test_scratchpad_hub as tsh
         self.tsh = tsh
         self.mq = MainQueue().__enter__()
-        self.h = Harness(durations=[1.0], supervisor=tsh.TFSupervisor())
+        self.h = Harness(durations=list(durations),
+                         supervisor=tsh.TFSupervisor())
         self.d = self.h.d
         if consent:
             self.d.consent.set("enabled", note="test")

@@ -409,8 +409,12 @@ def main(argv):
               " next note's content")
         # ---- dictated arrival: ack / commit / confirmation ------------------
         d = ns2.create_note("dictation base")
-        dm = NotesEditorModel(d["note_id"], d["revision"], "dictation base",
-                              on_dirty=lambda _n: None)
+        dm = NotesEditorModel(d["note_id"], d["revision"], "dictation base")
+        # The acknowledgment includes what the editor really does on a
+        # clean note: queue the unsaved-tail marker write (conditional,
+        # non-blocking) — exactly ScratchpadEditor._mark_dirty.
+        dm.on_dirty = lambda nid: ns2.mark_dirty(
+            nid, only_if=lambda: dm.dirty, wait=False)
         acks, commits, confirms, good = [], [], [], True
         for i in range(runs):
             word = f"spoken{i}"

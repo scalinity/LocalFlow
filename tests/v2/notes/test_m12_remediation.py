@@ -715,6 +715,7 @@ def r07a_held_commit_is_not_confirmed():
         try:
             fn(*args)
             assert latch.wait(), "the note save never reached persistence"
+            hw.mq.flush()     # anything posted to the main thread runs
             state = _job(hw, job["job_id"]).get("state")
             usage = _usage_outcome(hw, job["job_id"])
             assert state != "insertion_confirmed", \
@@ -726,6 +727,9 @@ def r07a_held_commit_is_not_confirmed():
             latch.remove()
             hw.settle_notes()
             hw.drain()
+        assert _job(hw, job["job_id"]).get("state") == \
+            "insertion_confirmed", "never confirmed after the commit"
+        assert _usage_outcome(hw, job["job_id"]) == ["confirmed"]
 
 
 @case("M12-AUDIT-07")
@@ -742,12 +746,21 @@ def r07b_failed_commit_is_never_confirmed():
             t.name == "localflow-notes-autosave" and t.is_alive()
             for t in threading.enumerate()), 5)
         latch.remove()
-        _fail_append(hw.notes)  # retries fail too: the outcome is failure
+        st = _fail_append(hw.notes)  # retries fail too while armed
         hw.settle_notes(2.0)
         hw.drain()
         state = _job(hw, job["job_id"]).get("state")
         assert state != "insertion_confirmed", \
             "a failed note save is recorded as a confirmed insertion"
+        # Not lost either: the store recovers, the kept arrival commits,
+        # and only then is the dictation confirmed.
+        st["armed"] = False
+        hw.settle_notes()
+        hw.drain()
+        assert job["final_text"] in (_latest(hw, n).get("content") or ""), \
+            "the failed arrival was dropped instead of kept for retry"
+        assert _job(hw, job["job_id"]).get("state") == \
+            "insertion_confirmed"
 
 
 @case("M12-AUDIT-07")
@@ -973,16 +986,18 @@ def r10_timer_fires_in_the_default_run_loop():
         hw.open_note(n)
         hw.type("timer base TYPED_TIMER_TAIL")
         deadline = time.monotonic() + 4.0
+        fired = False
         while time.monotonic() < deadline:
             NSRunLoop.currentRunLoop().runMode_beforeDate_(
                 NSDefaultRunLoopMode,
                 NSDate.dateWithTimeIntervalSinceNow_(0.1))
             if _latest(hw.notes, n).get("content") == \
                     "timer base TYPED_TIMER_TAIL":
+                fired = True
                 break
-        hw.settle_notes()
-        assert _latest(hw.notes, n).get("content") == \
-            "timer base TYPED_TIMER_TAIL", \
+        # Decided BEFORE any drain: a drain's own final save would hide
+        # a timer that never fired.
+        assert fired, \
             "the installed autosave timer never fired in the default mode"
 
 
@@ -994,7 +1009,8 @@ def _render_a_select_b(hw):
     a = hw.notes.create_note("note A rendered")["note_id"]
     b = hw.notes.create_note("note B selected")["note_id"]
     hw.open_note(a)
-    latch = w.Latch("detail_load").install(hw.notes, "open_note")
+    latch = w.Latch("detail_load", off_main=True).install(hw.notes,
+                                                          "open_note")
     hw.hub.state.select_scratchpad_note(b)
     assert latch.wait(), "B's detail load never started"
     hw.mq.flush()  # the list publication renders; B's detail is held
@@ -1059,6 +1075,23 @@ def r11b_add_image_revalidates_after_the_dialog():
             "the attachment belongs to A but its marker landed in B"
         assert not owners or (owners == [b]) == marker_in_b, \
             "attachment owner and marker note disagree"
+        # Positive control: with the binding unchanged the same action
+        # attaches to the shown note and puts the marker there.
+        Panel.runModal = lambda self: 1
+        AppKit.NSOpenPanel = type("P", (), {"openPanel":
+                                            staticmethod(Panel)})
+        try:
+            hw.hub.scratchpadAttach_(None)
+        finally:
+            AppKit.NSOpenPanel = real
+        hw.settle_notes()
+        hw.drain()
+        owners = [r[0] for r in hw.store.submit(lambda db: db.execute(
+            "SELECT note_id FROM note_attachments WHERE purged=0")
+            .fetchall())]
+        assert b in owners and "attachment:" in \
+            _latest(hw.notes, b).get("content", ""), \
+            "Add Image did not attach to the shown note (control)"
 
 
 # ============================================================================
@@ -1693,6 +1726,341 @@ def l03_identical_version_labels_restore_the_chosen_revision():
             f"the popup shows {shown} versions for {mapped} revisions"
         assert _latest(hw, n)["content"] == "created words", \
             "Restore restored a different version than the one chosen"
+
+
+# ============================================================================
+# REVIEW ROUND — the independent review of the first pass (5473ee9)
+# ============================================================================
+
+@case("REVIEW-01")
+def v01a_stale_detail_never_rebinds_over_a_committed_arrival():
+    """A reload that read the note BEFORE an arrival committed and
+    publishes AFTER it must not rebind the editor to that older text
+    (the next typed save would then drop the confirmed dictation)."""
+    with w.HubWorld() as hw:
+        n = hw.notes.create_note("hello")["note_id"]
+        hw.open_note(n)
+        latch = w.Latch("detail_read_before_publish", off_main=True).install(
+            hw.notes, "open_note", after=True)
+        hw.hub.state.reload_scratchpad()
+        assert latch.wait(), "the reload never read the detail"
+        a = hw.hub.editor.receive(" world", origin=ORIGIN_DICTATED,
+                                  source_job_id="job-synthetic",
+                                  at_chars=5)
+        hw.settle_notes()
+        assert a.outcome == "committed"
+        latch.release()
+        latch.remove()
+        hw.drain()
+        shown = str(hw.hub.editor.current_content())
+        hw.type(shown + " more")
+        hw.hub.editor.flush_now()
+        hw.settle_notes()
+        assert "world" in shown, "the editor rebound to a stale detail"
+        assert "world" in _latest(hw, n)["content"], \
+            "a typed save dropped a committed dictation"
+
+
+@case("REVIEW-01")
+def v01b_restore_is_bound_before_the_next_arrival():
+    with w.HubWorld() as hw:
+        n = hw.notes.create_note("version one")["note_id"]
+        hw.notes.append_revision(n, "version two", origin=ORIGIN_TYPED,
+                                 trigger=TRIGGER_AUTOSAVE)
+        hw.open_note(n)
+        vids = list(hw.hub._scratchpad_version_ids)
+        hw.hub.scratchpad_versions.selectItemAtIndex_(len(vids) - 1)
+        latch = w.Latch("reload_detail_held", off_main=True).install(
+            hw.notes, "open_note")
+        hw.hub.scratchpadRestore_(None)
+        ed = hw.hub.editor
+        ed.receive(" DICT", origin=ORIGIN_DICTATED,
+                   source_job_id="job-synthetic",
+                   at_chars=len(str(ed.current_content())))
+        hw.settle_notes()
+        latch.release()
+        latch.remove()
+        hw.drain()
+        cur = _latest(hw, n)["content"]
+        assert cur == "version one DICT", \
+            f"the arrival undid the restore (current {cur!r})"
+
+
+@case("REVIEW-02")
+def v02a_per_word_ambiguity_abstains():
+    surviving, _ = notes_mod.rebase_spans(
+        "hello world world", [[0, 2, ORIGIN_DICTATED, "job-a"]],
+        "hello world")
+    claimed = [x for ws, o, _j in w.span_words("hello world", surviving)
+               for x in ws]
+    assert "world" not in claimed, \
+        "the surviving typed 'world' was claimed as dictated"
+
+
+@case("REVIEW-02")
+def v02b_single_edit_fuzz_never_claims_a_typed_word():
+    """Ground-truth fuzz: a contiguous dictated span among typed words,
+    one known edit (delete/insert/replace a word); every word a
+    surviving span covers must be one of the original dictated words."""
+    import random
+    rnd = random.Random(1209)
+    vocab = ["echo", "red", "blue", "x", "y", "hello", "world"]
+    bad = 0
+    for _ in range(3000):
+        n = rnd.randint(2, 7)
+        words = [rnd.choice(vocab) for _ in range(n)]
+        s = rnd.randint(0, n - 1)
+        e = rnd.randint(s + 1, n)
+        ident = [("d", i) if s <= i < e else ("t", i) for i in range(n)]
+        op = rnd.choice(("del", "ins", "rep"))
+        i = rnd.randint(0, n - 1)
+        new_w, new_id = list(words), list(ident)
+        if op == "del":
+            del new_w[i], new_id[i]
+        elif op == "ins":
+            new_w.insert(i, rnd.choice(vocab))
+            new_id.insert(i, ("t", "new"))
+        else:
+            new_w[i] = rnd.choice(vocab)
+            new_id[i] = ("t", "new")
+        if not new_w or new_w == words:
+            continue   # an edit leaving the text identical is invisible
+        surv, _ = notes_mod.rebase_spans(
+            " ".join(words), [[s, e, ORIGIN_DICTATED, "job-f"]],
+            " ".join(new_w))
+        for sp in surv:
+            if any(new_id[k][0] != "d" for k in range(sp[0], sp[1])):
+                bad += 1
+    assert bad == 0, f"{bad} surviving spans covered typed words"
+
+
+@case("REVIEW-03")
+def v03_history_transform_output_is_not_labelled_dictated():
+    with w.HubWorld(select_scratchpad=False) as hw:
+        job_id, _fam = hw.store.create_job(
+            captured_at_utc="2026-09-25T10:00:00Z", time_quality="known",
+            state="insertion_confirmed")
+        for role, stage, text, meta in (
+                ("raw_transcript", "asr", "raw words", {}),
+                ("applied_output", "cleanup", "cleaned words",
+                 {"cleanup_path": "llm"}),
+                ("transform_output", "transform",
+                 "An entirely rewritten paragraph", {"path": "applied"})):
+            hw.store.write_text_artifact(job_id=job_id, stage=stage,
+                                         role=role, text=text,
+                                         retention_class="history",
+                                         meta=meta)
+        hw.store.sync()
+        out = hw.d.hubSaveHistoryRow("job", job_id)
+        rev = _latest(hw, out["note_id"])
+        dictated = [s for s in rev["spans"] if s[2] == ORIGIN_DICTATED]
+        assert rev["content"] == "An entirely rewritten paragraph"
+        assert not dictated and rev["origin"] != ORIGIN_DICTATED, \
+            "applied transform output was labelled dictated speech"
+
+
+@case("REVIEW-04")
+def v04_marker_write_never_blocks_the_main_thread():
+    with w.HubWorld() as hw:
+        n = hw.notes.create_note("clean note")["note_id"]
+        hw.open_note(n)
+        hold = w.WriterHold(hw.store)
+        t = threading.Timer(1.0, hold.release)
+        t.start()
+        t0 = time.monotonic()
+        hw.hub.editor.receive(" spoken", origin=ORIGIN_DICTATED,
+                              source_job_id="job-synthetic",
+                              at_chars=len("clean note"))
+        took = time.monotonic() - t0
+        t.join()
+        hw.settle_notes()
+        assert took < 0.5, \
+            f"the dictation acknowledgment blocked {took:.2f}s on the store"
+
+
+@case("REVIEW-05")
+def v05_late_marker_write_never_flags_a_saved_note():
+    with w.HubWorld() as hw:
+        n = hw.notes.create_note("base")["note_id"]
+        hw.open_note(n)
+        ed = hw.hub.editor
+
+        def save_first():
+            # The save that commits this generation wins the race.
+            th = threading.Thread(target=lambda: ed.model.flush(hw.notes))
+            th.start()
+            th.join(10)
+        latch = w.Latch("mark_dirty_after_save", on_reach=save_first)
+        latch.install(hw.notes, "mark_dirty")
+        hw.type("base typed")
+        latch.remove()
+        hw.store.sync()
+        hw.settle_notes()
+        assert not ed.model.dirty
+        assert _note(hw, n)["dirty_at_utc"] is None, \
+            "a late marker write flagged a fully saved note"
+
+
+@case("REVIEW-06")
+def v06_retried_attachment_id_survives_reopen():
+    from localflow.v2 import store as store_mod
+    with w.NoteWorld() as nw:
+        n = nw.notes.create_note("owner")["note_id"]
+        hold = w.WriterHold(nw.store)
+        try:
+            with w.short_submit_timeout(nw.store, 0.1):
+                nw.notes.add_attachment(n, w.PNG, "image/png", "p.png",
+                                        attachment_id="att-synthetic-r")
+        except (notes_mod.NoteOutcomeUnknown,
+                getattr(notes_mod, "NoteNotStarted", TimeoutError)):
+            pass    # the admission was not answered in time
+        finally:
+            hold.release()
+        nw.store.sync()
+        nw.notes.add_attachment(n, w.PNG, "image/png", "p.png",
+                                attachment_id="att-synthetic-r")
+        db = nw.store.db_path
+        nw.store.close()
+        s = store_mod.Store(db)
+        try:
+            ns = notes_mod.NoteStore(s)
+            got = ns.attachment_payload("att-synthetic-r")
+        finally:
+            s.close()
+        assert got == w.PNG, "a committed attachment lost its payload at open"
+
+
+@case("REVIEW-07")
+def v07_autosave_ticks_do_not_pile_up_threads():
+    with w.HubWorld() as hw:
+        n = hw.notes.create_note("tick")["note_id"]
+        hw.open_note(n)
+        hw.type("tick typed")
+        ed = hw.hub.editor
+        hold = w.WriterHold(hw.store)
+        try:
+            for _ in range(10):
+                ed.model.deadline = 0.0          # the debounce expired
+                ed.autosave_tick()
+            alive = sum(1 for t in threading.enumerate()
+                        if t.name == "localflow-notes-autosave"
+                        and t.is_alive())
+        finally:
+            hold.release()
+        hw.settle_notes()
+        assert alive <= 1, f"{alive} save threads for one note"
+
+
+@case("REVIEW-08")
+def v08_restore_that_never_started_is_not_pending():
+    with w.HubWorld() as hw:
+        n = hw.notes.create_note("v1")["note_id"]
+        hw.notes.append_revision(n, "v2", origin=ORIGIN_TYPED,
+                                 trigger=TRIGGER_AUTOSAVE)
+        hw.open_note(n)
+        hw.hub.scratchpad_versions.selectItemAtIndex_(0)
+        real = hw.notes.restore
+
+        def restore(*a, **kw):
+            hold = w.WriterHold(hw.store)
+            try:
+                with w.short_submit_timeout(hw.store, 0.1):
+                    return real(*a, **kw)
+            finally:
+                hold.release()
+        hw.notes.restore = restore
+        hw.hub.scratchpadRestore_(None)
+        status = str(hw.hub.scratchpad_status.stringValue())
+        hw.drain()
+        chain = [r[2] for r in hw.store.submit(lambda db: db.execute(
+            "SELECT 1,2,origin FROM note_revisions WHERE note_id=?",
+            (n,)).fetchall())]
+        assert "restore" not in chain
+        assert "pending" not in status, \
+            "a restore whose write never started was reported pending"
+
+
+@case("REVIEW-09")
+def v09_tab_chip_closes_the_note_it_shows():
+    with w.HubWorld() as hw:
+        ids_ = [hw.notes.create_note(f"tab {i}")["note_id"]
+                for i in range(9)]
+        for nid in ids_[:8]:
+            hw.open_note(nid)
+        chip0 = rem_tab_chip(hw, 0)
+        shows = str(chip0.title())
+        hw.hub.state.select_scratchpad_note(ids_[8])   # not yet rendered
+        hw.hub.scratchpadTabClose_(chip0)
+        hw.drain()
+        open_ids = hw.hub.state.views["scratchpad"]["open_ids"]
+        assert shows.startswith("tab 0")
+        assert ids_[1] in open_ids, \
+            "the chip showing one note closed another"
+
+
+def rem_tab_chip(hw, index):
+    for sub in hw.hub.scratchpad_tabs.subviews():
+        if int(sub.tag()) == index:
+            return sub
+    raise AssertionError(f"no tab chip {index}")
+
+
+@case("REVIEW-10")
+def v10_reoffer_names_only_its_own_result():
+    with w.HubWorld(consent=True) as hw:
+        a = hw.notes.create_note("first source")["note_id"]
+        b = hw.notes.create_note("second source")["note_id"]
+        _transform_note(hw, a)
+        hw.drain()
+        latch = w.Latch("t1_commit_held").install(hw.notes,
+                                                  "append_revision")
+        hw.d._tf_panel.panelAccept_(None)          # T1 accepted
+        assert latch.wait()
+        _transform_note(hw, b)                     # T2 now in the panel
+        hw.drain()
+        t2 = hw.d._tf_panel._state["result"]
+        hw.notes.delete_note(a)
+        hw.hub.editor.forget_note(a)               # T1's arrival discarded
+        latch.release()
+        latch.remove()
+        hw.settle_notes()
+        hw.drain()
+        panel = hw.d._tf_panel
+        assert panel._state["result"] is t2
+        assert panel._buttons["panelAccept:"].isEnabled() and \
+            "not applied" not in str(panel.panel.title()), \
+            "T1's refusal relabelled T2's preview"
+
+
+@case("REVIEW-11")
+def v11_switch_does_not_block_the_main_thread():
+    with w.HubWorld() as hw:
+        a = hw.notes.create_note("A")["note_id"]
+        b = hw.notes.create_note("B")["note_id"]
+        detail_b = hw.notes.open_note(b)
+        hw.open_note(a)
+        hw.type("A typed")
+        hold = w.WriterHold(hw.store)
+        t = threading.Timer(1.5, hold.release)
+        t.start()
+        t0 = time.monotonic()
+        hw.hub.editor.bind_note(detail_b)
+        took = time.monotonic() - t0
+        t.join()
+        hw.settle_notes()
+        assert took < 0.6, f"switching blocked the main thread {took:.2f}s"
+        assert _latest(hw, a)["content"] == "A typed"
+
+
+@case("REVIEW-13")
+def v13_suites_refuse_to_run_unisolated():
+    p = subprocess.run([sys.executable, "-c",
+                        "import sys; sys.path.insert(0, 'tests/v2/notes');"
+                        " import m12_world"],
+                       cwd=w.ROOT, capture_output=True, text=True,
+                       timeout=120)
+    assert p.returncode != 0 and "run_isolated" in (p.stderr + p.stdout), \
+        "the M12 world loaded without the desktop isolation"
 
 
 # ============================================================================

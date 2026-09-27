@@ -104,6 +104,17 @@ def s004(case):
     with w.HubWorld(consent=True) as hw:
         n = hw.notes.create_note("A")["note_id"]
         hw.notes.add_attachment(n, w.PNG, "image/png", "p.png")
+        # A first dictation commits: the note has a live evidence link
+        # (positive population for the closure the deletion must do).
+        fn0, args0, job0 = rem._dictate(hw, n)
+        fn0(*args0)
+        _settled(hw)
+        linked = hw.store.submit(lambda db: db.execute(
+            "SELECT COUNT(*) FROM note_evidence_links WHERE note_id=? AND"
+            " closed_utc IS NULL", (n,)).fetchone()[0])
+        if not linked:
+            return Outcome("ERROR", {}, note="no live evidence link"
+                                             " (population)")
         fn, args, job = rem._dictate(hw, n)
         mark("after_ptt_before_result")
         hw.hub.scratchpadDelete_(None)
