@@ -1,0 +1,828 @@
+{
+ "suite": "tests/v2/notes/test_m12_remediation.py",
+ "suite_sha256": "0b6a92e675206c2b6d1d6f18819c368ec1b0266dcb3f3d0412ff5103dc2bfaf1",
+ "code_root_sha": "884406da5c487c4f33d6abd66e1a1416c1480f35",
+ "tracked_files_modified": true,
+ "production_tree_modified": false,
+ "localflow_imported_from_root": "LocalFlow",
+ "python": "3.14.7",
+ "counts": {
+  "PASS": 74
+ },
+ "results": [
+  {
+   "id": "r01a_read_refuses_parent_traversal",
+   "finding": "M12-AUDIT-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483406.473,
+    1790483406.482
+   ]
+  },
+  {
+   "id": "r01b_read_refuses_absolute_and_dir_symlink_and_final_symlink",
+   "finding": "M12-AUDIT-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483406.482,
+    1790483406.507
+   ]
+  },
+  {
+   "id": "r01c_read_refuses_fifo_and_directory",
+   "finding": "M12-AUDIT-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483406.507,
+    1790483406.523
+   ]
+  },
+  {
+   "id": "r01d_delete_attachment_keeps_outside_sentinel",
+   "finding": "M12-AUDIT-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483406.523,
+    1790483406.549
+   ]
+  },
+  {
+   "id": "r01e_delete_note_keeps_outside_sentinel",
+   "finding": "M12-AUDIT-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483406.549,
+    1790483406.576
+   ]
+  },
+  {
+   "id": "r02a_failure_after_first_attachment_keeps_preexisting_files",
+   "finding": "M12-AUDIT-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483406.576,
+    1790483406.585
+   ]
+  },
+  {
+   "id": "r02b_chmod_failure_keeps_preexisting_main_file",
+   "finding": "M12-AUDIT-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483406.585,
+    1790483406.594
+   ]
+  },
+  {
+   "id": "r02c_destination_symlink_never_writes_through",
+   "finding": "M12-AUDIT-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483406.594,
+    1790483406.603
+   ]
+  },
+  {
+   "id": "r02d_unapproved_sibling_is_never_overwritten",
+   "finding": "M12-AUDIT-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483406.603,
+    1790483406.613
+   ]
+  },
+  {
+   "id": "r03a_failed_switch_save_keeps_the_tail",
+   "finding": "M12-AUDIT-03",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.3,
+   "window_epoch": [
+    1790483406.613,
+    1790483406.912
+   ]
+  },
+  {
+   "id": "r03b_held_then_failed_save_keeps_the_tail",
+   "finding": "M12-AUDIT-03",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.34,
+   "window_epoch": [
+    1790483406.912,
+    1790483407.25
+   ]
+  },
+  {
+   "id": "r04_typed_prefix_never_gets_dictated_provenance",
+   "finding": "M12-AUDIT-04",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483407.25,
+    1790483407.307
+   ]
+  },
+  {
+   "id": "r05a_rolled_back_attachment_delete_keeps_payload",
+   "finding": "M12-AUDIT-05",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483407.307,
+    1790483407.315
+   ]
+  },
+  {
+   "id": "r05b_rolled_back_note_delete_keeps_payload",
+   "finding": "M12-AUDIT-05",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483407.315,
+    1790483407.323
+   ]
+  },
+  {
+   "id": "r05c_failed_unlink_is_durably_pending_and_retried",
+   "finding": "M12-AUDIT-05",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483407.323,
+    1790483407.331
+   ]
+  },
+  {
+   "id": "r06a_deleted_owner_is_refused",
+   "finding": "M12-AUDIT-06",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483407.331,
+    1790483407.337
+   ]
+  },
+  {
+   "id": "r06b_timeout_then_late_commit_keeps_payload",
+   "finding": "M12-AUDIT-06",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.21,
+   "window_epoch": [
+    1790483407.337,
+    1790483407.552
+   ]
+  },
+  {
+   "id": "r06c_crash_after_payload_write_is_reconciled",
+   "finding": "M12-AUDIT-06",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.1,
+   "window_epoch": [
+    1790483407.552,
+    1790483407.649
+   ]
+  },
+  {
+   "id": "r07a_held_commit_is_not_confirmed",
+   "finding": "M12-AUDIT-07",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.15,
+   "window_epoch": [
+    1790483407.649,
+    1790483407.798
+   ]
+  },
+  {
+   "id": "r07b_failed_commit_is_never_confirmed",
+   "finding": "M12-AUDIT-07",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483407.798,
+    1790483407.934
+   ]
+  },
+  {
+   "id": "r07c_transform_applied_waits_for_the_revision",
+   "finding": "M12-AUDIT-07",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.1,
+   "window_epoch": [
+    1790483407.934,
+    1790483418.034
+   ]
+  },
+  {
+   "id": "r08a_snapshot_does_not_claim_an_uncommitted_generation",
+   "finding": "M12-AUDIT-08",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.36,
+   "window_epoch": [
+    1790483418.034,
+    1790483418.395
+   ]
+  },
+  {
+   "id": "r08b_quit_settles_admitted_note_work",
+   "finding": "M12-AUDIT-08",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483418.395,
+    1790483418.451
+   ]
+  },
+  {
+   "id": "r08c_close_during_flush_keeps_the_newer_generation",
+   "finding": "M12-AUDIT-08",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.25,
+   "window_epoch": [
+    1790483418.451,
+    1790483418.697
+   ]
+  },
+  {
+   "id": "r09a_two_arrivals_keep_their_own_provenance",
+   "finding": "M12-AUDIT-09",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483418.697,
+    1790483418.74
+   ]
+  },
+  {
+   "id": "r09b_failed_older_arrival_never_overwrites_newer_identity",
+   "finding": "M12-AUDIT-09",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483418.74,
+    1790483418.782
+   ]
+  },
+  {
+   "id": "r10_timer_fires_in_the_default_run_loop",
+   "finding": "M12-AUDIT-10",
+   "status": "PASS",
+   "note": "",
+   "seconds": 2.04,
+   "window_epoch": [
+    1790483418.782,
+    1790483420.827
+   ]
+  },
+  {
+   "id": "r11a_pin_and_delete_never_act_on_an_unrendered_note",
+   "finding": "M12-AUDIT-11",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.07,
+   "window_epoch": [
+    1790483420.827,
+    1790483420.895
+   ]
+  },
+  {
+   "id": "r11b_add_image_revalidates_after_the_dialog",
+   "finding": "M12-AUDIT-11",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483420.895,
+    1790483420.948
+   ]
+  },
+  {
+   "id": "r12_emoji_before_caret_lands_at_the_caret",
+   "finding": "M12-AUDIT-12",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.13,
+   "window_epoch": [
+    1790483420.948,
+    1790483421.076
+   ]
+  },
+  {
+   "id": "r13_whole_note_accept_refuses_after_growth",
+   "finding": "M12-AUDIT-13",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.09,
+   "window_epoch": [
+    1790483421.076,
+    1790483431.166
+   ]
+  },
+  {
+   "id": "r14a_copy_uses_the_current_attempt_final_artifact",
+   "finding": "M12-AUDIT-14",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483431.166,
+    1790483431.203
+   ]
+  },
+  {
+   "id": "r14b_missing_final_is_refused_not_substituted",
+   "finding": "M12-AUDIT-14",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483431.203,
+    1790483431.226
+   ]
+  },
+  {
+   "id": "r15a_delete_purges_the_note_transform_graph",
+   "finding": "M12-AUDIT-15",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.1,
+   "window_epoch": [
+    1790483431.226,
+    1790483441.322
+   ]
+  },
+  {
+   "id": "r15b_late_candidate_cannot_republish_a_deleted_note",
+   "finding": "M12-AUDIT-15",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.08,
+   "window_epoch": [
+    1790483441.322,
+    1790483451.405
+   ]
+  },
+  {
+   "id": "r16a_late_callback_cannot_reopen_a_deleted_note",
+   "finding": "M12-AUDIT-16",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.15,
+   "window_epoch": [
+    1790483451.405,
+    1790483451.55
+   ]
+  },
+  {
+   "id": "r16b_same_revision_event_counts_once",
+   "finding": "M12-AUDIT-16",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483451.55,
+    1790483451.688
+   ]
+  },
+  {
+   "id": "r17_surviving_typed_echo_is_not_dictated",
+   "finding": "M12-AUDIT-17",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483451.688,
+    1790483451.695
+   ]
+  },
+  {
+   "id": "r18_old_save_cannot_clear_a_newer_generation",
+   "finding": "M12-AUDIT-18",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483451.695,
+    1790483451.737
+   ]
+  },
+  {
+   "id": "r19a_closed_note_dictation_does_not_touch_the_clipboard",
+   "finding": "M12-AUDIT-19",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.13,
+   "window_epoch": [
+    1790483451.737,
+    1790483451.864
+   ]
+  },
+  {
+   "id": "r19b_refused_note_transform_does_not_touch_the_clipboard",
+   "finding": "M12-AUDIT-19",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.11,
+   "window_epoch": [
+    1790483451.864,
+    1790483461.975
+   ]
+  },
+  {
+   "id": "r20_move_selector_reaches_the_transfer",
+   "finding": "M12-AUDIT-20",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483461.975,
+    1790483462.018
+   ]
+  },
+  {
+   "id": "r21_actions_fit_at_default_and_minimum_sizes",
+   "finding": "M12-AUDIT-21",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483462.018,
+    1790483462.081
+   ]
+  },
+  {
+   "id": "r22_malformed_ranges_refuse",
+   "finding": "M12-AUDIT-22",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483462.081,
+    1790483462.081
+   ]
+  },
+  {
+   "id": "r23_chosen_transform_and_version_survive_refresh",
+   "finding": "M12-AUDIT-23",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483462.081,
+    1790483462.131
+   ]
+  },
+  {
+   "id": "r24a_pin_and_new_with_unknown_outcome_do_not_claim_failure",
+   "finding": "M12-AUDIT-24",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.47,
+   "window_epoch": [
+    1790483462.131,
+    1790483462.6
+   ]
+  },
+  {
+   "id": "r24b_history_copy_unknown_is_not_failure_and_never_deletes",
+   "finding": "M12-AUDIT-24",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.24,
+   "window_epoch": [
+    1790483462.6,
+    1790483462.841
+   ]
+  },
+  {
+   "id": "r25_benchmark_fixture_and_validity",
+   "finding": "M12-AUDIT-25",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483462.841,
+    1790483462.843
+   ]
+  },
+  {
+   "id": "r26_m12_results_carry_no_private_absolute_path",
+   "finding": "M12-AUDIT-26",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483462.844,
+    1790483462.85
+   ]
+  },
+  {
+   "id": "l01_legacy_row_transfer_is_honest",
+   "finding": "LOCAL-M12-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483462.85,
+    1790483462.885
+   ]
+  },
+  {
+   "id": "l02_populated_m12_table_loss_is_refused",
+   "finding": "LOCAL-M12-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483462.885,
+    1790483462.923
+   ]
+  },
+  {
+   "id": "l03_identical_version_labels_restore_the_chosen_revision",
+   "finding": "LOCAL-M12-03",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483462.923,
+    1790483462.979
+   ]
+  },
+  {
+   "id": "v01a_stale_detail_never_rebinds_over_a_committed_arrival",
+   "finding": "REVIEW-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483462.979,
+    1790483463.035
+   ]
+  },
+  {
+   "id": "v01b_restore_is_bound_before_the_next_arrival",
+   "finding": "REVIEW-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483463.035,
+    1790483463.09
+   ]
+  },
+  {
+   "id": "v02a_per_word_ambiguity_abstains",
+   "finding": "REVIEW-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483463.09,
+    1790483463.09
+   ]
+  },
+  {
+   "id": "v02b_single_edit_fuzz_never_claims_a_typed_word",
+   "finding": "REVIEW-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483463.09,
+    1790483463.11
+   ]
+  },
+  {
+   "id": "v03_history_transform_output_is_not_labelled_dictated",
+   "finding": "REVIEW-03",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483463.11,
+    1790483463.141
+   ]
+  },
+  {
+   "id": "v04_marker_write_never_blocks_the_main_thread",
+   "finding": "REVIEW-04",
+   "status": "PASS",
+   "note": "",
+   "seconds": 1.05,
+   "window_epoch": [
+    1790483463.141,
+    1790483464.192
+   ]
+  },
+  {
+   "id": "v05_late_marker_write_never_flags_a_saved_note",
+   "finding": "REVIEW-05",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.07,
+   "window_epoch": [
+    1790483464.192,
+    1790483464.258
+   ]
+  },
+  {
+   "id": "v06_retried_attachment_id_survives_reopen",
+   "finding": "REVIEW-06",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.11,
+   "window_epoch": [
+    1790483464.258,
+    1790483464.368
+   ]
+  },
+  {
+   "id": "v07_autosave_ticks_do_not_pile_up_threads",
+   "finding": "REVIEW-07",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483464.369,
+    1790483464.418
+   ]
+  },
+  {
+   "id": "v08_restore_that_never_started_is_not_pending",
+   "finding": "REVIEW-08",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.15,
+   "window_epoch": [
+    1790483464.418,
+    1790483464.567
+   ]
+  },
+  {
+   "id": "v09_tab_chip_closes_the_note_it_shows",
+   "finding": "REVIEW-09",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.12,
+   "window_epoch": [
+    1790483464.567,
+    1790483464.688
+   ]
+  },
+  {
+   "id": "v10_reoffer_names_only_its_own_result",
+   "finding": "REVIEW-10",
+   "status": "PASS",
+   "note": "",
+   "seconds": 20.4,
+   "window_epoch": [
+    1790483464.688,
+    1790483485.083
+   ]
+  },
+  {
+   "id": "v11_switch_does_not_block_the_main_thread",
+   "finding": "REVIEW-11",
+   "status": "PASS",
+   "note": "",
+   "seconds": 1.55,
+   "window_epoch": [
+    1790483485.083,
+    1790483486.636
+   ]
+  },
+  {
+   "id": "v13_suites_refuse_to_run_unisolated",
+   "finding": "REVIEW-13",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483486.636,
+    1790483486.773
+   ]
+  },
+  {
+   "id": "c01_serial_appends_keep_an_immutable_parent_chain",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483486.773,
+    1790483486.782
+   ]
+  },
+  {
+   "id": "c02_late_append_after_delete_is_refused",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483486.782,
+    1790483486.789
+   ]
+  },
+  {
+   "id": "c03_ordinary_switch_persists_the_outgoing_tail",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483486.789,
+    1790483486.842
+   ]
+  },
+  {
+   "id": "c04_ascii_caret_dictation_lands_at_the_caret",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483486.842,
+    1790483486.978
+   ]
+  },
+  {
+   "id": "c05_selection_transform_allows_an_outside_edit",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.09,
+   "window_epoch": [
+    1790483486.978,
+    1790483497.066
+   ]
+  },
+  {
+   "id": "c06_consent_off_keeps_notes_working",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483497.066,
+    1790483497.203
+   ]
+  },
+  {
+   "id": "c07_clean_restore_rebinds_before_the_next_keystroke",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483497.203,
+    1790483497.258
+   ]
+  },
+  {
+   "id": "c08_ordinary_export_round_trip",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483497.258,
+    1790483497.267
+   ]
+  }
+ ]
+}

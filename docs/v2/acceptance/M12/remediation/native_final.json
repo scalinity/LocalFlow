@@ -1,0 +1,126 @@
+{
+  "suite": "tests/v2/notes/test_native_m12_scratchpad.py",
+  "suite_sha256": "716e08900412bada4afeec782cf320efb9e785292e9ad28ef34ed3f1c9ca87f5",
+  "code_root_sha": "e64f78d034b34d1fd822d4bde21884a4354091c6",
+  "localflow_tree": "95e4ee26faf944f3f8a8bb4c0837b92dc037743b",
+  "production_tree_modified": false,
+  "kind": "NATIVE_AUTOMATED",
+  "python": "3.14.7",
+  "window": "owned by this process, off-screen; events via this app's own dispatch (nothing posted to the system event stream); the passive tier never activates the app; the active tier runs as a launched app and restores the prior frontmost application",
+  "tiers": {
+    "active": {
+      "record_code_root_sha": "e64f78d034b34d1fd822d4bde21884a4354091c6",
+      "launched_as_app": true,
+      "launch_activation_granted": true,
+      "prior_frontmost_restored": true,
+      "passed": 11,
+      "ran": 11
+    },
+    "passive": {
+      "record_code_root_sha": "e64f78d034b34d1fd822d4bde21884a4354091c6",
+      "never_activated_frontmost_unchanged": true,
+      "passed": 1,
+      "ran": 1
+    }
+  },
+  "cases": [
+    {
+      "id": "n01_click_type_and_ordinary_loop_autosave",
+      "corpus_id": "LF-M12-N001",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 3.62
+    },
+    {
+      "id": "n02_select_all_arrows_and_unicode_selection_at_ptt",
+      "corpus_id": "LF-M12-N002",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 0.47
+    },
+    {
+      "id": "n03_tab_inserts_and_control_tab_leaves_the_editor",
+      "corpus_id": "LF-M12-N003",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 0.34
+    },
+    {
+      "id": "n04_first_responder_matrix_at_ptt",
+      "corpus_id": "LF-M12-N004",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 0.83
+    },
+    {
+      "id": "n05_another_app_in_front_removes_the_note_binding",
+      "corpus_id": "LF-M12-N005",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 0.62
+    },
+    {
+      "id": "n06_picker_selection_and_whole_note_transforms",
+      "corpus_id": "LF-M12-N006",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 21.14
+    },
+    {
+      "id": "n07_snapshot_versions_popup_and_restore",
+      "corpus_id": "LF-M12-N007",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 1.18
+    },
+    {
+      "id": "n08_pin_and_delete_act_on_the_rendered_note",
+      "corpus_id": "LF-M12-N008",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 0.22
+    },
+    {
+      "id": "n09_every_control_reachable_at_default_minimum_and_large_font",
+      "corpus_id": "LF-M12-N009",
+      "tier": "passive",
+      "status": "PASS",
+      "note": "",
+      "seconds": 0.33
+    },
+    {
+      "id": "n10_reopened_hub_keeps_one_editor_and_timer",
+      "corpus_id": "LF-M12-N010",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 0.18
+    },
+    {
+      "id": "n11_autosave_during_menu_tracking_and_a_modal_panel",
+      "corpus_id": "LF-M12-N011",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 6.96
+    },
+    {
+      "id": "n12_quit_right_after_an_accepted_note_transform",
+      "corpus_id": "LF-M12-N012",
+      "tier": "active",
+      "status": "PASS",
+      "note": "",
+      "seconds": 10.28
+    }
+  ],
+  "passed": 12,
+  "ran": 12
+}

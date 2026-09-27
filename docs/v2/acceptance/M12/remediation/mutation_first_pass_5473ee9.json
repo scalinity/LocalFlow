@@ -1,0 +1,1502 @@
+{
+ "tool": "scripts/v2/m12_mutation_check.py",
+ "runner": "tests/v2/notes/m12_corpus_runner.py",
+ "code_sha": "5473ee99c789be0d4d919a7c5e0e41a45a0c34eb",
+ "corpus_sha256": "0c1e9cc51d82da29e1e4d3ad91097a8532a9c078eb6c3ce31ca1509349fc5be9",
+ "killer_rule": "every non-native corpus case sharing a finding id with the mutation, plus EXTRA (MUT05: C004/C037; MUT19: regression r10)",
+ "control": {
+  "imported_from": "control",
+  "cases": {
+   "LF-M12-C004": "PASS",
+   "LF-M12-C005": "PASS",
+   "LF-M12-C016": "PASS",
+   "LF-M12-C017": "PASS",
+   "LF-M12-C018": "PASS",
+   "LF-M12-C019": "PASS",
+   "LF-M12-C020": "PASS",
+   "LF-M12-C021": "PASS",
+   "LF-M12-C022": "PASS",
+   "LF-M12-C023": "PASS",
+   "LF-M12-C024": "PASS",
+   "LF-M12-C025": "PASS",
+   "LF-M12-C026": "PASS",
+   "LF-M12-C027": "PASS",
+   "LF-M12-C028": "PASS",
+   "LF-M12-C031": "PASS",
+   "LF-M12-C032": "PASS",
+   "LF-M12-C033": "PASS",
+   "LF-M12-C034": "PASS",
+   "LF-M12-C035": "PASS",
+   "LF-M12-C037": "PASS",
+   "LF-M12-C038": "PASS",
+   "LF-M12-C039": "PASS",
+   "LF-M12-C040": "PASS",
+   "LF-M12-C041": "PASS",
+   "LF-M12-C042": "PASS",
+   "LF-M12-C052": "PASS",
+   "LF-M12-C053": "PASS",
+   "LF-M12-C054": "PASS",
+   "LF-M12-C055": "PASS",
+   "LF-M12-C057": "PASS",
+   "LF-M12-C058": "PASS",
+   "LF-M12-C059": "PASS",
+   "LF-M12-C060": "PASS",
+   "LF-M12-C061": "PASS",
+   "LF-M12-C062": "PASS",
+   "LF-M12-C063": "PASS",
+   "LF-M12-C064": "PASS",
+   "LF-M12-C065": "PASS",
+   "LF-M12-C066": "PASS",
+   "LF-M12-C067": "PASS",
+   "LF-M12-C068": "PASS",
+   "LF-M12-C069": "PASS",
+   "LF-M12-C070": "PASS",
+   "LF-M12-C071": "PASS",
+   "LF-M12-C072": "PASS",
+   "LF-M12-C073": "PASS",
+   "LF-M12-C074": "PASS",
+   "LF-M12-C075": "PASS",
+   "LF-M12-C076": "PASS",
+   "LF-M12-C077": "PASS",
+   "LF-M12-C078": "PASS",
+   "LF-M12-C079": "PASS",
+   "LF-M12-C080": "PASS",
+   "LF-M12-C081": "PASS",
+   "LF-M12-C082": "PASS",
+   "LF-M12-C083": "PASS",
+   "LF-M12-C086": "PASS",
+   "LF-M12-C087": "PASS",
+   "LF-M12-C088": "PASS",
+   "LF-M12-C090": "PASS",
+   "LF-M12-C091": "PASS",
+   "LF-M12-C092": "PASS",
+   "LF-M12-C093": "PASS",
+   "LF-M12-C094": "PASS",
+   "LF-M12-C096": "PASS",
+   "LF-M12-C097": "PASS",
+   "LF-M12-C098": "PASS",
+   "LF-M12-C110": "PASS",
+   "LF-M12-C111": "PASS",
+   "LF-M12-C113": "PASS",
+   "LF-M12-C114": "PASS",
+   "LF-M12-C115": "PASS",
+   "LF-M12-C116": "PASS",
+   "LF-M12-C117": "PASS",
+   "LF-M12-C118": "PASS",
+   "LF-M12-C120": "PASS",
+   "LF-M12-C122": "PASS",
+   "LF-M12-C124": "PASS",
+   "LF-M12-C125": "PASS",
+   "LF-M12-S001": "PASS",
+   "LF-M12-S002": "PASS",
+   "LF-M12-S003": "PASS",
+   "LF-M12-S004": "PASS",
+   "LF-M12-S005": "PASS",
+   "LF-M12-S006": "PASS",
+   "LF-M12-S007": "PASS",
+   "LF-M12-S008": "PASS",
+   "LF-M12-S009": "PASS",
+   "LF-M12-S010": "PASS",
+   "LF-M12-S011": "PASS",
+   "LF-M12-S013": "PASS",
+   "LF-M12-S014": "PASS",
+   "LF-M12-S015": "PASS",
+   "LF-M12-S016": "PASS",
+   "LF-M12-S018": "PASS",
+   "LF-M12-S019": "PASS",
+   "LF-M12-S020": "PASS",
+   "LF-M12-S021": "PASS",
+   "LF-M12-S022": "PASS",
+   "LF-M12-S025": "PASS",
+   "LF-M12-S026": "PASS",
+   "LF-M12-S027": "PASS",
+   "LF-M12-S028": "PASS",
+   "LF-M12-B001": "PASS",
+   "LF-M12-B002": "PASS",
+   "LF-M12-B003": "PASS",
+   "LF-M12-B004": "PASS",
+   "LF-M12-B005": "PASS",
+   "LF-M12-B006": "PASS",
+   "LF-M12-B007": "PASS",
+   "LF-M12-B008": "PASS",
+   "LF-M12-B009": "PASS",
+   "LF-M12-B010": "PASS",
+   "regression:r10_timer_fires_in_the_default_run_loop": "PASS"
+  },
+  "details": {}
+ },
+ "summary": {
+  "killed": 19,
+  "harness_error": 1,
+  "survived": 2
+ },
+ "results": [
+  {
+   "mutation_id": "LF-M12-MUT01",
+   "name": "Raw UTF-16 caret",
+   "finding_ids": [
+    "M12-AUDIT-12"
+   ],
+   "kill_oracle": "A\ud83d\ude00B caret witness must fail on exact final text.",
+   "files": [
+    "localflow/v2/ui/scratchpad.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/scratchpad.py": {
+      "sha_before": "c74a8b578f926d2f",
+      "sha_after": "3f601178f8d98e35",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C016",
+    "LF-M12-C017",
+    "LF-M12-C018",
+    "LF-M12-C019",
+    "LF-M12-C020",
+    "LF-M12-C021",
+    "LF-M12-C028",
+    "LF-M12-C052",
+    "LF-M12-C053",
+    "LF-M12-C054",
+    "LF-M12-C055",
+    "LF-M12-C057",
+    "LF-M12-S001",
+    "LF-M12-S002",
+    "LF-M12-S022"
+   ],
+   "seconds": 1.7,
+   "mutant": {
+    "LF-M12-C016": "PASS",
+    "LF-M12-C017": "FAIL",
+    "LF-M12-C018": "FAIL",
+    "LF-M12-C019": "PASS",
+    "LF-M12-C020": "FAIL",
+    "LF-M12-C021": "PASS",
+    "LF-M12-C028": "PASS",
+    "LF-M12-C052": "PASS",
+    "LF-M12-C053": "PASS",
+    "LF-M12-C054": "PASS",
+    "LF-M12-C055": "PASS",
+    "LF-M12-C057": "PASS",
+    "LF-M12-S001": "PASS",
+    "LF-M12-S002": "PASS",
+    "LF-M12-S022": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-C017",
+    "LF-M12-C018",
+    "LF-M12-C020"
+   ],
+   "mutant_details": {
+    "LF-M12-C017": "failed: ['anchor_is_code_point', 'insertion_at_caret']",
+    "LF-M12-C018": "failed: ['anchor_is_code_point', 'insertion_at_caret']",
+    "LF-M12-C020": "failed: ['anchor_is_code_point', 'insertion_at_caret']"
+   },
+   "imported_from": "LF-M12-MUT01",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT02",
+   "name": "Skip note ID check",
+   "finding_ids": [
+    "M12-AUDIT-11"
+   ],
+   "kill_oracle": "Wrong-note sentinel changes and the authority oracle fails.",
+   "files": [
+    "localflow/v2/notes.py",
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "f6463a492a634488",
+      "changed": true
+     },
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "c226a8cedfa11fba",
+      "sha_after": "2322901056d0c794",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C090",
+    "LF-M12-C111",
+    "LF-M12-C113",
+    "LF-M12-S003",
+    "LF-M12-S028"
+   ],
+   "seconds": 0.8,
+   "mutant": {
+    "LF-M12-C090": "PASS",
+    "LF-M12-C111": "PASS",
+    "LF-M12-C113": "PASS",
+    "LF-M12-S003": "FAIL",
+    "LF-M12-S028": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-S003"
+   ],
+   "mutant_details": {
+    "LF-M12-S003": "failed: ['no_write_to_b', 'retained_not_inserted']"
+   },
+   "imported_from": "LF-M12-MUT02",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT03",
+   "name": "Accept stale transform source",
+   "finding_ids": [
+    "M12-AUDIT-13"
+   ],
+   "kill_oracle": "Changed-source acceptance must fail the no-replacement oracle.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "863e82f6991a4af9",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C058",
+    "LF-M12-C059",
+    "LF-M12-C060",
+    "LF-M12-C061",
+    "LF-M12-C062",
+    "LF-M12-C063",
+    "LF-M12-C064",
+    "LF-M12-C065",
+    "LF-M12-S005",
+    "LF-M12-S011"
+   ],
+   "seconds": 111.3,
+   "mutant": {
+    "LF-M12-C058": "PASS",
+    "LF-M12-C059": "PASS",
+    "LF-M12-C060": "PASS",
+    "LF-M12-C061": "FAIL",
+    "LF-M12-C062": "FAIL",
+    "LF-M12-C063": "PASS",
+    "LF-M12-C064": "PASS",
+    "LF-M12-C065": "PASS",
+    "LF-M12-S005": "PASS",
+    "LF-M12-S011": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-C061",
+    "LF-M12-C062"
+   ],
+   "mutant_details": {
+    "LF-M12-C061": "failed: ['never_retargets_the_other_copy']",
+    "LF-M12-C062": "failed: ['refused']"
+   },
+   "imported_from": "LF-M12-MUT03",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT04",
+   "name": "Whole-note insert",
+   "finding_ids": [
+    "M12-AUDIT-13"
+   ],
+   "kill_oracle": "Final full-note equality fails, not merely a substring assertion.",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "c226a8cedfa11fba",
+      "sha_after": "0f581369fb4645a9",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C058",
+    "LF-M12-C059",
+    "LF-M12-C060",
+    "LF-M12-C061",
+    "LF-M12-C062",
+    "LF-M12-C063",
+    "LF-M12-C064",
+    "LF-M12-C065",
+    "LF-M12-S005",
+    "LF-M12-S011"
+   ],
+   "seconds": 111.3,
+   "mutant": {
+    "LF-M12-C058": "FAIL",
+    "LF-M12-C059": "PASS",
+    "LF-M12-C060": "PASS",
+    "LF-M12-C061": "PASS",
+    "LF-M12-C062": "PASS",
+    "LF-M12-C063": "PASS",
+    "LF-M12-C064": "PASS",
+    "LF-M12-C065": "PASS",
+    "LF-M12-S005": "PASS",
+    "LF-M12-S011": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-C058"
+   ],
+   "mutant_details": {
+    "LF-M12-C058": "failed: ['replaced_whole']"
+   },
+   "imported_from": "LF-M12-MUT04",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT05",
+   "name": "Remove clean rebind",
+   "finding_ids": [
+    "M12-AUDIT-03",
+    "M12-AUDIT-08"
+   ],
+   "kill_oracle": "Next real typed input builds on the wrong revision and fails.",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "c226a8cedfa11fba",
+      "sha_after": "c522aba3f5c15722",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C005",
+    "LF-M12-C031",
+    "LF-M12-C032",
+    "LF-M12-C038",
+    "LF-M12-C110",
+    "LF-M12-C113",
+    "LF-M12-S006",
+    "LF-M12-S007",
+    "LF-M12-S010",
+    "LF-M12-S018",
+    "LF-M12-S027",
+    "LF-M12-C004",
+    "LF-M12-C037"
+   ],
+   "seconds": 1.5,
+   "mutant": {
+    "error": "no result (exit -15)",
+    "stderr": ""
+   },
+   "failed_killers": [],
+   "mutant_details": null,
+   "imported_from": null,
+   "outcome": "harness_error",
+   "reason": "run error"
+  },
+  {
+   "mutation_id": "LF-M12-MUT06",
+   "name": "Drop reflush",
+   "finding_ids": [
+    "M12-AUDIT-08",
+    "M12-AUDIT-09"
+   ],
+   "kill_oracle": "Latest generation remains uncommitted after drain.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "1f9010612ab55382",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C005",
+    "LF-M12-C032",
+    "LF-M12-C033",
+    "LF-M12-C034",
+    "LF-M12-C038",
+    "LF-M12-C039",
+    "LF-M12-C040",
+    "LF-M12-C041",
+    "LF-M12-C042",
+    "LF-M12-C057",
+    "LF-M12-C110",
+    "LF-M12-S006",
+    "LF-M12-S007",
+    "LF-M12-S008",
+    "LF-M12-S009",
+    "LF-M12-S010",
+    "LF-M12-S018",
+    "LF-M12-S025",
+    "LF-M12-S027"
+   ],
+   "seconds": 1.6,
+   "mutant": {
+    "LF-M12-C005": "PASS",
+    "LF-M12-C032": "FAIL",
+    "LF-M12-C033": "PASS",
+    "LF-M12-C034": "PASS",
+    "LF-M12-C038": "PASS",
+    "LF-M12-C039": "PASS",
+    "LF-M12-C040": "PASS",
+    "LF-M12-C041": "PASS",
+    "LF-M12-C042": "PASS",
+    "LF-M12-C057": "PASS",
+    "LF-M12-C110": "PASS",
+    "LF-M12-S006": "FAIL",
+    "LF-M12-S007": "PASS",
+    "LF-M12-S008": "PASS",
+    "LF-M12-S009": "PASS",
+    "LF-M12-S010": "PASS",
+    "LF-M12-S018": "PASS",
+    "LF-M12-S025": "PASS",
+    "LF-M12-S027": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-C032",
+    "LF-M12-S006"
+   ],
+   "mutant_details": {
+    "LF-M12-C032": "failed: ['generation_committed_at_return', 'status_names_saved_state']",
+    "LF-M12-S006": "failed: ['restore_parents_the_current_revision', 'dirty_text_saved_first']"
+   },
+   "imported_from": "LF-M12-MUT06",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT07",
+   "name": "Late deleted-note append",
+   "finding_ids": [
+    "M12-AUDIT-15"
+   ],
+   "kill_oracle": "A revision after deletion violates the tombstone oracle.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "868d6227cf76d5d8",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C058",
+    "LF-M12-C059",
+    "LF-M12-C060",
+    "LF-M12-C061",
+    "LF-M12-C062",
+    "LF-M12-C063",
+    "LF-M12-C064",
+    "LF-M12-C065",
+    "LF-M12-C113",
+    "LF-M12-C124",
+    "LF-M12-C125",
+    "LF-M12-S004",
+    "LF-M12-S011"
+   ],
+   "seconds": 111.5,
+   "mutant": {
+    "LF-M12-C058": "PASS",
+    "LF-M12-C059": "PASS",
+    "LF-M12-C060": "PASS",
+    "LF-M12-C061": "PASS",
+    "LF-M12-C062": "PASS",
+    "LF-M12-C063": "PASS",
+    "LF-M12-C064": "PASS",
+    "LF-M12-C065": "PASS",
+    "LF-M12-C113": "FAIL",
+    "LF-M12-C124": "PASS",
+    "LF-M12-C125": "PASS",
+    "LF-M12-S004": "PASS",
+    "LF-M12-S011": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-C113"
+   ],
+   "mutant_details": {
+    "LF-M12-C113": "failed: ['no_revision_to_deleted_note']"
+   },
+   "imported_from": "LF-M12-MUT07",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT08",
+   "name": "Precommit unlink",
+   "finding_ids": [
+    "M12-AUDIT-05"
+   ],
+   "kill_oracle": "Forced rollback leaves live rows with missing payloads.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "c0c29b099e86caf5",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C086",
+    "LF-M12-C087",
+    "LF-M12-C088",
+    "LF-M12-C090",
+    "LF-M12-S010",
+    "LF-M12-S013",
+    "LF-M12-S014"
+   ],
+   "seconds": 0.6,
+   "mutant": {
+    "LF-M12-C086": "FAIL",
+    "LF-M12-C087": "PASS",
+    "LF-M12-C088": "PASS",
+    "LF-M12-C090": "PASS",
+    "LF-M12-S010": "PASS",
+    "LF-M12-S013": "FAIL",
+    "LF-M12-S014": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-C086",
+    "LF-M12-S013"
+   ],
+   "mutant_details": {
+    "LF-M12-C086": "a rolled-back delete removed a live payload",
+    "LF-M12-S013": "a rolled-back delete removed a live payload"
+   },
+   "imported_from": "LF-M12-MUT08",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT09",
+   "name": "Allow outside path",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "kill_oracle": "An outside sentinel read/unlink is independently recorded.",
+   "files": [
+    "localflow/v2/notes.py",
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "0b5fe6af2c656cf3",
+      "sha_after": "d15bef0f4734df11",
+      "changed": true
+     },
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "235b31e069a8cea2",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C066",
+    "LF-M12-C067",
+    "LF-M12-C068",
+    "LF-M12-C069",
+    "LF-M12-C070",
+    "LF-M12-C071",
+    "LF-M12-C072",
+    "LF-M12-C073",
+    "LF-M12-C074",
+    "LF-M12-C075",
+    "LF-M12-C076",
+    "LF-M12-C077",
+    "LF-M12-C078",
+    "LF-M12-C079",
+    "LF-M12-C080",
+    "LF-M12-C081",
+    "LF-M12-C082",
+    "LF-M12-C083"
+   ],
+   "seconds": 3.4,
+   "mutant": {
+    "LF-M12-C066": "FAIL",
+    "LF-M12-C067": "FAIL",
+    "LF-M12-C068": "FAIL",
+    "LF-M12-C069": "FAIL",
+    "LF-M12-C070": "FAIL",
+    "LF-M12-C071": "FAIL",
+    "LF-M12-C072": "FAIL",
+    "LF-M12-C073": "FAIL",
+    "LF-M12-C074": "FAIL",
+    "LF-M12-C075": "FAIL",
+    "LF-M12-C076": "FAIL",
+    "LF-M12-C077": "FAIL",
+    "LF-M12-C078": "PASS",
+    "LF-M12-C079": "PASS",
+    "LF-M12-C080": "PASS",
+    "LF-M12-C081": "FAIL",
+    "LF-M12-C082": "FAIL",
+    "LF-M12-C083": "FAIL"
+   },
+   "failed_killers": [
+    "LF-M12-C066",
+    "LF-M12-C067",
+    "LF-M12-C068",
+    "LF-M12-C069",
+    "LF-M12-C070",
+    "LF-M12-C071",
+    "LF-M12-C072",
+    "LF-M12-C073",
+    "LF-M12-C074",
+    "LF-M12-C075",
+    "LF-M12-C076",
+    "LF-M12-C077",
+    "LF-M12-C081",
+    "LF-M12-C082",
+    "LF-M12-C083"
+   ],
+   "mutant_details": {
+    "LF-M12-C066": "failed: ['refused_or_confined', 'outside_never_touched']",
+    "LF-M12-C067": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+    "LF-M12-C068": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+    "LF-M12-C069": "failed: ['refused_or_confined', 'outside_never_touched']",
+    "LF-M12-C070": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+    "LF-M12-C071": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+    "LF-M12-C072": "failed: ['refused_or_confined', 'outside_never_touched']",
+    "LF-M12-C073": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+    "LF-M12-C074": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+    "LF-M12-C075": "failed: ['refused_or_confined', 'outside_never_touched']",
+    "LF-M12-C076": "failed: ['nonregular_left_in_place']",
+    "LF-M12-C077": "failed: ['nonregular_left_in_place']",
+    "LF-M12-C081": "failed: ['refused_or_confined']",
+    "LF-M12-C082": "failed: ['nonregular_left_in_place']",
+    "LF-M12-C083": "failed: ['nonregular_left_in_place']"
+   },
+   "imported_from": "LF-M12-MUT09",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT10",
+   "name": "Log note title",
+   "finding_ids": [
+    "M12-AUDIT-26"
+   ],
+   "kill_oracle": "Privacy-channel canary detector fails.",
+   "files": [
+    "localflow/v2/notes.py",
+    "localflow/v2/training.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "31d4293e5f2ffaa8",
+      "changed": true
+     },
+     "localflow/v2/training.py": {
+      "sha_before": "15e48e05d2cfa16b",
+      "sha_after": "207a1c905b8a9255",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C115"
+   ],
+   "seconds": 0.7,
+   "mutant": {
+    "LF-M12-C115": "FAIL"
+   },
+   "failed_killers": [
+    "LF-M12-C115"
+   ],
+   "mutant_details": {
+    "LF-M12-C115": "failed: ['no_title_or_filename']"
+   },
+   "imported_from": "LF-M12-MUT10",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT11",
+   "name": "Count note revisions as dictations",
+   "finding_ids": [
+    "M12-AUDIT-07"
+   ],
+   "kill_oracle": "One-job positive cohort exceeds exactly one fact.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "bbc7325d59cf30ee",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C035",
+    "LF-M12-C052",
+    "LF-M12-C053",
+    "LF-M12-C054",
+    "LF-M12-C055",
+    "LF-M12-C057",
+    "LF-M12-C120",
+    "LF-M12-S004",
+    "LF-M12-S020",
+    "LF-M12-S027"
+   ],
+   "seconds": 1.7,
+   "mutant": {
+    "LF-M12-C035": "PASS",
+    "LF-M12-C052": "PASS",
+    "LF-M12-C053": "PASS",
+    "LF-M12-C054": "PASS",
+    "LF-M12-C055": "PASS",
+    "LF-M12-C057": "PASS",
+    "LF-M12-C120": "PASS",
+    "LF-M12-S004": "PASS",
+    "LF-M12-S020": "FAIL",
+    "LF-M12-S027": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-S020"
+   ],
+   "mutant_details": {
+    "LF-M12-S020": "failed: ['one_positive_fact']"
+   },
+   "imported_from": "LF-M12-MUT11",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT12",
+   "name": "Typed text as dictated",
+   "finding_ids": [
+    "M12-AUDIT-04"
+   ],
+   "kill_oracle": "Resolved span words conflict with the edit-ownership oracle.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "10ae346fd89c3c81",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C039",
+    "LF-M12-C040",
+    "LF-M12-C041",
+    "LF-M12-C042",
+    "LF-M12-C122",
+    "LF-M12-S008",
+    "LF-M12-S021"
+   ],
+   "seconds": 0.9,
+   "mutant": {
+    "LF-M12-C039": "FAIL",
+    "LF-M12-C040": "PASS",
+    "LF-M12-C041": "PASS",
+    "LF-M12-C042": "FAIL",
+    "LF-M12-C122": "PASS",
+    "LF-M12-S008": "PASS",
+    "LF-M12-S021": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-C039",
+    "LF-M12-C042"
+   ],
+   "mutant_details": {
+    "LF-M12-C039": "dictated provenance covers ['one'], not exactly the arrival",
+    "LF-M12-C042": "failed: ['only_arrival']"
+   },
+   "imported_from": "LF-M12-MUT12",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT13",
+   "name": "Stale editor revives deleted note",
+   "finding_ids": [
+    "M12-AUDIT-03",
+    "M12-AUDIT-15"
+   ],
+   "kill_oracle": "Deleted identity gains managed content.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "31a478ef11579570",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C005",
+    "LF-M12-C031",
+    "LF-M12-C058",
+    "LF-M12-C059",
+    "LF-M12-C060",
+    "LF-M12-C061",
+    "LF-M12-C062",
+    "LF-M12-C063",
+    "LF-M12-C064",
+    "LF-M12-C065",
+    "LF-M12-C113",
+    "LF-M12-C124",
+    "LF-M12-C125",
+    "LF-M12-S004",
+    "LF-M12-S007",
+    "LF-M12-S011"
+   ],
+   "seconds": 112.3,
+   "mutant": {
+    "LF-M12-C005": "PASS",
+    "LF-M12-C031": "PASS",
+    "LF-M12-C058": "PASS",
+    "LF-M12-C059": "PASS",
+    "LF-M12-C060": "PASS",
+    "LF-M12-C061": "PASS",
+    "LF-M12-C062": "PASS",
+    "LF-M12-C063": "PASS",
+    "LF-M12-C064": "PASS",
+    "LF-M12-C065": "PASS",
+    "LF-M12-C113": "FAIL",
+    "LF-M12-C124": "PASS",
+    "LF-M12-C125": "PASS",
+    "LF-M12-S004": "PASS",
+    "LF-M12-S007": "PASS",
+    "LF-M12-S011": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-C113"
+   ],
+   "mutant_details": {
+    "LF-M12-C113": "failed: ['no_revision_to_deleted_note', 'not_resurrected']"
+   },
+   "imported_from": "LF-M12-MUT13",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT14",
+   "name": "Delete pre-existing export on rollback",
+   "finding_ids": [
+    "M12-AUDIT-02"
+   ],
+   "kill_oracle": "Pre-existing tree byte comparison fails.",
+   "files": [
+    "localflow/v2/note_export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/note_export.py": {
+      "sha_before": "5b07cf93122efc10",
+      "sha_after": "7df60ceaec259da1",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C091",
+    "LF-M12-C092",
+    "LF-M12-C093",
+    "LF-M12-C094",
+    "LF-M12-C096",
+    "LF-M12-C097",
+    "LF-M12-C098",
+    "LF-M12-S015",
+    "LF-M12-S016"
+   ],
+   "seconds": 0.3,
+   "mutant": {
+    "LF-M12-C091": "PASS",
+    "LF-M12-C092": "FAIL",
+    "LF-M12-C093": "FAIL",
+    "LF-M12-C094": "PASS",
+    "LF-M12-C096": "PASS",
+    "LF-M12-C097": "PASS",
+    "LF-M12-C098": "FAIL",
+    "LF-M12-S015": "PASS",
+    "LF-M12-S016": "FAIL"
+   },
+   "failed_killers": [
+    "LF-M12-C092",
+    "LF-M12-C093",
+    "LF-M12-C098",
+    "LF-M12-S016"
+   ],
+   "mutant_details": {
+    "LF-M12-C092": "failed: ['tree_identical']",
+    "LF-M12-C093": "the pre-existing main file was replaced by a failed export",
+    "LF-M12-C098": "failed: ['tree_identical']",
+    "LF-M12-S016": "failed: ['preexisting_tree_identical']"
+   },
+   "imported_from": "LF-M12-MUT14",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT15",
+   "name": "Confirm before commit",
+   "finding_ids": [
+    "M12-AUDIT-07"
+   ],
+   "kill_oracle": "Held-commit test observes forbidden affirmative status.",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "b6a59be99cc8e957",
+      "sha_after": "73961acf60c0ce60",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C035",
+    "LF-M12-C052",
+    "LF-M12-C053",
+    "LF-M12-C054",
+    "LF-M12-C055",
+    "LF-M12-C057",
+    "LF-M12-C120",
+    "LF-M12-S004",
+    "LF-M12-S020",
+    "LF-M12-S027"
+   ],
+   "seconds": 1.8,
+   "mutant": {
+    "LF-M12-C035": "PASS",
+    "LF-M12-C052": "PASS",
+    "LF-M12-C053": "PASS",
+    "LF-M12-C054": "PASS",
+    "LF-M12-C055": "PASS",
+    "LF-M12-C057": "PASS",
+    "LF-M12-C120": "PASS",
+    "LF-M12-S004": "PASS",
+    "LF-M12-S020": "FAIL",
+    "LF-M12-S027": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-S020"
+   ],
+   "mutant_details": {
+    "LF-M12-S020": "failed: ['not_confirmed_before_the_receipt']"
+   },
+   "imported_from": "LF-M12-MUT15",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT16",
+   "name": "Skip evidence-link closure",
+   "finding_ids": [
+    "M12-AUDIT-16"
+   ],
+   "kill_oracle": "Link-state and late-callback oracle fails.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "db21aa3a8a2c06ef",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C114",
+    "LF-M12-C116",
+    "LF-M12-C117",
+    "LF-M12-C118",
+    "LF-M12-S004",
+    "LF-M12-S019",
+    "LF-M12-S026"
+   ],
+   "seconds": 1.4,
+   "mutant": {
+    "LF-M12-C114": "PASS",
+    "LF-M12-C116": "PASS",
+    "LF-M12-C117": "PASS",
+    "LF-M12-C118": "PASS",
+    "LF-M12-S004": "PASS",
+    "LF-M12-S019": "PASS",
+    "LF-M12-S026": "PASS"
+   },
+   "failed_killers": [],
+   "mutant_details": {},
+   "imported_from": "LF-M12-MUT16",
+   "outcome": "survived",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT17",
+   "name": "No-op benchmark open",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "kill_oracle": "Validity rejects missing intended content and headers.",
+   "files": [
+    "scripts/v2/benchmark_m12.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "scripts/v2/benchmark_m12.py": {
+      "sha_before": "16bfe59185914ebf",
+      "sha_after": "ca80c2db15fdfe49",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-B001",
+    "LF-M12-B002",
+    "LF-M12-B003",
+    "LF-M12-B004",
+    "LF-M12-B005",
+    "LF-M12-B006",
+    "LF-M12-B007",
+    "LF-M12-B008",
+    "LF-M12-B009",
+    "LF-M12-B010"
+   ],
+   "seconds": 4.6,
+   "mutant": {
+    "LF-M12-B001": "FAIL",
+    "LF-M12-B002": "FAIL",
+    "LF-M12-B003": "FAIL",
+    "LF-M12-B004": "FAIL",
+    "LF-M12-B005": "FAIL",
+    "LF-M12-B006": "FAIL",
+    "LF-M12-B007": "FAIL",
+    "LF-M12-B008": "FAIL",
+    "LF-M12-B009": "FAIL",
+    "LF-M12-B010": "FAIL"
+   },
+   "failed_killers": [
+    "LF-M12-B001",
+    "LF-M12-B002",
+    "LF-M12-B003",
+    "LF-M12-B004",
+    "LF-M12-B005",
+    "LF-M12-B006",
+    "LF-M12-B007",
+    "LF-M12-B008",
+    "LF-M12-B009",
+    "LF-M12-B010"
+   ],
+   "mutant_details": {
+    "LF-M12-B001": "failed: ['valid:note_open_10k', 'valid:note_open_cold', 'run_not_invalid']",
+    "LF-M12-B002": "failed: ['run_not_invalid']",
+    "LF-M12-B003": "failed: ['run_not_invalid']",
+    "LF-M12-B004": "failed: ['run_not_invalid']",
+    "LF-M12-B005": "failed: ['run_not_invalid']",
+    "LF-M12-B006": "failed: ['run_not_invalid']",
+    "LF-M12-B007": "failed: ['run_not_invalid']",
+    "LF-M12-B008": "failed: ['run_not_invalid']",
+    "LF-M12-B009": "failed: ['run_not_invalid']",
+    "LF-M12-B010": "failed: ['run_not_invalid']"
+   },
+   "imported_from": "LF-M12-MUT17",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT18",
+   "name": "Empty benchmark search",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "kill_oracle": "Exact expected-match IDs fail.",
+   "files": [
+    "scripts/v2/benchmark_m12.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "scripts/v2/benchmark_m12.py": {
+      "sha_before": "16bfe59185914ebf",
+      "sha_after": "b436fb81915ab193",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-B001",
+    "LF-M12-B002",
+    "LF-M12-B003",
+    "LF-M12-B004",
+    "LF-M12-B005",
+    "LF-M12-B006",
+    "LF-M12-B007",
+    "LF-M12-B008",
+    "LF-M12-B009",
+    "LF-M12-B010"
+   ],
+   "seconds": 4.8,
+   "mutant": {
+    "LF-M12-B001": "FAIL",
+    "LF-M12-B002": "FAIL",
+    "LF-M12-B003": "FAIL",
+    "LF-M12-B004": "FAIL",
+    "LF-M12-B005": "FAIL",
+    "LF-M12-B006": "FAIL",
+    "LF-M12-B007": "FAIL",
+    "LF-M12-B008": "FAIL",
+    "LF-M12-B009": "FAIL",
+    "LF-M12-B010": "FAIL"
+   },
+   "failed_killers": [
+    "LF-M12-B001",
+    "LF-M12-B002",
+    "LF-M12-B003",
+    "LF-M12-B004",
+    "LF-M12-B005",
+    "LF-M12-B006",
+    "LF-M12-B007",
+    "LF-M12-B008",
+    "LF-M12-B009",
+    "LF-M12-B010"
+   ],
+   "mutant_details": {
+    "LF-M12-B001": "failed: ['run_not_invalid']",
+    "LF-M12-B002": "failed: ['valid:search_200_notes', 'run_not_invalid']",
+    "LF-M12-B003": "failed: ['run_not_invalid']",
+    "LF-M12-B004": "failed: ['run_not_invalid']",
+    "LF-M12-B005": "failed: ['run_not_invalid']",
+    "LF-M12-B006": "failed: ['run_not_invalid']",
+    "LF-M12-B007": "failed: ['run_not_invalid']",
+    "LF-M12-B008": "failed: ['run_not_invalid']",
+    "LF-M12-B009": "failed: ['run_not_invalid']",
+    "LF-M12-B010": "failed: ['run_not_invalid']"
+   },
+   "imported_from": "LF-M12-MUT18",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT19",
+   "name": "Bad timer mode",
+   "finding_ids": [
+    "M12-AUDIT-10"
+   ],
+   "kill_oracle": "Owned normal-loop autosave firing oracle fails.",
+   "files": [
+    "localflow/v2/ui/scratchpad.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/scratchpad.py": {
+      "sha_before": "c74a8b578f926d2f",
+      "sha_after": "932b6ddbcdc89ff6",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "regression:r10_timer_fires_in_the_default_run_loop"
+   ],
+   "seconds": 4.6,
+   "mutant": {
+    "regression:r10_timer_fires_in_the_default_run_loop": "PASS"
+   },
+   "failed_killers": [],
+   "mutant_details": {},
+   "imported_from": "LF-M12-MUT19",
+   "outcome": "survived",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT20",
+   "name": "Remove callback dedupe",
+   "finding_ids": [
+    "M12-AUDIT-16"
+   ],
+   "kill_oracle": "Exact logical observation count exceeds one.",
+   "files": [
+    "localflow/v2/training.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/training.py": {
+      "sha_before": "15e48e05d2cfa16b",
+      "sha_after": "8a2103428a7ba719",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C114",
+    "LF-M12-C116",
+    "LF-M12-C117",
+    "LF-M12-C118",
+    "LF-M12-S004",
+    "LF-M12-S019",
+    "LF-M12-S026"
+   ],
+   "seconds": 1.4,
+   "mutant": {
+    "LF-M12-C114": "FAIL",
+    "LF-M12-C116": "PASS",
+    "LF-M12-C117": "PASS",
+    "LF-M12-C118": "PASS",
+    "LF-M12-S004": "PASS",
+    "LF-M12-S019": "FAIL",
+    "LF-M12-S026": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-C114",
+    "LF-M12-S019"
+   ],
+   "mutant_details": {
+    "LF-M12-C114": "a redelivered revision event added a second observation",
+    "LF-M12-S019": "failed: ['no_duplicate_after_retry']"
+   },
+   "imported_from": "LF-M12-MUT20",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT21",
+   "name": "Old pending overwrites newer",
+   "finding_ids": [
+    "M12-AUDIT-09"
+   ],
+   "kill_oracle": "Per-operation provenance fails despite surviving text.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "87ed275551864731",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C033",
+    "LF-M12-C034",
+    "LF-M12-C039",
+    "LF-M12-C040",
+    "LF-M12-C041",
+    "LF-M12-C042",
+    "LF-M12-C057",
+    "LF-M12-S008",
+    "LF-M12-S009",
+    "LF-M12-S025"
+   ],
+   "seconds": 0.8,
+   "mutant": {
+    "LF-M12-C033": "PASS",
+    "LF-M12-C034": "FAIL",
+    "LF-M12-C039": "PASS",
+    "LF-M12-C040": "PASS",
+    "LF-M12-C041": "PASS",
+    "LF-M12-C042": "PASS",
+    "LF-M12-C057": "PASS",
+    "LF-M12-S008": "PASS",
+    "LF-M12-S009": "PASS",
+    "LF-M12-S025": "FAIL"
+   },
+   "failed_killers": [
+    "LF-M12-C034",
+    "LF-M12-S025"
+   ],
+   "mutant_details": {
+    "LF-M12-C034": "arrival B's identity was overwritten: {'dictated': ['AAA']}",
+    "LF-M12-S025": "arrival B's identity was overwritten: {'dictated': ['AAA']}"
+   },
+   "imported_from": "LF-M12-MUT21",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M12-MUT22",
+   "name": "Clamp malformed native range",
+   "finding_ids": [
+    "M12-AUDIT-22"
+   ],
+   "kill_oracle": "Invalid-range refusal and unchanged-text oracle fails.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "444362c2980edce9",
+      "sha_after": "8e984b58e0db36a7",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M12-C022",
+    "LF-M12-C023",
+    "LF-M12-C024",
+    "LF-M12-C025",
+    "LF-M12-C026",
+    "LF-M12-C027",
+    "LF-M12-C028",
+    "LF-M12-S022"
+   ],
+   "seconds": 0.6,
+   "mutant": {
+    "LF-M12-C022": "FAIL",
+    "LF-M12-C023": "FAIL",
+    "LF-M12-C024": "FAIL",
+    "LF-M12-C025": "FAIL",
+    "LF-M12-C026": "FAIL",
+    "LF-M12-C027": "FAIL",
+    "LF-M12-C028": "PASS",
+    "LF-M12-S022": "PASS"
+   },
+   "failed_killers": [
+    "LF-M12-C022",
+    "LF-M12-C023",
+    "LF-M12-C024",
+    "LF-M12-C025",
+    "LF-M12-C026",
+    "LF-M12-C027"
+   ],
+   "mutant_details": {
+    "LF-M12-C022": "failed: ['refused']",
+    "LF-M12-C023": "failed: ['refused']",
+    "LF-M12-C024": "failed: ['refused']",
+    "LF-M12-C025": "failed: ['refused']",
+    "LF-M12-C026": "failed: ['refused']",
+    "LF-M12-C027": "failed: ['refused']"
+   },
+   "imported_from": "LF-M12-MUT22",
+   "outcome": "killed",
+   "reason": null
+  }
+ ]
+}

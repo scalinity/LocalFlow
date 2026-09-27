@@ -1,0 +1,830 @@
+{
+ "suite": "tests/v2/notes/test_m12_remediation.py",
+ "suite_sha256": "0b6a92e675206c2b6d1d6f18819c368ec1b0266dcb3f3d0412ff5103dc2bfaf1",
+ "code_root_sha": "114ba5831c2581d28c96d427ac866c2f92c1b24a",
+ "tracked_files_modified": false,
+ "production_tree_modified": false,
+ "localflow_imported_from_root": "base-114ba58",
+ "python": "3.14.7",
+ "counts": {
+  "FAIL": 59,
+  "ERROR": 3,
+  "PASS": 12
+ },
+ "results": [
+  {
+   "id": "r01a_read_refuses_parent_traversal",
+   "finding": "M12-AUDIT-01",
+   "status": "FAIL",
+   "note": "an out-of-root payload was read (opened=1)",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483197.82,
+    1790483197.829
+   ]
+  },
+  {
+   "id": "r01b_read_refuses_absolute_and_dir_symlink_and_final_symlink",
+   "finding": "M12-AUDIT-01",
+   "status": "FAIL",
+   "note": "absolute: the outside sentinel was readable",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483197.829,
+    1790483197.836
+   ]
+  },
+  {
+   "id": "r01c_read_refuses_fifo_and_directory",
+   "finding": "M12-AUDIT-01",
+   "status": "FAIL",
+   "note": "fifo: the payload read blocked on a nonregular file",
+   "seconds": 3.01,
+   "window_epoch": [
+    1790483197.836,
+    1790483200.849
+   ]
+  },
+  {
+   "id": "r01d_delete_attachment_keeps_outside_sentinel",
+   "finding": "M12-AUDIT-01",
+   "status": "FAIL",
+   "note": "parent_traversal: delete_attachment removed the outside sentinel",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483200.849,
+    1790483200.857
+   ]
+  },
+  {
+   "id": "r01e_delete_note_keeps_outside_sentinel",
+   "finding": "M12-AUDIT-01",
+   "status": "FAIL",
+   "note": "parent_traversal: delete_note removed the outside sentinel",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483200.857,
+    1790483200.864
+   ]
+  },
+  {
+   "id": "r02a_failure_after_first_attachment_keeps_preexisting_files",
+   "finding": "M12-AUDIT-02",
+   "status": "FAIL",
+   "note": "pre-existing files damaged: 2",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483200.864,
+    1790483200.873
+   ]
+  },
+  {
+   "id": "r02b_chmod_failure_keeps_preexisting_main_file",
+   "finding": "M12-AUDIT-02",
+   "status": "FAIL",
+   "note": "the pre-existing main file was replaced by a failed export",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483200.873,
+    1790483200.881
+   ]
+  },
+  {
+   "id": "r02c_destination_symlink_never_writes_through",
+   "finding": "M12-AUDIT-02",
+   "status": "FAIL",
+   "note": "export wrote through a destination symlink",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483200.881,
+    1790483200.888
+   ]
+  },
+  {
+   "id": "r02d_unapproved_sibling_is_never_overwritten",
+   "finding": "M12-AUDIT-02",
+   "status": "FAIL",
+   "note": "a pre-existing sibling file was overwritten",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483200.888,
+    1790483200.896
+   ]
+  },
+  {
+   "id": "r03a_failed_switch_save_keeps_the_tail",
+   "finding": "M12-AUDIT-03",
+   "status": "FAIL",
+   "note": "the failed outgoing save discarded the only newest text",
+   "seconds": 0.3,
+   "window_epoch": [
+    1790483200.896,
+    1790483201.197
+   ]
+  },
+  {
+   "id": "r03b_held_then_failed_save_keeps_the_tail",
+   "finding": "M12-AUDIT-03",
+   "status": "FAIL",
+   "note": "a held save that then failed lost the only newest text",
+   "seconds": 0.07,
+   "window_epoch": [
+    1790483201.197,
+    1790483201.268
+   ]
+  },
+  {
+   "id": "r04_typed_prefix_never_gets_dictated_provenance",
+   "finding": "M12-AUDIT-04",
+   "status": "FAIL",
+   "note": "dictated provenance covers ['one'], not exactly the arrival",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483201.269,
+    1790483201.32
+   ]
+  },
+  {
+   "id": "r05a_rolled_back_attachment_delete_keeps_payload",
+   "finding": "M12-AUDIT-05",
+   "status": "FAIL",
+   "note": "a rolled-back delete removed a live payload",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483201.32,
+    1790483201.328
+   ]
+  },
+  {
+   "id": "r05b_rolled_back_note_delete_keeps_payload",
+   "finding": "M12-AUDIT-05",
+   "status": "FAIL",
+   "note": "a rolled-back note delete removed a live payload",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483201.328,
+    1790483201.336
+   ]
+  },
+  {
+   "id": "r05c_failed_unlink_is_durably_pending_and_retried",
+   "finding": "M12-AUDIT-05",
+   "status": "FAIL",
+   "note": "a failed unlink left the payload with no durable pending purge",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483201.336,
+    1790483201.343
+   ]
+  },
+  {
+   "id": "r06a_deleted_owner_is_refused",
+   "finding": "M12-AUDIT-06",
+   "status": "FAIL",
+   "note": "a deleted note gained a live attachment row",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483201.343,
+    1790483201.351
+   ]
+  },
+  {
+   "id": "r06b_timeout_then_late_commit_keeps_payload",
+   "finding": "M12-AUDIT-06",
+   "status": "FAIL",
+   "note": "a committed attachment row lost its payload to cleanup",
+   "seconds": 0.21,
+   "window_epoch": [
+    1790483201.351,
+    1790483201.563
+   ]
+  },
+  {
+   "id": "r06c_crash_after_payload_write_is_reconciled",
+   "finding": "M12-AUDIT-06",
+   "status": "FAIL",
+   "note": "crash-left payloads with no owner: 1",
+   "seconds": 0.1,
+   "window_epoch": [
+    1790483201.563,
+    1790483201.66
+   ]
+  },
+  {
+   "id": "r07a_held_commit_is_not_confirmed",
+   "finding": "M12-AUDIT-07",
+   "status": "FAIL",
+   "note": "confirmed before the note revision committed",
+   "seconds": 0.15,
+   "window_epoch": [
+    1790483201.66,
+    1790483201.813
+   ]
+  },
+  {
+   "id": "r07b_failed_commit_is_never_confirmed",
+   "finding": "M12-AUDIT-07",
+   "status": "FAIL",
+   "note": "a failed note save is recorded as a confirmed insertion",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483201.813,
+    1790483201.953
+   ]
+  },
+  {
+   "id": "r07c_transform_applied_waits_for_the_revision",
+   "finding": "M12-AUDIT-07",
+   "status": "FAIL",
+   "note": "transform_applied published before the revision committed",
+   "seconds": 10.08,
+   "window_epoch": [
+    1790483201.953,
+    1790483212.032
+   ]
+  },
+  {
+   "id": "r08a_snapshot_does_not_claim_an_uncommitted_generation",
+   "finding": "M12-AUDIT-08",
+   "status": "FAIL",
+   "note": "Snapshot reported saved while generation B was uncommitted",
+   "seconds": 0.36,
+   "window_epoch": [
+    1790483212.032,
+    1790483212.391
+   ]
+  },
+  {
+   "id": "r08b_quit_settles_admitted_note_work",
+   "finding": "M12-AUDIT-08",
+   "status": "FAIL",
+   "note": "quit did not settle the admitted note save before the store closed",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483212.391,
+    1790483212.443
+   ]
+  },
+  {
+   "id": "r08c_close_during_flush_keeps_the_newer_generation",
+   "finding": "M12-AUDIT-08",
+   "status": "FAIL",
+   "note": "closing during flush A dropped the admitted generation B",
+   "seconds": 0.26,
+   "window_epoch": [
+    1790483212.443,
+    1790483212.698
+   ]
+  },
+  {
+   "id": "r09a_two_arrivals_keep_their_own_provenance",
+   "finding": "M12-AUDIT-09",
+   "status": "FAIL",
+   "note": "arrival A lost its own revision/provenance to arrival B",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483212.698,
+    1790483212.75
+   ]
+  },
+  {
+   "id": "r09b_failed_older_arrival_never_overwrites_newer_identity",
+   "finding": "M12-AUDIT-09",
+   "status": "FAIL",
+   "note": "arrival B's identity was overwritten: {'dictated': ['AAA']}",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483212.75,
+    1790483212.803
+   ]
+  },
+  {
+   "id": "r10_timer_fires_in_the_default_run_loop",
+   "finding": "M12-AUDIT-10",
+   "status": "FAIL",
+   "note": "the installed autosave timer never fired in the default mode",
+   "seconds": 4.13,
+   "window_epoch": [
+    1790483212.803,
+    1790483216.932
+   ]
+  },
+  {
+   "id": "r11a_pin_and_delete_never_act_on_an_unrendered_note",
+   "finding": "M12-AUDIT-11",
+   "status": "FAIL",
+   "note": "Pin acted on the selected, unrendered note",
+   "seconds": 0.07,
+   "window_epoch": [
+    1790483216.932,
+    1790483217.0
+   ]
+  },
+  {
+   "id": "r11b_add_image_revalidates_after_the_dialog",
+   "finding": "M12-AUDIT-11",
+   "status": "FAIL",
+   "note": "the attachment belongs to A but its marker landed in B",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483217.0,
+    1790483217.062
+   ]
+  },
+  {
+   "id": "r12_emoji_before_caret_lands_at_the_caret",
+   "finding": "M12-AUDIT-12",
+   "status": "FAIL",
+   "note": "the dictation did not land at the caret",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483217.062,
+    1790483217.199
+   ]
+  },
+  {
+   "id": "r13_whole_note_accept_refuses_after_growth",
+   "finding": "M12-AUDIT-13",
+   "status": "FAIL",
+   "note": "a whole-note transform replaced part of a note that changed",
+   "seconds": 10.08,
+   "window_epoch": [
+    1790483217.199,
+    1790483227.281
+   ]
+  },
+  {
+   "id": "r14a_copy_uses_the_current_attempt_final_artifact",
+   "finding": "M12-AUDIT-14",
+   "status": "FAIL",
+   "note": "the transfer did not bind to the displayed final artifact",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483227.281,
+    1790483227.311
+   ]
+  },
+  {
+   "id": "r14b_missing_final_is_refused_not_substituted",
+   "finding": "M12-AUDIT-14",
+   "status": "FAIL",
+   "note": "a missing final stage was replaced by an earlier stage",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483227.311,
+    1790483227.342
+   ]
+  },
+  {
+   "id": "r15a_delete_purges_the_note_transform_graph",
+   "finding": "M12-AUDIT-15",
+   "status": "FAIL",
+   "note": "note-derived transform artifacts survived the note's deletion",
+   "seconds": 10.09,
+   "window_epoch": [
+    1790483227.342,
+    1790483237.427
+   ]
+  },
+  {
+   "id": "r15b_late_candidate_cannot_republish_a_deleted_note",
+   "finding": "M12-AUDIT-15",
+   "status": "FAIL",
+   "note": "a late producer recreated a deleted note's content",
+   "seconds": 10.08,
+   "window_epoch": [
+    1790483237.427,
+    1790483247.512
+   ]
+  },
+  {
+   "id": "r16a_late_callback_cannot_reopen_a_deleted_note",
+   "finding": "M12-AUDIT-16",
+   "status": "FAIL",
+   "note": "a late evidence callback reopened a deleted note's link",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483247.512,
+    1790483247.652
+   ]
+  },
+  {
+   "id": "r16b_same_revision_event_counts_once",
+   "finding": "M12-AUDIT-16",
+   "status": "FAIL",
+   "note": "a redelivered revision event added a second observation",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483247.652,
+    1790483247.79
+   ]
+  },
+  {
+   "id": "r17_surviving_typed_echo_is_not_dictated",
+   "finding": "M12-AUDIT-17",
+   "status": "FAIL",
+   "note": "the surviving typed word was asserted to be dictated",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483247.79,
+    1790483247.797
+   ]
+  },
+  {
+   "id": "r18_old_save_cannot_clear_a_newer_generation",
+   "finding": "M12-AUDIT-18",
+   "status": "FAIL",
+   "note": "an older save cleared the marker while B was unsaved",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483247.797,
+    1790483247.848
+   ]
+  },
+  {
+   "id": "r19a_closed_note_dictation_does_not_touch_the_clipboard",
+   "finding": "M12-AUDIT-19",
+   "status": "FAIL",
+   "note": "a refused note destination published to the clipboard",
+   "seconds": 0.13,
+   "window_epoch": [
+    1790483247.848,
+    1790483247.982
+   ]
+  },
+  {
+   "id": "r19b_refused_note_transform_does_not_touch_the_clipboard",
+   "finding": "M12-AUDIT-19",
+   "status": "FAIL",
+   "note": "a refused note transform published to the clipboard",
+   "seconds": 10.09,
+   "window_epoch": [
+    1790483247.982,
+    1790483258.074
+   ]
+  },
+  {
+   "id": "r20_move_selector_reaches_the_transfer",
+   "finding": "M12-AUDIT-20",
+   "status": "FAIL",
+   "note": "the Move selector raised AttributeError",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483258.074,
+    1790483258.11
+   ]
+  },
+  {
+   "id": "r21_actions_fit_at_default_and_minimum_sizes",
+   "finding": "M12-AUDIT-21",
+   "status": "FAIL",
+   "note": "actions outside the pane: [((1100.0, 760.0), 'Export .txt'), ((1100.0, 760.0), 'Delete'), ((900.0, 620.0), 'Restore'), ((900.0, 620.0), 'Export .md'), ((900.0, 620.0), 'Export .txt'), ((900.0, 620.0), 'Delete')]",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483258.11,
+    1790483258.159
+   ]
+  },
+  {
+   "id": "r22_malformed_ranges_refuse",
+   "finding": "M12-AUDIT-22",
+   "status": "FAIL",
+   "note": "malformed native ranges converted: [((2, 0), (2, 2)), ((1, 1), (1, 2)), ((-1, 1), (0, 0)), ((0, -1), (0, 0)), ((3, 5), (2, 3)), ((1000000000, 1), (3, 3)), ((0, 1000000000), (0, 3))]",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483258.159,
+    1790483258.159
+   ]
+  },
+  {
+   "id": "r23_chosen_transform_and_version_survive_refresh",
+   "finding": "M12-AUDIT-23",
+   "status": "FAIL",
+   "note": "the chosen transform reset on refresh",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483258.159,
+    1790483258.212
+   ]
+  },
+  {
+   "id": "r24a_pin_and_new_with_unknown_outcome_do_not_claim_failure",
+   "finding": "M12-AUDIT-24",
+   "status": "FAIL",
+   "note": "an admitted mutation with an unknown outcome was reported as failed",
+   "seconds": 0.45,
+   "window_epoch": [
+    1790483258.212,
+    1790483258.662
+   ]
+  },
+  {
+   "id": "r24b_history_copy_unknown_is_not_failure_and_never_deletes",
+   "finding": "M12-AUDIT-24",
+   "status": "FAIL",
+   "note": "an unknown creation was reported as failed ({'outcome': 'create_failed'})",
+   "seconds": 0.25,
+   "window_epoch": [
+    1790483258.662,
+    1790483258.91
+   ]
+  },
+  {
+   "id": "r25_benchmark_fixture_and_validity",
+   "finding": "M12-AUDIT-25",
+   "status": "FAIL",
+   "note": "the 10,000-word fixture has 11250 words",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483258.91,
+    1790483258.914
+   ]
+  },
+  {
+   "id": "r26_m12_results_carry_no_private_absolute_path",
+   "finding": "M12-AUDIT-26",
+   "status": "FAIL",
+   "note": "private absolute paths in fields: ['results.json.environment.cwd', 'results.json.human_verification.steps']",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483258.914,
+    1790483258.915
+   ]
+  },
+  {
+   "id": "l01_legacy_row_transfer_is_honest",
+   "finding": "LOCAL-M12-01",
+   "status": "FAIL",
+   "note": "legacy transfer raised RuntimeError",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483258.915,
+    1790483258.941
+   ]
+  },
+  {
+   "id": "l02_populated_m12_table_loss_is_refused",
+   "finding": "LOCAL-M12-02",
+   "status": "FAIL",
+   "note": "recreated empty and opened as intact: ['notes', 'note_revisions', 'note_attachments']",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483258.941,
+    1790483258.979
+   ]
+  },
+  {
+   "id": "l03_identical_version_labels_restore_the_chosen_revision",
+   "finding": "LOCAL-M12-03",
+   "status": "FAIL",
+   "note": "the popup shows 2 versions for 4 revisions",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483258.979,
+    1790483259.027
+   ]
+  },
+  {
+   "id": "v01a_stale_detail_never_rebinds_over_a_committed_arrival",
+   "finding": "REVIEW-01",
+   "status": "ERROR",
+   "note": "AttributeError: 'bool' object has no attribute 'outcome'",
+   "seconds": 10.06,
+   "window_epoch": [
+    1790483259.027,
+    1790483269.089
+   ]
+  },
+  {
+   "id": "v01b_restore_is_bound_before_the_next_arrival",
+   "finding": "REVIEW-01",
+   "status": "FAIL",
+   "note": "the arrival undid the restore (current 'version two DICT')",
+   "seconds": 0.07,
+   "window_epoch": [
+    1790483269.089,
+    1790483269.162
+   ]
+  },
+  {
+   "id": "v02a_per_word_ambiguity_abstains",
+   "finding": "REVIEW-02",
+   "status": "FAIL",
+   "note": "the surviving typed 'world' was claimed as dictated",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483269.162,
+    1790483269.162
+   ]
+  },
+  {
+   "id": "v02b_single_edit_fuzz_never_claims_a_typed_word",
+   "finding": "REVIEW-02",
+   "status": "FAIL",
+   "note": "98 surviving spans covered typed words",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483269.162,
+    1790483269.18
+   ]
+  },
+  {
+   "id": "v03_history_transform_output_is_not_labelled_dictated",
+   "finding": "REVIEW-03",
+   "status": "FAIL",
+   "note": "",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483269.18,
+    1790483269.205
+   ]
+  },
+  {
+   "id": "v04_marker_write_never_blocks_the_main_thread",
+   "finding": "REVIEW-04",
+   "status": "PASS",
+   "note": "",
+   "seconds": 1.05,
+   "window_epoch": [
+    1790483269.205,
+    1790483270.255
+   ]
+  },
+  {
+   "id": "v05_late_marker_write_never_flags_a_saved_note",
+   "finding": "REVIEW-05",
+   "status": "FAIL",
+   "note": "a late marker write flagged a fully saved note",
+   "seconds": 0.07,
+   "window_epoch": [
+    1790483270.255,
+    1790483270.321
+   ]
+  },
+  {
+   "id": "v06_retried_attachment_id_survives_reopen",
+   "finding": "REVIEW-06",
+   "status": "ERROR",
+   "note": "AttributeError: module 'localflow.v2.notes' has no attribute 'NoteOutcomeUnknown'",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483270.321,
+    1790483270.328
+   ]
+  },
+  {
+   "id": "v07_autosave_ticks_do_not_pile_up_threads",
+   "finding": "REVIEW-07",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483270.328,
+    1790483270.369
+   ]
+  },
+  {
+   "id": "v08_restore_that_never_started_is_not_pending",
+   "finding": "REVIEW-08",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.15,
+   "window_epoch": [
+    1790483270.369,
+    1790483270.514
+   ]
+  },
+  {
+   "id": "v09_tab_chip_closes_the_note_it_shows",
+   "finding": "REVIEW-09",
+   "status": "FAIL",
+   "note": "the chip showing one note closed another",
+   "seconds": 0.11,
+   "window_epoch": [
+    1790483270.514,
+    1790483270.627
+   ]
+  },
+  {
+   "id": "v10_reoffer_names_only_its_own_result",
+   "finding": "REVIEW-10",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute 'forget_note'",
+   "seconds": 20.1,
+   "window_epoch": [
+    1790483270.627,
+    1790483290.723
+   ]
+  },
+  {
+   "id": "v11_switch_does_not_block_the_main_thread",
+   "finding": "REVIEW-11",
+   "status": "FAIL",
+   "note": "switching blocked the main thread 1.51s",
+   "seconds": 1.56,
+   "window_epoch": [
+    1790483290.723,
+    1790483292.286
+   ]
+  },
+  {
+   "id": "v13_suites_refuse_to_run_unisolated",
+   "finding": "REVIEW-13",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.12,
+   "window_epoch": [
+    1790483292.286,
+    1790483292.409
+   ]
+  },
+  {
+   "id": "c01_serial_appends_keep_an_immutable_parent_chain",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483292.409,
+    1790483292.418
+   ]
+  },
+  {
+   "id": "c02_late_append_after_delete_is_refused",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483292.418,
+    1790483292.423
+   ]
+  },
+  {
+   "id": "c03_ordinary_switch_persists_the_outgoing_tail",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483292.423,
+    1790483292.47
+   ]
+  },
+  {
+   "id": "c04_ascii_caret_dictation_lands_at_the_caret",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.13,
+   "window_epoch": [
+    1790483292.47,
+    1790483292.6
+   ]
+  },
+  {
+   "id": "c05_selection_transform_allows_an_outside_edit",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.09,
+   "window_epoch": [
+    1790483292.6,
+    1790483302.685
+   ]
+  },
+  {
+   "id": "c06_consent_off_keeps_notes_working",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.13,
+   "window_epoch": [
+    1790483302.685,
+    1790483302.819
+   ]
+  },
+  {
+   "id": "c07_clean_restore_rebinds_before_the_next_keystroke",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483302.819,
+    1790483302.869
+   ]
+  },
+  {
+   "id": "c08_ordinary_export_round_trip",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483302.869,
+    1790483302.877
+   ]
+  }
+ ]
+}

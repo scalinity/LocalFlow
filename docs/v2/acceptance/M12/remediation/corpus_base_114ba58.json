@@ -1,0 +1,4187 @@
+{
+ "suite": "tests/v2/notes/m12_corpus_runner.py",
+ "suite_sha256": "cc4348289f90b20d979314ea6cf94127fb97714a26c006e13cce88db0ffd5d1f",
+ "code_root_sha": "114ba5831c2581d28c96d427ac866c2f92c1b24a",
+ "tracked_files_modified": false,
+ "production_tree_modified": false,
+ "localflow_imported_from_root": "base-114ba58",
+ "python": "3.14.7",
+ "localflow_tree": "ae73f7679199340c946310d1fb0277f3da9e9d65",
+ "driver_sha256": {
+  "m12_drivers.py": "86491364719310d18c530bd04409728d45920b29a8fc013ce23405db0d8b335f",
+  "m12_drivers_b.py": "f6ee598f6b052611276f5126427326cd955d6a16cbfb2fbba9696210043b3914",
+  "m12_drivers_c.py": "c16209c3a417b285796f3cea8b18090b3bf4809db8d106196f30c1b1d9cbfc4f"
+ },
+ "oracle_version": "m12-corpus-oracles-r1",
+ "corpus": "tests/v2/notes/m12_audit_corpus.json",
+ "corpus_sha256": "0c1e9cc51d82da29e1e4d3ad91097a8532a9c078eb6c3ce31ca1509349fc5be9",
+ "adjudications": {
+  "path": "docs/v2/acceptance/M12/remediation/adjudications.json",
+  "sha256": "eb6a8a6d6c00e590c0a6963f038bc56939a41578ae2c83aea0b133c39deb6ffa",
+  "policy_revision": "m12-policy-r1"
+ },
+ "native_record": null,
+ "summary": {
+  "cases": 175,
+  "counts": {
+   "PASS": 46,
+   "ERROR": 38,
+   "FAIL": 79,
+   "NOT_RUN": 12
+  },
+  "by_kind": {
+   "portable": {
+    "PASS": 42,
+    "ERROR": 23,
+    "FAIL": 60
+   },
+   "stateful": {
+    "FAIL": 19,
+    "ERROR": 5,
+    "PASS": 4
+   },
+   "native": {
+    "NOT_RUN": 12
+   },
+   "performance": {
+    "ERROR": 10
+   }
+  },
+  "metamorphic": {
+   "PASS": 4,
+   "FAIL": 7,
+   "ERROR": 3
+  }
+ },
+ "results": [
+  {
+   "id": "LF-M12-C001",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c001",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "c01_serial_appends_keep_an_immutable_parent_chain"
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C002",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c002",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "revisions": 6,
+    "checks": {
+     "older_unchanged": true,
+     "copy_of_r1": true,
+     "parent_is_r5": true,
+     "restore_of_r1": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C003",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c003",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "refused": true,
+     "b_unchanged": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C004",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c004",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "c07_clean_restore_rebinds_before_the_next_keystroke"
+   },
+   "seconds": 0.288
+  },
+  {
+   "id": "LF-M12-C005",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [
+    "M12-AUDIT-03",
+    "M12-AUDIT-08"
+   ],
+   "driver": "c005",
+   "status": "ERROR",
+   "note": "RuntimeError: injected append failure",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.049
+  },
+  {
+   "id": "LF-M12-C006",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c006",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "revisions": 200,
+    "headers": 200,
+    "checks": {
+     "header_count": true,
+     "truncated_flag": true,
+     "newest_first_exact_ids": true
+    }
+   },
+   "seconds": 0.073
+  },
+  {
+   "id": "LF-M12-C007",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c006",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "revisions": 201,
+    "headers": 200,
+    "checks": {
+     "header_count": true,
+     "truncated_flag": true,
+     "newest_first_exact_ids": true
+    }
+   },
+   "seconds": 0.074
+  },
+  {
+   "id": "LF-M12-C008",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c006",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "revisions": 1000,
+    "headers": 200,
+    "checks": {
+     "header_count": true,
+     "truncated_flag": true,
+     "newest_first_exact_ids": true
+    }
+   },
+   "seconds": 0.332
+  },
+  {
+   "id": "LF-M12-C009",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c009",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "pinned_first": true,
+     "no_revisions_from_pin": true,
+     "pin_is_not_retention": true,
+     "other_note_kept": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C010",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c010",
+   "status": "FAIL",
+   "note": "recreated empty and opened as intact: ['notes', 'note_revisions', 'note_attachments']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "l02_populated_m12_table_loss_is_refused"
+   },
+   "seconds": 0.031
+  },
+  {
+   "id": "LF-M12-C011",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c011",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "expected": 1,
+    "got": 1,
+    "checks": {
+     "exact_literal_matches": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C012",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c011",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "expected": 1,
+    "got": 1,
+    "checks": {
+     "exact_literal_matches": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C013",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c011",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "expected": 1,
+    "got": 1,
+    "checks": {
+     "exact_literal_matches": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C014",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c011",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "expected": 1,
+    "got": 1,
+    "checks": {
+     "exact_literal_matches": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C015",
+   "kind": "portable",
+   "category": "note_revisions",
+   "finding_ids": [],
+   "driver": "c011",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "expected": 0,
+    "got": 0,
+    "checks": {
+     "exact_literal_matches": true,
+     "positive_control": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C016",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-12"
+   ],
+   "driver": "c016",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute '_native_range'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "LF-M12-C017",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-12"
+   ],
+   "driver": "c016",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute '_native_range'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "LF-M12-C018",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-12"
+   ],
+   "driver": "c016",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute '_native_range'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.001
+  },
+  {
+   "id": "LF-M12-C019",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-12"
+   ],
+   "driver": "c016",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute '_native_range'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C020",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-12"
+   ],
+   "driver": "c016",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute '_native_range'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C021",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-12"
+   ],
+   "driver": "c016",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute '_native_range'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C022",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-22"
+   ],
+   "driver": "c022",
+   "status": "FAIL",
+   "note": "failed: ['refused']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "converted": [
+     2,
+     2
+    ],
+    "checks": {
+     "refused": false,
+     "valid_control": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C023",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-22"
+   ],
+   "driver": "c022",
+   "status": "FAIL",
+   "note": "failed: ['refused']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "converted": [
+     0,
+     2
+    ],
+    "checks": {
+     "refused": false,
+     "valid_control": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C024",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-22"
+   ],
+   "driver": "c022",
+   "status": "FAIL",
+   "note": "failed: ['refused']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "converted": [
+     0,
+     0
+    ],
+    "checks": {
+     "refused": false,
+     "valid_control": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C025",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-22"
+   ],
+   "driver": "c022",
+   "status": "FAIL",
+   "note": "failed: ['refused']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "converted": [
+     0,
+     0
+    ],
+    "checks": {
+     "refused": false,
+     "valid_control": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C026",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-22"
+   ],
+   "driver": "c022",
+   "status": "FAIL",
+   "note": "failed: ['refused']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "converted": [
+     3,
+     3
+    ],
+    "checks": {
+     "refused": false,
+     "valid_control": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C027",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-22"
+   ],
+   "driver": "c022",
+   "status": "FAIL",
+   "note": "failed: ['refused']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "converted": [
+     3,
+     3
+    ],
+    "checks": {
+     "refused": false,
+     "valid_control": true
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C028",
+   "kind": "portable",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-12",
+    "M12-AUDIT-22"
+   ],
+   "driver": "c028",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute 'selection'",
+   "adjudication": {
+    "decision": "D01",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.004
+  },
+  {
+   "id": "LF-M12-C029",
+   "kind": "portable",
+   "category": "autosave",
+   "finding_ids": [],
+   "driver": "c029",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "waits_for_debounce": true,
+     "commits_typed_autosave": true
+    }
+   },
+   "seconds": 0.006
+  },
+  {
+   "id": "LF-M12-C030",
+   "kind": "portable",
+   "category": "autosave",
+   "finding_ids": [
+    "M12-AUDIT-18"
+   ],
+   "driver": "c030",
+   "status": "FAIL",
+   "note": "failed: ['newer_generation_keeps_marker']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "writer_held"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "newer_generation_keeps_marker": false,
+     "newest_save_settles_it": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C031",
+   "kind": "portable",
+   "category": "autosave",
+   "finding_ids": [
+    "M12-AUDIT-03"
+   ],
+   "driver": "c031",
+   "status": "FAIL",
+   "note": "the failed outgoing save discarded the only newest text",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r03a_failed_switch_save_keeps_the_tail"
+   },
+   "seconds": 0.05
+  },
+  {
+   "id": "LF-M12-C032",
+   "kind": "portable",
+   "category": "autosave",
+   "finding_ids": [
+    "M12-AUDIT-08"
+   ],
+   "driver": "c032",
+   "status": "FAIL",
+   "note": "failed: ['generation_committed_at_return']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "autosave_before_commit"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "status": "snapshot saved (already_flushing)",
+    "checks": {
+     "generation_committed_at_return": false,
+     "status_names_saved_state": true
+    }
+   },
+   "seconds": 0.044
+  },
+  {
+   "id": "LF-M12-C033",
+   "kind": "portable",
+   "category": "autosave",
+   "finding_ids": [
+    "M12-AUDIT-09"
+   ],
+   "driver": "c033",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.006
+  },
+  {
+   "id": "LF-M12-C034",
+   "kind": "portable",
+   "category": "autosave",
+   "finding_ids": [
+    "M12-AUDIT-09"
+   ],
+   "driver": "c034",
+   "status": "FAIL",
+   "note": "arrival B's identity was overwritten: {'dictated': ['AAA']}",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "A_captured"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r09b_failed_older_arrival_never_overwrites_newer_identity"
+   },
+   "seconds": 0.198
+  },
+  {
+   "id": "LF-M12-C035",
+   "kind": "portable",
+   "category": "autosave",
+   "finding_ids": [
+    "M12-AUDIT-07",
+    "M12-AUDIT-18"
+   ],
+   "driver": "c035",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C036",
+   "kind": "portable",
+   "category": "autosave",
+   "finding_ids": [
+    "M12-AUDIT-18",
+    "M12-AUDIT-24"
+   ],
+   "driver": "c036",
+   "status": "FAIL",
+   "note": "failed: ['mark_reports_no_op', 'clear_reports_no_op']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "mark_reports_no_op": false,
+     "clear_reports_no_op": false,
+     "no_row_recreated": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C037",
+   "kind": "portable",
+   "category": "autosave",
+   "finding_ids": [],
+   "driver": "c004",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "c07_clean_restore_rebinds_before_the_next_keystroke"
+   },
+   "seconds": 0.052
+  },
+  {
+   "id": "LF-M12-C038",
+   "kind": "portable",
+   "category": "autosave",
+   "finding_ids": [
+    "M12-AUDIT-08"
+   ],
+   "driver": "c038",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C039",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-04",
+    "M12-AUDIT-09"
+   ],
+   "driver": "c039",
+   "status": "FAIL",
+   "note": "dictated provenance covers ['one'], not exactly the arrival",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r04_typed_prefix_never_gets_dictated_provenance"
+   },
+   "seconds": 0.048
+  },
+  {
+   "id": "LF-M12-C040",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-04",
+    "M12-AUDIT-09"
+   ],
+   "driver": "c040",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C041",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-04",
+    "M12-AUDIT-09"
+   ],
+   "driver": "c041",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C042",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-04",
+    "M12-AUDIT-09"
+   ],
+   "driver": "c042",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.006
+  },
+  {
+   "id": "LF-M12-C043",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-17"
+   ],
+   "driver": "c043",
+   "status": "FAIL",
+   "note": "failed: ['typed_survivor_not_claimed', 'abstention_reported', 'store_path']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "owned": [
+     "echo"
+    ],
+    "edited": [],
+    "checks": {
+     "typed_survivor_not_claimed": false,
+     "abstention_reported": false,
+     "store_path": false
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C044",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-17"
+   ],
+   "driver": "c043",
+   "status": "FAIL",
+   "note": "failed: ['typed_survivor_not_claimed', 'abstention_reported']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "owned": [
+     "red",
+     "blue"
+    ],
+    "edited": [],
+    "checks": {
+     "typed_survivor_not_claimed": false,
+     "abstention_reported": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C045",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-17"
+   ],
+   "driver": "c043",
+   "status": "FAIL",
+   "note": "failed: ['typed_survivor_not_claimed', 'abstention_reported']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "owned": [
+     "echo"
+    ],
+    "edited": [],
+    "checks": {
+     "typed_survivor_not_claimed": false,
+     "abstention_reported": false
+    }
+   },
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-C046",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [],
+   "driver": "c046",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": {
+    "decision": "D04",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.006
+  },
+  {
+   "id": "LF-M12-C047",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [],
+   "driver": "c046",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": {
+    "decision": "D04",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.006
+  },
+  {
+   "id": "LF-M12-C048",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [],
+   "driver": "c046",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": {
+    "decision": "D04",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.006
+  },
+  {
+   "id": "LF-M12-C049",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [],
+   "driver": "c046",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": {
+    "decision": "D04",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.006
+  },
+  {
+   "id": "LF-M12-C050",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [],
+   "driver": "c046",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": {
+    "decision": "D04",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.006
+  },
+  {
+   "id": "LF-M12-C051",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [],
+   "driver": "c046",
+   "status": "ERROR",
+   "note": "AttributeError: 'NotesEditorModel' object has no attribute 'insert'",
+   "adjudication": {
+    "decision": "D04",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.006
+  },
+  {
+   "id": "LF-M12-C052",
+   "kind": "portable",
+   "category": "note_destination",
+   "finding_ids": [
+    "M12-AUDIT-07",
+    "M12-AUDIT-12",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c052",
+   "status": "FAIL",
+   "note": "failed: ['edit_before_anchor_refuses']",
+   "adjudication": {
+    "decision": "D01",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "edit_before_anchor_refuses": false,
+     "no_clipboard_on_refusal": true,
+     "edit_after_anchor_delivers": true
+    }
+   },
+   "seconds": 0.271
+  },
+  {
+   "id": "LF-M12-C053",
+   "kind": "portable",
+   "category": "note_destination",
+   "finding_ids": [
+    "M12-AUDIT-07",
+    "M12-AUDIT-12",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c053",
+   "status": "PASS",
+   "note": "",
+   "adjudication": {
+    "decision": "D01",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "delivered_at_anchor": true,
+     "b_untouched": true,
+     "confirmed": true,
+     "no_clipboard": true,
+     "no_external": true
+    }
+   },
+   "seconds": 0.144
+  },
+  {
+   "id": "LF-M12-C054",
+   "kind": "portable",
+   "category": "note_destination",
+   "finding_ids": [
+    "M12-AUDIT-07",
+    "M12-AUDIT-12",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c054",
+   "status": "FAIL",
+   "note": "a refused note destination published to the clipboard",
+   "adjudication": {
+    "decision": "D01",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r19a_closed_note_dictation_does_not_touch_the_clipboard"
+   },
+   "seconds": 0.138
+  },
+  {
+   "id": "LF-M12-C055",
+   "kind": "portable",
+   "category": "note_destination",
+   "finding_ids": [
+    "M12-AUDIT-07",
+    "M12-AUDIT-12",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c055",
+   "status": "FAIL",
+   "note": "failed: ['no_clipboard']",
+   "adjudication": {
+    "decision": "D01",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "saved_not_inserted": true,
+     "no_resurrection": true,
+     "no_clipboard": false,
+     "no_external": true
+    }
+   },
+   "seconds": 0.137
+  },
+  {
+   "id": "LF-M12-C056",
+   "kind": "portable",
+   "category": "note_destination",
+   "finding_ids": [],
+   "driver": "c056",
+   "status": "PASS",
+   "note": "",
+   "adjudication": {
+    "decision": "D01",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "not_note_bound": true,
+     "note_unchanged": true,
+     "went_to_external_path": true
+    }
+   },
+   "seconds": 0.121
+  },
+  {
+   "id": "LF-M12-C057",
+   "kind": "portable",
+   "category": "note_dictation",
+   "finding_ids": [
+    "M12-AUDIT-07",
+    "M12-AUDIT-09",
+    "M12-AUDIT-12"
+   ],
+   "driver": "c057",
+   "status": "ERROR",
+   "note": "AttributeError: 'HubController' object has no attribute 'scratchpad_capture_target'",
+   "adjudication": {
+    "decision": "D01",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.048
+  },
+  {
+   "id": "LF-M12-C058",
+   "kind": "portable",
+   "category": "note_transforms",
+   "finding_ids": [
+    "M12-AUDIT-13",
+    "M12-AUDIT-15",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c058",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "replaced_whole": true,
+     "transform_identity": true,
+     "no_external": true
+    }
+   },
+   "seconds": 10.077
+  },
+  {
+   "id": "LF-M12-C059",
+   "kind": "portable",
+   "category": "note_transforms",
+   "finding_ids": [
+    "M12-AUDIT-13",
+    "M12-AUDIT-15",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c059",
+   "status": "FAIL",
+   "note": "a whole-note transform replaced part of a note that changed",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r13_whole_note_accept_refuses_after_growth"
+   },
+   "seconds": 10.099
+  },
+  {
+   "id": "LF-M12-C060",
+   "kind": "portable",
+   "category": "note_transforms",
+   "finding_ids": [
+    "M12-AUDIT-13",
+    "M12-AUDIT-15",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c060",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "c05_selection_transform_allows_an_outside_edit"
+   },
+   "seconds": 10.087
+  },
+  {
+   "id": "LF-M12-C061",
+   "kind": "portable",
+   "category": "note_transforms",
+   "finding_ids": [
+    "M12-AUDIT-13",
+    "M12-AUDIT-15",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c061",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "replaces_only_the_captured_range": true,
+     "never_retargets_the_other_copy": true
+    }
+   },
+   "seconds": 20.176
+  },
+  {
+   "id": "LF-M12-C062",
+   "kind": "portable",
+   "category": "note_transforms",
+   "finding_ids": [
+    "M12-AUDIT-13",
+    "M12-AUDIT-15",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c062",
+   "status": "FAIL",
+   "note": "failed: ['no_clipboard']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "refused": true,
+     "no_clipboard": false
+    }
+   },
+   "seconds": 10.082
+  },
+  {
+   "id": "LF-M12-C063",
+   "kind": "portable",
+   "category": "note_transforms",
+   "finding_ids": [
+    "M12-AUDIT-13",
+    "M12-AUDIT-15",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c063",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "chain_keeps_destination": true,
+     "replaced_original_region": true
+    }
+   },
+   "seconds": 20.082
+  },
+  {
+   "id": "LF-M12-C064",
+   "kind": "portable",
+   "category": "note_transforms",
+   "finding_ids": [
+    "M12-AUDIT-13",
+    "M12-AUDIT-15",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c064",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "no_generation": true,
+     "note_unchanged": true
+    }
+   },
+   "seconds": 0.051
+  },
+  {
+   "id": "LF-M12-C065",
+   "kind": "portable",
+   "category": "note_transforms",
+   "finding_ids": [
+    "M12-AUDIT-13",
+    "M12-AUDIT-15",
+    "M12-AUDIT-19"
+   ],
+   "driver": "c065",
+   "status": "FAIL",
+   "note": "failed: ['no_clipboard']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "refused_no_resurrection": true,
+     "no_clipboard": false
+    }
+   },
+   "seconds": 10.089
+  },
+  {
+   "id": "LF-M12-C066",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['refused_or_confined', 'outside_never_touched']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "absolute",
+    "op": "read",
+    "managed_entries": 1,
+    "checks": {
+     "refused_or_confined": false,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": false
+    }
+   },
+   "seconds": 0.009
+  },
+  {
+   "id": "LF-M12-C067",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "absolute",
+    "op": "delete_attachment",
+    "managed_entries": 1,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": false,
+     "outside_never_touched": false,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C068",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "absolute",
+    "op": "delete_note",
+    "managed_entries": 1,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": false,
+     "outside_never_touched": false,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C069",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['refused_or_confined', 'outside_never_touched']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "parent_traversal",
+    "op": "read",
+    "managed_entries": 1,
+    "checks": {
+     "refused_or_confined": false,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": false
+    }
+   },
+   "seconds": 0.013
+  },
+  {
+   "id": "LF-M12-C070",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "parent_traversal",
+    "op": "delete_attachment",
+    "managed_entries": 1,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": false,
+     "outside_never_touched": false,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C071",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "parent_traversal",
+    "op": "delete_note",
+    "managed_entries": 1,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": false,
+     "outside_never_touched": false,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C072",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['refused_or_confined', 'outside_never_touched']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "directory_symlink",
+    "op": "read",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": false,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": false
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C073",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "directory_symlink",
+    "op": "delete_attachment",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": false,
+     "outside_never_touched": false,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C074",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['outside_sentinel_intact', 'outside_never_touched']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "directory_symlink",
+    "op": "delete_note",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": false,
+     "outside_never_touched": false,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C075",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['refused_or_confined', 'outside_never_touched']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "final_symlink",
+    "op": "read",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": false,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": false
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C076",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['nonregular_left_in_place']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "final_symlink",
+    "op": "delete_attachment",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": true,
+     "nonregular_left_in_place": false,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C077",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['nonregular_left_in_place']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "final_symlink",
+    "op": "delete_note",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": true,
+     "nonregular_left_in_place": false,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C078",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "directory",
+    "op": "read",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C079",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "directory",
+    "op": "delete_attachment",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": true,
+     "nonregular_left_in_place": true,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C080",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "directory",
+    "op": "delete_note",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": true,
+     "nonregular_left_in_place": true,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C081",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['refused_or_confined']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "fifo",
+    "op": "read",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": false,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": true
+    }
+   },
+   "seconds": 3.012
+  },
+  {
+   "id": "LF-M12-C082",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['nonregular_left_in_place']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "fifo",
+    "op": "delete_attachment",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": true,
+     "nonregular_left_in_place": false,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.016
+  },
+  {
+   "id": "LF-M12-C083",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-01"
+   ],
+   "driver": "c066",
+   "status": "FAIL",
+   "note": "failed: ['nonregular_left_in_place']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "kind": "fifo",
+    "op": "delete_note",
+    "managed_entries": 2,
+    "checks": {
+     "refused_or_confined": true,
+     "outside_sentinel_intact": true,
+     "outside_never_touched": true,
+     "nonregular_left_in_place": false,
+     "row_purged": true
+    }
+   },
+   "seconds": 0.012
+  },
+  {
+   "id": "LF-M12-C084",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-06"
+   ],
+   "driver": "c084",
+   "status": "FAIL",
+   "note": "a deleted note gained a live attachment row",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r06a_deleted_owner_is_refused"
+   },
+   "seconds": 0.009
+  },
+  {
+   "id": "LF-M12-C085",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-06"
+   ],
+   "driver": "c085",
+   "status": "FAIL",
+   "note": "failed: ['reported_failure', 'no_row', 'no_orphan_file']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "reported_failure": false,
+     "no_row": false,
+     "no_orphan_file": false,
+     "no_open_staging_intent": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C086",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-05"
+   ],
+   "driver": "c086",
+   "status": "FAIL",
+   "note": "a rolled-back delete removed a live payload",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r05a_rolled_back_attachment_delete_keeps_payload"
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C087",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-05"
+   ],
+   "driver": "c087",
+   "status": "FAIL",
+   "note": "a rolled-back note delete removed a live payload",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r05b_rolled_back_note_delete_keeps_payload"
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C088",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-05"
+   ],
+   "driver": "c088",
+   "status": "FAIL",
+   "note": "a failed unlink left the payload with no durable pending purge",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r05c_failed_unlink_is_durably_pending_and_retried"
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C089",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [],
+   "driver": "c089",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "one_copy_for_duplicate_marker": true,
+     "both_live_markers_rewritten": true,
+     "purged_and_missing_verbatim": true,
+     "reported": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C090",
+   "kind": "portable",
+   "category": "attachments",
+   "finding_ids": [
+    "M12-AUDIT-05",
+    "M12-AUDIT-11"
+   ],
+   "driver": "c090",
+   "status": "FAIL",
+   "note": "no attachment-removal action exists (reported)",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "no_removal_action_exists": true,
+     "payload_still_live": true,
+     "export_reports_unreferenced": false
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C091",
+   "kind": "portable",
+   "category": "exports",
+   "finding_ids": [
+    "M12-AUDIT-02"
+   ],
+   "driver": "c091",
+   "status": "FAIL",
+   "note": "failed: ['unapproved_sibling_kept']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "approved_main_replaced": true,
+     "unapproved_sibling_kept": false,
+     "complete_set": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C092",
+   "kind": "portable",
+   "category": "exports",
+   "finding_ids": [
+    "M12-AUDIT-02"
+   ],
+   "driver": "c092",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "fault_ran": true,
+     "failed_honestly": true,
+     "tree_identical": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C093",
+   "kind": "portable",
+   "category": "exports",
+   "finding_ids": [
+    "M12-AUDIT-02"
+   ],
+   "driver": "c093",
+   "status": "FAIL",
+   "note": "the pre-existing main file was replaced by a failed export",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r02b_chmod_failure_keeps_preexisting_main_file"
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C094",
+   "kind": "portable",
+   "category": "exports",
+   "finding_ids": [
+    "M12-AUDIT-02"
+   ],
+   "driver": "c094",
+   "status": "FAIL",
+   "note": "failed: ['sentinel_intact']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "ok": true,
+     "sentinel_intact": false,
+     "link_untouched": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C095",
+   "kind": "portable",
+   "category": "exports",
+   "finding_ids": [],
+   "driver": "c095",
+   "status": "FAIL",
+   "note": "failed: ['declared_policy', 'no_hidden_copy']",
+   "adjudication": {
+    "decision": "D06",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "declared_policy": false,
+     "no_hidden_copy": false
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C096",
+   "kind": "portable",
+   "category": "exports",
+   "finding_ids": [
+    "M12-AUDIT-02"
+   ],
+   "driver": "c096",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "markdown_structure": true,
+     "plain_structure": true,
+     "both_ok": true
+    }
+   },
+   "seconds": 0.006
+  },
+  {
+   "id": "LF-M12-C097",
+   "kind": "portable",
+   "category": "exports",
+   "finding_ids": [
+    "M12-AUDIT-02"
+   ],
+   "driver": "c097",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "ok": true,
+     "only_direct_children": true,
+     "nothing_outside_dest": true
+    }
+   },
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C098",
+   "kind": "portable",
+   "category": "exports",
+   "finding_ids": [
+    "M12-AUDIT-02"
+   ],
+   "driver": "c098",
+   "status": "ERROR",
+   "note": "RuntimeError: store is closing",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.007
+  },
+  {
+   "id": "LF-M12-C099",
+   "kind": "portable",
+   "category": "history_copy_move",
+   "finding_ids": [
+    "M12-AUDIT-14"
+   ],
+   "driver": "c099",
+   "status": "FAIL",
+   "note": "the transfer did not bind to the displayed final artifact",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r14a_copy_uses_the_current_attempt_final_artifact"
+   },
+   "seconds": 0.029
+  },
+  {
+   "id": "LF-M12-C100",
+   "kind": "portable",
+   "category": "history_copy_move",
+   "finding_ids": [
+    "M12-AUDIT-14"
+   ],
+   "driver": "c100",
+   "status": "FAIL",
+   "note": "a missing final stage was replaced by an earlier stage",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r14b_missing_final_is_refused_not_substituted"
+   },
+   "seconds": 0.028
+  },
+  {
+   "id": "LF-M12-C101",
+   "kind": "portable",
+   "category": "history_copy_move",
+   "finding_ids": [
+    "M12-AUDIT-14"
+   ],
+   "driver": "c099",
+   "status": "FAIL",
+   "note": "the transfer did not bind to the displayed final artifact",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r14a_copy_uses_the_current_attempt_final_artifact"
+   },
+   "seconds": 0.026
+  },
+  {
+   "id": "LF-M12-C102",
+   "kind": "portable",
+   "category": "history_copy_move",
+   "finding_ids": [
+    "M12-AUDIT-14",
+    "M12-AUDIT-24"
+   ],
+   "driver": "c102",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "explicit_partial": true,
+     "note_has_text": true,
+     "source_kept": true
+    }
+   },
+   "seconds": 0.023
+  },
+  {
+   "id": "LF-M12-C103",
+   "kind": "portable",
+   "category": "history_copy_move",
+   "finding_ids": [
+    "M12-AUDIT-24"
+   ],
+   "driver": "c103",
+   "status": "FAIL",
+   "note": "an unknown creation was reported as failed ({'outcome': 'create_failed'})",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "writer_held"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r24b_history_copy_unknown_is_not_failure_and_never_deletes"
+   },
+   "seconds": 0.227
+  },
+  {
+   "id": "LF-M12-C104",
+   "kind": "portable",
+   "category": "history_copy_move",
+   "finding_ids": [],
+   "driver": "c104",
+   "status": "FAIL",
+   "note": "legacy transfer raised RuntimeError",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "l01_legacy_row_transfer_is_honest"
+   },
+   "seconds": 0.04
+  },
+  {
+   "id": "LF-M12-C105",
+   "kind": "portable",
+   "category": "history_copy_move",
+   "finding_ids": [
+    "M12-AUDIT-14",
+    "M12-AUDIT-20"
+   ],
+   "driver": "c105",
+   "status": "FAIL",
+   "note": "raised RuntimeError",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.029
+  },
+  {
+   "id": "LF-M12-C106",
+   "kind": "portable",
+   "category": "history_copy_move",
+   "finding_ids": [
+    "M12-AUDIT-20"
+   ],
+   "driver": "c106",
+   "status": "FAIL",
+   "note": "the Move selector raised AttributeError",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r20_move_selector_reaches_the_transfer"
+   },
+   "seconds": 0.036
+  },
+  {
+   "id": "LF-M12-C107",
+   "kind": "portable",
+   "category": "quick_open",
+   "finding_ids": [],
+   "driver": "c107",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "view": true,
+     "one_note": true,
+     "editor_bound": true
+    }
+   },
+   "seconds": 0.046
+  },
+  {
+   "id": "LF-M12-C108",
+   "kind": "portable",
+   "category": "quick_open",
+   "finding_ids": [],
+   "driver": "c108",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "deferred": true,
+     "intent_survived": true,
+     "view": true
+    }
+   },
+   "seconds": 0.046
+  },
+  {
+   "id": "LF-M12-C109",
+   "kind": "portable",
+   "category": "quick_open",
+   "finding_ids": [
+    "M12-AUDIT-24"
+   ],
+   "driver": "c109",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "deferred": true,
+     "one_note": true
+    }
+   },
+   "seconds": 0.041
+  },
+  {
+   "id": "LF-M12-C110",
+   "kind": "portable",
+   "category": "quick_open",
+   "finding_ids": [
+    "M12-AUDIT-08",
+    "M12-AUDIT-24"
+   ],
+   "driver": "c110",
+   "status": "FAIL",
+   "note": "failed: ['no_new_note']",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "no_new_note": false
+    }
+   },
+   "seconds": 0.041
+  },
+  {
+   "id": "LF-M12-C111",
+   "kind": "portable",
+   "category": "hub_binding",
+   "finding_ids": [
+    "M12-AUDIT-11"
+   ],
+   "driver": "c111",
+   "status": "FAIL",
+   "note": "Pin acted on the selected, unrendered note",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "detail_load"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r11a_pin_and_delete_never_act_on_an_unrendered_note"
+   },
+   "seconds": 0.051
+  },
+  {
+   "id": "LF-M12-C112",
+   "kind": "portable",
+   "category": "hub_binding",
+   "finding_ids": [
+    "M12-AUDIT-23"
+   ],
+   "driver": "c112",
+   "status": "FAIL",
+   "note": "the chosen transform reset on refresh",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r23_chosen_transform_and_version_survive_refresh"
+   },
+   "seconds": 0.046
+  },
+  {
+   "id": "LF-M12-C113",
+   "kind": "portable",
+   "category": "hub_binding",
+   "finding_ids": [
+    "M12-AUDIT-03",
+    "M12-AUDIT-11",
+    "M12-AUDIT-15"
+   ],
+   "driver": "c113",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute 'unsaved_notes'",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "hold_autosave"
+   ],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.043
+  },
+  {
+   "id": "LF-M12-C114",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-16"
+   ],
+   "driver": "c114",
+   "status": "FAIL",
+   "note": "a redelivered revision event added a second observation",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r16b_same_revision_event_counts_once"
+   },
+   "seconds": 0.136
+  },
+  {
+   "id": "LF-M12-C115",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-26"
+   ],
+   "driver": "c115",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "positive_population": true,
+     "no_title_or_filename": true
+    }
+   },
+   "seconds": 0.142
+  },
+  {
+   "id": "LF-M12-C116",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-16"
+   ],
+   "driver": "c116",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "note_committed": true
+    }
+   },
+   "seconds": 0.01
+  },
+  {
+   "id": "LF-M12-C117",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-16"
+   ],
+   "driver": "c117",
+   "status": "FAIL",
+   "note": "a late evidence callback reopened a deleted note's link",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "evidence_before_admission"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r16a_late_callback_cannot_reopen_a_deleted_note"
+   },
+   "seconds": 0.139
+  },
+  {
+   "id": "LF-M12-C118",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-16"
+   ],
+   "driver": "c118",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "closed_unavailable": true
+    }
+   },
+   "seconds": 0.141
+  },
+  {
+   "id": "LF-M12-C119",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [],
+   "driver": "c119",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "c06_consent_off_keeps_notes_working"
+   },
+   "seconds": 0.131
+  },
+  {
+   "id": "LF-M12-C120",
+   "kind": "portable",
+   "category": "m13_analytics",
+   "finding_ids": [
+    "M12-AUDIT-07"
+   ],
+   "driver": "c120",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "facts": [
+     [
+      "confirmed",
+      3
+     ]
+    ],
+    "checks": {
+     "one_fact": true,
+     "confirmed": true,
+     "final_words_of_the_job": true
+    }
+   },
+   "seconds": 0.148
+  },
+  {
+   "id": "LF-M12-C121",
+   "kind": "portable",
+   "category": "m13_analytics",
+   "finding_ids": [],
+   "driver": "c121",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "usage_unchanged": true
+    }
+   },
+   "seconds": 0.144
+  },
+  {
+   "id": "LF-M12-C122",
+   "kind": "portable",
+   "category": "m14_learning",
+   "finding_ids": [
+    "M12-AUDIT-04",
+    "M12-AUDIT-17"
+   ],
+   "driver": "c122",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "linked_population": true,
+     "no_candidate_from_typed_region": true,
+     "never_asr_example": true
+    }
+   },
+   "seconds": 0.138
+  },
+  {
+   "id": "LF-M12-C123",
+   "kind": "portable",
+   "category": "m14_learning",
+   "finding_ids": [],
+   "driver": "c123",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "no_dictated_region": true,
+     "no_source_job": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C124",
+   "kind": "portable",
+   "category": "m14_learning",
+   "finding_ids": [
+    "M12-AUDIT-15"
+   ],
+   "driver": "c124",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "open_goes_stale_cleared": true,
+     "open_payload_purged": true,
+     "approved_decision_kept": true,
+     "rejected_decision_kept": true
+    }
+   },
+   "seconds": 0.008
+  },
+  {
+   "id": "LF-M12-C125",
+   "kind": "portable",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-15"
+   ],
+   "driver": "c125",
+   "status": "FAIL",
+   "note": "note-derived transform artifacts survived the note's deletion",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r15a_delete_purges_the_note_transform_graph"
+   },
+   "seconds": 10.098
+  },
+  {
+   "id": "LF-M12-S001",
+   "kind": "stateful",
+   "category": "note_dictation",
+   "finding_ids": [
+    "M12-AUDIT-12"
+   ],
+   "driver": "s001",
+   "status": "FAIL",
+   "note": "failed: ['anchor_is_code_point_2', 'committed_exact']",
+   "adjudication": null,
+   "barriers_declared": [
+    "delivery_before_note_receive"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "delivery_before_note_receive"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "anchor_is_code_point_2": false,
+     "committed_exact": false,
+     "confirmed": true
+    }
+   },
+   "seconds": 0.137
+  },
+  {
+   "id": "LF-M12-S002",
+   "kind": "stateful",
+   "category": "note_destination",
+   "finding_ids": [
+    "M12-AUDIT-12"
+   ],
+   "driver": "s002",
+   "status": "FAIL",
+   "note": "failed: ['policy_refusal', 'no_stale_offset_write']",
+   "adjudication": {
+    "decision": "D01",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [
+    "after_ptt_before_result"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "after_ptt_before_result"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "policy_refusal": false,
+     "no_stale_offset_write": false,
+     "no_clipboard": true,
+     "no_external": true
+    }
+   },
+   "seconds": 0.134
+  },
+  {
+   "id": "LF-M12-S003",
+   "kind": "stateful",
+   "category": "note_destination",
+   "finding_ids": [
+    "M12-AUDIT-11",
+    "M12-AUDIT-19"
+   ],
+   "driver": "s003",
+   "status": "FAIL",
+   "note": "failed: ['no_clipboard']",
+   "adjudication": null,
+   "barriers_declared": [
+    "after_ptt_before_result"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "after_ptt_before_result"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "no_write_to_b": true,
+     "a_unchanged": true,
+     "retained_not_inserted": true,
+     "no_clipboard": false,
+     "no_external": true
+    }
+   },
+   "seconds": 0.141
+  },
+  {
+   "id": "LF-M12-S004",
+   "kind": "stateful",
+   "category": "deletion",
+   "finding_ids": [
+    "M12-AUDIT-06",
+    "M12-AUDIT-07",
+    "M12-AUDIT-15",
+    "M12-AUDIT-16"
+   ],
+   "driver": "s004",
+   "status": "FAIL",
+   "note": "failed: ['no_clipboard']",
+   "adjudication": null,
+   "barriers_declared": [
+    "after_ptt_before_result"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "after_ptt_before_result"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "no_resurrection": true,
+     "result_retained_in_history": true,
+     "no_clipboard": false
+    }
+   },
+   "seconds": 0.236
+  },
+  {
+   "id": "LF-M12-S005",
+   "kind": "stateful",
+   "category": "note_transforms",
+   "finding_ids": [
+    "M12-AUDIT-13"
+   ],
+   "driver": "s005",
+   "status": "FAIL",
+   "note": "a whole-note transform replaced part of a note that changed",
+   "adjudication": null,
+   "barriers_declared": [
+    "after_transform_capture_before_accept"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "after_transform_capture_before_accept"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r13_whole_note_accept_refuses_after_growth"
+   },
+   "seconds": 10.075
+  },
+  {
+   "id": "LF-M12-S006",
+   "kind": "stateful",
+   "category": "restore",
+   "finding_ids": [
+    "M12-AUDIT-08",
+    "M12-AUDIT-18"
+   ],
+   "driver": "s006",
+   "status": "FAIL",
+   "note": "failed: ['restore_parents_the_current_revision', 'dirty_text_saved_first', 'stale_restore_refused_explicitly']",
+   "adjudication": {
+    "decision": "D02",
+    "policy_revision": "m12-policy-r1"
+   },
+   "barriers_declared": [
+    "autosave_before_commit",
+    "restore_before_writer"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "autosave_before_commit"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "restore_parents_the_current_revision": false,
+     "dirty_text_saved_first": false,
+     "stale_restore_refused_explicitly": false,
+     "dirty_text_kept_when_refused": true
+    }
+   },
+   "seconds": 0.105
+  },
+  {
+   "id": "LF-M12-S007",
+   "kind": "stateful",
+   "category": "async_flush",
+   "finding_ids": [
+    "M12-AUDIT-03",
+    "M12-AUDIT-08"
+   ],
+   "driver": "s007",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute 'unsaved_notes'",
+   "adjudication": null,
+   "barriers_declared": [
+    "flush_before_admission"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "flush_before_admission"
+   ],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.047
+  },
+  {
+   "id": "LF-M12-S008",
+   "kind": "stateful",
+   "category": "autosave",
+   "finding_ids": [
+    "M12-AUDIT-04",
+    "M12-AUDIT-09",
+    "M12-AUDIT-18"
+   ],
+   "driver": "s008",
+   "status": "ERROR",
+   "note": "AttributeError: 'bool' object has no attribute 'outcome'",
+   "adjudication": null,
+   "barriers_declared": [
+    "after_content_snapshot",
+    "before_commit"
+   ],
+   "barrier_bindings": {
+    "before_commit": "after_content_snapshot"
+   },
+   "barriers_reached": [
+    "after_content_snapshot"
+   ],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.046
+  },
+  {
+   "id": "LF-M12-S009",
+   "kind": "stateful",
+   "category": "async_flush",
+   "finding_ids": [
+    "M12-AUDIT-09"
+   ],
+   "driver": "s009",
+   "status": "FAIL",
+   "note": "arrival A lost its own revision/provenance to arrival B",
+   "adjudication": null,
+   "barriers_declared": [
+    "flush_before_snapshot"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "flush_before_snapshot"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r09a_two_arrivals_keep_their_own_provenance"
+   },
+   "seconds": 0.04
+  },
+  {
+   "id": "LF-M12-S010",
+   "kind": "stateful",
+   "category": "deletion",
+   "finding_ids": [
+    "M12-AUDIT-05",
+    "M12-AUDIT-08"
+   ],
+   "driver": "s010",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute 'unsaved_notes'",
+   "adjudication": null,
+   "barriers_declared": [
+    "append_before_writer"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "append_before_writer"
+   ],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.048
+  },
+  {
+   "id": "LF-M12-S011",
+   "kind": "stateful",
+   "category": "deletion",
+   "finding_ids": [
+    "M12-AUDIT-13",
+    "M12-AUDIT-15"
+   ],
+   "driver": "s011",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [
+    "candidate_before_writer",
+    "accept_before_effect"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "accept_before_effect",
+    "candidate_before_writer"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "no_late_artifacts": true,
+     "no_accepted_revision": true
+    }
+   },
+   "seconds": 10.102
+  },
+  {
+   "id": "LF-M12-S012",
+   "kind": "stateful",
+   "category": "filesystem_transaction",
+   "finding_ids": [
+    "M12-AUDIT-06"
+   ],
+   "driver": "s012",
+   "status": "ERROR",
+   "note": "AttributeError: 'NoteStore' object has no attribute '_write_payload'",
+   "adjudication": null,
+   "barriers_declared": [
+    "add_after_file_before_commit"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.012
+  },
+  {
+   "id": "LF-M12-S013",
+   "kind": "stateful",
+   "category": "filesystem_transaction",
+   "finding_ids": [
+    "M12-AUDIT-05"
+   ],
+   "driver": "s013",
+   "status": "FAIL",
+   "note": "a rolled-back delete removed a live payload",
+   "adjudication": null,
+   "barriers_declared": [
+    "delete_after_unlink_before_commit"
+   ],
+   "barrier_bindings": {
+    "delete_after_unlink_before_commit": "structural: no unlink precedes the commit in the repaired design (post-commit purge intents); the probe fails the commit itself (delete_before_commit)"
+   },
+   "barriers_reached": [
+    "delete_before_commit"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r05a_rolled_back_attachment_delete_keeps_payload"
+   },
+   "seconds": 0.01
+  },
+  {
+   "id": "LF-M12-S014",
+   "kind": "stateful",
+   "category": "filesystem_transaction",
+   "finding_ids": [
+    "M12-AUDIT-05"
+   ],
+   "driver": "s014",
+   "status": "FAIL",
+   "note": "a rolled-back note delete removed a live payload",
+   "adjudication": null,
+   "barriers_declared": [
+    "note_delete_after_unlink_before_commit"
+   ],
+   "barrier_bindings": {
+    "note_delete_after_unlink_before_commit": "structural: no unlink precedes the commit in the repaired design (post-commit purge intents); the probe fails the commit itself (note_delete_before_commit)"
+   },
+   "barriers_reached": [
+    "note_delete_before_commit"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r05b_rolled_back_note_delete_keeps_payload"
+   },
+   "seconds": 0.009
+  },
+  {
+   "id": "LF-M12-S015",
+   "kind": "stateful",
+   "category": "exports",
+   "finding_ids": [
+    "M12-AUDIT-02"
+   ],
+   "driver": "s015",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [
+    "after_attachment_1_before_attachment_2"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "after_attachment_1_before_attachment_2"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "fault_reached": true,
+     "not_labelled_complete": true,
+     "no_partial_set_left": true
+    }
+   },
+   "seconds": 0.01
+  },
+  {
+   "id": "LF-M12-S016",
+   "kind": "stateful",
+   "category": "exports",
+   "finding_ids": [
+    "M12-AUDIT-02"
+   ],
+   "driver": "s016",
+   "status": "FAIL",
+   "note": "failed: ['preexisting_tree_identical']",
+   "adjudication": null,
+   "barriers_declared": [
+    "after_attachment_1_before_attachment_2"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "after_attachment_1_before_attachment_2"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "fault_reached": true,
+     "failed_honestly": true,
+     "preexisting_tree_identical": false
+    }
+   },
+   "seconds": 0.01
+  },
+  {
+   "id": "LF-M12-S017",
+   "kind": "stateful",
+   "category": "history_copy_move",
+   "finding_ids": [
+    "M12-AUDIT-14",
+    "M12-AUDIT-24"
+   ],
+   "driver": "s017",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [
+    "after_note_commit_before_source_delete"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "after_note_commit_before_source_delete"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "explicit_partial_result": true,
+     "no_data_loss": true,
+     "exactly_one_copy": true
+    }
+   },
+   "seconds": 0.027
+  },
+  {
+   "id": "LF-M12-S018",
+   "kind": "stateful",
+   "category": "quick_open",
+   "finding_ids": [
+    "M12-AUDIT-08",
+    "M12-AUDIT-24"
+   ],
+   "driver": "s018",
+   "status": "PASS",
+   "note": "",
+   "adjudication": null,
+   "barriers_declared": [
+    "insertion_busy_before_idle"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "insertion_busy_before_idle"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "intent_survives": true,
+     "one_note": true
+    }
+   },
+   "seconds": 0.055
+  },
+  {
+   "id": "LF-M12-S019",
+   "kind": "stateful",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-16"
+   ],
+   "driver": "s019",
+   "status": "FAIL",
+   "note": "failed: ['no_duplicate_after_retry']",
+   "adjudication": null,
+   "barriers_declared": [
+    "note_commit_before_evidence_admission"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "note_commit_before_evidence_admission"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "note_remains": true,
+     "failure_reported": true,
+     "no_duplicate_after_retry": false
+    }
+   },
+   "seconds": 0.14
+  },
+  {
+   "id": "LF-M12-S020",
+   "kind": "stateful",
+   "category": "m13_analytics",
+   "finding_ids": [
+    "M12-AUDIT-07"
+   ],
+   "driver": "s020",
+   "status": "FAIL",
+   "note": "failed: ['not_confirmed_before_the_receipt']",
+   "adjudication": null,
+   "barriers_declared": [
+    "note_commit_before_fact_confirmation"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "note_commit_before_fact_confirmation"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "facts": [
+     [
+      "confirmed",
+      3
+     ]
+    ],
+    "revisions": 10,
+    "checks": {
+     "not_confirmed_before_the_receipt": false,
+     "confirmed_after_it": true,
+     "one_positive_fact": true,
+     "nine_revisions_zero_extra_dictations": true
+    }
+   },
+   "seconds": 0.138
+  },
+  {
+   "id": "LF-M12-S021",
+   "kind": "stateful",
+   "category": "m14_learning",
+   "finding_ids": [
+    "M12-AUDIT-04",
+    "M12-AUDIT-17"
+   ],
+   "driver": "s021",
+   "status": "FAIL",
+   "note": "failed: ['no_correction_attributed']",
+   "adjudication": null,
+   "barriers_declared": [
+    "after_edit_before_note_mining"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "after_edit_before_note_mining"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "checks": {
+     "linked_population": true,
+     "no_correction_attributed": false,
+     "no_dictated_claim_left": true,
+     "never_asr_example": true
+    }
+   },
+   "seconds": 0.143
+  },
+  {
+   "id": "LF-M12-S022",
+   "kind": "stateful",
+   "category": "utf16_ranges",
+   "finding_ids": [
+    "M12-AUDIT-12",
+    "M12-AUDIT-22"
+   ],
+   "driver": "s022",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute '_native_range'",
+   "adjudication": null,
+   "barriers_declared": [
+    "native_selection_before_ptt_capture"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "native_selection_before_ptt_capture"
+   ],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.055
+  },
+  {
+   "id": "LF-M12-S023",
+   "kind": "stateful",
+   "category": "filesystem_transaction",
+   "finding_ids": [
+    "M12-AUDIT-06",
+    "M12-AUDIT-24"
+   ],
+   "driver": "s023",
+   "status": "FAIL",
+   "note": "a committed attachment row lost its payload to cleanup",
+   "adjudication": null,
+   "barriers_declared": [
+    "insert_admitted_before_commit"
+   ],
+   "barrier_bindings": {
+    "insert_admitted_before_commit": "writer_held"
+   },
+   "barriers_reached": [
+    "insert_admitted_before_commit",
+    "writer_held"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r06b_timeout_then_late_commit_keeps_payload"
+   },
+   "seconds": 0.214
+  },
+  {
+   "id": "LF-M12-S024",
+   "kind": "stateful",
+   "category": "dirty_marker",
+   "finding_ids": [
+    "M12-AUDIT-18"
+   ],
+   "driver": "s024",
+   "status": "FAIL",
+   "note": "an older save cleared the marker while B was unsaved",
+   "adjudication": null,
+   "barriers_declared": [
+    "snapshot_A_before_commit_A"
+   ],
+   "barrier_bindings": {
+    "snapshot_A_before_commit_A": "A_before_commit"
+   },
+   "barriers_reached": [
+    "A_before_commit"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r18_old_save_cannot_clear_a_newer_generation"
+   },
+   "seconds": 0.068
+  },
+  {
+   "id": "LF-M12-S025",
+   "kind": "stateful",
+   "category": "async_flush",
+   "finding_ids": [
+    "M12-AUDIT-09"
+   ],
+   "driver": "s025",
+   "status": "FAIL",
+   "note": "arrival B's identity was overwritten: {'dictated': ['AAA']}",
+   "adjudication": null,
+   "barriers_declared": [
+    "after_content_read_before_pending_read"
+   ],
+   "barrier_bindings": {
+    "after_content_read_before_pending_read": "structural: the buffer and the arrival are captured under one lock (no separate pending read exists); the probe holds a captured arrival's persistence (A_captured)"
+   },
+   "barriers_reached": [
+    "A_captured",
+    "atomic_capture"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r09b_failed_older_arrival_never_overwrites_newer_identity"
+   },
+   "seconds": 0.057
+  },
+  {
+   "id": "LF-M12-S026",
+   "kind": "stateful",
+   "category": "evidence",
+   "finding_ids": [
+    "M12-AUDIT-16"
+   ],
+   "driver": "s026",
+   "status": "FAIL",
+   "note": "a late evidence callback reopened a deleted note's link",
+   "adjudication": null,
+   "barriers_declared": [
+    "before_evidence_writer"
+   ],
+   "barrier_bindings": {
+    "before_evidence_writer": "evidence_before_admission"
+   },
+   "barriers_reached": [
+    "evidence_before_admission"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r16a_late_callback_cannot_reopen_a_deleted_note"
+   },
+   "seconds": 0.143
+  },
+  {
+   "id": "LF-M12-S027",
+   "kind": "stateful",
+   "category": "async_flush",
+   "finding_ids": [
+    "M12-AUDIT-07",
+    "M12-AUDIT-08"
+   ],
+   "driver": "s027",
+   "status": "FAIL",
+   "note": "quit did not settle the admitted note save before the store closed",
+   "adjudication": null,
+   "barriers_declared": [
+    "flush_before_store_admission"
+   ],
+   "barrier_bindings": {
+    "flush_before_store_admission": "autosave_before_admission"
+   },
+   "barriers_reached": [
+    "autosave_before_admission"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r08b_quit_settles_admitted_note_work"
+   },
+   "seconds": 0.047
+  },
+  {
+   "id": "LF-M12-S028",
+   "kind": "stateful",
+   "category": "hub_binding",
+   "finding_ids": [
+    "M12-AUDIT-11"
+   ],
+   "driver": "s028",
+   "status": "FAIL",
+   "note": "the attachment belongs to A but its marker landed in B",
+   "adjudication": null,
+   "barriers_declared": [
+    "dialog_before_return"
+   ],
+   "barrier_bindings": {},
+   "barriers_reached": [
+    "dialog_before_return"
+   ],
+   "barriers_missing": [],
+   "observed": {
+    "regression": "r11b_add_image_revalidates_after_the_dialog"
+   },
+   "seconds": 0.057
+  },
+  {
+   "id": "LF-M12-N001",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-10",
+    "M12-AUDIT-18"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N002",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-12",
+    "M12-AUDIT-22"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N003",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-21"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N004",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-11",
+    "M12-AUDIT-12"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N005",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-12"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N006",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-13",
+    "M12-AUDIT-23"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N007",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-08",
+    "M12-AUDIT-23"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N008",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-11",
+    "M12-AUDIT-21"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N009",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-21"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N010",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-08",
+    "M12-AUDIT-10"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N011",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-10"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-N012",
+   "kind": "native",
+   "category": "native_scratchpad",
+   "finding_ids": [
+    "M12-AUDIT-07",
+    "M12-AUDIT-08"
+   ],
+   "driver": "native_driver",
+   "status": "NOT_RUN",
+   "note": "no native record supplied",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-B001",
+   "kind": "performance",
+   "category": "benchmark_validity",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "driver": "perf_driver",
+   "status": "ERROR",
+   "note": "benchmark produced no record",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.086
+  },
+  {
+   "id": "LF-M12-B002",
+   "kind": "performance",
+   "category": "benchmark_validity",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "driver": "perf_driver",
+   "status": "ERROR",
+   "note": "benchmark produced no record",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-B003",
+   "kind": "performance",
+   "category": "benchmark_validity",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "driver": "perf_driver",
+   "status": "ERROR",
+   "note": "benchmark produced no record",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-B004",
+   "kind": "performance",
+   "category": "benchmark_validity",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "driver": "perf_driver",
+   "status": "ERROR",
+   "note": "benchmark produced no record",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-B005",
+   "kind": "performance",
+   "category": "benchmark_validity",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "driver": "perf_driver",
+   "status": "ERROR",
+   "note": "benchmark produced no record",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-B006",
+   "kind": "performance",
+   "category": "benchmark_validity",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "driver": "perf_driver",
+   "status": "ERROR",
+   "note": "benchmark produced no record",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-B007",
+   "kind": "performance",
+   "category": "benchmark_validity",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "driver": "perf_driver",
+   "status": "ERROR",
+   "note": "benchmark produced no record",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-B008",
+   "kind": "performance",
+   "category": "benchmark_validity",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "driver": "perf_driver",
+   "status": "ERROR",
+   "note": "benchmark produced no record",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-B009",
+   "kind": "performance",
+   "category": "benchmark_validity",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "driver": "perf_driver",
+   "status": "ERROR",
+   "note": "benchmark produced no record",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  },
+  {
+   "id": "LF-M12-B010",
+   "kind": "performance",
+   "category": "benchmark_validity",
+   "finding_ids": [
+    "M12-AUDIT-25"
+   ],
+   "driver": "perf_driver",
+   "status": "ERROR",
+   "note": "benchmark produced no record",
+   "adjudication": null,
+   "barriers_declared": [],
+   "barrier_bindings": {},
+   "barriers_reached": [],
+   "barriers_missing": [],
+   "observed": {},
+   "seconds": 0.0
+  }
+ ],
+ "metamorphic": [
+  {
+   "id": "LF-M12-MR01",
+   "status": "PASS",
+   "note": ""
+  },
+  {
+   "id": "LF-M12-MR02",
+   "status": "FAIL",
+   "note": ""
+  },
+  {
+   "id": "LF-M12-MR03",
+   "status": "FAIL",
+   "note": ""
+  },
+  {
+   "id": "LF-M12-MR04",
+   "status": "ERROR",
+   "note": "AttributeError: 'HubController' object has no attribute 'scratchpad_capture_target'"
+  },
+  {
+   "id": "LF-M12-MR05",
+   "status": "FAIL",
+   "note": ""
+  },
+  {
+   "id": "LF-M12-MR06",
+   "status": "FAIL",
+   "note": ""
+  },
+  {
+   "id": "LF-M12-MR07",
+   "status": "PASS",
+   "note": ""
+  },
+  {
+   "id": "LF-M12-MR08",
+   "status": "PASS",
+   "note": ""
+  },
+  {
+   "id": "LF-M12-MR09",
+   "status": "ERROR",
+   "note": "TypeError: NoteStore.append_revision() got an unexpected keyword argument 'revision_id'"
+  },
+  {
+   "id": "LF-M12-MR10",
+   "status": "FAIL",
+   "note": ""
+  },
+  {
+   "id": "LF-M12-MR11",
+   "status": "FAIL",
+   "note": ""
+  },
+  {
+   "id": "LF-M12-MR12",
+   "status": "ERROR",
+   "note": "AttributeError: 'ScratchpadEditor' object has no attribute '_native_range'"
+  },
+  {
+   "id": "LF-M12-MR13",
+   "status": "FAIL",
+   "note": ""
+  },
+  {
+   "id": "LF-M12-MR14",
+   "status": "PASS",
+   "note": ""
+  }
+ ]
+}

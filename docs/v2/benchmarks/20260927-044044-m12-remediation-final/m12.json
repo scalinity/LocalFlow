@@ -1,0 +1,229 @@
+{
+ "budget": {
+  "dictated_ack_p95_ms": 50.0,
+  "note": "UI acknowledgment (dictated_ack) is the buffer receipt; commit and confirmation are recorded separately and are not part of the acknowledgment budget",
+  "note_open_10k_p95_ms": 200.0,
+  "within_budget": true
+ },
+ "environment": {
+  "chip": "Apple M5 Pro",
+  "code_sha": "1e41a7021da4252e1692c4c248699fa9d05188b2",
+  "command": "python scripts/v2/benchmark_m12.py --out docs/v2/benchmarks/20260927-044044-m12-remediation-final",
+  "cores": 18,
+  "executable": ".venv/bin/python",
+  "load_avg_1_5_15": [
+   5.37,
+   4.39,
+   4.05
+  ],
+  "mac_model": "Mac17,8",
+  "macos": "27.0 (26A428)",
+  "memory_gib": 48.0,
+  "power_source": "AC Power",
+  "production_tree_modified": false,
+  "python": "3.14.7",
+  "tracked_files_modified": true,
+  "utc": "2026-09-27T04:40:45+00:00"
+ },
+ "fixtures": {
+  "evidence_collector": "not installed (excluded)",
+  "export_attachment_bytes": 65544,
+  "export_attachments": 2,
+  "note_revisions": 201,
+  "note_words": 10000,
+  "runs": 50,
+  "search_expected_matches": 20,
+  "search_live_notes": 200,
+  "warm_runs": 5
+ },
+ "kind": "m12-benchmark",
+ "qualified": true,
+ "synthetic": true,
+ "timing": {
+  "autosave_commit": {
+   "max_ms": 0.4628,
+   "p50_ms": 0.3155,
+   "p95_ms": 0.387,
+   "p99_ms": 0.4628,
+   "runs": 50
+  },
+  "autosave_commit_during_search": {
+   "max_ms": 0.5775,
+   "p50_ms": 0.4311,
+   "p95_ms": 0.4912,
+   "p99_ms": 0.5775,
+   "runs": 50
+  },
+  "autosave_commit_queue_wait": {
+   "max_ms": 0.0082,
+   "p50_ms": 0.0066,
+   "p95_ms": 0.008,
+   "p99_ms": 0.0082,
+   "runs": 50
+  },
+  "autosave_commit_writer_op": {
+   "max_ms": 0.1987,
+   "p50_ms": 0.1129,
+   "p95_ms": 0.1577,
+   "p99_ms": 0.1987,
+   "runs": 50
+  },
+  "dictated_ack": {
+   "max_ms": 0.0265,
+   "p50_ms": 0.0155,
+   "p95_ms": 0.0229,
+   "p99_ms": 0.0265,
+   "runs": 50
+  },
+  "dictated_commit": {
+   "max_ms": 0.979,
+   "p50_ms": 0.7065,
+   "p95_ms": 0.9498,
+   "p99_ms": 0.979,
+   "runs": 50
+  },
+  "dictated_confirmation": {
+   "max_ms": 0.9922,
+   "p50_ms": 0.7261,
+   "p95_ms": 0.9671,
+   "p99_ms": 0.9922,
+   "runs": 50
+  },
+  "dirty_note_switch": {
+   "max_ms": 0.4996,
+   "p50_ms": 0.3825,
+   "p95_ms": 0.4607,
+   "p99_ms": 0.4996,
+   "runs": 50
+  },
+  "export_markdown": {
+   "max_ms": 0.5427,
+   "p50_ms": 0.3775,
+   "p95_ms": 0.485,
+   "p99_ms": 0.5427,
+   "runs": 50
+  },
+  "export_plain": {
+   "max_ms": 0.1608,
+   "p50_ms": 0.1308,
+   "p95_ms": 0.1493,
+   "p99_ms": 0.1608,
+   "runs": 50
+  },
+  "note_open_10k": {
+   "max_ms": 1.9858,
+   "p50_ms": 1.6951,
+   "p95_ms": 1.8391,
+   "p99_ms": 1.9858,
+   "runs": 50
+  },
+  "note_open_cold": {
+   "ms": 2.0338,
+   "runs": 1
+  },
+  "restore": {
+   "max_ms": 0.4128,
+   "p50_ms": 0.337,
+   "p95_ms": 0.3985,
+   "p99_ms": 0.4128,
+   "runs": 50
+  },
+  "search_200_notes": {
+   "max_ms": 0.1363,
+   "p50_ms": 0.0941,
+   "p95_ms": 0.1106,
+   "p99_ms": 0.1363,
+   "runs": 50
+  },
+  "snapshot_explicit": {
+   "max_ms": 0.4962,
+   "p50_ms": 0.3112,
+   "p95_ms": 0.4451,
+   "p99_ms": 0.4962,
+   "runs": 50
+  },
+  "snapshot_explicit_queue_wait": {
+   "max_ms": 0.0098,
+   "p50_ms": 0.0064,
+   "p95_ms": 0.0082,
+   "p99_ms": 0.0098,
+   "runs": 50
+  },
+  "snapshot_explicit_writer_op": {
+   "max_ms": 0.2053,
+   "p50_ms": 0.1074,
+   "p95_ms": 0.174,
+   "p99_ms": 0.2053,
+   "runs": 50
+  },
+  "version_headers_200": {
+   "max_ms": 0.1972,
+   "p50_ms": 0.1509,
+   "p95_ms": 0.1555,
+   "p99_ms": 0.1972,
+   "runs": 50
+  },
+  "version_headers_201": {
+   "max_ms": 0.1533,
+   "p50_ms": 0.1504,
+   "p95_ms": 0.1528,
+   "p99_ms": 0.1533,
+   "runs": 50
+  }
+ },
+ "validity": {
+  "autosave_commit": {
+   "detail": "50 committed revisions (expected 50), trigger autosave, distinct hashes",
+   "valid": true
+  },
+  "autosave_commit_during_search": {
+   "detail": "50/50 commits overlapped a search interval; 51 searches ran",
+   "valid": true
+  },
+  "dictated_save": {
+   "detail": "each arrival's receipt settled committed on a dictated revision of its own job whose span is exactly its word",
+   "valid": true
+  },
+  "dirty_note_switch": {
+   "detail": "every outgoing edit committed; the incoming buffer is the next note's content",
+   "valid": true
+  },
+  "export_markdown": {
+   "detail": "markdown: both payload copies byte-identical and referenced; plain: both images reported",
+   "valid": true
+  },
+  "export_plain": {
+   "detail": "the file written; both image markers reported",
+   "valid": true
+  },
+  "note_open_10k": {
+   "detail": "content hash, 10,000 words, 200 distinct headers, truncated flag",
+   "valid": true
+  },
+  "note_open_cold": {
+   "detail": "first open after the store opened: 10,000 words, 200 headers, truncated",
+   "valid": true
+  },
+  "restore": {
+   "detail": "the newest revision is a restore holding the first revision's exact content",
+   "valid": true
+  },
+  "search_200_notes": {
+   "detail": "200 live notes; 20 matches of the fixed 20",
+   "valid": true
+  },
+  "snapshot_explicit": {
+   "detail": "50 committed revisions (expected 50), trigger explicit, distinct hashes",
+   "valid": true
+  },
+  "version_headers_200": {
+   "detail": "200 revisions: 200 headers, truncated=False",
+   "valid": true
+  },
+  "version_headers_201": {
+   "detail": "201 revisions: 200 headers, truncated=True",
+   "valid": true
+  }
+ },
+ "verdict": "VALID_WITHIN_BUDGET"
+}

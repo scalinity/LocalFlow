@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-26 · M09 section added by the M09 remediation · code <code>a304d48</code> (M08 checks unchanged at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-27 · M12 section added by the M12 remediation · code <code>b17aa2b</code> (M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -3886,7 +3886,268 @@ lf11_evidence() { ( cd "$LF_M11" &amp;&amp; "$PY" "$OUT11/m11_evidence.py" ); }<
           </details>
         </article>
       </section>
-      <section class="milestone" id="M12" data-milestone="M12" data-title="Scratchpad"><div class="ms-head"><span class="mid">M12</span><h2>Scratchpad</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M12-V001).</p></section>
+      <section class="milestone" id="M12" data-milestone="M12" data-title="Scratchpad">
+        <div class="ms-head">
+          <span class="mid">M12</span><h2>Scratchpad</h2>
+          <span class="meta">instructions M12-r1 · code b17aa2b · local remediation of the audit at 114ba58</span>
+        </div>
+        <p class="ms-intro">The M12 remediation makes the Scratchpad keep every word you write: a note you switch away from while it is still saving is kept and retried, a dictation lands at the caret you had when you pressed the key (after an emoji too) and counts as inserted only once its note version is saved, typed words are never labelled as dictated, a transform replaces only the text it was made from, deleting a note removes its images and transform copies, and an export never damages files already in the folder. The editor, its buttons, popups and autosave timer were qualified natively on this Mac by an owned test window. These five checks are what only the real app, a real microphone and your own eyes can show.</p>
+        <p class="ms-intro">Instruction revision M12-r1 replaces the pending <code>native-m12-scratchpad-trial</code> (<code>handoffs/M12.md</code>): quick-open, dictation and typing are M12-V001, the forced interruption M12-V002, image and export M12-V003, transforms M12-V004, and restore, History copy/move and text size M12-V005. Everything runs in a sandbox home with notes you create for the check — never your real LocalFlow data.</p>
+
+        <div class="callout">
+          <h3>M12 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The remediated code gets its own worktree, and the dev app runs with an empty <b>sandbox home folder</b> (<code>$SANDBOX12</code>); the notes each check asks for are created there. Recognition and transforms use the models already on this Mac, offline. Exports go to <code>$OUT12/exports</code>. Your real Application Support data and the installed app are never touched.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># Remediated M12 code in its own worktree (first time only)</span>
+export LF_M12="$(dirname "$LF_MAIN")/LocalFlow-m12-verify"
+git -C "$LF_MAIN" fetch origin main
+[ -d "$LF_M12" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M12" origin/main
+git -C "$LF_M12" merge-base --is-ancestor b17aa2b HEAD &amp;&amp; echo "M12 repairs present"
+export OUT12="$EV/m12-verification"; mkdir -p "$OUT12"/exports "$OUT12"/screens &amp;&amp; chmod 700 "$OUT12"
+
+<span class="c"># Sandbox home and config for the dev app</span>
+export REAL_HOME="$HOME"
+export SANDBOX12="$OUT12/sandbox-home"; mkdir -p "$SANDBOX12" &amp;&amp; chmod 700 "$SANDBOX12"
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M12"], "config.json").read_text())
+p = pathlib.Path(os.environ["OUT12"], "sandbox-config.json")
+p.write_text(json.dumps(dict(cfg, log_transcripts=False), indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app; $LF12_PID is its process</span>
+lf12_start() { ( cd "$LF_M12" &amp;&amp; exec env HOME="$SANDBOX12" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT12/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT12/app-console.txt" 2&gt;&amp;1 &amp;
+  LF12_PID=$!; echo "dev app pid $LF12_PID"; }
+export SDB12="$SANDBOX12/Library/Application Support/LocalFlow/v2.db"
+
+<span class="c"># Evidence reader: note events, revision origins/triggers, job states — no text</span>
+cat &gt; "$OUT12/m12_evidence.py" &lt;&lt;'EOF'
+import json, os, pathlib, sqlite3
+logs = pathlib.Path(os.environ["SANDBOX12"], "Library", "Logs", "LocalFlow")
+keep = ("notes.", "insertion.saved_not_inserted", "hub.copy")
+for f in sorted(logs.glob("*.jsonl")):
+    for line in f.read_text().splitlines():
+        e = json.loads(line)
+        if e.get("event", "").startswith(keep):
+            print(e["event"], e.get("outcome"), e.get("reason_code"))
+db = sqlite3.connect(os.environ["SDB12"])
+for n, (nid, dirty) in enumerate(db.execute(
+        "select note_id, dirty_at_utc is not null from notes order by rowid"), 1):
+    revs = db.execute("select origin, trigger_kind from note_revisions"
+                      " where note_id=? order by rowid", (nid,)).fetchall()
+    print(f"note#{n} unsaved_marker={bool(dirty)}"
+          f" revisions={[f'{o}/{t}' for o, t in revs]}")
+for state, reason in db.execute(
+        "select state, state_reason from jobs order by rowid"):
+    print("job", state, reason)
+EOF
+lf12_evidence() { SANDBOX12="$SANDBOX12" SDB12="$SDB12" "$PY" "$OUT12/m12_evidence.py"; }</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M12 repairs present”; the config path printed; the dev app prints its pid when started. The LocalFlow menu has Quick Open Scratchpad (⌘N in the menu) and Open Hub…. Quit the dev app from its menu when a check says so. When finished with M12, remove the worktree with <code>git -C "$LF_MAIN" worktree remove "$LF_M12"</code>; the sandbox stays under <code>$OUT12</code> until you delete it.</p>
+        </div>
+
+        <h3 class="group">Writing and dictating in a note</h3>
+
+        <article class="check" id="M12-V001" data-milestone="M12" data-rev="M12-r1" data-code="b17aa2b" data-tags="native human hardware model">
+          <header class="check-head">
+            <span class="cid">M12-V001</span>
+            <h4>Quick-open a note, dictate at the caret, type a list, and switch notes</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Quick-open puts the cursor in a fresh note, a dictation lands exactly where the caret was when you pressed the key — also after an emoji — and is marked inserted only after its note version is saved, typing saves on its own within a couple of seconds, and switching notes never loses what you just typed. The machine checks drive the real editor and coordinator with events in an owned window; only a real dictation shows how it feels.</p>
+          <p class="plain"><b>In plain terms.</b> You open a note from the menu, dictate into it, put an emoji in the middle and dictate after it, type a short list, and flip between two notes.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone</dd>
+              <dt>Preconditions</dt><dd>M12 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M12 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf12_start</code>; wait for “ASR: ready”. From the LocalFlow menu choose Quick Open Scratchpad.</li>
+              <li>Without clicking anywhere, dictate “first line of the trial note”.</li>
+              <li>Type “A”, insert an emoji with ⌃⌘Space, type “B”, then click between the emoji and B and dictate “middle”.</li>
+              <li>Type a three-item list on new lines (“- one”, “- two”, “- three”) and wait three seconds without typing.</li>
+              <li>Click New, type “second note”, then click the first note in the list and back to the second.</li>
+              <li>Run <code>lf12_evidence &gt; "$OUT12/v001.txt"</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Both dictations appear where the caret was: “middle” sits between the emoji and B, never after B.</li>
+              <li>The list stays exactly as typed; both notes show all their text after the switches.</li>
+              <li><code>v001.txt</code> shows <code>notes.dictation_received</code> then <code>notes.dictation_inserted</code> for each dictation, jobs <code>insertion_confirmed scratchpad_note</code>, and <code>typed/autosave</code> revisions for the typing; no <code>unsaved_marker=True</code> once you stopped typing.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A dictation lands in the wrong place or note, or typed text is missing after a switch: <b>Failed</b> — note which step and the <code>v001.txt</code> lines.</li>
+              <li>The recognizer mishears: repeat once; if it keeps mishearing, <b>Needs follow-up</b> — that is recognition, not the Scratchpad.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT12/v001.txt</code> (event names, origins, triggers and job states only). Nothing from this check goes into Git.</p>
+            <h5>Contract relevance</h5>
+            <p>M12-AC01, M12-AC05; M12-AUDIT-03/07/08/10/12; decisions D01, T01 (<code>acceptance/M12/remediation/adjudications.json</code>); <code>contracts/scratchpad.md</code> → The revision model, Dictation into the note.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M12-V002" data-milestone="M12" data-rev="M12-r1" data-code="b17aa2b" data-tags="native human hardware">
+          <header class="check-head">
+            <span class="cid">M12-V002</span>
+            <h4>Force-quit while typing, then quit normally right after a dictation</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> After a crash in the middle of typing, the note reopens at its last saved version with the warning that newer typing may be lost; after a normal quit straight after a dictation, the dictated words are saved. Quit ordering is covered by the machine checks; a real forced kill and restart can only be seen here.</p>
+          <p class="plain"><b>In plain terms.</b> You type and immediately kill the app, restart it and read the warning; then you dictate and quit at once, restart, and find the words there.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone</dd>
+              <dt>Preconditions</dt><dd>M12 set-up done; the dev app running with a note open in the Hub's Scratchpad.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M12 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Click into the note, type a few words quickly and, within one second of the last key, run <code>kill -9 $LF12_PID</code>.</li>
+              <li>Run <code>lf12_start</code>, open the Hub, go to Scratchpad and open the same note.</li>
+              <li>Dictate one sentence into the note and choose Quit from the LocalFlow menu immediately after the words appear.</li>
+              <li>Run <code>lf12_start</code> again, open the note, then run <code>lf12_evidence &gt; "$OUT12/v002.txt"</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>After the kill: the status line shows “⚠ unsaved changes may have been lost …” and the note shows its last saved version.</li>
+              <li>After the normal quit: the dictated sentence is in the note; <code>v002.txt</code> shows its job <code>insertion_confirmed</code> and a <code>notes.shutdown drained</code> line.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>No warning after the kill, or the dictated sentence is missing after the normal quit: <b>Failed</b> — keep <code>v002.txt</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT12/v002.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M12-AC01; M12-AUDIT-07/08/18; <code>contracts/scratchpad.md</code> → Unsaved tail risk, Quit.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Images, exports and transforms</h3>
+
+        <article class="check" id="M12-V003" data-milestone="M12" data-rev="M12-r1" data-code="b17aa2b" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M12-V003</span>
+            <h4>Add an image, export Markdown and plain text, and export again over the same file</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> An image you add shows as a marker and exports beside the Markdown file, plain text reports the image instead of dropping it, and exporting again over the same file replaces only the file you chose — the image files already in the folder stay as they were. Failure rollback is covered by the machine checks; how the files look in Finder and a Markdown viewer is yours to judge.</p>
+          <p class="plain"><b>In plain terms.</b> You put a picture in a note, export it twice to the same place, and look at the folder.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Finder · a Markdown viewer (Quick Look is enough)</dd>
+              <dt>Preconditions</dt><dd>M12 set-up done; the dev app running; any small picture you are happy to use (for example a screenshot of an empty desktop area).</dd>
+              <dt>Working dir</dt><dd><code>$OUT12/exports</code></dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>In a note with a heading, a list and a line of text, click Add Image… and choose the picture.</li>
+              <li>Click Export .md and save as <code>trial.md</code> in <code>$OUT12/exports</code>; then Export .txt as <code>trial.txt</code>.</li>
+              <li>Run <code>ls -l "$OUT12/exports"</code>. Click Export .md again, choose <code>trial.md</code> and confirm Replace; run the <code>ls</code> again.</li>
+              <li>Open <code>trial.md</code> with Quick Look and <code>trial.txt</code> in TextEdit.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>The first export writes <code>trial.md</code> and <code>trial-01.&lt;ext&gt;</code>; the second replaces <code>trial.md</code>, keeps <code>trial-01.&lt;ext&gt;</code> byte-identical (same size and time) and adds its own copy under a free name.</li>
+              <li>The Markdown shows the heading, list and picture; the text file keeps the structure and the status line reported one unsupported element.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>An existing file in the folder changes or disappears, or the picture is silently missing: <b>Failed</b> — keep the two <code>ls</code> listings.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: the two listings and the exports under <code>$OUT12/exports</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M12-AC03; M12-AUDIT-01/02/06; decision D06; <code>contracts/scratchpad.md</code> → Export.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M12-V004" data-milestone="M12" data-rev="M12-r1" data-code="b17aa2b" data-tags="native human hardware model">
+          <header class="check-head">
+            <span class="cid">M12-V004</span>
+            <h4>Transform a selection and a whole note; a note changed meanwhile is refused</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A transform of a selection replaces only that text, a whole-note transform replaces the note, and when you edit the note before accepting a whole-note transform the accept is refused and the preview stays open with Copy and Save to Scratchpad — nothing is put on the clipboard for you. The authority rules are machine-checked; the real model output and the preview's behaviour are yours to judge.</p>
+          <p class="plain"><b>In plain terms.</b> You polish one sentence, then the whole note, then try accepting a transform after changing the note.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · the transform model already on this Mac</dd>
+              <dt>Preconditions</dt><dd>M12 set-up done; the dev app running; a note with three sentences.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M12 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Select the second sentence, choose Polish in the transform picker, click Transform… and Accept in the preview.</li>
+              <li>With no selection, click Transform… and Accept.</li>
+              <li>Click Transform… again (no selection); before accepting, type a word at the end of the note, then click Accept.</li>
+              <li>Run <code>lf12_evidence &gt; "$OUT12/v004.txt"</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 1 changes only the second sentence; step 2 replaces the whole note.</li>
+              <li>Step 3 leaves the note as you typed it; the preview comes back titled “… not applied: the note changed” with Accept disabled.</li>
+              <li><code>v004.txt</code> shows <code>notes.transform_applied</code> twice and <code>notes.transform_target_lost</code> with <code>retained_offer note_content_changed</code>; no <code>hub.copy</code> line.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Any transform changes text outside what it was made from, or the refused one changes the note or the clipboard: <b>Failed</b> — keep <code>v004.txt</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT12/v004.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M12-AUDIT-07/13/19; <code>contracts/scratchpad.md</code> → Note-scope transforms.</p>
+          </details>
+        </article>
+
+        <h3 class="group">History, versions and text size</h3>
+
+        <article class="check" id="M12-V005" data-milestone="M12" data-rev="M12-r1" data-code="b17aa2b" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M12-V005</span>
+            <h4>Restore a version, copy and move a History row, and use the Scratchpad at a larger text size</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Restore brings back the version you chose and keeps the newer one in the list; History's Save→Scratchpad copies the text History shows as final and Move deletes the row only after the note exists; every Scratchpad control stays visible and usable at the smallest window size and a larger system text size. Popup identity and layout are machine-checked; readability at a larger text size is yours to judge.</p>
+          <p class="plain"><b>In plain terms.</b> You go back to an older version, send a dictation from History to a note twice (copy, then move), and look at the Scratchpad with bigger text.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · System Settings → Accessibility → Display → Text size</dd>
+              <dt>Preconditions</dt><dd>M12 set-up done; the dev app running; one dictation made into any app (it appears in History).</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M12 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>In a note, type three separate edits a few seconds apart; pick the oldest version in the versions popup and click Restore; type one more word.</li>
+              <li>In History, select the dictation and click Save→Scratchpad; then select it again and click Move→Scratchpad.</li>
+              <li>Drag the Hub window to its smallest size; take a screenshot into <code>$OUT12/screens</code>. Set a larger text size, reopen the Hub, go to Scratchpad and take another.</li>
+              <li>Run <code>lf12_evidence &gt; "$OUT12/v005.txt"</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>The restore shows the oldest text; the extra word builds on it; the versions list now has a <code>restore/explicit</code> entry and still lists the newer version.</li>
+              <li>Both transfers create a note with the text History showed as final; after Move the row is gone from History; the copy's note stays.</li>
+              <li>At the smallest size and the larger text size, every button, both popups, the search field and the editor are visible and respond to a click.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Restore shows a different version than chosen, a transfer copies different text than History shows, or a control is cut off or unreachable: <b>Failed</b> — keep the screenshots and <code>v005.txt</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT12/v005.txt</code> and the screenshots in <code>$OUT12/screens</code>. Screenshots stay private; nothing goes into Git.</p>
+            <h5>Contract relevance</h5>
+            <p>M12-AC02; M12-AUDIT-14/20/21/23, LOCAL-M12-01/03; decision L01; <code>contracts/scratchpad.md</code> → The surfaces.</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M13" data-milestone="M13" data-title="Usage analytics"><div class="ms-head"><span class="mid">M13</span><h2>Usage analytics</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M13-V001).</p></section>
       <section class="milestone" id="M14" data-milestone="M14" data-title="Learning & datasets"><div class="ms-head"><span class="mid">M14</span><h2>Learning &amp; datasets</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M14-V001).</p></section>
 

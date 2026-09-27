@@ -1,0 +1,829 @@
+{
+ "suite": "tests/v2/notes/test_m12_remediation.py",
+ "suite_sha256": "0b6a92e675206c2b6d1d6f18819c368ec1b0266dcb3f3d0412ff5103dc2bfaf1",
+ "code_root_sha": "5473ee99c789be0d4d919a7c5e0e41a45a0c34eb",
+ "tracked_files_modified": true,
+ "production_tree_modified": false,
+ "localflow_imported_from_root": "review-5473ee9",
+ "python": "3.14.7",
+ "counts": {
+  "PASS": 60,
+  "FAIL": 14
+ },
+ "results": [
+  {
+   "id": "r01a_read_refuses_parent_traversal",
+   "finding": "M12-AUDIT-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483303.166,
+    1790483303.174
+   ]
+  },
+  {
+   "id": "r01b_read_refuses_absolute_and_dir_symlink_and_final_symlink",
+   "finding": "M12-AUDIT-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483303.174,
+    1790483303.196
+   ]
+  },
+  {
+   "id": "r01c_read_refuses_fifo_and_directory",
+   "finding": "M12-AUDIT-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483303.196,
+    1790483303.212
+   ]
+  },
+  {
+   "id": "r01d_delete_attachment_keeps_outside_sentinel",
+   "finding": "M12-AUDIT-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483303.212,
+    1790483303.235
+   ]
+  },
+  {
+   "id": "r01e_delete_note_keeps_outside_sentinel",
+   "finding": "M12-AUDIT-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483303.235,
+    1790483303.259
+   ]
+  },
+  {
+   "id": "r02a_failure_after_first_attachment_keeps_preexisting_files",
+   "finding": "M12-AUDIT-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483303.259,
+    1790483303.267
+   ]
+  },
+  {
+   "id": "r02b_chmod_failure_keeps_preexisting_main_file",
+   "finding": "M12-AUDIT-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483303.267,
+    1790483303.275
+   ]
+  },
+  {
+   "id": "r02c_destination_symlink_never_writes_through",
+   "finding": "M12-AUDIT-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483303.275,
+    1790483303.283
+   ]
+  },
+  {
+   "id": "r02d_unapproved_sibling_is_never_overwritten",
+   "finding": "M12-AUDIT-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483303.283,
+    1790483303.292
+   ]
+  },
+  {
+   "id": "r03a_failed_switch_save_keeps_the_tail",
+   "finding": "M12-AUDIT-03",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.27,
+   "window_epoch": [
+    1790483303.292,
+    1790483303.56
+   ]
+  },
+  {
+   "id": "r03b_held_then_failed_save_keeps_the_tail",
+   "finding": "M12-AUDIT-03",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.33,
+   "window_epoch": [
+    1790483303.56,
+    1790483303.894
+   ]
+  },
+  {
+   "id": "r04_typed_prefix_never_gets_dictated_provenance",
+   "finding": "M12-AUDIT-04",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483303.894,
+    1790483303.957
+   ]
+  },
+  {
+   "id": "r05a_rolled_back_attachment_delete_keeps_payload",
+   "finding": "M12-AUDIT-05",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483303.957,
+    1790483303.965
+   ]
+  },
+  {
+   "id": "r05b_rolled_back_note_delete_keeps_payload",
+   "finding": "M12-AUDIT-05",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483303.965,
+    1790483303.972
+   ]
+  },
+  {
+   "id": "r05c_failed_unlink_is_durably_pending_and_retried",
+   "finding": "M12-AUDIT-05",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483303.972,
+    1790483303.979
+   ]
+  },
+  {
+   "id": "r06a_deleted_owner_is_refused",
+   "finding": "M12-AUDIT-06",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483303.979,
+    1790483303.985
+   ]
+  },
+  {
+   "id": "r06b_timeout_then_late_commit_keeps_payload",
+   "finding": "M12-AUDIT-06",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.21,
+   "window_epoch": [
+    1790483303.985,
+    1790483304.195
+   ]
+  },
+  {
+   "id": "r06c_crash_after_payload_write_is_reconciled",
+   "finding": "M12-AUDIT-06",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.11,
+   "window_epoch": [
+    1790483304.195,
+    1790483304.306
+   ]
+  },
+  {
+   "id": "r07a_held_commit_is_not_confirmed",
+   "finding": "M12-AUDIT-07",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483304.306,
+    1790483304.442
+   ]
+  },
+  {
+   "id": "r07b_failed_commit_is_never_confirmed",
+   "finding": "M12-AUDIT-07",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.13,
+   "window_epoch": [
+    1790483304.442,
+    1790483304.576
+   ]
+  },
+  {
+   "id": "r07c_transform_applied_waits_for_the_revision",
+   "finding": "M12-AUDIT-07",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.09,
+   "window_epoch": [
+    1790483304.576,
+    1790483314.664
+   ]
+  },
+  {
+   "id": "r08a_snapshot_does_not_claim_an_uncommitted_generation",
+   "finding": "M12-AUDIT-08",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.36,
+   "window_epoch": [
+    1790483314.664,
+    1790483315.027
+   ]
+  },
+  {
+   "id": "r08b_quit_settles_admitted_note_work",
+   "finding": "M12-AUDIT-08",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483315.027,
+    1790483315.083
+   ]
+  },
+  {
+   "id": "r08c_close_during_flush_keeps_the_newer_generation",
+   "finding": "M12-AUDIT-08",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.25,
+   "window_epoch": [
+    1790483315.083,
+    1790483315.333
+   ]
+  },
+  {
+   "id": "r09a_two_arrivals_keep_their_own_provenance",
+   "finding": "M12-AUDIT-09",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483315.333,
+    1790483315.397
+   ]
+  },
+  {
+   "id": "r09b_failed_older_arrival_never_overwrites_newer_identity",
+   "finding": "M12-AUDIT-09",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483315.397,
+    1790483315.44
+   ]
+  },
+  {
+   "id": "r10_timer_fires_in_the_default_run_loop",
+   "finding": "M12-AUDIT-10",
+   "status": "PASS",
+   "note": "",
+   "seconds": 2.04,
+   "window_epoch": [
+    1790483315.44,
+    1790483317.476
+   ]
+  },
+  {
+   "id": "r11a_pin_and_delete_never_act_on_an_unrendered_note",
+   "finding": "M12-AUDIT-11",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.07,
+   "window_epoch": [
+    1790483317.476,
+    1790483317.547
+   ]
+  },
+  {
+   "id": "r11b_add_image_revalidates_after_the_dialog",
+   "finding": "M12-AUDIT-11",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483317.547,
+    1790483317.596
+   ]
+  },
+  {
+   "id": "r12_emoji_before_caret_lands_at_the_caret",
+   "finding": "M12-AUDIT-12",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.13,
+   "window_epoch": [
+    1790483317.596,
+    1790483317.726
+   ]
+  },
+  {
+   "id": "r13_whole_note_accept_refuses_after_growth",
+   "finding": "M12-AUDIT-13",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.07,
+   "window_epoch": [
+    1790483317.726,
+    1790483327.794
+   ]
+  },
+  {
+   "id": "r14a_copy_uses_the_current_attempt_final_artifact",
+   "finding": "M12-AUDIT-14",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483327.794,
+    1790483327.818
+   ]
+  },
+  {
+   "id": "r14b_missing_final_is_refused_not_substituted",
+   "finding": "M12-AUDIT-14",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483327.818,
+    1790483327.843
+   ]
+  },
+  {
+   "id": "r15a_delete_purges_the_note_transform_graph",
+   "finding": "M12-AUDIT-15",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.09,
+   "window_epoch": [
+    1790483327.844,
+    1790483337.937
+   ]
+  },
+  {
+   "id": "r15b_late_candidate_cannot_republish_a_deleted_note",
+   "finding": "M12-AUDIT-15",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.09,
+   "window_epoch": [
+    1790483337.937,
+    1790483348.026
+   ]
+  },
+  {
+   "id": "r16a_late_callback_cannot_reopen_a_deleted_note",
+   "finding": "M12-AUDIT-16",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483348.026,
+    1790483348.171
+   ]
+  },
+  {
+   "id": "r16b_same_revision_event_counts_once",
+   "finding": "M12-AUDIT-16",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483348.171,
+    1790483348.309
+   ]
+  },
+  {
+   "id": "r17_surviving_typed_echo_is_not_dictated",
+   "finding": "M12-AUDIT-17",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483348.309,
+    1790483348.316
+   ]
+  },
+  {
+   "id": "r18_old_save_cannot_clear_a_newer_generation",
+   "finding": "M12-AUDIT-18",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483348.316,
+    1790483348.357
+   ]
+  },
+  {
+   "id": "r19a_closed_note_dictation_does_not_touch_the_clipboard",
+   "finding": "M12-AUDIT-19",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.12,
+   "window_epoch": [
+    1790483348.357,
+    1790483348.481
+   ]
+  },
+  {
+   "id": "r19b_refused_note_transform_does_not_touch_the_clipboard",
+   "finding": "M12-AUDIT-19",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.08,
+   "window_epoch": [
+    1790483348.481,
+    1790483358.564
+   ]
+  },
+  {
+   "id": "r20_move_selector_reaches_the_transfer",
+   "finding": "M12-AUDIT-20",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483358.564,
+    1790483358.604
+   ]
+  },
+  {
+   "id": "r21_actions_fit_at_default_and_minimum_sizes",
+   "finding": "M12-AUDIT-21",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483358.604,
+    1790483358.653
+   ]
+  },
+  {
+   "id": "r22_malformed_ranges_refuse",
+   "finding": "M12-AUDIT-22",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483358.653,
+    1790483358.653
+   ]
+  },
+  {
+   "id": "r23_chosen_transform_and_version_survive_refresh",
+   "finding": "M12-AUDIT-23",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.04,
+   "window_epoch": [
+    1790483358.653,
+    1790483358.696
+   ]
+  },
+  {
+   "id": "r24a_pin_and_new_with_unknown_outcome_do_not_claim_failure",
+   "finding": "M12-AUDIT-24",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.45,
+   "window_epoch": [
+    1790483358.696,
+    1790483359.15
+   ]
+  },
+  {
+   "id": "r24b_history_copy_unknown_is_not_failure_and_never_deletes",
+   "finding": "M12-AUDIT-24",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.23,
+   "window_epoch": [
+    1790483359.15,
+    1790483359.376
+   ]
+  },
+  {
+   "id": "r25_benchmark_fixture_and_validity",
+   "finding": "M12-AUDIT-25",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483359.376,
+    1790483359.379
+   ]
+  },
+  {
+   "id": "r26_m12_results_carry_no_private_absolute_path",
+   "finding": "M12-AUDIT-26",
+   "status": "FAIL",
+   "note": "private absolute paths in fields: ['results.json.environment.cwd', 'results.json.human_verification.steps']",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483359.379,
+    1790483359.38
+   ]
+  },
+  {
+   "id": "l01_legacy_row_transfer_is_honest",
+   "finding": "LOCAL-M12-01",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483359.38,
+    1790483359.405
+   ]
+  },
+  {
+   "id": "l02_populated_m12_table_loss_is_refused",
+   "finding": "LOCAL-M12-02",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.03,
+   "window_epoch": [
+    1790483359.406,
+    1790483359.439
+   ]
+  },
+  {
+   "id": "l03_identical_version_labels_restore_the_chosen_revision",
+   "finding": "LOCAL-M12-03",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483359.439,
+    1790483359.486
+   ]
+  },
+  {
+   "id": "v01a_stale_detail_never_rebinds_over_a_committed_arrival",
+   "finding": "REVIEW-01",
+   "status": "FAIL",
+   "note": "the editor rebound to a stale detail",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483359.486,
+    1790483359.535
+   ]
+  },
+  {
+   "id": "v01b_restore_is_bound_before_the_next_arrival",
+   "finding": "REVIEW-01",
+   "status": "FAIL",
+   "note": "the arrival undid the restore (current 'version two DICT')",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483359.535,
+    1790483359.582
+   ]
+  },
+  {
+   "id": "v02a_per_word_ambiguity_abstains",
+   "finding": "REVIEW-02",
+   "status": "FAIL",
+   "note": "the surviving typed 'world' was claimed as dictated",
+   "seconds": 0.0,
+   "window_epoch": [
+    1790483359.582,
+    1790483359.582
+   ]
+  },
+  {
+   "id": "v02b_single_edit_fuzz_never_claims_a_typed_word",
+   "finding": "REVIEW-02",
+   "status": "FAIL",
+   "note": "35 surviving spans covered typed words",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483359.582,
+    1790483359.599
+   ]
+  },
+  {
+   "id": "v03_history_transform_output_is_not_labelled_dictated",
+   "finding": "REVIEW-03",
+   "status": "FAIL",
+   "note": "applied transform output was labelled dictated speech",
+   "seconds": 0.02,
+   "window_epoch": [
+    1790483359.599,
+    1790483359.623
+   ]
+  },
+  {
+   "id": "v04_marker_write_never_blocks_the_main_thread",
+   "finding": "REVIEW-04",
+   "status": "FAIL",
+   "note": "the dictation acknowledgment blocked 1.01s on the store",
+   "seconds": 1.05,
+   "window_epoch": [
+    1790483359.623,
+    1790483360.67
+   ]
+  },
+  {
+   "id": "v05_late_marker_write_never_flags_a_saved_note",
+   "finding": "REVIEW-05",
+   "status": "FAIL",
+   "note": "a late marker write flagged a fully saved note",
+   "seconds": 0.06,
+   "window_epoch": [
+    1790483360.67,
+    1790483360.732
+   ]
+  },
+  {
+   "id": "v06_retried_attachment_id_survives_reopen",
+   "finding": "REVIEW-06",
+   "status": "FAIL",
+   "note": "a committed attachment lost its payload at open",
+   "seconds": 0.11,
+   "window_epoch": [
+    1790483360.732,
+    1790483360.845
+   ]
+  },
+  {
+   "id": "v07_autosave_ticks_do_not_pile_up_threads",
+   "finding": "REVIEW-07",
+   "status": "FAIL",
+   "note": "10 save threads for one note",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483360.845,
+    1790483360.897
+   ]
+  },
+  {
+   "id": "v08_restore_that_never_started_is_not_pending",
+   "finding": "REVIEW-08",
+   "status": "FAIL",
+   "note": "a restore whose write never started was reported pending",
+   "seconds": 0.15,
+   "window_epoch": [
+    1790483360.897,
+    1790483361.044
+   ]
+  },
+  {
+   "id": "v09_tab_chip_closes_the_note_it_shows",
+   "finding": "REVIEW-09",
+   "status": "FAIL",
+   "note": "the chip showing one note closed another",
+   "seconds": 0.11,
+   "window_epoch": [
+    1790483361.044,
+    1790483361.155
+   ]
+  },
+  {
+   "id": "v10_reoffer_names_only_its_own_result",
+   "finding": "REVIEW-10",
+   "status": "FAIL",
+   "note": "T1's refusal relabelled T2's preview",
+   "seconds": 20.38,
+   "window_epoch": [
+    1790483361.155,
+    1790483381.537
+   ]
+  },
+  {
+   "id": "v11_switch_does_not_block_the_main_thread",
+   "finding": "REVIEW-11",
+   "status": "FAIL",
+   "note": "switching blocked the main thread 1.51s",
+   "seconds": 1.57,
+   "window_epoch": [
+    1790483381.537,
+    1790483383.107
+   ]
+  },
+  {
+   "id": "v13_suites_refuse_to_run_unisolated",
+   "finding": "REVIEW-13",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.13,
+   "window_epoch": [
+    1790483383.107,
+    1790483383.241
+   ]
+  },
+  {
+   "id": "c01_serial_appends_keep_an_immutable_parent_chain",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483383.241,
+    1790483383.249
+   ]
+  },
+  {
+   "id": "c02_late_append_after_delete_is_refused",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483383.249,
+    1790483383.256
+   ]
+  },
+  {
+   "id": "c03_ordinary_switch_persists_the_outgoing_tail",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483383.256,
+    1790483383.308
+   ]
+  },
+  {
+   "id": "c04_ascii_caret_dictation_lands_at_the_caret",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483383.309,
+    1790483383.445
+   ]
+  },
+  {
+   "id": "c05_selection_transform_allows_an_outside_edit",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 10.09,
+   "window_epoch": [
+    1790483383.445,
+    1790483393.534
+   ]
+  },
+  {
+   "id": "c06_consent_off_keeps_notes_working",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.14,
+   "window_epoch": [
+    1790483393.535,
+    1790483393.675
+   ]
+  },
+  {
+   "id": "c07_clean_restore_rebinds_before_the_next_keystroke",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.05,
+   "window_epoch": [
+    1790483393.675,
+    1790483393.726
+   ]
+  },
+  {
+   "id": "c08_ordinary_export_round_trip",
+   "finding": "CONTROL",
+   "status": "PASS",
+   "note": "",
+   "seconds": 0.01,
+   "window_epoch": [
+    1790483393.726,
+    1790483393.735
+   ]
+  }
+ ]
+}

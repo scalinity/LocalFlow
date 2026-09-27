@@ -3,8 +3,15 @@
   "requirements": ["LF-R19", "LF-R28", "LF-R30"],
   "suite": "EV-14",
   "status": "implemented_pending_human",
+  "privacy_redactions": [
+    {"date": "2026-09-26", "finding": "M12-AUDIT-26",
+     "fields": ["environment.cwd", "human_verification.steps"],
+     "replaced": "the absolute path of the repository checkout (2 occurrences)",
+     "with": "<repo>",
+     "note": "Forward-only redaction of a private location; no measured outcome, count or status in this historical record was changed, and Git history was not rewritten."}
+  ],
   "environment": {
-    "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+    "cwd": "<repo>",
     "python": "3.14.7 (.venv)",
     "mlx": "0.31.2",
     "transformers": "5.10.4",
@@ -68,7 +75,7 @@
   "human_verification": {
     "id": "native-m12-scratchpad-trial",
     "status": "pending",
-    "steps": "From Terminal.app (cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh), one instance: (1) Quick Open Scratchpad — one action opens the Hub on the Scratchpad view with a fresh note focused; (2) dictate a paragraph with the editor focused (the pill runs; text lands at the caret as a dictated revision — History shows the dictation attributed to the note); (3) add a list and a code block by typing, watch autosave create revisions (word count in the status line), press Snapshot for an explicit version; (4) add an image (Add Image… — the managed file lands under Application Support/LocalFlow/v2-notes/); (5) select a sentence and run a transform from the picker (accept replaces the selection; then run one with nothing selected — accept REPLACES the whole note); (6) type, quit the app mid-burst without waiting, relaunch, reopen the note — the ⚠ tail-risk banner names when editing started and the last saved word count; (7) restore an earlier version from the popup (the editor shows it; the current version stays in the list); (8) from History, Copy a row to Scratchpad and Move another (the moved job's payloads purge); (9) export Markdown and plain text and inspect both (images copied beside the .md; plain text lists the image as unsupported); (10) screenshots at normal and enlarged text scale. Expected: every step above; actual: pending."
+    "steps": "From Terminal.app (cd <repo> && ./run.sh), one instance: (1) Quick Open Scratchpad — one action opens the Hub on the Scratchpad view with a fresh note focused; (2) dictate a paragraph with the editor focused (the pill runs; text lands at the caret as a dictated revision — History shows the dictation attributed to the note); (3) add a list and a code block by typing, watch autosave create revisions (word count in the status line), press Snapshot for an explicit version; (4) add an image (Add Image… — the managed file lands under Application Support/LocalFlow/v2-notes/); (5) select a sentence and run a transform from the picker (accept replaces the selection; then run one with nothing selected — accept REPLACES the whole note); (6) type, quit the app mid-burst without waiting, relaunch, reopen the note — the ⚠ tail-risk banner names when editing started and the last saved word count; (7) restore an earlier version from the popup (the editor shows it; the current version stays in the list); (8) from History, Copy a row to Scratchpad and Move another (the moved job's payloads purge); (9) export Markdown and plain text and inspect both (images copied beside the .md; plain text lists the image as unsupported); (10) screenshots at normal and enlarged text scale. Expected: every step above; actual: pending."
   },
   "review_loop": {
     "skill": "/review-2 (two parallel read-only reviewers: bug-hunting debugger; architecture/quality/security/data-integrity auditor) → /address",
@@ -76,5 +83,31 @@
     "addressed": "All four criticals fixed with regression tests driven through the production paths (the picker + button action; whole-note range (0, len) coerced at the coordinator too; the refresh rebinds whenever the persisted revision moves under a clean editor). Every warning fixed: select/reload share one loader generation (the just-created note actually appears); tab close rebinds or clears the editor and switching notes flushes the outgoing buffer; a no-change flush clears the tail-risk marker; scratchpad_receive enforces the PTT-time note binding and delivers at the captured anchor; hubSaveHistoryRow falls back applied→cleaned→raw; the revision_count column misalignment; the versions list bounded at 200 with an honest truncated flag (storage growth documented as a limitation — coalescing would violate the append-only contract here). Suggestions applied: the shared _conn_append_revision/_conn_latest helpers replace the duplicated envelope SQL; stale evidence links close as example_unavailable; closed stores fail fast instead of hanging; notes_meta and editor_origin (dead schema/state) cut; attachment insert-failure unlink; marker alt-text sanitizing; slugged export names; export flushes the debounce tail; partial-export cleanup; pending attribution restored on flush failure; transform_note task kind; objc.python_method decorators. Deferred with reasons: mid-word span placement stays a documented heuristic; two arrivals in one debounce window merge under the second origin (sub-second window, both texts persist). No findings rejected as incorrect.",
     "post_address": "All 44 fast suites, all six model-backed checks, the V1 control (51/51) and the benchmark re-ran green on the fixed code. The /review-2 stale-callback hang (a deferred Hub refresh executing against a closed harness's store) was root-caused to the test harness and closed with the harness-side discard_pending plus the store's fail-fast guard.",
     "cadence_note": "The /address per-fix-commit cadence was adapted to this repo's milestone protocol: one close-out commit, no push — per the kickoff's explicit constraints."
+  },
+  "remediation_2026_09_26": {
+    "kind": "LOCAL_REMEDIATION",
+    "state": "LOCAL_REMEDIATION_COMPLETE_PENDING_MANUAL_VERIFICATION",
+    "state_note": "Every confirmed automatable defect repaired; corpus, stateful, metamorphic, mutation, native, compatibility and benchmark gates green at the final production; the independent review's allegations reproduced and resolved; the manual checks M12-V001..V005 remain pending for the owner.",
+    "audit": {"title": "LocalFlow V2 — M12 Read-Only Deep Audit", "audited_sha": "114ba5831c2581d28c96d427ac866c2f92c1b24a", "verdict": "C", "findings": {"critical": 4, "high": 15, "medium": 6, "low": 1}, "audit_markdown_sha256": "6f928b802ac12589a99040d9b1c549b694fb12981ffb66343efeab15ba44d2a0", "corpus": "tests/v2/notes/m12_audit_corpus.json", "corpus_sha256": "0c1e9cc51d82da29e1e4d3ad91097a8532a9c078eb6c3ce31ca1509349fc5be9"},
+    "synchronization": {"local_pre_sync": "114ba5831c2581d28c96d427ac866c2f92c1b24a", "remote_main_at_sync": "114ba5831c2581d28c96d427ac866c2f92c1b24a", "local_main_after_sync": "114ba5831c2581d28c96d427ac866c2f92c1b24a", "ancestors_verified": ["ed5e20631529e063564b151555215485ec316a53", "1c074ce0ff3ef25da79e13600be38cfa4fcf843a"]},
+    "branch": "m12-local-remediation-20260926",
+    "first_pass_sha": "5473ee9 (production 72b795c)",
+    "final_code_revision": "b17aa2b",
+    "adjudications": "acceptance/M12/remediation/adjudications.json (policy m12-policy-r1)",
+    "disposition_counts": {"reproduced": 26, "refuted": 0, "narrowed": 0, "already_fixed": 0, "test_gap_only": 0, "design_only": 0, "native_manual_unresolved": 0, "local_findings": ["LOCAL-M12-01", "LOCAL-M12-02", "LOCAL-M12-03"]},
+    "caller_inventory": "acceptance/M12/remediation/caller_inventory.json",
+    "regressions": {"suite": "tests/v2/notes/test_m12_remediation.py", "cases": 74, "controls": 8, "base_first_suite": "50 FAIL / 8 PASS (regressions_base_114ba58.json)", "base_final_suite": "59 FAIL / 12 PASS / 3 ERROR (regressions_base_114ba58_final_suite.json)", "first_pass_final_suite": "60 PASS / 14 FAIL (regressions_first_pass_5473ee9_final_suite.json)", "final": "74/74 (regressions_final_b17aa2b.json); live pasteboard change count unchanged across the run"},
+    "corpus_results": {"final": "175/175 PASS — portable 125, stateful 28 (all barriers reached or bound), native 12, performance 10; metamorphic 14/14 (corpus_final_b17aa2b.json)", "base": "46 PASS / 79 FAIL / 38 ERROR / 12 NOT_RUN; metamorphic 4 PASS / 7 FAIL / 3 ERROR (corpus_base_114ba58.json)"},
+    "mutation_results": {"first_pass": "19 killed / 2 survived (MUT16, MUT19: weak oracles, strengthened) / 1 harness error (MUT05, subprocess terminated by the reviewer) (mutation_first_pass_5473ee9.json)", "final": "22/22 killed, 0 survived, 0 invalid, 0 equivalent (mutation_final_b17aa2b.json)"},
+    "independent_review": {"reviewed": "5473ee9", "allegations": 13, "reproduced_by_author": 13, "fixed": 12, "narrowed_process": 1, "refuted_hypotheses": 11, "fail_first_record": "review_regressions_first_pass_5473ee9.json (14 FAIL on the frozen first pass)", "repair_commit": "b17aa2b"},
+    "portable_tests": {"historical_suites": {"test_note_store": "7/7", "test_note_editor": "4/4", "test_note_export": "4/4", "test_note_evidence": "5/5", "test_scratchpad_hub": "10/10"}, "sweep": "91/93 files exit 0 at 1e41a70 (the two native-flag suites exit 2 as in M10's accepted sweep); no live clipboard change (sweep_final_1e41a70.json)", "runner": "tests/v2/context/run_isolated.py"},
+    "native_tests": {"record": "acceptance/M12/remediation/native_final.json", "result": "12/12 (passive 1/1 never activated; active 11/11 as a launched app, activation granted, prior frontmost restored)", "production_tree": "b17aa2b"},
+    "benchmark": {"run": "benchmarks/20260927-044044-m12-remediation-final/m12.json", "verdict": "VALID_WITHIN_BUDGET", "note_open_10k_p95_ms": 1.8391, "dictated_ack_p95_ms": 0.0229, "dictated_commit_p95_ms": 0.9498, "dictated_confirmation_p95_ms": 0.9671, "load_avg_1_5_15": [5.37, 4.39, 4.05], "power": "AC Power"},
+    "desktop_isolation": "every portable and native run under run_isolated (private pasteboard, no Accessibility, no posted events); the M12 world refuses to load without it",
+    "privacy": "synthetic stores, notes, attachments and exports in temporary folders only; no real notes, History, attachments, clipboard content or screenshots; evidence records carry repository-relative names only",
+    "pending_manual_verification": ["M12-V001", "M12-V002", "M12-V003", "M12-V004", "M12-V005"],
+    "declared_residuals": ["whitespace-word spans; an edit leaving the text identical is invisible to attribution", "no crash-gap reconciliation for optional note evidence; de-duplication within the 32-entry envelope window", "Snapshot during a running autosave writes no second revision", "Hub CRUD other than editor saves stays synchronous (M09 declared limitation)"],
+    "merge": "merged onto main in the same session (repository rule for completed remediations)",
+    "handoff": "handoffs/M12.md remediation addendum"
   }
 }
