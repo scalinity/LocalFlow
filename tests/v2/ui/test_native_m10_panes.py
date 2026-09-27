@@ -31,6 +31,8 @@ edit again.
 
 Run: .venv/bin/python tests/v2/context/run_isolated.py \
          tests/v2/ui/test_native_m10_panes.py [--json OUT] [-k NAME]
+(the passive tier); the active tier runs as a launched app through
+.venv/bin/python scripts/v2/native_m10_active.py --json OUT
 (the desktop isolation changes nothing this suite needs: it never uses
 Accessibility, event posting or the general pasteboard)
 """
