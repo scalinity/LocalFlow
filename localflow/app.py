@@ -294,11 +294,21 @@ class AppDelegate(NSObject):
         # dictation path.
         self._analytics = None
         self._insights = None
+        # One validated reporting-zone policy (m13-policy-r1 D02b): an
+        # invalid configured value falls back to the system policy and is
+        # disclosed by key and reason only — never echoed, never a
+        # disabled analytics service.
+        zone, zone_problem = v2.analytics.validate_reporting_zone(
+            cfg.get("analytics_timezone"))
+        if zone_problem is not None:
+            zone = v2.analytics.system_zone()
+            self.v2log.emit("analytics.timezone_config_invalid",
+                            level="WARNING", reason_code=zone_problem,
+                            detail="analytics_timezone",
+                            outcome="system_zone")
         try:
             self._analytics = v2.analytics.AnalyticsStore(
-                self.store, emit=self.v2log.emit,
-                reporting_timezone=v2.analytics.resolve_reporting_zone(
-                    cfg.get("analytics_timezone") or None))
+                self.store, emit=self.v2log.emit, reporting_timezone=zone)
             self._insights = v2.analytics.InsightsQueryService(
                 self.store, self._analytics)
         except Exception as e:
@@ -306,27 +316,21 @@ class AppDelegate(NSObject):
                             reason_code=type(e).__name__,
                             outcome="analytics_off")
         try:
-            # A changed analytics_timezone (or an aggregate table left
-            # at an older algorithm version) re-buckets every fact's
-            # day and rebuilds the aggregates at launch (versioned
-            # recomputation) — day boundaries follow the selected
-            # reporting zone (S21), and the table holds exactly one
-            # zone/version's arithmetic.
+            # A changed analytics_timezone, any fact or aggregate row in
+            # another zone, or any aggregate row at another algorithm
+            # version re-buckets every fact and rebuilds the aggregates
+            # at launch in ONE writer op (versioned recomputation) — the
+            # table holds exactly one zone/version's arithmetic.
             if self._analytics is not None:
-                stored_zone, stored_version = self.store.submit(
-                    lambda db: (
-                        db.execute("SELECT DISTINCT reporting_timezone"
-                                   " FROM usage_facts LIMIT 1").fetchone(),
-                        db.execute("SELECT MAX(algorithm_version) FROM"
-                                   " daily_aggregates").fetchone()))
-                if (stored_zone and stored_zone[0] !=
-                        self._analytics.reporting_timezone) or \
-                        (stored_version and stored_version[0] !=
-                            v2.analytics.ALGORITHM_VERSION):
-                    self._analytics.rebuild_aggregates()
+                self._analytics.ensure_current()
         except Exception as e:
             self.v2log.emit("analytics.zone_rebuild_failed",
                             level="WARNING", reason_code=type(e).__name__)
+        # Outcome-unknown usage mutations reconciled so far
+        # (op_id → committed | rolled_back), and the caller's bounded
+        # wait for a usage command (m13-policy-r1 D13).
+        self._usage_reconciled = {}
+        self._usage_op_timeout = 15.0
         self.v2log.unresolved_jobs_fn = self.store.unresolved_job_ids
         self.consent = v2.training.ConsentManager(self.store, self.v2log.emit)
         try:
@@ -1869,7 +1873,7 @@ class AppDelegate(NSObject):
             self._job_state(job_id, "insertion_confirmed",
                             reason="scratchpad_note")
         self._record_dictation_usage(
-            job, "confirmed", text, end_to_end=True,
+            job, "confirmed", text,
             meta={"destination": "scratchpad_note",
                   "note_revision_id": arrival.revision_id})
         if ctx is not None:
@@ -2752,7 +2756,12 @@ class AppDelegate(NSObject):
             # job-row pruning, deferred to this milestone (hub.md).
             if self._analytics is not None:
                 self._analytics.expire_usage()
-            self.store.prune_metadata()
+            # A job with an admitted recovery claim is never pruned under
+            # it (m13-policy-r1 D07); the store also keeps recoverable
+            # jobs inside their window and any with a retained journal.
+            with self._recovery_lock:
+                claimed = set(self._claimed_jobs)
+            self.store.prune_metadata(protected_job_ids=claimed)
             self._sweep_journal_root()
         except Exception as e:
             self.v2log.emit("store.retention_failed", level="ERROR",
@@ -4132,7 +4141,6 @@ class AppDelegate(NSObject):
                     vocab_rules = [e.rule_id for e in norm_result.edits
                                    if e.cls == "vocabulary" and e.rule_id] \
                         if norm_result is not None else []
-                    job["vocab_hits"] = len(vocab_rules)  # M13 usage fact
                     # An applied DICTIONARY skill is an applied dictionary
                     # rule too (its edit carries the approving entry id —
                     # M05-AUDIT-09); manifest skills carry none.
@@ -4140,6 +4148,10 @@ class AppDelegate(NSObject):
                         e.rule_id for e in norm_result.edits
                         if e.cls == "skill" and e.rule_id] \
                         if norm_result is not None else vocab_rules
+                    # M13 usage fact: the per-job count is the complete
+                    # applied set — the same one the registry records
+                    # (M13-AUDIT-16), set per attempt, never accumulated.
+                    job["vocab_hits"] = len(vocab_rules)
                     if vocab_rules and self._vocab is not None:
                         try:
                             self._vocab.record_hits(vocab_rules)
@@ -4776,7 +4788,7 @@ class AppDelegate(NSObject):
 
     @objc.python_method
     def _record_dictation_usage(self, job, outcome, final_text=None,
-                                *, meta=None, end_to_end=False):
+                                *, meta=None):
         """M13: write the job's usage fact at its terminal outcome
         (Spec S08/S21, contracts/analytics.md). One fact per logical
         dictation — the store upserts on job_id, so a retry reaching a
@@ -4793,12 +4805,29 @@ class AppDelegate(NSObject):
             wp = m10.get("wp")
             tf = job.get("transform_result")
             tf_job = getattr(tf, "job", None) if tf is not None else None
+            # m13-policy-r1 D06: end_to_end_ms is THIS capture's parent-
+            # monotonic PTT release → its terminal outcome, whatever the
+            # outcome (the confirmed subset is E06's confirmed-visible
+            # latency, reported apart). A retry has no release of its
+            # own: its retry-start → terminal interval rides meta and
+            # the release clock stays null with its reason — the two
+            # clocks never mix. Never wall-clock arithmetic.
             released = job.get("released_mono")
+            now_mono = time.monotonic()
             e2e = None
-            if end_to_end and released is not None:
-                # Parent-monotonic PTT release → terminal outcome (E06:
-                # end-to-end; stage timings stay separate).
-                e2e = round((time.monotonic() - released) * 1000.0, 1)
+            meta = dict(meta or {})
+            if released is not None:
+                e2e = round((now_mono - released) * 1000.0, 1)
+            elif job.get("from_retry"):
+                meta["e2e_missing"] = "retry_no_release_clock"
+                started = job.get("retry_started_mono")
+                if started is not None:
+                    meta["retry_to_terminal_ms"] = round(
+                        (now_mono - started) * 1000.0, 1)
+            elif outcome == "cancelled":
+                meta["e2e_missing"] = "cancelled_before_release"
+            else:
+                meta["e2e_missing"] = "no_release_clock"
             stats = job.get("stats") or {}
             captured = job.get("captured_at_utc")
             raw = job.get("raw")
@@ -4917,7 +4946,6 @@ class AppDelegate(NSObject):
                 self._job_state(job_id, "insertion_confirmed")
             self._record_dictation_usage(
                 job, "confirmed", job.get("final_text"),
-                end_to_end=True,
                 meta={"method": result.method})
         elif state == "posted_unverified":
             if job_id:
@@ -4937,7 +4965,6 @@ class AppDelegate(NSObject):
             # never presented as target-confirmed latency (E06).
             self._record_dictation_usage(
                 job, "posted_unverified", job.get("final_text"),
-                end_to_end=True,
                 meta={"reason": result.reason_code
                       or "readback_unavailable"})
         else:
@@ -5421,21 +5448,27 @@ class AppDelegate(NSObject):
         # flush rides the transaction's completion instead — and, for an
         # operation that runs no transaction, the service's idle
         # notification (``_hub_blocks_show`` registers it).
-        def _repaste_done(r, _job_id=job_id):
-            # M13: a re-paste is its own activity row — never a second
-            # dictation word count (M13-AC02). Guarded like every
-            # analytics write.
-            if self._analytics is not None:
-                try:
-                    self._analytics.record_repaste_fact(
-                        job_id=_job_id,
-                        meta={"state": getattr(r, "state", None)})
-                except Exception as e:
-                    self.v2log.emit("usage.record_failed",
-                                    level="WARNING",
-                                    reason_code=type(e).__name__)
-            AppHelper.callAfter(self._flush_pending_hub_show)
-        return paste(text, job_id=job_id, on_done=_repaste_done)
+        return paste(text, job_id=job_id,
+                     on_done=lambda r: self._repaste_done(r, job_id))
+
+    @objc.python_method
+    def _repaste_done(self, result, job_id=None):
+        """Every Paste Again surface's completion (History and the
+        Recovery menu, m13-policy-r1 D04). The insertion service calls it
+        only when a transaction RAN — already-present, revoked and
+        nothing-to-paste outcomes never arrive here. A re-paste is its
+        own activity row, never a second dictation word count
+        (M13-AC02); guarded like every analytics write."""
+        if self._analytics is not None:
+            try:
+                self._analytics.record_repaste_fact(
+                    job_id=job_id if job_id is not None
+                    else getattr(result, "job_id", None),
+                    meta={"state": getattr(result, "state", None)})
+            except Exception as e:
+                self.v2log.emit("usage.record_failed", level="WARNING",
+                                reason_code=type(e).__name__)
+        AppHelper.callAfter(self._flush_pending_hub_show)
 
     @objc.python_method
     def hubRetryJob(self, job_id):
@@ -5839,6 +5872,10 @@ class AppDelegate(NSObject):
                    "failed": False, "cancelled": False, "attempt": attempt,
                    "raw": None, "wav": info["wav"], "journal": None,
                    "from_retry": True,
+                   # m13-policy-r1 D06: the retry's own clock (no PTT
+                   # release exists for a retry; the capture instant
+                   # below stays the original).
+                   "retry_started_mono": time.monotonic(),
                    "audio": _arr,
                    # The retained bytes' own rate — never relabeled to the
                    # current configuration.
@@ -5980,65 +6017,140 @@ class AppDelegate(NSObject):
         when the previous result is not already present."""
         if self.state == STATE_RECORDING or self._insertion is None:
             return
-        self._insertion.paste_again()
+        self._insertion.paste_again(on_done=self._repaste_done)
 
     # ---- M13 usage analytics commands (Hub coordinator surface) -----------
 
     @objc.python_method
     def hubUsageInfo(self):
-        """The Settings/Insights usage block: retention knob value and
-        the active reporting timezone (S21)."""
+        """The Settings/Insights usage block: retention policy ("keep"
+        until cleared, or a day count) and the committed reporting
+        timezone (S21/S25)."""
+        days = self.store.retention_days.get("usage")
         return {
-            "usage_retention_days": self.store.retention_days.get(
-                "usage", 365),
+            "usage_retention_days": (config_mod.USAGE_KEEP if days is None
+                                     else days),
             "reporting_timezone": (self._analytics.reporting_timezone
                                    if self._analytics else None),
             "available": self._analytics is not None,
         }
 
     @objc.python_method
-    def hubApplyUsageRetention(self, days):
-        """Apply the usage retention knob now and persist it to the user
-        override (the single-key discipline of hubApplyRetention)."""
-        days = config_mod.validate_retention_value(
-            "retention_usage_days", days)  # M02-AUDIT-19 bounds
-        if days is None:
-            return {"outcome": "invalid_days"}
-        self.store.retention_days["usage"] = days
-        self.cfg["retention_usage_days"] = days
+    def hubApplyUsageRetention(self, value):
+        """Save the usage retention policy (m13-policy-r1 D03): validate
+        strictly ("keep" or whole days in range — never clamped), write
+        the user override atomically, and only then make the policy
+        effective. Nothing is deleted here: the result previews how many
+        facts the next scheduled retention pass will remove."""
+        ok, days, reason = config_mod.parse_usage_retention(value)
+        if not ok:
+            self.v2log.emit("hub.usage_retention_refused", level="INFO",
+                            reason_code=reason)
+            return {"outcome": "refused", "reason_code": reason}
+        stored = config_mod.USAGE_KEEP if days is None else days
         try:
-            override = {}
             path = config_mod.user_override_path()
             try:
                 override = json.loads(path.read_text())
+                if not isinstance(override, dict):
+                    override = {}
             except (OSError, ValueError):
                 override = {}
-            override["retention_usage_days"] = days
+            override["retention_usage_days"] = stored
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(override, ensure_ascii=False,
-                                       indent=1), encoding="utf-8")
+            tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+            tmp.write_text(json.dumps(override, ensure_ascii=False,
+                                      indent=1), encoding="utf-8")
+            os.replace(tmp, path)
         except Exception as e:
             self.v2log.emit("hub.settings_write_failed", level="WARNING",
                             reason_code=type(e).__name__)
-            return {"outcome": "not_persisted"}
+            return {"outcome": "not_saved",
+                    "reason_code": "override_write_failed"}
+        # Saved: now (and only now) the policy becomes effective.
+        self.store.retention_days["usage"] = days
+        self.cfg["retention_usage_days"] = stored
+        pending = None
+        if self._analytics is not None:
+            try:
+                pending = self._analytics.pending_expiry(days)
+            except Exception as e:
+                self.v2log.emit("usage.preview_failed", level="WARNING",
+                                reason_code=type(e).__name__)
         self.v2log.emit("hub.usage_retention_applied", level="INFO",
-                        reason_code="settings", detail=f"{days}d")
-        return {"outcome": "applied", "days": days}
+                        reason_code="settings",
+                        detail="keep" if days is None else f"{days}d")
+        return {"outcome": "saved", "days": stored,
+                "pending_expiry": pending,
+                "applies": "next_retention_pass"}
+
+    @objc.python_method
+    def _usage_mutation(self, name, fn, job_id=None):
+        """One usage deletion with a typed outcome (m13-policy-r1 D13):
+        not_started when the store admits nothing, deleted when it
+        committed, failed when the op raised and rolled back, and
+        outcome_unknown when the caller's wait timed out after admission
+        — a timeout is not cancellation. Committed and unknown outcomes
+        revoke Insights views at once; an unknown one is reconciled by
+        a later FIFO read of the op's durable marker."""
+        if self._analytics is None:
+            return {"outcome": "unavailable"}
+        if getattr(self.store, "lifecycle", "open") != "open":
+            return {"outcome": "not_started"}
+        op_id = v2.ids.new_id("uop")
+        try:
+            out = fn(op_id=op_id, timeout=self._usage_op_timeout)
+        except TimeoutError:
+            self.v2log.emit("usage.delete_outcome_unknown", level="WARNING",
+                            job_id=job_id, reason_code="writer_timeout",
+                            detail=name)
+            self._usage_changed()
+            threading.Thread(target=self._reconcile_usage_op,
+                             args=(op_id,), daemon=True,
+                             name="localflow-usage-reconcile").start()
+            return {"outcome": "outcome_unknown", "op_id": op_id}
+        except Exception as e:
+            self.v2log.emit("usage.delete_failed", level="WARNING",
+                            job_id=job_id, reason_code=type(e).__name__)
+            return {"outcome": "failed", "op_id": op_id}
+        self._usage_changed()
+        return {"outcome": "deleted", "op_id": op_id, **out}
+
+    @objc.python_method
+    def _reconcile_usage_op(self, op_id):
+        try:
+            result = self._analytics.reconcile_op(op_id, timeout=3600.0)
+        except Exception as e:
+            result = f"unreconciled:{type(e).__name__}"
+        AppHelper.callAfter(self._usageReconciled_, op_id, result)
+
+    @objc.python_method
+    def _usageReconciled_(self, op_id, result):
+        """Main thread: the late outcome of an outcome-unknown usage
+        deletion is known — record it and revoke the views again."""
+        self._usage_reconciled[op_id] = result
+        self.v2log.emit("usage.delete_reconciled", level="INFO",
+                        reason_code=result)
+        self._usage_changed()
+
+    @objc.python_method
+    def _usage_changed(self):
+        """Revoke Insights results read before a usage mutation (and a
+        cached Your Voice profile, whose usage fields were redacted)."""
+        if self._hub is not None:
+            try:
+                self._hub.state.invalidate_usage()
+            except Exception:
+                pass
 
     @objc.python_method
     def hubDeleteAllUsage(self):
-        """The explicit 'delete all usage data' control (S21): facts and
-        aggregates only — transcripts, audio, jobs and training
-        evidence are untouched (delete-content vs delete-usage)."""
-        if self._analytics is None:
-            return {"outcome": "unavailable"}
-        try:
-            return {"outcome": "deleted",
-                    **self._analytics.delete_all_usage()}
-        except Exception as e:
-            self.v2log.emit("usage.delete_failed", level="WARNING",
-                            reason_code=type(e).__name__)
-            return {"outcome": "failed"}
+        """The explicit 'delete all usage data' control (S21): facts,
+        aggregates and their Your Voice copies — transcripts, audio,
+        jobs, notes and training evidence are untouched
+        (delete-content vs delete-usage)."""
+        return self._usage_mutation(
+            "all", lambda **kw: self._analytics.delete_all_usage(**kw))
 
     @objc.python_method
     def hubDeleteUsageForJob(self, job_id):
@@ -6048,15 +6160,9 @@ class AppDelegate(NSObject):
         if not job_id or not str(job_id).startswith("job-"):
             return {"outcome": "not_a_v2_job",
                     "reason": "legacy_rows_have_no_deletable_usage"}
-        if self._analytics is None:
-            return {"outcome": "unavailable"}
-        try:
-            return {"outcome": "deleted",
-                    **self._analytics.delete_usage_for_job(job_id)}
-        except Exception as e:
-            self.v2log.emit("usage.delete_failed", level="WARNING",
-                            job_id=job_id, reason_code=type(e).__name__)
-            return {"outcome": "failed"}
+        return self._usage_mutation(
+            "job", lambda **kw: self._analytics.delete_usage_for_job(
+                job_id, **kw), job_id=job_id)
 
 
 def main():

@@ -280,13 +280,23 @@ def test_insights_view_over_real_services():
             raise AssertionError("bad range accepted")
         except ValueError:
             pass
-        # Settings usage info surfaces through the coordinator command.
+        # Settings usage info surfaces through the coordinator command:
+        # usage is kept until cleared by default (S25, m13-policy-r1
+        # D03). The override is confined to the harness's temp dir — a
+        # test never writes the live Application Support config.
         info = h.d.hubUsageInfo()
         assert info["available"] is True
-        assert info["usage_retention_days"] == 365
-        out = h.d.hubApplyUsageRetention(60)
-        assert out["outcome"] == "applied"
+        assert info["usage_retention_days"] == "keep"
+        override = h.tmp / "override.json"
+        real_path = app_mod.config_mod.user_override_path
+        app_mod.config_mod.user_override_path = lambda: override
+        try:
+            out = h.d.hubApplyUsageRetention(60)
+        finally:
+            app_mod.config_mod.user_override_path = real_path
+        assert out["outcome"] == "saved" and out["pending_expiry"] == 0, out
         assert h.d.store.retention_days["usage"] == 60
+        assert '"retention_usage_days": 60' in override.read_text()
         # Delete-all-usage empties counters, keeps the job/artifacts.
         before_jobs = h.d.store.submit(lambda db: db.execute(
             "SELECT COUNT(*) FROM jobs").fetchone()[0])

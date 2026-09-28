@@ -36,6 +36,7 @@ import re
 import statistics
 
 from . import ids
+from .analytics import conn_usage_revision
 from .store import TRAINABLE_STATES, Store
 
 ALGORITHM_VERSION = 1
@@ -221,11 +222,10 @@ class ProfileService:
                 " correction_labels").fetchone()),
             conn.execute("SELECT COUNT(*) FROM profile_evidence WHERE"
                          " included=0").fetchone()[0],
-            list(conn.execute(
-                "SELECT COUNT(*), TOTAL(raw_words),"
-                " COALESCE(MAX(activity_at_utc), ''),"
-                " COALESCE(MAX(created_at_utc), '') FROM usage_facts"
-                " WHERE kind='dictation'").fetchone()),
+            # M13's usage revision moves on EVERY usage mutation (a
+            # retry that only changed a mode, an explicit transform, a
+            # deletion) — never only on dictation totals (M13 C228/C229).
+            conn_usage_revision(conn),
             list(conn.execute(
                 "SELECT COUNT(*), TOTAL(usage_count), TOTAL(revision)"
                 " FROM vocabulary_entries WHERE approved=1 AND"
@@ -358,10 +358,7 @@ class ProfileService:
                 "labels": list(conn.execute(
                     "SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM"
                     " correction_labels").fetchone()),
-                "usage": list(conn.execute(
-                    "SELECT COUNT(*), TOTAL(raw_words),"
-                    " COALESCE(MAX(activity_at_utc), '') FROM"
-                    " usage_facts WHERE kind='dictation'").fetchone()),
+                "usage": conn_usage_revision(conn),
                 "vocabulary": list(conn.execute(
                     "SELECT COUNT(*), TOTAL(usage_count) FROM"
                     " vocabulary_entries WHERE approved=1 AND"

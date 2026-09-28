@@ -1001,7 +1001,13 @@ class HubController(NSObject):
                 "not_a_v2_job": "legacy rows carry no deletable usage"
                                 " facts (lossless import)",
                 "unavailable": "usage analytics unavailable",
-                "failed": "usage deletion failed — see Diagnostics"}
+                "not_started": "usage deletion did not start (store"
+                               " closing)",
+                "outcome_unknown": "usage deletion outcome not known yet"
+                                   " — the store is busy; Insights"
+                                   " refreshes when it finishes",
+                "failed": "usage deletion failed — nothing changed; see"
+                          " Diagnostics"}
         self._history_note(note.get(out.get("outcome"), "usage deletion"
                                     " returned " + str(out.get("outcome"))))
 
@@ -3733,35 +3739,41 @@ class HubController(NSObject):
             v.addSubview_(b)
         self.insights_status = _label(NSMakeRect(220, y + 3, 240, 18), "")
         v.addSubview_(self.insights_status)
-        x = cw - 470
+        # The cohort controls take their own row, left-anchored, ending
+        # at x=664 — inside the minimum content width (706 pt), so no
+        # control sits outside the pane at any supported size
+        # (M13-AUDIT-23; panes keep their build-time layout).
+        y2 = y - 30
+        x = 8
         for i, days in enumerate(INSIGHT_RANGES):
             title = "All" if days is None else f"{days}d"
             b = _button(title, self, "insightsRange:",
-                        NSMakeRect(x, y, 52, 22))
+                        NSMakeRect(x, y2, 52, 22))
             b.setTag_(i)
             v.addSubview_(b)
             x += 56
-        v.addSubview_(_label(NSMakeRect(x, y + 3, 32, 18), "App:"))
+        v.addSubview_(_label(NSMakeRect(x, y2 + 3, 32, 18), "App:"))
         x += 36
         self.insights_app = NSPopUpButton.alloc().initWithFrame_pullsDown_(
-            NSMakeRect(x, y, 140, 24), False)
+            NSMakeRect(x, y2, 140, 24), False)
         self.insights_app.setTarget_(self)
         self.insights_app.setAction_("insightsAppChanged:")
         v.addSubview_(self.insights_app)
         x += 146
-        v.addSubview_(_label(NSMakeRect(x, y + 3, 40, 18), "Mode:"))
+        v.addSubview_(_label(NSMakeRect(x, y2 + 3, 40, 18), "Mode:"))
         x += 44
         self.insights_mode = NSPopUpButton.alloc()\
-            .initWithFrame_pullsDown_(NSMakeRect(x, y, 110, 24), False)
+            .initWithFrame_pullsDown_(NSMakeRect(x, y2, 110, 24), False)
         self.insights_mode.setTarget_(self)
         self.insights_mode.setAction_("insightsModeChanged:")
         v.addSubview_(self.insights_mode)
+        x += 118
         # Summary block (cards + breakdowns + definitions), then the
         # dated table (the accessible daily graph — virtualized rows).
         table_h = (ch - 60) * 0.42
-        summary_h = ch - 56 - table_h - 34
+        summary_h = ch - 76 - table_h - 34
         self.insights_text = _textview(NSMakeRect(0, 0, 100, 100))
-        sc = _scroll(NSMakeRect(8, ch - 44 - summary_h, cw - 16,
+        sc = _scroll(NSMakeRect(8, ch - 64 - summary_h, cw - 16,
                                 summary_h), self.insights_text)
         sc.setAutoresizingMask_(18 | 16)
         v.addSubview_(sc)
@@ -3783,7 +3795,7 @@ class HubController(NSObject):
         tsc.setAutoresizingMask_(18 | 16)
         v.addSubview_(tsc)
         v.addSubview_(_button("Reload", self, "insightsReload:",
-                              NSMakeRect(cw - 96, y - 27, 88, 22)))
+                              NSMakeRect(x, y2, 88, 22)))
         self._usage_views = [self.insights_text, sc, tsc,
                              self.insights_table]
         for extra in v.subviews():
@@ -3900,19 +3912,29 @@ class HubController(NSObject):
                     (self.insights_mode, data.get("modes") or [],
                      (self.state.views["insights"].get("mode")),
                      "All modes")):
+                # Items carry the typed key as representedObject and a
+                # separate label (M13-AUDIT-20). NSMenu drops nothing
+                # here: addItemWithTitle_ collapses a repeated title, so
+                # items are appended through the menu directly.
                 popup.removeAllItems()
-                popup.addItemWithTitle_(all_label)
-                popup.lastItem().setRepresentedObject_(None)
+                menu = popup.menu()
+                keys = [None]
+                menu.addItemWithTitle_action_keyEquivalent_(
+                    all_label, None, "")
+                menu.itemAtIndex_(0).setRepresentedObject_(None)
                 for value in items:
-                    popup.addItemWithTitle_(str(value))
-                    popup.lastItem().setRepresentedObject_(value)
-                idx = 0
-                if current:
-                    titles = [popup.itemTitleAtIndex_(i)
-                              for i in range(popup.numberOfItems())]
-                    if str(current) in titles:
-                        idx = titles.index(str(current))
-                popup.selectItemAtIndex_(idx)
+                    if isinstance(value, dict):
+                        key, label = value.get("key"), value.get("label")
+                    else:
+                        key = value
+                        label = "Unknown" if value == "unknown" \
+                            else str(value)
+                    item = menu.addItemWithTitle_action_keyEquivalent_(
+                        str(label), None, "")
+                    item.setRepresentedObject_(key)
+                    keys.append(key)
+                popup.selectItemAtIndex_(keys.index(current)
+                                         if current in keys else 0)
         finally:
             self._insights_building = False
 
@@ -3927,13 +3949,17 @@ class HubController(NSObject):
         lat = s.get("latency") or {}
         den = s.get("wpm_denominator") or {}
         lines = []
-        rng = s.get("cohort", {}).get("days")
+        cohort = s.get("cohort") or {}
+        rng = cohort.get("days")
         rng_label = "all time" if rng is None else f"last {rng} days"
+        app_labels = {o.get("key"): o.get("label")
+                      for o in data.get("apps") or []
+                      if isinstance(o, dict)}
         lines.append(f"Usage — {rng_label}"
-                     + (f" · app {s['cohort']['app']}"
-                        if s.get("cohort", {}).get("app") else "")
-                     + (f" · mode {s['cohort']['mode']}"
-                        if s.get("cohort", {}).get("mode") else ""))
+                     + (f" · app {app_labels.get(cohort['app'], 'Unknown')}"
+                        if cohort.get("app") else "")
+                     + (f" · mode {cohort['mode']}"
+                        if cohort.get("mode") else ""))
         lines.append(
             f"Dictations: {s.get('dictations', 0)}"
             f" ({s.get('dictations_with_text', 0)} produced text"
@@ -3946,16 +3972,27 @@ class HubController(NSObject):
             f"Words: {s.get('raw_words', 0)} raw → {s.get('final_words', 0)}"
             f" final · capture {s.get('capture_seconds', 0) / 60.0:.1f} min")
         wpm = s.get("wpm")
+        exc = s.get("wpm_excluded") or {}
+        excluded = (exc.get("missing_duration") or 0) \
+            + (exc.get("nonpositive_duration") or 0)
         lines.append(
             f"Full-capture WPM: {wpm if wpm is not None else 'n/a'}"
             f"  (60 × {den.get('words', 0)} final words ÷"
             f" {den.get('capture_seconds', 0)} s over"
-            f" {den.get('jobs', 0)} jobs — weighted, not row-average)")
+            f" {den.get('jobs', 0)} jobs — weighted, not row-average)"
+            + (f" · {excluded} text job{'s' if excluded != 1 else ''}"
+               " without a known capture duration left out of the rate"
+               if excluded else ""))
         fr = s.get("fallback_rate")
+        cf = s.get("cleanup_fallback") or {}
         lines.append(
             f"Fallback jobs: {s.get('fallback_jobs', 0)}"
-            + (f" ({fr:.0%} of {s.get('dictations', 0)})"
+            + (f" ({fr:.0%} of all {s.get('dictations', 0)} dictations)"
                if fr is not None else "")
+            + (f" · cleanup fallback rate {cf['rate']:.0%}"
+               f" ({cf.get('fallbacks', 0)} of {cf.get('requested', 0)}"
+               " jobs that requested cleanup)"
+               if cf.get("rate") is not None else "")
             + f" · dictionary hits {s.get('dictionary_hits', 0)}"
             f" · snippet hits {s.get('snippet_hits', 0)}")
         tf = s.get("transforms")
@@ -3971,20 +4008,51 @@ class HubController(NSObject):
         for key, label in (("asr", "ASR (stage)"),
                            ("cleanup", "Cleanup (stage)"),
                            ("transform", "Transform (stage)"),
-                           ("end_to_end", "End-to-end (release→outcome)")):
-            block = lat.get(key) or {}
+                           ("end_to_end", "End-to-end (release→outcome)"),
+                           ("confirmed_visible",
+                            "Release→confirmed visible text"),
+                           ("retry_to_terminal",
+                            "Retry start→outcome (own clock)")):
+            block = lat.get(key)
+            if block is None:
+                continue
+            missing = block.get("missing") or {}
             lines.append(
                 f"Latency {label}: p50 {self._fmt_ms(block.get('p50'))}"
                 f" · p95 {self._fmt_ms(block.get('p95'))}"
                 f" · n={block.get('n', 0)} of {s.get('dictations', 0)}"
-                " cohort (failures stay counted)")
-        for row in (data.get("per_app") or [])[:8]:
+                " cohort (failures stay counted)"
+                + ("" if not missing else " · missing: " + ", ".join(
+                    f"{n} {r.replace('_', ' ')}"
+                    for r, n in sorted(missing.items()))))
+        # Complete breakdowns (M13-AUDIT-21): the top apps, then one
+        # Other line holding every remaining app, so the lines always
+        # add up to the cohort; every mode is listed.
+        per_app = data.get("per_app") or []
+        for row in per_app[:8]:
             lines.append(f"  {row['app']}: {row['dictations']} dictations"
                          f" · {row['final_words']} words"
                          f" · {row['capture_seconds'] / 60.0:.1f} min")
-        for row in (data.get("per_mode") or [])[:6]:
+        rest = per_app[8:]
+        if rest:
+            lines.append(
+                f"  Other ({len(rest)} apps): "
+                f"{sum(r['dictations'] for r in rest)} dictations"
+                f" · {sum(r['final_words'] for r in rest)} words"
+                f" · {sum(r['capture_seconds'] for r in rest) / 60.0:.1f}"
+                " min")
+        for row in data.get("per_mode") or []:
             lines.append(f"  mode {row['mode']}: {row['dictations']}"
                          f" dictations · {row['final_words']} words")
+        if s.get("future_dated"):
+            lines.append(
+                f"{s['future_dated']} dictation(s) dated after today"
+                " (a clock ahead at capture) — counted under All only")
+        if s.get("mixed_word_count_versions"):
+            lines.append(
+                "Word counts in this range mix counting versions ("
+                + ", ".join(s.get("word_count_versions") or [])
+                + ") — shown as recorded, never recounted")
         legacy = data.get("legacy")
         if legacy:
             lines.append(
@@ -4002,7 +4070,11 @@ class HubController(NSObject):
             "",
             "Definitions",
             "WPM — 60 × sum(final words) ÷ sum(capture seconds) over the"
-            " cohort's text-producing jobs; denominators shown above.",
+            " cohort's text-producing jobs with a known capture duration;"
+            " denominators shown above. Words are whitespace-separated"
+            " tokens, not a language-aware word count.",
+            "Fallback — incidence over all dictations; the cleanup"
+            " fallback rate counts only jobs that requested cleanup.",
             "Legacy edits — the imported fixed-words count; its formula"
             " is unknown and stays labeled legacy (never reused).",
             "Model edits — pipeline word changes (raw → final word"
@@ -4100,8 +4172,8 @@ class HubController(NSObject):
         y -= 40
         v.addSubview_(_label(
             NSMakeRect(8, y + 3, 330, 34),
-            "Usage data (Insights) retention days — independent of text"
-            " retention:"))
+            "Usage data (Insights) retention — days, or \"keep\" until"
+            " cleared; independent of text retention:"))
         self.usage_retention_field = NSTextField.alloc().initWithFrame_(
             NSMakeRect(344, y, 56, 22))
         v.addSubview_(self.usage_retention_field)
@@ -4111,12 +4183,16 @@ class HubController(NSObject):
         v.addSubview_(_button("Delete All Usage…", self,
                               "settingsDeleteUsage:",
                               NSMakeRect(528, y - 1, 160, 24)))
-        note = _label(NSMakeRect(8, y - 40, cw - 16, 60),
-                      "Store retention applies immediately. Event-log"
-                      " retention takes effect at next launch. Models,"
-                      " hotkey and capture behavior live in config.json."
-                      " Usage deletion removes counters only — never"
-                      " transcripts or audio.")
+        # Below the usage buttons, never over them: a label on top of a
+        # button takes its clicks (LOCAL-M13-02).
+        note = _label(NSMakeRect(8, y - 66, cw - 16, 60),
+                      "Retention settings are saved when applied;"
+                      " existing data older than a new limit is removed"
+                      " at the next retention pass (at launch and daily)."
+                      " Event-log retention takes effect at next launch."
+                      " Models, hotkey and capture behavior live in"
+                      " config.json. Usage deletion removes counters only"
+                      " — never transcripts or audio.")
         v.addSubview_(note)
         return v
 
@@ -4129,19 +4205,61 @@ class HubController(NSObject):
     def settingsCollectDisable_(self, sender):
         self._set_collection("disabled")
 
+    # Returned command outcomes a Settings action must show instead of
+    # reloading over them (M13-AUDIT-09): refusals, failures and
+    # outcomes not yet known.
+    _SETTINGS_OUTCOMES = {
+        "refused": "{what} refused ({reason}) — nothing changed",
+        "invalid": "{what} refused — nothing changed",
+        "not_saved": "{what} not saved ({reason}) — the previous policy"
+                     " stays in effect",
+        "not_persisted": "{what} not saved — the previous policy stays"
+                         " in effect",
+        "failed": "{what} failed — nothing changed; see Diagnostics",
+        "not_started": "{what} did not start (store closing)",
+        "unavailable": "{what} unavailable (usage analytics off)",
+        "outcome_unknown": "{what}: outcome not known yet — the store is"
+                           " busy; the result will be checked and shown"
+                           " when it finishes",
+    }
+
     @objc.python_method
     def _settings_call(self, what, fn, *args):
-        """Run one Settings coordinator command; a failure is shown (the
-        exception type only — never a payload) and nothing reloads over
-        it (M09-AUDIT-22)."""
+        """Run one Settings coordinator command. A raised failure is
+        shown (the exception type only — never a payload) and nothing
+        reloads over it (M09-AUDIT-22); a RETURNED refusal, failure or
+        unknown outcome is shown the same way (M13-AUDIT-09). Returns
+        whether the command succeeded."""
         try:
-            fn(*args)
+            out = fn(*args)
         except Exception as e:
             self.settings_text.setStringValue_(
                 f"{what} failed ({type(e).__name__}) — nothing changed on"
                 " screen; see Diagnostics")
             return False
+        outcome = out.get("outcome") if isinstance(out, dict) else None
+        if outcome in self._SETTINGS_OUTCOMES:
+            self._settings_note = self._SETTINGS_OUTCOMES[outcome].format(
+                what=what, reason=out.get("reason_code") or outcome)
+            self.settings_text.setStringValue_(self._settings_note)
+            if outcome == "outcome_unknown":
+                self.state.reload_current()
+            return False
+        self._settings_note = None
         self.state.reload_current()
+        if outcome == "saved" and "pending_expiry" in out:
+            n = out.get("pending_expiry")
+            policy = ("keep until cleared" if out.get("days") == "keep"
+                      else f"{out.get('days')} days")
+            self._settings_note = (
+                f"Usage retention saved: {policy}."
+                + ("" if n is None else
+                   f" {n} usage record{'s' if n != 1 else ''} older than"
+                   " that will be removed at the next retention pass."
+                   if n else " Nothing is due for removal."))
+        elif outcome == "deleted" and "facts_deleted" in out:
+            self._settings_note = (f"Usage data deleted"
+                                   f" ({out['facts_deleted']} records).")
         return True
 
     @objc.python_method
@@ -4164,17 +4282,15 @@ class HubController(NSObject):
                                 self.coordinator.hubApplyRetention, values)
 
     def settingsApplyUsage_(self, sender):
+        """The field's text goes to the coordinator's strict validator
+        unchanged — never clamped here (M13-AUDIT-10): "keep" or whole
+        days in range; anything else is refused and shown."""
         if self.coordinator is None or \
                 not hasattr(self.coordinator, "hubApplyUsageRetention"):
             return
-        try:
-            days = max(1, int(self.usage_retention_field.stringValue()))
-        except (ValueError, TypeError):
-            self.settings_text.setStringValue_(
-                "usage retention must be whole days")
-            return
         self._settings_call("Applying usage retention",
-                            self.coordinator.hubApplyUsageRetention, days)
+                            self.coordinator.hubApplyUsageRetention,
+                            str(self.usage_retention_field.stringValue()))
 
     def settingsDeleteUsage_(self, sender):
         """The explicit delete-all-usage control (S21): counters and
@@ -4205,8 +4321,10 @@ class HubController(NSObject):
             self.settings_text.setStringValue_(
                 f"Settings could not load ({view['error']})")
             return
+        note = getattr(self, "_settings_note", None)
         self.settings_text.setStringValue_(
-            f"Collection: {data.get('collection_state', 'unknown')}")
+            f"Collection: {data.get('collection_state', 'unknown')}"
+            + (f" · {note}" if note else ""))
         ret = data.get("retention") or {}
         keys = ("transcript", "audio_success", "audio_failed",
                 "metadata", "training_buffer")

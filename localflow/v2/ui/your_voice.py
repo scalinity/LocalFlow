@@ -96,6 +96,16 @@ class YourVoicePane:
                  + f" (no offset recorded: "
                    f"{measured.get('hours_unknown', 0)})",
                  "", "Frequent phrases:"]
+        redacted = measured.get("usage_redacted")
+        if redacted:
+            # M13 (m13-policy-r1 D11): usage this snapshot copied was
+            # deleted or expired — its app/hour/mode/transform fields
+            # were removed; the speech-derived fields stand.
+            lines[4:4] = ["Usage-derived fields removed ("
+                          + str(redacted.get("reason", "usage_removed"))
+                          .replace("_", " ")
+                          + ") — Generate recomputes them from the usage"
+                          " that remains."]
         for p in measured.get("frequent_phrases") or []:
             lines.append(f"  {p['phrase']}  ×{p['count']}")
         lines += ["", "Corrections by kind: "

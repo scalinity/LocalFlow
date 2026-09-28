@@ -711,10 +711,11 @@ class HubState:
 
     # ---- Insights (M13, Spec S21) ----------------------------------------
 
-    def set_insights_filters(self, range_days=None, app=..., mode=...):
-        """Cohort filters (``...`` leaves a field unchanged). ``app``/
+    def set_insights_filters(self, range_days=..., app=..., mode=...):
+        """Cohort filters (``...`` leaves a field unchanged — changing the
+        app or mode keeps the selected range, M13-AUDIT-05). ``app``/
         ``mode`` of None clear the filter; ``range_days`` comes from
-        INSIGHT_RANGES."""
+        INSIGHT_RANGES (None = All); ``app`` is a typed app key."""
         view = self.views["insights"]
         if range_days is not ...:
             if range_days is not None and range_days not in INSIGHT_RANGES:
@@ -763,22 +764,11 @@ class HubState:
                     data["profile"] = None
                     data["profile_reason"] = "profile_service_unavailable"
             else:
-                summary = self.insights_service.summary(
-                    days=days, app=app, mode=mode)
-                daily = self.insights_service.daily(
-                    days=days, app=app, mode=mode)
-                per_app = ([] if app else self.insights_service.per_app(
-                    days=days))
-                per_mode = ([] if mode else self.insights_service.per_mode(
-                    days=days))
-                undated = self.insights_service.undated_count()
-                legacy = self.insights_service.legacy_summary()
-                apps = self.insights_service.apps_available()
-                modes = self.insights_service.modes_available()
-                data.update({"summary": summary, "daily": daily,
-                             "per_app": per_app, "per_mode": per_mode,
-                             "undated": undated, "legacy": legacy,
-                             "apps": apps, "modes": modes})
+                # One report = one fact generation (M13-AUDIT-07): every
+                # section, both breakdowns filtered by the WHOLE cohort
+                # (M13-AUDIT-06), read in a single writer op.
+                data.update(self.insights_service.report(
+                    days=days, app=app, mode=mode))
         except Exception as e:
             self._publish_locked("insights", req, error=type(e).__name__,
                                  loading=False)
@@ -1036,6 +1026,19 @@ class HubState:
                 cb(job_id)
             except Exception:
                 pass
+
+    def invalidate_usage(self):
+        """A usage mutation committed (or may have — an outcome-unknown
+        deletion): Insights results read before it are dropped and re-run
+        (the epoch fence), the cached report — and a cached Your Voice
+        profile, whose usage fields were redacted — is cleared, and a
+        visible Insights view reloads (M13-AUDIT-08)."""
+        with self._lock:
+            self._epoch += 1
+            self.views["insights"].update(data=None)
+        if self.selected_view == "insights":
+            self.reload_insights()
+        self._publish()
 
     def revalidate(self):
         """A retention pass may have purged payload: results computed
