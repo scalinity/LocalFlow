@@ -751,6 +751,42 @@ def c_genuinely_older_store_upgrades_with_backup():
                 s2.close()
 
 
+@case("GATE-G04 every historical schema", kind="control")
+def c_every_historical_schema_upgrades_with_an_exact_backup():
+    """A real store at each schema 1..12 (the real migrations up to it,
+    with a job row) upgrades to the current version through the same
+    open that now refuses damaged current stores: never refused, never
+    'repaired', and its pre-migrate backup holds exactly the pre-upgrade
+    rows (read back independently)."""
+    target = max(store_mod._MIGRATIONS)
+    for version in range(1, target):
+        with tempfile.TemporaryDirectory() as td:
+            db = pathlib.Path(td) / "v2.db"
+            s = _old_schema_store(db, version)
+            s.create_job()
+            s.close()
+            before = raw_rows(db, "SELECT job_id, state FROM jobs")
+            events = []
+            s2 = store_mod.Store(db, artifacts_dir=db.parent / "arts",
+                                 backup_dir=db.parent / "bk",
+                                 emit=lambda n, **k: events.append(n))
+            try:
+                v = X.one(s2, "SELECT value FROM schema_meta WHERE"
+                          " key='schema_version'")[0]
+            finally:
+                s2.close()
+            assert v == str(target), (version, v)
+            assert "store.schema_corrupt" not in events and \
+                "store.schema_repaired" not in events, (version, events)
+            backups = sorted((db.parent / "bk").glob("v2-pre-migrate*.db"))
+            assert len(backups) == 1, (version, backups)
+            assert raw_rows(backups[0], "SELECT value FROM schema_meta"
+                            " WHERE key='schema_version'") == \
+                [(str(version),)], version
+            assert raw_rows(backups[0], "SELECT job_id, state FROM jobs") \
+                == before, version
+
+
 @case("MERGED-X01 control", kind="control")
 def c_fresh_store_opens_empty():
     with tempfile.TemporaryDirectory() as td:

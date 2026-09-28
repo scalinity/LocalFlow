@@ -467,6 +467,38 @@ def x07_retries_never_manufacture_dictations_or_words():
         h.close()
 
 
+@case("MERGED-X07 (excluded attempt never falls back)")
+def x07_excluded_latest_attempt_never_falls_back_to_an_older_one():
+    h = Harness(durations=[1.0] * 4)
+    try:
+        h.d.consent.set("enabled")
+        h.d.supervisor = Scripted(asr=lambda j, a: _words(f"x{a}{j[-6:]}",
+                                                         30),
+                                  fail_clean={1})
+        job = dictate(h)
+        retry(h, dict(h.d._last_failed))
+        store = h.d.store
+        exs = [e for (e,) in examples_of(store, job)]
+        assert len(exs) == 2, f"fixture: {exs}"
+        latest = max(exs, key=lambda e: envelope(store, e)["attempt"])
+        older = min(exs, key=lambda e: envelope(store, e)["attempt"])
+        svc = ProfileService(store, min_words=1)
+        snap = svc.compute()
+        svc.exclude_evidence(snap["snapshot_id"], latest)
+        m = svc.compute()["measured"]
+        used = {x for (x,) in rows(store, "SELECT example_id FROM"
+                                   " profile_evidence WHERE role='measured'"
+                                   " AND snapshot_id=(SELECT snapshot_id"
+                                   " FROM profile_snapshots ORDER BY rowid"
+                                   " DESC LIMIT 1)")}
+        assert older not in used and m["eligible_examples"] == 0, (
+            "excluding the capture's latest attempt let an older attempt"
+            f" of the same capture speak for it: {m['eligible_examples']}"
+            f" eligible, older used={older in used}")
+    finally:
+        h.close()
+
+
 @case("MERGED-X07 control", kind="control")
 def c_ten_independent_captures_reach_the_floor():
     h = Harness(durations=[1.0] * 10)
@@ -604,6 +636,9 @@ def x03_interleaved_updates_preserve_the_committed_definition():
             f"revision {revision} names two definitions: live"
             f" {live[:2]}, preserved {(preserved['name'], preserved['prompt'])}"
             + (f" (A raised {errs[0]!r})" if errs else ""))
+        # Neither writer's change is lost: the merge happened against the
+        # row as it was when A's own write ran.
+        assert live[:2] == ("N1", "P1") and not errs, (live[:2], errs)
         # The exporter's reader (transform_target_in) resolves a task's
         # definition from this preserved row.
         assert preserved["prompt"] == live[1]
