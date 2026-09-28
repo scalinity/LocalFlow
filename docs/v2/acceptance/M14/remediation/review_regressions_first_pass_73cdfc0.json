@@ -2,15 +2,15 @@
  "suite": "tests/v2/personalization/test_m14_remediation.py",
  "code": {
   "suite": "tests/v2/personalization/test_m14_remediation.py",
-  "suite_sha256": "1252a951ae70318fa758cd43c4d6f6817819f1b82e3544c31da244bc913fbe60",
-  "code_root_sha": "1e351d723d11a7bb5cb333c93a5daaca416f93d0",
-  "tracked_files_modified": false,
-  "production_tree_modified": false,
+  "suite_sha256": "fea4102456a37c57e330d3ea685ce011207d9fda1f34f6c349aad12aa279d509",
+  "code_root_sha": null,
+  "tracked_files_modified": null,
+  "production_tree_modified": null,
   "python": "3.14.7"
  },
  "counts": {
-  "FAIL": 54,
-  "PASS": 12,
+  "PASS": 67,
+  "FAIL": 13,
   "ERROR": 1
  },
  "invoked": [
@@ -63,6 +63,19 @@
   "l05_validator_reports_wrongly_typed_fields",
   "l06_validator_never_reads_through_a_linked_directory",
   "l07_corrupt_utc_offset_is_an_unknown_hour",
+  "ir01_reapproval_plans_against_the_candidates_identity",
+  "ir02_rejection_suppresses_pending_siblings",
+  "ir03_earlier_counterexample_results_do_not_outlive_the_candidate",
+  "ir04_fence_timeout_is_an_unknown_outcome_not_a_failure",
+  "ir05_operation_id_reused_on_another_target_refuses",
+  "ir06_undo_after_deletion_leaves_the_candidate_stale",
+  "ir07_validator_binds_record_texts_to_their_lineage",
+  "ir08_validator_reports_deep_nesting_and_unreadable_files",
+  "ir09_exposure_between_snapshot_and_fence_refuses",
+  "ir10_example_outside_the_assignment_is_reason_coded",
+  "ir11_unknown_partition_refuses",
+  "ir12_purged_rendered_final_refuses_as_stale",
+  "ir13_review_payload_lease_is_not_a_pin_of_the_example",
   "d02_task_rows_never_ride_into_a_holdout_export",
   "d03_cleanup_without_exact_prompts_is_labeled_text_pair",
   "d04_technical_terms_cite_eligible_speech_only",
@@ -71,6 +84,7 @@
   "d07_accept_then_reject_is_not_a_supervised_target",
   "f28_benchmark_rejects_a_noop_component",
   "f29_caller_inventory_covers_every_tracked_caller",
+  "ir14_hub_unknown_label_is_an_abstention",
   "f16_pair_judgment_binds_to_the_rendered_pair",
   "f18_job_only_teach_is_actionable_in_review",
   "f11_history_teach_passes_the_rendered_final_identity",
@@ -87,128 +101,128 @@
    "case": "f01_foreign_audio_is_not_asr_evidence",
    "finding": "M14-AUDIT-01",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "({'eligible': True, 'reason': None}, ['A exported', \"A carries B's audio bytes\"], None)",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.07
   },
   {
    "case": "f01_wrong_role_own_audio_is_not_asr_evidence",
    "finding": "M14-AUDIT-01",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "{'eligible': True, 'reason': None}",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f01_foreign_verbatim_reference_is_refused",
    "finding": "M14-AUDIT-01",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "({'eligible': True, 'reason': None}, [{'coverage': 'full', 'example_id': 'ex-fee3743bfc404b129db90135b66bba80', 'kind': 'verbatim_speech', 'listened_audio': True, 'reviewer': 'hub_user', 'text': 'bravo reference B_ONLY_73', 'transcription_policy': 'verbatim_audio_reviewed_v1'}], None)",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.06
   },
   {
    "case": "f01_foreign_or_wrong_stage_cleanup_source_is_refused",
    "finding": "M14-AUDIT-01",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "(['A foreign', 'C wrong stage'], {'count': 3, 'excluded': {}, 'definition': 'live examples with an explicit intended-writing mark and their exact stage input retained'}, ['ex-2b1d3864cbbc4e7ebb7d2d787f48128e', 'ex-6432ee99e5b944118686e47e768df29f', 'ex-d830e638bfad437f994cfb52a3dff60c'])",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.06
   },
   {
    "case": "f01_profile_reads_only_own_raw_speech",
    "finding": "M14-AUDIT-01",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "(2, 16)",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.02
   },
   {
    "case": "f01_observation_payload_of_another_job_is_refused",
    "finding": "M14-AUDIT-01",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "[('pending',)]",
-   "seconds": 0.02
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
   },
   {
    "case": "f02_unowned_staging_directory_is_never_removed",
    "finding": "M14-AUDIT-02",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "(False, False, None)",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.05
   },
   {
    "case": "f03_purged_artifact_mid_compute_is_not_published",
    "finding": "M14-AUDIT-03",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "('current', ['private_phrase_canary_59 zephyr'])",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.04
   },
   {
    "case": "f03_purge_after_publication_invalidates_current",
    "finding": "M14-AUDIT-03",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "current",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.04
   },
   {
    "case": "f04_new_export_from_old_version_cannot_reclaim_blindness",
    "finding": "M14-AUDIT-04",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "1 fresh unexposed frozen claims",
-   "seconds": 0.14
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.13
   },
   {
    "case": "f05_outside_audio_path_is_never_read",
    "finding": "M14-AUDIT-05",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "['<tmp>/tmpv2esugiy/outside/sentinel.wav', '../outside/sentinel.wav', 'link-to-outside.wav']",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.07
   },
   {
    "case": "f06_purge_serialized_before_publication_is_not_published",
    "finding": "M14-AUDIT-06",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "a completed export contains a source purged before its publication",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.06
   },
   {
    "case": "f06_consent_revoked_before_publication_is_not_published",
    "finding": "M14-AUDIT-06",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "assertion",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.05
   },
   {
    "case": "f07_self_consistent_semantic_tamper_is_rejected",
    "finding": "M14-AUDIT-07",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "chosen/judgment mismatch accepted",
-   "seconds": 0.07
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
   },
   {
    "case": "f07_preference_input_reconstructs_from_the_package",
    "finding": "M14-AUDIT-07",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "task input absent from the package",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.05
   },
   {
    "case": "f08_purged_task_source_makes_pair_ineligible",
    "finding": "M14-AUDIT-08",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "purged-input pair exported",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.05
   },
   {
@@ -231,152 +245,152 @@
    "case": "f09_deletion_between_plan_and_effect_leaves_no_orphan_rule",
    "finding": "M14-AUDIT-09",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "orphan rule: 1 active learned entries while the candidate is stale",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f09_rejection_between_plan_and_effect_leaves_no_orphan_rule",
    "finding": "M14-AUDIT-09",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "orphan rule while candidate rejected",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f10_undo_keeps_later_user_edits_of_a_created_entry",
    "finding": "M14-AUDIT-10",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "user alias no longer effective after undo: 'please check the moduel now'",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f10_concurrent_user_alias_survives_alias_undo",
    "finding": "M14-AUDIT-10",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "{'moduul'}",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f11_teach_refuses_a_final_newer_than_the_rendered_one",
    "finding": "M14-AUDIT-11",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "taught against a text the reviewer never saw: 'please check the modal today again'",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f11_teach_never_substitutes_raw_for_a_missing_final",
    "finding": "M14-AUDIT-11",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "('teach compared against the raw transcript in place of the purged final', 'please check the modul today')",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f12_graft_refuses_a_changed_source_with_the_same_substring",
    "finding": "M14-AUDIT-12",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "graft saved against a source nobody reviewed",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f12_graft_span_offsets_are_strict_integers",
    "finding": "M14-AUDIT-12",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "(False, 1)",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f13_typed_only_region_is_not_dictation_evidence",
    "finding": "M14-AUDIT-13",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "typed-only words kept as dictation evidence",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f15_counterexample_phrase_is_not_candidate_metadata",
    "finding": "M14-AUDIT-15",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "(1, ['learning_candidates'])",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f17_label_retry_with_one_operation_is_one_revision",
    "finding": "M14-AUDIT-17",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "2 revisions for one logical save",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f17_split_retry_with_one_operation_is_one_version",
    "finding": "M14-AUDIT-17",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "2 versions for one logical assignment",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.04
   },
   {
    "case": "f17_approval_retry_after_unknown_outcome_reconciles",
    "finding": "M14-AUDIT-17",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "retry reported failure: ValueError: not_pending:approved",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f24_unpin_keeps_review_retention_leases",
    "finding": "M14-AUDIT-24",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "review leases revoked by unpin: {'art-c56cc530858c4a1e8e7f04c8c920c333': 0, 'art-355d7514cbae43bf81d28c022340b93c': 0}",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.02
   },
   {
    "case": "f24_pin_never_makes_a_machine_suggestion_permanent",
    "finding": "M14-AUDIT-24",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "pin made a pending machine payload permanent",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f14_readiness_matches_export_membership",
    "finding": "M14-AUDIT-14",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "readiness {'asr_supervised': 11, 'cleanup_supervised': 2} vs export {'asr_supervised': 10, 'cleanup_supervised': 1}",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.07
   },
   {
    "case": "f19_later_abstention_returns_item_to_unresolved",
    "finding": "M14-AUDIT-19",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "stale resolution shown",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f20_punctuation_only_teach_is_a_review_record",
    "finding": "M14-AUDIT-20",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "ValueError: unchanged_output",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f21_directional_antonym_is_not_a_recognition_suggestion",
    "finding": "M14-AUDIT-21",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "(['increase'], ['recognition_error'])",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
@@ -391,40 +405,40 @@
    "case": "f22_equivalent_app_scope_composes_with_existing_entry",
    "finding": "M14-AUDIT-22",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "ValueError: an entry with this canonical spelling already exists in the requested scope",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "f23_used_term_canonical_edit_refreshes_the_profile_once",
    "finding": "M14-AUDIT-23",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "(True, '[\"Kubernetes\"]')",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.02
   },
   {
    "case": "f25_export_cli_accepts_an_explicit_db_path",
    "finding": "M14-AUDIT-25",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "(1, '\", line 61, in <module>\\n    raise SystemExit(main())\\n                     ~~~~^^\\n  File \"<repo>/scripts/v2/export_dataset.py\", line 43, in main\\n    artifacts_dir=args.db.parent / \"v2-artifacts\",\\n                  ^^^^^^^^^^^^^^\\nAttributeError: \\'str\\' object has no attribute \\'parent\\'\\n')",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.13
   },
   {
    "case": "f26_m14_evidence_carries_no_private_paths",
    "finding": "M14-AUDIT-26",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "['docs/v2/acceptance/M14/results.json:7', 'docs/v2/acceptance/M14/results.json:103']",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.0
   },
   {
    "case": "d01_resolved_ambiguity_no_longer_blocks_asr",
    "finding": "M14-AUDIT-30",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "{'eligible': False, 'reason': 'blocking_label_ambiguous'}",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
@@ -439,17 +453,17 @@
    "case": "l03_vanished_audio_file_fails_the_gate_not_the_export",
    "finding": "LOCAL-M14-03",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "{'eligible': True, 'reason': None}",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.06
   },
   {
    "case": "l04_audio_artifact_id_never_names_a_path_outside_the_export",
    "finding": "LOCAL-M14-04",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "['unsafe audio path']",
-   "seconds": 0.07
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
   },
   {
    "case": "l05_validator_reports_wrongly_typed_fields",
@@ -463,105 +477,217 @@
    "case": "l06_validator_never_reads_through_a_linked_directory",
    "finding": "LOCAL-M14-06",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "validator opened a file outside the dataset",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.05
   },
   {
    "case": "l07_corrupt_utc_offset_is_an_unknown_hour",
    "finding": "LOCAL-M14-07",
    "kind": "defect",
-   "status": "ERROR",
-   "detail": "RuntimeError: ValueError: invalid literal for int() with base 10: 'bogus' | Traceback (most recent call last):\n  File \"<repo>/tests/v2/personalization/test_m14_remediation.py\", line 1635, in main\n    fn()\n    ~~^^\n  File \"<repo>/tests/v2/personalization/test_m14_remediation.py\", line 1178, in l07_corrupt_utc_offset_is_an_unknown_hour\n    measured = w.profile.compute()[\"measured\"]\n               ~~~~~~~~~~~~~~~~~^^\n  File \"<repo>/localflow/v2/profile.py\", line 254, in compute\n    out = self._compute_once(only_if_changed)\n  File \"<repo>/localflow/v2/profile.py\", line 539, in _compute_once\n    return self.store.submit(write)\n           ~~~~~~~~~~~~~~~~~^^^^^^^\n  File \"<repo>/localflow/v2/store.py\", line 1244, in submit\n    return self._submit(lambda: fn(self._db), wait=wait,\n           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                        timeout=timeout)\n                        ^^^^^^^^^^^^^^^^\n  File \"<repo>/localflow/v2/store.py\", line 1229, in _submit\n    raise RuntimeError(err)\nRuntimeError: ValueError: invalid literal for int() with base 10: 'bogus'\n",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.02
+  },
+  {
+   "case": "ir01_reapproval_plans_against_the_candidates_identity",
+   "finding": "REVIEW-IR-01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "alias landed on the renamed entry: 'please check the modular today'",
+   "seconds": 0.01
+  },
+  {
+   "case": "ir02_rejection_suppresses_pending_siblings",
+   "finding": "REVIEW-IR-02",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "pending",
+   "seconds": 0.01
+  },
+  {
+   "case": "ir03_earlier_counterexample_results_do_not_outlive_the_candidate",
+   "finding": "REVIEW-IR-03",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "1 counterexample results survive",
+   "seconds": 0.01
+  },
+  {
+   "case": "ir04_fence_timeout_is_an_unknown_outcome_not_a_failure",
+   "finding": "REVIEW-IR-04",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "reported as ExportError('export failed: TimeoutError')",
+   "seconds": 0.06
+  },
+  {
+   "case": "ir05_operation_id_reused_on_another_target_refuses",
+   "finding": "REVIEW-IR-05",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(False, {'action': 'created', 'counterexample_check': {'artifact_id': None, 'flips': 0, 'scope': ['app', 'com.synthetic.editor'], 'snapshot_revision': 0, 'status': 'untested', 'tested': 0}, 'entry_id': 'vocab-2a7b370091294dd9a80e8a0ade5d9893', 'flips': []})",
+   "seconds": 0.01
+  },
+  {
+   "case": "ir06_undo_after_deletion_leaves_the_candidate_stale",
+   "finding": "REVIEW-IR-06",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "{'status': 'pending', 'alias': 'modul', 'canonical': 'module', 'entry_id': 'vocab-f775768686134db5900e99cc3e306e2b', 'action': 'created', 'counterexamples': '{\"artifact_id\": null, \"flips\": 0, \"scope\": [\"app\", \"com.synthetic.editor\"], \"snapshot_revision\": 0, \"status\": \"untested\", \"tested\": 0}', 'spans': '[]', 'payload_aid': 'art-02205610152948798811671b18052301', 'job_id': 'job-28b078bb595d49b89daf13c276b0c9ec', 'example_id': 'ex-6eb0243b8a2e4db1a1a37046518e7c68', 'classification': '{\"abstain_reason\": null, \"abstained\": false, \"domains\": [], \"edit_kind\": \"recognition_error\", \"evidence_status\": ",
+   "seconds": 0.01
+  },
+  {
+   "case": "ir07_validator_binds_record_texts_to_their_lineage",
+   "finding": "REVIEW-IR-07",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "{'cleanup_reference': True, 'cleanup_input': True, 'preference_input': True, 'split_vs_lineage': True, 'graft_text': True}",
+   "seconds": 0.09
+  },
+  {
+   "case": "ir08_validator_reports_deep_nesting_and_unreadable_files",
+   "finding": "REVIEW-IR-08",
+   "kind": "defect",
+   "status": "ERROR",
+   "detail": "PermissionError: [Errno 13] Permission denied: '<tmp>/tmp4e82l_j1/ds/artifacts/art-8baf75b40a764a31b5c3a303afa4a76b.wav' | Traceback (most recent call last):\n  File \"<repo>/tests/v2/personalization/test_m14_remediation.py\", line 1965, in main\n    fn()\n    ~~^^\n  File \"<repo>/tests/v2/personalization/test_m14_remediation.py\", line 1403, in ir08_validator_reports_deep_nesting_and_unreadable_files\n    assert not export_mod.validate_dataset(root)[\"valid\"]\n               ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"<repo>/localflow/v2/curation/export.py\", line 1170, in validate_dataset\n    if _sha256_file(p) != digest:\n       ~~~~~~~~~~~~^^^\n  File \"<repo>/localflow/v2/curation/export.py\", line 89, in _sha256_file\n    with open(path, \"rb\") as f:\n         ~~~~^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: '<tmp>/tmp4e82l_j1/ds/artifacts/art-8baf75b40a764a31b5c3a303afa4a76b.wav'\n",
+   "seconds": 0.06
+  },
+  {
+   "case": "ir09_exposure_between_snapshot_and_fence_refuses",
+   "finding": "REVIEW-IR-09",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "exposed family published as a blind holdout",
+   "seconds": 0.06
+  },
+  {
+   "case": "ir10_example_outside_the_assignment_is_reason_coded",
+   "finding": "REVIEW-IR-10",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "neither exported nor excluded with a reason",
+   "seconds": 0.06
+  },
+  {
+   "case": "ir11_unknown_partition_refuses",
+   "finding": "REVIEW-IR-11",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "an unknown partition produced an export",
+   "seconds": 0.05
+  },
+  {
+   "case": "ir12_purged_rendered_final_refuses_as_stale",
+   "finding": "REVIEW-IR-12",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(True, 'ValueError: no_retained_final_text')",
+   "seconds": 0.01
+  },
+  {
+   "case": "ir13_review_payload_lease_is_not_a_pin_of_the_example",
+   "finding": "REVIEW-IR-13",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "captured_unreviewed",
+   "seconds": 0.01
   },
   {
    "case": "d02_task_rows_never_ride_into_a_holdout_export",
    "finding": "M14-AUDIT-31",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "2 unpartitioned task rows",
-   "seconds": 0.14
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.15
   },
   {
    "case": "d03_cleanup_without_exact_prompts_is_labeled_text_pair",
    "finding": "M14-AUDIT-32",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "{'ex-889b1a3caa2342d7a449650ded8ac437': None, 'ex-a802eda603244b99a52e99889e581d30': None}",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.06
   },
   {
    "case": "d04_technical_terms_cite_eligible_speech_only",
    "finding": "M14-AUDIT-33",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "[\"Terraform\", \"Kafka\"]",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.02
   },
   {
    "case": "d05_case_variant_of_rejected_pair_stays_suppressed",
    "finding": "M14-AUDIT-34",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "[('Modul',)]",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.02
   },
   {
    "case": "d06_approval_without_counterexamples_is_recorded_untested",
    "finding": "M14-AUDIT-35",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "[]",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.01
   },
   {
    "case": "d07_accept_then_reject_is_not_a_supervised_target",
    "finding": "M14-AUDIT-36",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "a rejected target exported as supervised",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.05
   },
   {
    "case": "f28_benchmark_rejects_a_noop_component",
    "finding": "M14-AUDIT-28",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "no independent validity gate in the benchmark",
-   "seconds": 0.0
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.17
   },
   {
    "case": "f29_caller_inventory_covers_every_tracked_caller",
    "finding": "M14-AUDIT-29",
    "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "ir14_hub_unknown_label_is_an_abstention",
+   "finding": "REVIEW-IR-14",
+   "kind": "defect",
    "status": "FAIL",
-   "detail": "no caller inventory",
-   "seconds": 0.0
+   "detail": "[('unknown', False), ('recognition_error', False)]",
+   "seconds": 0.23
   },
   {
    "case": "f16_pair_judgment_binds_to_the_rendered_pair",
    "finding": "M14-AUDIT-16",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "the compared texts were never shown",
-   "seconds": 0.26
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
   },
   {
    "case": "f18_job_only_teach_is_actionable_in_review",
    "finding": "M14-AUDIT-18",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "(('pending', None), 0)",
+   "status": "PASS",
+   "detail": null,
    "seconds": 0.05
   },
   {
    "case": "f11_history_teach_passes_the_rendered_final_identity",
    "finding": "M14-AUDIT-11",
    "kind": "defect",
-   "status": "FAIL",
-   "detail": "{}",
-   "seconds": 0.04
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
   },
   {
    "case": "f27_profile_never_reaches_the_real_coordinator_pipeline",
@@ -577,7 +703,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.01
+   "seconds": 0.02
   },
   {
    "case": "c_prefer_b_exports_b",
@@ -601,7 +727,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.13
+   "seconds": 0.11
   },
   {
    "case": "c_unchanged_idle_pass_adds_no_snapshot",

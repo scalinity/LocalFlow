@@ -194,13 +194,14 @@ Export is local only: a dataset directory is never uploaded anywhere
 - Synthetic fixtures prove the export mechanics; a live pilot over real
   retained jobs is M15's (E19.5).
 
-## Performance (measured, benchmarks/20260924-010937-m14)
+## Performance (measured, benchmarks/20260928-120630-m14-remediation-final)
 
 Synthetic store: 10,000 examples, 400 retained 10-second float32 WAVs
-(256 MB). Export of the ASR + cleanup views (800 rows, 257 MB on disk):
-359 ms, 715 MB/s, 2,228 rows/s; Python peak 40.2 MB against a
-text-only control's 39.9 MB — the 256 MB of audio adds 0.3 MB (streamed
-copy and hash). A dictation's store write waits at most 50.3 ms during
-the build (40 probes). Offline validation of the dataset: 111 ms, 3.7 MB
-peak. Split assignment 56 ms (a dictation write waits ≤ 48 ms);
-contamination check 29 ms (≤ 22 ms).
+(256 MB), every component's work recounted before timing. Export of the
+ASR + cleanup views (800 rows, 257.6 MB on disk): p95 509 ms,
+514 MB/s; Python peak 46.2 MB against a text-only control's 46.1 MB —
+the audio is streamed. A dictation's store write waits p95 6.9 ms and
+at most 174 ms during the build (136 probes; the longest wait is the
+snapshot op, which qualifies every input). Offline validation: p95
+139 ms, 7.8 MB peak. Split assignment p95 84 ms (a dictation write
+waits ≤ 79 ms); contamination check p95 38 ms (≤ 33 ms).

@@ -10,7 +10,8 @@
   "automated_results": ["docs/v2/acceptance/M14/results.json"],
   "benchmark_runs": ["docs/v2/benchmarks/20260924-010937-m14/m14.json"],
   "pending_human": [
-    "native-m14-learning-profile-dataset-trial"
+    "M14-V001", "M14-V002", "M14-V003", "M14-V004", "M14-V005",
+    "M14-V006", "M14-V007"
   ],
   "handoff": "docs/v2/handoffs/M14.md",
   "next_milestone": "M15",

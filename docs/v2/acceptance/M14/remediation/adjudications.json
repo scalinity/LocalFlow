@@ -1,0 +1,2122 @@
+{
+  "schema": "m14-adjudications",
+  "policy_id": "m14-policy-r1",
+  "audited_base": "1e351d723d11a7bb5cb333c93a5daaca416f93d0",
+  "dispositions": [
+    "reproduced",
+    "refuted",
+    "narrowed",
+    "already_fixed",
+    "test_gap_only",
+    "design_only",
+    "native_manual_unresolved"
+  ],
+  "findings": [
+    {
+      "id": "M14-AUDIT-01",
+      "title": "Artifact existence is accepted as evidence authority",
+      "disposition": "reproduced",
+      "decision": "D11",
+      "repair": "One evidence resolver (localflow/v2/curation/evidence.py qualify): exists, unpurged, owned by the example row's job or the task, producer role for the slot, payload retained, digest match; used by the ASR gate, export views, readiness, mining/teach attribution and the profile speech read.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f01_foreign_audio_is_not_asr_evidence",
+            "status": "FAIL"
+          },
+          {
+            "case": "f01_wrong_role_own_audio_is_not_asr_evidence",
+            "status": "FAIL"
+          },
+          {
+            "case": "f01_foreign_verbatim_reference_is_refused",
+            "status": "FAIL"
+          },
+          {
+            "case": "f01_foreign_or_wrong_stage_cleanup_source_is_refused",
+            "status": "FAIL"
+          },
+          {
+            "case": "f01_profile_reads_only_own_raw_speech",
+            "status": "FAIL"
+          },
+          {
+            "case": "f01_observation_payload_of_another_job_is_refused",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f01_foreign_audio_is_not_asr_evidence",
+            "status": "PASS"
+          },
+          {
+            "case": "f01_wrong_role_own_audio_is_not_asr_evidence",
+            "status": "PASS"
+          },
+          {
+            "case": "f01_foreign_verbatim_reference_is_refused",
+            "status": "PASS"
+          },
+          {
+            "case": "f01_foreign_or_wrong_stage_cleanup_source_is_refused",
+            "status": "PASS"
+          },
+          {
+            "case": "f01_profile_reads_only_own_raw_speech",
+            "status": "PASS"
+          },
+          {
+            "case": "f01_observation_payload_of_another_job_is_refused",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f01_foreign_audio_is_not_asr_evidence",
+            "status": "PASS"
+          },
+          {
+            "case": "f01_wrong_role_own_audio_is_not_asr_evidence",
+            "status": "PASS"
+          },
+          {
+            "case": "f01_foreign_verbatim_reference_is_refused",
+            "status": "PASS"
+          },
+          {
+            "case": "f01_foreign_or_wrong_stage_cleanup_source_is_refused",
+            "status": "PASS"
+          },
+          {
+            "case": "f01_profile_reads_only_own_raw_speech",
+            "status": "PASS"
+          },
+          {
+            "case": "f01_observation_payload_of_another_job_is_refused",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 42,
+          "PASS": 21
+        },
+        "final_0e5cdcc": {
+          "PASS": 63
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-02",
+      "title": "Exporter recursively removes an unowned staging directory",
+      "disposition": "reproduced",
+      "decision": "D09",
+      "repair": "Each build creates its own .<name>.building-<export_id> exclusively with an ownership file and removes only that folder.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f02_unowned_staging_directory_is_never_removed",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f02_unowned_staging_directory_is_never_removed",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f02_unowned_staging_directory_is_never_removed",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 6,
+          "PASS": 4
+        },
+        "final_0e5cdcc": {
+          "PASS": 10
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-03",
+      "title": "Your Voice can publish speech after its source artifact was purged",
+      "disposition": "reproduced",
+      "decision": "D16",
+      "repair": "Profile commit re-checks each example's exact raw artifact and revision; a purged support invalidates snapshots as source_purged.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f03_purged_artifact_mid_compute_is_not_published",
+            "status": "FAIL"
+          },
+          {
+            "case": "f03_purge_after_publication_invalidates_current",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f03_purged_artifact_mid_compute_is_not_published",
+            "status": "PASS"
+          },
+          {
+            "case": "f03_purge_after_publication_invalidates_current",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f03_purged_artifact_mid_compute_is_not_published",
+            "status": "PASS"
+          },
+          {
+            "case": "f03_purge_after_publication_invalidates_current",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 18,
+          "PASS": 16
+        },
+        "final_0e5cdcc": {
+          "PASS": 34
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-04",
+      "title": "A new export can reclaim frozen-test status from an older assignment",
+      "disposition": "reproduced",
+      "decision": "D10",
+      "repair": "A new export joins its families to exposure across every assignment version and refuses an exposed family still in frozen_test.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f04_new_export_from_old_version_cannot_reclaim_blindness",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f04_new_export_from_old_version_cannot_reclaim_blindness",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f04_new_export_from_old_version_cannot_reclaim_blindness",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 7,
+          "PASS": 10
+        },
+        "final_0e5cdcc": {
+          "PASS": 17
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-05",
+      "title": "Audio export trusts an unconstrained stored source path",
+      "disposition": "reproduced",
+      "decision": "D11",
+      "repair": "Audio is admitted only as one plain managed name and streamed through open_managed_file (no-follow, regular files only).",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f05_outside_audio_path_is_never_read",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f05_outside_audio_path_is_never_read",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f05_outside_audio_path_is_never_read",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 5,
+          "PASS": 4
+        },
+        "final_0e5cdcc": {
+          "PASS": 9
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-06",
+      "title": "Export publication is outside the final source-liveness fence",
+      "disposition": "reproduced",
+      "decision": "D09",
+      "repair": "Publication is one writer op that re-checks consent and every dependency, inserts the complete row and renames staging into place.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f06_purge_serialized_before_publication_is_not_published",
+            "status": "FAIL"
+          },
+          {
+            "case": "f06_consent_revoked_before_publication_is_not_published",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f06_purge_serialized_before_publication_is_not_published",
+            "status": "PASS"
+          },
+          {
+            "case": "f06_consent_revoked_before_publication_is_not_published",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f06_purge_serialized_before_publication_is_not_published",
+            "status": "PASS"
+          },
+          {
+            "case": "f06_consent_revoked_before_publication_is_not_published",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 9,
+          "PASS": 4
+        },
+        "final_0e5cdcc": {
+          "PASS": 13
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-07",
+      "title": "Portable export cannot independently reconstruct or qualify its full evidence graph",
+      "disposition": "reproduced",
+      "decision": null,
+      "repair": "Per-record lineage (export schema 2) and a semantic validator that rejects checksum-consistent semantic tampering and reconstructs task inputs from the package alone.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f07_self_consistent_semantic_tamper_is_rejected",
+            "status": "FAIL"
+          },
+          {
+            "case": "f07_preference_input_reconstructs_from_the_package",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f07_self_consistent_semantic_tamper_is_rejected",
+            "status": "PASS"
+          },
+          {
+            "case": "f07_preference_input_reconstructs_from_the_package",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f07_self_consistent_semantic_tamper_is_rejected",
+            "status": "PASS"
+          },
+          {
+            "case": "f07_preference_input_reconstructs_from_the_package",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 22,
+          "PASS": 6
+        },
+        "final_0e5cdcc": {
+          "PASS": 28
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-08",
+      "title": "Preference selection ignores the liveness of its source task",
+      "disposition": "reproduced",
+      "decision": "D11",
+      "repair": "evidence.preference_pair_in: same task and conditional hashes, source and outputs retained with producer roles, source equal to the task's recorded input; shared by export and readiness.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f08_purged_task_source_makes_pair_ineligible",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f08_purged_task_source_makes_pair_ineligible",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f08_purged_task_source_makes_pair_ineligible",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 38,
+          "PASS": 8
+        },
+        "final_0e5cdcc": {
+          "PASS": 46
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-09",
+      "title": "Approval can install a rule after its candidate was revoked",
+      "disposition": "reproduced",
+      "decision": "D12",
+      "repair": "Approval is one writer op: evidence re-check, plan, M05 mutation through composable VocabularyStore operations and the approved mark.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f09_deletion_between_plan_and_effect_leaves_no_orphan_rule",
+            "status": "FAIL"
+          },
+          {
+            "case": "f09_rejection_between_plan_and_effect_leaves_no_orphan_rule",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f09_deletion_between_plan_and_effect_leaves_no_orphan_rule",
+            "status": "PASS"
+          },
+          {
+            "case": "f09_rejection_between_plan_and_effect_leaves_no_orphan_rule",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f09_deletion_between_plan_and_effect_leaves_no_orphan_rule",
+            "status": "PASS"
+          },
+          {
+            "case": "f09_rejection_between_plan_and_effect_leaves_no_orphan_rule",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 8,
+          "PASS": 17
+        },
+        "final_0e5cdcc": {
+          "PASS": 25
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-10",
+      "title": "Undo is not confined to the original vocabulary delta",
+      "disposition": "reproduced",
+      "decision": "D12",
+      "repair": "The exact delta is recorded in learning_vocabulary_deltas (schema v13); undo reverses only it and refuses user_modified_since_approval.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f10_undo_keeps_later_user_edits_of_a_created_entry",
+            "status": "FAIL"
+          },
+          {
+            "case": "f10_concurrent_user_alias_survives_alias_undo",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f10_undo_keeps_later_user_edits_of_a_created_entry",
+            "status": "PASS"
+          },
+          {
+            "case": "f10_concurrent_user_alias_survives_alias_undo",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f10_undo_keeps_later_user_edits_of_a_created_entry",
+            "status": "PASS"
+          },
+          {
+            "case": "f10_concurrent_user_alias_survives_alias_undo",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 5,
+          "PASS": 7
+        },
+        "final_0e5cdcc": {
+          "PASS": 12
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-11",
+      "title": "Teach does not bind to the immutable final text the reviewer saw",
+      "disposition": "reproduced",
+      "decision": "D13",
+      "repair": "teach_correction takes the rendered final artifact id and sha256 in one writer op, refuses stale_final and never substitutes raw; History Teach passes the rendered identity.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f11_teach_refuses_a_final_newer_than_the_rendered_one",
+            "status": "FAIL"
+          },
+          {
+            "case": "f11_teach_never_substitutes_raw_for_a_missing_final",
+            "status": "FAIL"
+          },
+          {
+            "case": "f11_history_teach_passes_the_rendered_final_identity",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f11_teach_refuses_a_final_newer_than_the_rendered_one",
+            "status": "PASS"
+          },
+          {
+            "case": "f11_teach_never_substitutes_raw_for_a_missing_final",
+            "status": "PASS"
+          },
+          {
+            "case": "f11_history_teach_passes_the_rendered_final_identity",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f11_teach_refuses_a_final_newer_than_the_rendered_one",
+            "status": "PASS"
+          },
+          {
+            "case": "f11_teach_never_substitutes_raw_for_a_missing_final",
+            "status": "PASS"
+          },
+          {
+            "case": "f11_history_teach_passes_the_rendered_final_identity",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 3,
+          "PASS": 7
+        },
+        "final_0e5cdcc": {
+          "PASS": 10
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-12",
+      "title": "Confirmed graft offsets are not bound to the displayed source identity",
+      "disposition": "reproduced",
+      "decision": "D13",
+      "repair": "record_label takes the expected source artifact id and sha256; spans are strict integer code-point offsets; the graft records its source identity.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f12_graft_refuses_a_changed_source_with_the_same_substring",
+            "status": "FAIL"
+          },
+          {
+            "case": "f12_graft_span_offsets_are_strict_integers",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f12_graft_refuses_a_changed_source_with_the_same_substring",
+            "status": "PASS"
+          },
+          {
+            "case": "f12_graft_span_offsets_are_strict_integers",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f12_graft_refuses_a_changed_source_with_the_same_substring",
+            "status": "PASS"
+          },
+          {
+            "case": "f12_graft_span_offsets_are_strict_integers",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 15,
+          "PASS": 2
+        },
+        "final_0e5cdcc": {
+          "PASS": 17
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-13",
+      "title": "Note mining combines dictated and typed regions under one job",
+      "disposition": "reproduced",
+      "decision": "D14",
+      "repair": "Per-region attribution with M12 rebase ambiguity; typed and straddling regions are excluded; two jobs mint nothing.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f13_typed_only_region_is_not_dictation_evidence",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f13_typed_only_region_is_not_dictation_evidence",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f13_typed_only_region_is_not_dictation_evidence",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 2,
+          "PASS": 10
+        },
+        "final_0e5cdcc": {
+          "PASS": 12
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-14",
+      "title": "Readiness and export disagree on task eligibility",
+      "disposition": "reproduced",
+      "decision": "D03",
+      "repair": "Readiness task eligibility calls the export's own predicates (task_eligibility_revision m14-policy-r1).",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f14_readiness_matches_export_membership",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f14_readiness_matches_export_membership",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f14_readiness_matches_export_membership",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 30,
+          "PASS": 5
+        },
+        "final_0e5cdcc": {
+          "PASS": 35
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-15",
+      "title": "Counterexample transcripts are stored in long-lived candidate metadata",
+      "disposition": "reproduced",
+      "decision": "D06",
+      "repair": "Phrases and flips live in a lease-governed counterexample_result artifact; the candidate row keeps a content-free result.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f15_counterexample_phrase_is_not_candidate_metadata",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f15_counterexample_phrase_is_not_candidate_metadata",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f15_counterexample_phrase_is_not_candidate_metadata",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 12,
+          "PASS": 15
+        },
+        "final_0e5cdcc": {
+          "PASS": 27
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-16",
+      "title": "The A/B pane does not establish what the user is judging",
+      "disposition": "reproduced",
+      "decision": "D15",
+      "repair": "The pair pane renders the source and both candidate texts with ids and display order; the judgment records exactly the rendered pair and slot order.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f16_pair_judgment_binds_to_the_rendered_pair",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f16_pair_judgment_binds_to_the_rendered_pair",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f16_pair_judgment_binds_to_the_rendered_pair",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 9,
+          "NOT_RUN": 9,
+          "PASS": 2
+        },
+        "final_0e5cdcc": {
+          "PASS": 20
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-17",
+      "title": "M14 retry-sensitive actions lack end-to-end operation identity",
+      "disposition": "reproduced",
+      "decision": null,
+      "repair": "m14_operation_receipts (schema v13); services accept operation_id; the Hub keeps the id across an unknown outcome and reconciles on retry.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f17_label_retry_with_one_operation_is_one_revision",
+            "status": "FAIL"
+          },
+          {
+            "case": "f17_split_retry_with_one_operation_is_one_version",
+            "status": "FAIL"
+          },
+          {
+            "case": "f17_approval_retry_after_unknown_outcome_reconciles",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f17_label_retry_with_one_operation_is_one_revision",
+            "status": "PASS"
+          },
+          {
+            "case": "f17_split_retry_with_one_operation_is_one_version",
+            "status": "PASS"
+          },
+          {
+            "case": "f17_approval_retry_after_unknown_outcome_reconciles",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f17_label_retry_with_one_operation_is_one_revision",
+            "status": "PASS"
+          },
+          {
+            "case": "f17_split_retry_with_one_operation_is_one_version",
+            "status": "PASS"
+          },
+          {
+            "case": "f17_approval_retry_after_unknown_outcome_reconciles",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 36,
+          "NOT_RUN": 9,
+          "PASS": 33
+        },
+        "final_0e5cdcc": {
+          "PASS": 78
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-18",
+      "title": "Job-only teaches appear in Review but cannot be selected for action",
+      "disposition": "reproduced",
+      "decision": "D15",
+      "repair": "A candidate chooser popup binds Approve/Reject to the rendered row's candidate id, including job-only teaches.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f18_job_only_teach_is_actionable_in_review",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f18_job_only_teach_is_actionable_in_review",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f18_job_only_teach_is_actionable_in_review",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 3,
+          "NOT_RUN": 9,
+          "PASS": 5
+        },
+        "final_0e5cdcc": {
+          "PASS": 17
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-19",
+      "title": "A historical non-abstained label can hide a currently unresolved item",
+      "disposition": "reproduced",
+      "decision": "D01",
+      "repair": "One effective-judgment reducer (review.effective_judgment_in) for the queue, gate, readiness and Your Voice.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f19_later_abstention_returns_item_to_unresolved",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f19_later_abstention_returns_item_to_unresolved",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f19_later_abstention_returns_item_to_unresolved",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 6,
+          "PASS": 2
+        },
+        "final_0e5cdcc": {
+          "PASS": 8
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-20",
+      "title": "Teach rejects punctuation-only corrections before classification",
+      "disposition": "reproduced",
+      "decision": "D13",
+      "repair": "A punctuation or structure change is recorded as a review record with its format regions and no alias.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f20_punctuation_only_teach_is_a_review_record",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f20_punctuation_only_teach_is_a_review_record",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f20_punctuation_only_teach_is_a_review_record",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 6,
+          "PASS": 10
+        },
+        "final_0e5cdcc": {
+          "PASS": 16
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-21",
+      "title": "Near-spelling semantic opposites can be suggested as recognition corrections",
+      "disposition": "reproduced",
+      "decision": null,
+      "repair": "classify.is_direction_flip: opposite-direction word pairs are ambiguous (direction_flip_needs_review) with no alias.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f21_directional_antonym_is_not_a_recognition_suggestion",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f21_directional_antonym_is_not_a_recognition_suggestion",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f21_directional_antonym_is_not_a_recognition_suggestion",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 3,
+          "PASS": 5
+        },
+        "final_0e5cdcc": {
+          "PASS": 8
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-22",
+      "title": "Approval composition compares raw rather than canonical scopes",
+      "disposition": "reproduced",
+      "decision": "D12",
+      "repair": "Plans use M05 identity via VocabularyStore.find_in (NOCASE canonical, canonical scope value).",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f22_equivalent_app_scope_composes_with_existing_entry",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f22_equivalent_app_scope_composes_with_existing_entry",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f22_equivalent_app_scope_composes_with_existing_entry",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 11,
+          "PASS": 5
+        },
+        "final_0e5cdcc": {
+          "PASS": 16
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-23",
+      "title": "A second profile signature can suppress a needed vocabulary refresh",
+      "disposition": "reproduced",
+      "decision": "D16",
+      "repair": "The evidence signature includes vocabulary entry revisions; the fast input signature is remembered only when the recomputed evidence signature is equal.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f23_used_term_canonical_edit_refreshes_the_profile_once",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f23_used_term_canonical_edit_refreshes_the_profile_once",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f23_used_term_canonical_edit_refreshes_the_profile_once",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 14,
+          "PASS": 8
+        },
+        "final_0e5cdcc": {
+          "PASS": 22
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-24",
+      "title": "Unpin can revoke M14 review-retention leases",
+      "disposition": "reproduced",
+      "decision": "D08",
+      "repair": "One REVIEW_RETENTION_ROLES constant: pin never leases and unpin never revokes review payloads; machine suggestions keep finite leases.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f24_unpin_keeps_review_retention_leases",
+            "status": "FAIL"
+          },
+          {
+            "case": "f24_pin_never_makes_a_machine_suggestion_permanent",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f24_unpin_keeps_review_retention_leases",
+            "status": "PASS"
+          },
+          {
+            "case": "f24_pin_never_makes_a_machine_suggestion_permanent",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f24_unpin_keeps_review_retention_leases",
+            "status": "PASS"
+          },
+          {
+            "case": "f24_pin_never_makes_a_machine_suggestion_permanent",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 9,
+          "PASS": 7
+        },
+        "final_0e5cdcc": {
+          "PASS": 16
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-25",
+      "title": "A supplied --db argument breaks the export CLI",
+      "disposition": "reproduced",
+      "decision": null,
+      "repair": "scripts/v2/export_dataset.py parses --db as a path.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f25_export_cli_accepts_an_explicit_db_path",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f25_export_cli_accepts_an_explicit_db_path",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f25_export_cli_accepts_an_explicit_db_path",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 5,
+          "PASS": 4
+        },
+        "final_0e5cdcc": {
+          "PASS": 9
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-26",
+      "title": "Historical M14 evidence still contains absolute private paths",
+      "disposition": "narrowed",
+      "decision": null,
+      "repair": "Forward redaction: current M14 evidence and every new run record carry repository-relative placeholders; committed history is not rewritten (a rewrite needs the owner's explicit authorization).",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f26_m14_evidence_carries_no_private_paths",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f26_m14_evidence_carries_no_private_paths",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f26_m14_evidence_carries_no_private_paths",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 3,
+          "PASS": 4
+        },
+        "final_0e5cdcc": {
+          "PASS": 7
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-27",
+      "title": "Important negative suites lack independent end-to-end semantic oracles",
+      "disposition": "test_gap_only",
+      "decision": null,
+      "repair": "Fail-first regressions with independent oracles and the frozen-corpus drivers (m14_drivers_a..h); the base passes the f27 oracle, so the gap was coverage, not behavior.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f27_profile_never_reaches_the_real_coordinator_pipeline",
+            "status": "PASS"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f27_profile_never_reaches_the_real_coordinator_pipeline",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f27_profile_never_reaches_the_real_coordinator_pipeline",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 22,
+          "PASS": 28
+        },
+        "final_0e5cdcc": {
+          "PASS": 50
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-28",
+      "title": "M14 benchmark reports lack independent work-validity and current-tree measurements",
+      "disposition": "reproduced",
+      "decision": null,
+      "repair": "benchmark_m14 recounts every component's work before timing; each no-op component makes the run INVALID; environment and tree state recorded.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f28_benchmark_rejects_a_noop_component",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f28_benchmark_rejects_a_noop_component",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f28_benchmark_rejects_a_noop_component",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 2,
+          "NOT_RUN": 8,
+          "PASS": 4
+        },
+        "final_0e5cdcc": {
+          "PASS": 14
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-29",
+      "title": "Repository-wide caller and native qualification remain unproven",
+      "disposition": "test_gap_only",
+      "decision": null,
+      "repair": "caller_inventory.json covers every tracked caller; the owned-window Hub suite qualifies the native actions. Real-use manual checks remain pending for the owner.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "f29_caller_inventory_covers_every_tracked_caller",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "f29_caller_inventory_covers_every_tracked_caller",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "f29_caller_inventory_covers_every_tracked_caller",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "NOT_RUN": 17
+        },
+        "final_0e5cdcc": {
+          "PASS": 17
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-30",
+      "title": "Historical blocking labels conflict with while-unresolved semantics",
+      "disposition": "reproduced",
+      "decision": "D01",
+      "repair": "ambiguous/user_rewrite block until an explicit non-blocking effective judgment; changed_intent stays permanent.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "d01_resolved_ambiguity_no_longer_blocks_asr",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "d01_resolved_ambiguity_no_longer_blocks_asr",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "d01_resolved_ambiguity_no_longer_blocks_asr",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 16,
+          "PASS": 2
+        },
+        "final_0e5cdcc": {
+          "PASS": 18
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-31",
+      "title": "Task-keyed transform and preference rows are outside family partitions",
+      "disposition": "reproduced",
+      "decision": "D02",
+      "repair": "Task rows export as unpartitioned with holdout_qualified false, only when train is requested; otherwise excluded as task_keyed_unpartitioned.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "d02_task_rows_never_ride_into_a_holdout_export",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "d02_task_rows_never_ride_into_a_holdout_export",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "d02_task_rows_never_ride_into_a_holdout_export",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 13,
+          "PASS": 11
+        },
+        "final_0e5cdcc": {
+          "PASS": 24
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-32",
+      "title": "Cleanup records with missing exact model inputs are still named supervised",
+      "disposition": "reproduced",
+      "decision": "D03",
+      "repair": "Cleanup records carry qualification_tier model_task_complete or text_pair_only; manifest, README and readiness count the tiers.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "d03_cleanup_without_exact_prompts_is_labeled_text_pair",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "d03_cleanup_without_exact_prompts_is_labeled_text_pair",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "d03_cleanup_without_exact_prompts_is_labeled_text_pair",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 8,
+          "PASS": 1
+        },
+        "final_0e5cdcc": {
+          "PASS": 9
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-33",
+      "title": "Technical-term statistics are not exclusively retained-speech evidence",
+      "disposition": "reproduced",
+      "decision": "D04",
+      "repair": "technical_terms come from rules applied in eligible dictations with citing examples; dictionary counters are labeled as such.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "d04_technical_terms_cite_eligible_speech_only",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "d04_technical_terms_cite_eligible_speech_only",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "d04_technical_terms_cite_eligible_speech_only",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 11,
+          "PASS": 13
+        },
+        "final_0e5cdcc": {
+          "PASS": 24
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-34",
+      "title": "Rejection identity needs an explicit canonical/scope policy",
+      "disposition": "reproduced",
+      "decision": "D05",
+      "repair": "Suppression key (alias lower-cased, canonical under M05 ASCII case identity), global across scopes.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "d05_case_variant_of_rejected_pair_stays_suppressed",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "d05_case_variant_of_rejected_pair_stays_suppressed",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "d05_case_variant_of_rejected_pair_stays_suppressed",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 4,
+          "PASS": 4
+        },
+        "final_0e5cdcc": {
+          "PASS": 8
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-35",
+      "title": "An empty counterexample set must not imply safety qualification",
+      "disposition": "reproduced",
+      "decision": "D06",
+      "repair": "No phrases is recorded untested; phrases are checked over the effective post-approval dictionary in the rule's scope.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "d06_approval_without_counterexamples_is_recorded_untested",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "d06_approval_without_counterexamples_is_recorded_untested",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "d06_approval_without_counterexamples_is_recorded_untested",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 10,
+          "PASS": 5
+        },
+        "final_0e5cdcc": {
+          "PASS": 15
+        }
+      }
+    },
+    {
+      "id": "M14-AUDIT-36",
+      "title": "Single-candidate acceptance history needs an effective-target policy",
+      "disposition": "reproduced",
+      "decision": "D07",
+      "repair": "The latest accept/reject decides a transform target; automatic application alone never does.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "d07_accept_then_reject_is_not_a_supervised_target",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "d07_accept_then_reject_is_not_a_supervised_target",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "d07_accept_then_reject_is_not_a_supervised_target",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {
+          "FAIL": 15,
+          "PASS": 3
+        },
+        "final_0e5cdcc": {
+          "PASS": 18
+        }
+      }
+    }
+  ],
+  "local_findings": [
+    {
+      "id": "LOCAL-M14-01",
+      "title": "Hub Review, History and Export controls overlap or clip in the owned window",
+      "found_by": "tests/v2/personalization/test_native_m14_training.py controls_contained_hittable_and_scaled (LF-M14-C218)",
+      "disposition": "reproduced",
+      "repair": "Non-overlapping control frames; export view checkboxes wrap three per row (localflow/v2/ui/hub.py).",
+      "regressions": {
+        "base_1e351d7": [],
+        "first_pass_73cdfc0": [],
+        "final_f24658c": []
+      },
+      "corpus": {
+        "base_1e351d7": {},
+        "final_0e5cdcc": {}
+      }
+    },
+    {
+      "id": "LOCAL-M14-02",
+      "title": "A late Export-tab refresh can repaint over a just-shown Validate result",
+      "found_by": "native suite development",
+      "disposition": "narrowed",
+      "repair": "None. Observation only: the result is written and the next action shows it; the native check drains pending refreshes before reading. Recorded for the owner's manual Hub pass.",
+      "regressions": {
+        "base_1e351d7": [],
+        "first_pass_73cdfc0": [],
+        "final_f24658c": []
+      },
+      "corpus": {
+        "base_1e351d7": {},
+        "final_0e5cdcc": {}
+      }
+    },
+    {
+      "id": "LOCAL-M14-03",
+      "title": "The ASR gate admits audio whose managed file vanished, and the export then refuses the whole build",
+      "found_by": "corpus driver LF-M14-C051 (removed-file variant)",
+      "disposition": "reproduced",
+      "repair": "qualify checks the payload file is present as a regular managed file when given the artifact directory; the gate, readiness and export pass it.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "l03_vanished_audio_file_fails_the_gate_not_the_export",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "l03_vanished_audio_file_fails_the_gate_not_the_export",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "l03_vanished_audio_file_fails_the_gate_not_the_export",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {},
+        "final_0e5cdcc": {}
+      }
+    },
+    {
+      "id": "LOCAL-M14-04",
+      "title": "An audio artifact id names the exported file unchecked, so a traversal id writes outside the dataset",
+      "found_by": "corpus driver LF-M14-C148",
+      "disposition": "reproduced",
+      "repair": "The audio slot requires the artifact id to be a plain managed name.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "l04_audio_artifact_id_never_names_a_path_outside_the_export",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "l04_audio_artifact_id_never_names_a_path_outside_the_export",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "l04_audio_artifact_id_never_names_a_path_outside_the_export",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {},
+        "final_0e5cdcc": {}
+      }
+    },
+    {
+      "id": "LOCAL-M14-05",
+      "title": "validate_dataset raises on wrongly typed record fields",
+      "found_by": "corpus driver LF-M14-C164",
+      "disposition": "reproduced",
+      "introduced_by": "first-pass remediation 4b9de5c (the semantic validator is new; the audited base has none)",
+      "repair": "A wrong JSON type is reported as an issue, never raised.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "l05_validator_reports_wrongly_typed_fields",
+            "status": "PASS"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "l05_validator_reports_wrongly_typed_fields",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "l05_validator_reports_wrongly_typed_fields",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {},
+        "final_0e5cdcc": {}
+      }
+    },
+    {
+      "id": "LOCAL-M14-06",
+      "title": "validate_dataset hashes a listed file through a symlinked directory",
+      "found_by": "corpus driver LF-M14-C165",
+      "disposition": "reproduced",
+      "repair": "No listed or audio path passing through a symlinked directory is opened.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "l06_validator_never_reads_through_a_linked_directory",
+            "status": "FAIL"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "l06_validator_never_reads_through_a_linked_directory",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "l06_validator_never_reads_through_a_linked_directory",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {},
+        "final_0e5cdcc": {}
+      }
+    },
+    {
+      "id": "LOCAL-M14-07",
+      "title": "A non-numeric recorded UTC offset stops profile computation",
+      "found_by": "corpus driver LF-M14-C201",
+      "disposition": "reproduced",
+      "repair": "A corrupt or impossible offset (outside UTC-12..UTC+14) counts in hours_unknown.",
+      "regressions": {
+        "base_1e351d7": [
+          {
+            "case": "l07_corrupt_utc_offset_is_an_unknown_hour",
+            "status": "ERROR"
+          }
+        ],
+        "first_pass_73cdfc0": [
+          {
+            "case": "l07_corrupt_utc_offset_is_an_unknown_hour",
+            "status": "PASS"
+          }
+        ],
+        "final_f24658c": [
+          {
+            "case": "l07_corrupt_utc_offset_is_an_unknown_hour",
+            "status": "PASS"
+          }
+        ]
+      },
+      "corpus": {
+        "base_1e351d7": {},
+        "final_0e5cdcc": {}
+      }
+    }
+  ],
+  "independent_review": {
+    "frozen_first_pass": "73cdfc08b5112bb22b8dc1cb3c92f7fbe0118049",
+    "reviewer": "fresh-context agent in a detached read-only worktree at the frozen SHA; given the audit, decisions, contracts and code, not the author's adjudications",
+    "reproduction": "every allegation was reproduced by the author with its own fail-first regression (tests/v2/personalization/test_m14_remediation.py, REVIEW-IR-*) before any repair",
+    "findings": [
+      {
+        "id": "REVIEW-IR-01",
+        "severity": "high",
+        "title": "Re-approval after undo installed the alias on the earlier entry even after it was renamed or a different scope was chosen",
+        "repair": "_plan_in always plans by find_in on the candidate's canonical and requested scope; an earlier entry is reused only while it holds that identity",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir01_reapproval_plans_against_the_candidates_identity",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir01_reapproval_plans_against_the_candidates_identity",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-02",
+        "severity": "medium",
+        "title": "A rejected pair stayed approvable through a sibling candidate",
+        "repair": "reject suppresses pending siblings with the same D05 key; approve refuses pair_rejected",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir02_rejection_suppresses_pending_siblings",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir02_rejection_suppresses_pending_siblings",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-03",
+        "severity": "medium",
+        "title": "Counterexample phrases from earlier attempts survived note deletion",
+        "repair": "each attempt purges the previous counterexample_result",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir03_earlier_counterexample_results_do_not_outlive_the_candidate",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir03_earlier_counterexample_results_do_not_outlive_the_candidate",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-04",
+        "severity": "medium",
+        "title": "A timeout at the export publication op reported failed while the export committed complete",
+        "repair": "the timeout is raised as an unknown outcome with no abort and no failed row; the export id's receipt reconciles",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir04_fence_timeout_is_an_unknown_outcome_not_a_failure",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir04_fence_timeout_is_an_unknown_outcome_not_a_failure",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-05",
+        "severity": "low",
+        "title": "An operation id reused on another target returned a false success",
+        "repair": "receipt_in compares the recorded target",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir05_operation_id_reused_on_another_target_refuses",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir05_operation_id_reused_on_another_target_refuses",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-06",
+        "severity": "low",
+        "title": "Undo after delete-everywhere returned the deleted job's candidate to pending with its terms",
+        "repair": "undo leaves a candidate whose evidence died stale with terms cleared",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir06_undo_after_deletion_leaves_the_candidate_stale",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir06_undo_after_deletion_leaves_the_candidate_stale",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-07",
+        "severity": "low",
+        "title": "The validator did not bind the cleanup input and reference, the preference input, the record partition or the graft text to lineage",
+        "repair": "each is checked against its lineage digest; graft references carry graft_record",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir07_validator_binds_record_texts_to_their_lineage",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir07_validator_binds_record_texts_to_their_lineage",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-08",
+        "severity": "low",
+        "title": "The validator raised on deep nesting and unreadable files",
+        "repair": "RecursionError and OSError are reported as issues",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir08_validator_reports_deep_nesting_and_unreadable_files",
+              "status": "ERROR"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir08_validator_reports_deep_nesting_and_unreadable_files",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-09",
+        "severity": "low",
+        "title": "Exposure recorded between snapshot and fence was not re-checked",
+        "repair": "the fence refuses when a family exported as unexposed has been exposed",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir09_exposure_between_snapshot_and_fence_refuses",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir09_exposure_between_snapshot_and_fence_refuses",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-10",
+        "severity": "low",
+        "title": "A live example outside the assignment version was silently omitted while readiness counted it",
+        "repair": "reason-coded as not_in_assignment_version",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir10_example_outside_the_assignment_is_reason_coded",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir10_example_outside_the_assignment_is_reason_coded",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-11",
+        "severity": "low",
+        "title": "An unknown partition name produced an empty complete export",
+        "repair": "build refuses unknown partitions",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir11_unknown_partition_refuses",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir11_unknown_partition_refuses",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-12",
+        "severity": "low",
+        "title": "A purged rendered final refused with no_retained_final_text instead of stale_final",
+        "repair": "a supplied expected final that no longer qualifies refuses as stale_final",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir12_purged_rendered_final_refuses_as_stale",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir12_purged_rendered_final_refuses_as_stale",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-13",
+        "severity": "low",
+        "title": "A teach's never-expiring payload lease pinned its example against the 30-day buffer (predates the remediation; conflicts with D08)",
+        "repair": "prune_training leaves review roles out of its pin test; a pending explicit teach still holds its example (D08 clarification)",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir13_review_payload_lease_is_not_a_pin_of_the_example",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir13_review_payload_lease_is_not_a_pin_of_the_example",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      },
+      {
+        "id": "REVIEW-IR-14",
+        "severity": "low",
+        "title": "The Hub could not record an abstention: its 'unknown' label resolved an ambiguous blocker (reviewer's policy suspicion)",
+        "repair": "the Hub records edit kind 'unknown' as an abstention (D01 clarification)",
+        "regressions": {
+          "base_1e351d7": [],
+          "first_pass_73cdfc0": [
+            {
+              "case": "ir14_hub_unknown_label_is_an_abstention",
+              "status": "FAIL"
+            }
+          ],
+          "final_f24658c": [
+            {
+              "case": "ir14_hub_unknown_label_is_an_abstention",
+              "status": "PASS"
+            }
+          ]
+        },
+        "corpus": {
+          "base_1e351d7": {},
+          "final_0e5cdcc": {}
+        }
+      }
+    ],
+    "unreproduced_or_not_filed": [
+      {
+        "note": "A sampled example labeled then abstained leaves the queue (annotated state); the queue definition makes this arguable — not changed."
+      },
+      {
+        "note": "A graft row exports from the latest graft label even after a later changed_intent or abstained revision; no contract bars it — not changed."
+      },
+      {
+        "note": "A commit failure after os.rename inside publish_op, and a leftover .replaced-<id> after destination_appeared, need injected SQLite failures — not reproduced."
+      },
+      {
+        "note": "voiceExcludeEvidence_ resolves profile.current() at click time; exclusion is durable by example id, worst case a spurious not_evidence refusal — not pursued."
+      },
+      {
+        "note": "Sentence-casing teaches (how->How) suggest a casing rule; predates the remediation, no decision covers it."
+      },
+      {
+        "note": "The Hub has no Undo-approval control (absent at base too); hub.md no longer lists Undo among its operation-id actions."
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "OBS-M14-01",
+      "entry": "LF-M14-C022",
+      "note": "For 'foo foo foo' -> 'foo fob foo' difflib reads an insertion plus a deletion of the third copy; the record is abstained with no alias and nothing is attributed to the first copy, so the predicate holds; its offsets name an untouched copy."
+    },
+    {
+      "id": "OBS-M14-02",
+      "entry": "LF-M14-C116",
+      "note": "record_pair_judgment accepts a same-task-key pair whose candidate rows were forged by SQL to carry different source or instruction digests or wrong artifact roles; no producer writes such rows, and the export's preference predicate refuses them."
+    },
+    {
+      "id": "OBS-M14-03",
+      "entry": "LF-M14-C158",
+      "note": "A process killed after the publication rename and before the op commits leaves a complete, checksum-valid dataset with no completion row; the next build to that destination recognizes it as an earlier LocalFlow export."
+    },
+    {
+      "id": "OBS-M14-04",
+      "entry": "LF-M14-C149",
+      "note": "The synthetic database is already at the current schema, so the migration-backup half of the CLI case was not exercised."
+    },
+    {
+      "id": "OBS-M14-05",
+      "entry": "LF-M14-C163",
+      "note": "The package carries no referenced rights object (consent travels as consent_revision_id and allowed_uses text), so the rights variant could not be constructed."
+    },
+    {
+      "id": "OBS-M14-06",
+      "entry": "LF-M14-C160",
+      "note": "No standalone validator distribution is declared; the case was bound to a copy of the localflow package and the script outside the checkout."
+    }
+  ],
+  "disposition_counts": {
+    "narrowed": 1,
+    "reproduced": 33,
+    "test_gap_only": 2
+  },
+  "records": {
+    "regressions_base": "regressions_base_1e351d7.json",
+    "regressions_first_pass": "review_regressions_first_pass_73cdfc0.json",
+    "regressions_final": "regressions_final_f24658c.json",
+    "corpus_base": "corpus_base_1e351d7.json",
+    "corpus_final": "corpus_final_0e5cdcc.json",
+    "native_base": "native_base_1e351d7.json",
+    "native_final": "native_final.json",
+    "mutation_final": "mutation_final_3ede837.json",
+    "sweep_final": "sweep_final_3ede837.json"
+  }
+}

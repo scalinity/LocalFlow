@@ -127,5 +127,95 @@
       "note": "Forward-only redaction of a private location; no measured outcome, count or status in this historical record was changed, and Git history was not rewritten (earlier commits still contain the original value)."
     }
   ],
+  "remediation_2026_09_28": {
+    "kind": "LOCAL_REMEDIATION",
+    "state": "LOCAL_REMEDIATION_COMPLETE_PENDING_MANUAL_VERIFICATION",
+    "state_note": "Every confirmed automatable defect repaired; regression, corpus, stateful, metamorphic, mutation, native, compatibility and benchmark gates green at the final production; the independent review's 13 allegations and its policy question reproduced by the author with fail-first regressions and repaired. The seven M14-V manual checks remain the owner's.",
+    "audit": {
+      "title": "LocalFlow M14 Read-Only Deep Audit",
+      "audited_sha": "1e351d723d11a7bb5cb333c93a5daaca416f93d0",
+      "findings": 36,
+      "policy_findings": ["M14-AUDIT-30", "M14-AUDIT-31", "M14-AUDIT-32", "M14-AUDIT-33", "M14-AUDIT-34", "M14-AUDIT-35", "M14-AUDIT-36"],
+      "audit_markdown": "acceptance/M14/remediation/LocalFlow_M14_Read_Only_Deep_Audit.md (sha256 286ad800…dfac)",
+      "corpus": "tests/v2/personalization/m14_audit_corpus.json (sha256 83c64624…27cb1): 234 cases, 34 stateful probes, 14 metamorphic relations, 32 mutations"
+    },
+    "synchronization": {
+      "local_pre_sync": "1e351d723d11a7bb5cb333c93a5daaca416f93d0",
+      "remote_main_at_sync": "1e351d723d11a7bb5cb333c93a5daaca416f93d0",
+      "local_main_after_sync": "1e351d723d11a7bb5cb333c93a5daaca416f93d0",
+      "ancestors_checked": ["36e03a2", "b17aa2b", "1545de9", "9a049b3"]
+    },
+    "branch": "m14-local-remediation-20260928",
+    "first_pass_sha": "73cdfc0 (production 5f3dd55)",
+    "final_code_revision": "9d0cfdf",
+    "final_evidence_tree": "0e5cdcc",
+    "adjudications": "acceptance/M14/remediation/adjudications.json (policy m14-policy-r1: D01–D16 in decisions.json)",
+    "disposition_counts": {"reproduced": 33, "narrowed": 1, "test_gap_only": 2, "refuted": 0, "already_fixed": 0, "design_only": 0, "native_manual_unresolved": 0, "local_findings": ["LOCAL-M14-01", "LOCAL-M14-02", "LOCAL-M14-03", "LOCAL-M14-04", "LOCAL-M14-05", "LOCAL-M14-06", "LOCAL-M14-07"]},
+    "caller_inventory": "acceptance/M14/remediation/caller_inventory.json",
+    "regressions": {
+      "suite": "tests/v2/personalization/test_m14_remediation.py",
+      "cases": 81,
+      "controls": 10,
+      "base": "54 FAIL / 1 ERROR / 12 PASS of the 67 audit and local cases (regressions_base_1e351d7.json)",
+      "review_fail_first": "the 14 review cases fail on the frozen first pass — 13 FAIL, 1 ERROR (review_regressions_first_pass_73cdfc0.json)",
+      "final": "81/81 (regressions_final_f24658c.json)"
+    },
+    "corpus_results": {
+      "final": "234/234 PASS — portable 217, native 9, performance 8; graded semantic 171, decision 45, structural 1, native 9, benchmark 8; probes 34/34; metamorphic 14/14 (corpus_final_0e5cdcc.json)",
+      "base": "portable 99 PASS / 118 FAIL; probes 13 PASS / 21 FAIL; relations 7 PASS / 7 FAIL; native and performance NOT_RUN (corpus_base_1e351d7.json)"
+    },
+    "mutation_results": {
+      "first_pass": "28 killed / 1 survived / 3 harness errors at e1ec5e4 (mutation_first_pass_e1ec5e4.json): MU027 survived behind the new payload-presence check; three killers raised on product refusals. After both corrections the four were killed (mutation_first_pass_recheck_21e6c07.json)",
+      "review_round": "31 killed / 1 survived at 25119b8 (MU016 behind the new fence exposure re-check; mutation_review_round_25119b8.json)",
+      "final": "32/32 killed at 3ede837 (mutation_final_3ede837.json); MU026 killed again at f24658c after the benchmark sizing fix (mutation_mu026_f24658c.json)"
+    },
+    "independent_review": {
+      "reviewed": "73cdfc0",
+      "allegations": 13,
+      "policy_questions": 1,
+      "severity": {"high": 1, "medium": 3, "low": 9},
+      "reproduced_by_author": 14,
+      "fixed": 14,
+      "fail_first_record": "review_regressions_first_pass_73cdfc0.json",
+      "repair_commits": ["9d0cfdf", "91a4649"]
+    },
+    "portable_tests": {
+      "historical_suites": {"test_learning": "green", "test_profile": "green", "test_classification": "green", "test_sampling": "green", "test_splits": "green", "test_dataset_export": "green", "test_training_review_hub": "green", "test_m13_remediation": "64/64", "test_m09_remediation": "86/86", "test_training_data": "green", "test_hub_shell": "green"},
+      "sweep": "93/97 files exit 0 at 3ede837 (an exported copy; 1,150 ok-lines): the two native-flag suites exit 2 as in the accepted sweeps; test_dataset_export.py and test_baseline_probe.py exit 1 only in an exported copy (no .venv, no git history) and pass in the live checkout at the same code; no live clipboard change (sweep_final_3ede837.json)"
+    },
+    "native_tests": {
+      "record": "acceptance/M14/remediation/native_final.json",
+      "result": "10/10 passive in an owned synthetic Hub window, never frontmost, frontmost app unchanged",
+      "production": "9d0cfdf",
+      "base": "2 PASS / 3 FAIL / 5 ERROR — no candidate chooser existed (native_base_1e351d7.json)"
+    },
+    "benchmark": {
+      "run": "benchmarks/20260928-120630-m14-remediation-final/m14.json",
+      "verdict": "VALID (no numeric budget; maximum dictation delay and peak memory reported)",
+      "noop_runs": "six components each replaced by a no-op: all INVALID before timing (noop-*/m14.json)",
+      "profile_compute_p95_ms": 560.18,
+      "profile_dictation_wait_max_ms": 204.95,
+      "profile_peak_mb": 47.5,
+      "idle_unchanged_p95_ms": 103.76,
+      "mining_1000_observations_ms": 1158.36,
+      "export_p95_ms": 508.54,
+      "export_mb_per_s": 513.8,
+      "export_dictation_wait_max_ms": 174.39,
+      "export_peak_mb": 46.2,
+      "validate_p95_ms": 139.25
+    },
+    "desktop_isolation": "every portable and native run under run_isolated (private pasteboard, no Accessibility reads of installed apps, no posted events)",
+    "privacy": "synthetic stores and identities (com.synthetic.*) in temporary folders only; no real transcripts, notes, correction phrases, profile phrases, app names, usage or audio; evidence records carry <repo>, <tmp>, <scratch> and <base-worktree> placeholders, scanned for home, scratch, temporary-folder and session paths before each commit",
+    "pending_manual_verification": ["M14-V001", "M14-V002", "M14-V003", "M14-V004", "M14-V005", "M14-V006", "M14-V007"],
+    "declared_residuals": [
+      "worst dictation write waits of 205 ms during profile compute and 174 ms during export (one writer op re-checks or qualifies the whole input set)",
+      "LOCAL-M14-02: a late Export-tab refresh can repaint over a Validate result",
+      "the pair writer accepts a same-task pair forged by SQL with mismatched digests; the export refuses it",
+      "a process killed between the publication rename and its commit leaves a valid dataset with no completion row",
+      "the Hub has no Undo-approval control; graft rows follow the latest graft label after a later changed-intent revision"
+    ],
+    "merge": "merged onto main in the same session (repository rule for completed remediations)",
+    "handoff": "handoffs/M14.md remediation addendum"
+  },
   "privacy": "Nothing private entered Git: every M14 fixture is synthetic (tests/v2/training/evidence_pack.py, Synth App names, example.com hosts); rows are ids/hashes/counts/offsets (candidate rows also name proposed rule terms) with observed words only in lease-governed artifacts inside the store; events carry ids/reasons/counts; the benchmark JSON holds timings/sizes over a temp-dir store; the baseline-manifest privacy scan passes; exports are written only to a user-chosen local folder, never uploaded."
 }

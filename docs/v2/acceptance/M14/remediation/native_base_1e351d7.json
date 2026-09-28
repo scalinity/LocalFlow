@@ -1,0 +1,200 @@
+{
+ "suite": "tests/v2/personalization/test_native_m14_training.py",
+ "tier": "passive",
+ "code": {
+  "suite": "tests/v2/personalization/test_native_m14_training.py",
+  "suite_sha256": "2668140ddaa28cbb71527c6969c5a42af8355e465a904aab55174f8f37eea52b",
+  "code_root_sha": "1e351d723d11a7bb5cb333c93a5daaca416f93d0",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "frontmost_unchanged": true,
+ "never_frontmost": true,
+ "full_keyboard_access": false,
+ "counts": {
+  "ERROR": 5,
+  "FAIL": 3,
+  "PASS": 2
+ },
+ "checks": {
+  "review_candidate_approve_reject_label": {
+   "status": "ERROR",
+   "note": "AttributeError: 'HubController' object has no attribute 'review_candidate_popup' | ing.py\", line 518, in main\n    r = fn(w)\n  File \"<base-worktree>/tests/v2/personalization/test_native_m14_training.py\", line 170, in c211\n    ok1, _ = choose_candidate(w, c1)\n             ~~~~~~~~~~~~~~~~^^^^^^^\n  File \"<base-worktree>/tests/v2/personalization/test_native_m14_training.py\", line 150, in choose_candidate\n    popup = w.hub.review_candidate_popup\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'HubController' object has no attribute 'review_candidate_popup'\n",
+   "cases": [
+    "LF-M14-C211"
+   ],
+   "tier": "passive",
+   "seconds": 0.35
+  },
+  "reorder_after_render_acts_on_rendered_item": {
+   "status": "ERROR",
+   "note": "AttributeError: 'HubController' object has no attribute 'review_candidate_popup' | Traceback (most recent call last):\n  File \"<base-worktree>/tests/v2/personalization/test_native_m14_training.py\", line 518, in main\n    r = fn(w)\n  File \"<base-worktree>/tests/v2/personalization/test_native_m14_training.py\", line 192, in c212\n    popup = w.hub.review_candidate_popup\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'HubController' object has no attribute 'review_candidate_popup'\n",
+   "cases": [
+    "LF-M14-C212"
+   ],
+   "tier": "passive",
+   "seconds": 0.22
+  },
+  "deletion_while_form_open_refuses": {
+   "status": "ERROR",
+   "note": "AttributeError: 'HubController' object has no attribute 'review_candidate_popup' | t_native_m14_training.py\", line 518, in main\n    r = fn(w)\n  File \"<base-worktree>/tests/v2/personalization/test_native_m14_training.py\", line 209, in c213\n    choose_candidate(w, c1)\n    ~~~~~~~~~~~~~~~~^^^^^^^\n  File \"<base-worktree>/tests/v2/personalization/test_native_m14_training.py\", line 150, in choose_candidate\n    popup = w.hub.review_candidate_popup\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'HubController' object has no attribute 'review_candidate_popup'\n",
+   "cases": [
+    "LF-M14-C213"
+   ],
+   "tier": "passive",
+   "seconds": 0.23
+  },
+  "job_only_candidate_selectable": {
+   "status": "ERROR",
+   "note": "AttributeError: 'HubController' object has no attribute 'review_candidate_popup' |  line 518, in main\n    r = fn(w)\n  File \"<base-worktree>/tests/v2/personalization/test_native_m14_training.py\", line 226, in c214\n    ok_sel, _ = choose_candidate(w, cid)\n                ~~~~~~~~~~~~~~~~^^^^^^^^\n  File \"<base-worktree>/tests/v2/personalization/test_native_m14_training.py\", line 150, in choose_candidate\n    popup = w.hub.review_candidate_popup\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'HubController' object has no attribute 'review_candidate_popup'\n",
+   "cases": [
+    "LF-M14-C214"
+   ],
+   "tier": "passive",
+   "seconds": 0.22
+  },
+  "ab_pair_shows_texts_and_binds_order": {
+   "status": "FAIL",
+   "visible": false,
+   "t1": [
+    [
+     "tcand-6fda99af6f5141ea98accda152b4cb42",
+     "tcand-24851b3d3efe4aa6ba6bdea4ef6a8157",
+     "prefer_b"
+    ]
+   ],
+   "t2": {
+    "prefer_a": [
+     [
+      "tcand-2ce0868a67cd43d8b466688f8590407c",
+      "tcand-bec379f785dd437788a9fd599cc01830"
+     ]
+    ],
+    "tie": [
+     [
+      "tcand-2ce0868a67cd43d8b466688f8590407c",
+      "tcand-bec379f785dd437788a9fd599cc01830"
+     ]
+    ],
+    "neither": [
+     [
+      "tcand-2ce0868a67cd43d8b466688f8590407c",
+      "tcand-bec379f785dd437788a9fd599cc01830"
+     ]
+    ],
+    "uncertain": [
+     [
+      "tcand-2ce0868a67cd43d8b466688f8590407c",
+      "tcand-bec379f785dd437788a9fd599cc01830"
+     ]
+    ]
+   },
+   "cases": [
+    "LF-M14-C215"
+   ],
+   "tier": "passive",
+   "seconds": 0.74
+  },
+  "split_assign_export_validate_and_refusal": {
+   "status": "PASS",
+   "versions": 1,
+   "built": true,
+   "valid": true,
+   "refused_kept": true,
+   "cases": [
+    "LF-M14-C216"
+   ],
+   "tier": "passive",
+   "seconds": 0.66
+  },
+  "your_voice_generate_and_exclude": {
+   "status": "PASS",
+   "cards": 1,
+   "after": "invalidated",
+   "training_state": "captured_unreviewed",
+   "cases": [
+    "LF-M14-C217"
+   ],
+   "tier": "passive",
+   "seconds": 0.38
+  },
+  "controls_contained_hittable_and_scaled": {
+   "status": "FAIL",
+   "misses": [
+    [
+     "review",
+     1100.0,
+     "NSButton",
+     "Reject Cand.",
+     "outside"
+    ],
+    [
+     "review",
+     900.0,
+     "NSButton",
+     "Reject Cand.",
+     "outside"
+    ],
+    [
+     "export",
+     1100.0,
+     "NSButton",
+     "asr_span_graft_weak",
+     "outside"
+    ],
+    [
+     "export",
+     1100.0,
+     "NSButton",
+     "transform_supervised",
+     "outside"
+    ],
+    [
+     "export",
+     900.0,
+     "NSButton",
+     "asr_span_graft_weak",
+     "outside"
+    ],
+    [
+     "export",
+     900.0,
+     "NSButton",
+     "transform_supervised",
+     "outside"
+    ],
+    [
+     "review-large",
+     "NSButton",
+     "not_hittable"
+    ]
+   ],
+   "keyboard_traversal": "not_verifiable_full_keyboard_access_off",
+   "cases": [
+    "LF-M14-C218"
+   ],
+   "tier": "passive",
+   "seconds": 1.1
+  },
+  "unknown_outcome_reconciles_without_duplicate": {
+   "status": "ERROR",
+   "note": "AttributeError: 'HubController' object has no attribute 'review_candidate_popup' | native_m14_training.py\", line 518, in main\n    r = fn(w)\n  File \"<base-worktree>/tests/v2/personalization/test_native_m14_training.py\", line 449, in c219\n    choose_candidate(w, cid)\n    ~~~~~~~~~~~~~~~~^^^^^^^^\n  File \"<base-worktree>/tests/v2/personalization/test_native_m14_training.py\", line 150, in choose_candidate\n    popup = w.hub.review_candidate_popup\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'HubController' object has no attribute 'review_candidate_popup'\n",
+   "cases": [
+    "LF-M14-C219"
+   ],
+   "tier": "passive",
+   "seconds": 0.22
+  },
+  "history_teach_binds_rendered_final": {
+   "status": "FAIL",
+   "bound": false,
+   "candidates": 0,
+   "cases": [
+    "LF-M14-C005"
+   ],
+   "tier": "passive",
+   "seconds": 0.25
+  }
+ }
+}

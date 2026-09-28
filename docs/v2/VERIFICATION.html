@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-27 · M13 section added by the M13 remediation · code <code>36e03a2</code> (M12 checks at <code>b17aa2b</code>, M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-28 · M14 section added by the M14 remediation · code <code>9d0cfdf</code> (M13 checks at <code>36e03a2</code>, M12 checks at <code>b17aa2b</code>, M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -4413,7 +4413,355 @@ lf13_evidence() { SANDBOX13="$SANDBOX13" SDB13="$SDB13" "$PY" "$OUT13/m13_eviden
           </details>
         </article>
       </section>
-      <section class="milestone" id="M14" data-milestone="M14" data-title="Learning & datasets"><div class="ms-head"><span class="mid">M14</span><h2>Learning &amp; datasets</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M14-V001).</p></section>
+      <section class="milestone" id="M14" data-milestone="M14" data-title="Learning &amp; datasets">
+        <div class="ms-head">
+          <span class="mid">M14</span><h2>Learning &amp; datasets</h2>
+          <span class="meta">instructions M14-r1 · code 9d0cfdf · local remediation of the audit at 1e351d7</span>
+        </div>
+        <p class="ms-intro">The M14 remediation makes learning and datasets rest only on evidence that really belongs to the dictation it claims: a correction you teach is bound to the text you saw, approving a suggestion changes the dictionary in one step and undo takes back only what it added, review labels follow your latest judgment, the A/B pane shows the texts you are judging, and an export never deletes a folder it did not create, never publishes after a source was removed, and can be checked on its own without the app. The machine checks cover all of that over synthetic data, and an owned test window drove the Review, Splits, Export, History and Your Voice controls on this Mac. These seven checks are what only your own store, voice and eyes can show.</p>
+        <p class="ms-intro">Instruction revision M14-r1 is the first M14 runbook entry: your store's upgrade to schema 13 with its backup is M14-V001, teaching and approving a correction M14-V002, reviewing labels and suggestions M14-V003, comparing two transform outputs M14-V004, splits, export and offline validation M14-V005, Your Voice evidence M14-V006, and larger text with keyboard navigation M14-V007. V001 reads a copy of your real store and reports counts only; every other check runs in a sandbox home — never your real LocalFlow data.</p>
+
+        <div class="callout">
+          <h3>M14 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The remediated code gets its own worktree, and the dev app runs with an empty <b>sandbox home folder</b> (<code>$SANDBOX14</code>) with collection enabled only there. Recognition and cleanup use the models already on this Mac, offline. Your real Application Support data and the installed app are never touched.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># Remediated M14 code in its own worktree (first time only)</span>
+export LF_M14="$(dirname "$LF_MAIN")/LocalFlow-m14-verify"
+git -C "$LF_MAIN" fetch origin main
+[ -d "$LF_M14" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M14" origin/main
+git -C "$LF_M14" merge-base --is-ancestor 9d0cfdf HEAD &amp;&amp; echo "M14 repairs present"
+export OUT14="$EV/m14-verification"; mkdir -p "$OUT14"/screens &amp;&amp; chmod 700 "$OUT14"
+
+<span class="c"># Sandbox home and config for the dev app</span>
+export REAL_HOME="$HOME"
+export SANDBOX14="$OUT14/sandbox-home"; mkdir -p "$SANDBOX14" &amp;&amp; chmod 700 "$SANDBOX14"
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M14"], "config.json").read_text())
+p = pathlib.Path(os.environ["OUT14"], "sandbox-config.json")
+p.write_text(json.dumps(dict(cfg, log_transcripts=False), indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app; $LF14_PID is its process</span>
+lf14_start() { ( cd "$LF_M14" &amp;&amp; exec env HOME="$SANDBOX14" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT14/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT14/app-console.txt" 2&gt;&amp;1 &amp;
+  LF14_PID=$!; echo "dev app pid $LF14_PID"; }
+export SDB14="$SANDBOX14/Library/Application Support/LocalFlow/v2.db"
+
+<span class="c"># Evidence reader: schema, states and counts — no transcript, note or phrase text</span>
+cat &gt; "$OUT14/m14_evidence.py" &lt;&lt;'EOF'
+import os, sqlite3, sys
+db = sqlite3.connect(sys.argv[1] if len(sys.argv) &gt; 1 else os.environ["SDB14"])
+q = lambda sql: db.execute(sql).fetchall()
+print("schema", q("select value from schema_meta where key='schema_version'"))
+for t in ("jobs", "artifacts", "training_examples", "learning_candidates",
+          "correction_labels", "vocabulary_entries", "split_assignments",
+          "export_manifests", "profile_snapshots"):
+    try: print(t, q(f"select count(*) from {t}")[0][0])
+    except sqlite3.Error: print(t, "absent")
+for name, sql in (
+    ("candidates", "select source, status, vocabulary_action, count(*) from"
+                   " learning_candidates group by 1, 2, 3"),
+    ("labels", "select edit_kind, abstained, count(*) from correction_labels"
+               " group by 1, 2"),
+    ("deltas", "select count(*) from learning_vocabulary_deltas"),
+    ("receipts", "select kind, count(*) from m14_operation_receipts group by 1"),
+    ("splits", "select assignment_version, partition, count(*) from"
+               " split_assignments group by 1, 2"),
+    ("exports", "select state, reason, count(*) from export_manifests"
+                " group by 1, 2"),
+    ("snapshots", "select state, invalidated_reason, count(*) from"
+                  " profile_snapshots group by 1, 2")):
+    try: print(name, q(sql))
+    except sqlite3.Error as e: print(name, "unavailable:", e)
+EOF
+lf14_evidence() { "$PY" "$OUT14/m14_evidence.py" "$@"; }</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M14 repairs present”; the config path printed; the dev app prints its pid when started. The evidence reader prints counts and states only; its output still describes your data, so it stays under <code>$OUT14</code> and never goes into Git. When finished with M14, remove the worktree with <code>git -C "$LF_MAIN" worktree remove "$LF_M14"</code>; the sandbox and the store copy stay under <code>$OUT14</code> until you delete them.</p>
+        </div>
+
+        <h3 class="group">Your store upgrades safely</h3>
+
+        <article class="check" id="M14-V001" data-milestone="M14" data-rev="M14-r1" data-code="9d0cfdf" data-tags="terminal human privacy">
+          <header class="check-head">
+            <span class="cid">M14-V001</span>
+            <h4>Upgrade a copy of your store to schema 13 and compare its counts</h4>
+            <ul class="tags"><li>Terminal</li><li>Human visual</li><li>Privacy</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The remediation adds two tables (operation receipts and approval records) in schema 13. Opening your real store with the new code takes a backup first, adds only those tables and leaves every existing row where it was. Synthetic stores prove the migration; only your own store shows it on the data you have.</p>
+          <p class="plain"><b>In plain terms.</b> You copy your store, open the copy with the new code, and check a backup appeared and nothing was lost.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal</dd>
+              <dt>Preconditions</dt><dd>M14 set-up done; installed LocalFlow.app quit (so the store is not being written).</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M14 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Copy the store: <code>mkdir -p "$OUT14/store-copy" &amp;&amp; sqlite3 "$REAL_HOME/Library/Application Support/LocalFlow/v2.db" ".backup '$OUT14/store-copy/v2.db'"</code></li>
+              <li>Record the counts before: <code>lf14_evidence "$OUT14/store-copy/v2.db" &gt; "$OUT14/v001-before.txt"</code></li>
+              <li>Open the copy with the remediated store: <code>( cd "$LF_M14" &amp;&amp; "$PY" -c 'import sys; from localflow.v2.store import Store; s = Store(sys.argv[1], artifacts_dir=sys.argv[2], backup_dir=sys.argv[3]); s.close()' "$OUT14/store-copy/v2.db" "$OUT14/store-copy/v2-artifacts" "$OUT14/store-copy/backups" )</code></li>
+              <li>Record the counts after: <code>lf14_evidence "$OUT14/store-copy/v2.db" &gt; "$OUT14/v001-after.txt"</code>, then <code>ls "$OUT14/store-copy/backups"</code> and <code>diff "$OUT14/v001-before.txt" "$OUT14/v001-after.txt"</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>schema</code> changes from 12 to 13 (or already reads 13 if the app has run the new code).</li>
+              <li>A <code>v2-pre-migrate-….db</code> backup is listed.</li>
+              <li>Every table count is unchanged; the only other differences are the new <code>deltas</code> and <code>receipts</code> lines, which read <code>0</code> / <code>[]</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>No backup, a count that changed, or an error opening the copy: <b>Failed</b> — keep both text files and the console output. Your real store was never opened.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT14/v001-before.txt</code>, <code>v001-after.txt</code> and the store copy (it holds your data — delete it after the check). Nothing from this check goes into Git.</p>
+            <h5>Contract relevance</h5>
+            <p>M14-AUDIT-10/17; <code>contracts/store.md</code> → M14 additions (migration v13).</p>
+          </details>
+        </article>
+
+        <h3 class="group">Teaching and approving a correction</h3>
+
+        <article class="check" id="M14-V002" data-milestone="M14" data-rev="M14-r1" data-code="9d0cfdf" data-tags="native human hardware model">
+          <header class="check-head">
+            <span class="cid">M14-V002</span>
+            <h4>Teach a correction from History and approve it narrowly</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A correction you teach is tied to the cleaned text History showed you, and approval adds exactly one dictionary rule and refuses when a counterexample you give would be changed. The synthetic tests cover the races and undo; only a real dictation shows the flow reads clearly.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate a sentence with a made-up word the recognizer gets wrong, teach the right spelling, try approving with a phrase it must not change, then approve.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · the dev app · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M14 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M14 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf14_start</code>; wait for “ASR: ready”. In the Hub → Settings, set collection to Enable (this sandbox only).</li>
+              <li>In TextEdit, dictate a sentence containing an unusual name you choose that the recognizer is likely to spell wrong.</li>
+              <li>Hub → History: select that dictation, type the corrected sentence in the Teach field and click Teach. Note the message beside the detail.</li>
+              <li>Hub → Models → Training Data → Review: choose the new candidate in the candidate popup. Type a phrase the rule must not change into the counterexample field and click Approve Cand.; then clear the field and click Approve Cand. again.</li>
+              <li>Dictate the same sentence again. Run <code>lf14_evidence &gt; "$OUT14/v002.txt"</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Teach reports a candidate (or, for a punctuation-only change, that it was recorded for review with no rule).</li>
+              <li>If your counterexample contains the misheard word, approval is refused and shows the flip; approving without one succeeds and is recorded as untested.</li>
+              <li>After approval the second dictation is spelled right, and any dictionary entry you had before is unchanged apart from the added spelling.</li>
+              <li><code>v002.txt</code>: one candidate <code>approved</code> with its <code>vocabulary_action</code>, and <code>deltas</code> reads 1.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Teach compares against a different text than History showed, or approval adds a rule after a refusal: <b>Failed</b> — keep <code>v002.txt</code> and a screenshot.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT14/v002.txt</code> and screenshots in <code>$OUT14/screens</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M14-AUDIT-09/10/11/15/20/22/35; decisions D06, D12, D13 (<code>acceptance/M14/remediation/decisions.json</code>); <code>contracts/learning.md</code> → Suggestion gate, approval and undo.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Reviewing your dictations</h3>
+
+        <article class="check" id="M14-V003" data-milestone="M14" data-rev="M14-r1" data-code="9d0cfdf" data-tags="native human hardware model">
+          <header class="check-head">
+            <span class="cid">M14-V003</span>
+            <h4>Label a correct, a mixed and a changed-intent dictation</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Review labels follow your latest judgment: a later “unsure” returns an item to unresolved, an ambiguous label stops blocking once you resolve it, and a changed-intent label keeps the dictation out of recognition training for good. The owned test window drove these controls; you confirm the labels mean what you meant.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate three sentences, draw a sample, and label one as right, one as partly wrong and one where you changed your mind about what to say.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · the dev app from M14-V002</dd>
+              <dt>Preconditions</dt><dd>Collection enabled in the sandbox (M14-V002 step 1).</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M14 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Dictate three short sentences into TextEdit; for the third, deliberately say something different from what you then type as the “correct” text.</li>
+              <li>Hub → Models → Training Data → Review: click Draw Sample, then Mine Candidates.</li>
+              <li>For each example, enter its id in the example field, choose an edit kind in the popup and click Record Label: the first as recognition-correct, the second as ambiguous, the third as changed intent. Then label the second again with a definite kind.</li>
+              <li>Run <code>lf14_evidence &gt; "$OUT14/v003.txt"</code>; screenshot the Review tab.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Each Record Label shows a result in the tab; the queue marks labeled items.</li>
+              <li><code>v003.txt</code> shows four labels (the second example has two); nothing was overwritten.</li>
+              <li>The Evidence tab's readiness counts the resolved second example and never the changed-intent one for recognition.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A label lands on a different example than the one entered, or the changed-intent example is ever counted as recognition training: <b>Failed</b> — keep <code>v003.txt</code> and the screenshot.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT14/v003.txt</code> and the screenshot.</p>
+            <h5>Contract relevance</h5>
+            <p>M14-AUDIT-14/19/30; decision D01; <code>contracts/learning.md</code> → Review labels, grafts and the ASR promotion gate.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M14-V004" data-milestone="M14" data-rev="M14-r1" data-code="9d0cfdf" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M14-V004</span>
+            <h4>Compare two transform outputs of the same input</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The A/B pane shows the shared input and both outputs, and your choice is recorded for the text you saw in that position. The binding is covered by synthetic tests; only you can say the pane makes clear what you are choosing between.</p>
+          <p class="plain"><b>In plain terms.</b> You run the same transform twice on one text, then pick the better result in the A/B pane.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · the dev app · the cleanup model</dd>
+              <dt>Preconditions</dt><dd>M14-V003 done.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M14 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>In TextEdit, select a paragraph and run the same transform on it twice (so one task has two candidates).</li>
+              <li>Hub → Models → Training Data → Review: read the pair — the input text and outputs A and B.</li>
+              <li>Click the button for the output you prefer (Pair: prefer A or prefer B); screenshot the pane.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>The pane shows the input and both outputs with their positions; the output you clicked is the one you read as better.</li>
+              <li>After a refresh the pair shows your judgment; a later export (M14-V005) names that output as chosen.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>The pane shows ids without texts, or the recorded choice is the other output: <b>Failed</b> — keep the screenshot.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: the screenshot in <code>$OUT14/screens</code> (it shows your text).</p>
+            <h5>Contract relevance</h5>
+            <p>M14-AUDIT-08/16; decision D15; <code>contracts/preferences.md</code> → M14 live status.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Splits and export</h3>
+
+        <article class="check" id="M14-V005" data-milestone="M14" data-rev="M14-r1" data-code="9d0cfdf" data-tags="native terminal human privacy">
+          <header class="check-head">
+            <span class="cid">M14-V005</span>
+            <h4>Assign splits, export a dataset and validate it offline</h4>
+            <ul class="tags"><li>Native macOS</li><li>Terminal</li><li>Human visual</li><li>Privacy</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Assign honestly refuses with too few recording families, an export writes a complete folder beside your files without touching them, and the folder validates on its own with the app closed. Synthetic stores cover the races and tampering; you confirm the README and audio make sense to a person.</p>
+          <p class="plain"><b>In plain terms.</b> You press Assign, export to a new folder, check the folder with the validator, and open the README and one audio file.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · the dev app · Terminal · QuickTime Player</dd>
+              <dt>Preconditions</dt><dd>M14-V004 done.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M14 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Hub → Models → Training Data → Splits: click Assign (new version). With fewer than 10 recording families it reports that everything stays unassigned; dictate more short sentences until 10 exist and click it again.</li>
+              <li>Make a folder with one file of your own: <code>mkdir -p "$OUT14/exports/mine" &amp;&amp; echo keep &gt; "$OUT14/exports/mine/keep.txt"</code>. In the Export tab, try exporting to <code>$OUT14/exports/mine</code>, then to <code>$OUT14/exports/ds</code>; click Validate.</li>
+              <li>Quit the dev app (<code>kill $LF14_PID</code>) and validate offline: <code>( cd /tmp &amp;&amp; "$PY" "$LF_M14/scripts/v2/validate_dataset.py" "$OUT14/exports/ds" ) &gt; "$OUT14/v005.txt"</code></li>
+              <li>Open <code>$OUT14/exports/ds/README.md</code> and play one file from its <code>artifacts/</code> folder.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Exporting into <code>mine</code> is refused and <code>keep.txt</code> is still there; the export to <code>ds</code> completes.</li>
+              <li><code>v005.txt</code> reports the dataset valid with the same counts the Export tab showed.</li>
+              <li>The README explains each task and what is missing; the audio is your own voice for that example.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>Any file of yours is removed or changed, or the offline validator fails a folder the app called complete: <b>Failed</b> — keep <code>v005.txt</code> and the folder listing.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT14/v005.txt</code> and the export folder (it holds your voice and text — delete it after the check).</p>
+            <h5>Contract relevance</h5>
+            <p>M14-AUDIT-02/04/05/06/07/25/31/32; decisions D02, D03, D09, D10; <code>contracts/dataset_exports.md</code> → The portable export.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Your Voice</h3>
+
+        <article class="check" id="M14-V006" data-milestone="M14" data-rev="M14-r1" data-code="9d0cfdf" data-tags="native human hardware model privacy">
+          <header class="check-head">
+            <span class="cid">M14-V006</span>
+            <h4>Generate Your Voice, exclude a supporting dictation, then delete one</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~15 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Your Voice shows cards only when there is enough of your speech, each card cites dictations that support it, and excluding or deleting one of them retires the snapshot rather than keeping phrases from it. Synthetic tests prove the arithmetic; only your own words show the cards are fair.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate enough to pass the 2,000-word floor, generate Your Voice, exclude one example it cites, and delete another from History.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · the dev app</dd>
+              <dt>Preconditions</dt><dd>At least 10 dictations and 2,000 words in the sandbox (a few longer dictations read from any text you like).</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M14 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Hub → Insights → Your Voice: click Generate. Read the cards and the example ids each one cites.</li>
+              <li>Enter one cited id and click Exclude; then Generate again.</li>
+              <li>Hub → History: delete another dictation a card cited; return to Your Voice.</li>
+              <li>Run <code>lf14_evidence &gt; "$OUT14/v006.txt"</code>; screenshot each state.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Below the floor the pane shows totals and says more speech is needed; above it, cards appear with their evidence.</li>
+              <li>After Exclude the old snapshot is marked invalidated and the new one no longer cites that dictation; the dictation itself is still in History.</li>
+              <li>After deleting, the pane shows the invalidation reason and none of the old numbers until you generate again.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A card cites a dictation that does not support it, or phrases from a deleted dictation remain on screen: <b>Failed</b> — keep <code>v006.txt</code> and the screenshots.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT14/v006.txt</code> and the screenshots (they show your phrases).</p>
+            <h5>Contract relevance</h5>
+            <p>M14-AUDIT-03/23/33; decisions D04, D16; <code>contracts/profile.md</code> → Snapshots are records, never caches.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Reaching every control</h3>
+
+        <article class="check" id="M14-V007" data-milestone="M14" data-rev="M14-r1" data-code="9d0cfdf" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M14-V007</span>
+            <h4>Use Review and Export with larger text and the keyboard</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The Review and Export controls stay inside the window, readable and reachable at the smallest window size and with larger text. The owned test window checked their frames with Full Keyboard Access off; moving through them with the keyboard needs you.</p>
+          <p class="plain"><b>In plain terms.</b> You turn on Full Keyboard Access, make the Hub as small as it goes, and tab through the Review and Export tabs.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · the dev app · System Settings</dd>
+              <dt>Preconditions</dt><dd>M14-V005 done.</dd>
+              <dt>Working dir</dt><dd>any</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>System Settings → Keyboard → Keyboard navigation on; Accessibility → Display → Text size one step larger.</li>
+              <li>Start the dev app, open the Hub → Models → Training Data, and shrink the window to its minimum.</li>
+              <li>In Review and in Export, press Tab through every control; activate the candidate popup and one checkbox with Space.</li>
+              <li>Screenshot both tabs; restore your settings afterwards.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Every button, field, popup and checkbox is fully visible, none overlaps another, and Tab reaches each with a visible focus ring.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A control is cut off, covered, or skipped by Tab: <b>Failed</b> — keep the screenshots and name the control.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: the screenshots in <code>$OUT14/screens</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>LOCAL-M14-01; M14-AUDIT-29; <code>contracts/hub.md</code> → The M14 tabs, Layout.</p>
+          </details>
+        </article>
+      </section>
 
       <section id="maintainers" aria-labelledby="mt-h">
         <h2 class="section" id="mt-h">For remediation sessions</h2>

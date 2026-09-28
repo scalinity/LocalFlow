@@ -1,0 +1,57 @@
+{
+ "tool": "scripts/v2/m14_mutation_check.py",
+ "runner": "tests/v2/personalization/m14_corpus_runner.py",
+ "suite": "tests/v2/personalization/test_m14_remediation.py",
+ "code_sha": "f24658ca628ac8df3412355a2e3d01cc2a06d7e8",
+ "corpus_sha256": "83c6462496e8a581987fbf9c730df9d49a95d4d0fed4505ed60776dc5fe27cb1",
+ "killer_rule": "each mutation's portable test_case_ids from the frozen corpus plus the matching fail-first regressions (EXTRA); a kill needs the reach marker AND a failed killer",
+ "control": {
+  "cases": {
+   "f28_benchmark_rejects_a_noop_component": "PASS"
+  },
+  "details": {},
+  "reached": []
+ },
+ "summary": {
+  "killed": 1
+ },
+ "results": [
+  {
+   "mutation_id": "LF-M14-MU026",
+   "name": "Benchmark skips real work",
+   "kill_rule": "KILLED only when branch was reached AND independent semantic assertion failed; crash/import/setup failure is INVALID, not KILLED.",
+   "files": [
+    "scripts/v2/benchmark_m14.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "scripts/v2/benchmark_m14.py": {
+      "sha_before": "b3e7cb6517654e94",
+      "sha_after": "1515b371cda29ccc",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "f28_benchmark_rejects_a_noop_component"
+   ],
+   "seconds": 0.4,
+   "mutant": {
+    "f28_benchmark_rejects_a_noop_component": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "f28_benchmark_rejects_a_noop_component"
+   ],
+   "mutant_details": {
+    "f28_benchmark_rejects_a_noop_component": "(['mining: pending candidates != changed observations', 'mining: dismissed != unchanged observations', 'sampling: representative set != independent seeded draw'], ['mining: pending candidates != changed observations', 'mining: dismissed != unchanged observations', 'sampling: representative set != in"
+   },
+   "outcome": "killed",
+   "reason": null
+  }
+ ]
+}

@@ -1,0 +1,112 @@
+{
+ "build_and_run_seconds": 3.1,
+ "definitions": {
+  "probe_wait": "submit\u2192commit of a dictation-shaped write (artifact row + lease) submitted continuously while the component runs",
+  "wall": "one component call, wall clock (p50/p95/p99 over its repetitions; one_shot components run once)",
+  "warm_state": "a freshly built store per run; each timed component follows the one before it (no process restart between components)",
+  "writer_hold": "time each of the component's own ops occupied the single writer, measured inside the writer thread"
+ },
+ "environment": {
+  "code_sha": "f24658ca628ac8df3412355a2e3d01cc2a06d7e8",
+  "cpu": "Apple M5 Pro",
+  "load_average": [
+   3.96875,
+   3.3486328125,
+   3.33837890625
+  ],
+  "mac_model": "Mac17,8",
+  "macos": "27.0 (26A428)",
+  "memory_bytes": 51539607552,
+  "power": [
+   "Now drawing from 'AC Power'"
+  ],
+  "pyobjc": "12.2.1",
+  "python": "3.14.7",
+  "sqlite": "3.53.4",
+  "tree_modified": false
+ },
+ "environment_after": {
+  "code_sha": "f24658ca628ac8df3412355a2e3d01cc2a06d7e8",
+  "cpu": "Apple M5 Pro",
+  "load_average": [
+   3.96875,
+   3.3486328125,
+   3.33837890625
+  ],
+  "mac_model": "Mac17,8",
+  "macos": "27.0 (26A428)",
+  "memory_bytes": 51539607552,
+  "power": [
+   "Now drawing from 'AC Power'"
+  ],
+  "pyobjc": "12.2.1",
+  "python": "3.14.7",
+  "sqlite": "3.53.4",
+  "tree_modified": false
+ },
+ "milestone": "M14",
+ "noop": "note_mining",
+ "results": null,
+ "scale": "full",
+ "sizes": {
+  "audio": 400,
+  "audio_seconds": 10.0,
+  "examples": 10000,
+  "notes": 200,
+  "observations": 1000,
+  "unchanged_observations": 100
+ },
+ "status": "INVALID",
+ "tool": "scripts/v2/benchmark_m14.py",
+ "validity": {
+  "reasons": [
+   "note mining: candidates != typed corrections",
+   "sampling: representative set != independent seeded draw"
+  ],
+  "valid": false,
+  "work": {
+   "export": {
+    "asr_supervised": 400,
+    "audio_bytes_on_disk": 256017600,
+    "cleanup_supervised": 400,
+    "expected_asr": 400,
+    "expected_audio_bytes": 256017600,
+    "expected_cleanup": 400,
+    "validator_valid": true
+   },
+   "mining": {
+    "candidates": 900,
+    "dismissed": 100,
+    "expected_candidates": 900,
+    "expected_dismissed": 100
+   },
+   "note_mining": {
+    "candidates": 0,
+    "expected": 200
+   },
+   "profile": {
+    "eligible_examples": 10000,
+    "eligible_words": 286190,
+    "expected_examples": 10000,
+    "expected_words": 286190,
+    "snapshots_written": 1
+   },
+   "sampling": {
+    "decisions": 10000,
+    "expected_decisions": 10000,
+    "expected_representative": 862,
+    "representative": 887
+   },
+   "splits": {
+    "expected": 10000,
+    "memberships": 10000
+   },
+   "store": {
+    "audio_artifacts": 400,
+    "example_rows": 10000,
+    "expected_audio": 400,
+    "expected_examples": 10000
+   }
+  }
+ }
+}

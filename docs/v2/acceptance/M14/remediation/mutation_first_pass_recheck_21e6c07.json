@@ -1,0 +1,293 @@
+{
+ "tool": "scripts/v2/m14_mutation_check.py",
+ "runner": "tests/v2/personalization/m14_corpus_runner.py",
+ "suite": "tests/v2/personalization/test_m14_remediation.py",
+ "code_sha": "21e6c075b63d8b835ce59a283f1966b6118c08bf",
+ "corpus_sha256": "83c6462496e8a581987fbf9c730df9d49a95d4d0fed4505ed60776dc5fe27cb1",
+ "killer_rule": "each mutation's portable test_case_ids from the frozen corpus plus the matching fail-first regressions (EXTRA); a kill needs the reach marker AND a failed killer",
+ "control": {
+  "cases": {
+   "LF-M14-C073": "PASS",
+   "LF-M14-C074": "PASS",
+   "LF-M14-C075": "PASS",
+   "LF-M14-C076": "PASS",
+   "LF-M14-C077": "PASS",
+   "LF-M14-C078": "PASS",
+   "LF-M14-C079": "PASS",
+   "LF-M14-C080": "PASS",
+   "LF-M14-C081": "PASS",
+   "LF-M14-C082": "PASS",
+   "LF-M14-C083": "PASS",
+   "LF-M14-C084": "PASS",
+   "LF-M14-C085": "PASS",
+   "LF-M14-C086": "PASS",
+   "LF-M14-C087": "PASS",
+   "LF-M14-C088": "PASS",
+   "LF-M14-C089": "PASS",
+   "LF-M14-C090": "PASS",
+   "LF-M14-C091": "PASS",
+   "LF-M14-C092": "PASS",
+   "LF-M14-C093": "PASS",
+   "LF-M14-C094": "PASS",
+   "LF-M14-C141": "PASS",
+   "LF-M14-C142": "PASS",
+   "LF-M14-C143": "PASS",
+   "LF-M14-C144": "PASS",
+   "LF-M14-C145": "PASS",
+   "LF-M14-C146": "PASS",
+   "LF-M14-C147": "PASS",
+   "LF-M14-C148": "PASS",
+   "LF-M14-C149": "PASS",
+   "f05_outside_audio_path_is_never_read": "PASS",
+   "f10_concurrent_user_alias_survives_alias_undo": "PASS",
+   "f22_equivalent_app_scope_composes_with_existing_entry": "PASS"
+  },
+  "details": {},
+  "reached": []
+ },
+ "summary": {
+  "killed": 4
+ },
+ "results": [
+  {
+   "mutation_id": "LF-M14-MU009",
+   "name": "Approval bypasses M05",
+   "kill_rule": "KILLED only when branch was reached AND independent semantic assertion failed; crash/import/setup failure is INVALID, not KILLED.",
+   "files": [
+    "localflow/v2/learning.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/learning.py": {
+      "sha_before": "4ff901658fd97677",
+      "sha_after": "fd7ddd10b5fab886",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M14-C073",
+    "LF-M14-C074",
+    "LF-M14-C075",
+    "LF-M14-C076",
+    "LF-M14-C077",
+    "LF-M14-C078",
+    "LF-M14-C079",
+    "LF-M14-C080",
+    "f22_equivalent_app_scope_composes_with_existing_entry"
+   ],
+   "seconds": 0.7,
+   "mutant": {
+    "LF-M14-C073": "PASS",
+    "LF-M14-C074": "PASS",
+    "LF-M14-C075": "FAIL",
+    "LF-M14-C076": "FAIL",
+    "LF-M14-C077": "FAIL",
+    "LF-M14-C078": "FAIL",
+    "LF-M14-C079": "PASS",
+    "LF-M14-C080": "PASS",
+    "f22_equivalent_app_scope_composes_with_existing_entry": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "LF-M14-C075",
+    "LF-M14-C076",
+    "LF-M14-C077",
+    "LF-M14-C078",
+    "f22_equivalent_app_scope_composes_with_existing_entry"
+   ],
+   "mutant_details": {
+    "LF-M14-C075": "failed: composed_into_user_entry, aliases, history_retained, learned_alias_effective",
+    "LF-M14-C076": "failed: approval_ran, already_present, undo_ran",
+    "LF-M14-C077": "failed: enabled_companion_composes",
+    "LF-M14-C078": "failed: app_case_padding_composes, site_equivalent_composes, workspace_padding_composes",
+    "f22_equivalent_app_scope_composes_with_existing_entry": "ValueError: vocabulary_duplicate"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M14-MU010",
+   "name": "Counterexample in wrong scope",
+   "kill_rule": "KILLED only when branch was reached AND independent semantic assertion failed; crash/import/setup failure is INVALID, not KILLED.",
+   "files": [
+    "localflow/v2/learning.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/learning.py": {
+      "sha_before": "4ff901658fd97677",
+      "sha_after": "412f4eddca768313",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M14-C088",
+    "LF-M14-C089",
+    "LF-M14-C090",
+    "LF-M14-C091",
+    "LF-M14-C092",
+    "LF-M14-C093",
+    "LF-M14-C094"
+   ],
+   "seconds": 0.4,
+   "mutant": {
+    "LF-M14-C088": "FAIL",
+    "LF-M14-C089": "PASS",
+    "LF-M14-C090": "PASS",
+    "LF-M14-C091": "FAIL",
+    "LF-M14-C092": "FAIL",
+    "LF-M14-C093": "FAIL",
+    "LF-M14-C094": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "LF-M14-C088",
+    "LF-M14-C091",
+    "LF-M14-C092",
+    "LF-M14-C093",
+    "LF-M14-C094"
+   ],
+   "mutant_details": {
+    "LF-M14-C088": "failed: refused_on_flip, no_rule_landed",
+    "LF-M14-C091": "failed: app_out_of_scope_entry_ignored, site_out_of_scope_entry_ignored",
+    "LF-M14-C092": "failed: workspace_flip_in_exact_scope, profile_flip_in_exact_scope",
+    "LF-M14-C093": "failed: population_still_detects_flip, merged_identity_checked",
+    "LF-M14-C094": "failed: flip_recorded, phrase_only_in_governed_artifact"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M14-MU011",
+   "name": "Undo disables user-owned entry",
+   "kill_rule": "KILLED only when branch was reached AND independent semantic assertion failed; crash/import/setup failure is INVALID, not KILLED.",
+   "files": [
+    "localflow/v2/learning.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/learning.py": {
+      "sha_before": "4ff901658fd97677",
+      "sha_after": "0ee58d893c565c20",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M14-C081",
+    "LF-M14-C082",
+    "LF-M14-C083",
+    "LF-M14-C084",
+    "LF-M14-C085",
+    "LF-M14-C086",
+    "LF-M14-C087",
+    "f10_concurrent_user_alias_survives_alias_undo"
+   ],
+   "seconds": 0.7,
+   "mutant": {
+    "LF-M14-C081": "PASS",
+    "LF-M14-C082": "PASS",
+    "LF-M14-C083": "FAIL",
+    "LF-M14-C084": "FAIL",
+    "LF-M14-C085": "FAIL",
+    "LF-M14-C086": "FAIL",
+    "LF-M14-C087": "PASS",
+    "f10_concurrent_user_alias_survives_alias_undo": "PASS"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "LF-M14-C083",
+    "LF-M14-C084",
+    "LF-M14-C085",
+    "LF-M14-C086"
+   ],
+   "mutant_details": {
+    "LF-M14-C083": "failed: undo_ran, only_learned_removed, learned_not_effective",
+    "LF-M14-C084": "failed: reconciled_to_narrow_delta, control_before_order, control_no_action",
+    "LF-M14-C085": "failed: b_alias_approved_then_restored",
+    "LF-M14-C086": "failed: alias_same_config, undo_took_effect"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "LF-M14-MU027",
+   "name": "Follow external audio path",
+   "kill_rule": "KILLED only when branch was reached AND independent semantic assertion failed; crash/import/setup failure is INVALID, not KILLED.",
+   "files": [
+    "localflow/v2/curation/evidence.py",
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/evidence.py": {
+      "sha_before": "1cc41ad5f5fa2abb",
+      "sha_after": "a4b29436b2e9496e",
+      "changed": true
+     },
+     "localflow/v2/curation/export.py": {
+      "sha_before": "1557a7abf0a7d0f7",
+      "sha_after": "1fa2b07188b5fdf4",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "LF-M14-C141",
+    "LF-M14-C142",
+    "LF-M14-C143",
+    "LF-M14-C144",
+    "LF-M14-C145",
+    "LF-M14-C146",
+    "LF-M14-C147",
+    "LF-M14-C148",
+    "LF-M14-C149",
+    "f05_outside_audio_path_is_never_read"
+   ],
+   "seconds": 1.5,
+   "mutant": {
+    "LF-M14-C141": "PASS",
+    "LF-M14-C142": "PASS",
+    "LF-M14-C143": "PASS",
+    "LF-M14-C144": "PASS",
+    "LF-M14-C145": "PASS",
+    "LF-M14-C146": "PASS",
+    "LF-M14-C147": "FAIL",
+    "LF-M14-C148": "PASS",
+    "LF-M14-C149": "PASS",
+    "f05_outside_audio_path_is_never_read": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "LF-M14-C147",
+    "f05_outside_audio_path_is_never_read"
+   ],
+   "mutant_details": {
+    "LF-M14-C147": "failed: no_outside_open, no_outside_copy",
+    "f05_outside_audio_path_is_never_read": "['<tmp>/tmp2tyqiouc/outside/sentinel.wav', '../outside/sentinel.wav', 'link-to-outside.wav']"
+   },
+   "outcome": "killed",
+   "reason": null
+  }
+ ]
+}

@@ -1,0 +1,169 @@
+{
+ "suite": "tests/v2/personalization/test_native_m14_training.py",
+ "tier": "passive",
+ "code": {
+  "suite": "tests/v2/personalization/test_native_m14_training.py",
+  "suite_sha256": "2668140ddaa28cbb71527c6969c5a42af8355e465a904aab55174f8f37eea52b",
+  "code_root_sha": "91a46499a4850c5bcd404e422b32afd8de1fa103",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "frontmost_unchanged": true,
+ "never_frontmost": true,
+ "full_keyboard_access": false,
+ "counts": {
+  "PASS": 10
+ },
+ "checks": {
+  "review_candidate_approve_reject_label": {
+   "status": "PASS",
+   "observed": [
+    "approved",
+    "rejected",
+    [
+     [
+      "recognition_error"
+     ]
+    ]
+   ],
+   "cases": [
+    "LF-M14-C211"
+   ],
+   "tier": "passive",
+   "seconds": 1.83
+  },
+  "reorder_after_render_acts_on_rendered_item": {
+   "status": "PASS",
+   "observed": [
+    "approved",
+    "pending"
+   ],
+   "cases": [
+    "LF-M14-C212"
+   ],
+   "tier": "passive",
+   "seconds": 0.73
+  },
+  "deletion_while_form_open_refuses": {
+   "status": "PASS",
+   "observed": {
+    "candidate": "stale",
+    "entries": 0
+   },
+   "cases": [
+    "LF-M14-C213"
+   ],
+   "tier": "passive",
+   "seconds": 0.71
+  },
+  "job_only_candidate_selectable": {
+   "status": "PASS",
+   "observed": [
+    "approved",
+    0
+   ],
+   "cases": [
+    "LF-M14-C214"
+   ],
+   "tier": "passive",
+   "seconds": 0.71
+  },
+  "ab_pair_shows_texts_and_binds_order": {
+   "status": "PASS",
+   "visible": true,
+   "t1": [
+    [
+     "tcand-bc6ed3e2ca884966aa5c33ea3290d2ec",
+     "tcand-2b7c2d2c0ff741e8a6cd05b79bf0f4d3",
+     "prefer_b"
+    ]
+   ],
+   "t2": {
+    "prefer_a": [
+     [
+      "tcand-dc4b5684f6ed410a8ab224c0564fefe8",
+      "tcand-0c3d751fe31c4d318137a9e4da4c13bd"
+     ]
+    ],
+    "tie": [
+     [
+      "tcand-dc4b5684f6ed410a8ab224c0564fefe8",
+      "tcand-0c3d751fe31c4d318137a9e4da4c13bd"
+     ]
+    ],
+    "neither": [
+     [
+      "tcand-dc4b5684f6ed410a8ab224c0564fefe8",
+      "tcand-0c3d751fe31c4d318137a9e4da4c13bd"
+     ]
+    ],
+    "uncertain": [
+     [
+      "tcand-dc4b5684f6ed410a8ab224c0564fefe8",
+      "tcand-0c3d751fe31c4d318137a9e4da4c13bd"
+     ]
+    ]
+   },
+   "cases": [
+    "LF-M14-C215"
+   ],
+   "tier": "passive",
+   "seconds": 0.73
+  },
+  "split_assign_export_validate_and_refusal": {
+   "status": "PASS",
+   "versions": 1,
+   "built": true,
+   "valid": true,
+   "refused_kept": true,
+   "cases": [
+    "LF-M14-C216"
+   ],
+   "tier": "passive",
+   "seconds": 0.66
+  },
+  "your_voice_generate_and_exclude": {
+   "status": "PASS",
+   "cards": 1,
+   "after": "invalidated",
+   "training_state": "captured_unreviewed",
+   "cases": [
+    "LF-M14-C217"
+   ],
+   "tier": "passive",
+   "seconds": 0.38
+  },
+  "controls_contained_hittable_and_scaled": {
+   "status": "PASS",
+   "misses": [],
+   "keyboard_traversal": "not_verifiable_full_keyboard_access_off",
+   "cases": [
+    "LF-M14-C218"
+   ],
+   "tier": "passive",
+   "seconds": 1.11
+  },
+  "unknown_outcome_reconciles_without_duplicate": {
+   "status": "PASS",
+   "first_note": "outcome unknown: the store is busy and the change may still complete \u2014 check this item before repeating it.",
+   "same_operation_id": true,
+   "entries": 3,
+   "cases": [
+    "LF-M14-C219"
+   ],
+   "tier": "passive",
+   "seconds": 0.8
+  },
+  "history_teach_binds_rendered_final": {
+   "status": "PASS",
+   "bound": true,
+   "candidates": 1,
+   "cases": [
+    "LF-M14-C005"
+   ],
+   "tier": "passive",
+   "seconds": 0.25
+  }
+ }
+}

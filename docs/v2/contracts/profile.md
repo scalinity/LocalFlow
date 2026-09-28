@@ -168,10 +168,11 @@ idle pass — Generate still works).
 - Background speech is excluded only where a review label flags it; no
   automatic detector exists.
 
-## Performance (measured, benchmarks/20260924-010937-m14)
+## Performance (measured, benchmarks/20260928-120630-m14-remediation-final)
 
-10,000 eligible dictations (284,990 words): compute p95 313 ms in
-250-example read chunks plus one write op; a dictation's store write
-waits at most 54 ms during it (16 probes); Python peak 41.4 MB. The
-idle pass over unchanged evidence costs p95 38 ms — counters only, no
-transcript read — and writes nothing.
+10,000 eligible dictations (286,190 words): compute p95 560 ms in
+250-example read chunks plus one write op that re-checks every input;
+a dictation's store write waits p95 87 ms and at most 205 ms during it
+(94 probes); Python peak 47.5 MB. The idle pass over unchanged evidence
+costs p95 104 ms — counters only, no transcript read — and writes
+nothing.
