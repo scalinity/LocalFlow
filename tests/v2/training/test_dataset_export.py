@@ -59,23 +59,30 @@ def prepare(s):
                          "revision": 1,
                          "instructions": "Polish the synthetic draft.",
                          "examples": []}), now))
+        from localflow.v2 import ids as ids_mod
         for p in range(6):
             task = f"task-synth-{p}"
+            source = f"polish this draft {p}"
             for slot in range(2):
                 aid_src = f"art-prefsrc-{p}-{slot}"
                 aid_out = f"art-prefout-{p}-{slot}"
                 from localflow.v2.store import \
                     insert_text_artifact_row
+                # Producer-shaped (TransformStore.record_candidate): the
+                # task input is a transform_source artifact and both
+                # artifacts name their task key.
                 insert_text_artifact_row(
                     conn, artifact_id=aid_src, job_id=f"job-pref-{p}",
-                    stage="transform", role="transform_prompt",
-                    text=f"polish this draft {p}", retention_class=
-                    "training", created_at_utc=now)
+                    stage="transform", role="transform_source",
+                    text=source, retention_class="training",
+                    meta={"task_key": task, "source_kind": "selection"},
+                    created_at_utc=now)
                 insert_text_artifact_row(
                     conn, artifact_id=aid_out, job_id=f"job-pref-{p}",
                     stage="transform", role="transform_output",
                     text=f"Polished draft {p}, candidate {slot}"
                          f" output.", retention_class="training",
+                    meta={"task_key": task, "path": "applied"},
                     created_at_utc=now)
                 conn.execute(
                     "INSERT INTO transform_candidates(candidate_id,"
@@ -87,7 +94,8 @@ def prepare(s):
                     " model_id, created_at_utc) VALUES"
                     " (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (f"cand-pref-{p}-{slot}", task, "transform_note",
-                     "builtin:polish", 1, "r1", f"sha-src-{p}",
+                     "builtin:polish", 1, "r1",
+                     ids_mod.sha256_text(source),
                      f"sha-ins-{p}", None, aid_src, aid_out,
                      "applied", slot, "qwen-synth", now))
             judgment = ("prefer_a" if p % 2 == 0 else "tie")
@@ -247,6 +255,10 @@ def test_negative_battery():
                 assert not dest4.exists()
             finally:
                 ex._select = real_select
+            # The revocation stands until the user re-enables collection
+            # (the build checks consent before reading anything, so the
+            # cases below re-enable it to test what they name).
+            s.append_consent("enabled", note="fixture")
             # (f) different-task preference: a rogue cross-task pair is
             # refused at export (the store refuses at write; here the
             # re-verification catches a planted mismatch).
@@ -286,12 +298,16 @@ def test_negative_battery():
                     " example_id='ex-rogue2'"))
             # (h) partial graft mislabeled gold: a graft payload whose
             # coverage_kind is tampered to full refuses.
+            # Written consistently (digest recomputed, as a buggy writer
+            # would): a digest mismatch alone is a corrupt artifact the
+            # resolver excludes, never trusts.
+            gold = json.dumps({"grafted_text": "x", "coverage": [],
+                               "coverage_kind": "full"})
+            from localflow.v2 import ids as ids_mod
             s.submit(lambda c: c.execute(
-                "UPDATE artifacts SET content_text=? WHERE"
+                "UPDATE artifacts SET content_text=?, sha256=? WHERE"
                 " role='span_graft' AND content_text LIKE"
-                " '%partial%'",
-                (json.dumps({"grafted_text": "x", "coverage": [],
-                             "coverage_kind": "full"}),)))
+                " '%partial%'", (gold, ids_mod.sha256_text(gold))))
             try:
                 ex.build(tmp / "ds7", task_views=("asr_supervised",
                                                   "asr_span_graft_weak"))
@@ -558,13 +574,15 @@ def test_export_hardening():
             assert last["state"] == "failed" and \
                 last["error"] == "consent_not_enabled", last
             s.append_consent("enabled", note="fixture")
-            # A staging path that is not a leftover build folder.
+            # A pre-existing path at the old predictable staging name is
+            # the user's, never the build's (m14-policy-r1 D09): the build
+            # stages in its own exclusively created folder and leaves it
+            # byte-for-byte alone.
             (tmp / ".ds-staged.building").write_text("not a folder")
-            try:
-                ex.build(tmp / "ds-staged", task_views=views)
-                raise AssertionError("built over a non-folder staging")
-            except export_mod.ExportError as e:
-                assert "staging path" in str(e)
+            out = ex.build(tmp / "ds-staged", task_views=views)
+            assert out["state"] == "complete", out
+            assert (tmp / ".ds-staged.building").read_text() == \
+                "not a folder"
             # An unexpected failure mid-build: no staging, failed row.
             real_sums = export_mod._write_sums
 
@@ -579,7 +597,7 @@ def test_export_hardening():
                     assert "KeyError" in str(e)
             finally:
                 export_mod._write_sums = real_sums
-            assert not (tmp / ".ds-broken.building").exists()
+            assert not list(tmp.glob(".ds-broken.building*"))
             assert not (tmp / "ds-broken").exists()
             assert ex.last_export()["error"] == "KeyError"
             print("ok  export hardening: user-extended exports kept;"

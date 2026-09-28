@@ -141,7 +141,7 @@ def test_unapproved_rejected_never_change_output():
                     insert_text_artifact_row(
                         conn, artifact_id=f"art-x{suffix}",
                         job_id=job, stage="insertion",
-                        role=f"observed_{suffix}", text=text,
+                        role={"b": "observation_before_range", "a": "observation_after_range"}[suffix], text=text,
                         retention_class="training",
                         created_at_utc=obs_now)
                 conn.execute(
@@ -240,11 +240,11 @@ def test_teach_refusals_and_deletion_propagation():
                 now = "2026-09-23T10:00:00.000Z"
                 insert_text_artifact_row(
                     conn, artifact_id=f"art-{oid}b", job_id=job2,
-                    stage="insertion", role="observed_b", text=before,
+                    stage="insertion", role="observation_before_range", text=before,
                     retention_class="training", created_at_utc=now)
                 insert_text_artifact_row(
                     conn, artifact_id=f"art-{oid}a", job_id=job2,
-                    stage="insertion", role="observed_a", text=after,
+                    stage="insertion", role="observation_after_range", text=after,
                     retention_class="training", created_at_utc=now)
                 conn.execute(
                     "INSERT INTO insertion_observations(observation_id,"
@@ -307,12 +307,12 @@ def test_repeated_snippet_excluded_from_mining():
                 now = "2026-09-23T10:00:00.000Z"
                 insert_text_artifact_row(
                     conn, artifact_id="art-sb", job_id=job,
-                    stage="insertion", role="observed_b",
+                    stage="insertion", role="observation_before_range",
                     text="Run the checks", retention_class="training",
                     created_at_utc=now)
                 insert_text_artifact_row(
                     conn, artifact_id="art-sa", job_id=job,
-                    stage="insertion", role="observed_a",
+                    stage="insertion", role="observation_after_range",
                     text="Run the checks please",
                     retention_class="training", created_at_utc=now)
                 conn.execute(
@@ -344,7 +344,7 @@ def _add_observation(s, job, before, after, oid):
         for suffix, text in (("b", before), ("a", after)):
             insert_text_artifact_row(
                 conn, artifact_id=f"art-{oid}{suffix}", job_id=job,
-                stage="insertion", role=f"observed_{suffix}", text=text,
+                stage="insertion", role={"b": "observation_before_range", "a": "observation_after_range"}[suffix], text=text,
                 retention_class="training", created_at_utc=now)
         conn.execute(
             "INSERT INTO insertion_observations(observation_id,"
@@ -432,33 +432,34 @@ def test_approval_composes_with_existing_entries_and_undo():
                 raise AssertionError("approved onto a disabled entry")
             except ValueError as e:
                 assert "existing_entry_not_active" in str(e)
-            # An approval interrupted between its plan and the
-            # vocabulary write keeps the plan; the retry lands the SAME
-            # entry and undo still reverses it.
+            # Approval is ONE writer op (m14-policy-r1 D12): a failure
+            # inside it leaves nothing — no plan, no entry — and the
+            # retry lands exactly one entry that undo still reverses.
             ex4, job4 = add_job_with_text(
                 s, "use the pyobjc bridge", "Use the pyobjc bridge")
             out4 = ls.teach_correction(job4, "Use the PyObjC bridge")
-            real_add = vs.add_entry
+            real_add = vs.add_entry_in
 
             def failing_add(*a, **k):
                 raise OSError("simulated crash")
-            vs.add_entry = failing_add
+            vs.add_entry_in = failing_add
             try:
                 ls.approve(out4["candidate_id"])
                 raise AssertionError("interrupted approval returned")
-            except OSError:
+            except (OSError, RuntimeError):
                 pass
-            vs.add_entry = real_add
+            vs.add_entry_in = real_add
             planned = s.submit(lambda c: c.execute(
                 "SELECT status, vocabulary_entry_id, vocabulary_action"
                 " FROM learning_candidates WHERE candidate_id=?",
                 (out4["candidate_id"],)).fetchone())
-            assert planned[0] == "pending" and planned[1] and \
-                planned[2] == "created", planned
+            assert planned == ("pending", None, None), planned
+            assert not [e for e in vs.entries()
+                        if e.canonical == "PyObjC"]
             done = ls.approve(out4["candidate_id"])
-            assert done["entry_id"] == planned[1]
+            assert done["action"] == "created"
             ls.undo_approval(out4["candidate_id"])
-            assert not vs.entry(planned[1]).enabled
+            assert not vs.entry(done["entry_id"]).enabled
             print("ok  approval adds aliases to the user's entry; undo"
                   " reverses only what approval did; re-approval after"
                   " undo works; an interrupted approval resumes its"

@@ -146,7 +146,7 @@ def _edit_observation(store, job_seq, before, after):
             insert_text_artifact_row(
                 conn, artifact_id=f"art-obs{suffix}-{job_seq:03d}",
                 job_id=f"job-synth-{job_seq:03d}", stage="insertion",
-                role=f"observed_{suffix}", text=text,
+                role={"b": "observation_before_range", "a": "observation_after_range"}[suffix], text=text,
                 retention_class="training", created_at_utc=now)
         conn.execute(
             "INSERT INTO insertion_observations(observation_id,"

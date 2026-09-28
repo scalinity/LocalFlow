@@ -120,11 +120,11 @@ def _seed_example(d, raw, applied, *, observation=None):
             now = "2026-09-23T09:00:00.000Z"
             insert_text_artifact_row(
                 conn, artifact_id=f"art-ob{ex[-6:]}b", job_id=job,
-                stage="insertion", role="observed_b", text=before,
+                stage="insertion", role="observation_before_range", text=before,
                 retention_class="training", created_at_utc=now)
             insert_text_artifact_row(
                 conn, artifact_id=f"art-ob{ex[-6:]}a", job_id=job,
-                stage="insertion", role="observed_a", text=after,
+                stage="insertion", role="observation_after_range", text=after,
                 retention_class="training", created_at_utc=now)
             conn.execute(
                 "INSERT INTO insertion_observations(observation_id,"
@@ -209,13 +209,22 @@ def test_review_draw_sample_and_pair_actions():
         now = "2026-09-23T08:00:00.000Z"
 
         def pair_op(conn):
+            from localflow.v2 import ids
             from localflow.v2.store import insert_text_artifact_row
+            # Producer-shaped (TransformStore.record_candidate): the
+            # shared task input and each output name the task key.
             for slot in range(2):
+                insert_text_artifact_row(
+                    conn, artifact_id=f"art-hps{slot}", job_id="job-hp",
+                    stage="transform", role="transform_source",
+                    text="pair source", retention_class="training",
+                    meta={"task_key": "task-hp"}, created_at_utc=now)
                 insert_text_artifact_row(
                     conn, artifact_id=f"art-hp{slot}", job_id="job-hp",
                     stage="transform", role="transform_output",
                     text=f"pair output {slot}", retention_class=
-                    "training", created_at_utc=now)
+                    "training", meta={"task_key": "task-hp"},
+                    created_at_utc=now)
                 conn.execute(
                     "INSERT INTO transform_candidates(candidate_id,"
                     " task_key, task_kind, transform_id,"
@@ -226,12 +235,17 @@ def test_review_draw_sample_and_pair_actions():
                     " model_id, created_at_utc) VALUES"
                     " (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (f"cand-hp-{slot}", "task-hp", "transform_note",
-                     "builtin:polish", 1, "r1", "sha-hp", "sha-ins",
-                     None, None, f"art-hp{slot}", "applied", slot,
-                     "qwen-synth", now))
+                     "builtin:polish", 1, "r1",
+                     ids.sha256_text("pair source"), "sha-ins",
+                     None, f"art-hps{slot}", f"art-hp{slot}", "applied",
+                     slot, "qwen-synth", now))
         h.d.store.submit(pair_op)
         pairs = h.d._review.preference_pairs()
         assert pairs and pairs[0]["task_key"] == "task-hp"
+        # Judgments act on the pair ON SCREEN (M14-AUDIT-16): render it.
+        hub.state.select_training_tab("review")
+        drain(hub.state)
+        assert "pair output 1" in hub.review_text.string()
         hub.review_pair_task.setStringValue_("task-hp")
         hub.reviewPairTie_(None)
         pairs = h.d._review.preference_pairs()

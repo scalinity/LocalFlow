@@ -2045,7 +2045,8 @@ class _FakeExport:
         self.started = []
         self.finished = set()
 
-    def build(self, dest, task_views=()):
+    def build(self, dest, task_views=(), export_id=None):
+        # export_id mirrors DatasetExporter.build (M14-AUDIT-17).
         eid = f"exp-{pathlib.Path(dest).name}"
         self.started.append(eid)
         g = self.gates.get(dest)
@@ -2386,11 +2387,12 @@ class _RecordingLearning:
     def __init__(self):
         self.approved, self.rejected = [], []
 
-    def approve(self, cid, counterexamples=()):
+    # operation_id mirrors LearningService (M14-AUDIT-17).
+    def approve(self, cid, counterexamples=(), operation_id=None):
         self.approved.append(cid)
         return {"flips": []}
 
-    def reject(self, cid):
+    def reject(self, cid, operation_id=None):
         self.rejected.append(cid)
         return {}
 
@@ -2815,7 +2817,8 @@ class _RecordingReview(_QueueReview):
         super().__init__([])
         self.labels = []
 
-    def record_label(self, example_id, edit_kind=None):
+    def record_label(self, example_id, edit_kind=None, operation_id=None):
+        # operation_id mirrors ReviewService.record_label (M14-AUDIT-17).
         self.labels.append(example_id)
         return {}
 

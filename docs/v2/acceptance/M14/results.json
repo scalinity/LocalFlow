@@ -4,7 +4,7 @@
   "suite": "EV-15 personalization portion + EV-20 correction/preference quality + EV-21 split/export qualification + EV-19 integrations (E19.1 fixture pack)",
   "status": "implemented_pending_human",
   "environment": {
-    "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+    "cwd": "<repo>",
     "python": "3.14.7 (.venv)",
     "mlx": "0.31.2",
     "transformers": "5.10.4",
@@ -100,7 +100,7 @@
   "human_verification": {
     "id": "native-m14-learning-profile-dataset-trial",
     "status": "pending",
-    "steps": "From Terminal.app (cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh), one instance only. First run: confirm the live store migrated 9->10 and that a new v2-pre-migrate-*.db exists under ~/Library/Application Support/LocalFlow/v2-evidence/backups/. (1) Correct 'Claude' in one coding-app dictation via History > Teach; in Models > Training Data > Review approve the narrow rule, then try a counterexample such as 'cloud deployment' - approval refused if it would flip; dictate the phrase again and confirm the rule applies only in that app. (2) Insights > Your Voice > Generate; open a card's evidence ids, Exclude one, confirm the snapshot invalidates and regeneration omits it; delete one supporting dictation everywhere and confirm no card or phrase keeps it. (3) Review a positive, a mixed edit and a changed-intent case; record an 'ambiguous' label on an unclear one. (4) Compare two same-input transform outputs (prefer A / B / tie / neither / uncertain). (5) Splits > Assign; Export selected views to a NEW folder; Validate; delete one source example and re-export - its rows disappear. (6) Read the dataset README and listen to exported audio / inspect context before any external sharing. Screenshots at normal and enlarged text scale."
+    "steps": "From Terminal.app (cd <repo> && ./run.sh), one instance only. First run: confirm the live store migrated 9->10 and that a new v2-pre-migrate-*.db exists under ~/Library/Application Support/LocalFlow/v2-evidence/backups/. (1) Correct 'Claude' in one coding-app dictation via History > Teach; in Models > Training Data > Review approve the narrow rule, then try a counterexample such as 'cloud deployment' - approval refused if it would flip; dictate the phrase again and confirm the rule applies only in that app. (2) Insights > Your Voice > Generate; open a card's evidence ids, Exclude one, confirm the snapshot invalidates and regeneration omits it; delete one supporting dictation everywhere and confirm no card or phrase keeps it. (3) Review a positive, a mixed edit and a changed-intent case; record an 'ambiguous' label on an unclear one. (4) Compare two same-input transform outputs (prefer A / B / tie / neither / uncertain). (5) Splits > Assign; Export selected views to a NEW folder; Validate; delete one source example and re-export - its rows disappear. (6) Read the dataset README and listen to exported audio / inspect context before any external sharing. Screenshots at normal and enlarged text scale."
   },
   "semantic_review": {
     "by": "the continuing session, before the review loop",
@@ -114,5 +114,18 @@
     "follow_up": "After close-out, four documented limitations were closed in code with regression tests: dictated note spans record their producing job (M12 spans gain an optional fourth element that survives every rebase), so an edit in a multi-dictation note is attributed to the dictation it touched; the export finalize recheck concerns only its own inputs (purged inputs abort, unrelated deletions do not); the idle profile pass decides from counters without reading transcripts (p95 299 ms -> 38 ms); Your Voice gains the S22 self-correction and requested-output measured views with honest denominators. 62/62 suites green again (V1 control 51/51 in 48 s) and the benchmark re-ran.",
     "cadence_note": "The /address per-fix commit+push cadence was adapted to this repo's milestone protocol: one close-out commit staged by name, no push."
   },
+  "privacy_redactions": [
+    {
+      "date": "2026-09-28",
+      "finding": "M14-AUDIT-26",
+      "fields": [
+        "environment.cwd",
+        "human_verification.steps"
+      ],
+      "replaced": "the absolute path of the repository checkout (2 occurrences)",
+      "with": "<repo>",
+      "note": "Forward-only redaction of a private location; no measured outcome, count or status in this historical record was changed, and Git history was not rewritten (earlier commits still contain the original value)."
+    }
+  ],
   "privacy": "Nothing private entered Git: every M14 fixture is synthetic (tests/v2/training/evidence_pack.py, Synth App names, example.com hosts); rows are ids/hashes/counts/offsets (candidate rows also name proposed rule terms) with observed words only in lease-governed artifacts inside the store; events carry ids/reasons/counts; the benchmark JSON holds timings/sizes over a temp-dir store; the baseline-manifest privacy scan passes; exports are written only to a user-chosen local folder, never uploaded."
 }

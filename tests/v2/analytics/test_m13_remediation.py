@@ -826,15 +826,19 @@ def f14_purged_transform_candidate_is_not_eligible():
                 "'transform_selection','builtin:polish',1,'p1','s','i',"
                 "?,?,'applied','2026-09-22T10:00:00.000Z')", (src, outp))
         e.store.submit(cand)
-        n = e.svc.readiness()["readiness_metrics"]["task_eligibility"][
-            "transform_supervised"]["count"]
-        assert n == 1, n
+        # M14 remediation (m14-policy-r1 D07, M14-AUDIT-14): a retained
+        # candidate without a human accept is review material — counted
+        # in the captured tier, never as a supervised target.
+        t = e.svc.readiness()["readiness_metrics"]["task_eligibility"][
+            "transform_supervised"]
+        assert (t["captured_tasks"], t["count"]) == (1, 0), t
         e.store.submit(lambda c: c.execute(
             "UPDATE artifacts SET purged=1, content_path=NULL,"
             " content_text=NULL WHERE artifact_id IN (?,?)", (src, outp)))
-        n = e.svc.readiness()["readiness_metrics"]["task_eligibility"][
-            "transform_supervised"]["count"]
-        assert n == 0, f"purged candidate still eligible ({n})"
+        t = e.svc.readiness()["readiness_metrics"]["task_eligibility"][
+            "transform_supervised"]
+        assert (t["captured_tasks"], t["count"]) == (0, 0), \
+            f"purged candidate still counted ({t})"
 
 
 @case("M13-AUDIT-14")
