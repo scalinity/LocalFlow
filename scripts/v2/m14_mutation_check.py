@@ -121,11 +121,14 @@ EDITS = {
         "                    \" observation_id=?\", (obs_id,)).fetchone():\n",
         mark("LF-M14-MU007", 12) + "            if False:\n")],
     "LF-M14-MU008": [(LN,
-        "            suppressed = any(\n",
-        mark("LF-M14-MU008", 12) + "            suppressed = False and any(\n")],
+        "    key = _pair_key(alias, canonical)\n    marks = \",\".join(",
+        mark("LF-M14-MU008", 4) + "    return False\n"
+        "    key = _pair_key(alias, canonical)\n    marks = \",\".join(")],
     "LF-M14-MU009": [(LN,
-        "            eid = vs.find_in(conn, canonical, kind, value)\n",
-        mark("LF-M14-MU009", 12) + "            eid = None\n")],
+        "        eid = vs.find_in(conn, canonical, kind, value)\n"
+        "        entry = vs.entry_in(conn, eid) if eid else None\n",
+        mark("LF-M14-MU009", 8) + "        eid = None\n"
+        "        entry = vs.entry_in(conn, eid) if eid else None\n")],
     "LF-M14-MU010": [(LN,
         "        scope_ctx = vocab_mod.ScopeContext(\n"
         "            **({_SCOPE_FIELDS[kind]: value} if kind in _SCOPE_FIELDS\n"
@@ -200,14 +203,13 @@ EDITS = {
         + "            return \"tombstone_moved\"\n"
           "        inputs = deps[\"inputs\"]\n"),
         (EX,
-        "        return {\"inputs\": inputs, \"examples\": examples,"
-        " \"pairs\": pairs,\n                \"accepts\": accepts}\n",
-        "        return {\"inputs\": inputs, \"examples\": examples,"
-        " \"pairs\": pairs,\n                \"accepts\": accepts,"
-        " \"tombstones\": conn.execute(\"SELECT COUNT(*) FROM"
-        " deletion_tombstones\").fetchone()[0]}\n")],
+        "                \"accepts\": accepts, \"unexposed_families\":"
+        " sorted(unexposed)}\n",
+        "                \"accepts\": accepts, \"unexposed_families\":"
+        " sorted(unexposed), \"tombstones\": conn.execute(\"SELECT"
+        " COUNT(*) FROM deletion_tombstones\").fetchone()[0]}\n")],
     "LF-M14-MU020": [(EX,
-        "        if _sha256_file(p) != digest:\n",
+        "        if actual != digest:\n",
         mark("LF-M14-MU020", 8) + "        if False:\n"),
         (EX,
         "    if _fingerprint(semantic) != manifest.get(\"content_fingerprint\"):\n",
