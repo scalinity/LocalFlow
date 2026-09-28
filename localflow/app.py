@@ -6027,11 +6027,16 @@ class AppDelegate(NSObject):
         until cleared, or a day count) and the committed reporting
         timezone (S21/S25)."""
         days = self.store.retention_days.get("usage")
+        zone = None
+        if self._analytics is not None:
+            try:
+                zone = self._analytics.committed_zone()
+            except Exception:
+                zone = self._analytics.reporting_timezone
         return {
             "usage_retention_days": (config_mod.USAGE_KEEP if days is None
                                      else days),
-            "reporting_timezone": (self._analytics.reporting_timezone
-                                   if self._analytics else None),
+            "reporting_timezone": zone,
             "available": self._analytics is not None,
         }
 
@@ -6113,6 +6118,7 @@ class AppDelegate(NSObject):
             self.v2log.emit("usage.delete_failed", level="WARNING",
                             job_id=job_id, reason_code=type(e).__name__)
             return {"outcome": "failed", "op_id": op_id}
+        self._analytics.retire_op(op_id)  # the caller saw the commit
         self._usage_changed()
         return {"outcome": "deleted", "op_id": op_id, **out}
 
@@ -6132,6 +6138,13 @@ class AppDelegate(NSObject):
         self.v2log.emit("usage.delete_reconciled", level="INFO",
                         reason_code=result)
         self._usage_changed()
+        if self._hub is not None:
+            try:
+                # The surface that said "not known yet" now says what
+                # happened (REVIEW-R03).
+                self._hub.usage_outcome_reconciled(result)
+            except Exception:
+                pass
 
     @objc.python_method
     def _usage_changed(self):

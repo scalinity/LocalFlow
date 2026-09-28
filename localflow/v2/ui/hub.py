@@ -1008,8 +1008,33 @@ class HubController(NSObject):
                                    " refreshes when it finishes",
                 "failed": "usage deletion failed — nothing changed; see"
                           " Diagnostics"}
-        self._history_note(note.get(out.get("outcome"), "usage deletion"
-                                    " returned " + str(out.get("outcome"))))
+        if out.get("outcome") == "deleted" and not out.get("facts_deleted"):
+            text = ("no usage was recorded for this dictation — nothing"
+                    " to delete")
+        else:
+            text = note.get(out.get("outcome"), "usage deletion returned "
+                            + str(out.get("outcome")))
+        self._history_unknown = out.get("outcome") == "outcome_unknown"
+        self._history_note(text)
+
+    @objc.python_method
+    def usage_outcome_reconciled(self, result):
+        """Main thread: an outcome-unknown usage deletion finished. The
+        surface that said "not known yet" now says what happened
+        (REVIEW-R03)."""
+        done = ("finished — usage deleted" if result == "committed"
+                else "did not complete — nothing was deleted"
+                if result == "rolled_back"
+                else "could not be confirmed — see Diagnostics")
+        note = getattr(self, "_settings_note", None) or ""
+        if "not known yet" in note:
+            what = note.split(":", 1)[0]
+            self._settings_note = f"{what}: {done}"
+            if "settings" in self._built_views:
+                self._refresh_settings_view()
+        if getattr(self, "_history_unknown", False):
+            self._history_unknown = False
+            self._history_note(f"usage deletion {done}")
 
     def historyToScratchpad_(self, sender):
         self._history_to_scratchpad(move=False)
@@ -3933,6 +3958,14 @@ class HubController(NSObject):
                         str(label), None, "")
                     item.setRepresentedObject_(key)
                     keys.append(key)
+                if current is not None and current not in keys:
+                    # The selection's usage is gone (deleted or expired):
+                    # keep showing what is selected, never "All" or
+                    # another population's label (REVIEW-R04).
+                    item = menu.addItemWithTitle_action_keyEquivalent_(
+                        "Selected — no usage left", None, "")
+                    item.setRepresentedObject_(current)
+                    keys.append(current)
                 popup.selectItemAtIndex_(keys.index(current)
                                          if current in keys else 0)
         finally:
@@ -3956,7 +3989,9 @@ class HubController(NSObject):
                       for o in data.get("apps") or []
                       if isinstance(o, dict)}
         lines.append(f"Usage — {rng_label}"
-                     + (f" · app {app_labels.get(cohort['app'], 'Unknown')}"
+                     + (f" · app {app_labels.get(cohort['app'], 'selected')}"
+                        + ("" if cohort["app"] in app_labels
+                           else " (no usage left)")
                         if cohort.get("app") else "")
                      + (f" · mode {cohort['mode']}"
                         if cohort.get("mode") else ""))
@@ -4302,8 +4337,9 @@ class HubController(NSObject):
         alert = NSAlert.alloc().init()
         alert.setMessageText_("Delete all usage data?")
         alert.setInformativeText_(
-            "Insights counters and daily aggregates are removed."
-            " Transcripts, audio, jobs and training evidence are"
+            "Insights counters, daily aggregates and the app, hour and"
+            " mode figures Your Voice copied from them are removed."
+            " Transcripts, audio, notes, jobs and training evidence are"
             " untouched. This cannot be undone.")
         alert.setAlertStyle_(NSAlertStyleWarning)
         alert.addButtonWithTitle_("Delete Usage Data")

@@ -77,7 +77,13 @@ OUTCOMES = ("confirmed", "posted_unverified", "saved_not_inserted",
 # The one admitted instant grammar (D02): UTC with an uppercase Z,
 # zero-padded fields, optional 1-6 fractional digits.
 _INSTANT_RE = re.compile(
-    r"\A(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?Z\Z")
+    r"\A(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?Z\Z",
+    re.ASCII)  # ASCII digits only: \d alone matches every Unicode digit
+# The stored canonical form, as an SQLite GLOB (a row that does not match
+# was written before canonical storage and is re-bucketed at launch).
+_CANONICAL_GLOB = ("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T"
+                   "[0-9][0-9]:[0-9][0-9]:[0-9][0-9]."
+                   "[0-9][0-9][0-9][0-9][0-9][0-9]Z")
 
 # Your Voice snapshot fields copied from usage facts (M14 consumer
 # seam): redacted whenever the facts they were computed from are
@@ -659,16 +665,32 @@ class AnalyticsStore:
                 "SELECT COUNT(*) FROM usage_facts").fetchone()[0]
             conn.execute("DELETE FROM usage_facts")
             conn.execute("DELETE FROM daily_aggregates")
-            if facts:
-                self._removed(conn, [], "usage_deleted", op_id)
-            else:
-                self._mark(conn, op_id)
+            # Redacted whether or not facts remained: a snapshot may
+            # still carry copies of usage deleted before copies were
+            # redacted (REVIEW-R02).
+            self._removed(conn, [], "usage_deleted", op_id)
             return {"facts_deleted": facts}
         n = self.store.submit(op, timeout=timeout)
         self.emit("usage.deleted", level="INFO",
                   reason_code="all_usage_deleted",
                   detail=f"facts={n['facts_deleted']}")
         return n
+
+    def retire_op(self, op_id):
+        """A committed deletion's marker is no longer needed (the caller
+        saw the commit): removed off the caller's path (REVIEW-R06)."""
+        self.store.submit(lambda conn: conn.execute(
+            "DELETE FROM usage_meta WHERE key=?", (f"op:{op_id}",)),
+            wait=False)
+
+    def committed_zone(self) -> str:
+        """The committed reporting zone read from the store (the display
+        copy is refreshed with it — a rebuild whose caller timed out may
+        still have committed; REVIEW-R07)."""
+        self._committed_zone = self.store.submit(
+            lambda conn: conn_committed_zone(conn,
+                                             self.configured_timezone))
+        return self._committed_zone
 
     def reconcile_op(self, op_id, timeout=60.0) -> str:
         """After an outcome-unknown admission: a FIFO read that runs only
@@ -800,6 +822,22 @@ class AnalyticsStore:
                     " reporting_timezone!=? OR algorithm_version!=?"
                     " LIMIT 1", (target, ALGORITHM_VERSION)).fetchone():
                 reasons.append("aggregate_drift")
+            if conn.execute(
+                    "SELECT 1 FROM usage_facts WHERE activity_at_utc NOT"
+                    " GLOB ? LIMIT 1", (_CANONICAL_GLOB,)).fetchone():
+                # Rows admitted before canonical storage (the old
+                # parser's lax forms) are re-bucketed and canonicalized.
+                reasons.append("noncanonical_instants")
+            # Completion markers only matter to a process still waiting;
+            # at launch none is (REVIEW-R06).
+            conn.execute("DELETE FROM usage_meta WHERE key LIKE 'op:%'")
+            if conn.execute("SELECT 1 FROM usage_facts LIMIT 1"
+                            ).fetchone() is None:
+                # No usage exists: no snapshot may keep a copy of any
+                # (copies left by a deletion before redaction existed —
+                # REVIEW-R02).
+                conn_redact_usage_copies(conn, "usage_deleted",
+                                         ids.now_utc_iso(self.now_fn()))
             if not reasons:
                 return {"rebuilt": False, "reasons": []}
             self._rebuild(conn, target)
@@ -1015,7 +1053,7 @@ class InsightsQueryService:
             "dictionary_hits": dict_hits or 0,
             "snippet_hits": snip_hits or 0,
             "transforms": transforms,
-            "transform_words": transform_words or 0,
+            "transform_words": transform_words,
             "repastes": repastes,
             "latency": latency,
             "future_dated": future,
@@ -1103,17 +1141,26 @@ class InsightsQueryService:
         return out if limit is None else out[:limit]
 
     def _labels(self, conn):
-        """key → display label for every app identity with facts; a
-        label shared by different keys carries its bundle id too."""
+        """key → display label for every app identity with facts: the
+        most recent non-empty name (by activity time) for a bundle; a
+        label shared by different keys carries its bundle id, and a
+        named app never borrows the distinct Unknown population's label
+        (REVIEW-R09)."""
         latest = {}
         for key, name, bundle in conn.execute(
                 f"SELECT {_APP_KEY_SQL}, app_name, app_bundle FROM"
-                " usage_facts WHERE kind='dictation' ORDER BY rowid"):
-            latest[key] = (name, bundle)
+                " usage_facts WHERE kind='dictation'"
+                " ORDER BY activity_at_utc, rowid"):
+            prev = latest.get(key, (None, bundle))
+            latest[key] = (name or prev[0], bundle or prev[1])
         base = {}
         for key, (name, bundle) in latest.items():
-            base[key] = ("Unknown" if key == "unknown"
-                         else name or bundle)
+            if key == "unknown":
+                base[key] = "Unknown"
+            elif (name or bundle) == "Unknown":
+                base[key] = f"“Unknown” ({bundle or 'app name'})"
+            else:
+                base[key] = name or bundle
         seen = {}
         for key, label in base.items():
             seen.setdefault(label, []).append(key)
