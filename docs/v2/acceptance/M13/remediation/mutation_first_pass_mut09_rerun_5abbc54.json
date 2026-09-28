@@ -1,0 +1,63 @@
+{
+ "tool": "scripts/v2/m13_mutation_check.py",
+ "runner": "tests/v2/analytics/m13_corpus_runner.py",
+ "code_sha": "5abbc54249921e2b6ea9b0f471c091073fabe83b",
+ "corpus_sha256": "35aeb9bf3ea3a0add615ccfbb449cf1b72677dc3382083f4fb0648040ca814c0",
+ "killer_rule": "each mutation's killer_case_ids from the frozen corpus minus native cases, plus EXTRA (MUT19: C247, the valid acceptance run)",
+ "control": {
+  "imported_from": "control",
+  "cases": {
+   "M13-C082": "PASS",
+   "M13-C086": "PASS",
+   "M13-C087": "PASS"
+  },
+  "details": {}
+ },
+ "summary": {
+  "killed": 1
+ },
+ "results": [
+  {
+   "mutation_id": "M13-MUT09",
+   "name": "Use invalid timezone label with UTC bucketing",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "f8c771ecfa2fed49",
+      "sha_after": "8420b1c2fb69db24",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C082",
+    "M13-C086",
+    "M13-C087"
+   ],
+   "seconds": 0.2,
+   "mutant": {
+    "M13-C082": "FAIL",
+    "M13-C086": "PASS",
+    "M13-C087": "PASS"
+   },
+   "failed_killers": [
+    "M13-C082"
+   ],
+   "mutant_details": {
+    "M13-C082": ""
+   },
+   "imported_from": "M13-MUT09",
+   "outcome": "killed",
+   "reason": null
+  }
+ ]
+}

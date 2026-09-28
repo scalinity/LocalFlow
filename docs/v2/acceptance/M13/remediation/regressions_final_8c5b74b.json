@@ -1,0 +1,595 @@
+{
+ "suite": "tests/v2/analytics/test_m13_remediation.py",
+ "code": {
+  "suite": "tests/v2/analytics/test_m13_remediation.py",
+  "suite_sha256": "3f660ffacfb41950705783b081fe1cd31d5cb19c6c2a29f179d645b38e9aba41",
+  "code_root_sha": "8c5b74b9248eb610a91854dc2ba586e6b6ef6017",
+  "tracked_files_modified": true,
+  "production_tree_modified": false,
+  "localflow_imported_from_root": "LocalFlow",
+  "python": "3.14.7"
+ },
+ "counts": {
+  "PASS": 64
+ },
+ "invoked": [
+  "f01_null_duration_is_not_free_words",
+  "f01_zero_duration_is_not_free_words",
+  "f02_failed_rebuild_restores_zone_everywhere",
+  "f02_fact_admitted_across_rebuild_uses_committed_zone",
+  "f03_expiry_is_chronological_across_precisions",
+  "f04_direct_invalid_zone_is_refused",
+  "f04_configured_invalid_zone_discloses_and_keeps_analytics",
+  "f05_app_and_mode_changes_keep_the_range",
+  "f06_breakdowns_use_the_whole_cohort",
+  "f07_one_report_is_one_generation",
+  "f20_app_identity_is_typed",
+  "f20_duplicate_labels_stay_separate",
+  "f21_lists_reconcile_or_disclose",
+  "f21_rendered_breakdowns_disclose_other",
+  "f08_delete_all_revokes_a_materialized_report",
+  "f08_hidden_insights_cache_is_revoked",
+  "f09_timed_out_delete_is_unknown_then_reconciled",
+  "f09_native_settings_render_returned_outcomes",
+  "f10_native_zero_and_negative_are_refused",
+  "f11_failed_save_changes_nothing",
+  "f11_apply_saves_and_previews_without_deleting",
+  "f12_delete_all_redacts_every_snapshot",
+  "f12_per_job_and_expiry_redact",
+  "f13_excluded_failure_is_one_class",
+  "f14_task_eligibility_follows_retained_inputs",
+  "f14_purged_transform_candidate_is_not_eligible",
+  "f14_quarantined_example_feeds_no_readiness",
+  "f24_nearing_expiry_counts_the_live_future_window",
+  "f27_readiness_test_runs_from_the_standalone_runner",
+  "f15_recoverable_journal_keeps_its_job",
+  "f15_recovery_claim_keeps_its_job",
+  "c15_unreferenced_terminal_job_still_prunes",
+  "f16_dictionary_skill_hits_reach_the_fact",
+  "f17_recovery_menu_repaste_is_counted",
+  "f18_failed_and_saved_paths_keep_their_clock",
+  "f19_activity_only_dates_in_daily",
+  "f22_invalid_numbers_never_become_usage",
+  "f23_insights_controls_fit_the_content",
+  "l02_settings_note_never_covers_usage_buttons",
+  "f25_committed_m13_evidence_has_no_home_paths",
+  "f26_benchmark_rejects_noop_and_empty_work",
+  "f28_aggregate_oracle_checks_every_field",
+  "f28_legacy_manifest_is_exact",
+  "f30_fallback_metrics_are_separately_named",
+  "f30_usage_keeps_until_cleared_by_default",
+  "v01_lax_rows_left_by_the_old_parser_are_canonicalized",
+  "v02_delete_all_redacts_copies_left_without_facts",
+  "v02_launch_redacts_copies_of_usage_that_no_longer_exists",
+  "v03_reconciled_outcome_is_shown_in_settings",
+  "v04_vanished_app_filter_is_never_labeled_unknown",
+  "v06_committed_deletions_leave_no_op_markers",
+  "v07_displayed_zone_follows_the_committed_zone_after_a_timeout",
+  "v08_non_ascii_digits_are_refused",
+  "v09_app_labels_are_distinct_and_latest_named",
+  "v10_filtered_transform_words_are_unavailable",
+  "v11_benchmark_refuses_requests_it_would_not_perform",
+  "v12_history_note_is_truthful_when_nothing_was_deleted",
+  "c_cross_day_recomputes_departed_day",
+  "c_retry_replaces_one_row",
+  "c_auto_transform_is_not_explicit_activity",
+  "c_filtered_activity_is_unavailable",
+  "c_each_latency_has_its_own_n",
+  "c_invalid_new_instant_is_refused",
+  "l01_lax_instant_forms_are_refused"
+ ],
+ "results": [
+  {
+   "case": "f01_null_duration_is_not_free_words",
+   "finding": "M13-AUDIT-01",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f01_zero_duration_is_not_free_words",
+   "finding": "M13-AUDIT-01",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f02_failed_rebuild_restores_zone_everywhere",
+   "finding": "M13-AUDIT-02",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f02_fact_admitted_across_rebuild_uses_committed_zone",
+   "finding": "M13-AUDIT-02",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f03_expiry_is_chronological_across_precisions",
+   "finding": "M13-AUDIT-03",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f04_direct_invalid_zone_is_refused",
+   "finding": "M13-AUDIT-04",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f04_configured_invalid_zone_discloses_and_keeps_analytics",
+   "finding": "M13-AUDIT-04",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.16
+  },
+  {
+   "case": "f05_app_and_mode_changes_keep_the_range",
+   "finding": "M13-AUDIT-05",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f06_breakdowns_use_the_whole_cohort",
+   "finding": "M13-AUDIT-06",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f07_one_report_is_one_generation",
+   "finding": "M13-AUDIT-07",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f20_app_identity_is_typed",
+   "finding": "M13-AUDIT-20",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f20_duplicate_labels_stay_separate",
+   "finding": "M13-AUDIT-20",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f21_lists_reconcile_or_disclose",
+   "finding": "M13-AUDIT-21",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "f21_rendered_breakdowns_disclose_other",
+   "finding": "M13-AUDIT-21",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f08_delete_all_revokes_a_materialized_report",
+   "finding": "M13-AUDIT-08",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.08
+  },
+  {
+   "case": "f08_hidden_insights_cache_is_revoked",
+   "finding": "M13-AUDIT-08",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "f09_timed_out_delete_is_unknown_then_reconciled",
+   "finding": "M13-AUDIT-09",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.35
+  },
+  {
+   "case": "f09_native_settings_render_returned_outcomes",
+   "finding": "M13-AUDIT-09",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "f10_native_zero_and_negative_are_refused",
+   "finding": "M13-AUDIT-10",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "f11_failed_save_changes_nothing",
+   "finding": "M13-AUDIT-11",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f11_apply_saves_and_previews_without_deleting",
+   "finding": "M13-AUDIT-11",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "f12_delete_all_redacts_every_snapshot",
+   "finding": "M13-AUDIT-12",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f12_per_job_and_expiry_redact",
+   "finding": "M13-AUDIT-12",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "f13_excluded_failure_is_one_class",
+   "finding": "M13-AUDIT-13",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f14_task_eligibility_follows_retained_inputs",
+   "finding": "M13-AUDIT-14",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f14_purged_transform_candidate_is_not_eligible",
+   "finding": "M13-AUDIT-14",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f14_quarantined_example_feeds_no_readiness",
+   "finding": "M13-AUDIT-14",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f24_nearing_expiry_counts_the_live_future_window",
+   "finding": "M13-AUDIT-24",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "f27_readiness_test_runs_from_the_standalone_runner",
+   "finding": "M13-AUDIT-27",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.48
+  },
+  {
+   "case": "f15_recoverable_journal_keeps_its_job",
+   "finding": "M13-AUDIT-15",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f15_recovery_claim_keeps_its_job",
+   "finding": "M13-AUDIT-15",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c15_unreferenced_terminal_job_still_prunes",
+   "finding": "M13-AUDIT-15",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f16_dictionary_skill_hits_reach_the_fact",
+   "finding": "M13-AUDIT-16",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.17
+  },
+  {
+   "case": "f17_recovery_menu_repaste_is_counted",
+   "finding": "M13-AUDIT-17",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "f18_failed_and_saved_paths_keep_their_clock",
+   "finding": "M13-AUDIT-18",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.68
+  },
+  {
+   "case": "f19_activity_only_dates_in_daily",
+   "finding": "M13-AUDIT-19",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f22_invalid_numbers_never_become_usage",
+   "finding": "M13-AUDIT-22",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.13
+  },
+  {
+   "case": "f23_insights_controls_fit_the_content",
+   "finding": "M13-AUDIT-23",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.04
+  },
+  {
+   "case": "l02_settings_note_never_covers_usage_buttons",
+   "finding": "LOCAL-M13-02",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "f25_committed_m13_evidence_has_no_home_paths",
+   "finding": "M13-AUDIT-25",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.0
+  },
+  {
+   "case": "f26_benchmark_rejects_noop_and_empty_work",
+   "finding": "M13-AUDIT-26",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.86
+  },
+  {
+   "case": "f28_aggregate_oracle_checks_every_field",
+   "finding": "M13-AUDIT-28",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f28_legacy_manifest_is_exact",
+   "finding": "M13-AUDIT-28",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f30_fallback_metrics_are_separately_named",
+   "finding": "M13-AUDIT-30",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f30_usage_keeps_until_cleared_by_default",
+   "finding": "M13-AUDIT-30",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "v01_lax_rows_left_by_the_old_parser_are_canonicalized",
+   "finding": "REVIEW-R01",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "v02_delete_all_redacts_copies_left_without_facts",
+   "finding": "REVIEW-R02",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "v02_launch_redacts_copies_of_usage_that_no_longer_exists",
+   "finding": "REVIEW-R02",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "v03_reconciled_outcome_is_shown_in_settings",
+   "finding": "REVIEW-R03",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.36
+  },
+  {
+   "case": "v04_vanished_app_filter_is_never_labeled_unknown",
+   "finding": "REVIEW-R04",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "v06_committed_deletions_leave_no_op_markers",
+   "finding": "REVIEW-R06",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "v07_displayed_zone_follows_the_committed_zone_after_a_timeout",
+   "finding": "REVIEW-R07",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.31
+  },
+  {
+   "case": "v08_non_ascii_digits_are_refused",
+   "finding": "REVIEW-R08",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "v09_app_labels_are_distinct_and_latest_named",
+   "finding": "REVIEW-R09",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "v10_filtered_transform_words_are_unavailable",
+   "finding": "REVIEW-R10",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "v11_benchmark_refuses_requests_it_would_not_perform",
+   "finding": "REVIEW-R11",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.25
+  },
+  {
+   "case": "v12_history_note_is_truthful_when_nothing_was_deleted",
+   "finding": "REVIEW-R12",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "c_cross_day_recomputes_departed_day",
+   "finding": "control:cross-day",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_retry_replaces_one_row",
+   "finding": "control:one-row",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_auto_transform_is_not_explicit_activity",
+   "finding": "control:auto-transform",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_filtered_activity_is_unavailable",
+   "finding": "control:filtered-activity",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_each_latency_has_its_own_n",
+   "finding": "control:latency-n",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_invalid_new_instant_is_refused",
+   "finding": "control:invalid-instant",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "l01_lax_instant_forms_are_refused",
+   "finding": "LOCAL-M13-01",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  }
+ ]
+}

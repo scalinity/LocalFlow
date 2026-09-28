@@ -1,0 +1,168 @@
+{
+ "suite": "tests/v2/analytics/test_native_m13_insights.py",
+ "tier": "active+passive",
+ "code": {
+  "suite": "tests/v2/analytics/test_native_m13_insights.py",
+  "suite_sha256": "68d4931e79f28623c18375c5c089bef4fb8d07e31383f34e3fbc87c6cfdedfaa",
+  "code_root_sha": "8c5b74b9248eb610a91854dc2ba586e6b6ef6017",
+  "tracked_files_modified": true,
+  "production_tree_modified": false,
+  "localflow_imported_from_root": "LocalFlow",
+  "python": "3.14.7"
+ },
+ "frontmost_unchanged": true,
+ "never_frontmost": true,
+ "counts": {
+  "PASS": 11
+ },
+ "checks": {
+  "controls_contained_and_reachable": {
+   "status": "PASS",
+   "misses": [],
+   "full_keyboard_access": false,
+   "tab_reaches_mode": "not_verifiable_full_keyboard_access_off",
+   "controls": [
+    "30d",
+    "7d",
+    "90d",
+    "All",
+    "All apps",
+    "All modes",
+    "Reload",
+    "Usage",
+    "Your Voice"
+   ],
+   "mode_frame_max_x": 568.0,
+   "tier": "passive",
+   "seconds": 0.35
+  },
+  "settings_usage_buttons_reachable": {
+   "status": "PASS",
+   "hit": {
+    "1100:Apply Usage": true,
+    "1100:Delete All Usage\u2026": true,
+    "1100:Apply Retention": true,
+    "900:Apply Usage": true,
+    "900:Delete All Usage\u2026": true,
+    "900:Apply Retention": false
+   },
+   "note": "Apply Retention (M02/M09 row) reported only \u2014 LOCAL-M13-03",
+   "tier": "passive",
+   "seconds": 0.21
+  },
+  "range_kept_through_native_handlers": {
+   "status": "PASS",
+   "range_after_app": 7,
+   "range_after_mode": 7,
+   "app": "bundle:com.synthetic.alpha",
+   "mode": "raw",
+   "dictations": 1,
+   "tier": "passive",
+   "seconds": 1.12
+  },
+  "duplicate_labels_distinct_items": {
+   "status": "PASS",
+   "items": [
+    [
+     "All apps",
+     null
+    ],
+    [
+     "Synthetic Editor (com.synthetic.alpha)",
+     "bundle:com.synthetic.alpha"
+    ],
+    [
+     "Synthetic Editor (com.synthetic.beta)",
+     "bundle:com.synthetic.beta"
+    ]
+   ],
+   "per_selection": [
+    1,
+    1
+   ],
+   "tier": "passive",
+   "seconds": 1.0
+  },
+  "rapid_changes_keep_prior_constraints": {
+   "status": "PASS",
+   "cohort": {
+    "app": "bundle:com.synthetic.alpha",
+    "mode": "raw",
+    "days": 7
+   },
+   "dictations": 2,
+   "tier": "passive",
+   "seconds": 1.05
+  },
+  "invalid_retention_refused_natively": {
+   "status": "PASS",
+   "shown": {
+    "0": [
+     "Applying usage retention refused (out_of_range) \u2014 nothing changed",
+     365
+    ],
+    "-1": [
+     "Applying usage retention refused (not_whole_days) \u2014 nothing changed",
+     365
+    ],
+    "-30": [
+     "Applying usage retention refused (not_whole_days) \u2014 nothing changed",
+     365
+    ],
+    "abc": [
+     "Applying usage retention refused (not_whole_days) \u2014 nothing changed",
+     365
+    ],
+    "2.5": [
+     "Applying usage retention refused (not_whole_days) \u2014 nothing changed",
+     365
+    ]
+   },
+   "facts_after_pass": 1,
+   "tier": "passive",
+   "seconds": 0.53
+  },
+  "returned_refusal_rendered": {
+   "status": "PASS",
+   "refused_text": "Applying usage retention refused (out_of_range) \u2014 nothing changed",
+   "saved_text": "Collection: disabled \u00b7 Usage retention saved: 30 days. Nothing is due for removal.",
+   "tier": "passive",
+   "seconds": 0.28
+  },
+  "delete_all_cancel_admits_nothing": {
+   "status": "PASS",
+   "pressed": "Cancel",
+   "facts": 1,
+   "text_before": "Collection: disabled",
+   "text_after": "Collection: disabled",
+   "tier": "active",
+   "seconds": 0.4
+  },
+  "delete_all_confirm_revokes_insights": {
+   "status": "PASS",
+   "facts": 0,
+   "hidden_cache_cleared": true,
+   "shown_after": 0,
+   "text": "Collection: disabled \u00b7 Usage data deleted (2 records).",
+   "tier": "active",
+   "seconds": 0.52
+  },
+  "unknown_outcome_rendered_then_reconciled": {
+   "status": "PASS",
+   "first_text": "Deleting usage data: outcome not known yet \u2014 the store is busy; the result will be checked and shown when it finishes",
+   "reconciled": [
+    "committed"
+   ],
+   "shown_after": 0,
+   "tier": "active",
+   "seconds": 0.8
+  },
+  "history_delete_usage_reloads_insights": {
+   "status": "PASS",
+   "shown_after": 1,
+   "note": "audio: unavailable (no_audio_artifact)\n\n\u2500\u2500 Source (raw transcript) \u2500\u2500\n(not captured)\n\n\u2500\u2500 Normalized \u2500\u2500\n(not captured)\n\n\u2500\u2500 Cleaned (applied output) \u2500\u2500\n(not captured)\n\n\u2500\u2500 Transformed \u2500\u2500\n(not_applicable)",
+   "tier": "passive",
+   "seconds": 0.27
+  }
+ }
+}

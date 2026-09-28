@@ -1,0 +1,1158 @@
+{
+ "tool": "scripts/v2/m13_mutation_check.py",
+ "runner": "tests/v2/analytics/m13_corpus_runner.py",
+ "code_sha": "8c5b74b9248eb610a91854dc2ba586e6b6ef6017",
+ "corpus_sha256": "35aeb9bf3ea3a0add615ccfbb449cf1b72677dc3382083f4fb0648040ca814c0",
+ "killer_rule": "each mutation's killer_case_ids from the frozen corpus minus native cases, plus EXTRA (MUT19: C247, the valid acceptance run)",
+ "control": {
+  "imported_from": "control",
+  "cases": {
+   "M13-C001": "PASS",
+   "M13-C002": "PASS",
+   "M13-C013": "PASS",
+   "M13-C014": "PASS",
+   "M13-C015": "PASS",
+   "M13-C023": "PASS",
+   "M13-C035": "PASS",
+   "M13-C039": "PASS",
+   "M13-C040": "PASS",
+   "M13-C041": "PASS",
+   "M13-C059": "PASS",
+   "M13-C062": "PASS",
+   "M13-C063": "PASS",
+   "M13-C064": "PASS",
+   "M13-C073": "PASS",
+   "M13-C074": "PASS",
+   "M13-C075": "PASS",
+   "M13-C076": "PASS",
+   "M13-C080": "PASS",
+   "M13-C082": "PASS",
+   "M13-C086": "PASS",
+   "M13-C087": "PASS",
+   "M13-C092": "PASS",
+   "M13-C093": "PASS",
+   "M13-C100": "PASS",
+   "M13-C101": "PASS",
+   "M13-C102": "PASS",
+   "M13-C103": "PASS",
+   "M13-C104": "PASS",
+   "M13-C107": "PASS",
+   "M13-C151": "PASS",
+   "M13-C152": "PASS",
+   "M13-C158": "PASS",
+   "M13-C179": "PASS",
+   "M13-C180": "PASS",
+   "M13-C197": "PASS",
+   "M13-C200": "PASS",
+   "M13-C201": "PASS",
+   "M13-C202": "PASS",
+   "M13-C203": "PASS",
+   "M13-C204": "PASS",
+   "M13-C205": "PASS",
+   "M13-C208": "PASS",
+   "M13-C209": "PASS",
+   "M13-C210": "PASS",
+   "M13-C211": "PASS",
+   "M13-C216": "PASS",
+   "M13-C218": "PASS",
+   "M13-C223": "PASS",
+   "M13-C224": "PASS",
+   "M13-C227": "PASS",
+   "M13-C231": "PASS",
+   "M13-C232": "PASS",
+   "M13-C233": "PASS",
+   "M13-C235": "PASS",
+   "M13-C247": "PASS",
+   "M13-C249": "PASS",
+   "M13-C250": "PASS",
+   "M13-C251": "PASS",
+   "M13-C257": "PASS"
+  },
+  "details": {}
+ },
+ "summary": {
+  "killed": 26
+ },
+ "results": [
+  {
+   "mutation_id": "M13-MUT01",
+   "name": "Use now() for retry capture time",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "5f6a3d87bec8069a",
+      "sha_after": "45deae8319a0d113",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C013",
+    "M13-C014",
+    "M13-C015"
+   ],
+   "seconds": 0.7,
+   "mutant": {
+    "M13-C013": "FAIL",
+    "M13-C014": "FAIL",
+    "M13-C015": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C013",
+    "M13-C014",
+    "M13-C015"
+   ],
+   "mutant_details": {
+    "M13-C013": "failed: original_instant, original_day",
+    "M13-C014": "failed: original_instant, original_day",
+    "M13-C015": "failed: no_fabricated_date, refused_content_free"
+   },
+   "imported_from": "M13-MUT01",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT02",
+   "name": "Insert a retry as another logical dictation",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py",
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "7d538b078fee642f",
+      "sha_after": "bdc8c319ac8d87a2",
+      "changed": true
+     },
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "9bd5fc5256b23714",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C001",
+    "M13-C002",
+    "M13-C013"
+   ],
+   "seconds": 0.5,
+   "mutant": {
+    "M13-C001": "PASS",
+    "M13-C002": "FAIL",
+    "M13-C013": "PASS"
+   },
+   "failed_killers": [
+    "M13-C002"
+   ],
+   "mutant_details": {
+    "M13-C002": "{\"dictation_rows\": {\"expected\": 1, \"observed\": 2}, \"attempt\": {\"expected\": 2, \"observed\": null}, \"failed\": {\"expected\": 0, \"observed\": 1}}"
+   },
+   "imported_from": "M13-MUT02",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT03",
+   "name": "Skip recomputing the departed day",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "3bae2b3f5949fd9c",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C092",
+    "M13-C093"
+   ],
+   "seconds": 0.2,
+   "mutant": {
+    "M13-C092": "FAIL",
+    "M13-C093": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C092",
+    "M13-C093"
+   ],
+   "mutant_details": {
+    "M13-C092": "failed: all_fields_equal",
+    "M13-C093": "failed: all_fields_equal"
+   },
+   "imported_from": "M13-MUT03",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT04",
+   "name": "Count repaste text as dictated words",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "8aee2c9f4f2326aa",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C039",
+    "M13-C040",
+    "M13-C041"
+   ],
+   "seconds": 0.4,
+   "mutant": {
+    "M13-C039": "FAIL",
+    "M13-C040": "FAIL",
+    "M13-C041": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C039",
+    "M13-C040",
+    "M13-C041"
+   ],
+   "mutant_details": {
+    "M13-C039": "{\"repaste_delta\": {\"expected\": 1, \"observed\": 0}, \"dictation_delta\": {\"expected\": 0, \"observed\": 1}, \"dictated_word_delta\": {\"expected\": 0, \"observed\": 5}}",
+    "M13-C040": "{\"repaste_delta\": {\"expected\": 1, \"observed\": 0}, \"dictation_delta\": {\"expected\": 0, \"observed\": 1}, \"dictated_word_delta\": {\"expected\": 0, \"observed\": 5}}",
+    "M13-C041": "{\"repaste_delta\": {\"expected\": 1, \"observed\": 0}, \"dictation_delta\": {\"expected\": 0, \"observed\": 1}, \"dictated_word_delta\": {\"expected\": 0, \"observed\": 5}}"
+   },
+   "imported_from": "M13-MUT04",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT05",
+   "name": "Count auto-applied transform twice",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "5f6a3d87bec8069a",
+      "sha_after": "e0c8dcccca762311",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C023",
+    "M13-C035"
+   ],
+   "seconds": 0.4,
+   "mutant": {
+    "M13-C023": "FAIL",
+    "M13-C035": "PASS"
+   },
+   "failed_killers": [
+    "M13-C023"
+   ],
+   "mutant_details": {
+    "M13-C023": "{\"explicit_transforms\": {\"expected\": 0, \"observed\": 1}}"
+   },
+   "imported_from": "M13-MUT05",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT06",
+   "name": "Average row WPM",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "b7449b3f21b7dcdf",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C101"
+   ],
+   "seconds": 0.2,
+   "mutant": {
+    "M13-C101": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C101"
+   ],
+   "mutant_details": {
+    "M13-C101": "{\"wpm\": {\"expected\": 65.5, \"observed\": 90.0}}"
+   },
+   "imported_from": "M13-MUT06",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT07",
+   "name": "Include textless cancellation seconds in WPM",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "71858dae482d286e",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C104"
+   ],
+   "seconds": 0.2,
+   "mutant": {
+    "M13-C104": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C104"
+   ],
+   "mutant_details": {
+    "M13-C104": "{\"wpm\": {\"expected\": 120.0, \"observed\": 20.0}, \"eligible_seconds\": {\"expected\": 60.0, \"observed\": 360.0}}"
+   },
+   "imported_from": "M13-MUT07",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT08",
+   "name": "Treat unknown-duration text as free WPM words",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "af04491cb3ae03ec",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C102",
+    "M13-C103",
+    "M13-C107"
+   ],
+   "seconds": 0.2,
+   "mutant": {
+    "M13-C102": "FAIL",
+    "M13-C103": "FAIL",
+    "M13-C107": "PASS"
+   },
+   "failed_killers": [
+    "M13-C102",
+    "M13-C103"
+   ],
+   "mutant_details": {
+    "M13-C102": "{\"wpm\": {\"expected\": 120.0, \"observed\": 240.0}, \"eligible_words\": {\"expected\": 120, \"observed\": 240}}",
+    "M13-C103": "{\"wpm\": {\"expected\": 120.0, \"observed\": 240.0}, \"eligible_words\": {\"expected\": 120, \"observed\": 240}}"
+   },
+   "imported_from": "M13-MUT08",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT09",
+   "name": "Use invalid timezone label with UTC bucketing",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "b0923e29f193ee14",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C082",
+    "M13-C086",
+    "M13-C087"
+   ],
+   "seconds": 0.2,
+   "mutant": {
+    "M13-C082": "FAIL",
+    "M13-C086": "PASS",
+    "M13-C087": "PASS"
+   },
+   "failed_killers": [
+    "M13-C082"
+   ],
+   "mutant_details": {
+    "M13-C082": ""
+   },
+   "imported_from": "M13-MUT09",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT10",
+   "name": "Keep stale old-zone aggregates on rebuild",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "5c057f8be88f652a",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C073",
+    "M13-C080",
+    "M13-C100"
+   ],
+   "seconds": 0.2,
+   "mutant": {
+    "M13-C073": "FAIL",
+    "M13-C080": "PASS",
+    "M13-C100": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C073",
+    "M13-C100"
+   ],
+   "mutant_details": {
+    "M13-C073": "['2026-09-27: aggregate row without facts']",
+    "M13-C100": "failed: all_fields_equal"
+   },
+   "imported_from": "M13-MUT10",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT11",
+   "name": "Leak new in-memory zone after rollback",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "f91507e7b52e1b20",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C074",
+    "M13-C075",
+    "M13-C076"
+   ],
+   "seconds": 0.3,
+   "mutant": {
+    "M13-C074": "FAIL",
+    "M13-C075": "PASS",
+    "M13-C076": "PASS"
+   },
+   "failed_killers": [
+    "M13-C074"
+   ],
+   "mutant_details": {
+    "M13-C074": "in-memory zone leaked: America/Los_Angeles"
+   },
+   "imported_from": "M13-MUT11",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT12",
+   "name": "Use raw mixed timestamp lexical comparison for expiry",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "61330d3bc52c64dc",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C059",
+    "M13-C062",
+    "M13-C063",
+    "M13-C064"
+   ],
+   "seconds": 0.3,
+   "mutant": {
+    "M13-C059": "FAIL",
+    "M13-C062": "FAIL",
+    "M13-C063": "FAIL",
+    "M13-C064": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C059",
+    "M13-C062",
+    "M13-C063",
+    "M13-C064"
+   ],
+   "mutant_details": {
+    "M13-C059": "{\"removed\": {\"expected\": true, \"observed\": false}}",
+    "M13-C062": "{\"removed\": {\"expected\": false, \"observed\": true}}",
+    "M13-C063": "{\"removed\": {\"expected\": false, \"observed\": true}}",
+    "M13-C064": "{\"removed\": {\"expected\": false, \"observed\": true}}"
+   },
+   "imported_from": "M13-MUT12",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT13",
+   "name": "Render unavailable filtered activity as zero",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "b76eaee73c0894c8",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C158"
+   ],
+   "seconds": 0.2,
+   "mutant": {
+    "M13-C158": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C158"
+   ],
+   "mutant_details": {
+    "M13-C158": "{\"transforms\": {\"expected\": null, \"observed\": 0}, \"repastes\": {\"expected\": null, \"observed\": 0}}"
+   },
+   "imported_from": "M13-MUT13",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT14",
+   "name": "Count every note revision as a dictation",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/notes.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/notes.py": {
+      "sha_before": "5b556017a2a88e10",
+      "sha_after": "3c8c315f0a019c5c",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C223",
+    "M13-C224"
+   ],
+   "seconds": 0.5,
+   "mutant": {
+    "M13-C223": "PASS",
+    "M13-C224": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C224"
+   ],
+   "mutant_details": {
+    "M13-C224": "failed: no_new_usage, one_dictation"
+   },
+   "imported_from": "M13-MUT14",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT15",
+   "name": "Drop dangling audio from join denominator",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/training_data.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/training_data.py": {
+      "sha_before": "e5b049b6bf362c9e",
+      "sha_after": "b5d08d95e2aee762",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C209"
+   ],
+   "seconds": 0.2,
+   "mutant": {
+    "M13-C209": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C209"
+   ],
+   "mutant_details": {
+    "M13-C209": "{\"denominator\": {\"expected\": 2, \"observed\": 1}}"
+   },
+   "imported_from": "M13-MUT15",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT16",
+   "name": "Relabel legacy WPM as current WPM",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "7e6bab81b18bc642",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C197"
+   ],
+   "seconds": 0.2,
+   "mutant": {
+    "M13-C197": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C197"
+   ],
+   "mutant_details": {
+    "M13-C197": "failed: legacy_labeled"
+   },
+   "imported_from": "M13-MUT16",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT17",
+   "name": "Include Undated legacy content in dated ranges",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "680645becad03cf5",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C200",
+    "M13-C201",
+    "M13-C202",
+    "M13-C203"
+   ],
+   "seconds": 0.3,
+   "mutant": {
+    "M13-C200": "FAIL",
+    "M13-C201": "FAIL",
+    "M13-C202": "FAIL",
+    "M13-C203": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C200",
+    "M13-C201",
+    "M13-C202",
+    "M13-C203"
+   ],
+   "mutant_details": {
+    "M13-C200": "undated entered a dated view",
+    "M13-C201": "undated entered a dated view",
+    "M13-C202": "undated entered a dated view",
+    "M13-C203": "undated entered a dated view"
+   },
+   "imported_from": "M13-MUT17",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT18",
+   "name": "Allow old Hub query to overwrite newest filters",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/ui/state.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/state.py": {
+      "sha_before": "c06b3db3d1250521",
+      "sha_after": "7b4abf4c33eb0490",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C231",
+    "M13-C232",
+    "M13-C233",
+    "M13-C235"
+   ],
+   "seconds": 0.5,
+   "mutant": {
+    "M13-C231": "FAIL",
+    "M13-C232": "PASS",
+    "M13-C233": "PASS",
+    "M13-C235": "PASS"
+   },
+   "failed_killers": [
+    "M13-C231"
+   ],
+   "mutant_details": {
+    "M13-C231": "failed: newest_only, data"
+   },
+   "imported_from": "M13-MUT18",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT19",
+   "name": "Replace benchmark query with no-op",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "scripts/v2/benchmark_m13.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "scripts/v2/benchmark_m13.py": {
+      "sha_before": "8b340821f28a5138",
+      "sha_after": "07c1f4f0eaaeb956",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C249",
+    "M13-C250",
+    "M13-C251",
+    "M13-C247"
+   ],
+   "seconds": 1.0,
+   "mutant": {
+    "M13-C247": "FAIL",
+    "M13-C249": "PASS",
+    "M13-C250": "PASS",
+    "M13-C251": "PASS"
+   },
+   "failed_killers": [
+    "M13-C247"
+   ],
+   "mutant_details": {
+    "M13-C247": "full-scale timing graded from the benchmark record when supplied"
+   },
+   "imported_from": "M13-MUT19",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT20",
+   "name": "Count excluded readiness examples as verified/live",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/training_data.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/training_data.py": {
+      "sha_before": "e5b049b6bf362c9e",
+      "sha_after": "5093d81d43116f15",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C204",
+    "M13-C205",
+    "M13-C216"
+   ],
+   "seconds": 0.3,
+   "mutant": {
+    "M13-C204": "FAIL",
+    "M13-C205": "FAIL",
+    "M13-C216": "PASS"
+   },
+   "failed_killers": [
+    "M13-C204",
+    "M13-C205"
+   ],
+   "mutant_details": {
+    "M13-C204": "(1, 1, 1)",
+    "M13-C205": "{\"complete\": {\"expected\": 1, \"observed\": 2}, \"denominator\": {\"expected\": 1, \"observed\": 2}}"
+   },
+   "imported_from": "M13-MUT20",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT21",
+   "name": "Keep ASR task eligibility after audio purge",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/training_data.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/training_data.py": {
+      "sha_before": "e5b049b6bf362c9e",
+      "sha_after": "a402b22c67e7b295",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C208",
+    "M13-C210",
+    "M13-C211"
+   ],
+   "seconds": 0.3,
+   "mutant": {
+    "M13-C208": "FAIL",
+    "M13-C210": "FAIL",
+    "M13-C211": "PASS"
+   },
+   "failed_killers": [
+    "M13-C208",
+    "M13-C210"
+   ],
+   "mutant_details": {
+    "M13-C208": "{\"eligible_asr\": {\"expected\": 0, \"observed\": 1}}",
+    "M13-C210": "failed: asr_not_eligible"
+   },
+   "imported_from": "M13-MUT21",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT22",
+   "name": "Omit the claimed operation from benchmark timing",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "scripts/v2/benchmark_m13.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "scripts/v2/benchmark_m13.py": {
+      "sha_before": "8b340821f28a5138",
+      "sha_after": "2a302043baf954e2",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C257"
+   ],
+   "seconds": 9.8,
+   "mutant": {
+    "M13-C257": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C257"
+   ],
+   "mutant_details": {
+    "M13-C257": "failed: inside_moves"
+   },
+   "imported_from": "M13-MUT22",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT23",
+   "name": "Ignore the opposite filter in a breakdown",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "fec22b73ccf90166",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C151",
+    "M13-C152"
+   ],
+   "seconds": 0.3,
+   "mutant": {
+    "M13-C151": "FAIL",
+    "M13-C152": "PASS"
+   },
+   "failed_killers": [
+    "M13-C151"
+   ],
+   "mutant_details": {
+    "M13-C151": "{\"sum_per_mode_words\": {\"expected\": 30, \"observed\": 60}}"
+   },
+   "imported_from": "M13-MUT23",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT24",
+   "name": "Reset range when changing app or mode",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/ui/state.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/state.py": {
+      "sha_before": "c06b3db3d1250521",
+      "sha_after": "60c21a60e2f480bb",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C231"
+   ],
+   "seconds": 15.3,
+   "mutant": {
+    "M13-C231": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C231"
+   ],
+   "mutant_details": {
+    "M13-C231": "failed: newest_only, state_matches"
+   },
+   "imported_from": "M13-MUT24",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT25",
+   "name": "Leave usage copies in current/historical profile snapshots",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "5c190916724dee20",
+      "sha_after": "b63b44f9019707d4",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C179",
+    "M13-C180",
+    "M13-C227"
+   ],
+   "seconds": 0.3,
+   "mutant": {
+    "M13-C179": "FAIL",
+    "M13-C180": "FAIL",
+    "M13-C227": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C179",
+    "M13-C180",
+    "M13-C227"
+   ],
+   "mutant_details": {
+    "M13-C179": "failed: no_copies",
+    "M13-C180": "failed: no_copies",
+    "M13-C227": "failed: no_copies"
+   },
+   "imported_from": "M13-MUT25",
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "M13-MUT26",
+   "name": "Omit M13 readiness test from standalone runner",
+   "kill_rule": "Count as killed only when the intended mutated branch executes and an independent semantic assertion fails for this mutation. An unrelated import/crash, an empty fixture, a timeout caused by the harness, or an unexecuted test is INVALID, not a kill. Equivalent mutations require a recorded equivalence argument.",
+   "files": [
+    "tests/v2/ui/test_training_data.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "tests/v2/ui/test_training_data.py": {
+      "sha_before": "1c04a15a80de6725",
+      "sha_after": "3a67ed43d616b64b",
+      "changed": true
+     }
+    }
+   },
+   "killers": [
+    "M13-C218"
+   ],
+   "seconds": 0.5,
+   "mutant": {
+    "M13-C218": "FAIL"
+   },
+   "failed_killers": [
+    "M13-C218"
+   ],
+   "mutant_details": {
+    "M13-C218": "[]"
+   },
+   "imported_from": "M13-MUT26",
+   "outcome": "killed",
+   "reason": null
+  }
+ ]
+}

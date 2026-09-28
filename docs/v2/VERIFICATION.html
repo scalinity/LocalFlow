@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-27 · M12 section added by the M12 remediation · code <code>b17aa2b</code> (M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-27 · M13 section added by the M13 remediation · code <code>36e03a2</code> (M12 checks at <code>b17aa2b</code>, M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -4148,7 +4148,271 @@ lf12_evidence() { SANDBOX12="$SANDBOX12" SDB12="$SDB12" "$PY" "$OUT12/m12_eviden
           </details>
         </article>
       </section>
-      <section class="milestone" id="M13" data-milestone="M13" data-title="Usage analytics"><div class="ms-head"><span class="mid">M13</span><h2>Usage analytics</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M13-V001).</p></section>
+      <section class="milestone" id="M13" data-milestone="M13" data-title="Usage analytics">
+        <div class="ms-head">
+          <span class="mid">M13</span><h2>Usage analytics</h2>
+          <span class="meta">instructions M13-r1 · code 36e03a2 · local remediation of the audit at 4e4be15</span>
+        </div>
+        <p class="ms-intro">The M13 remediation makes Insights count what really happened: words per minute leave out dictations whose length is unknown, changing the app or mode keeps the date range you chose, breakdowns use the whole filter, apps with the same name stay separate, a report never mixes before and after a change, and deleting usage also removes the copies Your Voice kept. Usage is now kept until you clear it; applying a shorter limit tells you how much will go at the next daily pass instead of deleting on the spot. The machine checks cover all of that over synthetic data, and an owned test window qualified the Insights and Settings controls on this Mac. These five checks are what only your own dictations, apps and eyes can show.</p>
+        <p class="ms-intro">Instruction revision M13-r1 is the first M13 runbook entry: your own counts across two apps are M13-V001, ranges, filters and latency labels M13-V002, a real History retry M13-V003, deleting and limiting usage while content stays M13-V004, and larger text with keyboard navigation M13-V005. Everything runs in a sandbox home — never your real LocalFlow data.</p>
+
+        <div class="callout">
+          <h3>M13 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The remediated code gets its own worktree, and the dev app runs with an empty <b>sandbox home folder</b> (<code>$SANDBOX13</code>); the dictations each check asks for are made there, so the usage store starts empty. Recognition uses the models already on this Mac, offline. Your real Application Support data and the installed app are never touched.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># Remediated M13 code in its own worktree (first time only)</span>
+export LF_M13="$(dirname "$LF_MAIN")/LocalFlow-m13-verify"
+git -C "$LF_MAIN" fetch origin main
+[ -d "$LF_M13" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M13" origin/main
+git -C "$LF_M13" merge-base --is-ancestor 36e03a2 HEAD &amp;&amp; echo "M13 repairs present"
+export OUT13="$EV/m13-verification"; mkdir -p "$OUT13"/screens &amp;&amp; chmod 700 "$OUT13"
+
+<span class="c"># Sandbox home and config for the dev app</span>
+export REAL_HOME="$HOME"
+export SANDBOX13="$OUT13/sandbox-home"; mkdir -p "$SANDBOX13" &amp;&amp; chmod 700 "$SANDBOX13"
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M13"], "config.json").read_text())
+p = pathlib.Path(os.environ["OUT13"], "sandbox-config.json")
+p.write_text(json.dumps(dict(cfg, log_transcripts=False), indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app; $LF13_PID is its process</span>
+lf13_start() { ( cd "$LF_M13" &amp;&amp; exec env HOME="$SANDBOX13" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT13/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT13/app-console.txt" 2&gt;&amp;1 &amp;
+  LF13_PID=$!; echo "dev app pid $LF13_PID"; }
+export SDB13="$SANDBOX13/Library/Application Support/LocalFlow/v2.db"
+
+<span class="c"># Evidence reader: counts, outcomes, clocks and usage events — no transcript text</span>
+cat &gt; "$OUT13/m13_evidence.py" &lt;&lt;'EOF'
+import json, os, pathlib, sqlite3
+db = sqlite3.connect(os.environ["SDB13"])
+print("zone", db.execute("select value from usage_meta where"
+                         " key='reporting_timezone'").fetchone())
+for row in db.execute(
+        "select kind, app_name, mode, insertion_outcome, final_words,"
+        " duration_sec, attempt, end_to_end_ms,"
+        " json_extract(meta_json, '$.e2e_missing'),"
+        " json_extract(meta_json, '$.retry_to_terminal_ms')"
+        " from usage_facts order by rowid"):
+    print("fact", row)
+print("snapshots with app usage", db.execute(
+    "select count(*) from profile_snapshots where"
+    " json_extract(measured_json, '$.app_usage') is not null").fetchone())
+logs = pathlib.Path(os.environ["SANDBOX13"], "Library", "Logs", "LocalFlow")
+for f in sorted(logs.glob("*.jsonl")):
+    for line in f.read_text().splitlines():
+        e = json.loads(line)
+        if e.get("event", "").startswith(("usage.", "hub.usage")):
+            print(e["event"], e.get("reason_code"), e.get("outcome"))
+EOF
+lf13_evidence() { SANDBOX13="$SANDBOX13" SDB13="$SDB13" "$PY" "$OUT13/m13_evidence.py"; }</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “M13 repairs present”; the config path printed; the dev app prints its pid when started. The evidence file names your apps (private usage metadata) — it stays under <code>$OUT13</code> and never goes into Git. When finished with M13, remove the worktree with <code>git -C "$LF_MAIN" worktree remove "$LF_M13"</code>; the sandbox stays under <code>$OUT13</code> until you delete it.</p>
+        </div>
+
+        <h3 class="group">Counting your own dictations</h3>
+
+        <article class="check" id="M13-V001" data-milestone="M13" data-rev="M13-r1" data-code="36e03a2" data-tags="native human hardware model privacy">
+          <header class="check-head">
+            <span class="cid">M13-V001</span>
+            <h4>Hand-count short dictations in two apps and compare with Insights</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Insights counts each of your dictations once, in the app it went to, with the words that were actually inserted, and its words-per-minute uses only dictations whose length is known. The arithmetic is covered by synthetic tests; only your own dictations in apps you choose show that the numbers match what you did.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate three short sentences in one app and two in another, count the words yourself, and check the Insights page shows the same.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · two apps you choose (for example TextEdit and Notes)</dd>
+              <dt>Preconditions</dt><dd>M13 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M13 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf13_start</code>; wait for “ASR: ready”.</li>
+              <li>In the first app, dictate three short sentences (about five words each); in the second app, dictate two. Write down the words each one inserted.</li>
+              <li>Open the Hub → Insights → Usage and choose All.</li>
+              <li>Run <code>lf13_evidence &gt; "$OUT13/v001.txt"</code>; take a screenshot of the Usage summary into <code>$OUT13/screens</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Dictations 5; final words equal your hand count; the per-app lines show 3 and 2 with the words you counted.</li>
+              <li>The WPM line names its denominator (jobs, words, seconds over 5 jobs) and says nothing is left out unless a dictation had no known length.</li>
+              <li><code>v001.txt</code> lists five <code>dictation</code> facts, each with its app and a <code>duration_sec</code>.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A dictation is missing or counted twice, or lands under the wrong app: <b>Failed</b> — keep <code>v001.txt</code> and the screenshot.</li>
+              <li>Word counts differ only because the recognizer inserted different words: count the inserted text again; if it matches the fact, it passes.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT13/v001.txt</code> and the screenshot (they name your apps). Nothing from this check goes into Git.</p>
+            <h5>Contract relevance</h5>
+            <p>M13-AC02, M13-AC04; M13-AUDIT-01/20; decisions D01, D09 (<code>acceptance/M13/remediation/decisions.json</code>); <code>contracts/analytics.md</code> → Fact model, Metric definitions.</p>
+          </details>
+        </article>
+
+        <article class="check" id="M13-V002" data-milestone="M13" data-rev="M13-r1" data-code="36e03a2" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M13-V002</span>
+            <h4>Switch ranges, apps and modes and read the latency labels</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Choosing an app or a mode keeps the date range you picked, every breakdown follows the whole filter, and each latency line says how many dictations it is based on and why others are missing. The owned test window drove these controls; you confirm they read clearly with your own data.</p>
+          <p class="plain"><b>In plain terms.</b> You flip between 7 days and All, pick an app and a mode, and read the lines.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · the dev app from M13-V001</dd>
+              <dt>Preconditions</dt><dd>M13-V001 done (its five dictations exist).</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M13 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>In Insights → Usage click 7d, then choose the first app in App, then a mode in Mode.</li>
+              <li>Read the first summary line and the latency lines; screenshot into <code>$OUT13/screens</code>.</li>
+              <li>Choose All apps and All modes, then click All.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>After choosing the app and the mode the summary still says “last 7 days”, and the per-mode lines add up to the dictations shown.</li>
+              <li>Each latency line says <i>n = … of …</i>; the end-to-end line and “Release→confirmed visible text” are separate lines.</li>
+              <li>Every control sits inside the window and is readable; nothing is cut off at the right edge.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>The range jumps to all time after choosing an app or mode, or a breakdown does not add up: <b>Failed</b> — keep the screenshot.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: the screenshots in <code>$OUT13/screens</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M13-AUDIT-05/06/18/21/23; decision D06; <code>contracts/analytics.md</code> → Cohorts, ranges and completeness; Terminal outcomes and latency.</p>
+          </details>
+        </article>
+
+        <h3 class="group">A retry counts once</h3>
+
+        <article class="check" id="M13-V003" data-milestone="M13" data-rev="M13-r1" data-code="36e03a2" data-tags="native human hardware model">
+          <header class="check-head">
+            <span class="cid">M13-V003</span>
+            <h4>Retry a failed dictation from History and see it counted once</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> A dictation that failed and was retried is one dictation, dated when you spoke it, in the app you spoke into, and its retry timing is kept apart from the release-to-result time. The retry path is machine-checked; a real failure and retry can only be made here.</p>
+          <p class="plain"><b>In plain terms.</b> You make one dictation fail by stopping the recognizer mid-way, retry it from History, and check Insights still shows it once.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone</dd>
+              <dt>Preconditions</dt><dd>M13 set-up done; the dev app running.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M13 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Note the dictation count in Insights → Usage (All).</li>
+              <li>Dictate a long sentence into the first app and, as soon as you release the key, run <code>pkill -f localflow.v2.worker</code>.</li>
+              <li>In History, select the failed row and click Retry; wait for the text to arrive.</li>
+              <li>Run <code>lf13_evidence &gt; "$OUT13/v003.txt"</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>The count went up by exactly one; the per-app line for the first app includes it.</li>
+              <li>In <code>v003.txt</code> the retried fact has <code>attempt</code> 2, an empty end-to-end time with <code>retry_no_release_clock</code>, and a <code>retry_to_terminal_ms</code> value.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>The retry counts twice, moves to another app, or has no retry time: <b>Failed</b> — keep <code>v003.txt</code>.</li>
+              <li>The dictation did not fail (the worker finished first): repeat step 2 with a longer sentence.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT13/v003.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M13-AC02; M13-AUDIT-18/29; decision D06; <code>contracts/analytics.md</code> → Fact model, Terminal outcomes and latency.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Deleting and limiting usage</h3>
+
+        <article class="check" id="M13-V004" data-milestone="M13" data-rev="M13-r1" data-code="36e03a2" data-tags="native human privacy">
+          <header class="check-head">
+            <span class="cid">M13-V004</span>
+            <h4>Delete usage, refuse a bad limit, and keep your transcripts</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~10 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Deleting one dictation's usage or all usage removes the counts and the copies in Your Voice but leaves transcripts and History text alone; a limit of 0 or a negative number is refused, and a real limit is saved with a preview instead of deleting on the spot. The owned test window pressed these buttons and answered the confirmation; you confirm the wording and that your text survives.</p>
+          <p class="plain"><b>In plain terms.</b> You try a few retention values, delete one dictation's usage, generate Your Voice, then delete all usage and check your History text is still there.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · the dev app from the earlier checks</dd>
+              <dt>Preconditions</dt><dd>M13-V001 done.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M13 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Settings → usage retention: type <code>0</code> and click Apply Usage; then <code>-30</code>; then <code>30</code>; then <code>keep</code>.</li>
+              <li>History: select one of your dictations, click Delete Usage; then look at Insights.</li>
+              <li>Insights → Your Voice → Generate.</li>
+              <li>Settings → Delete All Usage…: click Cancel first, then repeat and confirm.</li>
+              <li>Open History and read one of your dictations; run <code>lf13_evidence &gt; "$OUT13/v004.txt"</code>.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li><code>0</code> and <code>-30</code> show “refused — nothing changed”; <code>30</code> shows “saved: 30 days” with how many records the next daily pass will remove (none here); <code>keep</code> shows “keep until cleared”. No text claims the limit applies immediately.</li>
+              <li>After Delete Usage, Insights shows one dictation fewer; after Cancel nothing changes; after confirming, Insights shows zero.</li>
+              <li>History still shows your dictated text; <code>v004.txt</code> shows no facts and “snapshots with app usage (0,)”.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A bad value is accepted, Cancel deletes, or any History text is gone: <b>Failed</b> — keep <code>v004.txt</code>.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT13/v004.txt</code>.</p>
+            <h5>Contract relevance</h5>
+            <p>M13-AC03; M13-AUDIT-08/09/10/11/12; decisions D03, D11, D13; <code>contracts/analytics.md</code> → Retention and deletion.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Reading Insights comfortably</h3>
+
+        <article class="check" id="M13-V005" data-milestone="M13" data-rev="M13-r1" data-code="36e03a2" data-tags="native human">
+          <header class="check-head">
+            <span class="cid">M13-V005</span>
+            <h4>Use Insights at a larger text size and from the keyboard</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>~5 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> The Insights controls stay inside the window and usable at the smallest window size and with larger text, and the App and Mode selectors can be reached with Tab when Full Keyboard Access is on. The owned test window checked positions and clicks; macOS keeps pop-up menus out of the Tab order unless Full Keyboard Access is on, which automation on this Mac could not change.</p>
+          <p class="plain"><b>In plain terms.</b> You make the Hub window as small as it goes, turn on larger text and keyboard navigation, and move through Insights with Tab.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · System Settings → Accessibility → Display and Keyboard</dd>
+              <dt>Preconditions</dt><dd>The dev app running with the Hub open on Insights → Usage.</dd>
+              <dt>Working dir</dt><dd>any</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Drag the Hub window to its smallest size.</li>
+              <li>Turn on System Settings → Keyboard → Keyboard navigation (Full Keyboard Access) and choose a larger text size if your macOS offers one for apps.</li>
+              <li>Click the 7d button, then press Tab repeatedly; use Space to open App and Mode and the arrow keys to choose.</li>
+              <li>Screenshot into <code>$OUT13/screens</code>; turn the settings back to how you had them.</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>All range buttons, App, Mode and Reload are fully visible on one row and respond at the smallest size.</li>
+              <li>Tab reaches App and Mode; choosing from the keyboard updates the summary and keeps the 7-day range.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A control is cut off or cannot be reached with Full Keyboard Access on: <b>Failed</b> — keep the screenshot.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: the screenshots.</p>
+            <h5>Contract relevance</h5>
+            <p>M13-AUDIT-23; <code>contracts/analytics.md</code> → The Insights surface, Limitations.</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M14" data-milestone="M14" data-title="Learning & datasets"><div class="ms-head"><span class="mid">M14</span><h2>Learning &amp; datasets</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M14-V001).</p></section>
 
       <section id="maintainers" aria-labelledby="mt-h">

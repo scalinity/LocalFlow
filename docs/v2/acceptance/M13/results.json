@@ -146,5 +146,139 @@
       "with": "<repo>",
       "note": "Forward-only redaction of a private location; no measured outcome, count or status in this historical record was changed, and Git history was not rewritten (earlier commits still contain the original value)."
     }
-  ]
+  ],
+  "remediation_2026_09_27": {
+    "kind": "LOCAL_REMEDIATION",
+    "state": "LOCAL_REMEDIATION_COMPLETE_PENDING_MANUAL_VERIFICATION",
+    "state_note": "Every confirmed automatable defect repaired; regression, corpus, stateful, metamorphic, mutation, native, compatibility and benchmark gates green at the final production; the independent review's allegations reproduced and resolved; the manual checks M13-V001..V005 remain pending for the owner.",
+    "audit": {
+      "title": "LocalFlow V2 — M13 Read-Only Deep Audit",
+      "audited_sha": "4e4be158251edc3b2677b2254decd8fdc427f97c",
+      "verdict": "C",
+      "findings": {
+        "critical": 0,
+        "high": 13,
+        "medium": 12,
+        "test_gap": 4,
+        "design_concern": 2
+      },
+      "audit_markdown": "acceptance/M13/remediation/LocalFlow_M13_Read_Only_Deep_Audit.md",
+      "audit_markdown_sha256": "9eb52f2a908277a6b30948cc8a7810c08a9a9af1c89024238a371d653b2f848e",
+      "corpus": "tests/v2/analytics/m13_audit_corpus.json",
+      "corpus_sha256": "35aeb9bf3ea3a0add615ccfbb449cf1b72677dc3382083f4fb0648040ca814c0",
+      "corpus_shape": "265 cases, 22 stateful probes, 14 metamorphic relations, 26 mutations"
+    },
+    "synchronization": {
+      "local_pre_sync": "4e4be158251edc3b2677b2254decd8fdc427f97c",
+      "remote_main_at_sync": "4e4be158251edc3b2677b2254decd8fdc427f97c",
+      "local_main_after_sync": "4e4be158251edc3b2677b2254decd8fdc427f97c",
+      "remote_main_before_merge": "4e4be158251edc3b2677b2254decd8fdc427f97c",
+      "ancestors_verified": [
+        "b17aa2b"
+      ]
+    },
+    "branch": "m13-local-remediation-20260927",
+    "first_pass_sha": "96130c3 (production a26882c)",
+    "final_code_revision": "36e03a2",
+    "final_evidence_tree": "8c5b74b",
+    "adjudications": "acceptance/M13/remediation/adjudications.json (policy m13-policy-r1: D01–D14 and D02b in decisions.json)",
+    "disposition_counts": {
+      "reproduced": 25,
+      "reproduced_test_gap": 3,
+      "narrowed_test_gap": 1,
+      "design_adopted": 2,
+      "refuted": 0,
+      "already_fixed": 0,
+      "native_manual_unresolved": 0,
+      "local_findings": [
+        "LOCAL-M13-01",
+        "LOCAL-M13-02",
+        "LOCAL-M13-03",
+        "LOCAL-M13-04"
+      ],
+      "local_findings_note": "LOCAL-M13-03 (Apply Retention outside the Settings pane at the minimum width) belongs to the M02/M09 store-retention row and is recorded, not repaired; the other three are repaired"
+    },
+    "caller_inventory": "acceptance/M13/remediation/caller_inventory.json",
+    "regressions": {
+      "suite": "tests/v2/analytics/test_m13_remediation.py",
+      "cases": 64,
+      "controls": 7,
+      "base": "44 FAIL / 1 ERROR / 7 PASS of the first 52 cases (regressions_base_4e4be15.json)",
+      "review_fail_first": "13 FAIL on the frozen first pass 96130c3 (review_regressions_first_pass_96130c3.json)",
+      "final": "64/64 (regressions_final_8c5b74b.json)"
+    },
+    "corpus_results": {
+      "final": "265/265 PASS — portable 227, stateful 21, native 5, performance 12; graded semantic 216, structural 3, decision 41, native 5; probes 22/22; metamorphic 14/14 (corpus_final_8c5b74b.json)",
+      "base": "125 PASS / 87 FAIL / 47 ERROR / 6 NOT_RUN (corpus_base_4e4be15.json)"
+    },
+    "mutation_results": {
+      "first_pass": "25 killed / 1 survived (MUT09: the driver's zone-validity oracle was circular; replaced by an independent check) (mutation_first_pass_c145a04.json); MUT09 killed on rerun (mutation_first_pass_mut09_rerun_5abbc54.json)",
+      "final": "26/26 killed, 0 survived (mutation_final_8c5b74b.json)"
+    },
+    "independent_review": {
+      "reviewed": "96130c3",
+      "allegations": 12,
+      "reproduced_by_author": 12,
+      "fixed": 11,
+      "narrowed_process": 1,
+      "fail_first_record": "review_regressions_first_pass_96130c3.json (13 FAIL on the frozen first pass)",
+      "repair_commits": [
+        "36e03a2",
+        "de7246c"
+      ],
+      "not_filed_by_reviewer": "cleanup eligibility checks the source_text artifact is unpurged but not its job or role (asymmetry with ASR) — left for the next audit"
+    },
+    "portable_tests": {
+      "historical_suites": {
+        "test_usage_store": "11/11",
+        "test_insights_service": "6/6",
+        "test_insights_hub": "7/7",
+        "test_training_data": "13/13"
+      },
+      "sweep": "93/95 files exit 0 at 8c5b74b (the two native-flag suites exit 2 as in M10's and M12's accepted sweeps); no live clipboard change (sweep_final_8c5b74b.json)",
+      "runner": "tests/v2/context/run_isolated.py"
+    },
+    "native_tests": {
+      "record": "acceptance/M13/remediation/native_final.json",
+      "result": "11/11 (passive 8/8, never frontmost; active 3/3 — the Delete All and unknown-outcome alert checks — as a launched app, prior frontmost restored)",
+      "production_tree": "36e03a2 (run at 8c5b74b, production tree unmodified)"
+    },
+    "benchmark": {
+      "run": "benchmarks/20260927-212918-m13-remediation-final/m13.json",
+      "verdict": "VALID_WITHIN_BUDGET",
+      "report_30d_p95_ms": 72.388,
+      "summary_all_p95_ms": 105.069,
+      "usage_write_p95_ms": 0.635,
+      "busy_day_write_p95_ms": 14.351,
+    "busy_day_note": "all 50,000 facts on one local day; proposed budget 50 ms",
+      "rebuild_p95_ms": 470.832,
+      "rebuild_and_expiry_budget": "proposed (30 s), not canonical; both within it",
+      "expiry_p95_ms": 83.144,
+      "over_canonical_budget": [],
+      "load_avg_1_5_15": [
+        4.45,
+        3.75,
+        3.4
+      ],
+      "power": "AC Power"
+    },
+    "desktop_isolation": "every portable and native run under run_isolated (private pasteboard, no Accessibility reads of installed apps, no posted events)",
+    "privacy": "synthetic stores and app identities (com.synthetic.*) in temporary folders only; no real app names, History, transcripts, clipboard content or live usage; evidence records carry repository-relative names only. The test that wrote the live settings override (LOCAL-M13-04) now uses a temporary path; the stray live key was removed with the owner's approval and backed up outside the repository",
+    "pending_manual_verification": [
+      "M13-V001",
+      "M13-V002",
+      "M13-V003",
+      "M13-V004",
+      "M13-V005"
+    ],
+    "declared_residuals": [
+      "cleanup readiness checks its source text is retained but not its job or role (next audit)",
+      "no producer upgrades a posted-unverified outcome to confirmed after the fact",
+      "per-job usage deletion needs the History row; after metadata pruning only Delete All Usage or retention remove a fact",
+      "pop-up selectors join the keyboard loop only with Full Keyboard Access",
+      "Apply Retention outside the Settings pane at the minimum width (LOCAL-M13-03, M02/M09 row)"
+    ],
+    "merge": "merged onto main in the same session (repository rule for completed remediations)",
+    "handoff": "handoffs/M13.md remediation addendum"
+  }
 }
