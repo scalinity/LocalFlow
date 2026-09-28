@@ -1,0 +1,220 @@
+[
+  {
+    "id": "XF-AUDIT-01",
+    "severity": "High",
+    "title": "Recovery Copy Last Raw bypasses the clipboard-ownership guard",
+    "milestones": [
+      "M03",
+      "M08",
+      "M09",
+      "M12"
+    ],
+    "kind": "Authority bypass",
+    "confidence": "High for the bypass; native consumption consequence not executed",
+    "evidence": [
+      "recovery_copy",
+      "inject",
+      "note_callers",
+      "insertion"
+    ],
+    "expected": "Every in-app copy action must respect the insertion service's ownership of a pending payload, or make a separately specified and acknowledged override. An unverified paste does not surrender its payload merely because a different menu command runs.",
+    "actual": "copyLastRaw_ calls the imported inject.copy_text directly. That helper rewrites the general pasteboard. hubCopyText and tfCopyTransform instead pass through _guarded_copy, which can return clipboard_payload_pending. The Recovery caller does not use that gate.",
+    "chain": "Recovery menu action → AppDelegate.copyLastRaw_ → inject.copy_text → system pasteboard, bypassing AppDelegate._guarded_copy → InsertionService.copy_text.",
+    "example": "Keep dictation A's payload pending after a posted, unverified transaction. Make a different failed dictation B's raw text available in _last_failed. Invoke Copy Last Raw before A's delayed consumer reads the pasteboard. The caller has no ownership refusal before replacing A's bytes.",
+    "impact": "A supported in-app copy path can replace bytes reserved for a delayed insertion. Wrong or missing consumption is a native hypothesis to reproduce, not an observed event in this audit.",
+    "gap": "A broker-level ownership test can pass while this legacy caller never enters the broker. The committed M12 caller inventory is historical evidence, not a current exhaustive call-site scan.",
+    "fix": "Route this action through the shared guarded-copy command; preserve its refusal reason in the Recovery surface. Inventory every production pasteboard writer, including legacy helpers, rather than changing M08's core protocol.",
+    "regression": "Use the real AppDelegate action with a pending ownership ticket and a distinct raw canary. Assert pasteboard generation and payload are unchanged and refusal is visible; release ownership and assert a subsequent copy succeeds.",
+    "relation": "New cross-caller composition defect; no allegation that M08's core ownership repair failed.",
+    "case": "XF-CASE-045"
+  },
+  {
+    "id": "XF-AUDIT-02",
+    "severity": "High",
+    "title": "Concurrent transform updates can give one revision two different definitions",
+    "milestones": [
+      "M02",
+      "M11",
+      "M14"
+    ],
+    "kind": "Immutable-provenance inconsistency",
+    "confidence": "High: deterministic source interleaving",
+    "evidence": [
+      "transform_store",
+      "cleanup_gate",
+      "export"
+    ],
+    "expected": "The live definition and the immutable transform_revisions record for the same transform_id/revision must contain the same definition. Export must replay the definition that actually produced the candidate.",
+    "actual": "update_transform reads definition() before its mutation op and builds merged from that read. The op updates only the requested SQL columns and increments the live revision. It then reads the new revision number but appends the earlier merged definition. An intervening disjoint update survives in the live row but is absent from the preserved revision.",
+    "chain": "TransformStore.update_transform pre-read → another committed update → partial live-row UPDATE → _append_revision(stale merged definition, current revision number) → transform_target_in reads transform_revisions → DatasetExporter emits that definition.",
+    "example": "Start r1={name:N0,prompt:P0}. Pause A after reading r1 for a rename to N1. Let B update prompt to P1 and commit r2. Resume A. The live row becomes {N1,P1,r3}; the preserved r3 can be {N1,P0,r3}. A candidate executed from live r3 can subsequently export the preserved P0 definition.",
+    "impact": "The revision number ceases to identify one reproducible task. The exporter is a direct downstream reader of the inconsistent preserved record. No corrupt dataset was actually generated in this audit.",
+    "gap": "Checking monotonic revision numbers or the row count does not compare the preserved definition with the final live row. Sequential rename and prompt tests miss the interleaving.",
+    "fix": "Read the authoritative row, merge and validate the requested delta, perform the update, and serialize exactly that committed definition within one writer op. Preserve revision numbering and append-only history.",
+    "regression": "Latch two real update_transform calls at the pre-read boundary. After each commit, compare all canonical definition fields in the live row and matching transform_revisions row. Execute/export a synthetic candidate from the affected revision and independently compare its task definition.",
+    "relation": "New M11 storage→M14 export seam; preserve the accepted Prompt Engineer and fidelity gates.",
+    "case": "XF-CASE-041"
+  },
+  {
+    "id": "XF-AUDIT-03",
+    "severity": "High",
+    "title": "The transform editor can overwrite a later opt-out with an unchanged stale checkbox",
+    "milestones": [
+      "M09",
+      "M10",
+      "M11"
+    ],
+    "kind": "Stale edit authority",
+    "confidence": "High for stale-form overwrite",
+    "evidence": [
+      "transform_editor",
+      "transform_store",
+      "hub_contract"
+    ],
+    "expected": "An update should act on the rendered definition revision and either apply only the fields the user changed against a validated current row or refuse a conflicting stale form. A name edit must not silently reverse a later auto-apply opt-out.",
+    "actual": "transformsUpdate_ sends name, prompt, color, shortcut, enabled, auto_apply and auto_apply_apps from the complete form. It passes no expected revision or changed-field set. update_transform accepts those supplied values. The form can therefore overwrite unrelated changes made after it was filled.",
+    "chain": "Rendered transform form at r1 → external/public-service update to r2 → name-only user edit in old form → transformsUpdate_ sends old checkbox values → TransformStore accepts them.",
+    "example": "Render a custom transform with auto_apply=True. Disable auto_apply through another admitted control/service call. Change only the name in the still-edited form and press Update. Its unchanged True checkbox is sent again and can reverse the disable.",
+    "impact": "User intent at one field can overwrite a newer setting in another, including an explicit auto-apply opt-out. This is not a proven wrong-row selection defect; the allegation is stale field authority.",
+    "gap": "A test that edits a fresh form or verifies only stable transform_id cannot catch stale revision or field-delta loss. M10's stronger editor protocol is not automatically inherited by the transform pane.",
+    "fix": "Give transform editing the same rendered-id/revision/form binding and delta semantics used by the repaired M10 editors. Refuse conflicts without destroying the user's unsaved form.",
+    "regression": "Render, mutate the authoritative row elsewhere, edit one unrelated field, and press the actual Update action. Verify the concurrent opt-out survives or a stale/conflict outcome is shown. Add a fresh-form positive control.",
+    "relation": "New consumer inconsistency relative to the established M09/M10 editor contract, not a request for a new editor architecture.",
+    "case": "XF-CASE-042"
+  },
+  {
+    "id": "XF-AUDIT-04",
+    "severity": "High",
+    "title": "Missing normalized-input retention can be exported as a complete model task",
+    "milestones": [
+      "M04",
+      "M07",
+      "M14"
+    ],
+    "kind": "Failure state collapsed into stage absence",
+    "confidence": "High for the producer/qualifier/export branch",
+    "evidence": [
+      "norm_capture",
+      "cleanup_gate",
+      "export",
+      "export_contract"
+    ],
+    "expected": "When normalization ran and changed the actual cleanup input, a failure to retain that input must not be represented as if normalization did not run. model_task_complete must identify the exact stage input and prompt provenance.",
+    "actual": "on_normalization clears its normalization artifact fields on a retention failure and records a failure reason while leaving the dictation pipeline operational. cleanup_qualification_in treats an absent normalization artifact as a raw-text input fallback. It can still choose model_task_complete from ASR and cleanup-prompt provenance without consulting that normalization failure. The exporter writes the returned input and completeness tier.",
+    "chain": "Successful changed normalization → normalization evidence write/lease failure → cleared normalization pointer with explicit missing reason → cleanup receives the actual changed text → explicit correct mark → cleanup_qualification_in(raw fallback, model_task_complete) → cleanup_supervised record.",
+    "example": "Synthetic raw text is \"ship to cloud\"; deterministic normalization produces \"ship to Claude\". Inject failure only in retaining the normalization evidence, not in executing normalization or retaining the later cleanup prompt. Complete cleanup and mark the applied output intended-correct. The qualifier can export the raw phrase as input with model_task_complete.",
+    "impact": "A supposedly complete training/evaluation record can bind an output to input bytes the cleanup model did not actually receive. This is an evidence-integrity and M15 qualification blocker, not a claim that dictation output itself changes.",
+    "gap": "Producer-shaped healthy fixtures and tampered-existing-pointer tests miss the absence branch. The code does reject an existing invalid retained normalization reference. Healthy unchanged normalization with a ledger and raw fallback is valid and must remain a positive control.",
+    "fix": "Distinguish not-run/unchanged normalization from failed retention using the recorded producer outcome. Refuse the complete tier or downgrade to a truthful text-pair tier when exact input cannot be established. Do not infer exact input from the existence of a rendered prompt alone.",
+    "regression": "Drive the real collector through changed normalization with an injected retention failure, then real qualification/export. Independently record the actual cleanup input; assert it is either exported exactly with complete provenance or the record is refused/downgraded. Keep unchanged-normalization and bad-existing-reference controls.",
+    "relation": "New M04/M07 producer-failure→M14 consumer mismatch; accepted cleanup semantics stay unchanged.",
+    "case": "XF-CASE-077"
+  },
+  {
+    "id": "XF-AUDIT-05",
+    "severity": "Medium",
+    "title": "Transform CRUD reports admitted timeouts as not_saved and Add can duplicate",
+    "milestones": [
+      "M02",
+      "M09",
+      "M11"
+    ],
+    "kind": "Unknown outcome misclassified",
+    "confidence": "High for timeout propagation and new-ID retry",
+    "evidence": [
+      "transform_editor",
+      "transform_store",
+      "store"
+    ],
+    "expected": "A queued mutation whose reply times out is outcome_unknown, not confirmed failure. Retrying the same logical Add must reconcile one stable identity rather than mint another transform.",
+    "actual": "HubController._transform_write catches every exception, including an admitted Store timeout, and renders not_saved. transformsAdd_ does not preallocate/reuse transform_id, although add_transform accepts that optional parameter. Repeating Add after the first queued op eventually commits can allocate a second id.",
+    "chain": "Transform Add → add_transform(new id) → Store.submit admits op → reply timeout → _transform_write displays not_saved → same user action repeated → new id → two commits.",
+    "example": "Hold the writer past the submit wait after Add has been admitted. Observe the UI timeout, then release the writer so the first transform commits. Repeat the same Add fields. The caller has no retained operation identity linking the second request to the first.",
+    "impact": "Duplicate definitions and misleading status; update/toggle/delete share the false failure label even where they do not duplicate rows.",
+    "gap": "Testing the store's non-cancelling timeout alone does not test the caller's message or retry identity. Optional transform_id support is not an end-to-end reconciliation protocol.",
+    "fix": "Return/render not_started, refused/failed, and outcome_unknown distinctly. Keep a preallocated identity or receipt for a logical Add until its outcome is known, and reconcile before another creation.",
+    "regression": "Latch real Store admission and commit, trigger Add through the real Hub action, then repeat with the same logical operation. Assert one transform, one initial preserved revision, truthful unknown status, and eventual reconciliation.",
+    "relation": "An older CRUD caller did not inherit M02's outcome semantics; the underlying Store timeout behavior is intentional.",
+    "case": "XF-CASE-105"
+  },
+  {
+    "id": "XF-AUDIT-06",
+    "severity": "Medium",
+    "title": "Save Transform to Scratchpad discards the note service's unknown-outcome identity",
+    "milestones": [
+      "M02",
+      "M11",
+      "M12"
+    ],
+    "kind": "Cross-service outcome collapse",
+    "confidence": "High for caught typed exception and fresh-ID retry",
+    "evidence": [
+      "note_callers",
+      "note_create",
+      "store"
+    ],
+    "expected": "A NoteOutcomeUnknown(create, note_id) must reach a caller-owned pending operation that can reconcile the same note id. It must not become an ordinary create_failed result.",
+    "actual": "NoteStore.create_note allocates an id before admission, supports a supplied note_id, and raises NoteOutcomeUnknown with that identity on admitted timeout. tfSaveToScratchpad calls create without a retained id, catches generic Exception, emits notes.save_transform_failed and returns None. A repeated save starts another creation.",
+    "chain": "Transform result → tfSaveToScratchpad → NoteStore.create_note → admitted timeout with typed identity → generic catch discards identity → repeat Save → fresh note.",
+    "example": "Keep a valid transform result on screen. Stall its note creation after admission, let the caller return from the timeout, then let the original op commit. Invoke Save again. The caller does not reconcile the first note identity.",
+    "impact": "A saved note can be reported as failed and repeated saves can create duplicates. This does not establish that the note service itself loses data.",
+    "gap": "M12 editor arrival/receipt tests do not cover this M11 transform-result command unless it is explicitly driven through the real caller.",
+    "fix": "Preserve the note id and a typed pending result across this caller; repeat/reconcile the same operation. Keep the panel result available until settlement and do not label admitted uncertainty as failure.",
+    "regression": "Invoke the real tfSaveToScratchpad with a synthetic result and latched Store. Verify one note after timeout/retry, a stable id throughout, and correct origin=transform. Run a refusal-before-admission control.",
+    "relation": "New caller gap composed across M11 and the repaired M12 note API.",
+    "case": "XF-CASE-049"
+  },
+  {
+    "id": "XF-AUDIT-07",
+    "severity": "Medium",
+    "title": "History Move reports source deletion failed when its outcome is still unknown",
+    "milestones": [
+      "M02",
+      "M09",
+      "M12"
+    ],
+    "kind": "Two-phase user action misreported",
+    "confidence": "High for deletion-timeout catch",
+    "evidence": [
+      "note_callers",
+      "note_create",
+      "store"
+    ],
+    "expected": "After a note copy is durably created, an admitted source-deletion timeout must be reported as copy_created/source_deletion_unknown. A move is not complete until that phase settles, and confirmed source preservation must not be implied.",
+    "actual": "hubSaveHistoryRow correctly handles an unknown note creation and avoids deleting the source then. But after successful creation its move branch catches all exceptions from delete_everywhere/delete_legacy_row as move_failed_note_copied. A Store timeout does not cancel that admitted deletion.",
+    "chain": "Strict History final/hash check → stable-id note creation succeeds → source delete admitted → timeout → move_failed_note_copied → source deletion may commit later.",
+    "example": "Complete the note creation phase of Move. Hold only the source delete op after admission past its wait. Observe the returned status, then release the delete. The source can disappear after the caller reported the deletion phase as failed.",
+    "impact": "Misleading source-state information and an unsafe retry model. The destination note is already durable; no unsupported claim of destination loss is made.",
+    "gap": "A create-timeout test passes because that branch is already handled correctly. This requires a separate latch specifically after source-deletion admission.",
+    "fix": "Represent the two phases separately and preserve a move/deletion identity until reconciliation. Retrying must reuse the existing destination note and settle the source phase only.",
+    "regression": "Latch the source-delete phase of real hubSaveHistoryRow(move=True). Assert one destination note, truthful source-deletion-unknown status, eventual reconciliation, and no second copy on retry. Preserve the existing create_unknown positive control.",
+    "relation": "Narrow cross-phase gap in an otherwise guarded M12 History transfer.",
+    "case": "XF-CASE-050"
+  },
+  {
+    "id": "XF-AUDIT-08",
+    "severity": "Medium",
+    "title": "STATUS.json presents historical M14 details as current state",
+    "milestones": [
+      "M01",
+      "M14",
+      "M15"
+    ],
+    "kind": "Documentation authority drift",
+    "confidence": "High for contradictory current/historical claims",
+    "evidence": [
+      "status",
+      "m14"
+    ],
+    "expected": "A current-state projection must identify the current production schema, algorithm contract and applicable evidence. Historical acceptance results remain dated, immutable records rather than current claims.",
+    "actual": "STATUS.json has current M14-V001..V007 pending ids, but status_reason still describes schema v10, plan-before-effect approval, and the original performance figures; benchmark_runs points to the original September 24 run. The September 28 addendum explicitly supersedes current-code claims with schema v13, one-op approval and validity-gated newer measurements.",
+    "chain": "Historical M14 acceptance → partially refreshed STATUS current-state fields → fresh agent/M15 preparation consumes mixed-era state.",
+    "example": "A fresh session reads STATUS first as START_HERE directs. It can plan a v9→v10 migration or use old 54/50.3 ms writer-wait figures even though the current addendum describes schema13 and maxima205/174 ms.",
+    "impact": "Wrong qualification premises and misleading provenance, despite correct historical records being retained elsewhere. This is not evidence that the installed app or live database currently has any particular schema.",
+    "gap": "A syntactically valid JSON/status-id check will not compare the narrative and evidence pointers to the current remediation addendum.",
+    "fix": "Add/update an explicitly current remediation projection with full code/evidence refs and current schema. Keep the original source_commit and benchmarks as labeled historical entries, not overwritten history. Reconcile runbook counts from the actual stable-id set.",
+    "regression": "Statically validate that current schema/production/evidence pointers agree with the addendum and that old records remain byte-identical. Independently enumerate runbook ids and distinguish pending records by their instruction revision.",
+    "relation": "Partially refreshed current projection, not a request to rewrite accepted historical evidence.",
+    "case": "XF-CASE-092"
+  }
+]

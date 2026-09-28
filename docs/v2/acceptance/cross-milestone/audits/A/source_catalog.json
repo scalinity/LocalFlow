@@ -1,0 +1,413 @@
+{
+  "transform_store": {
+    "path": "localflow/v2/transforms_store.py",
+    "symbol_or_boundary": "TransformStore.add_transform / update_transform / _append_revision",
+    "requested_read_window": [
+      200,
+      335
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/transforms_store.py#L200-L335"
+  },
+  "transform_editor": {
+    "path": "localflow/v2/ui/hub.py",
+    "symbol_or_boundary": "_transform_write; transformsAdd_, transformsUpdate_, transformsToggle_",
+    "requested_read_window": [
+      1820,
+      2050
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/ui/hub.py#L1820-L2050"
+  },
+  "note_callers": {
+    "path": "localflow/app.py",
+    "symbol_or_boundary": "tfSaveToScratchpad; hubSaveHistoryRow; _guarded_copy",
+    "requested_read_window": [
+      2000,
+      2235
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py#L2000-L2235"
+  },
+  "note_create": {
+    "path": "localflow/v2/notes.py",
+    "symbol_or_boundary": "NoteOutcomeUnknown; NoteStore._mutation_submit / create",
+    "requested_read_window": [
+      285,
+      640
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/notes.py#L285-L640"
+  },
+  "recovery_copy": {
+    "path": "localflow/app.py",
+    "symbol_or_boundary": "copyLastRaw_; retry admission and old-attempt guards",
+    "requested_read_window": [
+      5830,
+      6005
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py#L5830-L6005"
+  },
+  "inject": {
+    "path": "localflow/inject.py",
+    "symbol_or_boundary": "copy_text",
+    "requested_read_window": [
+      1,
+      150
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/inject.py#L1-L150"
+  },
+  "insertion": {
+    "path": "localflow/v2/insertion/service.py",
+    "symbol_or_boundary": "InsertionService; pending clipboard ownership",
+    "requested_read_window": [
+      1,
+      250
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/insertion/service.py#L1-L250"
+  },
+  "store": {
+    "path": "localflow/v2/store.py",
+    "symbol_or_boundary": "Store._submit / submit; queue admission and timeout",
+    "requested_read_window": [
+      1240,
+      1415
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/store.py#L1240-L1415"
+  },
+  "cleanup_gate": {
+    "path": "localflow/v2/curation/evidence.py",
+    "symbol_or_boundary": "cleanup_qualification_in; transform_target_in",
+    "requested_read_window": [
+      105,
+      285
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/evidence.py#L105-L285"
+  },
+  "norm_capture": {
+    "path": "localflow/v2/training.py",
+    "symbol_or_boundary": "EvidenceCollector.on_normalization",
+    "requested_read_window": [
+      660,
+      830
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/training.py#L660-L830"
+  },
+  "export": {
+    "path": "localflow/v2/curation/export.py",
+    "symbol_or_boundary": "cleanup_supervised / transform_supervised record assembly",
+    "requested_read_window": [
+      335,
+      475
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/export.py#L335-L475"
+  },
+  "status": {
+    "path": "docs/v2/STATUS.json",
+    "symbol_or_boundary": "current-state projection",
+    "requested_read_window": null,
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/STATUS.json"
+  },
+  "m14": {
+    "path": "docs/v2/handoffs/M14.md",
+    "symbol_or_boundary": "2026-09-28 remediation addendum",
+    "requested_read_window": [
+      180,
+      280
+    ],
+    "evidence_level": "HANDOFF_RECORD",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+  },
+  "hub_contract": {
+    "path": "docs/v2/contracts/hub.md",
+    "symbol_or_boundary": "rendered identity, query publication, action outcomes",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+  },
+  "export_contract": {
+    "path": "docs/v2/contracts/dataset_exports.md",
+    "symbol_or_boundary": "cleanup completeness and exact task input",
+    "requested_read_window": [
+      45,
+      145
+    ],
+    "evidence_level": "CONTRACT",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md#L45-L145"
+  },
+  "store_contract": {
+    "path": "docs/v2/contracts/store.md",
+    "symbol_or_boundary": "writer discipline, retention, migration, receipts",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/store.md"
+  },
+  "notes_contract": {
+    "path": "docs/v2/contracts/scratchpad.md",
+    "symbol_or_boundary": "arrival receipts; note provenance",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/scratchpad.md"
+  },
+  "m15": {
+    "path": "docs/v2/LOCALFLOW_V2_MILESTONES.md",
+    "symbol_or_boundary": "M15 model qualification and end-to-end performance",
+    "requested_read_window": [
+      1380,
+      1515
+    ],
+    "evidence_level": "CANONICAL_EXCERPT",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/LOCALFLOW_V2_MILESTONES.md#L1380-L1515"
+  },
+  "history": {
+    "path": "localflow/v2/history_queries.py",
+    "symbol_or_boundary": "final_text; _job_artifacts; job_detail",
+    "requested_read_window": null,
+    "evidence_level": "PRIOR_PASS_DIRECT_SOURCE_WINDOWS; not exhaustive module review",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/history_queries.py"
+  },
+  "state": {
+    "path": "localflow/v2/ui/state.py",
+    "symbol_or_boundary": "QueryExecutor; HubState admission and revocation",
+    "requested_read_window": [
+      1,
+      300
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/ui/state.py#L1-L300"
+  },
+  "notes_spans": {
+    "path": "localflow/v2/notes.py",
+    "symbol_or_boundary": "rebase_spans; utf16_range_to_codepoints; note_destination_check",
+    "requested_read_window": [
+      1,
+      285
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/notes.py#L1-L285"
+  },
+  "learning": {
+    "path": "localflow/v2/learning.py",
+    "symbol_or_boundary": "teach_correction; mine_observation_candidates; _mine_note_candidates",
+    "requested_read_window": [
+      1,
+      300
+    ],
+    "evidence_level": "DIRECT_SOURCE",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/learning.py#L1-L300"
+  },
+  "app_lifecycle": {
+    "path": "localflow/app.py",
+    "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+    "requested_read_window": null,
+    "evidence_level": "DIRECT_SOURCE_WINDOWS",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+  },
+  "contracts_index": {
+    "path": "docs/v2/contracts/INDEX.md",
+    "symbol_or_boundary": "owner map and binding privacy conventions",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/INDEX.md"
+  },
+  "contract_events": {
+    "path": "docs/v2/contracts/events.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/events.md"
+  },
+  "contract_sessions": {
+    "path": "docs/v2/contracts/jobs.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/jobs.md"
+  },
+  "contract_audio": {
+    "path": "docs/v2/contracts/capture.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/capture.md"
+  },
+  "contract_workers": {
+    "path": "docs/v2/contracts/worker.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/worker.md"
+  },
+  "contract_local_store": {
+    "path": "docs/v2/contracts/store.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/store.md"
+  },
+  "contract_context": {
+    "path": "docs/v2/contracts/context.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/context.md"
+  },
+  "contract_normalization": {
+    "path": "docs/v2/contracts/normalization.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/normalization.md"
+  },
+  "contract_vocabulary": {
+    "path": "docs/v2/contracts/vocabulary.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/vocabulary.md"
+  },
+  "contract_cleanup": {
+    "path": "docs/v2/contracts/cleanup.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/cleanup.md"
+  },
+  "contract_insertion": {
+    "path": "docs/v2/contracts/insertion.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/insertion.md"
+  },
+  "contract_hub": {
+    "path": "docs/v2/contracts/hub.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+  },
+  "contract_writing_profiles": {
+    "path": "docs/v2/contracts/profiles.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/profiles.md"
+  },
+  "contract_styles": {
+    "path": "docs/v2/contracts/profiles.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/profiles.md"
+  },
+  "contract_pipeline": {
+    "path": "docs/v2/contracts/training_evidence.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/training_evidence.md"
+  },
+  "contract_transforms": {
+    "path": "docs/v2/contracts/transforms.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/transforms.md"
+  },
+  "contract_scratchpad": {
+    "path": "docs/v2/contracts/scratchpad.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/scratchpad.md"
+  },
+  "contract_analytics": {
+    "path": "docs/v2/contracts/analytics.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/analytics.md"
+  },
+  "contract_learning": {
+    "path": "docs/v2/contracts/learning.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/learning.md"
+  },
+  "contract_profile": {
+    "path": "docs/v2/contracts/profile.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/profile.md"
+  },
+  "contract_dataset_exports": {
+    "path": "docs/v2/contracts/dataset_exports.md",
+    "symbol_or_boundary": "Published owner/consumer contract",
+    "requested_read_window": null,
+    "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md"
+  },
+  "contract_model_qualification": {
+    "path": "docs/v2/LOCALFLOW_V2_MILESTONES.md",
+    "symbol_or_boundary": "M15 qualification owner; complete section reconciliation remains open",
+    "requested_read_window": null,
+    "evidence_level": "PARTIAL_DOCUMENT_READ",
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/LOCALFLOW_V2_MILESTONES.md"
+  }
+}

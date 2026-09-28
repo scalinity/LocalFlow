@@ -1,0 +1,2522 @@
+{
+  "schema_version": 1,
+  "repository": "scalinity/LocalFlow",
+  "audited_commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+  "inventory_kind": "bounded authority-interface map",
+  "scope_statement": "50 major shared authorities and their known consumers. This is not a complete tracked-file call-site enumeration and does not establish absence of other bypasses.",
+  "execution_status": "NOT_RUN",
+  "counts": {
+    "interfaces": 50,
+    "direct_source_pairs": 9,
+    "open_finding_rows": 10
+  },
+  "required_next_static_work": [
+    "Read the complete current runbook and status projection; enumerate stable ids and browser namespace versions.",
+    "Enumerate actual production consumers for each public interface from the full tracked source tree.",
+    "Recheck original source and candidate branches against the pinned base before remediation.",
+    "Read the uninspected portions of canonical S29/E19 and M15 acceptance before qualification."
+  ],
+  "interfaces": [
+    {
+      "interface_id": "XF-IF-001",
+      "interface": "Event taxonomy and content-free envelope",
+      "milestones": [
+        "M01",
+        "M02",
+        "M03",
+        "M09"
+      ],
+      "owner": "M01 events contract / EventLog",
+      "known_consumers": [
+        "coordinator",
+        "services",
+        "Diagnostics"
+      ],
+      "authority_fields_or_facts": "schema_version, timestamp/time-quality, job/attempt, decision/path, content-free detail",
+      "writer_threading_rule": "Queue-backed event writing; do not block callback or write private content in envelope",
+      "required_refusal_missing_unknown_behavior": "Unknown facts retain null/reason; queue loss is explicit",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/events.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/events.md"
+        }
+      ],
+      "coverage_class": "CONTRACT_ONLY",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-002",
+      "interface": "Public Store submission",
+      "milestones": [
+        "M02",
+        "M03",
+        "M09",
+        "M11",
+        "M12",
+        "M14"
+      ],
+      "owner": "Store.submit/_submit",
+      "known_consumers": [
+        "all synchronous service mutations and queries"
+      ],
+      "authority_fields_or_facts": "admission occurred versus not_started; eventual commit independent of reply timeout",
+      "writer_threading_rule": "One writer op; transaction BEGIN/COMMIT or rollback",
+      "required_refusal_missing_unknown_behavior": "Admitted timeout remains unknown; no unconditional retry with a fresh identity",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/store.py",
+          "symbol_or_boundary": "Store._submit / submit; queue admission and timeout",
+          "requested_read_window": [
+            1240,
+            1415
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/store.py#L1240-L1415"
+        },
+        {
+          "path": "localflow/v2/ui/hub.py",
+          "symbol_or_boundary": "_transform_write; transformsAdd_, transformsUpdate_, transformsToggle_",
+          "requested_read_window": [
+            1820,
+            2050
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/ui/hub.py#L1820-L2050"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "tfSaveToScratchpad; hubSaveHistoryRow; _guarded_copy",
+          "requested_read_window": [
+            2000,
+            2235
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py#L2000-L2235"
+        }
+      ],
+      "coverage_class": "DIRECT_SOURCE_PAIR",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": true,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": "XF-AUDIT-05/06/07",
+      "closure_state": "OPEN_FINDING",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-003",
+      "interface": "Job/attempt lifecycle identity",
+      "milestones": [
+        "M02",
+        "M03",
+        "M07",
+        "M08",
+        "M09",
+        "M14"
+      ],
+      "owner": "session coordinator",
+      "known_consumers": [
+        "workers",
+        "collector",
+        "History",
+        "insertion",
+        "analytics"
+      ],
+      "authority_fields_or_facts": "job_id, attempt, worker/stage generation, capture identity",
+      "writer_threading_rule": "Coordinator validates before publication; writer validates liveness",
+      "required_refusal_missing_unknown_behavior": "Old attempt/generation must not mutate current state",
+      "evidence_sources": [
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE_WINDOWS",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+        },
+        {
+          "path": "docs/v2/contracts/jobs.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/jobs.md"
+        },
+        {
+          "path": "docs/v2/contracts/worker.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/worker.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-004",
+      "interface": "Audio provenance across retry",
+      "milestones": [
+        "M02",
+        "M03",
+        "M09",
+        "M14"
+      ],
+      "owner": "audio/session owner",
+      "known_consumers": [
+        "worker ASR",
+        "Recovery",
+        "replay",
+        "ASR export"
+      ],
+      "authority_fields_or_facts": "original sample rate/count/digest, capture time/quality, artifact owner",
+      "writer_threading_rule": "Managed payloads and bounded worker transport",
+      "required_refusal_missing_unknown_behavior": "Unavailable audio refuses replay/export; original unknown time is not retry time",
+      "evidence_sources": [
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE_WINDOWS",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+        },
+        {
+          "path": "docs/v2/contracts/capture.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/capture.md"
+        },
+        {
+          "path": "docs/v2/contracts/jobs.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/jobs.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-005",
+      "interface": "Deletion tombstones",
+      "milestones": [
+        "M02",
+        "M03",
+        "M09",
+        "M12",
+        "M14"
+      ],
+      "owner": "Store deletion API",
+      "known_consumers": [
+        "collector",
+        "workers",
+        "HubState",
+        "notes",
+        "review/export/profile"
+      ],
+      "authority_fields_or_facts": "job/note/example identity, tombstone/revocation epoch",
+      "writer_threading_rule": "Check inside each write op; notify UI without recursive blocking Store call",
+      "required_refusal_missing_unknown_behavior": "Delete wins over late finalize/publication; no resurrection",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/store.py",
+          "symbol_or_boundary": "Store._submit / submit; queue admission and timeout",
+          "requested_read_window": [
+            1240,
+            1415
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/store.py#L1240-L1415"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE_WINDOWS",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+        },
+        {
+          "path": "docs/v2/contracts/store.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/store.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-006",
+      "interface": "Lease/purge ownership",
+      "milestones": [
+        "M02",
+        "M09",
+        "M12",
+        "M14"
+      ],
+      "owner": "Store retention policy",
+      "known_consumers": [
+        "History",
+        "training buffer",
+        "notes annotations",
+        "dataset sources"
+      ],
+      "authority_fields_or_facts": "owner-specific purpose/expiry; managed path; pending purge record",
+      "writer_threading_rule": "Serial decisions, tracked unlink/reconciliation",
+      "required_refusal_missing_unknown_behavior": "pending_purge is not complete deletion; retention failure is not permission",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/store.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/store.md"
+        },
+        {
+          "path": "docs/v2/contracts/dataset_exports.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md"
+        }
+      ],
+      "coverage_class": "CONTRACT_ONLY",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-007",
+      "interface": "Capture-boundary consent",
+      "milestones": [
+        "M02",
+        "M03",
+        "M06",
+        "M14"
+      ],
+      "owner": "coordinator + EvidenceCollector",
+      "known_consumers": [
+        "stage capture",
+        "retry",
+        "example creation"
+      ],
+      "authority_fields_or_facts": "consent_revision_id at capture, privacy mode and original capture lineage",
+      "writer_threading_rule": "Freeze before processing; producer checks applicable authority",
+      "required_refusal_missing_unknown_behavior": "Late enable does not retroactively authorize captured payloads",
+      "evidence_sources": [
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE_WINDOWS",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+        },
+        {
+          "path": "localflow/v2/training.py",
+          "symbol_or_boundary": "EvidenceCollector.on_normalization",
+          "requested_read_window": [
+            660,
+            830
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/training.py#L660-L830"
+        },
+        {
+          "path": "docs/v2/contracts/store.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/store.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-008",
+      "interface": "Frozen personal vocabulary",
+      "milestones": [
+        "M04",
+        "M05",
+        "M06",
+        "M10",
+        "M14"
+      ],
+      "owner": "VocabularyStore/configured normalizer",
+      "known_consumers": [
+        "normalization",
+        "ASR hints",
+        "cleanup hints",
+        "learning approval sandbox"
+      ],
+      "authority_fields_or_facts": "dictionary revision, scope, approved state, active normalizer mode",
+      "writer_threading_rule": "One job snapshot; dictionary writes through writer",
+      "required_refusal_missing_unknown_behavior": "Unavailable scope cannot expand vocabulary; rejected/pending never become rules",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/vocabulary.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/vocabulary.md"
+        },
+        {
+          "path": "docs/v2/contracts/normalization.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/normalization.md"
+        },
+        {
+          "path": "localflow/v2/learning.py",
+          "symbol_or_boundary": "teach_correction; mine_observation_candidates; _mine_note_candidates",
+          "requested_read_window": [
+            1,
+            300
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/learning.py#L1-L300"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-009",
+      "interface": "Normalization result and retained input",
+      "milestones": [
+        "M04",
+        "M07",
+        "M14"
+      ],
+      "owner": "EvidenceCollector.on_normalization",
+      "known_consumers": [
+        "cleanup qualifier",
+        "exporter"
+      ],
+      "authority_fields_or_facts": "actual normalized text, changed/not-run/failure, artifact role/hash, missing reasons",
+      "writer_threading_rule": "Collector writes/leases evidence; consumer must preserve producer outcome",
+      "required_refusal_missing_unknown_behavior": "Failed retention is not absent normalization; complete tier requires exact input",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/training.py",
+          "symbol_or_boundary": "EvidenceCollector.on_normalization",
+          "requested_read_window": [
+            660,
+            830
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/training.py#L660-L830"
+        },
+        {
+          "path": "localflow/v2/curation/evidence.py",
+          "symbol_or_boundary": "cleanup_qualification_in; transform_target_in",
+          "requested_read_window": [
+            105,
+            285
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/evidence.py#L105-L285"
+        },
+        {
+          "path": "localflow/v2/curation/export.py",
+          "symbol_or_boundary": "cleanup_supervised / transform_supervised record assembly",
+          "requested_read_window": [
+            335,
+            475
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/export.py#L335-L475"
+        }
+      ],
+      "coverage_class": "DIRECT_SOURCE_PAIR",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": true,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": "XF-AUDIT-04",
+      "closure_state": "OPEN_FINDING",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-010",
+      "interface": "Normalization edit/lease envelope",
+      "milestones": [
+        "M04",
+        "M05",
+        "M06",
+        "M07",
+        "M14"
+      ],
+      "owner": "normalizer + collector",
+      "known_consumers": [
+        "History stages",
+        "training qualification"
+      ],
+      "authority_fields_or_facts": "input/output digest, edits, policy snapshot, hint-context provenance",
+      "writer_threading_rule": "Managed artifact writes; release retired attempt leases",
+      "required_refusal_missing_unknown_behavior": "Missing stage artifacts retain specific reasons, not guessed content",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/training.py",
+          "symbol_or_boundary": "EvidenceCollector.on_normalization",
+          "requested_read_window": [
+            660,
+            830
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/training.py#L660-L830"
+        },
+        {
+          "path": "docs/v2/contracts/normalization.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/normalization.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-011",
+      "interface": "Context handle and late delta",
+      "milestones": [
+        "M03",
+        "M05",
+        "M06",
+        "M08",
+        "M10",
+        "M14"
+      ],
+      "owner": "ContextEngine",
+      "known_consumers": [
+        "coordinator",
+        "profile resolution",
+        "insertion capture",
+        "collector"
+      ],
+      "authority_fields_or_facts": "opaque per-job handle, origin, trust, fingerprint, parent revision",
+      "writer_threading_rule": "Capture/finalize deadlines and ownership; native AX access at adapter",
+      "required_refusal_missing_unknown_behavior": "Deny/secure/unavailable is explicit; late result cannot reparent",
+      "evidence_sources": [
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE_WINDOWS",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+        },
+        {
+          "path": "docs/v2/contracts/context.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/context.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-012",
+      "interface": "Cleanup faithful gate",
+      "milestones": [
+        "M04",
+        "M05",
+        "M06",
+        "M07",
+        "M10",
+        "M14"
+      ],
+      "owner": "cleanup validator/engine",
+      "known_consumers": [
+        "coordinator",
+        "collector",
+        "replay/evaluation"
+      ],
+      "authority_fields_or_facts": "exact input, applicable hints, required preservation, path/model/prompt provenance",
+      "writer_threading_rule": "Worker model path; deterministic validation boundary",
+      "required_refusal_missing_unknown_behavior": "Fail-closed fallback with a real reason; no relaxed fidelity for score gain",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/cleanup.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/cleanup.md"
+        },
+        {
+          "path": "docs/v2/contracts/training_evidence.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/training_evidence.md"
+        }
+      ],
+      "coverage_class": "CONTRACT_ONLY",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-013",
+      "interface": "Cleanup provenance completeness",
+      "milestones": [
+        "M07",
+        "M14",
+        "M15"
+      ],
+      "owner": "cleanup_qualification_in",
+      "known_consumers": [
+        "teach readiness",
+        "dataset records",
+        "qualification data"
+      ],
+      "authority_fields_or_facts": "explicit intended correctness, stage input/output, model revision, rendered prompt",
+      "writer_threading_rule": "Same eligibility owner used by readiness/export",
+      "required_refusal_missing_unknown_behavior": "Text-pair-only remains distinct from model-task-complete",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/curation/evidence.py",
+          "symbol_or_boundary": "cleanup_qualification_in; transform_target_in",
+          "requested_read_window": [
+            105,
+            285
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/evidence.py#L105-L285"
+        },
+        {
+          "path": "localflow/v2/curation/export.py",
+          "symbol_or_boundary": "cleanup_supervised / transform_supervised record assembly",
+          "requested_read_window": [
+            335,
+            475
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/export.py#L335-L475"
+        },
+        {
+          "path": "docs/v2/contracts/dataset_exports.md",
+          "symbol_or_boundary": "cleanup completeness and exact task input",
+          "requested_read_window": [
+            45,
+            145
+          ],
+          "evidence_level": "CONTRACT",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md#L45-L145"
+        }
+      ],
+      "coverage_class": "DIRECT_SOURCE_PAIR",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": true,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": "XF-AUDIT-04",
+      "closure_state": "OPEN_FINDING",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-014",
+      "interface": "Writing profile frozen for one job",
+      "milestones": [
+        "M06",
+        "M10",
+        "M11"
+      ],
+      "owner": "profile resolver",
+      "known_consumers": [
+        "normalization",
+        "cleanup",
+        "transform-backed mode"
+      ],
+      "authority_fields_or_facts": "mode override, app rule, skills, dictionary/context/settings revisions",
+      "writer_threading_rule": "Resolve/freeze once at documented boundary",
+      "required_refusal_missing_unknown_behavior": "No workspace context means no stale workspace skills; one-shot consumed once",
+      "evidence_sources": [
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE_WINDOWS",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+        },
+        {
+          "path": "docs/v2/contracts/profiles.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/profiles.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-015",
+      "interface": "Snippet literal provenance",
+      "milestones": [
+        "M04",
+        "M07",
+        "M10"
+      ],
+      "owner": "snippet expansion",
+      "known_consumers": [
+        "normalizer",
+        "cleanup",
+        "notes/profile eligibility"
+      ],
+      "authority_fields_or_facts": "trigger, expansion range, protected literals, origin",
+      "writer_threading_rule": "Use frozen profile/registry",
+      "required_refusal_missing_unknown_behavior": "Missing placeholder does not become fabricated successful expansion",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/profiles.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/profiles.md"
+        },
+        {
+          "path": "docs/v2/contracts/training_evidence.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/training_evidence.md"
+        },
+        {
+          "path": "docs/v2/contracts/profiles.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/profiles.md"
+        }
+      ],
+      "coverage_class": "CONTRACT_ONLY",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-016",
+      "interface": "Current transform definition and preserved revision",
+      "milestones": [
+        "M02",
+        "M11",
+        "M14"
+      ],
+      "owner": "TransformStore.update_transform",
+      "known_consumers": [
+        "engine definition lookup",
+        "transform qualification",
+        "dataset exporter"
+      ],
+      "authority_fields_or_facts": "transform_id/revision and all definition fields",
+      "writer_threading_rule": "Authoritative merge/update/preserve must be atomic in one writer op",
+      "required_refusal_missing_unknown_behavior": "No revision may name divergent live and preserved definitions",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/transforms_store.py",
+          "symbol_or_boundary": "TransformStore.add_transform / update_transform / _append_revision",
+          "requested_read_window": [
+            200,
+            335
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/transforms_store.py#L200-L335"
+        },
+        {
+          "path": "localflow/v2/curation/evidence.py",
+          "symbol_or_boundary": "cleanup_qualification_in; transform_target_in",
+          "requested_read_window": [
+            105,
+            285
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/evidence.py#L105-L285"
+        },
+        {
+          "path": "localflow/v2/curation/export.py",
+          "symbol_or_boundary": "cleanup_supervised / transform_supervised record assembly",
+          "requested_read_window": [
+            335,
+            475
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/export.py#L335-L475"
+        }
+      ],
+      "coverage_class": "DIRECT_SOURCE_PAIR",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": true,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": "XF-AUDIT-02",
+      "closure_state": "OPEN_FINDING",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-017",
+      "interface": "Transform editor update binding",
+      "milestones": [
+        "M09",
+        "M10",
+        "M11"
+      ],
+      "owner": "Hub transform editor",
+      "known_consumers": [
+        "TransformStore"
+      ],
+      "authority_fields_or_facts": "rendered id/revision, edited delta, auto_apply opt-out",
+      "writer_threading_rule": "Main-thread form, guarded store mutation",
+      "required_refusal_missing_unknown_behavior": "Stale form refuses/conflicts; unchanged stale fields do not overwrite newer state",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/ui/hub.py",
+          "symbol_or_boundary": "_transform_write; transformsAdd_, transformsUpdate_, transformsToggle_",
+          "requested_read_window": [
+            1820,
+            2050
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/ui/hub.py#L1820-L2050"
+        },
+        {
+          "path": "localflow/v2/transforms_store.py",
+          "symbol_or_boundary": "TransformStore.add_transform / update_transform / _append_revision",
+          "requested_read_window": [
+            200,
+            335
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/transforms_store.py#L200-L335"
+        }
+      ],
+      "coverage_class": "DIRECT_SOURCE_PAIR",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": true,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": "XF-AUDIT-03",
+      "closure_state": "OPEN_FINDING",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-018",
+      "interface": "Transform Add outcome identity",
+      "milestones": [
+        "M02",
+        "M09",
+        "M11"
+      ],
+      "owner": "Hub _transform_write / transformsAdd_",
+      "known_consumers": [
+        "TransformStore.add_transform"
+      ],
+      "authority_fields_or_facts": "logical create id and outcome state",
+      "writer_threading_rule": "Store admission is separate from UI reply",
+      "required_refusal_missing_unknown_behavior": "Preserve outcome_unknown and reconcile same id before repeat",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/ui/hub.py",
+          "symbol_or_boundary": "_transform_write; transformsAdd_, transformsUpdate_, transformsToggle_",
+          "requested_read_window": [
+            1820,
+            2050
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/ui/hub.py#L1820-L2050"
+        },
+        {
+          "path": "localflow/v2/transforms_store.py",
+          "symbol_or_boundary": "TransformStore.add_transform / update_transform / _append_revision",
+          "requested_read_window": [
+            200,
+            335
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/transforms_store.py#L200-L335"
+        },
+        {
+          "path": "localflow/v2/store.py",
+          "symbol_or_boundary": "Store._submit / submit; queue admission and timeout",
+          "requested_read_window": [
+            1240,
+            1415
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/store.py#L1240-L1415"
+        }
+      ],
+      "coverage_class": "DIRECT_SOURCE_PAIR",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": true,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": "XF-AUDIT-05",
+      "closure_state": "OPEN_FINDING",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-019",
+      "interface": "Transform frozen task/candidate identity",
+      "milestones": [
+        "M01",
+        "M11",
+        "M14"
+      ],
+      "owner": "transform request/task producer",
+      "known_consumers": [
+        "result panel",
+        "candidate store",
+        "preference and export"
+      ],
+      "authority_fields_or_facts": "source digest, cleaned input, transform id/revision, settings/prompt, candidate id",
+      "writer_threading_rule": "Freeze task before worker execution",
+      "required_refusal_missing_unknown_behavior": "Equal outputs alone do not establish comparable task identity",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/transforms.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/transforms.md"
+        },
+        {
+          "path": "localflow/v2/curation/evidence.py",
+          "symbol_or_boundary": "cleanup_qualification_in; transform_target_in",
+          "requested_read_window": [
+            105,
+            285
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/evidence.py#L105-L285"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-020",
+      "interface": "Prompt Engineer preservation",
+      "milestones": [
+        "M07",
+        "M11",
+        "M14"
+      ],
+      "owner": "Prompt Engineer requirement/literal gates",
+      "known_consumers": [
+        "transform acceptance",
+        "saved result",
+        "dataset candidates"
+      ],
+      "authority_fields_or_facts": "actions, polarity, actors, explicit literals, protected requirements",
+      "writer_threading_rule": "Independent deterministic acceptance gate around model output",
+      "required_refusal_missing_unknown_behavior": "Drop/negate explicit requirements means refuse/fallback, not accepted improvement",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/transforms.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/transforms.md"
+        }
+      ],
+      "coverage_class": "CONTRACT_ONLY",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-021",
+      "interface": "Insertion admission handshake",
+      "milestones": [
+        "M03",
+        "M08",
+        "M09",
+        "M11",
+        "M12"
+      ],
+      "owner": "InsertionService",
+      "known_consumers": [
+        "live coordinator",
+        "retry",
+        "paste-again",
+        "transform paste"
+      ],
+      "authority_fields_or_facts": "submission accepted versus settled outcome; job/generation/source authority",
+      "writer_threading_rule": "Serial insertion service; native transport isolated",
+      "required_refusal_missing_unknown_behavior": "No backend call when not admitted; truthful queued/unverified/confirmed distinction",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/insertion/service.py",
+          "symbol_or_boundary": "InsertionService; pending clipboard ownership",
+          "requested_read_window": [
+            1,
+            250
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/insertion/service.py#L1-L250"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE_WINDOWS",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+        },
+        {
+          "path": "docs/v2/contracts/insertion.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/insertion.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-022",
+      "interface": "Clipboard payload ownership",
+      "milestones": [
+        "M08",
+        "M09",
+        "M11",
+        "M12"
+      ],
+      "owner": "InsertionService.copy_text / _guarded_copy",
+      "known_consumers": [
+        "History Copy",
+        "transform Copy",
+        "Recovery Copy Last Raw"
+      ],
+      "authority_fields_or_facts": "ownership ticket, clipboard generation and pending payload",
+      "writer_threading_rule": "One guarded broker; every in-app caller must use it",
+      "required_refusal_missing_unknown_behavior": "clipboard_payload_pending refusal survives caller/UI",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/insertion/service.py",
+          "symbol_or_boundary": "InsertionService; pending clipboard ownership",
+          "requested_read_window": [
+            1,
+            250
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/insertion/service.py#L1-L250"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "tfSaveToScratchpad; hubSaveHistoryRow; _guarded_copy",
+          "requested_read_window": [
+            2000,
+            2235
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py#L2000-L2235"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "copyLastRaw_; retry admission and old-attempt guards",
+          "requested_read_window": [
+            5830,
+            6005
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py#L5830-L6005"
+        },
+        {
+          "path": "localflow/inject.py",
+          "symbol_or_boundary": "copy_text",
+          "requested_read_window": [
+            1,
+            150
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/inject.py#L1-L150"
+        }
+      ],
+      "coverage_class": "DIRECT_SOURCE_PAIR",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": true,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": "XF-AUDIT-01",
+      "closure_state": "OPEN_FINDING",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-023",
+      "interface": "Insertion final readback and cancellation",
+      "milestones": [
+        "M03",
+        "M08",
+        "M13"
+      ],
+      "owner": "insertion transaction",
+      "known_consumers": [
+        "coordinator state",
+        "History attempt",
+        "analytics"
+      ],
+      "authority_fields_or_facts": "irreversible-post phase, observable host state, cancellation timing",
+      "writer_threading_rule": "Serialized transaction; bounded wait/retention",
+      "required_refusal_missing_unknown_behavior": "Unobservable is not confirmed; cancellation after post is not no effect",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/insertion/service.py",
+          "symbol_or_boundary": "InsertionService; pending clipboard ownership",
+          "requested_read_window": [
+            1,
+            250
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/insertion/service.py#L1-L250"
+        },
+        {
+          "path": "docs/v2/contracts/insertion.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/insertion.md"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE_WINDOWS",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-024",
+      "interface": "History current final-stage resolution",
+      "milestones": [
+        "M02",
+        "M03",
+        "M09",
+        "M11",
+        "M12"
+      ],
+      "owner": "HistoryQueryService.final_text",
+      "known_consumers": [
+        "Copy",
+        "Teach",
+        "Scratchpad transfer",
+        "detail"
+      ],
+      "authority_fields_or_facts": "applied final stage, exact artifact id/hash, lineage attempt",
+      "writer_threading_rule": "Read authoritative live state; action revalidates",
+      "required_refusal_missing_unknown_behavior": "Missing applied transformed final must not fall back to cleaned/raw",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/history_queries.py",
+          "symbol_or_boundary": "final_text; _job_artifacts; job_detail",
+          "requested_read_window": null,
+          "evidence_level": "PRIOR_PASS_DIRECT_SOURCE_WINDOWS; not exhaustive module review",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/history_queries.py"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "tfSaveToScratchpad; hubSaveHistoryRow; _guarded_copy",
+          "requested_read_window": [
+            2000,
+            2235
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py#L2000-L2235"
+        },
+        {
+          "path": "docs/v2/contracts/hub.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-025",
+      "interface": "History search versus display lineage",
+      "milestones": [
+        "M03",
+        "M09"
+      ],
+      "owner": "HistoryQueryService",
+      "known_consumers": [
+        "Hub list/detail"
+      ],
+      "authority_fields_or_facts": "retained attempt match, current displayed manifest, explicit search policy",
+      "writer_threading_rule": "Bounded read/query publication",
+      "required_refusal_missing_unknown_behavior": "Search policy broader than current final is not itself a wrong-target defect",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/history_queries.py",
+          "symbol_or_boundary": "final_text; _job_artifacts; job_detail",
+          "requested_read_window": null,
+          "evidence_level": "PRIOR_PASS_DIRECT_SOURCE_WINDOWS; not exhaustive module review",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/history_queries.py"
+        },
+        {
+          "path": "docs/v2/contracts/hub.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "BOUNDED_INSPECTION_NO_NEW_DEFECT_ESTABLISHED",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-026",
+      "interface": "Hub query publication epoch",
+      "milestones": [
+        "M02",
+        "M09",
+        "M12",
+        "M14"
+      ],
+      "owner": "QueryExecutor / HubState",
+      "known_consumers": [
+        "all pane queries and errors"
+      ],
+      "authority_fields_or_facts": "per-key newest generation, active pane, deletion epoch",
+      "writer_threading_rule": "Background read; actual main-thread publication",
+      "required_refusal_missing_unknown_behavior": "Older success or error cannot repaint newer state",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/ui/state.py",
+          "symbol_or_boundary": "QueryExecutor; HubState admission and revocation",
+          "requested_read_window": [
+            1,
+            300
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/ui/state.py#L1-L300"
+        },
+        {
+          "path": "docs/v2/contracts/hub.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-027",
+      "interface": "Rendered detail action identity",
+      "milestones": [
+        "M09",
+        "M10",
+        "M11",
+        "M12",
+        "M14"
+      ],
+      "owner": "Hub controllers",
+      "known_consumers": [
+        "Copy",
+        "Teach",
+        "labels",
+        "candidate actions",
+        "notes transfer"
+      ],
+      "authority_fields_or_facts": "what was drawn: id/revision/hash/slot order, not only current selected_id",
+      "writer_threading_rule": "Bind before background action; revalidate on writer admission",
+      "required_refusal_missing_unknown_behavior": "selection_loading/stale_source before mutation; preserve user input",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/hub.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+        },
+        {
+          "path": "localflow/v2/ui/hub.py",
+          "symbol_or_boundary": "_transform_write; transformsAdd_, transformsUpdate_, transformsToggle_",
+          "requested_read_window": [
+            1820,
+            2050
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/ui/hub.py#L1820-L2050"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "tfSaveToScratchpad; hubSaveHistoryRow; _guarded_copy",
+          "requested_read_window": [
+            2000,
+            2235
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py#L2000-L2235"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-028",
+      "interface": "Replay source availability",
+      "milestones": [
+        "M02",
+        "M09"
+      ],
+      "owner": "replay service",
+      "known_consumers": [
+        "History Replay",
+        "training listening gate"
+      ],
+      "authority_fields_or_facts": "exact audio artifact/job/example, real payload availability",
+      "writer_threading_rule": "Serialize playback ownership; cancel old source on new failure",
+      "required_refusal_missing_unknown_behavior": "Missing audio stops old playback and cannot authorize another example",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/hub.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+        },
+        {
+          "path": "docs/v2/contracts/capture.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/capture.md"
+        }
+      ],
+      "coverage_class": "CONTRACT_ONLY",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-029",
+      "interface": "Note create and typed outcomes",
+      "milestones": [
+        "M02",
+        "M11",
+        "M12"
+      ],
+      "owner": "NoteStore.create_note/_mutation_submit",
+      "known_consumers": [
+        "Scratchpad New",
+        "transform Save",
+        "History transfer"
+      ],
+      "authority_fields_or_facts": "preallocated note_id, admitted/refused/unknown, origin",
+      "writer_threading_rule": "Caller-supplied note id in Store writer; reconcile an existing note before any replay",
+      "required_refusal_missing_unknown_behavior": "NoteOutcomeUnknown identity must reach caller reconciliation",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/notes.py",
+          "symbol_or_boundary": "NoteOutcomeUnknown; NoteStore._mutation_submit / create",
+          "requested_read_window": [
+            285,
+            640
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/notes.py#L285-L640"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "tfSaveToScratchpad; hubSaveHistoryRow; _guarded_copy",
+          "requested_read_window": [
+            2000,
+            2235
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py#L2000-L2235"
+        }
+      ],
+      "coverage_class": "DIRECT_SOURCE_PAIR",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": true,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": "XF-AUDIT-06",
+      "closure_state": "OPEN_FINDING",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-030",
+      "interface": "Note arrival durability",
+      "milestones": [
+        "M03",
+        "M12"
+      ],
+      "owner": "note arrival receipt owner",
+      "known_consumers": [
+        "dictation destination",
+        "autosave",
+        "coordinator completion"
+      ],
+      "authority_fields_or_facts": "arrival id, note id, base revision, content/generation, origin span",
+      "writer_threading_rule": "Actual writer receipt; no enqueue-as-durability",
+      "required_refusal_missing_unknown_behavior": "Keep admitted arrivals until settled; do not overwrite typed buffer",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/scratchpad.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/scratchpad.md"
+        },
+        {
+          "path": "localflow/v2/notes.py",
+          "symbol_or_boundary": "NoteOutcomeUnknown; NoteStore._mutation_submit / create",
+          "requested_read_window": [
+            285,
+            640
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/notes.py#L285-L640"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-031",
+      "interface": "Note rebase/attribution boundary",
+      "milestones": [
+        "M12",
+        "M14"
+      ],
+      "owner": "rebase_spans / occurrence ownership",
+      "known_consumers": [
+        "editor save",
+        "learning miner",
+        "profile eligibility"
+      ],
+      "authority_fields_or_facts": "codepoint/UTF16 mapping, occurrence identity, typed/dictated origin",
+      "writer_threading_rule": "Pure attribution analysis plus writer-bound revision update",
+      "required_refusal_missing_unknown_behavior": "Ambiguous repeated occurrence abstains; typed edits do not become speech",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/notes.py",
+          "symbol_or_boundary": "rebase_spans; utf16_range_to_codepoints; note_destination_check",
+          "requested_read_window": [
+            1,
+            285
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/notes.py#L1-L285"
+        },
+        {
+          "path": "localflow/v2/learning.py",
+          "symbol_or_boundary": "teach_correction; mine_observation_candidates; _mine_note_candidates",
+          "requested_read_window": [
+            1,
+            300
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/learning.py#L1-L300"
+        },
+        {
+          "path": "docs/v2/contracts/scratchpad.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/scratchpad.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-032",
+      "interface": "Note transform whole/selection acceptance",
+      "milestones": [
+        "M11",
+        "M12"
+      ],
+      "owner": "note_destination_check",
+      "known_consumers": [
+        "transform Accept into Scratchpad"
+      ],
+      "authority_fields_or_facts": "scope, captured full text or selected range, source revision/digest",
+      "writer_threading_rule": "Verify current destination at actual apply boundary",
+      "required_refusal_missing_unknown_behavior": "Whole-note changes refuse; unrelated outside edit may remain valid for exact selection",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/notes.py",
+          "symbol_or_boundary": "rebase_spans; utf16_range_to_codepoints; note_destination_check",
+          "requested_read_window": [
+            1,
+            285
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/notes.py#L1-L285"
+        },
+        {
+          "path": "docs/v2/contracts/scratchpad.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/scratchpad.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-033",
+      "interface": "History Copy/Move two-phase receipt",
+      "milestones": [
+        "M02",
+        "M09",
+        "M12"
+      ],
+      "owner": "hubSaveHistoryRow",
+      "known_consumers": [
+        "History transfer controls",
+        "NoteStore",
+        "source deletion"
+      ],
+      "authority_fields_or_facts": "strict final/hash, destination id, source-delete phase/outcome",
+      "writer_threading_rule": "Destination create then optional delete; reconcile phases separately",
+      "required_refusal_missing_unknown_behavior": "create_unknown is handled; source_delete_unknown must not become confirmed failure",
+      "evidence_sources": [
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "tfSaveToScratchpad; hubSaveHistoryRow; _guarded_copy",
+          "requested_read_window": [
+            2000,
+            2235
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py#L2000-L2235"
+        },
+        {
+          "path": "localflow/v2/notes.py",
+          "symbol_or_boundary": "NoteOutcomeUnknown; NoteStore._mutation_submit / create",
+          "requested_read_window": [
+            285,
+            640
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/notes.py#L285-L640"
+        },
+        {
+          "path": "localflow/v2/store.py",
+          "symbol_or_boundary": "Store._submit / submit; queue admission and timeout",
+          "requested_read_window": [
+            1240,
+            1415
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/store.py#L1240-L1415"
+        }
+      ],
+      "coverage_class": "DIRECT_SOURCE_PAIR",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": true,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": "XF-AUDIT-07",
+      "closure_state": "OPEN_FINDING",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-034",
+      "interface": "Explicit Teach source authority",
+      "milestones": [
+        "M09",
+        "M11",
+        "M14"
+      ],
+      "owner": "Hub Teach / LearningService",
+      "known_consumers": [
+        "candidate queue",
+        "VocabularyStore approval"
+      ],
+      "authority_fields_or_facts": "cleaned source artifact id/hash, explicit user correction, op id",
+      "writer_threading_rule": "Preallocated action id, writer current-source checks",
+      "required_refusal_missing_unknown_behavior": "Transformed final refuses; job-only explicit intent does not require enabling collection",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/learning.py",
+          "symbol_or_boundary": "teach_correction; mine_observation_candidates; _mine_note_candidates",
+          "requested_read_window": [
+            1,
+            300
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/learning.py#L1-L300"
+        },
+        {
+          "path": "localflow/v2/history_queries.py",
+          "symbol_or_boundary": "final_text; _job_artifacts; job_detail",
+          "requested_read_window": null,
+          "evidence_level": "PRIOR_PASS_DIRECT_SOURCE_WINDOWS; not exhaustive module review",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/history_queries.py"
+        },
+        {
+          "path": "docs/v2/contracts/hub.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-035",
+      "interface": "Vocabulary approval/undo atomicity",
+      "milestones": [
+        "M05",
+        "M14"
+      ],
+      "owner": "LearningService + vocabulary composer",
+      "known_consumers": [
+        "Review controls",
+        "effective dictionary"
+      ],
+      "authority_fields_or_facts": "candidate/decision id, exact alias/canonical/scope, recorded delta",
+      "writer_threading_rule": "One composed writer op, no nested submit",
+      "required_refusal_missing_unknown_behavior": "Unknown receipt target-bound; undo cannot erase independent later edit",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/learning.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/learning.md"
+        },
+        {
+          "path": "docs/v2/contracts/vocabulary.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/vocabulary.md"
+        },
+        {
+          "path": "docs/v2/handoffs/M14.md",
+          "symbol_or_boundary": "2026-09-28 remediation addendum",
+          "requested_read_window": [
+            180,
+            280
+          ],
+          "evidence_level": "HANDOFF_RECORD",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-036",
+      "interface": "Candidate counterexample scope",
+      "milestones": [
+        "M05",
+        "M14"
+      ],
+      "owner": "approval sandbox",
+      "known_consumers": [
+        "approve action"
+      ],
+      "authority_fields_or_facts": "effective rule scope and independently supplied adverse phrase",
+      "writer_threading_rule": "Same normalization semantics/scope as resulting rule",
+      "required_refusal_missing_unknown_behavior": "A global sandbox cannot validate an app-scoped rule; would-flip refuses",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/learning.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/learning.md"
+        },
+        {
+          "path": "docs/v2/contracts/vocabulary.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/vocabulary.md"
+        },
+        {
+          "path": "docs/v2/handoffs/M14.md",
+          "symbol_or_boundary": "2026-09-28 remediation addendum",
+          "requested_read_window": [
+            180,
+            280
+          ],
+          "evidence_level": "HANDOFF_RECORD",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-037",
+      "interface": "Training label/span source checks",
+      "milestones": [
+        "M02",
+        "M09",
+        "M14"
+      ],
+      "owner": "curation repository",
+      "known_consumers": [
+        "inspector",
+        "readiness",
+        "sampling",
+        "exports"
+      ],
+      "authority_fields_or_facts": "rendered example revision, stage id/hash, exact span coverage",
+      "writer_threading_rule": "Writer checks liveness/state/current source",
+      "required_refusal_missing_unknown_behavior": "Partial remains partial; expired/quarantined does not become live by labeling",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/hub.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+        },
+        {
+          "path": "docs/v2/contracts/dataset_exports.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md"
+        },
+        {
+          "path": "localflow/v2/curation/evidence.py",
+          "symbol_or_boundary": "cleanup_qualification_in; transform_target_in",
+          "requested_read_window": [
+            105,
+            285
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/evidence.py#L105-L285"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-038",
+      "interface": "Audio-reviewed verbatim gate",
+      "milestones": [
+        "M09",
+        "M14"
+      ],
+      "owner": "training inspector",
+      "known_consumers": [
+        "reference creation",
+        "ASR export"
+      ],
+      "authority_fields_or_facts": "same example/audio listened-for identity and explicit coverage",
+      "writer_threading_rule": "Rendered binding plus writer reference validation",
+      "required_refusal_missing_unknown_behavior": "Model suggestion is not verbatim; playback of A does not authorize B",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/hub.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+        },
+        {
+          "path": "docs/v2/contracts/dataset_exports.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md"
+        }
+      ],
+      "coverage_class": "CONTRACT_ONLY",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-039",
+      "interface": "Preference comparability/order",
+      "milestones": [
+        "M01",
+        "M11",
+        "M14"
+      ],
+      "owner": "pair/judgment owner",
+      "known_consumers": [
+        "Review pair surface",
+        "preference exporter"
+      ],
+      "authority_fields_or_facts": "same frozen task identity, displayed candidate ids/slot order, latest judgment",
+      "writer_threading_rule": "Append-only judgment; query current eligible state",
+      "required_refusal_missing_unknown_behavior": "Mismatched tasks/dead candidates refuse; row order is not displayed choice",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/curation/evidence.py",
+          "symbol_or_boundary": "cleanup_qualification_in; transform_target_in",
+          "requested_read_window": [
+            105,
+            285
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/evidence.py#L105-L285"
+        },
+        {
+          "path": "localflow/v2/curation/export.py",
+          "symbol_or_boundary": "cleanup_supervised / transform_supervised record assembly",
+          "requested_read_window": [
+            335,
+            475
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/export.py#L335-L475"
+        },
+        {
+          "path": "docs/v2/contracts/dataset_exports.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-040",
+      "interface": "Family split membership/exposure",
+      "milestones": [
+        "M01",
+        "M14"
+      ],
+      "owner": "split/exposure service",
+      "known_consumers": [
+        "Review readiness",
+        "export publication",
+        "M15 qualification"
+      ],
+      "authority_fields_or_facts": "frozen family membership, partition version, forward-only exposure",
+      "writer_threading_rule": "Writer-bound assignment and exposure history",
+      "required_refusal_missing_unknown_behavior": "Below floor/unassigned are reasons, not invented complete partitions",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/dataset_exports.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md"
+        },
+        {
+          "path": "docs/v2/handoffs/M14.md",
+          "symbol_or_boundary": "2026-09-28 remediation addendum",
+          "requested_read_window": [
+            180,
+            280
+          ],
+          "evidence_level": "HANDOFF_RECORD",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+        }
+      ],
+      "coverage_class": "CONTRACT_AND_HANDOFF",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-041",
+      "interface": "Dataset snapshot and exact-input publication fence",
+      "milestones": [
+        "M02",
+        "M14"
+      ],
+      "owner": "DatasetExporter",
+      "known_consumers": [
+        "filesystem staging/final output",
+        "export receipts",
+        "exposure bookkeeping"
+      ],
+      "authority_fields_or_facts": "actual input ids/revisions/digests and build operation target",
+      "writer_threading_rule": "Consistent snapshot; expensive I/O outside writer; scoped final fence",
+      "required_refusal_missing_unknown_behavior": "Relevant deletion/exposure refuses; unrelated changes do not arbitrary-abort",
+      "evidence_sources": [
+        {
+          "path": "localflow/v2/curation/export.py",
+          "symbol_or_boundary": "cleanup_supervised / transform_supervised record assembly",
+          "requested_read_window": [
+            335,
+            475
+          ],
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/v2/curation/export.py#L335-L475"
+        },
+        {
+          "path": "docs/v2/contracts/dataset_exports.md",
+          "symbol_or_boundary": "cleanup completeness and exact task input",
+          "requested_read_window": [
+            45,
+            145
+          ],
+          "evidence_level": "CONTRACT",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md#L45-L145"
+        },
+        {
+          "path": "docs/v2/handoffs/M14.md",
+          "symbol_or_boundary": "2026-09-28 remediation addendum",
+          "requested_read_window": [
+            180,
+            280
+          ],
+          "evidence_level": "HANDOFF_RECORD",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-042",
+      "interface": "Offline validator and bundle manifest",
+      "milestones": [
+        "M01",
+        "M14",
+        "M15"
+      ],
+      "owner": "validate_dataset_folder",
+      "known_consumers": [
+        "qualification harness",
+        "user exported folder"
+      ],
+      "authority_fields_or_facts": "record schema, semantic task/lineage, digests, local audio links",
+      "writer_threading_rule": "Offline read-only validation without live DB authority",
+      "required_refusal_missing_unknown_behavior": "Hash-consistent semantic tampering still fails; actual UTF8/missing files diagnosed",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/dataset_exports.md",
+          "symbol_or_boundary": "cleanup completeness and exact task input",
+          "requested_read_window": [
+            45,
+            145
+          ],
+          "evidence_level": "CONTRACT",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md#L45-L145"
+        },
+        {
+          "path": "docs/v2/handoffs/M14.md",
+          "symbol_or_boundary": "2026-09-28 remediation addendum",
+          "requested_read_window": [
+            180,
+            280
+          ],
+          "evidence_level": "HANDOFF_RECORD",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+        }
+      ],
+      "coverage_class": "CONTRACT_AND_HANDOFF",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-043",
+      "interface": "Profile eligible population",
+      "milestones": [
+        "M12",
+        "M13",
+        "M14"
+      ],
+      "owner": "ProfileService",
+      "known_consumers": [
+        "Your Voice cards",
+        "Insights links"
+      ],
+      "authority_fields_or_facts": "eligible raw/spoken content, origin exclusions, measured word denominator",
+      "writer_threading_rule": "Bounded background compute with independent population validity",
+      "required_refusal_missing_unknown_behavior": "Typed/snippet/model boilerplate are excluded, not represented as user speech",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/profile.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/profile.md"
+        },
+        {
+          "path": "docs/v2/handoffs/M14.md",
+          "symbol_or_boundary": "2026-09-28 remediation addendum",
+          "requested_read_window": [
+            180,
+            280
+          ],
+          "evidence_level": "HANDOFF_RECORD",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+        }
+      ],
+      "coverage_class": "CONTRACT_AND_HANDOFF",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-044",
+      "interface": "Profile input-signature/commit fence",
+      "milestones": [
+        "M02",
+        "M13",
+        "M14"
+      ],
+      "owner": "profile snapshot store",
+      "known_consumers": [
+        "cached cards",
+        "phrase evidence",
+        "generation state"
+      ],
+      "authority_fields_or_facts": "exact eligible revisions, restrictions, source liveness, usage-derived metadata",
+      "writer_threading_rule": "Recheck inputs at commit; invalidate derived copies",
+      "required_refusal_missing_unknown_behavior": "No-change avoids new snapshot; changed/deleted source cannot publish stale snapshot",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/profile.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/profile.md"
+        },
+        {
+          "path": "docs/v2/handoffs/M14.md",
+          "symbol_or_boundary": "2026-09-28 remediation addendum",
+          "requested_read_window": [
+            180,
+            280
+          ],
+          "evidence_level": "HANDOFF_RECORD",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+        }
+      ],
+      "coverage_class": "CONTRACT_AND_HANDOFF",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-045",
+      "interface": "Analytics logical fact population",
+      "milestones": [
+        "M03",
+        "M08",
+        "M13"
+      ],
+      "owner": "AnalyticsStore",
+      "known_consumers": [
+        "Insights report",
+        "profile usage projection"
+      ],
+      "authority_fields_or_facts": "logical job id, current attempt, kind, valid capture time/zone",
+      "writer_threading_rule": "Writer upsert then cohort-consistent query",
+      "required_refusal_missing_unknown_behavior": "Retry replaces fact; transform/repaste not counted as another dictation",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/analytics.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/analytics.md"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE_WINDOWS",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+        }
+      ],
+      "coverage_class": "CONTRACT_AND_SOURCE_WINDOWS",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-046",
+      "interface": "Content/usage deletion distinction",
+      "milestones": [
+        "M02",
+        "M13",
+        "M14"
+      ],
+      "owner": "Store + analytics/profile deletion owners",
+      "known_consumers": [
+        "usage reports",
+        "profile snapshot copies",
+        "UI invalidation"
+      ],
+      "authority_fields_or_facts": "explicit content versus usage deletion and derived dependencies",
+      "writer_threading_rule": "Cascade invalidation under named owners",
+      "required_refusal_missing_unknown_behavior": "Content deletion not silently usage deletion; usage deletion clears copied derived metadata",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/analytics.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/analytics.md"
+        },
+        {
+          "path": "docs/v2/contracts/profile.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/profile.md"
+        },
+        {
+          "path": "docs/v2/handoffs/M14.md",
+          "symbol_or_boundary": "2026-09-28 remediation addendum",
+          "requested_read_window": [
+            180,
+            280
+          ],
+          "evidence_level": "HANDOFF_RECORD",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+        }
+      ],
+      "coverage_class": "CONTRACT_AND_HANDOFF",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-047",
+      "interface": "Read-only/focus-safe Hub publication",
+      "milestones": [
+        "M08",
+        "M09",
+        "M11",
+        "M12"
+      ],
+      "owner": "Hub and transform controllers",
+      "known_consumers": [
+        "menu/status/timer/background callbacks"
+      ],
+      "authority_fields_or_facts": "pipeline busy, insertion hold, rendered action token",
+      "writer_threading_rule": "Main-thread UI with passive refresh guards",
+      "required_refusal_missing_unknown_behavior": "Passive work never steals focus or performs external insertion",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/contracts/hub.md",
+          "symbol_or_boundary": "Published owner/consumer contract",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT_INDEX_CONFIRMED; full implementation sweep not implied",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/hub.md"
+        },
+        {
+          "path": "localflow/app.py",
+          "symbol_or_boundary": "PTT admission, deletion, retention, terminal callbacks",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE_WINDOWS",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/localflow/app.py"
+        }
+      ],
+      "coverage_class": "PARTIAL_SOURCE_AND_CONTRACT",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-048",
+      "interface": "Status/runbook/browser state projection",
+      "milestones": [
+        "M01",
+        "M09",
+        "M14",
+        "M15"
+      ],
+      "owner": "STATUS + ORCHESTRATION + VERIFICATION owners",
+      "known_consumers": [
+        "fresh agent",
+        "human acceptance tracking"
+      ],
+      "authority_fields_or_facts": "current code/evidence refs, stable V-id instruction revision, browser namespace",
+      "writer_threading_rule": "Docs generated/reconciled from real id set; historical records immutable",
+      "required_refusal_missing_unknown_behavior": "Old green localStorage not a current pass; counts cannot be assumed from old addendum",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/STATUS.json",
+          "symbol_or_boundary": "current-state projection",
+          "requested_read_window": null,
+          "evidence_level": "DIRECT_SOURCE",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/STATUS.json"
+        },
+        {
+          "path": "docs/v2/handoffs/M14.md",
+          "symbol_or_boundary": "2026-09-28 remediation addendum",
+          "requested_read_window": [
+            180,
+            280
+          ],
+          "evidence_level": "HANDOFF_RECORD",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+        },
+        {
+          "path": "docs/v2/contracts/INDEX.md",
+          "symbol_or_boundary": "owner map and binding privacy conventions",
+          "requested_read_window": null,
+          "evidence_level": "CONTRACT",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/INDEX.md"
+        }
+      ],
+      "coverage_class": "DIRECT_DOCUMENT_PAIR",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": "XF-AUDIT-08",
+      "closure_state": "OPEN_FINDING",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-049",
+      "interface": "Performance validity versus speed",
+      "milestones": [
+        "M01",
+        "M13",
+        "M14",
+        "M15"
+      ],
+      "owner": "benchmark harness and independent validity oracle",
+      "known_consumers": [
+        "milestone acceptance",
+        "model/performance qualification"
+      ],
+      "authority_fields_or_facts": "actual work cardinalities, semantic outputs, fixture/env/source identity, timing samples",
+      "writer_threading_rule": "Validate work before timing interpretation; separate queue wait from throughput",
+      "required_refusal_missing_unknown_behavior": "No-op/empty work INVALID; historical timing is not current end-to-end pass",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/handoffs/M14.md",
+          "symbol_or_boundary": "2026-09-28 remediation addendum",
+          "requested_read_window": [
+            180,
+            280
+          ],
+          "evidence_level": "HANDOFF_RECORD",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/handoffs/M14.md#L180-L280"
+        },
+        {
+          "path": "docs/v2/LOCALFLOW_V2_MILESTONES.md",
+          "symbol_or_boundary": "M15 model qualification and end-to-end performance",
+          "requested_read_window": [
+            1380,
+            1515
+          ],
+          "evidence_level": "CANONICAL_EXCERPT",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/LOCALFLOW_V2_MILESTONES.md#L1380-L1515"
+        }
+      ],
+      "coverage_class": "CONTRACT_AND_HANDOFF",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    },
+    {
+      "interface_id": "XF-IF-050",
+      "interface": "M15 qualification gate",
+      "milestones": [
+        "M01",
+        "M04",
+        "M07",
+        "M11",
+        "M14",
+        "M15"
+      ],
+      "owner": "canonical milestone/spec/evaluation owners",
+      "known_consumers": [
+        "future model candidates",
+        "performance and acceptance reports"
+      ],
+      "authority_fields_or_facts": "current code, complete eligible data tiers, family exposure, faithful/PE policies",
+      "writer_threading_rule": "No execution authorized by this report; prepare source-bound local campaign",
+      "required_refusal_missing_unknown_behavior": "Do not use defective evidence as qualification truth or relax fidelity to obtain green results",
+      "evidence_sources": [
+        {
+          "path": "docs/v2/LOCALFLOW_V2_MILESTONES.md",
+          "symbol_or_boundary": "M15 model qualification and end-to-end performance",
+          "requested_read_window": [
+            1380,
+            1515
+          ],
+          "evidence_level": "CANONICAL_EXCERPT",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/LOCALFLOW_V2_MILESTONES.md#L1380-L1515"
+        },
+        {
+          "path": "docs/v2/LOCALFLOW_V2_MILESTONES.md",
+          "symbol_or_boundary": "M15 qualification owner; complete section reconciliation remains open",
+          "requested_read_window": null,
+          "evidence_level": "PARTIAL_DOCUMENT_READ",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/LOCALFLOW_V2_MILESTONES.md"
+        },
+        {
+          "path": "docs/v2/contracts/dataset_exports.md",
+          "symbol_or_boundary": "cleanup completeness and exact task input",
+          "requested_read_window": [
+            45,
+            145
+          ],
+          "evidence_level": "CONTRACT",
+          "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+          "url": "https://github.com/scalinity/LocalFlow/blob/340c566686c7123bfcf721e16160aacabbe0b97d/docs/v2/contracts/dataset_exports.md#L45-L145"
+        }
+      ],
+      "coverage_class": "CANONICAL_EXCERPT_AND_CONTRACT_INDEX",
+      "implementation_owner_consumer_pair_fully_traced_for_stated_allegation": false,
+      "all_production_consumers_exhaustively_enumerated": false,
+      "stale_consumer_or_bypass_finding": null,
+      "closure_state": "UNRESOLVED_FULL_CLOSURE",
+      "what_remains": "Run the specified real local probe and complete a tracked-file consumer inventory. No absence claim follows from this row."
+    }
+  ]
+}

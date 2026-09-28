@@ -1,0 +1,307 @@
+{
+ "suite": "tests/v2/crossmilestone/test_xm_remediation.py",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_xm_remediation.py",
+  "suite_sha256": "fce85de72d267b6aa1270ff930f516a70ed35108653b9a204570c81e818073ce",
+  "code_root_sha": "340c566686c7123bfcf721e16160aacabbe0b97d",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "counts": {
+  "FAIL": 21,
+  "PASS": 11
+ },
+ "invoked": [
+  "x02_recovery_copy_never_replaces_a_pending_payload",
+  "c_recovery_copy_publishes_when_nothing_is_pending",
+  "x05_failed_normalized_retention_is_never_a_complete_task",
+  "c_retained_changed_normalization_exports_the_exact_input",
+  "c_unchanged_normalization_keeps_raw_input_complete",
+  "x06_history_resolves_the_current_attempt_after_collection_off_retry",
+  "c_collection_on_retry_resolves_the_new_manifest",
+  "x07_retries_never_manufacture_dictations_or_words",
+  "c_ten_independent_captures_reach_the_floor",
+  "x03_interleaved_updates_preserve_the_committed_definition",
+  "c_sequential_updates_each_preserve_their_definition",
+  "x04_stale_form_never_reverses_a_newer_opt_out",
+  "x04_unknown_update_then_stale_refill_never_reenables_auto",
+  "c_fresh_form_update_changes_only_the_edited_field",
+  "local01_selected_transform_fills_its_own_instruction",
+  "x08_admitted_add_timeout_is_unknown_and_one_transform_results",
+  "x08_admitted_toggle_timeout_is_not_reported_as_failed",
+  "c_refused_add_saves_nothing_and_a_fixed_form_adds_once",
+  "x09_admitted_save_timeout_then_retry_makes_one_note",
+  "c_distinct_saves_make_distinct_notes",
+  "x10_unknown_source_deletion_is_reported_and_retry_settles",
+  "x10_unknown_copy_create_then_retry_makes_one_note",
+  "c_unknown_create_never_deletes_the_source",
+  "x11_renamed_entry_never_relabels_historical_speech",
+  "c_unrenamed_entry_cites_its_applied_term",
+  "x12_older_refresh_never_repaints_over_a_validate_result",
+  "x13_validate_never_runs_filesystem_work_on_the_ui_thread",
+  "x15_hub_offers_undo_approval_for_the_rendered_candidate",
+  "c_service_undo_reverses_exactly_and_keeps_user_edits",
+  "x14_post_rename_crash_is_recognized_not_lost_or_relabeled",
+  "x16_status_separates_current_state_from_historical_record",
+  "x17_m07_obligations_have_stable_runbook_ownership"
+ ],
+ "results": [
+  {
+   "case": "x02_recovery_copy_never_replaces_a_pending_payload",
+   "finding": "MERGED-X02 (XF-AUDIT-01, B CROSS-AUDIT-04)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "Copy Last Raw replaced the payload reserved for a pending insertion: board 'NEWFINALCANARY pending words'@1 -> 'OLDRAWCANARY recovery words'@2",
+   "seconds": 0.16
+  },
+  {
+   "case": "c_recovery_copy_publishes_when_nothing_is_pending",
+   "finding": "MERGED-X02 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x05_failed_normalized_retention_is_never_a_complete_task",
+   "finding": "MERGED-X05 (XF-AUDIT-04)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the cleanup_supervised record binds input the cleanup model never received: exported 'twelve percent of the orders shipped', actual '12% of the orders shipped' (tier model_task_complete)",
+   "seconds": 0.1
+  },
+  {
+   "case": "c_retained_changed_normalization_exports_the_exact_input",
+   "finding": "MERGED-X05 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.09
+  },
+  {
+   "case": "c_unchanged_normalization_keeps_raw_input_complete",
+   "finding": "MERGED-X05 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.09
+  },
+  {
+   "case": "x06_history_resolves_the_current_attempt_after_collection_off_retry",
+   "finding": "MERGED-X06 (B CROSS-AUDIT-01)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "History shows attempt 1's text as the current job: lineage_attempt=1 source='alpha attempt one words'",
+   "seconds": 0.17
+  },
+  {
+   "case": "c_collection_on_retry_resolves_the_new_manifest",
+   "finding": "MERGED-X06 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.17
+  },
+  {
+   "case": "x07_retries_never_manufacture_dictations_or_words",
+   "finding": "MERGED-X07 (C CROSS-AUDIT-03, B CROSS-AUDIT-02)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "5 logical captures counted as 10 dictations / 2100 words",
+   "seconds": 0.8
+  },
+  {
+   "case": "c_ten_independent_captures_reach_the_floor",
+   "finding": "MERGED-X07 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.83
+  },
+  {
+   "case": "x03_interleaved_updates_preserve_the_committed_definition",
+   "finding": "MERGED-X03 (XF-AUDIT-02, C CROSS-AUDIT-02)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "revision 3 names two definitions: live ('N1', 'P1'), preserved ('N1', 'P0')",
+   "seconds": 0.01
+  },
+  {
+   "case": "c_sequential_updates_each_preserve_their_definition",
+   "finding": "MERGED-X03 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x04_stale_form_never_reverses_a_newer_opt_out",
+   "finding": "MERGED-X04 (XF-AUDIT-03, C CROSS-AUDIT-05)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "Update from the stale form re-enabled auto-apply (the user edited only the name): ('Opt-out witness renamed', '', 1, 1, 3); status '4 definitions'",
+   "seconds": 0.09
+  },
+  {
+   "case": "x04_unknown_update_then_stale_refill_never_reenables_auto",
+   "finding": "MERGED-X04 (single-Hub path through an unknown Update)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the committed opt-out was reversed by a form refilled from the stale list: ('Renamed after busy store', '', 1, 1, 3)",
+   "seconds": 0.29
+  },
+  {
+   "case": "c_fresh_form_update_changes_only_the_edited_field",
+   "finding": "MERGED-X04 control",
+   "kind": "control",
+   "status": "FAIL",
+   "detail": "('Fresh rename', '', 1, 1, 2)",
+   "seconds": 0.04
+  },
+  {
+   "case": "local01_selected_transform_fills_its_own_instruction",
+   "finding": "LOCAL-XM-01 (GATE-G07 transform prompt editability)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "a name-only Update replaced B's instruction with '' (the form showed ''; selection errors: [\"AttributeError: 'NSTextView' object has no attribute 'setEnabled_'\"])",
+   "seconds": 0.04
+  },
+  {
+   "case": "x08_admitted_add_timeout_is_unknown_and_one_transform_results",
+   "finding": "MERGED-X08 (XF-AUDIT-05, C CROSS-AUDIT-06)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "an admitted timeout was reported as not saved: 'not saved: TimeoutError'",
+   "seconds": 0.29
+  },
+  {
+   "case": "x08_admitted_toggle_timeout_is_not_reported_as_failed",
+   "finding": "MERGED-X08 (sibling: Enable/Disable)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "an admitted toggle was reported as failed: 'not toggled: TimeoutError'",
+   "seconds": 0.29
+  },
+  {
+   "case": "c_refused_add_saves_nothing_and_a_fixed_form_adds_once",
+   "finding": "MERGED-X08 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.04
+  },
+  {
+   "case": "x09_admitted_save_timeout_then_retry_makes_one_note",
+   "finding": "MERGED-X09 (XF-AUDIT-06)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "one logical Save made 2 notes",
+   "seconds": 0.26
+  },
+  {
+   "case": "c_distinct_saves_make_distinct_notes",
+   "finding": "MERGED-X09 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x10_unknown_source_deletion_is_reported_and_retry_settles",
+   "finding": "MERGED-X10 (XF-AUDIT-07)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the source deletion was reported as definitely failed while it was admitted and later committed: {'outcome': 'move_failed_note_copied', 'note_id': 'note-0de15041f5134143b95d305668bc4215'}",
+   "seconds": 0.34
+  },
+  {
+   "case": "x10_unknown_copy_create_then_retry_makes_one_note",
+   "finding": "MERGED-X10 (census: History Copy after create_unknown)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "a repeated Copy after an unknown create made 2 notes: {'outcome': 'create_unknown', 'note_id': 'note-edd1945980f540e7b05943fa55b5a281'} then {'outcome': 'copied', 'note_id': 'note-635148f66fb54bbbb7c643ee9ff94f00'}",
+   "seconds": 0.34
+  },
+  {
+   "case": "c_unknown_create_never_deletes_the_source",
+   "finding": "MERGED-X10 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.34
+  },
+  {
+   "case": "x11_renamed_entry_never_relabels_historical_speech",
+   "finding": "MERGED-X11 (C CROSS-AUDIT-04, B CROSS-AUDIT-03)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "speech captured under 'Orion SDK' is now cited as 'Lyra SDK' (no new speech): ['Lyra SDK']",
+   "seconds": 0.1
+  },
+  {
+   "case": "c_unrenamed_entry_cites_its_applied_term",
+   "finding": "MERGED-X11 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "x12_older_refresh_never_repaints_over_a_validate_result",
+   "finding": "MERGED-X12 (C CROSS-AUDIT-07, B CROSS-AUDIT-06)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the older refresh repainted over the completed Validate result: 'Choose task views and a destination directory, then Export. The dataset builds into a staging directory and finalizes at'",
+   "seconds": 0.05
+  },
+  {
+   "case": "x13_validate_never_runs_filesystem_work_on_the_ui_thread",
+   "finding": "MERGED-X13 (B CROSS-AUDIT-07)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "Export Validate ran the validator's filesystem work on the Hub's UI thread (callback held 3.00s)",
+   "seconds": 3.05
+  },
+  {
+   "case": "x15_hub_offers_undo_approval_for_the_rendered_candidate",
+   "finding": "MERGED-X15 (C DESIGN-01, B CROSS-AUDIT-09)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the Hub has no Undo approval action for an approved learned rule (service undo is unreachable)",
+   "seconds": 0.05
+  },
+  {
+   "case": "c_service_undo_reverses_exactly_and_keeps_user_edits",
+   "finding": "MERGED-X15 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "x14_post_rename_crash_is_recognized_not_lost_or_relabeled",
+   "finding": "MERGED-X14 (C DESIGN-02, B CROSS-AUDIT-08)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "after the crash the store records the published package of export-crash-x14 as failed (retry: refused: export failed: OSError); destination holds export-crash-x14",
+   "seconds": 0.25
+  },
+  {
+   "case": "x16_status_separates_current_state_from_historical_record",
+   "finding": "MERGED-X16 (XF-AUDIT-08, C CROSS-AUDIT-08, B CROSS-AUDIT-10)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "STATUS.json has no explicit current-state projection; its implementation-era narrative (\"Store schema v10\", 54/50.3 ms waits, one benchmark run) reads as current",
+   "seconds": 0.0
+  },
+  {
+   "case": "x17_m07_obligations_have_stable_runbook_ownership",
+   "finding": "MERGED-X17 (B CROSS-AUDIT-11)",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the M07 runbook section is an empty placeholder while M07's long-prompt trial and adjudicated real-text stratum are still open",
+   "seconds": 0.0
+  }
+ ]
+}

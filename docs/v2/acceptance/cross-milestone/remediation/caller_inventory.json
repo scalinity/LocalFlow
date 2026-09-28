@@ -1,0 +1,67 @@
+{
+ "schema_version": 1,
+ "kind": "cross_milestone_caller_inventory",
+ "taken_at_commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+ "taken_before_production_edit": true,
+ "method": "git ls-files bounds the set (91 tracked files under localflow/, 53 under scripts/, 173 under tests/); git grep -n per symbol, identifiers as whole words; the enclosing function from an indentation map. Production = localflow/ + scripts/. A search miss is recorded as a miss, never as proof of absence. Counts are production/test occurrences.",
+ "symbol_counts": {
+  "copyLastRaw_": [1, 2], "_guarded_copy": [3, 0], "copy_text": [6, 1],
+  "TransformStore": [3, 14], "update_transform": [4, 29], "add_transform": [2, 3],
+  "transform_revisions": [6, 3], "_append_revision": [3, 0],
+  "transformsUpdate_": [1, 0], "transformsAdd_": [1, 0], "transformsToggle_": [1, 0], "transformsDelete_": [0, 0],
+  "_transform_write": [3, 0], "auto_apply": [32, 87],
+  "on_normalization": [5, 8], "normalized_text": [17, 18], "normalization_ledger": [6, 7],
+  "cleanup_qualification_in": [4, 0], "model_task_complete": [5, 12],
+  "tfSaveToScratchpad": [2, 1], "NoteOutcomeUnknown": [8, 1], "create_note": [15, 177],
+  "hubSaveHistoryRow": [2, 15], "delete_everywhere": [15, 249], "move_failed_note_copied": [2, 2],
+  "HistoryQueryService": [6, 40], "_manifests": [3, 0], "_job_artifacts": [3, 0], "final_text": [19, 21], "job_detail": [4, 31],
+  "ProfileService": [3, 49], "_eligible": [2, 7], "applied_rule_ids": [2, 8], "applied_rules": [6, 6], "profile_evidence": [12, 11],
+  "training_memberships": [22, 39], "learning_vocabulary_deltas": [7, 5], "usage_facts": [70, 63],
+  "_CORE_DEPENDENTS": [3, 0], "_migrate": [2, 0],
+  "exportValidate_": [1, 0], "_refresh_export_pane": [2, 0], "validate_dataset": [10, 28], "publish_op": [2, 1],
+  "undo_approval": [1, 39], "outcome_unknown": [8, 3], "operation_id": [48, 164], "expected_revision": [56, 7],
+  "STATUS.json": [0, 4], "VERIFICATION.html": [4, 5], "M07-V": [0, 0]
+ },
+ "authority_edges": [
+  {"interface": "clipboard ownership", "producer": "InsertionService (M08) pending payload", "consumers": ["AppDelegate._guarded_copy -> tfCopyTransform, hubCopyText (guarded)", "AppDelegate.copyLastRaw_ app.py:5991 (UNGUARDED: MERGED-X02)", "AppDelegate._finishWithText_ app.py:4726 copy_text only when no insertion service exists (nothing to guard)", "inject.paste_text (no production importer; dead code that still writes)"], "commit": "pasteboard write", "receipt": "change count", "publication": "Recovery menu"},
+  {"interface": "transform definition revision", "producer": "TransformStore.update_transform/add_transform", "consumers": ["HubController._transform_write / transformsToggle_ (the only production writers, main thread)", "evidence.transform_target_in (reads transform_revisions)", "DatasetExporter transform view"], "admission": "Store.submit", "note": "delete_transform has no production caller"},
+  {"interface": "normalized cleanup input", "producer": "EvidenceCollector.on_normalization_result (one production caller: app.py _worker)", "consumers": ["evidence.cleanup_qualification_in -> DatasetExporter cleanup view, TrainingDataService readiness"]},
+  {"interface": "History current attempt", "producer": "_worker collection-off History artifacts (attempt-tagged) and EvidenceCollector manifests", "consumers": ["HistoryQueryService.job_detail/search", "history_queries.final_text -> Copy / Paste Again / hubSaveHistoryRow"]},
+  {"interface": "profile speech cohort", "producer": "EvidenceCollector._publish (one example per attempt context)", "consumers": ["ProfileService._eligible/_compute_once -> Your Voice pane"]},
+  {"interface": "applied vocabulary provenance", "producer": "EvidenceCollector vocabulary_applied_rules artifact (training.py:760)", "consumers": ["ProfileService technical terms (reads current vocabulary_entries canonical: MERGED-X11)"]},
+  {"interface": "export publication", "producer": "DatasetExporter.build publish_op", "consumers": ["export_manifests / last_export -> Hub Export pane", "validate_dataset (standalone)"]},
+  {"interface": "approval undo", "producer": "LearningService.approve (learning_vocabulary_deltas)", "consumers": ["LearningService.undo_approval — NO production caller (MERGED-X15)"]}
+ ],
+ "clipboard_writers": [
+  {"site": "localflow/app.py:5991 AppDelegate.copyLastRaw_", "guarded": false, "disposition": "MERGED-X02 (reproduced)"},
+  {"site": "localflow/app.py:4726 AppDelegate._finishWithText_", "guarded": false, "disposition": "no insertion service exists on this branch; nothing owns the clipboard (not a bypass)"},
+  {"site": "localflow/inject.py:26 paste_text", "guarded": false, "disposition": "no tracked production importer (dead code); recorded"},
+  {"site": "localflow/app.py:1725 tfCopyTransform", "guarded": true},
+  {"site": "localflow/app.py:5418 hubCopyText (historyCopy_, hubPasteText fallbacks)", "guarded": true},
+  {"site": "insertion/clipboard.py:95/125, service.py:1075/1125", "guarded": "the owner itself (late-consumer check)"}
+ ],
+ "unknown_outcome_callers": {
+  "legend": {"a": "typed unknown outcome", "b": "TimeoutError reported as a failure", "c": "no handling at the UI site"},
+  "rows": [
+   {"site": "hub.py _transform_write (Add/Update)", "class": "b", "repeat_sensitive": "Add: yes (fresh id per call)", "disposition": "MERGED-X08 (reproduced)"},
+   {"site": "hub.py transformsToggle_", "class": "b", "repeat_sensitive": "no (sets the opposite of the rendered state)", "disposition": "MERGED-X08 sibling (reproduced: label)"},
+   {"site": "app.py tfSaveToScratchpad", "class": "b", "repeat_sensitive": "yes (fresh note id)", "disposition": "MERGED-X09 (reproduced)"},
+   {"site": "app.py hubSaveHistoryRow Move delete phase", "class": "b", "repeat_sensitive": "yes", "disposition": "MERGED-X10 (reproduced)"},
+   {"site": "app.py hubSaveHistoryRow Copy/Move create phase", "class": "a (label) but repeat mints a new note id", "repeat_sensitive": "yes", "disposition": "census finding, repaired with MERGED-X10 (reproduced: two notes)"},
+   {"site": "dictionary_panel.py add/approve/toggle/pin/delete", "class": "b", "repeat_sensitive": "no (M05 identity refuses a duplicate add; the others set explicit values)", "disposition": "residual: untruthful 'not …' label on an admitted timeout; not repaired here (no duplicate effect)"},
+   {"site": "hub.py reviewMine_", "class": "b", "repeat_sensitive": "no (mining dedups)", "disposition": "residual label"},
+   {"site": "hub.py voiceGenerate_", "class": "b", "repeat_sensitive": "no (a snapshot is a record)", "disposition": "residual label"},
+   {"site": "hub.py _settings_call 'Changing collection'", "class": "b", "repeat_sensitive": "no (sets an explicit state)", "disposition": "residual label"},
+   {"site": "app.py importDictionaryJSON_", "class": "b", "repeat_sensitive": "no (identity refuses duplicates)", "disposition": "residual label"},
+   {"site": "app.py toggleTrainingCollection_/toggleTrainingPause_/excludeLastDictation_/markLastCorrect_", "class": "c", "repeat_sensitive": "no", "disposition": "residual: the menu action raises into AppKit on a store timeout"},
+   {"site": "hub.py scratchpadAttach_ (no attachment id)", "class": "a", "repeat_sensitive": "yes (a repeat after unknown can add a second copy)", "disposition": "residual: not reproduced in this campaign (INCONCLUSIVE)"},
+   {"site": "hub.py scratchpadRestore_ (new revision id per press)", "class": "a", "repeat_sensitive": "partly (a duplicate identical revision)", "disposition": "residual: not reproduced in this campaign (INCONCLUSIVE)"},
+   {"site": "hub.py historyTeach_, _usage_mutation, _m10_*, _training_action, trainingVerbatim_/Span_, exportRun_, NotesEditorModel._persist", "class": "a", "repeat_sensitive": "operation/receipt ids", "disposition": "conforming"}
+  ]
+ },
+ "note_outcome_unknown": {"raised_by": ["NoteStore.create_note", "restore", "set_pinned", "add_attachment"], "handlers": ["app.py hubSaveHistoryRow (failure_kind)", "hub.py _scratchpad_outcome", "notes.py NotesEditorModel._persist"], "collapsing": ["app.py tfSaveToScratchpad (MERGED-X09)"]},
+ "store_openers": {"production": ["localflow/app.py:241 AppDelegate.configure (backup_dir=V2_BACKUPS)"], "real_store_scripts_with_backup": ["scripts/v2/export_dataset.py:42", "scripts/v2/import_legacy.py:41", "scripts/v2/m09_trial_seed.py:177 (sandbox home only)"], "temp_only_without_backup": ["benchmark_m02.py x3", "benchmark_m05.py x1", "benchmark_m12.py x3", "m02_remediation_repro.py x6", "m04_remediation_repro.py x1", "m05_remediation_repro.py x4"]},
+ "emitters": {"call_sites": 321, "free_text_detail_sites": 83, "note": "eventlog stores detail verbatim; GATE-G05 checks canaries against the generic event log (xm_privacy)."},
+ "direct_sql_outside_store": {"execute_sites": 469, "raw_connect": ["importer.py (legacy import)", "snapshot_user_data.py", "temp-copy repro/benchmark scripts"], "cross_module_writes": ["analytics.conn_redact_usage_copies -> profile_snapshots", "notes.py -> learning_candidates", "curation/review.py, curation/sampling.py -> training_examples"]},
+ "unbound_or_surprising": ["LearningService.undo_approval had no production caller (MERGED-X15)", "TransformStore.delete_transform has no production caller", "inject.paste_text is dead code that still writes the pasteboard", "hubSaveHistoryRow builds its own HistoryQueryService per call", "TransformStore.update_transform took no expected_revision (MERGED-X03/X04)"]
+}

@@ -1,0 +1,46 @@
+{
+  "kind": "AUDIT_ARTIFACT_AUTHORING_VALIDATION_ONLY",
+  "target_execution": "NOT_RUN",
+  "audited_commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+  "all_required_report_sections_present": true,
+  "report_required_section_count": 41,
+  "corpus_cases": 176,
+  "categories": 29,
+  "case_ids_unique": true,
+  "all_cases_NOT_RUN": true,
+  "interfaces": 40,
+  "declared_runbook_checks": 80,
+  "findings_by_severity": {
+    "HIGH": 4,
+    "MEDIUM": 5,
+    "LOW": 2
+  },
+  "test_gaps": 5,
+  "design_concerns": 2,
+  "files": [
+    {
+      "name": "LocalFlow_M01_M14_Cross_Milestone_Audit.md",
+      "bytes": 114587,
+      "sha256": "bae0895b17b2886d6069beb192529a5c5adbb6fc61fcd948d2a27dfdc21c536b",
+      "words": 13801
+    },
+    {
+      "name": "LocalFlow_M01_M14_Interface_Matrix.md",
+      "bytes": 45650,
+      "sha256": "627967ff44dc18219478436f1ffc900512c6f26c6f8b1d8e00bec0daf87e06ab",
+      "words": 6269
+    },
+    {
+      "name": "Claude_Code_LOCAL_Cross_Milestone_Remediation_Handoff.md",
+      "bytes": 25740,
+      "sha256": "e010445a21f8248c6756b5a77ffe64367579db79ff5c8419e4c3c994663a1811",
+      "words": 3369
+    },
+    {
+      "name": "LocalFlow_M01_M14_Cross_Milestone_Adversarial_Corpus.json",
+      "bytes": 350853,
+      "sha256": "35a0f460e09264f4ad4e9074e51dec6c9da289b48a624d5c814aa18c24f53004",
+      "words": 29763
+    }
+  ]
+}

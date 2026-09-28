@@ -1,0 +1,209 @@
+{
+ "suite": "tests/v2/crossmilestone/test_xm_store_families.py",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_xm_store_families.py",
+  "suite_sha256": "d2ca6e86389f30fee21f9685af1e34346cb8a1f13896485047f5e622bb03bc76",
+  "code_root_sha": "340c566686c7123bfcf721e16160aacabbe0b97d",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "counts": {
+  "FAIL": 19,
+  "PASS": 5
+ },
+ "results": [
+  {
+   "case": "x01a_lost_memberships_never_return_exposed_family_to_holdout",
+   "finding": "MERGED-X01/A training_memberships",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "exposed family fam-26602b68f770452692262b8d81e895da returned to the blind holdout as unexposed after the repair: [('frozen_test', 0)]",
+   "seconds": 0.07
+  },
+  {
+   "case": "x01b_lost_profile_evidence_never_keeps_dead_private_text",
+   "finding": "MERGED-X01/B profile_evidence",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "a deleted source's private phrase is still current profile content (state=current, rows_with_canary=1)",
+   "seconds": 0.07
+  },
+  {
+   "case": "x01c_lost_deltas_never_let_undo_destroy_a_user_edit",
+   "finding": "MERGED-X01/C learning_vocabulary_deltas",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "undo without its recorded delta disabled or changed the user-edited entry: ('module-user-edit', 0)",
+   "seconds": 0.02
+  },
+  {
+   "case": "x01d_lost_usage_facts_never_keep_deleted_usage_in_aggregates",
+   "finding": "MERGED-X01/D usage_facts",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the deleted job's usage still counts in a published daily aggregate: [('2026-09-27', 2)]",
+   "seconds": 0.02
+  },
+  {
+   "case": "x01e_lost_candidates_never_forget_a_permanent_rejection",
+   "finding": "MERGED-X01/E learning_candidates",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "a permanently rejected correction was proposed again (status=pending) and approval landed a rule (False)",
+   "seconds": 0.02
+  },
+  {
+   "case": "x01f_lost_labels_never_readmit_background_speech",
+   "finding": "MERGED-X01/F correction_labels",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "speech the user labeled background speech is counted as their own again after the repair",
+   "seconds": 0.07
+  },
+  {
+   "case": "x01g_lost_dictionary_entries_are_not_an_empty_dictionary",
+   "finding": "MERGED-X01/G vocabulary_entries",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the user's approved dictionary silently became empty after the repair: 'use the orion s d k now'",
+   "seconds": 0.01
+  },
+  {
+   "case": "x01h_lost_transform_rows_never_drop_a_user_definition",
+   "finding": "MERGED-X01/H transforms",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the user's custom transform vanished while its preserved revisions survive",
+   "seconds": 0.02
+  },
+  {
+   "case": "x01h2_lost_revisions_never_present_history_as_none",
+   "finding": "MERGED-X01/H transform_revisions",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "preserved transform definitions were erased and the history reads as 0 revision(s)",
+   "seconds": 0.01
+  },
+  {
+   "case": "x01i_lost_snippets_are_not_an_empty_registry",
+   "finding": "MERGED-X01/I snippets",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the user's snippets silently became empty",
+   "seconds": 0.01
+  },
+  {
+   "case": "x01j_lost_assignments_keep_the_assignment_history",
+   "finding": "MERGED-X01/J split_assignments",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "after the repair the assignment history reads as empty and the next assignment RuntimeError: IntegrityError: UNIQUE constraint failed: training_memberships.example_id, training_memberships.assignment_version",
+   "seconds": 0.07
+  },
+  {
+   "case": "x01g2_lost_aliases_never_silently_disable_rules",
+   "finding": "MERGED-X01/G vocabulary_aliases",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "approved aliases silently vanished: 'use the orion s d k now'",
+   "seconds": 0.01
+  },
+  {
+   "case": "x01g3_lost_history_never_reads_as_no_history",
+   "finding": "MERGED-X01/G vocabulary_history",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the entry's revision history reads as 0 of 2 revisions",
+   "seconds": 0.01
+  },
+  {
+   "case": "x01g4_lost_dictionary_revision_never_reuses_a_revision",
+   "finding": "MERGED-X01/G vocabulary_meta",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the dictionary revision restarted at 1 (was 2): frozen jobs' revision numbers now name two different dictionaries",
+   "seconds": 0.01
+  },
+  {
+   "case": "x01h3_lost_transform_registry_revision_never_restarts",
+   "finding": "MERGED-X01/H transform_meta",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the transform registry revision restarted at 1 (was 2)",
+   "seconds": 0.05
+  },
+  {
+   "case": "x01h4_lost_candidates_never_orphan_recorded_judgments",
+   "finding": "MERGED-X01/H transform_candidates",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "recorded same-task judgments survive while every candidate they judged is gone (the task reads as never run)",
+   "seconds": 0.01
+  },
+  {
+   "case": "x01i2_lost_style_rules_are_not_an_empty_registry",
+   "finding": "MERGED-X01/I style_rules",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the user's style rules silently became empty",
+   "seconds": 0.01
+  },
+  {
+   "case": "x01i3_lost_profile_registry_revision_never_restarts",
+   "finding": "MERGED-X01/I profiles_meta",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the snippet registry revision restarted at 1 (was 2)",
+   "seconds": 0.01
+  },
+  {
+   "case": "x01d2_lost_aggregates_never_hide_recorded_usage",
+   "finding": "MERGED-X01/D daily_aggregates",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "1 recorded usage fact(s) read as a day with no dictations in Insights after the repair",
+   "seconds": 0.01
+  },
+  {
+   "case": "c_lost_judgments_only_shrink_exports",
+   "finding": "MERGED-X01 recreate-safe: preference_observations",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "c_lost_sampling_decisions_redraw_identically",
+   "finding": "MERGED-X01 recreate-safe: sampling_decisions",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.14
+  },
+  {
+   "case": "c_genuinely_older_store_upgrades_with_backup",
+   "finding": "MERGED-X01 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "c_fresh_store_opens_empty",
+   "finding": "MERGED-X01 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_intact_current_store_reopens_without_repair",
+   "finding": "MERGED-X01 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.11
+  }
+ ]
+}

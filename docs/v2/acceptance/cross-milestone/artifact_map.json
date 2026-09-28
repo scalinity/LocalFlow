@@ -1,0 +1,52 @@
+{
+ "schema_version": 1,
+ "kind": "cross_milestone_audit_artifact_map",
+ "audited_commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+ "identity_rule": "Generation is identified by CONTENT (counts, finding ids, interface counts), never by filename: Audit C and Audit B share near-identical M01_M14 names. Every supplied copy was hashed; ZIP members were expanded into an audit-only temporary directory and hashed. Byte-identical copies are duplicates of one artifact, never extra evidence.",
+ "frozen_copies": "docs/v2/acceptance/cross-milestone/audits/{A,C,B}/ hold one byte-identical copy of every distinct artifact under its original (ZIP member) name.",
+ "generations": {
+  "A": {
+   "label": "Audit A - early cross-milestone audit",
+   "summary": "8 findings (4 High, 4 Medium), XF-AUDIT-01..08",
+   "content_signature": {"corpus_cases": 116, "multi_hop_scenarios": 16, "race_ordering_probes": 18, "metamorphic_relations": 14, "mutation_targets": 16, "interfaces": 50},
+   "package": {"name": "LocalFlow_Cross_Milestone_Audit_340c566.zip", "sha256": "e2f532b7bd50c087ab62ad5564001653309744c5f69cdf3f1fa42720f2cb8b31", "bytes": 103561, "copies_supplied": ["Downloads/LocalFlow_Cross_Milestone_Audit_340c566.zip", "LocalFlow_Cross_Milestone_Audit_340c566 (1).zip (byte-identical)"], "members": 8}
+  },
+  "C": {
+   "label": "Audit C - intermediate audit",
+   "summary": "8 findings (3 High, 4 Medium, 1 Low) CROSS-AUDIT-01..08 (C numbering), TEST-GAP-01..10, DESIGN-01..05",
+   "content_signature": {"corpus_cases": 125, "base_category_cases": 87, "finding_reproductions": 8, "multi_hop": 15, "stateful": 15, "metamorphic": 12, "mutations": 18, "categories": 29, "interfaces": 29},
+   "package": null,
+   "note": "No ZIP was supplied for Audit C; its four standalone files are the only copies."
+  },
+  "B": {
+   "label": "Audit B - later/final artifact package",
+   "summary": "11 findings (4 High, 5 Medium, 2 Low) CROSS-AUDIT-01..11 (B numbering), test gaps CROSS-AUDIT-12..16, design concerns CROSS-AUDIT-17..18",
+   "content_signature": {"scenario": 116, "multi_hop": 15, "stateful_race": 15, "metamorphic": 12, "mutation": 18, "declarations": 176, "interfaces": 40},
+   "package": {"name": "LocalFlow_M01_M14_Cross_Milestone_Audit_Package.zip", "sha256": "037a710892b522a509f66393f85e03d7b6afe7473308679e69b7b6f80cf95bb2", "bytes": 84961, "members": 6, "own_checksums": "SHA256SUMS.txt verifies all four listed members (shasum -c: 4/4 OK)"}
+  }
+ },
+ "artifacts": [
+  {"generation": "A", "file": "audits/A/LocalFlow_Cross_Milestone_Read_Only_Deep_Audit.md", "sha256": "bd0fd65a0865b69d8a2098889e2c50ca63f16fa145ac4fad117dbcef4160838e", "role": "primary report", "findings": ["XF-AUDIT-01", "XF-AUDIT-02", "XF-AUDIT-03", "XF-AUDIT-04", "XF-AUDIT-05", "XF-AUDIT-06", "XF-AUDIT-07", "XF-AUDIT-08"], "duplicates": ["standalone copy", "ZIP member (both ZIP copies)", "'LocalFlow Complete Artifacts' folder copy"]},
+  {"generation": "A", "file": "audits/A/LocalFlow_Cross_Milestone_Adversarial_Corpus.json", "sha256": "e0a25848c34f84a127ebfd1b6f87b863c87d3c8b1e4af08f415843cb8f178ede", "role": "corpus", "version": "116 cases / 16 multi-hop / 18 races / 14 relations / 16 mutations", "duplicates": ["standalone copy", "ZIP member", "'LocalFlow Complete Artifacts' folder copy"]},
+  {"generation": "A", "file": "audits/A/LocalFlow_Cross_Milestone_Interface_Matrix.md", "sha256": "6f26cd20b8adf08f1049834bfbafe63d75af60f2cfd55d5b06d090bc813b7311", "role": "interface matrix", "version": "50 interfaces (XF-IF-001..050)", "duplicates": ["standalone copy", "ZIP member", "'LocalFlow Complete Artifacts' folder copy"]},
+  {"generation": "A", "file": "audits/A/localflow_cross_milestone_interface_inventory.json", "sha256": "1e58d3ae752f52322f6b41a4301439daf2aba14407656aea02c8a37a6d1f0d12", "role": "interface inventory (machine-readable)", "duplicates": ["standalone copy", "ZIP member", "'LocalFlow Complete Artifacts' folder copy"]},
+  {"generation": "A", "file": "audits/A/LocalFlow_Cross_Milestone_Remediation_Handoff.md", "sha256": "800e493ec85d0d4daca059cc8079b4e8fb3c2b8dd35af935a1edeb6bc8e75967", "role": "original handoff (superseded as implementation authority by the merged three-audit prompt)", "duplicates": ["standalone copy", "ZIP member", "'LocalFlow Complete Artifacts' folder copy"]},
+  {"generation": "A", "file": "audits/A/findings.json", "sha256": "bccc72bed4a60a290a7167a671f32afffcb86595d8bac45e12209293ed6547eb", "role": "finding metadata (ZIP only)", "duplicates": ["ZIP member (both ZIP copies)"]},
+  {"generation": "A", "file": "audits/A/source_catalog.json", "sha256": "c300023ae42882a26c93d8c8dd8054edf5bfc96d980ab333deed3a2dc42886fe", "role": "pinned source catalog (ZIP only)", "duplicates": ["ZIP member (both ZIP copies)"]},
+  {"generation": "A", "file": "audits/A/artifact_validation_manifest.json", "sha256": "9d557dae96d77500410753dbd87e1649014dec4ee63ed6e9b1f35e660ea06ff3", "role": "package authoring validation (ZIP only)", "duplicates": ["ZIP member (both ZIP copies)"]},
+  {"generation": "C", "file": "audits/C/LocalFlow_M01_M14_Cross_Milestone_Read_Only_Audit.md", "sha256": "29cbe7b622ccb122824af8dcdbaff53b2396d1d2ba07703e4bd470f59f88716b", "role": "primary report", "findings": ["CROSS-AUDIT-01(C)", "CROSS-AUDIT-02(C)", "CROSS-AUDIT-03(C)", "CROSS-AUDIT-04(C)", "CROSS-AUDIT-05(C)", "CROSS-AUDIT-06(C)", "CROSS-AUDIT-07(C)", "CROSS-AUDIT-08(C)", "TEST-GAP-01..10", "DESIGN-01..05"], "duplicates": []},
+  {"generation": "C", "file": "audits/C/LocalFlow_M01_M14_Cross_Milestone_Adversarial_Corpus.json", "sha256": "ad9ae106d28d8e97dbb803bcf112f24aa1fabdf29633493e78562ad2d478120d", "role": "corpus", "version": "125 cases (87 base, 8 finding reproductions LF-CROSS-F001..F008, 15 multi-hop, 15 stateful) / 12 relations / 18 mutations; 227544 bytes", "identified_by": "content: counts.cases=125 and findings CROSS-AUDIT-01..08; the similarly named 350853-byte file is Audit B's", "duplicates": []},
+  {"generation": "C", "file": "audits/C/LocalFlow_M01_M14_Interface_Matrix.md", "sha256": "95f05efa592d6c0df7b0820792cde52863614a145d0ae282a5160e4cf22720cd", "role": "interface matrix", "version": "29 interfaces; 43097 bytes", "identified_by": "content: 29 interface rows; the '(1)' 45650-byte file is Audit B's", "duplicates": []},
+  {"generation": "C", "file": "audits/C/Claude_Code_Local_Cross_Milestone_Remediation_Handoff.md", "sha256": "6e872896de0b48979b94119fb144ab40c6bfe102aa08fca3811c170124d320c4", "role": "original handoff (superseded as implementation authority)", "duplicates": []},
+  {"generation": "B", "file": "audits/B/LocalFlow_M01_M14_Cross_Milestone_Audit.md", "sha256": "bae0895b17b2886d6069beb192529a5c5adbb6fc61fcd948d2a27dfdc21c536b", "role": "primary report", "findings": ["CROSS-AUDIT-01(B)..11(B)", "test gaps CROSS-AUDIT-12..16", "design CROSS-AUDIT-17..18"], "duplicates": ["standalone copy", "ZIP member", "'LocalFlow Complete Artifacts' folder copy"]},
+  {"generation": "B", "file": "audits/B/LocalFlow_M01_M14_Cross_Milestone_Adversarial_Corpus.json", "sha256": "35a0f460e09264f4ad4e9074e51dec6c9da289b48a624d5c814aa18c24f53004", "role": "corpus", "version": "176 declarations (116 scenario, 15 multi-hop, 15 stateful races, 12 metamorphic, 18 mutations); 350853 bytes", "identified_by": "content: summary 116/15/15/12/18 and findings CROSS-AUDIT-01..11", "duplicates": ["standalone copy named '...Corpus(1).json'", "ZIP member", "'LocalFlow Complete Artifacts' folder copy"]},
+  {"generation": "B", "file": "audits/B/LocalFlow_M01_M14_Interface_Matrix.md", "sha256": "627967ff44dc18219478436f1ffc900512c6f26c6f8b1d8e00bec0daf87e06ab", "role": "interface matrix", "version": "40 interfaces", "duplicates": ["standalone copy named '...Matrix(1).md'", "ZIP member", "'LocalFlow Complete Artifacts' folder copy"]},
+  {"generation": "B", "file": "audits/B/Claude_Code_LOCAL_Cross_Milestone_Remediation_Handoff.md", "sha256": "e010445a21f8248c6756b5a77ffe64367579db79ff5c8419e4c3c994663a1811", "role": "original handoff (superseded as implementation authority)", "duplicates": ["standalone copy named '...Handoff(1).md'", "ZIP member", "'LocalFlow Complete Artifacts' folder copy"]},
+  {"generation": "B", "file": "audits/B/AUDIT_PACKAGE_VALIDATION.json", "sha256": "7c7866c2e6c9286247014c106faeb4d01c1cc2ae299a0f71a6c323c074672131", "role": "package authoring validation (ZIP only)", "duplicates": []},
+  {"generation": "B", "file": "audits/B/SHA256SUMS.txt", "sha256": "1f5f2b2ad83f2a43369dbc1a30c90f511ecfcc61ed6268f636edc887f67e7eca", "role": "package checksums (ZIP only)", "duplicates": []}
+ ],
+ "distinct_artifacts": 18,
+ "supplied_copies_hashed": 55,
+ "distinct_hashes": "20 = 18 distinct artifacts + the Audit A ZIP (two byte-identical copies) + the Audit B ZIP",
+ "privacy_scan": "No home path, /private or /var/folders path, UUID, e-mail or session fragment in any artifact; 'scratchpad' occurs only as the product feature and its contract file name. The owner's first name appears in the C and B reports and handoffs, as it does in earlier frozen audits (M09, M14)."
+}

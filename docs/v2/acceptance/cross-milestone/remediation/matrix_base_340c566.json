@@ -1,0 +1,519 @@
+{
+ "kind": "xm_schema_family_open_matrix",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_xm_store_families.py",
+  "suite_sha256": "d2ca6e86389f30fee21f9685af1e34346cb8a1f13896485047f5e622bb03bc76",
+  "code_root_sha": "340c566686c7123bfcf721e16160aacabbe0b97d",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "tables": 46,
+ "results": [
+  {
+   "table": "artifact_leases",
+   "rows_before": 130,
+   "open": "refused",
+   "refusal": "store schema corrupt: core table(s) artifact_leases missing while dependent rows remain; refusing to recreate them empty \u2014 restore from backup",
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_corrupt"
+   ]
+  },
+  {
+   "table": "artifacts",
+   "rows_before": 138,
+   "open": "refused",
+   "refusal": "store schema corrupt: core table(s) artifacts missing while dependent rows remain; refusing to recreate them empty \u2014 restore from backup",
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_corrupt"
+   ]
+  },
+  {
+   "table": "consent_revisions",
+   "rows_before": 1,
+   "open": "refused",
+   "refusal": "store schema corrupt: core table(s) consent_revisions missing while dependent rows remain; refusing to recreate them empty \u2014 restore from backup",
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_corrupt"
+   ]
+  },
+  {
+   "table": "correction_labels",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "daily_aggregates",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "deletion_tombstones",
+   "rows_before": 7,
+   "open": "refused",
+   "refusal": "store schema corrupt: core table(s) deletion_tombstones missing while dependent rows remain; refusing to recreate them empty \u2014 restore from backup",
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_corrupt"
+   ]
+  },
+  {
+   "table": "example_tags",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "export_manifests",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "import_runs",
+   "rows_before": 0,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "imports",
+   "rows_before": 0,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "insertion_observations",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "insertions",
+   "rows_before": 0,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "job_deletions",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "job_targets",
+   "rows_before": 23,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "jobs",
+   "rows_before": 23,
+   "open": "refused",
+   "refusal": "store schema corrupt: core table(s) jobs missing while dependent rows remain; refusing to recreate them empty \u2014 restore from backup",
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_corrupt"
+   ]
+  },
+  {
+   "table": "learning_candidates",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "learning_vocabulary_deltas",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "legacy_dictations",
+   "rows_before": 0,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "m14_operation_receipts",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "note_attachments",
+   "rows_before": 0,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "note_evidence_links",
+   "rows_before": 0,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "note_revisions",
+   "rows_before": 1,
+   "open": "refused",
+   "refusal": "store schema corrupt: core table(s) note_revisions missing while dependent rows remain; refusing to recreate them empty \u2014 restore from backup",
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_corrupt"
+   ]
+  },
+  {
+   "table": "notes",
+   "rows_before": 1,
+   "open": "refused",
+   "refusal": "store schema corrupt: core table(s) notes missing while dependent rows remain; refusing to recreate them empty \u2014 restore from backup",
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_corrupt"
+   ]
+  },
+  {
+   "table": "preference_observations",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "profile_evidence",
+   "rows_before": 26,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "profile_snapshots",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "profiles_meta",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "purge_intents",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "sampling_decisions",
+   "rows_before": 22,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "schema_meta",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": false,
+   "events": [
+    "store.migrated"
+   ]
+  },
+  {
+   "table": "snippets",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "split_assignments",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "style_rules",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "training_examples",
+   "rows_before": 23,
+   "open": "refused",
+   "refusal": "store schema corrupt: core table(s) training_examples missing while dependent rows remain; refusing to recreate them empty \u2014 restore from backup",
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_corrupt"
+   ]
+  },
+  {
+   "table": "training_memberships",
+   "rows_before": 44,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "training_revisions",
+   "rows_before": 33,
+   "open": "refused",
+   "refusal": "store schema corrupt: core table(s) training_revisions missing while dependent rows remain; refusing to recreate them empty \u2014 restore from backup",
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_corrupt"
+   ]
+  },
+  {
+   "table": "transform_candidates",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "transform_meta",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "transform_revisions",
+   "rows_before": 4,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "transforms",
+   "rows_before": 4,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "usage_facts",
+   "rows_before": 1,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "usage_meta",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "vocabulary_aliases",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "vocabulary_entries",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "vocabulary_history",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  },
+  {
+   "table": "vocabulary_meta",
+   "rows_before": 2,
+   "open": "recreated_empty",
+   "refusal": null,
+   "pre_repair_backup": true,
+   "events": [
+    "store.backup_taken",
+    "store.schema_repaired"
+   ]
+  }
+ ]
+}

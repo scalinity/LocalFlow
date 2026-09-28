@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "audit_package_validation",
+  "prepared_on": "2026-09-28",
+  "audited_commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+  "scope": "Validation of generated audit files only, not LocalFlow software.",
+  "target_execution_status": "NOT_RUN",
+  "artifact_validation_status": "PASS",
+  "checks": {
+    "case_count_and_unique_ids": true,
+    "requested_minima_met": true,
+    "all_proposed_executions_not_run": true,
+    "all_cases_have_independent_oracles": true,
+    "all_cases_have_pinned_sources": true,
+    "all_cross_referenced_cases_exist": true,
+    "no_sleep_only_race_designs": true,
+    "no_case_or_mutant_actual_result_claims": true,
+    "interface_count_and_unique_ids": true,
+    "inventory_does_not_claim_exhaustive_callers": true,
+    "report_has_22_sections_in_requested_order": true,
+    "severity_counts": true,
+    "eight_findings_have_full_fields": true,
+    "known_contract_paths_confirmed_against_index": true,
+    "no_unresolved_template_tokens": true
+  },
+  "corpus_counts": {
+    "categories": 29,
+    "cases": 116,
+    "multi_hop_scenarios": 16,
+    "race_ordering_probes": 18,
+    "metamorphic_relations": 14,
+    "mutation_targets": 16
+  },
+  "interface_counts": {
+    "interfaces": 50,
+    "direct_source_pairs": 9,
+    "open_finding_rows": 10
+  },
+  "files": [
+    {
+      "filename": "LocalFlow_Cross_Milestone_Read_Only_Deep_Audit.md",
+      "bytes": 72137,
+      "sha256": "bd0fd65a0865b69d8a2098889e2c50ca63f16fa145ac4fad117dbcef4160838e"
+    },
+    {
+      "filename": "LocalFlow_Cross_Milestone_Adversarial_Corpus.json",
+      "bytes": 623623,
+      "sha256": "e0a25848c34f84a127ebfd1b6f87b863c87d3c8b1e4af08f415843cb8f178ede"
+    },
+    {
+      "filename": "LocalFlow_Cross_Milestone_Interface_Matrix.md",
+      "bytes": 62892,
+      "sha256": "6f26cd20b8adf08f1049834bfbafe63d75af60f2cfd55d5b06d090bc813b7311"
+    },
+    {
+      "filename": "localflow_cross_milestone_interface_inventory.json",
+      "bytes": 118085,
+      "sha256": "1e58d3ae752f52322f6b41a4301439daf2aba14407656aea02c8a37a6d1f0d12"
+    },
+    {
+      "filename": "LocalFlow_Cross_Milestone_Remediation_Handoff.md",
+      "bytes": 22279,
+      "sha256": "800e493ec85d0d4daca059cc8079b4e8fb3c2b8dd35af935a1edeb6bc8e75967"
+    },
+    {
+      "filename": "findings.json",
+      "bytes": 20269,
+      "sha256": "bccc72bed4a60a290a7167a671f32afffcb86595d8bac45e12209293ed6547eb"
+    },
+    {
+      "filename": "source_catalog.json",
+      "bytes": 19610,
+      "sha256": "c300023ae42882a26c93d8c8dd8054edf5bfc96d980ab333deed3a2dc42886fe"
+    }
+  ]
+}
