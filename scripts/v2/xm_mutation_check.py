@@ -409,6 +409,15 @@ MUTATIONS = [
      [(HUB, "        if self._exports_running.get(folder):\n",
        "        if " + mexpr("XM-MU63") + " and False:\n")],
      {REM: ["x14_hub_export_presses_while_one_runs"]}),
+    # The seventh review's residual test gaps (its mutants R and L).
+    ("XM-MU64", "MERGED-X14", "a published build keeps its mark and lock",
+     [(EX, "                    _release(export_id)\n",
+       mark("XM-MU64", 20) + "                    pass\n")],
+     {REM: ["c_settled_builds_release_their_mark_and_lock"]}),
+    ("XM-MU65", "MERGED-X14", "a release leaves the owner locked",
+     [(EX, "        owner.close()  # releases the lock\n",
+       mark("XM-MU65", 8) + "        _OWNER_LOCKS[export_id] = owner\n")],
+     {REM: ["c_settled_builds_release_their_mark_and_lock"]}),
 ]
 
 

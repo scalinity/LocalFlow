@@ -2867,6 +2867,34 @@ def x14_another_exporter_never_reconciles_a_publishing_build():
             w.close()
 
 
+@case("MERGED-X14 control (review 7: every settled build lets go)",
+      kind="control")
+def c_settled_builds_release_their_mark_and_lock():
+    import tempfile
+    from localflow.v2.curation import export as export_mod
+    from localflow.v2.curation.export import ExportError
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        w = _plain_export(root / "dataset")
+        try:
+            w.exporter.build(root / "dataset", task_views=("asr_supervised",),
+                             export_id="export-settled")
+            try:  # refused: a user folder that is not replaceable
+                (root / "mine").mkdir()
+                (root / "mine" / "notes.txt").write_text("x")
+                w.exporter.build(root / "mine",
+                                 task_views=("asr_supervised",),
+                                 export_id="export-refused")
+            except ExportError:
+                pass
+            held = {"in_flight": sorted(export_mod._INFLIGHT),
+                    "locks": sorted(export_mod._OWNER_LOCKS)}
+            assert held == {"in_flight": [], "locks": []}, (
+                f"a settled build still holds its mark or lock: {held}")
+        finally:
+            w.close()
+
+
 @case("MERGED-X14 (review R2-05: put back when the destination is free)")
 def x14_lost_record_before_rename_puts_the_earlier_export_back():
     import tempfile
