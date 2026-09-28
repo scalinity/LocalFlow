@@ -229,20 +229,22 @@ def transform_target_in(conn, task_key, candidate_id) -> dict:
 
 
 class OperationReused(ValueError):
-    """An operation id already names a different kind of action."""
+    """An operation id already names a different action or target."""
 
 
-def receipt_in(conn, operation_id, kind):
+def receipt_in(conn, operation_id, kind, target_id=None):
     """The recorded receipt of a completed operation (a retry of the
-    same logical action returns it and writes nothing), or None."""
+    same logical action returns it and writes nothing), or None. An id
+    recorded for another kind of action, or — when the caller names
+    its target — for another target, refuses."""
     if not operation_id:
         return None
     row = conn.execute(
-        "SELECT kind, receipt_json FROM m14_operation_receipts WHERE"
-        " operation_id=?", (operation_id,)).fetchone()
+        "SELECT kind, receipt_json, target_id FROM m14_operation_receipts"
+        " WHERE operation_id=?", (operation_id,)).fetchone()
     if row is None:
         return None
-    if row[0] != kind:
+    if row[0] != kind or (target_id is not None and row[2] != target_id):
         raise OperationReused("operation_id_reused")
     return json.loads(row[1])
 

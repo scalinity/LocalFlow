@@ -2266,6 +2266,7 @@ class Store:
         """Expire the 30-day unreviewed evidence buffer (S29.14); pinned
         examples (a training lease with no expiry) are never evicted."""
         now = now if now is not None else self.now_fn()
+        from .training_data import REVIEW_RETENTION_ROLES as review_roles
 
         def op():
             now_iso = ids.now_utc_iso(now)
@@ -2280,11 +2281,20 @@ class Store:
                 if created_t is None or \
                         (now - created_t) < self.retention_days["training_buffer"] * 86400:
                     continue
+                # A review payload's own lease is not a user pin (M14
+                # D08): an explicit teach holds its example only while
+                # the teach awaits the user's decision.
                 pinned = self._db.execute(
                     "SELECT 1 FROM artifact_leases l JOIN artifacts a ON"
                     " a.artifact_id = l.artifact_id WHERE a.job_id=? AND"
                     " l.holder='training' AND l.revoked_at_utc IS NULL AND"
-                    " l.expires_at_utc IS NULL", (job_id,)).fetchone()
+                    " l.expires_at_utc IS NULL AND a.role NOT IN"
+                    f" ({','.join('?' * len(review_roles))})",
+                    (job_id, *review_roles)).fetchone() or \
+                    self._db.execute(
+                        "SELECT 1 FROM learning_candidates WHERE job_id=?"
+                        " AND source='explicit_teach' AND"
+                        " status='pending'", (job_id,)).fetchone()
                 if pinned:
                     continue
                 # M02-AUDIT-07: only the TRAINING interest expires here.

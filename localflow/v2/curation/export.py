@@ -197,7 +197,13 @@ class DatasetExporter:
                 {"example_id": ex_id, "reason": "revisions_absent"})
         for ex_id, payload in latest:
             if ex_id not in memberships:
-                continue  # not part of this assignment version
+                # Captured after this assignment version: named, never a
+                # silent omission (readiness counts it — reassign first).
+                if states.get(ex_id) in _LIVE_STATES:
+                    excluded_rows.append(
+                        {"example_id": ex_id,
+                         "reason": "not_in_assignment_version"})
+                continue
             fam, part, exposed = memberships[ex_id]
             if part not in partitions:
                 continue
@@ -346,6 +352,7 @@ class DatasetExporter:
                                              inputs),
                     "label_revision": grow[1],
                     "graft_text": payload["grafted_text"],
+                    "graft_record": payload,
                     "source_text": src["artifact"]["text"],
                     "coverage": payload["coverage"],
                     "reference_quality": "weak_partial",
@@ -519,6 +526,7 @@ class DatasetExporter:
                          for row in snap[key]
                          for aid in row.get("inputs") or () if aid})
         examples = {}
+        unexposed = set()
         for key in ("asr", "grafts", "cleanup"):
             for row in snap[key]:
                 ex_id = row["example_id"]
@@ -527,13 +535,15 @@ class DatasetExporter:
                     "SELECT COUNT(*) FROM correction_labels WHERE"
                     " example_id=?", (ex_id,)).fetchone()[0]
                 examples[ex_id] = (lin["revision_id"], labels)
+                if not lin["exposed"]:
+                    unexposed.add(lin["family_id"])
         pairs = {(r["task_key"], r["judgment_observation_id"])
                  for r in snap["preferences"]}
         accepts = {(r["task_key"], r["candidate_id"],
                     r["judgment_observation_id"])
                    for r in snap["transforms"]}
         return {"inputs": inputs, "examples": examples, "pairs": pairs,
-                "accepts": accepts}
+                "accepts": accepts, "unexposed_families": sorted(unexposed)}
 
     @staticmethod
     def _dependencies_hold(conn, deps) -> str | None:
@@ -552,6 +562,16 @@ class DatasetExporter:
                 chunk).fetchone()[0]
             if n != len(chunk):
                 return "input_purged_or_absent"
+        # D10: a family exported as unexposed must not have been exposed
+        # since the snapshot, in any assignment version.
+        fams = deps["unexposed_families"]
+        for i in range(0, len(fams), 500):
+            chunk = fams[i:i + 500]
+            if conn.execute(
+                    "SELECT 1 FROM training_memberships WHERE exposed=1 AND"
+                    f" family_id IN ({','.join('?' * len(chunk))}) LIMIT 1",
+                    chunk).fetchone():
+                return "family_exposed"
         for ex_id, (revision, labels) in deps["examples"].items():
             row = conn.execute(
                 "SELECT state, latest_revision_id FROM training_examples"
@@ -587,9 +607,13 @@ class DatasetExporter:
         with nothing left behind but the refusal record. ``export_id``
         is the caller's operation identity: repeating a completed id
         returns its recorded receipt and builds nothing."""
+        from .splits import PARTITIONS
         for view in task_views:
             if view not in TASK_VIEWS:
                 raise ExportError(f"unknown task view {view!r}")
+        for part in partitions:
+            if part not in PARTITIONS:
+                raise ExportError(f"unknown partition {part!r}")
         destination = pathlib.Path(destination).expanduser()
         if export_id is not None:
             done = self._receipt(export_id)
@@ -667,6 +691,7 @@ class DatasetExporter:
                 "the build's own staging path already exists — nothing"
                 " written or removed")
         (staging / _OWNER_FILE).write_text(export_id, encoding="utf-8")
+        publishing = False
         try:
             manifest, counts, fingerprint = self._write_graph(
                 staging, snap, task_views, partitions, export_id,
@@ -715,7 +740,9 @@ class DatasetExporter:
                      summary_counts["excluded"], None, now, now))
                 os.rename(staging, destination)
                 return {"published": True}
+            publishing = True
             out = self.store.submit(publish_op)
+            publishing = False
             if out.get("refused"):
                 raise ExportError(
                     "consent revoked or selected content changed during"
@@ -727,7 +754,14 @@ class DatasetExporter:
                          destination, None, None, error="refused")
             raise e
         except Exception as e:
-            # Disk full, a store stall during the fence, anything:
+            if publishing and isinstance(e, TimeoutError):
+                # The publication op is queued and may still commit: an
+                # unknown outcome, never "failed". Staging is left to
+                # that op (removing it could publish a partial tree);
+                # repeating this export_id reconciles through its
+                # receipt.
+                raise
+            # Disk full, a store stall before publication, anything:
             # nothing is left labeled complete; only this build's own
             # staging is removed.
             self._abort(staging, export_id, moved_aside, destination)
@@ -844,6 +878,7 @@ class DatasetExporter:
                 "source_text": row["source_text"],
                 "source_sha256": ids.sha256_text(row["source_text"]),
                 "grafted_text": row["graft_text"],
+                "graft_record": row["graft_record"],
                 "reference_quality": "weak_partial",
                 "note": "unreviewed remainder unverified — never full"
                         " gold (S29.7)",
@@ -1136,7 +1171,7 @@ def validate_dataset(root) -> dict:
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         sums_text = sums.read_text(encoding="utf-8")
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         return {"valid": False, "issues": ["manifest or sums unreadable"]}
     if not isinstance(manifest, dict):
         return {"valid": False, "issues": ["manifest is not an object"]}
@@ -1167,7 +1202,12 @@ def validate_dataset(root) -> dict:
         if not p.is_file():
             issues.append(f"missing file {rel}")
             continue
-        if _sha256_file(p) != digest:
+        try:
+            actual = _sha256_file(p)
+        except OSError:
+            issues.append(f"unreadable file {rel}")
+            continue
+        if actual != digest:
             issues.append(f"hash mismatch {rel}")
     present = {p.relative_to(root).as_posix()
                for p in root.rglob("*")
@@ -1288,6 +1328,13 @@ def _validate_semantics(examples, references, preferences, listed,
             fam, split = ex.get("family_id"), ex.get("split")
             if families.setdefault(fam, split) != split:
                 issues.append(f"family {fam} spans partitions")
+            lin = ex.get("lineage")
+            if isinstance(lin, dict) and (
+                    lin.get("family_id") != fam
+                    or lin.get("split") != split
+                    or lin.get("exposed") != ex.get("exposed")):
+                issues.append(f"{kind} example {ex.get('example_id')}"
+                              " partition disagrees with its lineage")
             ref = refs.get((ex.get("example_id"), kind))
             if ref is None:
                 issues.append(f"{kind} example {ex.get('example_id')}"
@@ -1337,6 +1384,19 @@ def _validate_semantics(examples, references, preferences, listed,
                         and 0 <= span[0] <= span[1] <= len(src)):
                     issues.append(f"graft {ex.get('example_id')}"
                                   " coverage outside its source")
+            # The graft record is the reviewed artifact itself: its
+            # digest is the lineage's, and it names the grafted text and
+            # coverage the reference carries.
+            rec = ref.get("graft_record")
+            if by_role is not None and (
+                    not isinstance(rec, dict)
+                    or _sha_text(json.dumps(rec, ensure_ascii=False,
+                                            sort_keys=True))
+                    != (by_role.get("span_graft") or [{}])[0].get("sha256")
+                    or rec.get("grafted_text") != ref.get("grafted_text")
+                    or rec.get("coverage") != ref.get("coverage_spans")):
+                issues.append(f"graft {ex.get('example_id')} text is not"
+                              " its reviewed graft")
         elif kind == "cleanup_supervised":
             by_role = _lineage_ok(ex, ("raw_transcript", "applied_output",
                                        "normalized_text",
@@ -1351,6 +1411,16 @@ def _validate_semantics(examples, references, preferences, listed,
                 if app.get("sha256") != _sha_text(ex.get("output_text")):
                     issues.append(f"cleanup {ex.get('example_id')} output"
                                   " is not its recorded output")
+                # The stage input is the normalized text, or the raw
+                # text when normalization changed nothing.
+                stage_in = (by_role.get("normalized_text") or [src])[0]
+                if stage_in.get("sha256") != _sha_text(ex.get("input_text")):
+                    issues.append(f"cleanup {ex.get('example_id')} input"
+                                  " is not its recorded stage input")
+                ref = refs.get((ex.get("example_id"), kind)) or {}
+                if ref.get("text") != ex.get("output_text"):
+                    issues.append(f"cleanup {ex.get('example_id')}"
+                                  " reference is not its recorded output")
                 prompts = [i for r, ins in by_role.items()
                            if isinstance(r, str)
                            and r.startswith("cleanup_input_") for i in ins]
@@ -1425,6 +1495,11 @@ def _validate_semantics(examples, references, preferences, listed,
                               for c in cands):
                 issues.append(f"preference {pref.get('task_key')} outputs"
                               " are not its candidates'")
+            srcs = by_role.get("transform_source") or [{}]
+            if any(s.get("sha256") != _sha_text(pref.get("input_text"))
+                   for s in srcs):
+                issues.append(f"preference {pref.get('task_key')} input is"
+                              " not its task source")
 
 
 def _read_jsonl(path: pathlib.Path, issues: list) -> list[dict]:
@@ -1443,7 +1518,7 @@ def _read_jsonl(path: pathlib.Path, issues: list) -> list[dict]:
             continue
         try:
             row = json.loads(line)
-        except ValueError:
+        except (ValueError, RecursionError):
             issues.append(f"{path.name}:{i + 1} unparsable")
             continue
         if not isinstance(row, dict):

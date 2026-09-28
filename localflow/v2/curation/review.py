@@ -329,7 +329,7 @@ class ReviewService:
 
         def op(conn):
             try:
-                done = ev.receipt_in(conn, operation_id, "label")
+                done = ev.receipt_in(conn, operation_id, "label", example_id)
             except ev.OperationReused as e:
                 return {"refused": str(e)}
             if done is not None:
@@ -570,7 +570,8 @@ class ReviewService:
 
         def op(conn):
             try:
-                done = ev.receipt_in(conn, operation_id, "pair_judgment")
+                done = ev.receipt_in(conn, operation_id, "pair_judgment",
+                                   task_key)
             except ev.OperationReused as e:
                 return {"refused": str(e)}
             if done is not None:

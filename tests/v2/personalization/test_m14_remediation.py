@@ -1180,6 +1180,308 @@ def l07_corrupt_utc_offset_is_an_unknown_hour():
         assert measured["hour_histogram"][21] == 1, measured["hour_histogram"]
 
 
+# ---- independent review round (frozen first pass 73cdfc0) ------------------
+
+
+@case("REVIEW-IR-01")
+def ir01_reapproval_plans_against_the_candidates_identity():
+    with MWorld() as w:
+        eid = w.vocab.add_entry("module", [("moduul", True)],
+                                scope_kind="app", scope_value=APP,
+                                approved=True)
+        _j, cid = taught(w)
+        assert w.learning.approve(cid)["action"] == "alias_added"
+        w.learning.undo_approval(cid)
+        e = w.vocab.entry(eid)
+        w.vocab.update_entry(eid, expected_revision=e.revision,
+                             canonical="modular")
+        w.learning.approve(cid)
+        got = w.normalize("please check the modul today", app=APP)
+        assert got == TEACH_FIX, f"alias landed on the renamed entry: {got!r}"
+    with MWorld() as w:
+        w.vocab.add_entry("module", [("moduul", True)], scope_kind="app",
+                          scope_value=APP, approved=True)
+        _j, cid = taught(w)
+        w.learning.approve(cid)
+        w.learning.undo_approval(cid)
+        out = w.learning.approve(cid, scope_kind="global")
+        assert w.entries()[out["entry_id"]][1] == "global", \
+            w.entries()[out["entry_id"]][:3]
+
+
+@case("REVIEW-IR-02")
+def ir02_rejection_suppresses_pending_siblings():
+    with MWorld() as w:
+        _j1, c1 = taught(w)
+        _j2, c2 = taught(w)
+        w.learning.reject(c1)
+        assert w.candidate(c2)["status"] == "suppressed", \
+            w.candidate(c2)["status"]
+        was, _msg = refused(w.learning.approve, c2)
+        assert was, "a sibling of a rejected pair was approved"
+        assert w.normalize(TEACH_RAW, app=APP) == TEACH_RAW
+        queued = [r for r in w.review.queue()
+                  if r.get("candidate_id") == c2]
+        assert not queued, queued
+
+
+@case("REVIEW-IR-03")
+def ir03_earlier_counterexample_results_do_not_outlive_the_candidate():
+    from localflow.v2 import notes as notes_mod
+    with MWorld() as w:
+        ns = notes_mod.NoteStore(w.store)
+        text = "we use mlx daily for the work"
+        j = w.job(text)
+        nid = ns.create_note(text, origin=notes_mod.ORIGIN_DICTATED,
+                             source_job_id=j["job_id"])["note_id"]
+        w.store.submit(lambda c: c.execute(
+            "INSERT INTO note_evidence_links(note_id, example_id, job_id,"
+            " first_seen_utc) VALUES(?,?,?,?)",
+            (nid, j["example_id"], j["job_id"], ids.now_utc_iso())))
+        ns.append_revision(nid, "we use MLX daily for the work",
+                           origin=notes_mod.ORIGIN_TYPED,
+                           trigger=notes_mod.TRIGGER_AUTOSAVE)
+        w.learning.mine_observation_candidates()
+        cid = w.one("SELECT candidate_id FROM learning_candidates WHERE"
+                    " source='note_revision'")[0]
+        for phrase in (f"first mlx {PRIVATE_CANARY}",
+                       f"second mlx {PRIVATE_CANARY}"):
+            assert w.learning.approve(cid, counterexamples=(phrase,))[
+                "flips"], "the counterexample did not flip"
+        ns.delete_note(nid)
+        left = w.rows("SELECT artifact_id FROM artifacts WHERE"
+                      " role='counterexample_result' AND purged=0")
+        assert not left, f"{len(left)} counterexample results survive"
+
+
+@case("REVIEW-IR-04")
+def ir04_fence_timeout_is_an_unknown_outcome_not_a_failure():
+    with MWorld() as w:
+        w.families(10, asr=True)
+        w.splits.assign()
+        real = w.store.submit
+
+        def submit(fn, *a, **kw):
+            out = real(fn, *a, **kw)
+            if getattr(fn, "__name__", "") == "publish_op":
+                # The op committed; the caller's wait ran out first.
+                raise TimeoutError("store busy")
+            return out
+        w.store.submit = submit
+        try:
+            w.exporter.build(w.tmp / "ds", task_views=("asr_supervised",),
+                             export_id="export-ir04")
+            err = None
+        except Exception as e:  # noqa: BLE001
+            err = e
+        finally:
+            w.store.submit = real
+        assert isinstance(err, TimeoutError), f"reported as {err!r}"
+        row = w.one("SELECT state FROM export_manifests WHERE"
+                    " export_id='export-ir04'")
+        assert row == ("complete",), row
+        assert export_mod.validate_dataset(w.tmp / "ds")["valid"]
+        again = w.exporter.build(w.tmp / "ds",
+                                 task_views=("asr_supervised",),
+                                 export_id="export-ir04")
+        assert again["state"] == "complete", again
+
+
+@case("REVIEW-IR-05")
+def ir05_operation_id_reused_on_another_target_refuses():
+    with MWorld() as w:
+        _j1, c1 = taught(w)
+        j2 = w.job("please check the modul again", app="com.synthetic.b")
+        c2 = w.learning.teach_correction(
+            j2["job_id"], "please check the module again")["candidate_id"]
+        w.learning.approve(c1, operation_id="op-ir05")
+        was, msg = refused(w.learning.approve, c2, operation_id="op-ir05")
+        assert was and "operation_id_reused" in str(msg), (was, msg)
+        assert w.candidate(c2)["status"] == "pending"
+
+
+@case("REVIEW-IR-06")
+def ir06_undo_after_deletion_leaves_the_candidate_stale():
+    with MWorld() as w:
+        j, cid = taught(w)
+        w.learning.approve(cid)
+        w.store.delete_everywhere("job", j["job_id"])
+        w.learning.undo_approval(cid)
+        c = w.candidate(cid)
+        assert (c["status"], c["alias"], c["canonical"]) == \
+            ("stale", None, None), c
+        assert not [r for r in w.review.queue()
+                    if r.get("candidate_id") == cid]
+
+
+@case("REVIEW-IR-07")
+def ir07_validator_binds_record_texts_to_their_lineage():
+    import copy
+    import shutil
+    with MWorld() as w:
+        w.families(10, asr=True)
+        w.ready_cleanup("cleanup raw words")
+        g = w.ready_asr("send the cloud report on friday")
+        w.review.record_label(
+            g["example_id"], edit_kind="recognition_error",
+            origin_stages=("asr",),
+            confirmed_spans=[{"start": 9, "end": 14,
+                              "before_words": ["cloud"],
+                              "after_words": ["Claude"]}])
+        t = w.transform_task("draft source text", ["Draft A.", "Draft B."])
+        w.judge(t, t["candidates"][0]["candidate_id"],
+                t["candidates"][1]["candidate_id"], "prefer_b")
+        w.splits.assign()
+        w.export("ds", ("asr_supervised", "asr_span_graft_weak",
+                        "cleanup_supervised", "preference_pairs"))
+        base = w.tmp / "ds"
+        exs0 = read_jsonl(base / "examples.jsonl")
+        refs0 = read_jsonl(base / "references.jsonl")
+        prefs0 = read_jsonl(base / "preferences.jsonl")
+
+        def tampered(name, *, examples=None, references=None,
+                     preferences=None):
+            d = w.tmp / f"t-{name}"
+            shutil.copytree(base, d)
+            _rewrite_consistently(d, examples=examples,
+                                  references=references,
+                                  preferences=preferences)
+            return export_mod.validate_dataset(d)["valid"]
+        refs = copy.deepcopy(refs0)
+        for r in refs:
+            if r["task_kind"] == "cleanup_supervised":
+                r["text"] = "a target nobody approved"
+        exs = copy.deepcopy(exs0)
+        for e in exs:
+            if e["task_kind"] == "cleanup_supervised":
+                e["input_text"] = "an input the stage never saw"
+        prefs = copy.deepcopy(prefs0)
+        for p in prefs:
+            p["input_text"] = "another input"
+            p["input_source_sha256"] = ids.sha256_text("another input")
+        moved = copy.deepcopy(exs0)
+        fam = next(e["family_id"] for e in moved
+                   if e.get("split") == "train")
+        for e in moved:
+            if e.get("family_id") == fam:
+                e["split"] = "frozen_test"
+        grafted = copy.deepcopy(refs0)
+        for r in grafted:
+            if r["task_kind"] == "asr_span_graft_weak":
+                r["grafted_text"] = "send the other report on friday"
+        valid = {
+            "cleanup_reference": tampered("a", references=refs),
+            "cleanup_input": tampered("b", examples=exs),
+            "preference_input": tampered("c", preferences=prefs),
+            "split_vs_lineage": tampered("d", examples=moved),
+            "graft_text": tampered("e", references=grafted)}
+        assert not any(valid.values()), valid
+
+
+@case("REVIEW-IR-08")
+def ir08_validator_reports_deep_nesting_and_unreadable_files():
+    import os
+    with MWorld() as w:
+        w.families(10, asr=True)
+        w.splits.assign()
+        w.export("ds", ("asr_supervised",))
+        root = w.tmp / "ds"
+        deep = "[" * 100000 + "]" * 100000
+        path = root / "examples.jsonl"
+        keep = path.read_text()
+        path.write_text(keep + deep + "\n")
+        assert not export_mod.validate_dataset(root)["valid"]
+        path.write_text(keep)
+        m = root / "dataset_manifest.json"
+        mkeep = m.read_text()
+        m.write_text(deep)
+        assert not export_mod.validate_dataset(root)["valid"]
+        m.write_text(mkeep)
+        wav = next((root / "artifacts").glob("*.wav"))
+        os.chmod(wav, 0)
+        try:
+            assert not export_mod.validate_dataset(root)["valid"]
+        finally:
+            os.chmod(wav, 0o600)
+
+
+@case("REVIEW-IR-09")
+def ir09_exposure_between_snapshot_and_fence_refuses():
+    from m14_world import frozen_family_id
+    with MWorld() as w:
+        w.families(12, asr=True, frozen=1)
+        frozen = frozen_family_id(0)
+        w.splits.assign()
+        fired = {"n": 0}
+
+        def hook():
+            if not fired["n"]:
+                fired["n"] = 1
+                w.splits.mark_exposed([frozen], "inspected")
+        with after_each_op(w.store, hook):
+            out, err = export_or_refusal(
+                w, "ds", ("asr_supervised",), partitions=("frozen_test",),
+                assignment_version=1)
+        assert fired["n"]
+        assert out is None, "exposed family published as a blind holdout"
+
+
+@case("REVIEW-IR-10")
+def ir10_example_outside_the_assignment_is_reason_coded():
+    with MWorld() as w:
+        w.families(10, asr=True)
+        w.splits.assign()
+        late = w.ready_asr("a late witness after assignment")
+        te = w.training.readiness()["readiness_metrics"]["task_eligibility"]
+        out, err = export_or_refusal(w, "ds", ("asr_supervised",))
+        assert out is not None, err
+        exs, _r, _p = export_records(w, "ds")
+        manifest = json.loads((w.tmp / "ds" /
+                               "dataset_manifest.json").read_text())
+        excluded = {e["example_id"] for e in manifest.get("excluded", [])}
+        exported = {e["example_id"] for e in exs}
+        assert late["example_id"] in excluded | exported, \
+            "neither exported nor excluded with a reason"
+        assert te["asr_supervised"]["count"] == len(exs) + sum(
+            1 for e in manifest.get("excluded", [])
+            if e["example_id"] == late["example_id"]), te["asr_supervised"]
+
+
+@case("REVIEW-IR-11")
+def ir11_unknown_partition_refuses():
+    with MWorld() as w:
+        w.families(10, asr=True)
+        w.splits.assign()
+        out, err = export_or_refusal(w, "ds", ("asr_supervised",),
+                                     partitions=("Train",))
+        assert out is None, "an unknown partition produced an export"
+
+
+@case("REVIEW-IR-12")
+def ir12_purged_rendered_final_refuses_as_stale():
+    with MWorld() as w:
+        j = w.job(TEACH_RAW)
+        w.purge(j["applied_aid"])
+        was, msg = refused(
+            w.learning.teach_correction, j["job_id"], TEACH_FIX,
+            expected_final_artifact_id=j["applied_aid"],
+            expected_final_sha256=ids.sha256_text(j["applied"]))
+        assert was and "stale_final" in str(msg), (was, msg)
+
+
+@case("REVIEW-IR-13")
+def ir13_review_payload_lease_is_not_a_pin_of_the_example():
+    with MWorld() as w:
+        _j, cid = taught(w)
+        ex = w.candidate(cid)["example_id"]
+        w.learning.reject(cid)
+        w.clock.advance_days(40)
+        w.store.prune_training(now=w.clock())
+        state = w.one("SELECT state FROM training_examples WHERE"
+                      " example_id=?", (ex,))[0]
+        assert state == "expired", state
+
+
 @case("M14-AUDIT-31")
 def d02_task_rows_never_ride_into_a_holdout_export():
     with MWorld() as w:
@@ -1349,6 +1651,34 @@ def _review_tab(hub, mq):
     assert mq.drain(hub.state, 60)
     hub.state.select_training_tab("review")
     assert mq.drain(hub.state, 60)
+
+
+@case("REVIEW-IR-14")
+def ir14_hub_unknown_label_is_an_abstention():
+    Harness, MainQueue = _hub_env()
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = _make_hub(h)
+            assert mq.drain(hub.state, 60)
+            _review_tab(hub, mq)
+            calls = []
+
+            class Stub:
+                def record_label(self, example_id, **kw):
+                    calls.append(kw)
+                    return {"label_id": "lbl-stub", "revision": 1}
+            hub.spec["review_service"] = Stub()
+            hub.review_example.setStringValue_("ex-stub")
+            for kind in ("unknown", "recognition_error"):
+                hub.review_kind.selectItemWithTitle_(kind)
+                hub.reviewLabel_(None)
+            got = [(c.get("edit_kind"), bool(c.get("abstained")))
+                   for c in calls]
+            assert got == [("unknown", True),
+                           ("recognition_error", False)], got
+    finally:
+        h.close()
 
 
 @case("M14-AUDIT-16")

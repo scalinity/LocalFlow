@@ -2817,8 +2817,10 @@ class _RecordingReview(_QueueReview):
         super().__init__([])
         self.labels = []
 
-    def record_label(self, example_id, edit_kind=None, operation_id=None):
-        # operation_id mirrors ReviewService.record_label (M14-AUDIT-17).
+    def record_label(self, example_id, edit_kind=None, abstained=False,
+                     operation_id=None):
+        # abstained and operation_id mirror ReviewService.record_label
+        # (M14-AUDIT-17; the Hub records "unknown" as an abstention).
         self.labels.append(example_id)
         return {}
 

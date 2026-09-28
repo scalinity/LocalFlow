@@ -924,7 +924,9 @@ class TrainingDataService:
             # M14-AUDIT-14: each count is the export's own qualified
             # tier (the same predicates DatasetExporter selects with, over
             # all live examples — an export narrows further only by its
-            # requested partitions); looser tiers are named separately.
+            # requested partitions and its assignment version, naming each
+            # left-out example with a reason); looser tiers are named
+            # separately.
             task_eligibility = {
                 "asr_supervised": {
                     "count": asr_eligible,

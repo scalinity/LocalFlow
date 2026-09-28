@@ -3471,8 +3471,11 @@ class HubController(NSObject):
         if review is None or not ex:
             return
         kind = self.review_kind.titleOfSelectedItem() or "unknown"
+        # "unknown" is the reviewer saying they cannot tell: an
+        # abstention, which never resolves a blocker (D01).
         out = self._training_action(
             review.record_label, ex, edit_kind=kind,
+            abstained=kind == "unknown",
             operation_id=self._op_id("label", (ex, kind)))
         self._op_settled("label")
         if out is not None:

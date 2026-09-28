@@ -104,7 +104,7 @@ class LearningService:
 
         def op(conn):
             try:
-                done = ev.receipt_in(conn, operation_id, "teach")
+                done = ev.receipt_in(conn, operation_id, "teach", job_id)
             except ev.OperationReused as e:
                 return {"refused": str(e)}
             if done is not None:
@@ -140,7 +140,11 @@ class LearningService:
             final = ev.qualify(conn, final_aid, "applied_output",
                                job_id=job_id)
             if not final["ok"]:
-                return {"refused": "no_retained_final_text"}
+                # The text the reviewer saw is gone: that is a stale
+                # render (D13), not a job that never had a final.
+                return {"refused": "stale_final"
+                        if expected_final_artifact_id is not None
+                        else "no_retained_final_text"}
             if expected_final_artifact_id is not None and \
                     final["artifact"]["id"] != expected_final_artifact_id:
                 return {"refused": "stale_final"}
@@ -410,17 +414,10 @@ class LearningService:
             suggestion = _suggestion_from_regions(regions)
         alias, canonical = (suggestion["alias"], suggestion["canonical"]) \
             if suggestion else (None, None)
-        suppressed = False
-        if alias is not None:
-            # D05: the pair is compared under M05's rules (alias lower-
-            # cased, canonical ASCII-case-insensitive), in every scope.
-            key = _pair_key(alias, canonical)
-            suppressed = any(
-                _pair_key(a, c) == key for a, c in conn.execute(
-                    "SELECT proposed_alias, proposed_canonical FROM"
-                    " learning_candidates WHERE status IN"
-                    " ('rejected','suppressed') AND proposed_alias IS"
-                    " NOT NULL").fetchall())
+        # D05: the pair is compared under M05's rules (alias lower-cased,
+        # canonical ASCII-case-insensitive), in every scope.
+        suppressed = alias is not None and _pair_rejected(
+            conn, alias, canonical, ("rejected", "suppressed"))
         now = ids.now_utc_iso()
         candidate_id = ids.new_id("cand")
         # The observed words live only in this lease-governed payload.
@@ -541,7 +538,8 @@ class LearningService:
 
         def op(conn):
             try:
-                done = ev.receipt_in(conn, operation_id, "approve")
+                done = ev.receipt_in(conn, operation_id, "approve",
+                                   candidate_id)
             except ev.OperationReused as e:
                 return {"refused": str(e)}
             if done is not None:
@@ -560,6 +558,8 @@ class LearningService:
                 return {"refused": f"not_pending:{status}"}
             if not alias or not canonical:
                 return {"refused": "no_proposed_rule"}
+            if _pair_rejected(conn, alias, canonical):
+                return {"refused": "pair_rejected"}
             live = _evidence_live(conn, job_id, example_id, payload_aid)
             if live is not None:
                 return {"refused": live}
@@ -637,15 +637,18 @@ class LearningService:
         approved is never re-activated by a learned alias
         (``existing_entry_not_active``)."""
         vs = self.vocabulary
+        # The plan always starts from this candidate's identity and the
+        # requested scope; an earlier approval's entry is reused only
+        # while it still holds exactly that identity.
+        eid = vs.find_in(conn, canonical, kind, value)
+        entry = vs.entry_in(conn, eid) if eid else None
         prior = conn.execute(
             "SELECT delta_json FROM learning_vocabulary_deltas WHERE"
             " candidate_id=?", (candidate_id,)).fetchone()
-        entry = None
-        if prior is not None:
+        if prior is not None and entry is not None:
             d = json.loads(prior[0])
-            entry = vs.entry_in(conn, d["entry_id"])
-            if entry is not None and d["action"] == "created" and \
-                    not entry.enabled:
+            if d["entry_id"] == entry.entry_id and \
+                    d["action"] == "created" and not entry.enabled:
                 if d.get("undo_revision") is None or \
                         entry.revision != d["undo_revision"]:
                     return {"refused": "existing_entry_not_active"}
@@ -655,9 +658,6 @@ class LearningService:
                 if status != "ok":
                     return {"refused": f"vocabulary_{status}"}
                 return {"entry_id": entry.entry_id, "action": "created"}
-        if entry is None:
-            eid = vs.find_in(conn, canonical, kind, value)
-            entry = vs.entry_in(conn, eid) if eid else None
         if entry is None:
             status, eid = vs.add_entry_in(
                 conn, canonical, [(alias, True)], scope_kind=kind,
@@ -749,6 +749,26 @@ class LearningService:
                                               "snapshot_revision", "scope")}
         content_free["flips"] = len(check["flips"])
         content_free["artifact_id"] = None
+        # An attempt supersedes the previous one: its phrases are purged,
+        # so one result per candidate exists and every removal path
+        # (job, expiry, stale candidate, note deletion) reaches it.
+        prev = conn.execute(
+            "SELECT counterexample_json FROM learning_candidates WHERE"
+            " candidate_id=?", (candidate_id,)).fetchone()
+        try:
+            prev_aid = (json.loads(prev[0]) or {}).get("artifact_id") \
+                if prev and prev[0] else None
+        except (ValueError, AttributeError):
+            prev_aid = None
+        if prev_aid:
+            now = ids.now_utc_iso()
+            conn.execute(
+                "UPDATE artifact_leases SET revoked_at_utc=? WHERE"
+                " artifact_id=? AND revoked_at_utc IS NULL", (now, prev_aid))
+            conn.execute(
+                "UPDATE artifacts SET content_text=NULL, content_path=NULL,"
+                " purged=1 WHERE artifact_id=? AND role="
+                "'counterexample_result'", (prev_aid,))
         if check["tested"]:
             aid = insert_text_artifact_row(
                 conn, artifact_id=ids.new_id("art"), job_id=job_id,
@@ -782,14 +802,16 @@ class LearningService:
 
         def op(conn):
             try:
-                done = ev.receipt_in(conn, operation_id, "reject")
+                done = ev.receipt_in(conn, operation_id, "reject",
+                                   candidate_id)
             except ev.OperationReused as e:
                 return f"refused:{e}"
             if done is not None:
                 return done["outcome"]
             row = conn.execute(
-                "SELECT status FROM learning_candidates WHERE"
-                " candidate_id=?", (candidate_id,)).fetchone()
+                "SELECT status, proposed_alias, proposed_canonical FROM"
+                " learning_candidates WHERE candidate_id=?",
+                (candidate_id,)).fetchone()
             if row is None:
                 return "refused:candidate_not_found"
             if row[0] != "pending":
@@ -799,6 +821,22 @@ class LearningService:
                 "UPDATE learning_candidates SET status='rejected',"
                 " rejection_reason=?, decided_at_utc=?, updated_at_utc=?"
                 " WHERE candidate_id=?", (reason, now, now, candidate_id))
+            if row[1] and row[2]:
+                # D05: other pending suggestions of the same pair are
+                # suppressed with it — a rejected pair is never offered
+                # again, whichever dictation proposed it.
+                key = _pair_key(row[1], row[2])
+                for sid, a, c in conn.execute(
+                        "SELECT candidate_id, proposed_alias,"
+                        " proposed_canonical FROM learning_candidates"
+                        " WHERE status='pending' AND proposed_alias IS NOT"
+                        " NULL AND proposed_canonical IS NOT NULL"
+                        " AND candidate_id<>?", (candidate_id,)).fetchall():
+                    if _pair_key(a, c) == key:
+                        conn.execute(
+                            "UPDATE learning_candidates SET"
+                            " status='suppressed', updated_at_utc=? WHERE"
+                            " candidate_id=?", (now, sid))
             ev.record_receipt_in(conn, operation_id, "reject",
                                  candidate_id, {"outcome": "rejected"})
             return "rejected"
@@ -826,18 +864,20 @@ class LearningService:
 
         def op(conn):
             try:
-                done = ev.receipt_in(conn, operation_id, "undo")
+                done = ev.receipt_in(conn, operation_id, "undo", candidate_id)
             except ev.OperationReused as e:
                 return {"refused": str(e)}
             if done is not None:
                 return done
             row = conn.execute(
                 "SELECT vocabulary_entry_id, status, vocabulary_action,"
-                " proposed_alias FROM learning_candidates WHERE"
+                " proposed_alias, job_id, example_id, after_artifact_id"
+                " FROM learning_candidates WHERE"
                 " candidate_id=?", (candidate_id,)).fetchone()
             if row is None:
                 return {"refused": "candidate_not_found"}
-            entry_id, status, action, alias = row
+            entry_id, status, action, alias, job_id, example_id, \
+                payload_aid = row
             if status != "approved" or not entry_id:
                 return {"refused": f"not_approved:{status}"}
             drow = conn.execute(
@@ -863,10 +903,23 @@ class LearningService:
                 "INSERT OR REPLACE INTO learning_vocabulary_deltas("
                 "candidate_id, delta_json, updated_at_utc) VALUES(?,?,?)",
                 (candidate_id, json.dumps(delta, sort_keys=True), now))
-            conn.execute(
-                "UPDATE learning_candidates SET status='pending',"
-                " decided_at_utc=?, updated_at_utc=? WHERE"
-                " candidate_id=?", (now, now, candidate_id))
+            if _evidence_live(conn, job_id, example_id,
+                              payload_aid) is None:
+                conn.execute(
+                    "UPDATE learning_candidates SET status='pending',"
+                    " decided_at_utc=?, updated_at_utc=? WHERE"
+                    " candidate_id=?", (now, now, candidate_id))
+            else:
+                # Its evidence died while the rule lived in the
+                # dictionary: nothing returns to review — the candidate
+                # goes stale with its terms cleared, as deletion leaves
+                # every open candidate.
+                conn.execute(
+                    "UPDATE learning_candidates SET status='stale',"
+                    " proposed_alias=NULL, proposed_canonical=NULL,"
+                    " changed_spans_json='[]', decided_at_utc=?,"
+                    " updated_at_utc=? WHERE candidate_id=?",
+                    (now, now, candidate_id))
             return ev.record_receipt_in(
                 conn, operation_id, "undo", candidate_id,
                 {"outcome": "undone", "action": delta["action"]})
@@ -933,6 +986,16 @@ def _pair_key(alias, canonical):
     M05's ASCII case identity."""
     from .vocabulary_store import identity_key
     return (alias.lower(), identity_key(canonical, "global", None)[0])
+
+
+def _pair_rejected(conn, alias, canonical, statuses=("rejected",)) -> bool:
+    """Whether a row in ``statuses`` holds this pair under D05's key."""
+    key = _pair_key(alias, canonical)
+    marks = ",".join("?" * len(statuses))
+    return any(_pair_key(a, c) == key for a, c in conn.execute(
+        "SELECT proposed_alias, proposed_canonical FROM learning_candidates"
+        f" WHERE status IN ({marks}) AND proposed_alias IS NOT NULL"
+        " AND proposed_canonical IS NOT NULL", statuses).fetchall())
 
 
 def _attribute_note_regions(a, b, spans):
