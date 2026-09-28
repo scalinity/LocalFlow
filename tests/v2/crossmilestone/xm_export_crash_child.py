@@ -25,7 +25,7 @@ import xm_world as X  # noqa: E402,F401  (paths)
 from xm_world import M  # noqa: E402
 
 
-def main(workdir, export_id):
+def main(workdir, export_id, mode="after_rename"):
     work = pathlib.Path(workdir)
     w = M.MWorld()
     w.families(12, asr=True)
@@ -34,18 +34,28 @@ def main(workdir, export_id):
     w.exporter.build(dest, task_views=("asr_supervised",),
                      export_id="export-prior")
     marker = work / "renamed.json"
-    real_rename = os.rename
 
-    def rename(src, dst, *a, **kw):
-        real_rename(src, dst, *a, **kw)
-        if pathlib.Path(dst) == dest and ".building-" in str(src):
-            marker.write_text(json.dumps({
-                "db": str(w.tmp / "v2.db"),
-                "arts": str(w.store.artifacts_dir),
-                "pid": os.getpid()}))
-            threading.Event().wait()  # held until the parent kills us
+    def stop_here():
+        marker.write_text(json.dumps({
+            "db": str(w.tmp / "v2.db"),
+            "arts": str(w.store.artifacts_dir),
+            "pid": os.getpid()}))
+        threading.Event().wait()  # held until the parent kills us
 
-    os.rename = rename
+    if mode == "after_rename":
+        real_rename = os.rename
+
+        def rename(src, dst, *a, **kw):
+            real_rename(src, dst, *a, **kw)
+            if pathlib.Path(dst) == dest and ".building-" in str(src):
+                stop_here()
+        os.rename = rename
+    else:  # before_rename: inside the publication op, before its rename
+        from localflow.v2.curation import export as export_mod
+
+        def hold(conn, deps):
+            stop_here()
+        export_mod.DatasetExporter._dependencies_hold = staticmethod(hold)
     w.exporter.build(dest, task_views=("asr_supervised",),
                      export_id=export_id)
     # Reaching here means the hook never fired: say so to the parent.
@@ -53,4 +63,4 @@ def main(workdir, export_id):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(*sys.argv[1:4])

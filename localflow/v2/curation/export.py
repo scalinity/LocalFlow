@@ -142,6 +142,10 @@ class DatasetExporter:
     def __init__(self, store: Store, emit=None):
         self.store = store
         self.emit = emit or (lambda *a, **k: None)
+        # Export ids whose publication op this process has submitted and
+        # not yet seen run (xm-policy-r1 D13): a 'publishing' intent of
+        # one of these is in flight, not crash residue.
+        self._inflight = set()
 
     # ---- selection (one consistent read) --------------------------------------
 
@@ -619,6 +623,7 @@ class DatasetExporter:
             done = self._receipt(export_id)
             if done is not None:
                 return done
+            self._reconcile_intent(export_id)
         export_id = export_id or ids.new_id("export")
         for managed in (self.store.artifacts_dir, self.store.notes_dir):
             if _inside(destination, managed):
@@ -719,28 +724,42 @@ class DatasetExporter:
                 # The linearization point (D09): dependencies re-checked
                 # and the directory published in ONE writer op — no
                 # deletion or revocation can commit in between.
-                reason = self._dependencies_hold(conn, deps)
-                if reason is not None:
-                    return {"refused": reason}
-                if destination.exists():
-                    return {"refused": "destination_appeared"}
-                now = ids.now_utc_iso()
-                # The completion row first, the rename last: a failing
-                # rename raises, the op rolls back, nothing is published.
-                conn.execute(
-                    "INSERT OR REPLACE INTO export_manifests(export_id,"
-                    " state, task_views_json, manifest_json, destination,"
-                    " fingerprint, examples_count, excluded_count, error,"
-                    " created_at_utc, finalized_at_utc)"
-                    " VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                    (export_id, "complete", json.dumps(sorted(task_views)),
-                     json.dumps(manifest, sort_keys=True),
-                     str(destination), fingerprint,
-                     summary_counts["examples"],
-                     summary_counts["excluded"], None, now, now))
-                os.rename(staging, destination)
-                return {"published": True}
+                try:
+                    reason = self._dependencies_hold(conn, deps)
+                    if reason is not None:
+                        return {"refused": reason}
+                    if destination.exists():
+                        return {"refused": "destination_appeared"}
+                    now = ids.now_utc_iso()
+                    # The completion row first, the rename last: a
+                    # failing rename raises, the op rolls back, nothing
+                    # is published. A crash after the rename but before
+                    # the commit leaves the committed 'publishing'
+                    # intent, which a retry reconciles.
+                    conn.execute(
+                        "INSERT OR REPLACE INTO export_manifests(export_id,"
+                        " state, task_views_json, manifest_json,"
+                        " destination, fingerprint, examples_count,"
+                        " excluded_count, error, created_at_utc,"
+                        " finalized_at_utc) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                        (export_id, "complete",
+                         json.dumps(sorted(task_views)),
+                         json.dumps(manifest, sort_keys=True),
+                         str(destination), fingerprint,
+                         summary_counts["examples"],
+                         summary_counts["excluded"], None, now, now))
+                    os.rename(staging, destination)
+                    return {"published": True}
+                finally:
+                    self._inflight.discard(export_id)
+            # The publication intent (xm-policy-r1 D13, MERGED-X14):
+            # committed BEFORE the op that renames, because SQLite cannot
+            # roll back a rename — a crash in between leaves a record a
+            # retry of this export id can reconcile.
+            self._record(export_id, "publishing", task_views, manifest,
+                         destination, fingerprint, summary_counts)
             publishing = True
+            self._inflight.add(export_id)
             out = self.store.submit(publish_op)
             publishing = False
             if out.get("refused"):
@@ -761,6 +780,7 @@ class DatasetExporter:
                 # repeating this export_id reconciles through its
                 # receipt.
                 raise
+            self._inflight.discard(export_id)
             # Disk full, a store stall before publication, anything:
             # nothing is left labeled complete; only this build's own
             # staging is removed.
@@ -777,6 +797,59 @@ class DatasetExporter:
         return {"export_id": export_id, "state": "complete",
                 "fingerprint": fingerprint, "counts": summary_counts,
                 "error": None}
+
+    def _reconcile_intent(self, export_id):
+        """A committed 'publishing' intent with no publication of it in
+        flight in this process is what a crash between the rename and
+        the commit leaves (xm-policy-r1 D13, MERGED-X14). Reconciled
+        conservatively: this export's OWN package at the destination (its
+        manifest names the export id and the offline validator passes)
+        is recorded 'published_unconfirmed' — never 'complete', no new
+        consent or exposure granted — and left in place with any earlier
+        export moved aside beside it; the export is then refused with
+        that explanation. Without such a package nothing was published:
+        the intent is recorded failed, an earlier export moved aside is
+        put back when its destination is free, and the build proceeds."""
+        if export_id in self._inflight:
+            return
+        row = self.store.submit(lambda conn: conn.execute(
+            "SELECT state, destination, task_views_json FROM"
+            " export_manifests WHERE export_id=?",
+            (export_id,)).fetchone())
+        if row is None or row[0] != "publishing" or not row[1]:
+            return
+        destination = pathlib.Path(row[1])
+        views = json.loads(row[2] or "[]")
+        ours = False
+        try:
+            if destination.is_dir() and not destination.is_symlink():
+                manifest = json.loads((destination / "dataset_manifest.json")
+                                      .read_text(encoding="utf-8"))
+                ours = isinstance(manifest, dict) and \
+                    manifest.get("export_id") == export_id and \
+                    validate_dataset(destination)["valid"]
+        except (OSError, ValueError):
+            ours = False
+        if ours:
+            self._record(export_id, "published_unconfirmed", views, None,
+                         destination, None, None,
+                         error="crash_between_rename_and_commit")
+            self.emit("export.publication_unconfirmed", level="WARNING",
+                      reason_code="crash_between_rename_and_commit")
+            raise ExportError(
+                "this export's package was published to its folder but"
+                " its completion was never recorded (LocalFlow stopped"
+                " mid-publication); the package is left in place and is"
+                " not counted as a completed export — export again to a"
+                " new folder for a current dataset")
+        aside = destination.parent / \
+            f".{destination.name}.replaced-{export_id}"
+        staging = destination.parent / \
+            f".{destination.name}.building-{export_id}"
+        self._abort(staging, export_id,
+                    aside if aside.exists() else None, destination)
+        self._record(export_id, "failed", views, None, destination, None,
+                     None, error="publication_not_performed")
 
     @staticmethod
     def _abort(staging, export_id, moved_aside, destination):

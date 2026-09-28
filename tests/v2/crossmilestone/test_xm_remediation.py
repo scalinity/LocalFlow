@@ -1393,10 +1393,12 @@ def c_service_undo_reverses_exactly_and_keeps_user_edits():
 # MERGED-X14 — a crash after the export rename, before the SQLite commit
 # =============================================================================
 
-def _crash_after_rename(td, export_id):
-    """Run the owned child to the post-rename barrier, SIGKILL it, and
-    reopen a COPY of its store (with the hot journal SQLite rolls back).
-    Returns (reopened store, destination, workdir)."""
+def _crash_after_rename(td, export_id, mode="after_rename"):
+    """Run the owned child to its barrier (``after_rename``: the staging
+    directory is the destination, the commit has not happened;
+    ``before_rename``: inside the publication op, nothing renamed), SIGKILL
+    it, and reopen a COPY of its store (with the hot journal SQLite rolls
+    back). Returns (reopened store, destination, workdir)."""
     import os
     import shutil
     import signal
@@ -1405,7 +1407,7 @@ def _crash_after_rename(td, export_id):
     work = pathlib.Path(td)
     child = subprocess.Popen(
         [sys.executable, str(HERE.parent / "xm_export_crash_child.py"),
-         str(work), export_id], stdout=subprocess.DEVNULL,
+         str(work), export_id, mode], stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE)
     marker = work / "renamed.json"
     deadline = time.monotonic() + 120
@@ -1482,6 +1484,30 @@ def x14_post_rename_crash_is_recognized_not_lost_or_relabeled():
                 f" (retry: {retry}); destination holds {still}")
             assert still == export_id, (
                 f"the recognized package was replaced by {still}")
+        finally:
+            store.close()
+
+
+@case("MERGED-X14 control", kind="control")
+def c_crash_before_rename_restores_and_the_retry_completes():
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter
+    export_id = "export-crash-before"
+    with tempfile.TemporaryDirectory() as td:
+        store, dest, _work = _crash_after_rename(td, export_id,
+                                                 mode="before_rename")
+        try:
+            out = DatasetExporter(store).build(
+                dest, task_views=("asr_supervised",), export_id=export_id)
+            assert out["state"] == "complete", out
+            manifest = json.loads((dest / "dataset_manifest.json")
+                                  .read_text())
+            assert manifest.get("export_id") == export_id, manifest
+            ok, text = _validate_offline(dest)
+            assert ok, text
+            assert not [p for p in dest.parent.iterdir()
+                        if p.name.startswith(f".{dest.name}.building-")], \
+                "the crashed build's staging was left behind"
         finally:
             store.close()
 
