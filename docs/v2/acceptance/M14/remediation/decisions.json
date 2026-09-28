@@ -14,7 +14,8 @@
       "rule": [
         "correction_labels stay append-only. The effective judgment of an example is its latest revision; when that revision is abstained the example is unresolved (the reviewer's current opinion is uncertainty). This is the rule profile.md already stated for Your Voice; the review queue, the ASR promotion gate and readiness now use the same reducer (localflow.v2.curation.review.effective_judgment_in).",
         "The queue's 'labeled' flag means an effective judgment exists. A later abstained revision returns the item to unresolved; an abstained first revision followed by an explicit one is resolved.",
-        "ASR blockers: changed_intent in ANY revision bars verified ASR use permanently (a changed intent is never acoustic truth). ambiguous and user_rewrite block while unresolved: they are cleared only when the effective judgment exists and its edit_kind is not a blocking kind. Abstention never resolves a blocker. Resolution removes the blocker only; verified ASR still needs the listened verbatim reference and owned audio."
+        "ASR blockers: changed_intent in ANY revision bars verified ASR use permanently (a changed intent is never acoustic truth). ambiguous and user_rewrite block while unresolved: they are cleared only when the effective judgment exists and its edit_kind is not a blocking kind. Abstention never resolves a blocker. Resolution removes the blocker only; verified ASR still needs the listened verbatim reference and owned audio.",
+        "The Hub's edit kind 'unknown' (the classifier's own abstention kind) is recorded as an abstention: a reviewer who cannot tell resolves nothing (review round, REVIEW-IR-14)."
       ],
       "reconciles": "learning.md said any historical blocking label bars ASR use while review.py's docstring said ambiguous/user_rewrite block 'while unresolved'; the adopted rule keeps changed_intent any-history and gives ambiguous/user_rewrite an explicit resolution.",
       "does_not_change": "Label rows are never rewritten or deleted by review; changed_intent history is never cleared."
@@ -102,7 +103,8 @@
       "rule": [
         "Reviewed-evidence payloads carry their own never-expiring training lease and are not user pins: verbatim_reference, span_correction, span_graft and candidate_observation. pin never double-leases them and unpin never revokes them; _is_pinned never reports them.",
         "Machine-mined candidate_observation payloads keep their finite training-buffer lease; because pin no longer leases candidate_observation artifacts, pinning a job cannot make a pending machine suggestion permanent.",
-        "The set is one constant (training_data.REVIEW_RETENTION_ROLES) and a completeness test enumerates every role the M09/M14 review writers lease forever."
+        "The set is one constant (training_data.REVIEW_RETENTION_ROLES) and a completeness test enumerates every role the M09/M14 review writers lease forever.",
+        "A review payload's own lease never holds its example in the 30-day buffer (Store.prune_training excludes the set from its pin test); an explicit teach holds its example only while that teach is pending — once approved or rejected the buffer applies (review round, REVIEW-IR-13)."
       ]
     },
     {

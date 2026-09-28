@@ -215,7 +215,8 @@ orphan payload files.
   each repeat-sensitive M14 action under its caller-supplied operation
   id (kind, target id, receipt), so a retry after an unknown outcome
   returns the receipt instead of acting twice; an id reused for a
-  different kind of action refuses — and `learning_vocabulary_deltas`
+  different kind of action, or for another target, refuses — and
+  `learning_vocabulary_deltas`
   — per candidate, exactly what its approval changed in the dictionary
   (entry id, action, alias, entry revision) and what its undo left, so
   undo reverses only that delta (contracts/learning.md). Both are

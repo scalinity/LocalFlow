@@ -302,7 +302,10 @@ set is one constant, `training_data.REVIEW_RETENTION_ROLES`, which also
 holds `counterexample_result` (an approval's checked phrases): pin and
 unpin leave it alone too, and its own lease is the finite training
 buffer — it is removed with its job, its expiry or its candidate going
-stale.
+stale. None of these leases holds its example in the 30-day buffer:
+`Store.prune_training` leaves the set out of its pin test, and an
+explicit teach holds its example only while that teach is pending —
+once it is approved or rejected, the buffer applies.
 
 ## M02 remediation (consent boundary, publication, provenance)
 

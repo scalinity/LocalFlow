@@ -290,7 +290,9 @@ live as of M13, the refusal check uses any unregistered name).
   row's own `candidate_id` — a job-only teach with no example row is
   selectable; a queue refreshed or reordered after rendering never
   redirects the action to another row (m14-policy-r1 D15). Record Label
-  stays bound to the example id shown in the example field. The pair
+  stays bound to the example id shown in the example field, and its
+  edit kind `unknown` is recorded as an abstention (contracts/
+  learning.md). The pair
   pane shows the shared source text and both candidate texts with their
   candidate ids in display order; a judgment records exactly that pair
   in that slot order. **Splits** shows
@@ -309,7 +311,7 @@ live as of M13, the refusal check uses any unregistered name).
   when its tab is next on screen), and never navigates — the user may
   have moved on.
 - **Operation ids and unknown outcomes.** Every M14 write action —
-  Teach, Approve, Reject, Undo, Record Label, pair judgments, Assign,
+  Teach, Approve, Reject, Record Label, pair judgments, Assign,
   Mark Exposed, Export — carries an operation id per logical action.
   When the store is busy past the action's wait (an admitted
   `TimeoutError`) the write may still commit: the pane says the outcome

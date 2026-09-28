@@ -177,12 +177,18 @@ effect and mark:
    `counterexample_result` artifact of the candidate's job
    (training-buffer lease; removed with the job, its expiry or the
    candidate going stale); the row keeps only the content-free result.
+   Each attempt supersedes the previous one: its phrases are purged,
+   so a candidate holds at most one result.
 3. The plan uses M05's own identity — the canonical compared
    NOCASE and the scope value in canonical form (`canonical_scope_value`:
    app bundle ids and site origins compare case- and padding-
    insensitively; workspace/profile names exactly) — and the rule lands
    through VocabularyStore's composable validated operations
    (`add_entry_in`, `update_entry_in` with the entry's current revision).
+   Every approval — a re-approval after undo included — plans from the
+   candidate's own canonical and the requested scope; an earlier
+   approval's entry is reused only while it still holds exactly that
+   identity.
    `vocabulary_action`:
    - `created` — no entry for the canonical in that scope: a new
      approved entry;
@@ -210,20 +216,28 @@ alias is removed only while it is still present and approved; an
 `alias_approved` alias returns to unapproved only while it is still
 approved; `already_present` changed nothing to reverse. A later user
 edit is never overwritten — the undo refuses with
-`user_modified_since_approval`. The candidate returns to pending.
+`user_modified_since_approval`. The candidate returns to pending — or,
+when its evidence died meanwhile (job deleted, example expired or
+excluded, payload gone), goes stale with its terms cleared, as deletion
+leaves every open candidate.
 Re-approval after undo re-enables the learned entry only while it is
 exactly as the undo left it; an entry the user disabled or edited
 afterwards is never reactivated.
 
 Approve, reject and undo accept an `operation_id`: a repeat of a
 completed operation (a retry after an unknown outcome) returns the
-recorded receipt (`m14_operation_receipts`) with no second effect.
+recorded receipt (`m14_operation_receipts`) with no second effect; an
+id already used for another action or another target refuses
+(`operation_id_reused`).
 
 **Rejection** is permanent and global (D05): the same alias → canonical
 pair — alias lower-cased, canonical under M05's ASCII case identity —
 observed again in any scope is recorded `suppressed` and never
 re-proposed (S11). A different canonical, or a different alias, is not
-suppressed. Only the rejected row's terms are kept as that preference.
+suppressed. Rejecting a pair also suppresses every other pending
+candidate that proposes it, and approval refuses a rejected pair
+(`pair_rejected`). Only the rejected row's terms are kept as that
+preference.
 
 **M14-AC01**: pending, rejected, suppressed, stale and dismissed
 candidates never reach the pipeline — the normalize engine only ever
@@ -245,6 +259,9 @@ sees approved vocabulary entries.
   example is unresolved. The queue, the ASR gate, readiness and Your
   Voice all read it: the queue's `labeled` flag means an effective
   judgment exists, so a later abstention returns an item to unresolved.
+  The Hub records the edit kind `unknown` (the classifier's own
+  abstention kind) as an abstention: a reviewer who cannot tell
+  resolves nothing.
 - **Grafts**: `confirmed_spans` (reviewed recognition regions, strict
   primitives: non-negative integer code-point offsets, start ≤ end, word
   lists of strings) build a correction-grafted weak reference over the
