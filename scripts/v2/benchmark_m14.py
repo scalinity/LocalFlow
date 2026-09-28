@@ -454,6 +454,15 @@ def validate(s, tmp, expect, comp, services):
                 return None
         return call
     comp = {name: guarded(name) for name in raw}
+    # The declared population, recounted from the store itself.
+    rows = _q(s, "SELECT COUNT(*) FROM training_examples")[0][0]
+    audio = _q(s, "SELECT COUNT(*) FROM artifacts WHERE"
+                  " role='original_audio' AND purged=0")[0][0]
+    work["store"] = {"example_rows": rows, "audio_artifacts": audio,
+                     "expected_examples": expect["examples"],
+                     "expected_audio": expect["audio"]}
+    check(rows == expect["examples"] and audio == expect["audio"],
+          "store: rows != declared population", reasons)
     comp["mining"]()
     rows = _q(s, "SELECT status, COUNT(*) FROM learning_candidates WHERE"
                  " source='edit_observation' GROUP BY status")
