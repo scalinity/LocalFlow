@@ -1998,6 +1998,10 @@ def c225_forward_redaction(entry):
     restored = json.loads(current.replace("<repo>", home.group(0))
                           if home else current)
     restored.pop("privacy_redactions", None)
+    # A dated remediation section appended later is new content, not a
+    # changed meaning of the historical record.
+    for key in [k for k in restored if k.startswith("remediation_")]:
+        restored.pop(key)
     return check({
         "current_redacted": not PRIVATE_PATH.search(current),
         "meanings_unchanged": restored == old_j,
