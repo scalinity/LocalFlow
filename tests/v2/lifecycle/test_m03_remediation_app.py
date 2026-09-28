@@ -500,8 +500,13 @@ def test_09_t0_rate_and_gaps_survive_a_t1_retry():
                              "source": "capture_journal", "at_sample": 4800,
                              "missing_samples": 1600,
                              "recovered_offset": 4800}], gaps
+            # The ORIGINAL capture instant, stored at the canonical
+            # microsecond precision (M13 m13-policy-r1 D02 — zero pads
+            # only; the instant is unchanged).
+            from localflow.v2 import analytics as analytics_mod
             assert a.db("SELECT activity_at_utc FROM usage_facts WHERE"
-                        " job_id=?", (jid,))[0][0] == T0
+                        " job_id=?", (jid,))[0][0] == \
+                analytics_mod.canonical_instant(T0)
             assert d.store.job(jid)["family_id"] == fam
         finally:
             a.close()

@@ -59,7 +59,7 @@ def test_weighted_wpm_not_row_average():
                 "jobs": 2, "words": 720, "capture_seconds": 660.0}
             assert summ2["capture_seconds"] == 960.0  # all outcomes
             # No voiced data ⇒ no WPM, never a zero (honest null).
-            empty = q.summary(days=3650, app="Nowhere")
+            empty = q.summary(days=3650, app="name:Nowhere")
             assert empty["wpm"] is None
         finally:
             s.close()
@@ -96,7 +96,7 @@ def test_latency_percentiles_sample_aware():
             assert e2e["kind"] == "end_to_end"
             assert summ["dictations"] == 21  # the failure stayed counted
             # No samples at all: p50/p95 are None, never zeros.
-            empty = q.summary(days=3650, app="Nowhere")
+            empty = q.summary(days=3650, app="name:Nowhere")
             assert empty["latency"]["asr"]["p50"] is None
             assert empty["latency"]["asr"]["n"] == 0
         finally:
@@ -132,13 +132,13 @@ def test_cohort_filters_and_breakdowns():
             assert all_summ["fallback_rate"] == 0.5  # 1 of 2, denominator
             assert all_summ["transforms"] == 1
             # App cohort.
-            app_summ = q.summary(days=3650, app="Synth Code")
+            app_summ = q.summary(days=3650, app="bundle:com.synth.code")
             assert app_summ["dictations"] == 1
             assert app_summ["final_words"] == 18
             # Activity kinds are honestly absent under a filter (they
             # carry no app/mode) — never borrowed from another cohort.
             assert app_summ["transforms"] is None
-            assert q.daily(days=3650, app="Synth Code")[0]["transforms"] \
+            assert q.daily(days=3650, app="bundle:com.synth.code")[0]["transforms"] \
                 is None
             # Mode cohort + breakdowns.
             assert q.summary(days=3650, mode="polish")["dictations"] == 1

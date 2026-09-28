@@ -43,11 +43,13 @@ DEFAULTS = {
     "retention_audio_failed_days": 30,
     "retention_metadata_days": 14,
     "training_buffer_days": 30,
-    # M13 (Spec S21): usage analytics retention — usage facts and daily
-    # aggregates expire on their own schedule, independent of transcript
-    # and audio retention (deleting expired text never empties usage
-    # graphs unless usage was explicitly deleted).
-    "retention_usage_days": 365,
+    # M13 (Spec S21/S25, decision m13-policy-r1 D03): usage analytics
+    # retention — "keep" (until the user clears it, the S25 default) or
+    # a number of days after which usage facts and their daily
+    # aggregates expire, independent of transcript and audio retention
+    # (deleting expired text never empties usage graphs unless usage
+    # was explicitly deleted).
+    "retention_usage_days": "keep",
     # M13 (Spec S21): the reporting timezone for day boundaries — an
     # IANA name; empty means the system's local zone. Changing it
     # re-buckets every usage day at next launch.
@@ -206,16 +208,34 @@ def _valid_int(value, lo, hi):
     return value, None
 
 
+# The usage knob's keep-until-cleared value (S25): stored as the store's
+# None, never confused with a day count.
+USAGE_KEEP = "keep"
+
+
+def _valid_usage(value, lo, hi):
+    """The usage knob: "keep" → (None, None), else a day count checked by
+    the shared integer validator (booleans, non-integral numbers, other
+    strings, null and lists are invalid; an integral JSON float such as
+    365.0 keeps the shared validator's compatibility)."""
+    if value == USAGE_KEEP:
+        return None, None
+    return _valid_int(value, lo, hi)
+
+
 def retention_policy(cfg) -> tuple[dict, list]:
     """The validated store retention map + a list of (key, reason)
-    problems. Missing keys use DEFAULTS silently (not a problem)."""
+    problems. Missing keys use DEFAULTS silently (not a problem). The
+    usage knob maps "keep" to None (keep until cleared)."""
     days, problems = {}, []
     for key, (store_key, lo, hi) in RETENTION_BOUNDS.items():
-        default = DEFAULTS[key]
+        check = _valid_usage if key == "retention_usage_days" \
+            else _valid_int
+        default, _r = check(DEFAULTS[key], lo, hi)
         if key not in cfg:
             days[store_key] = default
             continue
-        value, reason = _valid_int(cfg.get(key), lo, hi)
+        value, reason = check(cfg.get(key), lo, hi)
         if reason:
             problems.append((key, reason))
             value = default
@@ -342,3 +362,24 @@ def validate_retention_value(key, value):
               else EVENT_RETENTION_BOUNDS[key])
     value, reason = _valid_int(value, lo, hi)
     return value
+
+
+def parse_usage_retention(value) -> tuple[bool, int | None, str | None]:
+    """The usage knob from a UI/settings write, strictly: (ok, days,
+    reason). "keep" (any case, surrounding spaces ignored) → keep until
+    cleared (days None); a whole number of days in range, as an int or
+    a plain run of digits → that count. Zero, negatives, decimals,
+    booleans and any other text are refused — never clamped (M13-AUDIT-
+    10: a malformed entry must not become a destructive policy)."""
+    lo, hi = RETENTION_BOUNDS["retention_usage_days"][1:]
+    if isinstance(value, str):
+        text = value.strip()
+        if text.lower() == USAGE_KEEP:
+            return True, None, None
+        if not text.isdigit() or not text.isascii():
+            return False, None, "not_whole_days"
+        value = int(text)
+    days, reason = _valid_int(value, lo, hi)
+    if reason:
+        return False, None, reason
+    return True, days, None

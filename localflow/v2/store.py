@@ -49,7 +49,10 @@ for _s in TERMINAL_STATES:
 
 RETENTION_DAYS_DEFAULTS = {
     "transcript": 30, "audio_success": 7, "audio_failed": 30,
-    "metadata": 14, "training_buffer": 30, "usage": 365,
+    "metadata": 14, "training_buffer": 30,
+    # M13 (S25, decision m13-policy-r1 D03): aggregate usage is kept
+    # until the user clears it; None = keep, a day count = expire.
+    "usage": None,
 }
 
 _MIGRATIONS: dict[int, list[str]] = {
@@ -650,6 +653,35 @@ _MIGRATIONS[11] = [
            ON a.artifact_id = t.target_id
          WHERE t.target_kind='artifact' AND a.job_id IS NOT NULL
          GROUP BY a.job_id""",
+]
+
+# M13 remediation (decision record m13-policy-r1 D02/D02b/D10/D13):
+# ``usage_meta`` holds the committed reporting zone, the usage revision
+# and outcome-unknown completion markers — durable state every analytics
+# writer/query op reads inside its own transaction. Admitted usage
+# instants are canonicalized to microsecond precision so their text
+# order is their time order; only zero pads are added (the true instant
+# is unchanged), and every statement is idempotent.
+_MIGRATIONS[12] = [
+    """CREATE TABLE IF NOT EXISTS usage_meta(
+         key TEXT PRIMARY KEY,
+         value TEXT NOT NULL)""",
+    """UPDATE usage_facts
+         SET activity_at_utc = substr(activity_at_utc, 1, 19)
+                               || '.000000Z'
+         WHERE length(activity_at_utc) = 20
+           AND substr(activity_at_utc, 20, 1) = 'Z'""",
+    """UPDATE usage_facts
+         SET activity_at_utc = substr(activity_at_utc, 1, 20)
+             || substr(substr(activity_at_utc, 21,
+                              length(activity_at_utc) - 21)
+                       || '000000', 1, 6) || 'Z'
+         WHERE substr(activity_at_utc, 20, 1) = '.'
+           AND substr(activity_at_utc, -1, 1) = 'Z'
+           AND length(activity_at_utc) BETWEEN 22 AND 26""",
+    """INSERT OR IGNORE INTO usage_meta(key, value)
+         SELECT 'reporting_timezone', reporting_timezone
+         FROM usage_facts ORDER BY rowid DESC LIMIT 1""",
 ]
 
 # Tables whose loss at the current schema version is corruption, not a
@@ -1320,7 +1352,8 @@ class Store:
                     "sampling_decisions", "split_assignments",
                     "training_memberships", "example_tags",
                     "profile_snapshots", "profile_evidence",
-                    "export_manifests", "job_deletions", "purge_intents"}
+                    "export_manifests", "job_deletions", "purge_intents",
+                    "usage_meta"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         expected_idx = {m.group(1) for stmts in _MIGRATIONS.values()
@@ -2243,7 +2276,7 @@ class Store:
                     "kept_by_other_interest": kept_other}
         return self._submit(op, wait=True)
 
-    def prune_metadata(self, now=None):
+    def prune_metadata(self, now=None, protected_job_ids=()):
         """Job-row metadata pruning (the M02 ``metadata`` knob, enforced
         from M13): delete terminal jobs past the metadata window whose
         content is already gone (no unpurged artifact, no live training
@@ -2252,8 +2285,27 @@ class Store:
         is why usage_facts carries its own app/duration/word copies.
         Effective pruning therefore starts once every content retention
         (transcript/audio) has expired past the metadata window, not
-        before."""
+        before.
+
+        Recovery liveness (decision m13-policy-r1 D07): a job stays while
+        it is failed_recoverable inside its authorized recovery window
+        (the ``audio_failed`` knob, from its last update), while a
+        registered job-scoped payload file (the recovery journal) still
+        exists for it, or while the caller holds a recovery claim on it
+        (``protected_job_ids``). A note's source_job_id is provenance,
+        not a pin."""
         now = now if now is not None else self.now_fn()
+        protected = set(protected_job_ids or ())
+
+        def registered_payload(job_id) -> bool:
+            for directory, pattern in self._job_payload_dirs:
+                try:
+                    if next(iter(directory.glob(pattern(job_id))), None) \
+                            is not None:
+                        return True
+                except OSError:
+                    return True  # unreadable: never guess it is gone
+            return False
 
         def op():
             now_iso = ids.now_utc_iso(now)
@@ -2261,14 +2313,21 @@ class Store:
             live_example_states = LIVE_EXAMPLE_STATES
             deleted = 0
             rows = self._db.execute(
-                f"SELECT job_id, updated_at_utc FROM jobs WHERE state IN"
-                f" ({placeholders})",
+                f"SELECT job_id, updated_at_utc, state FROM jobs WHERE"
+                f" state IN ({placeholders})",
                 tuple(TERMINAL_STATES)).fetchall()
-            for job_id, updated in rows:
+            for job_id, updated, state in rows:
                 updated_t = _iso_to_epoch(updated)
                 if updated_t is None or (now - updated_t) < \
                         self.retention_days["metadata"] * 86400:
                     continue
+                if job_id in protected:
+                    continue  # a recovery claim holds it right now
+                if state == "failed_recoverable" and (now - updated_t) < \
+                        self.retention_days["audio_failed"] * 86400:
+                    continue  # still recoverable by policy
+                if registered_payload(job_id):
+                    continue  # its recovery journal is still retained
                 if self._db.execute(
                         "SELECT 1 FROM artifacts WHERE job_id=? AND purged=0"
                         " LIMIT 1", (job_id,)).fetchone():

@@ -621,10 +621,14 @@ def test_migration_from_v10_adds_remediation_tables():
         names = {r[0] for r in rows(td / "v2.db", "SELECT name FROM"
                                     " sqlite_master WHERE type='table'")}
         assert {"job_deletions", "purge_intents"} <= names
+        # The migration runs through to the latest schema (v12 since the
+        # M13 remediation's additive usage_meta), never stopping at v11.
         assert rows(td / "v2.db", "SELECT value FROM schema_meta WHERE"
-                    " key='schema_version'") == [("11",)]
+                    " key='schema_version'") == \
+            [(str(max(store_mod._MIGRATIONS)),)]
         st.close()
-    print("ok  18 v10 -> v11 additive migration with pre-migration backup")
+    print("ok  18 v10 -> latest additive migration with pre-migration"
+          " backup")
 
 
 # ---- M02-AUDIT-19: retention configuration -------------------------------
@@ -645,9 +649,11 @@ def test_retention_config_validation():
         else:
             assert problems == [] and days["transcript"] == 45
     days, problems = config_mod.retention_policy({})
+    # Usage is kept until cleared by default (S25; M13 decision
+    # m13-policy-r1 D03 — None means keep, never a zero window).
     assert problems == [] and days == {
         "transcript": 30, "audio_success": 7, "audio_failed": 30,
-        "metadata": 14, "training_buffer": 30, "usage": 365}
+        "metadata": 14, "training_buffer": 30, "usage": None}
     ev, p = config_mod.event_retention_policy({"events_cap_mib": -1})
     assert ev["events_cap_mib"] == 100 and p == [("events_cap_mib",
                                                   "out_of_range")]

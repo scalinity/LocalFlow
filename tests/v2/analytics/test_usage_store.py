@@ -23,7 +23,9 @@ import tempfile
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+import m13_oracle  # noqa: E402
 from localflow.v2 import analytics, store as store_mod  # noqa: E402
 
 NY = "America/New_York"
@@ -36,17 +38,22 @@ def make_store(tmp, **kw):
 
 def seeded_legacy_rows(s):
     """Seven sanitized rows carrying the audited aggregate totals
-    (E13's reconciliation figures — public aggregates, synthetic
-    text/apps)."""
+    exactly (E13's reconciliation figures — 7 rows, 280/277 words,
+    350.3 s, fixed words 11 — public aggregates, synthetic text/apps).
+    A SYNTHETIC manifest: it proves the in-place read and reconciliation
+    arithmetic, not the private historical snapshot (which stays
+    outside the repository)."""
     rows = []
     base = dt.datetime(2026, 7, 4, 21, 15, 42, 804000,
                        tzinfo=dt.timezone.utc)
     words = [(40, 39), (38, 38), (41, 41), (39, 39), (42, 41), (38, 38),
              (42, 41)]
+    durations = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.3]
     for i, (rw, cw) in enumerate(words):
         ts = base + dt.timedelta(seconds=i * 197)
         rows.append({
-            "id": i + 1, "ts": ts.timestamp(), "duration_sec": 50.0,
+            "id": i + 1, "ts": ts.timestamp(),
+            "duration_sec": durations[i],
             "raw_text": f"synthetic raw {i}" * 3,
             "cleaned_text": f"synthetic cleaned {i}" * 3,
             "raw_words": rw, "cleaned_words": cw,
@@ -57,6 +64,31 @@ def seeded_legacy_rows(s):
     for row in rows:
         s.insert_legacy_dictation(row, "synthetic-sha")
     return rows
+
+
+_LEGACY_COLS = ("id", "ts", "captured_at_utc", "duration_sec", "raw_words",
+                "cleaned_words", "fixed_words", "wpm", "app_name",
+                "app_bundle", "kind")
+
+
+def expected_legacy_tuples(rows):
+    """The exact stored tuple each seeded row must keep, derived here
+    (the instant independently formatted from its epoch seconds)."""
+    out = []
+    for r in rows:
+        t = dt.datetime.fromtimestamp(r["ts"], tz=dt.timezone.utc)
+        captured = t.strftime("%Y-%m-%dT%H:%M:%S.") + \
+            f"{t.microsecond // 1000:03d}Z"
+        out.append((r["id"], float(r["ts"]), captured, r["duration_sec"],
+                    r["raw_words"], r["cleaned_words"], r["fixed_words"],
+                    r["wpm"], r["app_name"], r["app_bundle"], r["kind"]))
+    return out
+
+
+def legacy_tuples(s):
+    return [tuple(r) for r in s.submit(lambda db: db.execute(
+        f"SELECT {', '.join(_LEGACY_COLS)} FROM legacy_dictations"
+        " ORDER BY id").fetchall())]
 
 
 def test_migration_v9_additive_with_backup_and_repair():
@@ -341,28 +373,26 @@ def test_legacy_seven_row_reconciliation():
         a = analytics.AnalyticsStore(s, reporting_timezone=NY)
         q = analytics.InsightsQueryService(s, a)
         try:
-            seeded_legacy_rows(s)
+            seeded = seeded_legacy_rows(s)
             legacy = q.legacy_summary()
             assert legacy["rows"] == 7
             assert legacy["raw_words"] == 280
             assert legacy["cleaned_words"] == 277
-            assert legacy["capture_seconds"] == 350.0  # 7 × 50.0
+            assert legacy["capture_seconds"] == 350.3
             assert legacy["legacy_fixed_words"] == 11
             assert legacy["rows_without_instant"] == 0
-            # The rows themselves are byte-identical after all M13
-            # machinery ran (instants, counts, kind, fixed words).
-            rows = s.submit(lambda db: db.execute(
-                "SELECT id, ts, duration_sec, raw_words, cleaned_words,"
-                " fixed_words, kind FROM legacy_dictations ORDER BY"
-                " id").fetchall())
-            assert len(rows) == 7
-            assert sum(r[3] for r in rows) == 280
-            assert sum(r[4] for r in rows) == 277
-            assert sum(abs(r[2] - 50.0) < 1e-9 for r in rows) == 7
-            assert sum(r[5] for r in rows) == 11
-            # Legacy rows never became usage facts.
+            # Some usage machinery runs meanwhile (a fact, a rebuild).
+            a.record_dictation_fact(
+                job_id="job-legacy-control",
+                activity_at_utc="2026-09-23T14:00:00.000Z",
+                final_words=3, insertion_outcome="confirmed")
+            a.rebuild_aggregates()
+            # Every seeded row is unchanged, value by value — a single
+            # timestamp change with equal totals would fail here.
+            assert legacy_tuples(s) == expected_legacy_tuples(seeded)
+            # Legacy rows never became usage facts (only the control).
             assert s.submit(lambda db: db.execute(
-                "SELECT COUNT(*) FROM usage_facts").fetchone())[0] == 0
+                "SELECT COUNT(*) FROM usage_facts").fetchone())[0] == 1
             # And they are not deletable usage (the lossless import).
             assert a.delete_usage_for_job("legacy-db:1")["days_touched"] \
                 == 0
@@ -454,41 +484,21 @@ def test_cross_day_retry_moves_the_fact_and_fixes_both_days():
 
 
 def aggregates_match_facts(s) -> bool:
-    """The invariant: every daily_aggregates row equals what a fresh
-    recompute over that day's facts would produce."""
-    def op(db):
-        for (day, dictations, with_text, confirmed, unverified, saved,
-             cancelled, failed, raw_w, final_w, secs, fallbacks, dh,
-             sh, tf, tfw, rp) in db.execute(
-                "SELECT day_local, dictations, dictations_with_text,"
-                " insertion_confirmed, insertion_unverified,"
-                " saved_not_inserted, cancelled, failed, raw_words,"
-                " final_words, ROUND(capture_seconds,3), fallback_jobs,"
-                " dictionary_hits, snippet_hits, transforms,"
-                " transform_words, repastes FROM daily_aggregates"
-            ).fetchall():
-                row = db.execute(
-                    "SELECT COUNT(*),"
-                    " COALESCE(SUM(CASE WHEN final_words IS NOT NULL AND"
-                    " final_words > 0 THEN 1 ELSE 0 END),0),"
-                    " COALESCE(SUM(CASE WHEN insertion_outcome="
-                    " 'confirmed' THEN 1 ELSE 0 END),0),"
-                    " COALESCE(SUM(COALESCE(raw_words,0)),0),"
-                    " COALESCE(SUM(COALESCE(final_words,0)),0),"
-                    " ROUND(COALESCE(SUM(COALESCE(duration_sec,0.0)),"
-                    " 0.0),3)"
-                    " FROM usage_facts WHERE kind='dictation' AND"
-                    " day_local=?", (day,)).fetchone()
-                if (dictations, with_text, confirmed, raw_w, final_w,
-                        secs) != row:
-                    return False
-        # No aggregate row for a factless day, and vice versa.
-        fact_days = {r[0] for r in db.execute(
-            "SELECT DISTINCT day_local FROM usage_facts")}
-        agg_days = {r[0] for r in db.execute(
-            "SELECT DISTINCT day_local FROM daily_aggregates")}
-        return fact_days == agg_days
-    return s.submit(op)
+    """The invariant (M13-AUDIT-28): every field of every
+    daily_aggregates row — all outcome counts, word/second sums,
+    fallbacks, hits, transforms, transform words, repastes, the date
+    domain, the reporting zone and the algorithm version — equals an
+    INDEPENDENT reduction of the raw facts (m13_oracle, its own zone
+    conversion; never the production recompute)."""
+    zone = s.submit(lambda db: (db.execute(
+        "SELECT value FROM usage_meta WHERE key='reporting_timezone'"
+    ).fetchone() or [None])[0])
+    if zone is None:
+        # No usage written yet: an empty table is the only valid state.
+        return not s.submit(lambda db: db.execute(
+            "SELECT 1 FROM daily_aggregates LIMIT 1").fetchone())
+    return not m13_oracle.store_mismatches(s, zone,
+                                           analytics.ALGORITHM_VERSION)
 
 
 def test_aggregates_always_match_facts_under_writes_and_deletions():
