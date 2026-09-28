@@ -222,6 +222,7 @@ class HubController(NSObject):
         self._action_tokens = {}
         self._action_notes = {}
         self._export_validation = None  # {dest, text}: xm-policy-r1 D12
+        self._exports_running = {}  # destination -> Exports in flight
         self._suppress_select = False
         self._building = True
         # Delete-everywhere revokes the Hub's cached payload and replay
@@ -3714,6 +3715,9 @@ class HubController(NSObject):
         # nothing over it (xm-policy-r1 D12, review RV-03).
         self._export_validation = None
         self._action_tokens.pop("validate", None)
+        # While it runs, a Validate of this folder would describe a
+        # package in mid-replacement: it is refused (review R4).
+        self._exports_running[dest] = self._exports_running.get(dest, 0) + 1
         # The export id is the operation id: a retry of the same export
         # after an unknown outcome returns the recorded result instead
         # of building a second dataset (M14-AUDIT-17).
@@ -3725,17 +3729,13 @@ class HubController(NSObject):
             # current status (M09-AUDIT-21).
             self._last_action_unknown = isinstance(err, TimeoutError)
             self._op_settled("export")
+            left = self._exports_running.get(dest, 1) - 1
+            if left > 0:
+                self._exports_running[dest] = left
+            else:
+                self._exports_running.pop(dest, None)
             if not current:
                 return
-            if err is None or isinstance(err, TimeoutError):
-                # A completed — or possibly completing — export replaces
-                # the package a Validate of ITS folder described (review
-                # R2-01/R3-07); a Validate of another folder is left to
-                # finish (R3-01). A failed export put the old one back.
-                bound = self._export_validation
-                if bound is not None and bound["dest"] == dest:
-                    self._export_validation = None
-                    self._action_tokens.pop("validate", None)
             if isinstance(err, TimeoutError):
                 msg = ("export outcome unknown: the store is busy and the"
                        " export may still complete — Export again with"
@@ -3766,10 +3766,16 @@ class HubController(NSObject):
         kept in the pane's state bound to the destination it validated:
         a training refresh never repaints over it — only a newer Validate
         or Export, or another destination, supersedes it (xm-policy-r1
-        D12, MERGED-X12/X13)."""
+        D12, MERGED-X12/X13). While an Export into the folder runs, Validate of it
+        is refused: it would describe a package in mid-replacement."""
         from ..curation import export as export_mod
         dest = (self.export_dest.stringValue() or "").strip()
         if not dest:
+            return
+        if self._exports_running.get(dest):
+            self.export_text.setString_(
+                "an export into this folder is still running — Validate"
+                " it once the export finishes")
             return
         self._export_validation = {"dest": dest,
                                    "text": f"validating {dest} …"}

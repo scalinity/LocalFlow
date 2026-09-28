@@ -876,57 +876,36 @@ class DatasetExporter:
         only when THIS build completes, exactly as a completed build
         removes the export it replaced — so no crash leaves a hidden
         export behind, even when its record is gone (xm-policy-r1 D13,
-        review RV-02/RV-13). A crashed build's own staging is returned
-        the same way. Nothing else beside the destination is touched."""
+        review RV-02/RV-13). Only what this exporter names and owns is
+        touched (review R2-02): an export-id suffix (another
+        destination's sibling has a dot in it), no build of it in flight,
+        and a folder a build may replace. A build's staging is left to
+        its own intent (review R4)."""
         pending = self.store.submit(lambda conn: [r[0] for r in conn.execute(
             "SELECT export_id FROM export_manifests WHERE state="
             "'publishing' AND destination=?", (str(destination),))])
         for export_id in pending:
             self._reconcile_intent(export_id)
+        prefix = f".{destination.name}.replaced-"
         try:
-            siblings = sorted(destination.parent.iterdir())
+            siblings = sorted(p for p in destination.parent.iterdir()
+                              if p.name.startswith(prefix))
         except OSError:
             return []
         stale = []
-        for kind in ("replaced", "building"):
-            prefix = f".{destination.name}.{kind}-"
-            for p in siblings:
-                suffix = p.name[len(prefix):]
-                # Only what this exporter names and owns (review R2-02):
-                # an export-id suffix (another destination's sibling has
-                # a dot in it), no build of it in flight, and — for an
-                # earlier export — a folder a build may replace.
-                if not p.name.startswith(prefix) \
-                        or not _EXPORT_ID.fullmatch(suffix) \
-                        or suffix in self._inflight or p.is_symlink() \
-                        or not p.is_dir():
-                    continue
-                if kind == "building":
-                    # A crashed build's own finished graph, never
-                    # published: no owner file (a build still writing —
-                    # perhaps in another process — keeps one; review
-                    # R3-05) and a manifest naming this export id, with or
-                    # without its checksums (review R3-06).
-                    try:
-                        manifest = json.loads(
-                            (p / "dataset_manifest.json").read_text(
-                                encoding="utf-8"))
-                    except (OSError, ValueError):
-                        manifest = None
-                    if not (p / _OWNER_FILE).exists() \
-                            and isinstance(manifest, dict) \
-                            and manifest.get("export_id") == suffix:
-                        stale.append(p)
-                    continue
-                if not _replaceable(p):
-                    continue
-                if destination.exists():
-                    stale.append(p)
-                    continue
-                try:
-                    os.rename(p, destination)
-                except OSError:
-                    pass
+        for aside in siblings:
+            suffix = aside.name[len(prefix):]
+            if not _EXPORT_ID.fullmatch(suffix) \
+                    or suffix in self._inflight or aside.is_symlink() \
+                    or not _replaceable(aside):
+                continue
+            if destination.exists():
+                stale.append(aside)
+                continue
+            try:
+                os.rename(aside, destination)
+            except OSError:
+                pass
         return stale
 
     @staticmethod

@@ -1646,7 +1646,12 @@ def _export_then_validate(h, mq, hub, build, validate_dest):
         assert bgate.reached.wait(10), "fixture: Export never ran"
         hub.export_dest.setStringValue_(str(validate_dest))
         hub.exportValidate_(None)
-        assert vgate.reached.wait(10), "fixture: Validate never ran"
+        if str(validate_dest) == export_dest:
+            # Refused while the Export into that folder runs (review R4).
+            assert "still running" in hub.export_text.string(), \
+                hub.export_text.string()[:120]
+        else:
+            assert vgate.reached.wait(10), "fixture: Validate never ran"
         hub.export_dest.setStringValue_(export_dest)
         bgate.release()  # the Export settles first (a drain would wait
         # for the held Validate too)
@@ -1785,40 +1790,36 @@ def x12_completed_export_supersedes_a_validate_pressed_during_it():
             dest = _invalid_dataset(h.tmp / "invalid-ds")
             hub.export_dest.setStringValue_(str(dest))
             hub.export_checks["asr_supervised"].setState_(1)
-            gate = X.Latch("export_build")
-            svc = hub.spec["export_service"]
+            shown = _export_then_validate(
+                h, mq, hub, lambda eid: {
+                    "export_id": eid, "state": "complete",
+                    "fingerprint": "f" * 64, "counts": {}, "error": None},
+                dest)
+        assert "valid:" not in shown, (
+            "a Validate of the package the Export replaced stays over the"
+            f" completed Export: {shown[:120]!r}")
+    finally:
+        h.close()
 
-            def build(d, task_views, export_id=None):
-                gate.hit()
-                return {"export_id": export_id, "state": "complete",
-                        "fingerprint": "f" * 64, "counts": {"examples": 1},
-                        "error": None}
-            svc.build = build
-            try:
-                hub.exportRun_(None)
-                assert gate.reached.wait(10), "fixture: Export never ran"
-                hub.exportValidate_(None)
-                deadline = time.monotonic() + 15
-                while "valid:" not in hub.export_text.string() \
-                        and time.monotonic() < deadline:
-                    mq.flush()
-                    time.sleep(0.01)
-                assert "valid:" in hub.export_text.string(), (
-                    "fixture: the Validate result never showed:"
-                    f" {hub.export_text.string()[:120]!r}")
-                gate.release()
-                assert mq.drain(hub.state, 60)
-                time.sleep(0.2)
-                mq.flush()
-                hub.state.reload_training()
-                assert mq.drain(hub.state, 60)
-            finally:
-                gate.release()
-                del svc.build
-            after = hub.export_text.string()
-            assert "valid:" not in after, (
-                "the Validate of the package the Export replaced stays"
-                f" over the completed Export: {after[:120]!r}")
+
+@case("MERGED-X12 (review R4-05: a Validate pressed during a failing"
+      " Export)")
+def x12_failed_export_never_shows_a_validation_taken_during_it():
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _export_tab(h, mq, hub)
+            dest = _invalid_dataset(h.tmp / "invalid-ds")
+            hub.export_dest.setStringValue_(str(dest))
+            hub.export_checks["asr_supervised"].setState_(1)
+
+            def failing(_eid):
+                raise RuntimeError("synthetic build failure")
+            shown = _export_then_validate(h, mq, hub, failing, dest)
+        assert "valid:" not in shown, (
+            "a Validate taken while the folder was being replaced stays"
+            f" after the failed Export: {shown[:120]!r}")
     finally:
         h.close()
 
@@ -2387,41 +2388,6 @@ def x14_another_exporters_sweep_never_takes_a_live_build():
             w.close()
 
 
-@case("MERGED-X14 (review R3-06: a crash before SHA256SUMS)")
-def x14_crash_before_the_checksums_leaves_nothing_hidden():
-    import tempfile
-    from localflow.v2.curation import export as export_mod
-    from localflow.v2.curation.export import DatasetExporter
-
-    class Crash(BaseException):
-        pass
-    with tempfile.TemporaryDirectory() as td:
-        dest = pathlib.Path(td) / "dataset"
-        w = _plain_export(dest)
-        real = export_mod._write_sums
-
-        def crash(staging):
-            raise Crash()
-        try:
-            export_mod._write_sums = crash
-            try:
-                w.exporter.build(dest, task_views=("asr_supervised",),
-                                 export_id="export-torn")
-            except Crash:
-                pass
-            finally:
-                export_mod._write_sums = real
-            assert (dest.parent / ".dataset.building-export-torn").is_dir(), \
-                "fixture: the crashed staging is gone"
-            after = DatasetExporter(w.store)  # after the restart
-            out = after.build(dest, task_views=("asr_supervised",),
-                              export_id="export-after-torn")
-            assert out["state"] == "complete", out
-            left = sorted(p.name for p in dest.parent.iterdir()
-                          if p.name.startswith(".dataset."))
-            assert not left, f"hidden directories left: {left}"
-        finally:
-            w.close()
 
 
 @case("MERGED-X14 (review R2-05: put back when the destination is free)")
@@ -2447,7 +2413,9 @@ def x14_lost_record_before_rename_puts_the_earlier_export_back():
                            export_id="export-after-put-back")
             assert out["state"] == "complete", out
             left = sorted(p.name for p in dest.parent.iterdir()
-                          if p.name.startswith(f".{dest.name}."))
+                          if p.name.startswith(f".{dest.name}.replaced-"))
+            # (The crashed build's own staging stays: an M14-owned
+            # residual, cleaned only through a recorded intent.)
             assert not left, f"hidden directories left: {left}"
         finally:
             store.close()

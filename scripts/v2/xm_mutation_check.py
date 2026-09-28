@@ -299,13 +299,10 @@ MUTATIONS = [
        + "            if row and row[1] not in _MINABLE_STATES:\n")],
      {REM: ["x06_teach_ignores_the_superseded_attempts_example_state"]}),
     # The second review's reproduced allegations (R2-01..R2-09).
-    ("XM-MU37", "MERGED-X12", "a completed Export keeps an older Validate",
-     [(HUB, "                    self._export_validation = None\n",
-       mark("XM-MU37", 20) + "                    pass\n")],
-     {REM: ["x12_completed_export_supersedes_a_validate_pressed_during_it"]}),
+
     ("XM-MU38", "MERGED-X14", "reconcile takes any folder named like an aside",
-     [(EX, "                if not _replaceable(p):\n",
-       mark("XM-MU38", 16) + "                if False:\n")],
+     [(EX, "                    or not _replaceable(aside):\n",
+       "                    or not " + mexpr("XM-MU38") + ":\n")],
      {REM: ["x14_reconcile_never_touches_a_folder_it_did_not_move_aside"]}),
     ("XM-MU39", "MERGED-X01", "a stamp-less store expects every table",
      [(ST, "        if unversioned:\n",
@@ -316,8 +313,8 @@ MUTATIONS = [
        mark("XM-MU40", 8))],
      {REM: ["x14_a_concurrent_export_never_reconciles_a_live_build"]}),
     ("XM-MU41", "MERGED-X14", "an earlier export is never put back",
-     [(EX, "                    os.rename(p, destination)\n",
-       mark("XM-MU41", 20) + "                    pass\n")],
+     [(EX, "                os.rename(aside, destination)\n",
+       mark("XM-MU41", 16) + "                pass\n")],
      {REM: ["x14_lost_record_before_rename_puts_the_earlier_export_back"]}),
     ("XM-MU42", "MERGED-X06", "the absent reason ignores the attempt's stages",
      [(HQ, "                                      if forced and not any(\n"
@@ -339,39 +336,25 @@ MUTATIONS = [
      [(PR, "                inputs[ex_id] = (None, state)\n",
        mark("XM-MU45", 16) + "                pass\n")],
      {REM: ["x07_restoring_the_blocking_attempt_during_compute_restarts_it"]}),
-    # The third review's reproduced allegations (R3-01, R3-02, R3-05..07;
-    # R3-04's window is closed by R3-05's owner-file rule, which would
-    # mask a late-mark mutant; R3-03 is XM-MU28's added killer).
-    ("XM-MU46", "MERGED-X12", "an Export retires another folder's Validate",
-     [(HUB, "                if bound is not None and bound[\"dest\"] == dest:\n"
-            "                    self._export_validation = None\n"
-            "                    self._action_tokens.pop(\"validate\", None)\n",
-       "                if bound is not None and bound[\"dest\"] == dest:\n"
-       "                    self._export_validation = None\n"
-       + mark("XM-MU46", 16)
-       + "                self._action_tokens.pop(\"validate\", None)\n")],
-     {REM: ["x12_export_leaves_another_folders_validate_to_finish"]}),
-    ("XM-MU47", "MERGED-X12", "an unknown Export keeps the replaced validation",
-     [(HUB, "            if err is None or isinstance(err, TimeoutError):\n",
-       "            if err is None or (not " + mexpr("XM-MU47")
-       + " and isinstance(err, TimeoutError)):\n")],
-     {REM: ["x12_unknown_export_instruction_outranks_the_replaced_validation"]}),
+    # The third review's reproduced allegations (R3-01, R3-02, R3-07;
+    # R3-03 is XM-MU28's added killer; the staging sweep of R3-04..06 was
+    # withdrawn in the fourth round).
+
     ("XM-MU48", "MERGED-X01", "a stamp-less store re-migrates unbacked",
      [(ST, "        repairing = unversioned or (version >= target and bool(\n",
        "        repairing = (not " + mexpr("XM-MU48")
        + ") or (version >= target and bool(\n")],
      {FAM: ["x01m_lost_version_row_is_backed_up_before_remigrating"]}),
-    ("XM-MU49", "MERGED-X14", "the sweep takes a staging still being written",
-     [(EX, "                    if not (p / _OWNER_FILE).exists() \\\n",
-       "                    if " + mexpr("XM-MU49") + " \\\n")],
-     {REM: ["x14_another_exporters_sweep_never_takes_a_live_build"]}),
-    ("XM-MU50", "MERGED-X14", "a staging without checksums is never swept",
-     [(EX, "                            and manifest.get(\"export_id\") =="
-           " suffix:\n",
-       "                            and manifest.get(\"export_id\") == suffix"
-       " and " + mexpr("XM-MU50")
-       + " and (p / \"SHA256SUMS.txt\").exists():\n")],
-     {REM: ["x14_crash_before_the_checksums_leaves_nothing_hidden"]}),
+
+    # The fourth round: a Validate of a folder an Export is replacing is
+    # refused while that Export runs (replacing the R2-01/R3-01/R3-07
+    # completion-time rules, withdrawn with XM-MU37/46/47).
+    ("XM-MU51", "MERGED-X12", "a Validate runs during an Export into its folder",
+     [(HUB, "        if self._exports_running.get(dest):\n",
+       "        if " + mexpr("XM-MU51") + " and False:\n")],
+     {REM: ["x12_completed_export_supersedes_a_validate_pressed_during_it",
+            "x12_unknown_export_instruction_outranks_the_replaced_validation",
+            "x12_failed_export_never_shows_a_validation_taken_during_it"]}),
 ]
 
 
