@@ -1133,6 +1133,35 @@ def x12_older_refresh_never_repaints_over_a_validate_result():
         h.close()
 
 
+@case("MERGED-X12 (two destinations, pane switch)")
+def x12_validate_result_binds_to_its_destination_across_pane_switch():
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _export_tab(h, mq, hub)
+            dest_a = _invalid_dataset(h.tmp / "invalid-a")
+            hub.export_dest.setStringValue_(str(dest_a))
+            hub.exportValidate_(None)
+            assert mq.drain(hub.state, 60)
+            assert "valid: False" in hub.export_text.string()
+            # Switch to Review and back: the result is still the pane's.
+            hub.state.select_training_tab("review")
+            assert mq.drain(hub.state, 60)
+            hub.state.select_training_tab("export")
+            assert mq.drain(hub.state, 60)
+            assert "valid: False" in hub.export_text.string(), \
+                hub.export_text.string()[:120]
+            # Another destination: A's report is not shown as B's.
+            hub.export_dest.setStringValue_(str(h.tmp / "other-b"))
+            hub.state.reload_training()
+            assert mq.drain(hub.state, 60)
+            assert "valid: False" not in hub.export_text.string(), \
+                hub.export_text.string()[:120]
+    finally:
+        h.close()
+
+
 @case("MERGED-X13 (B CROSS-AUDIT-07)")
 def x13_validate_never_runs_filesystem_work_on_the_ui_thread():
     from localflow.v2.curation import export as export_mod
@@ -1166,6 +1195,9 @@ def x13_validate_never_runs_filesystem_work_on_the_ui_thread():
             assert not seen["main"], (
                 "Export Validate ran the validator's filesystem work on the"
                 f" Hub's UI thread (callback held {ack:.2f}s)")
+            # UI acknowledgement while the validator's read was held —
+            # independent of how long the validation itself took.
+            assert ack < 1.0, f"the Validate callback held the UI {ack:.2f}s"
             assert "valid: False" in hub.export_text.string(), \
                 hub.export_text.string()[:120]
     finally:
@@ -1218,11 +1250,14 @@ def x15_hub_offers_undo_approval_for_the_rendered_candidate():
             hub.state.select_training_tab("review")
             assert mq.drain(hub.state, 60)
             action = getattr(hub, "reviewUndoApproval_", None)
-            assert action is not None, (
+            popup = getattr(hub, "review_approved_popup", None)
+            assert action is not None and popup is not None, (
                 "the Hub has no Undo approval action for an approved"
                 " learned rule (service undo is unreachable)")
-            hub._review_select_candidate(cid) \
-                if hasattr(hub, "_review_select_candidate") else None
+            # The user chooses the rendered approved rule, then Undo.
+            idx = next(i for i in range(popup.numberOfItems())
+                       if popup.itemAtIndex_(i).representedObject() == cid)
+            popup.selectItemAtIndex_(idx)
             action(None)
             mq.drain(hub.state, 60)
         status = one(store, "SELECT status FROM learning_candidates WHERE"
@@ -1230,6 +1265,97 @@ def x15_hub_offers_undo_approval_for_the_rendered_candidate():
         enabled = one(store, "SELECT enabled FROM vocabulary_entries WHERE"
                       " entry_id=?", (eid,))[0]
         assert (status, enabled) == ("pending", 0), (status, enabled)
+    finally:
+        h.close()
+
+
+def _approved_rule(h):
+    """A producer-shaped dictation taught and approved through the real
+    services (the M14 world's taught() shape) — (candidate id, entry)."""
+    store = h.d.store
+    h.d.consent.set("enabled")
+    job, fam = store.create_job()
+    raw = store.write_text_artifact(
+        job_id=job, stage="asr", role="raw_transcript", text=TEACH_RAW,
+        retention_class="training")
+    applied = store.write_text_artifact(
+        job_id=job, stage="cleanup", role="applied_output", text=TEACH_RAW,
+        retention_class="training", parent_artifact_id=raw,
+        meta={"cleanup_path": "model"})
+    for aid in (raw, applied):
+        store.grant_lease(aid, "training", days=30)
+    ex = store.upsert_example(job_id=job, family_id=fam,
+                              consent_revision_id=store.current_consent_id())
+    store.append_revision(ex, {
+        "example_id": ex, "job_id": job, "family_id": fam,
+        "origin": "live_capture", "attempt": 1,
+        "artifact_ids": {"source_text": raw, "applied_output": applied},
+        "outcome": {}, "annotations": [], "missing_reasons": {}})
+    cid = h.d._learning.teach_correction(job, TEACH_FIX)["candidate_id"]
+    return cid, h.d._learning.approve(cid)["entry_id"]
+
+
+def _undo_in_hub(h, mq, hub, cid):
+    from localflow.v2.ui.state import VIEWS
+    hub._select_view_index(VIEWS.index("models"))
+    hub.state.select_models_subview("training")
+    assert mq.drain(hub.state, 60)
+    hub.state.select_training_tab("review")
+    assert mq.drain(hub.state, 60)
+    popup = hub.review_approved_popup
+    idx = next(i for i in range(popup.numberOfItems())
+               if popup.itemAtIndex_(i).representedObject() == cid)
+    popup.selectItemAtIndex_(idx)
+    hub.reviewUndoApproval_(None)
+    return hub.review_text.string()
+
+
+@case("MERGED-X15 (refusal keeps a user edit)")
+def x15_hub_undo_refuses_after_a_user_edit():
+    h = Harness(durations=[1.0])
+    try:
+        cid, eid = _approved_rule(h)
+        e = h.d._vocab.entry(eid)
+        h.d._vocab.update_entry(eid, expected_revision=e.revision,
+                                canonical="module-user-edit")
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            if not hasattr(hub, "reviewUndoApproval_"):
+                raise AssertionError("no Undo approval action in the Hub")
+            shown = _undo_in_hub(h, mq, hub, cid)
+        assert "user_modified" in shown, shown[:160]
+        row = one(h.d.store, "SELECT canonical, enabled FROM"
+                  " vocabulary_entries WHERE entry_id=?", (eid,))
+        assert row == ("module-user-edit", 1), row
+    finally:
+        h.close()
+
+
+@case("MERGED-X15 (unknown outcome reconciles)")
+def x15_hub_undo_unknown_outcome_then_retry_is_one_undo():
+    h = Harness(durations=[1.0])
+    try:
+        store = h.d.store
+        cid, eid = _approved_rule(h)
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            if not hasattr(hub, "reviewUndoApproval_"):
+                raise AssertionError("no Undo approval action in the Hub")
+            with X.hold_at(store, "undo_approval") as held:
+                first = _undo_in_hub(h, mq, hub, cid)
+                assert held.reached, "fixture: the undo was never admitted"
+            store.sync()
+            # An unknown outcome leaves the rendered list and the choice
+            # in place: the user presses Undo Approval again.
+            hub.reviewUndoApproval_(None)
+            second = hub.review_text.string()
+        assert "unknown" in first, first[:160]
+        assert "failed" not in second, second[:160]
+        status = one(store, "SELECT status FROM learning_candidates WHERE"
+                     " candidate_id=?", (cid,))[0]
+        assert status == "pending", status
+        assert one(store, "SELECT enabled FROM vocabulary_entries WHERE"
+                   " entry_id=?", (eid,))[0] == 0
     finally:
         h.close()
 

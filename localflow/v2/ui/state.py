@@ -519,6 +519,16 @@ class HubState:
         if self.review_service is not None:
             data["preference_pairs"] = \
                 self.review_service.preference_pairs()
+        # Approved learned rules: what Undo Approval can act on
+        # (xm-policy-r1 D14) — ids and the rule's own alias/canonical.
+        data["approved"] = []
+        if self.learning_service is not None:
+            data["approved"] = [
+                {"candidate_id": c["candidate_id"], "alias": c["alias"],
+                 "canonical": c["canonical"],
+                 "entry_id": c["vocabulary_entry_id"]}
+                for c in self.learning_service.candidates(
+                    status="approved", limit=100)]
         return data
 
     def _load_training_splits(self):

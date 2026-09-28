@@ -221,6 +221,7 @@ class HubController(NSObject):
         self._action_seq = 0
         self._action_tokens = {}
         self._action_notes = {}
+        self._export_validation = None  # {dest, text}: xm-policy-r1 D12
         self._suppress_select = False
         self._building = True
         # Delete-everywhere revokes the Hub's cached payload and replay
@@ -2964,10 +2965,18 @@ class HubController(NSObject):
                                     "")
         self.review_pane.addSubview_(self.review_status)
         self.review_text = _textview(NSMakeRect(0, 0, cw - 16, 100))
-        sc = _scroll(NSMakeRect(8, 108, cw - 16, ch - 172),
+        sc = _scroll(NSMakeRect(8, 138, cw - 16, ch - 202),
                      self.review_text)
         sc.setAutoresizingMask_(18 | 16)
         self.review_pane.addSubview_(sc)
+        # Approved learned rules and the undo of the chosen one
+        # (S22 reversible personalization, xm-policy-r1 D14).
+        self.review_approved_popup = NSPopUpButton.alloc().initWithFrame_(
+            NSMakeRect(8, 108, 290, 24))
+        self.review_pane.addSubview_(self.review_approved_popup)
+        b = _button("Undo Approval", self, "reviewUndoApproval:",
+                    NSMakeRect(304, 109, 130, 24))
+        self.review_pane.addSubview_(b)
         b = _button("Draw Sample", self, "reviewSample:",
                     NSMakeRect(8, 78, 110, 24))
         self.review_pane.addSubview_(b)
@@ -3669,6 +3678,7 @@ class HubController(NSObject):
                 " directory")
             return
         self.export_text.setString_("exporting…")
+        self._export_validation = None  # a newer explicit action
         # The export id is the operation id: a retry of the same export
         # after an unknown outcome returns the recorded result instead
         # of building a second dataset (M14-AUDIT-17).
@@ -3707,16 +3717,35 @@ class HubController(NSObject):
             done, key="export")
 
     def exportValidate_(self, sender):
-        from ..curation.export import validate_dataset
+        """The standalone validator runs on the Hub's background worker
+        (its hashing and file walk never hold the UI), and its report is
+        kept in the pane's state bound to the destination it validated:
+        a training refresh never repaints over it — only a newer Validate
+        or Export, or another destination, supersedes it (xm-policy-r1
+        D12, MERGED-X12/X13)."""
+        from ..curation import export as export_mod
         dest = (self.export_dest.stringValue() or "").strip()
         if not dest:
             return
-        report = self._training_action(validate_dataset, dest)
-        if report is not None:
-            self.export_text.setString_(
-                f"valid: {report['valid']}\n"
-                + ("\n".join(report["issues"])
-                   if report["issues"] else "all checks passed"))
+        self._export_validation = {"dest": dest,
+                                   "text": f"validating {dest} …"}
+        self.export_text.setString_(self._export_validation["text"])
+
+        def done(report, err, current):
+            if not current:
+                return  # a newer Validate owns the pane
+            if err is not None:
+                text = f"action failed: {type(err).__name__}: {err}"
+            else:
+                text = (f"valid: {report['valid']}\n"
+                        + ("\n".join(report["issues"])
+                           if report["issues"] else "all checks passed"))
+            self._export_validation = {"dest": dest, "text": text}
+            if self._on_training_tab("export") and (
+                    self.export_dest.stringValue() or "").strip() == dest:
+                self.export_text.setString_(text)
+        self._in_background(lambda: export_mod.validate_dataset(dest),
+                            done, key="validate")
 
     @objc.python_method
     def _apply_training_tab(self, tab):
@@ -3862,6 +3891,7 @@ class HubController(NSObject):
                    if sug else "")
                 + ("  [labeled]" if row.get("labeled") else ""))
         self._refresh_candidate_popup(queue)
+        self._refresh_approved_popup(data.get("approved") or [])
         pairs = data.get("preference_pairs") or []
         self._rendered["review_pair"] = None
         if pairs:
@@ -3901,6 +3931,58 @@ class HubController(NSObject):
                 f" {a['text']}",
                 f"B [{b['candidate_id']} · order {b['display_order']}]:"
                 f" {b['text']}"]
+
+    @objc.python_method
+    def _refresh_approved_popup(self, approved):
+        """The approved learned rules as rendered — Undo Approval acts on
+        the chosen one of THIS list, never a stale buffer."""
+        popup = getattr(self, "review_approved_popup", None)
+        if popup is None:
+            return
+        self._rendered_rows["review_approved"] = list(approved)
+        keep = popup.selectedItem().representedObject() \
+            if popup.selectedItem() is not None else None
+        popup.removeAllItems()
+        menu = popup.menu()
+        menu.addItemWithTitle_action_keyEquivalent_(
+            "Approved rule to undo…", None, "")
+        menu.itemAtIndex_(0).setRepresentedObject_(None)
+        index = 0
+        for row in approved:
+            item = menu.addItemWithTitle_action_keyEquivalent_(
+                f"{row.get('alias')} → {row.get('canonical')}", None, "")
+            item.setRepresentedObject_(row["candidate_id"])
+            if row["candidate_id"] == keep:
+                index = menu.numberOfItems() - 1
+        popup.selectItemAtIndex_(index)
+
+    def reviewUndoApproval_(self, sender):
+        """Undo the chosen approved rule: exactly the change its approval
+        made (the M14 service), refused when the user edited the entry
+        since; an unknown outcome keeps the operation id for the retry."""
+        learning = self.spec.get("learning_service")
+        popup = getattr(self, "review_approved_popup", None)
+        if learning is None or popup is None:
+            return
+        chosen = popup.selectedItem().representedObject() \
+            if popup.selectedItem() is not None else None
+        row = next((r for r in self._rendered_rows.get("review_approved")
+                    or () if r.get("candidate_id") == chosen), None) \
+            if chosen else None
+        if row is None:
+            self.review_text.setString_(
+                "Choose an approved rule first; nothing was undone.")
+            return
+        out = self._training_action(
+            learning.undo_approval, row["candidate_id"],
+            operation_id=self._op_id("undo", row["candidate_id"]))
+        self._op_settled("undo")
+        if out is None:
+            return  # the refusal or unknown outcome stays on screen
+        self.review_text.setString_(
+            f"approval undone: {row.get('alias')} → {row.get('canonical')}"
+            " is no longer applied; the correction is back in review")
+        self.state.select_training_tab("review")
 
     @objc.python_method
     def _refresh_candidate_popup(self, queue):
@@ -3962,6 +4044,16 @@ class HubController(NSObject):
             self.export_status.setStringValue_("Export finished while you"
                                                " were away")
             self.export_text.setString_(note)
+            return
+        validation = self._export_validation
+        if validation is not None and validation["dest"] == (
+                self.export_dest.stringValue() or "").strip():
+            # The newer explicit action's result stays on screen; the
+            # status line still says what the last export was.
+            self.export_status.setStringValue_(
+                f"last export {last['state']}" if last
+                else "No export run yet")
+            self.export_text.setString_(validation["text"])
             return
         if not last:
             self.export_status.setStringValue_("No export run yet")
