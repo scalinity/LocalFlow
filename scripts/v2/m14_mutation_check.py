@@ -247,6 +247,10 @@ EDITS = {
     "LF-M14-MU027": [(EV,
         "        if not path or not managed_name_ok(path) or \\\n",
         mark("LF-M14-MU027", 8) + "        if not path or \\\n"),
+        (EV,
+        "            handle = open_managed_file(artifacts_dir, path)\n",
+        "            handle = open(p, \"rb\") if __import__(\"os\").path.isfile("
+        "p := __import__(\"os\").path.join(artifacts_dir, path)) else None\n"),
         (EX,
         "                src = open_managed_file(self.store.artifacts_dir,\n"
         "                                        artifact[\"path\"])\n",

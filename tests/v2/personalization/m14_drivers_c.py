@@ -74,6 +74,15 @@ def teach(w, raw=RAW, fix=FIX, app=APP):
     return j, out["candidate_id"]
 
 
+def approval(w, cid, **kw):
+    """approve() whose refusal is an observed outcome, not a driver
+    crash: a driver that expects success grades a refusal as FAIL."""
+    try:
+        return w.learning.approve(cid, **kw)
+    except ValueError as e:
+        return {"refused": str(e)}
+
+
 def has_table(w, name):
     return w.one("SELECT 1 FROM sqlite_master WHERE type='table' AND"
                  " name=?", (name,)) is not None
@@ -334,7 +343,7 @@ def c075_existing_user_entry(entry):
         eid = user_entry(w)
         h_before = history(w, eid)
         _j, cid = teach(w)
-        out = w.learning.approve(cid)
+        out = approval(w, cid)
         ents = w.entries()
         h_after = history(w, eid)
         e = ents.get(eid)
@@ -364,7 +373,7 @@ def _already_present(w, pre_aliases):
     eid = user_entry(w, aliases=pre_aliases)
     _j, cid = teach(w)
     before = raw_vocab(w)
-    out = w.learning.approve(cid)
+    out = approval(w, cid)
     after_approve = raw_vocab(w)
     return eid, cid, out, before, after_approve
 
@@ -407,7 +416,7 @@ def c077_disabled_entry(entry):
     with MWorld() as w2:  # same-shape eligible companion
         eid2 = user_entry(w2, enabled=True)
         _j, cid2 = teach(w2)
-        out2 = w2.learning.approve(cid2)
+        out2 = approval(w2, cid2)
         companion = out2.get("entry_id") == eid2 \
             and out2.get("action") == "alias_added" \
             and norm(w2, RAW, app_bundle=APP) == FIX
@@ -651,7 +660,7 @@ def c081_positive_created(entry):
         other = w.vocab.add_entry("Kubernetes", [("cube earnest", True)],
                                   approved=True)
         _j, cid = teach(w)
-        out = w.learning.approve(cid)
+        out = approval(w, cid)
         eid = out.get("entry_id")
         rev_after = w.entries()[eid][5]
         other_before = raw_vocab(w)[0][other], raw_vocab(w)[1][other]
@@ -737,7 +746,7 @@ def c083_alias_added_then_user_alias(entry):
     with MWorld() as w:
         eid = user_entry(w)
         _j, cid = teach(w)
-        out = w.learning.approve(cid)
+        out = approval(w, cid)
         add_user_alias(w, eid, "modyul")
         u_ref, u_msg = refused(w.learning.undo_approval, cid)
         al = aliases_of(w, eid)
@@ -762,7 +771,7 @@ def _concurrent_undo(mode):
     with MWorld() as w:
         eid = user_entry(w)
         _j, cid = teach(w)
-        out = w.learning.approve(cid)
+        out = approval(w, cid)
         state = {}
         if mode == "before":
             add_user_alias(w, eid, "modyul")
@@ -834,7 +843,7 @@ def c085_preexisting_approved_alias(entry):
     with MWorld() as w:
         eid = user_entry(w, aliases=(("moduul", True), ("modul", False)))
         _j, cid = teach(w)
-        out = w.learning.approve(cid)
+        out = approval(w, cid)
         approved_mid = aliases_of(w, eid)
         u_ref, u_msg = refused(w.learning.undo_approval, cid)
         b = {"action": out.get("action"), "undo": u_msg if u_ref else "ok",
@@ -857,16 +866,21 @@ def _undo_reapprove(with_user_entry):
     with MWorld() as w:
         eid0 = user_entry(w) if with_user_entry else None
         _j, cid = teach(w)
-        first = w.learning.approve(cid)
+        first = approval(w, cid)
         s1 = w.entries()
         h1 = history(w)
-        w.learning.undo_approval(cid)
+        try:
+            w.learning.undo_approval(cid)
+            undo_refused = None
+        except ValueError as e:  # graded below: nothing to re-approve
+            undo_refused = str(e)
         s2 = w.entries()
-        again = w.learning.approve(cid)
+        again = approval(w, cid)
         s3 = w.entries()
         h3 = history(w)
         eid = first.get("entry_id")
-        return {"eid0": eid0, "first": first.get("action"),
+        return {"eid0": eid0, "undo_refused": undo_refused,
+                "first": first.get("action"),
                 "again": again.get("action"),
                 "same_entry": again.get("entry_id") == eid,
                 "sem_equal": sem(s1) == sem(s3),
@@ -1011,7 +1025,7 @@ def c089_safe_populated(entry):
 def c090_empty(entry):
     with MWorld() as w:
         _j, cid = teach(w)
-        out = w.learning.approve(cid)
+        out = approval(w, cid)
         ce = ce_json(w, cid)
         return check({
             "explicit_approval_proceeds": bool(out.get("entry_id"))
@@ -1085,9 +1099,9 @@ def c092_scope_workspace_profile(entry):
             w.vocab.add_entry("modal", [("modul", True)], approved=True)
             _j, cid = teach(w)
             kw = {"scope_kind": kind, "scope_value": key}
-            out = w.learning.approve(cid, counterexamples=(ADVERSE,), **kw)
+            out = approval(w, cid, counterexamples=(ADVERSE,), **kw)
             ce = ce_json(w, cid)
-            w.learning.approve(cid, **kw)
+            approval(w, cid, **kw)
             res[kind] = {
                 "flips": len(out.get("flips") or []),
                 "scope": ce.get("scope") if isinstance(ce, dict) else None,
@@ -1297,7 +1311,7 @@ def c099_different_canonical(entry):
         _j, same = observe_and_mine(w, RAW, FIX)
         cid = w.one("SELECT candidate_id FROM learning_candidates WHERE"
                     " status='pending'")[0]
-        out = w.learning.approve(cid)
+        out = approval(w, cid)
         return check({
             "different_canonical_pending": [r[:3] for r in diff]
             == [("pending", "modul", "modal")],
