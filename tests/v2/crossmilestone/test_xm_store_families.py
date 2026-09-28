@@ -734,6 +734,48 @@ def c_genuinely_older_store_upgrades_with_backup():
                 s2.close()
 
 
+@case("MERGED-X01 (review R2-03: an older store that lost only its stamp)")
+def x01l_older_store_without_its_stamp_is_never_refused():
+    refused = {}
+    for version in range(1, max(store_mod._MIGRATIONS)):
+        with tempfile.TemporaryDirectory() as td:
+            db = pathlib.Path(td) / "v2.db"
+            s = _old_schema_store(db, version)
+            job, _fam = s.create_job()
+            if version >= 10:
+                # A legacy approval from before recorded deltas existed.
+                s.submit(lambda c: c.execute(
+                    "INSERT INTO learning_candidates(candidate_id, job_id,"
+                    " source, status, vocabulary_entry_id, created_at_utc,"
+                    " updated_at_utc) VALUES('cand-legacy', ?, 'teach',"
+                    " 'approved', 'entry-legacy', '2026-09-20T00:00:00Z',"
+                    " '2026-09-20T00:00:00Z')", (job,)))
+            s.close()
+            X.drop_table(db, "schema_meta")
+            try:
+                s2 = store_mod.Store(db, artifacts_dir=db.parent / "arts",
+                                     backup_dir=db.parent / "bk")
+            except RuntimeError as e:
+                refused[version] = str(e)[:90]
+                continue
+            try:
+                assert X.one(s2, "SELECT COUNT(*) FROM jobs")[0] == 1
+                assert s2._schema_version() == max(store_mod._MIGRATIONS)
+            finally:
+                s2.close()
+    assert not refused, (
+        f"genuinely older stores that lost only their stamp were refused:"
+        f" {refused}")
+
+
+@case("MERGED-X01 record (review R2-10)", kind="control")
+def c_subledger_rows_state_the_current_design():
+    led = json.loads((X.ROOT / "docs/v2/acceptance/cross-milestone/"
+                      "remediation/schema_family_subledger.json").read_text())
+    row = next(t for t in led["tables"] if t.get("table") == "daily_aggregates")
+    assert "never rebuilds" not in json.dumps(row), row
+
+
 @case("GATE-G04 every historical schema", kind="control")
 def c_every_historical_schema_upgrades_with_an_exact_backup():
     """A real store at each schema 1..12 (the real migrations up to it,

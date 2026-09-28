@@ -203,7 +203,7 @@ class ProfileService:
     def _read_candidates(self, conn, example_ids) -> list:
         """One bounded read of the live-capture examples among
         ``example_ids``, as (example_id, envelope, raw text,
-        snippet_expanded, raw artifact id, revision id, job, attempt
+        snippet_expanded, raw artifact id, revision id, job, state, attempt
         order). An example that is not live or lacks its OWN retained raw
         transcript is returned with text None: it still names its job's
         latest attempt, so an older attempt never stands in for it."""
@@ -235,6 +235,7 @@ class ProfileService:
                         snippets, raw["artifact"]["id"] if ok else None,
                         env.get("revision_id"),
                         job_id or ex_id,
+                        state,
                         (attempt if isinstance(attempt, int)
                          and not isinstance(attempt, bool) else 0,
                          published or 0)))
@@ -275,17 +276,23 @@ class ProfileService:
                     "background_speech": 0, "repeated_verbatim": 0}
         inputs = {}
         per_job = {}
-        for ex_id, env, text, snippets, raw_aid, rev, job, order in rows:
+        for (ex_id, env, text, snippets, raw_aid, rev, job, state,
+             order) in rows:
             if text is not None:
                 inputs[ex_id] = (raw_aid, rev)
             best = per_job.get(job)
             if best is None or order > best[-1]:
-                per_job[job] = (ex_id, env, text, snippets, order)
+                per_job[job] = (ex_id, env, text, snippets, state, order)
         # Counted attempts that are not their job's contribution.
         excluded["superseded_attempt"] = len(inputs) - sum(
             1 for c in per_job.values() if c[2] is not None)
+        for ex_id, _env, text, _sn, state, _order in per_job.values():
+            if text is None:
+                # A blocking latest attempt is an input too: the fence
+                # restarts when its state changes (review R2-09).
+                inputs[ex_id] = (None, state)
         kept = []
-        for ex_id, env, text, snippets, _order in per_job.values():
+        for ex_id, env, text, snippets, _state, _order in per_job.values():
             if text is None:
                 continue  # the latest attempt is not countable: the job
                 # contributes nothing
@@ -464,6 +471,12 @@ class ProfileService:
                     "SELECT state, latest_revision_id, job_id FROM"
                     " training_examples WHERE example_id=?",
                     (ex,)).fetchone()
+                if raw_aid is None:
+                    # A job's blocking latest attempt, read in state
+                    # ``rev``: any change may change what the job counts.
+                    if row is None or row[0] != rev:
+                        return {"stale": True}
+                    continue
                 if row is None or row[0] not in _LIVE_STATES:
                     return {"stale": True}  # evidence died during the read
                 if rev and row[1] and row[1] != rev:

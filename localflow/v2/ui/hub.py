@@ -3736,6 +3736,12 @@ class HubController(NSObject):
                 # The refusal reason stays on screen (no reload over it).
                 msg = f"action failed: {type(err).__name__}: {err}"
             else:
+                # The package a Validate pressed meanwhile described is
+                # the one this export just replaced (review R2-01).
+                bound = self._export_validation
+                if bound is not None and bound["dest"] == dest:
+                    self._export_validation = None
+                self._action_tokens.pop("validate", None)
                 counts = json.dumps(out.get("counts") or {},
                                     sort_keys=True)
                 msg = (f"export {out['state']} · {out['export_id']}\n"

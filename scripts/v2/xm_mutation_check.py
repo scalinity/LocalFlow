@@ -253,8 +253,9 @@ MUTATIONS = [
      {REM: ["x14_restarted_export_reconciles_the_crashed_intent",
             "x14_lost_export_records_never_leave_a_hidden_export"]}),
     ("XM-MU28", "MERGED-X12", "an Export leaves a running Validate current",
-     [(HUB, "        self._action_tokens.pop(\"validate\", None)\n",
-       mark("XM-MU28", 8))],
+     [(HUB, "        self._export_validation = None\n"
+            "        self._action_tokens.pop(\"validate\", None)\n",
+       "        self._export_validation = None\n" + mark("XM-MU28", 8))],
      {REM: ["x12_older_validate_never_takes_over_a_newer_export_result"]}),
     ("XM-MU29", "MERGED-X09", "an unknown panel Save shows nothing",
      [(APP, "                    panel.reoffer_save(\n",
@@ -296,6 +297,47 @@ MUTATIONS = [
        mark("XM-MU36", 12)
        + "            if row and row[1] not in _MINABLE_STATES:\n")],
      {REM: ["x06_teach_ignores_the_superseded_attempts_example_state"]}),
+    # The second review's reproduced allegations (R2-01..R2-09).
+    ("XM-MU37", "MERGED-X12", "a completed Export keeps an older Validate",
+     [(HUB, "                    self._export_validation = None\n",
+       mark("XM-MU37", 20) + "                    pass\n")],
+     {REM: ["x12_completed_export_supersedes_a_validate_pressed_during_it"]}),
+    ("XM-MU38", "MERGED-X14", "reconcile takes any folder named like an aside",
+     [(EX, "                if not _replaceable(p):\n",
+       mark("XM-MU38", 16) + "                if False:\n")],
+     {REM: ["x14_reconcile_never_touches_a_folder_it_did_not_move_aside"]}),
+    ("XM-MU39", "MERGED-X01", "a stamp-less store expects every table",
+     [(ST, "        if unversioned:\n",
+       mark("XM-MU39", 8) + "        if False:\n")],
+     {FAM: ["x01l_older_store_without_its_stamp_is_never_refused"]}),
+    ("XM-MU40", "MERGED-X14", "a build is marked in flight only at publication",
+     [(EX, "        self._inflight.add(export_id)\n",
+       mark("XM-MU40", 8))],
+     {REM: ["x14_a_concurrent_export_never_reconciles_a_live_build"]}),
+    ("XM-MU41", "MERGED-X14", "an earlier export is never put back",
+     [(EX, "                    os.rename(p, destination)\n",
+       mark("XM-MU41", 20) + "                    pass\n")],
+     {REM: ["x14_lost_record_before_rename_puts_the_earlier_export_back"]}),
+    ("XM-MU42", "MERGED-X06", "the absent reason ignores the attempt's stages",
+     [(HQ, "                                      if forced and not any(\n"
+           "                                          r != \"original_audio\"\n"
+           "                                          for r in chosen) else"
+           " None),\n",
+       "                                      if forced and " + mexpr("XM-MU42")
+       + " else None),\n")],
+     {REM: ["c_current_attempt_with_stages_carries_no_absent_reason"]}),
+    ("XM-MU43", "MERGED-X02", "a refusal title outlives its failure",
+     [(APP, "                raw_item.setTitle_(COPY_RAW_TITLE)\n",
+       mark("XM-MU43", 16))],
+     {REM: ["x02_refusal_title_does_not_outlive_its_failure"]}),
+    ("XM-MU44", "MERGED-X09", "no Scratchpad loses the Save silently",
+     [(APP, "                self._tf_panel.reoffer_save(\n",
+       mark("XM-MU44", 16) + "                (lambda *a: None)(\n")],
+     {REM: ["x09_panel_save_without_scratchpad_is_shown_not_saved"]}),
+    ("XM-MU45", "MERGED-X07", "the fence ignores a blocking latest attempt",
+     [(PR, "                inputs[ex_id] = (None, state)\n",
+       mark("XM-MU45", 16) + "                pass\n")],
+     {REM: ["x07_restoring_the_blocking_attempt_during_compute_restarts_it"]}),
 ]
 
 

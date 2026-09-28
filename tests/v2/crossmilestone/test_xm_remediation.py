@@ -271,6 +271,33 @@ def x02_recovery_copy_refusal_is_shown_in_the_recovery_menu():
         h.close()
 
 
+@case("MERGED-X02 (review R2-07: the refusal is not shown for a later"
+      " failure)")
+def x02_refusal_title_does_not_outlive_its_failure():
+    from AppKit import NSMenuItem
+    h = Harness(durations=[1.0])
+    try:
+        svc, _r = _pending_payload_service(h.d.store)
+        item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "Copy Raw Transcript of Last Failure", "copyLastRaw:", "")
+        h.d._recovery_items["copyLastRaw"] = item
+        job, _fam = h.d.store.create_job(state="failed_recoverable")
+        h.d._insertion = svc
+        h.d._last_failed = {"job_id": job, "raw": OLD_RAW, "wav": None,
+                            "attempt": 1}
+        h.d.copyLastRaw_(None)
+        assert "busy" in str(item.title()).lower(), "fixture: not refused"
+        later, _fam = h.d.store.create_job(state="failed_recoverable")
+        h.d._last_failed = {"job_id": later, "raw": "later raw",
+                            "wav": None, "attempt": 1}
+        h.d._refresh_recovery_menu()
+        assert "busy" not in str(item.title()).lower(), (
+            "a later failure's Recovery item still reports the earlier"
+            f" refusal: {item.title()!r}")
+    finally:
+        h.close()
+
+
 @case("MERGED-X02 control", kind="control")
 def c_recovery_copy_publishes_when_nothing_is_pending():
     h = Harness(durations=[1.0])
@@ -503,6 +530,24 @@ def x06_absent_current_attempt_stages_say_why():
         h.close()
 
 
+@case("MERGED-X06 control (review R2-06: the reason only when no stage"
+      " exists)", kind="control")
+def c_current_attempt_with_stages_carries_no_absent_reason():
+    h = Harness(durations=[1.0])
+    try:
+        job, _sup = _collection_off_retry(h)  # attempt 2 wrote History
+        detail = HistoryQueryService(h.d.store).job_detail(job)
+        stages = {s["stage"]: (s.get("artifact") is not None, s.get("reason"))
+                  for s in detail["lineage"]}
+        assert stages["source"][0] and stages["cleaned"][0], \
+            f"fixture: attempt 2 left no History stages: {stages}"
+        assert stages["normalized"][1] != "current_attempt_unavailable", (
+            "a stage History never writes is labeled as captured for an"
+            f" earlier attempt: {stages}")
+    finally:
+        h.close()
+
+
 @case("MERGED-X06 (review RV-14: Teach after the superseded example is"
       " excluded)")
 def x06_teach_ignores_the_superseded_attempts_example_state():
@@ -658,6 +703,41 @@ def x07_training_excluded_latest_attempt_never_falls_back():
             "excluding the capture's latest attempt from training let the"
             f" older attempt speak for it: {m['eligible_examples']}"
             f" eligible, older used={older in used}")
+    finally:
+        h.close()
+
+
+@case("MERGED-X07 (review R2-09: the fence covers a blocking latest"
+      " attempt)")
+def x07_restoring_the_blocking_attempt_during_compute_restarts_it():
+    h = Harness(durations=[1.0] * 4)
+    try:
+        h.d.consent.set("enabled")
+        h.d.supervisor = Scripted(asr=lambda j, a: _words(f"f{a}{j[-6:]}",
+                                                         30),
+                                  fail_clean={1})
+        job = dictate(h)
+        retry(h, dict(h.d._last_failed))
+        store = h.d.store
+        exs = [e for (e,) in examples_of(store, job)]
+        latest = max(exs, key=lambda e: envelope(store, e)["attempt"])
+        tds = TrainingDataService(store)
+        tds.exclude(latest)
+        svc = ProfileService(store, min_words=1)
+        real = svc._eligible
+        done = {}
+
+        def eligible(labels):
+            out = real(labels)
+            if not done:
+                done["restored"] = tds.exclude(latest, False)  # mid-read
+            return out
+        svc._eligible = eligible
+        m = svc.compute()["measured"]
+        assert done, "fixture: the read never ran"
+        assert m["eligible_examples"] == 1, (
+            "the latest attempt was restored during the computation, yet"
+            f" the snapshot recorded {m['eligible_examples']} eligible")
     finally:
         h.close()
 
@@ -1163,6 +1243,27 @@ def c_save_refused_before_admission_is_not_saved_then_saves_once():
         h.close()
 
 
+@case("MERGED-X09 (review R2-08: Scratchpad unavailable)")
+def x09_panel_save_without_scratchpad_is_shown_not_saved():
+    from localflow.v2.ui.transforms_panel import TransformPreviewPanel
+    h = Harness(durations=[1.0])
+    try:
+        result = _transform_result("NOSCRATCHCANARY output")
+        defn = types.SimpleNamespace(name="Witness transform")
+        panel = TransformPreviewPanel.alloc().init_panel(h.d)
+        h.d._tf_panel = panel
+        panel.show(result, {"source": "panel source text"}, defn, None)
+        h.d._notes_store = None  # Scratchpad unavailable
+        panel.panelSaveToScratchpad_(None)
+        title = str(panel.panel.title())
+        assert panel.panel.isVisible() and "not saved" in title, (
+            "a Save with the Scratchpad unavailable lost the result"
+            f" silently (visible={bool(panel.panel.isVisible())},"
+            f" title={title!r})")
+    finally:
+        h.close()
+
+
 @case("MERGED-X09 control", kind="control")
 def c_distinct_saves_make_distinct_notes():
     h = Harness(durations=[1.0])
@@ -1516,6 +1617,55 @@ def x12_older_validate_never_takes_over_a_newer_export_result():
             assert "valid:" not in after, (
                 "the superseded Validate result came back on refresh:"
                 f" {after[:120]!r}")
+    finally:
+        h.close()
+
+
+@case("MERGED-X12 (review R2-01: a completed Export supersedes a Validate"
+      " pressed during it)")
+def x12_completed_export_supersedes_a_validate_pressed_during_it():
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _export_tab(h, mq, hub)
+            dest = _invalid_dataset(h.tmp / "invalid-ds")
+            hub.export_dest.setStringValue_(str(dest))
+            hub.export_checks["asr_supervised"].setState_(1)
+            gate = X.Latch("export_build")
+            svc = hub.spec["export_service"]
+
+            def build(d, task_views, export_id=None):
+                gate.hit()
+                return {"export_id": export_id, "state": "complete",
+                        "fingerprint": "f" * 64, "counts": {"examples": 1},
+                        "error": None}
+            svc.build = build
+            try:
+                hub.exportRun_(None)
+                assert gate.reached.wait(10), "fixture: Export never ran"
+                hub.exportValidate_(None)
+                deadline = time.monotonic() + 15
+                while "valid:" not in hub.export_text.string() \
+                        and time.monotonic() < deadline:
+                    mq.flush()
+                    time.sleep(0.01)
+                assert "valid:" in hub.export_text.string(), (
+                    "fixture: the Validate result never showed:"
+                    f" {hub.export_text.string()[:120]!r}")
+                gate.release()
+                assert mq.drain(hub.state, 60)
+                time.sleep(0.2)
+                mq.flush()
+                hub.state.reload_training()
+                assert mq.drain(hub.state, 60)
+            finally:
+                gate.release()
+                del svc.build
+            after = hub.export_text.string()
+            assert "valid:" not in after, (
+                "the Validate of the package the Export replaced stays"
+                f" over the completed Export: {after[:120]!r}")
     finally:
         h.close()
 
@@ -1923,6 +2073,131 @@ def x14_lost_export_records_never_leave_a_hidden_export():
             assert not left, (
                 "with its record lost, the crashed publication's moved-"
                 f"aside export stays hidden beside {dest.name}: {left}")
+        finally:
+            store.close()
+
+
+def _plain_export(dest):
+    """A synthetic world with one completed export at ``dest``; returns
+    the world (caller closes) and its exporter."""
+    w = X.M.MWorld()
+    w.families(12, asr=True)
+    w.splits.assign()
+    w.exporter.build(dest, task_views=("asr_supervised",),
+                     export_id="export-first")
+    return w
+
+
+@case("MERGED-X14 (review R2-02: a user folder named like an aside)")
+def x14_reconcile_never_touches_a_folder_it_did_not_move_aside():
+    import tempfile
+    import os
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        dest = root / "dataset"
+        w = _plain_export(dest)
+        try:
+            mine = root / ".dataset.replaced-my-notes"
+            mine.mkdir()
+            (mine / "notes.txt").write_text("user file")
+            # Another destination's own moved-aside export.
+            other = root / "dataset.replaced-2024"
+            w.exporter.build(other, task_views=("asr_supervised",),
+                             export_id="export-other")
+            other_aside = root / ".dataset.replaced-2024.replaced-export-x"
+            os.rename(other, other_aside)
+            out = w.exporter.build(dest, task_views=("asr_supervised",),
+                                   export_id="export-second")
+            assert out["state"] == "complete", out
+            assert (mine / "notes.txt").exists(), \
+                "the export removed a user folder named like an aside"
+            assert (other_aside / "dataset_manifest.json").exists(), \
+                "the export removed another destination's moved-aside export"
+        finally:
+            w.close()
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        mine = root / ".dataset.replaced-my-notes"
+        mine.mkdir()
+        (mine / "notes.txt").write_text("user file")
+        w = X.M.MWorld()
+        try:
+            from localflow.v2.curation.export import ExportError
+            w.families(12, asr=True)
+            w.splits.assign()
+            try:
+                w.exporter.build(root / "dataset",
+                                 task_views=("asr_supervised",),
+                                 export_id="export-into-free")
+            except ExportError:
+                pass
+            assert (mine / "notes.txt").exists(), \
+                "a user folder named like an aside was moved into the" \
+                " destination"
+        finally:
+            w.close()
+
+
+@case("MERGED-X14 (review R2-04: a second Export while one publishes)")
+def x14_a_concurrent_export_never_reconciles_a_live_build():
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        dest = pathlib.Path(td) / "dataset"
+        w = _plain_export(dest)
+        try:
+            ex = w.exporter
+            real = ex._record
+            fired = {}
+
+            def record(export_id, state, *a, **k):
+                out = real(export_id, state, *a, **k)
+                if export_id == "export-a" and state == "publishing" \
+                        and not fired:
+                    # Build B's first step, inside A's publication window.
+                    fired["stale"] = ex._reconcile_destination(dest)
+                return out
+            ex._record = record
+            from localflow.v2.curation.export import ExportError
+            try:
+                out = ex.build(dest, task_views=("asr_supervised",),
+                               export_id="export-a")
+            except ExportError as e:
+                out = {"state": f"refused: {e}"}
+            finally:
+                ex._record = real
+            assert fired, "fixture: A never recorded its intent"
+            assert out["state"] == "complete", out
+            m = json.loads((dest / "dataset_manifest.json").read_text())
+            assert m.get("export_id") == "export-a", m.get("export_id")
+        finally:
+            w.close()
+
+
+@case("MERGED-X14 (review R2-05: put back when the destination is free)")
+def x14_lost_record_before_rename_puts_the_earlier_export_back():
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter
+    crashed = "export-crash-lost-before"
+    with tempfile.TemporaryDirectory() as td:
+        store, dest, _work = _crash_after_rename(
+            td, crashed, mode="before_rename", lose=("export_manifests",))
+        try:
+            assert not dest.exists() and (
+                dest.parent / f".{dest.name}.replaced-{crashed}").is_dir(), \
+                "fixture: the earlier export was not moved aside"
+            ex = DatasetExporter(store)
+            ex._reconcile_destination(dest)
+            m = json.loads((dest / "dataset_manifest.json").read_text()) \
+                if dest.is_dir() else {}
+            assert m.get("export_id") == "export-prior", (
+                "with its record lost, the earlier export was not put back"
+                f" in its free destination: {m.get('export_id')}")
+            out = ex.build(dest, task_views=("asr_supervised",),
+                           export_id="export-after-put-back")
+            assert out["state"] == "complete", out
+            left = sorted(p.name for p in dest.parent.iterdir()
+                          if p.name.startswith(f".{dest.name}."))
+            assert not left, f"hidden directories left: {left}"
         finally:
             store.close()
 

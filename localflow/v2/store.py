@@ -1445,6 +1445,22 @@ class Store:
         missing_tables = expected - have
         missing_idx = expected_idx - have_idx
         unversioned = version == 0 and bool(have - {"schema_meta"})
+        if unversioned:
+            # Its tables show the schema it reached: the newest migration
+            # that created any table present. A table only a later
+            # migration creates was never there — not lost (review
+            # R2-03); the upgrade below creates it.
+            created = {v: set(re.findall(
+                r"CREATE TABLE IF NOT EXISTS (\w+)", " ".join(stmts)))
+                for v, stmts in _MIGRATIONS.items()}
+            shown = max((v for v, ts in created.items() if ts & have),
+                        default=0)
+            upto = " ".join(s for v, stmts in _MIGRATIONS.items()
+                            if v <= shown for s in stmts)
+            missing_tables &= set(re.findall(
+                r"CREATE TABLE IF NOT EXISTS (\w+)", upto)) | {"schema_meta"}
+            missing_idx &= set(re.findall(
+                r"CREATE (?:UNIQUE )?INDEX IF NOT EXISTS (\w+)", upto))
         repairing = (version >= target or unversioned) and bool(
             missing_tables or missing_idx)
         if repairing:

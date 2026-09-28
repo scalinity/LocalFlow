@@ -628,6 +628,7 @@ class AppDelegate(NSObject):
         self.mode_menu_item = None  # M10: the effective mode/profile line
         self._training_items = {}
         self._recovery_items = {}
+        self._raw_copy_refused_job = None  # the failure a refusal is shown for
         self._max_timer = None
         # Transcription requests run through the supervisor's serialized
         # GPU queue on one FIFO thread so a new recording can start while
@@ -2048,6 +2049,9 @@ class AppDelegate(NSObject):
         if self._notes_store is None:
             self.v2log.emit("notes.store_unavailable", level="WARNING",
                             reason_code="scratchpad_off")
+            if self._tf_panel is not None:  # review R2-08
+                self._tf_panel.reoffer_save(
+                    "not saved (Scratchpad unavailable)", result)
             return
         job = result.job
         # One logical Save of this result (its task and exact output)
@@ -5815,6 +5819,13 @@ class AppDelegate(NSObject):
         if raw_item is not None:
             raw_item.setEnabled_(
                 bool(self._last_failed and self._last_failed.get("raw")))
+            # A refusal is shown only for the failure it was refused for
+            # (review R2-07).
+            if self._raw_copy_refused_job is not None and (
+                    self._last_failed or {}).get("job_id") != \
+                    self._raw_copy_refused_job:
+                self._raw_copy_refused_job = None
+                raw_item.setTitle_(COPY_RAW_TITLE)
 
     def menuNeedsUpdate_(self, menu):
         """Rebuild the Transforms submenu on open so Hub edits surface
@@ -6066,10 +6077,12 @@ class AppDelegate(NSObject):
             self.v2log.emit("dictation.raw_copy_refused", level="INFO",
                             job_id=self._last_failed.get("job_id"),
                             reason_code="clipboard_payload_pending")
+            self._raw_copy_refused_job = self._last_failed.get("job_id")
             if item is not None:
                 item.setTitle_(f"{COPY_RAW_TITLE} — not copied: clipboard"
                                " busy with a pending paste; try again")
             return
+        self._raw_copy_refused_job = None
         if item is not None:
             item.setTitle_(COPY_RAW_TITLE)
         self.v2log.emit("dictation.raw_exported", level="INFO",

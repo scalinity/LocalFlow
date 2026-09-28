@@ -50,6 +50,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shutil
 
 from .. import ids
@@ -73,6 +74,9 @@ _TASK_VIEWS = ("transform_supervised", "preference_pairs")
 _LIVE_STATES = TRAINABLE_STATES
 _COMPARABLE = ev.COMPARABLE
 _OWNER_FILE = ".localflow-export-owner"
+# An export id as build() names its staging and moved-aside siblings
+# (ids.new_id and caller operation ids): never a dot.
+_EXPORT_ID = re.compile(r"[A-Za-z0-9_-]+")
 
 
 class ExportError(Exception):
@@ -703,6 +707,10 @@ class DatasetExporter:
                 "the build's own staging path already exists — nothing"
                 " written or removed")
         (staging / _OWNER_FILE).write_text(export_id, encoding="utf-8")
+        # In flight from its own staging on: another build's reconcile
+        # never takes this build's aside or intent for crash residue
+        # (review R2-04).
+        self._inflight.add(export_id)
         publishing = False
         try:
             manifest, counts, fingerprint = self._write_graph(
@@ -766,7 +774,6 @@ class DatasetExporter:
             self._record(export_id, "publishing", task_views, manifest,
                          destination, fingerprint, summary_counts)
             publishing = True
-            self._inflight.add(export_id)
             out = self.store.submit(publish_op)
             publishing = False
             if out.get("refused"):
@@ -775,6 +782,7 @@ class DatasetExporter:
                     f" the build ({out['refused']}) — export aborted"
                     " before completion (S29.13)")
         except ExportError as e:
+            self._inflight.discard(export_id)
             self._abort(staging, export_id, moved_aside, destination)
             self._record(export_id, "failed", task_views, None,
                          destination, None, None, error="refused")
@@ -868,30 +876,51 @@ class DatasetExporter:
         only when THIS build completes, exactly as a completed build
         removes the export it replaced — so no crash leaves a hidden
         export behind, even when its record is gone (xm-policy-r1 D13,
-        review RV-02/RV-13)."""
+        review RV-02/RV-13). A crashed build's own staging is returned
+        the same way. Nothing else beside the destination is touched."""
         pending = self.store.submit(lambda conn: [r[0] for r in conn.execute(
             "SELECT export_id FROM export_manifests WHERE state="
             "'publishing' AND destination=?", (str(destination),))])
         for export_id in pending:
             self._reconcile_intent(export_id)
-        prefix = f".{destination.name}.replaced-"
         try:
-            siblings = sorted(p for p in destination.parent.iterdir()
-                              if p.name.startswith(prefix))
+            siblings = sorted(destination.parent.iterdir())
         except OSError:
             return []
         stale = []
-        for aside in siblings:
-            if aside.name[len(prefix):] in self._inflight \
-                    or aside.is_symlink() or not aside.is_dir():
-                continue
-            if destination.exists():
-                stale.append(aside)
-                continue
-            try:
-                os.rename(aside, destination)
-            except OSError:
-                pass
+        for kind in ("replaced", "building"):
+            prefix = f".{destination.name}.{kind}-"
+            for p in siblings:
+                suffix = p.name[len(prefix):]
+                # Only what this exporter names and owns (review R2-02):
+                # an export-id suffix (another destination's sibling has
+                # a dot in it), no build of it in flight, and — for an
+                # earlier export — a folder a build may replace.
+                if not p.name.startswith(prefix) \
+                        or not _EXPORT_ID.fullmatch(suffix) \
+                        or suffix in self._inflight or p.is_symlink() \
+                        or not p.is_dir():
+                    continue
+                if kind == "building":
+                    # A crashed build's own staging, never published.
+                    owner = p / _OWNER_FILE
+                    try:
+                        ours = owner.read_text(encoding="utf-8") == suffix \
+                            if owner.exists() else _replaceable(p)
+                    except OSError:
+                        ours = False
+                    if ours:
+                        stale.append(p)
+                    continue
+                if not _replaceable(p):
+                    continue
+                if destination.exists():
+                    stale.append(p)
+                    continue
+                try:
+                    os.rename(p, destination)
+                except OSError:
+                    pass
         return stale
 
     @staticmethod

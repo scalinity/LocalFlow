@@ -424,10 +424,14 @@ class HistoryQueryService:
             tf_entry = chosen.get("transform_output")
             info = {"source": "attempt_group" if current is not None
                     else "artifacts", "attempt": current,
-                    # Its absent stages were captured for an earlier
-                    # attempt, not missing (xm-policy-r1 D06).
+                    # The current attempt left no stage of its own: its
+                    # text was captured only for an earlier attempt
+                    # (xm-policy-r1 D06; not when it has stages of its
+                    # own — review R2-06).
                     "absent_reason": ("current_attempt_unavailable"
-                                      if forced else None),
+                                      if forced and not any(
+                                          r != "original_audio"
+                                          for r in chosen) else None),
                     "ambiguous_attempts": current is None and any(
                         n > 1 for r, n in seen.items()
                         if r != "original_audio"),
