@@ -799,8 +799,8 @@ def c057_positive_owned_roles(entry):
         return check({
             "asr_exact_inputs": len(asr) == 1
             and inputs(asr[0]) == want_asr,
-            "asr_owner_job": len(asr) == 1 and asr[0]["lineage"].get(
-                "job_id") == a["job_id"],
+            "asr_owner_job": len(asr) == 1 and (
+                asr[0].get("lineage") or {}).get("job_id") == a["job_id"],
             "cleanup_exact_inputs": len(cln) == 1
             and inputs(cln[0]) == want_cln,
             "cleanup_stage_texts": len(cln) == 1
