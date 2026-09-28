@@ -1871,6 +1871,54 @@ def x12_validate_refused_exactly_while_an_export_may_replace_the_folder():
         h.close()
 
 
+@case("MERGED-X14 (review R6-03/R6-06: Export presses while one runs)")
+def x14_hub_export_presses_while_one_runs():
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _export_tab(h, mq, hub)
+            hub.export_checks["asr_supervised"].setState_(1)
+            gate = X.Latch("export_build")
+            svc = hub.spec["export_service"]
+            built = []
+
+            def build(d, task_views, export_id=None):
+                built.append(str(d))
+                if len(built) == 1:
+                    gate.hit()
+                return {"export_id": export_id, "state": "complete",
+                        "fingerprint": "f" * 64, "counts": {}, "error": None}
+            svc.build = build
+            x, y = str(h.tmp / "folder-x"), str(h.tmp / "folder-y")
+            try:
+                hub.export_dest.setStringValue_(x)
+                hub.exportRun_(None)
+                assert gate.reached.wait(10), "fixture: Export never ran"
+                hub.exportRun_(None)  # the same folder, pressed again
+                second = hub.export_text.string()
+                hub.export_dest.setStringValue_(y)
+                hub.exportRun_(None)  # another folder: runs, and is newer
+                deadline = time.monotonic() + 15
+                while len(built) < 2 and time.monotonic() < deadline:
+                    mq.flush()
+                    time.sleep(0.01)
+                gate.release()  # X completes, no longer current
+                assert mq.drain(hub.state, 60)
+                refused_after = _validate_refused(mq, hub, x)
+            finally:
+                gate.release()
+                del svc.build
+        assert built == [x, y], f"builds started: {built}"
+        assert "still running" in second, (
+            f"a second Export of the same folder was not refused: {second!r}")
+        assert not refused_after, (
+            "Validate of a folder stays refused after its Export completed"
+            " behind a newer one")
+    finally:
+        h.close()
+
+
 @case("MERGED-X12 (review R5-04: Validate reads the folder Export wrote)")
 def x12_validate_resolves_the_folder_like_export():
     import os
@@ -2516,7 +2564,7 @@ def x14_interrupted_export_leaves_no_copy_of_recordings_behind():
             assert (staging / "audio-copy.wav").exists(), \
                 "fixture: the interrupted build left nothing"
             from localflow.v2.curation import export as export_mod
-            export_mod._INFLIGHT.discard("export-quit")  # a new process
+            export_mod._release("export-quit")  # the process ended
             DatasetExporter(w.store)  # the next launch
             assert not staging.exists(), (
                 "a copy of recordings from an interrupted export stays"
@@ -2541,6 +2589,210 @@ def x14_interrupted_export_leaves_no_copy_of_recordings_behind():
             w.close()
 
 
+def _interrupt(ex, dest, export_id):
+    """A build of ``export_id`` into ``dest`` that ends mid-graph (the
+    process quit); then, as the next launch is a new process, its id is
+    no longer in flight."""
+    from localflow.v2.curation import export as export_mod
+
+    class Quit(BaseException):
+        pass
+    real = ex._write_graph
+
+    def write_graph(staging, *a, **k):
+        (staging / "audio-copy.wav").write_bytes(b"RIFF" + b"\0" * 64)
+        raise Quit()
+    ex._write_graph = write_graph
+    try:
+        ex.build(dest, task_views=("asr_supervised",), export_id=export_id)
+    except Quit:
+        pass
+    finally:
+        ex._write_graph = real
+    export_mod._release(export_id)  # the process ended: its lock with it
+
+
+def _building_row(store, export_id):
+    got = one(store, "SELECT state FROM export_manifests WHERE export_id=?",
+              (export_id,))
+    return got[0] if got else None
+
+
+@case("MERGED-X14 (review R6-01: a relative or unmounted destination)")
+def x14_interrupted_export_is_cleaned_wherever_it_was_written():
+    import os
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        w = _plain_export(root / "dataset")
+        cwd = os.getcwd()
+        try:
+            os.chdir(root)  # the CLI, given a relative folder
+            try:
+                _interrupt(w.exporter, pathlib.Path("rel-ds"), "export-rel")
+            finally:
+                os.chdir(cwd)  # the next launch runs from elsewhere
+            DatasetExporter(w.store)
+            assert not (root / ".rel-ds.building-export-rel").exists(), \
+                "a relative-path export's copies stay after the next launch"
+            vol = root / "vol"
+            vol.mkdir()
+            _interrupt(w.exporter, vol / "ds", "export-vol")
+            os.rename(vol, root / "vol-away")  # the drive is not mounted
+            DatasetExporter(w.store)
+            assert _building_row(w.store, "export-vol") == "building", (
+                "an interrupted export on an unmounted drive was written"
+                " off; its copies can never be cleaned")
+            os.rename(root / "vol-away", vol)  # mounted again
+            DatasetExporter(w.store)
+            assert not (vol / ".ds.building-export-vol").exists(), \
+                "the copies stay once the drive is back"
+        finally:
+            os.chdir(cwd)
+            w.close()
+
+
+@case("MERGED-X14 (review R6-02/R6-04: a dead build whose pid is reused)")
+def x14_dead_build_is_cleaned_whatever_process_now_has_its_pid():
+    import subprocess
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        dest = root / "dataset"
+        w = _plain_export(dest)
+        other = subprocess.Popen([sys.executable, "-c",
+                                  "import time; time.sleep(60)"])
+        try:
+            staging = root / ".dataset.building-export-reused"
+            staging.mkdir()
+            (staging / "audio-copy.wav").write_bytes(b"RIFF")
+            # Written by a build that died (no one holds it); the pid
+            # now belongs to an unrelated live process.
+            (staging / ".localflow-export-owner").write_text(
+                f"export-reused\n{other.pid}\n")
+            w.exporter._record("export-reused", "building",
+                               ("asr_supervised",), None, dest, None, None)
+            DatasetExporter(w.store)
+            assert not staging.exists(), (
+                "a dead build's copies stay because its pid was reused")
+        finally:
+            other.kill()
+            other.wait(10)
+            w.close()
+
+
+@case("MERGED-X14 (review R6-02/R6-04: a live build in another process)")
+def x14_live_build_of_another_process_survives_a_reconcile_then_is_cleaned():
+    import os
+    import signal
+    import subprocess
+    import tempfile
+    from localflow.v2 import store as store_mod
+    from localflow.v2.curation.export import DatasetExporter
+    export_id = "export-live-cli"
+    with tempfile.TemporaryDirectory() as td:
+        work = pathlib.Path(td)
+        child = subprocess.Popen(
+            [sys.executable, str(HERE.parent / "xm_export_crash_child.py"),
+             str(work), export_id, "mid_graph"], stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE)
+        marker = work / "renamed.json"
+        deadline = time.monotonic() + 120
+        while not marker.exists() and child.poll() is None \
+                and time.monotonic() < deadline:
+            time.sleep(0.05)  # the child's own barrier file
+        store = None
+        try:
+            if not marker.exists():
+                child.kill()
+                raise AssertionError("child never reached the barrier: "
+                                     + child.stderr.read().decode()[-400:])
+            info = json.loads(marker.read_text())
+            staging = work / f".dataset.building-{export_id}"
+            assert staging.is_dir(), "fixture: no live staging"
+            # The app opens the same store while the CLI's build runs.
+            store = store_mod.Store(pathlib.Path(info["db"]),
+                                    artifacts_dir=pathlib.Path(info["arts"]))
+            DatasetExporter(store)
+            assert staging.is_dir(), (
+                "the app's launch removed a build another process is"
+                " still running")
+            os.kill(child.pid, signal.SIGKILL)  # the CLI dies mid-graph
+            child.wait(30)
+            DatasetExporter(store)
+            assert not staging.exists(), (
+                "the dead build's copies stay after its process ended")
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait(30)
+            if store is not None:
+                store.close()
+
+
+@case("MERGED-X14 (review R6-03: the same export id while it runs)")
+def x14_same_id_while_building_never_clobbers_the_live_build():
+    import tempfile
+    from localflow.v2.curation.export import ExportError
+    with tempfile.TemporaryDirectory() as td:
+        dest = pathlib.Path(td) / "dataset"
+        w = _plain_export(dest)
+        try:
+            ex = w.exporter
+            real = ex._write_graph
+            got = {}
+
+            def write_graph(*a, **k):
+                if not got:
+                    try:
+                        ex.build(dest, task_views=("asr_supervised",),
+                                 export_id="export-same")
+                        got["second"] = "built"
+                    except ExportError as e:
+                        got["second"] = f"refused: {e}"
+                    got["row"] = _building_row(w.store, "export-same")
+                return real(*a, **k)
+            ex._write_graph = write_graph
+            try:
+                out = ex.build(dest, task_views=("asr_supervised",),
+                               export_id="export-same")
+            finally:
+                del ex._write_graph
+            assert got.get("row") == "building", (
+                f"the repeated id rewrote the live build's record: {got}")
+            assert out["state"] == "complete", out
+        finally:
+            w.close()
+
+
+@case("MERGED-X14 (review R6-05: the earlier export put back at launch)")
+def x14_launch_puts_back_the_export_an_interrupted_build_moved_aside():
+    import os
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        dest = root / "dataset"
+        w = _plain_export(dest)
+        try:
+            staging = root / ".dataset.building-export-aside"
+            staging.mkdir()
+            (staging / ".localflow-export-owner").write_text(
+                "export-aside\n")
+            os.rename(dest, root / ".dataset.replaced-export-aside")
+            w.exporter._record("export-aside", "building",
+                               ("asr_supervised",), None, dest, None, None)
+            DatasetExporter(w.store)  # the next launch
+            m = json.loads((dest / "dataset_manifest.json").read_text()) \
+                if dest.is_dir() else {}
+            assert m.get("export_id") == "export-first", (
+                "the user's earlier export was not put back at launch")
+        finally:
+            w.close()
+
+
 @case("MERGED-X14 control (review R5-05: another process's live build)",
       kind="control")
 def c_reconcile_never_touches_a_build_another_process_runs():
@@ -2551,13 +2803,20 @@ def c_reconcile_never_touches_a_build_another_process_runs():
         root = pathlib.Path(td)
         dest = root / "dataset"
         w = _plain_export(dest)
-        live = subprocess.Popen([sys.executable, "-c",
-                                 "import time; time.sleep(60)"])
+        staging = root / ".dataset.building-export-cli"
+        staging.mkdir()
+        owner = staging / ".localflow-export-owner"
+        owner.write_text("export-cli\n")
+        # The CLI's build, running: it holds its owner file's lock.
+        live = subprocess.Popen(
+            [sys.executable, "-c",
+             "import fcntl, sys, time; f = open(sys.argv[1], 'a');"
+             " fcntl.flock(f, fcntl.LOCK_EX); print('locked', flush=True);"
+             " time.sleep(60)", str(owner)], stdout=subprocess.PIPE,
+            text=True)
         try:
-            staging = root / ".dataset.building-export-cli"
-            staging.mkdir()
-            (staging / ".localflow-export-owner").write_text(
-                f"export-cli\n{live.pid}\n")
+            assert live.stdout.readline().strip() == "locked", \
+                "fixture: the other process never took its lock"
             w.exporter._record("export-cli", "building",
                                ("asr_supervised",), None, dest, None, None)
             DatasetExporter(w.store).reconcile_interrupted()

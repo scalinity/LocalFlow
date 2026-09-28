@@ -308,9 +308,9 @@ MUTATIONS = [
      [(ST, "        if unversioned:\n",
        mark("XM-MU39", 8) + "        if False:\n")],
      {FAM: ["x01l_older_store_without_its_stamp_is_never_refused"]}),
-    ("XM-MU40", "MERGED-X14", "a build is marked in flight only at publication",
-     [(EX, "        self._inflight.add(export_id)\n",
-       mark("XM-MU40", 8))],
+    ("XM-MU40", "MERGED-X14", "a build is never marked in flight in this process",
+     [(EX, "    _INFLIGHT.add(export_id)\n",
+       mark("XM-MU40", 4))],
      {REM: ["x14_a_concurrent_export_never_reconciles_a_live_build"]}),
     ("XM-MU41", "MERGED-X14", "an earlier export is never put back",
      [(EX, "                os.rename(aside, destination)\n",
@@ -386,6 +386,28 @@ MUTATIONS = [
      [(EX, "        self._inflight = _INFLIGHT\n",
        mark("XM-MU58", 8) + "        self._inflight = set()\n")],
      {REM: ["x14_another_exporters_sweep_never_takes_a_live_build"]}),
+    # The sixth review's reproduced allegations (R6-01..R6-06).
+    ("XM-MU59", "MERGED-X14", "the owner file is written but never locked",
+     [(EX, "    fcntl.flock(owner, fcntl.LOCK_EX)\n", mark("XM-MU59", 4))],
+     {REM: ["x14_live_build_of_another_process_survives_a_reconcile_then_is_cleaned"]}),
+    ("XM-MU60", "MERGED-X14", "a relative destination is recorded as given",
+     [(EX, "        destination = pathlib.Path(destination).expanduser()"
+           ".absolute()\n",
+       mark("XM-MU60", 8)
+       + "        destination = pathlib.Path(destination).expanduser()\n")],
+     {REM: ["x14_interrupted_export_is_cleaned_wherever_it_was_written"]}),
+    ("XM-MU61", "MERGED-X14", "an unmounted destination's intent is written off",
+     [(EX, "            if not destination.parent.is_dir():\n",
+       "            if " + mexpr("XM-MU61") + " and False:\n")],
+     {REM: ["x14_interrupted_export_is_cleaned_wherever_it_was_written"]}),
+    ("XM-MU62", "MERGED-X14", "a repeated id overwrites the live build's record",
+     [(EX, "            if export_id in self._inflight:\n",
+       "            if " + mexpr("XM-MU62") + " and False:\n")],
+     {REM: ["x14_same_id_while_building_never_clobbers_the_live_build"]}),
+    ("XM-MU63", "MERGED-X14", "a second Export of a folder runs beside the first",
+     [(HUB, "        if self._exports_running.get(folder):\n",
+       "        if " + mexpr("XM-MU63") + " and False:\n")],
+     {REM: ["x14_hub_export_presses_while_one_runs"]}),
 ]
 
 

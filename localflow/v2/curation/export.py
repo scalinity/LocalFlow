@@ -46,6 +46,7 @@ unpartitioned, only when the requested partitions include train (D02).
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
@@ -79,6 +80,8 @@ _OWNER_FILE = ".localflow-export-owner"
 _EXPORT_ID = re.compile(r"[A-Za-z0-9_-]+")
 # Export ids in flight in this process (every DatasetExporter shares it).
 _INFLIGHT: set = set()
+# Their owner files, each held under an exclusive lock (_hold).
+_OWNER_LOCKS: dict = {}
 
 
 class ExportError(Exception):
@@ -125,34 +128,46 @@ def _replaceable(destination: pathlib.Path) -> bool:
     return present <= listed
 
 
+def _hold(export_id: str, staging: pathlib.Path):
+    """Mark ``export_id`` in flight in this process and hold its owner
+    file — naming the build — under an exclusive lock until _release.
+    The lock ends with the process however it ends (quit, crash,
+    reboot), so a lock nobody holds means a build nobody is running."""
+    owner = open(staging / _OWNER_FILE, "w", encoding="utf-8")
+    owner.write(f"{export_id}\n")
+    owner.flush()
+    fcntl.flock(owner, fcntl.LOCK_EX)
+    _OWNER_LOCKS[export_id] = owner
+    _INFLIGHT.add(export_id)
+
+
+def _release(export_id: str):
+    _INFLIGHT.discard(export_id)
+    owner = _OWNER_LOCKS.pop(export_id, None)
+    if owner is not None:
+        owner.close()  # releases the lock
+
+
 def _owner_alive(staging: pathlib.Path, export_id: str) -> bool:
-    """Whether the build owning ``staging`` may still be running in
-    another process: its owner file names this export id and a live
-    process other than this one. A staging that is gone owns nothing;
-    an owner naming another build, or one that cannot be read, is
-    treated as alive (never touched)."""
+    """Whether a build — in any process — still holds ``staging``'s
+    owner file naming this export id (review R6-02). A staging that is
+    gone owns nothing; an owner naming another build, or one that
+    cannot be read or tested, is treated as alive (never touched)."""
     try:
-        lines = (staging / _OWNER_FILE).read_text(
-            encoding="utf-8").split("\n")
+        owner = open(staging / _OWNER_FILE, "r", encoding="utf-8")
     except FileNotFoundError:
         return False
     except OSError:
         return True
-    if lines[0] != export_id:
-        return True
-    try:
-        pid = int(lines[1])
-    except (IndexError, ValueError):
+    with owner:
+        try:
+            if owner.readline().rstrip("\n") != export_id:
+                return True
+            fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:  # BlockingIOError: a live build holds it
+            return True
+        fcntl.flock(owner, fcntl.LOCK_UN)
         return False
-    if pid == os.getpid():
-        return False  # this process, yet not in flight: that build died
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except OSError:
-        return True
-    return True
 
 
 def _inside(path: pathlib.Path, root: pathlib.Path) -> bool:
@@ -660,7 +675,9 @@ class DatasetExporter:
         for part in partitions:
             if part not in PARTITIONS:
                 raise ExportError(f"unknown partition {part!r}")
-        destination = pathlib.Path(destination).expanduser()
+        # Absolute: its record must name the same folder from any working
+        # directory (review R6-01).
+        destination = pathlib.Path(destination).expanduser().absolute()
         if export_id is not None:
             done = self._receipt(export_id)
             if done is not None:
@@ -740,18 +757,21 @@ class DatasetExporter:
             # link) — the build only ever works inside what it created.
             os.mkdir(staging)
         except OSError:
+            if export_id in self._inflight:
+                # The same export is still being built here: its record
+                # stays its own (review R6-03).
+                raise ExportError("this export is already running")
             self._record(export_id, "failed", task_views, None,
                          destination, None, None, error="staging_collision")
             raise ExportError(
                 "the build's own staging path already exists — nothing"
                 " written or removed")
-        # The owner names the build and its process until publication.
-        (staging / _OWNER_FILE).write_text(f"{export_id}\n{os.getpid()}\n",
-                                            encoding="utf-8")
         # In flight from its own staging on: another build's reconcile
         # never takes this build's aside or intent for crash residue
-        # (review R2-04).
-        self._inflight.add(export_id)
+        # (review R2-04). The owner file names the build and stays locked
+        # by it until publication or abort; the lock ends with the
+        # process, whatever ends it (review R6-02).
+        _hold(export_id, staging)
         publishing = False
         try:
             # Recorded before any recording is copied: a build LocalFlow
@@ -812,7 +832,7 @@ class DatasetExporter:
                     os.rename(staging, destination)
                     return {"published": True}
                 finally:
-                    self._inflight.discard(export_id)
+                    _release(export_id)
             # The publication intent (xm-policy-r1 D13, MERGED-X14):
             # committed BEFORE the op that renames, because SQLite cannot
             # roll back a rename — a crash in between leaves a record a
@@ -828,7 +848,7 @@ class DatasetExporter:
                     f" the build ({out['refused']}) — export aborted"
                     " before completion (S29.13)")
         except ExportError as e:
-            self._inflight.discard(export_id)
+            _release(export_id)
             self._abort(staging, export_id, moved_aside, destination)
             self._record(export_id, "failed", task_views, None,
                          destination, None, None, error="refused")
@@ -841,7 +861,7 @@ class DatasetExporter:
                 # repeating this export_id reconciles through its
                 # receipt.
                 raise
-            self._inflight.discard(export_id)
+            _release(export_id)
             # Disk full, a store stall before publication, anything:
             # nothing is left labeled complete; only this build's own
             # staging is removed.
@@ -959,12 +979,13 @@ class DatasetExporter:
         writing the graph — leaves its staging, holding copies of the
         user's recordings, hidden beside its destination. Every
         'building' record whose build is not in flight in this process
-        and whose owner process is gone has its staging removed, any
+        and whose owner file no build holds has its staging removed, any
         earlier export it had moved aside put back, and is recorded
         failed (build_interrupted), so no temporary copy outlives the
         recordings it came from (Evaluation E19; review R5-05). A build
         still running in another process — the export CLI — is left
-        alone. Run at launch and before every build."""
+        alone, and so is one whose folder is not reachable now (a drive
+        not mounted). Run at launch and before every build."""
         rows = self.store.submit(lambda conn: conn.execute(
             "SELECT export_id, destination, task_views_json FROM"
             " export_manifests WHERE state='building'").fetchall())
@@ -972,6 +993,8 @@ class DatasetExporter:
             if export_id in self._inflight or not dest:
                 continue
             destination = pathlib.Path(dest)
+            if not destination.parent.is_dir():
+                continue  # not mounted now: left for a later launch (R6-01)
             staging = destination.parent / \
                 f".{destination.name}.building-{export_id}"
             if _owner_alive(staging, export_id):

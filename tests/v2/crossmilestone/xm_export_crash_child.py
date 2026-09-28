@@ -1,6 +1,6 @@
 """Owned child process for MERGED-X14 (export rename vs SQLite commit).
 
-    python xm_export_crash_child.py WORKDIR EXPORT_ID
+    python xm_export_crash_child.py WORKDIR EXPORT_ID [MODE]
 
 Builds a synthetic store (the M14 world: 12 ASR families, one split
 assignment), publishes a PRIOR LocalFlow export at WORKDIR/dataset, then
@@ -9,7 +9,10 @@ staging directory has been renamed onto the destination — inside the
 exporter's publication op, BEFORE the Store commits it — this process
 writes WORKDIR/renamed.json (its store paths) and blocks the writer
 forever. The parent kills exactly this process (SIGKILL) at that point:
-the deterministic post-rename, pre-commit crash. Synthetic data only.
+the deterministic post-rename, pre-commit crash. MODE before_rename
+stops inside the publication op before its rename; mid_graph stops a
+live build while it writes its graph (its owner lock held). Synthetic
+data only.
 """
 
 import json
@@ -50,6 +53,12 @@ def main(workdir, export_id, mode="after_rename"):
             if pathlib.Path(dst) == dest and ".building-" in str(src):
                 stop_here()
         os.rename = rename
+    elif mode == "mid_graph":  # a live build, still copying recordings
+        from localflow.v2.curation import export as export_mod
+
+        def write_graph(self, staging, *a, **k):
+            stop_here()
+        export_mod.DatasetExporter._write_graph = write_graph
     else:  # before_rename: inside the publication op, before its rename
         from localflow.v2.curation import export as export_mod
 

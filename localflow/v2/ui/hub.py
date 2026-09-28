@@ -3718,6 +3718,13 @@ class HubController(NSObject):
                 "choose at least one task view and a destination"
                 " directory")
             return
+        folder = _export_folder(dest)
+        if self._exports_running.get(folder):
+            # One build per folder at a time (review R6-03).
+            self.export_text.setString_(
+                "an export into this folder is still running — Export"
+                " again once it finishes")
+            return
         self.export_text.setString_("exporting…")
         # A newer explicit action: a Validate still running publishes
         # nothing over it (xm-policy-r1 D12, review RV-03).
@@ -3725,7 +3732,6 @@ class HubController(NSObject):
         self._action_tokens.pop("validate", None)
         # While it runs, a Validate of this folder would describe a
         # package in mid-replacement: it is refused (review R4).
-        folder = _export_folder(dest)
         self._exports_running[folder] = \
             self._exports_running.get(folder, 0) + 1
         # The export id is the operation id: a retry of the same export
