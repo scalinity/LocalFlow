@@ -1383,8 +1383,15 @@ def native_driver(case):
     row = (rec.get("checks") or {}).get(name)
     if row is None:
         return result("NOT_RUN", None, note=f"native check {name} absent")
-    return result("PASS" if row.get("status") == "PASS" else "FAIL", row,
-                  grading="native", witness={"native_check": name})
+    status = row.get("status")
+    if status == "NOT_RUN":
+        return result("NOT_RUN", row, note=f"native check {name} not run"
+                      f" ({row.get('tier', '?')} tier)")
+    if status not in ("PASS", "FAIL"):
+        return result("ERROR", row, note=f"native check {name}: {status}")
+    return result(status, row, grading="native",
+                  witness={"native_check": name,
+                           "tier": row.get("tier")})
 
 
 for _cid in NATIVE_CASES:

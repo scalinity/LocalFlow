@@ -1043,6 +1043,19 @@ def d_same_zone(case):
     return check({"reducer": not m}, {"mismatches": m})
 
 
+def _independently_valid_zone(value) -> bool:
+    """The oracle's own answer (never the production validator's):
+    a non-empty string the tz database resolves."""
+    import zoneinfo
+    if not isinstance(value, str) or value == "":
+        return False
+    try:
+        zoneinfo.ZoneInfo(value)
+        return True
+    except (ValueError, zoneinfo.ZoneInfoNotFoundError):
+        return False
+
+
 @drives(*[f"M13-C{n:03d}" for n in range(82, 89)])
 def d_zone_admission(case):
     value = case["fixture"]["value"]
@@ -1055,8 +1068,7 @@ def d_zone_admission(case):
             direct = ("refused", None)
         rb = w.analytics.rebuild_aggregates(reporting_timezone=value) \
             if value is not None else {"outcome": "committed_zone_used"}
-    valid_name = isinstance(value, str) and value not in ("",) and \
-        reason is None
+    valid_name = _independently_valid_zone(value)
     obs = {"config": {"zone": zone, "reason": reason}, "direct": direct,
            "rebuild": rb.get("outcome", "rebuilt")}
     if value in (None, ""):
