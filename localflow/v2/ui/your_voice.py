@@ -112,8 +112,12 @@ class YourVoicePane:
                   + json_dumps(measured.get("corrections_by_kind")),
                   "Dictionary-hit examples: "
                   f"{measured.get('dictionary_hit_examples', 0)}",
-                  "Technical terms: "
-                  + ", ".join(measured.get("technical_terms") or []),
+                  "Technical terms applied in your dictations: "
+                  + _terms(measured.get("technical_terms")),
+                  "Dictionary terms with recorded use (all dictations,"
+                  " not evidence of this speech): "
+                  + ", ".join(measured.get(
+                      "dictionary_terms_with_recorded_use") or []),
                   "Modes: " + json_dumps(measured.get("modes")),
                   "Self-corrections: "
                   + _self_corrections(measured.get("self_corrections")),
@@ -131,6 +135,15 @@ class YourVoicePane:
             lines.append(f"    evidence: "
                          f"{', '.join(card['evidence_example_ids'])}")
         self.text.setString_("\n".join(lines))
+
+
+def _terms(terms) -> str:
+    """Speech-derived terms (each with its dictation count); an older
+    snapshot's plain list of names still renders."""
+    if not terms:
+        return "—"
+    return ", ".join(f"{t['term']} ×{t['dictations']}"
+                     if isinstance(t, dict) else str(t) for t in terms)
 
 
 def _self_corrections(sc) -> str:

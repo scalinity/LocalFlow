@@ -46,11 +46,18 @@ EXAMPLE_STATES = ("captured_unreviewed", "review_candidate", "annotated",
                   "ambiguous", "quarantined_sensitive", "excluded",
                   "expired", "deleted")
 
-# Annotation payload artifacts carry their own never-expiring training
-# leases (reviewed evidence is retained until explicitly removed,
-# S29.14) — they are NOT user pins, and pin/unpin must never revoke
-# them. Both operations scope to artifacts outside these roles.
-_ANNOTATION_ROLES = ("verbatim_reference", "span_correction")
+# Reviewed-evidence payloads carry their own training leases (reviewed
+# evidence is retained until explicitly removed, S29.14) — they are NOT
+# user pins, and pin/unpin must never touch them (m14-policy-r1 D08):
+# the M09 annotations and M14's review-derived payloads (a confirmed
+# span graft; a learning candidate's observation — an explicit teach's
+# forever lease, or a machine-mined payload's finite buffer lease that a
+# pin must never make permanent). Both operations scope to artifacts
+# outside these roles; one set, so a new review writer is added here.
+_ANNOTATION_ROLES = ("verbatim_reference", "span_correction",
+                     "span_graft", "candidate_observation",
+                     "counterexample_result")
+REVIEW_RETENTION_ROLES = _ANNOTATION_ROLES
 
 # States no review may write to (the learning contract's non-reviewable
 # set): purged, content-flagged, past retention, or excluded by the
@@ -651,12 +658,20 @@ class TrainingDataService:
         edits. Counts are counts: a verified-failure tally is never
         divided into a population error rate (hard-mined samples are
         not population WER, and no mining exists until M14)."""
+        from .curation.evidence import (cleanup_qualification_in,
+                                        current_pair_judgments_in,
+                                        preference_pair_in,
+                                        transform_target_in)
+        from .curation.review import verified_asr_eligible_in
+
         def op(conn):
             by_state = {}
             for st, n in conn.execute(
                     "SELECT state, COUNT(*) FROM training_examples GROUP"
                     " BY state").fetchall():
                 by_state[st] = n
+            cleanup_tiers: dict = {}
+            verbatim_without_audio = 0
             # m13-policy-r1 D12: ONE population behind every number. The
             # outcome classes partition live + excluded examples,
             # exclusion first (an excluded example is only 'excluded');
@@ -695,14 +710,6 @@ class TrainingDataService:
             job_rows = dict(conn.execute(
                 "SELECT example_id, job_id FROM training_examples"
             ).fetchall())
-
-            def retained_text(artifact_id) -> bool:
-                if not artifact_id:
-                    return False
-                row = conn.execute(
-                    "SELECT purged FROM artifacts WHERE artifact_id=?",
-                    (artifact_id,)).fetchone()
-                return row is not None and not row[0]
 
             def bump(reasons, key):
                 reasons[key] = reasons.get(key, 0) + 1
@@ -774,19 +781,28 @@ class TrainingDataService:
                             clip = 0.0
                         audio_seconds += clip
                 if has_verbatim:
-                    if audio_ok:
+                    # M14-AUDIT-14: the export's own ASR gate (owned,
+                    # role-checked reference and audio; the effective
+                    # blocking-label policy) — one predicate, so the
+                    # count is exactly who the export would admit.
+                    gate = verified_asr_eligible_in(conn, _ex_id)
+                    if not audio_ok:
+                        verbatim_without_audio += 1
+                    if gate["eligible"]:
                         asr_eligible += 1
                         # A verbatim reference covers the whole clip
                         # (coverage "full"); partial span corrections
                         # add no reviewed seconds.
                         verbatim_seconds += clip
                     else:
-                        bump(asr_reasons, "audio_not_retained")
+                        bump(asr_reasons, gate["reason"])
                 if correctness in ("correct", "incorrect"):
-                    if retained_text(arts.get("source_text")):
+                    q = cleanup_qualification_in(conn, _ex_id, env)
+                    if q["eligible"]:
                         cleanup_eligible += 1
+                        bump(cleanup_tiers, q["tier"])
                     else:
-                        bump(cleanup_reasons, "source_text_not_retained")
+                        bump(cleanup_reasons, q["reason"])
                 source_ok = bool(arts.get("source_text")) or \
                     "source_text" in missing
                 applied_ok = bool(arts.get("applied_output")) or \
@@ -875,65 +891,81 @@ class TrainingDataService:
             # own definition — reported separately, never merged): a
             # record counts only while its exact inputs are retained;
             # records left out are counted by reason.
-            task_keys = conn.execute(
-                "SELECT COUNT(DISTINCT task_key) FROM"
-                " transform_candidates").fetchone()[0]
-            transform_ok = conn.execute(
+            # A captured-candidate tier (M13's signal), kept apart from
+            # the qualified count: a retained candidate is material for
+            # review, not a supervised target.
+            captured_tasks = conn.execute(
                 "SELECT COUNT(DISTINCT c.task_key) FROM"
                 " transform_candidates c JOIN artifacts s ON"
                 " s.artifact_id=c.source_artifact_id AND s.purged=0"
                 " JOIN artifacts o ON o.artifact_id=c.output_artifact_id"
                 " AND o.purged=0").fetchone()[0]
-            judged = conn.execute(
-                "SELECT COUNT(DISTINCT task_key) FROM"
-                " preference_observations WHERE judgment IN"
-                " ('prefer_a','prefer_b','tie','neither')").fetchone()[0]
-            pairs_ok = conn.execute(
-                "SELECT COUNT(DISTINCT p.task_key) FROM"
-                " preference_observations p JOIN transform_candidates a"
-                " ON a.candidate_id=p.candidate_id AND"
-                " a.task_key=p.task_key JOIN transform_candidates b ON"
-                " b.candidate_id=p.candidate_b_id AND"
-                " b.task_key=p.task_key JOIN artifacts sa ON"
-                " sa.artifact_id=a.source_artifact_id AND sa.purged=0"
-                " JOIN artifacts oa ON oa.artifact_id=a.output_artifact_id"
-                " AND oa.purged=0 JOIN artifacts ob ON"
-                " ob.artifact_id=b.output_artifact_id AND ob.purged=0"
-                " WHERE p.judgment IN"
-                " ('prefer_a','prefer_b','tie','neither')").fetchone()[0]
+            transform_ok = 0
+            transform_reasons: dict = {}
+            for task_key, cand in conn.execute(
+                    "SELECT task_key, candidate_id FROM"
+                    " preference_observations WHERE judgment='accept'"
+                    " AND candidate_b_id IS NULL GROUP BY task_key,"
+                    " candidate_id").fetchall():
+                q = transform_target_in(conn, task_key, cand)
+                if q["eligible"]:
+                    transform_ok += 1
+                else:
+                    bump(transform_reasons, q["reason"])
+            pairs_ok = 0
+            pair_reasons: dict = {}
+            for task_key, a, b, *_rest in current_pair_judgments_in(conn):
+                q = preference_pair_in(conn, task_key, a, b)
+                if q["eligible"]:
+                    pairs_ok += 1
+                else:
+                    bump(pair_reasons, q["reason"])
+            # M14-AUDIT-14: each count is the export's own qualified
+            # tier (the same predicates DatasetExporter selects with, over
+            # all live examples — an export narrows further only by its
+            # requested partitions); looser tiers are named separately.
             task_eligibility = {
                 "asr_supervised": {
                     "count": asr_eligible,
                     "excluded": asr_reasons,
-                    "definition": "live examples with an audio-reviewed"
-                                  " verbatim reference and their own"
-                                  " retained original audio",
+                    "definition": "live examples the ASR promotion gate"
+                                  " admits: their own audio-reviewed"
+                                  " verbatim reference and original"
+                                  " audio (job, role and digest"
+                                  " checked) and no effective blocking"
+                                  " label (m14-policy-r1 D01)",
                 },
                 "cleanup_supervised": {
                     "count": cleanup_eligible,
                     "excluded": cleanup_reasons,
+                    "tiers": cleanup_tiers,
                     "definition": "live examples with an explicit"
-                                  " intended-writing mark and their"
-                                  " exact stage input retained",
+                                  " correct intended-writing mark and"
+                                  " their own retained stage input and"
+                                  " applied output; tiers say whether"
+                                  " every model prompt is retained"
+                                  " (m14-policy-r1 D03)",
                 },
                 "transform_supervised": {
                     "count": transform_ok,
-                    "excluded": ({"candidate_payload_not_retained":
-                                  task_keys - transform_ok}
-                                 if task_keys > transform_ok else {}),
-                    "definition": "distinct transform tasks with a"
-                                  " candidate whose source and output"
-                                  " are retained (reviewed targets are"
-                                  " M14's review queue)",
+                    "excluded": transform_reasons,
+                    "captured_tasks": captured_tasks,
+                    "definition": "candidates whose current human"
+                                  " decision is an explicit accept, with"
+                                  " the exact task input, output and"
+                                  " frozen definition retained"
+                                  " (m14-policy-r1 D07);"
+                                  " captured_tasks counts tasks with a"
+                                  " retained candidate — review material,"
+                                  " not a target",
                 },
                 "preference_pairs": {
                     "count": pairs_ok,
-                    "excluded": ({"pair_not_same_task_or_not_retained":
-                                  judged - pairs_ok}
-                                 if judged > pairs_ok else {}),
-                    "definition": "distinct tasks with an explicit"
-                                  " comparable judgment between two"
-                                  " retained candidates of that task",
+                    "excluded": pair_reasons,
+                    "definition": "same-task pairs whose current"
+                                  " comparable judgment rests on the"
+                                  " task's exact retained input and both"
+                                  " retained outputs",
                 },
             }
             return {
@@ -968,6 +1000,9 @@ class TrainingDataService:
                             " design (S29.9)",
                 },
                 "readiness_definition_revision": "m13-r1",
+                # The task-eligibility predicates are the export's own
+                # (M14 remediation); the population above is M13's.
+                "task_eligibility_revision": "m14-policy-r1",
                 "readiness_metrics": {
                     "capture_completeness": {
                         "complete": complete_examples,
@@ -989,7 +1024,7 @@ class TrainingDataService:
                     },
                     "verbatim_reference_coverage": {
                         "examples": asr_eligible,
-                        "references_without_audio": verbatim - asr_eligible,
+                        "references_without_audio": verbatim_without_audio,
                         "denominator": audio_count,
                         "reviewed_seconds": round(verbatim_seconds, 1),
                         "retained_seconds": round(audio_seconds, 1),

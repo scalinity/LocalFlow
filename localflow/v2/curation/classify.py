@@ -227,6 +227,66 @@ def changed_regions(before_text: str, after_text: str) -> list[dict]:
     return regions
 
 
+def format_regions(before_text: str, after_text: str) -> list[dict]:
+    """Character-level changed spans for an edit whose WORDS are equal
+    (punctuation, spacing, line breaks): zero-based half-open code-point
+    spans into ``before_text`` with the changed characters. No word
+    changed, so no rule can ever be proposed from these."""
+    out = []
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(
+            a=before_text, b=after_text, autojunk=False).get_opcodes():
+        if tag == "equal":
+            continue
+        out.append({"start": i1, "end": i2, "before_words": [],
+                    "after_words": [], "before_chars": before_text[i1:i2],
+                    "after_chars": after_text[j1:j2]})
+    return out
+
+
+# Directional opposites (M14-AUDIT-21): a near-spelling replacement that
+# reverses a direction ("increase" → "decrease", "enable" → "disable")
+# is a meaning change until a human says otherwise — never a
+# recognition fix by edit distance. Deliberately small and conservative:
+# explicit opposite pairs plus same-stem prefix swaps; it claims no
+# general semantic understanding.
+_OPPOSITE_WORDS = frozenset(frozenset(p) for p in (
+    ("up", "down"), ("on", "off"), ("in", "out"), ("left", "right"),
+    ("min", "max"), ("minimum", "maximum"), ("more", "less"),
+    ("higher", "lower"), ("high", "low"), ("before", "after"),
+    ("start", "stop"), ("open", "close"), ("show", "hide"),
+    ("yes", "no"), ("true", "false"), ("accept", "reject"),
+    ("allow", "deny"), ("add", "remove"), ("push", "pull"),
+    ("above", "below"), ("over", "under"), ("first", "last"),
+    ("next", "previous"), ("positive", "negative"), ("buy", "sell"),
+    ("win", "lose"), ("always", "never"), ("all", "none"),
+    ("larger", "smaller"), ("faster", "slower"), ("upper", "lower")))
+_DIRECTION_PREFIXES = ("dis", "non", "un", "in", "im", "ir", "il", "de",
+                       "en", "ex", "up", "down")
+
+
+def _stem(word: str):
+    for p in _DIRECTION_PREFIXES:
+        if word.startswith(p) and len(word) - len(p) >= 3:
+            return p, word[len(p):]
+    return "", word
+
+
+def is_direction_flip(before_words: list[str], after_words: list[str]) -> bool:
+    """True when a one-word replacement swaps a direction: a listed
+    opposite pair, or the same stem (≥3 letters) behind two different
+    direction prefixes (in/de-crease, en/dis-able, im/ex-port) or a bare
+    word against its negating prefix (load/unload)."""
+    if len(before_words) != 1 or len(after_words) != 1:
+        return False
+    a, b = before_words[0].lower(), after_words[0].lower()
+    if a == b:
+        return False
+    if frozenset((a, b)) in _OPPOSITE_WORDS:
+        return True
+    (pa, sa), (pb, sb) = _stem(a), _stem(b)
+    return sa == sb and pa != pb and len(sa) >= 3
+
+
 def is_correction_shaped(regions: list[dict], before_text: str) -> bool:
     """The reliability gate: a bounded local edit, not intentional
     rewriting. Unchanged output (no regions) is NOT a candidate — an
@@ -443,6 +503,10 @@ def classify_observation(before_text: str, after_text: str, *,
                 b_days[0] in _WEEKDAYS and a_days[0] in _WEEKDAYS:
             kinds.append("changed_intent")
             continue
+        if is_direction_flip(region["before_words"],
+                             region["after_words"]):
+            kinds.append("direction_flip")
+            continue
         if _confusable(region["before_words"], region["after_words"]):
             kinds.append("recognition_error")
             continue
@@ -473,6 +537,12 @@ def classify_observation(before_text: str, after_text: str, *,
         result["abstain_reason"] = "unclassifiable_region"
     if result["edit_kind"] == "changed_intent":
         result["abstained"] = False  # decided — it is just not an ASR fix
+    elif "direction_flip" in kinds:
+        # A reversed direction outranks a recognition reading: it stays
+        # visibly unresolved until a human classifies it (never an alias).
+        result["edit_kind"] = "ambiguous"
+        result["abstained"] = True
+        result["abstain_reason"] = "direction_flip_needs_review"
     if _negation_markers(b_words) != _negation_markers(a_words):
         # A flipped negation is always critical: never silently a
         # recognition fix or style edit (a "do"→"don't" alias would

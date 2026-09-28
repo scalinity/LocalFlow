@@ -803,11 +803,25 @@ class NoteStore:
             # in a suggestion.
             revs = ("SELECT revision_id FROM note_revisions WHERE"
                     " note_id=?")
-            for (aid,) in db.execute(
-                    "SELECT after_artifact_id FROM learning_candidates"
-                    " WHERE source='note_revision' AND after_artifact_id"
+            # A candidate's counterexample result (its approval attempt's
+            # phrases, M14-AUDIT-15) goes with it.
+            doomed = [r[0] for r in db.execute(
+                "SELECT after_artifact_id FROM learning_candidates"
+                " WHERE source='note_revision' AND after_artifact_id"
+                f" IS NOT NULL AND observation_id IN ({revs})",
+                (note_id,)).fetchall()]
+            for (cj,) in db.execute(
+                    "SELECT counterexample_json FROM learning_candidates"
+                    " WHERE source='note_revision' AND counterexample_json"
                     f" IS NOT NULL AND observation_id IN ({revs})",
                     (note_id,)).fetchall():
+                try:
+                    cx = json.loads(cj)
+                except ValueError:
+                    cx = None
+                if isinstance(cx, dict) and cx.get("artifact_id"):
+                    doomed.append(cx["artifact_id"])
+            for aid in doomed:
                 db.execute(
                     "UPDATE artifact_leases SET revoked_at_utc=? WHERE"
                     " artifact_id=? AND revoked_at_utc IS NULL", (now, aid))

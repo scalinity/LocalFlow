@@ -3,8 +3,10 @@ contract profile.md).
 
 Measured views are computed from ELIGIBLE evidence only: live V2
 examples' RAW transcripts (the speech, not Qwen's cleaned output —
-S22: never learn the cleanup model's style as the user's), usage
-facts for app/time patterns, correction labels and dictionary hits.
+S22: never learn the cleanup model's style as the user's), each the
+example's OWN retained raw-transcript artifact (job, role and digest
+checked — m14-policy-r1 D11), usage facts for app/time patterns,
+correction labels and the dictionary rules applied in that speech.
 Snippet-generated spans and excluded/quarantined examples never feed
 speech statistics. Every measured number is a store fact with its
 denominator.
@@ -20,13 +22,16 @@ the honest explanation shows; a fabricated profile to fill an empty
 screen is the M14 stop condition.
 
 Deletion: a snapshot is a RECORD, never a cache — regeneration always
-recomputes from the current store. Any snapshot whose evidence died
-(delete-everywhere, expiry, exclusion from training) is invalidated and
-loses its text-bearing content — phrases and cards never outlive their
-source. User-excluded evidence links carry forward to future snapshots
-by example id. Nothing here ever feeds the dictation
-pipeline: no cleanup prompt, context or vocabulary path reads a
-profile snapshot (M14-AC04 — pinned by test).
+recomputes from the current store. Publication re-validates the exact
+inputs it read (each example's revision and raw artifact, the labels
+and exclusions — D16): a change during the read restarts the
+computation. Any snapshot whose evidence died (delete-everywhere,
+expiry, exclusion from training, a purged raw transcript) is
+invalidated and loses its text-bearing content — phrases and cards
+never outlive their source. User-excluded evidence links carry forward
+to future snapshots by example id. Nothing here ever feeds the
+dictation pipeline: no cleanup prompt, context or vocabulary path reads
+a profile snapshot (M14-AC04 — pinned by test).
 """
 
 from __future__ import annotations
@@ -37,11 +42,13 @@ import statistics
 
 from . import ids
 from .analytics import conn_usage_revision
+from .curation import evidence as ev
 from .store import TRAINABLE_STATES, Store
 
-ALGORITHM_VERSION = 1
+ALGORITHM_VERSION = 2
 DEFAULT_MIN_WORDS = 2000
 _PHRASE_TOP = 12
+_TERM_TOP = 10
 # Examples per bounded eligibility read (one short writer op each).
 _READ_CHUNK = 250
 _STOPWORDS = frozenset(
@@ -73,12 +80,24 @@ _DEAD_REASONS = {"deleted": "source_deleted", "expired": "evidence_expired",
                  "quarantined_sensitive": "evidence_quarantined"}
 
 
+def _invalidate(conn, reasons: dict) -> int:
+    for snapshot_id, reason in reasons.items():
+        conn.execute(
+            "UPDATE profile_snapshots SET invalidated_reason=CASE WHEN"
+            " state='current' THEN ? ELSE invalidated_reason END,"
+            " state='invalidated', measured_json='{}', cards_json='[]'"
+            " WHERE snapshot_id=?", (reason, snapshot_id))
+    return len(reasons)
+
+
 def _scrub_dead_evidence(conn) -> int:
     """Invalidate every snapshot — current or historical — that drew on
     an example no longer eligible (deleted, expired, excluded,
-    quarantined), clearing its text-bearing content: derived phrases
-    and cards never outlive their source (S29.14). The reason names
-    what happened to the evidence. Returns the number scrubbed."""
+    quarantined) or whose raw transcript is no longer retained (a purge
+    while the example stayed live — M14-AUDIT-03), clearing its
+    text-bearing content: derived phrases and cards never outlive their
+    source (S29.14). The reason names what happened to the evidence.
+    Returns the number scrubbed."""
     reasons: dict[str, str] = {}
     for snapshot_id, state in conn.execute(
             "SELECT pe.snapshot_id, e.state FROM profile_evidence pe"
@@ -90,19 +109,25 @@ def _scrub_dead_evidence(conn) -> int:
             " ORDER BY pe.snapshot_id, e.state", _LIVE_STATES).fetchall():
         reasons.setdefault(snapshot_id,
                            _DEAD_REASONS.get(state, "source_deleted"))
-    for snapshot_id, reason in reasons.items():
-        conn.execute(
-            "UPDATE profile_snapshots SET invalidated_reason=CASE WHEN"
-            " state='current' THEN ? ELSE invalidated_reason END,"
-            " state='invalidated', measured_json='{}', cards_json='[]'"
-            " WHERE snapshot_id=?", (reason, snapshot_id))
-    return len(reasons)
+    for (snapshot_id,) in conn.execute(
+            "SELECT DISTINCT pe.snapshot_id FROM profile_evidence pe"
+            " JOIN profile_snapshots s ON s.snapshot_id=pe.snapshot_id"
+            " JOIN training_examples e ON e.example_id=pe.example_id"
+            " JOIN training_revisions r ON r.revision_id="
+            "e.latest_revision_id"
+            " LEFT JOIN artifacts a ON a.artifact_id="
+            "json_extract(r.envelope_json, '$.artifact_ids.source_text')"
+            " WHERE (s.measured_json!='{}' OR s.state='current') AND"
+            " (a.artifact_id IS NULL OR a.purged=1)").fetchall():
+        reasons.setdefault(snapshot_id, "source_purged")
+    return _invalidate(conn, reasons)
 
 
 def _latest_labels(conn) -> dict:
     """example_id → (edit_kind, domains) of its CURRENT reviewed label —
     the latest revision; an abstained latest revision counts as no
-    label (the reviewer's current opinion is uncertainty)."""
+    label (the reviewer's current opinion is uncertainty; the shared
+    effective-judgment rule, m14-policy-r1 D01)."""
     out = {}
     for ex, kind, domains, abstained in conn.execute(
             "SELECT l.example_id, l.edit_kind, l.domains_json,"
@@ -112,6 +137,28 @@ def _latest_labels(conn) -> dict:
         if not abstained:
             out[ex] = (kind, json.loads(domains or "[]"))
     return out
+
+
+def _labels_digest(conn) -> str:
+    """Every label row's content-free axes (never transcript text): a
+    label change moves it even when the row count stays the same."""
+    rows = conn.execute(
+        "SELECT example_id, revision, edit_kind, abstained, domains_json"
+        " FROM correction_labels ORDER BY example_id, revision"
+    ).fetchall()
+    return ids.sha256_text(json.dumps(rows))
+
+
+def _exclusions_digest(conn) -> str:
+    return ids.sha256_text(json.dumps([r[0] for r in conn.execute(
+        "SELECT DISTINCT example_id FROM profile_evidence WHERE"
+        " included=0 ORDER BY example_id").fetchall()]))
+
+
+def _vocabulary_revision(conn) -> int:
+    row = conn.execute("SELECT value FROM vocabulary_meta WHERE"
+                       " key='revision'").fetchone()
+    return int(row[0]) if row else 0
 
 
 class ProfileService:
@@ -129,47 +176,45 @@ class ProfileService:
 
     def _read_candidates(self, conn, example_ids) -> list:
         """One bounded read: the live examples among ``example_ids``
-        with a retained raw transcript, as (example_id, envelope, raw
-        text, snippet_expanded)."""
+        with their OWN retained raw transcript, as (example_id, envelope,
+        raw text, snippet_expanded, raw artifact id, revision id)."""
         marks = ",".join("?" * len(example_ids))
-        states = dict(conn.execute(
-            "SELECT example_id, state FROM training_examples WHERE"
-            f" example_id IN ({marks})", example_ids).fetchall())
+        rows = {r[0]: (r[1], r[2]) for r in conn.execute(
+            "SELECT example_id, state, job_id FROM training_examples WHERE"
+            f" example_id IN ({marks})", example_ids).fetchall()}
         out = []
         for ex_id, payload in conn.execute(
                 "SELECT example_id, envelope_json FROM training_revisions"
                 " WHERE rowid IN (SELECT MAX(rowid) FROM"
                 f" training_revisions WHERE example_id IN ({marks})"
                 " GROUP BY example_id)", example_ids).fetchall():
-            if states.get(ex_id) not in _LIVE_STATES:
+            state, job_id = rows.get(ex_id, (None, None))
+            if state not in _LIVE_STATES:
                 continue
             env = json.loads(payload)
             if env.get("origin") not in (None, "live_capture"):
                 continue  # synthetic/legacy corpus material is not the
                 # user's speech
-            raw_aid = (env.get("artifact_ids") or {}).get("source_text")
-            if not raw_aid:
-                continue
-            row = conn.execute(
-                "SELECT content_text, purged FROM artifacts WHERE"
-                " artifact_id=?", (raw_aid,)).fetchone()
-            if row is None or row[1] or row[0] is None:
-                continue
+            raw = ev.qualify(conn, (env.get("artifact_ids") or {}).get(
+                "source_text"), "source_text", job_id=job_id)
+            if not raw["ok"]:
+                continue  # absent, purged, foreign or wrong-stage text
             snippets = bool(((env.get("normalization") or {})
                              .get("snippets") or {}).get("expansions"))
-            out.append((ex_id, env, row[0], snippets))
+            out.append((ex_id, env, raw["artifact"]["text"], snippets,
+                        raw["artifact"]["id"], env.get("revision_id")))
         return out
 
     def _eligible(self, labels: dict):
-        """Live examples with a retained raw transcript, minus what S22
-        says is not the user's own speech: examples whose normalization
-        expanded snippets (generated text), examples whose current
-        review label flags background speech, and verbatim repeats of
-        an earlier utterance (test phrases said over and over count
-        once). Reads in bounded chunks — each a short writer op, so a
-        dictation's store writes interleave instead of queueing behind
-        the whole history (S29.16). Returns (eligible, excluded
-        counts)."""
+        """Live examples with their own retained raw transcript, minus
+        what S22 says is not the user's own speech: examples whose
+        normalization expanded snippets (generated text), examples whose
+        current review label flags background speech, and verbatim
+        repeats of an earlier utterance (test phrases said over and over
+        count once). Reads in bounded chunks — each a short writer op,
+        so a dictation's store writes interleave instead of queueing
+        behind the whole history (S29.16). Returns (eligible, excluded
+        counts, the exact inputs read)."""
         live = self.store.submit(lambda conn: [r[0] for r in conn.execute(
             "SELECT example_id FROM training_examples WHERE state IN"
             f" ({','.join('?' * len(_LIVE_STATES))}) ORDER BY"
@@ -182,7 +227,9 @@ class ProfileService:
         excluded = {"snippet_expanded": 0, "background_speech": 0,
                     "repeated_verbatim": 0}
         kept = []
-        for ex_id, env, text, snippets in rows:
+        inputs = {}
+        for ex_id, env, text, snippets, raw_aid, rev in rows:
+            inputs[ex_id] = (raw_aid, rev)
             if snippets:
                 excluded["snippet_expanded"] += 1
             elif "background_speech" in (labels.get(ex_id)
@@ -200,13 +247,13 @@ class ProfileService:
                 continue
             seen.add(key)
             out.append((ex_id, env, text))
-        return out, excluded
+        return out, excluded, inputs
 
     def _input_signature(self, conn) -> str:
         """A cheap fingerprint of everything that can change a profile
         — revisions, example states, purges, labels, exclusions, usage,
-        vocabulary, the floor and algorithm — read from counters and
-        maxima only, never from transcript text."""
+        vocabulary, the floor and algorithm — read from counters, maxima
+        and content-free rows only, never from transcript text."""
         parts = [
             list(conn.execute(
                 "SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM"
@@ -217,15 +264,13 @@ class ProfileService:
             ).fetchall()],
             conn.execute("SELECT COUNT(*) FROM artifacts WHERE purged=1"
                          ).fetchone()[0],
-            list(conn.execute(
-                "SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM"
-                " correction_labels").fetchone()),
-            conn.execute("SELECT COUNT(*) FROM profile_evidence WHERE"
-                         " included=0").fetchone()[0],
+            _labels_digest(conn),
+            _exclusions_digest(conn),
             # M13's usage revision moves on EVERY usage mutation (a
             # retry that only changed a mode, an explicit transform, a
             # deletion) — never only on dictation totals (M13 C228/C229).
             conn_usage_revision(conn),
+            _vocabulary_revision(conn),
             list(conn.execute(
                 "SELECT COUNT(*), TOTAL(usage_count), TOTAL(revision)"
                 " FROM vocabulary_entries WHERE approved=1 AND"
@@ -244,9 +289,11 @@ class ProfileService:
     def compute(self, *, only_if_changed: bool = False) -> dict:
         """Compute a new snapshot. Evidence is read in bounded chunks
         and counted off the writer; one short write op then re-checks
-        that every evidence example is still live (a deletion during
-        the read restarts the computation — deleted speech never lands
-        in a snapshot) and records the snapshot. ``only_if_changed``
+        every input it read — each example still live at the same
+        revision with its raw transcript retained, the labels and the
+        exclusions unchanged (a change during the read restarts the
+        computation — deleted or purged speech never lands in a
+        snapshot, D16) — and records the snapshot. ``only_if_changed``
         (the idle pass) returns ``{"skipped": True, ...}`` when the
         current snapshot was computed from exactly the same evidence —
         snapshots are records, so an unchanged idle tick adds none."""
@@ -277,9 +324,10 @@ class ProfileService:
                 # Nothing that feeds the profile has changed since the
                 # current snapshot: decided without reading any text.
                 return {"skipped": True, "snapshot_id": last[0]}
+        labels_seen = self.store.submit(_labels_digest)
         labels = self.store.submit(_latest_labels)
         user_excluded = self.store.submit(self._excluded_evidence)
-        candidates, excluded = self._eligible(labels)
+        candidates, excluded, inputs = self._eligible(labels)
         eligible = [(ex, env, text) for ex, env, text in candidates
                     if ex not in user_excluded]
         excluded["user_excluded"] = len(candidates) - len(eligible)
@@ -331,10 +379,14 @@ class ProfileService:
             "definition": "eligible dictations whose cleanup detected at"
                           " least one spoken self-correction, over those"
                           " whose cleanup recorded the count"}
-        vocab_examples = sorted(
-            ex for ex, env, _t in eligible
-            if ((env.get("normalization") or {}).get("vocabulary")
-                or {}).get("applied_rule_ids"))
+        # Technical terms (D04): approved rules APPLIED in eligible
+        # speech, each citing the dictations that applied it.
+        rule_examples: dict[str, list[str]] = {}
+        for ex, env, _t in sorted(eligible, key=lambda r: r[0]):
+            for rid in sorted(set(((env.get("normalization") or {})
+                                   .get("vocabulary") or {})
+                                  .get("applied_rule_ids") or [])):
+                rule_examples.setdefault(rid, []).append(ex)
         captured = [env.get("captured_at_utc") for _e, env, _t in eligible
                     if env.get("captured_at_utc")]
         coverage = [min(captured) if captured else None,
@@ -345,24 +397,35 @@ class ProfileService:
         enough = words_total >= self.min_words and len(eligible) >= 10
 
         def write(conn):
-            live_now = {r[0] for r in conn.execute(
-                "SELECT example_id FROM training_examples WHERE state IN"
-                f" ({','.join('?' * len(_LIVE_STATES))})",
-                _LIVE_STATES).fetchall()}
-            if not eligible_ids <= live_now:
-                return {"stale": True}  # evidence died during the read
+            # The exact-input fence (D16): everything the computation
+            # read must still hold, or it restarts.
+            for ex in eligible_ids | set(inputs):
+                raw_aid, rev = inputs[ex]
+                row = conn.execute(
+                    "SELECT state, latest_revision_id, job_id FROM"
+                    " training_examples WHERE example_id=?",
+                    (ex,)).fetchone()
+                if row is None or row[0] not in _LIVE_STATES:
+                    return {"stale": True}  # evidence died during the read
+                if rev and row[1] and row[1] != rev:
+                    return {"stale": True}
+                if not ev.qualify(conn, raw_aid, "source_text",
+                                  job_id=row[2])["ok"]:
+                    return {"stale": True}
+            if _labels_digest(conn) != labels_seen or \
+                    self._excluded_evidence(conn) != user_excluded:
+                return {"stale": True}
             signature = ids.sha256_text(json.dumps({
                 "examples": sorted((ex, env.get("revision_id") or "")
                                    for ex, env, _t in eligible),
                 "user_excluded": sorted(user_excluded),
-                "labels": list(conn.execute(
-                    "SELECT COUNT(*), COALESCE(MAX(rowid), 0) FROM"
-                    " correction_labels").fetchone()),
+                "labels": labels_seen,
                 "usage": conn_usage_revision(conn),
-                "vocabulary": list(conn.execute(
-                    "SELECT COUNT(*), TOTAL(usage_count) FROM"
-                    " vocabulary_entries WHERE approved=1 AND"
-                    " enabled=1").fetchone()),
+                "vocabulary": [_vocabulary_revision(conn)] + list(
+                    conn.execute(
+                        "SELECT COUNT(*), TOTAL(usage_count) FROM"
+                        " vocabulary_entries WHERE approved=1 AND"
+                        " enabled=1").fetchone()),
                 "min_words": self.min_words,
                 "algorithm": ALGORITHM_VERSION}, sort_keys=True))
             if only_if_changed:
@@ -383,7 +446,15 @@ class ProfileService:
             hits = conn.execute(
                 "SELECT COUNT(*) FROM usage_facts WHERE"
                 " kind='dictation' AND dictionary_hits > 0").fetchone()[0]
-            dict_hit_terms = [
+            active = {r[0]: r[1] for r in conn.execute(
+                "SELECT entry_id, canonical FROM vocabulary_entries WHERE"
+                " approved=1 AND enabled=1").fetchall()}
+            used = sorted(((rid, exs) for rid, exs in rule_examples.items()
+                           if rid in active),
+                          key=lambda p: (-len(p[1]), active[p[0]]))[:_TERM_TOP]
+            technical = [{"term": active[rid], "dictations": len(exs),
+                          "example_ids": exs[:5]} for rid, exs in used]
+            recorded_use = [
                 r[0] for r in conn.execute(
                     "SELECT canonical FROM vocabulary_entries WHERE"
                     " approved=1 AND enabled=1 AND usage_count > 0"
@@ -440,7 +511,18 @@ class ProfileService:
                      "example_ids": exs[:5]} for p, exs in phrases],
                 "corrections_by_kind": label_kinds,
                 "dictionary_hit_examples": hits,
-                "technical_terms": dict_hit_terms,
+                "technical_terms": technical,
+                "technical_terms_source": "approved dictionary rules"
+                                          " applied in eligible"
+                                          " dictations (each cites"
+                                          " them)",
+                "dictionary_terms_with_recorded_use": recorded_use,
+                "dictionary_terms_source": "independent dictionary usage"
+                                           " counters over all"
+                                           " dictations — not evidence"
+                                           " of this speech; not cleared"
+                                           " by Delete Usage"
+                                           " (analytics.md)",
                 "app_usage": app_counts,
                 "hour_histogram": hours,
                 "hour_note": "local hour of each dictation (its recorded"
@@ -451,7 +533,8 @@ class ProfileService:
                 "self_corrections": self_corrections,
                 "requested_transforms": requested,
                 "sources": {
-                    "speech": "eligible live examples' raw transcripts",
+                    "speech": "eligible live examples' own raw"
+                              " transcripts",
                     "usage": "usage facts (M13) — every dictation"},
                 "min_words_threshold": self.min_words,
                 "evidence_signature": signature,
@@ -495,16 +578,18 @@ class ProfileService:
                         "evidence_example_ids": label_examples[top][:5],
                         "coverage": coverage,
                     })
-                if dict_hit_terms and vocab_examples:
+                if technical:
+                    applied = sorted({ex for _rid, exs in used
+                                      for ex in exs})
                     cards.append({
                         "card_id": "technical-vocabulary",
                         "kind": "interpretive",
                         "title": "Technical vocabulary in daily use",
-                        "statement": f"{len(dict_hit_terms)} approved"
-                                     " dictionary terms have recorded"
-                                     f" use; {len(vocab_examples)}"
-                                     " eligible dictations applied one.",
-                        "evidence_example_ids": vocab_examples[:5],
+                        "statement": f"{len(technical)} approved"
+                                     " dictionary terms were applied in"
+                                     f" {len(applied)} eligible"
+                                     " dictations.",
+                        "evidence_example_ids": applied[:5],
                         "coverage": coverage,
                     })
             now = ids.now_utc_iso()
@@ -542,11 +627,11 @@ class ProfileService:
 
     def current(self) -> dict | None:
         """The latest snapshot with its honest state. Every evidence
-        example must still be live; when one expired or was deleted the
-        snapshot is marked invalidated AND its text-bearing content
-        (phrases, cards) is cleared — derived text never outlives its
-        source (S29.14, M14-AC03). The UI shows the reason until the
-        next generation."""
+        example must still be live with its raw transcript retained;
+        when one expired, was deleted or purged the snapshot is marked
+        invalidated AND its text-bearing content (phrases, cards) is
+        cleared — derived text never outlives its source (S29.14,
+        M14-AC03). The UI shows the reason until the next generation."""
         def op(conn):
             row = conn.execute(
                 "SELECT snapshot_id, algorithm_version, computed_at_utc,"
@@ -579,9 +664,12 @@ class ProfileService:
 
     def exclude_evidence(self, snapshot_id: str, example_id: str) -> str:
         """Remove one supporting example from a snapshot's evidence
-        (S22 'edit, exclude or delete'). The snapshot invalidates —
-        cards must regenerate without it; the exclusion is durable and
-        carries into future snapshots (never silently re-included)."""
+        (S22 'edit, exclude or delete'). The exclusion is durable and
+        carries into future snapshots (never silently re-included), and
+        EVERY snapshot that still presents that example as support
+        invalidates — excluding through an older rendered snapshot also
+        retires a newer current one built from the same evidence
+        (corpus S034)."""
 
         def op(conn):
             now = ids.now_utc_iso()
@@ -594,10 +682,14 @@ class ProfileService:
                 # nothing durable would be recorded, so say so.
                 return "not_evidence"
             conn.execute(
+                "UPDATE profile_evidence SET included=0, excluded_at_utc=?"
+                " WHERE example_id=? AND included=1", (now, example_id))
+            conn.execute(
                 "UPDATE profile_snapshots SET state='invalidated',"
                 " invalidated_reason='evidence_excluded' WHERE"
-                " snapshot_id=? AND state='current'",
-                (snapshot_id,))
+                " state='current' AND snapshot_id IN (SELECT snapshot_id"
+                " FROM profile_evidence WHERE example_id=?)",
+                (example_id,))
             return "excluded"
         out = self.store.submit(op)
         if out == "not_evidence":

@@ -684,6 +684,27 @@ _MIGRATIONS[12] = [
          FROM usage_facts ORDER BY rowid DESC LIMIT 1""",
 ]
 
+# M14 remediation (decision record m14-policy-r1 D09/D12, M14-AUDIT-17):
+# ``m14_operation_receipts`` records the outcome of each repeat-sensitive
+# M14 action under its caller-supplied operation id, so a retry after an
+# unknown outcome reconciles instead of acting twice;
+# ``learning_vocabulary_deltas`` records exactly what an approval changed
+# in the dictionary (and what its undo left), so undo reverses only that
+# delta. Content-free (ids, revisions, reason codes); additive and
+# idempotent.
+_MIGRATIONS[13] = [
+    """CREATE TABLE IF NOT EXISTS m14_operation_receipts(
+         operation_id TEXT PRIMARY KEY,
+         kind TEXT NOT NULL,
+         target_id TEXT,
+         receipt_json TEXT NOT NULL,
+         created_at_utc TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS learning_vocabulary_deltas(
+         candidate_id TEXT PRIMARY KEY,
+         delta_json TEXT NOT NULL,
+         updated_at_utc TEXT NOT NULL)""",
+]
+
 # Tables whose loss at the current schema version is corruption, not a
 # torn additive migration, whenever rows that depend on them survive
 # (M02-AUDIT-18). Each maps to queries that detect such surviving
@@ -777,6 +798,35 @@ def read_managed_file(directory, name):
             return None
         finally:
             os.close(fd)
+    finally:
+        os.close(dfd)
+
+
+def open_managed_file(directory, name):
+    """A binary file object for regular file ``name`` directly inside
+    ``directory`` (the same admission as ``read_managed_file``), for
+    streaming large payloads; None when refused or unreadable. The
+    caller closes it."""
+    if not managed_name_ok(name):
+        return None
+    try:
+        dfd = _managed_dir_fd(directory)
+    except OSError:
+        return None
+    try:
+        try:
+            fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                         dir_fd=dfd)
+        except OSError:
+            return None
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                os.close(fd)
+                return None
+        except OSError:
+            os.close(fd)
+            return None
+        return os.fdopen(fd, "rb")
     finally:
         os.close(dfd)
 
@@ -1353,7 +1403,8 @@ class Store:
                     "training_memberships", "example_tags",
                     "profile_snapshots", "profile_evidence",
                     "export_manifests", "job_deletions", "purge_intents",
-                    "usage_meta"}
+                    "usage_meta", "m14_operation_receipts",
+                    "learning_vocabulary_deltas"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         expected_idx = {m.group(1) for stmts in _MIGRATIONS.values()

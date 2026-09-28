@@ -204,6 +204,13 @@ class HubController(NSObject):
         self._editor_bound = None  # example the Training editors belong to
         self._teach_key = None  # History row the teach buffer belongs to
         self._pending_annotation = None  # unknown-outcome save to reuse
+        # M14 repeat-sensitive actions (teach, approve, reject, undo,
+        # label, pair judgment, split, export): a stable operation id per
+        # (action, target, payload), reused by a retry of the SAME action
+        # after an unknown outcome so the service reconciles it instead
+        # of acting twice (M14-AUDIT-17).
+        self._pending_ops = {}
+        self._last_action_unknown = False
         # M10 editors (bound id, revision, baseline form) and adds whose
         # outcome was unknown (their pre-allocated id is reused by a
         # retry of the same form — never a duplicate rule).
@@ -970,18 +977,41 @@ class HubController(NSObject):
                                " text came from a transform, and Teach"
                                " corrects the cleaned text.")
             return
+        # Teach binds to the exact final text on screen (M14-AUDIT-11):
+        # its artifact and hash travel with the action, and a newer,
+        # purged or changed final refuses as stale in the writer.
+        shown = next((s.get("artifact") for s in ctx.get("lineage") or []
+                      if s.get("stage") == "cleaned"), None)
+        if not shown or not shown.get("present") or not shown.get("text"):
+            self._history_note("Teach refused: this dictation's cleaned"
+                               " text is no longer retained.")
+            return
+        from .. import ids
+        expected = {"expected_final_artifact_id": shown["artifact_id"],
+                    "expected_final_sha256": ids.sha256_text(
+                        shown["text"])}
+        op = self._op_id("teach", (job_id, shown["artifact_id"],
+                                   ids.sha256_text(corrected)))
+        self._last_action_unknown = False
         try:
-            out = learning.teach_correction(job_id, corrected)
+            out = learning.teach_correction(job_id, corrected,
+                                            operation_id=op, **expected)
             note = (f"candidate {out['candidate_id'][:20]}… created"
                     f" ({out['status']})"
                     + (f" — suggested: {out['suggestion']['alias']} →"
                        f" {out['suggestion']['canonical']}"
                        if out.get("suggestion") else
                        " — spans recorded for review"))
+        except TimeoutError:
+            self._last_action_unknown = True
+            note = ("teach outcome unknown: the store is busy and the"
+                    " candidate may still be created — Teach again to"
+                    " reconcile it (no duplicate is made)")
         except ValueError as e:
             note = f"teach correction refused: {e}"
         except Exception as e:
             note = f"teach correction failed: {type(e).__name__}"
+        self._op_settled("teach")
         self._history_note(note)
 
     def historyDeleteUsage_(self, sender):
@@ -2851,6 +2881,12 @@ class HubController(NSObject):
         b = _button("Reject Cand.", self, "reviewReject:",
                     NSMakeRect(692, 77, 110, 24))
         self.review_pane.addSubview_(b)
+        # The pending candidates of the RENDERED queue, by candidate id —
+        # a job-only teach (collection off) has no example row to select
+        # in Evidence and is chosen here (M14-AUDIT-18).
+        self.review_candidate_popup = NSPopUpButton.alloc().initWithFrame_(
+            NSMakeRect(576, 46, 226, 24))
+        self.review_pane.addSubview_(self.review_candidate_popup)
         # Label row: record a reviewed classification on the selected
         # example (the evidence list selection drives it).
         self.review_kind = NSPopUpButton.alloc().initWithFrame_(
@@ -3005,6 +3041,25 @@ class HubController(NSObject):
         return self._pending_annotation["annotation_id"]
 
     @objc.python_method
+    def _op_id(self, kind, key):
+        """The operation id for one logical action: the same (kind, key)
+        after an unknown outcome gets the SAME id; anything else a new
+        one."""
+        from .. import ids
+        pending = self._pending_ops.get(kind)
+        if pending is not None and pending["key"] == key:
+            return pending["id"]
+        self._pending_ops[kind] = {"key": key, "id": ids.new_id("op")}
+        return self._pending_ops[kind]["id"]
+
+    @objc.python_method
+    def _op_settled(self, kind):
+        """The action's outcome is known (done or definitely refused):
+        its id is not reused. After an unknown outcome it is kept."""
+        if not self._last_action_unknown:
+            self._pending_ops.pop(kind, None)
+
+    @objc.python_method
     def _in_background(self, work, done, key=None):
         """Run a long curation action (export, mining, generation) off
         the AppKit main thread so the Hub stays responsive;
@@ -3049,9 +3104,11 @@ class HubController(NSObject):
         tab showing, or Your Voice) instead of escaping the action
         handler. Service refusal messages are content-free ids and
         reasons, so the reason is shown with the type."""
+        self._last_action_unknown = False
         try:
             return fn(*args, **kwargs)
         except Exception as e:
+            self._last_action_unknown = isinstance(e, TimeoutError)
             view = self.training_detail
             if self.state.selected_view == "insights":
                 view = self.voice_pane.text
@@ -3307,10 +3364,12 @@ class HubController(NSObject):
 
     @objc.python_method
     def _selected_queue_row(self):
-        """The queue row an Approve/Reject acts on: the selected
-        example's row in the RENDERED queue — refused with no selection,
-        when the selection has no row, and while a newer queue is not
-        yet on screen, so nothing but the chosen row is ever acted on."""
+        """The queue row an Approve/Reject acts on: the candidate chosen
+        in the rendered candidate list (by candidate id — a job-only
+        teach has no example), else the selected example's row in the
+        RENDERED queue — refused with no selection, when the selection
+        has no row, and while a newer queue is not yet on screen, so
+        nothing but the chosen row is ever acted on."""
         view = self.state.views["models"]
         current = (view.get("data") or {}).get("queue")
         rows = self._rendered_rows.get("review_queue")
@@ -3319,11 +3378,23 @@ class HubController(NSObject):
             self.review_text.setString_(
                 "The review queue is refreshing — try again.")
             return None
+        popup = getattr(self, "review_candidate_popup", None)
+        chosen = popup.selectedItem().representedObject() \
+            if popup is not None and popup.selectedItem() is not None \
+            else None
+        if chosen:
+            row = next((r for r in rows
+                        if r.get("candidate_id") == chosen), None)
+            if row is None:
+                self.review_text.setString_(
+                    "The chosen candidate is no longer in the review"
+                    " queue, so nothing was approved or rejected.")
+            return row
         sel = view.get("selected_id")
         if not sel:
             # Only the row the user chose — never a first-row default.
             self.review_text.setString_(
-                "Select the example to approve or reject in Evidence"
+                "Choose a candidate (or select its example in Evidence)"
                 " first; nothing was approved or rejected.")
             return None
         for row in rows:
@@ -3346,9 +3417,13 @@ class HubController(NSObject):
             self.review_text.setString_(
                 "no pending candidate for the selected queue row")
             return
+        cid = row["candidate_id"]
+        op = self._op_id("approve", (cid, counter))
         out = self._training_action(
-            learning.approve, row["candidate_id"],
-            counterexamples=((counter,) if counter else ()))
+            learning.approve, cid,
+            counterexamples=((counter,) if counter else ()),
+            operation_id=op)
+        self._op_settled("approve")
         if out is None:
             return  # the refusal reason stays on screen
         if out.get("flips"):
@@ -3371,8 +3446,12 @@ class HubController(NSObject):
             self.review_text.setString_(
                 "no pending candidate for the selected queue row")
             return
-        if self._training_action(learning.reject,
-                                 row["candidate_id"]) is None:
+        cid = row["candidate_id"]
+        out = self._training_action(
+            learning.reject, cid,
+            operation_id=self._op_id("reject", cid))
+        self._op_settled("reject")
+        if out is None:
             return
         self.state.select_training_tab("review")
 
@@ -3386,27 +3465,42 @@ class HubController(NSObject):
             return
         kind = self.review_kind.titleOfSelectedItem() or "unknown"
         out = self._training_action(
-            review.record_label, ex, edit_kind=kind)
+            review.record_label, ex, edit_kind=kind,
+            operation_id=self._op_id("label", (ex, kind)))
+        self._op_settled("label")
         if out is not None:
             self.state.select_training_tab("review")
 
     def _review_pair_judgment(self, judgment):
+        """Judge EXACTLY the pair on screen (M14-AUDIT-16): the rendered
+        comparison names its task and both candidate ids in slot order;
+        a typed task key that is not the rendered one, or a pair that is
+        no longer the task's (a candidate gone), refuses — a candidate
+        added after rendering never changes which pair is judged."""
         review = self.spec.get("review_service")
         tf_store = self.spec.get("transforms_store")
-        task = (self.review_pair_task.stringValue() or "").strip()
-        if review is None or tf_store is None or not task:
+        if review is None or tf_store is None:
             return
-        pairs = self._training_action(review.preference_pairs) or []
-        pair = next((p for p in pairs if p["task_key"] == task), None)
-        if pair is None or len(pair["candidates"]) < 2:
+        pair = self._rendered.get("review_pair")
+        typed = (self.review_pair_task.stringValue() or "").strip()
+        if pair is None:
             self.review_text.setString_(
-                f"no same-task candidate pair found for {task}")
+                "No comparison is shown — refresh the review queue.")
             return
-        a, b = (pair["candidates"][0]["candidate_id"],
-                pair["candidates"][1]["candidate_id"])
-        self._training_action(
-            review.record_pair_judgment, tf_store, task, a, b, judgment)
-        self.state.select_training_tab("review")
+        if typed and typed != pair["task_key"]:
+            self.review_text.setString_(
+                "The comparison shown is for another task; showing the"
+                " typed task's pair now — judge it once it is on screen.")
+            self.state.select_training_tab("review")
+            return
+        key = (pair["task_key"], pair["a"], pair["b"], judgment)
+        out = self._training_action(
+            review.record_pair_judgment, tf_store, pair["task_key"],
+            pair["a"], pair["b"], judgment,
+            operation_id=self._op_id("pair", key))
+        self._op_settled("pair")
+        if out is not None:
+            self.state.select_training_tab("review")
 
     def reviewPairA_(self, sender):
         self._review_pair_judgment("prefer_a")
@@ -3425,16 +3519,26 @@ class HubController(NSObject):
 
     def splitsAssign_(self, sender):
         svc = self.spec.get("splits_service")
-        if svc is not None and \
-                self._training_action(svc.assign) is not None:
+        if svc is None:
+            return
+        # One click is one assignment: the id is reused only by a retry
+        # after an unknown outcome (a later click is a new assignment).
+        out = self._training_action(
+            svc.assign, operation_id=self._op_id("assign", "assign"))
+        self._op_settled("assign")
+        if out is not None:
             self.state.select_training_tab("splits")
 
     def splitsExpose_(self, sender):
         svc = self.spec.get("splits_service")
         family = (self.splits_family.stringValue() or "").strip()
-        if svc is not None and family and self._training_action(
-                svc.mark_exposed, [family],
-                "inspected_during_tuning") is not None:
+        if svc is None or not family:
+            return
+        out = self._training_action(
+            svc.mark_exposed, [family], "inspected_during_tuning",
+            operation_id=self._op_id("expose", family))
+        self._op_settled("expose")
+        if out is not None:
             self.state.select_training_tab("splits")
 
     def exportRun_(self, sender):
@@ -3450,14 +3554,25 @@ class HubController(NSObject):
                 " directory")
             return
         self.export_text.setString_("exporting…")
+        # The export id is the operation id: a retry of the same export
+        # after an unknown outcome returns the recorded result instead
+        # of building a second dataset (M14-AUDIT-17).
+        export_id = self._op_id("export", (dest, tuple(sorted(views))))
 
         def done(out, err, current):
             # An older export finishing after a newer one started keeps
             # its own record (export history) but never takes over the
             # current status (M09-AUDIT-21).
+            self._last_action_unknown = isinstance(err, TimeoutError)
+            self._op_settled("export")
             if not current:
                 return
-            if err is not None:
+            if isinstance(err, TimeoutError):
+                msg = ("export outcome unknown: the store is busy and the"
+                       " export may still complete — Export again with"
+                       " the same destination to reconcile it (no second"
+                       " dataset is built)")
+            elif err is not None:
                 # The refusal reason stays on screen (no reload over it).
                 msg = f"action failed: {type(err).__name__}: {err}"
             else:
@@ -3473,7 +3588,8 @@ class HubController(NSObject):
             else:
                 self._action_notes["export"] = msg
         self._in_background(
-            lambda: svc.build(dest, task_views=views), done, key="export")
+            lambda: svc.build(dest, task_views=views, export_id=export_id),
+            done, key="export")
 
     def exportValidate_(self, sender):
         from ..curation.export import validate_dataset
@@ -3630,7 +3746,9 @@ class HubController(NSObject):
                 + (f"  suggest: {sug['alias']} → {sug['canonical']}"
                    if sug else "")
                 + ("  [labeled]" if row.get("labeled") else ""))
+        self._refresh_candidate_popup(queue)
         pairs = data.get("preference_pairs") or []
+        self._rendered["review_pair"] = None
         if pairs:
             lines.append("\n— same-task candidate pairs —")
             for pair in pairs[:20]:
@@ -3638,7 +3756,64 @@ class HubController(NSObject):
                     f"{pair['task_key'][:20]}… candidates"
                     f" {len(pair['candidates'])} · judgment: "
                     f"{pair.get('comparable_judgment') or 'unreviewed'}")
+            lines += self._render_comparison(pairs)
         self.review_text.setString_("\n".join(lines))
+
+    @objc.python_method
+    def _render_comparison(self, pairs):
+        """The one pair the judgment buttons act on (M14-AUDIT-16): the
+        typed task's pair, else the first — its shared source and both
+        candidate outputs in display order, with their ids. A pair whose
+        texts are not retained is not offered for judgment."""
+        typed = (self.review_pair_task.stringValue() or "").strip()
+        pair = next((p for p in pairs if p["task_key"] == typed), None) \
+            if typed else None
+        pair = pair or pairs[0]
+        cands = [c for c in pair["candidates"] if c.get("text") is not None]
+        if pair.get("source_text") is None or len(cands) < 2:
+            return ["\n— compare —",
+                    f"task {pair['task_key'][:20]}…: the source or a"
+                    " candidate's text is no longer retained — not"
+                    " offered for judgment"]
+        a, b = cands[0], cands[1]
+        self._rendered["review_pair"] = {"task_key": pair["task_key"],
+                                         "a": a["candidate_id"],
+                                         "b": b["candidate_id"]}
+        return ["\n— compare (the pair buttons judge exactly this) —",
+                f"task {pair['task_key']}",
+                f"source: {pair['source_text']}",
+                f"A [{a['candidate_id']} · order {a['display_order']}]:"
+                f" {a['text']}",
+                f"B [{b['candidate_id']} · order {b['display_order']}]:"
+                f" {b['text']}"]
+
+    @objc.python_method
+    def _refresh_candidate_popup(self, queue):
+        popup = getattr(self, "review_candidate_popup", None)
+        if popup is None:
+            return
+        keep = popup.selectedItem().representedObject() \
+            if popup.selectedItem() is not None else None
+        popup.removeAllItems()
+        menu = popup.menu()
+        menu.addItemWithTitle_action_keyEquivalent_(
+            "Choose a candidate…", None, "")
+        menu.itemAtIndex_(0).setRepresentedObject_(None)
+        index = 0
+        for row in queue:
+            cid = row.get("candidate_id")
+            if not cid:
+                continue
+            sug = row.get("suggestion")
+            title = (f"{(row.get('example_id') or row.get('job_id'))[:14]}"
+                     f"… " + (f"{sug['alias']} → {sug['canonical']}"
+                              if sug else "spans"))
+            item = menu.addItemWithTitle_action_keyEquivalent_(
+                title, None, "")
+            item.setRepresentedObject_(cid)
+            if cid == keep:
+                index = menu.numberOfItems() - 1
+        popup.selectItemAtIndex_(index)
 
     @objc.python_method
     def _refresh_splits_pane(self, data):

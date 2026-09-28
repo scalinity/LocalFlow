@@ -47,6 +47,38 @@ _JUDGMENTS = ("accept", "reject", "undo", "prefer_a", "prefer_b",
               "tie", "neither", "uncertain")
 
 
+def conn_record_observation(db, *, task_key, candidate_id, judgment,
+                            candidate_b_id=None, provenance="user_action",
+                            reason_code=None, source_event_id=None) -> str:
+    """The one preference-observation insert, INSIDE a writer op: the
+    same-task invariant is enforced here — both candidates must carry
+    exactly this task key, or the judgment refuses (M11-AC05). M14's
+    pair review composes it with its own checks in one op."""
+    if judgment not in _JUDGMENTS:
+        raise ValueError(f"unknown judgment: {judgment}")
+    keys = [r[0] for r in db.execute(
+        "SELECT task_key FROM transform_candidates WHERE"
+        " candidate_id IN (?, ?)", (candidate_id,
+                                    candidate_b_id)).fetchall()]
+    if task_key not in keys or len(keys) != (
+            2 if candidate_b_id else 1) \
+            or any(k != task_key for k in keys):
+        raise ValueError(
+            "preference observation refused: candidates do not"
+            " share the task key (a different source or"
+            " instruction set is a different task, S29.10)")
+    observation_id = ids.new_id("pref")
+    db.execute(
+        "INSERT INTO preference_observations(observation_id,"
+        " task_key, candidate_id, candidate_b_id, judgment,"
+        " provenance, reason_code, source_event_id,"
+        " created_at_utc) VALUES(?,?,?,?,?,?,?,?,?)",
+        (observation_id, task_key, candidate_id, candidate_b_id,
+         judgment, provenance, reason_code, source_event_id,
+         ids.now_utc_iso()))
+    return observation_id
+
+
 def _row_to_def(row) -> tf.TransformDefinition:
     d = dict(zip(_COLS, row))
     return tf.TransformDefinition(
@@ -500,27 +532,11 @@ class TransformStore:
             raise ValueError(f"unknown judgment: {judgment}")
 
         def op(db):
-            keys = [r[0] for r in db.execute(
-                "SELECT task_key FROM transform_candidates WHERE"
-                " candidate_id IN (?, ?)", (candidate_id,
-                                            candidate_b_id)).fetchall()]
-            if task_key not in keys or len(keys) != (
-                    2 if candidate_b_id else 1) \
-                    or any(k != task_key for k in keys):
-                raise ValueError(
-                    "preference observation refused: candidates do not"
-                    " share the task key (a different source or"
-                    " instruction set is a different task, S29.10)")
-            observation_id = ids.new_id("pref")
-            db.execute(
-                "INSERT INTO preference_observations(observation_id,"
-                " task_key, candidate_id, candidate_b_id, judgment,"
-                " provenance, reason_code, source_event_id,"
-                " created_at_utc) VALUES(?,?,?,?,?,?,?,?,?)",
-                (observation_id, task_key, candidate_id, candidate_b_id,
-                 judgment, provenance, reason_code, source_event_id,
-                 ids.now_utc_iso()))
-            return observation_id
+            return conn_record_observation(
+                db, task_key=task_key, candidate_id=candidate_id,
+                judgment=judgment, candidate_b_id=candidate_b_id,
+                provenance=provenance, reason_code=reason_code,
+                source_event_id=source_event_id)
         return self.store.submit(op)
 
     def candidates_for_task(self, task_key: str) -> list[dict]:

@@ -87,12 +87,23 @@ class SplitService:
     # ---- assignment ----------------------------------------------------------
 
     def assign(self, *, policy: str = DEFAULT_POLICY,
-               seed: str = DEFAULT_SEED) -> dict:
+               seed: str = DEFAULT_SEED,
+               operation_id: str | None = None) -> dict:
         """Mint a NEW assignment version over the current live
         families. Reassigning with the same policy+seed reproduces the
         same family→partition map (deterministic); the version row
-        still advances because membership may have grown."""
+        still advances because membership may have grown. A repeat of a
+        completed ``operation_id`` (a retry after an unknown outcome)
+        returns its receipt and mints nothing (M14-AUDIT-17)."""
+        from . import evidence as ev
+
         def op(conn):
+            try:
+                done = ev.receipt_in(conn, operation_id, "split_assign")
+            except ev.OperationReused as e:
+                return {"refused": str(e)}
+            if done is not None:
+                return done
             examples = self._live_examples(conn)
             families = sorted({fam for _ex, fam, _env in examples
                                if fam})
@@ -131,11 +142,15 @@ class SplitService:
                 assigned[partition] += 1
             reason = None if partitions else (
                 f"insufficient_families:{len(families)}<{MIN_FAMILIES}")
-            return {"assignment_version": version, "policy": policy,
-                    "seed": seed, "families": len(families),
-                    "examples": len(examples), "assigned": assigned,
-                    "unassigned_reason": reason}
+            return ev.record_receipt_in(
+                conn, operation_id, "split_assign", str(version),
+                {"assignment_version": version, "policy": policy,
+                 "seed": seed, "families": len(families),
+                 "examples": len(examples), "assigned": assigned,
+                 "unassigned_reason": reason})
         out = self.store.submit(op)
+        if out.get("refused"):
+            raise ValueError(out["refused"])
         self.emit("splits.assigned", level="INFO",
                   reason_code=out["policy"],
                   detail=f"v{out['assignment_version']}"
@@ -155,17 +170,26 @@ class SplitService:
 
     # ---- exposure -------------------------------------------------------------
 
-    def mark_exposed(self, family_ids, reason: str) -> dict:
+    def mark_exposed(self, family_ids, reason: str, *,
+                     operation_id: str | None = None) -> dict:
         """An inspected held-out family used for tuning: it leaves the
         blind holdout in a NEW assignment version (partition 'train',
         exposed=1, the reason recorded) and its examples carry the
         'regression' tag. The previous version's rows are untouched —
-        old manifests keep describing what they actually were."""
+        old manifests keep describing what they actually were. A repeat
+        of a completed ``operation_id`` returns its receipt."""
+        from . import evidence as ev
         families = sorted(set(family_ids))
         if not families:
             raise ValueError("family_ids_required")
 
         def op(conn):
+            try:
+                done = ev.receipt_in(conn, operation_id, "split_expose")
+            except ev.OperationReused as e:
+                return {"refused": str(e)}
+            if done is not None:
+                return done
             prev = conn.execute(
                 "SELECT COALESCE(MAX(assignment_version), 0) FROM"
                 " split_assignments").fetchone()[0]
@@ -214,9 +238,11 @@ class SplitService:
                         " VALUES(?,?,?,?,?,?,?)",
                         (ex_id, fam, version, partition, exposed,
                          prev_reason, now))
-            return {"assignment_version": version,
-                    "families_exposed": len(families),
-                    "examples_moved": moved}
+            return ev.record_receipt_in(
+                conn, operation_id, "split_expose", str(version),
+                {"assignment_version": version,
+                 "families_exposed": len(families),
+                 "examples_moved": moved})
         out = self.store.submit(op)
         if out.get("refused"):
             # Raised after the op: an in-op raise surfaces wrapped as a

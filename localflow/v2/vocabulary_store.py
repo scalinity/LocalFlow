@@ -177,6 +177,34 @@ def _inherit_migrated(db) -> bool:
                       (_INHERIT_KEY,)).fetchone() is not None
 
 
+def _new_entry(canonical, aliases=(), *, language=None, kind="term",
+               matching_mode="phrase", scope_kind="global",
+               scope_value=None, priority=0, pinned=False, origin="user",
+               enabled=True, approved=False, verification=None,
+               entry_id=None) -> vocab.VocabularyEntry:
+    """A validated new entry (strict primitives, canonical scope value) —
+    the one construction ``add_entry`` and ``add_entry_in`` share."""
+    canonical = vocab._validate_canonical(canonical)
+    alias_records = _normalize_alias_items(aliases)
+    for name, value in (("pinned", pinned), ("enabled", enabled),
+                        ("approved", approved)):
+        vocab.require_bool(name, value)
+    vocab.require_int("priority", priority)
+    vocab.require_opt_str("language", language)
+    vocab.require_opt_str("scope_value", scope_value)
+    vocab.require_opt_str("entry_id", entry_id)
+    if verification is None:
+        verification = ("explicit" if approved else "suggested")
+    return vocab.VocabularyEntry(
+        entry_id=entry_id or ids.new_id("vocab"), canonical=canonical,
+        language=language, kind=kind, matching_mode=matching_mode,
+        scope_kind=scope_kind, scope_value=scope_value,
+        priority=priority, pinned=pinned, origin=origin,
+        enabled=enabled, approved=approved, verification=verification,
+        aliases=tuple(vocab.Alias(t, f, lang)
+                      for t, f, lang in alias_records))
+
+
 class VocabularyStore:
     """Dictionary persistence over the single-writer Store."""
 
@@ -225,21 +253,82 @@ class VocabularyStore:
         return self.store.submit(op) or 0
 
     def entries(self) -> list[vocab.VocabularyEntry]:
-        def op(db):
-            rows = db.execute(
-                f"SELECT {', '.join(_ENTRY_COLS)} FROM vocabulary_entries"
-                f" ORDER BY canonical COLLATE NOCASE, entry_id"
-            ).fetchall()
-            alias_rows = db.execute(
-                "SELECT entry_id, alias, approved, language"
-                " FROM vocabulary_aliases ORDER BY alias COLLATE NOCASE, alias"
-            ).fetchall()
-            by_entry: dict[str, list] = {}
-            for r in alias_rows:
-                by_entry.setdefault(r[0], []).append((r[1], r[2], r[3]))
-            return [_row_to_entry(row, by_entry.get(row[0], ()))
-                    for row in rows]
-        return self.store.submit(op)
+        return self.store.submit(self.entries_in)
+
+    # ---- composable (inside a caller's writer op) ------------------------
+    # The same validated M05 operations, taking the caller's connection
+    # instead of submitting their own op (a nested submit would deadlock
+    # the single writer). M14 approval/undo (m14-policy-r1 D12) composes
+    # its check → plan → effect → mark sequence into ONE writer op with
+    # these, so nothing can commit between the plan and the effect.
+    # Statuses come back as values (never raised inside the op).
+
+    def entries_in(self, db) -> list[vocab.VocabularyEntry]:
+        rows = db.execute(
+            f"SELECT {', '.join(_ENTRY_COLS)} FROM vocabulary_entries"
+            f" ORDER BY canonical COLLATE NOCASE, entry_id"
+        ).fetchall()
+        alias_rows = db.execute(
+            "SELECT entry_id, alias, approved, language"
+            " FROM vocabulary_aliases ORDER BY alias COLLATE NOCASE, alias"
+        ).fetchall()
+        by_entry: dict[str, list] = {}
+        for r in alias_rows:
+            by_entry.setdefault(r[0], []).append((r[1], r[2], r[3]))
+        return [_row_to_entry(row, by_entry.get(row[0], ()))
+                for row in rows]
+
+    def entry_in(self, db, entry_id) -> Optional[vocab.VocabularyEntry]:
+        return _read_entry(db, entry_id)
+
+    def revision_in(self, db) -> int:
+        row = db.execute("SELECT value FROM vocabulary_meta WHERE"
+                         " key='revision'").fetchone()
+        return int(row[0]) if row else 0
+
+    def find_in(self, db, canonical, scope_kind, scope_value):
+        """The entry id holding this identity under M05's own comparison
+        (NOCASE canonical, canonical scope value — review Q5), or None."""
+        value = None if scope_kind == "global" or scope_value is None \
+            else vocab.canonical_scope_value(scope_kind, scope_value)
+        return _find_identity(db, canonical, scope_kind, value)
+
+    def add_entry_in(self, db, canonical, aliases=(), **kw):
+        """``("ok", entry_id)`` or ``(status, None)`` — duplicate,
+        duplicate_id or invalid (validation failed)."""
+        try:
+            entry = _new_entry(canonical, aliases, **kw)
+        except (ValueError, TypeError) as e:
+            return ("invalid", str(e)[:80])
+        if _find_identity(db, entry.canonical, entry.scope_kind,
+                          entry.scope_value):
+            return ("duplicate", None)
+        if db.execute("SELECT 1 FROM vocabulary_entries WHERE entry_id=?",
+                      (entry.entry_id,)).fetchone():
+            return ("duplicate_id", None)
+        self._insert(db, entry, ids.now_utc_iso())
+        return ("ok", entry.entry_id)
+
+    def update_entry_in(self, db, entry_id, *, expected_revision=None,
+                        **changes):
+        """``(status, detail, entry)`` exactly as ``update_entry``'s op
+        decides it, against the authoritative row read here."""
+        try:
+            fields = self._validated_fields(changes)
+        except (ValueError, TypeError) as e:
+            return ("invalid", str(e)[:80], None)
+        cur = _read_entry(db, entry_id)
+        if cur is None:
+            return ("missing", None, None)
+        if expected_revision is not None \
+                and cur.revision != expected_revision:
+            return ("stale", cur.revision, None)
+        if not fields:
+            return ("ok", None, cur)
+        status, detail = self._apply_update(db, cur, fields,
+                                            ids.now_utc_iso())
+        return (status, detail, _read_entry(db, entry_id)
+                if status == "ok" else None)
 
     def entry(self, entry_id: str) -> Optional[vocab.VocabularyEntry]:
         return self.store.submit(lambda db: _read_entry(db, entry_id))
@@ -448,26 +537,13 @@ class VocabularyStore:
                   enabled: bool = True, approved: bool = False,
                   verification: str | None = None,
                   entry_id: str | None = None) -> str:
-        canonical = vocab._validate_canonical(canonical)
-        alias_records = _normalize_alias_items(aliases)
-        for name, value in (("pinned", pinned), ("enabled", enabled),
-                            ("approved", approved)):
-            vocab.require_bool(name, value)
-        vocab.require_int("priority", priority)
-        vocab.require_opt_str("language", language)
-        vocab.require_opt_str("scope_value", scope_value)
-        vocab.require_opt_str("entry_id", entry_id)
-        if verification is None:
-            verification = ("explicit" if approved else "suggested")
-        # Construct once for validation before touching the database.
-        entry = vocab.VocabularyEntry(
-            entry_id=entry_id or ids.new_id("vocab"), canonical=canonical,
-            language=language, kind=kind, matching_mode=matching_mode,
-            scope_kind=scope_kind, scope_value=scope_value,
-            priority=priority, pinned=pinned, origin=origin,
-            enabled=enabled, approved=approved, verification=verification,
-            aliases=tuple(vocab.Alias(t, f, lang)
-                          for t, f, lang in alias_records))
+        entry = _new_entry(canonical, aliases, language=language, kind=kind,
+                           matching_mode=matching_mode,
+                           scope_kind=scope_kind, scope_value=scope_value,
+                           priority=priority, pinned=pinned, origin=origin,
+                           enabled=enabled, approved=approved,
+                           verification=verification, entry_id=entry_id)
+        canonical = entry.canonical
         # Duplicate probe BEFORE the writer keeps the common rejection
         # cheap; the in-op check below is the authoritative one (two
         # concurrent adds that both passed the probe resolve there, as

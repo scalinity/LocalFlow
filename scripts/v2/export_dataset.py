@@ -30,8 +30,9 @@ def main() -> int:
                                        "preference_pairs")
     ap.add_argument("--partitions", default="train,validation,"
                                             "frozen_test")
-    ap.add_argument("--db", default=pathlib.Path.home()
-                      / "Library/Application Support/LocalFlow/v2.db")
+    ap.add_argument("--db", type=pathlib.Path,
+                    default=pathlib.Path.home()
+                    / "Library/Application Support/LocalFlow/v2.db")
     args = ap.parse_args()
     views = [v.strip() for v in args.views.split(",") if v.strip()]
     partitions = tuple(p.strip() for p in args.partitions.split(",")
