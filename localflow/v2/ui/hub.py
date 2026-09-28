@@ -1104,7 +1104,11 @@ class HubController(NSObject):
                     " as-is (lossless by contract), so this was a copy",
                 "move_failed_note_copied":
                     "the note was created but the History deletion"
-                    " failed — row kept",
+                    " failed — row kept (Move again reuses the note)",
+                "source_deletion_unknown":
+                    "the note was created; deleting the History row is"
+                    " pending (the store has not answered yet) — Move"
+                    " again to finish it (no second note is made)",
                 "create_unknown":
                     "saving the note is pending (the store has not"
                     " answered yet); the row was kept",

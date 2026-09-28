@@ -488,6 +488,11 @@ class AppDelegate(NSObject):
         # failure degrades to the Scratchpad view reporting
         # notes_unavailable — dictation never depends on it.
         self._notes_store = None
+        # Transfers into the Scratchpad whose outcome is not known yet
+        # (xm-policy-r1 D09/D10): the note id a repeat of the SAME save
+        # reconciles instead of creating a second note.
+        self._tf_pending_saves = {}
+        self._history_transfers = {}
         try:
             self._notes_store = v2_notes.NoteStore(
                 self.store,
@@ -2041,19 +2046,39 @@ class AppDelegate(NSObject):
                             reason_code="scratchpad_off")
             return
         job = result.job
+        # One logical Save of this result (its task and exact output)
+        # keeps one note id until the outcome is known: a repeat after an
+        # admitted-but-unanswered create reads the note back instead of
+        # creating a second one (xm-policy-r1 D09, MERGED-X09).
+        key = (job.task_key() if job is not None else None,
+               v2.ids.sha256_text(result.output))
+        note_id = self._tf_pending_saves.get(key) or v2.ids.new_id("note")
+        self._tf_pending_saves[key] = note_id
         try:
-            out = self._notes_store.create_note(
-                result.output, origin=v2_notes.ORIGIN_TRANSFORM,
-                source_job_id=job.parent_job_id if job is not None else None,
-                task_key=job.task_key() if job is not None else None,
-                transform_id=job.transform_id if job is not None else None,
-                transform_revision=(job.transform_revision
-                                    if job is not None else None),
-                title=defn.name)
+            if self._notes_store.open_note(note_id) is not None:
+                out = {"note_id": note_id}  # the earlier save committed
+            else:
+                out = self._notes_store.create_note(
+                    result.output, origin=v2_notes.ORIGIN_TRANSFORM,
+                    source_job_id=(job.parent_job_id if job is not None
+                                   else None),
+                    task_key=job.task_key() if job is not None else None,
+                    transform_id=(job.transform_id if job is not None
+                                  else None),
+                    transform_revision=(job.transform_revision
+                                        if job is not None else None),
+                    title=defn.name, note_id=note_id)
         except Exception as e:
+            if v2_notes.failure_kind(e) == "unknown":
+                self.v2log.emit("notes.note_create_unknown",
+                                level="WARNING",
+                                reason_code=type(e).__name__)
+                return
+            self._tf_pending_saves.pop(key, None)
             self.v2log.emit("notes.note_create_failed", level="WARNING",
                             reason_code=type(e).__name__)
             return
+        self._tf_pending_saves.pop(key, None)
         self.v2log.emit(
             "notes.note_created", level="INFO",
             detail=f"note={out['note_id']} origin=transform"
@@ -2124,6 +2149,11 @@ class AppDelegate(NSObject):
         # earlier one. ``expected_sha256`` binds the transfer to the text
         # the user saw — a row that changed since is refused.
         from .v2 import history_queries
+        # A transfer whose earlier outcome is not known yet keeps its
+        # destination note id (and, for a Move, its deletion phase): a
+        # repeat reconciles that note and settles only what is left —
+        # never a second note (xm-policy-r1 D10, MERGED-X10).
+        pending = self._history_transfers.get((kind, row_id))
         hq = history_queries.HistoryQueryService(self.store)
         if kind == "job":
             detail = hq.job_detail(row_id)
@@ -2132,6 +2162,10 @@ class AppDelegate(NSObject):
         else:
             detail = hq.legacy_detail(row_id)
         if detail is None:
+            if pending and move and pending.get("phase") == "delete":
+                # The Move's own admitted deletion has committed since.
+                self._history_transfers.pop((kind, row_id), None)
+                return {"outcome": "moved", "note_id": pending["note_id"]}
             return {"outcome": "no_retained_text"}
         text = history_queries.final_text(detail)
         if not text:
@@ -2149,11 +2183,19 @@ class AppDelegate(NSObject):
             origin = v2_notes.ORIGIN_TRANSFORM
         else:
             origin = v2_notes.ORIGIN_DICTATED
-        note_id = v2.ids.new_id("note")
+        if pending and pending.get("sha256") != v2.ids.sha256_text(text):
+            pending = None  # a different final: a different transfer
+        note_id = pending["note_id"] if pending else v2.ids.new_id("note")
+        self._history_transfers[(kind, row_id)] = {
+            "note_id": note_id, "phase": "create",
+            "sha256": v2.ids.sha256_text(text)}
         try:
-            out = self._notes_store.create_note(
-                text, origin=origin, source_job_id=source_job,
-                note_id=note_id)
+            if pending and self._notes_store.open_note(note_id) is not None:
+                out = {"note_id": note_id}  # the earlier create committed
+            else:
+                out = self._notes_store.create_note(
+                    text, origin=origin, source_job_id=source_job,
+                    note_id=note_id)
         except Exception as e:
             if v2_notes.failure_kind(e) == "unknown":
                 # Admitted, unanswered: the note may still appear. A
@@ -2162,20 +2204,32 @@ class AppDelegate(NSObject):
                                 level="WARNING",
                                 reason_code=type(e).__name__)
                 return {"outcome": "create_unknown", "note_id": note_id}
+            self._history_transfers.pop((kind, row_id), None)
             self.v2log.emit("notes.note_create_failed", level="WARNING",
                             reason_code=type(e).__name__)
             return {"outcome": "create_failed"}
         outcome = "copied"
+        self._history_transfers.pop((kind, row_id), None)
         if move:
             if kind == "job":
+                # The destination note is durable; the deletion phase is
+                # kept until its outcome is known.
+                self._history_transfers[(kind, row_id)] = {
+                    "note_id": note_id, "phase": "delete",
+                    "sha256": v2.ids.sha256_text(text)}
                 try:
                     self.store.delete_everywhere(
                         "job", row_id, reason="moved_to_scratchpad")
                     outcome = "moved"
+                    self._history_transfers.pop((kind, row_id), None)
                 except Exception as e:
                     self.v2log.emit("notes.move_failed", level="WARNING",
                                     reason_code=type(e).__name__)
-                    outcome = "move_failed_note_copied"
+                    # Admitted, unanswered: the deletion may still
+                    # commit — never reported as failed.
+                    outcome = ("source_deletion_unknown"
+                               if isinstance(e, TimeoutError)
+                               else "move_failed_note_copied")
             else:
                 outcome = "move_degrades_to_copy_legacy"
         self.v2log.emit("notes.note_created", level="INFO",
