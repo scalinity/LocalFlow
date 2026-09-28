@@ -204,16 +204,18 @@ class HistoryQueryService:
             clauses.append("0")
         where = f" WHERE {' AND '.join(clauses)}"
         sql = ("SELECT j.job_id, j.captured_at_utc, j.time_quality, j.state,"
-               " j.state_reason, t.app_name, t.app_bundle FROM jobs j LEFT"
+               " j.state_reason, t.app_name, t.app_bundle, j.attempt FROM"
+               " jobs j LEFT"
                f" JOIN job_targets t ON t.job_id = j.job_id{where}"
                f" ORDER BY {_JOB_INSTANT} IS NULL, {_JOB_INSTANT} DESC,"
                " j.job_id LIMIT ?")
         job_rows = conn.execute(sql, [*params, sql_limit]).fetchall()
         manifests = self._manifests(conn, [r[0] for r in job_rows])
-        for (job_id, captured, tq, state, reason, app_name, app_bundle) \
-                in job_rows:
+        for (job_id, captured, tq, state, reason, app_name, app_bundle,
+             attempt) in job_rows:
             arts, _info = self._job_artifacts(conn, job_id,
-                                              manifests.get(job_id))
+                                              manifests.get(job_id),
+                                              attempt)
             raw = arts.get("raw_transcript")
             applied = arts.get("applied_output")
             instant = parse_instant(captured)
@@ -340,8 +342,19 @@ class HistoryQueryService:
                     continue
         return out
 
-    def _job_artifacts(self, conn, job_id, manifest=None):
-        """({role: entry}, info) for the job's CURRENT attempt."""
+    def _job_artifacts(self, conn, job_id, manifest=None,
+                       current_attempt=None):
+        """({role: entry}, info) for the job's CURRENT attempt — the job
+        row's ``current_attempt``. A training manifest speaks for the job
+        only when it records that attempt: a retry that ran without
+        collection leaves an older attempt's manifest behind, and its
+        stages are then the current attempt's own tagged History
+        artifacts, or absent (xm-policy-r1 D06, MERGED-X06)."""
+        superseded = manifest is not None and current_attempt is not None \
+            and isinstance(manifest.get("attempt"), int) \
+            and manifest["attempt"] != current_attempt
+        if superseded:
+            manifest = None
         entries = {}
         order = []
         for (aid, role, stage, purged, content, meta_json, cpath,
@@ -390,6 +403,13 @@ class HistoryQueryService:
             tagged = [e["_attempt"] for e in order
                       if isinstance(e["_attempt"], int)]
             current = max(tagged) if tagged else None
+            if current_attempt is not None and (
+                    superseded or (current is not None
+                                   and current_attempt > current)):
+                # The current attempt's own stages only: what it left no
+                # stage for is absent — never an older attempt's text
+                # (the superseded manifest's untagged evidence included).
+                current = current_attempt
             chosen = {}
             seen = {}
             for e in order:
@@ -461,7 +481,8 @@ class HistoryQueryService:
                 " job_id=?", (job_id,)).fetchone()
             detail["app"] = (tgt[0] or tgt[1]) if tgt else None
             manifest = self._manifests(conn, [job_id]).get(job_id)
-            arts, info = self._job_artifacts(conn, job_id, manifest)
+            arts, info = self._job_artifacts(conn, job_id, manifest,
+                                             detail.get("attempt"))
             raw = arts.get("raw_transcript")
             normalized = arts.get("normalized_text")
             applied = arts.get("applied_output") or arts.get(

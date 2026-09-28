@@ -357,6 +357,25 @@ def x06_history_resolves_the_current_attempt_after_collection_off_retry():
                    " n.current_revision_id WHERE n.note_id=?",
                    (out["note_id"],))[0]
         assert note == expected, (note, expected)
+        # Teach admission against the rendered current final (the Hub
+        # passes the artifact it showed).
+        cleaned = next(s for s in detail["lineage"]
+                       if s["stage"] == "cleaned")["artifact"]
+        fixed = expected.replace("WORDS", "WORLDS")
+        try:
+            got = h.d._learning.teach_correction(
+                job, fixed,
+                expected_final_artifact_id=cleaned["artifact_id"])
+            refusal = None
+        except ValueError as e:
+            got, refusal = None, str(e)
+        assert refusal not in ("stale_final", "no_retained_final_text"), (
+            f"Teach refused the rendered current final: {refusal}")
+        if got:
+            ex = one(store, "SELECT example_id FROM learning_candidates"
+                     " WHERE candidate_id=?", (got["candidate_id"],))[0]
+            assert ex is None or envelope(store, ex).get("attempt") == 2, \
+                "the teach was bound to attempt 1's evidence"
     finally:
         h.close()
 

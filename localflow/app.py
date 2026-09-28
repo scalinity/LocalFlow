@@ -5988,7 +5988,14 @@ class AppDelegate(NSObject):
             # A deleted job's words never leave again (review R5).
             self._drop_recovery_item(self._last_failed.get("job_id"))
             return
-        copy_text(self._last_failed["raw"])
+        # The same clipboard authority as every other in-app copy: a
+        # payload an insertion still owns is never replaced
+        # (xm-policy-r1 D02, MERGED-X02).
+        if not self._guarded_copy(self._last_failed["raw"]):
+            self.v2log.emit("dictation.raw_copy_refused", level="INFO",
+                            job_id=self._last_failed.get("job_id"),
+                            reason_code="clipboard_payload_pending")
+            return
         self.v2log.emit("dictation.raw_exported", level="INFO",
                         job_id=self._last_failed.get("job_id"),
                         reason_code="user_action",

@@ -708,7 +708,10 @@ _MIGRATIONS[13] = [
 # Tables whose loss at the current schema version is corruption, not a
 # torn additive migration, whenever rows that depend on them survive
 # (M02-AUDIT-18). Each maps to queries that detect such surviving
-# dependents; the queries only touch tables that must then exist.
+# dependents; a query over a table that is gone too finds nothing. A
+# migration commits its DDL with its version stamp, so a table missing
+# at the current version is always external damage: a genuinely older
+# store never reaches this map (it upgrades), a fresh one has no rows.
 _CORE_DEPENDENTS = {
     "jobs": ("SELECT 1 FROM artifacts WHERE job_id LIKE 'job-%' LIMIT 1",
              "SELECT 1 FROM training_examples LIMIT 1"),
@@ -747,6 +750,53 @@ _CORE_DEPENDENTS = {
     "note_evidence_links": ("SELECT 1 FROM training_revisions WHERE"
                             " envelope_json LIKE '%\"note_revision_id\"%'"
                             " LIMIT 1",),
+    # Cross-milestone remediation (xm-policy-r1 D01, MERGED-X01): every
+    # later family whose loss would read as a clean empty feature while
+    # rows around it survive — exposure forgotten, a deleted source's
+    # derived profile left current, an undo without its recorded delta,
+    # usage deletion unable to reach an aggregate, a permanent rejection
+    # forgotten, the user's labels, dictionary, transforms, styles and
+    # snippets silently gone, registry revisions restarting. Each is
+    # witnessed in tests/v2/crossmilestone/test_xm_store_families.py;
+    # the tables left out are derivable, session-scoped or record-only
+    # (acceptance/cross-milestone/remediation/schema_family_subledger.json).
+    "vocabulary_entries": ("SELECT 1 FROM vocabulary_aliases LIMIT 1",
+                           "SELECT 1 FROM vocabulary_history LIMIT 1"),
+    "vocabulary_aliases": ("SELECT 1 FROM vocabulary_entries LIMIT 1",),
+    "vocabulary_history": ("SELECT 1 FROM vocabulary_entries LIMIT 1",),
+    "vocabulary_meta": ("SELECT 1 FROM vocabulary_entries LIMIT 1",),
+    "style_rules": ("SELECT 1 FROM profiles_meta WHERE key='style_rules'"
+                    " LIMIT 1",),
+    "snippets": ("SELECT 1 FROM profiles_meta WHERE key='snippets'"
+                 " LIMIT 1",),
+    "profiles_meta": ("SELECT 1 FROM style_rules LIMIT 1",
+                      "SELECT 1 FROM snippets LIMIT 1"),
+    "transforms": ("SELECT 1 FROM transform_revisions LIMIT 1",),
+    "transform_revisions": ("SELECT 1 FROM transforms LIMIT 1",),
+    "transform_meta": ("SELECT 1 FROM transforms LIMIT 1",),
+    "transform_candidates": ("SELECT 1 FROM preference_observations"
+                             " LIMIT 1",),
+    "usage_facts": ("SELECT 1 FROM daily_aggregates LIMIT 1",),
+    "daily_aggregates": ("SELECT 1 FROM usage_facts LIMIT 1",),
+    "learning_candidates": ("SELECT 1 FROM learning_vocabulary_deltas"
+                            " LIMIT 1",
+                            "SELECT 1 FROM correction_labels WHERE"
+                            " candidate_id IS NOT NULL LIMIT 1",
+                            "SELECT 1 FROM artifacts WHERE"
+                            " role='candidate_observation' LIMIT 1"),
+    "correction_labels": ("SELECT 1 FROM training_examples WHERE"
+                          " state='annotated' LIMIT 1",
+                          "SELECT 1 FROM artifacts WHERE role='span_graft'"
+                          " LIMIT 1"),
+    "split_assignments": ("SELECT 1 FROM training_memberships LIMIT 1",),
+    "training_memberships": ("SELECT 1 FROM split_assignments WHERE"
+                             " family_count > 0 LIMIT 1",),
+    "profile_evidence": ("SELECT 1 FROM profile_snapshots WHERE"
+                         " source_example_count > 0 LIMIT 1",),
+    "learning_vocabulary_deltas": ("SELECT 1 FROM learning_candidates WHERE"
+                                   " status='approved' AND"
+                                   " vocabulary_entry_id IS NOT NULL"
+                                   " LIMIT 1",),
 }
 
 

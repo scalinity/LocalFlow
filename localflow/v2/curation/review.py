@@ -57,16 +57,20 @@ _JOB_STAGE_SLOTS = (("raw", "raw_transcript", "source_text"),
                     ("transform", "transform_output", "transform_output"))
 
 
-def _latest_job_artifact(conn, job_id, role):
+def _latest_job_artifact(conn, job_id, role, attempt=None):
     row = conn.execute(
         "SELECT artifact_id FROM artifacts WHERE job_id=? AND role=? AND"
-        " purged=0 ORDER BY rowid DESC LIMIT 1",
-        (job_id, role)).fetchone() if job_id else None
+        " purged=0"
+        + (" AND json_extract(meta_json, '$.attempt') = ?"
+           if attempt is not None else "")
+        + " ORDER BY rowid DESC LIMIT 1",
+        (job_id, role) + ((attempt,) if attempt is not None else ())
+    ).fetchone() if job_id else None
     return row[0] if row else None
 
 
 def stage_texts_for(conn, example_id: str | None,
-                    job_id: str | None = None) -> dict:
+                    job_id: str | None = None, attempt=None) -> dict:
     """The retained raw/normalized/applied/transform texts the stage
     attribution compares against — each admitted through the evidence
     resolver as this job's own artifact with its producer role (a
@@ -76,13 +80,15 @@ def stage_texts_for(conn, example_id: str | None,
     normalization changed the text; otherwise it names the edit ledger,
     and the normalized text IS the raw text. Without a training example
     (collection off), the job's own History artifacts supply the same
-    stages."""
+    stages — only those of ``attempt`` when given (a retry's own stages,
+    never an earlier attempt's)."""
     env, _rev = _conn_latest(conn, example_id) if example_id \
         else (None, None)
     if env is None:
         out = {}
         for stage, role, slot in _JOB_STAGE_SLOTS:
-            q = ev.qualify(conn, _latest_job_artifact(conn, job_id, role),
+            q = ev.qualify(conn, _latest_job_artifact(conn, job_id, role,
+                                                      attempt),
                            slot, job_id=job_id) if job_id else None
             if q and q["ok"]:
                 out[stage] = q["artifact"]["text"]

@@ -185,16 +185,16 @@ class ProfileService:
         with their OWN retained raw transcript, as (example_id, envelope,
         raw text, snippet_expanded, raw artifact id, revision id)."""
         marks = ",".join("?" * len(example_ids))
-        rows = {r[0]: (r[1], r[2]) for r in conn.execute(
-            "SELECT example_id, state, job_id FROM training_examples WHERE"
-            f" example_id IN ({marks})", example_ids).fetchall()}
+        rows = {r[0]: (r[1], r[2], r[3]) for r in conn.execute(
+            "SELECT example_id, state, job_id, rowid FROM training_examples"
+            f" WHERE example_id IN ({marks})", example_ids).fetchall()}
         out = []
         for ex_id, payload in conn.execute(
                 "SELECT example_id, envelope_json FROM training_revisions"
                 " WHERE rowid IN (SELECT MAX(rowid) FROM"
                 f" training_revisions WHERE example_id IN ({marks})"
                 " GROUP BY example_id)", example_ids).fetchall():
-            state, job_id = rows.get(ex_id, (None, None))
+            state, job_id, published = rows.get(ex_id, (None, None, 0))
             if state not in _LIVE_STATES:
                 continue
             env = json.loads(payload)
@@ -207,20 +207,30 @@ class ProfileService:
                 continue  # absent, purged, foreign or wrong-stage text
             snippets = bool(((env.get("normalization") or {})
                              .get("snippets") or {}).get("expansions"))
+            attempt = env.get("attempt")
             out.append((ex_id, env, raw["artifact"]["text"], snippets,
-                        raw["artifact"]["id"], env.get("revision_id")))
+                        raw["artifact"]["id"], env.get("revision_id"),
+                        job_id or ex_id,
+                        (attempt if isinstance(attempt, int)
+                         and not isinstance(attempt, bool) else 0,
+                         published or 0)))
         return out
 
     def _eligible(self, labels: dict):
-        """Live examples with their own retained raw transcript, minus
-        what S22 says is not the user's own speech: examples whose
-        normalization expanded snippets (generated text), examples whose
-        current review label flags background speech, and verbatim
-        repeats of an earlier utterance (test phrases said over and over
-        count once). Reads in bounded chunks — each a short writer op,
-        so a dictation's store writes interleave instead of queueing
-        behind the whole history (S29.16). Returns (eligible, excluded
-        counts, the exact inputs read)."""
+        """Live examples with their own retained raw transcript — ONE
+        per logical job: a retry is the same capture spoken once, so of
+        a job's attempts only the latest (ties: the latest published)
+        speaks for it and the others count as ``superseded_attempt``
+        (xm-policy-r1 D07; they stay inspectable as training evidence).
+        Then minus what S22 says is not the user's own speech: examples
+        whose normalization expanded snippets (generated text), examples
+        whose current review label flags background speech, and
+        verbatim repeats of an earlier utterance (test phrases said over
+        and over count once). An excluded contribution never falls back
+        to an older attempt. Reads in bounded chunks — each a short
+        writer op, so a dictation's store writes interleave instead of
+        queueing behind the whole history (S29.16). Returns (eligible,
+        excluded counts, the exact inputs read)."""
         live = self.store.submit(lambda conn: [r[0] for r in conn.execute(
             "SELECT example_id FROM training_examples WHERE state IN"
             f" ({','.join('?' * len(_LIVE_STATES))}) ORDER BY"
@@ -230,12 +240,18 @@ class ProfileService:
             chunk = live[i:i + _READ_CHUNK]
             rows += self.store.submit(
                 lambda conn, ch=chunk: self._read_candidates(conn, ch))
-        excluded = {"snippet_expanded": 0, "background_speech": 0,
-                    "repeated_verbatim": 0}
-        kept = []
+        excluded = {"superseded_attempt": 0, "snippet_expanded": 0,
+                    "background_speech": 0, "repeated_verbatim": 0}
         inputs = {}
-        for ex_id, env, text, snippets, raw_aid, rev in rows:
+        per_job = {}
+        for ex_id, env, text, snippets, raw_aid, rev, job, order in rows:
             inputs[ex_id] = (raw_aid, rev)
+            best = per_job.get(job)
+            if best is None or order > best[-1]:
+                per_job[job] = (ex_id, env, text, snippets, order)
+        excluded["superseded_attempt"] = len(rows) - len(per_job)
+        kept = []
+        for ex_id, env, text, snippets, _order in per_job.values():
             if snippets:
                 excluded["snippet_expanded"] += 1
             elif "background_speech" in (labels.get(ex_id)

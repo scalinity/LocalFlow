@@ -126,16 +126,36 @@ class LearningService:
                 "SELECT envelope_json FROM training_revisions WHERE"
                 " example_id=? ORDER BY rowid DESC LIMIT 1",
                 (example_id,)).fetchone() if example_id else None
-            if env_row is not None:
-                final_aid = (json.loads(env_row[0]).get("artifact_ids")
+            env = json.loads(env_row[0]) if env_row is not None else None
+            job_attempt = (conn.execute(
+                "SELECT attempt FROM jobs WHERE job_id=?",
+                (job_id,)).fetchone() or (None,))[0]
+            superseded = env is not None and \
+                isinstance(env.get("attempt"), int) and \
+                isinstance(job_attempt, int) and \
+                env["attempt"] != job_attempt
+            if superseded:
+                # A retry ran without collection: the example describes
+                # an earlier attempt, not the final History shows
+                # (xm-policy-r1 D06). The current attempt's own text is
+                # taught, bound to no example.
+                env = None
+                example_id = None
+            if env is not None:
+                final_aid = (env.get("artifact_ids")
                              or {}).get("applied_output")
             else:
                 # No training example (collection off): the job's own
-                # History artifacts are the text the user saw.
+                # History artifacts are the text the user saw — of the
+                # current attempt when the example was superseded.
                 last = conn.execute(
                     "SELECT artifact_id FROM artifacts WHERE job_id=?"
-                    " AND role='applied_output' ORDER BY rowid DESC"
-                    " LIMIT 1", (job_id,)).fetchone()
+                    " AND role='applied_output'"
+                    + (" AND json_extract(meta_json, '$.attempt') = ?"
+                       if superseded else "")
+                    + " ORDER BY rowid DESC LIMIT 1",
+                    (job_id, job_attempt) if superseded
+                    else (job_id,)).fetchone()
                 final_aid = last[0] if last else None
             final = ev.qualify(conn, final_aid, "applied_output",
                                job_id=job_id)
@@ -160,7 +180,9 @@ class LearningService:
                 return {"refused": "not_target_bound_correction"}
             classification = classify.classify_observation(
                 final_text, corrected,
-                stage_texts=stage_texts_for(conn, example_id, job_id),
+                stage_texts=stage_texts_for(
+                    conn, example_id, job_id,
+                    attempt=job_attempt if superseded else None),
                 evidence_status="explicit_intent_review")
             if not regions:
                 # Same words, different punctuation/spacing/line breaks:
