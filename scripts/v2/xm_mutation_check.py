@@ -256,7 +256,8 @@ MUTATIONS = [
      [(HUB, "        self._export_validation = None\n"
             "        self._action_tokens.pop(\"validate\", None)\n",
        "        self._export_validation = None\n" + mark("XM-MU28", 8))],
-     {REM: ["x12_older_validate_never_takes_over_a_newer_export_result"]}),
+     {REM: ["x12_older_validate_never_takes_over_a_newer_export_result",
+            "x12_older_validate_never_shows_during_or_after_a_failed_export"]}),
     ("XM-MU29", "MERGED-X09", "an unknown panel Save shows nothing",
      [(APP, "                    panel.reoffer_save(\n",
        mark("XM-MU29", 20) + "                    (lambda *a: None)(\n")],

@@ -1621,6 +1621,62 @@ def x12_older_validate_never_takes_over_a_newer_export_result():
         h.close()
 
 
+@case("MERGED-X12 (an older Validate finishing during a running, then"
+      " failing, Export)")
+def x12_older_validate_never_shows_during_or_after_a_failed_export():
+    from localflow.v2.curation import export as export_mod
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _export_tab(h, mq, hub)
+            dest = _invalid_dataset(h.tmp / "invalid-ds")
+            hub.export_dest.setStringValue_(str(dest))
+            hub.export_checks["asr_supervised"].setState_(1)
+            vgate, bgate = X.Latch("validator_read"), X.Latch("export_build")
+            real = export_mod.validate_dataset
+
+            def validate(root):
+                vgate.hit()
+                return real(root)
+            svc = hub.spec["export_service"]
+
+            def build(d, task_views, export_id=None):
+                bgate.hit()
+                raise RuntimeError("synthetic build failure")
+            svc.build = build
+            export_mod.validate_dataset = validate
+            try:
+                hub.exportValidate_(None)
+                assert vgate.reached.wait(10), "fixture: Validate never ran"
+                hub.exportRun_(None)
+                assert bgate.reached.wait(10), "fixture: Export never ran"
+                vgate.release()  # the older Validate finishes first
+                time.sleep(0.3)
+                mq.flush()
+                during = hub.export_text.string()
+                bgate.release()
+                assert mq.drain(hub.state, 60)
+                time.sleep(0.2)
+                mq.flush()
+                hub.state.reload_training()
+                assert mq.drain(hub.state, 60)
+            finally:
+                vgate.release()
+                bgate.release()
+                export_mod.validate_dataset = real
+                del svc.build
+            after = hub.export_text.string()
+            assert "valid:" not in during, (
+                "an older Validate painted over the running Export:"
+                f" {during[:120]!r}")
+            assert "valid:" not in after, (
+                "an older Validate stays over the failed Export:"
+                f" {after[:120]!r}")
+    finally:
+        h.close()
+
+
 @case("MERGED-X12 (review R2-01: a completed Export supersedes a Validate"
       " pressed during it)")
 def x12_completed_export_supersedes_a_validate_pressed_during_it():
