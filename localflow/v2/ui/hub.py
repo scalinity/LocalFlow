@@ -1980,9 +1980,10 @@ class HubController(NSObject):
         except Exception as e:
             self._transform_outcome("Update", e)
             return
-        self._transform_editor = {"id": transform_id,
-                                  "revision": updated.revision,
-                                  "baseline": form}
+        # The editor now shows the row as stored: the merge kept any
+        # field changed elsewhere that the user did not touch (review
+        # RV-08 — never a stale checkbox bound as the new baseline).
+        self._fill_transform_editor(updated.to_json())
         self.transforms_status.setStringValue_("updated")
         self.state.reload_transforms()
 
@@ -3709,7 +3710,10 @@ class HubController(NSObject):
                 " directory")
             return
         self.export_text.setString_("exporting…")
-        self._export_validation = None  # a newer explicit action
+        # A newer explicit action: a Validate still running publishes
+        # nothing over it (xm-policy-r1 D12, review RV-03).
+        self._export_validation = None
+        self._action_tokens.pop("validate", None)
         # The export id is the operation id: a retry of the same export
         # after an unknown outcome returns the recorded result instead
         # of building a second dataset (M14-AUDIT-17).
@@ -4010,10 +4014,14 @@ class HubController(NSObject):
         self._op_settled("undo")
         if out is None:
             return  # the refusal or unknown outcome stays on screen
-        self.review_text.setString_(
-            f"approval undone: {row.get('alias')} → {row.get('canonical')}"
-            " is no longer applied; the correction is back in review")
-        self.state.select_training_tab("review")
+        # Kept in the pane's note so the refresh below cannot wipe it; the
+        # refreshed queue shows whether the correction returned to review
+        # (its evidence may have gone stale meanwhile — review RV-09).
+        msg = (f"approval undone: {row.get('alias')} →"
+               f" {row.get('canonical')} is no longer applied")
+        self.review_text.setString_(msg)
+        self._action_notes["review"] = msg
+        self.state.reload_training()  # pressed from the Review tab
 
     @objc.python_method
     def _refresh_candidate_popup(self, queue):

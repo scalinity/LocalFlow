@@ -64,6 +64,10 @@ STATE_IDLE = "idle"
 STATE_RECORDING = "recording"
 STATE_PROCESSING = "processing"
 
+# The Recovery menu's raw-copy item; a refusal is shown in its title
+# (review RV-10).
+COPY_RAW_TITLE = "Copy Raw Transcript of Last Failure"
+
 # Audio of the last few dictations, kept for replay when a transcript
 # comes out wrong (local only, pruned to the newest AUDIO_DEBUG_KEEP)
 AUDIO_DEBUG_DIR = pathlib.Path.home() / "Library" / "Logs" / "LocalFlow-audio"
@@ -2070,14 +2074,25 @@ class AppDelegate(NSObject):
                                         if job is not None else None),
                     title=defn.name, note_id=note_id)
         except Exception as e:
+            # The panel closed for the save: it comes back with the
+            # outcome so the same result can be saved again (D09).
+            panel = self._tf_panel
             if v2_notes.failure_kind(e) == "unknown":
                 self.v2log.emit("notes.note_create_unknown",
                                 level="WARNING",
                                 reason_code=type(e).__name__)
+                if panel is not None:
+                    panel.reoffer_save(
+                        "outcome unknown — the store is busy and the note"
+                        " may still appear; Save again to check (no"
+                        " second note)", result)
                 return
             self._tf_pending_saves.pop(key, None)
             self.v2log.emit("notes.note_create_failed", level="WARNING",
                             reason_code=type(e).__name__)
+            if panel is not None:
+                panel.reoffer_save(f"not saved ({type(e).__name__})",
+                                   result)
             return
         self._tf_pending_saves.pop(key, None)
         self.v2log.emit(
@@ -5234,7 +5249,7 @@ class AppDelegate(NSObject):
         recovery = NSMenu.alloc().init()
         for title, action in (
             ("Retry Last Failed Dictation", "retryLastFailed:"),
-            ("Copy Raw Transcript of Last Failure", "copyLastRaw:"),
+            (COPY_RAW_TITLE, "copyLastRaw:"),
             ("Undo Last Insertion", "undoLastInsertion:"),
             ("Paste Last Result Again", "pasteLastResultAgain:"),
         ):
@@ -6046,11 +6061,17 @@ class AppDelegate(NSObject):
         # The same clipboard authority as every other in-app copy: a
         # payload an insertion still owns is never replaced
         # (xm-policy-r1 D02, MERGED-X02).
+        item = self._recovery_items.get("copyLastRaw")
         if not self._guarded_copy(self._last_failed["raw"]):
             self.v2log.emit("dictation.raw_copy_refused", level="INFO",
                             job_id=self._last_failed.get("job_id"),
                             reason_code="clipboard_payload_pending")
+            if item is not None:
+                item.setTitle_(f"{COPY_RAW_TITLE} — not copied: clipboard"
+                               " busy with a pending paste; try again")
             return
+        if item is not None:
+            item.setTitle_(COPY_RAW_TITLE)
         self.v2log.emit("dictation.raw_exported", level="INFO",
                         job_id=self._last_failed.get("job_id"),
                         reason_code="user_action",

@@ -623,13 +623,20 @@ class DatasetExporter:
             done = self._receipt(export_id)
             if done is not None:
                 return done
-            self._reconcile_intent(export_id)
+            if self._reconcile_intent(export_id) == "published_unconfirmed":
+                raise ExportError(
+                    "this export's package was published to its folder"
+                    " but its completion was never recorded (LocalFlow"
+                    " stopped mid-publication); the package is left in"
+                    " place and is not counted as a completed export —"
+                    " export again for a current dataset")
         export_id = export_id or ids.new_id("export")
         for managed in (self.store.artifacts_dir, self.store.notes_dir):
             if _inside(destination, managed):
                 raise ExportError(
                     "destination lies inside LocalFlow's managed data —"
                     " choose a folder outside it")
+        stale_asides = self._reconcile_destination(destination)
         if destination.exists() and not _replaceable(destination):
             # Publication replaces the destination; only an empty folder
             # or an earlier export may be replaced — never a folder of
@@ -791,6 +798,8 @@ class DatasetExporter:
             raise ExportError(f"export failed: {type(e).__name__}")
         if moved_aside is not None:
             shutil.rmtree(moved_aside, ignore_errors=True)
+        for aside in stale_asides:
+            shutil.rmtree(aside, ignore_errors=True)
         self.emit("export.completed", level="INFO",
                   reason_code=",".join(sorted(task_views)),
                   detail=f"examples={summary_counts['examples']}")
@@ -806,10 +815,12 @@ class DatasetExporter:
         manifest names the export id and the offline validator passes)
         is recorded 'published_unconfirmed' — never 'complete', no new
         consent or exposure granted — and left in place with any earlier
-        export moved aside beside it; the export is then refused with
-        that explanation. Without such a package nothing was published:
-        the intent is recorded failed, an earlier export moved aside is
-        put back when its destination is free, and the build proceeds."""
+        export moved aside beside it (a retry of the same export id is
+        then refused with that explanation). Without such a package
+        nothing was published: the intent is recorded failed and an
+        earlier export moved aside is put back when its destination is
+        free. Returns the outcome, or None when there was nothing to
+        reconcile."""
         if export_id in self._inflight:
             return
         row = self.store.submit(lambda conn: conn.execute(
@@ -836,12 +847,7 @@ class DatasetExporter:
                          error="crash_between_rename_and_commit")
             self.emit("export.publication_unconfirmed", level="WARNING",
                       reason_code="crash_between_rename_and_commit")
-            raise ExportError(
-                "this export's package was published to its folder but"
-                " its completion was never recorded (LocalFlow stopped"
-                " mid-publication); the package is left in place and is"
-                " not counted as a completed export — export again to a"
-                " new folder for a current dataset")
+            return "published_unconfirmed"
         aside = destination.parent / \
             f".{destination.name}.replaced-{export_id}"
         staging = destination.parent / \
@@ -850,6 +856,43 @@ class DatasetExporter:
                     aside if aside.exists() else None, destination)
         self._record(export_id, "failed", views, None, destination, None,
                      None, error="publication_not_performed")
+        return "failed"
+
+    def _reconcile_destination(self, destination) -> list:
+        """Before any build into ``destination``: every 'publishing'
+        intent recorded for it with no publication in flight in this
+        process is reconciled as above — whatever export id the caller
+        now uses (the Hub's id does not survive a restart). An earlier
+        export still moved aside beside it is put back when the
+        destination is free; otherwise it is returned, to be removed
+        only when THIS build completes, exactly as a completed build
+        removes the export it replaced — so no crash leaves a hidden
+        export behind, even when its record is gone (xm-policy-r1 D13,
+        review RV-02/RV-13)."""
+        pending = self.store.submit(lambda conn: [r[0] for r in conn.execute(
+            "SELECT export_id FROM export_manifests WHERE state="
+            "'publishing' AND destination=?", (str(destination),))])
+        for export_id in pending:
+            self._reconcile_intent(export_id)
+        prefix = f".{destination.name}.replaced-"
+        try:
+            siblings = sorted(p for p in destination.parent.iterdir()
+                              if p.name.startswith(prefix))
+        except OSError:
+            return []
+        stale = []
+        for aside in siblings:
+            if aside.name[len(prefix):] in self._inflight \
+                    or aside.is_symlink() or not aside.is_dir():
+                continue
+            if destination.exists():
+                stale.append(aside)
+                continue
+            try:
+                os.rename(aside, destination)
+            except OSError:
+                pass
+        return stale
 
     @staticmethod
     def _abort(staging, export_id, moved_aside, destination):

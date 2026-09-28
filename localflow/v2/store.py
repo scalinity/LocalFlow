@@ -775,7 +775,10 @@ _CORE_DEPENDENTS = {
     "transform_candidates": ("SELECT 1 FROM preference_observations"
                              " LIMIT 1",),
     "usage_facts": ("SELECT 1 FROM daily_aggregates LIMIT 1",),
-    "daily_aggregates": ("SELECT 1 FROM usage_facts LIMIT 1",),
+    # daily_aggregates is derived from usage_facts: recreated, then
+    # rebuilt by the launch drift check (AnalyticsStore.ensure_current,
+    # review RV-07) — refusing would stop dictation over a table the
+    # facts recompute.
     "learning_candidates": ("SELECT 1 FROM learning_vocabulary_deltas"
                             " LIMIT 1",
                             "SELECT 1 FROM correction_labels WHERE"
@@ -1401,39 +1404,17 @@ class Store:
                     f" columns {sorted(set(required_cols) - cols)}; refusing"
                     " to migrate over it — restore from backup or remove"
                     " v2.db manually")
-        if 0 < version < target and self.backup_dir is not None:
-            self._backup()
-        elif 0 < version < target:
-            # Constructed without a backup_dir but with a real upgrade
-            # pending: proceed (additive DDL), but never silently —
-            # an unbacked migration of live data must be visible.
-            self.emit("store.migration_backup_skipped", level="WARNING",
-                      reason_code="no_backup_dir",
-                      detail=f"v{version}->v{target} without pre-migration"
-                             " backup")
-        for v in range(version + 1, target + 1):
-            try:
-                self._db.execute("BEGIN")
-                for stmt in _MIGRATIONS[v]:
-                    self._db.execute(stmt)
-                self._db.execute(
-                    "INSERT OR REPLACE INTO schema_meta VALUES('schema_version', ?)",
-                    (str(v),))
-                self._db.execute(
-                    "INSERT OR REPLACE INTO schema_meta VALUES"
-                    "('training_schema_version', ?)", (str(TRAINING_SCHEMA_VERSION),))
-                self._db.commit()
-            except sqlite3.DatabaseError:
-                self._db.rollback()
-                raise
-            self.emit("store.migrated", level="INFO",
-                      reason_code=f"store_schema_v{v}")
         # Repair path for a torn external write: re-apply every statement
         # (all DDL is IF NOT EXISTS / idempotent) when tables or indexes
         # are missing — but only when that repair is SAFE. A missing core
         # table whose dependent rows survive is corruption: recreating it
         # empty would present the lost relationships as a healthy empty
         # store (M02-AUDIT-18). That case is backed up and refused.
+        # Checked BEFORE any migration runs: a store with tables but no
+        # version stamp lost its schema_meta — it is neither fresh (a
+        # fresh file has no tables) nor older — and re-migrating it from
+        # 0 would recreate what it lost before anything looked (review
+        # RV-06).
         expected = {"schema_meta", "jobs", "artifacts", "imports", "import_runs",
                     "legacy_dictations", "training_examples", "training_revisions",
                     "consent_revisions", "artifact_leases", "deletion_tombstones",
@@ -1463,7 +1444,10 @@ class Store:
             "SELECT name FROM sqlite_master WHERE type='index'")}
         missing_tables = expected - have
         missing_idx = expected_idx - have_idx
-        if version >= target and (missing_tables or missing_idx):
+        unversioned = version == 0 and bool(have - {"schema_meta"})
+        repairing = (version >= target or unversioned) and bool(
+            missing_tables or missing_idx)
+        if repairing:
             corrupt = []
             for table in sorted(missing_tables & set(_CORE_DEPENDENTS)):
                 for probe in _CORE_DEPENDENTS[table]:
@@ -1493,6 +1477,36 @@ class Store:
                     f"{', '.join(corrupt)} missing while dependent rows"
                     " remain; refusing to recreate them empty — restore"
                     " from backup")
+        if 0 < version < target and self.backup_dir is not None:
+            self._backup()
+        elif 0 < version < target:
+            # Constructed without a backup_dir but with a real upgrade
+            # pending: proceed (additive DDL), but never silently —
+            # an unbacked migration of live data must be visible.
+            self.emit("store.migration_backup_skipped", level="WARNING",
+                      reason_code="no_backup_dir",
+                      detail=f"v{version}->v{target} without pre-migration"
+                             " backup")
+        for v in range(version + 1, target + 1):
+            try:
+                self._db.execute("BEGIN")
+                for stmt in _MIGRATIONS[v]:
+                    self._db.execute(stmt)
+                self._db.execute(
+                    "INSERT OR REPLACE INTO schema_meta VALUES('schema_version', ?)",
+                    (str(v),))
+                self._db.execute(
+                    "INSERT OR REPLACE INTO schema_meta VALUES"
+                    "('training_schema_version', ?)", (str(TRAINING_SCHEMA_VERSION),))
+                self._db.commit()
+            except sqlite3.DatabaseError:
+                self._db.rollback()
+                raise
+            self.emit("store.migrated", level="INFO",
+                      reason_code=f"store_schema_v{v}")
+        if repairing:
+            # (An unversioned store was just re-migrated from 0: the same
+            # idempotent statements.)
             for v_repair in range(1, target + 1):
                 for stmt in _MIGRATIONS[v_repair]:
                     self._db.execute(stmt)

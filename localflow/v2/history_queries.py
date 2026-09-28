@@ -403,9 +403,10 @@ class HistoryQueryService:
             tagged = [e["_attempt"] for e in order
                       if isinstance(e["_attempt"], int)]
             current = max(tagged) if tagged else None
-            if current_attempt is not None and (
-                    superseded or (current is not None
-                                   and current_attempt > current)):
+            forced = current_attempt is not None and (
+                superseded or (current is not None
+                               and current_attempt > current))
+            if forced:
                 # The current attempt's own stages only: what it left no
                 # stage for is absent — never an older attempt's text
                 # (the superseded manifest's untagged evidence included).
@@ -423,6 +424,10 @@ class HistoryQueryService:
             tf_entry = chosen.get("transform_output")
             info = {"source": "attempt_group" if current is not None
                     else "artifacts", "attempt": current,
+                    # Its absent stages were captured for an earlier
+                    # attempt, not missing (xm-policy-r1 D06).
+                    "absent_reason": ("current_attempt_unavailable"
+                                      if forced else None),
                     "ambiguous_attempts": current is None and any(
                         n > 1 for r, n in seen.items()
                         if r != "original_audio"),
@@ -512,6 +517,11 @@ class HistoryQueryService:
                      "output_unavailable" if applied_tf
                      else "not_applicable")},
             ]
+            absent = info.get("absent_reason")
+            if absent:
+                for stage in detail["lineage"][:3]:
+                    if stage["artifact"] is None:
+                        stage["reason"] = absent
             # What was actually inserted follows the recorded decision:
             # an applied transform's output — even when it no longer
             # resolves (then there is no final text, never the cleaned

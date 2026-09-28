@@ -243,6 +243,34 @@ def x02_recovery_copy_never_replaces_a_pending_payload():
         h.close()
 
 
+@case("MERGED-X02 (review RV-10: the refusal is visible in Recovery)")
+def x02_recovery_copy_refusal_is_shown_in_the_recovery_menu():
+    h = Harness(durations=[1.0])
+    try:
+        from AppKit import NSMenuItem
+        svc, _r = _pending_payload_service(h.d.store)
+        # The item as _setup_status_item registers it (building the real
+        # status item would put an icon in the live menu bar).
+        item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            "Copy Raw Transcript of Last Failure", "copyLastRaw:", "")
+        h.d._recovery_items["copyLastRaw"] = item
+        job, _fam = h.d.store.create_job(state="failed_recoverable")
+        h.d._insertion = svc
+        h.d._last_failed = {"job_id": job, "raw": OLD_RAW, "wav": None,
+                            "attempt": 1}
+        h.d.copyLastRaw_(None)
+        title = str(item.title())
+        assert "busy" in title.lower(), (
+            "the refused Copy Last Raw left the Recovery menu"
+            f" unchanged: {title!r}")
+        h.d._insertion = None  # the pending insertion settled
+        h.d.copyLastRaw_(None)
+        assert _board()[1] == OLD_RAW, _board()
+        assert "busy" not in str(item.title()).lower(), item.title()
+    finally:
+        h.close()
+
+
 @case("MERGED-X02 control", kind="control")
 def c_recovery_copy_publishes_when_nothing_is_pending():
     h = Harness(durations=[1.0])
@@ -449,6 +477,63 @@ def x06_history_resolves_the_current_attempt_after_collection_off_retry():
         h.close()
 
 
+@case("MERGED-X06 (review RV-11: the current attempt left no stage)")
+def x06_absent_current_attempt_stages_say_why():
+    h = Harness(durations=[1.0])
+    try:
+        h.d.consent.set("enabled")
+        h.d.cfg["log_transcripts"] = False
+        h.d.supervisor = Scripted(asr=lambda j, a: ALPHA if a == 1
+                                  else BETA, fail_clean={1})
+        job = dictate(h)
+        info = dict(h.d._last_failed)
+        h.d.consent.set("disabled")
+        retry(h, info)
+        detail = HistoryQueryService(h.d.store).job_detail(job)
+        assert detail.get("lineage_attempt") == 2, (
+            f"fixture: lineage attempt {detail.get('lineage_attempt')}")
+        reasons = {s["stage"]: s.get("reason") for s in detail["lineage"]
+                   if s["stage"] != "transformed"
+                   and s.get("artifact") is None}
+        assert reasons and set(reasons.values()) == {
+            "current_attempt_unavailable"}, (
+            "the current attempt's absent stages carry no reason (History"
+            f" shows them as never captured): {reasons}")
+    finally:
+        h.close()
+
+
+@case("MERGED-X06 (review RV-14: Teach after the superseded example is"
+      " excluded)")
+def x06_teach_ignores_the_superseded_attempts_example_state():
+    h = Harness(durations=[1.0])
+    try:
+        job, sup = _collection_off_retry(h)
+        store = h.d.store
+        exs = [e for (e,) in examples_of(store, job)]
+        assert len(exs) == 1 and envelope(store, exs[0])["attempt"] == 1, \
+            f"fixture: {exs}"
+        TrainingDataService(store).exclude(exs[0])
+        detail = HistoryQueryService(store).job_detail(job)
+        cleaned = next(s for s in detail["lineage"]
+                       if s["stage"] == "cleaned")["artifact"]
+        expected = attempt_final(sup, job, 2)
+        assert cleaned and cleaned.get("text") == expected, \
+            f"fixture: rendered final {cleaned}"
+        try:
+            h.d._learning.teach_correction(
+                job, expected.replace("WORDS", "WORLDS"),
+                expected_final_artifact_id=cleaned["artifact_id"])
+            refusal = None
+        except ValueError as e:
+            refusal = str(e)
+        assert refusal is None, (
+            "Teach on the current attempt's rendered final was refused by"
+            f" the superseded attempt's example state: {refusal}")
+    finally:
+        h.close()
+
+
 @case("MERGED-X06 control", kind="control")
 def c_collection_on_retry_resolves_the_new_manifest():
     h = Harness(durations=[1.0])
@@ -536,6 +621,42 @@ def x07_excluded_latest_attempt_never_falls_back_to_an_older_one():
         assert older not in used and m["eligible_examples"] == 0, (
             "excluding the capture's latest attempt let an older attempt"
             f" of the same capture speak for it: {m['eligible_examples']}"
+            f" eligible, older used={older in used}")
+    finally:
+        h.close()
+
+
+@case("MERGED-X07 (review RV-01: Training Data exclusion of the latest"
+      " attempt)")
+def x07_training_excluded_latest_attempt_never_falls_back():
+    h = Harness(durations=[1.0] * 4)
+    try:
+        h.d.consent.set("enabled")
+        h.d.supervisor = Scripted(asr=lambda j, a: _words(f"t{a}{j[-6:]}",
+                                                         30),
+                                  fail_clean={1})
+        job = dictate(h)
+        retry(h, dict(h.d._last_failed))
+        store = h.d.store
+        exs = [e for (e,) in examples_of(store, job)]
+        assert len(exs) == 2, f"fixture: {exs}"
+        latest = max(exs, key=lambda e: envelope(store, e)["attempt"])
+        older = min(exs, key=lambda e: envelope(store, e)["attempt"])
+        svc = ProfileService(store, min_words=1)
+        before = svc.compute()["measured"]["eligible_examples"]
+        assert before == 1, f"fixture: {before} eligible before exclusion"
+        state = TrainingDataService(store).exclude(latest)
+        assert one(store, "SELECT state FROM training_examples WHERE"
+                   " example_id=?", (latest,))[0] == "excluded", state
+        m = svc.compute()["measured"]
+        used = {x for (x,) in rows(store, "SELECT example_id FROM"
+                                   " profile_evidence WHERE role='measured'"
+                                   " AND snapshot_id=(SELECT snapshot_id"
+                                   " FROM profile_snapshots ORDER BY rowid"
+                                   " DESC LIMIT 1)")}
+        assert older not in used and m["eligible_examples"] == 0, (
+            "excluding the capture's latest attempt from training let the"
+            f" older attempt speak for it: {m['eligible_examples']}"
             f" eligible, older used={older in used}")
     finally:
         h.close()
@@ -778,6 +899,35 @@ def x04_unknown_update_then_stale_refill_never_reenables_auto():
         h.close()
 
 
+@case("MERGED-X04 (review RV-08: the editor after a merged Update)")
+def x04_merged_update_shows_the_stored_opt_out():
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            t = _auto_transform(h, mq, hub)
+            hub.tf_name.setStringValue_("Merged rename")  # editing
+            h.d._tf_store.update_transform(t.transform_id,
+                                           auto_apply=False)
+            # The refresh finds the edited form: it marks, never refills.
+            hub.state.reload_transforms()
+            mq.drain(hub.state, 60)
+            assert hub.tf_name.stringValue() == "Merged rename", \
+                "fixture: the refresh discarded the unsaved edit"
+            hub.transformsUpdate_(None)
+            mq.drain(hub.state, 60)
+            row = transform_row(h.d.store, t.transform_id)
+            assert row[:3] == ("Merged rename", "Rewrite formally.", 0), \
+                f"fixture: the merge did not keep the opt-out: {row}"
+            shown = hub.tf_auto.state()
+            assert shown == row[2], (
+                f"after the merged Update the editor shows auto-apply"
+                f" {'ON' if shown else 'OFF'} while the stored row is"
+                f" {'ON' if row[2] else 'OFF'}")
+    finally:
+        h.close()
+
+
 @case("MERGED-X04 control", kind="control")
 def c_fresh_form_update_changes_only_the_edited_field():
     h = Harness(durations=[1.0])
@@ -942,6 +1092,73 @@ def x09_admitted_save_timeout_then_retry_makes_one_note():
         store.sync()
         got = notes_with(store, text)
         assert len(got) == 1, f"one logical Save made {len(got)} notes"
+    finally:
+        h.close()
+
+
+@case("MERGED-X09 (review RV-04: through the preview panel)")
+def x09_panel_save_unknown_is_shown_and_repeatable():
+    from localflow.v2.ui.transforms_panel import TransformPreviewPanel
+    h = Harness(durations=[1.0])
+    try:
+        store = h.d.store
+        text = "PANELSAVECANARY saved output"
+        result = _transform_result(text)
+        defn = types.SimpleNamespace(name="Witness transform")
+        panel = TransformPreviewPanel.alloc().init_panel(h.d)
+        h.d._tf_panel = panel
+        panel.show(result, {"source": "panel source text"}, defn, None)
+        with X.hold_at(store, "_append") as held:
+            panel.panelSaveToScratchpad_(None)
+            assert held.reached, "fixture: the create was never admitted"
+        title = str(panel.panel.title())
+        shown = bool(panel.panel.isVisible())
+        assert shown and "unknown" in title.lower(), (
+            "an admitted-but-unanswered Save to Scratchpad left nothing"
+            f" on screen (panel visible={shown}, title={title!r})")
+        store.sync()
+        panel.panelSaveToScratchpad_(None)  # the repeat the panel offers
+        store.sync()
+        got = rows(store, "SELECT r.origin FROM notes n JOIN"
+                   " note_revisions r ON r.revision_id ="
+                   " n.current_revision_id WHERE r.content_text=?", (text,))
+        assert [o for (o,) in got] == ["transform"], (
+            f"one logical Save from the panel made {got}")
+    finally:
+        h.close()
+
+
+@case("MERGED-X09 control (XF-AUDIT-06 refusal before admission)",
+      kind="control")
+def c_save_refused_before_admission_is_not_saved_then_saves_once():
+    from localflow.v2.ui.transforms_panel import TransformPreviewPanel
+    h = Harness(durations=[1.0])
+    try:
+        store = h.d.store
+        text = "REFUSEDSAVECANARY output"
+        result = _transform_result(text)
+        defn = types.SimpleNamespace(name="Witness transform")
+        panel = TransformPreviewPanel.alloc().init_panel(h.d)
+        h.d._tf_panel = panel
+        panel.show(result, {"source": "panel source text"}, defn, None)
+        notes = h.d._notes_store
+        real = notes.create_note
+
+        def refuse(*a, **k):
+            from localflow.v2.notes import NoteNotStarted
+            raise NoteNotStarted("never admitted")
+        notes.create_note = refuse
+        try:
+            panel.panelSaveToScratchpad_(None)
+        finally:
+            notes.create_note = real
+        store.sync()
+        assert not notes_with(store, text), "a refused save wrote a note"
+        assert "not saved" in str(panel.panel.title()), panel.panel.title()
+        assert not h.d._tf_pending_saves, h.d._tf_pending_saves
+        panel.panelSaveToScratchpad_(None)
+        store.sync()
+        assert len(notes_with(store, text)) == 1, notes_with(store, text)
     finally:
         h.close()
 
@@ -1243,6 +1460,66 @@ def x12_validate_result_binds_to_its_destination_across_pane_switch():
         h.close()
 
 
+@case("MERGED-X12 (review RV-03: an Export supersedes an older Validate)")
+def x12_older_validate_never_takes_over_a_newer_export_result():
+    from localflow.v2.curation import export as export_mod
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _export_tab(h, mq, hub)
+            dest = _invalid_dataset(h.tmp / "invalid-ds")
+            hub.export_dest.setStringValue_(str(dest))
+            hub.export_checks["asr_supervised"].setState_(1)
+            gate = X.Latch("validator_read")
+            real = export_mod.validate_dataset
+
+            def validate(root):
+                gate.hit()
+                return real(root)
+            svc = hub.spec["export_service"]
+            svc.build = lambda d, task_views, export_id=None: {
+                "export_id": export_id, "state": "complete",
+                "fingerprint": "f" * 64, "counts": {"examples": 1},
+                "error": None}
+            export_mod.validate_dataset = validate
+            try:
+                hub.exportValidate_(None)
+                assert gate.reached.wait(10), "fixture: Validate never ran"
+                hub.exportRun_(None)
+                deadline = time.monotonic() + 15
+                while "export complete" not in hub.export_text.string() \
+                        and time.monotonic() < deadline:
+                    mq.flush()
+                    time.sleep(0.01)
+                assert "export complete" in hub.export_text.string(), (
+                    "fixture: the export result never showed:"
+                    f" {hub.export_text.string()[:120]!r}")
+                gate.release()
+                assert mq.drain(hub.state, 60)
+                time.sleep(0.2)
+                mq.flush()
+                settled = hub.export_text.string()
+                # (The stubbed build records no export row, so a refresh
+                # then shows the pane's no-export text — never the
+                # superseded validation.)
+                hub.state.reload_training()
+                assert mq.drain(hub.state, 60)
+            finally:
+                gate.release()
+                export_mod.validate_dataset = real
+                del svc.build
+            after = hub.export_text.string()
+            assert "valid:" not in settled, (
+                "a Validate pressed before the Export published over the"
+                f" Export's result: {settled[:120]!r}")
+            assert "valid:" not in after, (
+                "the superseded Validate result came back on refresh:"
+                f" {after[:120]!r}")
+    finally:
+        h.close()
+
+
 @case("MERGED-X13 (B CROSS-AUDIT-07)")
 def x13_validate_never_runs_filesystem_work_on_the_ui_thread():
     from localflow.v2.curation import export as export_mod
@@ -1391,6 +1668,25 @@ def _undo_in_hub(h, mq, hub, cid):
     return hub.review_text.string()
 
 
+@case("MERGED-X15 (review RV-09: the outcome survives its own refresh)")
+def x15_hub_undo_outcome_stays_on_screen_after_refresh():
+    h = Harness(durations=[1.0])
+    try:
+        cid, _eid = _approved_rule(h)
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _undo_in_hub(h, mq, hub, cid)
+            assert mq.drain(hub.state, 60)
+            shown = (hub.review_status.stringValue() + "\n"
+                     + hub.review_text.string())
+        assert "approval undone" in shown, (
+            "the Undo Approval outcome was wiped by the refresh it"
+            f" triggered: {shown[:200]!r}")
+        assert "back in review" not in shown, shown[:200]
+    finally:
+        h.close()
+
+
 @case("MERGED-X15 (refusal keeps a user edit)")
 def x15_hub_undo_refuses_after_a_user_edit():
     h = Harness(durations=[1.0])
@@ -1474,7 +1770,7 @@ def c_service_undo_reverses_exactly_and_keeps_user_edits():
 # MERGED-X14 — a crash after the export rename, before the SQLite commit
 # =============================================================================
 
-def _crash_after_rename(td, export_id, mode="after_rename"):
+def _crash_after_rename(td, export_id, mode="after_rename", lose=()):
     """Run the owned child to its barrier (``after_rename``: the staging
     directory is the destination, the commit has not happened;
     ``before_rename``: inside the publication op, nothing renamed), SIGKILL
@@ -1509,6 +1805,8 @@ def _crash_after_rename(td, export_id, mode="after_rename"):
         if src.exists():
             shutil.copy2(src, copy / ("v2.db" + suffix))
     shutil.copytree(info["arts"], copy / "arts")
+    for table in lose:  # the synthetic corruption, on the copy only
+        X.drop_table(copy / "v2.db", table)
     store = store_mod.Store(copy / "v2.db", artifacts_dir=copy / "arts",
                             backup_dir=copy / "bk")
     return store, work / "dataset", work
@@ -1569,6 +1867,66 @@ def x14_post_rename_crash_is_recognized_not_lost_or_relabeled():
             store.close()
 
 
+@case("MERGED-X14 (review RV-02: the restarted Hub exports under a new id)")
+def x14_restarted_export_reconciles_the_crashed_intent():
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter
+    crashed = "export-crash-restart"
+    with tempfile.TemporaryDirectory() as td:
+        store, dest, _work = _crash_after_rename(td, crashed)
+        try:
+            hidden = f".{dest.name}.replaced-{crashed}"
+            assert (dest.parent / hidden).is_dir(), \
+                "fixture: the prior export was not moved aside"
+            # The Hub's export op id lived in memory: after the restart
+            # the next Export to the same folder carries a NEW id.
+            out = DatasetExporter(store).build(
+                dest, task_views=("asr_supervised",),
+                export_id="export-after-restart")
+            assert out["state"] == "complete", out
+            ok, text = _validate_offline(dest)
+            assert ok, text
+            states = dict(rows(store, "SELECT export_id, state FROM"
+                               " export_manifests"))
+            left = sorted(p.name for p in dest.parent.iterdir()
+                          if p.name.startswith(f".{dest.name}."))
+            assert states.get(crashed) not in ("publishing", "complete"), (
+                f"the crashed export is still recorded"
+                f" {states.get(crashed)!r} after a completed export to"
+                f" its folder: {states}")
+            assert not left, (
+                f"hidden export directories left beside {dest.name}: {left}")
+        finally:
+            store.close()
+
+
+@case("MERGED-X14 (review RV-13: the crash's record is lost too)")
+def x14_lost_export_records_never_leave_a_hidden_export():
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter
+    crashed = "export-crash-lost-row"
+    with tempfile.TemporaryDirectory() as td:
+        store, dest, _work = _crash_after_rename(
+            td, crashed, lose=("export_manifests",))
+        try:
+            assert store is not None and not rows(
+                store, "SELECT 1 FROM export_manifests"), \
+                "fixture: the export records survived"
+            assert (dest.parent / f".{dest.name}.replaced-{crashed}"
+                    ).is_dir(), "fixture: nothing was moved aside"
+            out = DatasetExporter(store).build(
+                dest, task_views=("asr_supervised",),
+                export_id="export-after-loss")
+            assert out["state"] == "complete", out
+            left = sorted(p.name for p in dest.parent.iterdir()
+                          if p.name.startswith(f".{dest.name}."))
+            assert not left, (
+                "with its record lost, the crashed publication's moved-"
+                f"aside export stays hidden beside {dest.name}: {left}")
+        finally:
+            store.close()
+
+
 @case("MERGED-X14 control", kind="control")
 def c_crash_before_rename_restores_and_the_retry_completes():
     import tempfile
@@ -1606,15 +1964,31 @@ def x16_status_separates_current_state_from_historical_record():
         "STATUS.json has no explicit current-state projection; its"
         " implementation-era narrative (\"Store schema v10\", 54/50.3 ms"
         " waits, one benchmark run) reads as current")
+    import subprocess
     assert current.get("store_schema_version") == \
         max(store_mod._MIGRATIONS), current.get("store_schema_version")
-    for ref in current.get("evidence") or []:
+    # D15: the current commits, evidence, performance interpretation and
+    # what may run next — each present, never vacuous (review RV-12).
+    for key in ("production_commit", "evidence", "performance",
+                "may_run_next"):
+        assert current.get(key), f"current_state lacks {key!r}"
+    assert subprocess.run(
+        ["git", "cat-file", "-e", f"{current['production_commit']}^{{commit}}"],
+        cwd=ROOT, capture_output=True).returncode == 0, \
+        f"production commit {current['production_commit']} not in history"
+    for ref in current["evidence"]:
         assert (ROOT / ref).exists(), f"current evidence missing: {ref}"
+    # The M14 implementation record kept verbatim, never rewritten.
+    base = subprocess.run(["git", "show", "340c566:docs/v2/STATUS.json"],
+                          cwd=ROOT, capture_output=True, text=True)
+    assert base.returncode == 0, "fixture: the audited base is unreadable"
     hist = status.get("historical_implementation") or {}
-    assert "Store schema v10" in json.dumps(hist) or \
-        "Store schema v10" not in status.get("status_reason", ""), (
-        "the v10 implementation claim is neither labeled historical nor"
-        " current")
+    changed = sorted(k for k, v in json.loads(base.stdout).items()
+                     if k != "schema_version" and hist.get(k) != v)
+    assert not changed, (
+        f"historical M14 fields missing or rewritten: {changed}")
+    assert "Store schema v10" not in status.get("status_reason", ""), (
+        "the v10 implementation claim still reads as current")
 
 
 @case("MERGED-X17 (B CROSS-AUDIT-11)")
@@ -1631,8 +2005,19 @@ def x17_m07_obligations_have_stable_runbook_ownership():
         "the M07 runbook section is an empty placeholder while M07's"
         " long-prompt trial and adjudicated real-text stratum are still"
         " open")
+    articles = re.findall(r'<article class="check[^"]*"[^>]*>.*?</article>',
+                          sec, re.S)
     for oblig in ("long-prompt", "real-text"):
-        assert oblig in sec.lower(), f"M07 obligation not owned: {oblig}"
+        assert any(oblig in a.lower() for a in articles), (
+            f"no M07 check owns the {oblig} obligation")
+    # D16: PENDING and owned — never a recorded or implied pass (the
+    # runbook's state is the reader's own, kept by the page).
+    for a in articles:
+        head = a.split(">", 1)[0]
+        assert "data-rev=" in head and "data-code=" in head, head
+        assert "data-status" not in head, head
+        assert '<div class="status-slot"></div>' in a, (
+            f"a baked-in state in {head}")
 
 
 # =============================================================================

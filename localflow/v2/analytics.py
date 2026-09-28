@@ -823,6 +823,13 @@ class AnalyticsStore:
                     " LIMIT 1", (target, ALGORITHM_VERSION)).fetchone():
                 reasons.append("aggregate_drift")
             if conn.execute(
+                    "SELECT 1 FROM usage_facts f WHERE NOT EXISTS (SELECT"
+                    " 1 FROM daily_aggregates a WHERE a.day_local ="
+                    " f.day_local) LIMIT 1").fetchone():
+                # A recorded day with no aggregate row: the table was
+                # lost and recreated by the store's repair (review RV-07).
+                reasons.append("aggregates_missing")
+            if conn.execute(
                     "SELECT 1 FROM usage_facts WHERE activity_at_utc NOT"
                     " GLOB ? LIMIT 1", (_CANONICAL_GLOB,)).fetchone():
                 # Rows admitted before canonical storage (the old

@@ -117,11 +117,6 @@ class LearningService:
                 " job_id=? ORDER BY rowid DESC LIMIT 1",
                 (job_id,)).fetchone()
             example_id = row[0] if row else None
-            if row and row[1] not in _MINABLE_STATES:
-                # Excluded, quarantined or expired evidence teaches
-                # nothing (the observation producers apply the same
-                # rule).
-                return {"refused": f"example_{row[1]}"}
             env_row = conn.execute(
                 "SELECT envelope_json FROM training_revisions WHERE"
                 " example_id=? ORDER BY rowid DESC LIMIT 1",
@@ -141,6 +136,13 @@ class LearningService:
                 # taught, bound to no example.
                 env = None
                 example_id = None
+            elif row and row[1] not in _MINABLE_STATES:
+                # Excluded, quarantined or expired evidence teaches
+                # nothing (the observation producers apply the same
+                # rule) — the evidence of THIS attempt: a superseded
+                # example's state does not govern the current attempt's
+                # own text (D06, review RV-14).
+                return {"refused": f"example_{row[1]}"}
             if env is not None:
                 final_aid = (env.get("artifact_ids")
                              or {}).get("applied_output")

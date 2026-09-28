@@ -201,9 +201,12 @@ class ProfileService:
     # ---- eligibility --------------------------------------------------------
 
     def _read_candidates(self, conn, example_ids) -> list:
-        """One bounded read: the live examples among ``example_ids``
-        with their OWN retained raw transcript, as (example_id, envelope,
-        raw text, snippet_expanded, raw artifact id, revision id)."""
+        """One bounded read of the live-capture examples among
+        ``example_ids``, as (example_id, envelope, raw text,
+        snippet_expanded, raw artifact id, revision id, job, attempt
+        order). An example that is not live or lacks its OWN retained raw
+        transcript is returned with text None: it still names its job's
+        latest attempt, so an older attempt never stands in for it."""
         marks = ",".join("?" * len(example_ids))
         rows = {r[0]: (r[1], r[2], r[3]) for r in conn.execute(
             "SELECT example_id, state, job_id, rowid FROM training_examples"
@@ -215,21 +218,22 @@ class ProfileService:
                 f" training_revisions WHERE example_id IN ({marks})"
                 " GROUP BY example_id)", example_ids).fetchall():
             state, job_id, published = rows.get(ex_id, (None, None, 0))
-            if state not in _LIVE_STATES:
-                continue
             env = json.loads(payload)
             if env.get("origin") not in (None, "live_capture"):
                 continue  # synthetic/legacy corpus material is not the
                 # user's speech
             raw = ev.qualify(conn, (env.get("artifact_ids") or {}).get(
-                "source_text"), "source_text", job_id=job_id)
-            if not raw["ok"]:
-                continue  # absent, purged, foreign or wrong-stage text
+                "source_text"), "source_text", job_id=job_id) \
+                if state in _LIVE_STATES else {"ok": False}
+            # Not live, or absent, purged, foreign or wrong-stage text:
+            # kept as a blocker for its job, never counted.
+            ok = raw["ok"]
             snippets = bool(((env.get("normalization") or {})
                              .get("snippets") or {}).get("expansions"))
             attempt = env.get("attempt")
-            out.append((ex_id, env, raw["artifact"]["text"], snippets,
-                        raw["artifact"]["id"], env.get("revision_id"),
+            out.append((ex_id, env, raw["artifact"]["text"] if ok else None,
+                        snippets, raw["artifact"]["id"] if ok else None,
+                        env.get("revision_id"),
                         job_id or ex_id,
                         (attempt if isinstance(attempt, int)
                          and not isinstance(attempt, bool) else 0,
@@ -239,9 +243,12 @@ class ProfileService:
     def _eligible(self, labels: dict):
         """Live examples with their own retained raw transcript — ONE
         per logical job: a retry is the same capture spoken once, so of
-        a job's attempts only the latest (ties: the latest published)
-        speaks for it and the others count as ``superseded_attempt``
-        (xm-policy-r1 D07; they stay inspectable as training evidence).
+        a job's attempts only the latest (ties: the latest published),
+        whatever its state, speaks for it — when that one is excluded,
+        quarantined, expired or has lost its transcript the job
+        contributes nothing — and the others count as
+        ``superseded_attempt`` (xm-policy-r1 D07; they stay inspectable
+        as training evidence).
         Then minus what S22 says is not the user's own speech: examples
         whose normalization expanded snippets (generated text), examples
         whose current review label flags background speech, and
@@ -251,10 +258,14 @@ class ProfileService:
         writer op, so a dictation's store writes interleave instead of
         queueing behind the whole history (S29.16). Returns (eligible,
         excluded counts, the exact inputs read)."""
+        # Every example of a job that has a live one: the job's latest
+        # attempt is chosen among ALL its attempts, whatever their state.
         live = self.store.submit(lambda conn: [r[0] for r in conn.execute(
             "SELECT example_id FROM training_examples WHERE state IN"
-            f" ({','.join('?' * len(_LIVE_STATES))}) ORDER BY"
-            " example_id", _LIVE_STATES).fetchall()])
+            f" ({','.join('?' * len(_LIVE_STATES))}) OR job_id IN"
+            " (SELECT job_id FROM training_examples WHERE state IN"
+            f" ({','.join('?' * len(_LIVE_STATES))})) ORDER BY"
+            " example_id", (*_LIVE_STATES, *_LIVE_STATES)).fetchall()])
         rows = []
         for i in range(0, len(live), _READ_CHUNK):
             chunk = live[i:i + _READ_CHUNK]
@@ -265,13 +276,19 @@ class ProfileService:
         inputs = {}
         per_job = {}
         for ex_id, env, text, snippets, raw_aid, rev, job, order in rows:
-            inputs[ex_id] = (raw_aid, rev)
+            if text is not None:
+                inputs[ex_id] = (raw_aid, rev)
             best = per_job.get(job)
             if best is None or order > best[-1]:
                 per_job[job] = (ex_id, env, text, snippets, order)
-        excluded["superseded_attempt"] = len(rows) - len(per_job)
+        # Counted attempts that are not their job's contribution.
+        excluded["superseded_attempt"] = len(inputs) - sum(
+            1 for c in per_job.values() if c[2] is not None)
         kept = []
         for ex_id, env, text, snippets, _order in per_job.values():
+            if text is None:
+                continue  # the latest attempt is not countable: the job
+                # contributes nothing
             if snippets:
                 excluded["snippet_expanded"] += 1
             elif "background_speech" in (labels.get(ex_id)

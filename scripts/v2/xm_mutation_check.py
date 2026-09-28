@@ -57,6 +57,7 @@ PR = "localflow/v2/profile.py"
 EV = "localflow/v2/curation/evidence.py"
 TR = "localflow/v2/training.py"
 EX = "localflow/v2/curation/export.py"
+AN = "localflow/v2/analytics.py"
 
 
 def mark(mid, indent):
@@ -239,6 +240,62 @@ MUTATIONS = [
        "            operation_id=None if " + mexpr("XM-MU25") + " else"
        " self._op_id(\"undo\", row[\"candidate_id\"]))\n")],
      {REM: ["x15_hub_undo_unknown_outcome_then_retry_is_one_undo"]}),
+    # The independent review's reproduced allegations (RV-01..RV-14).
+    ("XM-MU26", "MERGED-X07", "a non-countable latest attempt falls back",
+     [(PR, "            best = per_job.get(job)\n",
+       mark("XM-MU26", 12) + "            if text is None:\n"
+       "                continue\n"
+       "            best = per_job.get(job)\n")],
+     {REM: ["x07_training_excluded_latest_attempt_never_falls_back"]}),
+    ("XM-MU27", "MERGED-X14", "a build never reconciles its destination",
+     [(EX, "        stale_asides = self._reconcile_destination(destination)\n",
+       mark("XM-MU27", 8) + "        stale_asides = []\n")],
+     {REM: ["x14_restarted_export_reconciles_the_crashed_intent",
+            "x14_lost_export_records_never_leave_a_hidden_export"]}),
+    ("XM-MU28", "MERGED-X12", "an Export leaves a running Validate current",
+     [(HUB, "        self._action_tokens.pop(\"validate\", None)\n",
+       mark("XM-MU28", 8))],
+     {REM: ["x12_older_validate_never_takes_over_a_newer_export_result"]}),
+    ("XM-MU29", "MERGED-X09", "an unknown panel Save shows nothing",
+     [(APP, "                    panel.reoffer_save(\n",
+       mark("XM-MU29", 20) + "                    (lambda *a: None)(\n")],
+     {REM: ["x09_panel_save_unknown_is_shown_and_repeatable"]}),
+    ("XM-MU30", "MERGED-X01", "a lost version stamp skips the family check",
+     [(ST, "        unversioned = version == 0 and bool(have -"
+           " {\"schema_meta\"})\n",
+       mark("XM-MU30", 8) + "        unversioned = False\n")],
+     {FAM: ["x01k_lost_version_stamp_never_bypasses_family_integrity"]}),
+    ("XM-MU31", "MERGED-X01", "lost aggregates are never rebuilt",
+     [(AN, "                reasons.append(\"aggregates_missing\")\n",
+       mark("XM-MU31", 16) + "                pass\n")],
+     {FAM: ["x01d2_lost_aggregates_never_hide_recorded_usage"]}),
+    ("XM-MU32", "MERGED-X04", "a merged Update binds the stale form",
+     [(HUB, "        self._fill_transform_editor(updated.to_json())\n",
+       mark("XM-MU32", 8)
+       + "        self._transform_editor = {\"id\": transform_id,"
+         " \"revision\": updated.revision, \"baseline\": form}\n")],
+     {REM: ["x04_merged_update_shows_the_stored_opt_out"]}),
+    ("XM-MU33", "MERGED-X15", "the Undo outcome is not kept",
+     [(HUB, "        self._action_notes[\"review\"] = msg\n",
+       mark("XM-MU33", 8))],
+     {REM: ["x15_hub_undo_outcome_stays_on_screen_after_refresh"]}),
+    ("XM-MU34", "MERGED-X02", "the refused copy leaves Recovery unchanged",
+     [(APP, "                item.setTitle_(f\"{COPY_RAW_TITLE} — not copied:"
+            " clipboard\"\n",
+       mark("XM-MU34", 16) + "                (lambda *a: None)(f\"{COPY_RAW_TITLE}"
+       " — not copied: clipboard\"\n")],
+     {REM: ["x02_recovery_copy_refusal_is_shown_in_the_recovery_menu"]}),
+    ("XM-MU35", "MERGED-X06", "absent current stages carry no reason",
+     [(HQ, "                    \"absent_reason\":"
+           " (\"current_attempt_unavailable\"\n",
+       "                    \"absent_reason\": (" + mexpr("XM-MU35")
+       + " and None and \"current_attempt_unavailable\"\n")],
+     {REM: ["x06_absent_current_attempt_stages_say_why"]}),
+    ("XM-MU36", "MERGED-X06", "Teach obeys the superseded example's state",
+     [(LN, "            elif row and row[1] not in _MINABLE_STATES:\n",
+       mark("XM-MU36", 12)
+       + "            if row and row[1] not in _MINABLE_STATES:\n")],
+     {REM: ["x06_teach_ignores_the_superseded_attempts_example_state"]}),
 ]
 
 

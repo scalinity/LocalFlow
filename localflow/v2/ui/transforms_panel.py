@@ -218,6 +218,19 @@ class TransformPreviewPanel(NSObject):
     def panelTransformResult_(self, sender):
         self._choose_definition(sender, "panelResultChosen:")
 
+    @objc.python_method
+    def reoffer_save(self, message, result):
+        """A Save to Scratchpad that did not settle keeps the result
+        here with the reason, so Save can be pressed again for the same
+        result (xm-policy-r1 D09) — only while no later preview has
+        replaced it."""
+        if self._state.get("result") is not result:
+            return
+        defn = self._state.get("defn")
+        self.panel.setTitle_(f"{defn.name if defn else 'Transform'} —"
+                             f" Save to Scratchpad: {message}")
+        self.panel.orderFrontRegardless()
+
     def panelResultChosen_(self, sender):
         st = self._state
         other = sender.representedObject()

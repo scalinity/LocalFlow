@@ -78,7 +78,7 @@ class Reopened:
     """The copied store reopened through the real ``Store``: ``store``
     is None when the open refused (``refusal`` holds the message)."""
 
-    def __init__(self, src_db, src_arts, table, workdir):
+    def __init__(self, src_db, src_arts, table, workdir, also=()):
         self.dir = pathlib.Path(workdir) / f"copy-{table}"
         self.dir.mkdir()
         self.db = self.dir / "v2.db"
@@ -90,6 +90,8 @@ class Reopened:
         self.arts = self.dir / "arts"
         shutil.copytree(src_arts, self.arts)
         drop_table(self.db, table)
+        for extra in also:
+            drop_table(self.db, extra)
         self.bk = self.dir / "bk"
         self.events = []
         self.refusal = None
@@ -488,17 +490,18 @@ def x01j_lost_assignments_keep_the_assignment_history():
 
 # ---- family siblings: each table's own dependent-state witness ---------------
 
-def lost(table, build, check):
+def lost(table, build, check, refusal_passes=True):
     """Build real state with ``build(w)``, lose ``table`` in a copy and
     reopen; ``check(store, ctx)`` asserts the semantic consequence (a
-    clean refusal passes)."""
+    clean refusal passes unless ``refusal_passes`` is False: a derivable
+    table must open and be rebuilt)."""
     with M.MWorld() as w:
         ctx = build(w)
         db, arts = closed_copy(w)
         with tempfile.TemporaryDirectory() as td:
             r = Reopened(db, arts, table, td)
             try:
-                if refused_cleanly(r):
+                if refusal_passes and refused_cleanly(r):
                     return
                 assert r.store is not None, f"open failed: {r.refusal}"
                 check(r.store, ctx)
@@ -596,14 +599,40 @@ def x01d2_lost_aggregates_never_hide_recorded_usage():
 
     def check(store, _ctx):
         an = AnalyticsStore(store, reporting_timezone="UTC")
-        an.ensure_current()
+        an.ensure_current()  # the launch drift check
         agg = X.rows(store, "SELECT day_local, dictations FROM"
                      " daily_aggregates")
-        facts = X.rows(store, "SELECT COUNT(*) FROM usage_facts")[0][0]
-        assert not facts or agg, (
-            f"{facts} recorded usage fact(s) read as a day with no"
-            " dictations in Insights after the repair")
-    lost("daily_aggregates", build, check)
+        assert agg == [("2026-09-27", 1)], (
+            "recorded usage read as a day with no dictations in Insights"
+            f" after the repair: {agg}")
+    # Derivable (xm-policy-r1 D01, review RV-07): the store opens and the
+    # launch check rebuilds it — refusing would stop dictation over a
+    # table usage_facts can recompute.
+    lost("daily_aggregates", build, check, refusal_passes=False)
+
+
+@case("MERGED-X01/A (review RV-06: schema_meta lost with a family table)")
+def x01k_lost_version_stamp_never_bypasses_family_integrity():
+    with M.MWorld() as w:
+        w.families(12, asr=True, frozen=2)
+        w.splits.assign()
+        assert w.one("SELECT COUNT(*) FROM training_memberships")[0], \
+            "fixture: no memberships"
+        db, arts = closed_copy(w)
+        with tempfile.TemporaryDirectory() as td:
+            r = Reopened(db, arts, "training_memberships", td,
+                         also=("schema_meta",))
+            try:
+                recreated = r.store is not None and X.rows(
+                    r.store, "SELECT COUNT(*) FROM training_memberships"
+                    )[0][0] == 0
+                assert refused_cleanly(r), (
+                    "a store that lost its version stamp and"
+                    " training_memberships opened"
+                    f" (memberships recreated empty={recreated},"
+                    f" backups={r.backups()}, refusal={r.refusal!r})")
+            finally:
+                r.close()
 
 
 # ---- recreate-safe classifications, measured -------------------------------
@@ -739,6 +768,28 @@ def c_every_historical_schema_upgrades_with_an_exact_backup():
                 [(str(version),)], version
             assert raw_rows(backups[0], "SELECT job_id, state FROM jobs") \
                 == before, version
+
+
+@case("MERGED-X01 control (review RV-06: only the version stamp lost)",
+      kind="control")
+def c_lost_version_stamp_alone_reopens_with_a_backup():
+    with M.MWorld() as w:
+        w.families(12, asr=True)
+        w.splits.assign()
+        before = w.one("SELECT COUNT(*) FROM training_memberships")[0]
+        db, arts = closed_copy(w)
+        with tempfile.TemporaryDirectory() as td:
+            r = Reopened(db, arts, "schema_meta", td)
+            try:
+                assert r.store is not None, f"refused: {r.refusal}"
+                assert X.rows(r.store, "SELECT COUNT(*) FROM"
+                              " training_memberships")[0][0] == before
+                assert r.store._schema_version() == max(
+                    store_mod._MIGRATIONS)
+                assert any(b.startswith("v2-pre-repair")
+                           for b in r.backups()), r.backups()
+            finally:
+                r.close()
 
 
 @case("MERGED-X01 control", kind="control")
