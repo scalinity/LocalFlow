@@ -71,7 +71,7 @@ live as of M13, the refusal check uses any unregistered name).
   rides the spec as `insights_service`, the training_service
   pattern). They return typed outcomes (`saved`/`refused`/`not_saved`
   for retention; `deleted`/`failed`/`not_started`/`outcome_unknown`
-  for deletions); every usage mutation — and the late reconciliation
+  for deletions); every usage deletion — and the late reconciliation
   of an unknown one — calls `HubState.invalidate_usage()` (epoch fence;
   the cached Insights report, including a cached Your Voice profile, is
   cleared; a visible Insights view reloads). Settings actions render a

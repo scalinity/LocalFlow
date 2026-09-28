@@ -77,7 +77,7 @@
     },
     "D10_REPORT_SNAPSHOT": {
       "canonical_requirements": ["one rendered report = one fact snapshot"],
-      "chosen": "The Insights Usage report is materialized in ONE writer op (summary, daily, per-app, per-mode, filter options, Undated, legacy) and carries the usage revision it read. Every usage mutation revokes pending Insights results (and a cached Your Voice profile) through the Hub state's usage invalidation, for committed and outcome-unknown mutations alike; the scheduled retention revalidation is kept.",
+      "chosen": "The Insights Usage report is materialized in ONE writer op (summary, daily, per-app, per-mode, filter options, Undated, legacy) and carries the usage revision it read. Every usage deletion revokes pending Insights results (and a cached Your Voice profile) through the Hub state's usage invalidation, for committed and outcome-unknown deletions alike and again when an unknown one is reconciled; the scheduled retention pass keeps its revalidation. A new fact does not revoke: a report is still one consistent generation and the next load shows the fact.",
       "alternatives_rejected": ["revision re-check with restart loops"],
       "migration_history": "usage_meta carries the usage revision (schema v12).",
       "affected": ["InsightsQueryService.report", "HubState._load_insights", "HubState.invalidate_usage"]

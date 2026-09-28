@@ -46,7 +46,7 @@ a counter reset.
 ## Admission (D02, D14)
 
 - **Instants.** A new usage instant is admitted only as UTC with an
-  uppercase Z and zero-padded fields: `YYYY-MM-DDTHH:MM:SSZ` or
+  uppercase Z, zero-padded fields and ASCII digits: `YYYY-MM-DDTHH:MM:SSZ` or
   `YYYY-MM-DDTHH:MM:SS.<1-6 digits>Z`. Anything else — offsets,
   lowercase z, missing zone, unpadded fields, seven or more fractional
   digits, empty or non-string values — is refused with
@@ -81,8 +81,14 @@ zone; configuration falls back to the system zone and emits
 `analytics.timezone_config_invalid` (key and reason only). At launch,
 `ensure_current()` rebuilds everything in one writer op when the
 committed zone differs from the configured one, when any fact or
-aggregate row carries another zone, or when any aggregate row carries
-another algorithm version.
+aggregate row carries another zone, when any aggregate row carries
+another algorithm version, or when any stored instant is outside the
+canonical form (a row admitted before canonical storage — the rebuild
+canonicalizes it). The same op sweeps completion markers no process is
+waiting for and, when no usage exists, redacts any Your Voice usage copy
+left by an earlier deletion. The displayed zone (`hubUsageInfo`) is read
+from the store, so a rebuild whose caller timed out cannot leave the
+display on the old zone.
 
 ## Aggregates and versioned recomputation
 
@@ -197,7 +203,9 @@ the capture instant never changes. A cancel while holding records
   `outcome_unknown` (the caller's bounded wait timed out after admission
   — a timeout is not cancellation). Each deletion writes a durable
   completion marker in its own transaction; an unknown outcome is
-  reconciled by a later FIFO read of that marker (then removed).
+  reconciled by a later FIFO read of that marker (then removed); a
+  committed deletion retires its marker at once. The reconciled result
+  replaces the "not known yet" note where it was shown.
   Committed and unknown outcomes revoke Insights views at once, and again
   when reconciled.
 
@@ -212,7 +220,7 @@ transforms and repastes, latency blocks with n and missing reasons,
 per-app and per-mode lines, future-dated and word-version disclosures,
 Undated and legacy lines, Definitions); the dated daily table. Changing
 the app or mode keeps the selected range. Each load is one `report()`;
-a usage mutation calls `HubState.invalidate_usage()` (epoch fence,
+a usage deletion calls `HubState.invalidate_usage()` (epoch fence,
 cached report cleared, visible view reloaded). Settings actions render
 returned refusals, failures and unknown outcomes.
 
