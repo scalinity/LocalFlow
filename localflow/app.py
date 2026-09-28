@@ -2052,10 +2052,11 @@ class AppDelegate(NSObject):
         # creating a second one (xm-policy-r1 D09, MERGED-X09).
         key = (job.task_key() if job is not None else None,
                v2.ids.sha256_text(result.output))
-        note_id = self._tf_pending_saves.get(key) or v2.ids.new_id("note")
+        pending = self._tf_pending_saves.get(key)
+        note_id = pending or v2.ids.new_id("note")
         self._tf_pending_saves[key] = note_id
         try:
-            if self._notes_store.open_note(note_id) is not None:
+            if pending and self._notes_store.open_note(note_id) is not None:
                 out = {"note_id": note_id}  # the earlier save committed
             else:
                 out = self._notes_store.create_note(

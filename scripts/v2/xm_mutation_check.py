@@ -155,9 +155,10 @@ MUTATIONS = [
        " change may\"\n")],
      {REM: ["x08_admitted_add_timeout_is_unknown_and_one_transform_results"]}),
     ("XM-MU12", "MERGED-X09", "Save to Scratchpad forgets the note id",
-     [(APP, "        note_id = self._tf_pending_saves.get(key) or"
-            " v2.ids.new_id(\"note\")\n",
-       mark("XM-MU12", 8) + "        note_id = v2.ids.new_id(\"note\")\n")],
+     [(APP, "        pending = self._tf_pending_saves.get(key)\n"
+            "        note_id = pending or v2.ids.new_id(\"note\")\n",
+       mark("XM-MU12", 8) + "        pending = None\n"
+       "        note_id = v2.ids.new_id(\"note\")\n")],
      {REM: ["x09_admitted_save_timeout_then_retry_makes_one_note"]}),
     ("XM-MU13", "MERGED-X10", "unknown deletion reported as failed",
      [(APP, "                    outcome = (\"source_deletion_unknown\"\n"

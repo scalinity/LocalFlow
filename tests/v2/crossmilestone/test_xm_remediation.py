@@ -888,10 +888,14 @@ def x09_admitted_save_timeout_then_retry_makes_one_note():
         text = "TRANSFORMNOTECANARY saved output"
         result = _transform_result(text)
         defn = types.SimpleNamespace(name="Witness transform")
-        with WriterHold(store) as hold, caller_timeout(store):
+        # Exactly the note CREATE is admitted and unanswered; nothing
+        # else is held (a held read would never admit the create).
+        with X.hold_at(store, "_append") as held:
             h.d.tfSaveToScratchpad(result, defn)
-            hold.release()
+            assert held.reached, "fixture: the create was never admitted"
         store.sync()
+        assert len(notes_with(store, text)) == 1, \
+            "fixture: the admitted create did not commit"
         h.d.tfSaveToScratchpad(result, defn)  # the same logical Save
         store.sync()
         got = notes_with(store, text)
