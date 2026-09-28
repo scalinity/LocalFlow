@@ -86,6 +86,18 @@ not matching state, so an applied hit never forces a snapshot rebuild
 (approval was checked at match time under the frozen revision, so an
 entry disabled mid-flight still records its applied use).
 
+**Composable operations.** A caller that must decide and change the
+dictionary in one writer op (M14 learning approval and undo —
+contracts/learning.md) uses `VocabularyStore`'s connection-level
+methods inside its own op instead of the public ones, which submit ops
+of their own: `entries_in`, `entry_in`, `revision_in`, `find_in`
+(the entry holding a canonical in a scope, under M05's own identity —
+NOCASE canonical, canonical scope value), `add_entry_in` and
+`update_entry_in` (with the entry's expected revision). They run the
+same validation, counter bump and history append as `add_entry` /
+`update_entry`, built by the same entry builder — there is one set of
+rules, not two.
+
 ## HintSet and selector (S30.1)
 
 `RelevantVocabularySelector(max_terms)` ranks enabled in-scope entries

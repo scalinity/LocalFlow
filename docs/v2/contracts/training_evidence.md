@@ -288,9 +288,21 @@ verbatim reference covers its whole clip; span corrections have no
 audio alignment and add no seconds). Every readiness number counts
 TRAINABLE examples (quarantined content is retained storage, never a
 readiness class or task); its outcome classes partition trainable +
-excluded examples, exclusion first; task eligibility needs each
-record's exact inputs retained, with excluded records counted by
-reason (contracts/analytics.md, M13 decision D12).
+excluded examples, exclusion first; task eligibility is the export's
+own predicate per view, with excluded records counted by reason
+(contracts/analytics.md, M13 decision D12, m14-policy-r1).
+
+Reviewed-evidence payloads — `verbatim_reference`, `span_correction`,
+`span_graft`, `candidate_observation` — carry their own never-expiring
+training lease and are not user pins (m14-policy-r1 D08): pin never
+double-leases them and unpin never revokes them, and a machine-mined
+`candidate_observation` keeps its finite training-buffer lease, so
+pinning a job never makes a pending machine suggestion permanent. The
+set is one constant, `training_data.REVIEW_RETENTION_ROLES`, which also
+holds `counterexample_result` (an approval's checked phrases): pin and
+unpin leave it alone too, and its own lease is the finite training
+buffer — it is removed with its job, its expiry or its candidate going
+stale.
 
 ## M02 remediation (consent boundary, publication, provenance)
 

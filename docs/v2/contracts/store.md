@@ -210,6 +210,22 @@ orphan payload files.
   would deadlock the writer. A refusal found inside an op returns as
   data and is raised after the op (an in-op raise surfaces wrapped as
   `RuntimeError`).
+- Migration v13 (M14 remediation; additive, `CREATE TABLE IF NOT
+  EXISTS` only) adds `m14_operation_receipts` — the recorded outcome of
+  each repeat-sensitive M14 action under its caller-supplied operation
+  id (kind, target id, receipt), so a retry after an unknown outcome
+  returns the receipt instead of acting twice; an id reused for a
+  different kind of action refuses — and `learning_vocabulary_deltas`
+  — per candidate, exactly what its approval changed in the dictionary
+  (entry id, action, alias, entry revision) and what its undo left, so
+  undo reverses only that delta (contracts/learning.md). Both are
+  content-free. The torn-write repair path covers them.
+- `open_managed_file(directory, name)` streams a large payload (export
+  audio) under the same admission as `read_managed_file`: one plain
+  managed name, opened no-follow and non-blocking, regular files only.
+- Every artifact an M14 consumer reads is admitted by
+  `localflow.v2.curation.evidence.qualify` (contracts/learning.md,
+  m14-policy-r1 D11).
 
 ## M02 remediation (schema v11; no frozen identity changed)
 

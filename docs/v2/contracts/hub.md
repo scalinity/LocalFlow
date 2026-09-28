@@ -282,10 +282,18 @@ live as of M13, the refusal check uses any unregistered name).
   review queue with machine-suggested axes, sampling coverage and the
   same-task pairs awaiting judgment; actions: Draw Sample, Mine
   Candidates, Approve (with an optional counterexample phrase —
-  a would-flip rule is refused with the flip shown), Reject, record a
-  label (edit-kind popup), and pair judgments prefer A / prefer B /
-  tie / neither / uncertain (contracts/learning.md,
-  contracts/preferences.md). **Splits** shows
+  a would-flip rule is refused with the flip shown; none is recorded
+  as untested), Reject, record a label (edit-kind popup), and pair
+  judgments prefer A / prefer B / tie / neither / uncertain
+  (contracts/learning.md, contracts/preferences.md). Approve and Reject
+  act on the candidate chosen in the candidate popup, by the rendered
+  row's own `candidate_id` — a job-only teach with no example row is
+  selectable; a queue refreshed or reordered after rendering never
+  redirects the action to another row (m14-policy-r1 D15). Record Label
+  stays bound to the example id shown in the example field. The pair
+  pane shows the shared source text and both candidate texts with their
+  candidate ids in display order; a judgment records exactly that pair
+  in that slot order. **Splits** shows
   the version summary, family table and contamination report; actions:
   Assign, Mark Exposed. **Export** shows per-view checkboxes, a
   destination field and the last export's state; actions: Export,
@@ -300,10 +308,26 @@ live as of M13, the refusal check uses any unregistered name).
   the newest action of its key, under that action's own note (shown
   when its tab is next on screen), and never navigates — the user may
   have moved on.
+- **Operation ids and unknown outcomes.** Every M14 write action —
+  Teach, Approve, Reject, Undo, Record Label, pair judgments, Assign,
+  Mark Exposed, Export — carries an operation id per logical action.
+  When the store is busy past the action's wait (an admitted
+  `TimeoutError`) the write may still commit: the pane says the outcome
+  is unknown, never that it failed, and repeating the same action on
+  the same item reuses the same id, so the service returns the recorded
+  receipt instead of acting twice. A known outcome (done or refused)
+  retires the id.
+- **Layout.** The Review, History and Export controls sit on
+  non-overlapping frames inside their panes at the default window size,
+  each fully visible and hittable; the export view checkboxes wrap three
+  per row.
 - **History → Teach** (S22/S29.2): the corrected text for the selected
-  job becomes an explicit learning candidate; refusals
-  (`unchanged_output`, `not_target_bound_correction`,
-  `no_retained_final_text`) show beside the detail.
+  job becomes an explicit learning candidate, bound to the cleaned
+  final the detail rendered (its artifact id and sha256 — contracts/
+  learning.md); a transformed final is refused before the service is
+  called. Refusals (`unchanged_output`, `stale_final`,
+  `not_target_bound_correction`, `no_retained_final_text`) show beside
+  the detail.
 - **Insights → Your Voice** renders the current profile snapshot —
   absent, invalidated (reason only, never its stale numbers) or
   current (measured block, cards with their evidence ids and coverage)

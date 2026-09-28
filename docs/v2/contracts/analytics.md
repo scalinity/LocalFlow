@@ -234,13 +234,19 @@ first — unreviewed / verified positive / verified failure / unobserved /
 excluded, adding up to `population`; counts, never rates. Capture
 completeness, exact audio-join coverage (an unpurged `original_audio`
 row of the SAME job), reviewed seconds and task eligibility share the
-trainable population. Task eligibility counts records whose exact
-inputs are retained — ASR: a listened verbatim reference and its own
-retained audio; cleanup: an intended-writing mark and the retained
-source text; transform: a task with a candidate whose source and output
-are retained; preference pairs: an explicit comparable judgment between
-two retained candidates of the same task — with excluded records
-counted by reason. `nearing_expiry` counts trainable examples whose
+trainable population. Task eligibility counts exactly the records the
+export would admit, through the same predicates
+(`task_eligibility_revision` `m14-policy-r1`; contracts/
+dataset_exports.md) — ASR: the ASR promotion gate (the example's own
+listened verbatim reference and own retained audio file, no ASR
+blocker under the effective judgment); cleanup: an intended-writing
+`correct` mark with the example's own stage input and applied output,
+counted per `tiers` (`model_task_complete` / `text_pair_only`);
+transform: candidates whose latest accept/reject is accept, with
+`captured_tasks` (tasks with a retained candidate) reported
+separately; preference pairs: the preference predicate on the pair's
+current comparable judgment — with excluded records counted by reason.
+`nearing_expiry` counts trainable examples whose
 retained, training-held artifact's protection (latest unrevoked lease;
 a never-expiring lease is a pin) ends in (now, now + 3 days] at the
 store clock. `readiness_definition_revision` is `m13-r1`.
