@@ -840,8 +840,12 @@ def c196_secondary_signature_cannot_absorb(entry):
             changed = w.profile.compute(only_if_changed=True)
             n1 = snapshots(w)
         cur = w.profile.current()
-        probs = card_problems(cur, c, active_terms={
-            c.term_id: "Terraform Cloud"})
+        # Speech-derived terms keep the spelling those dictations applied
+        # (cross-milestone MERGED-X11); the edit shows in the labeled
+        # current-dictionary view.
+        probs = card_problems(cur, c)
+        current = json.dumps(cur["measured"].get(
+            "dictionary_terms_with_recorded_use"))
         return check({
             "metadata_move_skipped": bool(meta.get("skipped"))
                 and bool(quiet.get("skipped")),
@@ -849,7 +853,8 @@ def c196_secondary_signature_cannot_absorb(entry):
             "counters_constant": tuple(before) == tuple(after),
             "canonical_edit_recomputed": not changed.get("skipped")
                 and n1 == n0 + 1,
-            "output_follows_edit": not probs,
+            "output_follows_edit": not probs
+                and "Terraform Cloud" in current,
         }, {"snapshots": [n0, n1], "problems": probs,
             "quiet_reads": quiet_reads},
             witness="unrelated purge (fast signature moves, evidence"
@@ -1424,13 +1429,17 @@ def c208_canonical_once(entry):
         outs = [w.profile.compute(only_if_changed=True) for _ in range(3)]
         cur = w.profile.current()
         terms = list(tech_terms(cur["measured"]))
+        current = json.dumps(cur["measured"].get(
+            "dictionary_terms_with_recorded_use"))
+        # Speech-derived terms keep the applied spelling (cross-milestone
+        # MERGED-X11); the current-dictionary view carries the edit.
         return check({
             "counters_constant": tuple(before) == tuple(after),
             "exactly_once": [bool(o.get("skipped")) for o in outs]
                 == [False, True, True] and snapshots(w) == n0 + 1,
-            "term_output_updated": terms == ["Terraform Enterprise"],
-            "oracle": not card_problems(cur, c, active_terms={
-                c.term_id: "Terraform Enterprise"}),
+            "term_output_updated": terms == ["Terraform"]
+                and "Terraform Enterprise" in current,
+            "oracle": not card_problems(cur, c),
         }, {"terms": terms}, witness="update_entry canonical; three idle"
             " ticks")
 
