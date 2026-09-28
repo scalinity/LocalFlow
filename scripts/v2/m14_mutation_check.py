@@ -81,11 +81,11 @@ def mexpr(mid):
 EDITS = {
     "LF-M14-MU001": [(RV,
         "    audio = ev.qualify(conn, audio_aid, \"original_audio\","
-        " job_id=job_id)\n",
+        " job_id=job_id,\n",
         mark("LF-M14-MU001", 4)
         + "    audio = ev.qualify(conn, audio_aid, \"original_audio\","
           " job_id=(conn.execute(\"SELECT job_id FROM artifacts WHERE"
-          " artifact_id=?\", (audio_aid,)).fetchone() or [job_id])[0])\n")],
+          " artifact_id=?\", (audio_aid,)).fetchone() or [job_id])[0],\n")],
     "LF-M14-MU002": [(EV,
         "    return role in SLOT_ROLES.get(slot, ())\n",
         "    if slot == \"source_text\":\n"
@@ -245,8 +245,8 @@ EDITS = {
         "        \"mining\": mine_observations_only,\n",
         "        \"mining\": lambda: " + mexpr("LF-M14-MU026") + " and 0,\n")],
     "LF-M14-MU027": [(EV,
-        "        if not path or not managed_name_ok(path):\n",
-        mark("LF-M14-MU027", 8) + "        if not path:\n"),
+        "        if not path or not managed_name_ok(path) or \\\n",
+        mark("LF-M14-MU027", 8) + "        if not path or \\\n"),
         (EX,
         "                src = open_managed_file(self.store.artifacts_dir,\n"
         "                                        artifact[\"path\"])\n",
