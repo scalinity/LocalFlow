@@ -374,58 +374,84 @@ def test_readiness_triad_honest():
               " improvement (improvement: post-V2)")
 
 
+def _reached(name):
+    """Runner-activation witness (M13-AUDIT-27): a named test records
+    that it executed when M13_REACHED_MANIFEST names a file, and fails
+    on purpose when M13_FORCE_FAIL names it — so a runner that omits it,
+    or reports it without running it, is detectable."""
+    import os
+    manifest = os.environ.get("M13_REACHED_MANIFEST")
+    if manifest:
+        with open(manifest, "a", encoding="utf-8") as fh:
+            fh.write(name + "\n")
+    assert os.environ.get("M13_FORCE_FAIL") != name, \
+        f"{name}: forced failure (activation guard)"
+
+
 def test_readiness_aggregates_m13():
-    """M13's E19.4 aggregates: the five outcome classes stay DISTINCT
-    (AC05), every metric carries a denominator, the join coverage can
-    actually fall below 100%, and not-available stays explicit — never
-    a fabricated number or rate."""
+    """M13's E19.4 aggregates (decision m13-policy-r1 D12): the outcome
+    classes PARTITION live + excluded examples, exclusion first (AC05)
+    — they add up to the population; completeness, join coverage,
+    reviewed seconds and task eligibility share the live population;
+    the join coverage can actually fall below 100%; not-available stays
+    explicit — never a fabricated number or rate."""
+    _reached("test_readiness_aggregates_m13")
     with Env() as e:
-        ex1 = e.add_example()                 # audio + unreviewed
-        ex2 = e.add_example(with_audio=False)  # no audio, unreviewed
+        ex1 = e.add_example()                 # audio + reviewed below
+        ex2 = e.add_example(with_audio=False)  # no audio
+        ex3 = e.add_example()                 # audio, unreviewed
         # ex1's 1.0 s clip gets an audio-reviewed verbatim reference.
         e.svc.set_verbatim(ex1, "synthetic verbatim words",
                            listened_audio=True)
-        # A verified positive and a verified failure (intended marks).
+        # A verified positive and a verified failure (intended marks);
+        # the failure is then excluded — excluded wins, one class.
         e.svc.mark_intended(ex1, True)
         e.svc.mark_intended(ex2, False)
-        # An excluded example leaves the capture-completeness base but
-        # stays its own class.
         e.svc.exclude(ex2)
         r = e.svc.readiness()
         balance = r["outcome_balance"]
-        assert set(balance) == {"unreviewed", "verified_positive",
-                                "verified_failure", "unobserved",
-                                "excluded", "note"}
-        assert balance["verified_positive"] == 1
-        assert balance["verified_failure"] == 1
-        assert balance["excluded"] == 1
-        assert "never rates" in balance["note"]  # no population WER
+        assert {"unreviewed", "verified_positive", "verified_failure",
+                "unobserved", "excluded", "note",
+                "population"} <= set(balance)
+        # Independent partition: live = {ex1 (positive), ex3
+        # (unreviewed)}, excluded = {ex2}.
+        assert (balance["verified_positive"], balance["verified_failure"],
+                balance["unreviewed"], balance["unobserved"],
+                balance["excluded"]) == (1, 0, 1, 0, 1), balance
+        classes = sum(balance[k] for k in (
+            "unreviewed", "verified_positive", "verified_failure",
+            "unobserved", "excluded"))
+        assert classes == balance["population"] == 3, balance
+        assert "not rates" in balance["note"]  # no population WER
         m = r["readiness_metrics"]
-        # Denominators present and honest.
-        assert m["capture_completeness"]["denominator"] == 1  # live only
-        assert m["exact_audio_join_coverage"]["denominator"] == 1
-        assert m["exact_audio_join_coverage"]["joined"] == 1
-        assert "definition" in m["exact_audio_join_coverage"]
+        # One live population behind every numerator and denominator.
+        cc = m["capture_completeness"]
+        assert (cc["complete"], cc["denominator"]) == (2, 2), cc
+        assert m["exact_audio_join_coverage"]["denominator"] == 2
+        assert m["exact_audio_join_coverage"]["joined"] == 2
         # Verbatim coverage in reviewed SECONDS over retained seconds.
         v = m["verbatim_reference_coverage"]
-        assert v["examples"] == 1 and v["denominator"] == 1
+        assert v["examples"] == 1 and v["denominator"] == 2, v
         assert v["reviewed_seconds"] == 1.0 and \
-            v["retained_seconds"] == 1.0, v
+            v["retained_seconds"] == 2.0, v
         assert "no audio alignment" in v["seconds_definition"]
-        # A dangling audio id (envelope names an id with no row) lowers
-        # the join coverage — never a tautological 100%.
+        t = m["task_eligibility"]
+        assert t["asr_supervised"]["count"] == 1, t
+        assert t["cleanup_supervised"]["count"] == 1, t  # ex2 excluded
+        # A dangling audio id on a LIVE example lowers the join coverage
+        # — never a tautological 100%.
         import json as _json
+
         def _dangle(db):
+            env = _json.loads(db.execute(
+                "SELECT envelope_json FROM training_revisions WHERE"
+                " example_id=? ORDER BY rowid DESC LIMIT 1",
+                (ex3,)).fetchone()[0])
+            env["artifact_ids"]["original_audio"] = "art-does-not-exist"
             db.execute(
                 "UPDATE training_revisions SET envelope_json=? WHERE"
-                " example_id=(SELECT example_id FROM training_revisions"
-                " ORDER BY rowid DESC LIMIT 1)",
-                (_json.dumps({
-                    "example_id": "ex-dangle", "job_id": "job-dangle",
-                    "family_id": "fam-dangle",
-                    "artifact_ids": {"original_audio":
-                                     "art-does-not-exist"},
-                    "outcome": {"correctness": "unreviewed"}}),))
+                " rowid=(SELECT MAX(rowid) FROM training_revisions WHERE"
+                " example_id=?)", (_json.dumps(env), ex3))
         e.store.submit(_dangle)
         r2 = e.svc.readiness()
         j = r2["readiness_metrics"]["exact_audio_join_coverage"]
@@ -435,16 +461,16 @@ def test_readiness_aggregates_m13():
                     "transform_supervised", "preference_pairs"):
             assert "definition" in m["task_eligibility"][key]
         # Not-available stays explicit; M14 fills the two slots it
-        # owned (split contamination, export integrity) and computes
-        # nearing-expiry for real — an int count, never a fabricated 0.
+        # owned (split contamination, export integrity).
         na = m["not_available"]
         assert na["comparator_coverage"] == "not_available_until_m15"
         assert na["population_wer"] == "no_references_no_population_claims"
         assert m["split_contamination"] == "not_available_no_assignment"
         assert m["export_integrity"] == "not_available_no_export"
-        assert isinstance(m["retention_health"]["nearing_expiry"], int)
-        print("ok  M13 readiness aggregates: five classes, denominators,"
-              " honest join coverage; M14 slots filled")
+        # Every lease here expires in 30 days: nothing is nearing.
+        assert m["retention_health"]["nearing_expiry"] == 0
+        print("ok  M13 readiness aggregates: exclusive partition, one live"
+              " population, honest join coverage; M14 slots filled")
 
 
 def test_examples_text_search():
@@ -514,6 +540,7 @@ if __name__ == "__main__":
     test_persistent_pin_and_exclusion()
     test_delete_everywhere_and_inspection_without_engine()
     test_readiness_triad_honest()
+    test_readiness_aggregates_m13()
     test_examples_text_search()
     test_replay_service_over_real_store()
     print("all training data inspector tests passed")

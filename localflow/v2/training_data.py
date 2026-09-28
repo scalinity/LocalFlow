@@ -39,7 +39,7 @@ import json
 import time
 
 from . import ids
-from .store import (LIVE_EXAMPLE_STATES, conn_append_revision,
+from .store import (TRAINABLE_STATES, conn_append_revision,
                     grant_lease_row, insert_text_artifact_row)
 
 EXAMPLE_STATES = ("captured_unreviewed", "review_candidate", "annotated",
@@ -657,19 +657,34 @@ class TrainingDataService:
                     "SELECT state, COUNT(*) FROM training_examples GROUP"
                     " BY state").fetchall():
                 by_state[st] = n
+            # m13-policy-r1 D12: ONE population behind every number. The
+            # outcome classes partition live + excluded examples,
+            # exclusion first (an excluded example is only 'excluded');
+            # deleted/expired/quarantined are storage states, never
+            # readiness classes. Completeness, join coverage, reviewed
+            # seconds and task eligibility all count live examples only,
+            # and a task counts an example only while its exact inputs
+            # are retained (reasons are counted for the rest).
             verbatim = intended = spans = 0
             verified_correct = verified_incorrect = 0
             unreviewed_outcomes = unobserved_outcomes = 0
+            excluded_class = 0
             audio_count = 0
             audio_referenced = 0
             audio_seconds = 0.0
             verbatim_seconds = 0.0
             complete_examples = 0
             live_examples = 0
+            asr_eligible = cleanup_eligible = 0
+            asr_reasons: dict = {}
+            cleanup_reasons: dict = {}
             training_bytes = 0
             families = set()
             sessions = set()
-            live_example_states = LIVE_EXAMPLE_STATES
+            # Readiness counts TRAINABLE examples: quarantined content is
+            # retained (a storage state) but never feeds a readiness class
+            # or a task (M13 D12, corpus C216).
+            live_example_states = TRAINABLE_STATES
             latest = conn.execute(
                 "SELECT example_id, envelope_json FROM"
                 " training_revisions WHERE rowid IN (SELECT MAX(rowid)"
@@ -677,14 +692,34 @@ class TrainingDataService:
             state_rows = dict(conn.execute(
                 "SELECT example_id, state FROM training_examples"
             ).fetchall())
+            job_rows = dict(conn.execute(
+                "SELECT example_id, job_id FROM training_examples"
+            ).fetchall())
+
+            def retained_text(artifact_id) -> bool:
+                if not artifact_id:
+                    return False
+                row = conn.execute(
+                    "SELECT purged FROM artifacts WHERE artifact_id=?",
+                    (artifact_id,)).fetchone()
+                return row is not None and not row[0]
+
+            def bump(reasons, key):
+                reasons[key] = reasons.get(key, 0) + 1
+
             for _ex_id, payload in latest:
+                state = state_rows.get(_ex_id)
+                if state == "excluded":
+                    excluded_class += 1
+                    continue
+                if state not in live_example_states:
+                    continue
                 env = json.loads(payload)
+                live_examples += 1
                 if env.get("family_id"):
                     families.add(env["family_id"])
                 if env.get("session_id"):
                     sessions.add(env["session_id"])
-                if state_rows.get(_ex_id) in live_example_states:
-                    live_examples += 1
                 anns = env.get("annotations") or []
                 has_verbatim = any(
                     a.get("kind") == "verbatim_reference"
@@ -714,16 +749,22 @@ class TrainingDataService:
                 missing = env.get("missing_reasons") or {}
                 audio_id = arts.get("original_audio")
                 audio_ok = False
+                clip = 0.0
                 if audio_id:
-                    # Join denominator: every envelope that NAMES an
-                    # audio artifact — resolvable or not — so a dangling
-                    # id can actually surface (never a tautological
-                    # 100%).
+                    # Join denominator: every live envelope that NAMES
+                    # an audio artifact — resolvable or not — so a
+                    # dangling id can actually surface (never a
+                    # tautological 100%). An exact join is an unpurged
+                    # original_audio row owned by the SAME job; another
+                    # job's or another kind's row is not linkage.
                     audio_referenced += 1
                     arow = conn.execute(
-                        "SELECT purged, meta_json FROM artifacts"
-                        " WHERE artifact_id=?", (audio_id,)).fetchone()
-                    if arow and not arow[0]:
+                        "SELECT purged, meta_json, job_id, role FROM"
+                        " artifacts WHERE artifact_id=?",
+                        (audio_id,)).fetchone()
+                    owner = env.get("job_id") or job_rows.get(_ex_id)
+                    if arow and not arow[0] and arow[2] == owner \
+                            and arow[3] == "original_audio":
                         audio_count += 1
                         audio_ok = True
                         try:
@@ -732,10 +773,20 @@ class TrainingDataService:
                         except (ValueError, TypeError):
                             clip = 0.0
                         audio_seconds += clip
-                        if has_verbatim:
-                            # A verbatim reference covers the whole
-                            # clip (coverage "full").
-                            verbatim_seconds += clip
+                if has_verbatim:
+                    if audio_ok:
+                        asr_eligible += 1
+                        # A verbatim reference covers the whole clip
+                        # (coverage "full"); partial span corrections
+                        # add no reviewed seconds.
+                        verbatim_seconds += clip
+                    else:
+                        bump(asr_reasons, "audio_not_retained")
+                if correctness in ("correct", "incorrect"):
+                    if retained_text(arts.get("source_text")):
+                        cleanup_eligible += 1
+                    else:
+                        bump(cleanup_reasons, "source_text_not_retained")
                 source_ok = bool(arts.get("source_text")) or \
                     "source_text" in missing
                 applied_ok = bool(arts.get("applied_output")) or \
@@ -795,48 +846,94 @@ class TrainingDataService:
                 }
             else:
                 export_integrity = "not_available_no_export"
-            cutoff = time.time() + 3 * 86400
-            cutoff_iso = ids.now_utc_iso(cutoff)
-            now_iso = ids.now_utc_iso()
+            # Nearing expiry (D12): live examples holding a RETAINED,
+            # training-held artifact whose protection — the latest
+            # unrevoked lease end; any never-expiring lease is a pin —
+            # ends inside the future window (now, now + 3 days]. Already
+            # expired, purged and pinned artifacts are not "nearing".
+            now_t = self.store.now_fn()
+            now_iso = ids.now_utc_iso(now_t)
+            cutoff_iso = ids.now_utc_iso(now_t + 3 * 86400)
             placeholders = ",".join("?" * len(live_example_states))
             nearing = conn.execute(
                 "SELECT COUNT(DISTINCT e.example_id) FROM"
                 " training_examples e JOIN artifacts a ON"
-                " a.job_id=e.job_id JOIN artifact_leases l ON"
-                " l.artifact_id=a.artifact_id WHERE e.state IN"
-                f" ({placeholders}) AND l.holder='training' AND"
-                " l.revoked_at_utc IS NULL AND l.expires_at_utc IS NOT"
-                " NULL AND l.expires_at_utc <= ?",
-                (*live_example_states, cutoff_iso)).fetchone()[0]
+                " a.job_id=e.job_id AND a.purged=0 WHERE e.state IN"
+                f" ({placeholders}) AND EXISTS (SELECT 1 FROM"
+                " artifact_leases l WHERE l.artifact_id=a.artifact_id"
+                " AND l.holder='training' AND l.revoked_at_utc IS NULL)"
+                " AND NOT EXISTS (SELECT 1 FROM artifact_leases l WHERE"
+                " l.artifact_id=a.artifact_id AND l.revoked_at_utc IS"
+                " NULL AND l.expires_at_utc IS NULL) AND (SELECT"
+                " MAX(l.expires_at_utc) FROM artifact_leases l WHERE"
+                " l.artifact_id=a.artifact_id AND l.revoked_at_utc IS"
+                " NULL) > ? AND (SELECT MAX(l.expires_at_utc) FROM"
+                " artifact_leases l WHERE l.artifact_id=a.artifact_id AND"
+                " l.revoked_at_utc IS NULL) <= ?",
+                (*live_example_states, now_iso, cutoff_iso)).fetchone()[0]
             # Task eligibility (S29.12's minimum evidence, each with its
-            # own definition — reported separately, never merged).
+            # own definition — reported separately, never merged): a
+            # record counts only while its exact inputs are retained;
+            # records left out are counted by reason.
+            task_keys = conn.execute(
+                "SELECT COUNT(DISTINCT task_key) FROM"
+                " transform_candidates").fetchone()[0]
+            transform_ok = conn.execute(
+                "SELECT COUNT(DISTINCT c.task_key) FROM"
+                " transform_candidates c JOIN artifacts s ON"
+                " s.artifact_id=c.source_artifact_id AND s.purged=0"
+                " JOIN artifacts o ON o.artifact_id=c.output_artifact_id"
+                " AND o.purged=0").fetchone()[0]
+            judged = conn.execute(
+                "SELECT COUNT(DISTINCT task_key) FROM"
+                " preference_observations WHERE judgment IN"
+                " ('prefer_a','prefer_b','tie','neither')").fetchone()[0]
+            pairs_ok = conn.execute(
+                "SELECT COUNT(DISTINCT p.task_key) FROM"
+                " preference_observations p JOIN transform_candidates a"
+                " ON a.candidate_id=p.candidate_id AND"
+                " a.task_key=p.task_key JOIN transform_candidates b ON"
+                " b.candidate_id=p.candidate_b_id AND"
+                " b.task_key=p.task_key JOIN artifacts sa ON"
+                " sa.artifact_id=a.source_artifact_id AND sa.purged=0"
+                " JOIN artifacts oa ON oa.artifact_id=a.output_artifact_id"
+                " AND oa.purged=0 JOIN artifacts ob ON"
+                " ob.artifact_id=b.output_artifact_id AND ob.purged=0"
+                " WHERE p.judgment IN"
+                " ('prefer_a','prefer_b','tie','neither')").fetchone()[0]
             task_eligibility = {
                 "asr_supervised": {
-                    "count": verbatim,
-                    "definition": "retained audio + audio-reviewed"
-                                  " verbatim reference",
+                    "count": asr_eligible,
+                    "excluded": asr_reasons,
+                    "definition": "live examples with an audio-reviewed"
+                                  " verbatim reference and their own"
+                                  " retained original audio",
                 },
                 "cleanup_supervised": {
-                    "count": intended,
-                    "definition": "exact stage input retained + explicit"
-                                  " intended-writing mark",
+                    "count": cleanup_eligible,
+                    "excluded": cleanup_reasons,
+                    "definition": "live examples with an explicit"
+                                  " intended-writing mark and their"
+                                  " exact stage input retained",
                 },
                 "transform_supervised": {
-                    "count": conn.execute(
-                        "SELECT COUNT(DISTINCT task_key) FROM"
-                        " transform_candidates").fetchone()[0],
-                    "definition": "distinct transform tasks with retained"
-                                  " candidates (reviewed targets are"
+                    "count": transform_ok,
+                    "excluded": ({"candidate_payload_not_retained":
+                                  task_keys - transform_ok}
+                                 if task_keys > transform_ok else {}),
+                    "definition": "distinct transform tasks with a"
+                                  " candidate whose source and output"
+                                  " are retained (reviewed targets are"
                                   " M14's review queue)",
                 },
                 "preference_pairs": {
-                    "count": conn.execute(
-                        "SELECT COUNT(DISTINCT task_key) FROM"
-                        " preference_observations WHERE judgment IN"
-                        " ('prefer_a','prefer_b','tie','neither')"
-                    ).fetchone()[0],
+                    "count": pairs_ok,
+                    "excluded": ({"pair_not_same_task_or_not_retained":
+                                  judged - pairs_ok}
+                                 if judged > pairs_ok else {}),
                     "definition": "distinct tasks with an explicit"
-                                  " comparable judgment",
+                                  " comparable judgment between two"
+                                  " retained candidates of that task",
                 },
             }
             return {
@@ -860,11 +957,17 @@ class TrainingDataService:
                     "verified_positive": verified_correct,
                     "verified_failure": verified_incorrect,
                     "unobserved": unobserved_outcomes,
-                    "excluded": excluded,
+                    "excluded": excluded_class,
+                    "population": live_examples + excluded_class,
+                    "partition": "live and excluded examples; an"
+                                 " excluded example is only excluded"
+                                 " (exclusion first) — the classes add"
+                                 " up to the population",
                     "note": "counts, not rates — no population error"
                             " rate is derivable without a sampling"
                             " design (S29.9)",
                 },
+                "readiness_definition_revision": "m13-r1",
                 "readiness_metrics": {
                     "capture_completeness": {
                         "complete": complete_examples,
@@ -877,13 +980,16 @@ class TrainingDataService:
                     "exact_audio_join_coverage": {
                         "joined": audio_count,
                         "denominator": audio_referenced,
-                        "definition": "envelopes naming an original_audio"
-                                      " id whose artifact row resolves"
-                                      " unpurged — a dangling id lowers"
-                                      " this",
+                        "definition": "live envelopes naming an"
+                                      " original_audio id whose artifact"
+                                      " row resolves unpurged, as"
+                                      " original_audio of the same job —"
+                                      " a dangling, foreign or wrong-kind"
+                                      " id lowers this",
                     },
                     "verbatim_reference_coverage": {
-                        "examples": verbatim,
+                        "examples": asr_eligible,
+                        "references_without_audio": verbatim - asr_eligible,
                         "denominator": audio_count,
                         "reviewed_seconds": round(verbatim_seconds, 1),
                         "retained_seconds": round(audio_seconds, 1),
