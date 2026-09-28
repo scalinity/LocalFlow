@@ -1,9 +1,11 @@
 # Contract: Usage analytics and Insights
 
 **Spec:** S08 (usage_facts/daily_aggregates), S21, S19 (Insights
-surface), S29.15 (readiness aggregates) · **Owner:** M13 · **Suites:**
-EV-15 analytics portion (tests/v2/analytics/), EV-13 (metric honesty),
-EV-19 readiness aggregates (tests/v2/ui/test_training_data.py)
+surface), S25 (retention), S29.15 (readiness aggregates) · **Owner:**
+M13 · **Decisions:** m13-policy-r1
+(docs/v2/acceptance/M13/remediation/decisions.json) · **Suites:** EV-15
+analytics portion (tests/v2/analytics/), EV-13 (metric honesty), EV-19
+readiness aggregates (tests/v2/ui/test_training_data.py)
 
 `localflow.v2.analytics` (`AnalyticsStore` + `InsightsQueryService`)
 turns the dated store into accurate local analytics: dated usage facts,
@@ -17,200 +19,272 @@ a counter reset.
 - **One logical dictation contributes exactly once.** `usage_facts`
   holds one dictation row per job (a partial unique index on `job_id`);
   a retry reaching a terminal outcome again REPLACES its row (attempt
-  bumped), and re-pastes record `kind='repaste'` activity rows with no
-  word counts. Note text NEVER feeds word counts (contracts/
-  scratchpad.md's boundary: usage reads jobs; repeated saved versions
-  are revisions of one dictation, never new dictations). A note-bound
-  dictation's row is written once, when its note revision's receipt
-  settles: `confirmed` only after that revision committed, otherwise
-  `saved_not_inserted`.
-- **Explicit transforms are a separate activity kind.** Selection- and
-  note-scope runs record `kind='transform'` facts (task key, path,
-  source/output words) at the coordinator's completion seam. A
-  dictation-path auto-apply transform does NOT mint a transform fact —
-  it rides the dictation's own row (`transform_id`/`task_key`/
-  `transform_path`/`transform_ms`), so one activity is never counted
-  twice (M13-AC02).
+  bumped) and keeps the original capture instant, zone and destination
+  app. Note text NEVER feeds word counts (contracts/scratchpad.md's
+  boundary: usage reads jobs; repeated saved versions are revisions of
+  one dictation). A note-bound dictation's row is written once, when its
+  note revision's receipt settles: `confirmed` only after that revision
+  committed, otherwise `saved_not_inserted`.
+- **Explicit transforms and repastes are separate activity kinds (D04).**
+  An explicit transform fact is recorded once per completed generation
+  run, its path as returned (applied / needs_review /
+  fallback_original…); a refusal before execution records nothing.
+  Selection and note transforms carry no job association. A
+  dictation-path auto-apply transform never mints a transform fact — it
+  rides the dictation's row (`transform_id`/`task_key`/`transform_path`/
+  `transform_ms`). A repaste fact is recorded when the insertion service
+  RAN a transaction for an explicit Paste Again — from History or the
+  Recovery menu, through one coordinator completion — whatever the
+  transaction's result; no-transaction outcomes (nothing to paste,
+  already present, revoked job, recording, in flight) record nothing.
+  Neither kind ever adds dictated words.
 - **Facts denormalize their own app/duration/word/mode copies** so
-  usage survives job-row metadata pruning and transcript expiry —
-  aggregate retention is independent of text retention (M13-AC03).
+  usage survives job-row metadata pruning and transcript expiry.
   App names are private usage metadata: store rows only, never in
   events or committed artifacts (S21).
-- **Unknown activity instants are refused**, never parked on a
-  fabricated day; undated legacy log pairs surface only as the explicit
-  Undated count (S21). Day buckets use the REPORTING timezone
-  (config `analytics_timezone`, default the system local zone; a change
-  re-buckets every fact and rebuilds aggregates at next launch) while
-  each fact retains its observed zone for inspection. DST boundaries
-  resolve through zone-aware conversion.
 
-## Terminal outcomes and latency
+## Admission (D02, D14)
 
-The dictation fact records `insertion_outcome` ∈ {confirmed,
-posted_unverified, saved_not_inserted, cancelled, failed} — the same
-buckets History's job states use. Word counts: raw (the acoustic
-original) and final (what shipped; None for cancelled/failed, never an
-invented zero). Latency: stage durations (`asr_ms`, `cleanup_ms`,
-`transform_ms` from the worker's own elapsed clocks) stay separate from
-`end_to_end_ms` (parent-monotonic PTT release → terminal outcome, E06);
-posted-unverified outcomes record their end-to-end with the unverified
-reason in meta — never presented as target-confirmed latency. A
-cancel-while-holding job writes its fact at the cancel branch (no
-stats yet — `duration_sec` honestly null).
+- **Instants.** A new usage instant is admitted only as UTC with an
+  uppercase Z and zero-padded fields: `YYYY-MM-DDTHH:MM:SSZ` or
+  `YYYY-MM-DDTHH:MM:SS.<1-6 digits>Z`. Anything else — offsets,
+  lowercase z, missing zone, unpadded fields, seven or more fractional
+  digits, empty or non-string values — is refused with
+  `usage.fact_refused` (`unknown_activity_time`): never dated at now,
+  never added to the legacy Undated count. Admitted instants are stored
+  in canonical microsecond form (`…SS.ffffffZ`), so text order is time
+  order. No upper bound applies at admission (a skewed clock's capture
+  instant is still the observation).
+- **Numbers.** Counts (`raw_words`, `final_words`, `dictionary_hits`,
+  `snippet_hits`, `source_words`, `output_words`, `attempt`) must be
+  non-negative integers (`attempt` ≥ 1) or null where unknown is
+  allowed; a violation refuses the fact. Timings (`duration_sec`,
+  `asr_ms`, `cleanup_ms`, `transform_ms`, `end_to_end_ms`, transform
+  duration) must be finite and ≥ 0; a violation stores null for that
+  metric only and names it in `meta_json.invalid_metrics`. Every
+  emitted number is finite.
+
+## The committed reporting zone (D02b)
+
+The reporting zone, the usage revision and outcome-unknown completion
+markers live in `usage_meta` and are read inside every writer and query
+op: a fact's day, its row zone, a query's range and the published label
+always come from one committed policy. `AnalyticsStore.
+reporting_timezone` is a display copy updated only after a rebuild's
+commit returns; a failed rebuild rolls back the rows and the zone
+together.
+
+One validator serves every boundary: empty or null selects the system
+zone (the observed IANA zone, else UTC); a non-string or unknown name is
+invalid. Direct construction and `rebuild_aggregates` refuse an invalid
+zone; configuration falls back to the system zone and emits
+`analytics.timezone_config_invalid` (key and reason only). At launch,
+`ensure_current()` rebuilds everything in one writer op when the
+committed zone differs from the configured one, when any fact or
+aggregate row carries another zone, or when any aggregate row carries
+another algorithm version.
 
 ## Aggregates and versioned recomputation
 
-`daily_aggregates` rows (PK: day_local + reporting_timezone +
-`algorithm_version`) are ALWAYS recomputed from the facts inside the
-same writer op as the fact write — never incrementally mutated, so a
-rebuild is always correct. `rebuild_aggregates()` re-buckets every fact
-under a (possibly changed) zone and rebuilds every row under the
-current `ALGORITHM_VERSION`; the table holds exactly one zone's
-arithmetic. A version bump plus rebuild is the recomputation path when
-the formula changes (EV-15 "count-version changes").
+`daily_aggregates` (one row per local day) is always recomputed from the
+facts inside the same writer op as the fact write, deletion or expiry;
+a day without facts has no row. Rebuilding re-buckets every fact under
+the target zone and recomputes every day under the current
+`ALGORITHM_VERSION`; the table holds exactly one zone/version's
+arithmetic. Every usage mutation bumps the usage revision.
+
+## Terminal outcomes and latency (D06)
+
+The dictation fact records `insertion_outcome` ∈ {confirmed,
+posted_unverified, saved_not_inserted, cancelled, failed}. Word counts:
+raw (the acoustic original) and final (what shipped; None for
+cancelled/failed, never an invented zero). Stage durations (`asr_ms`,
+`cleanup_ms`, `transform_ms`) come from the stages' own clocks.
+`end_to_end_ms` is THIS capture's parent-monotonic PTT release → its
+terminal outcome for every outcome reached after a release (confirmed,
+posted-unverified, saved, failed, cancelled after release, committed or
+refused note delivery). A retry has no release of its own: its
+`end_to_end_ms` stays null with `e2e_missing=retry_no_release_clock`
+and its retry-start → terminal interval is `meta.retry_to_terminal_ms`;
+the capture instant never changes. A cancel while holding records
+`e2e_missing=cancelled_before_release`.
 
 ## Metric definitions (E06/S21 — the Insights labels)
 
-- **Full-capture WPM** = `60 × sum(final_words) / sum(capture_seconds)`
-  over the cohort's text-producing jobs — BOTH sums over the same
-  cohort, weighted, never an average of row WPM; the denominator
-  (jobs/words/seconds) is displayed with the number. The whole-cohort
-  capture-minute total (all outcomes, labelled as such) is separate. No
-  voiced-time WPM is shown (the recorder's VAD percentage is retained
-  on facts, not promoted to a WPM method).
-- **Latency percentiles** are nearest-rank over observed samples with
-  `n` stated per stage and end-to-end; failed jobs stay in the cohort
-  count (they are why cohort > latency n).
-- **Fallback rate** = fallback jobs / cohort dictations, denominator
-  shown. **Dictionary/snippet hits** are applied-rule counts (M05/M10
-  semantics).
-- **Legacy edits** — the imported `fixed_words` sum, labeled legacy;
-  its producing formula is unknown and stays so (the M13 stop
-  condition). The legacy row-level `wpm` column is never reused.
-- **Model edits** — the raw→final word delta a pipeline produced; a
-  change rate, never a correctness claim.
-- **Reference-based accuracy** — requires reviewed references; until
-  they exist the Insights view states that no accuracy or WER is shown
-  (no operational WER from usage, S21).
-- Word counts carry their definition version
-  (`word_count_version='whitespace-split-v1'`).
+- **Full-capture WPM (D01)** = `60 × sum(final_words) /
+  sum(duration_sec)` over ONE rate cohort: text-producing jobs with an
+  observed positive capture duration — weighted, never an average of row
+  WPM, null when the cohort is empty. `wpm_denominator` states the
+  cohort's jobs/words/seconds; `wpm_excluded` counts text jobs left out
+  for a missing or non-positive duration. Ordinary totals keep every
+  word; the whole-cohort capture total (all outcomes) is separate.
+- **Latency blocks** are nearest-rank over observed samples (p50, p95,
+  p99) with `n` per block: stages, end-to-end (with `missing` counted by
+  reason), confirmed-visible (E06: the end-to-end observations whose
+  outcome is confirmed) and retry-to-terminal (the retry's own clock).
+  Failed jobs stay in the cohort count.
+- **Fallback (D05)** — `fallback_rate` is fallback incidence over ALL
+  dictations; `cleanup_fallback` = {requested, fallbacks, rate} counts
+  only jobs that requested the cleanup stage (`cleanup_path` recorded and
+  not `raw`) — E06's stage rate. The UI names each denominator.
+- **Dictionary/snippet hits** are the complete applied-rule sets per job
+  (vocabulary edits and dictionary-backed skills; snippets) — the same
+  set the registry records; a retry replaces, never accumulates.
+- **Words (D08)** are whitespace tokens (`whitespace-split-v1`), not a
+  language-aware count; the summary lists the versions present and flags
+  a mixed range (never recounted from text retention removed).
+- **Legacy edits** — the imported `fixed_words` sum, labeled legacy
+  (its formula is unknown); the legacy row-level `wpm` is never reused.
+- **Model edits** — the raw→final word delta; a change rate, never a
+  correctness claim. **Reference-based accuracy** requires reviewed
+  references; no operational WER from usage (S21).
 
-## Retention and deletion (M13-AC03)
+## Cohorts, ranges and completeness
+
+- **Ranges** are inclusive local calendar days `[today-(N-1), today]` in
+  the committed zone at the service clock (`day_start`/`day_end`); facts
+  dated after today are outside every relative range, counted under All
+  and disclosed as `future_dated`.
+- **App identity (D09)** is a typed key — `bundle:<id>`, else
+  `name:<display name>`, else `unknown` — with a separate label (the
+  latest name for a bundle; a label shared by different keys shows its
+  bundle id). Unknown is its own population, never folded into All. Mode
+  `None` means All; `unknown` selects facts without a mode.
+- Every breakdown uses the WHOLE cohort (range, app and mode). Lists are
+  complete: `daily`, `per_app` and `per_mode` return every row (`daily`
+  takes an explicit `limit` only when a caller asks); the Hub lists the
+  top eight apps plus one Other line holding the rest, and every mode.
+- The unfiltered daily table's date domain is every activity kind (a
+  transform-only or repaste-only day is a row with zero dictated words);
+  under a cohort filter transform/repaste counts are `None` — activity
+  rows carry no app or mode, so no number is borrowed.
+- **One report, one generation (D10):** `report(days, app, mode)` reads
+  summary, daily, both breakdowns, the filter options, Undated and legacy
+  in ONE writer op and stamps the usage revision.
+
+## Retention and deletion (M13-AC03, D03, D11, D13)
 
 - **Text/audio/metadata retention never deletes usage.** `prune` and
-  the new `prune_metadata` (the M02 `metadata` knob, enforced from M13:
-  terminal job rows go once every content retention has expired past
-  the window and no live training example pins them) leave
-  `usage_facts` untouched.
-- **Usage retention is its own knob** (`retention_usage_days`, default
-  365) enforced by `expire_usage` in the daily retention pass.
-- **Explicit controls:** `hubDeleteUsageForJob` (History's Delete
-  Usage; legacy rows refuse — the lossless import has no deletable
-  usage) and `hubDeleteAllUsage` (Settings, confirmed via alert) remove
-  facts + aggregates only; content, jobs and training evidence stay.
-  Affected days recompute; empty days' rows go.
+  `prune_metadata` leave `usage_facts` untouched.
+- **Usage retention** (`retention_usage_days`) defaults to **keep until
+  cleared** (S25). Its domain is `"keep"` or whole days 1..36500 (the
+  config file keeps the shared validator's integral-float compatibility;
+  Settings text accepts `keep` or digits). With a day count set, the
+  daily retention pass (30 s after launch, then daily) removes facts
+  strictly older than now minus that many days of elapsed UTC time; an
+  instant equal to the cutoff stays. Malformed input is refused, never
+  clamped.
+- **Apply Usage** validates, writes the user override atomically and
+  only then makes the policy effective; a failed write changes nothing
+  (`not_saved`). It deletes nothing: the result previews how many facts
+  the next retention pass will remove (`pending_expiry`).
+- **Explicit deletion.** `hubDeleteUsageForJob` removes the job's
+  dictation fact (with its auto-transform metadata) and every repaste
+  carrying that job id; explicit transforms stay. Legacy rows refuse
+  (the lossless import has no deletable usage). `hubDeleteAllUsage`
+  (confirmed by an alert) removes every fact and aggregate. Content,
+  jobs, notes and training evidence stay. After History metadata has
+  been pruned, a remaining fact is removed by Delete All Usage or a
+  retention setting (no per-fact browser).
+- **Derived copies (D11).** Every usage removal that deletes a fact —
+  one job, all, or expiry — redacts, in the same writer op, the
+  usage-derived fields of every Your Voice snapshot (`app_usage`,
+  `hour_histogram`, `hours_unknown`, `modes`, `requested_transforms`,
+  `dictionary_hit_examples`) and records `usage_redacted`; speech-derived
+  fields, cards and evidence links are untouched.
+- **Typed outcomes (D13).** Usage deletions return `deleted`, `failed`
+  (the op raised and rolled back), `not_started` (store not open) or
+  `outcome_unknown` (the caller's bounded wait timed out after admission
+  — a timeout is not cancellation). Each deletion writes a durable
+  completion marker in its own transaction; an unknown outcome is
+  reconciled by a later FIFO read of that marker (then removed).
+  Committed and unknown outcomes revoke Insights views at once, and again
+  when reconciled.
 
-## The Insights surface (VIEWS 9→10, the M09 triple)
+## The Insights surface (the M09 triple)
 
-Range selector (7/30/90/all days in the reporting zone), app and mode
-cohort filters (from the facts' distinct values; activity kinds are
-honestly `None` under a filter — they carry no app/mode), the summary
-block (outcomes, words, minutes, weighted WPM with denominator,
-fallbacks, hits, transforms/re-pastes, latency percentiles), per-app
-and per-mode lines, the dated daily table (the accessible virtualized
-graph), the Undated line, the imported-legacy reconciliation line, and
-the Definitions footer carrying the AC04 labels above. No-data states
-are honest zeros and nulls. The view rides `insights_service`
-(`InsightsQueryService`) — the M09 query discipline; Insights never
-steals focus (it renders inside the Hub).
+Subview buttons and the zone/version status on the first row; the
+cohort row — range (7/30/90/All), App and Mode pop-ups (typed keys as
+represented objects), Reload — inside the minimum content width; the
+summary block (outcomes, words, capture minutes, weighted WPM with its
+denominator and exclusions, both fallback metrics, hits, explicit
+transforms and repastes, latency blocks with n and missing reasons,
+per-app and per-mode lines, future-dated and word-version disclosures,
+Undated and legacy lines, Definitions); the dated daily table. Changing
+the app or mode keeps the selected range. Each load is one `report()`;
+a usage mutation calls `HubState.invalidate_usage()` (epoch fence,
+cached report cleared, visible view reloaded). Settings actions render
+returned refusals, failures and unknown outcomes.
 
-## Readiness aggregates (S29.15/E19.4, task 6)
+## Readiness aggregates (S29.15/E19.4, D12)
 
-`TrainingDataService.readiness()` gains `outcome_balance`
-(unreviewed / verified positive / verified failure / unobserved /
-excluded — five DISTINCT classes, counts only, never rates: no
-population error rate is derivable without a sampling design, and
-hard-mined samples are never population WER) and `readiness_metrics`
-(capture completeness with denominator, exact audio-join coverage,
-verbatim reference coverage with the per-span-seconds limitation,
-task eligibility per S29.12 view, diversity, retention health).
-Split contamination (M14), comparator coverage (M15), export integrity
-(M14) and population WER report explicit `not_available` reasons.
-Usage analytics and readiness remain separate definitions: a correct
-usage total never establishes a training label.
+`TrainingDataService.readiness()` counts TRAINABLE examples
+(captured_unreviewed / review_candidate / annotated / ambiguous);
+quarantined, deleted and expired examples are storage states only.
+`outcome_balance` partitions trainable + excluded examples, exclusion
+first — unreviewed / verified positive / verified failure / unobserved /
+excluded, adding up to `population`; counts, never rates. Capture
+completeness, exact audio-join coverage (an unpurged `original_audio`
+row of the SAME job), reviewed seconds and task eligibility share the
+trainable population. Task eligibility counts records whose exact
+inputs are retained — ASR: a listened verbatim reference and its own
+retained audio; cleanup: an intended-writing mark and the retained
+source text; transform: a task with a candidate whose source and output
+are retained; preference pairs: an explicit comparable judgment between
+two retained candidates of the same task — with excluded records
+counted by reason. `nearing_expiry` counts trainable examples whose
+retained, training-held artifact's protection (latest unrevoked lease;
+a never-expiring lease is a pin) ends in (now, now + 3 days] at the
+store clock. `readiness_definition_revision` is `m13-r1`.
 
-## Store (schema v9, additive; the vocabulary pattern)
+## Store (schema v9 + v12, additive)
 
-`usage_facts` + `daily_aggregates` + three indexes; migrations
-additive/idempotent with pre-migration backups; the torn-write repair
-set covers both tables. All access through `AnalyticsStore` over
-`Store.submit` (one writer op per action; fact write and its day's
-recompute atomic). `training_schema_version` unchanged — usage facts
-are operational metadata, NOT training evidence, and never gates on
+v9: `usage_facts` + `daily_aggregates` + indexes. v12: `usage_meta`
+(committed zone, revision, markers); stored usage instants canonicalized
+by zero padding (idempotent; true instants unchanged); the committed
+zone seeded from existing facts. Migrations are additive/idempotent with
+pre-migration backups; the torn-write repair set covers the tables. All
+access through `AnalyticsStore` over `Store.submit`. Usage facts are
+operational metadata, NOT training evidence, and never gate on
 collection consent.
 
 ## Events (content-free)
 
-`usage.fact_refused` (unknown instant), `usage.record_failed`,
-`usage.deleted`, `usage.retention_applied`,
-`usage.aggregates_rebuilt`, `analytics.store_unavailable`,
-`analytics.zone_rebuild_failed`, `usage.retry_provenance_unavailable`,
-`hub.usage_retention_applied`, `usage.delete_failed`,
-`store.metadata_pruned` — ids/reasons/counts only; no per-fact success
-events (the events stream already carries the stage/insertion events).
-
-## The one-dictation-one-fact boundary, edge by edge
-
-- Below-min-duration discards and system-abandoned captures write no
-  fact (the capture never became a job the store finalized); a
-  crash-recovered journal's retry DOES — it is the same logical job
-  re-running to a terminal outcome, so its fact replaces whatever the
-  failure recorded, keeping the ORIGINAL capture instant, zone and
-  destination app read back from the store rows.
-- A retry completing on a different local day moves the fact to the
-  capture day's bucket and recomputes (or deletes, when emptied) the
-  departed day's aggregate — the tables never disagree.
+`usage.fact_refused`, `usage.record_failed`, `usage.deleted`,
+`usage.retention_applied`, `usage.aggregates_rebuilt`,
+`usage.delete_outcome_unknown`, `usage.delete_reconciled`,
+`usage.delete_failed`, `usage.preview_failed`,
+`usage.retry_provenance_unavailable`, `analytics.store_unavailable`,
+`analytics.zone_rebuild_failed`, `analytics.timezone_config_invalid`,
+`hub.usage_retention_applied`, `hub.usage_retention_refused`,
+`store.metadata_pruned` — ids/reasons/counts only.
 
 ## Config
 
-`retention_usage_days` (365), `analytics_timezone` ("" = system local).
-Both visible in config.json; the usage knob is Hub-editable (Settings)
-and persisted to the user override (the five-key discipline, one key
-here). The zone knob is config-file only — a change rebuilds at launch.
+`retention_usage_days` (`"keep"`), `analytics_timezone` (`""` = the
+system zone). The usage knob is Hub-editable (Settings) and persisted to
+the user override (one key); the zone knob is config-file only — a
+change rebuilds at launch.
 
-## Performance (measured, benchmarks/20260924-005000-m13)
+## Performance
 
-50,000 synthetic facts (40k dictations over 23 days, 5k transforms,
-5k re-pastes): every Insights query p95 ≤ 56.4 ms warm (budget 200;
-30-day summary 4.6 ms, daily 0.16 ms, all-time summary 56.4 ms); the
-fact write on the busiest day (1,870 facts) p95 1.11–1.21 ms — the
-terminal-path addition stays sub-millisecond UI time. Aggregation runs
-inside the fact write (no separate scheduled job to contend with
-dictation).
-
-## Testability split
-
-Store and query layers are fully automatable headless (migration,
-retry/re-paste/DST/unknown-date/retention/versioning/reconciliation).
-The coordinator suite drives the REAL pipeline for the fact writes
-(confirmed/saved/cancelled outcomes, the guarded seam), the
-repaste/transform seams, and the Hub view over the real services.
-Native visual checks (the summary layout, popup/table rendering at
-text scale) are the pending human trial with the Hub pass.
+Measured by `scripts/v2/benchmark_m13.py` (validity before timing; see
+the M13 remediation record for the current reference-Mac figures). The
+canonical budget is Insights query p95 ≤ 200 ms at the 50,000-logical-
+dictation acceptance cohort; write, rebuild and expiry budgets are
+proposed, not canonical.
 
 ## Limitations (documented, not hidden)
 
-- Voiced-time WPM is not offered (no VAD-method WPM until a method is
-  labeled); full-capture WPM only.
-- Time-saved estimates are not shown (no user typing-speed baseline
-  exists; S21 requires one before any such estimate).
-- `summary` counts transform/re-paste kinds only in the UNFILTERED view
-  (activity rows carry no app/mode) — filtered views show them as
-  not-applicable, never a borrowed number.
-- Verbatim coverage counts reviewed audio seconds only for
-  audio-reviewed verbatim references (each covers its whole clip);
-  span corrections are text offsets with no audio alignment (S29.5) and
-  add no reviewed seconds.
-- The Usage subview shows measured usage; the communication profile is
-  the separate Your Voice subview (contracts/profile.md), which reads
-  usage facts for app and local-hour patterns but never writes them.
+- Voiced-time WPM and time-saved estimates are not offered.
+- Whitespace tokens undercount unspaced scripts and count punctuation
+  runs as tokens (disclosed in Definitions).
+- No producer upgrades a posted-unverified outcome to confirmed after
+  the fact; if one is added, it replaces the logical row.
+- Per-job usage deletion needs the History row; after metadata pruning
+  only Delete All Usage or a retention setting remove a fact.
+- Pop-up selectors join the keyboard loop only when the system's Full
+  Keyboard Access is on (a macOS setting).
+- The Usage subview shows measured usage; Your Voice
+  (contracts/profile.md) reads usage facts for app/hour/mode patterns,
+  never writes them, and loses those fields when the usage is removed.

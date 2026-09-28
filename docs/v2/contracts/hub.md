@@ -69,7 +69,15 @@ live as of M13, the refusal check uses any unregistered name).
   `hubApplyUsageRetention`, `hubDeleteAllUsage` and
   `hubDeleteUsageForJob` (contracts/analytics.md; the Insights view
   rides the spec as `insights_service`, the training_service
-  pattern).
+  pattern). They return typed outcomes (`saved`/`refused`/`not_saved`
+  for retention; `deleted`/`failed`/`not_started`/`outcome_unknown`
+  for deletions); every usage mutation — and the late reconciliation
+  of an unknown one — calls `HubState.invalidate_usage()` (epoch fence;
+  the cached Insights report, including a cached Your Voice profile, is
+  cleared; a visible Insights view reloads). Settings actions render a
+  returned refusal, failure or unknown outcome instead of reloading over
+  it; the usage field's text reaches the coordinator's strict validator
+  unclamped.
   M14 adds no coordinator command: its services ride the spec as
   `learning_service`/`review_service`/`sampling_service`/
   `splits_service`/`profile_service`/`export_service` plus
@@ -399,4 +407,4 @@ weakened.
   nothing.
 - Job-row metadata pruning (`retention_metadata_days`), deferred since
   M02, is enforced from M13 by `Store.prune_metadata`
-  (contracts/store.md v9).
+  (contracts/store.md; recovery liveness per M13 D07).

@@ -279,11 +279,18 @@ tables beside the envelopes (contracts/learning.md,
 contracts/dataset_exports.md). Validator outcomes, confirmed pastes and
 `no_edit_observed` windows stay observations — sampling can bring them
 to review, but no path turns them into a correctness label, a positive
-or a preference. Readiness now reports split contamination, the last
-export's state, examples with a training lease expiring within 3 days,
-and verbatim coverage in reviewed audio seconds over retained seconds
-(a verbatim reference covers its whole clip; span corrections have no
-audio alignment and add no seconds).
+or a preference. Readiness reports split contamination, the last
+export's state, trainable examples whose retained training-held
+artifact's protection ends within (now, now + 3 days] at the store
+clock (expired, purged and pinned artifacts are not "nearing"), and
+verbatim coverage in reviewed audio seconds over retained seconds (a
+verbatim reference covers its whole clip; span corrections have no
+audio alignment and add no seconds). Every readiness number counts
+TRAINABLE examples (quarantined content is retained storage, never a
+readiness class or task); its outcome classes partition trainable +
+excluded examples, exclusion first; task eligibility needs each
+record's exact inputs retained, with excluded records counted by
+reason (contracts/analytics.md, M13 decision D12).
 
 ## M02 remediation (consent boundary, publication, provenance)
 

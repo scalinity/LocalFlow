@@ -126,7 +126,7 @@ orphan payload files.
   access through `TransformStore` over `Store.submit`; the torn-write
   repair path covers the v7 tables.
 
-## M13 additions (schema v9; no frozen identity changed)
+## M13 additions (schema v9 + v12; no frozen identity changed)
 
 - Migration v9 adds the usage analytics tables (see
   `contracts/analytics.md`): `usage_facts` (one dictation row per
@@ -135,12 +135,24 @@ orphan payload files.
   activity rows) + `daily_aggregates` (versioned, always recomputed
   from the facts inside the same writer op as the fact write) + day/
   activity indexes. The torn-write repair path covers the v9 tables.
-  The `retention_days` map gains the independent `usage` knob.
-- `prune_metadata` enforces the M02 `metadata` knob (deferred to M13
-  by hub.md): terminal job rows delete once every content retention
-  has expired past the window and no live training example pins them —
-  `job_targets`/`insertions`/`insertion_observations` go with the row;
-  usage facts never do (M13-AC03).
+- Migration v12 adds `usage_meta` (the committed reporting zone, the
+  usage revision and outcome-unknown completion markers, read inside
+  every analytics op), canonicalizes stored usage instants to
+  microsecond form by zero padding (idempotent; the true instant is
+  unchanged) and seeds the committed zone from the existing facts.
+- The `retention_days` map carries the independent `usage` knob; `None`
+  means keep until cleared (the default, S25).
+- `prune_metadata` enforces the M02 `metadata` knob: terminal job rows
+  delete once every content retention has expired past the window and
+  no live training example pins them — `job_targets`/`insertions`/
+  `insertion_observations` go with the row; usage facts never do
+  (M13-AC03). A job is KEPT while it is `failed_recoverable` inside its
+  authorized recovery window (the `audio_failed` knob, from its last
+  update), while a job-scoped payload file registered through
+  `register_job_payload_dir` (the recovery journal, the debug audio
+  copy) still exists for it, or while the caller holds a recovery claim
+  on it (`protected_job_ids`; the app's retention pass passes its
+  claimed set). A note's `source_job_id` is provenance, not a pin.
 
 ## M12 additions (schema v8; no frozen identity changed)
 

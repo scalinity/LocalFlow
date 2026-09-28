@@ -77,7 +77,10 @@ actually support it:
 `profile_snapshots` (schema v10) rows are append-only records with
 their algorithm version, measured JSON, cards, coverage and an
 `evidence_signature` (eligible example revisions, exclusions, labels,
-usage and vocabulary counts, the floor and algorithm version).
+the M13 usage revision, vocabulary counts, the floor and algorithm
+version). The usage revision moves on EVERY usage mutation — a retry
+that only changed a mode, an explicit transform, a deletion — so a
+usage-dependent snapshot never goes stale behind unchanged totals.
 `profile_evidence` links every eligible example (role `measured`) and
 every card example (role `card_example`).
 
@@ -106,6 +109,16 @@ every card example (role `card_example`).
   `evidence_excluded_from_training`, `evidence_quarantined`,
   `source_deleted`). Regeneration always recomputes from the current
   store.
+- **Usage removal (M13 D11)**: deleting usage (one job or all) or its
+  expiry redacts, in the same writer op, the usage-derived fields of
+  EVERY snapshot, current and historical (`app_usage`,
+  `hour_histogram`, `hours_unknown`, `modes`, `requested_transforms`,
+  `dictionary_hit_examples`), and records `usage_redacted` with the
+  reason; speech-derived fields, cards and evidence links stay. The
+  pane explains the removal; the next generation (or idle pass, since
+  the usage revision moved) recomputes from the usage that remains. A
+  computation in flight reads usage inside its own final write op, so
+  it never publishes a copy of usage deleted before that op.
 - **Exclusion**: excluding one supporting example invalidates the
   snapshot (`evidence_excluded`); the exclusion is durable. Excluding
   an id that is not evidence of the snapshot refuses
