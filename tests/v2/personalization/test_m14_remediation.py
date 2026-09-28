@@ -1001,11 +1001,19 @@ def f23_used_term_canonical_edit_refreshes_the_profile_once():
         w.profile.compute()
         w.vocab.update_entry(eid, canonical="Kubernetes Engine")
         first = w.profile.compute(only_if_changed=True)
-        terms = json.dumps(w.profile.current()["measured"]
-                           .get("technical_terms"))
+        measured = w.profile.current()["measured"]
+        terms = json.dumps(measured.get("technical_terms"))
+        current = json.dumps(measured.get(
+            "dictionary_terms_with_recorded_use"))
         second = w.profile.compute(only_if_changed=True)
-        assert not first.get("skipped") and "Kubernetes Engine" in terms, (
-            first.get("skipped"), terms)
+        # The canonical edit refreshes the profile once. The speech-
+        # derived term keeps the spelling those dictations applied
+        # (cross-milestone MERGED-X11); the new spelling shows in the
+        # labeled current-dictionary view.
+        assert not first.get("skipped") and "Kubernetes Engine" in current, (
+            first.get("skipped"), current)
+        assert "Kubernetes Engine" not in terms and "Kubernetes" in terms, \
+            terms
         assert second.get("skipped"), "unchanged tick wrote a snapshot"
 
 

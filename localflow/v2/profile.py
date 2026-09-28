@@ -161,6 +161,26 @@ def _exclusions_digest(conn) -> str:
         " included=0 ORDER BY example_id").fetchall()]))
 
 
+def _applied_canonicals(conn, example_id, env) -> dict:
+    """entry id -> the canonical frozen in the example's OWN applied-rules
+    artifact (qualified: this job's artifact, its producer role, its
+    digest) — {} when that record is absent or does not qualify."""
+    vocab = ((env.get("normalization") or {}).get("vocabulary") or {})
+    q = ev.qualify(conn, vocab.get("applied_rules_artifact"),
+                   "vocabulary_applied_rules",
+                   job_id=ev.conn_example_job(conn, example_id))
+    if not q["ok"]:
+        return {}
+    try:
+        payload = json.loads(q["artifact"]["text"])
+    except ValueError:
+        return {}
+    return {r["entry_id"]: r["canonical"]
+            for r in (payload.get("rules") or [])
+            if isinstance(r, dict) and r.get("entry_id")
+            and r.get("canonical")}
+
+
 def _vocabulary_revision(conn) -> int:
     row = conn.execute("SELECT value FROM vocabulary_meta WHERE"
                        " key='revision'").fetchone()
@@ -468,14 +488,36 @@ class ProfileService:
             hits = conn.execute(
                 "SELECT COUNT(*) FROM usage_facts WHERE"
                 " kind='dictation' AND dictionary_hits > 0").fetchone()[0]
-            active = {r[0]: r[1] for r in conn.execute(
-                "SELECT entry_id, canonical FROM vocabulary_entries WHERE"
+            # The current dictionary decides which rules count (approved
+            # and enabled now); the NAME is the canonical frozen in each
+            # dictation's own applied-rules record — what that speech
+            # actually applied, never today's spelling (xm-policy-r1
+            # D11, MERGED-X11). A rule without a qualifiable record is
+            # omitted rather than relabeled.
+            active = {r[0] for r in conn.execute(
+                "SELECT entry_id FROM vocabulary_entries WHERE"
                 " approved=1 AND enabled=1").fetchall()}
-            used = sorted(((rid, exs) for rid, exs in rule_examples.items()
-                           if rid in active),
-                          key=lambda p: (-len(p[1]), active[p[0]]))[:_TERM_TOP]
-            technical = [{"term": active[rid], "dictations": len(exs),
-                          "example_ids": exs[:5]} for rid, exs in used]
+            envs = {ex: env for ex, env, _t in eligible}
+            applied_names: dict = {}
+            terms: dict[tuple, list[str]] = {}
+            unrecorded = set()
+            for rid, exs in rule_examples.items():
+                if rid not in active:
+                    continue
+                for ex in exs:
+                    if ex not in applied_names:
+                        applied_names[ex] = _applied_canonicals(
+                            conn, ex, envs[ex])
+                    name = applied_names[ex].get(rid)
+                    if name:
+                        terms.setdefault((rid, name), []).append(ex)
+                    else:
+                        unrecorded.add(ex)
+            used = sorted(terms.items(),
+                          key=lambda p: (-len(p[1]), p[0][1]))[:_TERM_TOP]
+            technical = [{"term": name, "dictations": len(exs),
+                          "example_ids": exs[:5]}
+                         for (_rid, name), exs in used]
             recorded_use = [
                 r[0] for r in conn.execute(
                     "SELECT canonical FROM vocabulary_entries WHERE"
@@ -537,7 +579,12 @@ class ProfileService:
                 "technical_terms_source": "approved dictionary rules"
                                           " applied in eligible"
                                           " dictations (each cites"
-                                          " them)",
+                                          " them), named as spelled"
+                                          " when applied",
+                "technical_terms_unrecorded": {
+                    "dictations": len(unrecorded),
+                    "reason": "applied spelling not recorded for these"
+                              " dictations"},
                 "dictionary_terms_with_recorded_use": recorded_use,
                 "dictionary_terms_source": "independent dictionary usage"
                                            " counters over all"

@@ -41,6 +41,7 @@ SLOT_ROLES = {
     "observation_before": ("observation_before_range",),
     "observation_after": ("observation_after_range",),
     "candidate_observation": ("candidate_observation",),
+    "vocabulary_applied_rules": ("vocabulary_applied_rules",),
 }
 # A cleanup pass prompt is ``cleanup_input_<kind>`` (kind model_input).
 _PROMPT_PREFIX = "cleanup_input_"
@@ -153,6 +154,17 @@ def cleanup_qualification_in(conn, example_id, env, job_id=None) -> dict:
                       job_id=job_id)
     if not applied["ok"]:
         return {"eligible": False, "reason": applied["reason"]}
+    reasons = (env or {}).get("missing_reasons") or {}
+    if not arts.get("normalization") and \
+            reasons.get("normalization") == "retention_write_failed" and \
+            ((env or {}).get("normalization_retention") or {}).get(
+                "input_changed") is not False:
+        # Normalization ran and its evidence was not retained: unless the
+        # producer recorded that it changed nothing, the exact input the
+        # cleanup model received is unknown — never the raw transcript
+        # by default (xm-policy-r1 D05, MERGED-X05).
+        return {"eligible": False,
+                "reason": "normalization_input_not_retained"}
     norm = None
     if arts.get("normalization"):
         norm_q = qualify(conn, arts["normalization"], "normalization",

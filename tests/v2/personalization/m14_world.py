@@ -293,6 +293,28 @@ class MWorld:
             cleanup["v2"] = {"corrections": cleanup_counts}
         normalization = {"vocabulary": {"applied_rule_ids":
                                         list(applied_rule_ids)}}
+        if applied_rule_ids:
+            # The collector's frozen applied-rules record (training.py
+            # on_normalization_result): each applied entry as it stood
+            # at capture, a lease-governed artifact of THIS job.
+            rules = []
+            for rid in sorted(set(applied_rule_ids)):
+                e = self.vocab.entry(rid)
+                if e is not None:
+                    rules.append({**e.to_json(), "usage_count": None,
+                                  "last_used_utc": None})
+            art = s.write_text_artifact(
+                job_id=job_id, stage="normalization",
+                role="vocabulary_applied_rules",
+                kind="vocabulary_rules_json", retention_class="training",
+                text=json.dumps({"schema_version": 1,
+                                 "vocabulary_revision":
+                                     self.vocab.revision(),
+                                 "scope": {}, "rules": rules},
+                                ensure_ascii=False, sort_keys=True),
+                meta={"rules": len(rules)})
+            s.grant_lease(art, "training", days=days)
+            normalization["vocabulary"]["applied_rules_artifact"] = art
         if snippets:
             normalization["snippets"] = {"expansions": 1}
         env = {

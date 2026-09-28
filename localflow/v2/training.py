@@ -226,6 +226,7 @@ class CaptureContext:
         # M04 (S29.4 normalization family): typed edits + ledger replay
         self.normalization = None
         self.normalization_missing_reason = None  # M04-AUDIT-16
+        self.normalization_retention = None  # MERGED-X05
         self.norm_text_artifact = None
         self.norm_ledger_artifact = None
         # M05 (S30.1/S29.4 context family): the frozen pre-decode hint
@@ -661,8 +662,8 @@ class EvidenceCollector:
         if not ctx.collecting or result is None or ctx.example_id:
             return
         step = "normalized_text_write"
+        src = source_text if source_text is not None else ""
         try:
-            src = source_text if source_text is not None else ""
             if result.text != src:
                 ctx.norm_text_artifact = self.store.write_text_artifact(
                     job_id=ctx.job_id, stage="normalization",
@@ -703,6 +704,12 @@ class EvidenceCollector:
                 ctx.norm_text_artifact = None
             ctx.norm_ledger_artifact = None
             ctx.normalization_missing_reason = "retention_write_failed"
+            # Whether the text cleanup then received differs from the
+            # raw transcript: without it, a lost normalized text cannot
+            # be told from normalization that changed nothing
+            # (xm-policy-r1 D05, MERGED-X05). Content-free.
+            ctx.normalization_retention = {
+                "failed_step": step, "input_changed": result.text != src}
             self.emit("training.capture_failed", level="ERROR",
                       job_id=ctx.job_id, reason_code=type(e).__name__,
                       stage="normalization", detail=step,
@@ -1788,6 +1795,10 @@ class EvidenceCollector:
             "collection_policy": policy,
             "deletion_epoch": 0,
         }
+        if ctx.normalization is None and \
+                getattr(ctx, "normalization_retention", None):
+            env["normalization_retention"] = dict(
+                ctx.normalization_retention)
         return env
 
     def attach_capture_meta(self, ctx, recorder_stats, sample_rate):

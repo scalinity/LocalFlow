@@ -204,87 +204,103 @@ class TransformStore:
             target_profiles=tuple(target_profiles),
             auto_apply=auto_apply, enabled=enabled, revision=1,
             source_locator=source_locator, legacy_key=legacy_key)
-        self._check_shortcut(defn.shortcut)
         now = ids.now_utc_iso()
 
         def op(db):
+            # A caller-chosen id is the operation identity (the M10
+            # pattern, xm-policy-r1 D08): repeating an add that already
+            # committed returns it; a different definition under the
+            # same id refuses.
+            if transform_id is not None:
+                row = db.execute(
+                    f"SELECT {', '.join(_COLS)} FROM transforms WHERE"
+                    " transform_id=?", (transform_id,)).fetchone()
+                if row is not None:
+                    have = _row_to_def(row)
+                    same = have.origin == defn.origin and all(
+                        have.__dict__[k] == defn.__dict__[k]
+                        for k in _EDITABLE if k != "edit_types")
+                    return ("already_applied", have) if same \
+                        else ("id_in_use", None)
+            if defn.shortcut is not None and tf.shortcut_conflicts(
+                    [_row_to_def(r) for r in db.execute(
+                        f"SELECT {', '.join(_COLS)} FROM transforms"
+                    ).fetchall()] + [defn]):
+                return ("shortcut", None)
             self._insert(db, defn, now)
             self._bump(db)
-        self.store.submit(op)
-        return defn
+            return ("ok", defn)
+        status, out = self.store.submit(op)
+        if status == "id_in_use":
+            raise ValueError("id_in_use")
+        if status == "shortcut":
+            raise ValueError(
+                f"shortcut {defn.shortcut!r} collides with another"
+                " transform")
+        return out
 
     def update_transform(self, transform_id: str, **changes
                          ) -> tf.TransformDefinition:
+        """Edit fields of one definition. The authoritative row is read,
+        the given fields merged into it, validated, updated and preserved
+        as its new revision inside ONE writer op, so the live row and the
+        revision it names are always the same definition — fields a
+        caller did not name keep the row's current values, whatever
+        committed since the caller read (xm-policy-r1 D03, MERGED-X03)."""
         # The auto-apply opt-in and enablement are refused unless they
         # are real Booleans — before any read or write (M10-AUDIT-06).
         for field in ("auto_apply", "enabled"):
             if field in changes and type(changes[field]) is not bool:
                 raise ValueError(f"not_a_boolean: {field}")
-        current = self.definition(transform_id)
-        if current is None:
-            raise KeyError(f"no transform {transform_id}")
-        if current.origin == "legacy":
-            # A preserved legacy revision is frozen: its definition is
-            # the migrated V1 bytes. Users who want to iterate create a
-            # custom transform (the legacy row stays available, AC01).
-            raise ValueError(
-                "legacy transform definitions are preserved revisions"
-                " and cannot be edited")
-        if current.origin == "builtin" and "mode" in changes \
-                and changes["mode"] != current.mode:
-            # A built-in IS its mode (the mode executors bind by
-            # id+mode) — an edit can never silently rebind it.
-            raise ValueError(
-                "a built-in transform's mode is fixed")
+        for k in changes:
+            if k.endswith("_json"):
+                raise ValueError("internal column names are not editable")
         unknown = set(changes) - set(_EDITABLE)
         if unknown:
             raise ValueError(f"unknown transform fields: {sorted(unknown)}")
-        if not changes:
-            return current
-        merged = {
-            "name": current.name, "mode": current.mode,
-            "description": current.description, "prompt": current.prompt,
-            "edit_types": current.permitted_edits(),
-            "examples": current.examples, "shortcut": current.shortcut,
-            "target_profiles": current.target_profiles,
-            "auto_apply": current.auto_apply, "enabled": current.enabled,
-        }
-        for k, v in changes.items():
-            if k.endswith("_json"):
-                raise ValueError("internal column names are not editable")
-            merged[k] = v
-        if all(merged[k] == current.__dict__[k]
-               for k in _EDITABLE):
-            # A no-op update appends nothing — the append-only history
-            # records real changes only.
-            return current
-        self._check_shortcut(merged["shortcut"], exclude=transform_id)
         now = ids.now_utc_iso()
-        sets, vals = [], []
-        for field in _EDITABLE:
-            if field not in changes:
-                continue
-            col = _COL_FOR.get(field, field)
-            v = changes[field]
-            if col.endswith("_json"):
-                v = json.dumps([list(ex) for ex in v]
-                               if field == "examples" else list(v))
-            elif field in ("auto_apply", "enabled"):
-                v = int(v)
-            sets.append(f"{col}=?")
-            vals.append(v)
-        sets += ["revision=revision+1", "updated_at_utc=?"]
-        vals += [now, transform_id]
 
         def op(db):
-            # The next revision is read INSIDE the writer op — two
-            # interleaved updates can never append the same revision
-            # number to the preserved history.
             row = db.execute(
-                "SELECT revision FROM transforms WHERE transform_id=?",
-                (transform_id,)).fetchone()
+                f"SELECT {', '.join(_COLS)} FROM transforms WHERE"
+                " transform_id=?", (transform_id,)).fetchone()
             if row is None:
-                raise KeyError(f"no transform {transform_id}")
+                return ("missing", None)
+            current = _row_to_def(row)
+            if current.origin == "legacy":
+                # A preserved legacy revision is frozen: its definition
+                # is the migrated V1 bytes. Users who want to iterate
+                # create a custom transform (the legacy row stays, AC01).
+                return ("legacy", current)
+            if current.origin == "builtin" and "mode" in changes \
+                    and changes["mode"] != current.mode:
+                # A built-in IS its mode (the mode executors bind by
+                # id+mode) — an edit can never silently rebind it.
+                return ("builtin_mode", current)
+            merged = {
+                "name": current.name, "mode": current.mode,
+                "description": current.description,
+                "prompt": current.prompt,
+                "edit_types": current.permitted_edits(),
+                "examples": current.examples,
+                "shortcut": current.shortcut,
+                "target_profiles": current.target_profiles,
+                "auto_apply": current.auto_apply,
+                "enabled": current.enabled,
+            }
+            merged.update(changes)
+            if all(merged[k] == current.__dict__[k] for k in _EDITABLE):
+                # A no-op update appends nothing — the append-only
+                # history records real changes only.
+                return ("ok", current)
+            if merged["shortcut"] is not None and tf.shortcut_conflicts(
+                    [_row_to_def(r) for r in db.execute(
+                        f"SELECT {', '.join(_COLS)} FROM transforms WHERE"
+                        " transform_id != ?", (transform_id,)).fetchall()]
+                    + [tf.TransformDefinition(
+                        transform_id="pending", name="pending",
+                        mode="custom", shortcut=merged["shortcut"])]):
+                return ("shortcut", merged["shortcut"])
             updated = tf.TransformDefinition(
                 transform_id=current.transform_id,
                 name=merged["name"], mode=merged["mode"],
@@ -297,17 +313,39 @@ class TransformStore:
                 target_profiles=tuple(merged["target_profiles"]),
                 auto_apply=merged["auto_apply"],
                 enabled=merged["enabled"],
-                revision=int(row[0]) + 1,
+                revision=current.revision + 1,
                 source_locator=current.source_locator,
                 legacy_key=current.legacy_key)
+            # The whole editable definition is written from the one
+            # merged object the preserved revision serializes.
             db.execute(
-                f"UPDATE transforms SET {', '.join(sets)}"
-                f" WHERE transform_id=?", vals)
+                "UPDATE transforms SET name=?, mode=?, description=?,"
+                " prompt=?, edit_types_json=?, examples_json=?,"
+                " shortcut=?, target_profiles_json=?, auto_apply=?,"
+                " enabled=?, revision=?, updated_at_utc=? WHERE"
+                " transform_id=?",
+                (updated.name, updated.mode, updated.description,
+                 updated.prompt,
+                 json.dumps(list(updated.permitted_edits())),
+                 json.dumps([list(ex) for ex in updated.examples]),
+                 updated.shortcut, json.dumps(list(updated.target_profiles)),
+                 int(updated.auto_apply), int(updated.enabled),
+                 updated.revision, now, transform_id))
             self._append_revision(db, updated, now)
             self._bump(db)
-        self.store.submit(op)
-        out = self.definition(transform_id)
-        assert out is not None
+            return ("ok", updated)
+        status, out = self.store.submit(op)
+        if status == "missing":
+            raise KeyError(f"no transform {transform_id}")
+        if status == "legacy":
+            raise ValueError(
+                "legacy transform definitions are preserved revisions"
+                " and cannot be edited")
+        if status == "builtin_mode":
+            raise ValueError("a built-in transform's mode is fixed")
+        if status == "shortcut":
+            raise ValueError(
+                f"shortcut {out!r} collides with another transform")
         return out
 
     def delete_transform(self, transform_id: str):
@@ -337,20 +375,6 @@ class TransformStore:
                 n += cur.rowcount
             return n
         return self.store.submit(op)
-
-    def _check_shortcut(self, shortcut: Optional[str],
-                        exclude: Optional[str] = None):
-        if shortcut is None:
-            return
-        conflicts = tf.shortcut_conflicts([
-            d for d in self.definitions()
-            if d.transform_id != exclude] + [
-            tf.TransformDefinition(
-                transform_id="pending", name="pending", mode="custom",
-                shortcut=shortcut)])
-        if conflicts:
-            raise ValueError(
-                f"shortcut {shortcut!r} collides with another transform")
 
     # ---- legacy migration (M11-AC01) --------------------------------------
 

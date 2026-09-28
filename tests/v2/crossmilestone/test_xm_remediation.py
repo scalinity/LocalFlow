@@ -296,6 +296,33 @@ def c_unchanged_normalization_keeps_raw_input_complete():
         h.close()
 
 
+@case("MERGED-X05 control", kind="control")
+def c_ledger_failure_with_unchanged_text_keeps_raw_input():
+    h = Harness(durations=[1.0])
+    try:
+        received, q, env = _cleanup_record(
+            h, fail_role="normalization_ledger", raw="plain words only here")
+        assert received == "plain words only here", received
+        assert (env.get("missing_reasons") or {}).get("normalization") \
+            == "retention_write_failed", env.get("missing_reasons")
+        assert q.get("eligible") and q["input_text"] == received \
+            and q["tier"] == "model_task_complete", q
+    finally:
+        h.close()
+
+
+@case("MERGED-X05 control", kind="control")
+def c_ledger_failure_after_retained_text_exports_normalized_input():
+    h = Harness(durations=[1.0])
+    try:
+        received, q, _env = _cleanup_record(
+            h, fail_role="normalization_ledger")
+        assert received != NORM_RAW, "fixture: nothing normalized"
+        assert q.get("eligible") and q["input_text"] == received, q
+    finally:
+        h.close()
+
+
 # =============================================================================
 # MERGED-X06 — History after a collection-off retry
 # =============================================================================
@@ -993,6 +1020,40 @@ def x11_renamed_entry_never_relabels_historical_speech():
         assert "Lyra SDK" not in terms, (
             "speech captured under 'Orion SDK' is now cited as 'Lyra SDK'"
             f" (no new speech): {terms}")
+    finally:
+        h.close()
+
+
+@case("MERGED-X11 (missing frozen record)")
+def x11_missing_frozen_record_is_unrecorded_never_relabeled():
+    h = Harness(durations=[1.0])
+    try:
+        eid = _term_world(h)
+        store = h.d.store
+        (aid,), = rows(store, "SELECT artifact_id FROM artifacts WHERE"
+                       " role='vocabulary_applied_rules'")
+        store.submit(lambda c: c.execute(
+            "UPDATE artifacts SET purged=1, content_text=NULL WHERE"
+            " artifact_id=?", (aid,)))
+        e = h.d._vocab.entry(eid)
+        h.d._vocab.update_entry(eid, expected_revision=e.revision,
+                                canonical="Lyra SDK")
+        snap = ProfileService(store, min_words=1).compute()
+        m = snap["measured"]
+        names = [t["term"] for t in m["technical_terms"]]
+        assert not names and m.get("technical_terms_unrecorded", {}).get(
+            "dictations") == 1, (names, m.get("technical_terms_unrecorded"))
+    finally:
+        h.close()
+
+
+@case("MERGED-X11 control", kind="control")
+def c_disabled_rule_no_longer_counts():
+    h = Harness(durations=[1.0])
+    try:
+        eid = _term_world(h)
+        h.d._vocab.set_enabled(eid, False)
+        assert _terms(h.d.store) == [], _terms(h.d.store)
     finally:
         h.close()
 

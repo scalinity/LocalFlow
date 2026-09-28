@@ -216,6 +216,7 @@ class HubController(NSObject):
         # retry of the same form — never a duplicate rule).
         self._style_editor = None
         self._snippet_editor = None
+        self._transform_editor = None
         self._pending_adds = {}
         self._action_seq = 0
         self._action_tokens = {}
@@ -1845,43 +1846,108 @@ class HubController(NSObject):
         self._transform_write("update")
 
     @objc.python_method
+    def _transform_form(self):
+        """The editor's values, in the service's field names."""
+        return {"name": self.tf_name.stringValue() or "",
+                "mode": self.tf_mode.titleOfSelectedItem() or "custom",
+                "prompt": self.tf_prompt.string() or "",
+                "shortcut": self.tf_shortcut.stringValue() or None,
+                "target_profiles": tuple(
+                    t.strip() for t in
+                    (self.tf_targets.stringValue() or "").split(",")
+                    if t.strip()),
+                "auto_apply": bool(self.tf_auto.state())}
+
+    @staticmethod
+    def _transform_row_form(t):
+        """What the editor shows for a rendered row (the built-in
+        placeholder included, so an untouched one is never written)."""
+        builtin = t.get("origin") == "builtin"
+        editable = t.get("origin") != "legacy"
+        return {"name": t.get("name") or "",
+                "mode": t.get("mode") or "custom",
+                "prompt": (t.get("prompt") or (
+                    "(built-in frozen contract — see Transforms contract)"
+                    if builtin else "")) if editable
+                else (t.get("prompt") or ""),
+                "shortcut": t.get("shortcut") or None,
+                "target_profiles": tuple(t.get("target_profiles") or ()),
+                "auto_apply": bool(t.get("auto_apply"))}
+
+    @objc.python_method
+    def _transform_outcome(self, button, e):
+        """One honest line per failure class (the M10 wording): an
+        admitted write whose caller stopped waiting may still commit."""
+        if isinstance(e, TimeoutError):
+            self.transforms_status.setStringValue_(
+                "outcome unknown: the store is busy and the change may"
+                " still complete — check the reloaded transform before"
+                f" pressing {button} again"
+                + (" (Add again with the same form makes no second"
+                   " transform)" if button == "Add" else ""))
+            self.state.reload_transforms()
+        elif isinstance(e, (ValueError, KeyError)):
+            self.transforms_status.setStringValue_(f"not saved: {e}")
+        else:
+            self.transforms_status.setStringValue_(
+                f"not saved: {type(e).__name__}")
+
+    @objc.python_method
     def _transform_write(self, action):
+        """Add keeps one transform id per logical Add until its outcome
+        is known; Update writes only the fields changed since the editor
+        was filled from its row — the store merges them into the row as
+        it is now (xm-policy-r1 D03/D08, the M10 editor discipline)."""
         svc = self.spec.get("transforms_service")
         if svc is None:
             self.transforms_status.setStringValue_(
                 "transforms unavailable")
             return
-        name = self.tf_name.stringValue() or ""
-        mode = self.tf_mode.titleOfSelectedItem() or "custom"
-        shortcut = self.tf_shortcut.stringValue() or None
-        targets = [t.strip() for t in
-                   (self.tf_targets.stringValue() or "").split(",")
-                   if t.strip()]
-        prompt = self.tf_prompt.string() or ""
-        try:
-            if action == "add":
+        from .. import ids
+        form = self._transform_form()
+        if action == "add":
+            pending = self._pending_adds.get("transforms")
+            new_id = pending["id"] if pending and pending["form"] == form \
+                else ids.new_id("tf")
+            self._pending_adds["transforms"] = {"id": new_id, "form": form}
+            try:
                 svc.add_transform(
-                    name=name, mode=mode, prompt=prompt,
-                    shortcut=shortcut, target_profiles=targets,
-                    auto_apply=bool(self.tf_auto.state()))
-            else:
-                transform_id = self.state.views["transforms"].get(
-                    "selected_id")
-                if not transform_id:
-                    self.transforms_status.setStringValue_(
-                        "select a transform to update")
-                    return
-                svc.update_transform(
-                    transform_id, name=name, mode=mode, prompt=prompt,
-                    shortcut=shortcut, target_profiles=targets,
-                    auto_apply=bool(self.tf_auto.state()))
-        except (ValueError, KeyError) as e:
-            self.transforms_status.setStringValue_(f"not saved: {e}")
-            return
-        except Exception as e:
+                    name=form["name"], mode=form["mode"],
+                    prompt=form["prompt"], shortcut=form["shortcut"],
+                    target_profiles=form["target_profiles"],
+                    auto_apply=form["auto_apply"], transform_id=new_id)
+            except Exception as e:
+                if not isinstance(e, TimeoutError):
+                    self._pending_adds.pop("transforms", None)
+                self._transform_outcome("Add", e)
+                return
+            self._pending_adds.pop("transforms", None)
             self.transforms_status.setStringValue_(
-                f"not saved: {type(e).__name__}")
+                "added (confirmed)" if pending and pending["id"] == new_id
+                else "added")
+            self.state.reload_transforms()
             return
+        editor = self._transform_editor
+        transform_id = self.state.views["transforms"].get("selected_id")
+        if not transform_id or editor is None \
+                or editor["id"] != transform_id:
+            self.transforms_status.setStringValue_(
+                "select a transform to update")
+            return
+        diff = {k: v for k, v in form.items()
+                if v != editor["baseline"].get(k)}
+        if not diff:
+            self.transforms_status.setStringValue_("no changes to save")
+            return
+        try:
+            updated = svc.update_transform(transform_id, **diff)
+        except Exception as e:
+            self._transform_outcome("Update", e)
+            return
+        self._transform_editor = {"id": transform_id,
+                                  "revision": updated.revision,
+                                  "baseline": form}
+        self.transforms_status.setStringValue_("updated")
         self.state.reload_transforms()
 
     def transformsToggle_(self, sender):
@@ -1896,33 +1962,46 @@ class HubController(NSObject):
         try:
             svc.set_enabled(transform_id, not enabled)
         except Exception as e:
-            self.transforms_status.setStringValue_(
-                f"not toggled: {type(e).__name__}")
+            if isinstance(e, TimeoutError):
+                # Repeating a toggle is not safe (it would flip the
+                # stored state back): point at the reloaded row.
+                self.transforms_status.setStringValue_(
+                    "outcome unknown: the change was queued and may still"
+                    " complete — check the reloaded row before pressing"
+                    " Enable/Disable again")
+                self.state.reload_transforms()
+            else:
+                self.transforms_status.setStringValue_(
+                    f"not toggled: {type(e).__name__}")
             return
         self.state.reload_transforms()
 
     @objc.python_method
     def _fill_transform_editor(self, t):
-        self.tf_name.setStringValue_(t.get("name") or "")
-        self.tf_mode.selectItemWithTitle_(t.get("mode") or "custom")
-        self.tf_shortcut.setStringValue_(t.get("shortcut") or "")
-        self.tf_targets.setStringValue_(
-            ", ".join(t.get("target_profiles") or ()))
-        self.tf_auto.setState_(1 if t.get("auto_apply") else 0)
+        shown = self._transform_row_form(t)
+        self.tf_name.setStringValue_(shown["name"])
+        self.tf_mode.selectItemWithTitle_(shown["mode"])
+        self.tf_shortcut.setStringValue_(shown["shortcut"] or "")
+        self.tf_targets.setStringValue_(", ".join(shown["target_profiles"]))
+        self.tf_auto.setState_(1 if shown["auto_apply"] else 0)
         legacy = t.get("origin") == "legacy"
         builtin = t.get("origin") == "builtin"
         editable = not legacy
         for ctrl in (self.tf_name, self.tf_mode, self.tf_shortcut,
-                     self.tf_targets, self.tf_auto, self.tf_prompt):
+                     self.tf_targets, self.tf_auto):
             ctrl.setEnabled_(editable)
+        # The instruction is a text VIEW: it has setEditable_, not
+        # setEnabled_ (LOCAL-XM-01 — the latter raised before the
+        # instruction was shown, so an Update wrote a stale one).
+        self.tf_prompt.setEditable_(editable)
         # A built-in IS its mode (polish/concise/prompt_engineer bind
         # by id+mode): the mode stays fixed so a Hub edit can never
         # silently unbind or cross-bind the mode executors.
         self.tf_mode.setEnabled_(editable and not builtin)
-        self.tf_prompt.setString_(
-            (t.get("prompt") or
-             ("(built-in frozen contract — see Transforms contract)"
-              if builtin else "")) if editable else (t.get("prompt") or ""))
+        self.tf_prompt.setString_(shown["prompt"])
+        self._transform_editor = {"id": t.get("transform_id"),
+                                  "revision": t.get("revision"),
+                                  "baseline": shown}
         detail = [
             f"{t.get('transform_id')} · revision {t.get('revision')}"
             f" · prompt {t.get('prompt_revision')}"]
@@ -1948,6 +2027,28 @@ class HubController(NSObject):
             return
         self._render_rows("transforms_table", "transform_id",
                           self.state.views["transforms"].get("selected_id"))
+        editor = self._transform_editor
+        if editor is not None:
+            # The M10 editor sync: a vanished row unbinds; a row changed
+            # elsewhere refills an unedited editor, rebinds one that
+            # already holds exactly what the row now says, and marks an
+            # edited one (its Update still writes only its own changes).
+            row = next((r for r in (data or {}).get("transforms") or ()
+                        if r.get("transform_id") == editor["id"]), None)
+            if row is None:
+                self._transform_editor = None
+            elif row.get("revision") != editor["revision"]:
+                form = self._transform_form()
+                if form == editor["baseline"]:
+                    self._fill_transform_editor(row)
+                elif self._transform_row_form(row) == form:
+                    editor["revision"] = row.get("revision")
+                    editor["baseline"] = form
+                else:
+                    self.transforms_status.setStringValue_(
+                        "This transform changed since you opened it;"
+                        " Update writes only the fields you changed.")
+                    return
         conflicts = (data or {}).get("shortcut_conflicts") or []
         if conflicts:
             self.transforms_status.setStringValue_(
