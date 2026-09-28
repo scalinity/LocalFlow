@@ -25,7 +25,7 @@ from __future__ import annotations
 import json
 
 from .. import ids
-from ..store import managed_name_ok
+from ..store import managed_name_ok, open_managed_file
 
 # The producers' own roles per slot (training.py, insertion/observation.py,
 # transforms_store.py, training_data.py, curation/review.py, learning.py).
@@ -63,7 +63,7 @@ def conn_example_job(conn, example_id):
 
 
 def qualify(conn, artifact_id, slot: str, *, job_id=None, task_key=None,
-            digest: bool = True) -> dict:
+            digest: bool = True, artifacts_dir=None) -> dict:
     """``{"ok": True, "artifact": {...}}`` for an artifact admitted as
     evidence for ``slot``, else ``{"ok": False, "reason": code}`` with a
     content-free code naming the slot and the failed condition.
@@ -99,9 +99,19 @@ def qualify(conn, artifact_id, slot: str, *, job_id=None, task_key=None,
     if slot in _AUDIO_SLOTS:
         # Audio lives as ONE plain managed file name in the artifact
         # directory; anything else (absolute, traversal, a separator)
-        # is never opened (M14-AUDIT-05).
-        if not path or not managed_name_ok(path):
+        # is never opened (M14-AUDIT-05). The id names the exported copy
+        # (``artifacts/<id>.wav``), so it must be a plain name too.
+        if not path or not managed_name_ok(path) or \
+                not managed_name_ok(artifact_id):
             return {"ok": False, "reason": f"{slot}_path_refused"}
+        # Given the artifact directory, the payload must be there as a
+        # regular file too — a gate that admits a vanished file would
+        # disagree with the export that has to copy it.
+        if artifacts_dir is not None:
+            handle = open_managed_file(artifacts_dir, path)
+            if handle is None:
+                return {"ok": False, "reason": f"{slot}_payload_absent"}
+            handle.close()
     else:
         if text is None:
             return {"ok": False, "reason": f"{slot}_payload_absent"}

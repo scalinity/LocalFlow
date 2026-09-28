@@ -83,61 +83,91 @@ fields, allowed uses) and `SHA256SUMS.txt`.
 
 | View | Exported when | Carries |
 |---|---|---|
-| `asr_supervised` | the review gate passes (live, audio-reviewed verbatim, retained audio, no changed-intent/ambiguous/user-rewrite label) | the audio file + its hash, the verbatim reference (`coverage: full`), transcription policy, time quality; no alignment (none runs in V2) |
-| `asr_span_graft_weak` | a label carries a graft whose `coverage_kind` is `partial` (anything else refuses the export) | the grafted text, coverage spans, `reference_quality: weak_partial` |
-| `cleanup_supervised` | an explicit intended-writing `correct` mark | the exact cleanup-stage input (normalized text; the raw text when normalization changed nothing), every rendered model prompt the stage sent (or `model_inputs_missing_reason`), the applied output as the intended-writing reference |
-| `transform_supervised` | an explicit `accept` judgment | source text, the transform's frozen definition revision (instructions + examples), the accepted output — one row per accepted candidate |
-| `preference_pairs` | an explicit comparable judgment (prefer_a/prefer_b/tie/neither/uncertain) on a same-task pair | both outputs with their display order; the LATEST judgment per pair; slot A = the stored `candidate_id` |
+| `asr_supervised` | the ASR promotion gate passes (contracts/learning.md: live state, the example's own listened verbatim reference and own retained audio file, no ASR blocker under the effective judgment) | the audio file + its hash, the verbatim reference (`coverage: full`), transcription policy, time quality; no alignment (none runs in V2) |
+| `asr_span_graft_weak` | a label carries a graft whose `coverage_kind` is `partial` (anything else refuses the export) and whose recorded source is still retained | the grafted text, its source text, coverage spans, `reference_quality: weak_partial` |
+| `cleanup_supervised` | an explicit intended-writing `correct` mark with the example's own stage input and applied output (producer roles, digests) | the exact cleanup-stage input (normalized text; the raw text when normalization changed nothing), every rendered model prompt the stage sent (or `model_inputs_missing_reason`), the applied output as the intended-writing reference, and `qualification_tier`: `model_task_complete` when every recorded model pass's exact prompt is retained, else `text_pair_only` (m14-policy-r1 D03) |
+| `transform_supervised` | the candidate's latest accept/reject is `accept` (D07; automatic application alone never is), with its source digest matching the task's recorded source | source text, the transform's frozen definition revision (instructions + examples), the accepted output — one row per accepted candidate |
+| `preference_pairs` | the pair's current comparable judgment (prefer_a/prefer_b/tie/neither/uncertain), both candidates sharing the task key, source and conditional input hashes, every text retained with its producer role | the shared input text, both outputs with their display order; the LATEST judgment per pair; slot A = the candidate shown first |
 
-Exposed development families export normally with `exposed: true`.
-Transform and preference rows are task-keyed (M11): they carry no
-family or split.
+Every record carries `lineage`: the authoritative job (the example
+row's, never what an envelope claims) or task key, and each input's
+artifact id, role, owner and sha256 — the evidence the record was built
+from (`LINEAGE_VERSION`). Every input is admitted by the one evidence
+resolver (contracts/learning.md, D11); an input that fails it excludes
+the record with a content-free reason in `manifest.excluded`.
 
-**Refusals** (the whole export, nothing written): no split assignment;
-a family spanning partitions; an exposed family still in
-`frozen_test`; a stale family assignment (the example's record now
-names another family); a preference pair whose candidates do not share
-the task key and conditional input hashes; a graft mislabeled full; an
-audio file whose bytes no longer match the hash recorded at capture;
-collection consent not enabled. Examples whose revisions or state died
-are listed in `manifest.excluded` with content-free reasons.
+**Partitions.** Exposed development families export normally with
+`exposed: true`. A new export consults exposure across every assignment
+version (D10): a family exposed in any version is `exposed: true`, and
+one still in `frozen_test` in the requested version refuses the export.
+Transform and preference rows are task-keyed (M11) and carry no family:
+they export as `split: "unpartitioned"`, `holdout_qualified: false`, and
+only when the requested partitions include `train`; an export of
+validation and/or frozen_test alone lists them in `manifest.excluded`
+as `task_keyed_unpartitioned` (D02). The manifest's `partition_scope`
+names which views are family-partitioned.
 
-**Build discipline** (S29.13): selection and content resolve in one
-snapshot op; the graph is written into `.<name>.building` beside the
-destination; audio is copied and hashed by streaming (never read into
-RAM); before the atomic rename one recheck op confirms consent is
-still enabled, every exported example is still live and none of the
-artifacts the build read has been purged (deleted or expired) —
-otherwise the build aborts and nothing is labeled complete. A deletion
-elsewhere in the store does not concern the dataset and does not abort
-it. The manifest records the store's `deletion_epoch` (tombstone count)
-at the snapshot, a content fingerprint over the semantic records
-(export ids/times excluded — identical revisions reproduce identical
-fingerprints) and every version. The destination is replaced only when
-it is absent, an empty folder or an earlier LocalFlow export holding
-nothing but the files its own `SHA256SUMS.txt` lists — a folder of the
-user's own files, or an earlier export the user has added files to, is
-never removed. The staging path must be absent or a leftover build
-folder. Every build records an `export_manifests` row — `complete`, or
-`failed` with its reason (refusals, `consent_not_enabled`, any
-unexpected error — which also removes the staging folder).
+**Refusals** (the whole export, nothing published): collection consent
+not enabled (checked first); no split assignment; a family spanning
+partitions; an exposed family still in `frozen_test`; a stale family
+assignment (the example's record now names another family); a graft
+mislabeled full; an audio file whose bytes no longer match the hash
+recorded at capture; a destination inside the managed artifact or note
+folders. Examples whose revisions, state or evidence died are listed in
+`manifest.excluded` with content-free reasons.
+
+**Build discipline** (S29.13, D09): selection and content resolve in one
+snapshot op. Each build creates its own staging folder
+`.<name>.building-<export_id>` exclusively (creation fails on any
+existing path) and marks it with a `.localflow-export-owner` file; only
+that folder is ever removed by the build — a pre-existing
+`.<name>.building` or any other path is never deleted or reused. Audio
+is copied and hashed by streaming (never read into RAM), each copy
+named `artifacts/<artifact_id>.wav` from an artifact id that is itself
+a plain managed name. Publication's linearization point is ONE writer
+op: it re-checks consent and every dependency the build read — inputs
+present and unpurged, each example's state and latest revision, label
+counts, the current pair judgments and transform accepts — moves an
+earlier export at the destination aside, inserts the `complete`
+`export_manifests` row and renames staging into place. A dependency
+that changed aborts the build (nothing labeled complete); a purge or
+revocation queued behind publication sees a complete export and
+governs the next build. A deletion elsewhere in the store does not
+concern the dataset and does not abort it. The manifest records the
+store's `deletion_epoch` at the snapshot, a content fingerprint over
+the semantic records (export ids/times excluded — identical revisions
+reproduce identical fingerprints) and every version
+(`export_schema_version` 2, `exporter_version` `m14-v2`). The
+destination is replaced only when it is absent, an empty folder or an
+earlier LocalFlow export holding nothing but the files its own
+`SHA256SUMS.txt` lists — a folder of the user's own files, or an
+earlier export the user has added files to, is never removed. Every
+build records an `export_manifests` row — `complete`, or `failed` with
+its reason. `build(export_id=...)` is a receipt: repeating a completed
+export id returns it and writes nothing.
 
 The selection runs in ONE writer op on purpose: S29.13 requires a
-consistent source snapshot, and the op is that snapshot (measured: a
-dictation write waits at most 50.3 ms behind it at 10,000 examples;
-export is a user action, never idle work).
+consistent source snapshot, and the op is that snapshot; export is a
+user action, never idle work.
 
 **The validator** (no store, no network, any working directory)
 treats the directory as untrusted input: every structural surprise —
-a manifest or row that is not a JSON object, non-string or traversal
-paths, a symlink anywhere (reported, never followed) — is an issue in
-the report, never an exception. Every file hashed by streaming against `SHA256SUMS.txt`; every file in
-the directory must be listed and the manifest and record files must be
-covered; absolute/traversal paths refused; ASR audio present and equal
-to its recorded hash; graft references partial; verbatim references
-audio-reviewed; preference pairs complete with comparable judgments;
-manifest counts equal the records for all five views; the content
-fingerprint reproduces.
+a manifest or row that is not a JSON object, a field of the wrong JSON
+type, non-string or traversal paths, a symlink anywhere (reported;
+never followed, and no listed path through a linked folder is opened)
+— is an issue in the report, never an exception. Every file is hashed
+by streaming against `SHA256SUMS.txt`; every file in the directory must
+be listed and the manifest and record files must be covered. Then,
+independently of the checksums, the semantic lineage every record
+declares: each input belongs to the record's own job (or task) with an
+expected role, included texts match their recorded digests, references
+pair with their examples, ASR audio is the recorded capture, cleanup
+tiers are supported by their inputs, a family occupies one partition,
+task-keyed rows claim no partition, preference choices follow their
+judgments, and task inputs reconstruct from the package alone. A
+package whose checksums were recomputed around a semantic change still
+fails. Manifest counts and cleanup tiers equal the records; the
+content fingerprint reproduces.
 
 Export is local only: a dataset directory is never uploaded anywhere
 (S25; provider sharing is a separate explicit decision).

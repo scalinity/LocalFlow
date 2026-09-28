@@ -18,7 +18,11 @@ trainable examples (`captured_unreviewed`, `review_candidate`,
 `annotated`, `ambiguous` — never `quarantined_sensitive`: suspected
 secrets feed no statistic, S29.14) of origin `live_capture`, read from their
 retained **raw** transcript — the speech, never the cleanup model's
-applied output (S22: Qwen's style is not the user's). Excluded from
+applied output (S22: Qwen's style is not the user's). The raw text is
+admitted by the evidence resolver (contracts/learning.md, m14-policy-r1
+D11): the example's own job's `raw_transcript`, retained, matching its
+digest — another job's raw, another example's, or an applied output
+recorded in the raw slot is never read as speech. Excluded from
 speech statistics, each counted in `measured.excluded`:
 
 - `snippet_expanded` — the example's normalization expanded a snippet
@@ -39,8 +43,13 @@ Every measured value is a store fact with its source
 per utterance, frequent 2–3-word phrases (counted once per example,
 with up to five supporting example ids each), corrections by kind (each
 eligible example's CURRENT reviewed label — the latest revision; an
-abstained latest revision counts as none), dictionary-hit dictations
-and the approved terms with recorded use, spoken self-corrections the
+abstained latest revision counts as none), dictionary-hit dictations,
+`technical_terms` — approved, enabled dictionary entries that
+normalization applied in ELIGIBLE dictations, each with its count of
+eligible dictations and up to five supporting example ids (D04) —
+`dictionary_terms_with_recorded_use`, the dictionary's own usage
+counters labeled with that source (all dictations, not cleared by
+Delete Usage; never presented as speech), spoken self-corrections the
 cleanup stage detected (over the dictations whose cleanup recorded the
 count — unknown is not zero), requested transforms (explicit runs and
 auto-applied dictation transforms separately), app and mode usage, and
@@ -69,16 +78,17 @@ actually support it:
 - `correction-focus` — the most common current reviewed label kind;
   evidence = eligible dictations carrying that label ("an observation
   of reviewed labels, not a population rate");
-- `technical-vocabulary` — approved terms with recorded use; evidence =
-  eligible dictations whose normalization applied an approved rule.
+- `technical-vocabulary` — the speech-derived `technical_terms`;
+  evidence = exactly the eligible dictations those terms cite.
 
 ## Snapshots are records, never caches
 
 `profile_snapshots` (schema v10) rows are append-only records with
 their algorithm version, measured JSON, cards, coverage and an
-`evidence_signature` (eligible example revisions, exclusions, labels,
-the M13 usage revision, vocabulary counts, the floor and algorithm
-version). The usage revision moves on EVERY usage mutation — a retry
+`evidence_signature` (eligible example revisions, the exclusions
+digest, the latest label per example, the M13 usage revision, the
+vocabulary entry revisions, the floor and algorithm version — 2). The
+usage revision moves on EVERY usage mutation — a retry
 that only changed a mode, an explicit transform, a deletion — so a
 usage-dependent snapshot never goes stale behind unchanged totals.
 `profile_evidence` links every eligible example (role `measured`) and
@@ -87,10 +97,13 @@ every card example (role `card_example`).
 - **Generation** runs on demand (Your Voice → Generate) or on the idle
   pass (Generate runs off the main thread and shows a failure in the
   pane rather than swallowing it). Evidence is read in bounded chunks (250 examples per short
-  writer op) and counted off the writer; one short write op re-checks
-  that every evidence example is still live — a deletion landing
-  mid-read restarts the computation, so deleted speech never lands in
-  a record — and inserts the snapshot.
+  writer op) and counted off the writer, which records the exact raw
+  artifact and latest revision of every example it read. One short
+  write op re-checks every one — still live, same revision, artifact
+  retained — plus the label and exclusion state the computation used
+  (D16); any change restarts the computation, so deleted, purged,
+  revised, relabeled or excluded speech never lands in a record — and
+  inserts the snapshot.
 - **The idle pass** (`profileIdlePass_`, every `profile_idle_minutes`,
   default 30; 0 disables) never starts while recording, while a job is
   pending, during the synthetic-paste window or an insertion/undo
@@ -99,7 +112,8 @@ every card example (role `card_example`).
   signature built from counters only (revisions, example states,
   purges, labels, exclusions, usage, vocabulary) — no transcript is
   read; when those moved but the eligible evidence did not, one read
-  confirms it and the new input signature is remembered.
+  confirms it, and the new input signature is remembered only when the
+  recomputed evidence signature is equal.
 - **Deletion (M14-AC03)**: delete-everywhere invalidates every snapshot
   that drew on the example (`source_deleted`) and clears its measured
   JSON and cards — phrases derived from deleted speech never outlive
@@ -107,7 +121,8 @@ every card example (role `card_example`).
   quarantined is invalidated and cleared the same way on the next read
   or compute, the reason naming what happened (`evidence_expired`,
   `evidence_excluded_from_training`, `evidence_quarantined`,
-  `source_deleted`). Regeneration always recomputes from the current
+  `source_deleted`, or `source_purged` when the example is live but its
+  supporting raw transcript was purged). Regeneration always recomputes from the current
   store.
 - **Usage removal (M13 D11)**: deleting usage (one job or all) or its
   expiry redacts, in the same writer op, the usage-derived fields of
@@ -119,8 +134,10 @@ every card example (role `card_example`).
   the usage revision moved) recomputes from the usage that remains. A
   computation in flight reads usage inside its own final write op, so
   it never publishes a copy of usage deleted before that op.
-- **Exclusion**: excluding one supporting example invalidates the
-  snapshot (`evidence_excluded`); the exclusion is durable. Excluding
+- **Exclusion**: excluding one supporting example invalidates every
+  current snapshot that presents it as support (`evidence_excluded`) —
+  excluding through an older rendered snapshot also retires a newer one
+  built from the same evidence; the exclusion is durable. Excluding
   an id that is not evidence of the snapshot refuses
   (`not_evidence_of_this_snapshot`) rather than silently recording
   nothing.

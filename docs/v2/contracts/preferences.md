@@ -52,16 +52,26 @@ None exist. Historical retries in the legacy log are NOT preference pairs
 ## M14 live status (pair review and export)
 
 The Review tab lists every task key with at least two retained
-candidates (`ReviewService.preference_pairs`) and records explicit
+candidates (`ReviewService.preference_pairs`) — each pair row carries
+the shared source text and both candidate texts with their candidate
+ids and display order — and records explicit
 `prefer_a`/`prefer_b`/`tie`/`neither`/`uncertain` judgments through
-`TransformStore.record_observation` — the M11 write-time same-task
-invariant is the enforcement, and a cross-task judgment refuses. The
-pair is stored in the order shown: `candidate_id` is A,
-`candidate_b_id` is B, and `prefer_a`/`prefer_b` name the winner by
-slot. Judgments append; the latest comparable judgment on a pair is its
-current one. accept/reject/undo stay single-candidate observations,
-never pair judgments. The exporter re-verifies the shared task key AND
-the conditional input hashes (source, instructions, examples revision)
-before any pair leaves the machine, and exports both outputs with their
-display order (contracts/dataset_exports.md). No preference-training
-algorithm exists.
+`TransformStore.record_observation` in one writer op — the M11
+write-time same-task invariant is the enforcement, and a cross-task
+judgment refuses. The judgment records exactly the rendered pair in the
+rendered slot order (m14-policy-r1 D15): `candidate_id` is A (the
+candidate shown first), `candidate_b_id` is B, and
+`prefer_a`/`prefer_b` name the winner by slot; it refuses when either
+rendered candidate no longer exists or no longer shares the task, and a
+candidate added after rendering never changes which pair is judged. A
+repeated `operation_id` returns the recorded observation and writes
+nothing. Judgments append; the latest comparable judgment on a pair is
+its current one. accept/reject/undo stay single-candidate observations,
+never pair judgments. The exporter admits a pair only through the one
+preference predicate (`evidence.preference_pair_in`): the shared task
+key AND the conditional input hashes (source, instructions, examples
+revision), the task source and both outputs retained as this task's
+artifacts with their producer roles, and the retained source equal to
+the input the task hash names — then exports the input text and both
+outputs with their display order (contracts/dataset_exports.md). No
+preference-training algorithm exists.

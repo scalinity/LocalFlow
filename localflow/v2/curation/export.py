@@ -263,7 +263,8 @@ class DatasetExporter:
                 and a.get("listened_audio")
                 for a in env.get("annotations") or [])
             if "asr_supervised" in task_views and has_verbatim:
-                gate = review_mod.verified_asr_eligible_in(conn, ex_id)
+                gate = review_mod.verified_asr_eligible_in(
+                    conn, ex_id, self.store.artifacts_dir)
                 if not gate["eligible"]:
                     sel["excluded"].append(
                         {"example_id": ex_id,
@@ -330,7 +331,9 @@ class DatasetExporter:
                 audio_aid = (env.get("artifact_ids") or {}).get(
                     "original_audio")
                 audio = ev.qualify(conn, audio_aid, "original_audio",
-                                   job_id=job_id) if audio_aid else None
+                                   job_id=job_id,
+                                   artifacts_dir=self.store.artifacts_dir
+                                   ) if audio_aid else None
                 audio_art = audio["artifact"] if audio and audio["ok"] \
                     else None
                 inputs = [graft["artifact"], src["artifact"]] + (
@@ -1093,6 +1096,15 @@ def _safe_rel(rel) -> bool:
         ".." not in pathlib.PurePosixPath(rel).parts
 
 
+def _under_symlink(rel: str, symlinks: set) -> bool:
+    """True when ``rel`` or any directory above it is a symlink: a path
+    through a linked directory resolves outside the dataset, so it is
+    never opened (not even ``rglob`` descends into one)."""
+    parts = pathlib.PurePosixPath(rel).parts
+    return any("/".join(parts[:i]) in symlinks
+               for i in range(1, len(parts) + 1))
+
+
 def _sha_text(text) -> str | None:
     return hashlib.sha256(text.encode("utf-8")).hexdigest() \
         if isinstance(text, str) else None
@@ -1150,7 +1162,7 @@ def validate_dataset(root) -> dict:
             continue
         listed[rel] = digest
         p = root / rel
-        if rel in symlinks:
+        if _under_symlink(rel, symlinks):
             continue
         if not p.is_file():
             issues.append(f"missing file {rel}")
@@ -1170,8 +1182,13 @@ def validate_dataset(root) -> dict:
     examples = _read_jsonl(root / "examples.jsonl", issues)
     references = _read_jsonl(root / "references.jsonl", issues)
     preferences = _read_jsonl(root / "preferences.jsonl", issues)
-    _validate_semantics(examples, references, preferences, listed,
-                        symlinks, root, issues)
+    try:
+        _validate_semantics(examples, references, preferences, listed,
+                            symlinks, root, issues)
+    except (TypeError, AttributeError, ValueError):
+        # A field of the wrong JSON type (an object where an id belongs,
+        # a list as a family) is reported, never raised.
+        issues.append("records carry a field of the wrong type")
     counts = manifest.get("counts")
     if not isinstance(counts, dict):
         issues.append("manifest counts missing")
@@ -1282,7 +1299,8 @@ def _validate_semantics(examples, references, preferences, listed,
         if audio is not None:
             if not _safe_rel(audio):
                 issues.append("unsafe audio path")
-            elif audio in symlinks or not (root / audio).is_file():
+            elif _under_symlink(audio, symlinks) or \
+                    not (root / audio).is_file():
                 issues.append(
                     f"example {ex.get('example_id')} missing audio")
             elif listed.get(audio) != ex.get("audio_sha256"):

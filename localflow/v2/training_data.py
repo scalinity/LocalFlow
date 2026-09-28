@@ -785,7 +785,8 @@ class TrainingDataService:
                     # role-checked reference and audio; the effective
                     # blocking-label policy) — one predicate, so the
                     # count is exactly who the export would admit.
-                    gate = verified_asr_eligible_in(conn, _ex_id)
+                    gate = verified_asr_eligible_in(
+                        conn, _ex_id, self.store.artifacts_dir)
                     if not audio_ok:
                         verbatim_without_audio += 1
                     if gate["eligible"]:

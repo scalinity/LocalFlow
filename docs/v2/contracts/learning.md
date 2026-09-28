@@ -30,45 +30,71 @@ key), the changed spans (zero-based half-open code-point offsets into
 the observed before-text, S29.4), the proposed alias → canonical rule
 and scope, the classification axes, and `status` ∈ {`pending`,
 `approved`, `rejected`, `suppressed`, `dismissed`, `stale`}. The row is
-content-free apart from the proposed rule terms: spans are offsets only
-and the stored classification carries axes, not region words. The
-observed words live only in a lease-governed `learning_json` payload
-written inside the same writer op — before/after text for a dictation
-observation or a teach, and just the changed regions for a note edit
-(S22: minimal edit ranges; the rest of a note is the user's own
-writing). A teach is reviewed evidence and its payload is retained
-until removed; a machine-mined payload follows the unreviewed buffer
-(`training_buffer`, 30 days), so an unreviewed observation never pins
-its job's evidence past the buffer.
+content-free apart from the proposed rule terms: spans are offsets only,
+the stored classification carries axes, not region words, and
+`counterexample_json` holds only the counterexample check's result
+(status, tested count, flip count, snapshot revision, scope, artifact
+id). The observed words live only in a lease-governed `learning_json`
+payload (role `candidate_observation`) written inside the same writer op
+— before/after text for a dictation observation or a teach, and just the
+attributed changed regions for a note edit (S22: minimal edit ranges;
+the rest of a note is the user's own writing). A teach is reviewed
+evidence and its payload is retained until removed; a machine-mined
+payload follows the unreviewed buffer (`training_buffer`, 30 days), so
+an unreviewed observation never pins its job's evidence past the buffer.
+
+Every artifact a producer or reviewer reads is admitted through the M14
+evidence resolver (`curation.evidence.qualify`, contracts/
+dataset_exports.md): the example row's own job, the producer's role for
+the slot, the payload retained and its digest intact — an artifact id
+alone is never evidence.
 
 Three producers (S22 — a reliable target-bound edit or an explicit
 teach action; never every later manual rewrite):
 
 - **Explicit teach** (History → Teach): the user states the corrected
-  text for a job. The minimal changed spans against the job's final
-  text become the candidate (`explicit_intent_review`). An unchanged
-  or whole-rewrite submission refuses with its reason
-  (`unchanged_output`, `not_target_bound_correction`,
-  `no_retained_final_text`), and so does a job whose example is
-  excluded, quarantined or expired (`example_<state>`). Without a
-  training example (collection off) the job's own History artifacts
-  supply the text and the stage texts; the candidate is then keyed by
-  its job.
+  text for a job. The action carries the rendered cleaned-stage
+  artifact id and its hash; the service reads the job's final text (its
+  applied output — a raw transcript is never substituted), compares and
+  mints the candidate in ONE writer op, and a different, purged or
+  changed final refuses as `stale_final`. The minimal changed spans
+  against that text become the candidate (`explicit_intent_review`).
+  Unchanged means the stripped correction equals the stripped final
+  (`unchanged_output`); a correction whose words are identical but whose
+  punctuation, spacing or line breaks differ is recorded as a
+  `punctuation_or_structure` candidate with character-level spans and no
+  rule. A whole-rewrite submission refuses (`not_target_bound_correction`),
+  and so do a missing final (`no_retained_final_text`), a deleted job
+  (`job_deleted`) and a job whose example is excluded, quarantined or
+  expired (`example_<state>`). Without a training example (collection
+  off) the job's own History artifacts supply the text and the stage
+  texts; the candidate is then keyed by its job. The History row that
+  shows a transformed final refuses Teach (Teach corrects the cleaned
+  text). An `operation_id` makes a retry after an unknown outcome return
+  the first candidate.
 - **M08 observation windows**: `insertion_observations` rows that
   stopped `owned_range_edited` on a certified surface (the window
-  already guarantees target-bound attribution). Each observation is
-  examined once, in its own short writer op; an observation whose
-  example is excluded, quarantined or expired is recorded as
-  dismissed and teaches nothing.
-- **M12 note edits**: consecutive typed revisions of a note whose
-  changed words intersect a surviving `dictated` span (both measured
-  in whitespace words, the spans' own unit). A dictated span records
-  the job that produced it, so in a note holding several dictations
-  the edit is attributed to the one whose span it touched. An edit
-  touching two dictations' spans, or a span written before spans
-  carried their job in a note with more than one linked dictation,
-  stays unattributed — attribution stops where it becomes unreliable
-  (S29.8) — and an edit with no resolvable dictation job is skipped.
+  already guarantees target-bound attribution). The before/after
+  payloads must be that job's own `observation_before_range` /
+  `observation_after_range` artifacts; anything else is recorded stale
+  with its content-free reason. Each observation is examined once, in
+  its own short writer op; a deleted job's observation writes nothing;
+  an observation whose example is excluded, quarantined or expired is
+  recorded as dismissed and teaches nothing.
+- **M12 note edits**: consecutive typed revisions of a note, compared
+  in the note's own unit (whitespace words), attributed REGION BY
+  REGION (m14-policy-r1 D14). A changed region wholly inside one
+  `dictated` span of job J (an insertion strictly inside it) is J's
+  evidence; a region touching no dictated span is the user's own writing
+  and is left out; a region straddling a span boundary is ambiguous and
+  left out. A dictated span that M12's occurrence-safe rebase reports as
+  ambiguous (repeated words whose surviving copy cannot be told) abstains
+  the whole revision. Only when the attributable regions belong to
+  exactly one dictation are those regions — and nothing else —
+  classified and kept as its evidence; regions of two dictations, a span
+  written before spans carried their job in a note with more than one
+  linked dictation, or no resolvable dictation job mint nothing —
+  attribution stops where it becomes unreliable (S29.8).
 
 User rewrites and changed intent are recorded as `dismissed`
 (examined, never re-suggested). A job with several triggers yields one
@@ -100,6 +126,10 @@ oracle. Synthetic fixtures prove mechanics, not real accuracy.
   contraction) makes the whole observation `ambiguous` with
   `negation_flip_needs_review` unless it is already changed intent.
   No alias is ever suggested from it.
+- **Direction flips are never recognition**: a replaced word pair that
+  names opposite directions (increase/decrease, enable/disable, a known
+  antonym or an opposing prefix on one stem) is `ambiguous` with
+  `direction_flip_needs_review`; no alias is suggested from it.
 - **origin_stage / pipeline_effect**: attribution compares the changed
   region against the retained stage texts. Raw carrying the wrong form
   (and not the right one) ⇒ `asr`/`neutral`. Raw carrying the right
@@ -129,40 +159,71 @@ reviewable spans with no rule. The proposed scope is the job's
 destination app when one was recorded, else global; a global rule
 still requires the explicit approval click (S11).
 
-**Approval** (one click, no approval chain):
+**Approval** (one click, no approval chain) is ONE writer op
+(m14-policy-r1 D12) — nothing can commit between its check, plan,
+effect and mark:
 
-1. Adverse counterexamples run first through the frozen M05 sandbox,
-   filtered for the rule's own scope (an app-scoped rule is tested as
-   if in that app — an unscoped sandbox would never fire it and pass
-   every counterexample vacuously). A flip refuses the approval, shows
-   the flip and leaves the candidate pending.
-2. The rule lands through `VocabularyStore` (origin `user`; the
-   candidate's `vocabulary_entry_id` carries the linkage). The plan —
-   entry id (pre-minted for a new entry) and action — is recorded on
-   the still-pending candidate BEFORE the vocabulary store is touched,
-   and the final mark is conditional on `pending`: an approval
-   interrupted between the two resumes the same plan on retry, so undo
-   still knows what to reverse. `vocabulary_action`:
+1. The candidate must still be `pending` with live evidence: its job
+   not deleted, its example trainable, its governed payload retained
+   (`evidence_deleted`, `example_<state>`, `evidence_unavailable`).
+2. Adverse counterexamples run through the M05 sandbox over the
+   EFFECTIVE post-approval dictionary — every current approved entry
+   plus the proposed rule (merged into the user's existing entry when
+   one holds the identity) — filtered for the rule's own scope (an
+   app-scoped rule is tested as if in that app). A phrase the proposed
+   rule rewrites is a flip: the approval refuses, shows the flip and
+   leaves the candidate pending. No phrase is recorded as `untested`,
+   never as safe (D06). The phrases and flips live in a lease-governed
+   `counterexample_result` artifact of the candidate's job
+   (training-buffer lease; removed with the job, its expiry or the
+   candidate going stale); the row keeps only the content-free result.
+3. The plan uses M05's own identity — the canonical compared
+   NOCASE and the scope value in canonical form (`canonical_scope_value`:
+   app bundle ids and site origins compare case- and padding-
+   insensitively; workspace/profile names exactly) — and the rule lands
+   through VocabularyStore's composable validated operations
+   (`add_entry_in`, `update_entry_in` with the entry's current revision).
+   `vocabulary_action`:
    - `created` — no entry for the canonical in that scope: a new
      approved entry;
    - `alias_added` / `alias_approved` — the user's own active entry
-     exists: the alias is added to it or approved on it (M05's
-     one-canonical-per-scope rule refuses a second entry);
+     exists: the alias is added to it or approved on it, every other
+     alias kept with its language (M05's one-canonical-per-scope rule
+     refuses a second entry);
    - `already_present` — the approved alias is already there.
    An existing entry that the user disabled or never approved is never
    re-activated by a learned alias: approval refuses with
    `existing_entry_not_active`.
-3. From then on the rule lives under every M05 control — scope
-   precedence, masking, pin/disable, versioned history.
+4. The exact delta (entry id, action, alias, the entry revision after
+   approval) is recorded in `learning_vocabulary_deltas` and the
+   candidate marked approved in the same op.
+5. From then on the rule lives under every M05 control — scope
+   precedence, masking, pin/disable, versioned history. A deletion that
+   serializes after the approval leaves the rule in place (it is the
+   user's approved dictionary entry now); one that serializes before it
+   refuses the approval.
 
-**Undo** reverses exactly what approval did: a `created` entry is
-disabled (history survives; re-approval re-enables that same entry), an
-`alias_added` alias is removed, an `alias_approved` alias returns to
-unapproved; the rest of a user's entry is never touched. The candidate
-returns to pending.
+**Undo** reverses exactly the recorded delta, in one writer op against
+the authoritative entry: a `created` entry is disabled only while it is
+exactly as approval left it (its revision unchanged); an `alias_added`
+alias is removed only while it is still present and approved; an
+`alias_approved` alias returns to unapproved only while it is still
+approved; `already_present` changed nothing to reverse. A later user
+edit is never overwritten — the undo refuses with
+`user_modified_since_approval`. The candidate returns to pending.
+Re-approval after undo re-enables the learned entry only while it is
+exactly as the undo left it; an entry the user disabled or edited
+afterwards is never reactivated.
 
-**Rejection** is permanent: the same alias → canonical pair observed
-again is recorded `suppressed` and never re-proposed (S11).
+Approve, reject and undo accept an `operation_id`: a repeat of a
+completed operation (a retry after an unknown outcome) returns the
+recorded receipt (`m14_operation_receipts`) with no second effect.
+
+**Rejection** is permanent and global (D05): the same alias → canonical
+pair — alias lower-cased, canonical under M05's ASCII case identity —
+observed again in any scope is recorded `suppressed` and never
+re-proposed (S11). A different canonical, or a different alias, is not
+suppressed. Only the rejected row's terms are kept as that preference.
 
 **M14-AC01**: pending, rejected, suppressed, stale and dismissed
 candidates never reach the pipeline — the normalize engine only ever
@@ -172,29 +233,48 @@ sees approved vocabulary entries.
 
 - `correction_labels` are per-example, **append-only, versioned**
   (`revision` = prior count + 1); every axis value is validated against
-  the S29.7 vocabularies. A changed opinion appends; the latest
-  revision is the current label. A non-abstained label moves the
-  example to `annotated`. A label never lands on a deleted, expired,
-  excluded or quarantined example (`example_not_reviewable:<state>`) —
-  the state move would otherwise hand that evidence back to export and
-  the ASR gate. Refusals raise `ValueError` after the writer op.
-- **Grafts**: `confirmed_spans` (reviewed recognition regions) build a
-  correction-grafted weak reference over the retained source (raw)
-  text — every span must index that text (its words at the offsets
-  equal the span's before-words, else `span_not_in_source_text`), only
-  those spans applied, overlapping spans refused, coverage mask
-  recorded, `coverage_kind: "partial"` forever. The graft artifact is
-  lease-governed and written in the label's op. A graft never grants
-  full-utterance SFT eligibility (contracts/references.md).
+  the S29.7 vocabularies. A changed opinion appends. A non-abstained
+  label moves the example to `annotated`. A label never lands on a
+  deleted, expired, excluded or quarantined example
+  (`example_not_reviewable:<state>`) — the state move would otherwise
+  hand that evidence back to export and the ASR gate. Refusals raise
+  `ValueError` after the writer op. An `operation_id` makes a retry of a
+  completed save return its receipt without a second revision.
+- **The effective judgment** (`effective_judgment_in`, m14-policy-r1
+  D01) is the latest revision; when that revision is abstained the
+  example is unresolved. The queue, the ASR gate, readiness and Your
+  Voice all read it: the queue's `labeled` flag means an effective
+  judgment exists, so a later abstention returns an item to unresolved.
+- **Grafts**: `confirmed_spans` (reviewed recognition regions, strict
+  primitives: non-negative integer code-point offsets, start ≤ end, word
+  lists of strings) build a correction-grafted weak reference over the
+  retained source (raw) text the reviewer saw. The save names that
+  source (`expected_source_artifact_id` / `expected_source_sha256`); a
+  different current source, or a different hash, refuses as
+  `stale_source` even when the same word sits at the same offset. Every
+  span must index that text (its words at the offsets equal the span's
+  before-words, else `span_not_in_source_text`); only those spans are
+  applied, overlapping spans refused, the coverage mask recorded,
+  `coverage_kind: "partial"` forever, and the graft payload records its
+  source artifact id and sha256. The graft artifact is lease-governed
+  and written in the label's op. A graft never grants full-utterance
+  SFT eligibility (contracts/references.md).
 - **ASR promotion gate** (`verified_asr_eligible_in`, one helper shared
-  with the exporter): verified-ASR-trainable needs a live state, an
-  audio-reviewed verbatim reference, retained unpurged audio and NO
-  label revision whose edit_kind is `changed_intent`, `ambiguous` or
-  `user_rewrite` (M14-AC05).
+  with the exporter and readiness): verified-ASR-trainable needs a live
+  state, the latest listened `verbatim_reference` annotation whose
+  artifact is this example's own (job, role, digest — including the
+  annotation's recorded text hash), this example's own retained
+  `original_audio` (a plain managed file name), and no ASR blocker:
+  `changed_intent` in ANY revision bars it permanently; `ambiguous` /
+  `user_rewrite` bar it until the effective judgment exists and is
+  itself non-blocking (an explicit resolution — abstention never
+  resolves) (M14-AC05, D01).
 - **Review queue**: pending learning candidates, each row carrying its
   `candidate_id` (a job-only teach is keyed by its candidate), then
   sampled `review_candidate` examples with machine-suggested axes — one
-  row per example. Suppressed pairs never reappear in the queue.
+  row per example. Suppressed pairs never reappear in the queue. The
+  Hub acts on a candidate chosen from the rendered queue by id
+  (contracts/hub.md).
 - **Label coverage**: per-kind counts, abstentions and
   recognition-after-changed-intent revisions — counts with
   denominators, never rates over a population.
@@ -231,7 +311,8 @@ knob (10); seed/policy are the constants `localflow-m14-review-v1` /
 
 Candidates are keyed by JOB, so propagation reaches a teach with no
 example row. `Store.delete_everywhere` (same op) purges the job's
-artifacts — candidate payloads included — sets the job's pending,
+artifacts — candidate payloads and counterexample results included —
+sets the job's pending,
 suppressed and dismissed candidates `stale` (never approvable) with
 their rule terms and spans cleared, clears the spans of its approved
 and rejected rows (a rejection keeps its rule terms: it is the user's
@@ -240,8 +321,8 @@ lives in the dictionary), deletes the example's correction labels, and
 invalidates every profile snapshot that drew on it with its
 text-bearing content cleared (contracts/profile.md). Buffer expiry
 (`prune_training`) propagates the same way. Deleting a note purges the
-payloads of candidates mined from its edits and stales the open ones
-(contracts/scratchpad.md).
+payloads and counterexample results of candidates mined from its edits
+and stales the open ones (contracts/scratchpad.md).
 
 ## Events
 

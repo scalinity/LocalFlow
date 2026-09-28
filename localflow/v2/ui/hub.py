@@ -771,13 +771,15 @@ class HubController(NSObject):
         # V2 job — the corrected text's minimal changed spans become a
         # LearningCandidate (Suggestion review happens in Models →
         # Training Data → Review).
+        # Every control ends inside 700 pt: the pane's visible width at
+        # the Hub's minimum window size is 706 pt (M14 native C218).
         self.teach_field = NSTextField.alloc().initWithFrame_(
-            NSMakeRect(372, ch - 28, 300, 24))
+            NSMakeRect(372, ch - 28, 240, 24))
         self.teach_field.setPlaceholderString_(
             "corrected text — teach correction for the selected job")
         v.addSubview_(self.teach_field)
         v.addSubview_(_button("Teach", self, "historyTeach:",
-                              NSMakeRect(678, ch - 29, 84, 24)))
+                              NSMakeRect(618, ch - 29, 82, 24)))
         # App and mode filters (S19): an app name/bundle substring and a
         # cleanup mode; empty / "All modes" clears each one.
         v.addSubview_(_label(NSMakeRect(8, ch - 55, 34, 18), "App:"))
@@ -2869,24 +2871,20 @@ class HubController(NSObject):
         self.review_pane.addSubview_(b)
         p.addSubview_(self.review_pane)
         # Candidate decision row: the selected queue row's candidate
-        # approves (through the vocabulary store) or rejects.
+        # approves (through the vocabulary store) or rejects. Every
+        # control ends inside 700 pt — the pane's visible width at the
+        # Hub's minimum window size is 706 pt (M14 native C218).
         self.review_counter = NSTextField.alloc().initWithFrame_(
-            NSMakeRect(260, 76, 300, 22))
+            NSMakeRect(260, 76, 180, 22))
         self.review_counter.setPlaceholderString_(
             "counterexample phrase (optional)")
         self.review_pane.addSubview_(self.review_counter)
         b = _button("Approve Cand.", self, "reviewApprove:",
-                    NSMakeRect(568, 77, 118, 24))
+                    NSMakeRect(446, 77, 118, 24))
         self.review_pane.addSubview_(b)
         b = _button("Reject Cand.", self, "reviewReject:",
-                    NSMakeRect(692, 77, 110, 24))
+                    NSMakeRect(570, 77, 110, 24))
         self.review_pane.addSubview_(b)
-        # The pending candidates of the RENDERED queue, by candidate id —
-        # a job-only teach (collection off) has no example row to select
-        # in Evidence and is chosen here (M14-AUDIT-18).
-        self.review_candidate_popup = NSPopUpButton.alloc().initWithFrame_(
-            NSMakeRect(576, 46, 226, 24))
-        self.review_pane.addSubview_(self.review_candidate_popup)
         # Label row: record a reviewed classification on the selected
         # example (the evidence list selection drives it).
         self.review_kind = NSPopUpButton.alloc().initWithFrame_(
@@ -2895,12 +2893,18 @@ class HubController(NSObject):
         self.review_kind.addItemsWithTitles_(list(AXIS_EDIT_KINDS))
         self.review_pane.addSubview_(self.review_kind)
         self.review_example = NSTextField.alloc().initWithFrame_(
-            NSMakeRect(204, 46, 240, 22))
+            NSMakeRect(204, 46, 180, 22))
         self.review_example.setPlaceholderString_("example id")
         self.review_pane.addSubview_(self.review_example)
         b = _button("Record Label", self, "reviewLabel:",
-                    NSMakeRect(452, 47, 118, 24))
+                    NSMakeRect(390, 47, 118, 24))
         self.review_pane.addSubview_(b)
+        # The pending candidates of the RENDERED queue, by candidate id —
+        # a job-only teach (collection off) has no example row to select
+        # in Evidence and is chosen here (M14-AUDIT-18).
+        self.review_candidate_popup = NSPopUpButton.alloc().initWithFrame_(
+            NSMakeRect(514, 46, 186, 24))
+        self.review_pane.addSubview_(self.review_candidate_popup)
         b = _button("Pair: prefer A", self, "reviewPairA:",
                     NSMakeRect(8, 16, 110, 24))
         self.review_pane.addSubview_(b)
@@ -2953,18 +2957,21 @@ class HubController(NSObject):
                                     "")
         self.export_pane.addSubview_(self.export_status)
         self.export_text = _textview(NSMakeRect(0, 0, cw - 16, 100))
-        sc = _scroll(NSMakeRect(8, 92, cw - 16, ch - 156),
+        sc = _scroll(NSMakeRect(8, 116, cw - 16, ch - 180),
                      self.export_text)
         sc.setAutoresizingMask_(18 | 16)
         self.export_pane.addSubview_(sc)
         self.export_checks = {}
+        # Two rows so every view's checkbox ends inside 700 pt — the
+        # pane's visible width at the Hub's minimum window size is 706 pt
+        # (M14 native C218).
         for i, view in enumerate(("asr_supervised", "cleanup_supervised",
                                   "preference_pairs",
                                   "asr_span_graft_weak",
                                   "transform_supervised")):
             from AppKit import NSButtonTypeSwitch
             cb = NSButton.alloc().initWithFrame_(
-                NSMakeRect(8 + i * 190, 60, 186, 22))
+                NSMakeRect(8 + (i % 3) * 230, 86 - (i // 3) * 26, 226, 22))
             cb.setButtonType_(NSButtonTypeSwitch)
             cb.setTitle_(view)
             cb.setState_(1 if i < 3 else 0)

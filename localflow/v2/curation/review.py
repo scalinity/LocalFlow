@@ -147,7 +147,8 @@ def effective_judgment_in(conn, example_id) -> dict:
             "asr_block": block}
 
 
-def verified_asr_eligible_in(conn, example_id: str) -> dict:
+def verified_asr_eligible_in(conn, example_id: str,
+                             artifacts_dir=None) -> dict:
     """The ASR promotion gate INSIDE a writer op (S29.6/M14-AC05):
     True eligibility for VERIFIED ASR training needs a live state, no
     ASR blocker under the effective-judgment policy, an audio-reviewed
@@ -186,7 +187,8 @@ def verified_asr_eligible_in(conn, example_id: str) -> dict:
     audio_aid = (env.get("artifact_ids") or {}).get("original_audio")
     if not audio_aid:
         return {"eligible": False, "reason": "no_retained_audio"}
-    audio = ev.qualify(conn, audio_aid, "original_audio", job_id=job_id)
+    audio = ev.qualify(conn, audio_aid, "original_audio", job_id=job_id,
+                       artifacts_dir=artifacts_dir)
     if not audio["ok"]:
         return {"eligible": False, "reason": audio["reason"]}
     return {"eligible": True, "reason": None, "job_id": job_id,
@@ -446,7 +448,8 @@ class ReviewService:
         """See ``verified_asr_eligible_in`` (the connection-level
         helper the export layer shares — one gate, never two)."""
         out = self.store.submit(
-            lambda conn: verified_asr_eligible_in(conn, example_id))
+            lambda conn: verified_asr_eligible_in(
+                conn, example_id, self.store.artifacts_dir))
         return {"eligible": out["eligible"], "reason": out["reason"]}
 
     # ---- coverage (readiness inputs, E19.4) ----------------------------------

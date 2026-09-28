@@ -64,14 +64,20 @@ _WORD_RE = re.compile(r"\w+", re.UNICODE)
 
 def _local_hour(iso_utc: str, offset_minutes) -> int | None:
     """The local hour of a UTC instant under its recorded UTC offset;
-    None when either is missing (a UTC hour is not a time of day)."""
-    if not iso_utc or len(iso_utc) < 16 or offset_minutes is None:
+    None when either is missing or unusable — a corrupt or impossible
+    offset (outside UTC−12…UTC+14) is unknown, never a guessed hour
+    (a UTC hour is not a time of day)."""
+    if not iso_utc or len(iso_utc) < 16 or offset_minutes is None \
+            or isinstance(offset_minutes, bool):
         return None
     try:
         minutes = int(iso_utc[11:13]) * 60 + int(iso_utc[14:16])
-    except ValueError:
+        offset = int(offset_minutes)
+    except (ValueError, TypeError):
         return None
-    return ((minutes + int(offset_minutes)) // 60) % 24
+    if not -720 <= offset <= 840:
+        return None
+    return ((minutes + offset) // 60) % 24
 
 
 # Why a snapshot's evidence stopped being usable, by the example's state.

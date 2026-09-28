@@ -1073,6 +1073,113 @@ def c_changed_intent_blocks_asr_forever():
             j["example_id"])["eligible"]
 
 
+@case("LOCAL-M14-03")
+def l03_vanished_audio_file_fails_the_gate_not_the_export():
+    with MWorld() as w:
+        w.families(10, asr=True)
+        gone = w.ready_asr("vanished audio witness")
+        (w.store.artifacts_dir
+         / w.artifact_row(gone["audio_aid"])[4]).unlink()
+        gate = w.review.verified_asr_eligible(gone["example_id"])
+        assert not gate["eligible"], gate
+        te = w.training.readiness()["readiness_metrics"]["task_eligibility"]
+        assert te["asr_supervised"]["count"] == 10, te["asr_supervised"]
+        w.splits.assign()
+        out, err = export_or_refusal(w, "ds", ("asr_supervised",))
+        assert out is not None, err
+        exs, _r, _p = export_records(w, "ds")
+        assert len(exs) == 10, len(exs)
+        assert gone["example_id"] not in {e["example_id"] for e in exs}
+
+
+@case("LOCAL-M14-04")
+def l04_audio_artifact_id_never_names_a_path_outside_the_export():
+    with MWorld() as w:
+        w.families(10, asr=True)
+        bad = w.ready_asr("escaping id witness")
+        old = w.envelope(bad["example_id"])["artifact_ids"]["original_audio"]
+
+        def clone(conn):
+            cols = [r[1] for r in conn.execute("PRAGMA table_info(artifacts)")]
+            pick = ", ".join("?" if c == "artifact_id" else c for c in cols)
+            conn.execute(f"INSERT INTO artifacts ({', '.join(cols)})"
+                         f" SELECT {pick} FROM artifacts WHERE artifact_id=?",
+                         ("../../escape-id", old))
+        w.store.submit(clone)
+        w.rewrite_envelope(bad["example_id"], lambda env: env[
+            "artifact_ids"].__setitem__("original_audio", "../../escape-id"))
+        w.splits.assign()
+        out, err = export_or_refusal(w, "out/deep/ds", ("asr_supervised",))
+        assert out is not None, err
+        assert not (w.tmp / "out" / "escape-id.wav").exists()
+        assert not (w.tmp / "escape-id.wav").exists()
+        report = export_mod.validate_dataset(w.tmp / "out/deep/ds")
+        assert report["valid"], report["issues"]
+        assert report["counts"]["asr_supervised"] == 10, report["counts"]
+
+
+@case("LOCAL-M14-05")
+def l05_validator_reports_wrongly_typed_fields():
+    with MWorld() as w:
+        w.families(10, asr=True)
+        w.splits.assign()
+        w.export("ds", ("asr_supervised",))
+        path = w.tmp / "ds" / "examples.jsonl"
+        rows = read_jsonl(path)
+        for field, bad in (("example_id", {"nested": 1}),
+                           ("task_kind", ["asr_supervised"]),
+                           ("family_id", ["f"])):
+            tampered = [dict(rows[0], **{field: bad})] + rows[1:]
+            path.write_text("".join(json.dumps(r) + "\n" for r in tampered))
+            report = export_mod.validate_dataset(w.tmp / "ds")
+            assert not report["valid"], field
+
+
+@case("LOCAL-M14-06")
+def l06_validator_never_reads_through_a_linked_directory():
+    with MWorld() as w:
+        w.families(10, asr=True)
+        w.splits.assign()
+        w.export("ds", ("asr_supervised",))
+        outside = w.tmp / "outside"
+        outside.mkdir()
+        sentinel = outside / "sentinel.wav"
+        sentinel.write_bytes(b"outside bytes")
+        (w.tmp / "ds" / "extra").symlink_to(outside)
+        sums = w.tmp / "ds" / "SHA256SUMS.txt"
+        sums.write_text(sums.read_text()
+                        + f"{sha256_file(sentinel)}  extra/sentinel.wav\n")
+        opened = []
+
+        def hook(event, args):
+            if event == "open" and args and "sentinel" in str(args[0]):
+                opened.append(event)
+        sys.addaudithook(hook)
+        report = export_mod.validate_dataset(w.tmp / "ds")
+        assert not report["valid"]
+        assert not opened, "validator opened a file outside the dataset"
+
+
+@case("LOCAL-M14-07")
+def l07_corrupt_utc_offset_is_an_unknown_hour():
+    from localflow.v2 import analytics as analytics_mod
+    with MWorld(min_words=10) as w:
+        a = analytics_mod.AnalyticsStore(w.store, emit=w._emit,
+                                         now_fn=w.clock,
+                                         reporting_timezone="UTC")
+        good = w.job("an eligible dictation with a known local hour")
+        bad = w.job("an eligible dictation with a corrupt offset")
+        a.record_dictation_fact(job_id=good["job_id"],
+                                activity_at_utc="2026-09-26T16:00:00.000Z",
+                                utc_offset_minutes=330)
+        a.record_dictation_fact(job_id=bad["job_id"],
+                                activity_at_utc="2026-09-26T16:00:00.000Z",
+                                utc_offset_minutes="bogus")
+        measured = w.profile.compute()["measured"]
+        assert measured["hours_unknown"] == 1, measured["hours_unknown"]
+        assert measured["hour_histogram"][21] == 1, measured["hour_histogram"]
+
+
 @case("M14-AUDIT-31")
 def d02_task_rows_never_ride_into_a_holdout_export():
     with MWorld() as w:
