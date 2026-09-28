@@ -768,6 +768,34 @@ def x01l_older_store_without_its_stamp_is_never_refused():
         f" {refused}")
 
 
+@case("MERGED-X01 (review R3-02: only the version row lost, backed up"
+      " first)")
+def x01m_lost_version_row_is_backed_up_before_remigrating():
+    import sqlite3
+    unbacked = []
+    for version in range(1, max(store_mod._MIGRATIONS) + 1):
+        with tempfile.TemporaryDirectory() as td:
+            db = pathlib.Path(td) / "v2.db"
+            s = _old_schema_store(db, version)
+            s.create_job()
+            s.close()
+            con = sqlite3.connect(db)
+            con.execute("DELETE FROM schema_meta WHERE key='schema_version'")
+            con.commit()
+            con.close()
+            bk = db.parent / "bk"
+            s2 = store_mod.Store(db, artifacts_dir=db.parent / "arts",
+                                 backup_dir=bk)
+            try:
+                assert X.one(s2, "SELECT COUNT(*) FROM jobs")[0] == 1
+            finally:
+                s2.close()
+            if not list(bk.glob("*.db")):
+                unbacked.append(version)
+    assert not unbacked, (
+        f"stores at schema {unbacked} re-migrated from 0 with no backup")
+
+
 @case("MERGED-X01 record (review R2-10)", kind="control")
 def c_subledger_rows_state_the_current_design():
     led = json.loads((X.ROOT / "docs/v2/acceptance/cross-milestone/"

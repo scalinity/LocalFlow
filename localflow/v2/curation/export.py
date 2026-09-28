@@ -902,14 +902,20 @@ class DatasetExporter:
                         or not p.is_dir():
                     continue
                 if kind == "building":
-                    # A crashed build's own staging, never published.
-                    owner = p / _OWNER_FILE
+                    # A crashed build's own finished graph, never
+                    # published: no owner file (a build still writing —
+                    # perhaps in another process — keeps one; review
+                    # R3-05) and a manifest naming this export id, with or
+                    # without its checksums (review R3-06).
                     try:
-                        ours = owner.read_text(encoding="utf-8") == suffix \
-                            if owner.exists() else _replaceable(p)
-                    except OSError:
-                        ours = False
-                    if ours:
+                        manifest = json.loads(
+                            (p / "dataset_manifest.json").read_text(
+                                encoding="utf-8"))
+                    except (OSError, ValueError):
+                        manifest = None
+                    if not (p / _OWNER_FILE).exists() \
+                            and isinstance(manifest, dict) \
+                            and manifest.get("export_id") == suffix:
                         stale.append(p)
                     continue
                 if not _replaceable(p):

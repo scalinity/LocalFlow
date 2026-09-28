@@ -1621,6 +1621,103 @@ def x12_older_validate_never_takes_over_a_newer_export_result():
         h.close()
 
 
+def _export_then_validate(h, mq, hub, build, validate_dest):
+    """Export into the pane's destination with ``build`` (called when the
+    build runs, holding it until a Validate of ``validate_dest`` has
+    started); that Validate finishes after the Export settles. Returns
+    the pane text after a refresh."""
+    from localflow.v2.curation import export as export_mod
+    bgate, vgate = X.Latch("export_build"), X.Latch("validator_read")
+    real = export_mod.validate_dataset
+    svc = hub.spec["export_service"]
+
+    def held_build(d, task_views, export_id=None):
+        bgate.hit()
+        return build(export_id)
+
+    def validate(root):
+        vgate.hit()
+        return real(root)
+    svc.build = held_build
+    export_mod.validate_dataset = validate
+    export_dest = hub.export_dest.stringValue()
+    try:
+        hub.exportRun_(None)
+        assert bgate.reached.wait(10), "fixture: Export never ran"
+        hub.export_dest.setStringValue_(str(validate_dest))
+        hub.exportValidate_(None)
+        assert vgate.reached.wait(10), "fixture: Validate never ran"
+        hub.export_dest.setStringValue_(export_dest)
+        bgate.release()  # the Export settles first (a drain would wait
+        # for the held Validate too)
+        deadline = time.monotonic() + 15
+        while "export" not in hub.export_text.string() \
+                and time.monotonic() < deadline:
+            mq.flush()
+            time.sleep(0.01)
+        assert "export" in hub.export_text.string(), (
+            "fixture: the Export never settled:"
+            f" {hub.export_text.string()[:120]!r}")
+        hub.export_dest.setStringValue_(str(validate_dest))
+        vgate.release()
+        time.sleep(0.3)
+        mq.flush()
+        hub.state.reload_training()
+        assert mq.drain(hub.state, 60)
+    finally:
+        bgate.release()
+        vgate.release()
+        export_mod.validate_dataset = real
+        del svc.build
+    return hub.export_text.string()
+
+
+@case("MERGED-X12 (review R3-01: an Export never strands another folder's"
+      " Validate)")
+def x12_export_leaves_another_folders_validate_to_finish():
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _export_tab(h, mq, hub)
+            hub.export_dest.setStringValue_(str(h.tmp / "export-x"))
+            hub.export_checks["asr_supervised"].setState_(1)
+            other = _invalid_dataset(h.tmp / "folder-y")
+            shown = _export_then_validate(
+                h, mq, hub, lambda eid: {
+                    "export_id": eid, "state": "complete",
+                    "fingerprint": "f" * 64, "counts": {}, "error": None},
+                other)
+        assert "valid:" in shown, (
+            "the Validate of another folder never published after an"
+            f" Export completed: {shown[:120]!r}")
+    finally:
+        h.close()
+
+
+@case("MERGED-X12 (review R3-07: an unknown Export keeps its instruction)")
+def x12_unknown_export_instruction_outranks_the_replaced_validation():
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _export_tab(h, mq, hub)
+            dest = _invalid_dataset(h.tmp / "invalid-ds")
+            hub.export_dest.setStringValue_(str(dest))
+            hub.export_checks["asr_supervised"].setState_(1)
+
+            def unknown(_eid):
+                raise TimeoutError("publication queued")
+            shown = _export_then_validate(h, mq, hub, unknown, dest)
+        # (The stubbed build records no export row, so the refresh then
+        # shows the no-export text — never the replaced validation.)
+        assert "valid:" not in shown, (
+            "an unknown Export's reconcile instruction was covered by the"
+            f" replaced package's validation: {shown[:120]!r}")
+    finally:
+        h.close()
+
+
 @case("MERGED-X12 (an older Validate finishing during a running, then"
       " failing, Export)")
 def x12_older_validate_never_shows_during_or_after_a_failed_export():
@@ -2225,6 +2322,102 @@ def x14_a_concurrent_export_never_reconciles_a_live_build():
             assert out["state"] == "complete", out
             m = json.loads((dest / "dataset_manifest.json").read_text())
             assert m.get("export_id") == "export-a", m.get("export_id")
+        finally:
+            w.close()
+
+
+def _nested_build(outer, inner, dest):
+    """Run ``inner``'s complete build to ``dest`` while ``outer``'s build
+    is inside its graph write; returns (outer result, inner result)."""
+    from localflow.v2.curation.export import ExportError
+    real = outer._write_graph
+    got = {}
+
+    def write_graph(*a, **k):
+        if not got:
+            try:
+                got["inner"] = inner.build(dest,
+                                           task_views=("asr_supervised",),
+                                           export_id="export-inner")
+            except ExportError as e:
+                got["inner"] = {"state": f"refused: {e}"}
+        return real(*a, **k)
+    outer._write_graph = write_graph
+    try:
+        out = outer.build(dest, task_views=("asr_supervised",),
+                          export_id="export-outer")
+    except ExportError as e:
+        out = {"state": f"refused: {e}"}
+    finally:
+        del outer._write_graph
+    return out, got.get("inner")
+
+
+@case("MERGED-X14 (review R3-04: a second Export while one writes its"
+      " graph)")
+def x14_a_second_export_during_the_graph_write_leaves_both_complete():
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        dest = pathlib.Path(td) / "dataset"
+        w = _plain_export(dest)
+        try:
+            outer, inner = _nested_build(w.exporter, w.exporter, dest)
+            assert inner and inner["state"] == "complete", inner
+            assert outer["state"] == "complete", outer
+        finally:
+            w.close()
+
+
+@case("MERGED-X14 (review R3-05: another exporter on the same store)")
+def x14_another_exporters_sweep_never_takes_a_live_build():
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter
+    with tempfile.TemporaryDirectory() as td:
+        dest = pathlib.Path(td) / "dataset"
+        w = _plain_export(dest)
+        try:
+            other = DatasetExporter(w.store)  # e.g. the export CLI
+            outer, inner = _nested_build(w.exporter, other, dest)
+            assert inner and inner["state"] == "complete", inner
+            assert outer["state"] == "complete", (
+                f"another exporter's sweep took the live build: {outer}")
+        finally:
+            w.close()
+
+
+@case("MERGED-X14 (review R3-06: a crash before SHA256SUMS)")
+def x14_crash_before_the_checksums_leaves_nothing_hidden():
+    import tempfile
+    from localflow.v2.curation import export as export_mod
+    from localflow.v2.curation.export import DatasetExporter
+
+    class Crash(BaseException):
+        pass
+    with tempfile.TemporaryDirectory() as td:
+        dest = pathlib.Path(td) / "dataset"
+        w = _plain_export(dest)
+        real = export_mod._write_sums
+
+        def crash(staging):
+            raise Crash()
+        try:
+            export_mod._write_sums = crash
+            try:
+                w.exporter.build(dest, task_views=("asr_supervised",),
+                                 export_id="export-torn")
+            except Crash:
+                pass
+            finally:
+                export_mod._write_sums = real
+            assert (dest.parent / ".dataset.building-export-torn").is_dir(), \
+                "fixture: the crashed staging is gone"
+            after = DatasetExporter(w.store)  # after the restart
+            out = after.build(dest, task_views=("asr_supervised",),
+                              export_id="export-after-torn")
+            assert out["state"] == "complete", out
+            left = sorted(p.name for p in dest.parent.iterdir()
+                          if p.name.startswith(".dataset."))
+            assert not left, f"hidden directories left: {left}"
         finally:
             w.close()
 

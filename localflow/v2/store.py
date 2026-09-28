@@ -1461,8 +1461,10 @@ class Store:
                 r"CREATE TABLE IF NOT EXISTS (\w+)", upto)) | {"schema_meta"}
             missing_idx &= set(re.findall(
                 r"CREATE (?:UNIQUE )?INDEX IF NOT EXISTS (\w+)", upto))
-        repairing = (version >= target or unversioned) and bool(
-            missing_tables or missing_idx)
+        # A stamp-less store is always backed up before it re-migrates
+        # from 0, whatever else it lost (review R3-02).
+        repairing = unversioned or (version >= target and bool(
+            missing_tables or missing_idx))
         if repairing:
             corrupt = []
             for table in sorted(missing_tables & set(_CORE_DEPENDENTS)):
@@ -1529,7 +1531,9 @@ class Store:
             self._db.commit()
             self.emit("store.schema_repaired", level="WARNING",
                       reason_code=("missing_tables" if missing_tables
-                                   else "missing_indexes"),
+                                   - {"schema_meta"} else "missing_indexes"
+                                   if missing_idx else
+                                   "missing_version_stamp"),
                       detail=f"tables={len(missing_tables)}"
                              f" indexes={len(missing_idx)}")
 

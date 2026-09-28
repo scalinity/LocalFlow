@@ -339,6 +339,39 @@ MUTATIONS = [
      [(PR, "                inputs[ex_id] = (None, state)\n",
        mark("XM-MU45", 16) + "                pass\n")],
      {REM: ["x07_restoring_the_blocking_attempt_during_compute_restarts_it"]}),
+    # The third review's reproduced allegations (R3-01, R3-02, R3-05..07;
+    # R3-04's window is closed by R3-05's owner-file rule, which would
+    # mask a late-mark mutant; R3-03 is XM-MU28's added killer).
+    ("XM-MU46", "MERGED-X12", "an Export retires another folder's Validate",
+     [(HUB, "                if bound is not None and bound[\"dest\"] == dest:\n"
+            "                    self._export_validation = None\n"
+            "                    self._action_tokens.pop(\"validate\", None)\n",
+       "                if bound is not None and bound[\"dest\"] == dest:\n"
+       "                    self._export_validation = None\n"
+       + mark("XM-MU46", 16)
+       + "                self._action_tokens.pop(\"validate\", None)\n")],
+     {REM: ["x12_export_leaves_another_folders_validate_to_finish"]}),
+    ("XM-MU47", "MERGED-X12", "an unknown Export keeps the replaced validation",
+     [(HUB, "            if err is None or isinstance(err, TimeoutError):\n",
+       "            if err is None or (not " + mexpr("XM-MU47")
+       + " and isinstance(err, TimeoutError)):\n")],
+     {REM: ["x12_unknown_export_instruction_outranks_the_replaced_validation"]}),
+    ("XM-MU48", "MERGED-X01", "a stamp-less store re-migrates unbacked",
+     [(ST, "        repairing = unversioned or (version >= target and bool(\n",
+       "        repairing = (not " + mexpr("XM-MU48")
+       + ") or (version >= target and bool(\n")],
+     {FAM: ["x01m_lost_version_row_is_backed_up_before_remigrating"]}),
+    ("XM-MU49", "MERGED-X14", "the sweep takes a staging still being written",
+     [(EX, "                    if not (p / _OWNER_FILE).exists() \\\n",
+       "                    if " + mexpr("XM-MU49") + " \\\n")],
+     {REM: ["x14_another_exporters_sweep_never_takes_a_live_build"]}),
+    ("XM-MU50", "MERGED-X14", "a staging without checksums is never swept",
+     [(EX, "                            and manifest.get(\"export_id\") =="
+           " suffix:\n",
+       "                            and manifest.get(\"export_id\") == suffix"
+       " and (p / \"SHA256SUMS.txt\").exists() and " + mexpr("XM-MU50")
+       + ":\n")],
+     {REM: ["x14_crash_before_the_checksums_leaves_nothing_hidden"]}),
 ]
 
 
