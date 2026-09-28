@@ -139,6 +139,13 @@ def _ensure_edit_menu():
     app.setMainMenu_(main)
 
 
+def _export_folder(text):
+    """A destination field's folder exactly as the exporter resolves it
+    (``~`` expanded; a trailing slash names the same folder)."""
+    import pathlib
+    return str(pathlib.Path(text).expanduser()) if text else ""
+
+
 def _refusal_text(e):
     """A service refusal's reason, or None. Raised inside a writer op it
     reaches the caller as the store's ``RuntimeError('ValueError: …')``;
@@ -222,7 +229,8 @@ class HubController(NSObject):
         self._action_tokens = {}
         self._action_notes = {}
         self._export_validation = None  # {dest, text}: xm-policy-r1 D12
-        self._exports_running = {}  # destination -> Exports in flight
+        self._exports_running = {}  # folder -> Exports in flight
+        self._exports_unknown = set()  # folders whose Export may still land
         self._suppress_select = False
         self._building = True
         # Delete-everywhere revokes the Hub's cached payload and replay
@@ -3717,7 +3725,9 @@ class HubController(NSObject):
         self._action_tokens.pop("validate", None)
         # While it runs, a Validate of this folder would describe a
         # package in mid-replacement: it is refused (review R4).
-        self._exports_running[dest] = self._exports_running.get(dest, 0) + 1
+        folder = _export_folder(dest)
+        self._exports_running[folder] = \
+            self._exports_running.get(folder, 0) + 1
         # The export id is the operation id: a retry of the same export
         # after an unknown outcome returns the recorded result instead
         # of building a second dataset (M14-AUDIT-17).
@@ -3729,11 +3739,17 @@ class HubController(NSObject):
             # current status (M09-AUDIT-21).
             self._last_action_unknown = isinstance(err, TimeoutError)
             self._op_settled("export")
-            left = self._exports_running.get(dest, 1) - 1
+            left = self._exports_running.get(folder, 1) - 1
             if left > 0:
-                self._exports_running[dest] = left
+                self._exports_running[folder] = left
             else:
-                self._exports_running.pop(dest, None)
+                self._exports_running.pop(folder, None)
+            # An unknown outcome may still replace the folder: Validate
+            # stays refused until an Export of it settles (review R5-01).
+            if isinstance(err, TimeoutError):
+                self._exports_unknown.add(folder)
+            else:
+                self._exports_unknown.discard(folder)
             if not current:
                 return
             if isinstance(err, TimeoutError):
@@ -3772,10 +3788,14 @@ class HubController(NSObject):
         dest = (self.export_dest.stringValue() or "").strip()
         if not dest:
             return
-        if self._exports_running.get(dest):
+        folder = _export_folder(dest)  # as Export resolves it (R5-02/04)
+        if self._exports_running.get(folder) \
+                or folder in self._exports_unknown:
             self.export_text.setString_(
-                "an export into this folder is still running — Validate"
-                " it once the export finishes")
+                "an export into this folder is still running, or its"
+                " outcome is unknown — Validate it once the export"
+                " finishes (after an unknown outcome, Export again to"
+                " reconcile it first)")
             return
         self._export_validation = {"dest": dest,
                                    "text": f"validating {dest} …"}
@@ -3794,7 +3814,7 @@ class HubController(NSObject):
             if self._on_training_tab("export") and (
                     self.export_dest.stringValue() or "").strip() == dest:
                 self.export_text.setString_(text)
-        self._in_background(lambda: export_mod.validate_dataset(dest),
+        self._in_background(lambda: export_mod.validate_dataset(folder),
                             done, key="validate")
 
     @objc.python_method

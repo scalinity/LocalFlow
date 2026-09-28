@@ -1802,6 +1802,102 @@ def x12_completed_export_supersedes_a_validate_pressed_during_it():
         h.close()
 
 
+def _settle_export(mq, hub, build):
+    """Press Export with ``build(export_id)`` as the service and wait
+    until its outcome is on screen."""
+    svc = hub.spec["export_service"]
+    svc.build = lambda d, task_views, export_id=None: build(export_id)
+    try:
+        hub.exportRun_(None)
+        deadline = time.monotonic() + 15
+        while "export" not in hub.export_text.string().replace(
+                "exporting", "") and time.monotonic() < deadline:
+            mq.flush()
+            time.sleep(0.01)
+    finally:
+        del svc.build
+
+
+def _validate_refused(mq, hub, text):
+    hub.export_dest.setStringValue_(text)
+    hub.exportValidate_(None)
+    shown = hub.export_text.string()
+    mq.flush()
+    return "still running" in shown or "unknown" in shown and \
+        "Export again" in shown and "valid:" not in shown
+
+
+@case("MERGED-X12 (review R5-01..R5-03: when Validate is refused, and when"
+      " it is available again)")
+def x12_validate_refused_exactly_while_an_export_may_replace_the_folder():
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _export_tab(h, mq, hub)
+            dest = str(_invalid_dataset(h.tmp / "invalid-ds"))
+            hub.export_checks["asr_supervised"].setState_(1)
+
+            def complete(eid):
+                return {"export_id": eid, "state": "complete",
+                        "fingerprint": "f" * 64, "counts": {},
+                        "error": None}
+
+            def failing(_eid):
+                raise RuntimeError("synthetic build failure")
+
+            def unknown(_eid):
+                raise TimeoutError("publication queued")
+            got = {}
+            for label, build in (("after_complete", complete),
+                                 ("after_failure", failing)):
+                hub.export_dest.setStringValue_(dest)
+                _settle_export(mq, hub, build)
+                got[label] = _validate_refused(mq, hub, dest)
+            hub.export_dest.setStringValue_(dest)
+            _settle_export(mq, hub, unknown)
+            got["after_unknown"] = _validate_refused(mq, hub, dest)
+            got["after_unknown_slash"] = _validate_refused(mq, hub,
+                                                           dest + "/")
+            hub.export_dest.setStringValue_(dest)
+            _settle_export(mq, hub, complete)  # the reconciling Export
+            got["after_reconcile"] = _validate_refused(mq, hub, dest)
+        want = {"after_complete": False, "after_failure": False,
+                "after_unknown": True, "after_unknown_slash": True,
+                "after_reconcile": False}
+        assert got == want, (
+            f"Validate refusal (True = refused) {got}, expected {want}")
+    finally:
+        h.close()
+
+
+@case("MERGED-X12 (review R5-04: Validate reads the folder Export wrote)")
+def x12_validate_resolves_the_folder_like_export():
+    import os
+    h = Harness(durations=[1.0])
+    try:
+        with MainQueue() as mq:
+            hub = make_hub(h)
+            _export_tab(h, mq, hub)
+            _invalid_dataset(h.tmp / "home-ds")
+            old = os.environ.get("HOME")
+            os.environ["HOME"] = str(h.tmp)
+            try:
+                hub.export_dest.setStringValue_("~/home-ds")
+                hub.exportValidate_(None)
+                assert mq.drain(hub.state, 60)
+            finally:
+                if old is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = old
+            shown = hub.export_text.string()
+        assert "not a directory" not in shown and "valid:" in shown, (
+            f"Validate did not read the folder Export resolves: {shown[:160]!r}")
+    finally:
+        h.close()
+
+
 @case("MERGED-X12 (review R4-05: a Validate pressed during a failing"
       " Export)")
 def x12_failed_export_never_shows_a_validation_taken_during_it():
@@ -2388,6 +2484,91 @@ def x14_another_exporters_sweep_never_takes_a_live_build():
             w.close()
 
 
+
+
+@case("MERGED-X14 (review R5-05: an export interrupted mid-graph)")
+def x14_interrupted_export_leaves_no_copy_of_recordings_behind():
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter
+
+    class Quit(BaseException):  # the process ends mid-graph
+        pass
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        dest = root / "dataset"
+        w = _plain_export(dest)
+        try:
+            ex = w.exporter
+            real = ex._write_graph
+
+            def write_graph(staging, *a, **k):
+                (staging / "audio-copy.wav").write_bytes(b"RIFF" + b"\0" * 64)
+                raise Quit()
+            ex._write_graph = write_graph
+            try:
+                ex.build(dest, task_views=("asr_supervised",),
+                         export_id="export-quit")
+            except Quit:
+                pass
+            finally:
+                ex._write_graph = real
+            staging = root / ".dataset.building-export-quit"
+            assert (staging / "audio-copy.wav").exists(), \
+                "fixture: the interrupted build left nothing"
+            from localflow.v2.curation import export as export_mod
+            export_mod._INFLIGHT.discard("export-quit")  # a new process
+            DatasetExporter(w.store)  # the next launch
+            assert not staging.exists(), (
+                "a copy of recordings from an interrupted export stays"
+                " hidden beside its folder after the next launch")
+            # A build whose process died while this one runs (the export
+            # CLI crashed): cleaned before this exporter's next build.
+            import subprocess
+            gone = subprocess.Popen([sys.executable, "-c", "pass"])
+            gone.wait(30)
+            cli = root / ".dataset.building-export-cli-crashed"
+            cli.mkdir()
+            (cli / ".localflow-export-owner").write_text(
+                f"export-cli-crashed\n{gone.pid}\n")
+            ex._record("export-cli-crashed", "building",
+                       ("asr_supervised",), None, dest, None, None)
+            ex.build(root / "elsewhere", task_views=("asr_supervised",),
+                     export_id="export-elsewhere")
+            assert not cli.exists(), (
+                "a crashed build of another process stays hidden while"
+                " this exporter keeps building")
+        finally:
+            w.close()
+
+
+@case("MERGED-X14 control (review R5-05: another process's live build)",
+      kind="control")
+def c_reconcile_never_touches_a_build_another_process_runs():
+    import subprocess
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        dest = root / "dataset"
+        w = _plain_export(dest)
+        live = subprocess.Popen([sys.executable, "-c",
+                                 "import time; time.sleep(60)"])
+        try:
+            staging = root / ".dataset.building-export-cli"
+            staging.mkdir()
+            (staging / ".localflow-export-owner").write_text(
+                f"export-cli\n{live.pid}\n")
+            w.exporter._record("export-cli", "building",
+                               ("asr_supervised",), None, dest, None, None)
+            DatasetExporter(w.store).reconcile_interrupted()
+            assert staging.is_dir(), "a live build of another process was" \
+                " removed"
+            assert one(w.store, "SELECT state FROM export_manifests WHERE"
+                       " export_id='export-cli'")[0] == "building"
+        finally:
+            live.kill()
+            live.wait(10)
+            w.close()
 
 
 @case("MERGED-X14 (review R2-05: put back when the destination is free)")

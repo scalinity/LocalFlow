@@ -216,10 +216,10 @@ MUTATIONS = [
             "x12_validate_result_binds_to_its_destination_across_pane_switch"]}),
     ("XM-MU22", "MERGED-X13", "Validate runs on the UI thread",
      [(HUB, "        self._in_background(lambda:"
-            " export_mod.validate_dataset(dest),\n"
+            " export_mod.validate_dataset(folder),\n"
             "                            done, key=\"validate\")\n",
        mark("XM-MU22", 8)
-       + "        done(export_mod.validate_dataset(dest), None, True)\n")],
+       + "        done(export_mod.validate_dataset(folder), None, True)\n")],
      {REM: ["x13_validate_never_runs_filesystem_work_on_the_ui_thread"]}),
     ("XM-MU23", "MERGED-X14", "no publication intent before the rename",
      [(EX, "            self._record(export_id, \"publishing\", task_views,"
@@ -350,11 +350,42 @@ MUTATIONS = [
     # refused while that Export runs (replacing the R2-01/R3-01/R3-07
     # completion-time rules, withdrawn with XM-MU37/46/47).
     ("XM-MU51", "MERGED-X12", "a Validate runs during an Export into its folder",
-     [(HUB, "        if self._exports_running.get(dest):\n",
-       "        if " + mexpr("XM-MU51") + " and False:\n")],
+     [(HUB, "        if self._exports_running.get(folder) \\\n",
+       "        if " + mexpr("XM-MU51") + " and False \\\n")],
      {REM: ["x12_completed_export_supersedes_a_validate_pressed_during_it",
             "x12_unknown_export_instruction_outranks_the_replaced_validation",
             "x12_failed_export_never_shows_a_validation_taken_during_it"]}),
+    # The fifth review's reproduced allegations (R5-01..R5-05).
+    ("XM-MU52", "MERGED-X12", "an unknown Export leaves Validate open",
+     [(HUB, "                self._exports_unknown.add(folder)\n",
+       mark("XM-MU52", 16) + "                pass\n")],
+     {REM: ["x12_validate_refused_exactly_while_an_export_may_replace_the_folder"]}),
+    ("XM-MU53", "MERGED-X12", "Validate stays refused after a settled Export",
+     [(HUB, "                self._exports_unknown.discard(folder)\n",
+       mark("XM-MU53", 16) + "                pass\n")],
+     {REM: ["x12_validate_refused_exactly_while_an_export_may_replace_the_folder"]}),
+    ("XM-MU54", "MERGED-X12", "the field text is not resolved like Export",
+     [(HUB, "    return str(pathlib.Path(text).expanduser()) if text else \"\"\n",
+       mark("XM-MU54", 4) + "    return text\n")],
+     {REM: ["x12_validate_refused_exactly_while_an_export_may_replace_the_folder",
+            "x12_validate_resolves_the_folder_like_export"]}),
+    ("XM-MU55", "MERGED-X14", "an interrupted build is never cleaned",
+     [(EX, "        self.reconcile_interrupted()\n",
+       mark("XM-MU55", 8))],
+     {REM: ["x14_interrupted_export_leaves_no_copy_of_recordings_behind"]}),
+    ("XM-MU56", "MERGED-X14", "a live build of another process is cleaned",
+     [(EX, "            if _owner_alive(staging, export_id):\n",
+       "            if not " + mexpr("XM-MU56")
+       + " and _owner_alive(staging, export_id):\n")],
+     {REM: ["c_reconcile_never_touches_a_build_another_process_runs"]}),
+    ("XM-MU57", "MERGED-X14", "the launch never cleans an interrupted build",
+     [(EX, "            self.reconcile_interrupted()  # review R5-05\n",
+       mark("XM-MU57", 12) + "            pass\n")],
+     {REM: ["x14_interrupted_export_leaves_no_copy_of_recordings_behind"]}),
+    ("XM-MU58", "MERGED-X14", "each exporter keeps its own in-flight set",
+     [(EX, "        self._inflight = _INFLIGHT\n",
+       mark("XM-MU58", 8) + "        self._inflight = set()\n")],
+     {REM: ["x14_another_exporters_sweep_never_takes_a_live_build"]}),
 ]
 
 

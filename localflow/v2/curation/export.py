@@ -77,6 +77,8 @@ _OWNER_FILE = ".localflow-export-owner"
 # An export id as build() names its staging and moved-aside siblings
 # (ids.new_id and caller operation ids): never a dot.
 _EXPORT_ID = re.compile(r"[A-Za-z0-9_-]+")
+# Export ids in flight in this process (every DatasetExporter shares it).
+_INFLIGHT: set = set()
 
 
 class ExportError(Exception):
@@ -123,6 +125,36 @@ def _replaceable(destination: pathlib.Path) -> bool:
     return present <= listed
 
 
+def _owner_alive(staging: pathlib.Path, export_id: str) -> bool:
+    """Whether the build owning ``staging`` may still be running in
+    another process: its owner file names this export id and a live
+    process other than this one. A staging that is gone owns nothing;
+    an owner naming another build, or one that cannot be read, is
+    treated as alive (never touched)."""
+    try:
+        lines = (staging / _OWNER_FILE).read_text(
+            encoding="utf-8").split("\n")
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return True
+    if lines[0] != export_id:
+        return True
+    try:
+        pid = int(lines[1])
+    except (IndexError, ValueError):
+        return False
+    if pid == os.getpid():
+        return False  # this process, yet not in flight: that build died
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return True
+    return True
+
+
 def _inside(path: pathlib.Path, root: pathlib.Path) -> bool:
     try:
         path.resolve().relative_to(root.resolve())
@@ -140,16 +172,22 @@ def _input(art: dict) -> dict:
 
 class DatasetExporter:
     """Build and validate portable datasets from the store's evidence
-    graph. Construction is cheap; ``build`` is one long operation and
-    runs on demand (never on the dictation path)."""
+    graph. Construction (at launch) cleans up after builds LocalFlow
+    never finished; ``build`` is one long operation and runs on demand
+    (never on the dictation path)."""
 
     def __init__(self, store: Store, emit=None):
         self.store = store
         self.emit = emit or (lambda *a, **k: None)
-        # Export ids whose publication op this process has submitted and
-        # not yet seen run (xm-policy-r1 D13): a 'publishing' intent of
-        # one of these is in flight, not crash residue.
-        self._inflight = set()
+        # Export ids this PROCESS is building or publishing, shared by
+        # every exporter in it (xm-policy-r1 D13): an intent of one of
+        # these is in flight, not crash residue.
+        self._inflight = _INFLIGHT
+        try:
+            self.reconcile_interrupted()  # review R5-05
+        except Exception as e:
+            self.emit("export.reconcile_failed", level="WARNING",
+                      reason_code=type(e).__name__)
 
     # ---- selection (one consistent read) --------------------------------------
 
@@ -635,6 +673,7 @@ class DatasetExporter:
                     " place and is not counted as a completed export —"
                     " export again for a current dataset")
         export_id = export_id or ids.new_id("export")
+        self.reconcile_interrupted()
         for managed in (self.store.artifacts_dir, self.store.notes_dir):
             if _inside(destination, managed):
                 raise ExportError(
@@ -706,17 +745,23 @@ class DatasetExporter:
             raise ExportError(
                 "the build's own staging path already exists — nothing"
                 " written or removed")
-        (staging / _OWNER_FILE).write_text(export_id, encoding="utf-8")
+        # The owner names the build and its process until publication.
+        (staging / _OWNER_FILE).write_text(f"{export_id}\n{os.getpid()}\n",
+                                            encoding="utf-8")
         # In flight from its own staging on: another build's reconcile
         # never takes this build's aside or intent for crash residue
         # (review R2-04).
         self._inflight.add(export_id)
         publishing = False
         try:
+            # Recorded before any recording is copied: a build LocalFlow
+            # never finishes (a quit or crash mid-graph) is found and
+            # cleaned by reconcile_interrupted (review R5-05).
+            self._record(export_id, "building", task_views, None,
+                         destination, None, None)
             manifest, counts, fingerprint = self._write_graph(
                 staging, snap, task_views, partitions, export_id,
                 baseline_tombstones)
-            (staging / _OWNER_FILE).unlink()
             _write_sums(staging)
             if destination.exists():
                 if not _replaceable(destination):
@@ -763,6 +808,7 @@ class DatasetExporter:
                          str(destination), fingerprint,
                          summary_counts["examples"],
                          summary_counts["excluded"], None, now, now))
+                    (staging / _OWNER_FILE).unlink(missing_ok=True)
                     os.rename(staging, destination)
                     return {"published": True}
                 finally:
@@ -908,6 +954,36 @@ class DatasetExporter:
                 pass
         return stale
 
+    def reconcile_interrupted(self):
+        """A build LocalFlow never finished — it quit or crashed while
+        writing the graph — leaves its staging, holding copies of the
+        user's recordings, hidden beside its destination. Every
+        'building' record whose build is not in flight in this process
+        and whose owner process is gone has its staging removed, any
+        earlier export it had moved aside put back, and is recorded
+        failed (build_interrupted), so no temporary copy outlives the
+        recordings it came from (Evaluation E19; review R5-05). A build
+        still running in another process — the export CLI — is left
+        alone. Run at launch and before every build."""
+        rows = self.store.submit(lambda conn: conn.execute(
+            "SELECT export_id, destination, task_views_json FROM"
+            " export_manifests WHERE state='building'").fetchall())
+        for export_id, dest, views in rows:
+            if export_id in self._inflight or not dest:
+                continue
+            destination = pathlib.Path(dest)
+            staging = destination.parent / \
+                f".{destination.name}.building-{export_id}"
+            if _owner_alive(staging, export_id):
+                continue
+            aside = destination.parent / \
+                f".{destination.name}.replaced-{export_id}"
+            self._abort(staging, export_id,
+                        aside if aside.exists() else None, destination)
+            self._record(export_id, "failed", json.loads(views or "[]"),
+                         None, destination, None, None,
+                         error="build_interrupted")
+
     @staticmethod
     def _abort(staging, export_id, moved_aside, destination):
         """Remove only THIS build's staging (its ownership file, or an
@@ -917,7 +993,8 @@ class DatasetExporter:
             owner = (staging / _OWNER_FILE)
             ours = staging.is_dir() and not staging.is_symlink() and (
                 not owner.exists()
-                or owner.read_text(encoding="utf-8") == export_id)
+                or owner.read_text(encoding="utf-8").split("\n")[0]
+                == export_id)
         except OSError:
             ours = False
         if ours:
@@ -1216,7 +1293,7 @@ def _write_jsonl(path: pathlib.Path, rows: list[dict]):
 def _write_sums(root: pathlib.Path):
     lines = []
     for p in sorted(root.rglob("*")):
-        if p.is_file() and p.name != "SHA256SUMS.txt":
+        if p.is_file() and p.name not in ("SHA256SUMS.txt", _OWNER_FILE):
             lines.append(f"{_sha256_file(p)}"
                          f"  {p.relative_to(root).as_posix()}")
     (root / "SHA256SUMS.txt").write_text(
