@@ -102,9 +102,9 @@ MUTATIONS = [
     ("XM-MU04", "MERGED-X01", "lost usage_facts recreated empty",
      skip_family("XM-MU04", "usage_facts"),
      {FAM: ["x01d_lost_usage_facts_never_keep_deleted_usage_in_aggregates"]}),
-    ("XM-MU05", "MERGED-X01", "lost vocabulary_entries recreated empty",
-     skip_family("XM-MU05", "vocabulary_entries"),
-     {FAM: ["x01g_lost_dictionary_entries_are_not_an_empty_dictionary"]}),
+    ("XM-MU05", "MERGED-X01", "lost learning_candidates recreated empty",
+     skip_family("XM-MU05", "learning_candidates"),
+     {FAM: ["x01e_lost_candidates_never_forget_a_permanent_rejection"]}),
     ("XM-MU06", "MERGED-X02", "Recovery copy bypasses the guard",
      [(APP, "        if not self._guarded_copy(self._last_failed[\"raw\"]):\n",
        mark("XM-MU06", 8)

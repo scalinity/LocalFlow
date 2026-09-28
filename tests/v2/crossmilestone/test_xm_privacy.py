@@ -87,7 +87,7 @@ def session(h):
             fn()
             steps[name] = "ran"
         except Exception as e:  # noqa: BLE001 — the refusal is the path
-            steps[name] = f"raised {type(e).__name__}: {str(e)[:60]}"
+            steps[name] = f"raised {type(e).__name__}"
 
     d.consent.set("enabled")
 
@@ -269,6 +269,26 @@ def main(argv):
     finally:
         h.close()
     leaked = {k: sorted(set(v)) for k, v in hits.items() if v}
+    # Never vacuous: every path must have been REACHED (a refusal is the
+    # path for the refusal steps) and the writer must have written.
+    expected = {
+        "dictation": "ran", "vocabulary_add": "ran",
+        "notes_and_attachment": "ran", "profile": "ran",
+        "managed_file_authority": "ran",
+        "validator_hostile_package": "ran",
+        "export_and_tampered_validate": "ran",
+        "teach_approve": "raised ValueError",
+        "vocabulary_duplicate_refused": "raised ValueError",
+        "vocabulary_import_refused": "raised ImportRejected",
+        "note_admitted_timeout": "raised NoteOutcomeUnknown",
+        "transforms_with_refusal": "raised ValueError",
+        "snippets_with_refusal": "raised ValueError"}
+    unreached = {k: steps.get(k) for k, want in expected.items()
+                 if not str(steps.get(k, "")).startswith(want)}
+    if unreached or records < 20 or steps.get("tampered_validate") \
+            != "False":
+        error = error or X.strict({"unreached": unreached,
+                                   "records": records})
     status = "PASS" if not leaked and not error else "FAIL"
     record = {"kind": "xm_event_privacy_census", "status": status,
               "records_scanned": records, "steps": steps,

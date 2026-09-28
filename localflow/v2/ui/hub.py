@@ -818,9 +818,7 @@ class HubController(NSObject):
                                 self.history_detail)
         detail_scroll.setAutoresizingMask_(18 | 16)
         v.addSubview_(detail_scroll)
-        # Action row: fit the buttons into the detail column's width
-        # (clamped so nothing clips at the 900×620 minimum).
-        avail = max(cw * 0.54 - 16, 7 * 70)
+        self._history_scrolls = (list_scroll, detail_scroll)
         buttons = (
                 ("Replay", "historyReplay:"),
                 ("Copy", "historyCopy:"),
@@ -830,12 +828,45 @@ class HubController(NSObject):
                 ("Save→Scratchpad", "historyToScratchpad:"),
                 ("Move→Scratchpad", "historyMoveToScratchpad:"),
                 ("Delete Usage", "historyDeleteUsage:"))
-        bw = min(130.0, (avail - (len(buttons) - 1) * 8) / len(buttons))
-        for i, (title, action) in enumerate(buttons):
-            v.addSubview_(_button(title, self, action,
-                                  NSMakeRect(cw * 0.46 + i * (bw + 8), 4,
-                                             bw, 24)))
-        return v
+        self._history_buttons = []
+        for title, action in buttons:
+            b = _button(title, self, action, NSMakeRect(0, 4, 80, 24))
+            v.addSubview_(b)
+            self._history_buttons.append(b)
+        # The M12 relayout container (M12-AUDIT-21): the action rows are
+        # laid out again at every pane size, so every action stays inside
+        # the pane from the minimum window up (LOCAL-XM-03: Move and
+        # Delete Usage sat past the 706 pt minimum content width).
+        from .scratchpad import ScratchpadPane
+        pane = ScratchpadPane.alloc().initWithFrame_(
+            NSMakeRect(0, 0, cw, ch))
+        for sub in list(v.subviews()):
+            sub.removeFromSuperview()
+            pane.addSubview_(sub)
+        pane.layout_cb = self._layout_history
+        self._history_pane = pane
+        self._layout_history()
+        return pane
+
+    @objc.python_method
+    def _layout_history(self):
+        """Two action rows of four across the pane's current width; the
+        list and the detail end above them."""
+        pane = getattr(self, "_history_pane", None)
+        if pane is None:
+            return
+        b = pane.bounds()
+        w, h = b.size.width, b.size.height
+        list_scroll, detail_scroll = self._history_scrolls
+        list_scroll.setFrame_(NSMakeRect(0, 66, w * 0.45,
+                                         max(40.0, h - 100)))
+        detail_scroll.setFrame_(NSMakeRect(w * 0.46, 66, w * 0.54 - 8,
+                                           max(40.0, h - 132)))
+        bw = (w - 16 - 3 * 8) / 4
+        for i, btn in enumerate(self._history_buttons):
+            row, col = divmod(i, 4)
+            btn.setFrame_(NSMakeRect(8 + col * (bw + 8), 34 - row * 30,
+                                     bw, 24))
 
     def historySearchChanged_(self, sender):
         self.state.set_history_search(sender.stringValue() or "")
@@ -4574,14 +4605,16 @@ class HubController(NSObject):
             "Retention (days): transcript · audio ok · audio failed ·"
             " metadata · training buffer"))
         self.retention_fields = []
+        # The row ends inside the 706 pt content width of the minimum
+        # window (LOCAL-XM-02: Apply Retention sat past it).
         for i in range(5):
             f = NSTextField.alloc().initWithFrame_(
-                NSMakeRect(304 + i * 64, y, 56, 22))
+                NSMakeRect(304 + i * 56, y, 50, 22))
             v.addSubview_(f)
             self.retention_fields.append(f)
         v.addSubview_(_button("Apply Retention", self,
                               "settingsApplyRetention:",
-                              NSMakeRect(640, y - 1, 140, 24)))
+                              NSMakeRect(584, y - 1, 116, 24)))
         # M13 (Spec S21): usage analytics retention — its own control,
         # independent of the text/audio knobs above (deleting expired
         # text never empties usage graphs), plus the explicit

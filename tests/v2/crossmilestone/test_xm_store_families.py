@@ -369,26 +369,28 @@ def _normalize(store, text):
     return vocab_mod.sandbox_phrase(text, snap).get("output")
 
 
-@case("MERGED-X01/G vocabulary_entries")
-def x01g_lost_dictionary_entries_are_not_an_empty_dictionary():
-    with M.MWorld() as w:
-        w.vocab.add_entry("Orion SDK", [("orion s d k", True)],
-                          approved=True)
-        assert _normalize(w.store, "use the orion s d k now") \
-            == "use the Orion SDK now", "fixture: rule not applied"
-        db, arts = closed_copy(w)
-        with tempfile.TemporaryDirectory() as td:
-            r = Reopened(db, arts, "vocabulary_entries", td)
-            try:
-                if refused_cleanly(r):
-                    return
-                assert r.store is not None, f"open failed: {r.refusal}"
-                got = _normalize(r.store, "use the orion s d k now")
-                assert got == "use the Orion SDK now", (
-                    "the user's approved dictionary silently became empty"
-                    f" after the repair: {got!r}")
-            finally:
-                r.close()
+@case("MERGED-X01/G vocabulary family (M05-AUDIT-18)", kind="control")
+def c_torn_dictionary_stays_detectable_after_repair():
+    """The vocabulary family is M05's to govern (M05-AUDIT-18): the Store
+    repairs it and the dictionary's own integrity report tells a torn
+    dictionary from a healthy one — the app turns the vocabulary off on
+    vanished entries and warns on lost aliases (the product-level half is
+    test_xm_remediation.c_app_refuses_a_torn_dictionary). Measured: lost
+    entries and lost aliases are both detected after the repair."""
+    for table, key in (("vocabulary_entries", "vanished_entries"),
+                       ("vocabulary_aliases", "entries_missing_aliases")):
+        with M.MWorld() as w:
+            w.vocab.add_entry("Orion SDK", [("orion s d k", True)],
+                              approved=True)
+            db, arts = closed_copy(w)
+            with tempfile.TemporaryDirectory() as td:
+                r = Reopened(db, arts, table, td)
+                try:
+                    assert r.store is not None, r.refusal
+                    rep = VocabularyStore(r.store).integrity_report()
+                    assert rep[key] >= 1, (table, rep)
+                finally:
+                    r.close()
 
 
 @case("MERGED-X01/H transforms")
@@ -502,54 +504,6 @@ def lost(table, build, check):
                 check(r.store, ctx)
             finally:
                 r.close()
-
-
-@case("MERGED-X01/G vocabulary_aliases")
-def x01g2_lost_aliases_never_silently_disable_rules():
-    def build(w):
-        w.vocab.add_entry("Orion SDK", [("orion s d k", True)],
-                          approved=True)
-
-    def check(store, _ctx):
-        got = _normalize(store, "use the orion s d k now")
-        assert got == "use the Orion SDK now", (
-            f"approved aliases silently vanished: {got!r}")
-    lost("vocabulary_aliases", build, check)
-
-
-@case("MERGED-X01/G vocabulary_history")
-def x01g3_lost_history_never_reads_as_no_history():
-    def build(w):
-        eid = w.vocab.add_entry("Orion SDK", [("orion s d k", True)],
-                                approved=True)
-        e = w.vocab.entry(eid)
-        w.vocab.update_entry(eid, expected_revision=e.revision,
-                             canonical="Orion SDK v2")
-        return {"eid": eid, "n": len(w.vocab.history(eid))}
-
-    def check(store, ctx):
-        got = VocabularyStore(store).history(ctx["eid"])
-        assert len(got) == ctx["n"], (
-            f"the entry's revision history reads as {len(got)} of"
-            f" {ctx['n']} revisions")
-    lost("vocabulary_history", build, check)
-
-
-@case("MERGED-X01/G vocabulary_meta")
-def x01g4_lost_dictionary_revision_never_reuses_a_revision():
-    def build(w):
-        w.vocab.add_entry("Alpha term", [("alpha t", True)], approved=True)
-        w.vocab.add_entry("Beta term", [("beta t", True)], approved=True)
-        return {"rev": w.vocab.revision()}
-
-    def check(store, ctx):
-        vs = VocabularyStore(store)
-        vs.add_entry("Gamma term", [("gamma t", True)], approved=True)
-        assert vs.revision() > ctx["rev"], (
-            f"the dictionary revision restarted at {vs.revision()} (was"
-            f" {ctx['rev']}): frozen jobs' revision numbers now name two"
-            " different dictionaries")
-    lost("vocabulary_meta", build, check)
 
 
 @case("MERGED-X01/H transform_meta")

@@ -142,6 +142,48 @@ def envelope(store, example_id):
 
 
 # =============================================================================
+# MERGED-X01 (vocabulary family) — the app, not the Store, refuses a torn
+# dictionary (M05-AUDIT-18 governs it)
+# =============================================================================
+
+@case("MERGED-X01/G control (M05-AUDIT-18, app startup)", kind="control")
+def c_app_refuses_a_torn_dictionary():
+    import sqlite3
+    import tempfile
+    import localflow.app as app_mod
+    from localflow.v2 import store as store_mod
+    from localflow.v2.vocabulary_store import VocabularyStore
+    from test_lifecycle import CFG
+    with tempfile.TemporaryDirectory() as td:
+        td = pathlib.Path(td)
+        s = store_mod.Store(td / "v2.db", artifacts_dir=td / "artifacts")
+        VocabularyStore(s).add_entry("Orion SDK", [("orion s d k", True)],
+                                     approved=True)
+        s.close()
+        con = sqlite3.connect(td / "v2.db")
+        con.execute("DROP TABLE vocabulary_entries")
+        con.commit()
+        con.close()
+        for k, v in dict(V2_DB=td / "v2.db", V2_ARTIFACTS=td / "artifacts",
+                         V2_BACKUPS=td / "backups", V2_EVENTS_DIR=td / "ev",
+                         V2_JOURNAL=td / "journal").items():
+            setattr(app_mod, k, v)
+        d = app_mod.AppDelegate.alloc().init()
+        d.configure(dict(CFG))
+        try:
+            vocab_off = d._vocab is None
+            d.v2log.flush()
+            events = "".join(p.read_text() for p in (td / "ev").rglob("*")
+                             if p.is_file())
+        finally:
+            d.store.close()
+            d.v2log.close()
+    assert vocab_off and "vocabulary.integrity_failed" in events, (
+        "a torn dictionary booted as a healthy one:"
+        f" vocabulary_off={vocab_off}")
+
+
+# =============================================================================
 # MERGED-X02 — Recovery Copy Last Raw vs a pending M08 payload
 # =============================================================================
 

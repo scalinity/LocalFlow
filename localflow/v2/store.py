@@ -760,11 +760,9 @@ _CORE_DEPENDENTS = {
     # witnessed in tests/v2/crossmilestone/test_xm_store_families.py;
     # the tables left out are derivable, session-scoped or record-only
     # (acceptance/cross-milestone/remediation/schema_family_subledger.json).
-    "vocabulary_entries": ("SELECT 1 FROM vocabulary_aliases LIMIT 1",
-                           "SELECT 1 FROM vocabulary_history LIMIT 1"),
-    "vocabulary_aliases": ("SELECT 1 FROM vocabulary_entries LIMIT 1",),
-    "vocabulary_history": ("SELECT 1 FROM vocabulary_entries LIMIT 1",),
-    "vocabulary_meta": ("SELECT 1 FROM vocabulary_entries LIMIT 1",),
+    # The vocabulary family stays repairable here: M05-AUDIT-18 settled
+    # it at startup (VocabularyStore.integrity_report — vanished entries
+    # turn the vocabulary off, lost aliases warn).
     "style_rules": ("SELECT 1 FROM profiles_meta WHERE key='style_rules'"
                     " LIMIT 1",),
     "snippets": ("SELECT 1 FROM profiles_meta WHERE key='snippets'"
