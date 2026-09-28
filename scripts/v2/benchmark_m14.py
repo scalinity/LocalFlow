@@ -117,8 +117,10 @@ def build(s, tmp, sz):
     s.append_consent("enabled", note="m14-benchmark")
     consent = s.current_consent_id()
     n, n_audio = sz["examples"], sz["audio"]
-    n_obs, n_same, n_notes = (sz["observations"],
-                              sz["unchanged_observations"], sz["notes"])
+    # ``observations`` is the whole population; of it, the unchanged
+    # windows are counted separately from the truly changed ones.
+    n_same, n_notes = sz["unchanged_observations"], sz["notes"]
+    n_obs = sz["observations"] - n_same
     samples = (np.sin(np.arange(int(sz["audio_seconds"] * RATE)) / 40.0)
                * 0.01).astype("<f4")
     audio = {}
