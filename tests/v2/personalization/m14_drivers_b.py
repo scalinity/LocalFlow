@@ -1490,13 +1490,25 @@ def s009_asr_foreign_audio(entry):
             a = w.ready_asr(f"s009 alpha {A_CANARY}", freq=310.0)
             b = w.ready_asr(f"s009 bravo {B_CANARY}", freq=690.0)
             seen = {}
+            # The alternate seam is the op AFTER the export snapshot (its
+            # selection runs inside that op); reconcile reads may precede
+            # it (cross-milestone D13).
+            selected = []
+            real_select = w.exporter._select
+
+            def select(*a_, **k_):
+                out = real_select(*a_, **k_)
+                selected.append(1)
+                return out
+            w.exporter._select = select
 
             def swap():
                 _set_env(w, a["example_id"], "original_audio",
                          b["audio_aid"])
 
             def hook():
-                if "fired" in seen:
+                if "fired" in seen or (mode == "during_export"
+                                       and not selected):
                     return
                 seen["fired"] = True
                 swap()
