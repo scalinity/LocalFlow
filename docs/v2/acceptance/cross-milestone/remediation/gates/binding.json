@@ -1,0 +1,543 @@
+{
+  "schema_version": 1,
+  "kind": "gate_g02_requirement_test_production_binding",
+  "repo": "<repo>",
+  "branch": "xm-local-remediation-20260928",
+  "head": "a613818 at start; 684303c at end (concurrent commits)",
+  "worktree_note": "At start: test_xm_store_families.py modified; test_xm_privacy/runbook/validator untracked. At end: all committed (3d824ac); test_native_xm_hub.py untracked and localflow/v2/store.py modified by another session, not analysed",
+  "method": "Read-only. registry.json (33 LF-R / 22 EV) x E08 suite rows x module docstrings, case function names (def test_* / @case / CHECKS / VARIANTS) and localflow imports of every test_*.py under tests/, confirmed against production definitions with git grep. Qualification from scripts/v2/m09_test_sweep.py (MODEL_BACKED tuple, tracked test_*.py only) and docs/v2/acceptance/M14/remediation/sweep_final_3ede837.json. No test was run.",
+  "qualification_legend": {
+    "portable_automated": "runs headless in the tracked sweep (run_isolated.py; AppKit headless allowed)",
+    "native_owned_window": "needs a real window-server session and/or an Accessibility grant; NOT_RUN without it",
+    "model_backed": "loads MLX models (Parakeet / Qwen3-4B)",
+    "human": "VERIFICATION.html check ids",
+    "unbound": "no tracked executable case"
+  },
+  "requirements": [
+    {
+      "id": "LF-R01",
+      "requirement": "Reconcile deployed/source/data baseline without losing existing work",
+      "suites": ["EV-01"],
+      "bindings": [
+        {"suite": "EV-01", "test_file": "tests/v2/test_baseline_manifest_producers.py", "cases": ["test_dirty_digest_tracks_content_not_status_text", "test_bundle_compared_against_head_and_worktree_separately", "test_config_resolution_mirrors_runtime_load", "test_model_identity_covers_tokenizer_config_and_unusable_snapshots", "test_historical_claims_are_not_regenerated_as_current"], "production_callables": ["scripts/v2/build_baseline_manifest.py (imported as bm)", "localflow/config.py:load", "localflow/v2/ids.py:resolve_model_revision"], "reaches_branch": "yes: generator run over synthetic git repos, fake bundles and HF caches with runtime-function oracles", "qualification": "portable_automated"},
+        {"suite": "EV-01", "test_file": "tests/v2/test_snapshot_safety.py", "cases": ["test_file_snapshot_preserves_original", "test_sqlite_backup_is_consistent_and_preserves_original", "test_snapshot_cli_never_mutates_sources", "test_wal_backed_write_during_snapshot_is_detected", "test_disk_full_leaves_only_an_unpublished_partial"], "production_callables": ["scripts/v2/snapshot_user_data.py"], "reaches_branch": "yes: no-overwrite branch exercised on throwaway fixtures", "qualification": "portable_automated"},
+        {"suite": "EV-01", "test_file": "tests/v2/test_legacy_parser.py", "cases": ["test_multiline_payload", "test_prefix_after_download_progress", "test_eof_tail_is_incomplete_then_completes", "test_historical_snapshot_reproduction (SKIPPED without the private snapshot -> M01-V007)"], "production_callables": ["scripts/v2/parse_legacy_log.py:parse"], "reaches_branch": "partial: synthetic cases reach the parser; the audited-corpus hash reproduction needs the private snapshot", "qualification": "portable_automated"},
+        {"suite": "EV-01", "test_file": "tests/v2/test_legacy_import_boundary.py", "cases": ["test_incomplete_tail_then_completion_imports_once", "test_pre_remediation_partial_tail_is_completed_not_lost", "test_exact_payloads_reach_the_store"], "production_callables": ["localflow/v2/importer.py:LegacyImporter.import_log", "localflow/v2/store.py:Store"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-01", "test_file": "tests/v2/test_baseline_probe.py", "cases": ["test_configured_v2_runs_the_v2_engine", "test_fallbacks_are_counted_not_hidden", "test_stage_failures_exit_nonzero_and_still_publish"], "production_callables": ["scripts/v2/baseline_probe.py"], "reaches_branch": "partial: probe orchestration only, injected fake ASR/cleanup; real inference is M01-V008", "qualification": "portable_automated"},
+        {"suite": "EV-01", "test_file": "tests/v2/test_m01_verify_summary.py", "cases": ["test_snapshot_summary", "test_parse_summary_rejects_wrong_source", "test_probe_summary_flags_fallbacks_and_failures", "test_manifest_summary"], "production_callables": ["scripts/v2/m01_verify_summary.py"], "reaches_branch": "yes (runbook tooling)", "qualification": "portable_automated"},
+        {"suite": "EV-01", "test_file": "tests/v2/test_baseline_manifest.py", "cases": ["test_historical_manifest_record_is_frozen", "test_no_private_files_in_repository", "test_fixture_inventory_reconciles_with_files"], "production_callables": [], "reaches_branch": "no: frozen-document, repository privacy and fixture-inventory checks; no production code", "qualification": "portable_automated"},
+        {"suite": "EV-01", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M01-V001..M01-V011"], "production_callables": [], "reaches_branch": "human: installed app, real data inventory, model probe", "qualification": "human"}
+      ],
+      "state": "bound",
+      "note": "Deployed-app and private-data halves are human (M01-V007 parser reproduction, M01-V008 real probe)."
+    },
+    {
+      "id": "LF-R02",
+      "requirement": "Dated structured logging and correlated diagnostics",
+      "suites": ["EV-02", "EV-19"],
+      "bindings": [
+        {"suite": "EV-02", "test_file": "tests/v2/logging/test_event_writer.py", "cases": ["test_envelope_validity", "test_utc_day_boundary_rotation", "test_clock_jump_and_dst_never_negative", "test_concurrent_emitters", "test_redacted_export_is_content_free", "test_capture_stderr_coalesced_content_free"], "production_callables": ["localflow/v2/eventlog.py:EventWriter"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-02", "test_file": "tests/v2/logging/test_m02_remediation_events.py", "cases": ["test_redacted_export_is_a_typed_allowlist", "test_roll_cap_keeps_unresolved_evidence", "test_emit_after_close_is_refused", "test_view_ordering_policy"], "production_callables": ["localflow/v2/eventlog.py:EventWriter", "scripts/v2/view_events.py (viewer)"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-02", "test_file": "tests/v2/ui/test_diagnostics.py", "cases": ["test_load_filter_and_timeline", "test_redacted_export_drops_detail", "test_engine_block"], "production_callables": ["localflow/v2/diagnostics.py:load_events/job_timeline/redacted_export/engine_block"], "reaches_branch": "yes: correlated per-job timeline", "qualification": "portable_automated"},
+        {"suite": "EV-02", "test_file": "tests/v2/crossmilestone/test_xm_privacy.py (committed in 3d824ac during this pass)", "cases": ["main: one session, steps dictation/teach_approve/vocabulary/notes/note_admitted_timeout/profile/transforms_with_refusal/snippets_with_refusal/export_and_tampered_validate/managed_file_authority/validator_hostile_package; oracle = raw event files"], "production_callables": ["localflow/app.py:AppDelegate (test_lifecycle.Harness)", "localflow/v2/eventlog.py:EventWriter", "localflow/v2/profile.py:ProfileService", "localflow/v2/curation/export.py:DatasetExporter/validate_dataset", "localflow/v2/store.py:read_managed_file"], "reaches_branch": "partial: reaches the composed emitters, but PASS does not require each step to have run (step() records exceptions) and has no records_scanned floor", "qualification": "portable_automated"},
+        {"suite": "EV-02", "test_file": "tests/v2/test_m02_app_wiring.py", "cases": ["test_consent_snapshot_at_ptt_down", "test_attempt_propagation", "test_debug_copy_and_job_dirs", "test_shutdown_drains_writers"], "production_callables": ["localflow/app.py (ast parse only)"], "reaches_branch": "no: static AST call-site checks, no execution", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/training/test_collector.py", "cases": ["test_envelope_carries_no_transcript_text", "test_secret_quarantine_is_content_free"], "production_callables": ["localflow/v2/training.py:EvidenceCollector", "localflow/v2/eventlog.py:EventWriter"], "reaches_branch": "yes: content-free operational events from the collector", "qualification": "portable_automated"},
+        {"suite": "EV-02", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M02-V001..M02-V009"], "production_callables": [], "reaches_branch": "human: live-app log files", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R03",
+      "requirement": "Persistent jobs, immutable stage artifacts and safe legacy import",
+      "suites": ["EV-03", "EV-19"],
+      "bindings": [
+        {"suite": "EV-03", "test_file": "tests/v2/storage/test_store.py", "cases": ["test_migration_idempotent_and_backup", "test_torn_schema_repaired", "test_concurrent_writes_single_writer", "test_job_state_machine", "test_audio_artifact_lossless", "test_op_failure_rolls_back_atomically", "test_durability_across_close_and_reopen"], "production_callables": ["localflow/v2/store.py:Store"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-03", "test_file": "tests/v2/storage/test_import.py", "cases": ["test_verbatim_rows_and_totals", "test_idempotent_reimport", "test_dictionary_and_transform_legacy_revisions", "test_interrupted_import_recovers", "test_sources_never_mutated"], "production_callables": ["localflow/v2/importer.py:LegacyImporter"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-03", "test_file": "tests/v2/storage/test_m02_remediation_store.py", "cases": ["test_deletion_barrier_refuses_every_late_write", "test_pending_intent_finishes_at_next_open", "test_deep_verify_detects_payload_and_relationship_damage", "test_missing_core_table_with_dependents_refused_with_backup", "test_caller_timeout_is_not_cancellation"], "production_callables": ["localflow/v2/store.py:Store"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-03", "test_file": "tests/v2/storage/test_m02_remediation_import.py", "cases": ["test_interrupted_import_then_growth_imports_each_pair_once", "test_stats_row_and_bookkeeping_are_one_op"], "production_callables": ["localflow/v2/importer.py:LegacyImporter"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-03", "test_file": "tests/v2/storage/test_m02_review_round.py", "cases": ["test_r3_deleted_example_stays_deleted", "test_r7_additive_tables_repaired_and_backfilled"], "production_callables": ["localflow/v2/store.py:Store", "localflow/v2/training_data.py:TrainingDataService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-03", "test_file": "tests/v2/crossmilestone/test_xm_store_families.py (MODIFIED)", "cases": ["c_genuinely_older_store_upgrades_with_backup", "c_every_historical_schema_upgrades_with_an_exact_backup", "c_fresh_store_opens_empty", "c_intact_current_store_reopens_without_repair"], "production_callables": ["localflow/v2/store.py:Store (open/migrate/repair with backup_dir)"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/training/test_collector.py", "cases": ["test_enabled_lineage_and_exact_inputs", "test_interrupted_write_and_orphan"], "production_callables": ["localflow/v2/training.py:EvidenceCollector", "localflow/v2/store.py:Store"], "reaches_branch": "yes: immutable stage artifacts per job", "qualification": "portable_automated"},
+        {"suite": "EV-03", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M02-V001..M02-V009"], "production_callables": [], "reaches_branch": "human: real legacy rows on this Mac", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R04",
+      "requirement": "Reliable capture, hotkeys, mic switching and crash recovery",
+      "suites": ["EV-04"],
+      "bindings": [
+        {"suite": "EV-04", "test_file": "tests/v2/lifecycle/test_capture_journal.py", "cases": ["test_round_trip_bit_exact", "test_crash_reconstruction_incomplete_tail", "test_disk_pressure_degrades_not_discards", "test_bounded_queue_under_flood", "test_cancel_discards_journal"], "production_callables": ["localflow/v2/capture_journal.py:CaptureJournal/reconstruct"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-04", "test_file": "tests/v2/lifecycle/test_m03_remediation_journal.py", "cases": ["test_08_v1_integrity_matrix", "test_08_v2_positions_crc_and_gaps", "test_19_recorder_memory_complete_while_journal_degrades", "test_01_is_live_ownership"], "production_callables": ["localflow/v2/capture_journal.py", "localflow/audio.py:Recorder"], "reaches_branch": "yes: journal bytes built independently", "qualification": "portable_automated"},
+        {"suite": "EV-04", "test_file": "tests/v2/lifecycle/test_lifecycle.py", "cases": ["test_sleep_ends_capture_recoverable_wake_leaves_mic_off", "test_lock_ends_capture_recoverable", "test_device_loss_preserves_speech", "test_cancel_during_processing_blocks_late_insert", "test_crash_recovery_scan", "test_hands_free_double_tap", "test_mouse_trigger_configuration"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/hotkey.py:HotkeyListener/MouseTriggerListener"], "reaches_branch": "partial: real AppDelegate over shimmed AppKit/sounddevice; device loss only, no named-device mic switch", "qualification": "portable_automated"},
+        {"suite": "EV-04", "test_file": "tests/v2/lifecycle/test_m03_remediation_app.py", "cases": ["test_01_recovery_ownership_and_selection", "test_04_quit_is_ordered", "test_11_stream_teardown_failures_through_the_app", "test_15_trigger_latches"], "production_callables": ["localflow/app.py:AppDelegate.startDictation/finishDictation/_recover_journals/applicationWillTerminate_", "localflow/audio.py:Recorder"], "reaches_branch": "yes (declared native shims)", "qualification": "portable_automated"},
+        {"suite": "EV-04", "test_file": "tests/v2/lifecycle/test_m03_review_round.py", "cases": ["test_R3_relaunched_owner_never_claims_live_instance_work", "test_R4_scan_and_retry_claim_exclusively", "test_R9_crc_covers_positions"], "production_callables": ["localflow/v2/capture_journal.py", "localflow/v2/store.py:Store", "localflow/v2/debug_audio.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-04", "test_file": "tests/test_stuck_overlay.py", "cases": ["test_wedge_recovers", "test_no_false_finish_while_held", "test_lost_release_preserves_speech", "test_stale_held_cleared_after_cancel"], "production_callables": ["localflow/app.py (watchdog)", "localflow/hotkey.py:HotkeyListener"], "reaches_branch": "yes: Fn/watchdog branch with simulated key state", "qualification": "portable_automated"},
+        {"suite": "EV-04", "test_file": "(none)", "cases": [], "production_callables": ["localflow/audio.py:Recorder._resolve_device (named input_device, not-found fallback)", "localflow/app.py capture.near_silence / capture.dead_tail branch (~line 3700)"], "reaches_branch": "no: every tracked config sets input_device None; no test references near_silence/dead_tail", "qualification": "unbound"},
+        {"suite": "EV-04", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M03-V004 kill mid-capture", "M03-V005 quit while recording", "M03-V006 unplug/replug microphone", "M03-V007 triggers", "M03-V008 sleep/lock/wake"], "production_callables": [], "reaches_branch": "human: real mic, real Fn/CGEvent tap", "qualification": "human"}
+      ],
+      "state": "partial",
+      "reason": "EV-04 names silence and mic switch; neither the Recorder input-device resolution nor the near-silence/dead-tail warnings has a tracked case. Device loss, journal, cancel, wake and Fn are bound; real hardware is human only (M03-V006)."
+    },
+    {
+      "id": "LF-R05",
+      "requirement": "Restartable inference, explicit readiness and recoverable failures",
+      "suites": ["EV-05"],
+      "bindings": [
+        {"suite": "EV-05", "test_file": "tests/v2/lifecycle/test_m03_remediation_supervisor.py", "cases": ["test_03_old_finalizer_cannot_fail_new_request", "test_04_restart_serialized_with_retry_spawn", "test_06_second_fatal_failure_retires_generation", "test_13_expected_identity_matrix", "test_16_diagnostics_bytes_bounded_owned"], "production_callables": ["localflow/v2/supervisor.py:WorkerSupervisor"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-05", "test_file": "tests/v2/lifecycle/test_m03_remediation_worker.py", "cases": ["test_07_basic_now_while_cleanup_load_is_latched", "test_07_asr_behind_inflight_load_is_reported", "test_09_rate_is_refused_not_relabeled", "test_13_malformed_request_then_next_served", "test_12_fault_codes_are_controlled"], "production_callables": ["localflow/v2/worker.py:Worker.serve (model loaders shimmed via prod_worker_harness.py)"], "reaches_branch": "yes: production worker readiness/fault branches; no MLX", "qualification": "portable_automated"},
+        {"suite": "EV-05", "test_file": "tests/v2/lifecycle/test_worker_protocol.py", "cases": ["test_injected_fault_recovers_once", "test_second_fault_is_recoverable_not_looping", "test_stale_generation_result_discarded", "test_cleanup_engine_not_ready_reports_basic_honestly"], "production_callables": ["localflow/v2/supervisor.py:WorkerSupervisor"], "reaches_branch": "partial: supervisor is production, the worker is tests/v2/lifecycle/fake_worker.py; the Metal fault is a 'fault:InjectedMetalError' token", "qualification": "portable_automated"},
+        {"suite": "EV-05", "test_file": "tests/v2/lifecycle/test_worker_live.py", "cases": ["test_real_worker_end_to_end (readiness, Parakeet, Qwen, kill -9 respawn)"], "production_callables": ["localflow/v2/worker.py (python -m)", "localflow/v2/supervisor.py:WorkerSupervisor"], "reaches_branch": "yes: real models and real respawn", "qualification": "model_backed"},
+        {"suite": "EV-05", "test_file": "tests/v2/lifecycle/test_lifecycle.py", "cases": ["test_worker_fault_makes_recoverable_item", "test_cancel_during_processing_blocks_late_insert"], "production_callables": ["localflow/app.py:AppDelegate"], "reaches_branch": "yes: no duplicate insertion after fault/cancel", "qualification": "portable_automated"},
+        {"suite": "EV-05", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M03-V002 real worker basic-now + mid-request kill", "M03-V003 benchmark with real models"], "production_callables": [], "reaches_branch": "human", "qualification": "human"}
+      ],
+      "state": "bound",
+      "note": "No real Metal fault is ever produced; the fault is simulated (fake worker token or shimmed loader raise)."
+    },
+    {
+      "id": "LF-R06",
+      "requirement": "Numeric, units, dates, identifiers and syntax normalization",
+      "suites": ["EV-06"],
+      "bindings": [
+        {"suite": "EV-06", "test_file": "tests/v2/normalization/test_normalize_numbers.py", "cases": ["test_all_fixtures_exact", "test_typed_semantics_independent_oracle", "test_idempotence_all_fixtures", "test_ledger_replay", "test_decimal_exactness", "test_time_requires_time_context"], "production_callables": ["localflow/v2/normalize/engine.py:normalize"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-06", "test_file": "tests/v2/normalization/test_m04_remediation.py", "cases": ["test_03_scaled_decimal_exact", "test_05_signed_typed_values_and_port_domain", "test_07_dates_modal_and_invalid_days", "test_15_identifier_noop_idempotent"], "production_callables": ["localflow/v2/normalize/engine.py:normalize", "localflow/v2/normalize/syntax.py"], "reaches_branch": "yes (test_18_oracle_mutations_are_caught tests the harness oracle)", "qualification": "portable_automated"},
+        {"suite": "EV-06", "test_file": "tests/v2/normalization/test_m04_audit_corpus.py", "cases": ["test_corpus_shape", "test_corpus_oracles"], "production_callables": ["localflow/v2/normalize (normalize, NormalizationPolicy)"], "reaches_branch": "yes: 368 cases scored by declared oracle kinds", "qualification": "portable_automated"},
+        {"suite": "EV-06", "test_file": "tests/v2/normalization/test_normalization_pipeline.py", "cases": ["test_coordinator_normalizes_between_asr_and_cleanup", "test_normalization_failure_passes_raw_through", "test_evidence_envelope_and_ledger_replay"], "production_callables": ["localflow/app.py:AppDelegate (coordinator _worker)"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-06", "test_file": "tests/v2/normalization/test_m04_review_round.py", "cases": ["test_R2_scale_and_small_number", "test_R13_spanish_accented_numbers", "test_R11_may_needs_date_shaped_context"], "production_callables": ["localflow/v2/normalize"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-06", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M04-V001..M04-V003"], "production_callables": [], "reaches_branch": "human", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R07",
+      "requirement": "Spoken punctuation, literal escape and slash-command grammar",
+      "suites": ["EV-06"],
+      "bindings": [
+        {"suite": "EV-06", "test_file": "tests/v2/normalization/test_normalize_syntax.py", "cases": ["test_all_fixtures_exact", "test_literal_and_noncommand_stay_unconverted", "test_no_shell_no_enter_no_skill_execution", "test_slash_prose_never_converts", "test_protected_spans_recorded"], "production_callables": ["localflow/v2/normalize/engine.py:normalize", "localflow/v2/normalize/syntax.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-06", "test_file": "tests/v2/normalization/test_short_command_scoring.py", "cases": ["test_exact_token_accuracy_and_false_command_rate"], "production_callables": ["localflow/v2/normalize/scoring.py:score_command_corpus"], "reaches_branch": "yes: text counterparts only", "qualification": "portable_automated"},
+        {"suite": "EV-06", "test_file": "tests/v2/developer/test_skills.py", "cases": ["test_registered_skills_render_exactly_unknown_invoke_nothing"], "production_callables": ["localflow/v2/developer/skills.py:SkillRegistry", "localflow/v2/normalize"], "reaches_branch": "yes: registered skills and negative controls", "qualification": "portable_automated"},
+        {"suite": "EV-06", "test_file": "tests/v2/normalization/test_m04_remediation.py", "cases": ["test_01_slash_verb_context_stays_prose", "test_02_punctuation_is_a_boundary", "test_10_literal_escape_scope"], "production_callables": ["localflow/v2/normalize"], "reaches_branch": "yes", "qualification": "portable_automated"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R08",
+      "requirement": "Local scoped vocabulary, aliases, ranking and management",
+      "suites": ["EV-07", "EV-18"],
+      "bindings": [
+        {"suite": "EV-07", "test_file": "tests/v2/vocabulary/test_vocabulary_matching.py", "cases": ["test_all_fixtures_exact", "test_cloud_claude_mixed_context", "test_applied_edits_attributable_to_approved_rules", "test_negative_control_corpus"], "production_callables": ["localflow/v2/vocabulary.py (VocabularySnapshot, sandbox_phrase)", "localflow/v2/normalize/engine.py:normalize"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-07", "test_file": "tests/v2/vocabulary/test_vocabulary_store.py", "cases": ["test_legacy_terms_adopted_and_reopen_preserves", "test_versioned_updates_with_history", "test_json_import_export_round_trip", "test_store_repair_recreates_vocabulary_tables"], "production_callables": ["localflow/v2/vocabulary_store.py:VocabularyStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-07", "test_file": "tests/v2/vocabulary/test_vocabulary_pipeline.py", "cases": ["test_vocabulary_flows_and_hits_recorded", "test_ac03_live_midflight_edit", "test_vocabulary_store_failure_degrades", "test_dictionary_panel_constructs"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/dictionary_panel.py:DictionaryPanelController"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-07", "test_file": "tests/v2/vocabulary/test_m05_remediation.py + test_m05_remediation_app.py + test_m05_review_round.py", "cases": ["test_01_alias_never_spans_a_delimiter", "test_06_concurrent_scope_update_never_commits_invalid_state", "test_11_import_is_one_transaction_with_a_declared_identity", "test_02_refresh_failure_never_reuses_another_apps_dictionary", "test_R11_app_refuses_torn_entries_and_history"], "production_callables": ["localflow/v2/vocabulary.py", "localflow/v2/vocabulary_store.py:VocabularyStore", "localflow/app.py:AppDelegate._vocab_job_state"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-07", "test_file": "tests/v2/crossmilestone/test_xm_store_families.py (MODIFIED)", "cases": ["x01g_lost_dictionary_entries_are_not_an_empty_dictionary", "x01g2_lost_aliases_never_silently_disable_rules", "x01g3_lost_history_never_reads_as_no_history", "x01g4_lost_dictionary_revision_never_reuses_a_revision"], "production_callables": ["localflow/v2/store.py:Store", "localflow/v2/vocabulary_store.py:VocabularyStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-07", "test_file": "tests/v2/crossmilestone/test_xm_remediation.py", "cases": ["x11_renamed_entry_never_relabels_historical_speech", "c_unrenamed_entry_cites_its_applied_term"], "production_callables": ["localflow/v2/vocabulary_store.py:VocabularyStore.update_entry", "localflow/v2/profile.py:ProfileService.compute"], "reaches_branch": "yes: applied-rule provenance", "qualification": "portable_automated"},
+        {"suite": "EV-18", "test_file": "tests/v2/vocabulary/test_hint_selection.py", "cases": ["test_deterministic_selection", "test_wrong_workspace_condition", "test_matrix_conditions", "test_no_post_answer_hint_leakage"], "production_callables": ["localflow/v2/vocabulary.py:RelevantVocabularySelector/HintSet"], "reaches_branch": "partial: text-side only; acoustic strata are M15", "qualification": "portable_automated"},
+        {"suite": "EV-07", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M05-V001..M05-V003"], "production_callables": [], "reaches_branch": "human", "qualification": "human"}
+      ],
+      "state": "bound",
+      "note": "EV-18's acoustic half is M15 (see LF-R29)."
+    },
+    {
+      "id": "LF-R09",
+      "requirement": "Fast local app/site/field context with sensitive-field exclusions",
+      "suites": ["EV-08", "EV-18"],
+      "bindings": [
+        {"suite": "EV-08", "test_file": "tests/v2/context/test_context_snapshot.py", "cases": ["test_ac01_secure_field_retains_no_content", "test_classify_before_content_read", "test_denied_app_never_read", "test_ac02_timeout_partial_snapshot", "test_ac03_stale_window_invalidates", "test_ac04_hostile_nearby_text_is_data"], "production_callables": ["localflow/v2/context/collector.py:ContextCollector", "localflow/v2/context/providers.py", "localflow/v2/context/snapshot.py"], "reaches_branch": "yes: real collector/providers over a fake AX host", "qualification": "portable_automated"},
+        {"suite": "EV-08", "test_file": "tests/v2/context/test_m06_remediation.py + test_m06_review_round.py", "cases": ["test_a01_focus_switch_never_reads_other_destination", "test_a22_secure_element_reads_only_classification", "test_a10_privacy_config_fails_closed", "test_r1_same_window_other_tab_is_a_changed_target"], "production_callables": ["localflow/v2/context/collector.py:ContextCollector", "localflow/v2/context/providers.py", "localflow/app.py:AppDelegate"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-18", "test_file": "tests/v2/context/test_context_pipeline.py", "cases": ["test_site_scope_hint_set_frozen_with_destination_evidence", "test_ac05_late_context_downstream_not_predecode", "test_ac04_hostile_nearby_text_never_reaches_cleanup", "test_secure_field_pipeline_retains_no_content"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/context/collector.py:ContextCollector"], "reaches_branch": "yes: pre-decode snapshot and hint freeze (text side)", "qualification": "portable_automated"},
+        {"suite": "EV-08", "test_file": "tests/v2/context/test_native_ax.py", "cases": ["test_read_field_native_offsets_and_flanks", "test_secure_field_native_zero_content", "test_window_identity_and_element_equality", "test_collector_end_to_end_native", "test_dead_process_element_fails_closed"], "production_callables": ["localflow/v2/context/providers.py:SystemAXHost", "localflow/v2/insertion/hosts.py:SystemInsertionHost"], "reaches_branch": "yes on an AX-granted terminal; exits 2 NOT RUN otherwise (as in the sweep)", "qualification": "native_owned_window"},
+        {"suite": "EV-08", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M06-V001..M06-V004"], "production_callables": [], "reaches_branch": "human: real apps, pages and tabs", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R10",
+      "requirement": "Faithful cleanup, self-corrections and document-aware formatting",
+      "suites": ["EV-09"],
+      "bindings": [
+        {"suite": "EV-09", "test_file": "tests/v2/fidelity/test_cleanup_engine.py", "cases": ["test_windows_complete_blocks_with_read_only_overlap", "test_corrections_exact_offsets_and_reason_preserved", "test_output_limit_split_retry_and_incomplete_notice", "test_list_renderer_controls_numbering"], "production_callables": ["localflow/v2/cleanup/engine.py:CleanupEngine/plan_windows", "localflow/v2/cleanup/document_nodes.py:parse"], "reaches_branch": "yes: injected fake generators, production engine", "qualification": "portable_automated"},
+        {"suite": "EV-09", "test_file": "tests/v2/fidelity/test_cleanup_remediation.py", "cases": ["test_01_polarity_scope_inventions", "test_04_false_correction_cannot_redefine_reference", "test_07_protected_long_literal_never_cut", "test_11_split_recovery_keeps_child_lineage_and_revisions"], "production_callables": ["localflow/v2/cleanup/engine.py:CleanupEngine.clean", "localflow/v2/cleanup/validation.py:validate", "localflow/v2/worker.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-09", "test_file": "tests/v2/fidelity/test_cleanup_pipeline.py", "cases": ["test_permitted_context_flows_and_nearby_text_stays_out", "test_evidence_cleanup_family_v2_block", "test_worker_v2_engine_exception_keeps_normalized_input"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/worker.py", "localflow/v2/cleanup/engine.py:CleanupEngine"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-09", "test_file": "tests/v2/fidelity/test_fidelity.py", "cases": ["run_case x 60 fixtures_fidelity.json"], "production_callables": ["localflow/v2/cleanup/model.py:ModelRunner", "localflow/v2/cleanup/engine.py:CleanupEngine"], "reaches_branch": "yes: real Qwen3-4B", "qualification": "model_backed"},
+        {"suite": "EV-09", "test_file": "tests/v2/structure/test_structure.py", "cases": ["run_case x 40 fixtures_structure.json"], "production_callables": ["localflow/v2/cleanup/model.py:ModelRunner", "localflow/v2/cleanup/engine.py:plan_windows"], "reaches_branch": "yes: real model (NOT excluded from the sweep)", "qualification": "model_backed"},
+        {"suite": "EV-09", "test_file": "(runbook)", "cases": [], "production_callables": [], "reaches_branch": "no: M07 section of VERIFICATION.html has no check articles; results.json native-m07-long-prompt-cleanup-trial pending, M07-AC04 partial_automated", "qualification": "unbound"}
+      ],
+      "state": "bound",
+      "note": "Human half has no runbook id (MERGED-X17; fail-first x17_m07_obligations_have_stable_runbook_ownership)."
+    },
+    {
+      "id": "LF-R11",
+      "requirement": "Protected meaning, transparent validation and safe fallback",
+      "suites": ["EV-09"],
+      "bindings": [
+        {"suite": "EV-09", "test_file": "tests/v2/fidelity/test_cleanup_engine.py", "cases": ["test_ac02_rollback_on_validation_failure", "test_protected_span_mapping_never_drops", "test_validator_damaged_outputs_e09", "test_incomplete_path_labels_honest"], "production_callables": ["localflow/v2/cleanup/validation.py:validate", "localflow/v2/cleanup/engine.py:CleanupEngine"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-09", "test_file": "tests/v2/fidelity/test_cleanup_remediation.py", "cases": ["test_05_protection_exact_and_multiplicity", "test_06_identity_and_fallback_preserve_final", "test_08_engine_exception_keeps_protected_text", "test_r3_render_never_changes_a_bound_value"], "production_callables": ["localflow/v2/cleanup/validation.py:validate", "localflow/v2/cleanup/engine.py:CleanupEngine.clean", "localflow/v2/worker.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-09", "test_file": "tests/v2/fidelity/test_cleanup_pipeline.py", "cases": ["test_ac05_rejected_candidate_and_fallback_inspectable", "test_ac06_validator_outcome_never_labels"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/training.py:EvidenceCollector"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-09", "test_file": "tests/v2/fidelity/test_literal.py", "cases": ["main over 20 fixtures_literal.json"], "production_callables": ["localflow/v2/cleanup/model.py:ModelRunner", "localflow/v2/cleanup/engine.py:CleanupEngine"], "reaches_branch": "yes: real model (NOT excluded from the sweep)", "qualification": "model_backed"},
+        {"suite": "EV-09", "test_file": "tests/v2/fidelity/test_fidelity.py", "cases": ["run_case x 60"], "production_callables": ["localflow/v2/cleanup/model.py:ModelRunner"], "reaches_branch": "yes", "qualification": "model_backed"}
+      ],
+      "state": "bound",
+      "note": "Same missing M07 runbook ownership as LF-R10."
+    },
+    {
+      "id": "LF-R12",
+      "requirement": "Destination-safe insertion, clipboard ownership and honest status",
+      "suites": ["EV-10"],
+      "bindings": [
+        {"suite": "EV-10", "test_file": "tests/v2/insertion/test_insertion_races.py", "cases": ["test_changed_target_routes_to_saved", "test_user_copy_during_restoration_wins", "test_partial_insertion_is_never_confirmed", "test_rich_data_preserved_and_unsupported_disclosed", "test_terminal_guard_without_context_snapshot"], "production_callables": ["localflow/v2/insertion/service.py:InsertionService"], "reaches_branch": "yes: over the instrumented FixtureTargetApp host", "qualification": "portable_automated"},
+        {"suite": "EV-10", "test_file": "tests/v2/insertion/test_m08_remediation.py", "cases": ["test_a01_write_after_validation_goes_only_to_validated_field", "test_a06_ax_noop_over_identical_text_is_not_confirmed", "test_a07_next_job_never_changes_a_pending_payload", "test_a14_same_operation_submitted_twice_writes_once", "test_r02_failed_final_readback_keeps_clipboard_ownership"], "production_callables": ["localflow/v2/insertion/service.py:InsertionService", "localflow/v2/insertion/validation.py:validate_target", "localflow/v2/insertion/selection.py:capture_selection", "localflow/v2/insertion/observation.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-10", "test_file": "tests/v2/insertion/test_insertion_pipeline.py", "cases": ["test_app_switch_midprocessing_routes_to_saved", "test_confirmed_path_settles_states_and_envelope", "test_multiline_terminal_guard_through_coordinator"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/insertion/service.py:InsertionService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-10", "test_file": "tests/v2/crossmilestone/test_xm_remediation.py", "cases": ["x02_recovery_copy_never_replaces_a_pending_payload", "c_recovery_copy_publishes_when_nothing_is_pending"], "production_callables": ["localflow/app.py:AppDelegate (Copy Last Raw)", "localflow/v2/insertion/hosts.py:SystemPasteboard (private board)", "localflow/v2/insertion/service.py:InsertionService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-10", "test_file": "tests/v2/insertion/test_native_insertion.py", "cases": ["f07_c01", "f07_c02", "f07_c03", "f07_c04", "f12_c04", "f09_c04", "f09_c05", "f10_c05", "f11_c02", "binding_two_processes", "binding_equal_title_windows", "binding_secure_field", "binding_observer (*_diag cases never count)"], "production_callables": ["localflow/v2/insertion/hosts.py:SystemInsertionHost/SystemPasteboard", "localflow/v2/insertion/service.py:InsertionService"], "reaches_branch": "yes on an AX-granted terminal (Cmd-V consumer emulated by the helper); exits 2 NOT RUN otherwise", "qualification": "native_owned_window"},
+        {"suite": "EV-10", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M08-V001..M08-V008"], "production_callables": [], "reaches_branch": "human: real apps and the real clipboard", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R13",
+      "requirement": "Native Hub, history, replay, diagnostics and models UI",
+      "suites": ["EV-11"],
+      "bindings": [
+        {"suite": "EV-11", "test_file": "tests/v2/ui/test_hub_shell.py", "cases": ["test_window_bounds_and_min_size", "test_view_switching_and_keyboard_paths", "test_close_reopen_preserves_state_and_service", "test_open_deferred_during_insertion", "test_hub_retry_job_paths", "test_search_cancellation_by_generation"], "production_callables": ["localflow/v2/ui/hub.py:HubController", "localflow/app.py:AppDelegate", "localflow/v2/insertion/service.py:InsertionService"], "reaches_branch": "yes: headless AppKit state and wiring; visual/focus rendering not asserted", "qualification": "portable_automated"},
+        {"suite": "EV-11", "test_file": "tests/v2/ui/test_history_queries.py", "cases": ["test_grouping_and_undated", "test_lineage_distinct_stages", "test_audio_and_purged_reasons", "test_like_escaping_and_overall_limit"], "production_callables": ["localflow/v2/history_queries.py:HistoryQueryService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-11", "test_file": "tests/v2/ui/test_m09_remediation.py", "cases": ["test_a01_history_actions_during_selection_interval", "test_a03_publication_check_and_mutation_atomic", "test_a07_delete_stops_active_replay_and_refuses_again", "test_a09_history_shows_current_attempt_not_first_row", "test_a22_models_failure_is_visible_not_stale_success"], "production_callables": ["localflow/v2/ui/hub.py:HubController", "localflow/v2/ui/state.py", "localflow/v2/ui/replay.py:ReplayService", "localflow/v2/history_queries.py:HistoryQueryService", "localflow/v2/diagnostics.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-11", "test_file": "tests/v2/ui/test_training_data.py", "cases": ["test_replay_service_over_real_store", "test_delete_everywhere_and_inspection_without_engine"], "production_callables": ["localflow/v2/ui/replay.py:ReplayService", "localflow/v2/training_data.py:TrainingDataService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-11", "test_file": "tests/v2/crossmilestone/test_xm_remediation.py", "cases": ["x06_history_resolves_the_current_attempt_after_collection_off_retry", "x12_older_refresh_never_repaints_over_a_validate_result", "x13_validate_never_runs_filesystem_work_on_the_ui_thread"], "production_callables": ["localflow/v2/history_queries.py:HistoryQueryService/final_text", "localflow/v2/ui/hub.py:HubController"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-11", "test_file": "tests/v2/notes/test_native_m12_scratchpad.py, tests/v2/analytics/test_native_m13_insights.py, tests/v2/personalization/test_native_m14_training.py", "cases": ["n01..n12 (M12)", "c157/c186/c237/c238/c262/insights_controls/settings_reach/history_delete (M13)", "c211..c219/teach_native (M14)"], "production_callables": ["localflow/v2/ui/hub.py:HubController", "localflow/v2/ui/scratchpad.py:ScratchpadEditor"], "reaches_branch": "yes: owned off-screen window, passive tier; ACTIVE tier needs owner go-ahead", "qualification": "native_owned_window"},
+        {"suite": "EV-11", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M09-V001..M09-V007"], "production_callables": [], "reaches_branch": "human: keyboard/accessibility, focus rings, text scale", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R14",
+      "requirement": "Destination styles and explicit writing modes",
+      "suites": ["EV-12"],
+      "bindings": [
+        {"suite": "EV-12", "test_file": "tests/v2/profiles/test_style_resolution.py", "cases": ["test_precedence_chain", "test_disabled_rules_never_fire", "test_category_derivation", "test_transform_modes_fall_back_honestly", "test_casual_style_never_loosens_cleanup_contract"], "production_callables": ["localflow/v2/profiles.py:resolve/derive_category", "localflow/v2/profiles_store.py:StyleRuleStore", "localflow/v2/cleanup/validation.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/profiles/test_profiles_pipeline.py", "cases": ["test_raw_mode_rule_skips_stages", "test_number_policy_rule_applies_per_destination", "test_one_job_override_consumed_once", "test_finalize_only_rule_reaches_normalization"], "production_callables": ["localflow/app.py:AppDelegate"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/profiles/test_m10_remediation.py", "cases": ["r03_correlated_style_patches_never_commit_invalid_row", "c03_disjoint_patches_both_survive", "r02_app_bundle_case", "r06_style_enabled_string_false"], "production_callables": ["localflow/v2/profiles.py", "localflow/v2/profiles_store.py:StyleRuleStore", "localflow/app.py:AppDelegate"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/crossmilestone/test_xm_store_families.py (MODIFIED)", "cases": ["x01i2_lost_style_rules_are_not_an_empty_registry", "x01i3_lost_profile_registry_revision_never_restarts"], "production_callables": ["localflow/v2/profiles_store.py:StyleRuleStore", "localflow/v2/store.py:Store"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/ui/test_native_m10_panes.py", "cases": ["n01_every_input_is_hittable_in_both_panes", "n03_styles_add_from_the_controls", "n04_styles_update_toggle_delete_by_rendered_row", "n08_resize_and_repeat"], "production_callables": ["localflow/v2/ui/hub.py:HubController", "localflow/v2/profiles_store.py:StyleRuleStore"], "reaches_branch": "yes: owned window, passive tier", "qualification": "native_owned_window"},
+        {"suite": "EV-12", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M10-V001..M10-V004"], "production_callables": [], "reaches_branch": "human", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R15",
+      "requirement": "Plain/rich snippets and safe voice macros",
+      "suites": ["EV-12"],
+      "bindings": [
+        {"suite": "EV-12", "test_file": "tests/v2/profiles/test_snippets.py", "cases": ["test_exact_stored_content_and_placeholders", "test_literal_escape_and_quotes_win", "test_skill_collision_is_ambiguous_vocabulary_loses", "test_protection_spans_for_later_stages", "test_store_roundtrip_versions_and_rich_payload"], "production_callables": ["localflow/v2/snippets.py (expand, SnippetSnapshot, protected_output_spans)", "localflow/v2/snippets_store.py:SnippetStore"], "reaches_branch": "yes: voice macros are text-entry snippets (snippets.py docstring)", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/profiles/test_profiles_pipeline.py", "cases": ["test_snippet_expansion_and_protection_through_pipeline", "test_ac05_verbatim_gate_on_snippet_example"], "production_callables": ["localflow/app.py:AppDelegate"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/profiles/test_m10_remediation.py", "cases": ["r04_correlated_snippet_patches_never_commit_invalid_row", "r14_trigger_cannot_cross_period", "r17_snippet_snapshot_export_is_detached"], "production_callables": ["localflow/v2/snippets.py", "localflow/v2/snippets_store.py:SnippetStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/crossmilestone/test_xm_store_families.py (MODIFIED)", "cases": ["x01i_lost_snippets_are_not_an_empty_registry"], "production_callables": ["localflow/v2/snippets_store.py:SnippetStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/ui/test_native_m10_panes.py", "cases": ["n05_snippets_add_from_the_controls", "n06_snippets_collisions_update_toggle_delete"], "production_callables": ["localflow/v2/ui/hub.py:HubController"], "reaches_branch": "yes", "qualification": "native_owned_window"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R16",
+      "requirement": "Developer vocabulary, IDE symbols, file tags and terminal adapters",
+      "suites": ["EV-12"],
+      "bindings": [
+        {"suite": "EV-12", "test_file": "tests/v2/developer/test_developer_resolution.py", "cases": ["test_resolution_exactness_and_prose_survival", "test_attachment_plan_and_ac04", "test_surface_compatibility_table", "test_terminal_safe_fallback_preserves_literal_text", "test_symbol_resolution_prefers_exact_no_invention"], "production_callables": ["localflow/v2/developer/file_tags.py:FileTagResolver/attachment_plan", "localflow/v2/developer/surfaces.py:compatibility_table", "localflow/v2/insertion/service.py"], "reaches_branch": "partial: resolution and the declared table are reached; certified per-surface readback is the pending native trial (M10-AC04)", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/developer/test_skills.py", "cases": ["test_discovery_reads_identity_only", "test_workspace_scoping_and_stale_invalidation", "test_dictionary_merge_and_collision_masking"], "production_callables": ["localflow/v2/developer/skills.py:discover/SkillRegistry"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/profiles/test_m10_remediation.py", "cases": ["r01_child_directory_symlink_not_followed", "r22_listing_visits_are_bounded", "r15_attach_command_cannot_cross_sentence", "c16_spoken_path_disambiguates_and_no_document_is_ambiguous"], "production_callables": ["localflow/v2/developer/skills.py", "localflow/v2/developer/file_tags.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "tests/v2/insertion/test_insertion_races.py", "cases": ["test_terminal_multiline_guards_and_single_line_inserts"], "production_callables": ["localflow/v2/insertion/service.py:InsertionService"], "reaches_branch": "yes: terminal multiline enforcement point", "qualification": "portable_automated"},
+        {"suite": "EV-12", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M10-V001..M10-V004"], "production_callables": [], "reaches_branch": "human: real IDE/terminal surfaces", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R17",
+      "requirement": "Local selected-text/custom/automatic transforms with diff and undo",
+      "suites": ["EV-13"],
+      "bindings": [
+        {"suite": "EV-13", "test_file": "tests/v2/transforms/test_transform_definitions.py", "cases": ["test_versions_append_and_never_erase", "test_legacy_definitions_materialize_preserved", "test_auto_apply_decision_matrix"], "production_callables": ["localflow/v2/transforms (definitions)", "localflow/v2/transforms_store.py:TransformStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-13", "test_file": "tests/v2/transforms/test_transform_engine.py", "cases": ["test_task_identity_and_retry_semantics", "test_run_transform_paths", "test_diff_surfaces"], "production_callables": ["localflow/v2/transforms/engine.py:run_transform", "localflow/v2/transforms/diffview.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-13", "test_file": "tests/v2/transforms/test_transform_pipeline.py", "cases": ["test_auto_apply_transforms_before_insertion", "test_selection_transform_accept_replaces_through_queue", "test_changed_selection_never_overwritten", "test_worker_transform_op_through_supervisor"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/insertion/service.py:InsertionService", "localflow/v2/supervisor.py:WorkerSupervisor"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-13", "test_file": "tests/v2/transforms/test_transform_remediation_native.py", "cases": ["f06_same_app_other_document_not_replaced", "f07_accept_checks_the_captured_note_identity", "f11_panel_actions_do_not_overlap_and_hit_test"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/ui/transforms_panel.py:TransformPreviewPanel", "localflow/v2/ui/hub.py"], "reaches_branch": "yes: AppKit headless, runs in the sweep (16 ok-lines)", "qualification": "portable_automated"},
+        {"suite": "EV-13", "test_file": "tests/v2/transforms/test_selection_capture_m06_seam.py", "cases": ["test_r4_denied_app_reads_nothing", "test_seam_other_window_with_equal_title_refuses_strict_accept"], "production_callables": ["localflow/app.py:AppDelegate._m11_capture_selection", "localflow/v2/insertion/validation.py:validate_target"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-13", "test_file": "tests/v2/crossmilestone/test_xm_remediation.py", "cases": ["x03_interleaved_updates_preserve_the_committed_definition", "x04_stale_form_never_reverses_a_newer_opt_out", "x08_admitted_add_timeout_is_unknown_and_one_transform_results", "local01_selected_transform_fills_its_own_instruction"], "production_callables": ["localflow/v2/ui/hub.py:HubController", "localflow/v2/transforms_store.py:TransformStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-13", "test_file": "tests/v2/crossmilestone/test_xm_store_families.py (MODIFIED)", "cases": ["x01h_lost_transform_rows_never_drop_a_user_definition", "x01h2_lost_revisions_never_present_history_as_none", "x01h3_lost_transform_registry_revision_never_restarts"], "production_callables": ["localflow/v2/transforms_store.py:TransformStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-13", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M11-V001..M11-V006"], "production_callables": [], "reaches_branch": "human", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R18",
+      "requirement": "Requirement-preserving Prompt Engineer",
+      "suites": ["EV-13"],
+      "bindings": [
+        {"suite": "EV-13", "test_file": "tests/v2/transforms/test_prompt_engineer_cases.py", "cases": ["run_case over fixtures_prompt_engineer_v2.json, graded by judge (applied / applied_semantic_failure / review_* / fallback / error)"], "production_callables": ["localflow/v2/cleanup/model.py:ModelRunner", "localflow/v2/transforms (builtin:prompt_engineer, run_transform)"], "reaches_branch": "yes: real model", "qualification": "model_backed"},
+        {"suite": "EV-13", "test_file": "tests/v2/transforms/test_transform_remediation.py", "cases": ["f01_unrepresented_requirements_not_applied", "f02_polarity_ordering_hedge_quantity", "f03_real_worker_round_trip_nonempty_coverage", "f04_technical_tokens_carry_verbatim", "tg01_dense_ten_requirement_prompt", "tg07_conflicting_requirements_surface"], "production_callables": ["localflow/v2/transforms/engine.py:run_transform", "localflow/v2/transforms/atoms.py", "localflow/v2/worker.py:Worker._transform"], "reaches_branch": "yes: production gate with injected generator outputs", "qualification": "portable_automated"},
+        {"suite": "EV-13", "test_file": "tests/v2/transforms/test_transform_remediation.py", "cases": ["f05_oracle_never_reports_fallback_as_applied", "f05_oracle_fixture_relations", "f05_oracle_checks_review_addresses_the_loss"], "production_callables": ["tests/v2/transforms/test_prompt_engineer_cases.py:judge (test oracle)"], "reaches_branch": "no: harness-only, asserts on the test oracle", "qualification": "portable_automated"},
+        {"suite": "EV-13", "test_file": "tests/v2/transforms/test_transform_engine.py", "cases": ["test_atoms_extraction_finds_s16_example", "test_coverage_three_valued_and_review_policy", "test_exact_carry_guards_every_mode"], "production_callables": ["localflow/v2/transforms/atoms.py"], "reaches_branch": "yes", "qualification": "portable_automated"}
+      ],
+      "state": "bound",
+      "note": "M11 model-backed limitations are recorded as M15 gates (M14 handoff)."
+    },
+    {
+      "id": "LF-R19",
+      "requirement": "Local Scratchpad, versions, search and portable export",
+      "suites": ["EV-14"],
+      "bindings": [
+        {"suite": "EV-14", "test_file": "tests/v2/notes/test_note_store.py", "cases": ["test_migration_v8_additive_and_repair", "test_revisions_immutable_parent_linked", "test_restore_copies_forward_nothing_discarded", "test_attachments_managed_lifecycle", "test_pinning_search_deletion_tombstones"], "production_callables": ["localflow/v2/notes.py:NoteStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-14", "test_file": "tests/v2/notes/test_note_editor.py", "cases": ["test_debounce_and_autosave", "test_concurrent_autosave_serializes"], "production_callables": ["localflow/v2/notes.py:NotesEditorModel"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-14", "test_file": "tests/v2/notes/test_note_export.py", "cases": ["test_markdown_structure_round_trip", "test_failed_export_retains_source_note", "test_offline_export_and_content_operations"], "production_callables": ["localflow/v2/note_export.py:write_export", "localflow/v2/cleanup/document_nodes.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-14", "test_file": "tests/v2/notes/test_scratchpad_hub.py", "cases": ["test_dictation_into_note_internal_destination", "test_note_transform_never_external", "test_restore_rebinds_editor", "test_export_command_round_trip"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/ui/hub.py:HubController"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-14", "test_file": "tests/v2/notes/test_m12_remediation.py", "cases": ["r01a_read_refuses_parent_traversal", "r02c_destination_symlink_never_writes_through", "r05c_failed_unlink_is_durably_pending_and_retried", "r07a_held_commit_is_not_confirmed", "r15a_delete_purges_the_note_transform_graph"], "production_callables": ["localflow/v2/notes.py:NoteStore", "localflow/v2/note_export.py", "localflow/v2/ui/hub.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-14", "test_file": "tests/v2/crossmilestone/test_xm_remediation.py", "cases": ["x09_admitted_save_timeout_then_retry_makes_one_note", "x10_unknown_source_deletion_is_reported_and_retry_settles", "x10_unknown_copy_create_then_retry_makes_one_note"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/notes.py:NoteStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-14", "test_file": "tests/v2/notes/test_native_m12_scratchpad.py", "cases": ["n01_click_type_and_ordinary_loop_autosave", "n07_snapshot_versions_popup_and_restore", "n08_pin_and_delete_act_on_the_rendered_note"], "production_callables": ["localflow/v2/ui/scratchpad.py:ScratchpadEditor", "localflow/v2/ui/hub.py:HubController"], "reaches_branch": "yes: passive owned window; key-window paths ACTIVE only", "qualification": "native_owned_window"},
+        {"suite": "EV-14", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M12-V001..M12-V005"], "production_callables": [], "reaches_branch": "human", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R20",
+      "requirement": "Accurate existing/new analytics with independent retention",
+      "suites": ["EV-03", "EV-15"],
+      "bindings": [
+        {"suite": "EV-15", "test_file": "tests/v2/analytics/test_usage_store.py", "cases": ["test_migration_v9_additive_with_backup_and_repair", "test_one_dictation_counts_once_retry_replaces", "test_dst_day_boundaries", "test_text_prune_does_not_empty_usage_and_expiry_does", "test_legacy_seven_row_reconciliation", "test_aggregates_always_match_facts_under_writes_and_deletions"], "production_callables": ["localflow/v2/analytics.py:AnalyticsStore", "localflow/v2/store.py:Store"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/analytics/test_insights_service.py (docstring mislabels itself EV-13)", "cases": ["test_weighted_wpm_not_row_average", "test_latency_percentiles_sample_aware", "test_legacy_and_undated_lines"], "production_callables": ["localflow/v2/analytics.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/analytics/test_insights_hub.py", "cases": ["test_confirmed_dictation_writes_fact", "test_repaste_command_records_activity_not_words", "test_analytics_failure_never_touches_dictation"], "production_callables": ["localflow/app.py:AppDelegate (_finishWithText_/_insertionDone_)", "localflow/v2/ui/hub.py:HubController"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/analytics/test_m13_remediation.py", "cases": ["f01_null_duration_is_not_free_words", "f03_expiry_is_chronological_across_precisions", "f08_delete_all_revokes_a_materialized_report", "f09_timed_out_delete_is_unknown_then_reconciled", "f28_aggregate_oracle_checks_every_field"], "production_callables": ["localflow/v2/analytics.py", "localflow/v2/ui/state.py", "localflow/app.py:AppDelegate"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/crossmilestone/test_xm_store_families.py (MODIFIED)", "cases": ["x01d_lost_usage_facts_never_keep_deleted_usage_in_aggregates", "x01d2_lost_aggregates_never_hide_recorded_usage"], "production_callables": ["localflow/v2/analytics.py:AnalyticsStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/analytics/test_native_m13_insights.py", "cases": ["insights_controls", "c157", "c186", "c237", "c238", "c262", "delete_confirm", "history_delete"], "production_callables": ["localflow/v2/ui/hub.py:HubController"], "reaches_branch": "yes: passive owned window", "qualification": "native_owned_window"},
+        {"suite": "EV-15", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M13-V001..M13-V005"], "production_callables": [], "reaches_branch": "human: real legacy/usage data", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R21",
+      "requirement": "Useful local communication profile with evidence and uncertainty",
+      "suites": ["EV-15"],
+      "bindings": [
+        {"suite": "EV-15", "test_file": "tests/v2/personalization/test_profile.py", "cases": ["test_measured_views_and_cards", "test_below_threshold_measured_only", "test_deletion_and_exclusion_propagation", "test_deleted_evidence_leaves_no_derived_text", "test_idle_skip_reads_no_text"], "production_callables": ["localflow/v2/profile.py:ProfileService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/personalization/test_profile.py", "cases": ["test_no_profile_injection"], "production_callables": ["localflow/v2/normalize/engine.py:normalize (context None)"], "reaches_branch": "no: both normalize() calls run after compute() and never touch cleanup; not a before/after noninterference proof", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/personalization/test_m14_remediation.py", "cases": ["f27_profile_never_reaches_the_real_coordinator_pipeline", "f01_profile_reads_only_own_raw_speech", "f03_purged_artifact_mid_compute_is_not_published", "f23_used_term_canonical_edit_refreshes_the_profile_once"], "production_callables": ["localflow/app.py:AppDelegate (real coordinator)", "localflow/v2/profile.py:ProfileService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/crossmilestone/test_xm_remediation.py", "cases": ["x07_retries_never_manufacture_dictations_or_words", "x07_excluded_latest_attempt_never_falls_back_to_an_older_one", "c_ten_independent_captures_reach_the_floor", "x11_missing_frozen_record_is_unrecorded_never_relabeled"], "production_callables": ["localflow/v2/profile.py:ProfileService.compute", "localflow/app.py:AppDelegate._retry_job"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/crossmilestone/test_xm_store_families.py (MODIFIED)", "cases": ["x01b_lost_profile_evidence_never_keeps_dead_private_text"], "production_callables": ["localflow/v2/profile.py:ProfileService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/ui/test_training_review_hub.py", "cases": ["test_your_voice_subview_and_generate", "test_idle_profile_scheduler_yields"], "production_callables": ["localflow/v2/ui/your_voice.py", "localflow/v2/ui/hub.py:HubController", "localflow/app.py:configure"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M14-V006"], "production_callables": [], "reaches_branch": "human", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R22",
+      "requirement": "User-controlled correction learning and reversible personalization",
+      "suites": ["EV-15", "EV-20"],
+      "bindings": [
+        {"suite": "EV-15", "test_file": "tests/v2/personalization/test_learning.py", "cases": ["test_unapproved_rejected_never_change_output", "test_counterexample_refusal", "test_approval_composes_with_existing_entries_and_undo", "test_teach_refusals_and_deletion_propagation", "test_migration_v10_additive_with_backup_and_repair"], "production_callables": ["localflow/v2/learning.py:LearningService", "localflow/v2/vocabulary_store.py:VocabularyStore"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/personalization/test_m14_remediation.py", "cases": ["f09_deletion_between_plan_and_effect_leaves_no_orphan_rule", "f10_undo_keeps_later_user_edits_of_a_created_entry", "f11_teach_refuses_a_final_newer_than_the_rendered_one", "f17_approval_retry_after_unknown_outcome_reconciles"], "production_callables": ["localflow/v2/learning.py:LearningService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/crossmilestone/test_xm_remediation.py", "cases": ["x15_hub_offers_undo_approval_for_the_rendered_candidate", "x15_hub_undo_refuses_after_a_user_edit", "x15_hub_undo_unknown_outcome_then_retry_is_one_undo", "c_service_undo_reverses_exactly_and_keeps_user_edits"], "production_callables": ["localflow/v2/ui/hub.py:HubController", "localflow/v2/learning.py:LearningService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/crossmilestone/test_xm_store_families.py (MODIFIED)", "cases": ["x01c_lost_deltas_never_let_undo_destroy_a_user_edit", "x01e_lost_candidates_never_forget_a_permanent_rejection"], "production_callables": ["localflow/v2/learning.py:LearningService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-20", "test_file": "tests/v2/training/test_classification.py", "cases": ["test_negatives_never_promoted", "test_suggestion_gate_precision"], "production_callables": ["localflow/v2/curation/classify.py", "localflow/v2/learning.py:LearningService"], "reaches_branch": "yes: synthetic pack (mechanics, not real accuracy)", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/ui/test_training_review_hub.py", "cases": ["test_history_teach_correction_action", "test_training_tabs_and_review_actions"], "production_callables": ["localflow/v2/ui/hub.py:HubController"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-15", "test_file": "tests/v2/personalization/test_native_m14_training.py", "cases": ["c211..c219", "teach_native"], "production_callables": ["localflow/v2/ui/hub.py:HubController"], "reaches_branch": "yes: passive owned window", "qualification": "native_owned_window"},
+        {"suite": "EV-15", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M14-V002"], "production_callables": [], "reaches_branch": "human", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R23",
+      "requirement": "Qualified model adapters, model comparison and pinned defaults",
+      "suites": ["EV-16", "EV-22"],
+      "bindings": [
+        {"suite": "EV-16", "test_file": "(none)", "cases": [], "production_callables": [], "reaches_branch": "no: M15 obligation; no tracked file names or implements EV-16", "qualification": "unbound"},
+        {"suite": "EV-22", "test_file": "(none)", "cases": [], "production_callables": [], "reaches_branch": "no: M15 obligation", "qualification": "unbound"}
+      ],
+      "state": "future",
+      "reason": "M15. Precursors only, not coverage: capability-manifest honesty (test_audio_fidelity.py::test_capability_manifest_conservative), identity-bound qualification (test_m05_remediation.py::test_19_qualification_requires_identity, test_m05_review_round.py::test_Q1_self_attested_qualification_is_refused), model identity (test_baseline_manifest_producers.py::test_model_identity_covers_tokenizer_config_and_unusable_snapshots)."
+    },
+    {
+      "id": "LF-R24",
+      "requirement": "End-to-end performance and responsive UI budgets",
+      "suites": ["EV-16", "EV-22"],
+      "bindings": [
+        {"suite": "EV-16", "test_file": "(none)", "cases": [], "production_callables": [], "reaches_branch": "no: M15 obligation; per-milestone scripts/v2/benchmark_m*.py are stage benchmarks, not EV-16 release-to-insert", "qualification": "unbound"},
+        {"suite": "EV-22", "test_file": "(none)", "cases": [], "production_callables": [], "reaches_branch": "no", "qualification": "unbound"}
+      ],
+      "state": "future",
+      "reason": "M15. The release-to-insert latency pilot is pending_human since M01."
+    },
+    {
+      "id": "LF-R25",
+      "requirement": "Offline operation, private storage and deletion semantics",
+      "suites": ["EV-03", "EV-17", "EV-19", "EV-21"],
+      "bindings": [
+        {"suite": "EV-03", "test_file": "tests/v2/storage/test_store.py + test_m02_remediation_store.py", "cases": ["test_delete_everywhere", "test_deletion_barrier_refuses_every_late_write", "test_failed_unlink_stays_pending_then_retries", "test_training_expiry_respects_other_interests"], "production_callables": ["localflow/v2/store.py:Store"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/training/test_m02_remediation_collector.py", "cases": ["test_delete_before_finalize_blocks_late_producer", "test_late_outcome_after_example_delete_refused", "test_consent_is_decided_at_capture_start"], "production_callables": ["localflow/v2/training.py:EvidenceCollector", "localflow/v2/training_data.py:TrainingDataService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-21", "test_file": "tests/v2/training/test_dataset_export.py", "cases": ["test_negative_battery (revoked permission mid-export)", "test_export_safety_and_semantics", "test_round_trip_and_determinism (validate offline, store closed)"], "production_callables": ["localflow/v2/curation/export.py:DatasetExporter/validate_dataset"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-21", "test_file": "tests/v2/crossmilestone/test_xm_validator.py (committed in 3d824ac during this pass)", "cases": ["untouched copy validates", "tamper_manifest", "tamper_text_resummed", "bad_hash", "missing_audio", "malformed_path", "unrelated_file"], "production_callables": ["scripts/v2/validate_dataset.py -> localflow/v2/curation/export.py:validate_dataset"], "reaches_branch": "yes: separate process, empty HOME, source world deleted", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/crossmilestone/test_xm_privacy.py (committed in 3d824ac during this pass)", "cases": ["managed_file_authority", "validator_hostile_package", "event canary scan"], "production_callables": ["localflow/v2/store.py:read_managed_file", "localflow/v2/eventlog.py:EventWriter"], "reaches_branch": "partial: vacuous-pass risk (see problems)", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/normalization/test_m04_remediation.py", "cases": ["test_19b_collaborators_never_spawn_or_connect"], "production_callables": ["localflow/v2/normalize"], "reaches_branch": "partial: no-network for one stage only", "qualification": "portable_automated"},
+        {"suite": "EV-17", "test_file": "(none)", "cases": [], "production_callables": [], "reaches_branch": "no: M16 no-network acceptance", "qualification": "unbound"}
+      ],
+      "state": "partial",
+      "reason": "Storage/deletion and export privacy halves (EV-03/EV-19/EV-21) are bound; EV-17 whole-app no-network acceptance is an M16 obligation with no tracked file."
+    },
+    {
+      "id": "LF-R26",
+      "requirement": "Packaging, upgrade/rollback, sleep/wake and final acceptance",
+      "suites": ["EV-17"],
+      "bindings": [
+        {"suite": "EV-17", "test_file": "(none)", "cases": [], "production_callables": [], "reaches_branch": "no: M16 obligation (scripts/build_app.sh has no test)", "qualification": "unbound"}
+      ],
+      "state": "future",
+      "reason": "M16. Sleep/wake capture behaviour is tested under EV-04 (test_lifecycle.py::test_sleep_ends_capture_recoverable_wake_leaves_mic_off) and store upgrade backups under EV-03, but neither is the packaged-app EV-17 acceptance."
+    },
+    {
+      "id": "LF-R27",
+      "requirement": "Existing behavior and language coverage regression protection",
+      "suites": ["EV-04", "EV-17"],
+      "bindings": [
+        {"suite": "EV-04", "test_file": "tests/test_stuck_overlay.py", "cases": ["test_wedge_recovers", "test_unreporting_hardware_unaffected", "test_lost_release_preserves_speech"], "production_callables": ["localflow/app.py (watchdog)", "localflow/hotkey.py:HotkeyListener"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-04", "test_file": "tests/test_cleanup.py", "cases": ["CASES (LLM tier, 51 cases)", "--basic tier"], "production_callables": ["localflow/cleanup.py:TranscriptCleaner/basic_cleanup"], "reaches_branch": "yes: V1 control; the whole file incl. the portable --basic tier is excluded from the sweep", "qualification": "model_backed"},
+        {"suite": "EV-04", "test_file": "tests/v2/normalization/test_m04_review_round.py", "cases": ["test_R13_spanish_accented_numbers"], "production_callables": ["localflow/v2/normalize"], "reaches_branch": "partial: one Spanish normalization case; no language-coverage suite", "qualification": "portable_automated"},
+        {"suite": "EV-17", "test_file": "(none)", "cases": [], "production_callables": [], "reaches_branch": "no: M16", "qualification": "unbound"}
+      ],
+      "state": "partial",
+      "reason": "V1 watchdog and cleanup controls are bound; EV-17 (M16) regression acceptance has no tracked file and ASR language coverage has no case."
+    },
+    {
+      "id": "LF-R28",
+      "requirement": "Fresh-session contracts, handoffs and traceable verification",
+      "suites": ["EV-01", "EV-17"],
+      "bindings": [
+        {"suite": "EV-01", "test_file": "tests/v2/test_registry.py", "cases": ["test_registry_matches_canonical_docs", "test_early_collection_producers_have_owners", "test_fabricated_reverse_edge_is_rejected", "test_builder_exits_nonzero_on_problems"], "production_callables": ["scripts/v2/build_registry.py:spec_requirements/eval_suites"], "reaches_branch": "yes: catalog derivation (mapping only, not coverage)", "qualification": "portable_automated"},
+        {"suite": "EV-01", "test_file": "tests/v2/crossmilestone/test_xm_runbook.py (committed in 3d824ac during this pass)", "cases": ["g03_ids_well_formed_unique_and_in_their_section", "g03_numbering_is_stable_per_milestone", "g03_storage_namespace_and_stale_rule", "g03_every_milestone_has_a_section"], "production_callables": [], "reaches_branch": "no: static read of docs/v2/VERIFICATION.html", "qualification": "portable_automated"},
+        {"suite": "EV-01", "test_file": "tests/v2/crossmilestone/test_xm_remediation.py", "cases": ["x16_status_separates_current_state_from_historical_record", "x17_m07_obligations_have_stable_runbook_ownership"], "production_callables": ["localflow/v2/store.py:_MIGRATIONS (read only)"], "reaches_branch": "no: document checks of STATUS.json and VERIFICATION.html", "qualification": "portable_automated"},
+        {"suite": "EV-17", "test_file": "(none)", "cases": [], "production_callables": [], "reaches_branch": "no: M16 sign-off", "qualification": "unbound"}
+      ],
+      "state": "partial",
+      "reason": "Registry and runbook traceability are checked as documents; no test exercises handoff/contract freshness, and EV-17 sign-off is M16."
+    },
+    {
+      "id": "LF-R29",
+      "requirement": "Qualified pre-decode hint capabilities and one relevant-vocabulary selector",
+      "suites": ["EV-18"],
+      "bindings": [
+        {"suite": "EV-18", "test_file": "tests/v2/vocabulary/test_hint_selection.py", "cases": ["test_deterministic_selection", "test_term_limits_and_omissions_recorded", "test_unsupported_adapter_stays_honest", "test_offered_vs_applied_provenance", "test_hint_set_feeds_all_supported_consumers", "test_request_fields_shape_pinned_for_qualified_adapter"], "production_callables": ["localflow/v2/vocabulary.py:RelevantVocabularySelector/HintSet", "localflow/v2/capabilities.py:hint_disposition/asr_hint_request_fields/biasing_qualified"], "reaches_branch": "partial: selector and unsupported-adapter branch reached; the qualified-adapter branch uses a synthetic manifest", "qualification": "portable_automated"},
+        {"suite": "EV-18", "test_file": "tests/v2/lifecycle/test_audio_fidelity.py", "cases": ["test_capability_manifest_conservative", "test_envelope_optional_fields_null_with_reason"], "production_callables": ["localflow/v2/capabilities.py:asr_capability_manifest", "localflow/v2/training.py:EvidenceCollector"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-18", "test_file": "tests/v2/vocabulary/test_vocabulary_pipeline.py + tests/v2/context/test_context_pipeline.py", "cases": ["test_hint_set_frozen_pre_decode_with_evidence", "test_hint_request_fields_carry_context_snapshot_id", "test_ac03_upgrade_uses_frozen_entries"], "production_callables": ["localflow/app.py:AppDelegate"], "reaches_branch": "yes: pre-decode freeze", "qualification": "portable_automated"},
+        {"suite": "EV-18", "test_file": "tests/v2/vocabulary/test_m05_remediation.py + test_m05_review_round.py", "cases": ["test_17_hint_budget_matrix", "test_19_qualification_requires_identity", "test_Q1_self_attested_qualification_is_refused", "test_A2_qualified_disposition_is_not_ignored_with_a_reason"], "production_callables": ["localflow/v2/capabilities.py", "localflow/v2/vocabulary.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-18", "test_file": "(none)", "cases": [], "production_callables": [], "reaches_branch": "no: acoustic true/distractor strata and applied-hint decoding need a qualified decoder (M15)", "qualification": "unbound"}
+      ],
+      "state": "partial",
+      "reason": "Text-side selector and capability boundary are bound; no qualified decoder adapter exists, so applied-hint decoding and acoustic qualification are M15."
+    },
+    {
+      "id": "LF-R30",
+      "requirement": "Early live training evidence, exact provenance, consent/retention and deletion",
+      "suites": ["EV-19"],
+      "bindings": [
+        {"suite": "EV-19", "test_file": "tests/v2/training/test_collector.py", "cases": ["test_collection_disabled_creates_no_payload", "test_enabled_lineage_and_exact_inputs", "test_fallback_route_distinguishes_proposal_from_applied", "test_simultaneous_jobs_keep_separate_joins", "test_binding_isolation_under_overlap"], "production_callables": ["localflow/v2/training.py:EvidenceCollector"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/training/test_m02_remediation_collector.py", "cases": ["test_quarantine_is_the_first_visible_state", "test_complete_publication_is_acknowledged_after_commit", "test_retry_uses_original_capture_permission", "test_benchmark_refuses_unbound_or_empty_collection"], "production_callables": ["localflow/v2/training.py:EvidenceCollector", "localflow/v2/training_data.py:TrainingDataService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/lifecycle/test_audio_fidelity.py", "cases": ["test_float32_round_trip_original", "test_pcm16_export_labeled_derivative", "test_decode_ranges_bound_and_joined", "test_discontinuities_reported"], "production_callables": ["localflow/v2/training.py", "localflow/v2/store.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/lifecycle/test_m03_remediation_app.py", "cases": ["test_05_failed_retry_identity_end_to_end", "test_09_t0_rate_and_gaps_survive_a_t1_retry", "test_23_retry_consent_is_original_and_enabled_now"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/training.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/profiles/test_profiles_pipeline.py + tests/v2/normalization/test_normalization_pipeline.py + tests/v2/fidelity/test_cleanup_pipeline.py", "cases": ["test_ev19_evidence_provenance_and_changed_profile", "test_evidence_envelope_and_ledger_replay", "test_evidence_round_trip_accept"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/training.py:EvidenceCollector"], "reaches_branch": "yes: producer stages", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/crossmilestone/test_xm_remediation.py", "cases": ["x05_failed_normalized_retention_is_never_a_complete_task", "c_retained_changed_normalization_exports_the_exact_input", "x06_history_resolves_the_current_attempt_after_collection_off_retry"], "production_callables": ["localflow/v2/curation/evidence.py", "localflow/v2/training.py:EvidenceCollector"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-19", "test_file": "tests/v2/training/test_live_pipeline.py", "cases": ["test_real_cleanup_capture", "test_real_asr_empty_output_path"], "production_callables": ["localflow/cleanup.py:TranscriptCleaner", "localflow/stt.py:Transcriber", "localflow/v2/training.py:EvidenceCollector"], "reaches_branch": "yes: real models (V1 cleaner path)", "qualification": "model_backed"},
+        {"suite": "EV-19", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M02-V001..M02-V009"], "production_callables": [], "reaches_branch": "human: live pilot", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R31",
+      "requirement": "Classified corrections, representative/hard sampling and same-task preferences",
+      "suites": ["EV-20"],
+      "bindings": [
+        {"suite": "EV-20", "test_file": "tests/v2/training/test_classification.py", "cases": ["test_axes_over_pack", "test_graft_mechanics", "test_label_versions_and_coverage", "test_stage_attribution_and_gates"], "production_callables": ["localflow/v2/curation/classify.py", "localflow/v2/curation/review.py:ReviewService"], "reaches_branch": "yes: mechanics on a synthetic pack; real accuracy needs 60 reviewed real observations", "qualification": "portable_automated"},
+        {"suite": "EV-20", "test_file": "tests/v2/training/test_sampling.py (docstring says EV-19.4)", "cases": ["test_deterministic_and_idempotent", "test_state_move_and_triggers", "test_late_triggers_and_configured_percent"], "production_callables": ["localflow/v2/curation/sampling.py:SamplingService/hard_trigger_reasons"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-20", "test_file": "tests/v2/insertion/test_insertion_attribution.py", "cases": ["test_no_edit_window_is_never_a_positive_label", "test_edit_inside_owned_range_recorded_with_attribution", "test_undo_of_our_revision_flagged_weakly"], "production_callables": ["localflow/v2/insertion/service.py:InsertionService", "localflow/v2/insertion/observation.py", "localflow/v2/training.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-20", "test_file": "tests/v2/transforms/test_transform_pipeline.py", "cases": ["test_preference_same_task_invariants"], "production_callables": ["localflow/app.py:AppDelegate", "localflow/v2/transforms"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-20", "test_file": "tests/v2/notes/test_note_evidence.py", "cases": ["test_arrival_links_and_content_free", "test_repeated_revisions_no_duplicates"], "production_callables": ["localflow/v2/notes.py:NoteStore", "localflow/v2/training.py:EvidenceCollector"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-20", "test_file": "tests/v2/ui/test_training_data.py + tests/v2/ui/test_training_review_hub.py", "cases": ["test_span_correction_is_partial", "test_verbatim_requires_listening_and_separates_intended", "test_review_draw_sample_and_pair_actions"], "production_callables": ["localflow/v2/training_data.py:TrainingDataService", "localflow/v2/ui/hub.py:HubController"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-20", "test_file": "tests/v2/personalization/test_m14_remediation.py", "cases": ["f12_graft_refuses_a_changed_source_with_the_same_substring", "f19_later_abstention_returns_item_to_unresolved", "f21_directional_antonym_is_not_a_recognition_suggestion", "f08_purged_task_source_makes_pair_ineligible"], "production_callables": ["localflow/v2/curation/review.py:ReviewService", "localflow/v2/curation/classify.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-20", "test_file": "tests/v2/crossmilestone/test_xm_store_families.py (MODIFIED)", "cases": ["x01f_lost_labels_never_readmit_background_speech", "x01h4_lost_candidates_never_orphan_recorded_judgments", "c_lost_sampling_decisions_redraw_identically"], "production_callables": ["localflow/v2/curation/sampling.py:SamplingService", "localflow/v2/curation/review.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-20", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M14-V003", "M14-V004"], "production_callables": [], "reaches_branch": "human: real labels and pair judgments", "qualification": "human"}
+      ],
+      "state": "bound"
+    },
+    {
+      "id": "LF-R32",
+      "requirement": "Family-safe dataset splits, task-specific views and portable verified export",
+      "suites": ["EV-21"],
+      "bindings": [
+        {"suite": "EV-21", "test_file": "tests/v2/training/test_splits.py", "cases": ["test_versioned_assignment_and_leakage", "test_exposure_moves_forward_only", "test_tags_never_change_partition", "test_minimum_family_floor_and_late_hints"], "production_callables": ["localflow/v2/curation/splits.py:SplitService"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-21", "test_file": "tests/v2/training/test_dataset_export.py", "cases": ["test_round_trip_and_determinism", "test_negative_battery", "test_audio_deleted_text_only_case", "test_export_hardening", "test_finalize_recheck_is_about_the_selection"], "production_callables": ["localflow/v2/curation/export.py:DatasetExporter/validate_dataset"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-21", "test_file": "tests/v2/crossmilestone/test_xm_validator.py (committed in 3d824ac during this pass)", "cases": ["untouched copy validates", "tamper_manifest", "tamper_text_resummed", "bad_hash", "missing_audio", "malformed_path", "unrelated_file"], "production_callables": ["scripts/v2/validate_dataset.py", "localflow/v2/curation/export.py:validate_dataset"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-21", "test_file": "tests/v2/crossmilestone/test_xm_remediation.py", "cases": ["x14_post_rename_crash_is_recognized_not_lost_or_relabeled", "c_crash_before_rename_restores_and_the_retry_completes", "x12_validate_result_binds_to_its_destination_across_pane_switch"], "production_callables": ["localflow/v2/curation/export.py:DatasetExporter", "tests/v2/crossmilestone/xm_export_crash_child.py (child process)"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-21", "test_file": "tests/v2/personalization/test_m14_remediation.py", "cases": ["f04_new_export_from_old_version_cannot_reclaim_blindness", "f07_self_consistent_semantic_tamper_is_rejected", "l03_vanished_audio_file_fails_the_gate_not_the_export", "l06_validator_never_reads_through_a_linked_directory"], "production_callables": ["localflow/v2/curation/export.py", "localflow/v2/curation/splits.py"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-21", "test_file": "tests/v2/crossmilestone/test_xm_store_families.py (MODIFIED)", "cases": ["x01a_lost_memberships_never_return_exposed_family_to_holdout", "x01j_lost_assignments_keep_the_assignment_history", "c_lost_judgments_only_shrink_exports"], "production_callables": ["localflow/v2/curation/splits.py:SplitService", "localflow/v2/curation/export.py:DatasetExporter"], "reaches_branch": "yes", "qualification": "portable_automated"},
+        {"suite": "EV-21", "test_file": "docs/v2/VERIFICATION.html", "cases": ["M14-V005"], "production_callables": [], "reaches_branch": "human", "qualification": "human"}
+      ],
+      "state": "bound",
+      "note": "The M15/M16 re-qualification round trip named in the owner column is still a future obligation."
+    },
+    {
+      "id": "LF-R33",
+      "requirement": "Optional cloud comparator and explicit short/acoustic/context challenge evaluation",
+      "suites": ["EV-22"],
+      "bindings": [
+        {"suite": "EV-22", "test_file": "(none)", "cases": [], "production_callables": [], "reaches_branch": "no: M15 obligation", "qualification": "unbound"}
+      ],
+      "state": "future",
+      "reason": "M15. tests/v2/normalization/test_short_command_scoring.py scores E18.4 text counterparts only and says M15 owns the comparator; it is not EV-22 coverage."
+    }
+  ],
+  "suites": [
+    {"id": "EV-01", "name": "Baseline/provenance", "test_files": ["tests/v2/test_legacy_parser.py", "tests/v2/test_baseline_manifest.py", "tests/v2/test_baseline_manifest_producers.py", "tests/v2/test_snapshot_safety.py", "tests/v2/test_baseline_probe.py", "tests/v2/test_m01_verify_summary.py", "tests/v2/test_legacy_import_boundary.py", "tests/v2/test_registry.py", "tests/v2/crossmilestone/test_xm_runbook.py (committed 3d824ac)"], "state": "bound"},
+    {"id": "EV-02", "name": "Logging/time", "test_files": ["tests/v2/logging/test_event_writer.py", "tests/v2/logging/test_m02_remediation_events.py", "tests/v2/ui/test_diagnostics.py", "tests/v2/crossmilestone/test_xm_privacy.py (committed 3d824ac)", "tests/v2/test_m02_app_wiring.py (static)"], "state": "bound"},
+    {"id": "EV-03", "name": "Storage/migration", "test_files": ["tests/v2/storage/test_store.py", "tests/v2/storage/test_import.py", "tests/v2/storage/test_m02_remediation_store.py", "tests/v2/storage/test_m02_remediation_import.py", "tests/v2/storage/test_m02_review_round.py", "tests/v2/vocabulary/test_vocabulary_store.py", "tests/v2/analytics/test_usage_store.py", "tests/v2/crossmilestone/test_xm_store_families.py (modified)"], "state": "bound"},
+    {"id": "EV-04", "name": "Capture/lifecycle", "test_files": ["tests/v2/lifecycle/test_capture_journal.py", "tests/v2/lifecycle/test_lifecycle.py", "tests/v2/lifecycle/test_m03_remediation_app.py", "tests/v2/lifecycle/test_m03_remediation_journal.py", "tests/v2/lifecycle/test_m03_review_round.py", "tests/test_stuck_overlay.py", "tests/test_cleanup.py (model-backed V1 control)"], "state": "partial", "reason": "silence and mic-switch branches unbound"},
+    {"id": "EV-05", "name": "Worker recovery", "test_files": ["tests/v2/lifecycle/test_worker_protocol.py (fake worker)", "tests/v2/lifecycle/test_m03_remediation_supervisor.py", "tests/v2/lifecycle/test_m03_remediation_worker.py", "tests/v2/lifecycle/test_worker_live.py (model-backed)"], "state": "bound"},
+    {"id": "EV-06", "name": "Normalization", "test_files": ["tests/v2/normalization/test_normalize_numbers.py", "tests/v2/normalization/test_normalize_syntax.py", "tests/v2/normalization/test_normalization_pipeline.py", "tests/v2/normalization/test_short_command_scoring.py", "tests/v2/normalization/test_m04_audit_corpus.py", "tests/v2/normalization/test_m04_remediation.py", "tests/v2/normalization/test_m04_remediation_app.py", "tests/v2/normalization/test_m04_review_round.py", "tests/v2/developer/test_skills.py"], "state": "bound"},
+    {"id": "EV-07", "name": "Vocabulary", "test_files": ["tests/v2/vocabulary/test_vocabulary_matching.py", "tests/v2/vocabulary/test_vocabulary_store.py", "tests/v2/vocabulary/test_vocabulary_pipeline.py", "tests/v2/vocabulary/test_m05_remediation.py", "tests/v2/vocabulary/test_m05_remediation_app.py", "tests/v2/vocabulary/test_m05_review_round.py"], "state": "bound"},
+    {"id": "EV-08", "name": "Context", "test_files": ["tests/v2/context/test_context_snapshot.py", "tests/v2/context/test_context_pipeline.py", "tests/v2/context/test_m06_remediation.py", "tests/v2/context/test_m06_review_round.py", "tests/v2/context/test_native_ax.py (native)"], "state": "bound"},
+    {"id": "EV-09", "name": "Cleanup/fidelity", "test_files": ["tests/v2/fidelity/test_cleanup_engine.py", "tests/v2/fidelity/test_cleanup_pipeline.py", "tests/v2/fidelity/test_cleanup_remediation.py", "tests/v2/fidelity/test_fidelity.py (model)", "tests/v2/fidelity/test_literal.py (model)", "tests/v2/structure/test_structure.py (model)"], "state": "bound"},
+    {"id": "EV-10", "name": "Insertion", "test_files": ["tests/v2/insertion/test_insertion_races.py", "tests/v2/insertion/test_insertion_pipeline.py", "tests/v2/insertion/test_insertion_attribution.py", "tests/v2/insertion/test_m08_remediation.py", "tests/v2/insertion/test_native_insertion.py (native)"], "state": "bound"},
+    {"id": "EV-11", "name": "Hub/history", "test_files": ["tests/v2/ui/test_hub_shell.py", "tests/v2/ui/test_history_queries.py", "tests/v2/ui/test_diagnostics.py", "tests/v2/ui/test_m09_remediation.py", "tests/v2/ui/test_training_data.py", "tests/v2/notes/test_native_m12_scratchpad.py (native)", "tests/v2/analytics/test_native_m13_insights.py (native)", "tests/v2/personalization/test_native_m14_training.py (native)"], "state": "bound"},
+    {"id": "EV-12", "name": "Profiles/developer", "test_files": ["tests/v2/profiles/test_style_resolution.py", "tests/v2/profiles/test_snippets.py", "tests/v2/profiles/test_profiles_pipeline.py", "tests/v2/profiles/test_m10_remediation.py", "tests/v2/developer/test_developer_resolution.py", "tests/v2/developer/test_skills.py", "tests/v2/ui/test_native_m10_panes.py (native)"], "state": "bound"},
+    {"id": "EV-13", "name": "Transforms", "test_files": ["tests/v2/transforms/test_transform_definitions.py", "tests/v2/transforms/test_transform_engine.py", "tests/v2/transforms/test_transform_pipeline.py", "tests/v2/transforms/test_transform_remediation.py", "tests/v2/transforms/test_transform_remediation_native.py", "tests/v2/transforms/test_selection_capture_m06_seam.py", "tests/v2/transforms/test_prompt_engineer_cases.py (model)"], "state": "bound"},
+    {"id": "EV-14", "name": "Scratchpad", "test_files": ["tests/v2/notes/test_note_store.py", "tests/v2/notes/test_note_editor.py", "tests/v2/notes/test_note_export.py", "tests/v2/notes/test_scratchpad_hub.py", "tests/v2/notes/test_m12_remediation.py", "tests/v2/notes/test_native_m12_scratchpad.py (native)"], "state": "bound"},
+    {"id": "EV-15", "name": "Analytics/profile", "test_files": ["tests/v2/analytics/test_usage_store.py", "tests/v2/analytics/test_insights_service.py (self-labelled EV-13)", "tests/v2/analytics/test_insights_hub.py", "tests/v2/analytics/test_m13_remediation.py", "tests/v2/analytics/test_native_m13_insights.py (native)", "tests/v2/personalization/test_profile.py", "tests/v2/personalization/test_learning.py", "tests/v2/personalization/test_m14_remediation.py", "tests/v2/ui/test_training_review_hub.py"], "state": "bound"},
+    {"id": "EV-16", "name": "Models/performance", "test_files": [], "state": "future", "reason": "M15; no tracked file"},
+    {"id": "EV-17", "name": "Release/offline", "test_files": [], "state": "future", "reason": "M16; no tracked file"},
+    {"id": "EV-18", "name": "ASR hints/discrimination", "test_files": ["tests/v2/vocabulary/test_hint_selection.py", "tests/v2/lifecycle/test_audio_fidelity.py", "tests/v2/vocabulary/test_vocabulary_pipeline.py", "tests/v2/context/test_context_pipeline.py", "tests/v2/vocabulary/test_m05_remediation.py", "tests/v2/vocabulary/test_m05_review_round.py"], "state": "partial", "reason": "text side bound; acoustic qualification is M15"},
+    {"id": "EV-19", "name": "Training capture/lineage/retention", "test_files": ["tests/v2/training/test_collector.py", "tests/v2/training/test_m02_remediation_collector.py", "tests/v2/training/test_live_pipeline.py (model)", "tests/v2/lifecycle/test_audio_fidelity.py", "tests/v2/lifecycle/test_m03_remediation_app.py", "tests/v2/context/test_context_pipeline.py", "tests/v2/vocabulary/test_vocabulary_pipeline.py", "tests/v2/profiles/test_profiles_pipeline.py", "tests/v2/notes/test_note_evidence.py", "tests/v2/insertion/test_insertion_attribution.py", "tests/v2/ui/test_training_data.py", "tests/v2/crossmilestone/test_xm_remediation.py"], "state": "bound"},
+    {"id": "EV-20", "name": "Correction/preferences/sampling", "test_files": ["tests/v2/training/test_classification.py", "tests/v2/training/test_sampling.py (self-labelled EV-19.4)", "tests/v2/insertion/test_insertion_attribution.py", "tests/v2/notes/test_note_evidence.py", "tests/v2/transforms/test_transform_pipeline.py", "tests/v2/ui/test_training_data.py", "tests/v2/ui/test_training_review_hub.py", "tests/v2/personalization/test_m14_remediation.py"], "state": "bound"},
+    {"id": "EV-21", "name": "Dataset splits/export", "test_files": ["tests/v2/training/test_splits.py", "tests/v2/training/test_dataset_export.py", "tests/v2/crossmilestone/test_xm_validator.py (committed 3d824ac)", "tests/v2/personalization/test_m14_remediation.py", "tests/v2/crossmilestone/test_xm_store_families.py (modified)"], "state": "bound"},
+    {"id": "EV-22", "name": "Comparator/challenge evaluation", "test_files": [], "state": "future", "reason": "M15; no tracked file"}
+  ],
+  "cross_milestone_suites": [
+    {"file": "tests/v2/crossmilestone/test_xm_remediation.py", "tracked": true, "requirements": ["LF-R08", "LF-R12", "LF-R13", "LF-R17", "LF-R19", "LF-R20", "LF-R21", "LF-R22", "LF-R28", "LF-R30", "LF-R32"], "note": "x16/x17 are document checks"},
+    {"file": "tests/v2/crossmilestone/test_xm_store_families.py", "tracked": "modified, uncommitted", "requirements": ["LF-R03", "LF-R08", "LF-R14", "LF-R15", "LF-R17", "LF-R20", "LF-R21", "LF-R22", "LF-R31", "LF-R32"]},
+    {"file": "tests/v2/crossmilestone/test_xm_privacy.py", "tracked": "committed in 3d824ac during this pass", "requirements": ["LF-R02", "LF-R25", "LF-R30"]},
+    {"file": "tests/v2/crossmilestone/test_xm_runbook.py", "tracked": "committed in 3d824ac during this pass", "requirements": ["LF-R28"], "note": "document-only"},
+    {"file": "tests/v2/crossmilestone/test_xm_validator.py", "tracked": "committed in 3d824ac during this pass", "requirements": ["LF-R25", "LF-R32"]}
+  ],
+  "problems": [
+    {"id": "G02-P01", "kind": "future_unbound", "detail": "EV-16, EV-17 and EV-22 have no tracked test file. LF-R23, LF-R24, LF-R26 and LF-R33 are entirely future (M15/M16); the EV-17 halves of LF-R25, LF-R27 and LF-R28 are future."},
+    {"id": "G02-P02", "kind": "qualification_mismatch", "detail": "tests/v2/structure/test_structure.py and tests/v2/fidelity/test_literal.py call ModelRunner('mlx-community/Qwen3-4B-Instruct-2507-4bit').load() with no skip, but scripts/v2/m09_test_sweep.py MODEL_BACKED omits them. In sweep_final_3ede837.json they ran inside the portable sweep (51.7 s and 13.5 s, exit 0, ok_lines 0). The M14 handoff's model-backed list names structure but not literal or test_cleanup."},
+    {"id": "G02-P03", "kind": "tracking_moved_during_analysis", "detail": "At the start (head a613818) test_xm_privacy.py, test_xm_runbook.py and test_xm_validator.py were untracked and test_xm_store_families.py was modified. A concurrent session then committed them (3d824ac, 684303c), so the sweep now picks them up. It also left tests/v2/crossmilestone/test_native_xm_hub.py untracked and localflow/v2/store.py modified. Neither was analysed here."},
+    {"id": "G02-P04", "kind": "vacuous_pass_risk", "detail": "test_xm_privacy.py: step() catches every exception and records it as 'raised ...'. status = PASS iff no canary leak and no session-level error. A step that never ran, or an empty events directory (records_scanned has no floor), still passes."},
+    {"id": "G02-P05", "kind": "harness_weak", "detail": "tests/v2/personalization/test_profile.py::test_no_profile_injection calls normalize() twice after compute(), with context None, and never reaches cleanup. Both runs see the same state, so it is not a before/after noninterference proof (Audit B CROSS-AUDIT-12). The real-coordinator proof is test_m14_remediation.py::f27_profile_never_reaches_the_real_coordinator_pipeline."},
+    {"id": "G02-P06", "kind": "harness_only_cases", "detail": "These assert on test oracles or documents, not production: test_transform_remediation.py f05_oracle_never_reports_fallback_as_applied, f05_oracle_fixture_relations, f05_oracle_checks_review_addresses_the_loss (test_prompt_engineer_cases.judge); test_m04_remediation.py::test_18_oracle_mutations_are_caught; test_m04_review_round.py::test_R20_corpus_component_oracle_is_exact; test_baseline_manifest.py::test_historical_manifest_record_is_frozen; test_xm_runbook.py (all); test_xm_remediation.py x16/x17."},
+    {"id": "G02-P07", "kind": "static_only", "detail": "tests/v2/test_m02_app_wiring.py parses localflow/app.py with ast and asserts that call sites exist. Nothing is executed."},
+    {"id": "G02-P08", "kind": "fake_counterpart", "detail": "tests/v2/lifecycle/test_worker_protocol.py drives the real WorkerSupervisor against tests/v2/lifecycle/fake_worker.py, a protocol re-implementation. Its 'Metal' faults are 'fault:InjectedMetalError' tokens. The production worker's fault branch is reached only with shimmed loaders (test_m03_remediation_worker.py) or the model-backed test_worker_live.py (kill -9, not a Metal fault)."},
+    {"id": "G02-P09", "kind": "unbound_branch", "detail": "localflow/audio.py:46 Recorder._resolve_device (named input_device, the not-found fallback) has no case: every tracked config sets input_device None. The capture.near_silence / capture.dead_tail branch in localflow/app.py (~3700) is also unreferenced by any test. EV-04's 'silence' and 'mic switch' items rest on human M03-V006 only."},
+    {"id": "G02-P10", "kind": "dead_reference", "detail": "docs/v2/acceptance/M01/results.json:31 cites tests/v2/test_baseline_manifest.py::test_no_private_files_in_repo_docs_or_tests. The current case is test_no_private_files_in_repository. The M07 renames (test_unlocatable_protected_span_dropped -> test_protected_span_mapping_never_drops; test_worker_v2_engine_exception_falls_back_basic -> ..._keeps_normalized_input) are documented in handoffs/M07.md."},
+    {"id": "G02-P11", "kind": "mislabel", "detail": "tests/v2/analytics/test_insights_service.py calls itself 'EV-13 analytics portion', but analytics is EV-15 and EV-13 is Transforms. tests/v2/training/test_sampling.py says 'EV-19.4', but sampling is EV-20 (the E19.4 section)."},
+    {"id": "G02-P12", "kind": "human_gap", "detail": "The M07 section of VERIFICATION.html has no check articles. M07-AC04 is partial_automated and native-m07-long-prompt-cleanup-trial is pending, so the human half of LF-R10/R11 has no runbook id. MERGED-X17 fail-first: x17_m07_obligations_have_stable_runbook_ownership."},
+    {"id": "G02-P13", "kind": "outside_sweep", "detail": "The corpus runners and drivers (m05/m06/m08/m09/m10/m12/m13/m14 *_corpus_runner.py, m*_drivers*.py) are tracked but are not test_*.py, so the tracked sweep never executes them. Their evidence exists only as recorded JSON under docs/v2/acceptance/M*/remediation."},
+    {"id": "G02-P14", "kind": "qualification_note", "detail": "tests/test_cleanup.py is excluded from the sweep as a whole, including its portable --basic tier. test_native_ax.py and test_native_insertion.py exit 2 (NOT RUN) without an AX grant. The passive native Hub suites (m10/m12/m13/m14) run in the sweep on the reference Mac. m13/m14 report ok_lines 0, so the sweep sees only their exit status."},
+    {"id": "G02-P15", "kind": "synthetic_qualified_adapter", "detail": "No qualified decoder adapter exists. test_hint_selection.py::test_request_fields_shape_pinned_for_qualified_adapter exercises the qualified branch with a synthetic manifest. The applied-hint decode path is M15."},
+    {"id": "G02-P16", "kind": "fake_io", "detail": "tests/v2/test_baseline_probe.py injects fake ASR and cleanup objects and tests only the probe's own logic. Real inference is M01-V008."}
+  ],
+  "counts": {
+    "requirements": {"bound": 24, "partial": 5, "unbound": 0, "future": 4},
+    "suites": {"with_tracked_file": 19, "without_tracked_file": 3, "bound": 17, "partial": 2, "future": 3}
+  }
+}

@@ -1,0 +1,327 @@
+{
+ "milestone": "M09",
+ "rewritten_by": "M09 remediation",
+ "generated_utc": "2026-09-28T22:06:08Z",
+ "synthetic": true,
+ "quick": false,
+ "mutant": null,
+ "mutant_description": null,
+ "environment": {
+  "code_sha": "356a08a37651e007c9813b732406bc46f6d44b49",
+  "production_tree_clean": true,
+  "mac_model": "Mac17,8",
+  "chip": "Apple M5 Pro",
+  "macos": "27.0",
+  "python": "3.14.7",
+  "loadavg_at_start": "{ 3.38 2.92 2.94 }"
+ },
+ "population": {
+  "jobs": 50000,
+  "hit_jobs": 516,
+  "legacy_db_rows": 5000,
+  "legacy_log_pairs": 1000,
+  "training_examples": 1000,
+  "events": 2000,
+  "styles": 5,
+  "snippets": 5,
+  "notes": 5,
+  "dictations": 5,
+  "build_s": 2.4
+ },
+ "memory": {
+  "method": "tracemalloc (Python heap only: current and peak since start) + ps rss (process-wide current resident, native included); not an isolated allocation count",
+  "views_visited": 10,
+  "python_heap_current_mb_with_hub": 1.4,
+  "python_heap_peak_mb": 12.9,
+  "python_heap_retained_after_shutdown_mb": 1.4,
+  "rss_current_mb_before": 135.7,
+  "rss_current_mb_with_hub": 167.0,
+  "valid": true
+ },
+ "history_search": {
+  "text_hit": {
+   "n": 50,
+   "p50_ms": 23.71,
+   "p95_ms": 24.08,
+   "p99_ms": 24.82,
+   "max_ms": 24.82,
+   "valid": true,
+   "work": "200/200 hits",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "text_miss": {
+   "n": 50,
+   "p50_ms": 22.76,
+   "p95_ms": 23.26,
+   "p99_ms": 23.91,
+   "max_ms": 23.91,
+   "valid": true,
+   "work": "0 rows",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "app_filter": {
+   "n": 50,
+   "p50_ms": 23.14,
+   "p95_ms": 24.8,
+   "p99_ms": 25.16,
+   "max_ms": 25.16,
+   "valid": true,
+   "work": "182 job rows",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "mode_filter": {
+   "n": 50,
+   "p50_ms": 36.68,
+   "p95_ms": 37.94,
+   "p99_ms": 38.13,
+   "max_ms": 38.13,
+   "valid": true,
+   "work": "200 rows",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "browse_mixed": {
+   "n": 50,
+   "p50_ms": 46.23,
+   "p95_ms": 48.38,
+   "p99_ms": 54.9,
+   "max_ms": 54.9,
+   "valid": true,
+   "work": "200 rows, kinds ['job', 'legacy_db']",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  },
+  "legacy_mode": {
+   "n": 50,
+   "p50_ms": 3.24,
+   "p95_ms": 3.3,
+   "p99_ms": 3.34,
+   "max_ms": 3.34,
+   "valid": true,
+   "work": "200 rows",
+   "clock": "HistoryQueryService.search call \u2192 rows materialized (writer op included)",
+   "budget_p95_ms": 200.0,
+   "within_budget": true
+  }
+ },
+ "shell": {
+  "construction": {
+   "n": 10,
+   "p50_ms": 11.11,
+   "p95_ms": 21.49,
+   "p99_ms": 21.49,
+   "max_ms": 21.49
+  },
+  "first_usable_result": {
+   "n": 10,
+   "p50_ms": 12.01,
+   "p95_ms": 22.44,
+   "p99_ms": 22.44,
+   "max_ms": 22.44
+  },
+  "full_pass": {
+   "n": 10,
+   "p50_ms": 241.82,
+   "p95_ms": 277.04,
+   "p99_ms": 277.04,
+   "max_ms": 277.04,
+   "budget_p95_ms": 1000.0,
+   "within_budget": true
+  },
+  "view_switch": {
+   "home": {
+    "n": 10,
+    "p50_ms": 0.73,
+    "p95_ms": 1.04,
+    "p99_ms": 1.04,
+    "max_ms": 1.04
+   },
+   "history": {
+    "n": 10,
+    "p50_ms": 54.36,
+    "p95_ms": 58.83,
+    "p99_ms": 58.83,
+    "max_ms": 58.83
+   },
+   "styles": {
+    "n": 10,
+    "p50_ms": 7.57,
+    "p95_ms": 8.71,
+    "p99_ms": 8.71,
+    "max_ms": 8.71
+   },
+   "snippets": {
+    "n": 10,
+    "p50_ms": 7.04,
+    "p95_ms": 8.04,
+    "p99_ms": 8.04,
+    "max_ms": 8.04
+   },
+   "transforms": {
+    "n": 10,
+    "p50_ms": 6.76,
+    "p95_ms": 8.23,
+    "p99_ms": 8.23,
+    "max_ms": 8.23
+   },
+   "scratchpad": {
+    "n": 10,
+    "p50_ms": 7.79,
+    "p95_ms": 9.26,
+    "p99_ms": 9.26,
+    "max_ms": 9.26
+   },
+   "insights": {
+    "n": 10,
+    "p50_ms": 16.64,
+    "p95_ms": 19.43,
+    "p99_ms": 19.43,
+    "max_ms": 19.43
+   },
+   "diagnostics": {
+    "n": 10,
+    "p50_ms": 28.63,
+    "p95_ms": 31.24,
+    "p99_ms": 31.24,
+    "max_ms": 31.24
+   },
+   "models": {
+    "n": 10,
+    "p50_ms": 17.53,
+    "p95_ms": 21.5,
+    "p99_ms": 21.5,
+    "max_ms": 21.5
+   },
+   "settings": {
+    "n": 10,
+    "p50_ms": 5.31,
+    "p95_ms": 6.76,
+    "p99_ms": 6.76,
+    "max_ms": 6.76
+   },
+   "training:evidence": {
+    "n": 10,
+    "p50_ms": 15.31,
+    "p95_ms": 17.79,
+    "p99_ms": 17.79,
+    "max_ms": 17.79
+   },
+   "training:review": {
+    "n": 10,
+    "p50_ms": 11.56,
+    "p95_ms": 13.64,
+    "p99_ms": 13.64,
+    "max_ms": 13.64
+   },
+   "training:splits": {
+    "n": 10,
+    "p50_ms": 11.14,
+    "p95_ms": 12.44,
+    "p99_ms": 12.44,
+    "max_ms": 12.44
+   },
+   "training:export": {
+    "n": 10,
+    "p50_ms": 11.15,
+    "p95_ms": 12.67,
+    "p99_ms": 12.67,
+    "max_ms": 12.67
+   },
+   "training:detail": {
+    "n": 10,
+    "p50_ms": 0.47,
+    "p95_ms": 0.58,
+    "p99_ms": 0.58,
+    "max_ms": 0.58
+   },
+   "insights:voice": {
+    "n": 10,
+    "p50_ms": 0.31,
+    "p95_ms": 0.47,
+    "p99_ms": 0.47,
+    "max_ms": 0.47
+   }
+  },
+  "clock": "HubController init \u2192 every view/tab publication rendered on the main thread",
+  "valid": true,
+  "problems": []
+ },
+ "rapid_search": {
+  "search_changes": 100,
+  "admission_main_ms": 0.35,
+  "drain_ms": 34.7,
+  "new_hub_query_threads_peak": 0,
+  "hub_query_threads_total": 1,
+  "admitted": 100,
+  "superseded_before_start": 99,
+  "service_search_calls": 1,
+  "all_admitted_accounted": true,
+  "final_result_is_latest": true,
+  "dictation_idle_ms": 12.8,
+  "dictation_during_burst_ms": 37.0,
+  "valid": true
+ },
+ "training_diagnostics": {
+  "training": {
+   "examples": 1000,
+   "list": {
+    "n": 20,
+    "p50_ms": 4.14,
+    "p95_ms": 4.5,
+    "p99_ms": 5.02,
+    "max_ms": 5.02
+   },
+   "detail": {
+    "n": 20,
+    "p50_ms": 0.08,
+    "p95_ms": 0.1,
+    "p99_ms": 0.11,
+    "max_ms": 0.11
+   },
+   "readiness": {
+    "n": 20,
+    "p50_ms": 11.92,
+    "p95_ms": 12.75,
+    "p99_ms": 12.94,
+    "max_ms": 12.94
+   },
+   "valid": true
+  },
+  "diagnostics": {
+   "events": 2000,
+   "filtered_window_last500": {
+    "n": 20,
+    "p50_ms": 25.82,
+    "p95_ms": 26.09,
+    "p99_ms": 26.12,
+    "max_ms": 26.12
+   },
+   "redacted_export_500": {
+    "n": 20,
+    "p50_ms": 6.0,
+    "p95_ms": 6.1,
+    "p99_ms": 6.38,
+    "max_ms": 6.38
+   },
+   "valid": true
+  }
+ },
+ "validity": {
+  "history_search": true,
+  "shell": true,
+  "rapid_search": true,
+  "training": true,
+  "diagnostics": true,
+  "memory": true
+ },
+ "work_valid": true,
+ "timing_qualified": true
+}

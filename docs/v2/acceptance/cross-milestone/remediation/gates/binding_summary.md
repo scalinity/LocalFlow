@@ -1,0 +1,115 @@
+# GATE-G02: requirement -> test -> production branch binding
+
+Repository: `<repo>`. Branch: `xm-local-remediation-20260928`. Head: `a613818` at the start, `684303c` at the end (concurrent commits).
+
+This was a read-only pass: nothing was run, and nothing in the repository was edited. Every binding in `binding.json` comes from these sources:
+
+- `docs/v2/registry.json` (33 LF-R / 22 EV)
+- the E08 suite rows
+- each tracked `test_*.py`: its docstring, case names (`def test_*` / `@case` / `CHECKS` / `VARIANTS`) and `localflow` imports
+- production definitions, confirmed with `git grep`
+- the sweep's own rules: `scripts/v2/m09_test_sweep.py` and `acceptance/M14/remediation/sweep_final_3ede837.json`
+
+A suite name in a docstring was never counted as coverage.
+
+## Counts
+
+| | bound | partial | unbound | future |
+|---|---|---|---|---|
+| Requirements (33) | 24 | 5 | 0 | 4 |
+| Suites (22) | 17 | 2 | 0 | 3 |
+
+- 19 suites have at least one tracked test file. Three have none: EV-16, EV-17 and EV-22.
+- The 188 binding rows break down as: 144 portable_automated, 8 native_owned_window, 8 model_backed, 20 human and 12 unbound.
+
+## Future (M15/M16), never counted as covered
+
+- **LF-R23:** qualified model adapters (EV-16, EV-22). The precursors are capability-manifest honesty and identity-bound qualification.
+- **LF-R24:** end-to-end performance (EV-16, EV-22). The per-milestone `benchmark_m*.py` scripts are stage benchmarks, not EV-16.
+- **LF-R26:** packaging, upgrade and final acceptance (EV-17). Sleep/wake and store upgrades are tested only under EV-04 and EV-03.
+- **LF-R33:** comparator and challenge evaluation (EV-22). `test_short_command_scoring.py` is text-only.
+
+## Partial requirements, with the reason
+
+- **LF-R04:** EV-04 names "silence" and "mic switch", and neither has a case.
+  - `localflow/audio.py:46 Recorder._resolve_device` is never exercised: every tracked config sets `input_device: None`.
+  - The `capture.near_silence` / `capture.dead_tail` branch in `localflow/app.py` (~3700) is referenced by no test.
+  - Device loss, journal, cancel, wake and Fn are bound. Real hardware is covered only by human check M03-V006.
+- **LF-R25:** storage, deletion and export privacy (EV-03/19/21) are bound. EV-17's whole-app no-network acceptance is M16.
+- **LF-R27:** the V1 watchdog and cleanup controls are bound. EV-17 is M16, and ASR language coverage has no case: the only language case is one Spanish normalization case, `test_R13_spanish_accented_numbers`.
+- **LF-R28:** registry and runbook traceability are checked only as documents (`test_registry.py`, `test_xm_runbook.py`, and the xm cases `x16`/`x17`). Nothing tests handoff or contract freshness. EV-17 sign-off is M16.
+- **LF-R29:** the selector and the unsupported-adapter boundary are bound. No qualified decoder adapter exists: `test_request_fields_shape_pinned_for_qualified_adapter` uses a synthetic manifest, and applied-hint decoding plus the acoustic strata are M15.
+
+## Harness-only, fake, static, dead or mislabelled tests
+
+- **Harness-only cases.** These assert on test oracles or documents, not production:
+  - `test_transform_remediation.py` `f05_oracle_*` (3 cases), which check `test_prompt_engineer_cases.judge`
+  - `test_m04_remediation.py::test_18_oracle_mutations_are_caught`
+  - `test_m04_review_round.py::test_R20_corpus_component_oracle_is_exact`
+  - `test_baseline_manifest.py::test_historical_manifest_record_is_frozen`
+  - all of `test_xm_runbook.py`
+  - `test_xm_remediation.py` `x16`/`x17`
+- **Harness-weak:** `test_profile.py::test_no_profile_injection`. It runs `normalize()` twice, both after `compute()`, with context `None`, and never reaches cleanup. The real-coordinator proof is `test_m14_remediation.py::f27_profile_never_reaches_the_real_coordinator_pipeline`.
+- **Fake counterpart:** `test_worker_protocol.py` pairs the real supervisor with `fake_worker.py`. Its "Metal" faults are string tokens, and no real Metal fault is ever produced.
+- **Static only:** `test_m02_app_wiring.py` is an AST call-site check of `app.py`.
+- **Fake I/O:** `test_baseline_probe.py` injects fake ASR and cleanup objects. Real inference is M01-V008.
+- **Vacuous-pass risk:** in `test_xm_privacy.py` (committed 3d824ac during this pass), `step()` swallows exceptions. PASS needs only "no leak and no session error", and there is no floor on `records_scanned`.
+- **Dead reference:** `acceptance/M01/results.json:31` cites `test_no_private_files_in_repo_docs_or_tests`. The case is now `test_no_private_files_in_repository`.
+- **Mislabels:**
+  - `test_insights_service.py` calls itself "EV-13", but it covers analytics, which is EV-15.
+  - `test_sampling.py` calls itself "EV-19.4", but it covers sampling, which is EV-20.
+
+## Qualification problems
+
+- **Model-backed suites inside the portable sweep.** `test_structure.py` and `test_literal.py` load Qwen3-4B with no skip, but they are missing from the sweep's `MODEL_BACKED` tuple. In the M14 sweep they ran as "portable" (51.7 s and 13.5 s, 0 ok-lines).
+- **Tracking moved during the analysis.** At the start (`a613818`), `test_xm_privacy.py`, `test_xm_runbook.py` and `test_xm_validator.py` were untracked, so the sweep (which uses `git ls-files`) would have skipped them. A concurrent session then committed them in `3d824ac` (head now `684303c`), so the sweep now picks them up. That session also left `tests/v2/crossmilestone/test_native_xm_hub.py` untracked and `localflow/v2/store.py` modified; neither was analysed here.
+- **Corpus runners never run in the sweep.** The corpus runners and drivers (M05–M14) are tracked but are not `test_*.py` files. Their evidence exists only as recorded JSON.
+- **`test_cleanup.py` excluded whole.** The sweep excludes it entirely, including its portable `--basic` tier.
+
+## Model-, native- and human-gated requirements
+
+- **Model-backed.** The tracked list is `test_cleanup.py`, `test_worker_live.py`, `test_live_pipeline.py`, `test_prompt_engineer_cases.py` and `test_fidelity.py`; `test_structure.py` and `test_literal.py` also load a model.
+  - LF-R05 (worker live)
+  - LF-R10/R11 (fidelity, literal, structure)
+  - LF-R18 (Prompt Engineer semantics)
+  - LF-R27 (V1 cleanup control)
+  - LF-R30 (live pipeline)
+- **Native, owned window.**
+  - LF-R09 (`test_native_ax.py`, needs an AX grant, exits 2 without one)
+  - LF-R12 (`test_native_insertion.py`, same)
+  - LF-R13/R19/R20/R21/R22 (passive owned Hub windows in the M12/M13/M14 native suites)
+  - LF-R14/R15 (`test_native_m10_panes.py`)
+  - The ACTIVE tier needs the owner's go-ahead.
+- **Human.** These are attributed by milestone ownership; the subject of each individual check was not reviewed.
+
+  | Requirement(s) | Human checks |
+  |---|---|
+  | LF-R01 | M01-V001..V011 |
+  | LF-R02, R03, R30 | M02-V001..V009 |
+  | LF-R04 | M03-V004..V008 |
+  | LF-R05 | M03-V002, V003 |
+  | LF-R06, R07 | M04-V001..V003 |
+  | LF-R08, R29 | M05-V001..V003 |
+  | LF-R09 | M06-V001..V004 |
+  | LF-R12 | M08-V001..V008 |
+  | LF-R13 | M09-V001..V007 |
+  | LF-R14, R15, R16 | M10-V001..V004 |
+  | LF-R17, R18 | M11-V001..V006 |
+  | LF-R19 | M12-V001..V005 |
+  | LF-R20 | M13-V001..V005 |
+  | LF-R21 | M14-V006 |
+  | LF-R22 | M14-V002 |
+  | LF-R31 | M14-V003, V004 |
+  | LF-R32 | M14-V005 |
+
+  LF-R10/R11 have **no** human id. The M07 runbook section is empty while `native-m07-long-prompt-cleanup-trial` is pending and M07-AC04 is `partial_automated` (MERGED-X17).
+
+## Cross-milestone suites and the requirements they touch
+
+| Suite | Status | Requirements |
+|---|---|---|
+| `test_xm_remediation.py` | tracked | R08, R12, R13, R17, R19, R20, R21, R22, R28 (docs only), R30, R32 |
+| `test_xm_store_families.py` | committed 3d824ac | R03, R08, R14, R15, R17, R20, R21, R22, R31, R32 |
+| `test_xm_privacy.py` | committed 3d824ac | R02, R25, R30 |
+| `test_xm_runbook.py` | committed 3d824ac, document-only | R28 |
+| `test_xm_validator.py` | committed 3d824ac | R25, R32 |

@@ -1,0 +1,97 @@
+{
+ "suite": "tests/v2/crossmilestone/test_native_xm_hub.py",
+ "tier": "passive",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_native_xm_hub.py",
+  "suite_sha256": "b882a52164445a5a1c7acaa7dc4a43c4782c570da7786c68ed07f4fd222f88f6",
+  "code_root_sha": "356a08a37651e007c9813b732406bc46f6d44b49",
+  "tracked_files_modified": true,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "frontmost_unchanged": true,
+ "never_frontmost": true,
+ "full_keyboard_access": false,
+ "counts": {
+  "PASS": 6
+ },
+ "checks": {
+  "transform_row_click_fills_instruction_and_update_keeps_it": {
+   "status": "PASS",
+   "rows_selected": [
+    true,
+    true
+   ],
+   "shown": "NATIVE INSTRUCTION BETA",
+   "stored": [
+    "Native B renamed",
+    "NATIVE INSTRUCTION BETA",
+    0
+   ],
+   "covers": [
+    "LOCAL-XM-01",
+    "MERGED-X04"
+   ],
+   "tier": "passive",
+   "seconds": 0.4
+  },
+  "transform_add_unknown_then_add_again_is_one": {
+   "status": "PASS",
+   "first": "outcome unknown: the store is busy and the change may still complete \u2014 check the",
+   "transforms": 1,
+   "admitted": true,
+   "covers": [
+    "MERGED-X08"
+   ],
+   "tier": "passive",
+   "seconds": 0.57
+  },
+  "export_validate_acknowledges_then_keeps_its_result": {
+   "status": "PASS",
+   "ack_seconds": 0.046,
+   "acknowledged": true,
+   "kept_across_tab_switch": true,
+   "covers": [
+    "MERGED-X12",
+    "MERGED-X13"
+   ],
+   "tier": "passive",
+   "seconds": 0.61
+  },
+  "undo_approval_button_undoes_the_chosen_rule": {
+   "status": "PASS",
+   "chosen": true,
+   "candidate": "pending",
+   "entry_enabled": 0,
+   "covers": [
+    "MERGED-X15"
+   ],
+   "tier": "passive",
+   "seconds": 0.77
+  },
+  "history_move_unknown_deletion_then_move_again": {
+   "status": "PASS",
+   "notes": 1,
+   "source_deleted": true,
+   "delete_admitted": true,
+   "first_told": "the note was created; deleting the History row is pending (the store has not answered yet) \u2014 Move again to finish it (no",
+   "second_told": "No history yet \u2014 dictations appear here.\n\nSelect a row and wait for its detail t",
+   "covers": [
+    "MERGED-X10"
+   ],
+   "tier": "passive",
+   "seconds": 0.8
+  },
+  "touched_controls_contained_and_hittable_at_minimum_size": {
+   "status": "PASS",
+   "misses": [],
+   "covers": [
+    "MERGED-X15",
+    "LOCAL-XM-02 Apply Retention",
+    "LOCAL-XM-03 History actions"
+   ],
+   "tier": "passive",
+   "seconds": 0.63
+  }
+ }
+}

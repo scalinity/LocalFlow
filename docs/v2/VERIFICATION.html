@@ -308,7 +308,7 @@ footer{color:var(--faint);font-size:12px;margin-top:40px;border-top:1px solid va
       <section id="overview" aria-labelledby="ov-h">
         <div class="hero">
           <div>
-            <div class="navlabel" style="padding:0">Last updated 2026-09-28 · M14 section added by the M14 remediation · code <code>9d0cfdf</code> (M13 checks at <code>36e03a2</code>, M12 checks at <code>b17aa2b</code>, M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
+            <div class="navlabel" style="padding:0">Last updated 2026-09-28 · M07 section added by the cross-milestone remediation · code <code>340c566</code> (M14 checks at <code>9d0cfdf</code>, M13 checks at <code>36e03a2</code>, M12 checks at <code>b17aa2b</code>, M10 checks at <code>ed5e206</code>, M09 at <code>a304d48</code>, M08 at <code>ea83bc1</code>, M11 at <code>9a049b3</code>, M06 at <code>4388b52</code>, M05 at <code>01a1f3c</code>, M04 at <code>4ef219c</code>, M03 at <code>3e0d1ab</code>, M02 at <code>bfbc63c</code>, M01 at <code>3db7406</code>)</div>
             <h2 id="ov-h">What still has to be proven on the real Mac.</h2>
             <p class="lede">Cloud remediation sessions repair code and prove it with portable tests. Anything that needs this Mac — the installed app, real Application Support data, MLX/Metal inference, microphones, the launch environment or a human watching the screen — is collected here as a check with exact commands, expected results and where to save the evidence.</p>
             <p class="lede">Work top to bottom inside a milestone. Set each check’s status as you go; it is saved in this browser. Nothing here needs to be done between milestones.</p>
@@ -2511,7 +2511,134 @@ grep -h '"context.provider_failed"' "$SANDBOX6"/Library/Logs/LocalFlow/events-*.
 
         <p class="ms-intro">Related: <b>M05-V003</b> (the reference-Mac vocabulary benchmark) is pinned to M05 code <code>01a1f3c</code> and stays yours to record. The M06 session ran the same benchmark on this Mac against the M06 code, whose release path it changed (<code>docs/v2/benchmarks/20260926-043413-m06-remediation/m05/</code>, 10,000 entries): work validity valid, verdict pass, and <code>scope_upgrade_and_packaging</code> p50 121 ms / p95 141 ms — still above 75 ms as a stand-alone build. M06 now runs that build while you speak instead of after you release fn; the release-path addition measured by the M06 benchmark in the same run is p95 40.5 ms. That run informs M05-V003; it does not record it.</p>
       </section>
-      <section class="milestone" id="M07" data-milestone="M07" data-title="Faithful cleanup"><div class="ms-head"><span class="mid">M07</span><h2>Faithful cleanup</h2></div><p class="placeholder">No deferred checks recorded yet (IDs from M07-V001).</p></section>
+      <section class="milestone" id="M07" data-milestone="M07" data-title="Faithful cleanup">
+        <div class="ms-head">
+          <span class="mid">M07</span><h2>Faithful cleanup</h2>
+          <span class="meta">instructions M07-r1 · code 340c566 (main) · added by the cross-milestone remediation (MERGED-X17)</span>
+        </div>
+        <p class="ms-intro">M07 made cleanup faithful: it fixes what you said without rewriting what you meant — self-corrections applied with their reasons kept, lists kept at their exact length, constraints and quoted literals left untouched, and the raw transcript always recoverable without running a model again. Its automated half ran long ago on a synthetic corpus; two obligations were never performed and are carried here so they have an owner: the long-prompt trial on this Mac (<code>native-m07-long-prompt-cleanup-trial</code>) and the adjudicated real-text stratum (60 cases reviewed from the 749 legacy candidates). Both start as Not run; nothing here records a pass. Detail: <code>docs/v2/handoffs/M07.md</code> and <code>docs/v2/acceptance/M07/results.json</code>.</p>
+
+        <div class="callout">
+          <h3>M07 set-up (once per Terminal window, after the set-up above)</h3>
+          <p style="margin:0 0 8px">The current code gets its own worktree, and the dev app runs with a <b>sandbox home folder</b> (<code>$SANDBOX07</code>), so its store, logs and History land in a throw-away folder — never your real Application Support data or the installed app. The sandbox config keeps transcripts in History so each dictation's stages can be compared. Quit the installed LocalFlow.app first. The evidence reader prints stages, cleanup paths and reasons — never the text you dictated.</p>
+          <div class="cmdwrap"><pre class="cmd"><code><span class="c"># Current code in its own worktree (first time only)</span>
+export LF_M07="$(dirname "$LF_MAIN")/LocalFlow-m07-verify"
+git -C "$LF_MAIN" fetch origin main
+[ -d "$LF_M07" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M07" origin/main
+git -C "$LF_M07" merge-base --is-ancestor 340c566 HEAD &amp;&amp; echo "current code present"
+export OUT07="$EV/m07-verification"; mkdir -p "$OUT07" &amp;&amp; chmod 700 "$OUT07"
+
+<span class="c"># Sandbox home and config for the dev app</span>
+export REAL_HOME="$HOME"
+export SANDBOX07="$OUT07/sandbox-home"; mkdir -p "$SANDBOX07" &amp;&amp; chmod 700 "$SANDBOX07"
+"$PY" - &lt;&lt;'EOF'
+import json, os, pathlib
+cfg = json.loads(pathlib.Path(os.environ["LF_M07"], "config.json").read_text())
+c = dict(cfg, log_transcripts=True)
+p = pathlib.Path(os.environ["OUT07"], "sandbox-config.json")
+p.write_text(json.dumps(c, indent=1)); print("wrote", p)
+EOF
+<span class="c"># Start the dev app; $LF07_PID is its process</span>
+lf07_start() { ( cd "$LF_M07" &amp;&amp; exec env HOME="$SANDBOX07" \
+    HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
+    LOCALFLOW_CONFIG="$OUT07/sandbox-config.json" "$PY" -m localflow ) \
+    &gt;&gt; "$OUT07/app-console.txt" 2&gt;&amp;1 &amp;
+  LF07_PID=$!; echo "dev app pid $LF07_PID"; }
+
+<span class="c"># Evidence reader: normalizing and cleaning outcomes per dictation (no text)</span>
+cat &gt; "$OUT07/m07_evidence.py" &lt;&lt;'EOF'
+import glob, json, os
+logs = os.path.join(os.environ["SANDBOX07"], "Library/Logs/LocalFlow/events-*.jsonl")
+for f in sorted(glob.glob(logs)):
+    for line in open(f, encoding="utf-8"):
+        e = json.loads(line)
+        if e["event"] in ("stage.completed", "stage.failed") and \
+                e.get("stage") in ("normalizing", "cleaning"):
+            print(e["timestamp_utc"][11:19], (e.get("job_id") or "")[-8:],
+                  e["stage"], e.get("outcome"), e.get("reason_code"))
+EOF
+lf07_evidence() { "$PY" "$OUT07/m07_evidence.py"; }</code></pre></div>
+          <p style="margin:6px 0 0" class="kbdhelp">Expected: “current code present” and one “wrote …/sandbox-config.json” line. Cleanup runs on the cleanup model, so wait for “ASR: ready” after <code>lf07_start</code>. Remove the sandbox when finished: <code>rm -rf "$SANDBOX07"</code> (test dictations only).</p>
+        </div>
+
+        <h3 class="group">Long AI prompts</h3>
+        <article class="check" id="M07-V001" data-milestone="M07" data-rev="M07-r1" data-code="340c566" data-tags="native human model">
+          <header class="check-head">
+            <span class="cid">M07-V001</span>
+            <h4>Dictate a long AI prompt with constraints, corrections, a list and a quoted literal; compare its stages</h4>
+            <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~15 min</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> On real speech and the real cleanup model, a long prompt keeps what you asked for: all three constraints survive, both self-corrections are applied, a spoken list keeps its exact item count, and a quoted literal is left untouched. Each dictation's stages (raw transcript, normalized, cleaned) are kept in History, so the raw transcript is recoverable without running a model again. This is M07's <code>native-m07-long-prompt-cleanup-trial</code>, which was never performed; the synthetic corpus cannot show real speech.</p>
+          <p class="plain"><b>In plain terms.</b> You dictate a long request to an AI assistant the way you normally would — with a word limit, things to mention and avoid, a couple of “no, I mean…” corrections and a list — then look at what LocalFlow did to it, stage by stage.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · Terminal · microphone · models cached (offline) · sandbox home · TextEdit</dd>
+              <dt>Preconditions</dt><dd>M07 set-up done; installed LocalFlow.app quit.</dd>
+              <dt>Working dir</dt><dd>the Terminal window where you ran the M07 set-up</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Run <code>lf07_start</code>; wait for “ASR: ready”. Open a new TextEdit document and click into it.</li>
+              <li>Dictate one long prompt containing: a word limit (“keep it under two hundred words”), something it must mention, something it must not mention, two self-corrections (“on Tuesday — no, Wednesday”), a spoken list of four or more items, and a sign-off.</li>
+              <li>Dictate a second, short one with a quoted literal: “write the phrase <em>exactly as typed</em> verbatim”.</li>
+              <li>Open the Hub (<b>Open Hub…</b> in the menu) → <b>History</b>, select each dictation and read its stages: <b>Source (raw transcript)</b>, <b>Normalized</b>, <b>Cleaned (applied output)</b>.</li>
+              <li>Quit from the menu, then run the command block. Close the TextEdit document without saving.</li>
+            </ol>
+            <h5>Commands (after step 5)</h5>
+            <div class="cmdwrap"><pre class="cmd"><code>lf07_evidence | tee "$OUT07/V001-evidence.txt"</code></pre></div>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Step 4: each Cleaned stage is your prompt, tidied — never an answer to it or a carried-out instruction.</li>
+              <li>Step 4, first dictation: the Cleaned stage keeps the word limit, the must-mention and the must-not-mention; both corrections are applied (only the corrected value remains); the list has exactly as many items as you said; nothing you did not say is added.</li>
+              <li>Step 4, second dictation: the quoted phrase appears in the Cleaned stage exactly as you said it.</li>
+              <li>Each dictation's Source stage holds your raw words — recoverable without dictating again.</li>
+              <li>The evidence shows one <code>normalizing</code> and one <code>cleaning</code> line per dictation. A <code>cleaning</code> path other than <code>llm</code> (a fallback) is acceptable only when its reason is shown; note it.</li>
+            </ul>
+            <h5>If it fails</h5>
+            <ul class="list">
+              <li>A Cleaned stage answers or carries out the prompt instead of keeping it: <b>Failed</b>.</li>
+              <li>A constraint, a correction, a list item or the quoted literal is lost or changed in the Cleaned stage: <b>Failed</b> — note which, keep <code>V001-evidence.txt</code> and <code>app-console.txt</code>.</li>
+              <li>A Source stage is missing: <b>Failed</b>.</li>
+              <li>The model fell back on either dictation: <b>Needs follow-up</b> — note the reason; the trial needs a cleaned output to judge.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>Private: <code>$OUT07/V001-evidence.txt</code> (stages, paths and reasons — no text), <code>$OUT07/app-console.txt</code>. The dictations stay in the sandbox store.</p>
+            <h5>Contract relevance</h5>
+            <p>M07-AC01, M07-AC03, M07-AC05; <code>contracts/cleanup.md</code> → corrections, validation, termination/fallback; cross-milestone MERGED-X17.</p>
+          </details>
+        </article>
+
+        <h3 class="group">Real text</h3>
+        <article class="check" id="M07-V002" data-milestone="M07" data-rev="M07-r1" data-code="340c566" data-tags="human privacy">
+          <header class="check-head">
+            <span class="cid">M07-V002</span>
+            <h4>Adjudicate the real-text stratum: review 60 cases from the 749 legacy candidates</h4>
+            <ul class="tags"><li>Human judgment</li><li>Private data</li><li>several sessions</li></ul>
+            <div class="status-slot"></div>
+          </header>
+          <p class="proves"><b>What it proves.</b> Cleanup is judged against your own past dictations, not only synthetic text: 60 real raw/cleaned pairs (30 development, 10 validation, 20 held-out), each reviewed by you for critical defects, become the <code>adjudicated_real_text</code> family the evaluation plan (E04) reserves. Until it exists, M07's real-text claim rests on synthetic cases only.</p>
+          <p class="plain"><b>In plain terms.</b> You read a sample of your own old dictations next to how they were cleaned, and mark each one as fine, flawed or wrong. Nobody else sees them.</p>
+          <details class="more"><summary>Instructions &amp; expected results</summary>
+            <dl class="facts">
+              <dt>Environment</dt><dd>Reference Mac · your legacy LocalFlow log (private, never committed)</dd>
+              <dt>Preconditions</dt><dd><b>Not yet possible.</b> There is no tool that draws the stratified sample and presents the pairs for review: the legacy parser (<code>scripts/v2/parse_legacy_log.py</code>) never writes transcript text, by design. Building that private review tool is part of this obligation (fixture owner M07, <code>tests/v2/fixtures/manifest.json</code>); M15's corpus needs its output.</dd>
+            </dl>
+            <h5>Manual actions</h5>
+            <ol class="list">
+              <li>Mark this check <b>Blocked</b> with the note “review tool not built”. It moves to Not run when the tool exists; the instructions will then be revised (M07-r2).</li>
+            </ol>
+            <h5>Expected</h5>
+            <ul class="list">
+              <li>Nothing to run yet. No case is reviewed, and no fixture is created, before the tool and its instructions exist.</li>
+            </ul>
+            <h5>Evidence</h5>
+            <p>None yet. Reviewed pairs stay private (outside Git); only sanitized case records would ever be committed.</p>
+            <h5>Contract relevance</h5>
+            <p>M07-AC04 (its human half); Evaluation E04 family <code>adjudicated_real_text</code>; cross-milestone MERGED-X17.</p>
+          </details>
+        </article>
+      </section>
       <section class="milestone" id="M08" data-milestone="M08" data-title="Insertion">
         <div class="ms-head">
           <span class="mid">M08</span><h2>Insertion</h2>

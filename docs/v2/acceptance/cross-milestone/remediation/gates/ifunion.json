@@ -1,0 +1,4830 @@
+{
+  "sources": {
+    "A": 50,
+    "C": 29,
+    "B": 40
+  },
+  "union_rows": 78,
+  "verified_at": {
+    "branch": "xm-local-remediation-20260928",
+    "commit": "63f9ef25148b4d10381693527e4679e351dcd60a",
+    "method": "git grep over tracked localflow/ and scripts/ files at the pinned commit; enclosing function from the census awk indentation map; every site resolved to file:line and re-checked against the source line"
+  },
+  "census": {
+    "commit": "340c566686c7123bfcf721e16160aacabbe0b97d",
+    "files": [
+      "docs/v2/acceptance/cross-milestone/remediation/caller_inventory.json",
+      "gates/census.json"
+    ]
+  },
+  "closure_rule": "bound = every production caller of the producer found by the tracked census (or, where the census has no symbol, by the same git grep at the pinned commit) is listed as a consumer, with every other pattern hit classified in closure_residue; partial = a census-found production consumer does not honour the interface (missing_consumers, with the reason); unbound = no production callable consumes it",
+  "rows": [
+    {
+      "union_id": "XM-IF-001",
+      "authoritative_object": "Content-free event envelope (event taxonomy)",
+      "producer": "EventWriter.emit (M01/M02 event log)",
+      "producer_site": "localflow/v2/eventlog.py:126",
+      "consumers": [
+        {
+          "name": "AppDelegate.configure",
+          "site": "localflow/app.py:237",
+          "role": "constructs the writer every coordinator emit uses"
+        },
+        {
+          "name": "load_events",
+          "site": "localflow/v2/diagnostics.py:25",
+          "role": "Diagnostics reader"
+        },
+        {
+          "name": "HubState._load_diagnostics",
+          "site": "localflow/v2/ui/state.py:821",
+          "role": "Diagnostics pane"
+        },
+        {
+          "name": "render",
+          "site": "localflow/v2/diagnostics.py:71",
+          "role": "Diagnostics renderer"
+        },
+        {
+          "name": "all emit call sites",
+          "site": "localflow/ (313 emit call sites in 148 functions at the pinned commit; census: 321 production at 340c566)",
+          "role": "every coordinator/service emitter writes through the envelope"
+        }
+      ],
+      "identity": "schema_version, timestamp/time-quality, job_id/attempt, decision/path, content-free detail",
+      "deletion_authority": "no private content in the envelope; queue loss is explicit",
+      "timeout_behavior": "queue-backed, never blocks the callback; unknown facts keep null plus a reason",
+      "aliases": {
+        "A": [
+          "XF-IF-001"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "partial",
+      "missing_consumers": [
+        {
+          "name": "Store._run",
+          "site": "localflow/v2/store.py:1290",
+          "reason": "exception text passed as free-text detail; EventWriter.emit stores detail verbatim (no sanitizer), so content-freedom rests on each caller"
+        },
+        {
+          "name": "CaptureJournal._degrade",
+          "site": "localflow/v2/capture_journal.py:348",
+          "reason": "reason string concatenated into free-text detail; same verbatim-storage dependency"
+        }
+      ],
+      "closure_basis": "census emitters (321 emit call sites, 83 with free-text detail=; detail stored verbatim per census eventlog note)",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-002",
+      "authoritative_object": "Public Store submission admission (writer op, reply timeout)",
+      "producer": "Store.submit / Store._submit",
+      "producer_site": "localflow/v2/store.py:1337",
+      "consumers": [
+        {
+          "name": "Store._submit",
+          "site": "localflow/v2/store.py:1307",
+          "role": "raises TimeoutError without cancelling an admitted op"
+        },
+        {
+          "name": "HubController._training_action",
+          "site": "localflow/v2/ui/hub.py:3253",
+          "role": "typed unknown outcome"
+        },
+        {
+          "name": "HubController.historyTeach_",
+          "site": "localflow/v2/ui/hub.py:1032",
+          "role": "typed unknown outcome"
+        },
+        {
+          "name": "AppDelegate._usage_mutation",
+          "site": "localflow/app.py:6155",
+          "role": "typed unknown outcome"
+        },
+        {
+          "name": "HubController._m10_outcome",
+          "site": "localflow/v2/ui/hub.py:1417",
+          "role": "typed unknown outcome for M10 add/update/delete/toggle"
+        },
+        {
+          "name": "HubController._scratchpad_outcome",
+          "site": "localflow/v2/ui/hub.py:2227",
+          "role": "typed note outcome"
+        },
+        {
+          "name": "NotesEditorModel._persist",
+          "site": "localflow/v2/notes.py:1359",
+          "role": "typed note outcome"
+        },
+        {
+          "name": "AppDelegate.tfSaveToScratchpad",
+          "site": "localflow/app.py:2073",
+          "role": "typed after MERGED-X09"
+        },
+        {
+          "name": "AppDelegate.hubSaveHistoryRow",
+          "site": "localflow/app.py:2222",
+          "role": "typed source-deletion phase after MERGED-X10"
+        },
+        {
+          "name": "HubController._transform_write",
+          "site": "localflow/v2/ui/hub.py:1950",
+          "role": "typed Add/Update outcome after MERGED-X08"
+        },
+        {
+          "name": "HubController.transformsToggle_",
+          "site": "localflow/v2/ui/hub.py:1999",
+          "role": "typed toggle outcome after MERGED-X08"
+        },
+        {
+          "name": "HubController.exportRun_",
+          "site": "localflow/v2/ui/hub.py:3746",
+          "role": "typed export outcome"
+        },
+        {
+          "name": "all Store.submit service operations",
+          "site": "localflow/ (142 .submit( call sites in 127 functions at the pinned commit, excluding InsertionService/QueryExecutor submits; census: 237 production at 340c566)",
+          "role": "every service mutation/query"
+        }
+      ],
+      "identity": "admitted versus not_started; eventual commit is independent of the reply timeout; operation/receipt ids for repeat-sensitive writes",
+      "deletion_authority": "n/a (transport for every deletion API)",
+      "timeout_behavior": "admitted timeout stays unknown; no unconditional retry with a fresh identity",
+      "aliases": {
+        "A": [
+          "XF-IF-002"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X08",
+        "MERGED-X09",
+        "MERGED-X10"
+      ],
+      "closure_state": "partial",
+      "missing_consumers": [
+        {
+          "name": "DictionaryPanelController.addEntry_",
+          "site": "localflow/v2/dictionary_panel.py:239",
+          "reason": "caller inventory class b: admitted timeout shown as 'not added'; residual, not repaired (M05 identity refuses a duplicate)"
+        },
+        {
+          "name": "DictionaryPanelController.approveEntry_",
+          "site": "localflow/v2/dictionary_panel.py:287",
+          "reason": "class b residual label"
+        },
+        {
+          "name": "DictionaryPanelController.toggleEntry_",
+          "site": "localflow/v2/dictionary_panel.py:303",
+          "reason": "class b residual label"
+        },
+        {
+          "name": "DictionaryPanelController.pinEntry_",
+          "site": "localflow/v2/dictionary_panel.py:316",
+          "reason": "class b residual label"
+        },
+        {
+          "name": "DictionaryPanelController.deleteEntry_",
+          "site": "localflow/v2/dictionary_panel.py:329",
+          "reason": "class b residual label"
+        },
+        {
+          "name": "HubController.reviewMine_",
+          "site": "localflow/v2/ui/hub.py:3514",
+          "reason": "class b residual label ('action failed')"
+        },
+        {
+          "name": "HubController.voiceGenerate_",
+          "site": "localflow/v2/ui/hub.py:4329",
+          "reason": "class b residual label ('generation failed')"
+        },
+        {
+          "name": "HubController._set_collection",
+          "site": "localflow/v2/ui/hub.py:4718",
+          "reason": "class b: consent write may commit while shown as failed"
+        },
+        {
+          "name": "AppDelegate.importDictionaryJSON_",
+          "site": "localflow/app.py:5751",
+          "reason": "class b residual label"
+        },
+        {
+          "name": "AppDelegate.toggleTrainingCollection_",
+          "site": "localflow/app.py:5305",
+          "reason": "class c: store timeout raises into AppKit"
+        },
+        {
+          "name": "AppDelegate.toggleTrainingPause_",
+          "site": "localflow/app.py:5310",
+          "reason": "class c"
+        },
+        {
+          "name": "AppDelegate.excludeLastDictation_",
+          "site": "localflow/app.py:5318",
+          "reason": "class c"
+        },
+        {
+          "name": "AppDelegate.markLastCorrect_",
+          "site": "localflow/app.py:5321",
+          "reason": "class c"
+        },
+        {
+          "name": "ScratchpadEditor._mark_dirty",
+          "site": "localflow/v2/ui/scratchpad.py:178",
+          "reason": "class c: wait=False, exception swallowed"
+        },
+        {
+          "name": "AppDelegate._retry_job",
+          "site": "localflow/app.py:5960",
+          "reason": "direct store.submit read; TimeoutError collapses into usage.retry_provenance_unavailable"
+        }
+      ],
+      "closure_basis": "census submit_callers + caller_inventory.unknown_outcome_callers (classes a/b/c)",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-003",
+      "authoritative_object": "Job/attempt lifecycle identity and ASR audio request",
+      "producer": "coordinator attempt admission (AppDelegate._bump_attempt / Store.bump_job_attempt) issuing WorkerSupervisor.transcribe(job_id, attempt, audio_name)",
+      "producer_site": "localflow/app.py:4598",
+      "consumers": [
+        {
+          "name": "Store.bump_job_attempt",
+          "site": "localflow/v2/store.py:1592",
+          "role": "writer-owned attempt counter"
+        },
+        {
+          "name": "AppDelegate._acknowledge_attempt",
+          "site": "localflow/app.py:4585",
+          "role": "attempt acknowledgement"
+        },
+        {
+          "name": "AppDelegate._retry_job",
+          "site": "localflow/app.py:5895",
+          "role": "retry attempt"
+        },
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4077",
+          "role": "audio request to the ASR worker"
+        },
+        {
+          "name": "WorkerSupervisor.transcribe",
+          "site": "localflow/v2/supervisor.py:557",
+          "role": "request carries job+attempt+generation"
+        },
+        {
+          "name": "EvidenceCollector.job_started",
+          "site": "localflow/v2/training.py:285",
+          "role": "collector context per attempt"
+        },
+        {
+          "name": "InsertionService._admit",
+          "site": "localflow/v2/insertion/service.py:510",
+          "role": "insertion refuses a stale attempt"
+        },
+        {
+          "name": "AnalyticsStore.record_dictation_fact",
+          "site": "localflow/v2/analytics.py:461",
+          "role": "one fact per logical job"
+        }
+      ],
+      "identity": "job_id + attempt + worker/stage generation + capture identity",
+      "deletion_authority": "deleted job loses request/publication authority",
+      "timeout_behavior": "old attempt/generation cannot mutate current state; worker timeout retires/reconciles per supervisor contract",
+      "aliases": {
+        "A": [
+          "XF-IF-003"
+        ],
+        "C": [],
+        "B": [
+          "IF-003"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "not a census symbol; pinned-commit git grep of bump_job_attempt/_bump_attempt/transcribe (all production callers listed)",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-004",
+      "authoritative_object": "Worker reply bound to its requested attempt (ASR/cleanup result)",
+      "producer": "WorkerSupervisor._handle_message resolving the pending request",
+      "producer_site": "localflow/v2/supervisor.py:405",
+      "consumers": [
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4077",
+          "role": "ASR reply"
+        },
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4374",
+          "role": "cleanup reply"
+        },
+        {
+          "name": "AppDelegate._acknowledge_executed_attempt",
+          "site": "localflow/app.py:4567",
+          "role": "settles only the requested attempt"
+        }
+      ],
+      "identity": "job_id + attempt + worker generation; stage output becomes a governed artifact",
+      "deletion_authority": "deleted/cancelled job cannot be republished by a late result",
+      "timeout_behavior": "worker failure and Store admission timeout are separate dimensions",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-03"
+        ],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of supervisor.transcribe/clean callers (only AppDelegate._worker in localflow)",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-005",
+      "authoritative_object": "Managed audio and original capture provenance across retry/replay/export",
+      "producer": "EvidenceCollector.on_audio (registered original audio) with the capture journal",
+      "producer_site": "localflow/v2/training.py:357",
+      "consumers": [
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4040",
+          "role": "registers the original audio"
+        },
+        {
+          "name": "AppDelegate._retry_job",
+          "site": "localflow/app.py:5883",
+          "role": "retry reads the original capture"
+        },
+        {
+          "name": "AppDelegate._retry_job",
+          "site": "localflow/app.py:5922",
+          "role": "retry keeps original consent/capture lineage"
+        },
+        {
+          "name": "ReplayService.play_artifact",
+          "site": "localflow/v2/ui/replay.py:84",
+          "role": "History replay"
+        },
+        {
+          "name": "DatasetExporter._write_graph.copy_audio",
+          "site": "localflow/v2/curation/export.py:891",
+          "role": "ASR export"
+        }
+      ],
+      "identity": "job_id, original capture instant/time-quality, sample rate/count/digest, managed audio name",
+      "deletion_authority": "job tombstone prevents resurrection; journal and artifact copies share deletion authority",
+      "timeout_behavior": "admitted writer timeout is unknown, not cancellation; unavailable audio refuses replay/export; original unknown time is not retry time",
+      "aliases": {
+        "A": [
+          "XF-IF-004"
+        ],
+        "C": [
+          "IF-02"
+        ],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of on_audio/read_wav_f32/artifact_payload/open_managed_file",
+      "closure_residue": [
+        {
+          "function": "read_wav_f32",
+          "site": "localflow/v2/store.py:1154",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "EvidenceCollector.retry_snapshot",
+          "site": "localflow/v2/training.py:314",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "Store.artifact_payload",
+          "site": "localflow/v2/store.py:1746",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 4)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-006",
+      "authoritative_object": "Capture job and journal registered into the Store",
+      "producer": "AppDelegate._finishCapture (job/family/capture instant) with CaptureJournal",
+      "producer_site": "localflow/app.py:3731",
+      "consumers": [
+        {
+          "name": "EvidenceCollector.job_started",
+          "site": "localflow/v2/training.py:285",
+          "role": "capture-time job context"
+        },
+        {
+          "name": "AppDelegate.startDictation",
+          "site": "localflow/app.py:3415",
+          "role": "journal opened at capture start"
+        },
+        {
+          "name": "Store.update_job_state",
+          "site": "localflow/v2/store.py:1554",
+          "role": "lifecycle state"
+        },
+        {
+          "name": "AppDelegate._retry_job",
+          "site": "localflow/app.py:5918",
+          "role": "retry opens a collector context with the original capture provenance"
+        }
+      ],
+      "identity": "job_id + original capture provenance (family, capture instant, sample layout)",
+      "deletion_authority": "job barrier revokes queued work and managed copies",
+      "timeout_behavior": "late worker result cannot reopen terminal state",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-002"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of job_started/CaptureJournal callers",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 6)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-007",
+      "authoritative_object": "Deletion tombstones and in-memory revocation",
+      "producer": "Store.delete_everywhere (deletion_tombstones)",
+      "producer_site": "localflow/v2/store.py:2466",
+      "consumers": [
+        {
+          "name": "AppDelegate._on_job_deleted",
+          "site": "localflow/app.py:2855",
+          "role": "coordinator revocation listener"
+        },
+        {
+          "name": "HubController._store_job_deleted",
+          "site": "localflow/v2/ui/hub.py:243",
+          "role": "Hub revocation"
+        },
+        {
+          "name": "HubState.revoke_job",
+          "site": "localflow/v2/ui/state.py:1004",
+          "role": "query epoch revocation"
+        },
+        {
+          "name": "ReplayService.revoke_job",
+          "site": "localflow/v2/ui/replay.py:121",
+          "role": "replay revocation"
+        },
+        {
+          "name": "InsertionService.revoke_job",
+          "site": "localflow/v2/insertion/service.py:247",
+          "role": "insertion revocation"
+        },
+        {
+          "name": "WorkerSupervisor.revoke_job",
+          "site": "localflow/v2/supervisor.py:810",
+          "role": "worker revocation"
+        },
+        {
+          "name": "DatasetExporter.build.snapshot_op",
+          "site": "localflow/v2/curation/export.py:646",
+          "role": "export deletion epoch"
+        },
+        {
+          "name": "NoteStore.delete_note.op",
+          "site": "localflow/v2/notes.py:855",
+          "role": "note tombstone"
+        },
+        {
+          "name": "Store.prune_training.op",
+          "site": "localflow/v2/store.py:2379",
+          "role": "training prune"
+        },
+        {
+          "name": "AppDelegate.hubSaveHistoryRow",
+          "site": "localflow/app.py:2222",
+          "role": "History Move source deletion"
+        },
+        {
+          "name": "TrainingDataService.delete_everywhere",
+          "site": "localflow/v2/training_data.py:636",
+          "role": "Review delete"
+        },
+        {
+          "name": "HubController._delete_example",
+          "site": "localflow/v2/ui/hub.py:3363",
+          "role": "Hub delete"
+        }
+      ],
+      "identity": "job/note/example identity plus tombstone/deletion epoch",
+      "deletion_authority": "delete wins over late finalize/publication; no resurrection",
+      "timeout_behavior": "unknown deletion is reconciled, not reported as failure",
+      "aliases": {
+        "A": [
+          "XF-IF-005"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census delete_everywhere (15 production) re-verified at the pinned commit; deletion_tombstones readers",
+      "closure_residue": [
+        {
+          "function": "Store.tombstones",
+          "site": "localflow/v2/store.py:2836",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "Store._migrate",
+          "site": "localflow/v2/store.py:1439",
+          "class": "schema DDL/repair (XM-IF-078)"
+        },
+        {
+          "function": "Store.delete_everywhere.op",
+          "site": "localflow/v2/store.py:2535",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 4)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-008",
+      "authoritative_object": "Artifact leases, retention purge and revocation",
+      "producer": "Store.grant_lease / Store._purge_artifact / purge intents",
+      "producer_site": "localflow/v2/store.py:2229",
+      "consumers": [
+        {
+          "name": "EvidenceCollector.on_normalization_result",
+          "site": "localflow/v2/training.py:675",
+          "role": "stage evidence leases"
+        },
+        {
+          "name": "EvidenceCollector.on_cleanup_result",
+          "site": "localflow/v2/training.py:908",
+          "role": "stage evidence leases"
+        },
+        {
+          "name": "OutcomeObserver._record_edit",
+          "site": "localflow/v2/insertion/observation.py:455",
+          "role": "observation lease"
+        },
+        {
+          "name": "Store.delete_everywhere.op",
+          "site": "localflow/v2/store.py:2511",
+          "role": "deletion revokes leases"
+        },
+        {
+          "name": "Store._drain_purge_intents",
+          "site": "localflow/v2/store.py:2722",
+          "role": "purge execution"
+        },
+        {
+          "name": "Store.delete_everywhere",
+          "site": "localflow/v2/store.py:2575",
+          "role": "pending_purge is reported, not complete deletion"
+        },
+        {
+          "name": "HubController.scratchpadDelete_",
+          "site": "localflow/v2/ui/hub.py:2469",
+          "role": "UI reports pending purge"
+        },
+        {
+          "name": "AppDelegate._retention_pass",
+          "site": "localflow/app.py:2806",
+          "role": "scheduled retention"
+        },
+        {
+          "name": "EvidenceCollector.on_audio",
+          "site": "localflow/v2/training.py:383",
+          "role": "stage lease"
+        },
+        {
+          "name": "EvidenceCollector.on_asr_result",
+          "site": "localflow/v2/training.py:406",
+          "role": "stage lease"
+        },
+        {
+          "name": "EvidenceCollector.on_hint_set",
+          "site": "localflow/v2/training.py:458",
+          "role": "stage lease"
+        },
+        {
+          "name": "EvidenceCollector.on_context_snapshot",
+          "site": "localflow/v2/training.py:526",
+          "role": "stage lease"
+        },
+        {
+          "name": "EvidenceCollector.on_writing_profile",
+          "site": "localflow/v2/training.py:578",
+          "role": "stage lease"
+        },
+        {
+          "name": "EvidenceCollector._retain_snippet_definitions",
+          "site": "localflow/v2/training.py:621",
+          "role": "stage lease"
+        },
+        {
+          "name": "EvidenceCollector.on_transform_result",
+          "site": "localflow/v2/training.py:957",
+          "role": "stage lease"
+        },
+        {
+          "name": "EvidenceCollector.finalize",
+          "site": "localflow/v2/training.py:1032",
+          "role": "finalize lease"
+        },
+        {
+          "name": "TrainingDataService.pin.op",
+          "site": "localflow/v2/training_data.py:581",
+          "role": "review pin lease"
+        },
+        {
+          "name": "TrainingDataService.set_verbatim.op",
+          "site": "localflow/v2/training_data.py:414",
+          "role": "verbatim lease"
+        },
+        {
+          "name": "TrainingDataService.add_span_correction.op",
+          "site": "localflow/v2/training_data.py:527",
+          "role": "span lease"
+        },
+        {
+          "name": "Store.prune.op",
+          "site": "localflow/v2/store.py:2303",
+          "role": "retention prune"
+        },
+        {
+          "name": "Store.prune_training.op",
+          "site": "localflow/v2/store.py:2368",
+          "role": "training prune"
+        }
+      ],
+      "identity": "artifact owner/stage; lease purpose/holder/expiry; managed path; pending purge record",
+      "deletion_authority": "expiry/purge propagates to derived views; review retention is not a user pin",
+      "timeout_behavior": "timeout does not prove purge completed; retention failure is not permission (store.retention_failed is log-only)",
+      "aliases": {
+        "A": [
+          "XF-IF-006"
+        ],
+        "C": [],
+        "B": [
+          "IF-039"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census retention_failed + pinned-commit git grep of grant_lease/_purge_artifact/pending_purges",
+      "closure_residue": [
+        {
+          "function": "Store._revoke_leases",
+          "site": "localflow/v2/store.py:2804",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "Store.reconcile_purges",
+          "site": "localflow/v2/store.py:2771",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "Store.sweep_orphans",
+          "site": "localflow/v2/store.py:2989",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "_conn_grant_lease",
+          "site": "localflow/v2/training_data.py:88",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "Store._purge_artifact",
+          "site": "localflow/v2/store.py:2810",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "Store.pending_purges",
+          "site": "localflow/v2/store.py:2773",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 4)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-009",
+      "authoritative_object": "Capture-boundary consent snapshot",
+      "producer": "ConsentManager.capture_snapshot",
+      "producer_site": "localflow/v2/training.py:154",
+      "consumers": [
+        {
+          "name": "AppDelegate.startDictation",
+          "site": "localflow/app.py:3404",
+          "role": "consent frozen at capture"
+        },
+        {
+          "name": "EvidenceCollector.job_started",
+          "site": "localflow/v2/training.py:299",
+          "role": "collector context (capture-time snapshot or an atomic read)"
+        },
+        {
+          "name": "EvidenceCollector.retry_snapshot",
+          "site": "localflow/v2/training.py:329",
+          "role": "retry keeps original consent lineage"
+        },
+        {
+          "name": "Store.publish_example",
+          "site": "localflow/v2/store.py:2050",
+          "role": "example carries consent revision"
+        },
+        {
+          "name": "DatasetExporter._lineage",
+          "site": "localflow/v2/curation/export.py:256",
+          "role": "export lineage"
+        },
+        {
+          "name": "AppDelegate.configure",
+          "site": "localflow/app.py:338",
+          "role": "startup read"
+        },
+        {
+          "name": "ConsentManager.set",
+          "site": "localflow/v2/training.py:172",
+          "role": "consent change"
+        }
+      ],
+      "identity": "consent_revision_id at capture, privacy mode, original capture lineage",
+      "deletion_authority": "late enable does not retroactively authorize captured payloads",
+      "timeout_behavior": "consent write admitted under timeout may still commit",
+      "aliases": {
+        "A": [
+          "XF-IF-007"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "partial",
+      "missing_consumers": [
+        {
+          "name": "AppDelegate.toggleTrainingCollection_",
+          "site": "localflow/app.py:5305",
+          "reason": "census class c: consent.state()/consent.set read the store with a wait and have no timeout handling"
+        },
+        {
+          "name": "AppDelegate.toggleTrainingPause_",
+          "site": "localflow/app.py:5310",
+          "reason": "census class c"
+        },
+        {
+          "name": "HubController._set_collection",
+          "site": "localflow/v2/ui/hub.py:4718",
+          "reason": "census class b: TimeoutError shown as failed while the append_consent write may commit"
+        }
+      ],
+      "closure_basis": "census (UI/controller callers that collapse TimeoutError) + pinned-commit git grep of capture_snapshot/consent_revision_id",
+      "closure_residue": [
+        {
+          "function": "ConsentManager.snapshot_now",
+          "site": "localflow/v2/training.py:146",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-010",
+      "authoritative_object": "Frozen per-job vocabulary snapshot",
+      "producer": "VocabularyStore.snapshot",
+      "producer_site": "localflow/v2/vocabulary_store.py:347",
+      "consumers": [
+        {
+          "name": "AppDelegate._vocab_job_state",
+          "site": "localflow/app.py:694",
+          "role": "per-job scoped snapshot"
+        },
+        {
+          "name": "AppDelegate._unscoped_norm_state",
+          "site": "localflow/app.py:875",
+          "role": "unscoped fallback"
+        },
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4165",
+          "role": "normalization uses the frozen snapshot"
+        },
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4374",
+          "role": "cleanup vocabulary pairs from the frozen snapshot"
+        },
+        {
+          "name": "DictionaryPanelController.runSandbox_",
+          "site": "localflow/v2/dictionary_panel.py:375",
+          "role": "sandbox"
+        },
+        {
+          "name": "LearningService._counterexample_check",
+          "site": "localflow/v2/learning.py:753",
+          "role": "approval sandbox"
+        }
+      ],
+      "identity": "dictionary revision, entry set, approval state, scope, applied rule revision",
+      "deletion_authority": "revocation affects only future snapshots; rejected/pending never become rules",
+      "timeout_behavior": "optional snapshot failure narrows scope; unavailable scope cannot expand vocabulary",
+      "aliases": {
+        "A": [
+          "XF-IF-008"
+        ],
+        "C": [],
+        "B": [
+          "IF-004"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X11"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of VocabularyStore.snapshot callers",
+      "closure_residue": [
+        {
+          "function": "sandbox_phrase",
+          "site": "localflow/v2/vocabulary.py:969",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-011",
+      "authoritative_object": "Canonical scoped vocabulary entry identity (writer-authoritative)",
+      "producer": "VocabularyStore.update_entry_in / add_entry_in / find_in",
+      "producer_site": "localflow/v2/vocabulary_store.py:312",
+      "consumers": [
+        {
+          "name": "LearningService._plan_in",
+          "site": "localflow/v2/learning.py:677",
+          "role": "approval writes through M05 methods"
+        },
+        {
+          "name": "LearningService.undo_approval.op",
+          "site": "localflow/v2/learning.py:917",
+          "role": "undo writes through M05 methods"
+        },
+        {
+          "name": "LearningService._counterexample_check",
+          "site": "localflow/v2/learning.py:728",
+          "role": "scope lookup"
+        }
+      ],
+      "identity": "entry id, canonical_scope_value, aliases, enabled/approved, expected revision",
+      "deletion_authority": "user deletion/disable cannot be undone by a stale learned rule",
+      "timeout_behavior": "M14 approval receipt protects one transaction; other writers require their own handling",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-05"
+        ],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "partial",
+      "missing_consumers": [
+        {
+          "name": "DictionaryPanelController.addEntry_",
+          "site": "localflow/v2/dictionary_panel.py:239",
+          "reason": "caller inventory class b residual: admitted timeout reported as 'not added'"
+        },
+        {
+          "name": "DictionaryPanelController.approveEntry_",
+          "site": "localflow/v2/dictionary_panel.py:287",
+          "reason": "class b residual"
+        },
+        {
+          "name": "DictionaryPanelController.toggleEntry_",
+          "site": "localflow/v2/dictionary_panel.py:303",
+          "reason": "class b residual"
+        },
+        {
+          "name": "DictionaryPanelController.pinEntry_",
+          "site": "localflow/v2/dictionary_panel.py:316",
+          "reason": "class b residual"
+        },
+        {
+          "name": "DictionaryPanelController.deleteEntry_",
+          "site": "localflow/v2/dictionary_panel.py:329",
+          "reason": "class b residual"
+        },
+        {
+          "name": "AppDelegate.importDictionaryJSON_",
+          "site": "localflow/app.py:5751",
+          "reason": "class b residual"
+        }
+      ],
+      "closure_basis": "caller_inventory.unknown_outcome_callers (dictionary_panel, importDictionaryJSON_) + pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "VocabularyStore.add_entry_in",
+          "site": "localflow/v2/vocabulary_store.py:296",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "VocabularyStore.find_in",
+          "site": "localflow/v2/vocabulary_store.py:289",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 5)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-012",
+      "authoritative_object": "Normalization result evidence and retained exact input",
+      "producer": "EvidenceCollector.on_normalization_result",
+      "producer_site": "localflow/v2/training.py:644",
+      "consumers": [
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4185",
+          "role": "the one production caller"
+        },
+        {
+          "name": "cleanup_qualification_in",
+          "site": "localflow/v2/curation/evidence.py:160",
+          "role": "distinguishes retention failure after changed normalization"
+        },
+        {
+          "name": "DatasetExporter._cleanup_rows",
+          "site": "localflow/v2/curation/export.py:376",
+          "role": "exporter"
+        },
+        {
+          "name": "TrainingDataService.readiness.op",
+          "site": "localflow/v2/training_data.py:801",
+          "role": "readiness"
+        },
+        {
+          "name": "TrainingDataService._summary_row",
+          "site": "localflow/v2/training_data.py:214",
+          "role": "inspector display of missing reasons"
+        },
+        {
+          "name": "TrainingDataService.example_detail.op",
+          "site": "localflow/v2/training_data.py:296",
+          "role": "inspector display"
+        }
+      ],
+      "identity": "actual normalized text, changed/not-run/failure, artifact role/hash, missing reasons, normalization_retention {failed_step, input_changed}",
+      "deletion_authority": "source artifacts governed by job authority",
+      "timeout_behavior": "failed retention is not absent normalization; complete tier requires the exact input",
+      "aliases": {
+        "A": [
+          "XF-IF-009"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X05"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census on_normalization (5 production: one localflow caller) + cleanup_qualification_in (4 production)",
+      "closure_residue": [
+        {
+          "function": "EvidenceCollector._envelope",
+          "site": "localflow/v2/training.py:1799",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "CaptureContext.__init__",
+          "site": "localflow/v2/training.py:229",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 2)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-013",
+      "authoritative_object": "Runtime normalization result into cleanup (ledger, protected spans)",
+      "producer": "normalize (M04/M05/M10 one result)",
+      "producer_site": "localflow/v2/normalize/engine.py:231",
+      "consumers": [
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4165",
+          "role": "job normalization"
+        },
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4374",
+          "role": "cleanup receives normalized text and protected spans"
+        },
+        {
+          "name": "AppDelegate.hubPreviewPhrase",
+          "site": "localflow/app.py:5651",
+          "role": "preview only, no job authority"
+        }
+      ],
+      "identity": "rule ids plus frozen policy/context revision; raw-to-normalized ledger in source/destination coordinates",
+      "deletion_authority": "unavailable protection must not be silently discarded",
+      "timeout_behavior": "normalization exception is recorded raw passthrough; unprotected cleanup abstains",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-04"
+        ],
+        "B": [
+          "IF-010"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of normalize() callers in localflow",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-014",
+      "authoritative_object": "Normalization edit/lease envelope for History stages and qualification",
+      "producer": "EvidenceCollector.on_normalization_result (normalization_ledger artifact + lease)",
+      "producer_site": "localflow/v2/training.py:675",
+      "consumers": [
+        {
+          "name": "HistoryQueryService._job_artifacts",
+          "site": "localflow/v2/history_queries.py:345",
+          "role": "History stage display"
+        },
+        {
+          "name": "cleanup_qualification_in",
+          "site": "localflow/v2/curation/evidence.py:149",
+          "role": "training qualification"
+        },
+        {
+          "name": "_validate_semantics",
+          "site": "localflow/v2/curation/export.py:1476",
+          "role": "offline validator semantic check"
+        }
+      ],
+      "identity": "input/output digest, edits, policy snapshot, hint-context provenance",
+      "deletion_authority": "missing stage artifacts keep specific reasons, never guessed content",
+      "timeout_behavior": "retention failure recorded as retention_write_failed",
+      "aliases": {
+        "A": [
+          "XF-IF-010"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census normalization_ledger (6 production) re-verified",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 2)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-015",
+      "authoritative_object": "Job-scoped context handle and late downstream delta",
+      "producer": "ContextCollector.begin / finalize / take_downstream",
+      "producer_site": "localflow/v2/context/collector.py:236",
+      "consumers": [
+        {
+          "name": "AppDelegate.startDictation",
+          "site": "localflow/app.py:3485",
+          "role": "handle opened at capture"
+        },
+        {
+          "name": "AppDelegate._finalize_job_context",
+          "site": "localflow/app.py:2447",
+          "role": "pre-decode snapshot"
+        },
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4265",
+          "role": "separately labelled late revision"
+        },
+        {
+          "name": "AppDelegate._finishCapture",
+          "site": "localflow/app.py:3772",
+          "role": "collector"
+        },
+        {
+          "name": "AppDelegate._m10_re_resolve",
+          "site": "localflow/app.py:1161",
+          "role": "profile resolution from the frozen destination"
+        }
+      ],
+      "identity": "opaque per-job handle, origin, trust, fingerprint, parent revision",
+      "deletion_authority": "deny/secure/unavailable reduces capability only; revocation stops publication",
+      "timeout_behavior": "late provider response cannot retroactively become pre-decode evidence or reparent",
+      "aliases": {
+        "A": [
+          "XF-IF-011"
+        ],
+        "C": [
+          "IF-06"
+        ],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of ContextCollector begin/finalize/take_downstream callers",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-016",
+      "authoritative_object": "Context scope projection into vocabulary/profile scope",
+      "producer": "AppDelegate._vocab_job_state (scope_ctx from the captured destination)",
+      "producer_site": "localflow/app.py:657",
+      "consumers": [
+        {
+          "name": "VocabularyStore.snapshot",
+          "site": "localflow/v2/vocabulary_store.py:347",
+          "role": "scoped vocabulary"
+        },
+        {
+          "name": "AppDelegate._m10_destination",
+          "site": "localflow/app.py:1169",
+          "role": "profile destination"
+        },
+        {
+          "name": "AppDelegate.startDictation",
+          "site": "localflow/app.py:3558",
+          "role": "capture-time scope"
+        },
+        {
+          "name": "AppDelegate._m10_re_resolve",
+          "site": "localflow/app.py:1162",
+          "role": "finalized destination"
+        },
+        {
+          "name": "AppDelegate._start_prewiden.run",
+          "site": "localflow/app.py:2380",
+          "role": "pre-widen"
+        }
+      ],
+      "identity": "handle + pre-decode snapshot + authoritative origin; captured entry/rule tuple",
+      "deletion_authority": "handle revocation stops further publication",
+      "timeout_behavior": "75 ms shared release budget; narrow fallback",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-005"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 3)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-017",
+      "authoritative_object": "Cleanup context (protected spans, bounded frozen vocabulary, category)",
+      "producer": "ContextSnapshot.to_engine_context",
+      "producer_site": "localflow/v2/context/snapshot.py:270",
+      "consumers": [
+        {
+          "name": "AppDelegate._finalize_job_context",
+          "site": "localflow/app.py:2485",
+          "role": "engine context frozen per job"
+        },
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4374",
+          "role": "cleanup request"
+        }
+      ],
+      "identity": "snapshot/tuple identity",
+      "deletion_authority": "no unrelated live context reread",
+      "timeout_behavior": "missing context degrades to allowed narrow fields",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-006"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-018",
+      "authoritative_object": "Insertion target lease",
+      "producer": "TargetLease",
+      "producer_site": "localflow/v2/insertion/target_lease.py:38",
+      "consumers": [
+        {
+          "name": "validate_target",
+          "site": "localflow/v2/insertion/validation.py:126",
+          "role": "revalidation against the captured destination"
+        },
+        {
+          "name": "InsertionService._transaction",
+          "site": "localflow/v2/insertion/service.py:593",
+          "role": "transaction"
+        },
+        {
+          "name": "InsertionService._undo_now",
+          "site": "localflow/v2/insertion/service.py:306",
+          "role": "undo"
+        }
+      ],
+      "identity": "PID/bundle/window/field/selection/region proof",
+      "deletion_authority": "revocation prevents late insertion/undo",
+      "timeout_behavior": "uncertainty is saved/unverified, not confirmation",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-013"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 4)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-019",
+      "authoritative_object": "Cleanup faithful gate (validation report)",
+      "producer": "cleanup.validation.validate",
+      "producer_site": "localflow/v2/cleanup/validation.py:943",
+      "consumers": [
+        {
+          "name": "CleanupEngine._clean_window",
+          "site": "localflow/v2/cleanup/engine.py:906",
+          "role": "gate inside the engine"
+        },
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4427",
+          "role": "coordinator/collector receive the gated result"
+        },
+        {
+          "name": "EvidenceCollector.on_cleanup_result",
+          "site": "localflow/v2/training.py:885",
+          "role": "collector evidence"
+        }
+      ],
+      "identity": "exact input, applicable hints, required preservation, path/model/prompt provenance",
+      "deletion_authority": "n/a",
+      "timeout_behavior": "fail-closed fallback with a real reason; no relaxed fidelity for score gain",
+      "aliases": {
+        "A": [
+          "XF-IF-012"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of validation.validate callers",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 5)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-020",
+      "authoritative_object": "Clean applied output into transform input and insertion",
+      "producer": "AppDelegate._worker (applied Clean result)",
+      "producer_site": "localflow/app.py:4374",
+      "consumers": [
+        {
+          "name": "AppDelegate._m11_apply_transform",
+          "site": "localflow/app.py:1424",
+          "role": "transform input"
+        },
+        {
+          "name": "AppDelegate._finishWithText_",
+          "site": "localflow/app.py:4700",
+          "role": "insertion of the applied final"
+        }
+      ],
+      "identity": "applied artifact + attempt + cleanup path; source hash, transform revision, task key",
+      "deletion_authority": "deleted source cannot publish job-owned content; source loss refuses later application",
+      "timeout_behavior": "fallback is explicit, not a successful proposal; generation timeout is not approval",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-09"
+        ],
+        "B": [
+          "IF-011"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "AppDelegate.cancelDictation",
+          "site": "localflow/app.py:3611",
+          "class": "comment mention only"
+        },
+        {
+          "function": "(scripts/ harness functions: 9)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-021",
+      "authoritative_object": "Cleanup provenance completeness (qualification tier)",
+      "producer": "cleanup_qualification_in",
+      "producer_site": "localflow/v2/curation/evidence.py:129",
+      "consumers": [
+        {
+          "name": "DatasetExporter._cleanup_rows",
+          "site": "localflow/v2/curation/export.py:376",
+          "role": "dataset records"
+        },
+        {
+          "name": "TrainingDataService.readiness.op",
+          "site": "localflow/v2/training_data.py:801",
+          "role": "readiness"
+        }
+      ],
+      "identity": "explicit intended correctness, stage input/output, model revision, rendered prompt",
+      "deletion_authority": "deletion only removes eligibility",
+      "timeout_behavior": "text-pair-only remains distinct from model_task_complete",
+      "aliases": {
+        "A": [
+          "XF-IF-013"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X05"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census cleanup_qualification_in (4 production) re-verified",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-022",
+      "authoritative_object": "Writing profile frozen for one job (mode, rules, skills, revisions)",
+      "producer": "profiles.resolve via AppDelegate._m10_freeze",
+      "producer_site": "localflow/app.py:1067",
+      "consumers": [
+        {
+          "name": "AppDelegate.startDictation",
+          "site": "localflow/app.py:3528",
+          "role": "freeze at capture"
+        },
+        {
+          "name": "AppDelegate._finishCapture",
+          "site": "localflow/app.py:3794",
+          "role": "collector evidence"
+        },
+        {
+          "name": "AppDelegate._m10_re_resolve",
+          "site": "localflow/app.py:1161",
+          "role": "one allowed finalized projection"
+        },
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4165",
+          "role": "normalization uses the frozen tuple"
+        },
+        {
+          "name": "AppDelegate._m11_apply_transform",
+          "site": "localflow/app.py:1449",
+          "role": "transform-backed mode"
+        },
+        {
+          "name": "AppDelegate._m10_degraded",
+          "site": "localflow/app.py:1021",
+          "role": "degraded profile"
+        },
+        {
+          "name": "AppDelegate._start_prewiden.run",
+          "site": "localflow/app.py:2378",
+          "role": "pre-widen profile"
+        }
+      ],
+      "identity": "mode override, app rule, skills, dictionary/context/settings revisions; definition/manifest revision",
+      "deletion_authority": "no workspace context means no stale workspace skills; one-shot consumed once",
+      "timeout_behavior": "typed config mutation versus file effect reconciled separately",
+      "aliases": {
+        "A": [
+          "XF-IF-014"
+        ],
+        "C": [
+          "IF-07"
+        ],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of profiles.resolve callers",
+      "note": "C IF-07 is split: its mode/category half is here, its file/skill confinement half is XM-IF-023",
+      "closure_residue": [
+        {
+          "function": "EvidenceCollector.on_writing_profile",
+          "site": "localflow/v2/training.py:543",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-023",
+      "authoritative_object": "Skill/file reference records (confined root, manifest/listing revision)",
+      "producer": "SkillRegistry / FileTagResolver",
+      "producer_site": "localflow/v2/developer/skills.py:579",
+      "consumers": [
+        {
+          "name": "AppDelegate._m10_registry",
+          "site": "localflow/app.py:979",
+          "role": "per-job registry"
+        },
+        {
+          "name": "AppDelegate._finalized_policy",
+          "site": "localflow/app.py:1210",
+          "role": "finalized policy"
+        },
+        {
+          "name": "AppDelegate._unscoped_norm_state",
+          "site": "localflow/app.py:885",
+          "role": "unscoped state"
+        },
+        {
+          "name": "AppDelegate._m10_finalize_upgrade",
+          "site": "localflow/app.py:1340",
+          "role": "file-tag resolver"
+        },
+        {
+          "name": "grammar_file_tags",
+          "site": "localflow/v2/normalize/syntax.py:386",
+          "role": "normalizer grammar"
+        }
+      ],
+      "identity": "configured root authority, frozen manifest/listing + exact resolved name",
+      "deletion_authority": "no downstream unconfined re-resolution; revoked/missing source cannot trigger unchecked filesystem resolution",
+      "timeout_behavior": "partial listing cannot prove bare-name uniqueness",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-07"
+        ],
+        "B": [
+          "IF-009"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "not a census symbol; pinned-commit git grep of SkillRegistry/FileTagResolver constructors (all in the coordinator)",
+      "note": "C IF-07 split (see XM-IF-022)",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 4)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-024",
+      "authoritative_object": "Snippet expansion literal provenance",
+      "producer": "snippets.expand",
+      "producer_site": "localflow/v2/snippets.py:162",
+      "consumers": [
+        {
+          "name": "grammar_snippets",
+          "site": "localflow/v2/normalize/syntax.py:298",
+          "role": "normalizer grammar"
+        },
+        {
+          "name": "EvidenceCollector._retain_snippet_definitions",
+          "site": "localflow/v2/training.py:589",
+          "role": "collector evidence"
+        },
+        {
+          "name": "applied_definition",
+          "site": "localflow/v2/snippets.py:393",
+          "role": "applied snippet definition"
+        },
+        {
+          "name": "EvidenceCollector.on_normalization_result",
+          "site": "localflow/v2/training.py:810",
+          "role": "retains applied snippet definitions"
+        }
+      ],
+      "identity": "snippet id/revision, trigger, expansion range in output coordinates, protected literals, origin",
+      "deletion_authority": "retained generated content follows job authority",
+      "timeout_behavior": "missing placeholder never becomes a fabricated expansion; optional failure cannot partly freeze the tuple",
+      "aliases": {
+        "A": [
+          "XF-IF-015"
+        ],
+        "C": [],
+        "B": [
+          "IF-008"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-025",
+      "authoritative_object": "Transform definition revision (live row and preserved history)",
+      "producer": "TransformStore.update_transform / _append_revision (one writer op)",
+      "producer_site": "localflow/v2/transforms_store.py:242",
+      "consumers": [
+        {
+          "name": "HubController._transform_write",
+          "site": "localflow/v2/ui/hub.py:1979",
+          "role": "editor update"
+        },
+        {
+          "name": "TransformStore.set_enabled",
+          "site": "localflow/v2/transforms_store.py:358",
+          "role": "toggle"
+        },
+        {
+          "name": "TransformStore.delete_transform",
+          "site": "localflow/v2/transforms_store.py:355",
+          "role": "no production caller"
+        },
+        {
+          "name": "TransformStore.update_transform.op",
+          "site": "localflow/v2/transforms_store.py:334",
+          "role": "revision appended in the same op"
+        },
+        {
+          "name": "transform_target_in",
+          "site": "localflow/v2/curation/evidence.py:228",
+          "role": "qualification reads preserved revisions"
+        },
+        {
+          "name": "DatasetExporter._transform_rows",
+          "site": "localflow/v2/curation/export.py:429",
+          "role": "dataset exporter"
+        },
+        {
+          "name": "TrainingDataService.readiness.op",
+          "site": "localflow/v2/training_data.py:911",
+          "role": "readiness"
+        },
+        {
+          "name": "AppDelegate._m11_run_transform",
+          "site": "localflow/app.py:1376",
+          "role": "engine definition lookup"
+        },
+        {
+          "name": "TransformStore._insert",
+          "site": "localflow/v2/transforms_store.py:169",
+          "role": "add path appends revision 1"
+        }
+      ],
+      "identity": "transform_id + revision = one semantic definition across live/history/export",
+      "deletion_authority": "missing definition reduces task qualification",
+      "timeout_behavior": "CRUD inherits the typed unknown outcome (XM-IF-027)",
+      "aliases": {
+        "A": [
+          "XF-IF-016"
+        ],
+        "C": [
+          "IF-08"
+        ],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X03",
+        "MERGED-X08"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census update_transform (4), _append_revision (3), transform_revisions (6) re-verified",
+      "closure_residue": [
+        {
+          "function": "TrainingDataService.add_span_correction.op",
+          "site": "localflow/v2/training_data.py:544",
+          "class": "name collision: training-example revision helpers, not transform revisions"
+        },
+        {
+          "function": "conn_append_revision",
+          "site": "localflow/v2/store.py:3046",
+          "class": "name collision: training-example revision helpers, not transform revisions"
+        },
+        {
+          "function": "_conn_append_revision",
+          "site": "localflow/v2/training_data.py:109",
+          "class": "name collision: training-example revision helpers, not transform revisions"
+        },
+        {
+          "function": "EvidenceCollector._on_note_revision.op",
+          "site": "localflow/v2/training.py:1448",
+          "class": "name collision: training-example revision helpers, not transform revisions"
+        },
+        {
+          "function": "TransformStore._append_revision",
+          "site": "localflow/v2/transforms_store.py:149",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "TrainingDataService.set_verbatim.op",
+          "site": "localflow/v2/training_data.py:428",
+          "class": "name collision: training-example revision helpers, not transform revisions"
+        },
+        {
+          "function": "EvidenceCollector.on_note_deleted.op",
+          "site": "localflow/v2/training.py:1490",
+          "class": "name collision: training-example revision helpers, not transform revisions"
+        },
+        {
+          "function": "Store.update_latest_revision.op",
+          "site": "localflow/v2/store.py:2145",
+          "class": "name collision: training-example revision helpers, not transform revisions"
+        },
+        {
+          "function": "conn_mark_intended",
+          "site": "localflow/v2/training_data.py:133",
+          "class": "name collision: training-example revision helpers, not transform revisions"
+        },
+        {
+          "function": "Store.publish_example.op",
+          "site": "localflow/v2/store.py:2119",
+          "class": "name collision: training-example revision helpers, not transform revisions"
+        },
+        {
+          "function": "job_for_definition",
+          "site": "localflow/v2/transforms/engine.py:272",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 2)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-026",
+      "authoritative_object": "Transform editor update binding",
+      "producer": "HubController._transform_write (editor baseline diff)",
+      "producer_site": "localflow/v2/ui/hub.py:1932",
+      "consumers": [
+        {
+          "name": "HubController.transformsUpdate_",
+          "site": "localflow/v2/ui/hub.py:1882",
+          "role": "Update button"
+        },
+        {
+          "name": "TransformStore.update_transform",
+          "site": "localflow/v2/transforms_store.py:242",
+          "role": "merges named fields into the authoritative row"
+        },
+        {
+          "name": "HubController.transformsToggle_",
+          "site": "localflow/v2/ui/hub.py:1999",
+          "role": "toggle"
+        }
+      ],
+      "identity": "rendered id/revision, edited delta, auto_apply opt-out",
+      "deletion_authority": "n/a",
+      "timeout_behavior": "stale form refuses/conflicts; unchanged stale fields do not overwrite newer state",
+      "aliases": {
+        "A": [
+          "XF-IF-017"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X04"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census transformsUpdate_/_transform_write/transformsToggle_ re-verified",
+      "closure_residue": [
+        {
+          "function": "HubController.transformsAdd_",
+          "site": "localflow/v2/ui/hub.py:1879",
+          "class": "listed under XM-IF-027"
+        },
+        {
+          "function": "HubController._m10_toggle",
+          "site": "localflow/v2/ui/hub.py:1569",
+          "class": "name collision: M10 style/snippet set_enabled"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-027",
+      "authoritative_object": "Transform Add outcome identity",
+      "producer": "HubController._transform_write (Add) via transformsAdd_",
+      "producer_site": "localflow/v2/ui/hub.py:1879",
+      "consumers": [
+        {
+          "name": "TransformStore.add_transform",
+          "site": "localflow/v2/transforms_store.py:189",
+          "role": "idempotent with a caller-chosen id"
+        },
+        {
+          "name": "HubController._transform_write",
+          "site": "localflow/v2/ui/hub.py:1950",
+          "role": "keeps one preallocated id until the outcome is known"
+        }
+      ],
+      "identity": "logical create id (preallocated) and outcome state",
+      "deletion_authority": "n/a",
+      "timeout_behavior": "outcome_unknown preserved; repeat reconciles the same id",
+      "aliases": {
+        "A": [
+          "XF-IF-018"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X08"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census add_transform (2 production) re-verified",
+      "closure_residue": [
+        {
+          "function": "HubController.transformsUpdate_",
+          "site": "localflow/v2/ui/hub.py:1882",
+          "class": "listed under XM-IF-026"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-028",
+      "authoritative_object": "Transform mode/definition frozen into the transform job",
+      "producer": "job_for_definition",
+      "producer_site": "localflow/v2/transforms/engine.py:272",
+      "consumers": [
+        {
+          "name": "AppDelegate._m11_run_transform",
+          "site": "localflow/app.py:1376",
+          "role": "transform job"
+        },
+        {
+          "name": "Worker._transform",
+          "site": "localflow/v2/worker.py:613",
+          "role": "worker execution"
+        },
+        {
+          "name": "AppDelegate.runTransform_.work",
+          "site": "localflow/app.py:1563",
+          "role": "explicit run"
+        },
+        {
+          "name": "AppDelegate.tfApplyAnother.work",
+          "site": "localflow/app.py:1791",
+          "role": "apply another"
+        },
+        {
+          "name": "AppDelegate.tfTransformOfResult.work",
+          "site": "localflow/app.py:1820",
+          "role": "transform of result"
+        },
+        {
+          "name": "AppDelegate.tfRunNoteTransform.work",
+          "site": "localflow/app.py:1971",
+          "role": "note transform"
+        },
+        {
+          "name": "AppDelegate._m11_apply_transform",
+          "site": "localflow/app.py:1449",
+          "role": "auto-apply"
+        }
+      ],
+      "identity": "transform revision + task key; definition/task/profile/locale and job tuple",
+      "deletion_authority": "source deletion revokes job-owned effects",
+      "timeout_behavior": "failed generation keeps source/Clean",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-007"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "run_transform",
+          "site": "localflow/v2/transforms/engine.py:203",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 2)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-029",
+      "authoritative_object": "Transform task/candidate identity into candidates, preference and export",
+      "producer": "TransformStore.record_candidate / record_observation",
+      "producer_site": "localflow/v2/transforms_store.py:429",
+      "consumers": [
+        {
+          "name": "AppDelegate._m11_apply_transform",
+          "site": "localflow/app.py:1491",
+          "role": "auto path"
+        },
+        {
+          "name": "AppDelegate._tfShowResult_",
+          "site": "localflow/app.py:1641",
+          "role": "explicit run"
+        },
+        {
+          "name": "AppDelegate.tfAcceptTransform",
+          "site": "localflow/app.py:1682",
+          "role": "accept observation"
+        },
+        {
+          "name": "preference_pair_in",
+          "site": "localflow/v2/curation/evidence.py:301",
+          "role": "pair qualification"
+        },
+        {
+          "name": "DatasetExporter._preference_rows",
+          "site": "localflow/v2/curation/export.py:482",
+          "role": "preference export"
+        },
+        {
+          "name": "ReviewService.record_pair_judgment",
+          "site": "localflow/v2/curation/review.py:559",
+          "role": "judgments"
+        },
+        {
+          "name": "TrainingDataService.readiness.op",
+          "site": "localflow/v2/training_data.py:919",
+          "role": "readiness"
+        }
+      ],
+      "identity": "source digest, cleaned input, transform id/revision, settings/prompt, candidate id; same task and current judgment",
+      "deletion_authority": "governed payloads purge with authority; independent notes separate",
+      "timeout_behavior": "equal outputs alone do not establish comparable task identity; no automatic application becomes a human label",
+      "aliases": {
+        "A": [
+          "XF-IF-019"
+        ],
+        "C": [],
+        "B": [
+          "IF-033"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "TransformStore.record_observation",
+          "site": "localflow/v2/transforms_store.py:544",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "ReviewService.record_pair_judgment.op",
+          "site": "localflow/v2/curation/review.py:586",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "TransformStore.record_observation.op",
+          "site": "localflow/v2/transforms_store.py:559",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "conn_record_observation",
+          "site": "localflow/v2/transforms_store.py:50",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-030",
+      "authoritative_object": "Prompt Engineer requirement/literal preservation gate",
+      "producer": "run_transform (mode-specific gate, validate_common)",
+      "producer_site": "localflow/v2/transforms/engine.py:203",
+      "consumers": [
+        {
+          "name": "Worker._transform",
+          "site": "localflow/v2/worker.py:613",
+          "role": "executes the gate"
+        },
+        {
+          "name": "AppDelegate._tfShowResult_",
+          "site": "localflow/app.py:1597",
+          "role": "result panel"
+        },
+        {
+          "name": "AppDelegate.tfAcceptTransform",
+          "site": "localflow/app.py:1672",
+          "role": "acceptance"
+        },
+        {
+          "name": "AppDelegate._m11_run_transform",
+          "site": "localflow/app.py:1362",
+          "role": "run entry"
+        },
+        {
+          "name": "AppDelegate._tf_spawn.guarded",
+          "site": "localflow/app.py:1592",
+          "role": "result publication"
+        },
+        {
+          "name": "AppDelegate.tfRetryOriginal.work",
+          "site": "localflow/app.py:1770",
+          "role": "retry original"
+        },
+        {
+          "name": "TransformPreviewPanel.panelAccept_",
+          "site": "localflow/v2/ui/transforms_panel.py:169",
+          "role": "panel Accept"
+        }
+      ],
+      "identity": "actions, polarity, actors, explicit literals, protected requirements",
+      "deletion_authority": "n/a",
+      "timeout_behavior": "dropping/negating an explicit requirement refuses or falls back, never an accepted improvement",
+      "aliases": {
+        "A": [
+          "XF-IF-020"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "AppDelegate.runTransform_.work",
+          "site": "localflow/app.py:1563",
+          "class": "transform entry point listed under XM-IF-028"
+        },
+        {
+          "function": "AppDelegate._tf_spawn",
+          "site": "localflow/app.py:1582",
+          "class": "transform entry point listed under XM-IF-028"
+        },
+        {
+          "function": "AppDelegate.tfRunNoteTransform.work",
+          "site": "localflow/app.py:1971",
+          "class": "transform entry point listed under XM-IF-028"
+        },
+        {
+          "function": "AppDelegate.tfApplyAnother.work",
+          "site": "localflow/app.py:1791",
+          "class": "transform entry point listed under XM-IF-028"
+        },
+        {
+          "function": "AppDelegate.tfTransformOfResult.work",
+          "site": "localflow/app.py:1820",
+          "class": "transform entry point listed under XM-IF-028"
+        },
+        {
+          "function": "AppDelegate._m11_apply_transform",
+          "site": "localflow/app.py:1449",
+          "class": "transform entry point listed under XM-IF-028"
+        },
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-031",
+      "authoritative_object": "Gated transform candidate and explicit Accept into external insertion",
+      "producer": "AppDelegate.tfAcceptTransform",
+      "producer_site": "localflow/app.py:1672",
+      "consumers": [
+        {
+          "name": "TransformPreviewPanel.panelAccept_",
+          "site": "localflow/v2/ui/transforms_panel.py:169",
+          "role": "UI"
+        },
+        {
+          "name": "AppDelegate.tfAcceptTransform",
+          "site": "localflow/app.py:1703",
+          "role": "InsertionService.submit"
+        }
+      ],
+      "identity": "candidate/task identity, approved disposition, captured target selection; strict replacement stays strict",
+      "deletion_authority": "loss of proof refuses rather than downgrading to ordinary paste",
+      "timeout_behavior": "posted-unverified is not confirmed; unknown external effects are not safe retries",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-10"
+        ],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-032",
+      "authoritative_object": "Validated auto-transform final into insertion",
+      "producer": "AppDelegate._m11_apply_transform (auto-apply)",
+      "producer_site": "localflow/app.py:1424",
+      "consumers": [
+        {
+          "name": "AppDelegate._finishWithText_",
+          "site": "localflow/app.py:4808",
+          "role": "inserts the applied path"
+        },
+        {
+          "name": "AppDelegate._worker",
+          "site": "localflow/app.py:4445",
+          "role": "auto-apply invoked from the worker loop"
+        }
+      ],
+      "identity": "same frozen job/target + applied path; task, source, output and gate result",
+      "deletion_authority": "job deletion revokes insertion",
+      "timeout_behavior": "needs_review/fallback inserts Clean, not the proposal",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-012"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-033",
+      "authoritative_object": "Insertion admission handshake",
+      "producer": "InsertionService.submit / _admit",
+      "producer_site": "localflow/v2/insertion/service.py:220",
+      "consumers": [
+        {
+          "name": "AppDelegate._finishWithText_",
+          "site": "localflow/app.py:4808",
+          "role": "live dictation"
+        },
+        {
+          "name": "AppDelegate.tfAcceptTransform",
+          "site": "localflow/app.py:1703",
+          "role": "transform paste"
+        },
+        {
+          "name": "AppDelegate.pasteLastResultAgain_",
+          "site": "localflow/app.py:6082",
+          "role": "Recovery Paste Again"
+        },
+        {
+          "name": "AppDelegate.hubPasteText",
+          "site": "localflow/app.py:5506",
+          "role": "History Paste Again"
+        },
+        {
+          "name": "InsertionService._admit",
+          "site": "localflow/v2/insertion/service.py:510",
+          "role": "stale-attempt refusal"
+        }
+      ],
+      "identity": "submission accepted versus settled; job/generation/source authority",
+      "deletion_authority": "revoked job cannot be inserted",
+      "timeout_behavior": "no backend call when not admitted; truthful queued/unverified/confirmed distinction",
+      "aliases": {
+        "A": [
+          "XF-IF-021"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of _insertion.submit/paste_again/paste_text",
+      "closure_residue": [
+        {
+          "function": "InsertionService.paste_again",
+          "site": "localflow/v2/insertion/service.py:361",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "InsertionService.paste_text",
+          "site": "localflow/v2/insertion/service.py:384",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "InsertionService._run_insert",
+          "site": "localflow/v2/insertion/service.py:501",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "paste_text",
+          "site": "localflow/inject.py:26",
+          "class": "inject.paste_text: dead code, no production importer (listed under XM-IF-034)"
+        },
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-034",
+      "authoritative_object": "Clipboard payload ownership (guarded copy)",
+      "producer": "AppDelegate._guarded_copy (refuses while InsertionService owns the clipboard)",
+      "producer_site": "localflow/app.py:1737",
+      "consumers": [
+        {
+          "name": "AppDelegate.tfCopyTransform",
+          "site": "localflow/app.py:1730",
+          "role": "transform Copy"
+        },
+        {
+          "name": "AppDelegate.hubCopyText",
+          "site": "localflow/app.py:5473",
+          "role": "History Copy / Paste Again fallbacks"
+        },
+        {
+          "name": "HubController.historyCopy_",
+          "site": "localflow/v2/ui/hub.py:932",
+          "role": "History Copy"
+        },
+        {
+          "name": "AppDelegate.copyLastRaw_",
+          "site": "localflow/app.py:6049",
+          "role": "Recovery Copy Last Raw (MERGED-X02 repaired)"
+        },
+        {
+          "name": "AppDelegate._finishWithText_",
+          "site": "localflow/app.py:4781",
+          "role": "direct copy only when no insertion service exists (nothing owns the clipboard)"
+        },
+        {
+          "name": "paste_text",
+          "site": "localflow/inject.py:26",
+          "role": "inject.paste_text: dead code with no production importer"
+        },
+        {
+          "name": "AppDelegate.hubPasteText",
+          "site": "localflow/app.py:5494",
+          "role": "copy-only fallbacks go through the guard"
+        }
+      ],
+      "identity": "ownership ticket, clipboard generation, pending payload",
+      "deletion_authority": "deleted job's cached raw is never copied",
+      "timeout_behavior": "clipboard_payload_pending refusal survives to the caller/UI",
+      "aliases": {
+        "A": [
+          "XF-IF-022"
+        ],
+        "C": [],
+        "B": [
+          "IF-019",
+          "IF-018"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X02"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census clipboard_writers + caller_inventory.clipboard_writers re-verified",
+      "note": "B IF-018 is split: its Copy half is here, its Paste Again half is XM-IF-035",
+      "closure_residue": [
+        {
+          "function": "copy_text",
+          "site": "localflow/inject.py:19",
+          "class": "the pasteboard primitive itself"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-035",
+      "authoritative_object": "History Paste Again destination policy",
+      "producer": "HubController.historyPasteAgain_ -> AppDelegate.hubPasteText",
+      "producer_site": "localflow/v2/ui/hub.py:962",
+      "consumers": [
+        {
+          "name": "AppDelegate.hubPasteText",
+          "site": "localflow/app.py:5506",
+          "role": "InsertionService.paste_text with the row's job id"
+        },
+        {
+          "name": "InsertionService.paste_text",
+          "site": "localflow/v2/insertion/service.py:384",
+          "role": "reconcile-then-submit engine"
+        },
+        {
+          "name": "AppDelegate._repaste_done",
+          "site": "localflow/app.py:5519",
+          "role": "repaste activity only when a transaction ran"
+        },
+        {
+          "name": "AppDelegate.pasteLastResultAgain_",
+          "site": "localflow/app.py:6082",
+          "role": "Recovery Paste Again surface"
+        },
+        {
+          "name": "AnalyticsStore.record_repaste_fact",
+          "site": "localflow/v2/analytics.py:592",
+          "role": "usage activity"
+        },
+        {
+          "name": "InsertionService.paste_again",
+          "site": "localflow/v2/insertion/service.py:361",
+          "role": "Recovery engine"
+        }
+      ],
+      "identity": "job + attempt + rendered final artifact/hash + action",
+      "deletion_authority": "revoked source cannot repaste",
+      "timeout_behavior": "no transaction means no repaste fact; queued repaste targets the app in front when it runs (declared policy: _PASTE_NOTES 'repaste_queued')",
+      "aliases": {
+        "A": [],
+        "C": [
+          "SURFACE:History (Paste Again)",
+          "DESIGN-05"
+        ],
+        "B": [
+          "IF-018"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of hubPasteText/paste_text/paste_again callers",
+      "note": "destination is a product-policy question (C DESIGN-05), not a missing callable; native qualification must test the declared destination",
+      "closure_residue": [
+        {
+          "function": "paste_text",
+          "site": "localflow/inject.py:26",
+          "class": "inject.paste_text: dead code, no production importer"
+        },
+        {
+          "function": "(scripts/ harness functions: 2)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-036",
+      "authoritative_object": "External insertion outcome (InsertionResult)",
+      "producer": "InsertionResult (InsertionService transaction)",
+      "producer_site": "localflow/v2/insertion/result.py:50",
+      "consumers": [
+        {
+          "name": "AppDelegate._insertionDone_",
+          "site": "localflow/app.py:4969",
+          "role": "terminal completion and usage"
+        },
+        {
+          "name": "AppDelegate._retire_active_job",
+          "site": "localflow/app.py:4936",
+          "role": "coordinator state"
+        },
+        {
+          "name": "AppDelegate._repaste_done",
+          "site": "localflow/app.py:5519",
+          "role": "repaste activity"
+        },
+        {
+          "name": "AppDelegate._observationFinished_",
+          "site": "localflow/app.py:5086",
+          "role": "edit observation"
+        },
+        {
+          "name": "AppDelegate._finishWithText_",
+          "site": "localflow/app.py:4811",
+          "role": "completion callback"
+        }
+      ],
+      "identity": "transaction/job/target identity; confirmed vs posted_unverified vs saved/failed; one terminal completion per attempt",
+      "deletion_authority": "content deletion revokes replay/action payload; allowed usage may remain",
+      "timeout_behavior": "unobservable is not confirmed; cancellation after post is not no-effect; unknown write admission distinct from external uncertainty",
+      "aliases": {
+        "A": [
+          "XF-IF-023"
+        ],
+        "C": [
+          "IF-11"
+        ],
+        "B": [
+          "IF-014"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "InsertionService._admit",
+          "site": "localflow/v2/insertion/service.py:534",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "InsertionResult.legacy_posted",
+          "site": "localflow/v2/insertion/result.py:85",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "InsertionService._ax_insert",
+          "site": "localflow/v2/insertion/service.py:687",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "InsertionService._after_exception",
+          "site": "localflow/v2/insertion/service.py:1059",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "InsertionService._copy_offer",
+          "site": "localflow/v2/insertion/service.py:1076",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "InsertionService._clipboard_insert",
+          "site": "localflow/v2/insertion/service.py:836",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "AppDelegate._settle_state",
+          "site": "localflow/app.py:5124",
+          "class": "comment mention only"
+        },
+        {
+          "function": "InsertionService._transaction",
+          "site": "localflow/v2/insertion/service.py:572",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 3)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-037",
+      "authoritative_object": "History current final-stage resolution (display final)",
+      "producer": "history_queries.final_text over HistoryQueryService.job_detail",
+      "producer_site": "localflow/v2/history_queries.py:127",
+      "consumers": [
+        {
+          "name": "HubController._final_text",
+          "site": "localflow/v2/ui/hub.py:1178",
+          "role": "Hub resolver"
+        },
+        {
+          "name": "HubController.historyCopy_",
+          "site": "localflow/v2/ui/hub.py:927",
+          "role": "Copy"
+        },
+        {
+          "name": "HubController.historyPasteAgain_",
+          "site": "localflow/v2/ui/hub.py:955",
+          "role": "Paste Again"
+        },
+        {
+          "name": "HubController._history_to_scratchpad",
+          "site": "localflow/v2/ui/hub.py:1123",
+          "role": "Save/Move"
+        },
+        {
+          "name": "HubController._current_detail_text",
+          "site": "localflow/v2/ui/hub.py:1183",
+          "role": "detail"
+        },
+        {
+          "name": "AppDelegate.hubSaveHistoryRow",
+          "site": "localflow/app.py:2171",
+          "role": "transfer re-resolves the same rule"
+        },
+        {
+          "name": "HubState._load_history_detail",
+          "site": "localflow/v2/ui/state.py:425",
+          "role": "detail query"
+        }
+      ],
+      "identity": "applied final stage of the current attempt, exact artifact id/hash, generation",
+      "deletion_authority": "missing expected final means unavailable, never fallback to cleaned/raw",
+      "timeout_behavior": "historical action must not infer success from query completion",
+      "aliases": {
+        "A": [
+          "XF-IF-024"
+        ],
+        "C": [
+          "IF-13"
+        ],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X06"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census final_text/job_detail re-verified (learning.py hits are local variables, per census)",
+      "closure_residue": [
+        {
+          "function": "HistoryQueryService.job_detail",
+          "site": "localflow/v2/history_queries.py:458",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-038",
+      "authoritative_object": "Current History attempt (retry stage artifacts vs older training manifest)",
+      "producer": "AppDelegate._worker attempt-tagged History artifacts + EvidenceCollector manifests",
+      "producer_site": "localflow/v2/history_queries.py:345",
+      "consumers": [
+        {
+          "name": "HistoryQueryService.job_detail.op",
+          "site": "localflow/v2/history_queries.py:484",
+          "role": "detail"
+        },
+        {
+          "name": "HistoryQueryService._search_op",
+          "site": "localflow/v2/history_queries.py:216",
+          "role": "search"
+        },
+        {
+          "name": "HistoryQueryService._manifests",
+          "site": "localflow/v2/history_queries.py:327",
+          "role": "manifest read"
+        }
+      ],
+      "identity": "job row current attempt + artifact stage; manifest authoritative only when its attempt equals the job's",
+      "deletion_authority": "old result cannot revive a deleted job",
+      "timeout_behavior": "admitted retry must reconcile before repeat",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-016"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X06"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census _manifests/_job_artifacts (3 each) re-verified",
+      "closure_residue": [
+        {
+          "function": "DatasetExporter.build.publish_op",
+          "site": "localflow/v2/curation/export.py:740",
+          "class": "name collision: export_manifests"
+        },
+        {
+          "function": "DatasetExporter._record.op",
+          "site": "localflow/v2/curation/export.py:1111",
+          "class": "name collision: export_manifests"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-039",
+      "authoritative_object": "History Retry command",
+      "producer": "HubController.historyRetry_ -> AppDelegate.hubRetryJob",
+      "producer_site": "localflow/v2/ui/hub.py:977",
+      "consumers": [
+        {
+          "name": "AppDelegate.hubRetryJob",
+          "site": "localflow/app.py:5552",
+          "role": "retry admission"
+        },
+        {
+          "name": "AppDelegate.retryLastFailed_",
+          "site": "localflow/app.py:5836",
+          "role": "Recovery retry"
+        },
+        {
+          "name": "AppDelegate._retry_job",
+          "site": "localflow/app.py:5922",
+          "role": "original capture lineage"
+        }
+      ],
+      "identity": "rendered job/recoverable identity; selected stable job and state",
+      "deletion_authority": "deleted/unavailable audio refuses",
+      "timeout_behavior": "unknown admission cannot trigger a blind duplicate retry ('already_retrying')",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-017"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of _retry_job callers",
+      "note": "_retry_job's own direct store read collapses TimeoutError (listed under XM-IF-002)",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 4)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-040",
+      "authoritative_object": "History search versus display lineage",
+      "producer": "HistoryQueryService.search",
+      "producer_site": "localflow/v2/history_queries.py:158",
+      "consumers": [
+        {
+          "name": "HubState._load_history",
+          "site": "localflow/v2/ui/state.py:398",
+          "role": "list query"
+        },
+        {
+          "name": "HubController.historySearchChanged_",
+          "site": "localflow/v2/ui/hub.py:871",
+          "role": "search field"
+        }
+      ],
+      "identity": "retained attempt match, current displayed manifest, explicit search policy",
+      "deletion_authority": "n/a",
+      "timeout_behavior": "broader search policy is not itself a wrong-target defect",
+      "aliases": {
+        "A": [
+          "XF-IF-025"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census HistoryQueryService re-verified",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-041",
+      "authoritative_object": "Hub query publication epoch",
+      "producer": "HubState._spawn / QueryExecutor.submit / _publish_locked (per-key generation)",
+      "producer_site": "localflow/v2/ui/state.py:1085",
+      "consumers": [
+        {
+          "name": "HubState._target_current",
+          "site": "localflow/v2/ui/state.py:961",
+          "role": "newest generation wins"
+        },
+        {
+          "name": "HubState._load_history",
+          "site": "localflow/v2/ui/state.py:402",
+          "role": "history"
+        },
+        {
+          "name": "HubState._load_history_detail",
+          "site": "localflow/v2/ui/state.py:431",
+          "role": "detail"
+        },
+        {
+          "name": "HubState._load_training",
+          "site": "localflow/v2/ui/state.py:486",
+          "role": "training"
+        },
+        {
+          "name": "HubController._in_background",
+          "site": "localflow/v2/ui/hub.py:3215",
+          "role": "action results carry a key and current flag"
+        },
+        {
+          "name": "HubController._refresh_export_pane",
+          "site": "localflow/v2/ui/hub.py:4071",
+          "role": "export pane keeps the newer Validate result"
+        },
+        {
+          "name": "HubState._load_styles",
+          "site": "localflow/v2/ui/state.py:572",
+          "role": "styles"
+        },
+        {
+          "name": "HubState._load_snippets",
+          "site": "localflow/v2/ui/state.py:595",
+          "role": "snippets"
+        },
+        {
+          "name": "HubState._load_transforms",
+          "site": "localflow/v2/ui/state.py:626",
+          "role": "transforms"
+        },
+        {
+          "name": "HubState._load_scratchpad",
+          "site": "localflow/v2/ui/state.py:688",
+          "role": "scratchpad"
+        },
+        {
+          "name": "HubState._load_scratchpad_detail",
+          "site": "localflow/v2/ui/state.py:707",
+          "role": "scratchpad detail"
+        },
+        {
+          "name": "HubState._load_insights",
+          "site": "localflow/v2/ui/state.py:759",
+          "role": "insights"
+        },
+        {
+          "name": "HubState._load_diagnostics",
+          "site": "localflow/v2/ui/state.py:833",
+          "role": "diagnostics"
+        },
+        {
+          "name": "HubState._load_home",
+          "site": "localflow/v2/ui/state.py:856",
+          "role": "home"
+        },
+        {
+          "name": "HubState._load_settings",
+          "site": "localflow/v2/ui/state.py:880",
+          "role": "settings"
+        },
+        {
+          "name": "HubState._load_models_engines",
+          "site": "localflow/v2/ui/state.py:930",
+          "role": "models"
+        },
+        {
+          "name": "HubState._load_training_detail",
+          "site": "localflow/v2/ui/state.py:557",
+          "role": "training detail"
+        },
+        {
+          "name": "HubController.exportValidate_",
+          "site": "localflow/v2/ui/hub.py:3778",
+          "role": "Validate"
+        },
+        {
+          "name": "HubController.exportRun_",
+          "site": "localflow/v2/ui/hub.py:3746",
+          "role": "Export"
+        },
+        {
+          "name": "HubController.reviewMine_",
+          "site": "localflow/v2/ui/hub.py:3514",
+          "role": "Mine"
+        },
+        {
+          "name": "HubController.diagnosticsExport_",
+          "site": "localflow/v2/ui/hub.py:2819",
+          "role": "Diagnostics export"
+        },
+        {
+          "name": "HubController.voiceGenerate_",
+          "site": "localflow/v2/ui/hub.py:4329",
+          "role": "Generate"
+        }
+      ],
+      "identity": "per-key newest generation, active pane, deletion epoch",
+      "deletion_authority": "revoked job epoch invalidates stale rows",
+      "timeout_behavior": "older success or error cannot repaint newer state",
+      "aliases": {
+        "A": [
+          "XF-IF-026"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X12"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of _publish_locked/_in_background callers",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-042",
+      "authoritative_object": "Rendered detail action identity",
+      "producer": "HubController._history_ctx",
+      "producer_site": "localflow/v2/ui/hub.py:886",
+      "consumers": [
+        {
+          "name": "HubController.historyReplay_",
+          "site": "localflow/v2/ui/hub.py:911",
+          "role": "Replay"
+        },
+        {
+          "name": "HubController.historyCopy_",
+          "site": "localflow/v2/ui/hub.py:924",
+          "role": "Copy"
+        },
+        {
+          "name": "HubController.historyPasteAgain_",
+          "site": "localflow/v2/ui/hub.py:952",
+          "role": "Paste Again"
+        },
+        {
+          "name": "HubController.historyRetry_",
+          "site": "localflow/v2/ui/hub.py:969",
+          "role": "Retry"
+        },
+        {
+          "name": "HubController.historyTeach_",
+          "site": "localflow/v2/ui/hub.py:999",
+          "role": "Teach"
+        },
+        {
+          "name": "HubController.historyDeleteUsage_",
+          "site": "localflow/v2/ui/hub.py:1060",
+          "role": "Delete Usage"
+        },
+        {
+          "name": "HubController._history_to_scratchpad",
+          "site": "localflow/v2/ui/hub.py:1119",
+          "role": "Save/Move"
+        },
+        {
+          "name": "HubController.historyDiff_",
+          "site": "localflow/v2/ui/hub.py:1156",
+          "role": "Diff"
+        }
+      ],
+      "identity": "what was drawn: id/revision/hash/slot order, not only the current selected_id",
+      "deletion_authority": "_revoke_rendered drops a deleted job's rendered context",
+      "timeout_behavior": "selection_loading/stale_source refuses before mutation; user input preserved",
+      "aliases": {
+        "A": [
+          "XF-IF-027"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of _history_ctx callers (all listed)",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-043",
+      "authoritative_object": "Replay source availability",
+      "producer": "ReplayService",
+      "producer_site": "localflow/v2/ui/replay.py:40",
+      "consumers": [
+        {
+          "name": "AppDelegate.openHub_",
+          "site": "localflow/app.py:5385",
+          "role": "constructed for the Hub"
+        },
+        {
+          "name": "HubController.historyReplay_",
+          "site": "localflow/v2/ui/hub.py:910",
+          "role": "History Replay"
+        },
+        {
+          "name": "ReplayService.stop_unavailable",
+          "site": "localflow/v2/ui/replay.py:139",
+          "role": "missing audio stops playback"
+        },
+        {
+          "name": "ReplayService.revoke_job",
+          "site": "localflow/v2/ui/replay.py:121",
+          "role": "deletion"
+        },
+        {
+          "name": "HubController._revalidate_rendered",
+          "site": "localflow/v2/ui/hub.py:264",
+          "role": "rendered revalidation"
+        },
+        {
+          "name": "HubController.trainingReplay_",
+          "site": "localflow/v2/ui/hub.py:3377",
+          "role": "training listening"
+        },
+        {
+          "name": "HubController._store_job_deleted",
+          "site": "localflow/v2/ui/hub.py:243",
+          "role": "deletion"
+        }
+      ],
+      "identity": "exact audio artifact/job/example and real payload availability",
+      "deletion_authority": "missing audio stops old playback and cannot authorize another example",
+      "timeout_behavior": "n/a",
+      "aliases": {
+        "A": [
+          "XF-IF-028"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-044",
+      "authoritative_object": "Note create with typed outcomes",
+      "producer": "NoteStore.create_note (raises NoteOutcomeUnknown)",
+      "producer_site": "localflow/v2/notes.py:481",
+      "consumers": [
+        {
+          "name": "HubController.scratchpadNew_",
+          "site": "localflow/v2/ui/hub.py:2249",
+          "role": "Scratchpad New"
+        },
+        {
+          "name": "AppDelegate.tfSaveToScratchpad",
+          "site": "localflow/app.py:2062",
+          "role": "transform Save (MERGED-X09 repaired)"
+        },
+        {
+          "name": "AppDelegate.hubSaveHistoryRow",
+          "site": "localflow/app.py:2197",
+          "role": "History transfer"
+        },
+        {
+          "name": "failure_kind",
+          "site": "localflow/v2/notes.py:285",
+          "role": "shared classifier"
+        },
+        {
+          "name": "HubController._scratchpad_outcome",
+          "site": "localflow/v2/ui/hub.py:2227",
+          "role": "typed outcome"
+        },
+        {
+          "name": "NotesEditorModel._persist",
+          "site": "localflow/v2/notes.py:1359",
+          "role": "editor autosave"
+        }
+      ],
+      "identity": "preallocated note_id, admitted/refused/unknown, origin",
+      "deletion_authority": "deleted destination refuses",
+      "timeout_behavior": "NoteOutcomeUnknown identity reaches caller reconciliation; a repeat reads back the same id",
+      "aliases": {
+        "A": [
+          "XF-IF-029"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X09",
+        "MERGED-X10"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census create_note/NoteOutcomeUnknown/tfSaveToScratchpad re-verified",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 3)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-045",
+      "authoritative_object": "Internal note arrival/delivery receipt to the coordinator",
+      "producer": "NotesEditorModel._commit_arrival",
+      "producer_site": "localflow/v2/notes.py:1408",
+      "consumers": [
+        {
+          "name": "NotesEditorModel._persist",
+          "site": "localflow/v2/notes.py:1338",
+          "role": "autosave commits arrivals"
+        },
+        {
+          "name": "AppDelegate._noteDeliverySettled_",
+          "site": "localflow/app.py:1857",
+          "role": "coordinator completion"
+        },
+        {
+          "name": "AppDelegate._settle_note_deliveries_now",
+          "site": "localflow/app.py:1920",
+          "role": "settlement"
+        },
+        {
+          "name": "AppDelegate._finishWithText_",
+          "site": "localflow/app.py:4762",
+          "role": "dictation into a note"
+        }
+      ],
+      "identity": "arrival id, note id, base revision, content/generation, origin span, source job",
+      "deletion_authority": "deleted/revised destination refuses or keeps a truthful saved outcome",
+      "timeout_behavior": "admitted arrival kept until settled; unknown note mutation never labelled proven failed",
+      "aliases": {
+        "A": [
+          "XF-IF-030"
+        ],
+        "C": [
+          "IF-12"
+        ],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "note": "C IF-12 is split: its M13 usage half is XM-IF-069",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-046",
+      "authoritative_object": "Note-bound delivery (dictation/transform into a captured note)",
+      "producer": "AppDelegate._finishWithText_ note destination",
+      "producer_site": "localflow/app.py:4762",
+      "consumers": [
+        {
+          "name": "HubController.scratchpad_receive",
+          "site": "localflow/v2/ui/hub.py:2663",
+          "role": "Hub routes the delivery"
+        },
+        {
+          "name": "NotesEditorModel.receive",
+          "site": "localflow/v2/notes.py:1219",
+          "role": "editor admission"
+        },
+        {
+          "name": "NotesEditorModel._admit",
+          "site": "localflow/v2/notes.py:1251",
+          "role": "captured note/revision check"
+        },
+        {
+          "name": "HubController.scratchpad_apply_transform",
+          "site": "localflow/v2/ui/hub.py:2695",
+          "role": "transform delivery into a note"
+        }
+      ],
+      "identity": "note id/revision/region captured at start; codepoint/UTF-16 mapping",
+      "deletion_authority": "deleted note refuses delivery",
+      "timeout_behavior": "confirmed only after a committed revision receipt",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-022"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-047",
+      "authoritative_object": "Note transform whole/selection acceptance",
+      "producer": "note_destination_check",
+      "producer_site": "localflow/v2/notes.py:114",
+      "consumers": [
+        {
+          "name": "HubController.scratchpad_apply_transform",
+          "site": "localflow/v2/ui/hub.py:2689",
+          "role": "Accept into Scratchpad"
+        },
+        {
+          "name": "AppDelegate.tfApplyNoteTransform",
+          "site": "localflow/app.py:1989",
+          "role": "coordinator entry"
+        }
+      ],
+      "identity": "scope, captured full text or selected range, source revision/digest",
+      "deletion_authority": "n/a",
+      "timeout_behavior": "whole-note changes refuse; unrelated outside edit may remain valid for an exact selection",
+      "aliases": {
+        "A": [
+          "XF-IF-032"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-048",
+      "authoritative_object": "Note revision provenance and dictated-edit attribution",
+      "producer": "rebase_spans (NoteStore._append.op)",
+      "producer_site": "localflow/v2/notes.py:167",
+      "consumers": [
+        {
+          "name": "NoteStore._append.op",
+          "site": "localflow/v2/notes.py:921",
+          "role": "editor save"
+        },
+        {
+          "name": "LearningService._mine_note_candidates",
+          "site": "localflow/v2/learning.py:291",
+          "role": "learning miner"
+        },
+        {
+          "name": "LearningService.mine_observation_candidates",
+          "site": "localflow/v2/learning.py:241",
+          "role": "miner entry"
+        }
+      ],
+      "identity": "codepoint/UTF-16 mapping, occurrence identity, typed/dictated origin; one-job changed-region attribution",
+      "deletion_authority": "deleted note/source closes links and revokes derived support",
+      "timeout_behavior": "miner rechecks liveness inside the writer after a queued wait; ambiguous repeated occurrence abstains",
+      "aliases": {
+        "A": [
+          "XF-IF-031"
+        ],
+        "C": [
+          "IF-17"
+        ],
+        "B": [
+          "IF-023"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "CleanupEngine.clean",
+          "site": "localflow/v2/cleanup/engine.py:1050",
+          "class": "name collision: cleanup engine _rebase_spans"
+        },
+        {
+          "function": "CleanupEngine._clean_window",
+          "site": "localflow/v2/cleanup/engine.py:884",
+          "class": "name collision: cleanup engine _rebase_spans"
+        },
+        {
+          "function": "_rebase_spans",
+          "site": "localflow/v2/cleanup/engine.py:337",
+          "class": "name collision: cleanup engine _rebase_spans"
+        },
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-049",
+      "authoritative_object": "History Copy/Move into Scratchpad (two-phase receipt)",
+      "producer": "AppDelegate.hubSaveHistoryRow",
+      "producer_site": "localflow/app.py:2136",
+      "consumers": [
+        {
+          "name": "HubController._history_to_scratchpad",
+          "site": "localflow/v2/ui/hub.py:1129",
+          "role": "History controls"
+        },
+        {
+          "name": "HubController.historyToScratchpad_",
+          "site": "localflow/v2/ui/hub.py:1105",
+          "role": "Copy"
+        },
+        {
+          "name": "HubController.historyMoveToScratchpad_",
+          "site": "localflow/v2/ui/hub.py:1108",
+          "role": "Move"
+        },
+        {
+          "name": "AppDelegate.hubSaveHistoryRow",
+          "site": "localflow/app.py:2197",
+          "role": "destination note"
+        },
+        {
+          "name": "AppDelegate.hubSaveHistoryRow",
+          "site": "localflow/app.py:2222",
+          "role": "source deletion phase"
+        }
+      ],
+      "identity": "strict final/hash, destination note id kept per rendered row, source-delete phase/outcome",
+      "deletion_authority": "Move deletes the source only after a durable note copy; the independent note keeps its own authority",
+      "timeout_behavior": "create_unknown reconciles the same note id; source_deletion_unknown is never reported as a confirmed failure",
+      "aliases": {
+        "A": [
+          "XF-IF-033"
+        ],
+        "C": [
+          "IF-15"
+        ],
+        "B": [
+          "IF-020"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X10"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census hubSaveHistoryRow/move_failed_note_copied re-verified",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-050",
+      "authoritative_object": "Explicit Teach source authority",
+      "producer": "HubController.historyTeach_ -> LearningService.teach_correction",
+      "producer_site": "localflow/v2/learning.py:86",
+      "consumers": [
+        {
+          "name": "HubController.historyTeach_",
+          "site": "localflow/v2/ui/hub.py:1032",
+          "role": "rendered applied artifact id/hash + corrected text"
+        },
+        {
+          "name": "LearningService.teach_correction.op",
+          "site": "localflow/v2/learning.py:160",
+          "role": "expected final checked inside the minting writer op"
+        }
+      ],
+      "identity": "cleaned source artifact id/hash, explicit user correction, operation id",
+      "deletion_authority": "deleted/purged/stale final refuses; transformed final refuses honestly",
+      "timeout_behavior": "stable operation receipt reconciles the same teaching action",
+      "aliases": {
+        "A": [
+          "XF-IF-034"
+        ],
+        "C": [
+          "IF-14"
+        ],
+        "B": [
+          "IF-021"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of teach_correction callers",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-051",
+      "authoritative_object": "Certified edit observation into learning candidates",
+      "producer": "OutcomeObserver -> EvidenceCollector.on_observation_closed",
+      "producer_site": "localflow/v2/training.py:1324",
+      "consumers": [
+        {
+          "name": "AppDelegate._observationFinished_",
+          "site": "localflow/app.py:5086",
+          "role": "coordinator hand-off"
+        },
+        {
+          "name": "LearningService._mine_one",
+          "site": "localflow/v2/learning.py:357",
+          "role": "candidate minting"
+        },
+        {
+          "name": "HubController.reviewMine_",
+          "site": "localflow/v2/ui/hub.py:3514",
+          "role": "Review Mine"
+        },
+        {
+          "name": "LearningService.mine_observation_candidates",
+          "site": "localflow/v2/learning.py:210",
+          "role": "miner entry"
+        }
+      ],
+      "identity": "owner + observation role + retained digest + reliable stop reason; exact attributable region",
+      "deletion_authority": "deleted job or unretained observation cannot mint a candidate",
+      "timeout_behavior": "mining is idempotent by observation identity; lost ownership ends observation, never a broad diff",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-16"
+        ],
+        "B": [
+          "IF-015"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "LearningService.mine_observation_candidates.mine",
+          "site": "localflow/v2/learning.py:235",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-052",
+      "authoritative_object": "Approved learning delta into vocabulary",
+      "producer": "LearningService.approve / _plan_in (learning_vocabulary_deltas)",
+      "producer_site": "localflow/v2/learning.py:541",
+      "consumers": [
+        {
+          "name": "HubController.reviewApprove_",
+          "site": "localflow/v2/ui/hub.py:3573",
+          "role": "Review Approve"
+        },
+        {
+          "name": "LearningService._plan_in",
+          "site": "localflow/v2/learning.py:677",
+          "role": "writes through M05 methods with expected revision"
+        },
+        {
+          "name": "LearningService.approve.op",
+          "site": "localflow/v2/learning.py:595",
+          "role": "sandbox before approval"
+        }
+      ],
+      "identity": "candidate/decision id, canonical scope, exact alias/canonical, expected revision, operation receipt, recorded delta",
+      "deletion_authority": "stale evidence cannot silently approve; later user edits own their revision",
+      "timeout_behavior": "same operation id returns one receipt, not a second mutation",
+      "aliases": {
+        "A": [
+          "XF-IF-035"
+        ],
+        "C": [
+          "IF-22"
+        ],
+        "B": [
+          "IF-031"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X01",
+        "MERGED-X15"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of approve callers",
+      "note": "A XF-IF-035 and C IF-22 are split: the undo half is XM-IF-053",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-053",
+      "authoritative_object": "Undo Approval (Hub control over the recorded delta)",
+      "producer": "HubController.reviewUndoApproval_ -> LearningService.undo_approval",
+      "producer_site": "localflow/v2/learning.py:874",
+      "consumers": [
+        {
+          "name": "HubController.reviewUndoApproval_",
+          "site": "localflow/v2/ui/hub.py:4008",
+          "role": "Review Undo control (D14)"
+        },
+        {
+          "name": "HubState._load_training_review",
+          "site": "localflow/v2/ui/state.py:524",
+          "role": "approved-rule list the control acts on"
+        },
+        {
+          "name": "LearningService.undo_approval.op",
+          "site": "localflow/v2/learning.py:913",
+          "role": "exact recorded delta"
+        }
+      ],
+      "identity": "candidate/delta/entry revision; operation id kept across an unknown outcome",
+      "deletion_authority": "does not erase later independent user changes (user_modified_since refusal)",
+      "timeout_behavior": "unknown outcome reconciles rather than applying twice",
+      "aliases": {
+        "A": [
+          "XF-IF-035"
+        ],
+        "C": [
+          "IF-22"
+        ],
+        "B": [
+          "IF-032"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X15",
+        "MERGED-X01"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census undo_approval had 1 production hit (definition only) at 340c566; the pinned commit adds HubController.reviewUndoApproval_",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-054",
+      "authoritative_object": "Candidate counterexample scope (approval sandbox)",
+      "producer": "LearningService._counterexample_check",
+      "producer_site": "localflow/v2/learning.py:711",
+      "consumers": [
+        {
+          "name": "LearningService.approve.op",
+          "site": "localflow/v2/learning.py:595",
+          "role": "approve action"
+        },
+        {
+          "name": "DictionaryPanelController.runSandbox_",
+          "site": "localflow/v2/dictionary_panel.py:375",
+          "role": "manual sandbox"
+        }
+      ],
+      "identity": "effective rule scope and an independently supplied adverse phrase",
+      "deletion_authority": "n/a",
+      "timeout_behavior": "a global sandbox cannot validate an app-scoped rule; would-flip refuses",
+      "aliases": {
+        "A": [
+          "XF-IF-036"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "sandbox_phrase",
+          "site": "localflow/v2/vocabulary.py:969",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-055",
+      "authoritative_object": "Training label/span source checks",
+      "producer": "ReviewService.record_label / TrainingDataService.add_span_correction",
+      "producer_site": "localflow/v2/curation/review.py:302",
+      "consumers": [
+        {
+          "name": "HubController.reviewLabel_",
+          "site": "localflow/v2/ui/hub.py:3622",
+          "role": "inspector label"
+        },
+        {
+          "name": "HubController.trainingSpan_",
+          "site": "localflow/v2/ui/hub.py:3435",
+          "role": "span correction"
+        },
+        {
+          "name": "ReviewService.record_label.op",
+          "site": "localflow/v2/curation/review.py:361",
+          "role": "source check"
+        }
+      ],
+      "identity": "rendered example revision, stage id/hash, exact span coverage",
+      "deletion_authority": "expired/quarantined does not become live by labelling",
+      "timeout_behavior": "typed via _training_action/trainingSpan_; partial remains partial",
+      "aliases": {
+        "A": [
+          "XF-IF-037"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "TrainingDataService.add_span_correction",
+          "site": "localflow/v2/training_data.py:440",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-056",
+      "authoritative_object": "Audio-reviewed verbatim gate",
+      "producer": "HubController.trainingVerbatim_ (listened-for identity)",
+      "producer_site": "localflow/v2/ui/hub.py:3407",
+      "consumers": [
+        {
+          "name": "verified_asr_eligible_in",
+          "site": "localflow/v2/curation/review.py:185",
+          "role": "ASR eligibility"
+        },
+        {
+          "name": "DatasetExporter._asr_rows",
+          "site": "localflow/v2/curation/export.py:310",
+          "role": "ASR export"
+        },
+        {
+          "name": "TrainingDataService.set_verbatim",
+          "site": "localflow/v2/training_data.py:385",
+          "role": "verbatim service"
+        },
+        {
+          "name": "TrainingDataService.readiness.op",
+          "site": "localflow/v2/training_data.py:788",
+          "role": "readiness"
+        },
+        {
+          "name": "ReviewService.verified_asr_eligible",
+          "site": "localflow/v2/curation/review.py:457",
+          "role": "review view"
+        }
+      ],
+      "identity": "same example/audio listened-for identity and explicit coverage",
+      "deletion_authority": "playback of A does not authorize B",
+      "timeout_behavior": "model suggestion is not verbatim",
+      "aliases": {
+        "A": [
+          "XF-IF-038"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-057",
+      "authoritative_object": "Preference comparability and displayed order",
+      "producer": "ReviewService.record_pair_judgment",
+      "producer_site": "localflow/v2/curation/review.py:559",
+      "consumers": [
+        {
+          "name": "HubController._review_pair_judgment",
+          "site": "localflow/v2/ui/hub.py:3653",
+          "role": "Review pair surface"
+        },
+        {
+          "name": "current_pair_judgments_in",
+          "site": "localflow/v2/curation/evidence.py:279",
+          "role": "latest judgment"
+        },
+        {
+          "name": "DatasetExporter._preference_rows",
+          "site": "localflow/v2/curation/export.py:482",
+          "role": "preference exporter"
+        },
+        {
+          "name": "TrainingDataService.readiness.op",
+          "site": "localflow/v2/training_data.py:919",
+          "role": "readiness"
+        },
+        {
+          "name": "DatasetExporter._dependencies_hold",
+          "site": "localflow/v2/curation/export.py:591",
+          "role": "publication recheck"
+        }
+      ],
+      "identity": "same frozen task identity, displayed candidate ids/slot order, latest judgment",
+      "deletion_authority": "dead candidates refuse",
+      "timeout_behavior": "row order is not the displayed choice",
+      "aliases": {
+        "A": [
+          "XF-IF-039"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-058",
+      "authoritative_object": "Shared task qualification / eligibility decision",
+      "producer": "curation.evidence.qualify (+ cleanup/transform/preference qualifiers)",
+      "producer_site": "localflow/v2/curation/evidence.py:66",
+      "consumers": [
+        {
+          "name": "TrainingDataService.readiness.op",
+          "site": "localflow/v2/training_data.py:801",
+          "role": "M13 readiness"
+        },
+        {
+          "name": "DatasetExporter._cleanup_rows",
+          "site": "localflow/v2/curation/export.py:376",
+          "role": "export"
+        },
+        {
+          "name": "DatasetExporter._transform_rows",
+          "site": "localflow/v2/curation/export.py:429",
+          "role": "export"
+        },
+        {
+          "name": "DatasetExporter._preference_rows",
+          "site": "localflow/v2/curation/export.py:482",
+          "role": "export"
+        },
+        {
+          "name": "DatasetExporter._asr_rows",
+          "site": "localflow/v2/curation/export.py:310",
+          "role": "export"
+        },
+        {
+          "name": "ProfileService._read_candidates",
+          "site": "localflow/v2/profile.py:224",
+          "role": "Your Voice"
+        },
+        {
+          "name": "LearningService._mine_one",
+          "site": "localflow/v2/learning.py:363",
+          "role": "learning"
+        },
+        {
+          "name": "LearningService.teach_correction.op",
+          "site": "localflow/v2/learning.py:160",
+          "role": "Teach"
+        },
+        {
+          "name": "ReviewService.record_label.op",
+          "site": "localflow/v2/curation/review.py:361",
+          "role": "labels"
+        },
+        {
+          "name": "ReviewService.preference_pairs.op",
+          "site": "localflow/v2/curation/review.py:533",
+          "role": "pairs"
+        },
+        {
+          "name": "stage_texts_for",
+          "site": "localflow/v2/curation/review.py:90",
+          "role": "review stage texts"
+        },
+        {
+          "name": "verified_asr_eligible_in",
+          "site": "localflow/v2/curation/review.py:185",
+          "role": "ASR eligibility"
+        },
+        {
+          "name": "ReviewService._suggested_axes",
+          "site": "localflow/v2/curation/review.py:289",
+          "role": "suggestions"
+        },
+        {
+          "name": "_evidence_live",
+          "site": "localflow/v2/learning.py:999",
+          "role": "learning liveness"
+        },
+        {
+          "name": "_applied_canonicals",
+          "site": "localflow/v2/profile.py:169",
+          "role": "Your Voice applied canonical"
+        },
+        {
+          "name": "ProfileService._compute_once.write",
+          "site": "localflow/v2/profile.py:454",
+          "role": "profile publication"
+        }
+      ],
+      "identity": "own job/task, role, retained bytes, digest, current decision; same predicate and definition revision",
+      "deletion_authority": "removing evidence only removes dependent records",
+      "timeout_behavior": "readiness is read-only; refusals return reasons, not fabricated eligibility",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-23"
+        ],
+        "B": [
+          "IF-035"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of qualify callers (all share the helper)",
+      "closure_residue": [
+        {
+          "function": "cleanup_qualification_in",
+          "site": "localflow/v2/curation/evidence.py:149",
+          "class": "the shared qualifiers themselves"
+        },
+        {
+          "function": "transform_target_in",
+          "site": "localflow/v2/curation/evidence.py:219",
+          "class": "the shared qualifiers themselves"
+        },
+        {
+          "function": "preference_pair_in",
+          "site": "localflow/v2/curation/evidence.py:322",
+          "class": "the shared qualifiers themselves"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-059",
+      "authoritative_object": "Family split membership and forward-only exposure",
+      "producer": "SplitService.assign / mark_exposed",
+      "producer_site": "localflow/v2/curation/splits.py:173",
+      "consumers": [
+        {
+          "name": "HubController.splitsAssign_",
+          "site": "localflow/v2/ui/hub.py:3682",
+          "role": "Splits Assign"
+        },
+        {
+          "name": "HubController.splitsExpose_",
+          "site": "localflow/v2/ui/hub.py:3693",
+          "role": "Splits Expose"
+        },
+        {
+          "name": "DatasetExporter._select",
+          "site": "localflow/v2/curation/export.py:170",
+          "role": "export selection"
+        },
+        {
+          "name": "DatasetExporter._dependencies_hold",
+          "site": "localflow/v2/curation/export.py:575",
+          "role": "publication recheck"
+        },
+        {
+          "name": "TrainingDataService.readiness.op",
+          "site": "localflow/v2/training_data.py:831",
+          "role": "readiness"
+        }
+      ],
+      "identity": "frozen family membership, partition/assignment version, all-version exposed-ever predicate",
+      "deletion_authority": "expiry or table repair never erases exposure",
+      "timeout_behavior": "assign/expose receipts reconcile duplicate commands; exposure rechecked before publication",
+      "aliases": {
+        "A": [
+          "XF-IF-040"
+        ],
+        "C": [
+          "IF-24"
+        ],
+        "B": [
+          "IF-034"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X01"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census training_memberships (22 production) re-verified",
+      "closure_residue": [
+        {
+          "function": "SplitService._exposure_before",
+          "site": "localflow/v2/curation/splits.py:166",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "Store._migrate",
+          "site": "localflow/v2/store.py:1451",
+          "class": "schema DDL/repair (XM-IF-078)"
+        },
+        {
+          "function": "SplitService.contamination.op",
+          "site": "localflow/v2/curation/splits.py:375",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "SplitService.assign.op",
+          "site": "localflow/v2/curation/splits.py:136",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "SplitService.summary.op",
+          "site": "localflow/v2/curation/splits.py:305",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "SplitService.mark_exposed.op",
+          "site": "localflow/v2/curation/splits.py:202",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "SplitService.membership.op",
+          "site": "localflow/v2/curation/splits.py:276",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "SplitService.family_report.op",
+          "site": "localflow/v2/curation/splits.py:334",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-060",
+      "authoritative_object": "Dataset snapshot, exact-input fence and publication",
+      "producer": "DatasetExporter.build / publish_op / _reconcile_intent",
+      "producer_site": "localflow/v2/curation/export.py:606",
+      "consumers": [
+        {
+          "name": "HubController.exportRun_",
+          "site": "localflow/v2/ui/hub.py:3746",
+          "role": "Hub Export"
+        },
+        {
+          "name": "main",
+          "site": "scripts/v2/export_dataset.py:47",
+          "role": "scripts/v2/export_dataset.py CLI"
+        },
+        {
+          "name": "DatasetExporter.last_export",
+          "site": "localflow/v2/curation/export.py:1129",
+          "role": "completion receipt"
+        },
+        {
+          "name": "HubState._load_training_export",
+          "site": "localflow/v2/ui/state.py:545",
+          "role": "export pane state"
+        },
+        {
+          "name": "TrainingDataService.readiness.op",
+          "site": "localflow/v2/training_data.py:851",
+          "role": "readiness"
+        },
+        {
+          "name": "AppDelegate.configure",
+          "site": "localflow/app.py:536",
+          "role": "constructs the exporter"
+        }
+      ],
+      "identity": "export id, staged package, semantic fingerprint, publication intent row, actual input ids/revisions/digests",
+      "deletion_authority": "relevant deletion/exposure refuses; delete queued before publish aborts",
+      "timeout_behavior": "publication intent committed before rename; a retry reconciles the same export (D13)",
+      "aliases": {
+        "A": [
+          "XF-IF-041"
+        ],
+        "C": [
+          "IF-26"
+        ],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X14"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census publish_op re-verified; pinned-commit git grep of DatasetExporter constructors",
+      "closure_residue": [
+        {
+          "function": "DatasetExporter.build.publish_op",
+          "site": "localflow/v2/curation/export.py:740",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "Store._migrate",
+          "site": "localflow/v2/store.py:1453",
+          "class": "schema DDL/repair (XM-IF-078)"
+        },
+        {
+          "function": "DatasetExporter._receipt.op",
+          "site": "localflow/v2/curation/export.py:1087",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "DatasetExporter.last_export.op",
+          "site": "localflow/v2/curation/export.py:1135",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "DatasetExporter._record.op",
+          "site": "localflow/v2/curation/export.py:1103",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "DatasetExporter._reconcile_intent",
+          "site": "localflow/v2/curation/export.py:817",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-061",
+      "authoritative_object": "Self-contained offline package and validator",
+      "producer": "DatasetExporter._write_graph (package) consumed by validate_dataset",
+      "producer_site": "localflow/v2/curation/export.py:1221",
+      "consumers": [
+        {
+          "name": "HubController.exportValidate_",
+          "site": "localflow/v2/ui/hub.py:3778",
+          "role": "Hub Validate"
+        },
+        {
+          "name": "main",
+          "site": "scripts/v2/validate_dataset.py:25",
+          "role": "scripts/v2/validate_dataset.py CLI"
+        },
+        {
+          "name": "DatasetExporter._reconcile_intent",
+          "site": "localflow/v2/curation/export.py:830",
+          "role": "crash reconciliation"
+        }
+      ],
+      "identity": "manifest/tasks/artifacts/prompts/hashes/exposure; offline closure with no private-DB dependency",
+      "deletion_authority": "a released export is independent disclosure; future exports requalify",
+      "timeout_behavior": "post-rename missing receipt reconciled via publication intent",
+      "aliases": {
+        "A": [
+          "XF-IF-042"
+        ],
+        "C": [],
+        "B": [
+          "IF-036"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X14"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census validate_dataset (10 production) re-verified",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 2)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-062",
+      "authoritative_object": "Export Validate result into Hub export-pane state",
+      "producer": "HubController.exportValidate_ (background validate_dataset)",
+      "producer_site": "localflow/v2/ui/hub.py:3750",
+      "consumers": [
+        {
+          "name": "HubController._in_background",
+          "site": "localflow/v2/ui/hub.py:3215",
+          "role": "Hub background worker (key=validate)"
+        },
+        {
+          "name": "HubController._refresh_export_pane",
+          "site": "localflow/v2/ui/hub.py:4071",
+          "role": "keeps the newer result bound to its destination"
+        },
+        {
+          "name": "HubController._refresh_models_view",
+          "site": "localflow/v2/ui/hub.py:3844",
+          "role": "models/training view refresh"
+        }
+      ],
+      "identity": "destination + action generation; newer result beats older background refresh",
+      "deletion_authority": "closed/revoked pane cannot publish",
+      "timeout_behavior": "validation runs off the UI thread; worker cancellation is not dataset failure",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-27"
+        ],
+        "B": [
+          "IF-037"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X12",
+        "MERGED-X13"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census exportValidate_ (1) / _refresh_export_pane (2) re-verified",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-063",
+      "authoritative_object": "Managed artifact file capability for export reads",
+      "producer": "store.open_managed_file / read_managed_file",
+      "producer_site": "localflow/v2/store.py:853",
+      "consumers": [
+        {
+          "name": "qualify",
+          "site": "localflow/v2/curation/evidence.py:112",
+          "role": "qualification streams and hashes"
+        },
+        {
+          "name": "DatasetExporter._write_graph.copy_audio",
+          "site": "localflow/v2/curation/export.py:891",
+          "role": "export audio copy"
+        },
+        {
+          "name": "NoteStore.attachment_payload",
+          "site": "localflow/v2/notes.py:469",
+          "role": "attachment read"
+        },
+        {
+          "name": "Store._drain_purge_intents",
+          "site": "localflow/v2/store.py:2722",
+          "role": "purge"
+        },
+        {
+          "name": "NoteStore.add_attachment",
+          "site": "localflow/v2/notes.py:681",
+          "role": "attachment rollback"
+        }
+      ],
+      "identity": "root confinement + no-follow + regular file + streamed digest; plain managed basename",
+      "deletion_authority": "purged/missing selected input aborts before publication",
+      "timeout_behavior": "read failure refuses the relevant record only; file publication is not atomic with SQLite",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-25"
+        ],
+        "B": [
+          "IF-040"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "partial",
+      "missing_consumers": [
+        {
+          "name": "Store.artifact_payload",
+          "site": "localflow/v2/store.py:1759",
+          "reason": "managed audio read by path (census file_io store.py read_wav/read_bytes) outside the confined no-follow helper; reached by ReplayService.play_artifact"
+        },
+        {
+          "name": "AppDelegate._retry_job",
+          "site": "localflow/app.py:5883",
+          "reason": "retry reads managed audio by path outside the confined helper"
+        },
+        {
+          "name": "ReplayService.play_artifact",
+          "site": "localflow/v2/ui/replay.py:84",
+          "reason": "History/training replay reaches Store.artifact_payload (plain-path read of managed audio)"
+        }
+      ],
+      "closure_basis": "census file_io (managed-file helpers vs plain open/read_bytes) + pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "read_wav",
+          "site": "localflow/v2/store.py:1168",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "read_managed_file",
+          "site": "localflow/v2/store.py:819",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "read_wav_f32",
+          "site": "localflow/v2/store.py:1154",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "unlink_managed_file",
+          "site": "localflow/v2/store.py:882",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 3)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-064",
+      "authoritative_object": "Eligible speech cohort (training examples into Your Voice)",
+      "producer": "EvidenceCollector._publish (one example per attempt)",
+      "producer_site": "localflow/v2/training.py:1167",
+      "consumers": [
+        {
+          "name": "ProfileService._eligible",
+          "site": "localflow/v2/profile.py:239",
+          "role": "one contribution per logical job (highest live attempt)"
+        },
+        {
+          "name": "ProfileService._compute_once",
+          "site": "localflow/v2/profile.py:372",
+          "role": "compute"
+        }
+      ],
+      "identity": "artifact owner+role+digest and logical capture identity; example id is not distinct-capture proof",
+      "deletion_authority": "purge/exclusion/deletion invalidates support",
+      "timeout_behavior": "profile publication rechecks exact inputs",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-19"
+        ],
+        "B": [
+          "IF-029"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X07"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census ProfileService/_eligible re-verified",
+      "closure_residue": [
+        {
+          "function": "EvidenceCollector.finalize",
+          "site": "localflow/v2/training.py:1165",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "ReviewService.verified_asr_eligible",
+          "site": "localflow/v2/curation/review.py:453",
+          "class": "name collision: verified_asr_eligible"
+        },
+        {
+          "function": "EvidenceCollector.on_failure",
+          "site": "localflow/v2/training.py:1536",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-065",
+      "authoritative_object": "Profile eligible population on Your Voice cards",
+      "producer": "ProfileService.compute / current",
+      "producer_site": "localflow/v2/profile.py:331",
+      "consumers": [
+        {
+          "name": "HubController.voiceGenerate_",
+          "site": "localflow/v2/ui/hub.py:4329",
+          "role": "Generate"
+        },
+        {
+          "name": "HubState._load_insights",
+          "site": "localflow/v2/ui/state.py:772",
+          "role": "Your Voice cards read ProfileService.current"
+        },
+        {
+          "name": "AppDelegate._profile_idle_compute",
+          "site": "localflow/app.py:2798",
+          "role": "idle pass"
+        },
+        {
+          "name": "HubController.voiceExcludeEvidence_",
+          "site": "localflow/v2/ui/hub.py:4333",
+          "role": "exclusion refresh"
+        }
+      ],
+      "identity": "eligible raw/spoken content, origin exclusions, measured word denominator",
+      "deletion_authority": "typed/snippet/model boilerplate excluded, never represented as user speech",
+      "timeout_behavior": "idle pass is log-only; Generate label residual listed under XM-IF-002",
+      "aliases": {
+        "A": [
+          "XF-IF-043"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X07"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of compute callers",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-066",
+      "authoritative_object": "Profile input-signature and commit fence",
+      "producer": "ProfileService._compute_once.write (input signature) with _scrub_dead_evidence",
+      "producer_site": "localflow/v2/profile.py:357",
+      "consumers": [
+        {
+          "name": "ProfileService.current.op",
+          "site": "localflow/v2/profile.py:713",
+          "role": "cached cards"
+        },
+        {
+          "name": "ProfileService.exclude_evidence.op",
+          "site": "localflow/v2/profile.py:746",
+          "role": "user exclusions"
+        },
+        {
+          "name": "HubController.voiceExcludeEvidence_",
+          "site": "localflow/v2/ui/hub.py:4338",
+          "role": "Exclude evidence"
+        },
+        {
+          "name": "conn_redact_usage_copies",
+          "site": "localflow/v2/analytics.py:299",
+          "role": "usage redaction of snapshot copies"
+        },
+        {
+          "name": "Store.delete_everywhere.op",
+          "site": "localflow/v2/store.py:2549",
+          "role": "deletion invalidates snapshots"
+        }
+      ],
+      "identity": "exact eligible revisions, restrictions (profile_evidence), source liveness, usage-derived metadata",
+      "deletion_authority": "changed/deleted source cannot publish a stale snapshot",
+      "timeout_behavior": "no-change avoids a new snapshot",
+      "aliases": {
+        "A": [
+          "XF-IF-044"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X01"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census profile_evidence (12 production) re-verified",
+      "closure_residue": [
+        {
+          "function": "Store._migrate",
+          "site": "localflow/v2/store.py:1452",
+          "class": "schema DDL/repair (XM-IF-078)"
+        },
+        {
+          "function": "_invalidate",
+          "site": "localflow/v2/profile.py:92",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "_scrub_dead_evidence",
+          "site": "localflow/v2/profile.py:99",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "ProfileService.exclude_evidence",
+          "site": "localflow/v2/profile.py:734",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "ProfileService._compute_once.write",
+          "site": "localflow/v2/profile.py:476",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-067",
+      "authoritative_object": "Historical applied vocabulary into technical terms",
+      "producer": "EvidenceCollector.on_normalization_result (vocabulary_applied_rules artifact, applied_rule_ids)",
+      "producer_site": "localflow/v2/training.py:767",
+      "consumers": [
+        {
+          "name": "_applied_canonicals",
+          "site": "localflow/v2/profile.py:170",
+          "role": "reads the job's frozen applied canonical"
+        },
+        {
+          "name": "ProfileService._compute_once",
+          "site": "localflow/v2/profile.py:430",
+          "role": "technical terms grouped by (entry id, applied canonical)"
+        },
+        {
+          "name": "ProfileService._compute_once.write",
+          "site": "localflow/v2/profile.py:651",
+          "role": "publishes the applied-canonical terms"
+        }
+      ],
+      "identity": "frozen applied rule revision/payload, not entry id alone",
+      "deletion_authority": "missing proof cannot be replaced with current dictionary text",
+      "timeout_behavior": "read failure cannot invent current term evidence",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-20"
+        ],
+        "B": [
+          "IF-030"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X11"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census applied_rule_ids (2) / applied_rules (6) re-verified",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-068",
+      "authoritative_object": "Terminal usage fact (one logical dictation per job)",
+      "producer": "AppDelegate._record_dictation_usage -> AnalyticsStore.record_dictation_fact",
+      "producer_site": "localflow/v2/analytics.py:461",
+      "consumers": [
+        {
+          "name": "AppDelegate._record_dictation_usage",
+          "site": "localflow/app.py:4897",
+          "role": "coordinator producer"
+        },
+        {
+          "name": "AppDelegate._insertionDone_",
+          "site": "localflow/app.py:4969",
+          "role": "insertion terminal"
+        },
+        {
+          "name": "AppDelegate._finishWithText_",
+          "site": "localflow/app.py:4715",
+          "role": "saved/failed terminal"
+        },
+        {
+          "name": "AppDelegate.cancelDictation",
+          "site": "localflow/app.py:3614",
+          "role": "cancel"
+        },
+        {
+          "name": "HubState._load_insights",
+          "site": "localflow/v2/ui/state.py:757",
+          "role": "Insights report"
+        },
+        {
+          "name": "AppDelegate._noteDeliverySettled_",
+          "site": "localflow/app.py:1880",
+          "role": "note delivery"
+        },
+        {
+          "name": "AppDelegate._note_not_inserted",
+          "site": "localflow/app.py:1902",
+          "role": "note not inserted"
+        }
+      ],
+      "identity": "logical job id, current attempt, kind, original capture time/zone/app",
+      "deletion_authority": "content expiry does not delete independent permitted usage",
+      "timeout_behavior": "retry completion replaces, never accumulates; transform/repaste not counted as dictation",
+      "aliases": {
+        "A": [
+          "XF-IF-045"
+        ],
+        "C": [
+          "IF-18"
+        ],
+        "B": [
+          "IF-025"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census usage_facts re-verified; pinned-commit git grep of _record_dictation_usage callers",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-069",
+      "authoritative_object": "Note dictation terminal receipt into usage",
+      "producer": "AppDelegate._noteDeliverySettled_",
+      "producer_site": "localflow/app.py:1880",
+      "consumers": [
+        {
+          "name": "AppDelegate._note_not_inserted",
+          "site": "localflow/app.py:1902",
+          "role": "not inserted"
+        },
+        {
+          "name": "AnalyticsStore.record_dictation_fact",
+          "site": "localflow/v2/analytics.py:461",
+          "role": "usage store"
+        },
+        {
+          "name": "AppDelegate._finishWithText_",
+          "site": "localflow/app.py:4762",
+          "role": "dictation into a note"
+        },
+        {
+          "name": "AppDelegate._settle_note_deliveries_now",
+          "site": "localflow/app.py:1920",
+          "role": "settlement"
+        }
+      ],
+      "identity": "job uniqueness + note commit receipt; original capture/time/job",
+      "deletion_authority": "usage deletion independent from note deletion",
+      "timeout_behavior": "unknown note write is not yet confirmed; autosave never adds dictation words",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-12"
+        ],
+        "B": [
+          "IF-024"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "note": "C IF-12 split (see XM-IF-045)",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-070",
+      "authoritative_object": "Explicit activity fact (transform generation, executed repaste)",
+      "producer": "AnalyticsStore.record_transform_fact / record_repaste_fact",
+      "producer_site": "localflow/v2/analytics.py:548",
+      "consumers": [
+        {
+          "name": "AppDelegate._tfShowResult_",
+          "site": "localflow/app.py:1611",
+          "role": "completed generation"
+        },
+        {
+          "name": "AppDelegate._repaste_done",
+          "site": "localflow/app.py:5519",
+          "role": "executed repaste"
+        },
+        {
+          "name": "AnalyticsStore.record_repaste_fact",
+          "site": "localflow/v2/analytics.py:592",
+          "role": "repaste fact"
+        }
+      ],
+      "identity": "completed generation or executed repaste id; one activity per actual operation",
+      "deletion_authority": "job-linked repastes deleted with the job usage action",
+      "timeout_behavior": "refusal/no transaction records nothing",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-026"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-071",
+      "authoritative_object": "Insights report into the Hub pane",
+      "producer": "InsightsQueryService",
+      "producer_site": "localflow/v2/analytics.py:872",
+      "consumers": [
+        {
+          "name": "AppDelegate.configure",
+          "site": "localflow/app.py:312",
+          "role": "construction"
+        },
+        {
+          "name": "HubState._load_insights",
+          "site": "localflow/v2/ui/state.py:757",
+          "role": "report query"
+        },
+        {
+          "name": "HubState.invalidate_usage",
+          "site": "localflow/v2/ui/state.py:1040",
+          "role": "usage revision invalidation"
+        },
+        {
+          "name": "AppDelegate._usage_changed",
+          "site": "localflow/app.py:6217",
+          "role": "after usage mutation"
+        },
+        {
+          "name": "HubState.reload_insights",
+          "site": "localflow/v2/ui/state.py:752",
+          "role": "reload"
+        }
+      ],
+      "identity": "generation + usage revision + pane identity; single report revision/cohort/zone",
+      "deletion_authority": "usage deletion invalidates cached/visible reports",
+      "timeout_behavior": "unknown deletion revokes then reconciles via receipt",
+      "aliases": {
+        "A": [],
+        "C": [],
+        "B": [
+          "IF-027"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-072",
+      "authoritative_object": "Content versus usage deletion and usage-derived profile copies",
+      "producer": "AnalyticsStore.delete_usage_for_job / conn_redact_usage_copies",
+      "producer_site": "localflow/v2/analytics.py:635",
+      "consumers": [
+        {
+          "name": "AppDelegate.hubDeleteUsageForJob",
+          "site": "localflow/app.py:6239",
+          "role": "History Delete Usage"
+        },
+        {
+          "name": "AppDelegate._usage_mutation",
+          "site": "localflow/app.py:6155",
+          "role": "typed receipt/reconciliation"
+        },
+        {
+          "name": "AnalyticsStore._removed",
+          "site": "localflow/v2/analytics.py:622",
+          "role": "same-op redaction of profile snapshot copies"
+        },
+        {
+          "name": "AnalyticsStore.ensure_current.op",
+          "site": "localflow/v2/analytics.py:839",
+          "role": "retention redaction"
+        },
+        {
+          "name": "AppDelegate.hubDeleteAllUsage",
+          "site": "localflow/app.py:6227",
+          "role": "Delete all usage"
+        },
+        {
+          "name": "AnalyticsStore.delete_all_usage",
+          "site": "localflow/v2/analytics.py:657",
+          "role": "delete all usage"
+        }
+      ],
+      "identity": "explicit content versus usage deletion; committed usage revision/signature at publication",
+      "deletion_authority": "usage deletion clears copied derived metadata in the same transaction; speech remains",
+      "timeout_behavior": "outcome_unknown reconciles via completion marker; never falsely failed",
+      "aliases": {
+        "A": [
+          "XF-IF-046"
+        ],
+        "C": [
+          "IF-21"
+        ],
+        "B": [
+          "IF-028"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X01"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census usage_facts (70 production) re-verified",
+      "closure_residue": [
+        {
+          "function": "conn_redact_usage_copies",
+          "site": "localflow/v2/analytics.py:277",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-073",
+      "authoritative_object": "Read-only/focus-safe Hub publication",
+      "producer": "AppDelegate._hub_blocks_show",
+      "producer_site": "localflow/app.py:5401",
+      "consumers": [
+        {
+          "name": "AppDelegate.openHub_",
+          "site": "localflow/app.py:5356",
+          "role": "Hub show"
+        },
+        {
+          "name": "AppDelegate.quickOpenScratchpad_",
+          "site": "localflow/app.py:2253",
+          "role": "Scratchpad quick open"
+        },
+        {
+          "name": "AppDelegate.hubPasteText",
+          "site": "localflow/app.py:5491",
+          "role": "Paste Again refusal mid-transaction"
+        },
+        {
+          "name": "AppDelegate._flush_pending_hub_show",
+          "site": "localflow/app.py:5436",
+          "role": "deferred show"
+        }
+      ],
+      "identity": "pipeline busy, insertion hold, rendered action token",
+      "deletion_authority": "n/a",
+      "timeout_behavior": "passive work never steals focus or performs external insertion",
+      "aliases": {
+        "A": [
+          "XF-IF-047"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-074",
+      "authoritative_object": "Status/runbook/registry current-state projection",
+      "producer": "docs/v2/STATUS.json, docs/v2/VERIFICATION.html, docs/v2/registry.json, ORCHESTRATION.html",
+      "producer_site": "docs/v2/VERIFICATION.html:2514",
+      "consumers": [
+        {
+          "name": "fresh agent / human acceptance tracking",
+          "site": "docs/v2/STATUS.json:1",
+          "role": "no production callable"
+        }
+      ],
+      "identity": "current code/evidence refs, stable V-id instruction revision, browser namespace, requirement/suite ids",
+      "deletion_authority": "history retained while superseded evidence is marked",
+      "timeout_behavior": "missing/native/model evidence stays PENDING, never PASS; old green localStorage is not a current pass",
+      "aliases": {
+        "A": [
+          "XF-IF-048"
+        ],
+        "C": [
+          "IF-29"
+        ],
+        "B": []
+      },
+      "merged_findings": [
+        "MERGED-X16",
+        "MERGED-X17"
+      ],
+      "closure_state": "unbound",
+      "missing_consumers": [],
+      "closure_basis": "census STATUS.json (0 production) / VERIFICATION.html (4 production, all script comments)",
+      "closure_reason": "document projection with no production callable: census STATUS.json has 0 production hits; VERIFICATION.html production hits are comments in scripts. At the pinned commit STATUS.json has no current_state projection (D15 not landed) and VERIFICATION.html M07 is still the placeholder at line 2514 (D16 not landed; GATE-G03 records M07 has none)",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-075",
+      "authoritative_object": "Baseline/config/model/fixture provenance",
+      "producer": "ids.source_revision / resolve_model_revision and scripts/v2/build_baseline_manifest.build",
+      "producer_site": "localflow/v2/ids.py:57",
+      "consumers": [
+        {
+          "name": "AppDelegate.startDictation",
+          "site": "localflow/app.py:3396",
+          "role": "job source revision"
+        },
+        {
+          "name": "AppDelegate._recover_claimed",
+          "site": "localflow/app.py:3201",
+          "role": "recovery"
+        },
+        {
+          "name": "AppDelegate._pipeline_info",
+          "site": "localflow/app.py:2560",
+          "role": "diagnostics engine block"
+        },
+        {
+          "name": "engine_block",
+          "site": "localflow/v2/diagnostics.py:108",
+          "role": "Diagnostics"
+        },
+        {
+          "name": "build",
+          "site": "scripts/v2/build_baseline_manifest.py:772",
+          "role": "scripts/v2/build_baseline_manifest.py"
+        },
+        {
+          "name": "AppDelegate.configure",
+          "site": "localflow/app.py:364",
+          "role": "model revision at startup"
+        },
+        {
+          "name": "EventWriter.__init__",
+          "site": "localflow/v2/eventlog.py:93",
+          "role": "event envelope source revision"
+        }
+      ],
+      "identity": "exact source/config/model/fixture revision and digest, never a branch name alone",
+      "deletion_authority": "private snapshots/baselines stay outside commits and generic events",
+      "timeout_behavior": "startup failure is not evidence the installed process matches Git; no target execution inferred",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-01"
+        ],
+        "B": [
+          "IF-001"
+        ]
+      },
+      "merged_findings": [],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of source_revision callers",
+      "note": "installed-build parity remains a human/native check",
+      "closure_residue": [
+        {
+          "function": "resolve_model_revision",
+          "site": "localflow/v2/ids.py:81",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    },
+    {
+      "union_id": "XM-IF-076",
+      "authoritative_object": "Performance validity versus speed",
+      "producer": "benchmark harness validity oracle (scripts/v2/benchmark_m14.py run_validity; EXIT_INVALID)",
+      "producer_site": "scripts/v2/benchmark_m14.py:551",
+      "consumers": [
+        {
+          "name": "milestone acceptance / model qualification",
+          "site": "docs/v2/LOCALFLOW_V2_MILESTONES.md:65",
+          "role": "no production callable"
+        }
+      ],
+      "identity": "actual work cardinalities, semantic outputs, fixture/env/source identity, timing samples",
+      "deletion_authority": "n/a",
+      "timeout_behavior": "no-op/empty work is INVALID; historical timing is not a current end-to-end pass",
+      "aliases": {
+        "A": [
+          "XF-IF-049"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "unbound",
+      "missing_consumers": [],
+      "closure_basis": "pinned-commit git grep of run_validity",
+      "closure_reason": "the producer exists only as benchmark scripts; its consumers are acceptance documents and humans, not a production callable",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-077",
+      "authoritative_object": "M15 qualification gate",
+      "producer": "canonical milestone/spec/evaluation owners",
+      "producer_site": "docs/v2/LOCALFLOW_V2_MILESTONES.md:65",
+      "consumers": [
+        {
+          "name": "future model candidates / acceptance reports",
+          "site": "docs/v2/LOCALFLOW_V2_MILESTONES.md:65",
+          "role": "no production callable"
+        }
+      ],
+      "identity": "current code, complete eligible data tiers, family exposure, faithful/PE policies",
+      "deletion_authority": "n/a",
+      "timeout_behavior": "defective evidence is never qualification truth; fidelity is not relaxed for a green result",
+      "aliases": {
+        "A": [
+          "XF-IF-050"
+        ],
+        "C": [],
+        "B": []
+      },
+      "merged_findings": [],
+      "closure_state": "unbound",
+      "missing_consumers": [],
+      "closure_basis": "docs/v2/LOCALFLOW_V2_MILESTONES.md dependency table",
+      "closure_reason": "M15 is not implemented; the gate is a document requirement with no producer or consumer callable",
+      "closure_residue": []
+    },
+    {
+      "union_id": "XM-IF-078",
+      "authoritative_object": "Schema version and relational-family integrity (repair authority)",
+      "producer": "Store._migrate with _CORE_DEPENDENTS (refuses a damaged current-version store, D01)",
+      "producer_site": "localflow/v2/store.py:1377",
+      "consumers": [
+        {
+          "name": "Store.__init__",
+          "site": "localflow/v2/store.py:1241",
+          "role": "every Store open"
+        },
+        {
+          "name": "AppDelegate.configure",
+          "site": "localflow/app.py:241",
+          "role": "production opener (backup_dir)"
+        },
+        {
+          "name": "main",
+          "site": "scripts/v2/export_dataset.py:42",
+          "role": "scripts/v2/export_dataset.py real-store opener (import_legacy.py:41 likewise)"
+        }
+      ],
+      "identity": "schema version, table families, dependent rows, pre-repair backup; relationship integrity, not table existence alone",
+      "deletion_authority": "repair preserves deletion/exposure/revocation semantics; missing links invalidate/refuse dependent content",
+      "timeout_behavior": "failure leaves a usable preimage and no false clean opening",
+      "aliases": {
+        "A": [],
+        "C": [
+          "IF-28"
+        ],
+        "B": [
+          "IF-038"
+        ]
+      },
+      "merged_findings": [
+        "MERGED-X01"
+      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census store_openers / _CORE_DEPENDENTS / _migrate re-verified; raw sqlite3.connect sites are a legacy importer source and a read-only snapshot copy, not Store authority",
+      "closure_residue": [
+        {
+          "function": "(scripts/ harness functions: 1)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ]
+    }
+  ]
+}

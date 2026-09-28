@@ -1,0 +1,729 @@
+{
+ "suite": "tests/v2/crossmilestone/test_xm_remediation.py",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_xm_remediation.py",
+  "suite_sha256": "3a268b0f610b336fe314f80e144aac4e354e4c916e2d0e1e17a6141f295b6216",
+  "code_root_sha": "b29640877feb3725ec5b7035d9eb32fdcb933571",
+  "tracked_files_modified": true,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "counts": {
+  "PASS": 79
+ },
+ "invoked": [
+  "c_app_refuses_a_torn_dictionary",
+  "x02_recovery_copy_never_replaces_a_pending_payload",
+  "x02_recovery_copy_refusal_is_shown_in_the_recovery_menu",
+  "x02_refusal_title_does_not_outlive_its_failure",
+  "c_recovery_copy_publishes_when_nothing_is_pending",
+  "x05_failed_normalized_retention_is_never_a_complete_task",
+  "c_retained_changed_normalization_exports_the_exact_input",
+  "c_unchanged_normalization_keeps_raw_input_complete",
+  "c_ledger_failure_with_unchanged_text_keeps_raw_input",
+  "c_ledger_failure_after_retained_text_exports_normalized_input",
+  "x06_history_resolves_the_current_attempt_after_collection_off_retry",
+  "x06_absent_current_attempt_stages_say_why",
+  "c_current_attempt_with_stages_carries_no_absent_reason",
+  "x06_teach_ignores_the_superseded_attempts_example_state",
+  "c_collection_on_retry_resolves_the_new_manifest",
+  "x07_retries_never_manufacture_dictations_or_words",
+  "x07_excluded_latest_attempt_never_falls_back_to_an_older_one",
+  "x07_training_excluded_latest_attempt_never_falls_back",
+  "x07_restoring_the_blocking_attempt_during_compute_restarts_it",
+  "c_ten_independent_captures_reach_the_floor",
+  "x03_interleaved_updates_preserve_the_committed_definition",
+  "c_sequential_updates_each_preserve_their_definition",
+  "x04_stale_form_never_reverses_a_newer_opt_out",
+  "x04_unknown_update_then_stale_refill_never_reenables_auto",
+  "x04_merged_update_shows_the_stored_opt_out",
+  "c_fresh_form_update_changes_only_the_edited_field",
+  "local01_selected_transform_fills_its_own_instruction",
+  "x08_admitted_add_timeout_is_unknown_and_one_transform_results",
+  "x08_admitted_toggle_timeout_is_not_reported_as_failed",
+  "c_refused_add_saves_nothing_and_a_fixed_form_adds_once",
+  "x09_admitted_save_timeout_then_retry_makes_one_note",
+  "x09_panel_save_unknown_is_shown_and_repeatable",
+  "c_save_refused_before_admission_is_not_saved_then_saves_once",
+  "x09_panel_save_without_scratchpad_is_shown_not_saved",
+  "c_distinct_saves_make_distinct_notes",
+  "x10_unknown_source_deletion_is_reported_and_retry_settles",
+  "x10_unknown_copy_create_then_retry_makes_one_note",
+  "c_unknown_create_never_deletes_the_source",
+  "x11_renamed_entry_never_relabels_historical_speech",
+  "x11_missing_frozen_record_is_unrecorded_never_relabeled",
+  "c_disabled_rule_no_longer_counts",
+  "c_unrenamed_entry_cites_its_applied_term",
+  "x12_older_refresh_never_repaints_over_a_validate_result",
+  "x12_validate_result_binds_to_its_destination_across_pane_switch",
+  "x12_older_validate_never_takes_over_a_newer_export_result",
+  "x12_export_leaves_another_folders_validate_to_finish",
+  "x12_unknown_export_instruction_outranks_the_replaced_validation",
+  "x12_older_validate_never_shows_during_or_after_a_failed_export",
+  "x12_completed_export_supersedes_a_validate_pressed_during_it",
+  "x12_validate_refused_exactly_while_an_export_may_replace_the_folder",
+  "x14_hub_export_presses_while_one_runs",
+  "x12_validate_resolves_the_folder_like_export",
+  "x12_failed_export_never_shows_a_validation_taken_during_it",
+  "x13_validate_never_runs_filesystem_work_on_the_ui_thread",
+  "x15_hub_offers_undo_approval_for_the_rendered_candidate",
+  "x15_hub_undo_outcome_stays_on_screen_after_refresh",
+  "x15_hub_undo_refuses_after_a_user_edit",
+  "x15_hub_undo_unknown_outcome_then_retry_is_one_undo",
+  "c_service_undo_reverses_exactly_and_keeps_user_edits",
+  "x14_post_rename_crash_is_recognized_not_lost_or_relabeled",
+  "x14_restarted_export_reconciles_the_crashed_intent",
+  "x14_lost_export_records_never_leave_a_hidden_export",
+  "x14_reconcile_never_touches_a_folder_it_did_not_move_aside",
+  "x14_a_concurrent_export_never_reconciles_a_live_build",
+  "x14_a_second_export_during_the_graph_write_leaves_both_complete",
+  "x14_another_exporters_sweep_never_takes_a_live_build",
+  "x14_interrupted_export_leaves_no_copy_of_recordings_behind",
+  "x14_interrupted_export_is_cleaned_wherever_it_was_written",
+  "x14_dead_build_is_cleaned_whatever_process_now_has_its_pid",
+  "x14_live_build_of_another_process_survives_a_reconcile_then_is_cleaned",
+  "x14_same_id_while_building_never_clobbers_the_live_build",
+  "x14_launch_puts_back_the_export_an_interrupted_build_moved_aside",
+  "c_reconcile_never_touches_a_build_another_process_runs",
+  "x14_another_exporter_never_reconciles_a_publishing_build",
+  "c_settled_builds_release_their_mark_and_lock",
+  "x14_lost_record_before_rename_puts_the_earlier_export_back",
+  "c_crash_before_rename_restores_and_the_retry_completes",
+  "x16_status_separates_current_state_from_historical_record",
+  "x17_m07_obligations_have_stable_runbook_ownership"
+ ],
+ "results": [
+  {
+   "case": "c_app_refuses_a_torn_dictionary",
+   "finding": "MERGED-X01/G control (M05-AUDIT-18, app startup)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
+  },
+  {
+   "case": "x02_recovery_copy_never_replaces_a_pending_payload",
+   "finding": "MERGED-X02 (XF-AUDIT-01, B CROSS-AUDIT-04)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.13
+  },
+  {
+   "case": "x02_recovery_copy_refusal_is_shown_in_the_recovery_menu",
+   "finding": "MERGED-X02 (review RV-10: the refusal is visible in Recovery)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.13
+  },
+  {
+   "case": "x02_refusal_title_does_not_outlive_its_failure",
+   "finding": "MERGED-X02 (review R2-07: the refusal is not shown for a later failure)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.13
+  },
+  {
+   "case": "c_recovery_copy_publishes_when_nothing_is_pending",
+   "finding": "MERGED-X02 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "x05_failed_normalized_retention_is_never_a_complete_task",
+   "finding": "MERGED-X05 (XF-AUDIT-04)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "c_retained_changed_normalization_exports_the_exact_input",
+   "finding": "MERGED-X05 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "c_unchanged_normalization_keeps_raw_input_complete",
+   "finding": "MERGED-X05 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "c_ledger_failure_with_unchanged_text_keeps_raw_input",
+   "finding": "MERGED-X05 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "c_ledger_failure_after_retained_text_exports_normalized_input",
+   "finding": "MERGED-X05 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "x06_history_resolves_the_current_attempt_after_collection_off_retry",
+   "finding": "MERGED-X06 (B CROSS-AUDIT-01)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.17
+  },
+  {
+   "case": "x06_absent_current_attempt_stages_say_why",
+   "finding": "MERGED-X06 (review RV-11: the current attempt left no stage)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.17
+  },
+  {
+   "case": "c_current_attempt_with_stages_carries_no_absent_reason",
+   "finding": "MERGED-X06 control (review R2-06: the reason only when no stage exists)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.17
+  },
+  {
+   "case": "x06_teach_ignores_the_superseded_attempts_example_state",
+   "finding": "MERGED-X06 (review RV-14: Teach after the superseded example is excluded)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "c_collection_on_retry_resolves_the_new_manifest",
+   "finding": "MERGED-X06 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.17
+  },
+  {
+   "case": "x07_retries_never_manufacture_dictations_or_words",
+   "finding": "MERGED-X07 (C CROSS-AUDIT-03, B CROSS-AUDIT-02)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.81
+  },
+  {
+   "case": "x07_excluded_latest_attempt_never_falls_back_to_an_older_one",
+   "finding": "MERGED-X07 (excluded attempt never falls back)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "x07_training_excluded_latest_attempt_never_falls_back",
+   "finding": "MERGED-X07 (review RV-01: Training Data exclusion of the latest attempt)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "x07_restoring_the_blocking_attempt_during_compute_restarts_it",
+   "finding": "MERGED-X07 (review R2-09: the fence covers a blocking latest attempt)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "c_ten_independent_captures_reach_the_floor",
+   "finding": "MERGED-X07 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.86
+  },
+  {
+   "case": "x03_interleaved_updates_preserve_the_committed_definition",
+   "finding": "MERGED-X03 (XF-AUDIT-02, C CROSS-AUDIT-02)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "c_sequential_updates_each_preserve_their_definition",
+   "finding": "MERGED-X03 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x04_stale_form_never_reverses_a_newer_opt_out",
+   "finding": "MERGED-X04 (XF-AUDIT-03, C CROSS-AUDIT-05)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "x04_unknown_update_then_stale_refill_never_reenables_auto",
+   "finding": "MERGED-X04 (single-Hub path through an unknown Update)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.3
+  },
+  {
+   "case": "x04_merged_update_shows_the_stored_opt_out",
+   "finding": "MERGED-X04 (review RV-08: the editor after a merged Update)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "c_fresh_form_update_changes_only_the_edited_field",
+   "finding": "MERGED-X04 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.04
+  },
+  {
+   "case": "local01_selected_transform_fills_its_own_instruction",
+   "finding": "LOCAL-XM-01 (GATE-G07 transform prompt editability)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.04
+  },
+  {
+   "case": "x08_admitted_add_timeout_is_unknown_and_one_transform_results",
+   "finding": "MERGED-X08 (XF-AUDIT-05, C CROSS-AUDIT-06)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.3
+  },
+  {
+   "case": "x08_admitted_toggle_timeout_is_not_reported_as_failed",
+   "finding": "MERGED-X08 (sibling: Enable/Disable)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.31
+  },
+  {
+   "case": "c_refused_add_saves_nothing_and_a_fixed_form_adds_once",
+   "finding": "MERGED-X08 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "x09_admitted_save_timeout_then_retry_makes_one_note",
+   "finding": "MERGED-X09 (XF-AUDIT-06)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.27
+  },
+  {
+   "case": "x09_panel_save_unknown_is_shown_and_repeatable",
+   "finding": "MERGED-X09 (review RV-04: through the preview panel)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.31
+  },
+  {
+   "case": "c_save_refused_before_admission_is_not_saved_then_saves_once",
+   "finding": "MERGED-X09 control (XF-AUDIT-06 refusal before admission)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.04
+  },
+  {
+   "case": "x09_panel_save_without_scratchpad_is_shown_not_saved",
+   "finding": "MERGED-X09 (review R2-08: Scratchpad unavailable)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "c_distinct_saves_make_distinct_notes",
+   "finding": "MERGED-X09 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "x10_unknown_source_deletion_is_reported_and_retry_settles",
+   "finding": "MERGED-X10 (XF-AUDIT-07)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.35
+  },
+  {
+   "case": "x10_unknown_copy_create_then_retry_makes_one_note",
+   "finding": "MERGED-X10 (census: History Copy after create_unknown)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.36
+  },
+  {
+   "case": "c_unknown_create_never_deletes_the_source",
+   "finding": "MERGED-X10 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.36
+  },
+  {
+   "case": "x11_renamed_entry_never_relabels_historical_speech",
+   "finding": "MERGED-X11 (C CROSS-AUDIT-04, B CROSS-AUDIT-03)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.11
+  },
+  {
+   "case": "x11_missing_frozen_record_is_unrecorded_never_relabeled",
+   "finding": "MERGED-X11 (missing frozen record)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "c_disabled_rule_no_longer_counts",
+   "finding": "MERGED-X11 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "c_unrenamed_entry_cites_its_applied_term",
+   "finding": "MERGED-X11 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "x12_older_refresh_never_repaints_over_a_validate_result",
+   "finding": "MERGED-X12 (C CROSS-AUDIT-07, B CROSS-AUDIT-06)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "x12_validate_result_binds_to_its_destination_across_pane_switch",
+   "finding": "MERGED-X12 (two destinations, pane switch)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
+  },
+  {
+   "case": "x12_older_validate_never_takes_over_a_newer_export_result",
+   "finding": "MERGED-X12 (review RV-03: an Export supersedes an older Validate)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.26
+  },
+  {
+   "case": "x12_export_leaves_another_folders_validate_to_finish",
+   "finding": "MERGED-X12 (review R3-01: an Export never strands another folder's Validate)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.39
+  },
+  {
+   "case": "x12_unknown_export_instruction_outranks_the_replaced_validation",
+   "finding": "MERGED-X12 (review R3-07: an unknown Export keeps its instruction)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.36
+  },
+  {
+   "case": "x12_older_validate_never_shows_during_or_after_a_failed_export",
+   "finding": "MERGED-X12 (an older Validate finishing during a running, then failing, Export)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.57
+  },
+  {
+   "case": "x12_completed_export_supersedes_a_validate_pressed_during_it",
+   "finding": "MERGED-X12 (review R2-01: a completed Export supersedes a Validate pressed during it)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.37
+  },
+  {
+   "case": "x12_validate_refused_exactly_while_an_export_may_replace_the_folder",
+   "finding": "MERGED-X12 (review R5-01..R5-03: when Validate is refused, and when it is available again)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 15.11
+  },
+  {
+   "case": "x14_hub_export_presses_while_one_runs",
+   "finding": "MERGED-X14 (review R6-03/R6-06: Export presses while one runs)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "x12_validate_resolves_the_folder_like_export",
+   "finding": "MERGED-X12 (review R5-04: Validate reads the folder Export wrote)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.04
+  },
+  {
+   "case": "x12_failed_export_never_shows_a_validation_taken_during_it",
+   "finding": "MERGED-X12 (review R4-05: a Validate pressed during a failing Export)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.35
+  },
+  {
+   "case": "x13_validate_never_runs_filesystem_work_on_the_ui_thread",
+   "finding": "MERGED-X13 (B CROSS-AUDIT-07)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "x15_hub_offers_undo_approval_for_the_rendered_candidate",
+   "finding": "MERGED-X15 (C DESIGN-01, B CROSS-AUDIT-09)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
+  },
+  {
+   "case": "x15_hub_undo_outcome_stays_on_screen_after_refresh",
+   "finding": "MERGED-X15 (review RV-09: the outcome survives its own refresh)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
+  },
+  {
+   "case": "x15_hub_undo_refuses_after_a_user_edit",
+   "finding": "MERGED-X15 (refusal keeps a user edit)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
+  },
+  {
+   "case": "x15_hub_undo_unknown_outcome_then_retry_is_one_undo",
+   "finding": "MERGED-X15 (unknown outcome reconciles)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.31
+  },
+  {
+   "case": "c_service_undo_reverses_exactly_and_keeps_user_edits",
+   "finding": "MERGED-X15 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "x14_post_rename_crash_is_recognized_not_lost_or_relabeled",
+   "finding": "MERGED-X14 (C DESIGN-02, B CROSS-AUDIT-08)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.25
+  },
+  {
+   "case": "x14_restarted_export_reconciles_the_crashed_intent",
+   "finding": "MERGED-X14 (review RV-02: the restarted Hub exports under a new id)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.25
+  },
+  {
+   "case": "x14_lost_export_records_never_leave_a_hidden_export",
+   "finding": "MERGED-X14 (review RV-13: the crash's record is lost too)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "x14_reconcile_never_touches_a_folder_it_did_not_move_aside",
+   "finding": "MERGED-X14 (review R2-02: a user folder named like an aside)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.13
+  },
+  {
+   "case": "x14_a_concurrent_export_never_reconciles_a_live_build",
+   "finding": "MERGED-X14 (review R2-04: a second Export while one publishes)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "x14_a_second_export_during_the_graph_write_leaves_both_complete",
+   "finding": "MERGED-X14 (review R3-04: a second Export while one writes its graph)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.08
+  },
+  {
+   "case": "x14_another_exporters_sweep_never_takes_a_live_build",
+   "finding": "MERGED-X14 (review R3-05: another exporter on the same store)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "x14_interrupted_export_leaves_no_copy_of_recordings_behind",
+   "finding": "MERGED-X14 (review R5-05: an export interrupted mid-graph)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.09
+  },
+  {
+   "case": "x14_interrupted_export_is_cleaned_wherever_it_was_written",
+   "finding": "MERGED-X14 (review R6-01: a relative or unmounted destination)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "x14_dead_build_is_cleaned_whatever_process_now_has_its_pid",
+   "finding": "MERGED-X14 (review R6-02/R6-04: a dead build whose pid is reused)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "x14_live_build_of_another_process_survives_a_reconcile_then_is_cleaned",
+   "finding": "MERGED-X14 (review R6-02/R6-04: a live build in another process)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.16
+  },
+  {
+   "case": "x14_same_id_while_building_never_clobbers_the_live_build",
+   "finding": "MERGED-X14 (review R6-03: the same export id while it runs)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "x14_launch_puts_back_the_export_an_interrupted_build_moved_aside",
+   "finding": "MERGED-X14 (review R6-05: the earlier export put back at launch)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "c_reconcile_never_touches_a_build_another_process_runs",
+   "finding": "MERGED-X14 control (review R5-05: another process's live build)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.08
+  },
+  {
+   "case": "x14_another_exporter_never_reconciles_a_publishing_build",
+   "finding": "MERGED-X14 (another exporter while a build publishes)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "c_settled_builds_release_their_mark_and_lock",
+   "finding": "MERGED-X14 control (review 7: every settled build lets go)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.11
+  },
+  {
+   "case": "x14_lost_record_before_rename_puts_the_earlier_export_back",
+   "finding": "MERGED-X14 (review R2-05: put back when the destination is free)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "c_crash_before_rename_restores_and_the_retry_completes",
+   "finding": "MERGED-X14 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.26
+  },
+  {
+   "case": "x16_status_separates_current_state_from_historical_record",
+   "finding": "MERGED-X16 (XF-AUDIT-08, C CROSS-AUDIT-08, B CROSS-AUDIT-10)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "x17_m07_obligations_have_stable_runbook_ownership",
+   "finding": "MERGED-X17 (B CROSS-AUDIT-11)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.0
+  }
+ ]
+}

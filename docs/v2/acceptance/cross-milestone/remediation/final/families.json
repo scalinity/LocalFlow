@@ -1,0 +1,232 @@
+{
+ "suite": "tests/v2/crossmilestone/test_xm_store_families.py",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_xm_store_families.py",
+  "suite_sha256": "381635f72b76dbddbfa967390b2f7e55ab29ba5659eb0094317d4b3a81dd0650",
+  "code_root_sha": "b29640877feb3725ec5b7035d9eb32fdcb933571",
+  "tracked_files_modified": true,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "counts": {
+  "PASS": 27
+ },
+ "results": [
+  {
+   "case": "x01a_lost_memberships_never_return_exposed_family_to_holdout",
+   "finding": "MERGED-X01/A training_memberships",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "x01b_lost_profile_evidence_never_keeps_dead_private_text",
+   "finding": "MERGED-X01/B profile_evidence",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "x01c_lost_deltas_never_let_undo_destroy_a_user_edit",
+   "finding": "MERGED-X01/C learning_vocabulary_deltas",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x01d_lost_usage_facts_never_keep_deleted_usage_in_aggregates",
+   "finding": "MERGED-X01/D usage_facts",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "x01e_lost_candidates_never_forget_a_permanent_rejection",
+   "finding": "MERGED-X01/E learning_candidates",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x01f_lost_labels_never_readmit_background_speech",
+   "finding": "MERGED-X01/F correction_labels",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
+  },
+  {
+   "case": "c_torn_dictionary_stays_detectable_after_repair",
+   "finding": "MERGED-X01/G vocabulary family (M05-AUDIT-18)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "x01h_lost_transform_rows_never_drop_a_user_definition",
+   "finding": "MERGED-X01/H transforms",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x01h2_lost_revisions_never_present_history_as_none",
+   "finding": "MERGED-X01/H transform_revisions",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x01i_lost_snippets_are_not_an_empty_registry",
+   "finding": "MERGED-X01/I snippets",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x01j_lost_assignments_keep_the_assignment_history",
+   "finding": "MERGED-X01/J split_assignments",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "x01h3_lost_transform_registry_revision_never_restarts",
+   "finding": "MERGED-X01/H transform_meta",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x01h4_lost_candidates_never_orphan_recorded_judgments",
+   "finding": "MERGED-X01/H transform_candidates",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x01i2_lost_style_rules_are_not_an_empty_registry",
+   "finding": "MERGED-X01/I style_rules",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x01i3_lost_profile_registry_revision_never_restarts",
+   "finding": "MERGED-X01/I profiles_meta",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "x01d2_lost_aggregates_never_hide_recorded_usage",
+   "finding": "MERGED-X01/D daily_aggregates",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "x01k_lost_version_stamp_never_bypasses_family_integrity",
+   "finding": "MERGED-X01/A (review RV-06: schema_meta lost with a family table)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "c_lost_judgments_only_shrink_exports",
+   "finding": "MERGED-X01 recreate-safe: preference_observations",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "c_lost_sampling_decisions_redraw_identically",
+   "finding": "MERGED-X01 recreate-safe: sampling_decisions",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.12
+  },
+  {
+   "case": "c_genuinely_older_store_upgrades_with_backup",
+   "finding": "MERGED-X01 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "x01l_older_store_without_its_stamp_is_never_refused",
+   "finding": "MERGED-X01 (review R2-03: an older store that lost only its stamp)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.11
+  },
+  {
+   "case": "x01m_lost_version_row_is_backed_up_before_remigrating",
+   "finding": "MERGED-X01 (review R3-02: only the version row lost, backed up first)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.12
+  },
+  {
+   "case": "c_subledger_rows_state_the_current_design",
+   "finding": "MERGED-X01 record (review R2-10)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.0
+  },
+  {
+   "case": "c_every_historical_schema_upgrades_with_an_exact_backup",
+   "finding": "GATE-G04 every historical schema",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.09
+  },
+  {
+   "case": "c_lost_version_stamp_alone_reopens_with_a_backup",
+   "finding": "MERGED-X01 control (review RV-06: only the version stamp lost)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "c_fresh_store_opens_empty",
+   "finding": "MERGED-X01 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_intact_current_store_reopens_without_repair",
+   "finding": "MERGED-X01 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.11
+  }
+ ]
+}

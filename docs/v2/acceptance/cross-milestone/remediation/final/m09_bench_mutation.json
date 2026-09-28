@@ -1,0 +1,197 @@
+{
+ "tool": "scripts/v2/m09_benchmark_mutation_check.py",
+ "benchmark": "scripts/v2/benchmark_m09.py --quick",
+ "control_environment": {
+  "code_sha": "356a08a37651e007c9813b732406bc46f6d44b49",
+  "production_tree_clean": true,
+  "mac_model": "Mac17,8",
+  "chip": "Apple M5 Pro",
+  "macos": "27.0",
+  "python": "3.14.7",
+  "loadavg_at_start": "{ 2.63 3.25 3.30 }"
+ },
+ "summary": {
+  "killed": 8,
+  "survived": 0,
+  "harness_error": 0
+ },
+ "results": {
+  "control": {
+   "exit": 0,
+   "work_valid": true,
+   "validity": {
+    "history_search": true,
+    "shell": true,
+    "rapid_search": true,
+    "training": true,
+    "diagnostics": true,
+    "memory": true
+   },
+   "tail": null
+  },
+  "empty_hit": {
+   "outcome": "killed",
+   "cohort": "history_search",
+   "cases": [
+    "M09-C114",
+    "M09-MUT26"
+   ],
+   "why": "history_search validity failed",
+   "validity": {
+    "history_search": false,
+    "shell": true,
+    "rapid_search": true,
+    "training": true,
+    "diagnostics": true,
+    "memory": true
+   },
+   "work_valid": false,
+   "timing_qualified": false
+  },
+  "skip_view": {
+   "outcome": "killed",
+   "cohort": "shell",
+   "cases": [
+    "M09-C115",
+    "M09-MUT25"
+   ],
+   "why": "shell validity failed",
+   "validity": {
+    "history_search": true,
+    "shell": false,
+    "rapid_search": true,
+    "training": true,
+    "diagnostics": true,
+    "memory": true
+   },
+   "work_valid": false,
+   "timing_qualified": false
+  },
+  "omit_service": {
+   "outcome": "killed",
+   "cohort": "shell",
+   "cases": [
+    "M09-C115",
+    "M09-MUT25"
+   ],
+   "why": "shell validity failed",
+   "validity": {
+    "history_search": true,
+    "shell": false,
+    "rapid_search": true,
+    "training": true,
+    "diagnostics": true,
+    "memory": true
+   },
+   "work_valid": false,
+   "timing_qualified": false
+  },
+  "zero_examples": {
+   "outcome": "killed",
+   "cohort": "training",
+   "cases": [
+    "M09-C116",
+    "M09-MUT28"
+   ],
+   "why": "training validity failed",
+   "validity": {
+    "history_search": true,
+    "shell": false,
+    "rapid_search": true,
+    "training": false,
+    "diagnostics": true,
+    "memory": true
+   },
+   "work_valid": false,
+   "timing_qualified": false
+  },
+  "drop_publication": {
+   "outcome": "killed",
+   "cohort": "shell",
+   "cases": [
+    "M09-C117"
+   ],
+   "why": "shell validity failed",
+   "validity": {
+    "history_search": true,
+    "shell": false,
+    "rapid_search": true,
+    "training": true,
+    "diagnostics": true,
+    "memory": true
+   },
+   "work_valid": false,
+   "timing_qualified": false
+  },
+  "inline_dispatch": {
+   "outcome": "killed",
+   "cohort": "shell",
+   "cases": [
+    "M09-C118"
+   ],
+   "why": "shell validity failed",
+   "validity": {
+    "history_search": true,
+    "shell": false,
+    "rapid_search": true,
+    "training": true,
+    "diagnostics": true,
+    "memory": true
+   },
+   "work_valid": false,
+   "timing_qualified": false
+  },
+  "enqueue_timer": {
+   "outcome": "killed",
+   "cohort": "shell",
+   "cases": [
+    "M09-C119",
+    "M09-MUT27"
+   ],
+   "why": "shell validity failed",
+   "validity": {
+    "history_search": true,
+    "shell": false,
+    "rapid_search": true,
+    "training": true,
+    "diagnostics": true,
+    "memory": true
+   },
+   "work_valid": false,
+   "timing_qualified": false
+  },
+  "memory_five_views": {
+   "outcome": "killed",
+   "cohort": "memory",
+   "cases": [
+    "M09-C120"
+   ],
+   "why": "memory validity failed",
+   "validity": {
+    "history_search": true,
+    "shell": true,
+    "rapid_search": true,
+    "training": true,
+    "diagnostics": true,
+    "memory": false
+   },
+   "work_valid": false,
+   "timing_qualified": false
+  },
+  "timer_sensitivity": {
+   "injected_ms": 50.0,
+   "p50_delta_ms": {
+    "text_hit": 57.8,
+    "text_miss": 56.3,
+    "app_filter": 58.1,
+    "mode_filter": 57.1,
+    "browse_mixed": 57.9,
+    "legacy_mode": 53.2
+   },
+   "sensitive": true,
+   "cases": [
+    "M09-C119"
+   ]
+  }
+ }
+}

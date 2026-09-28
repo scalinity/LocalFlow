@@ -1,0 +1,110 @@
+{
+ "schema": 1,
+ "kind": "cross_milestone_adjudications",
+ "audited_base": "340c566686c7123bfcf721e16160aacabbe0b97d",
+ "policy_id": "xm-policy-r1",
+ "campaign_state": "CROSS_MILESTONE_REMEDIATION_INCOMPLETE",
+ "campaign_state_reason": "Every one of the 17 merged findings was reproduced on the audited base and is repaired with its regressions green; seven independent review rounds converged. The campaign is not complete because GATE-G06 (current cross-service semantic execution of the merged corpus) is largely open: of the 309 merged cases, the committed witnesses execute the finding reproductions and their controls, and the remaining cases have no driver yet (gates/casemap.json). The interface union keeps 5 partial and 3 unbound rows, GATE-G02 binds 24 of 33 requirements fully (5 partial, 4 future), GATE-G07's active native tier and GATE-G08's end-to-end timing are not run.",
+ "production": {
+  "first_pass": "63f9ef25148b4d10381693527e4679e351dcd60a",
+  "final": "d6a555d",
+  "tests_final": "356a08a",
+  "note": "Commits after d6a555d change tests, the mutation catalog and documents only."
+ },
+ "dispositions": ["reproduced", "narrowed", "test_gap_only", "design_only", "residual"],
+ "findings": [
+  {"id": "MERGED-X01", "severity": "HIGH", "disposition": "reproduced", "decision": "D01",
+   "repair": "localflow/v2/store.py: at the current schema version the repair path refuses (pre-repair backup kept) to recreate a later table empty when surviving rows of its family show it carried authority or user content; a store that lost its version stamp is checked the same way before any migration, against the schema its tables show, and always backed up first; daily_aggregates is recreated and rebuilt by the launch drift check (localflow/v2/analytics.py). The vocabulary family stays M05's (M05-AUDIT-18).",
+   "witnesses": "tests/v2/crossmilestone/test_xm_store_families.py (x01a..x01m, controls for fresh, intact, older and every historical schema)",
+   "narrowed_part": "vocabulary_history and vocabulary_meta losses: M05's accepted disposition (M05 test_18 asserts a clean integrity report); recorded as an M05-owned residual in schema_family_subledger.json"},
+  {"id": "MERGED-X02", "severity": "HIGH", "disposition": "reproduced", "decision": "D02",
+   "repair": "localflow/app.py copyLastRaw_: through _guarded_copy; a refusal is shown in the Recovery menu item and reset for a later failure."},
+  {"id": "MERGED-X03", "severity": "HIGH", "disposition": "reproduced", "decision": "D03",
+   "repair": "localflow/v2/transforms_store.py update_transform: read, merge, validate, update and preserve the revision in one writer op."},
+  {"id": "MERGED-X04", "severity": "HIGH", "disposition": "reproduced", "decision": "D03",
+   "repair": "localflow/v2/ui/hub.py Transforms editor: binds the rendered row; Update sends only changed fields; after an Update it refills from the stored definition."},
+  {"id": "MERGED-X05", "severity": "HIGH", "disposition": "reproduced", "decision": "D05",
+   "repair": "localflow/v2/training.py records whether a failed-to-retain normalization changed the text; localflow/v2/curation/evidence.py cleanup_qualification_in refuses unless the input is known unchanged."},
+  {"id": "MERGED-X06", "severity": "HIGH", "disposition": "reproduced", "decision": "D06",
+   "repair": "localflow/v2/history_queries.py resolves the current attempt (reason current_attempt_unavailable when it left no stage); learning.teach_correction and review.stage_texts_for use the same attempt; a superseded example's state does not govern Teach."},
+  {"id": "MERGED-X07", "severity": "HIGH", "disposition": "reproduced", "decision": "D07",
+   "repair": "localflow/v2/profile.py: one contribution per logical job, the latest attempt among all its examples whatever their state; a non-countable latest attempt makes the job contribute nothing; the exact-input fence covers it."},
+  {"id": "MERGED-X08", "severity": "MEDIUM", "disposition": "reproduced", "decision": "D08",
+   "repair": "Transforms Add keeps one id per logical Add until known; add_transform with a caller id is idempotent; admitted timeouts on Add/Update/Enable read outcome unknown."},
+  {"id": "MERGED-X09", "severity": "MEDIUM", "disposition": "reproduced", "decision": "D09",
+   "repair": "localflow/app.py tfSaveToScratchpad: one pending note id per displayed result; the preview panel returns with an unknown or not-saved outcome (TransformPreviewPanel.reoffer_save), Scratchpad unavailable included."},
+  {"id": "MERGED-X10", "severity": "MEDIUM", "disposition": "reproduced", "decision": "D10",
+   "repair": "localflow/app.py hubSaveHistoryRow: one pending transfer per row; source_deletion_unknown reported; Move again reuses the note and settles the deletion."},
+  {"id": "MERGED-X11", "severity": "MEDIUM", "disposition": "reproduced", "decision": "D11",
+   "repair": "localflow/v2/profile.py names speech-derived terms by the dictation's frozen applied-rules record; unrecorded dictations are counted, never relabeled; the current dictionary is a labeled separate view."},
+  {"id": "MERGED-X12", "severity": "MEDIUM", "disposition": "reproduced", "decision": "D12",
+   "repair": "localflow/v2/ui/hub.py: the Validate result is pane state bound to its destination; Export retires a running Validate; Validate of a folder is refused while an Export into it runs or its outcome is unknown; folders resolve as Export resolves them."},
+  {"id": "MERGED-X13", "severity": "MEDIUM", "disposition": "reproduced", "decision": "D12",
+   "repair": "Export Validate runs the validator on the Hub's background worker."},
+  {"id": "MERGED-X14", "severity": "MEDIUM", "disposition": "reproduced", "decision": "D13",
+   "repair": "localflow/v2/curation/export.py: a publishing intent before the rename; every build reconciles its destination (intents, moved-aside earlier exports it names and owns); a building intent and a locked owner file per build; interrupted builds cleaned at launch and before every build; one build per folder."},
+  {"id": "MERGED-X15", "severity": "MEDIUM", "disposition": "reproduced", "decision": "D14",
+   "repair": "Hub Review lists approved rules and offers Undo Approval through LearningService.undo_approval (operation id kept across an unknown outcome; refusal shown; outcome kept in the pane note)."},
+  {"id": "MERGED-X16", "severity": "MEDIUM", "disposition": "reproduced", "decision": "D15",
+   "repair": "docs/v2/STATUS.json current_state projection; the M14 implementation fields kept verbatim under historical_implementation."},
+  {"id": "MERGED-X17", "severity": "LOW", "disposition": "reproduced", "decision": "D16",
+   "repair": "docs/v2/VERIFICATION.html M07 section: M07-V001 (long-prompt trial) and M07-V002 (adjudicated real-text stratum, blocked: its private review tool does not exist), both Not run."}
+ ],
+ "local_findings": [
+  {"id": "LOCAL-XM-01", "disposition": "reproduced", "decision": "D04", "title": "Filling the Transforms editor raised before the instruction was shown (setEnabled_ on a text view), so a name-only Update erased the instruction", "repair": "setEditable_; the editor fills the selected row's instruction."},
+  {"id": "LOCAL-XM-02", "disposition": "reproduced", "title": "Settings Apply Retention sat past the minimum window's content width", "repair": "the retention row ends inside 700 pt."},
+  {"id": "LOCAL-XM-03", "disposition": "reproduced", "title": "History Move to Scratchpad and Delete Usage were unreachable at the minimum window", "repair": "History actions laid out again at every size in two rows."}
+ ],
+ "gates": {
+  "GATE-G01": {"state": "closed", "evidence": "remediation/caller_inventory.json; gates/census.json"},
+  "GATE-G02": {"state": "partial", "evidence": "gates/binding.json, gates/binding_summary.md", "detail": "33 requirements: 24 bound, 5 partial, 4 future (M15/M16); 22 suites: 17 bound, 2 partial, 3 future."},
+  "GATE-G03": {"state": "closed", "evidence": "tests/v2/crossmilestone/test_xm_runbook.py"},
+  "GATE-G04": {"state": "closed", "evidence": "test_xm_store_families.py c_every_historical_schema_upgrades_with_an_exact_backup, x01l, x01m"},
+  "GATE-G05": {"state": "closed", "evidence": "tests/v2/crossmilestone/test_xm_privacy.py"},
+  "GATE-G06": {"state": "open", "evidence": "gates/casemap.json", "detail": "309 merged cases from 511 source declarations; the committed witnesses execute the finding reproductions and their controls; the other merged cases have no driver yet."},
+  "GATE-G07": {"state": "partial", "evidence": "tests/v2/crossmilestone/test_native_xm_hub.py (passive tier)", "detail": "active tier, real keyboard/focus and the Hub's human checks not run."},
+  "GATE-G08": {"state": "partial", "evidence": "docs/v2/benchmarks (cross-milestone final)", "detail": "writer contention and Hub acknowledgement measured on this Mac after correctness; dictation end-to-end needs a human speaker and is not run."},
+  "GATE-G09": {"state": "closed", "evidence": "tests/v2/crossmilestone/test_xm_validator.py; X14 crash witnesses"},
+  "GATE-G10": {"state": "pending_manual_model", "detail": "M11 integrated record not all-green (one misdirected review, fourteen output-limit fallbacks); M07 long-prompt trial and real-text stratum pending (M07-V001/V002)."}
+ },
+ "policies": {
+  "POLICY-D01": "measured after correctness; see the cross-milestone benchmark record",
+  "POLICY-D02": "not implemented (design only)",
+  "POLICY-D03": "open product decision; nothing changed",
+  "POLICY-D04": "threat-model policy; supported producers bind identity, export requalifies pairs"
+ },
+ "interface_union": {"evidence": "gates/ifunion.json, gates/ifunion_summary.md", "rows": 78, "bound": 70, "partial": 5, "unbound": 3},
+ "independent_review": {
+  "method": "Each round a fresh-context agent reviewed the delta in a detached read-only worktree, given the audits, decisions, records and code, not the author's dispositions. Every allegation was reproduced by the author with an independently written fail-first witness before any change; mutants were added for each repair.",
+  "convergence_bar": "From round 7: a round converges when it finds no correctness, data-loss or privacy defect reachable in single-user use; lesser items are recorded as residuals.",
+  "rounds": [
+   {"round": 1, "reviewed": "340c566..63f9ef2", "allegations": 14, "outcome": "12 reproduced and repaired in 3db5e00; RV-05 narrowed to the record (M05-owned disposition); RV-12 witnesses tightened"},
+   {"round": 2, "reviewed": "63f9ef2..3db5e00", "allegations": 10, "outcome": "all reproduced and repaired in 4942e54; XM-MU28 masking resolved in c6ea3f9"},
+   {"round": 3, "reviewed": "3db5e00..4942e54", "allegations": 7, "outcome": "R3-01/R3-02 (regressions of round 2) and R3-05..R3-07 repaired in 309df21; R3-03 in c6ea3f9; R3-04 closed by the owner-file rule; mutation instruments fixed in 7ac3759"},
+   {"round": 4, "reviewed": "4942e54..309df21", "allegations": 9, "outcome": "settled by simplification in 121aa55: the staging sweep withdrawn, Validate refused during an Export into its folder; R4-08 residual"},
+   {"round": 5, "reviewed": "7ac3759..121aa55", "allegations": 5, "outcome": "R5-05 (interrupted exports left copies of recordings, pre-existing) and R5-01..R5-04 repaired in 8bf804d"},
+   {"round": 6, "reviewed": "121aa55..8bf804d", "allegations": 6, "outcome": "repaired in d6a555d (owner lock, absolute destinations, one build per folder); XM-MU58 masking resolved in 8e286c6"},
+   {"round": 7, "reviewed": "8bf804d..d6a555d", "allegations": 0, "outcome": "converged; release bookkeeping witnessed in 356a08a (XM-MU64/65)"}
+  ],
+  "residuals": [
+   "vocabulary_history / vocabulary_meta loss is silently repaired (M05-owned)",
+   "two processes first-opening a fresh store at once get a spurious pre-repair backup and warning (no data effect)",
+   "an unknown-outcome Export's 'Export again' instruction is replaced by the refresh's last-export text (cosmetic)",
+   "an interrupted export to a volume's top level whose empty mount point remains is written off",
+   "building rows written before d6a555d with a relative destination (never on main) can be orphaned",
+   "a lock failure right after staging mkdir raises a raw OSError and leaves an empty staging",
+   "after a publication timeout a same-id retry leaves the earlier export hidden until a later build to that folder (pre-existing)",
+   "exFAT with extended attributes: macOS ._* files make a package fail the validator (pre-existing, conditional)",
+   "the export CLI's destination reconcile can put an aside back during the app's publish window; the app's export then fails, no data lost (pre-existing, cross-process)",
+   "a non-current Export clearing the unknown-outcome state is not witnessed"
+  ]
+ },
+ "records": {
+  "decisions": "decisions.json",
+  "schema_family_subledger": "schema_family_subledger.json",
+  "caller_inventory": "caller_inventory.json",
+  "base": ["regressions_base_340c566.json", "families_base_340c566.json", "matrix_base_340c566.json"],
+  "gates": "gates/",
+  "final": {"regressions": "final/regressions.json", "families": "final/families.json", "mutation": "final/mutation.json", "native": "final/native_xm_hub.json", "sweep": "final/sweep.json", "sweep_rechecks": "final/recheck_*.json", "compatibility_corpora": "final/corpus_m05.json .. corpus_m14.json", "m09_benchmark_validity": "final/m09_bench_mutation.json", "benchmarks": "docs/v2/benchmarks/20260928-180600-xm-remediation-final/"}
+ }
+}

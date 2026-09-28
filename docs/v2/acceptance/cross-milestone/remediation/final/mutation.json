@@ -1,0 +1,2450 @@
+{
+ "tool": "scripts/v2/xm_mutation_check.py",
+ "code_sha": "356a08a37651e007c9813b732406bc46f6d44b49",
+ "killer_rule": "the fail-first regressions/controls of tests/v2/crossmilestone/ named per mutation; a kill needs the reach marker AND a failed killer",
+ "control": {
+  "cases": {
+   "x02_recovery_copy_never_replaces_a_pending_payload": "PASS",
+   "x02_recovery_copy_refusal_is_shown_in_the_recovery_menu": "PASS",
+   "x02_refusal_title_does_not_outlive_its_failure": "PASS",
+   "x05_failed_normalized_retention_is_never_a_complete_task": "PASS",
+   "c_ledger_failure_with_unchanged_text_keeps_raw_input": "PASS",
+   "x06_history_resolves_the_current_attempt_after_collection_off_retry": "PASS",
+   "x06_absent_current_attempt_stages_say_why": "PASS",
+   "c_current_attempt_with_stages_carries_no_absent_reason": "PASS",
+   "x06_teach_ignores_the_superseded_attempts_example_state": "PASS",
+   "x07_retries_never_manufacture_dictations_or_words": "PASS",
+   "x07_excluded_latest_attempt_never_falls_back_to_an_older_one": "PASS",
+   "x07_training_excluded_latest_attempt_never_falls_back": "PASS",
+   "x07_restoring_the_blocking_attempt_during_compute_restarts_it": "PASS",
+   "x03_interleaved_updates_preserve_the_committed_definition": "PASS",
+   "x04_stale_form_never_reverses_a_newer_opt_out": "PASS",
+   "x04_unknown_update_then_stale_refill_never_reenables_auto": "PASS",
+   "x04_merged_update_shows_the_stored_opt_out": "PASS",
+   "local01_selected_transform_fills_its_own_instruction": "PASS",
+   "x08_admitted_add_timeout_is_unknown_and_one_transform_results": "PASS",
+   "x09_admitted_save_timeout_then_retry_makes_one_note": "PASS",
+   "x09_panel_save_unknown_is_shown_and_repeatable": "PASS",
+   "x09_panel_save_without_scratchpad_is_shown_not_saved": "PASS",
+   "x10_unknown_source_deletion_is_reported_and_retry_settles": "PASS",
+   "x10_unknown_copy_create_then_retry_makes_one_note": "PASS",
+   "x11_renamed_entry_never_relabels_historical_speech": "PASS",
+   "x12_older_refresh_never_repaints_over_a_validate_result": "PASS",
+   "x12_validate_result_binds_to_its_destination_across_pane_switch": "PASS",
+   "x12_older_validate_never_takes_over_a_newer_export_result": "PASS",
+   "x12_unknown_export_instruction_outranks_the_replaced_validation": "PASS",
+   "x12_older_validate_never_shows_during_or_after_a_failed_export": "PASS",
+   "x12_completed_export_supersedes_a_validate_pressed_during_it": "PASS",
+   "x12_validate_refused_exactly_while_an_export_may_replace_the_folder": "PASS",
+   "x14_hub_export_presses_while_one_runs": "PASS",
+   "x12_validate_resolves_the_folder_like_export": "PASS",
+   "x12_failed_export_never_shows_a_validation_taken_during_it": "PASS",
+   "x13_validate_never_runs_filesystem_work_on_the_ui_thread": "PASS",
+   "x15_hub_undo_outcome_stays_on_screen_after_refresh": "PASS",
+   "x15_hub_undo_unknown_outcome_then_retry_is_one_undo": "PASS",
+   "x14_post_rename_crash_is_recognized_not_lost_or_relabeled": "PASS",
+   "x14_restarted_export_reconciles_the_crashed_intent": "PASS",
+   "x14_lost_export_records_never_leave_a_hidden_export": "PASS",
+   "x14_reconcile_never_touches_a_folder_it_did_not_move_aside": "PASS",
+   "x14_a_concurrent_export_never_reconciles_a_live_build": "PASS",
+   "x14_another_exporters_sweep_never_takes_a_live_build": "PASS",
+   "x14_interrupted_export_leaves_no_copy_of_recordings_behind": "PASS",
+   "x14_interrupted_export_is_cleaned_wherever_it_was_written": "PASS",
+   "x14_live_build_of_another_process_survives_a_reconcile_then_is_cleaned": "PASS",
+   "x14_same_id_while_building_never_clobbers_the_live_build": "PASS",
+   "c_reconcile_never_touches_a_build_another_process_runs": "PASS",
+   "x14_another_exporter_never_reconciles_a_publishing_build": "PASS",
+   "c_settled_builds_release_their_mark_and_lock": "PASS",
+   "x14_lost_record_before_rename_puts_the_earlier_export_back": "PASS",
+   "x01a_lost_memberships_never_return_exposed_family_to_holdout": "PASS",
+   "x01b_lost_profile_evidence_never_keeps_dead_private_text": "PASS",
+   "x01c_lost_deltas_never_let_undo_destroy_a_user_edit": "PASS",
+   "x01d_lost_usage_facts_never_keep_deleted_usage_in_aggregates": "PASS",
+   "x01e_lost_candidates_never_forget_a_permanent_rejection": "PASS",
+   "x01d2_lost_aggregates_never_hide_recorded_usage": "PASS",
+   "x01k_lost_version_stamp_never_bypasses_family_integrity": "PASS",
+   "x01l_older_store_without_its_stamp_is_never_refused": "PASS",
+   "x01m_lost_version_row_is_backed_up_before_remigrating": "PASS"
+  },
+  "details": {},
+  "reached": []
+ },
+ "summary": {
+  "killed": 60
+ },
+ "results": [
+  {
+   "mutation_id": "XM-MU01",
+   "finding": "MERGED-X01",
+   "name": "lost training_memberships recreated empty",
+   "files": [
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "3ba15863a396fcb3",
+      "sha_after": "c1d6df69dc4a6bb2",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_store_families.py": [
+     "x01a_lost_memberships_never_return_exposed_family_to_holdout"
+    ]
+   },
+   "seconds": 0.2,
+   "mutant": {
+    "x01a_lost_memberships_never_return_exposed_family_to_holdout": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x01a_lost_memberships_never_return_exposed_family_to_holdout"
+   ],
+   "mutant_details": {
+    "x01a_lost_memberships_never_return_exposed_family_to_holdout": "exposed family fam-7e972bbd5485491ba0097e223fe43d83 returned to the blind holdout as unexposed after the repair: [('frozen_test', 0)]"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU02",
+   "finding": "MERGED-X01",
+   "name": "lost profile_evidence recreated empty",
+   "files": [
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "3ba15863a396fcb3",
+      "sha_after": "33d146f7dd855afb",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_store_families.py": [
+     "x01b_lost_profile_evidence_never_keeps_dead_private_text"
+    ]
+   },
+   "seconds": 0.2,
+   "mutant": {
+    "x01b_lost_profile_evidence_never_keeps_dead_private_text": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x01b_lost_profile_evidence_never_keeps_dead_private_text"
+   ],
+   "mutant_details": {
+    "x01b_lost_profile_evidence_never_keeps_dead_private_text": "a deleted source's private phrase is still current profile content (state=current, rows_with_canary=1)"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU03",
+   "finding": "MERGED-X01",
+   "name": "lost learning_vocabulary_deltas recreated",
+   "files": [
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "3ba15863a396fcb3",
+      "sha_after": "42adf0cbbce1dfa0",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_store_families.py": [
+     "x01c_lost_deltas_never_let_undo_destroy_a_user_edit"
+    ]
+   },
+   "seconds": 0.1,
+   "mutant": {
+    "x01c_lost_deltas_never_let_undo_destroy_a_user_edit": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x01c_lost_deltas_never_let_undo_destroy_a_user_edit"
+   ],
+   "mutant_details": {
+    "x01c_lost_deltas_never_let_undo_destroy_a_user_edit": "undo without its recorded delta disabled or changed the user-edited entry: ('module-user-edit', 0)"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU04",
+   "finding": "MERGED-X01",
+   "name": "lost usage_facts recreated empty",
+   "files": [
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "3ba15863a396fcb3",
+      "sha_after": "cf67262f5a18854b",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_store_families.py": [
+     "x01d_lost_usage_facts_never_keep_deleted_usage_in_aggregates"
+    ]
+   },
+   "seconds": 0.1,
+   "mutant": {
+    "x01d_lost_usage_facts_never_keep_deleted_usage_in_aggregates": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x01d_lost_usage_facts_never_keep_deleted_usage_in_aggregates"
+   ],
+   "mutant_details": {
+    "x01d_lost_usage_facts_never_keep_deleted_usage_in_aggregates": "the deleted job's usage still counts in a published daily aggregate: [('2026-09-27', 2)]"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU05",
+   "finding": "MERGED-X01",
+   "name": "lost learning_candidates recreated empty",
+   "files": [
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "3ba15863a396fcb3",
+      "sha_after": "faa6c9de15148839",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_store_families.py": [
+     "x01e_lost_candidates_never_forget_a_permanent_rejection"
+    ]
+   },
+   "seconds": 0.1,
+   "mutant": {
+    "x01e_lost_candidates_never_forget_a_permanent_rejection": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x01e_lost_candidates_never_forget_a_permanent_rejection"
+   ],
+   "mutant_details": {
+    "x01e_lost_candidates_never_forget_a_permanent_rejection": "a permanently rejected correction was proposed again (status=pending) and approval landed a rule (False)"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU06",
+   "finding": "MERGED-X02",
+   "name": "Recovery copy bypasses the guard",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "1bfd5230e063100f",
+      "sha_after": "a0504e6f9a682fd7",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x02_recovery_copy_never_replaces_a_pending_payload"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x02_recovery_copy_never_replaces_a_pending_payload": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x02_recovery_copy_never_replaces_a_pending_payload"
+   ],
+   "mutant_details": {
+    "x02_recovery_copy_never_replaces_a_pending_payload": "Copy Last Raw replaced the payload reserved for a pending insertion: board 'NEWFINALCANARY pending words'@1 -> 'OLDRAWCANARY recovery words'@2"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU07",
+   "finding": "MERGED-X03",
+   "name": "update merges into a pre-op read",
+   "files": [
+    "localflow/v2/transforms_store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1,
+     1
+    ],
+    "files": {
+     "localflow/v2/transforms_store.py": {
+      "sha_before": "751d75cb2b5e5174",
+      "sha_after": "23c1be6cba6278f0",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x03_interleaved_updates_preserve_the_committed_definition"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "x03_interleaved_updates_preserve_the_committed_definition": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x03_interleaved_updates_preserve_the_committed_definition"
+   ],
+   "mutant_details": {
+    "x03_interleaved_updates_preserve_the_committed_definition": "revision 2 names two definitions: live ('N1', 'P0'), preserved ('N0', 'P1')"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU08",
+   "finding": "MERGED-X04",
+   "name": "Update sends the whole stale form",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "3e2a72ff0489de9b",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x04_stale_form_never_reverses_a_newer_opt_out",
+     "x04_unknown_update_then_stale_refill_never_reenables_auto"
+    ]
+   },
+   "seconds": 0.8,
+   "mutant": {
+    "x04_stale_form_never_reverses_a_newer_opt_out": "FAIL",
+    "x04_unknown_update_then_stale_refill_never_reenables_auto": "PASS"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x04_stale_form_never_reverses_a_newer_opt_out"
+   ],
+   "mutant_details": {
+    "x04_stale_form_never_reverses_a_newer_opt_out": "Update from the stale form re-enabled auto-apply (the user edited only the name): ('Opt-out witness renamed', 'Rewrite formally.', 1, 1, 3); status '4 definitions'"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU09",
+   "finding": "LOCAL-XM-01",
+   "name": "instruction view setEnabled_ again",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "24bc7047462f3342",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "local01_selected_transform_fills_its_own_instruction"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "local01_selected_transform_fills_its_own_instruction": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "local01_selected_transform_fills_its_own_instruction"
+   ],
+   "mutant_details": {
+    "local01_selected_transform_fills_its_own_instruction": "[\"AttributeError: 'NSTextView' object has no attribute 'setEnabled_'\"]"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU10",
+   "finding": "MERGED-X08",
+   "name": "Add mints a new id on every press",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "f509efaa3ade24f5",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x08_admitted_add_timeout_is_unknown_and_one_transform_results"
+    ]
+   },
+   "seconds": 0.8,
+   "mutant": {
+    "x08_admitted_add_timeout_is_unknown_and_one_transform_results": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x08_admitted_add_timeout_is_unknown_and_one_transform_results"
+   ],
+   "mutant_details": {
+    "x08_admitted_add_timeout_is_unknown_and_one_transform_results": "one logical Add made 2 transforms"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU11",
+   "finding": "MERGED-X08",
+   "name": "an admitted timeout reads as not saved",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "b6954fb42f4ceb5f",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x08_admitted_add_timeout_is_unknown_and_one_transform_results"
+    ]
+   },
+   "seconds": 0.8,
+   "mutant": {
+    "x08_admitted_add_timeout_is_unknown_and_one_transform_results": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x08_admitted_add_timeout_is_unknown_and_one_transform_results"
+   ],
+   "mutant_details": {
+    "x08_admitted_add_timeout_is_unknown_and_one_transform_results": "an admitted timeout was reported as not saved: 'not saved: TimeoutError'"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU12",
+   "finding": "MERGED-X09",
+   "name": "Save to Scratchpad forgets the note id",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "1bfd5230e063100f",
+      "sha_after": "4e928fec21e368cc",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x09_admitted_save_timeout_then_retry_makes_one_note"
+    ]
+   },
+   "seconds": 0.7,
+   "mutant": {
+    "x09_admitted_save_timeout_then_retry_makes_one_note": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x09_admitted_save_timeout_then_retry_makes_one_note"
+   ],
+   "mutant_details": {
+    "x09_admitted_save_timeout_then_retry_makes_one_note": "one logical Save made 2 notes"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU13",
+   "finding": "MERGED-X10",
+   "name": "unknown deletion reported as failed",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "1bfd5230e063100f",
+      "sha_after": "1023f47cd5e0116a",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x10_unknown_source_deletion_is_reported_and_retry_settles"
+    ]
+   },
+   "seconds": 0.8,
+   "mutant": {
+    "x10_unknown_source_deletion_is_reported_and_retry_settles": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x10_unknown_source_deletion_is_reported_and_retry_settles"
+   ],
+   "mutant_details": {
+    "x10_unknown_source_deletion_is_reported_and_retry_settles": "the source deletion was reported as definitely failed while it was admitted and later committed: {'outcome': 'move_failed_note_copied', 'note_id': 'note-d1319f31413c4ba5ab1f99f442d5009b'}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU14",
+   "finding": "MERGED-X10",
+   "name": "a repeated transfer mints a new note id",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "1bfd5230e063100f",
+      "sha_after": "fab0c7bed335af4b",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x10_unknown_copy_create_then_retry_makes_one_note"
+    ]
+   },
+   "seconds": 0.8,
+   "mutant": {
+    "x10_unknown_copy_create_then_retry_makes_one_note": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x10_unknown_copy_create_then_retry_makes_one_note"
+   ],
+   "mutant_details": {
+    "x10_unknown_copy_create_then_retry_makes_one_note": "a repeated Copy after an unknown create made 2 notes: {'outcome': 'create_unknown', 'note_id': 'note-115ce328edb042bbbe01f5101d7e865a'} then {'outcome': 'copied', 'note_id': 'note-c0b17a9a55974399b29eca19bbb96d35'}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU15",
+   "finding": "MERGED-X06",
+   "name": "History trusts a superseded manifest",
+   "files": [
+    "localflow/v2/history_queries.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/history_queries.py": {
+      "sha_before": "1985b6ab64013ec7",
+      "sha_after": "3ab327898ce9a777",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x06_history_resolves_the_current_attempt_after_collection_off_retry"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x06_history_resolves_the_current_attempt_after_collection_off_retry": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x06_history_resolves_the_current_attempt_after_collection_off_retry"
+   ],
+   "mutant_details": {
+    "x06_history_resolves_the_current_attempt_after_collection_off_retry": "History shows attempt 1's text as the current job: lineage_attempt=1 source='alpha attempt one words'"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU16",
+   "finding": "MERGED-X06",
+   "name": "Teach trusts a superseded example",
+   "files": [
+    "localflow/v2/learning.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/learning.py": {
+      "sha_before": "3d0d06881f4eacf2",
+      "sha_after": "6e48efe62a8fe1fc",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x06_history_resolves_the_current_attempt_after_collection_off_retry"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "x06_history_resolves_the_current_attempt_after_collection_off_retry": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x06_history_resolves_the_current_attempt_after_collection_off_retry"
+   ],
+   "mutant_details": {
+    "x06_history_resolves_the_current_attempt_after_collection_off_retry": "Teach refused the rendered current final: stale_final"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU17",
+   "finding": "MERGED-X07",
+   "name": "each attempt speaks for its own capture",
+   "files": [
+    "localflow/v2/profile.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/profile.py": {
+      "sha_before": "2f4fa5de0ab897c2",
+      "sha_after": "aee2e8b365f0f4f8",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x07_retries_never_manufacture_dictations_or_words",
+     "x07_excluded_latest_attempt_never_falls_back_to_an_older_one"
+    ]
+   },
+   "seconds": 1.4,
+   "mutant": {
+    "x07_retries_never_manufacture_dictations_or_words": "FAIL",
+    "x07_excluded_latest_attempt_never_falls_back_to_an_older_one": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x07_excluded_latest_attempt_never_falls_back_to_an_older_one",
+    "x07_retries_never_manufacture_dictations_or_words"
+   ],
+   "mutant_details": {
+    "x07_retries_never_manufacture_dictations_or_words": "5 logical captures counted as 10 dictations / 2100 words",
+    "x07_excluded_latest_attempt_never_falls_back_to_an_older_one": "excluding the capture's latest attempt let an older attempt of the same capture speak for it: 1 eligible, older used=True"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU18",
+   "finding": "MERGED-X05",
+   "name": "a lost normalized input reads as raw",
+   "files": [
+    "localflow/v2/curation/evidence.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/evidence.py": {
+      "sha_before": "abdbb813468c6702",
+      "sha_after": "bb058c5733edc053",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x05_failed_normalized_retention_is_never_a_complete_task"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x05_failed_normalized_retention_is_never_a_complete_task": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x05_failed_normalized_retention_is_never_a_complete_task"
+   ],
+   "mutant_details": {
+    "x05_failed_normalized_retention_is_never_a_complete_task": "the cleanup_supervised record binds input the cleanup model never received: exported 'twelve percent of the orders shipped', actual '12% of the orders shipped' (tier model_task_complete)"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU19",
+   "finding": "MERGED-X05",
+   "name": "the producer always claims a change",
+   "files": [
+    "localflow/v2/training.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/training.py": {
+      "sha_before": "2e00f654c81ca9d1",
+      "sha_after": "59595a9c645672ed",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "c_ledger_failure_with_unchanged_text_keeps_raw_input"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "c_ledger_failure_with_unchanged_text_keeps_raw_input": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "c_ledger_failure_with_unchanged_text_keeps_raw_input"
+   ],
+   "mutant_details": {
+    "c_ledger_failure_with_unchanged_text_keeps_raw_input": "{'eligible': False, 'reason': 'normalization_input_not_retained'}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU20",
+   "finding": "MERGED-X11",
+   "name": "technical terms use today's spelling",
+   "files": [
+    "localflow/v2/profile.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/profile.py": {
+      "sha_before": "2f4fa5de0ab897c2",
+      "sha_after": "b19c7794f9a84c3e",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x11_renamed_entry_never_relabels_historical_speech"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x11_renamed_entry_never_relabels_historical_speech": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x11_renamed_entry_never_relabels_historical_speech"
+   ],
+   "mutant_details": {
+    "x11_renamed_entry_never_relabels_historical_speech": "speech captured under 'Orion SDK' is now cited as 'Lyra SDK' (no new speech): ['Lyra SDK']"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU21",
+   "finding": "MERGED-X12",
+   "name": "the pane forgets the validation",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "1f30e8fcf0c028c2",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x12_older_refresh_never_repaints_over_a_validate_result",
+     "x12_validate_result_binds_to_its_destination_across_pane_switch"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x12_older_refresh_never_repaints_over_a_validate_result": "FAIL",
+    "x12_validate_result_binds_to_its_destination_across_pane_switch": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x12_older_refresh_never_repaints_over_a_validate_result",
+    "x12_validate_result_binds_to_its_destination_across_pane_switch"
+   ],
+   "mutant_details": {
+    "x12_older_refresh_never_repaints_over_a_validate_result": "the older refresh repainted over the completed Validate result: 'Choose task views and a destination directory, then Export. The dataset builds into a staging directory and finalizes at'",
+    "x12_validate_result_binds_to_its_destination_across_pane_switch": "Choose task views and a destination directory, then Export. The dataset builds into a staging directory and finalizes at"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU22",
+   "finding": "MERGED-X13",
+   "name": "Validate runs on the UI thread",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "76b15785335ca5a2",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x13_validate_never_runs_filesystem_work_on_the_ui_thread"
+    ]
+   },
+   "seconds": 3.5,
+   "mutant": {
+    "x13_validate_never_runs_filesystem_work_on_the_ui_thread": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x13_validate_never_runs_filesystem_work_on_the_ui_thread"
+   ],
+   "mutant_details": {
+    "x13_validate_never_runs_filesystem_work_on_the_ui_thread": "Export Validate ran the validator's filesystem work on the Hub's UI thread (callback held 3.00s)"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU23",
+   "finding": "MERGED-X14",
+   "name": "no publication intent before the rename",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "104dc3d1074e3f1a",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_post_rename_crash_is_recognized_not_lost_or_relabeled"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "x14_post_rename_crash_is_recognized_not_lost_or_relabeled": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_post_rename_crash_is_recognized_not_lost_or_relabeled"
+   ],
+   "mutant_details": {
+    "x14_post_rename_crash_is_recognized_not_lost_or_relabeled": "after the crash the store records the published package of export-crash-x14 as failed (retry: refused: export failed: OSError); destination holds export-crash-x14"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU24",
+   "finding": "MERGED-X14",
+   "name": "reconciliation invents a completion",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "e3757b05e6fa6337",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_post_rename_crash_is_recognized_not_lost_or_relabeled"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "x14_post_rename_crash_is_recognized_not_lost_or_relabeled": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_post_rename_crash_is_recognized_not_lost_or_relabeled"
+   ],
+   "mutant_details": {
+    "x14_post_rename_crash_is_recognized_not_lost_or_relabeled": "after the crash the store records the published package of export-crash-x14 as complete (retry: refused: this export's package was published to its folder but its completion was never recorded (LocalFlow stopped mid-publication); the package is left in place and is not counted as a completed export "
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU25",
+   "finding": "MERGED-X15",
+   "name": "Undo Approval drops its operation id",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "ad541c373e0746ec",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x15_hub_undo_unknown_outcome_then_retry_is_one_undo"
+    ]
+   },
+   "seconds": 0.8,
+   "mutant": {
+    "x15_hub_undo_unknown_outcome_then_retry_is_one_undo": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x15_hub_undo_unknown_outcome_then_retry_is_one_undo"
+   ],
+   "mutant_details": {
+    "x15_hub_undo_unknown_outcome_then_retry_is_one_undo": "action failed: ValueError: not_approved:pending"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU26",
+   "finding": "MERGED-X07",
+   "name": "a non-countable latest attempt falls back",
+   "files": [
+    "localflow/v2/profile.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/profile.py": {
+      "sha_before": "2f4fa5de0ab897c2",
+      "sha_after": "620105be06e39e22",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x07_training_excluded_latest_attempt_never_falls_back"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "x07_training_excluded_latest_attempt_never_falls_back": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x07_training_excluded_latest_attempt_never_falls_back"
+   ],
+   "mutant_details": {
+    "x07_training_excluded_latest_attempt_never_falls_back": "excluding the capture's latest attempt from training let the older attempt speak for it: 1 eligible, older used=True"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU27",
+   "finding": "MERGED-X14",
+   "name": "a build never reconciles its destination",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "615de853885b4ef0",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_restarted_export_reconciles_the_crashed_intent",
+     "x14_lost_export_records_never_leave_a_hidden_export"
+    ]
+   },
+   "seconds": 0.9,
+   "mutant": {
+    "x14_restarted_export_reconciles_the_crashed_intent": "FAIL",
+    "x14_lost_export_records_never_leave_a_hidden_export": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_lost_export_records_never_leave_a_hidden_export",
+    "x14_restarted_export_reconciles_the_crashed_intent"
+   ],
+   "mutant_details": {
+    "x14_restarted_export_reconciles_the_crashed_intent": "the crashed export is still recorded 'publishing' after a completed export to its folder: {'export-prior': 'complete', 'export-crash-restart': 'publishing', 'export-after-restart': 'complete'}",
+    "x14_lost_export_records_never_leave_a_hidden_export": "with its record lost, the crashed publication's moved-aside export stays hidden beside dataset: ['.dataset.replaced-export-crash-lost-row']"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU28",
+   "finding": "MERGED-X12",
+   "name": "an Export leaves a running Validate current",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "14e3d3a1b632e568",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x12_older_validate_never_takes_over_a_newer_export_result",
+     "x12_older_validate_never_shows_during_or_after_a_failed_export"
+    ]
+   },
+   "seconds": 1.4,
+   "mutant": {
+    "x12_older_validate_never_takes_over_a_newer_export_result": "FAIL",
+    "x12_older_validate_never_shows_during_or_after_a_failed_export": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x12_older_validate_never_shows_during_or_after_a_failed_export",
+    "x12_older_validate_never_takes_over_a_newer_export_result"
+   ],
+   "mutant_details": {
+    "x12_older_validate_never_takes_over_a_newer_export_result": "a Validate pressed before the Export published over the Export's result: 'valid: False\\nunsupported export schema version'",
+    "x12_older_validate_never_shows_during_or_after_a_failed_export": "an older Validate painted over the running Export: 'valid: False\\nunsupported export schema version'"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU29",
+   "finding": "MERGED-X09",
+   "name": "an unknown panel Save shows nothing",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "1bfd5230e063100f",
+      "sha_after": "a0362467c96bcab8",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x09_panel_save_unknown_is_shown_and_repeatable"
+    ]
+   },
+   "seconds": 0.7,
+   "mutant": {
+    "x09_panel_save_unknown_is_shown_and_repeatable": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x09_panel_save_unknown_is_shown_and_repeatable"
+   ],
+   "mutant_details": {
+    "x09_panel_save_unknown_is_shown_and_repeatable": "an admitted-but-unanswered Save to Scratchpad left nothing on screen (panel visible=False, title='Witness transform \u2014 ready to apply')"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU30",
+   "finding": "MERGED-X01",
+   "name": "a lost version stamp skips the family check",
+   "files": [
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "3ba15863a396fcb3",
+      "sha_after": "19b23f98e97eea36",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_store_families.py": [
+     "x01k_lost_version_stamp_never_bypasses_family_integrity"
+    ]
+   },
+   "seconds": 0.2,
+   "mutant": {
+    "x01k_lost_version_stamp_never_bypasses_family_integrity": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x01k_lost_version_stamp_never_bypasses_family_integrity"
+   ],
+   "mutant_details": {
+    "x01k_lost_version_stamp_never_bypasses_family_integrity": "a store that lost its version stamp and training_memberships opened (memberships recreated empty=True, backups=[], refusal=None)"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU31",
+   "finding": "MERGED-X01",
+   "name": "lost aggregates are never rebuilt",
+   "files": [
+    "localflow/v2/analytics.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/analytics.py": {
+      "sha_before": "602bff09192fd7b1",
+      "sha_after": "c79a9505219b4fa3",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_store_families.py": [
+     "x01d2_lost_aggregates_never_hide_recorded_usage"
+    ]
+   },
+   "seconds": 0.1,
+   "mutant": {
+    "x01d2_lost_aggregates_never_hide_recorded_usage": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x01d2_lost_aggregates_never_hide_recorded_usage"
+   ],
+   "mutant_details": {
+    "x01d2_lost_aggregates_never_hide_recorded_usage": "recorded usage read as a day with no dictations in Insights after the repair: []"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU32",
+   "finding": "MERGED-X04",
+   "name": "a merged Update binds the stale form",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "db0fdf62a3d9f905",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x04_merged_update_shows_the_stored_opt_out"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x04_merged_update_shows_the_stored_opt_out": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x04_merged_update_shows_the_stored_opt_out"
+   ],
+   "mutant_details": {
+    "x04_merged_update_shows_the_stored_opt_out": "after the merged Update the editor shows auto-apply ON while the stored row is OFF"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU33",
+   "finding": "MERGED-X15",
+   "name": "the Undo outcome is not kept",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "f9daa7e5ec4f78b5",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x15_hub_undo_outcome_stays_on_screen_after_refresh"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x15_hub_undo_outcome_stays_on_screen_after_refresh": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x15_hub_undo_outcome_stays_on_screen_after_refresh"
+   ],
+   "mutant_details": {
+    "x15_hub_undo_outcome_stays_on_screen_after_refresh": "the Undo Approval outcome was wiped by the refresh it triggered: \"1 review rows \u00b7 strata {}\\n\u2014 review queue \u2014\\nex-45f043e2a97a433ba08f2322f63b95ad  [learning_candidate/pending]  axes: recognition_error ['asr']  suggest: modul \u2192 module\""
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU34",
+   "finding": "MERGED-X02",
+   "name": "the refused copy leaves Recovery unchanged",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "1bfd5230e063100f",
+      "sha_after": "e796c060d085db7c",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x02_recovery_copy_refusal_is_shown_in_the_recovery_menu"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x02_recovery_copy_refusal_is_shown_in_the_recovery_menu": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x02_recovery_copy_refusal_is_shown_in_the_recovery_menu"
+   ],
+   "mutant_details": {
+    "x02_recovery_copy_refusal_is_shown_in_the_recovery_menu": "the refused Copy Last Raw left the Recovery menu unchanged: 'Copy Raw Transcript of Last Failure'"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU35",
+   "finding": "MERGED-X06",
+   "name": "absent current stages carry no reason",
+   "files": [
+    "localflow/v2/history_queries.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/history_queries.py": {
+      "sha_before": "1985b6ab64013ec7",
+      "sha_after": "d92c2dc73d6fa09f",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x06_absent_current_attempt_stages_say_why"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "x06_absent_current_attempt_stages_say_why": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x06_absent_current_attempt_stages_say_why"
+   ],
+   "mutant_details": {
+    "x06_absent_current_attempt_stages_say_why": "the current attempt's absent stages carry no reason (History shows them as never captured): {'source': None, 'normalized': None, 'cleaned': None}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU36",
+   "finding": "MERGED-X06",
+   "name": "Teach obeys the superseded example's state",
+   "files": [
+    "localflow/v2/learning.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/learning.py": {
+      "sha_before": "3d0d06881f4eacf2",
+      "sha_after": "1c754c9ab5bfc5e3",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x06_teach_ignores_the_superseded_attempts_example_state"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x06_teach_ignores_the_superseded_attempts_example_state": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x06_teach_ignores_the_superseded_attempts_example_state"
+   ],
+   "mutant_details": {
+    "x06_teach_ignores_the_superseded_attempts_example_state": "Teach on the current attempt's rendered final was refused by the superseded attempt's example state: example_excluded"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU38",
+   "finding": "MERGED-X14",
+   "name": "reconcile takes any folder named like an aside",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "8dbcc25d88faaa9e",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_reconcile_never_touches_a_folder_it_did_not_move_aside"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "x14_reconcile_never_touches_a_folder_it_did_not_move_aside": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_reconcile_never_touches_a_folder_it_did_not_move_aside"
+   ],
+   "mutant_details": {
+    "x14_reconcile_never_touches_a_folder_it_did_not_move_aside": "the export removed a user folder named like an aside"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU39",
+   "finding": "MERGED-X01",
+   "name": "a stamp-less store expects every table",
+   "files": [
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "3ba15863a396fcb3",
+      "sha_after": "35995cc2ccd85c1e",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_store_families.py": [
+     "x01l_older_store_without_its_stamp_is_never_refused"
+    ]
+   },
+   "seconds": 0.2,
+   "mutant": {
+    "x01l_older_store_without_its_stamp_is_never_refused": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x01l_older_store_without_its_stamp_is_never_refused"
+   ],
+   "mutant_details": {
+    "x01l_older_store_without_its_stamp_is_never_refused": "genuinely older stores that lost only their stamp were refused: {10: 'store schema corrupt: core table(s) learning_vocabulary_deltas missing while dependent row', 11: 'store schema corrupt: core table(s) learning_vocabulary_deltas missing while dependent row', 12: 'store schema corrupt: core table(s"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU40",
+   "finding": "MERGED-X14",
+   "name": "a build is never marked in flight in this process",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "6937a05c20678ed8",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_a_concurrent_export_never_reconciles_a_live_build"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "x14_a_concurrent_export_never_reconciles_a_live_build": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_a_concurrent_export_never_reconciles_a_live_build"
+   ],
+   "mutant_details": {
+    "x14_a_concurrent_export_never_reconciles_a_live_build": "{'state': 'refused: consent revoked or selected content changed during the build (destination_appeared) \u2014 export aborted before completion (S29.13)'}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU41",
+   "finding": "MERGED-X14",
+   "name": "an earlier export is never put back",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "40f4d1e15cfb41d6",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_lost_record_before_rename_puts_the_earlier_export_back"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x14_lost_record_before_rename_puts_the_earlier_export_back": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_lost_record_before_rename_puts_the_earlier_export_back"
+   ],
+   "mutant_details": {
+    "x14_lost_record_before_rename_puts_the_earlier_export_back": "with its record lost, the earlier export was not put back in its free destination: None"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU42",
+   "finding": "MERGED-X06",
+   "name": "the absent reason ignores the attempt's stages",
+   "files": [
+    "localflow/v2/history_queries.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/history_queries.py": {
+      "sha_before": "1985b6ab64013ec7",
+      "sha_after": "028fd167b780a120",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "c_current_attempt_with_stages_carries_no_absent_reason"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "c_current_attempt_with_stages_carries_no_absent_reason": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "c_current_attempt_with_stages_carries_no_absent_reason"
+   ],
+   "mutant_details": {
+    "c_current_attempt_with_stages_carries_no_absent_reason": "a stage History never writes is labeled as captured for an earlier attempt: {'source': (True, None), 'normalized': (False, 'current_attempt_unavailable'), 'cleaned': (True, None), 'transformed': (False, 'not_applicable')}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU43",
+   "finding": "MERGED-X02",
+   "name": "a refusal title outlives its failure",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "1bfd5230e063100f",
+      "sha_after": "5c6d1dcafd32ae30",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x02_refusal_title_does_not_outlive_its_failure"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x02_refusal_title_does_not_outlive_its_failure": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x02_refusal_title_does_not_outlive_its_failure"
+   ],
+   "mutant_details": {
+    "x02_refusal_title_does_not_outlive_its_failure": "a later failure's Recovery item still reports the earlier refusal: 'Copy Raw Transcript of Last Failure \u2014 not copied: clipboard busy with a pending paste; try again'"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU44",
+   "finding": "MERGED-X09",
+   "name": "no Scratchpad loses the Save silently",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "1bfd5230e063100f",
+      "sha_after": "7a0d58fd86901fe3",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x09_panel_save_without_scratchpad_is_shown_not_saved"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x09_panel_save_without_scratchpad_is_shown_not_saved": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x09_panel_save_without_scratchpad_is_shown_not_saved"
+   ],
+   "mutant_details": {
+    "x09_panel_save_without_scratchpad_is_shown_not_saved": "a Save with the Scratchpad unavailable lost the result silently (visible=False, title='Witness transform \u2014 ready to apply')"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU45",
+   "finding": "MERGED-X07",
+   "name": "the fence ignores a blocking latest attempt",
+   "files": [
+    "localflow/v2/profile.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/profile.py": {
+      "sha_before": "2f4fa5de0ab897c2",
+      "sha_after": "e9a5797bbafb8e56",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x07_restoring_the_blocking_attempt_during_compute_restarts_it"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x07_restoring_the_blocking_attempt_during_compute_restarts_it": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x07_restoring_the_blocking_attempt_during_compute_restarts_it"
+   ],
+   "mutant_details": {
+    "x07_restoring_the_blocking_attempt_during_compute_restarts_it": "the latest attempt was restored during the computation, yet the snapshot recorded 0 eligible"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU48",
+   "finding": "MERGED-X01",
+   "name": "a stamp-less store re-migrates unbacked",
+   "files": [
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "3ba15863a396fcb3",
+      "sha_after": "0450fec2f756cc83",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_store_families.py": [
+     "x01m_lost_version_row_is_backed_up_before_remigrating"
+    ]
+   },
+   "seconds": 0.2,
+   "mutant": {
+    "x01m_lost_version_row_is_backed_up_before_remigrating": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x01m_lost_version_row_is_backed_up_before_remigrating"
+   ],
+   "mutant_details": {
+    "x01m_lost_version_row_is_backed_up_before_remigrating": "stores at schema [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] re-migrated from 0 with no backup"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU51",
+   "finding": "MERGED-X12",
+   "name": "a Validate runs during an Export into its folder",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "88e74687bd65a27f",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x12_completed_export_supersedes_a_validate_pressed_during_it",
+     "x12_unknown_export_instruction_outranks_the_replaced_validation",
+     "x12_failed_export_never_shows_a_validation_taken_during_it"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "x12_unknown_export_instruction_outranks_the_replaced_validation": "FAIL",
+    "x12_completed_export_supersedes_a_validate_pressed_during_it": "FAIL",
+    "x12_failed_export_never_shows_a_validation_taken_during_it": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x12_completed_export_supersedes_a_validate_pressed_during_it",
+    "x12_failed_export_never_shows_a_validation_taken_during_it",
+    "x12_unknown_export_instruction_outranks_the_replaced_validation"
+   ],
+   "mutant_details": {
+    "x12_unknown_export_instruction_outranks_the_replaced_validation": "validating <tmp>/tmpubq17aut/invalid-ds \u2026",
+    "x12_completed_export_supersedes_a_validate_pressed_during_it": "validating <tmp>/tmphec9b9_w/invalid-ds \u2026",
+    "x12_failed_export_never_shows_a_validation_taken_during_it": "validating <tmp>/tmp4h17pma3/invalid-ds \u2026"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU52",
+   "finding": "MERGED-X12",
+   "name": "an unknown Export leaves Validate open",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "9661928e39c93e0f",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x12_validate_refused_exactly_while_an_export_may_replace_the_folder"
+    ]
+   },
+   "seconds": 15.5,
+   "mutant": {
+    "x12_validate_refused_exactly_while_an_export_may_replace_the_folder": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x12_validate_refused_exactly_while_an_export_may_replace_the_folder"
+   ],
+   "mutant_details": {
+    "x12_validate_refused_exactly_while_an_export_may_replace_the_folder": "Validate refusal (True = refused) {'after_complete': False, 'after_failure': False, 'after_unknown': False, 'after_unknown_slash': False, 'after_reconcile': False}, expected {'after_complete': False, 'after_failure': False, 'after_unknown': True, 'after_unknown_slash': True, 'after_reconcile': False"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU53",
+   "finding": "MERGED-X12",
+   "name": "Validate stays refused after a settled Export",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "47b62d1c135dfa9d",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x12_validate_refused_exactly_while_an_export_may_replace_the_folder"
+    ]
+   },
+   "seconds": 15.6,
+   "mutant": {
+    "x12_validate_refused_exactly_while_an_export_may_replace_the_folder": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x12_validate_refused_exactly_while_an_export_may_replace_the_folder"
+   ],
+   "mutant_details": {
+    "x12_validate_refused_exactly_while_an_export_may_replace_the_folder": "Validate refusal (True = refused) {'after_complete': False, 'after_failure': False, 'after_unknown': True, 'after_unknown_slash': True, 'after_reconcile': True}, expected {'after_complete': False, 'after_failure': False, 'after_unknown': True, 'after_unknown_slash': True, 'after_reconcile': False}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU54",
+   "finding": "MERGED-X12",
+   "name": "the field text is not resolved like Export",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "140c4f239f23d608",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x12_validate_refused_exactly_while_an_export_may_replace_the_folder",
+     "x12_validate_resolves_the_folder_like_export"
+    ]
+   },
+   "seconds": 15.6,
+   "mutant": {
+    "x12_validate_refused_exactly_while_an_export_may_replace_the_folder": "FAIL",
+    "x12_validate_resolves_the_folder_like_export": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x12_validate_refused_exactly_while_an_export_may_replace_the_folder",
+    "x12_validate_resolves_the_folder_like_export"
+   ],
+   "mutant_details": {
+    "x12_validate_refused_exactly_while_an_export_may_replace_the_folder": "Validate refusal (True = refused) {'after_complete': False, 'after_failure': False, 'after_unknown': True, 'after_unknown_slash': False, 'after_reconcile': False}, expected {'after_complete': False, 'after_failure': False, 'after_unknown': True, 'after_unknown_slash': True, 'after_reconcile': False}",
+    "x12_validate_resolves_the_folder_like_export": "Validate did not read the folder Export resolves: 'valid: False\\nnot a directory'"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU55",
+   "finding": "MERGED-X14",
+   "name": "an interrupted build is never cleaned",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "1fd6d3409b0f5034",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_interrupted_export_leaves_no_copy_of_recordings_behind"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "x14_interrupted_export_leaves_no_copy_of_recordings_behind": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_interrupted_export_leaves_no_copy_of_recordings_behind"
+   ],
+   "mutant_details": {
+    "x14_interrupted_export_leaves_no_copy_of_recordings_behind": "a crashed build of another process stays hidden while this exporter keeps building"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU56",
+   "finding": "MERGED-X14",
+   "name": "a live build of another process is cleaned",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "9cb00e9b817a74f9",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "c_reconcile_never_touches_a_build_another_process_runs"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "c_reconcile_never_touches_a_build_another_process_runs": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "c_reconcile_never_touches_a_build_another_process_runs"
+   ],
+   "mutant_details": {
+    "c_reconcile_never_touches_a_build_another_process_runs": "a live build of another process was removed"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU57",
+   "finding": "MERGED-X14",
+   "name": "the launch never cleans an interrupted build",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "48b9528f9df411d4",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_interrupted_export_leaves_no_copy_of_recordings_behind"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "x14_interrupted_export_leaves_no_copy_of_recordings_behind": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_interrupted_export_leaves_no_copy_of_recordings_behind"
+   ],
+   "mutant_details": {
+    "x14_interrupted_export_leaves_no_copy_of_recordings_behind": "a copy of recordings from an interrupted export stays hidden beside its folder after the next launch"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU58",
+   "finding": "MERGED-X14",
+   "name": "each exporter keeps its own in-flight set",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "4fd128cae2d5ee60",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_another_exporters_sweep_never_takes_a_live_build",
+     "x14_another_exporter_never_reconciles_a_publishing_build"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x14_another_exporters_sweep_never_takes_a_live_build": "PASS",
+    "x14_another_exporter_never_reconciles_a_publishing_build": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_another_exporter_never_reconciles_a_publishing_build"
+   ],
+   "mutant_details": {
+    "x14_another_exporter_never_reconciles_a_publishing_build": "another exporter took the publishing build for residue: {'state': 'refused: consent revoked or selected content changed during the build (destination_appeared) \u2014 export aborted before completion (S29.13)'}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU59",
+   "finding": "MERGED-X14",
+   "name": "the owner file is written but never locked",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "e3a106dbe0c26c33",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_live_build_of_another_process_survives_a_reconcile_then_is_cleaned"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x14_live_build_of_another_process_survives_a_reconcile_then_is_cleaned": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_live_build_of_another_process_survives_a_reconcile_then_is_cleaned"
+   ],
+   "mutant_details": {
+    "x14_live_build_of_another_process_survives_a_reconcile_then_is_cleaned": "the app's launch removed a build another process is still running"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU60",
+   "finding": "MERGED-X14",
+   "name": "a relative destination is recorded as given",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "d9ab049cf6f9a8de",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_interrupted_export_is_cleaned_wherever_it_was_written"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "x14_interrupted_export_is_cleaned_wherever_it_was_written": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_interrupted_export_is_cleaned_wherever_it_was_written"
+   ],
+   "mutant_details": {
+    "x14_interrupted_export_is_cleaned_wherever_it_was_written": "a relative-path export's copies stay after the next launch"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU61",
+   "finding": "MERGED-X14",
+   "name": "an unmounted destination's intent is written off",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "ce2e806003102660",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_interrupted_export_is_cleaned_wherever_it_was_written"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "x14_interrupted_export_is_cleaned_wherever_it_was_written": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_interrupted_export_is_cleaned_wherever_it_was_written"
+   ],
+   "mutant_details": {
+    "x14_interrupted_export_is_cleaned_wherever_it_was_written": "an interrupted export on an unmounted drive was written off; its copies can never be cleaned"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU62",
+   "finding": "MERGED-X14",
+   "name": "a repeated id overwrites the live build's record",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "d11001ea2e8a3e0d",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_same_id_while_building_never_clobbers_the_live_build"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "x14_same_id_while_building_never_clobbers_the_live_build": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_same_id_while_building_never_clobbers_the_live_build"
+   ],
+   "mutant_details": {
+    "x14_same_id_while_building_never_clobbers_the_live_build": "the repeated id rewrote the live build's record: {'second': \"refused: the build's own staging path already exists \u2014 nothing written or removed\", 'row': 'failed'}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU63",
+   "finding": "MERGED-X14",
+   "name": "a second Export of a folder runs beside the first",
+   "files": [
+    "localflow/v2/ui/hub.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/hub.py": {
+      "sha_before": "efb9a696caa438a4",
+      "sha_after": "093964eeb31990b0",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "x14_hub_export_presses_while_one_runs"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "x14_hub_export_presses_while_one_runs": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "x14_hub_export_presses_while_one_runs"
+   ],
+   "mutant_details": {
+    "x14_hub_export_presses_while_one_runs": "builds started: ['<tmp>/tmpqbsmzqtp/folder-x', '<tmp>/tmpqbsmzqtp/folder-x', '<tmp>/tmpqbsmzqtp/folder-y']"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU64",
+   "finding": "MERGED-X14",
+   "name": "a published build keeps its mark and lock",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "89d09152c39e7656",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "c_settled_builds_release_their_mark_and_lock"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "c_settled_builds_release_their_mark_and_lock": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "c_settled_builds_release_their_mark_and_lock"
+   ],
+   "mutant_details": {
+    "c_settled_builds_release_their_mark_and_lock": "a settled build still holds its mark or lock: {'in_flight': ['export-first', 'export-settled'], 'locks': ['export-first', 'export-settled']}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU65",
+   "finding": "MERGED-X14",
+   "name": "a release leaves the owner locked",
+   "files": [
+    "localflow/v2/curation/export.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/curation/export.py": {
+      "sha_before": "3b4a9a2a717bb509",
+      "sha_after": "6644b9b97ddddf90",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "c_settled_builds_release_their_mark_and_lock"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "c_settled_builds_release_their_mark_and_lock": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "c_settled_builds_release_their_mark_and_lock"
+   ],
+   "mutant_details": {
+    "c_settled_builds_release_their_mark_and_lock": "a settled build still holds its mark or lock: {'in_flight': [], 'locks': ['export-first', 'export-settled']}"
+   },
+   "outcome": "killed",
+   "reason": null
+  }
+ ]
+}

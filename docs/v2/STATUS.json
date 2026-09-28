@@ -1,19 +1,63 @@
 {
-  "schema_version": 1,
-  "active_milestone": "M14",
-  "status": "implemented_pending_human",
-  "status_reason": "All automatable M14 work and checks passed on post-review code, across all three checkpoints (M14-A labels/review, M14-B sampling/preferences/splits, M14-C export/readiness/profile), recorded in one coherent handoff. Store schema v10 (additive). Correction learning: three producers (explicit teach incl. with collection off, M08 certified edit windows, single-dictation note edits); the S29.7 multi-axis classifier with honest abstention, contraction-aware negation and case gates, stage attribution under the retained stage texts; rule suggestions only for ASR-origin recognition errors; approval composes with M05 entries (created/alias_added/alias_approved/already_present), runs counterexamples in the rule's own scope, records its plan before any vocabulary write so undo reverses exactly what it did; rejection permanent. Versioned labels, source-anchored partial grafts and a shared ASR promotion gate; labels and teach refuse non-live evidence. Sampling: seeded 10% stream + explicit/hard/supplemental/late-trigger strata, one inclusion per example. Same-task pair review (A/B/tie/neither/uncertain; latest judgment wins). Versioned family splits with a 10-family floor and permanent forward-only exposure. Portable export (five task views, streamed hash-verified audio, consistent snapshot, finalize recheck, never replaces a user's folder) and a hardened offline validator. Your Voice: eligible-evidence measured views (quarantine, snippets, background and repeated speech excluded), cards citing their own evidence, snapshots as records cleared on deletion/expiry, chunked reads, unchanged-evidence idle skip, no injection. Deletion and expiry propagate to job-keyed and note-sourced candidates; rows carry offsets not words. The /review-2 -> /address loop found 3 criticals (deletion/retention propagation, content in rows plus a job-pinning lease, label resurrection of quarantined evidence) and 20 further findings - all addressed with regression tests (one decided by measurement: the export snapshot stays one op per S29.13). Suites: 62/62 green on the final code incl. every model-backed suite and the V1 control 51/51. Benchmark at 10k examples: worst dictation write wait 54 ms during profile compute, 1 ms during mining, 50.3 ms during export; export 715 MB/s with audio adding 0.3 MB peak memory; the idle profile pass decides from counters alone (p95 38 ms). Live store left at v9 to migrate with its automatic backup on the next dev run. Live data is below every floor (6 examples, 0 observations, 0 labels, 0 pairs) - the valid measured-only state. Pending: the native M14 trial; 16 human checks open overall.",
-  "source_commit": "5e90489d8aa46f5aa1eda6b9a8c7558bd0d60b41",
-  "source_commit_note": "M14 was implemented on top of this commit (the M13 close-out ORCHESTRATION.html realignment); the M14 commit follows.",
-  "requirements": ["LF-R21", "LF-R22", "LF-R28", "LF-R31", "LF-R32"],
-  "registry": "docs/v2/registry.json",
-  "automated_results": ["docs/v2/acceptance/M14/results.json"],
-  "benchmark_runs": ["docs/v2/benchmarks/20260924-010937-m14/m14.json"],
-  "pending_human": [
-    "M14-V001", "M14-V002", "M14-V003", "M14-V004", "M14-V005",
-    "M14-V006", "M14-V007"
-  ],
-  "handoff": "docs/v2/handoffs/M14.md",
-  "next_milestone": "M15",
-  "next_milestone_dependency_eligible": true
+  "schema_version": 2,
+  "status_reason": "Cross-milestone three-audit remediation of 340c566: all 17 merged findings reproduced and repaired on branch xm-local-remediation-20260928 (final production d6a555d), regressions and mutants green, independent review converged over seven rounds. The campaign is INCOMPLETE and unmerged: the merged cross-milestone corpus (GATE-G06) is largely unexecuted, and GATE-G02, GATE-G07 and GATE-G08 are partial. The M14 implementation record below is historical.",
+  "current_state": {
+    "as_of": "2026-09-28",
+    "store_schema_version": 13,
+    "store_schema_source": "max(_MIGRATIONS) in localflow/v2/store.py",
+    "campaign": "Three-audit cross-milestone remediation (Audits A, C, B of 340c566; 17 merged findings, gates G01-G10, policies D01-D04)",
+    "campaign_state": "CROSS_MILESTONE_REMEDIATION_INCOMPLETE",
+    "blockers": [
+      "GATE-G06: of the 309 merged cross-milestone cases (gates/casemap.json), only the finding reproductions and their controls have executed drivers",
+      "GATE-G02: 24 of 33 requirements bound to tests and production branches; 5 partial, 4 future (gates/binding_summary.md)",
+      "Interface union: 70 of 78 rows bound; 5 partial, 3 unbound (gates/ifunion_summary.md)",
+      "GATE-G07: the owned native Hub suite runs its passive tier only; active tier, real keyboard and focus are not run",
+      "GATE-G08: dictation end-to-end timing needs a human speaker and is not run"
+    ],
+    "branch": "xm-local-remediation-20260928 (not merged onto main; an incomplete remediation is never merged)",
+    "production_commit": "d6a555d",
+    "evidence": [
+      "docs/v2/acceptance/cross-milestone/remediation/adjudications.json",
+      "docs/v2/acceptance/cross-milestone/remediation/decisions.json",
+      "docs/v2/acceptance/cross-milestone/merged_ledger.json",
+      "docs/v2/handoffs/CROSS-MILESTONE.md"
+    ],
+    "performance": "Current performance on this Mac is read from docs/v2/benchmarks/20260928-180600-xm-remediation-final (M14 curation, profile and export cost with the dictation-shaped writer probe; M09 Hub construction, publication and History search), measured after correctness on the final production code. Dictation end-to-end is not measured. The benchmark figures under historical_implementation are historical and describe the M14 implementation code.",
+    "may_run_next": "The owner decides how GATE-G06 closes (drivers for the remaining merged cases, or a narrower assignment) and whether the branch is pushed; until the campaign completes nothing merges. The owner's manual runbook checks (docs/v2/VERIFICATION.html, 82 checks, all Not run as committed) may run beside it. M15 is not started: it stays gated by this campaign, by M11's incomplete verification and by M07's pending qualification.",
+    "pending_human": "docs/v2/VERIFICATION.html: the M01-M14 checks, including M07-V001 and M07-V002 (M07-V002 blocked: its private review tool does not exist)",
+    "next_milestone": "M15 (not started)"
+  },
+  "historical_implementation": {
+    "active_milestone": "M14",
+    "status": "implemented_pending_human",
+    "status_reason": "All automatable M14 work and checks passed on post-review code, across all three checkpoints (M14-A labels/review, M14-B sampling/preferences/splits, M14-C export/readiness/profile), recorded in one coherent handoff. Store schema v10 (additive). Correction learning: three producers (explicit teach incl. with collection off, M08 certified edit windows, single-dictation note edits); the S29.7 multi-axis classifier with honest abstention, contraction-aware negation and case gates, stage attribution under the retained stage texts; rule suggestions only for ASR-origin recognition errors; approval composes with M05 entries (created/alias_added/alias_approved/already_present), runs counterexamples in the rule's own scope, records its plan before any vocabulary write so undo reverses exactly what it did; rejection permanent. Versioned labels, source-anchored partial grafts and a shared ASR promotion gate; labels and teach refuse non-live evidence. Sampling: seeded 10% stream + explicit/hard/supplemental/late-trigger strata, one inclusion per example. Same-task pair review (A/B/tie/neither/uncertain; latest judgment wins). Versioned family splits with a 10-family floor and permanent forward-only exposure. Portable export (five task views, streamed hash-verified audio, consistent snapshot, finalize recheck, never replaces a user's folder) and a hardened offline validator. Your Voice: eligible-evidence measured views (quarantine, snippets, background and repeated speech excluded), cards citing their own evidence, snapshots as records cleared on deletion/expiry, chunked reads, unchanged-evidence idle skip, no injection. Deletion and expiry propagate to job-keyed and note-sourced candidates; rows carry offsets not words. The /review-2 -> /address loop found 3 criticals (deletion/retention propagation, content in rows plus a job-pinning lease, label resurrection of quarantined evidence) and 20 further findings - all addressed with regression tests (one decided by measurement: the export snapshot stays one op per S29.13). Suites: 62/62 green on the final code incl. every model-backed suite and the V1 control 51/51. Benchmark at 10k examples: worst dictation write wait 54 ms during profile compute, 1 ms during mining, 50.3 ms during export; export 715 MB/s with audio adding 0.3 MB peak memory; the idle profile pass decides from counters alone (p95 38 ms). Live store left at v9 to migrate with its automatic backup on the next dev run. Live data is below every floor (6 examples, 0 observations, 0 labels, 0 pairs) - the valid measured-only state. Pending: the native M14 trial; 16 human checks open overall.",
+    "source_commit": "5e90489d8aa46f5aa1eda6b9a8c7558bd0d60b41",
+    "source_commit_note": "M14 was implemented on top of this commit (the M13 close-out ORCHESTRATION.html realignment); the M14 commit follows.",
+    "requirements": [
+      "LF-R21",
+      "LF-R22",
+      "LF-R28",
+      "LF-R31",
+      "LF-R32"
+    ],
+    "registry": "docs/v2/registry.json",
+    "automated_results": [
+      "docs/v2/acceptance/M14/results.json"
+    ],
+    "benchmark_runs": [
+      "docs/v2/benchmarks/20260924-010937-m14/m14.json"
+    ],
+    "pending_human": [
+      "M14-V001",
+      "M14-V002",
+      "M14-V003",
+      "M14-V004",
+      "M14-V005",
+      "M14-V006",
+      "M14-V007"
+    ],
+    "handoff": "docs/v2/handoffs/M14.md",
+    "next_milestone": "M15",
+    "next_milestone_dependency_eligible": true
+  }
 }
