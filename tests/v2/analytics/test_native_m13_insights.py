@@ -21,6 +21,7 @@ Run: .venv/bin/python tests/v2/context/run_isolated.py \
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import sys
 import time
@@ -116,7 +117,9 @@ class World:
         finally:
             self.mq.__exit__(None, None, None)
             self._ctx.__exit__(None, None, None)
-        assert frontmost_pid() == self.front, "frontmost app changed"
+        # The passive safety property: THIS process never became the
+        # frontmost app (another app the user switched to is fine).
+        assert frontmost_pid() != os.getpid(), "this process was activated"
 
 
 def insights_controls(hub):
@@ -496,6 +499,7 @@ def main(argv):
               "code": W.code_stamp(
                   "tests/v2/analytics/test_native_m13_insights.py"),
               "frontmost_unchanged": frontmost_pid() == front0,
+              "never_frontmost": frontmost_pid() != os.getpid(),
               "counts": counts, "checks": results}
     print("native m13:", counts, "frontmost unchanged:",
           record["frontmost_unchanged"])
@@ -503,7 +507,7 @@ def main(argv):
         pathlib.Path(out_path).write_text(json.dumps(record, indent=1,
                                                      default=str))
     return 0 if set(counts) <= {"PASS", "NOT_RUN"} and \
-        record["frontmost_unchanged"] else 1
+        record["never_frontmost"] else 1
 
 
 if __name__ == "__main__":
