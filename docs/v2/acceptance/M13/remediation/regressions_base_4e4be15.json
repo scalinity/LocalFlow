@@ -1,0 +1,489 @@
+{
+ "suite": "tests/v2/analytics/test_m13_remediation.py",
+ "code": {
+  "suite": "tests/v2/analytics/test_m13_remediation.py",
+  "suite_sha256": "8e7e400ae107f89d9d7e7be304d15fec301bf4653324d8b3bc469a9c671241b8",
+  "code_root_sha": "4e4be158251edc3b2677b2254decd8fdc427f97c",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "localflow_imported_from_root": "base-4e4be15",
+  "python": "3.14.7"
+ },
+ "counts": {
+  "FAIL": 44,
+  "PASS": 7,
+  "ERROR": 1
+ },
+ "invoked": [
+  "f01_null_duration_is_not_free_words",
+  "f01_zero_duration_is_not_free_words",
+  "f02_failed_rebuild_restores_zone_everywhere",
+  "f02_fact_admitted_across_rebuild_uses_committed_zone",
+  "f03_expiry_is_chronological_across_precisions",
+  "f04_direct_invalid_zone_is_refused",
+  "f04_configured_invalid_zone_discloses_and_keeps_analytics",
+  "f05_app_and_mode_changes_keep_the_range",
+  "f06_breakdowns_use_the_whole_cohort",
+  "f07_one_report_is_one_generation",
+  "f20_app_identity_is_typed",
+  "f20_duplicate_labels_stay_separate",
+  "f21_lists_reconcile_or_disclose",
+  "f21_rendered_breakdowns_disclose_other",
+  "f08_delete_all_revokes_a_materialized_report",
+  "f08_hidden_insights_cache_is_revoked",
+  "f09_timed_out_delete_is_unknown_then_reconciled",
+  "f09_native_settings_render_returned_outcomes",
+  "f10_native_zero_and_negative_are_refused",
+  "f11_failed_save_changes_nothing",
+  "f11_apply_saves_and_previews_without_deleting",
+  "f12_delete_all_redacts_every_snapshot",
+  "f12_per_job_and_expiry_redact",
+  "f13_excluded_failure_is_one_class",
+  "f14_task_eligibility_follows_retained_inputs",
+  "f14_purged_transform_candidate_is_not_eligible",
+  "f14_quarantined_example_feeds_no_readiness",
+  "f24_nearing_expiry_counts_the_live_future_window",
+  "f27_readiness_test_runs_from_the_standalone_runner",
+  "f15_recoverable_journal_keeps_its_job",
+  "f15_recovery_claim_keeps_its_job",
+  "c15_unreferenced_terminal_job_still_prunes",
+  "f16_dictionary_skill_hits_reach_the_fact",
+  "f17_recovery_menu_repaste_is_counted",
+  "f18_failed_and_saved_paths_keep_their_clock",
+  "f19_activity_only_dates_in_daily",
+  "f22_invalid_numbers_never_become_usage",
+  "f23_insights_controls_fit_the_content",
+  "l02_settings_note_never_covers_usage_buttons",
+  "f25_committed_m13_evidence_has_no_home_paths",
+  "f26_benchmark_rejects_noop_and_empty_work",
+  "f28_aggregate_oracle_checks_every_field",
+  "f28_legacy_manifest_is_exact",
+  "f30_fallback_metrics_are_separately_named",
+  "f30_usage_keeps_until_cleared_by_default",
+  "c_cross_day_recomputes_departed_day",
+  "c_retry_replaces_one_row",
+  "c_auto_transform_is_not_explicit_activity",
+  "c_filtered_activity_is_unavailable",
+  "c_each_latency_has_its_own_n",
+  "c_invalid_new_instant_is_refused",
+  "l01_lax_instant_forms_are_refused"
+ ],
+ "results": [
+  {
+   "case": "f01_null_duration_is_not_free_words",
+   "finding": "M13-AUDIT-01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "wpm 240.0 (expected 120)",
+   "seconds": 0.01
+  },
+  {
+   "case": "f01_zero_duration_is_not_free_words",
+   "finding": "M13-AUDIT-01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "wpm 240.0",
+   "seconds": 0.01
+  },
+  {
+   "case": "f02_failed_rebuild_restores_zone_everywhere",
+   "finding": "M13-AUDIT-02",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "in-memory zone leaked: America/Los_Angeles",
+   "seconds": 0.01
+  },
+  {
+   "case": "f02_fact_admitted_across_rebuild_uses_committed_zone",
+   "finding": "M13-AUDIT-02",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "old-zone day 2026-09-27 under an LA label",
+   "seconds": 0.01
+  },
+  {
+   "case": "f03_expiry_is_chronological_across_precisions",
+   "finding": "M13-AUDIT-03",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['job-control', 'job-earlier']",
+   "seconds": 0.01
+  },
+  {
+   "case": "f04_direct_invalid_zone_is_refused",
+   "finding": "M13-AUDIT-04",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "invalid zone accepted: label 'Not/AZone' day '2026-09-27'",
+   "seconds": 0.01
+  },
+  {
+   "case": "f04_configured_invalid_zone_discloses_and_keeps_analytics",
+   "finding": "M13-AUDIT-04",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['17: analytics disabled', 'True: analytics disabled', '[]: no content-free diagnostic', \"'Not/AZone': no content-free diagnostic\"]",
+   "seconds": 0.15
+  },
+  {
+   "case": "f05_app_and_mode_changes_keep_the_range",
+   "finding": "M13-AUDIT-05",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "range became None",
+   "seconds": 0.01
+  },
+  {
+   "case": "f06_breakdowns_use_the_whole_cohort",
+   "finding": "M13-AUDIT-06",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "per-mode 60",
+   "seconds": 0.01
+  },
+  {
+   "case": "f07_one_report_is_one_generation",
+   "finding": "M13-AUDIT-07",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(3, 2)",
+   "seconds": 0.01
+  },
+  {
+   "case": "f20_app_identity_is_typed",
+   "finding": "M13-AUDIT-20",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(2, 30)",
+   "seconds": 0.01
+  },
+  {
+   "case": "f20_duplicate_labels_stay_separate",
+   "finding": "M13-AUDIT-20",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['Synthetic Editor']",
+   "seconds": 0.01
+  },
+  {
+   "case": "f21_lists_reconcile_or_disclose",
+   "finding": "M13-AUDIT-21",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(400, 401)",
+   "seconds": 0.15
+  },
+  {
+   "case": "f21_rendered_breakdowns_disclose_other",
+   "finding": "M13-AUDIT-21",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "app lines account for 8 of 9",
+   "seconds": 0.01
+  },
+  {
+   "case": "f08_delete_all_revokes_a_materialized_report",
+   "finding": "M13-AUDIT-08",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "pre-delete count republished: {'reporting_timezone': 'America/New_York', 'algorithm_version': 1, 'day_start': None, 'cohort': {'app': None, 'mode': None, 'days': None}, 'dictations': 2, 'dictations_with_text': 2, 'outcomes': {'confirmed': 2, 'posted_unverified': 0, 'saved_not_inserted': 0, 'cancelled': 0, 'failed': 0}, 'raw_words': 10, 'final_words': 10, 'capture_seconds': 20.0, 'wpm': 30.0, 'wpm_denominator': {'jobs': 2, 'words': 10, 'capture_seconds': 20.0}, 'fallback_jobs': 0, 'fallback_rate': 0.0, 'dictionary_hits': 0, 'snippet_hits': 0, 'transforms': 0, 'transform_words': 0, 'repastes': 0",
+   "seconds": 0.07
+  },
+  {
+   "case": "f08_hidden_insights_cache_is_revoked",
+   "finding": "M13-AUDIT-08",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "hidden Insights kept pre-delete counts",
+   "seconds": 0.02
+  },
+  {
+   "case": "f09_timed_out_delete_is_unknown_then_reconciled",
+   "finding": "M13-AUDIT-09",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "{'outcome': 'failed'}",
+   "seconds": 0.33
+  },
+  {
+   "case": "f09_native_settings_render_returned_outcomes",
+   "finding": "M13-AUDIT-09",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "returned failure ignored: ''",
+   "seconds": 0.05
+  },
+  {
+   "case": "f10_native_zero_and_negative_are_refused",
+   "finding": "M13-AUDIT-10",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "'0' became 1",
+   "seconds": 0.03
+  },
+  {
+   "case": "f11_failed_save_changes_nothing",
+   "finding": "M13-AUDIT-11",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "live policy changed to 30",
+   "seconds": 0.01
+  },
+  {
+   "case": "f11_apply_saves_and_previews_without_deleting",
+   "finding": "M13-AUDIT-11",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "{'outcome': 'applied', 'days': 30}",
+   "seconds": 0.01
+  },
+  {
+   "case": "f12_delete_all_redacts_every_snapshot",
+   "finding": "M13-AUDIT-12",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "2 snapshot(s) keep deleted app usage",
+   "seconds": 0.01
+  },
+  {
+   "case": "f12_per_job_and_expiry_redact",
+   "finding": "M13-AUDIT-12",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "job: snapshot keeps removed app usage",
+   "seconds": 0.01
+  },
+  {
+   "case": "f13_excluded_failure_is_one_class",
+   "finding": "M13-AUDIT-13",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(1, 1, 1)",
+   "seconds": 0.01
+  },
+  {
+   "case": "f14_task_eligibility_follows_retained_inputs",
+   "finding": "M13-AUDIT-14",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "{'count': 1, 'definition': 'retained audio + audio-reviewed verbatim reference'}",
+   "seconds": 0.01
+  },
+  {
+   "case": "f14_purged_transform_candidate_is_not_eligible",
+   "finding": "M13-AUDIT-14",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "purged candidate still eligible (1)",
+   "seconds": 0.01
+  },
+  {
+   "case": "f14_quarantined_example_feeds_no_readiness",
+   "finding": "M13-AUDIT-14",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "quarantined example eligible for {'asr_supervised': {'count': 1, 'definition': 'retained audio + audio-reviewed verbatim reference'}, 'cleanup_supervised': {'count': 1, 'definition': 'exact stage input retained + explicit intended-writing mark'}, 'transform_supervised': {'count': 0, 'definition': \"distinct transform tasks with retained candidates (reviewed targets are M14's review queue)\"}, 'preference_pairs': {'count': 0, 'definition': 'distinct tasks with an explicit comparable judgment'}}",
+   "seconds": 0.01
+  },
+  {
+   "case": "f24_nearing_expiry_counts_the_live_future_window",
+   "finding": "M13-AUDIT-24",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "nearing_expiry 4 (expected 1)",
+   "seconds": 0.02
+  },
+  {
+   "case": "f27_readiness_test_runs_from_the_standalone_runner",
+   "finding": "M13-AUDIT-27",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "[]",
+   "seconds": 0.24
+  },
+  {
+   "case": "f15_recoverable_journal_keeps_its_job",
+   "finding": "M13-AUDIT-15",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "recoverable job pruned",
+   "seconds": 0.01
+  },
+  {
+   "case": "f15_recovery_claim_keeps_its_job",
+   "finding": "M13-AUDIT-15",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "claimed recovery job pruned",
+   "seconds": 0.01
+  },
+  {
+   "case": "c15_unreferenced_terminal_job_still_prunes",
+   "finding": "M13-AUDIT-15",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f16_dictionary_skill_hits_reach_the_fact",
+   "finding": "M13-AUDIT-16",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "dictionary_hits 0",
+   "seconds": 0.09
+  },
+  {
+   "case": "f17_recovery_menu_repaste_is_counted",
+   "finding": "M13-AUDIT-17",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "menu repaste counted 0",
+   "seconds": 0.02
+  },
+  {
+   "case": "f18_failed_and_saved_paths_keep_their_clock",
+   "finding": "M13-AUDIT-18",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "failed: end_to_end_ms None (failed)",
+   "seconds": 0.7
+  },
+  {
+   "case": "f19_activity_only_dates_in_daily",
+   "finding": "M13-AUDIT-19",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['2026-09-25']",
+   "seconds": 0.01
+  },
+  {
+   "case": "f22_invalid_numbers_never_become_usage",
+   "finding": "M13-AUDIT-22",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['duration_sec=-1.0 stored -1.0', 'duration_sec=nan: no reason kept', 'duration_sec=inf stored inf', 'asr_ms=-1.0 stored -1.0', 'asr_ms=nan: no reason kept', 'asr_ms=inf stored inf', 'cleanup_ms=-1.0 stored -1.0', 'cleanup_ms=nan: no reason kept', 'cleanup_ms=inf stored inf', 'transform_ms=-1.0 stored -1.0', 'transform_ms=nan: no reason kept', 'transform_ms=inf stored inf', 'end_to_end_ms=-1.0 stored -1.0', 'end_to_end_ms=nan: no reason kept', 'end_to_end_ms=inf stored inf', 'raw_words=-1 stored [-1]', 'final_words=-1 stored [-1]', 'dictionary_hits=-1 stored [-1]', 'snippet_hits=-1 stored [-1]",
+   "seconds": 0.12
+  },
+  {
+   "case": "f23_insights_controls_fit_the_content",
+   "finding": "M13-AUDIT-23",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['insights_mode x=686..796 of 706']",
+   "seconds": 0.03
+  },
+  {
+   "case": "l02_settings_note_never_covers_usage_buttons",
+   "finding": "LOCAL-M13-02",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "labels over buttons: [('Apply Usage', 'Store retention applies immedi'), ('Delete All Usage\u2026', 'Store retention applies immedi')]",
+   "seconds": 0.02
+  },
+  {
+   "case": "f25_committed_m13_evidence_has_no_home_paths",
+   "finding": "M13-AUDIT-25",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['docs/v2/acceptance/M13/results.json']",
+   "seconds": 0.0
+  },
+  {
+   "case": "f26_benchmark_rejects_noop_and_empty_work",
+   "finding": "M13-AUDIT-26",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(0, '0 0.14 ms \u00b7 p95 0.15 ms (budget 200) OK\\nper_app: p50 0.11 ms \u00b7 p95 0.14 ms (budget 200) OK\\nper_mode: p50 0.11 ms \u00b7 p95 0.12 ms (budget 200) OK\\nlegacy_summary: p50 0.01 ms \u00b7 p95 0.02 ms (budget 200) OK\\nfact_write_busy_day (1870 facts that day): p50 0.8 ms \u00b7 p95 1.07 ms\\nwrote --validate-only/m13.json\\n', '')",
+   "seconds": 36.19
+  },
+  {
+   "case": "f28_aggregate_oracle_checks_every_field",
+   "finding": "M13-AUDIT-28",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "oracle missed a corrupted repastes",
+   "seconds": 0.01
+  },
+  {
+   "case": "f28_legacy_manifest_is_exact",
+   "finding": "M13-AUDIT-28",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "350.0",
+   "seconds": 0.01
+  },
+  {
+   "case": "f30_fallback_metrics_are_separately_named",
+   "finding": "M13-AUDIT-30",
+   "kind": "defect",
+   "status": "ERROR",
+   "detail": "KeyError: 'cleanup_fallback' | Traceback (most recent call last):\n  File \"<base-worktree>/tests/v2/analytics/test_m13_remediation.py\", line 1452, in main\n    fn()\n    ~~^^\n  File \"<base-worktree>/tests/v2/analytics/test_m13_remediation.py\", line 1334, in f30_fallback_metrics_are_separately_named\n    cf = s[\"cleanup_fallback\"]\n         ~^^^^^^^^^^^^^^^^^^^^\nKeyError: 'cleanup_fallback'\n",
+   "seconds": 0.01
+  },
+  {
+   "case": "f30_usage_keeps_until_cleared_by_default",
+   "finding": "M13-AUDIT-30",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "default usage retention 365",
+   "seconds": 0.0
+  },
+  {
+   "case": "c_cross_day_recomputes_departed_day",
+   "finding": "control:cross-day",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_retry_replaces_one_row",
+   "finding": "control:one-row",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_auto_transform_is_not_explicit_activity",
+   "finding": "control:auto-transform",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.0
+  },
+  {
+   "case": "c_filtered_activity_is_unavailable",
+   "finding": "control:filtered-activity",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_each_latency_has_its_own_n",
+   "finding": "control:latency-n",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "c_invalid_new_instant_is_refused",
+   "finding": "control:invalid-instant",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.0
+  },
+  {
+   "case": "l01_lax_instant_forms_are_refused",
+   "finding": "LOCAL-M13-01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "lax forms admitted: ['2026-09-27T12:34:56z', '2026-9-7T1:2:3Z', '2026-09-27T12:34:56.5z']",
+   "seconds": 0.01
+  }
+ ]
+}

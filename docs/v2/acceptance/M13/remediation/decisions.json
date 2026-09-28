@@ -1,0 +1,114 @@
+{
+  "schema": "m13-decision-record",
+  "version": "m13-policy-r1",
+  "recorded_on": "2026-09-27",
+  "audited_sha": "4e4be158251edc3b2677b2254decd8fdc427f97c",
+  "authority": "Decided in the local M13 remediation session under the repository's current authority. D03's retention horizon and Apply semantics were chosen by the owner in-session (keep usage until cleared; Apply saves and previews, never deletes on click). Every other decision adopts the audit's proposal or narrows it, with the reason recorded here. The audit corpus keeps its original policy text; these adoptions grade its policy-gated cases.",
+  "decisions": {
+    "D01_WPM_DURATION": {
+      "canonical_requirements": ["S21", "M13-AC04", "E06 weighted WPM"],
+      "chosen": "WPM = 60 x sum(final_words) / sum(duration_sec) over ONE rate cohort: dictation facts with final_words > 0 AND an observed duration_sec > 0 (finite by admission, D-numeric). Text-producing jobs without an observed positive duration stay in every ordinary total (final_words, dictations_with_text) and are disclosed as wpm_excluded {missing_duration, nonpositive_duration}. wpm is null when the rate cohort is empty.",
+      "alternatives_rejected": ["COALESCE(duration, 0) in the denominator (gives unknown-duration text free words)", "dropping unknown-duration words from ordinary totals (hides real usage)", "imputing a duration from word count (fabrication)"],
+      "migration_history": "No data change: the rule is a query definition. Historical rows keep their stored durations.",
+      "affected": ["summary.wpm", "summary.wpm_denominator{jobs,words,capture_seconds}", "summary.wpm_excluded", "Insights WPM line and its definition"]
+    },
+    "D02_TIME_ADMISSION": {
+      "canonical_requirements": ["S21 unknown dates never enter dated views", "analytics.md accepted formats"],
+      "chosen": "A new usage instant is admitted only as UTC with an uppercase Z: YYYY-MM-DDTHH:MM:SSZ or YYYY-MM-DDTHH:MM:SS.<1-6 digits>Z. Anything else (offsets, lowercase z, no zone, 7+ fractional digits, empty, non-string) is refused with the content-free reason unknown_activity_time; nothing is dated at now and nothing joins the legacy Undated bucket. Admitted instants are stored canonically at microsecond precision (YYYY-MM-DDTHH:MM:SS.ffffffZ), so lexical order equals chronological order; schema v12 canonicalizes existing usage rows without changing their true instants. No upper bound is applied at admission (a capture instant from a skewed clock is still the recorded observation). Relative ranges are inclusive local calendar days [today-(N-1), today] in the committed reporting zone at the service clock; facts dated after today are outside every relative range, counted in All, and disclosed as future_dated in the summary.",
+      "alternatives_rejected": ["numeric julianday comparison (millisecond truncation misorders sub-millisecond instants)", "broadening admitted formats (no recorded need)", "refusing future-dated instants (would drop a real dictation over a clock skew)"],
+      "migration_history": "Schema v12: UPDATE usage_facts to the canonical form where not already canonical (idempotent; pads zeros only). created_at_utc and legacy rows are untouched.",
+      "affected": ["usage_facts.activity_at_utc", "expire_usage cutoff", "summary.day_start/day_end/future_dated", "range queries"]
+    },
+    "D02b_REPORTING_ZONE": {
+      "canonical_requirements": ["S21 user-selected reporting timezone"],
+      "chosen": "One validator for every boundary. Empty or null means the documented system policy (the observed system IANA zone, else UTC). A non-string or an unknown name is invalid: direct AnalyticsStore construction and rebuild_aggregates refuse it (ValueError / outcome unknown_timezone); configuration falls back to the system policy and emits analytics.timezone_config_invalid with the key and a reason code only. The committed zone and algorithm version live durably in usage_meta and are read inside every writer/query op, so a fact's day, its row zone, a query's range and the published label always come from one committed policy. A failed rebuild rolls back rows and the durable zone together; no in-memory zone is published before commit. Launch drift (a different configured zone, any fact row in another zone, or any aggregate row at another version) triggers one atomic rebuild.",
+      "alternatives_rejected": ["silent UTC bucketing under an invalid label", "assigning the Python zone inside the writer op before commit"],
+      "migration_history": "Schema v12 adds usage_meta(key, value). The first launch seeds it from the configured zone through the drift check.",
+      "affected": ["AnalyticsStore constructor", "rebuild_aggregates", "summary.reporting_timezone", "hubUsageInfo"]
+    },
+    "D03_RETENTION": {
+      "canonical_requirements": ["S25 aggregate usage until manually cleared; all values visible and adjustable including keep indefinitely", "M02-AUDIT-19 no destructive zero/negative window"],
+      "chosen": "Usage retention defaults to keep until cleared (config value \"keep\"). The knob's valid domain is \"keep\" or an integer number of days in [1, 36500]; integral JSON floats such as 365.0 stay accepted in the config file (the shared M02 validator's existing compatibility), booleans, non-integral numbers, strings other than \"keep\", null and lists are invalid and fall back to the default with a content-free problem report. The native field accepts \"keep\" or a plain run of digits in range; 0, negatives, decimals and text are refused visibly and change nothing. Expiry, when a day count is set, removes facts whose canonical instant is strictly older than now minus days x 86400 seconds of elapsed UTC time; an instant equal to the cutoff stays. Apply validates, writes the override file atomically, and only then publishes the effective policy; a failed write changes nothing. Apply never deletes on click: it reports the saved policy and how many usage facts the next scheduled retention pass (30 s after launch, then daily) will remove.",
+      "alternatives_rejected": ["keeping the shipped 365-day default (S25 conflict; owner chose until-cleared)", "clamping invalid input to one day", "running an immediate irreversible expiry on Apply (owner chose preview)"],
+      "migration_history": "Default changes from 365 to keep. An explicit override the user saved keeps its value. No stored facts change.",
+      "affected": ["config retention_usage_days", "Store.retention_days['usage'] (None = keep)", "expire_usage", "hubApplyUsageRetention", "Settings usage field and note", "hubUsageInfo"]
+    },
+    "D04_ACTIVITY_SCOPE": {
+      "canonical_requirements": ["M13-AC02", "S21"],
+      "chosen": "An explicit transform fact is recorded once per completed generation run (the transform result carries an executed job); a refusal before execution records nothing. Its path is recorded as returned (applied, needs_review, fallback_original...). Selection and note transforms carry no job association: the source text is not reliably derived from one dictation, so no association is guessed. An auto-applied transform stays metadata on its dictation fact and never adds explicit-transform activity. A repaste fact is recorded when the insertion service ran a transaction for an explicit Paste Again (any transaction result, including failed and saved_not_inserted); no-transaction outcomes (nothing_to_paste, already_present, job_deleted/revoked, recording, in-flight refusals) record nothing. History and the Recovery menu use the same coordinator callback. Per-job usage deletion removes the job's dictation fact (with its auto-transform metadata) and every repaste carrying that job id; explicit transforms stay.",
+      "alternatives_rejected": ["counting auto-apply as explicit activity", "associating a selection transform with a dictation by matching text"],
+      "migration_history": "None.",
+      "affected": ["record_transform_fact", "record_repaste_fact", "pasteLastResultAgain_", "delete_usage_for_job"]
+    },
+    "D05_FALLBACK_COHORT": {
+      "canonical_requirements": ["E06 fallback rate = fallbacks / jobs requesting the relevant stage"],
+      "chosen": "Two separately named metrics. fallback_rate keeps its existing meaning and is labeled fallback incidence over all dictations. cleanup_fallback = {requested, fallbacks, rate}: jobs whose cleanup stage was requested (cleanup_path recorded and not 'raw') and, among those, jobs with a fallback reason; rate is null when none requested. The UI names each denominator.",
+      "alternatives_rejected": ["silently redefining fallback_rate"],
+      "migration_history": "None.",
+      "affected": ["summary.fallback_rate (label)", "summary.cleanup_fallback"]
+    },
+    "D06_LATENCY_CLOCK": {
+      "canonical_requirements": ["E06 end-to-end: parent monotonic PTT release to target-confirmed visible text; separate unknown outcomes"],
+      "chosen": "end_to_end_ms is the parent-monotonic interval from THIS capture's PTT release to the job's terminal outcome, for every terminal outcome reached after a release (confirmed, posted_unverified, saved_not_inserted, failed, cancelled after release, committed or refused note delivery). E06's confirmed-visible latency is reported as its own block: the same observations restricted to confirmed outcomes. A retry has no release of its own: its end_to_end_ms stays null with missing reason retry_no_release_clock, and its retry-start to terminal interval is stored separately (meta retry_to_terminal_ms) and reported as its own block; the capture instant never changes. A cancellation while holding has no release clock (missing reason cancelled_before_release). Missing reasons are counted per reason.",
+      "alternatives_rejected": ["wall-clock subtraction across processes", "mixing retry and release clocks in one percentile"],
+      "migration_history": "None: reasons and the retry interval ride meta_json.",
+      "affected": ["end_to_end_ms producers", "summary.latency.end_to_end{n,p50,p95,missing}", "summary.latency.confirmed_visible", "summary.latency.retry_to_terminal"]
+    },
+    "D07_METADATA_LIVENESS": {
+      "canonical_requirements": ["S25 failed/recoverable audio 30 days or until resolved", "M02 metadata knob"],
+      "chosen": "Metadata pruning keeps a terminal job while (a) it is failed_recoverable and its authorized recovery window (the audio_failed knob, measured from its last update) is still open, (b) a job-scoped payload file registered through register_job_payload_dir still exists for it (ownership by registered name pattern, never by guessing), or (c) the coordinator holds a recovery claim on it (the claimed set is passed in). A note revision's source_job_id does NOT pin the job row: the note keeps its text and its provenance id; an open note evidence link already pins through its live example. Usage facts stay independent of metadata pruning.",
+      "alternatives_rejected": ["deleting the journal early so the prune test passes", "pinning every historical source_job_id forever"],
+      "migration_history": "None.",
+      "affected": ["Store.prune_metadata", "app._retention_pass"]
+    },
+    "D08_WORD_VERSION": {
+      "canonical_requirements": ["S21 counts carry their tokenizer version"],
+      "chosen": "Counts stay whitespace tokens (whitespace-split-v1) and the UI says so. The summary lists the word-count versions present in the cohort and sets mixed_word_count_versions when more than one appears; a mixed cohort is disclosed, never recomputed from text that retention may have removed.",
+      "alternatives_rejected": ["recomputing retained counts under a new tokenizer"],
+      "migration_history": "None.",
+      "affected": ["summary.word_count_versions", "summary.mixed_word_count_versions", "Insights definitions"]
+    },
+    "D09_APP_IDENTITY": {
+      "canonical_requirements": ["S21 per-app breakdown"],
+      "chosen": "The app filter and grouping key is typed: bundle:<bundle id> when a bundle id exists, else name:<display name>, else unknown. The label is rendered separately (the most recent name for a bundle; a label shared by different keys shows its bundle id too). Unknown stays a distinct population, never folded into All.",
+      "alternatives_rejected": ["matching one string against name OR bundle"],
+      "migration_history": "None.",
+      "affected": ["apps_available", "per_app", "app filter", "native app popup representedObject"]
+    },
+    "D10_REPORT_SNAPSHOT": {
+      "canonical_requirements": ["one rendered report = one fact snapshot"],
+      "chosen": "The Insights Usage report is materialized in ONE writer op (summary, daily, per-app, per-mode, filter options, Undated, legacy) and carries the usage revision it read. Every usage mutation revokes pending Insights results (and a cached Your Voice profile) through the Hub state's usage invalidation, for committed and outcome-unknown mutations alike; the scheduled retention revalidation is kept.",
+      "alternatives_rejected": ["revision re-check with restart loops"],
+      "migration_history": "usage_meta carries the usage revision (schema v12).",
+      "affected": ["InsightsQueryService.report", "HubState._load_insights", "HubState.invalidate_usage"]
+    },
+    "D11_USAGE_DERIVED_COPIES": {
+      "canonical_requirements": ["S08/S21 delete associated usage", "S29.14 derived records never outlive their source"],
+      "chosen": "Any usage removal that deletes at least one fact (delete one job, delete all, retention expiry) redacts, in the same writer op, the usage-derived fields of every Your Voice snapshot that still carries them (app_usage, hour_histogram, hours_unknown, modes, requested_transforms, dictionary_hit_examples) and records usage_redacted {reason}. Speech-derived fields, evidence links, cards, notes, transcripts and labels are untouched. The profile's input signature reads the usage revision, so the next idle pass regenerates the current snapshot from the remaining facts.",
+      "alternatives_rejected": ["deleting whole snapshots or the training graph", "decrementing per-job counts inside historical snapshots (top-N slices make exact subtraction impossible)"],
+      "migration_history": "None.",
+      "affected": ["delete_usage_for_job", "delete_all_usage", "expire_usage", "profile snapshots", "Your Voice pane"]
+    },
+    "D12_READINESS_POPULATIONS": {
+      "canonical_requirements": ["M13-AC05", "E19.4", "S29.12-15"],
+      "chosen": "Outcome classes partition live+excluded examples, exclusion first: excluded examples count only as excluded; live examples split into unreviewed / verified_positive / verified_failure / unobserved; class_sum = live + excluded. Deleted, expired and quarantined examples are storage states, never readiness classes. Completeness numerator and denominator are both over live examples. Task eligibility is one side-effect-free predicate per live example: ASR needs an audio-reviewed verbatim reference plus a retained, unpurged audio artifact owned by the same job with role original_audio; cleanup needs an explicit intended-writing mark plus the retained source text; transform tasks count distinct task keys with at least one candidate whose source and output payloads are retained; preference pairs count distinct task keys whose explicit comparable judgment names candidates of that same task with retained payloads. Each task reports reason counts for records it excluded. Reviewed seconds come from the same eligible ASR population; partial span corrections add no seconds. nearing_expiry counts live examples with a retained training-held artifact whose protection (the latest unrevoked lease; a never-expiring lease is a pin) ends within (now, now + 3 days].",
+      "alternatives_rejected": ["overlapping excluded/failure classes", "counting annotation totals or bare task keys as eligible records"],
+      "migration_history": "None: readiness is computed on read. readiness_definition_revision m13-r1 is exposed.",
+      "affected": ["TrainingDataService.readiness outcome_balance, capture_completeness, task_eligibility, verbatim_reference_coverage, retention_health.nearing_expiry"]
+    },
+    "D13_MUTATION_OUTCOMES": {
+      "canonical_requirements": ["M02 timeout is not cancellation", "M10/M12 typed outcomes"],
+      "chosen": "Usage commands return typed outcomes: refused (validation), not_started (store not open), committed, failed (the op raised and rolled back) or outcome_unknown (the caller's wait timed out after admission). Each deletion op writes a durable marker for its operation id in the same transaction; an outcome_unknown is reconciled by a later FIFO read of that marker (committed or rolled back) and the views are revoked again. The native Settings and History actions render the returned outcome.",
+      "alternatives_rejected": ["reporting a timed-out admitted delete as failed"],
+      "migration_history": "Markers live in usage_meta and are removed when reconciled.",
+      "affected": ["hubDeleteAllUsage", "hubDeleteUsageForJob", "hubApplyUsageRetention", "_settings_call", "historyDeleteUsage_"]
+    },
+    "D14_NUMERIC_ADMISSION": {
+      "canonical_requirements": ["counts and durations are non-negative and finite; unknown is not zero"],
+      "chosen": "Count fields (raw_words, final_words, dictionary_hits, snippet_hits, source_words, output_words, attempt) must be integers >= 0 (attempt >= 1) or null where the column allows it; a violation refuses the fact with ValueError before any write. Timing fields (duration_sec, asr_ms, cleanup_ms, transform_ms, end_to_end_ms, transform duration) must be finite and >= 0; a violation stores null for that metric only and records the metric name and reason in meta_json invalid_metrics, so one bad timing never loses the dictation. Every emitted number is finite.",
+      "alternatives_rejected": ["accepting and filtering at query time"],
+      "migration_history": "None.",
+      "affected": ["record_dictation_fact", "record_transform_fact"]
+    }
+  }
+}
