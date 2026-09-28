@@ -2327,13 +2327,15 @@ def x14_a_concurrent_export_never_reconciles_a_live_build():
 
 
 def _nested_build(outer, inner, dest):
-    """Run ``inner``'s complete build to ``dest`` while ``outer``'s build
-    is inside its graph write; returns (outer result, inner result)."""
+    """Run ``inner``'s complete build to ``dest`` right after ``outer``'s
+    graph is written (its manifest on disk, its owner file not yet
+    removed); returns (outer result, inner result)."""
     from localflow.v2.curation.export import ExportError
     real = outer._write_graph
     got = {}
 
     def write_graph(*a, **k):
+        written = real(*a, **k)
         if not got:
             try:
                 got["inner"] = inner.build(dest,
@@ -2341,7 +2343,7 @@ def _nested_build(outer, inner, dest):
                                            export_id="export-inner")
             except ExportError as e:
                 got["inner"] = {"state": f"refused: {e}"}
-        return real(*a, **k)
+        return written
     outer._write_graph = write_graph
     try:
         out = outer.build(dest, task_views=("asr_supervised",),

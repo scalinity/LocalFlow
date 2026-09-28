@@ -369,8 +369,8 @@ MUTATIONS = [
      [(EX, "                            and manifest.get(\"export_id\") =="
            " suffix:\n",
        "                            and manifest.get(\"export_id\") == suffix"
-       " and (p / \"SHA256SUMS.txt\").exists() and " + mexpr("XM-MU50")
-       + ":\n")],
+       " and " + mexpr("XM-MU50")
+       + " and (p / \"SHA256SUMS.txt\").exists():\n")],
      {REM: ["x14_crash_before_the_checksums_leaves_nothing_hidden"]}),
 ]
 
