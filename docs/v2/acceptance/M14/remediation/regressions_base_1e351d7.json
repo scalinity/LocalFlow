@@ -1,0 +1,577 @@
+{
+ "suite": "tests/v2/personalization/test_m14_remediation.py",
+ "code": {
+  "suite": "tests/v2/personalization/test_m14_remediation.py",
+  "suite_sha256": "c691fe96d0d3ad92f89d7678c14ffbe0056cecf93552d3e6eb26459910173895",
+  "code_root_sha": "1e351d723d11a7bb5cb333c93a5daaca416f93d0",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "counts": {
+  "FAIL": 51,
+  "PASS": 11
+ },
+ "invoked": [
+  "f01_foreign_audio_is_not_asr_evidence",
+  "f01_wrong_role_own_audio_is_not_asr_evidence",
+  "f01_foreign_verbatim_reference_is_refused",
+  "f01_foreign_or_wrong_stage_cleanup_source_is_refused",
+  "f01_profile_reads_only_own_raw_speech",
+  "f01_observation_payload_of_another_job_is_refused",
+  "f02_unowned_staging_directory_is_never_removed",
+  "f03_purged_artifact_mid_compute_is_not_published",
+  "f03_purge_after_publication_invalidates_current",
+  "f04_new_export_from_old_version_cannot_reclaim_blindness",
+  "f05_outside_audio_path_is_never_read",
+  "f06_purge_serialized_before_publication_is_not_published",
+  "f06_consent_revoked_before_publication_is_not_published",
+  "f07_self_consistent_semantic_tamper_is_rejected",
+  "f07_preference_input_reconstructs_from_the_package",
+  "f08_purged_task_source_makes_pair_ineligible",
+  "c_selected_purge_before_fence_aborts",
+  "c_unrelated_deletion_does_not_abort",
+  "f09_deletion_between_plan_and_effect_leaves_no_orphan_rule",
+  "f09_rejection_between_plan_and_effect_leaves_no_orphan_rule",
+  "f10_undo_keeps_later_user_edits_of_a_created_entry",
+  "f10_concurrent_user_alias_survives_alias_undo",
+  "f11_teach_refuses_a_final_newer_than_the_rendered_one",
+  "f11_teach_never_substitutes_raw_for_a_missing_final",
+  "f12_graft_refuses_a_changed_source_with_the_same_substring",
+  "f12_graft_span_offsets_are_strict_integers",
+  "f13_typed_only_region_is_not_dictation_evidence",
+  "f15_counterexample_phrase_is_not_candidate_metadata",
+  "f17_label_retry_with_one_operation_is_one_revision",
+  "f17_split_retry_with_one_operation_is_one_version",
+  "f17_approval_retry_after_unknown_outcome_reconciles",
+  "f24_unpin_keeps_review_retention_leases",
+  "f24_pin_never_makes_a_machine_suggestion_permanent",
+  "f14_readiness_matches_export_membership",
+  "f19_later_abstention_returns_item_to_unresolved",
+  "f20_punctuation_only_teach_is_a_review_record",
+  "f21_directional_antonym_is_not_a_recognition_suggestion",
+  "c_real_spelling_correction_is_suggested",
+  "f22_equivalent_app_scope_composes_with_existing_entry",
+  "f23_used_term_canonical_edit_refreshes_the_profile_once",
+  "f25_export_cli_accepts_an_explicit_db_path",
+  "f26_m14_evidence_carries_no_private_paths",
+  "d01_resolved_ambiguity_no_longer_blocks_asr",
+  "c_changed_intent_blocks_asr_forever",
+  "d02_task_rows_never_ride_into_a_holdout_export",
+  "d03_cleanup_without_exact_prompts_is_labeled_text_pair",
+  "d04_technical_terms_cite_eligible_speech_only",
+  "d05_case_variant_of_rejected_pair_stays_suppressed",
+  "d06_approval_without_counterexamples_is_recorded_untested",
+  "d07_accept_then_reject_is_not_a_supervised_target",
+  "f28_benchmark_rejects_a_noop_component",
+  "f29_caller_inventory_covers_every_tracked_caller",
+  "f16_pair_judgment_binds_to_the_rendered_pair",
+  "f18_job_only_teach_is_actionable_in_review",
+  "f11_history_teach_passes_the_rendered_final_identity",
+  "f27_profile_never_reaches_the_real_coordinator_pipeline",
+  "c_pending_candidates_never_reach_normalization",
+  "c_prefer_b_exports_b",
+  "c_label_refuses_restricted_states",
+  "c_next_assignment_keeps_exposed_family_out_of_frozen",
+  "c_unchanged_idle_pass_adds_no_snapshot",
+  "c_delete_reaches_job_only_candidates"
+ ],
+ "results": [
+  {
+   "case": "f01_foreign_audio_is_not_asr_evidence",
+   "finding": "M14-AUDIT-01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "({'eligible': True, 'reason': None}, ['A exported', \"A carries B's audio bytes\"], None)",
+   "seconds": 0.06
+  },
+  {
+   "case": "f01_wrong_role_own_audio_is_not_asr_evidence",
+   "finding": "M14-AUDIT-01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "{'eligible': True, 'reason': None}",
+   "seconds": 0.01
+  },
+  {
+   "case": "f01_foreign_verbatim_reference_is_refused",
+   "finding": "M14-AUDIT-01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "({'eligible': True, 'reason': None}, [{'coverage': 'full', 'example_id': 'ex-5e4fd960e13d46fab6f4d7461cc4ffb8', 'kind': 'verbatim_speech', 'listened_audio': True, 'reviewer': 'hub_user', 'text': 'bravo reference B_ONLY_73', 'transcription_policy': 'verbatim_audio_reviewed_v1'}], None)",
+   "seconds": 0.06
+  },
+  {
+   "case": "f01_foreign_or_wrong_stage_cleanup_source_is_refused",
+   "finding": "M14-AUDIT-01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(['A foreign', 'C wrong stage'], {'count': 3, 'excluded': {}, 'definition': 'live examples with an explicit intended-writing mark and their exact stage input retained'}, ['ex-25fa983571144a029920a4f4eabede2d', 'ex-8e6ad84b9db94670b9aaee639859fcdf', 'ex-c985242feacd44c6a56066da93d3dfe4'])",
+   "seconds": 0.05
+  },
+  {
+   "case": "f01_profile_reads_only_own_raw_speech",
+   "finding": "M14-AUDIT-01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(2, 16)",
+   "seconds": 0.01
+  },
+  {
+   "case": "f01_observation_payload_of_another_job_is_refused",
+   "finding": "M14-AUDIT-01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "[('pending',)]",
+   "seconds": 0.01
+  },
+  {
+   "case": "f02_unowned_staging_directory_is_never_removed",
+   "finding": "M14-AUDIT-02",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(False, False, None)",
+   "seconds": 0.05
+  },
+  {
+   "case": "f03_purged_artifact_mid_compute_is_not_published",
+   "finding": "M14-AUDIT-03",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "('current', ['private_phrase_canary_59 zephyr'])",
+   "seconds": 0.04
+  },
+  {
+   "case": "f03_purge_after_publication_invalidates_current",
+   "finding": "M14-AUDIT-03",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "current",
+   "seconds": 0.04
+  },
+  {
+   "case": "f04_new_export_from_old_version_cannot_reclaim_blindness",
+   "finding": "M14-AUDIT-04",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "1 fresh unexposed frozen claims",
+   "seconds": 0.13
+  },
+  {
+   "case": "f05_outside_audio_path_is_never_read",
+   "finding": "M14-AUDIT-05",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['<tmp>/tmp_wkrv749/outside/sentinel.wav', '../outside/sentinel.wav', 'link-to-outside.wav']",
+   "seconds": 0.06
+  },
+  {
+   "case": "f06_purge_serialized_before_publication_is_not_published",
+   "finding": "M14-AUDIT-06",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "a completed export contains a source purged before its publication",
+   "seconds": 0.05
+  },
+  {
+   "case": "f06_consent_revoked_before_publication_is_not_published",
+   "finding": "M14-AUDIT-06",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "assertion",
+   "seconds": 0.05
+  },
+  {
+   "case": "f07_self_consistent_semantic_tamper_is_rejected",
+   "finding": "M14-AUDIT-07",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "chosen/judgment mismatch accepted",
+   "seconds": 0.06
+  },
+  {
+   "case": "f07_preference_input_reconstructs_from_the_package",
+   "finding": "M14-AUDIT-07",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "task input absent from the package",
+   "seconds": 0.05
+  },
+  {
+   "case": "f08_purged_task_source_makes_pair_ineligible",
+   "finding": "M14-AUDIT-08",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "purged-input pair exported",
+   "seconds": 0.05
+  },
+  {
+   "case": "c_selected_purge_before_fence_aborts",
+   "finding": "control:selected-purge-before-fence",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
+  },
+  {
+   "case": "c_unrelated_deletion_does_not_abort",
+   "finding": "control:unrelated-deletion-completes",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
+  },
+  {
+   "case": "f09_deletion_between_plan_and_effect_leaves_no_orphan_rule",
+   "finding": "M14-AUDIT-09",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "orphan rule: 1 active learned entries while the candidate is stale",
+   "seconds": 0.01
+  },
+  {
+   "case": "f09_rejection_between_plan_and_effect_leaves_no_orphan_rule",
+   "finding": "M14-AUDIT-09",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "orphan rule while candidate rejected",
+   "seconds": 0.01
+  },
+  {
+   "case": "f10_undo_keeps_later_user_edits_of_a_created_entry",
+   "finding": "M14-AUDIT-10",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "user alias no longer effective after undo: 'please check the moduel now'",
+   "seconds": 0.01
+  },
+  {
+   "case": "f10_concurrent_user_alias_survives_alias_undo",
+   "finding": "M14-AUDIT-10",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "{'moduul'}",
+   "seconds": 0.01
+  },
+  {
+   "case": "f11_teach_refuses_a_final_newer_than_the_rendered_one",
+   "finding": "M14-AUDIT-11",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "taught against a text the reviewer never saw: 'please check the modal today again'",
+   "seconds": 0.01
+  },
+  {
+   "case": "f11_teach_never_substitutes_raw_for_a_missing_final",
+   "finding": "M14-AUDIT-11",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "('teach compared against the raw transcript in place of the purged final', 'please check the modul today')",
+   "seconds": 0.01
+  },
+  {
+   "case": "f12_graft_refuses_a_changed_source_with_the_same_substring",
+   "finding": "M14-AUDIT-12",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "graft saved against a source nobody reviewed",
+   "seconds": 0.01
+  },
+  {
+   "case": "f12_graft_span_offsets_are_strict_integers",
+   "finding": "M14-AUDIT-12",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(False, 1)",
+   "seconds": 0.01
+  },
+  {
+   "case": "f13_typed_only_region_is_not_dictation_evidence",
+   "finding": "M14-AUDIT-13",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "typed-only words kept as dictation evidence",
+   "seconds": 0.01
+  },
+  {
+   "case": "f15_counterexample_phrase_is_not_candidate_metadata",
+   "finding": "M14-AUDIT-15",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(1, ['learning_candidates'])",
+   "seconds": 0.01
+  },
+  {
+   "case": "f17_label_retry_with_one_operation_is_one_revision",
+   "finding": "M14-AUDIT-17",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "2 revisions for one logical save",
+   "seconds": 0.01
+  },
+  {
+   "case": "f17_split_retry_with_one_operation_is_one_version",
+   "finding": "M14-AUDIT-17",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "2 versions for one logical assignment",
+   "seconds": 0.04
+  },
+  {
+   "case": "f17_approval_retry_after_unknown_outcome_reconciles",
+   "finding": "M14-AUDIT-17",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "retry reported failure: ValueError: not_pending:approved",
+   "seconds": 0.01
+  },
+  {
+   "case": "f24_unpin_keeps_review_retention_leases",
+   "finding": "M14-AUDIT-24",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "review leases revoked by unpin: {'art-d605e2ef827944d89b07864a9c70df9a': 0, 'art-be5010649e6246388b2d6c366beab20f': 0}",
+   "seconds": 0.01
+  },
+  {
+   "case": "f24_pin_never_makes_a_machine_suggestion_permanent",
+   "finding": "M14-AUDIT-24",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "pin made a pending machine payload permanent",
+   "seconds": 0.01
+  },
+  {
+   "case": "f14_readiness_matches_export_membership",
+   "finding": "M14-AUDIT-14",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "readiness {'asr_supervised': 11, 'cleanup_supervised': 2} vs export {'asr_supervised': 10, 'cleanup_supervised': 1}",
+   "seconds": 0.06
+  },
+  {
+   "case": "f19_later_abstention_returns_item_to_unresolved",
+   "finding": "M14-AUDIT-19",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "stale resolution shown",
+   "seconds": 0.01
+  },
+  {
+   "case": "f20_punctuation_only_teach_is_a_review_record",
+   "finding": "M14-AUDIT-20",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "ValueError: unchanged_output",
+   "seconds": 0.01
+  },
+  {
+   "case": "f21_directional_antonym_is_not_a_recognition_suggestion",
+   "finding": "M14-AUDIT-21",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(['increase'], ['recognition_error'])",
+   "seconds": 0.01
+  },
+  {
+   "case": "c_real_spelling_correction_is_suggested",
+   "finding": "control:spelling-correction-still-suggested",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "f22_equivalent_app_scope_composes_with_existing_entry",
+   "finding": "M14-AUDIT-22",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "ValueError: an entry with this canonical spelling already exists in the requested scope",
+   "seconds": 0.01
+  },
+  {
+   "case": "f23_used_term_canonical_edit_refreshes_the_profile_once",
+   "finding": "M14-AUDIT-23",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(True, '[\"Kubernetes\"]')",
+   "seconds": 0.03
+  },
+  {
+   "case": "f25_export_cli_accepts_an_explicit_db_path",
+   "finding": "M14-AUDIT-25",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(1, '\", line 61, in <module>\\n    raise SystemExit(main())\\n                     ~~~~^^\\n  File \"<repo>/scripts/v2/export_dataset.py\", line 43, in main\\n    artifacts_dir=args.db.parent / \"v2-artifacts\",\\n                  ^^^^^^^^^^^^^^\\nAttributeError: \\'str\\' object has no attribute \\'parent\\'\\n')",
+   "seconds": 0.16
+  },
+  {
+   "case": "f26_m14_evidence_carries_no_private_paths",
+   "finding": "M14-AUDIT-26",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['docs/v2/acceptance/M14/results.json:7', 'docs/v2/acceptance/M14/results.json:103']",
+   "seconds": 0.0
+  },
+  {
+   "case": "d01_resolved_ambiguity_no_longer_blocks_asr",
+   "finding": "M14-AUDIT-30",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "{'eligible': False, 'reason': 'blocking_label_ambiguous'}",
+   "seconds": 0.01
+  },
+  {
+   "case": "c_changed_intent_blocks_asr_forever",
+   "finding": "control:changed-intent-permanent",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "d02_task_rows_never_ride_into_a_holdout_export",
+   "finding": "M14-AUDIT-31",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "2 unpartitioned task rows",
+   "seconds": 0.13
+  },
+  {
+   "case": "d03_cleanup_without_exact_prompts_is_labeled_text_pair",
+   "finding": "M14-AUDIT-32",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "{'ex-1af74582fb9d4f609cb0de1b16c9260c': None, 'ex-45d6e1caef2a4430af00e57f47824dbf': None}",
+   "seconds": 0.05
+  },
+  {
+   "case": "d04_technical_terms_cite_eligible_speech_only",
+   "finding": "M14-AUDIT-33",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "[\"Terraform\", \"Kafka\"]",
+   "seconds": 0.02
+  },
+  {
+   "case": "d05_case_variant_of_rejected_pair_stays_suppressed",
+   "finding": "M14-AUDIT-34",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "[('Modul',)]",
+   "seconds": 0.02
+  },
+  {
+   "case": "d06_approval_without_counterexamples_is_recorded_untested",
+   "finding": "M14-AUDIT-35",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "[]",
+   "seconds": 0.01
+  },
+  {
+   "case": "d07_accept_then_reject_is_not_a_supervised_target",
+   "finding": "M14-AUDIT-36",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "a rejected target exported as supervised",
+   "seconds": 0.05
+  },
+  {
+   "case": "f28_benchmark_rejects_a_noop_component",
+   "finding": "M14-AUDIT-28",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "no independent validity gate in the benchmark",
+   "seconds": 0.0
+  },
+  {
+   "case": "f29_caller_inventory_covers_every_tracked_caller",
+   "finding": "M14-AUDIT-29",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "no caller inventory",
+   "seconds": 0.0
+  },
+  {
+   "case": "f16_pair_judgment_binds_to_the_rendered_pair",
+   "finding": "M14-AUDIT-16",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "the compared texts were never shown",
+   "seconds": 0.24
+  },
+  {
+   "case": "f18_job_only_teach_is_actionable_in_review",
+   "finding": "M14-AUDIT-18",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(('pending', None), 0)",
+   "seconds": 0.05
+  },
+  {
+   "case": "f11_history_teach_passes_the_rendered_final_identity",
+   "finding": "M14-AUDIT-11",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "{}",
+   "seconds": 0.03
+  },
+  {
+   "case": "f27_profile_never_reaches_the_real_coordinator_pipeline",
+   "finding": "M14-AUDIT-27",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "c_pending_candidates_never_reach_normalization",
+   "finding": "control:pending-never-changes-output",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "c_prefer_b_exports_b",
+   "finding": "control:prefer-b-maps-to-b",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
+  },
+  {
+   "case": "c_label_refuses_restricted_states",
+   "finding": "control:label-refuses-restricted",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "c_next_assignment_keeps_exposed_family_out_of_frozen",
+   "finding": "control:assign-preserves-exposure",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.13
+  },
+  {
+   "case": "c_unchanged_idle_pass_adds_no_snapshot",
+   "finding": "control:idle-unchanged-writes-nothing",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "c_delete_reaches_job_only_candidates",
+   "finding": "control:delete-reaches-job-keyed-candidates",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  }
+ ]
+}

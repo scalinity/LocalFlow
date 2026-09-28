@@ -1,0 +1,210 @@
+{
+  "policy_id": "m14-policy-r1",
+  "milestone": "M14",
+  "audited_sha": "1e351d723d11a7bb5cb333c93a5daaca416f93d0",
+  "scope": "Decisions the M14 read-only deep audit left to the local remediation (design concerns M14-AUDIT-30..36) plus the implementation choices its repair directions require. Each entry states the adopted rule, the finding it resolves, the governing text it reconciles and what it deliberately does not change. Tests and corpus cases that depend on a decision cite its id.",
+  "decisions": [
+    {
+      "id": "D01",
+      "findings": [
+        "M14-AUDIT-19",
+        "M14-AUDIT-30"
+      ],
+      "title": "One effective review judgment; changed intent stays permanent",
+      "rule": [
+        "correction_labels stay append-only. The effective judgment of an example is its latest revision; when that revision is abstained the example is unresolved (the reviewer's current opinion is uncertainty). This is the rule profile.md already stated for Your Voice; the review queue, the ASR promotion gate and readiness now use the same reducer (localflow.v2.curation.review.effective_judgment_in).",
+        "The queue's 'labeled' flag means an effective judgment exists. A later abstained revision returns the item to unresolved; an abstained first revision followed by an explicit one is resolved.",
+        "ASR blockers: changed_intent in ANY revision bars verified ASR use permanently (a changed intent is never acoustic truth). ambiguous and user_rewrite block while unresolved: they are cleared only when the effective judgment exists and its edit_kind is not a blocking kind. Abstention never resolves a blocker. Resolution removes the blocker only; verified ASR still needs the listened verbatim reference and owned audio."
+      ],
+      "reconciles": "learning.md said any historical blocking label bars ASR use while review.py's docstring said ambiguous/user_rewrite block 'while unresolved'; the adopted rule keeps changed_intent any-history and gives ambiguous/user_rewrite an explicit resolution.",
+      "does_not_change": "Label rows are never rewritten or deleted by review; changed_intent history is never cleared."
+    },
+    {
+      "id": "D02",
+      "findings": [
+        "M14-AUDIT-31"
+      ],
+      "title": "Task-keyed rows are explicitly unpartitioned",
+      "rule": [
+        "transform_supervised and preference_pairs records have no authoritative family link (a task key is not a recording family, and a family is never inferred from proximity or text). They are exported with split 'unpartitioned' and holdout_qualified false, and the manifest's partition_scope names which views are family-partitioned.",
+        "Because they carry no holdout claim, task-keyed rows are exported only when the requested partitions include 'train'; an export of validation and/or frozen_test alone lists them in manifest.excluded with reason task_keyed_unpartitioned instead of mixing unpartitioned material into a holdout package."
+      ],
+      "reconciles": "dataset_exports.md's task-keyed exception with S29.11/S29.13's family-isolation guarantee: the exception now travels with the data instead of being implied.",
+      "does_not_change": "No family is invented for a task row; example-keyed views keep their family partitions."
+    },
+    {
+      "id": "D03",
+      "findings": [
+        "M14-AUDIT-32",
+        "M14-AUDIT-14"
+      ],
+      "title": "Cleanup records carry a qualification tier",
+      "rule": [
+        "A cleanup_supervised record is 'model_task_complete' only when at least one model pass was recorded and every recorded pass's exact rendered prompt is retained as this job's cleanup_input_* model_input artifact. Otherwise it is 'text_pair_only' and keeps model_inputs_missing_reason.",
+        "Both tiers stay in the cleanup_supervised view (an intended-writing text pair is useful research material), but every record names its tier, the manifest and README count the tiers separately, and readiness reports the same tiers with the same predicate. A text_pair_only record is never described as a reconstructable model task."
+      ],
+      "does_not_change": "The intended-writing requirement (explicit correct mark with user_explicit_intended_writing provenance) is unchanged."
+    },
+    {
+      "id": "D04",
+      "findings": [
+        "M14-AUDIT-33"
+      ],
+      "title": "Technical terms are speech-derived; dictionary counters are labeled as such",
+      "rule": [
+        "measured.technical_terms lists approved, enabled vocabulary entries that were applied (normalization.vocabulary.applied_rule_ids) in ELIGIBLE dictations, each with its count of eligible dictations and up to five supporting example ids. The technical-vocabulary card cites exactly those examples.",
+        "The previous global list (entries with usage_count > 0) is kept as dictionary_terms_with_recorded_use with source 'independent dictionary usage counters (all dictations; not cleared by Delete Usage — analytics.md)'. It is never presented as speech the user said."
+      ],
+      "does_not_change": "Independent vocabulary occurrence counters are not reset by Delete Usage (the accepted M13 analytics policy)."
+    },
+    {
+      "id": "D05",
+      "findings": [
+        "M14-AUDIT-34"
+      ],
+      "title": "Rejection suppresses the pair globally under M05 comparison rules",
+      "rule": [
+        "A rejection is the user's pair-level decision that this correction must not be suggested again (S11). The suppression key is (alias lower-cased, canonical under M05's ASCII-case identity); it applies in every scope.",
+        "Case-equivalent spellings of a rejected pair are suppressed; the same alias with a different canonical, or a different alias, is not."
+      ],
+      "does_not_change": "Only the alias/canonical terms of a rejected row are retained as preference metadata; no observation or counterexample text is kept for suppression."
+    },
+    {
+      "id": "D06",
+      "findings": [
+        "M14-AUDIT-35",
+        "M14-AUDIT-15"
+      ],
+      "title": "Counterexample checks record their population; phrases live in governed artifacts",
+      "rule": [
+        "Approval with no counterexample phrase remains an explicit user choice, recorded as status 'untested' (tested 0) — never as safe.",
+        "Supplied phrases are checked through the M05 sandbox over the EFFECTIVE post-approval dictionary (the current approved entries plus the proposed rule) in the rule's own scope; a flip is a phrase the proposed rule itself rewrites.",
+        "learning_candidates.counterexample_json holds only content-free results {status, tested, flips, snapshot_revision, scope, artifact_id}. Phrases and flipped outputs live in a lease-governed counterexample_result artifact of the candidate's job (training-buffer lease), so job deletion, expiry and candidate staling remove them."
+      ]
+    },
+    {
+      "id": "D07",
+      "findings": [
+        "M14-AUDIT-36"
+      ],
+      "title": "Transform target approval is the latest accept/reject",
+      "rule": [
+        "The effective human target decision on a single transform candidate is its latest accept or reject observation: accept then reject is not a target; reject then accept is.",
+        "An undo observation records an insertion reversal, not a writing-quality verdict, and does not change target approval (no producer writes one today). Automatic application alone is never a target."
+      ]
+    },
+    {
+      "id": "D08",
+      "findings": [
+        "M14-AUDIT-24"
+      ],
+      "title": "Review-retention roles are one shared set",
+      "rule": [
+        "Reviewed-evidence payloads carry their own never-expiring training lease and are not user pins: verbatim_reference, span_correction, span_graft and candidate_observation. pin never double-leases them and unpin never revokes them; _is_pinned never reports them.",
+        "Machine-mined candidate_observation payloads keep their finite training-buffer lease; because pin no longer leases candidate_observation artifacts, pinning a job cannot make a pending machine suggestion permanent.",
+        "The set is one constant (training_data.REVIEW_RETENTION_ROLES) and a completeness test enumerates every role the M09/M14 review writers lease forever."
+      ]
+    },
+    {
+      "id": "D09",
+      "findings": [
+        "M14-AUDIT-02",
+        "M14-AUDIT-06",
+        "M14-AUDIT-17"
+      ],
+      "title": "Export staging is operation-owned; publication is writer-fenced",
+      "rule": [
+        "Each build creates its own staging directory, named with its export id, exclusively (mkdir fails on any existing path) and marks it with an ownership file. Only that directory is ever removed by the build; a pre-existing '.<name>.building' or any other path is never deleted or reused.",
+        "Publication's linearization point is one store writer op that re-checks consent, every selected dependency (artifacts present and unpurged, example state and latest revision, label and preference judgments) and then renames the staging directory onto the destination and records the export complete. A deletion or consent revocation serialized before that op aborts the build; one serialized after it concerns an export that was already published. An earlier export at the destination is moved aside before the fence and removed only after publication (restored if the fence refuses).",
+        "build(export_id=...) accepts a caller-supplied operation id; a repeat of an id that already completed returns its recorded receipt and writes nothing."
+      ]
+    },
+    {
+      "id": "D10",
+      "findings": [
+        "M14-AUDIT-04"
+      ],
+      "title": "A new export consults all-history exposure",
+      "rule": "Any NEW export joins its selected families to the exposure ledger across every assignment version. A family exposed in any version is exported with exposed true; if it sits in frozen_test in the requested version the export refuses (known holdout leakage). Old assignment rows are never rewritten."
+    },
+    {
+      "id": "D11",
+      "findings": [
+        "M14-AUDIT-01",
+        "M14-AUDIT-05",
+        "M14-AUDIT-07",
+        "M14-AUDIT-08",
+        "M14-AUDIT-14"
+      ],
+      "title": "One qualified evidence resolver",
+      "rule": [
+        "localflow.v2.curation.evidence resolves every artifact an M14 consumer reads: it must exist, be unpurged, belong to the expected job, carry the producer role expected for its slot, hold its payload and match its recorded digest (text re-hashed; audio re-hashed on copy). The ASR gate, the export views, readiness task eligibility, stage attribution for mining/teach and the profile's speech read all use it.",
+        "Expected roles per slot are the producers' own: source_text raw_transcript, applied_output applied_output, normalization normalized_text|normalization_ledger, original_audio original_audio, verbatim annotation verbatim_reference, cleanup pass prompt cleanup_input_* (model_input), graft span_graft, transform source transform_source, transform output transform_output, observation before/after observation_before_range/observation_after_range.",
+        "Audio payloads are opened only as a plain managed file name inside the store's artifact directory, through a no-follow descriptor, regular files only (the M12 managed-file discipline)."
+      ]
+    },
+    {
+      "id": "D12",
+      "findings": [
+        "M14-AUDIT-09",
+        "M14-AUDIT-10",
+        "M14-AUDIT-17",
+        "M14-AUDIT-22"
+      ],
+      "title": "Approval and undo are single writer operations with recorded deltas",
+      "rule": [
+        "approve() reads the candidate, re-checks its evidence (candidate pending, payload retained, job not deleted, example trainable), plans against the authoritative dictionary with M05's canonical identity (NOCASE canonical, validated scope value), applies the M05 mutation and marks the candidate approved in ONE writer op, recording the exact delta (entry id, action, alias, entry revision after approval). A revocation serialized before it refuses; nothing can land between plan and effect.",
+        "approve(operation_id=...) and undo_approval(operation_id=...) are idempotent: a repeat of a completed operation id returns its receipt without a second effect.",
+        "undo_approval() reverses only the recorded delta against the authoritative entry inside one writer op: a created entry is disabled only while it is exactly as approval left it; an added alias is removed only while it is present and approved; an approved alias returns to unapproved only while it is still approved. Otherwise the undo refuses with user_modified_since_approval and changes nothing.",
+        "Re-approval after undo re-enables the learned entry only while it is exactly as the undo left it; an entry the user disabled or edited afterwards is never reactivated (existing_entry_not_active)."
+      ]
+    },
+    {
+      "id": "D13",
+      "findings": [
+        "M14-AUDIT-11",
+        "M14-AUDIT-12",
+        "M14-AUDIT-20"
+      ],
+      "title": "Teach and graft bind to the text the reviewer saw",
+      "rule": [
+        "teach_correction(expected_final_artifact_id, expected_final_sha256) is checked and minted in ONE writer op; a different current final, a purged final or a hash mismatch refuses as stale_final. The final text is the job's applied output only — a raw transcript is never substituted. The History Teach action passes the rendered cleaned-stage artifact id and hash; the transformed-final refusal stays.",
+        "Unchanged means the stripped correction equals the stripped final text. A correction whose words are identical but whose punctuation, spacing or line breaks differ is recorded as a punctuation_or_structure candidate with character-level spans and no suggested rule.",
+        "record_label(confirmed_spans, expected_source_artifact_id, expected_source_sha256) refuses a graft whose current source artifact or hash differs from the reviewed one; span offsets must be non-negative integers (not bool) with start <= end. The graft payload records its source artifact id and sha256."
+      ]
+    },
+    {
+      "id": "D14",
+      "findings": [
+        "M14-AUDIT-13"
+      ],
+      "title": "Note mining attributes each changed region",
+      "rule": "Each changed word region is attributed on its own: wholly inside one dictated span of job J (an insertion strictly inside it) attributes to J; touching no dictated span is the user's own writing and is excluded; straddling a span boundary is ambiguous and excluded. A dictated span that M12's occurrence-safe rebase reports as ambiguous abstains the whole revision. When the attributable regions belong to exactly one job, only those regions are classified and kept as that job's evidence; regions of two jobs, or none, mint nothing."
+    },
+    {
+      "id": "D15",
+      "findings": [
+        "M14-AUDIT-16",
+        "M14-AUDIT-18"
+      ],
+      "title": "Review actions bind to rendered identities",
+      "rule": [
+        "Candidate actions (Approve/Reject) bind to the rendered queue row's candidate id — a job-only teach is selectable without an example row; label actions stay example-bound.",
+        "The pair pane renders the shared source text and both candidate texts with their candidate ids and display order; a judgment records exactly the rendered pair in the rendered slot order (slot A is the candidate shown first), and refuses when either rendered candidate no longer exists or no longer shares the task — a candidate added after rendering never changes which pair is judged."
+      ]
+    },
+    {
+      "id": "D16",
+      "findings": [
+        "M14-AUDIT-03",
+        "M14-AUDIT-23"
+      ],
+      "title": "Profile publication re-validates its exact inputs",
+      "rule": [
+        "compute() records the exact raw-transcript artifact and latest revision of every eligible example it read, and the commit op re-checks every one (still live, same revision, artifact retained) plus the label and exclusion state it used; any change restarts the computation.",
+        "A snapshot whose supporting raw artifact was purged (the example still live) is invalidated with reason source_purged and its text-bearing content cleared on the next read or compute.",
+        "The evidence signature covers everything the output depends on, including vocabulary entry revisions, the latest label per example and exclusions; a fast input signature is remembered only when the recomputed evidence signature is equal."
+      ]
+    }
+  ]
+}
