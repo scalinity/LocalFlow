@@ -180,7 +180,10 @@ EDITS = {
         "                                  bool(exposed) or fam in"
         " exposed_ever)\n",
         mark("LF-M14-MU016", 12)
-        + "            memberships[ex_id] = (fam, part, bool(exposed))\n")],
+        + "            memberships[ex_id] = (fam, part, bool(exposed))\n"),
+        (EX,
+        "                return \"family_exposed\"\n",
+        "                pass\n")],
     "LF-M14-MU017": [(EX,
         "        destination.parent.mkdir(parents=True, exist_ok=True)\n"
         "        staging = destination.parent / \\\n",
