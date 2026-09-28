@@ -1039,9 +1039,20 @@ def c063_deleted_artifact_row(entry):
             w.families(10)
             w.splits.assign()
             fired = []
+            # The seam is the op AFTER the export snapshot (its selection
+            # runs inside that op); later reconcile reads may precede it
+            # (cross-milestone D13).
+            selected = []
+            real_select = w.exporter._select
+
+            def select(*a, **k):
+                out = real_select(*a, **k)
+                selected.append(1)
+                return out
+            w.exporter._select = select
 
             def hook():
-                if fired:
+                if fired or not selected:
                     return
                 fired.append(1)
                 if drop:

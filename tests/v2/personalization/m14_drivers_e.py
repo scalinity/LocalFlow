@@ -1925,7 +1925,6 @@ def c158_crash_boundaries(entry):
                 or (_manifest(r[2]) or {}).get("export_id") != r[0]
                 or _sums_problems(r[2]))]
             left = _leftovers(out, f"ds-{b}")
-            left_snap = {n: _inventory(out / n) for n in left}
             unowned_kept = _inventory(out, skip=unowned_skip()) == before
             # Recovery: a fresh build to the same destination completes
             # and never removes another operation's leftovers.
@@ -1937,12 +1936,16 @@ def c158_crash_boundaries(entry):
                 rec = {"state": f"refused: {str(e)[:60]}"}
             store.close()
             store = None
-            leftovers_kept = all(
-                (out / n).exists() and _inventory(out / n) == s
-                for n, s in left_snap.items())
+            # xm-policy-r1 D13 (cross-milestone review R5-05, Evaluation
+            # E19): the recovery removes the crashed build's own staging —
+            # copies of recordings — and puts back or removes what it
+            # moved aside; unowned leftovers stay untouched (checked
+            # above).
+            own_left = _leftovers(out, f"ds-{b}")
             per[b] = {"reached": reached, "rc": p.returncode,
                       "dest": dest_state, "leftovers": len(left),
                       "false_complete_rows": len(false_complete),
+                      "leftovers_after_recovery": len(own_left),
                       "recovery": rec.get("state")}
             conds[f"{b}_no_partial_finalized"] = dest_state != "partial" \
                 and not false_complete and (dest_state == "absent"
@@ -1950,8 +1953,8 @@ def c158_crash_boundaries(entry):
             conds[f"{b}_unowned_untouched"] = unowned_kept and \
                 _is_sentinel(out / "UNRELATED.bin") and \
                 _is_sentinel(out / f".ds-{b}.building" / "nested" / "KEEP")
-            conds[f"{b}_recovery_completes_without_removing_leftovers"] = \
-                rec.get("state") == "complete" and leftovers_kept and \
+            conds[f"{b}_recovery_completes_and_clears_its_own_leftovers"] = \
+                rec.get("state") == "complete" and not own_left and \
                 not _sums_problems(dest)
         if not reached_all:
             return invalid("a crash boundary was never reached",
