@@ -4,7 +4,7 @@
   "suite": "EV-15 analytics portion + EV-13 metric honesty + EV-19 readiness aggregates",
   "status": "implemented_pending_human",
   "environment": {
-    "cwd": "/Users/danny/Documents/Tools/LocalFlow",
+    "cwd": "<repo>",
     "python": "3.14.7 (.venv)",
     "mlx": "0.31.2",
     "transformers": "5.10.4",
@@ -124,7 +124,7 @@
   "human_verification": {
     "id": "native-m13-insights-trial",
     "status": "pending",
-    "steps": "From Terminal.app (cd /Users/danny/Documents/Tools/LocalFlow && ./run.sh): dictate a few short phrases across two destination apps, open Hub > Insights and check the summary/daily/per-app/per-mode numbers against a hand count for today; set the range/filters; check latency lines carry n=; retry one failed dictation from History and confirm today's totals do not double; Delete Usage on one History row and watch the graphs recompute; Settings > usage retention apply; expire a transcript (or wait out retention) and confirm the graphs keep the words; screenshots at normal and enlarged text scale."
+    "steps": "From Terminal.app (cd <repo> && ./run.sh): dictate a few short phrases across two destination apps, open Hub > Insights and check the summary/daily/per-app/per-mode numbers against a hand count for today; set the range/filters; check latency lines carry n=; retry one failed dictation from History and confirm today's totals do not double; Delete Usage on one History row and watch the graphs recompute; Settings > usage retention apply; expire a transcript (or wait out retention) and confirm the graphs keep the words; screenshots at normal and enlarged text scale."
   },
   "review_loop": {
     "skill": "/review-2 (two parallel read-only reviewers: bug-hunting debugger; architecture/quality/security/data-integrity auditor)",
@@ -133,5 +133,18 @@
     "post_address": "All 54 suites re-ran green on the fixed code (55-line transcript: every suite exit 0, model-backed included, V1 control 51/51 in 50 s) and the benchmark re-ran on the fixed code (all queries p95 <= 58.5 ms vs the 200 ms budget; fact write p95 1.04 ms).",
     "cadence_note": "The /address per-fix-commit cadence was adapted to this repo's milestone protocol: one close-out commit, no push - per the kickoff's constraints."
   },
-  "privacy": "Nothing private entered Git: analytics rows carry app names only inside the live store (private usage metadata per S21); every committed fixture is synthetic (Synth Notes/Synth Code/Synth Editor, synthetic legacy rows shaped to the public audited totals); events are content-free ids/reasons/counts; the benchmark JSON carries latencies/counts over a temp-dir store; the baseline-manifest privacy scan passes over every new path; the live v9 migration is additive with its backup under v2-evidence/backups/ (outside Git)."
+  "privacy": "Nothing private entered Git: analytics rows carry app names only inside the live store (private usage metadata per S21); every committed fixture is synthetic (Synth Notes/Synth Code/Synth Editor, synthetic legacy rows shaped to the public audited totals); events are content-free ids/reasons/counts; the benchmark JSON carries latencies/counts over a temp-dir store; the baseline-manifest privacy scan passes over every new path; the live v9 migration is additive with its backup under v2-evidence/backups/ (outside Git).",
+  "privacy_redactions": [
+    {
+      "date": "2026-09-27",
+      "finding": "M13-AUDIT-25",
+      "fields": [
+        "environment.cwd",
+        "human_verification.steps"
+      ],
+      "replaced": "the absolute path of the repository checkout (2 occurrences)",
+      "with": "<repo>",
+      "note": "Forward-only redaction of a private location; no measured outcome, count or status in this historical record was changed, and Git history was not rewritten (earlier commits still contain the original value)."
+    }
+  ]
 }
