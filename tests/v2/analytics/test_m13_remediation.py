@@ -1350,6 +1350,261 @@ def f30_usage_keeps_until_cleared_by_default():
 
 
 # =============================================================================
+# Independent review round (first pass 96130c3): R01..R12
+# =============================================================================
+
+def _raw_fact(w, job, at):
+    """A dictation row exactly as the pre-remediation writer stored it
+    (the raw admitted string), bypassing today's admission."""
+    w.store.submit(lambda c: c.execute(
+        "INSERT INTO usage_facts(fact_id, kind, job_id, activity_at_utc,"
+        " day_local, reporting_timezone, algorithm_version,"
+        " created_at_utc, final_words, insertion_outcome)"
+        " VALUES(?, 'dictation', ?, ?, ?, 'UTC', 1, ?, 3, 'confirmed')",
+        (f"uf-{job}", job, at, at[:10] if len(at) >= 10 else at, at)))
+
+
+@case("REVIEW-R01")
+def v01_lax_rows_left_by_the_old_parser_are_canonicalized():
+    now = epoch("2026-03-01T12:00:00.000Z")
+    with AWorld(now=now) as w:
+        for job, at in (("job-a", "2026-01-05T10:00:00Z"),
+                        ("job-b", "2026-1-5T10:00:00Z"),
+                        ("job-c", "2026-01-06T10:00:00z"),
+                        ("job-d", "2026-01-07t10:00:00.5Z"),
+                        ("job-keep", "2026-02-25T10:00:00Z")):
+            _raw_fact(w, job, at)
+        # The v12 migration seeds the committed zone from these facts,
+        # so the launch check sees no zone or version drift.
+        w.store.submit(lambda c: c.execute(
+            "INSERT OR REPLACE INTO usage_meta(key, value)"
+            " VALUES('reporting_timezone', 'UTC')"))
+        w.analytics.ensure_current()  # the launch check
+        stored = sorted(r["activity_at_utc"] for r in w.rows())
+        assert all(A_canon(s) == s for s in stored), stored
+        w.store.retention_days["usage"] = 30
+        w.analytics.expire_usage()
+        left = sorted(r["job_id"] for r in w.rows())
+        assert left == ["job-keep"], left
+        assert not w.mismatches(), w.mismatches()
+
+
+def A_canon(s):
+    """Independent canonical check: 27 ASCII characters, exact shape."""
+    import re
+    return s if re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}"
+                             r":[0-9]{2}\.[0-9]{6}Z", s) else None
+
+
+def _stale_snapshot(w):
+    """A Your Voice snapshot still carrying usage copies with no facts
+    left (the state a pre-remediation Delete All Usage left behind)."""
+    w.store.submit(lambda c: c.execute(
+        "INSERT INTO profile_snapshots(snapshot_id, algorithm_version,"
+        " computed_at_utc, eligible_words, measured_json, cards_json,"
+        " state, source_example_count) VALUES('prof-stale', 1,"
+        " '2026-09-20T10:00:00.000Z', 0, ?, '[]', 'current', 0)",
+        (json.dumps({"app_usage": {APP_CANARY: 1},
+                     "modes": {"clean": 1}, "eligible_words": 0}),)))
+
+
+@case("REVIEW-R02")
+def v02_delete_all_redacts_copies_left_without_facts():
+    with AWorld() as w:
+        _stale_snapshot(w)
+        w.analytics.delete_all_usage()
+        left = w.store.submit(lambda c: [r[0] for r in c.execute(
+            "SELECT measured_json FROM profile_snapshots")])
+        assert not any(APP_CANARY in s for s in left), left
+
+
+@case("REVIEW-R02")
+def v02_launch_redacts_copies_of_usage_that_no_longer_exists():
+    with AWorld() as w:
+        _stale_snapshot(w)
+        w.analytics.ensure_current()
+        left = w.store.submit(lambda c: [r[0] for r in c.execute(
+            "SELECT measured_json FROM profile_snapshots")])
+        assert not any(APP_CANARY in s for s in left), left
+
+
+@case("REVIEW-R03")
+def v03_reconciled_outcome_is_shown_in_settings():
+    with coordinator() as h, MainQueue() as mq:
+        seed_facts(h, 2)
+        hub = make_hub(h)
+        hub._select_view_index(state_mod.VIEWS.index("settings"))
+        hub.state.wait_for_queries(15)
+        real_submit = h.d.store.submit
+        release, parked = threading.Event(), threading.Event()
+
+        def park(_c):
+            parked.set()
+            release.wait(30)
+        real_submit(park, wait=False)
+        assert parked.wait(10)
+        h.d._usage_op_timeout = 0.3
+        try:
+            hub._settings_call("Deleting usage data", h.d.hubDeleteAllUsage)
+        finally:
+            release.set()
+        assert "not known yet" in str(hub.settings_text.stringValue())
+        h.d.store.sync()
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline and not h.d._usage_reconciled:
+            mq.flush()
+            time.sleep(0.02)
+        mq.drain(hub.state)
+        hub.state.reload_current()
+        mq.drain(hub.state)
+        text = str(hub.settings_text.stringValue())
+        assert "not known yet" not in text, text
+        assert "deleted" in text.lower(), text
+
+
+@case("REVIEW-R04")
+def v04_vanished_app_filter_is_never_labeled_unknown():
+    from localflow.v2.ui.hub import HubController
+    with AWorld() as w:
+        w.dictation("job-a1", app_name="Synthetic Alpha",
+                    app_bundle="com.synthetic.alpha")
+        w.dictation("job-b1", app_name="Synthetic Beta",
+                    app_bundle="com.synthetic.beta")
+        st = hub_state(w)
+        try:
+            load_insights(st, range_days=None,
+                          app="bundle:com.synthetic.alpha")
+            w.analytics.delete_usage_for_job("job-a1")
+            st.reload_insights()
+            st.wait_for_queries(15)
+            data = st.views["insights"]["data"]
+        finally:
+            st.close()
+        renderer = type("R", (), {"_fmt_ms": staticmethod(
+            HubController._fmt_ms)})()
+        header = HubController._insights_summary_text(
+            renderer, data).splitlines()[0]
+        assert "app Unknown" not in header, header
+
+
+@case("REVIEW-R06")
+def v06_committed_deletions_leave_no_op_markers():
+    with coordinator() as h:
+        seed_facts(h, 3)
+        for i in range(3):
+            h.d.hubDeleteUsageForJob(f"job-seed{i}")
+        h.d.hubDeleteAllUsage()
+        h.d.store.sync()
+        left = h.d.store.submit(lambda c: c.execute(
+            "SELECT COUNT(*) FROM usage_meta WHERE key LIKE 'op:%'"
+        ).fetchone()[0])
+        assert left == 0, f"{left} op markers left"
+
+
+@case("REVIEW-R07")
+def v07_displayed_zone_follows_the_committed_zone_after_a_timeout():
+    with coordinator(cfg={"analytics_timezone": "America/New_York"}) \
+            as h:
+        real_submit = h.d.store.submit
+        release, parked = threading.Event(), threading.Event()
+
+        def park(_c):
+            parked.set()
+            release.wait(30)
+        real_submit(park, wait=False)
+        assert parked.wait(10)
+
+        def short(fn, *a, **kw):
+            kw["timeout"] = 0.3
+            return real_submit(fn, *a, **kw)
+        h.d.store.submit = short
+        try:
+            try:
+                h.d._analytics.rebuild_aggregates(
+                    reporting_timezone="America/Los_Angeles")
+            except TimeoutError:
+                pass
+        finally:
+            h.d.store.submit = real_submit
+            release.set()
+        h.d.store.sync()
+        shown = h.d.hubUsageInfo()["reporting_timezone"]
+        committed = h.d._insights.summary(days=None)["reporting_timezone"]
+        assert shown == committed == "America/Los_Angeles", \
+            (shown, committed)
+
+
+@case("REVIEW-R08")
+def v08_non_ascii_digits_are_refused():
+    with AWorld() as w:
+        for bad in ("٢٠٢٦-09-01T10:00:00Z",
+                    "２０２６-09-02T10:00:00Z"):
+            assert w.dictation(f"job-{bad[:2]}", activity_at_utc=bad) \
+                is None, bad
+        assert w.rows() == []
+
+
+@case("REVIEW-R09")
+def v09_app_labels_are_distinct_and_latest_named():
+    with AWorld() as w:
+        w.dictation("job-u1", app_name="Unknown", app_bundle=None)
+        w.dictation("job-u2", app_name=None, app_bundle=None)
+        w.dictation("job-m1", app_name="Synthetic Mail",
+                    app_bundle="com.synthetic.mail",
+                    activity_at_utc="2026-09-20T10:00:00.000Z")
+        w.dictation("job-m2", app_name=None,
+                    app_bundle="com.synthetic.mail",
+                    activity_at_utc="2026-09-21T10:00:00.000Z")
+        labels = [o["label"] for o in w.insights.apps_available()]
+        assert len(set(labels)) == len(labels), labels
+        assert "Synthetic Mail" in labels, labels
+
+
+@case("REVIEW-R10")
+def v10_filtered_transform_words_are_unavailable():
+    with AWorld() as w:
+        w.dictation("job-a")
+        w.transform()
+        s = w.insights.summary(days=None, mode="clean")
+        assert s["transform_words"] is None, s["transform_words"]
+
+
+@case("REVIEW-R11")
+def v11_benchmark_refuses_requests_it_would_not_perform():
+    script = ROOT / "scripts" / "v2" / "benchmark_m13.py"
+    for args in (["--shapes", ""], ["--shapes", "busy_day", "--noop",
+                                    "query"],
+                 ["--shapes", "acceptance", "--delay", "nowhere:500"]):
+        p = subprocess.run([sys.executable, str(script), "--validate-only",
+                            "--scale", "small", *args],
+                           capture_output=True, text=True, timeout=600)
+        assert p.returncode not in (0, 4), (args, p.returncode,
+                                            p.stdout[-200:])
+
+
+@case("REVIEW-R12")
+def v12_history_note_is_truthful_when_nothing_was_deleted():
+    with coordinator() as h, MainQueue():
+        hub = make_hub(h)
+        jid, _f = h.d.store.create_job(
+            captured_at_utc="2026-09-26T15:00:00.000Z",
+            time_quality="known", state="insertion_confirmed")
+        out = h.d.hubDeleteUsageForJob(jid)
+        assert out.get("facts_deleted") == 0, out
+        shown = []
+        with patched(hub, "_history_ctx", lambda _o: (lambda: {
+                "job_id": jid})), \
+                patched(hub, "_history_note", lambda _o: shown.append):
+            hub.historyDeleteUsage_(None)
+        assert shown and "graphs recomputed" not in shown[0], shown
+        from localflow.v2.ui import hub as hub_mod
+        text = pathlib.Path(hub_mod.__file__).read_text()
+        start = text.index("    def settingsDeleteUsage_(")
+        body = text[start:text.index("\n    def ", start + 10)]
+        assert "Your Voice" in body, "alert does not mention Your Voice"
+
+
+# =============================================================================
 # Preservation controls (must hold on the base and after the repair)
 # =============================================================================
 

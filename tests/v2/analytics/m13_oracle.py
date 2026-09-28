@@ -21,6 +21,13 @@ def parse_utc(s: str) -> dt.datetime:
     return dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
+def canonical(iso) -> str:
+    """The expected stored form of an admitted instant, derived here:
+    Python's ISO reader, then microseconds written out."""
+    t = parse_utc(iso).astimezone(dt.timezone.utc)
+    return t.strftime("%Y-%m-%dT%H:%M:%S.") + f"{t.microsecond:06d}Z"
+
+
 def local_day(iso, zone) -> str:
     return parse_utc(iso).astimezone(zoneinfo.ZoneInfo(zone)).strftime(
         "%Y-%m-%d")

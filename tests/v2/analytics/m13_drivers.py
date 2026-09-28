@@ -24,7 +24,7 @@ import time
 import m13_world as W
 import test_m13_remediation as R
 from m13_world import AWorld, Latch, MainQueue, epoch, local_day, patched
-from m13_oracle import compare_aggregates, reference_aggregates
+from m13_oracle import canonical, compare_aggregates, reference_aggregates
 
 from localflow.v2 import analytics as A
 
@@ -392,7 +392,7 @@ def d_retry_provenance(case):
     return check({
         "one_row": obs["rows"] == 1,
         "original_instant": obs.get("activity_at_utc") ==
-        A.canonical_instant(capture),
+        canonical(capture),
         "original_day": obs.get("day_local") == expect_day,
         "original_zone": obs.get("timezone") == zone,
         "original_offset": obs.get("utc_offset_minutes") == offset,
@@ -427,7 +427,7 @@ def d_retry_missing_instant(case):
         return check({"no_fabricated_date": obs["after"] == obs["before"],
                       "refused_content_free": obs["refusal_recorded"]},
                      obs)
-    want = A.canonical_instant(var["journal_instant"])
+    want = canonical(var["journal_instant"])
     return check({"journal_instant_used": obs["after"] == [want],
                   "attempt_two": obs["attempts"] == [2]}, obs)
 
@@ -1312,7 +1312,7 @@ def d_clock(case):
         ok = obs["e2e"] is None and \
             obs["missing"] == "retry_no_release_clock" and \
             (obs["retry_ms"] or 0) >= delay * 1000.0 and \
-            obs["activity"] == A.canonical_instant(
+            obs["activity"] == canonical(
                 "2026-09-25T23:30:00.000Z")
     else:
         rows, _job = _coordinator_outcome(kind, delay=delay)

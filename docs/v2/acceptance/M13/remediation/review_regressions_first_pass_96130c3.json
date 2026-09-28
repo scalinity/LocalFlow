@@ -1,0 +1,136 @@
+{
+ "suite": "tests/v2/analytics/test_m13_remediation.py",
+ "code": {
+  "suite": "tests/v2/analytics/test_m13_remediation.py",
+  "suite_sha256": "3f660ffacfb41950705783b081fe1cd31d5cb19c6c2a29f179d645b38e9aba41",
+  "code_root_sha": "96130c3a6819e87a1ceb6fbce55a240f2692fdef",
+  "tracked_files_modified": true,
+  "production_tree_modified": false,
+  "localflow_imported_from_root": "fp-96130c3",
+  "python": "3.14.7"
+ },
+ "counts": {
+  "FAIL": 13
+ },
+ "invoked": [
+  "f25_committed_m13_evidence_has_no_home_paths",
+  "v01_lax_rows_left_by_the_old_parser_are_canonicalized",
+  "v02_delete_all_redacts_copies_left_without_facts",
+  "v02_launch_redacts_copies_of_usage_that_no_longer_exists",
+  "v03_reconciled_outcome_is_shown_in_settings",
+  "v04_vanished_app_filter_is_never_labeled_unknown",
+  "v06_committed_deletions_leave_no_op_markers",
+  "v07_displayed_zone_follows_the_committed_zone_after_a_timeout",
+  "v08_non_ascii_digits_are_refused",
+  "v09_app_labels_are_distinct_and_latest_named",
+  "v10_filtered_transform_words_are_unavailable",
+  "v11_benchmark_refuses_requests_it_would_not_perform",
+  "v12_history_note_is_truthful_when_nothing_was_deleted"
+ ],
+ "results": [
+  {
+   "case": "f25_committed_m13_evidence_has_no_home_paths",
+   "finding": "M13-AUDIT-25",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['docs/v2/acceptance/M13/results.json']",
+   "seconds": 0.0
+  },
+  {
+   "case": "v01_lax_rows_left_by_the_old_parser_are_canonicalized",
+   "finding": "REVIEW-R01",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['2026-01-05T10:00:00Z', '2026-01-06T10:00:00z', '2026-01-07t10:00:00.5Z', '2026-02-25T10:00:00Z', '2026-1-5T10:00:00Z']",
+   "seconds": 0.01
+  },
+  {
+   "case": "v02_delete_all_redacts_copies_left_without_facts",
+   "finding": "REVIEW-R02",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['{\"app_usage\": {\"SYNTHETIC_USAGE_CANARY_ALPHA\": 1}, \"modes\": {\"clean\": 1}, \"eligible_words\": 0}']",
+   "seconds": 0.01
+  },
+  {
+   "case": "v02_launch_redacts_copies_of_usage_that_no_longer_exists",
+   "finding": "REVIEW-R02",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['{\"app_usage\": {\"SYNTHETIC_USAGE_CANARY_ALPHA\": 1}, \"modes\": {\"clean\": 1}, \"eligible_words\": 0}']",
+   "seconds": 0.01
+  },
+  {
+   "case": "v03_reconciled_outcome_is_shown_in_settings",
+   "finding": "REVIEW-R03",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "Collection: disabled \u00b7 Deleting usage data: outcome not known yet \u2014 the store is busy; the result will be checked and shown when it finishes",
+   "seconds": 0.52
+  },
+  {
+   "case": "v04_vanished_app_filter_is_never_labeled_unknown",
+   "finding": "REVIEW-R04",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "Usage \u2014 all time \u00b7 app Unknown",
+   "seconds": 0.01
+  },
+  {
+   "case": "v06_committed_deletions_leave_no_op_markers",
+   "finding": "REVIEW-R06",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "4 op markers left",
+   "seconds": 0.02
+  },
+  {
+   "case": "v07_displayed_zone_follows_the_committed_zone_after_a_timeout",
+   "finding": "REVIEW-R07",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "('America/New_York', 'America/Los_Angeles')",
+   "seconds": 0.32
+  },
+  {
+   "case": "v08_non_ascii_digits_are_refused",
+   "finding": "REVIEW-R08",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "\u0662\u0660\u0662\u0666-09-01T10:00:00Z",
+   "seconds": 0.01
+  },
+  {
+   "case": "v09_app_labels_are_distinct_and_latest_named",
+   "finding": "REVIEW-R09",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['com.synthetic.mail', 'Unknown', 'Unknown']",
+   "seconds": 0.01
+  },
+  {
+   "case": "v10_filtered_transform_words_are_unavailable",
+   "finding": "REVIEW-R10",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "0",
+   "seconds": 0.01
+  },
+  {
+   "case": "v11_benchmark_refuses_requests_it_would_not_perform",
+   "finding": "REVIEW-R11",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "(['--shapes', ''], 0, '')",
+   "seconds": 0.12
+  },
+  {
+   "case": "v12_history_note_is_truthful_when_nothing_was_deleted",
+   "finding": "REVIEW-R12",
+   "kind": "defect",
+   "status": "FAIL",
+   "detail": "['usage for this dictation deleted \u2014 graphs recomputed']",
+   "seconds": 0.03
+  }
+ ]
+}

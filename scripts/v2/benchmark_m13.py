@@ -333,12 +333,23 @@ def timed_queries(s, q, dictations, zone, filt, args, shape):
     }
     def delayed(fn):
         # The injected delay runs INSIDE the claimed operation's own
-        # call, so it moves the measurement only if the timing window
-        # really contains the operation (MR14/MUT22).
+        # writer op (the store op the report is read in), so it moves the
+        # measurement only if the timing window really contains that
+        # operation (MR14/MUT22).
         def run():
-            r = fn()
-            time.sleep(delay)
-            return r
+            real = s.submit
+
+            def inner(op, *a, **kw):
+                def slow(conn):
+                    out = op(conn)
+                    time.sleep(delay)
+                    return out
+                return real(slow, *a, **kw)
+            s.submit = inner
+            try:
+                return fn()
+            finally:
+                s.submit = real
         return run
 
     out = {}
@@ -693,8 +704,35 @@ def main(argv=None):
     args = p.parse_args(argv)
     args.delay_where, args.delay_s = None, 0.0
     if args.delay:
-        where, ms = args.delay.split(":")
-        args.delay_where, args.delay_s = where, float(ms) / 1000.0
+        where, _sep, ms = args.delay.partition(":")
+        if where not in ("query", "writer", "outside"):
+            p.error(f"unknown --delay location {where!r}"
+                    " (query | writer | outside)")
+        try:
+            args.delay_s = float(ms) / 1000.0
+        except ValueError:
+            p.error("--delay needs where:milliseconds")
+        args.delay_where = where
+    # A request the run would silently not perform is refused, never
+    # reported as valid (REVIEW-R11).
+    requested = [x for x in args.shapes.split(",") if x]
+    known = {"acceptance", "mixed_facts", "busy_day", "many_days",
+             "rebuild", "expiry"}
+    if not requested:
+        p.error("no shapes requested")
+    unknown = sorted(set(requested) - known)
+    if unknown:
+        p.error(f"unknown shapes {unknown}")
+    query_shapes = {"acceptance", "mixed_facts", "many_days"}
+    write_shapes = query_shapes | {"busy_day"}
+    if args.noop in ("query", "filter") and \
+            not query_shapes & set(requested):
+        p.error(f"--noop {args.noop} needs a query shape"
+                f" ({sorted(query_shapes)})")
+    if args.noop == "write" and not write_shapes & set(requested):
+        p.error("--noop write needs a shape with timed writes")
+    if args.delay_where == "query" and not query_shapes & set(requested):
+        p.error("--delay query needs a query shape")
     if args.validate_only:
         args.samples, args.warmups, args.copies = 1, 0, 1
         args.writes = min(args.writes, 3)
