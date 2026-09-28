@@ -2830,6 +2830,43 @@ def c_reconcile_never_touches_a_build_another_process_runs():
             w.close()
 
 
+@case("MERGED-X14 (another exporter while a build publishes)")
+def x14_another_exporter_never_reconciles_a_publishing_build():
+    import tempfile
+    from localflow.v2.curation.export import DatasetExporter, ExportError
+    with tempfile.TemporaryDirectory() as td:
+        dest = pathlib.Path(td) / "dataset"
+        w = _plain_export(dest)
+        try:
+            ex = w.exporter
+            real = ex._record
+            fired = {}
+
+            def record(export_id, state, *a, **k):
+                out = real(export_id, state, *a, **k)
+                if export_id == "export-a" and state == "publishing" \
+                        and not fired:
+                    # Another exporter in this process (the Hub's and a
+                    # tool's) reconciles the folder in A's window.
+                    fired["stale"] = DatasetExporter(
+                        w.store)._reconcile_destination(dest)
+                return out
+            ex._record = record
+            try:
+                out = ex.build(dest, task_views=("asr_supervised",),
+                               export_id="export-a")
+            except ExportError as e:
+                out = {"state": f"refused: {e}"}
+            finally:
+                ex._record = real
+            assert fired, "fixture: A never recorded its intent"
+            assert out["state"] == "complete", (
+                f"another exporter took the publishing build for residue:"
+                f" {out}")
+        finally:
+            w.close()
+
+
 @case("MERGED-X14 (review R2-05: put back when the destination is free)")
 def x14_lost_record_before_rename_puts_the_earlier_export_back():
     import tempfile

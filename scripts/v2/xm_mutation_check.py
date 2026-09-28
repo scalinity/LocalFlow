@@ -385,7 +385,8 @@ MUTATIONS = [
     ("XM-MU58", "MERGED-X14", "each exporter keeps its own in-flight set",
      [(EX, "        self._inflight = _INFLIGHT\n",
        mark("XM-MU58", 8) + "        self._inflight = set()\n")],
-     {REM: ["x14_another_exporters_sweep_never_takes_a_live_build"]}),
+     {REM: ["x14_another_exporters_sweep_never_takes_a_live_build",
+            "x14_another_exporter_never_reconciles_a_publishing_build"]}),
     # The sixth review's reproduced allegations (R6-01..R6-06).
     ("XM-MU59", "MERGED-X14", "the owner file is written but never locked",
      [(EX, "    fcntl.flock(owner, fcntl.LOCK_EX)\n", mark("XM-MU59", 4))],
