@@ -736,6 +736,28 @@ def _run_repaste(h, svc, action):
     return out, ran
 
 
+def _history_paste(h, svc, text, job_id):
+    """POLICY-D03: History's Paste Again queues only at the user's
+    destination click (here the app in front, A/F1). Returns the
+    invocation's refusal, or the M08 service's answer to the pick."""
+    from m08_world import pick_destination  # on sys.path via real_insertion
+    click = pick_destination(h.d)
+    out = h.d.hubPasteText(text, job_id=job_id)
+    if out.get("outcome") != "choosing_destination":
+        return out
+    got = {}
+
+    def witness(orig):
+        def run(*a, **kw):
+            r = orig(*a, **kw)
+            got.update(r or {})
+            return r
+        return run
+    with patched(svc, "paste_text", witness):
+        click()
+    return got or {"outcome": "pick_refused"}
+
+
 def _counts(h):
     s = h.d._insights.summary(days=None)
     return s["repastes"] or 0, s["dictations"], s["final_words"]
@@ -753,9 +775,10 @@ def d_repaste_counted(case):
                 h, svc, lambda: h.d.pasteLastResultAgain_(None))
         else:
             job = jid if surface == "History V2" else "legacy-db:1"
+            # POLICY-D03: the History surface pastes at the user's pick.
             out, ran = _run_repaste(
-                h, svc, lambda: h.d.hubPasteText("synthetic repaste words",
-                                                 job_id=job))
+                h, svc, lambda: _history_paste(
+                    h, svc, "synthetic repaste words", job))
         mq.flush()
         after = _counts(h)
     if not ran or ran[0] is None:
@@ -808,8 +831,9 @@ def d_repaste_policy(case):
                     out, ran = _run_repaste(
                         h, svc, lambda: h.d.pasteLastResultAgain_(None))
                 else:
+                    # POLICY-D03: History pastes at the user's pick.
                     out, ran = _run_repaste(
-                        h, svc, lambda: h.d.hubPasteText(text, job_id=jid))
+                        h, svc, lambda: _history_paste(h, svc, text, jid))
             mq.flush()
             after = _counts(h)
             deltas[surface] = {"repaste_delta": after[0] - before[0],

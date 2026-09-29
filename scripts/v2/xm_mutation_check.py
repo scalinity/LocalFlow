@@ -50,6 +50,7 @@ G06A = "tests/v2/crossmilestone/test_xm_g06_a.py"
 G06C1 = "tests/v2/crossmilestone/test_xm_g06_c1.py"
 G06D = "tests/v2/crossmilestone/test_xm_g06_d.py"
 G06C2 = "tests/v2/crossmilestone/test_xm_g06_c2.py"
+PASTE = "tests/v2/crossmilestone/test_xm_paste_again.py"
 
 ST = "localflow/v2/store.py"
 APP = "localflow/app.py"
@@ -471,6 +472,123 @@ MUTATIONS = [
          "            \"job_id\": job_id, \"family_id\": family_id,\n"
          "            \"captured_at_utc\": v2.ids.now_utc_iso(),\n")],
      {G06C2: ["g06_xm_c020_mh06_control_clean_capture"]}),
+    # Final owner decisions: retry authority (XM-C042) and the interface
+    # union consumers (XM-IF-001/002/009/011).
+    ("XM-MU75", "XM-C042", "a retry without a captured target inserts",
+     [(APP, "            if job.get(\"from_retry\") and job.get(\"target\")"
+            " is None:\n",
+       "            if job.get(\"from_retry\") and job.get(\"target\")"
+       " is None and not " + mexpr("XM-MU75") + ":\n")],
+     {G06C2: ["g06_xm_c042_retry_with_hub_focus_never_inserts",
+              "g06_xm_c042_retry_without_target_keeps_result"]}),
+    ("XM-MU76", "XM-C042", "a retry ignores its captured target",
+     [(APP, "                job[\"target\"] = target_snapshot.target\n",
+       mark("XM-MU76", 16) + "                pass\n")],
+     {G06C2: ["g06_xm_c042_fresh_target_inserts_and_keeps_provenance"]}),
+    ("XM-MU77", "XM-IF-001", "a store failure event quotes the message",
+     [(ST, "                              detail=type(e).__name__)\n",
+       "                              detail=(" + mexpr("XM-MU77")
+       + " and err[:200]))\n")],
+     {REM: ["if001_store_failure_event_carries_no_message_text"]}),
+    ("XM-MU78", "XM-IF-002", "a panel timeout reads as not added",
+     [("localflow/v2/dictionary_panel.py",
+       "        if isinstance(ex, TimeoutError):\n",
+       "        if isinstance(ex, TimeoutError) and not "
+       + mexpr("XM-MU78") + ":\n")],
+     {REM: ["if002_dictionary_timeout_is_not_a_refusal"]}),
+    ("XM-MU79", "XM-IF-011", "an import timeout is logged as failed",
+     [(APP, "        except TimeoutError:\n"
+            "            # Admitted and still queued: the import may yet"
+            " commit\n",
+       "        except (ZeroDivisionError if " + mexpr("XM-MU79")
+       + " else TimeoutError):\n"
+         "            # Admitted and still queued: the import may yet"
+         " commit\n")],
+     {REM: ["if002_dictionary_timeout_is_not_a_refusal"]}),
+    ("XM-MU80", "XM-IF-009", "a Hub consent timeout reads as failed",
+     [(APP, "        except TimeoutError:\n"
+            "            # Admitted and still queued: the change may yet"
+            " commit, so\n",
+       "        except (ZeroDivisionError if " + mexpr("XM-MU80")
+       + " else TimeoutError):\n"
+         "            # Admitted and still queued: the change may yet"
+         " commit, so\n")],
+     {REM: ["if009_consent_timeout_is_outcome_unknown"]}),
+    ("XM-MU81", "XM-IF-009", "a menu consent timeout escapes the toggle",
+     [(APP, "\n            self.consent.set(new, note=\"menu toggle\")\n"
+            "        except TimeoutError:\n",
+       "\n            self.consent.set(new, note=\"menu toggle\")\n"
+       "        except (ZeroDivisionError if " + mexpr("XM-MU81")
+       + " else TimeoutError):\n")],
+     {REM: ["if009_consent_timeout_is_outcome_unknown"]}),
+    # POLICY-D03: History Paste Again's explicit one-shot destination pick.
+    ("XM-MU82", "POLICY-D03", "Paste Again pastes at once into the front app",
+     [(APP, "        self._paste_picker.arm(self._paste_destination_picked,\n"
+            "                               self._paste_pick_cancelled)\n",
+       mark("XM-MU82", 8)
+       + "        self._paste_destination_picked()\n"
+         "        return {\"outcome\": \"repaste_queued\"}\n")],
+     {PASTE: ["d03_invoke_and_incidental_front_app_paste_nothing"]}),
+    ("XM-MU83", "POLICY-D03", "the picked source is not revalidated",
+     [(APP, "        job_id, aid = pick.get(\"job_id\"),"
+            " pick.get(\"artifact_id\")\n",
+       mark("XM-MU83", 8) + "        return None\n")],
+     {PASTE: ["d03_source_deleted_or_purged_while_choosing"]}),
+    ("XM-MU84", "POLICY-D03", "Esc does not cancel the pick",
+     [("localflow/v2/ui/paste_picker.py",
+       "        if self._state == \"armed\" and key_code == ESC_KEY_CODE:\n",
+       "        if self._state == \"armed\" and key_code == ESC_KEY_CODE"
+       " and not " + mexpr("XM-MU84") + ":\n")],
+     {PASTE: ["d03_cancel_before_click_pastes_nothing"]}),
+    ("XM-MU85", "POLICY-D03", "the timeout does not cancel the pick",
+     [("localflow/v2/ui/paste_picker.py",
+       "        if gen == self._gen and self._state == \"armed\":\n",
+       "        if gen == self._gen and self._state == \"armed\""
+       " and not " + mexpr("XM-MU85") + ":\n")],
+     {PASTE: ["d03_cancel_before_click_pastes_nothing"]}),
+    ("XM-MU86", "POLICY-D03", "deleting the source leaves the pick armed",
+     [(APP, "            AppHelper.callAfter(self._cancel_paste_pick, job_id,\n"
+            "                                \"source_deleted\")\n",
+       mark("XM-MU86", 12) + "            pass\n")],
+     {PASTE: ["d03_source_deleted_or_purged_while_choosing"]}),
+    ("XM-MU87", "POLICY-D03", "the repaste ignores the picked destination",
+     [("localflow/v2/insertion/service.py",
+       "                                 \"repaste\": True, \"target\": target},\n",
+       "                                 \"repaste\": True, \"target\": (None if "
+       + mexpr("XM-MU87") + " else target)},\n")],
+     {PASTE: ["d03_target_changed_after_pick_is_refused"]}),
+    ("XM-MU88", "POLICY-D03 review", "any front app counts as the click",
+     [(APP, "        if clicked_pid is None or fm.get(\"pid\") != clicked_pid:\n",
+       "        if (clicked_pid is None or fm.get(\"pid\") != clicked_pid)"
+       " and not " + mexpr("XM-MU88") + ":\n")],
+     {PASTE: ["d03_click_not_owned_by_front_app_pastes_nothing"]}),
+    ("XM-MU89", "POLICY-D03 review", "reopening the Hub leaves the pick",
+     [(APP, "            self._paste_picker.cancel(\"reopened\")\n",
+       mark("XM-MU89", 12) + "            pass\n")],
+     {PASTE: ["d03_reopening_hub_cancels_the_pick"]}),
+    ("XM-MU90", "POLICY-D03 review", "a second pick loses its source",
+     [(APP, "        self._paste_picker.cancel(\"superseded\")\n"
+            "        self._paste_pick = {",
+       mark("XM-MU90", 8) + "        self._paste_pick = {")],
+     {PASTE: ["d03_second_paste_again_replaces_the_first"]}),
+    ("XM-MU91", "POLICY-D03 review", "a busy source check escapes the pick",
+     [(APP, "        except TimeoutError:\n"
+            "            # The store is busy: the source is unverified",
+       "        except (ZeroDivisionError if " + mexpr("XM-MU91")
+       + " else TimeoutError):\n"
+         "            # The store is busy: the source is unverified")],
+     {PASTE: ["d03_source_check_timeout_ends_the_pick"]}),
+    ("XM-MU92", "POLICY-D03 review", "a pick ending by itself reopens the Hub",
+     [(APP, "        self._paste_pick_ended(reason, show_hub=reason == \"cancelled\")\n",
+       "        self._paste_pick_ended(reason, show_hub=reason == \"cancelled\""
+       " or " + mexpr("XM-MU92") + ")\n")],
+     {PASTE: ["d03_pick_ending_never_steals_focus_from_dictation"]}),
+    ("XM-MU93", "POLICY-D03 review", "the Hub reopens mid-dictation",
+     [(APP, "                    and self.state == STATE_IDLE and not"
+            " self._active_jobs:\n",
+       "                    and (" + mexpr("XM-MU93") + " or (self.state =="
+       " STATE_IDLE and not self._active_jobs)):\n")],
+     {PASTE: ["d03_pick_ending_never_steals_focus_from_dictation"]}),
 ]
 
 

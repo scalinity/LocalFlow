@@ -616,7 +616,10 @@ def _one_logical_dictation(retry):
             first = _facts(store, job)
             assert [f[0] for f in first] == ["failed"], \
                 f"fixture: attempt 1's usage fact {first}"
-            out = a.d.hubRetryJob(job) or {}
+            # The retry action explicitly captures F1 as its destination
+            # (XM-C042: focus alone grants a retry no insertion).
+            from test_m08_remediation import snap
+            out = a.d.hubRetryJob(job, target_snapshot=snap(a.w)) or {}
             assert out.get("outcome") in (None, "requeued", "queued"), \
                 f"fixture: retry refused {out}"
             _run_inline(a, snapshot=False)
@@ -694,6 +697,176 @@ def g06_xm_c020_mh06_control_clean_capture():
     bad = _ledger_violations(got)
     assert not bad, ("a clean capture's ledger (got, want): "
                      + json.dumps(bad, default=str))
+
+
+# =============================================================================
+# XM-C042 — a retry keeps its capture's provenance; its insertion authority
+# is only a destination the retry action explicitly captured
+# =============================================================================
+
+def _failed_capture(a):
+    """Attempt 1, captured in app A (F1), transcribes ALPHA and fails in
+    cleanup. The capture's destination identity is recorded through the
+    production writer PTT uses (AppEnv has context collection off)."""
+    import localflow.app as app_mod
+    app_mod.AUDIO_DEBUG_DIR = a.h.tmp / "dbg"
+    a.d.recorder.durations.extend([1.0] * 4)
+    a.d.supervisor = Scripted(asr=lambda j, n: ALPHA if n == 1 else BETA,
+                              fail_clean={1})
+    a.h.press_release()
+    _run_inline(a, snapshot=True)
+    store = a.d.store
+    job, captured, family = one(store, "SELECT job_id, captured_at_utc,"
+                                " family_id FROM jobs ORDER BY rowid DESC")
+    assert one(store, "SELECT state FROM jobs WHERE job_id=?",
+               (job,))[0] == "failed_recoverable", "fixture: attempt 1"
+    store.set_job_target(job, "A", "com.example.a")
+    store.sync()
+    return job, captured, family
+
+
+def _retry_settled(a, job, target=None):
+    out = a.d.hubRetryJob(job, target_snapshot=target) or {}
+    assert out.get("outcome") in (None, "requeued", "queued"), \
+        f"fixture: retry refused {out}"
+    _run_inline(a, snapshot=False)
+    store = a.d.store
+    final = rows(store, "SELECT content_text FROM artifacts WHERE job_id=?"
+                 " AND role='applied_output' ORDER BY rowid DESC", (job,))
+    fed = [t for j, n, t in a.d.supervisor.clean_inputs
+           if j == job and n == 2]
+    return {"state": one(store, "SELECT state FROM jobs WHERE job_id=?",
+                         (job,))[0],
+            "insertions": [r[0] for r in rows(
+                store, "SELECT state FROM insertions WHERE job_id=?",
+                (job,))],
+            "final": final[0][0] if final else None,
+            "want_final": fed[0].upper() if len(fed) == 1 else None,
+            "facts": _facts(store, job)}
+
+
+def _writes(w, since, fids=None):
+    return [e[:3] for e in w.effects if e[0] > since and e[1] in _WRITES
+            and (fids is None or e[2] in fids)]
+
+
+def _stamp(w):
+    return w.effects[-1][0] if w.effects else 0
+
+
+@case("G06 XM-C042 (a retry while the Hub has focus and no destination"
+      " was captured never inserts into the Hub)")
+def g06_xm_c042_retry_with_hub_focus_never_inserts():
+    from test_m08_remediation import AppEnv
+    a = AppEnv(consent=True, window=0.3)
+    try:
+        job, _cap, _fam = _failed_capture(a)
+        w = a.w
+        w.add_app("LocalFlow", 303, "com.localflow.app")
+        w.add_window("WH", "LocalFlow", "History")
+        w.add_field("FH", "WH", role="AXTextArea", text="", sel=(0, 0))
+        w.focus("LocalFlow", "FH")
+        since, pb0 = _stamp(w), a.pb.count
+        got = _retry_settled(a, job)
+        writes = _writes(w, since)
+        assert got["state"] == "saved_not_inserted" \
+            and not got["insertions"] and not writes \
+            and a.pb.count == pb0 and w.text("FH") == "", (
+                "a retry with the Hub in front and no captured destination:"
+                f" state {got['state']}, insertions {got['insertions']},"
+                f" writes {writes}, pasteboard {pb0}->{a.pb.count},"
+                f" FH {w.text('FH')!r}")
+    finally:
+        a.close()
+
+
+@case("G06 XM-C042 (a retry with no valid destination keeps its result"
+      " as saved-not-inserted; nothing is pasted anywhere)")
+def g06_xm_c042_retry_without_target_keeps_result():
+    from test_m08_remediation import AppEnv
+    a = AppEnv(consent=True, window=0.3)
+    try:
+        job, _cap, _fam = _failed_capture(a)
+        w = a.w
+        w.fields["F1"].text, w.fields["F1"].sel = "", (0, 0)
+        since, pb0 = _stamp(w), a.pb.count
+        got = _retry_settled(a, job)
+        writes = _writes(w, since)
+        assert got["state"] == "saved_not_inserted" \
+            and got["final"] == got["want_final"] is not None \
+            and [f[0] for f in got["facts"]] == ["saved_not_inserted"] \
+            and not got["insertions"] and not writes \
+            and a.pb.count == pb0, (
+                "a retry with focus on an ordinary app but no captured"
+                f" destination: {json.dumps(got, default=str)}, writes"
+                f" {writes}, pasteboard {pb0}->{a.pb.count}")
+    finally:
+        a.close()
+
+
+@case("G06 XM-C042 (a retry bound to a freshly captured destination inserts"
+      " there through M08, and the capture's provenance is unchanged)")
+def g06_xm_c042_fresh_target_inserts_and_keeps_provenance():
+    from test_m08_remediation import AppEnv, snap
+    a = AppEnv(consent=True, window=0.3)
+    try:
+        job, captured, family = _failed_capture(a)
+        store, w = a.d.store, a.w
+        targets0 = rows(store, "SELECT app_name, app_bundle FROM"
+                        " job_targets WHERE job_id=?", (job,))
+        w.fields["FB"].text, w.fields["FB"].sel = "", (0, 0)
+        w.focus("B", "FB")
+        since = _stamp(w)
+        got = _retry_settled(a, job, target=snap(w, app="B", fid="FB"))
+        fb, f1 = _writes(w, since, ("FB",)), _writes(w, since, ("F1",))
+        prov = one(store, "SELECT family_id, captured_at_utc, attempt FROM"
+                   " jobs WHERE job_id=?", (job,))
+        fact = rows(store, "SELECT activity_at_utc, app_name, app_bundle"
+                    " FROM usage_facts WHERE job_id=? AND kind='dictation'",
+                    (job,))
+        bad = {}
+        if got["state"] not in ("insertion_confirmed", "posted_unverified") \
+                or not fb or f1 \
+                or w.text("FB").strip() != got["want_final"]:
+            bad["insertion"] = (got["state"], got["insertions"], fb, f1,
+                                w.text("FB"))
+        if (prov[0], _instant(prov[1]), prov[2]) != (
+                family, _instant(captured), 2):
+            bad["job_provenance"] = (prov, family, captured)
+        if [(_instant(r[0]), r[1], r[2]) for r in fact] != [
+                (_instant(captured), "A", "com.example.a")]:
+            bad["usage_provenance"] = fact
+        if rows(store, "SELECT app_name, app_bundle FROM job_targets"
+                " WHERE job_id=?", (job,)) != targets0:
+            bad["job_targets"] = targets0
+        assert not bad, ("a retry into a freshly captured destination"
+                         " (got): " + json.dumps(bad, default=str))
+    finally:
+        a.close()
+
+
+@case("G06 XM-C042 (a destination that changes after the retry captured it"
+      " is refused by M08 revalidation and the result is kept)")
+def g06_xm_c042_target_changed_after_capture_is_refused():
+    from test_m08_remediation import AppEnv, snap
+    a = AppEnv(consent=True, window=0.3)
+    try:
+        job, _cap, _fam = _failed_capture(a)
+        w = a.w
+        w.focus("B", "FB")
+        fresh = snap(w, app="B", fid="FB")
+        w.focus("A", "F1")      # focus moves after the capture
+        w.fields["F1"].text, w.fields["F1"].sel = "", (0, 0)
+        since = _stamp(w)
+        got = _retry_settled(a, job, target=fresh)
+        writes = _writes(w, since)
+        assert got["state"] == "saved_not_inserted" and not writes \
+            and got["final"] == got["want_final"] is not None, (
+                "a captured destination that lost focus before the insert:"
+                f" state {got['state']}, insertions {got['insertions']},"
+                f" writes {writes}")
+    finally:
+        a.close()
 
 
 # =============================================================================

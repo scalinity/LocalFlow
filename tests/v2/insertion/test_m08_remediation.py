@@ -322,7 +322,9 @@ def test_a03_denied_app_undo_and_repaste_read_nothing():
     mark = w.seq
     env.svc.undo_last()
     env.svc.paste_again()
-    env.svc.paste_text("hello", job_id="job-den")
+    # History's Paste Again into the denied app the user picked
+    # (POLICY-D03): still no content read.
+    env.svc.paste_text("hello", job_id="job-den", target=t)
     time.sleep(0.4)
     reads = reads_on(w, {"F1"}, since=mark)
     assert reads == [], f"denied-app reads by undo/repaste: {reads}"

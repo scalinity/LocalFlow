@@ -274,7 +274,19 @@ class DictionaryPanelController(NSObject):
                     f"added {canonical!r} (unapproved — approve to make it"
                     " rewrite text)")
         except Exception as e:
-            self.sandbox.setStringValue_(f"not added: {e}")
+            self._not_done("added", e)
+
+    @objc.python_method
+    def _not_done(self, verb, ex):
+        """A store wait that timed out after admission is not a refusal:
+        the write stays queued and may still commit (Store._submit), so
+        the panel says the outcome is not known yet (XM-IF-002)."""
+        if isinstance(ex, TimeoutError):
+            self.sandbox.setStringValue_(
+                f"{verb}: outcome not known yet — the store is busy;"
+                " edit the search or reopen the panel to see the result")
+        else:
+            self.sandbox.setStringValue_(f"not {verb}: {ex}")
 
     @objc.python_method
     def _no_selection(self):
@@ -298,7 +310,7 @@ class DictionaryPanelController(NSObject):
             self.refresh()
             self.sandbox.setStringValue_(f"approved {e.canonical}")
         except Exception as ex:
-            self.sandbox.setStringValue_(f"not approved: {ex}")
+            self._not_done("approved", ex)
 
     def toggleEntry_(self, sender):
         e = self._selected_entry()
@@ -311,7 +323,7 @@ class DictionaryPanelController(NSObject):
             self._acted(e.entry_id)
             self.refresh()
         except Exception as ex:
-            self.sandbox.setStringValue_(f"not toggled: {ex}")
+            self._not_done("toggled", ex)
 
     def pinEntry_(self, sender):
         e = self._selected_entry()
@@ -324,7 +336,7 @@ class DictionaryPanelController(NSObject):
             self._acted(e.entry_id)
             self.refresh()
         except Exception as ex:
-            self.sandbox.setStringValue_(f"not pinned: {ex}")
+            self._not_done("pinned", ex)
 
     def deleteEntry_(self, sender):
         e = self._selected_entry()
@@ -338,7 +350,7 @@ class DictionaryPanelController(NSObject):
             self._selected_rev = None
             self.refresh()
         except Exception as ex:
-            self.sandbox.setStringValue_(f"not deleted: {ex}")
+            self._not_done("deleted", ex)
 
     @objc.python_method
     def _sandbox_scope(self):

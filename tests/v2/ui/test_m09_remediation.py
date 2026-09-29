@@ -2122,8 +2122,9 @@ def test_a21_older_export_cannot_overwrite_newer_status():
 # ---- M09-AUDIT-11: deferred Open Hub liveness ---------------------------------
 
 class _HeldTarget:
-    """Fixture target whose first frontmost() read (inside the queued
-    repaste, with busy already true) waits for the test."""
+    """Fixture target whose first frontmost() read inside the queued
+    repaste (busy already true) waits for the test; the destination
+    pick's read on the main thread (POLICY-D03) passes through."""
 
     def __new__(cls, **kw):
         from fixture_target import FixtureTargetApp
@@ -2136,7 +2137,8 @@ class _HeldTarget:
                 self._held = False
 
             def frontmost(self):
-                if not self._held:
+                if not self._held and threading.current_thread() \
+                        is not threading.main_thread():
                     self._held = True
                     self.arrived.set()
                     self.hold.wait(10)
@@ -2158,6 +2160,16 @@ def _wait_idle(svc, timeout=5.0):
         time.sleep(0.01)
 
 
+def _paste_again_clicked(d, text):
+    """POLICY-D03: History's Paste Again, then the user's click in the
+    app in front (the repaste queues only after that pick)."""
+    from m08_world import pick_destination
+    click = pick_destination(d)
+    out = d.hubPasteText(text)
+    assert out["outcome"] == "choosing_destination", out
+    click()
+
+
 @case("M09-AUDIT-11")
 def test_a11_noop_repaste_still_delivers_deferred_open():
     """C034/C006: Open Hub twice during a repaste whose reconciliation
@@ -2168,7 +2180,7 @@ def test_a11_noop_repaste_still_delivers_deferred_open():
         tgt = _HeldTarget(settable=False, ax_readable=True)
         tgt.set_content("before hello m09 after")
         svc = _real_insertion(w, tgt)
-        assert w.d.hubPasteText("hello m09")["outcome"] == "repaste_queued"
+        _paste_again_clicked(w.d, "hello m09")
         assert tgt.arrived.wait(5) and svc.busy
         w.d.openHub_(None)
         w.d.openHub_(None)
@@ -2208,8 +2220,7 @@ def test_a11_flush_before_busy_decrement_is_not_lost():
                 if first["busy"]:
                     flushed.wait(10)  # hold the worker before its decrement
         w.mq.on_post = on_post
-        assert w.d.hubPasteText("fresh m09 text")["outcome"] == \
-            "repaste_queued"
+        _paste_again_clicked(w.d, "fresh m09 text")
         assert tgt.arrived.wait(5)
         w.d.openHub_(None)
         assert w.d._hub_show_pending
@@ -2254,8 +2265,7 @@ def test_r01_idle_between_pending_read_and_flag_still_shows_hub():
                           settle_sec=0.05)
         w.d._insertion = svc
         try:
-            assert w.d.hubPasteText("already here m09")["outcome"] == \
-                "repaste_queued"
+            _paste_again_clicked(w.d, "already here m09")
             assert tgt.arrived.wait(5) and svc.pending
             idle = threading.Event()
 

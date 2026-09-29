@@ -71,6 +71,7 @@ from typing import Callable, Optional
 
 from .. import ids
 from ..context.providers import ax_range, categorize, utf16_len
+from ..context.snapshot import identity_matches
 from . import record
 from .clipboard import ClipboardTransaction, PASTE_SETTLE_SEC
 from .hosts import InsertionHost, KeyboardHost, PasteboardHost
@@ -378,37 +379,55 @@ class InsertionService:
             return {"outcome": "nothing_to_paste"}
         self._count_admitted()
         self._q.put(("repaste", ids.new_id("op"), last["text"],
-                     last["job_id"], last["attempt"], on_done))
+                     last["job_id"], last["attempt"], on_done, None))
         return {"outcome": "repaste_queued"}
 
     def paste_text(self, text: str, job_id: str | None = None,
-                   on_done: Optional[Callable] = None) -> dict:
+                   on_done: Optional[Callable] = None,
+                   target=None) -> dict:
         """M09 (S18/S19): the History "Paste Again" engine — the same
         queued reconcile-then-paste operation as ``paste_again`` for
-        arbitrary retained text. Each call is a new explicit intent (its
-        own operation id). ``job_id`` keeps the insertion row and any
-        observation attributed (contracts/insertion.md); ``on_done``
-        (e.g. the coordinator's deferred-Hub-show flush) fires with the
-        result on the queue thread."""
+        arbitrary retained text, bound to ``target``: the destination the
+        user explicitly picked after invoking it (POLICY-D03). Without
+        one nothing is queued — the app in front is never authority.
+        Each call is a new explicit intent (its own operation id).
+        ``job_id`` keeps the insertion row and any observation attributed
+        (contracts/insertion.md); ``on_done`` fires with the result on
+        the queue thread."""
         if not text:
             return {"outcome": "nothing_to_paste"}
+        if target is None:
+            return {"outcome": "no_destination"}
         if job_id and job_id in self._revoked_jobs:
             return {"outcome": "job_deleted"}
         self._count_admitted()
-        self._q.put(("repaste", ids.new_id("op"), text, job_id, 1, on_done))
+        self._q.put(("repaste", ids.new_id("op"), text, job_id, 1, on_done,
+                     target))
         return {"outcome": "repaste_queued"}
 
-    def _repaste_now(self, op_id, text, job_id, attempt):
-        """Queue thread: reconcile, choose the destination and insert as
-        one serialized operation. Returns the InsertionResult, or None
-        when nothing was inserted (already present / revoked)."""
+    def _repaste_now(self, op_id, text, job_id, attempt, target):
+        """Queue thread: reconcile and insert as one serialized operation
+        — History's into its picked ``target``, revalidated by M08; the
+        Recovery menu's (``target`` None) into the app in front.
+        Returns the InsertionResult, or None when nothing was inserted
+        (already present / revoked)."""
         if job_id and job_id in self._revoked_jobs:
             self.emit("insertion.paste_again", level="INFO", job_id=job_id,
                       outcome="refused", reason_code="job_deleted")
             return None
         fm = self.host.frontmost()
-        pid = fm.get("pid") if fm else None
-        el, owned = acquire_destination(self.host, pid)
+        if target is None:
+            # The Recovery menu's Paste Again (M08 S18): invoked from the
+            # menu bar while the user's own app stays in front.
+            pid = fm.get("pid") if fm else None
+            el, owned = acquire_destination(self.host, pid)
+        elif identity_matches(target.app_pid, target.app_bundle, fm):
+            # History's: reconcile inside the picked app only.
+            el, owned = acquire_destination(self.host, target.app_pid)
+        else:
+            # Another app is in front: the transaction's revalidation
+            # refuses it.
+            el, owned = None, False
         allowed = False
         if owned and el is not None:
             allowed, _why, _role = read_permission(
@@ -426,13 +445,13 @@ class InsertionService:
                         job_id=job_id, outcome="already_present",
                         reason_code="reconciled_accessible_text")
                     return None
-        # Explicit intent authorizes the re-paste; the transaction runs
-        # right here (the target may have changed since the original).
+        # The picked destination authorizes the re-paste; the transaction
+        # revalidates it right here.
         self.emit("insertion.paste_again", level="INFO", job_id=job_id,
                   outcome="repaste_submitted")
         return self._run_insert(op_id, text,
                                 {"job_id": job_id, "attempt": int(attempt),
-                                 "repaste": True},
+                                 "repaste": True, "target": target},
                                 None, check_attempt=False)
 
     # ---- queue thread --------------------------------------------------
@@ -456,10 +475,10 @@ class InsertionService:
                     deliver(outcome)
                     continue
                 if kind == "repaste":
-                    _tag, op_id, text, job_id, attempt, on_done = item
+                    _tag, op_id, text, job_id, attempt, on_done, target = item
                     try:
                         result = self._repaste_now(op_id, text, job_id,
-                                                   attempt)
+                                                   attempt, target)
                     except Exception as e:
                         self.emit("insertion.paste_again", level="WARNING",
                                   job_id=job_id, outcome="error",

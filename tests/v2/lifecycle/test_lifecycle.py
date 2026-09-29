@@ -500,9 +500,11 @@ def test_retry_reopens_failed_job_with_new_attempt():
     text, done_job = args
     assert done_job is new_job
     h.d._finishWithText_(text, done_job)
-    assert len(h.pastes) == 1
+    # XM-C042: the menu retry captured no destination, so its result is
+    # kept (History), never pasted into whatever has focus.
+    assert len(h.pastes) == 0
     row = h.d.store.job(job_id)
-    assert row["state"] == "insertion_unverified"
+    assert row["state"] == "saved_not_inserted"
     h.close()
     print("ok  retry: failed job reopens with attempt 2 and completes")
 

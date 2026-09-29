@@ -1306,8 +1306,13 @@ class Store:
                     # The op's purge intents rolled back with it: their
                     # files are still referenced by live rows, untouched.
                     self._purge_pending = False
+                    # The event carries the exception type only: an op's
+                    # message can quote stored text, and the envelope is
+                    # content-free by construction (XM-IF-001). The full
+                    # message stays in memory (last_errors).
                     self.emit("store.write_failed", level="ERROR",
-                              reason_code="store_error", detail=err[:200])
+                              reason_code="store_error",
+                              detail=type(e).__name__)
                 if self._purge_pending:
                     # Only now is the purge durable; remove the files.
                     self._purge_pending = False

@@ -30,7 +30,8 @@ live as of M13, the refusal check uses any unregistered name).
 - **Coordinator command surface** (AppDelegate methods, the only way
   the Hub touches the world): `hubEngineStates`, `hubRecoveryInfo`,
   `collection_state`, `hubRetentionDays`, `hubCopyText`,
-  `hubPasteText(text, job_id)`, `hubRetryJob(job_id)`,
+  `hubPasteText(text, job_id, source)`,
+  `hubRetryJob(job_id, target_snapshot)`,
   `hubSetCollection`, `hubApplyRetention`, `_hub_diagnostics_spec`.
   M10 adds `hubEffectiveProfile`, `hubSetNextJobMode`,
   `hubPreviewPhrase` and `hubSnippetCollisionPreview` (live-process
@@ -185,15 +186,28 @@ live as of M13, the refusal check uses any unregistered name).
   Retry and Teach refuse with the reason and Paste Again records no
   attribution row.
 - Actions: Replay (one at a time — a new replay stops the previous),
-  Copy, Paste Again, Retry, stage diff. **Paste Again** is the M08
-  reconcile-then-submit engine (`InsertionService.paste_text`) under
-  explicit user intent; the selected row's job id rides along so the
-  `insertions` row and any observation stay attributed — a jobless
-  (legacy-row) repaste records no attribution row rather than failing
-  the NOT NULL constraint. **Retry** runs only for
-  `failed_recoverable` jobs with live recovery audio, refuses while
+  Copy, Paste Again, Retry, stage diff. **Paste Again** (POLICY-D03) is
+  explicit one-shot destination acquisition: it binds the source as
+  shown (the job and its rendered final artifact), the Hub steps aside
+  with a click-through hint ("Click where you'd like to paste — Esc to
+  cancel"), and only the user's next click in another app names the
+  destination — the app whose window was clicked must be the app in
+  front. At that click the source is revalidated (deleted, purged or
+  changed text refuses; a busy store refuses as `source_unverified`) and
+  a fresh target goes to the M08 engine (`InsertionService.paste_text`),
+  which revalidates it. Esc, a 30-second timeout, quit, deleting the
+  source, reopening the Hub or a newer Paste Again end the pick with
+  nothing pasted; the Hub returns with the outcome except after a sent
+  paste, when the destination app stays in front. The job id keeps the
+  `insertions` row and any observation attributed — a jobless
+  (legacy-row) repaste records no attribution row. **Retry** runs only
+  for `failed_recoverable` jobs with live recovery audio, refuses while
   the job is already active (a double click never double-inserts), and
-  reports `audio_unavailable`/`not_retryable` with reasons. Every
+  reports `audio_unavailable`/`not_retryable` with reasons. A retry
+  keeps its original capture's provenance but inserts only into a
+  destination its own action captured (`target_snapshot`, XM-C042);
+  without one its result is kept as `saved_not_inserted` and nothing is
+  inserted or copied. Every
   refusal and outcome is written beside the detail.
 - **Actions use the rendered item.** Every History action resolves
   its target from the detail on screen for the selected row

@@ -1366,10 +1366,14 @@ def f15_c03(c):
 @driver("LF-M08-F15-C04")
 def f15_c04(c):
     env = corpus_env(c, text_f1="")
-    run(env, "hello", job(snap(env), op="op-synthetic-OP1"))
+    s = snap(env)
+    run(env, "hello", job(s, op="op-synthetic-OP1"))
     env.w.user_replace("F1", 0, 5, "")
     done = []
-    out = env.svc.paste_text("hello", job_id=JOB, on_done=done.append)
+    # POLICY-D03: History's Paste Again runs only into the destination
+    # the user picked — here A/F1, still in front.
+    out = env.svc.paste_text("hello", job_id=JOB, on_done=done.append,
+                             target=s.target)
     mw.wait_for(lambda: done, 5)
     c.observe(outcome=out.get("outcome"),
               repaste=[(r.state, r.reason_code) for r in done])
@@ -1639,6 +1643,7 @@ def f18_c04(c):
         time.sleep(0.2)
     a.w.on("number_of_characters", slow)
     a.w.on("string_for_range", slow)
+    click = mw.pick_destination(a.d)
     t0 = time.monotonic()
     with rem.inline_after(a.app_mod):
         a.d.pasteLastResultAgain_(None)
@@ -1646,6 +1651,7 @@ def f18_c04(c):
         t1 = time.monotonic()
         a.d.hubPasteText("history text", job_id=j["job_id"])
         d2 = time.monotonic() - t1
+        click()   # POLICY-D03: the user picks F1, so the repaste runs
     time.sleep(1.0)
     c.observe(callback_ms=(round(d1 * 1000, 2), round(d2 * 1000, 2)))
     c.check("no_ax_on_ui_thread", caller not in seen, seen)

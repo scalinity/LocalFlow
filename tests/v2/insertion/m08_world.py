@@ -632,3 +632,36 @@ def wait_for(pred, timeout=5.0, step=0.01):
             return False
         time.sleep(step)
     return True
+
+
+def pick_destination(d):
+    """POLICY-D03: History's Paste Again pastes only after the user's
+    deliberate click. Installs a picker on the coordinator ``d`` with no
+    event monitors and manual timers; the returned ``click()`` is the
+    user clicking in whatever the insertion host has in front (so the
+    clicked window's owner is that app)."""
+    from localflow.v2.ui import paste_picker
+    timers = []
+    d._paste_picker = paste_picker.DestinationPicker(
+        schedule=lambda delay, fn: timers.append((delay, fn)),
+        install=lambda on_mouse, on_key: [], remove=lambda handles: None)
+    d._paste_hint = _NoHint()
+
+    def click():
+        front = d._insertion.host.frontmost() or {}
+        d._paste_picker.mouse_down(front.get("pid"))
+        due = [fn for delay, fn in timers
+               if delay == paste_picker.CLICK_SETTLE_SEC]
+        timers[:] = [t for t in timers
+                     if t[0] != paste_picker.CLICK_SETTLE_SEC]
+        for fn in due:
+            fn()
+    return click
+
+
+class _NoHint:
+    def show(self, text):
+        pass
+
+    def hide(self):
+        pass

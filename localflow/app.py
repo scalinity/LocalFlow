@@ -620,6 +620,11 @@ class AppDelegate(NSObject):
         self._hub = None
         self._hub_show_pending = False
         self._hub_pending_action = None
+        # POLICY-D03: History Paste Again's one-shot destination pick
+        # (created on first use; the ui package loads lazily).
+        self._paste_picker = None
+        self._paste_hint = None
+        self._paste_pick = None
         self.overlay = None
         self.hotkey = None
         self.mouse_trigger = None
@@ -2698,6 +2703,8 @@ class AppDelegate(NSObject):
         # the Hub's query admission closes before the store drains.
         self._hub_show_pending = False
         self._hub_pending_action = None
+        if self._paste_picker is not None:
+            self._paste_picker.cancel("quit")
         if self._hub is not None:
             try:
                 self._hub.state.shutdown()
@@ -2876,6 +2883,10 @@ class AppDelegate(NSObject):
         revoke every in-memory authority this process holds for the job.
         Flags only — no store calls, no main-thread work."""
         self._deleted_jobs.add(job_id)
+        pick = getattr(self, "_paste_pick", None)
+        if pick is not None and pick.get("job_id") == job_id:
+            AppHelper.callAfter(self._cancel_paste_pick, job_id,
+                                "source_deleted")
         tap = self._tap_pending or {}
         for job in [self._job, tap.get("job")] + list(self._active_jobs):
             if job and job.get("job_id") == job_id:
@@ -4804,6 +4815,25 @@ class AppDelegate(NSObject):
                 self._delete_journal_files(job_id, job)
                 self._settle_state()
                 return
+            if job.get("from_retry") and job.get("target") is None:
+                # XM-C042: a retry with no freshly captured destination is
+                # kept (History shows it; Copy and Paste Again stay the
+                # explicit ways to place it) — no insertion, no clipboard.
+                if job_id:
+                    self.v2log.emit(
+                        "insertion.saved_not_inserted", level="WARNING",
+                        job_id=job_id, outcome="saved_not_inserted",
+                        reason_code="retry_without_target")
+                    self._job_state(job_id, "saved_not_inserted",
+                                    reason="retry_without_target")
+                self._record_dictation_usage(
+                    job, "saved_not_inserted", text,
+                    meta={"reason": "retry_without_target"})
+                if ctx is not None:
+                    self.collector.on_insertion(ctx, False, 0)
+                self._retire_active_job(job)
+                self._settle_state()
+                return
             # M08 (S18): the text branch hands off to the serialized
             # insertion queue — the job stays active (cancel authority
             # holds until the transaction starts) and settles in
@@ -5335,17 +5365,35 @@ class AppDelegate(NSObject):
             pause.setEnabled_(state != "disabled")
 
     def toggleTrainingCollection_(self, sender):
-        new = "disabled" if self.consent.state() == "enabled" else "enabled"
-        self.consent.set(new, note="menu toggle")
+        try:
+            new = "disabled" if self.consent.state() == "enabled" \
+                else "enabled"
+            self.consent.set(new, note="menu toggle")
+        except TimeoutError:
+            self._consent_outcome_unknown()
+            return
         self._refresh_training_menu()
 
     def toggleTrainingPause_(self, sender):
-        state = self.consent.state()
-        new = "paused" if state == "enabled" else (
-            "enabled" if state == "paused" else state)
-        if new != state:
-            self.consent.set(new, note="menu toggle")
+        try:
+            state = self.consent.state()
+            new = "paused" if state == "enabled" else (
+                "enabled" if state == "paused" else state)
+            if new != state:
+                self.consent.set(new, note="menu toggle")
+        except TimeoutError:
+            self._consent_outcome_unknown()
+            return
         self._refresh_training_menu()
+
+    @objc.python_method
+    def _consent_outcome_unknown(self):
+        """A consent read or write that timed out after admission: the
+        store is busy and a queued change may yet commit, so the menu is
+        left as it was and the next open reads the real state
+        (XM-IF-009)."""
+        self.v2log.emit("training.consent_outcome_unknown",
+                        level="WARNING", reason_code="TimeoutError")
 
     def excludeLastDictation_(self, sender):
         self.collector.exclude_last()
@@ -5385,6 +5433,10 @@ class AppDelegate(NSObject):
         transaction would flip the frontmost app under the paste (the
         M09 regression requirement — window actions do not steal focus
         during insertion)."""
+        if self._paste_picker is not None and self._paste_picker.active:
+            # Reopening the Hub ends a waiting Paste Again pick (POLICY-D03):
+            # with LocalFlow active, Esc could no longer reach it.
+            self._paste_picker.cancel("reopened")
         if self._hub_blocks_show():
             self._hub_show_pending = True
             self.v2log.emit("hub.show_deferred", level="INFO",
@@ -5512,31 +5564,150 @@ class AppDelegate(NSObject):
         return {"outcome": "copied"}
 
     @objc.python_method
-    def hubPasteText(self, text, job_id=None):
-        """History's Paste Again: the M08 reconcile-then-submit engine
-        under explicit user intent. Refused while recording or mid-
-        transaction (never steals focus from an insert in flight). The
-        selected row's job id rides along so the insertion row and any
-        observation stay attributed (contracts/insertion.md)."""
+    def hubPasteText(self, text, job_id=None, source=None):
+        """History's Paste Again (POLICY-D03): explicit one-shot
+        destination acquisition. Invoking it authorizes no app that
+        merely comes to the front: the Hub steps aside, and only the
+        user's next deliberate click in another app names the
+        destination — captured then as a fresh M08 target. The History
+        source (``source``: the rendered final's artifact id) is
+        revalidated at the pick, and the paste runs through the M08
+        service, which revalidates the target. Esc, a timeout, quit or
+        deleting the source cancel it; nothing is pasted anywhere else."""
         if self.state == STATE_RECORDING:
             return {"outcome": "recording"}
         if self._hub_blocks_show():
             return {"outcome": "insertion_in_flight"}
-        if self._insertion is None:
-            self.hubCopyText(text)
-            return {"outcome": "copy_only_no_service"}
-        paste = getattr(self._insertion, "paste_text", None)
-        if paste is None:
-            # The shared test harnesses stub _insertion without the M09
-            # entry point; production always has it.
-            self.hubCopyText(text)
-            return {"outcome": "copy_only"}
-        # The AX path fires no ⌘V guard timer, so the deferred-Hub-show
-        # flush rides the transaction's completion instead — and, for an
-        # operation that runs no transaction, the service's idle
-        # notification (``_hub_blocks_show`` registers it).
-        return paste(text, job_id=job_id,
-                     on_done=lambda r: self._repaste_done(r, job_id))
+        if not text:
+            return {"outcome": "nothing_to_paste"}
+        if job_id and self._job_is_deleted(job_id):
+            return {"outcome": "job_deleted"}
+        if self._insertion is None \
+                or getattr(self._insertion, "paste_text", None) is None:
+            return {"outcome": "unavailable"}
+        if self._paste_picker is None:
+            from .v2.ui import paste_picker
+            self._paste_picker = paste_picker.DestinationPicker()
+            self._paste_hint = paste_picker.PasteHint()
+        from .v2.ui.paste_picker import HINT
+        # One pick at a time: a newer Paste Again replaces a waiting one
+        # before its own source is recorded.
+        self._paste_picker.cancel("superseded")
+        self._paste_pick = {"text": text, "job_id": job_id,
+                            "artifact_id": (source or {}).get("artifact_id")}
+        if self._hub is not None:
+            self._hub.window.orderOut_(None)
+        # LocalFlow resigns active so Esc reaches the global monitor; the
+        # app that comes to the front is NOT a destination.
+        NSApplication.sharedApplication().deactivate()
+        self._paste_hint.show(HINT)
+        self._paste_picker.arm(self._paste_destination_picked,
+                               self._paste_pick_cancelled)
+        self.v2log.emit("insertion.paste_again", level="INFO",
+                        job_id=job_id, outcome="choosing_destination")
+        return {"outcome": "choosing_destination"}
+
+    @objc.python_method
+    def _paste_destination_picked(self, clicked_pid):
+        """Main thread, after the user's click settled: the app in front
+        must be the one whose window was clicked (a menu-bar item, banner
+        or Dock click does not bring its app forward); then capture the
+        fresh target from it, revalidate the source, and hand both to
+        the M08 service."""
+        pick, self._paste_pick = self._paste_pick, None
+        self._paste_hint.hide()
+        if pick is None or self._insertion is None:
+            return
+        fm = self._insertion.host.frontmost() or {}
+        if clicked_pid is None or fm.get("pid") != clicked_pid:
+            self._paste_pick_ended("destination_not_in_front",
+                                   show_hub=True)
+            return
+        refusal = self._paste_source_refusal(pick)
+        if refusal is not None:
+            self._paste_pick_ended(refusal, show_hub=True)
+            return
+        from .v2.context.providers import categorize
+        from .v2.context.snapshot import TargetSnapshot, app_denied
+        bundle = fm.get("bundle")
+        target = TargetSnapshot(
+            target_snapshot_id=v2.ids.new_id("tgt"), app_bundle=bundle,
+            app_name=fm.get("name"), app_pid=fm.get("pid"),
+            denied=app_denied(bundle, self._insertion.denied_apps),
+            category=categorize(bundle),
+            captured_at_utc=v2.ids.now_utc_iso())
+        job_id = pick["job_id"]
+        out = self._insertion.paste_text(
+            pick["text"], job_id=job_id, target=target,
+            on_done=lambda r, j=job_id: (
+                self._repaste_done(r, j),
+                AppHelper.callAfter(self._paste_landed, r))) or {}
+        self._paste_pick_ended(out.get("outcome"),
+                               show_hub=out.get("outcome")
+                               != "repaste_queued")
+
+    @objc.python_method
+    def _paste_landed(self, result):
+        """The picked paste's transaction result replaces the row's
+        'sent' note with what actually happened."""
+        if self._hub is not None:
+            self._hub.pasteAgainEnded(
+                getattr(result, "state", None) or "unknown")
+
+    @objc.python_method
+    def _paste_source_refusal(self, pick):
+        """The History source still exactly as invoked: its job not
+        deleted, its final artifact live and unchanged — never
+        retargeted to newer text."""
+        job_id, aid = pick.get("job_id"), pick.get("artifact_id")
+        if job_id and self._job_is_deleted(job_id):
+            return "source_deleted"
+        if not aid:
+            return None
+        try:
+            row = self.store.submit(lambda db: db.execute(
+                "SELECT purged, content_text FROM artifacts WHERE"
+                " artifact_id=?", (aid,)).fetchone())
+        except TimeoutError:
+            # The store is busy: the source is unverified, so nothing is
+            # pasted (the lookup itself changes nothing).
+            return "source_unverified"
+        if row is None or row[0]:
+            return "source_purged"
+        if row[1] != pick["text"]:
+            return "source_changed"
+        return None
+
+    @objc.python_method
+    def _paste_pick_cancelled(self, reason):
+        self._paste_pick = None
+        self._paste_hint.hide()
+        # Only the user's own Esc brings the Hub back; a pick that ends by
+        # itself (timeout, a deletion elsewhere, quit, a newer pick, a
+        # reopen) leaves its outcome on the row for the next open.
+        self._paste_pick_ended(reason, show_hub=reason == "cancelled")
+
+    @objc.python_method
+    def _cancel_paste_pick(self, job_id, reason):
+        pick = self._paste_pick
+        if pick is not None and pick.get("job_id") == job_id \
+                and self._paste_picker is not None:
+            self._paste_picker.cancel(reason)
+
+    @objc.python_method
+    def _paste_pick_ended(self, outcome, show_hub):
+        """The pick's outcome goes on the History row's note. The Hub
+        comes back only for the user's own Esc or a refusal right after
+        their click, and never while a dictation is in flight: bringing
+        it forward then would move the front app out from under that
+        dictation's insert."""
+        self.v2log.emit("insertion.paste_again", level="INFO",
+                        outcome=outcome or "unknown")
+        if self._hub is not None:
+            self._hub.pasteAgainEnded(outcome)
+            if show_hub and not getattr(self, "_closing", False) \
+                    and self.state == STATE_IDLE and not self._active_jobs:
+                self.openHub_(None)
 
     @objc.python_method
     def _repaste_done(self, result, job_id=None):
@@ -5558,12 +5729,14 @@ class AppDelegate(NSObject):
         AppHelper.callAfter(self._flush_pending_hub_show)
 
     @objc.python_method
-    def hubRetryJob(self, job_id):
+    def hubRetryJob(self, job_id, target_snapshot=None):
         """Retry one failed job from its History row, through the same
         coordinator path the Recovery menu uses. Only ``failed_
         recoverable`` jobs with live recovery audio retry — anything
         else reports why instead of requeueing (a double click must
-        never insert the same dictation twice)."""
+        never insert the same dictation twice). ``target_snapshot`` is
+        a destination the retry action explicitly captured (XM-C042);
+        without one the result is kept, never inserted."""
         if self.state == STATE_RECORDING:
             return {"outcome": "recording"}
         if any(j.get("job_id") == job_id for j in self._active_jobs):
@@ -5581,7 +5754,7 @@ class AppDelegate(NSObject):
                 if not wav.exists():
                     return {"outcome": "audio_unavailable",
                             "reason": "recovery audio expired"}
-                return self._retry_job(info)
+                return self._retry_job(info, target_snapshot)
         # Not the in-memory last-failed set: only retryable if recovery
         # audio still exists under the journal root (contracts/store.md
         # — it expires by mtime, and missing audio is labeled
@@ -5591,13 +5764,18 @@ class AppDelegate(NSObject):
             return self._retry_job({
                 "job_id": job_id, "family_id": row.get("family_id"),
                 "wav": str(wav), "raw": None,
-                "attempt": row.get("attempt", 1) or 1})
+                "attempt": row.get("attempt", 1) or 1}, target_snapshot)
         return {"outcome": "audio_unavailable",
                 "reason": "no recovery audio for job"}
 
     @objc.python_method
     def hubSetCollection(self, new_state):
-        self.consent.set(new_state, note="hub settings")
+        try:
+            self.consent.set(new_state, note="hub settings")
+        except TimeoutError:
+            # Admitted and still queued: the change may yet commit, so
+            # it is neither failed nor applied (XM-IF-009).
+            return {"outcome": "outcome_unknown"}
         self._refresh_training_menu()
 
     @objc.python_method
@@ -5797,6 +5975,11 @@ class AppDelegate(NSObject):
                 detail=f"created {result['created']}, updated"
                        f" {result['updated']}, unchanged"
                        f" {result['unchanged']}")
+        except TimeoutError:
+            # Admitted and still queued: the import may yet commit
+            # (Store._submit), so it is not reported as failed (XM-IF-011).
+            self.v2log.emit("vocabulary.import_outcome_unknown",
+                            level="WARNING", reason_code="TimeoutError")
         except Exception as e:
             self.v2log.emit("vocabulary.import_failed", level="WARNING",
                             reason_code=type(e).__name__)
@@ -5875,7 +6058,7 @@ class AppDelegate(NSObject):
         self._retry_job(info)
 
     @objc.python_method
-    def _retry_job(self, info):
+    def _retry_job(self, info, target_snapshot=None):
         """The one retry path (menu and the Hub's History row share it):
         re-arm the breaker, re-read the recovery audio, re-open the
         failed job with the next attempt and requeue it through the
@@ -5978,6 +6161,14 @@ class AppDelegate(NSObject):
                                                         int(_rate)),
                    "captured_at_utc": captured, "time_quality": time_quality,
                    "timezone": zone, "utc_offset_minutes": offset}
+            # XM-C042: the retry keeps the original capture's provenance
+            # but inherits no insertion authority from whatever has focus
+            # now. Only a destination the retry action itself captured
+            # (``target_snapshot``, taken under the M08 contract) may
+            # receive the text; without one the result is kept, never
+            # inserted (_finishWithText_).
+            if target_snapshot is not None:
+                job["target"] = target_snapshot.target
             # M04 (review R15): the retry re-recognizes old audio with no
             # destination context — its normalization runs under a NEW,
             # unscoped snapshot, recorded as such in the evidence.

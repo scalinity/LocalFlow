@@ -560,9 +560,10 @@ def d_legacy_repaste(case):
         w, svc = R.real_insertion(h)
         w.fields["F1"].text = ""
         before = h.d._insights.summary(days=None)
-        from m13_drivers import _run_repaste
-        _out, ran = _run_repaste(h, svc, lambda: h.d.hubPasteText(
-            "synthetic legacy words", job_id="legacy-db:1"))
+        from m13_drivers import _history_paste, _run_repaste
+        # POLICY-D03: History's Paste Again pastes at the user's pick.
+        _out, ran = _run_repaste(h, svc, lambda: _history_paste(
+            h, svc, "synthetic legacy words", "legacy-db:1"))
         mq.flush()
         rows = h.d.store.submit(lambda c: c.execute(
             "SELECT job_id, kind FROM usage_facts").fetchall())

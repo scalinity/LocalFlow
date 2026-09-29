@@ -949,14 +949,35 @@ class HubController(NSObject):
         self._history_note("Copied the final text.")
 
     _PASTE_NOTES = {
-        "repaste_queued": "Paste Again queued: it pastes into the app in"
-                          " front when it runs.",
+        "choosing_destination": "Click where you'd like to paste — Esc"
+                                " to cancel.",
+        "repaste_queued": "Paste Again: sent to the place you clicked.",
+        "insertion_confirmed": "Paste Again: pasted where you clicked.",
+        "posted_unverified": "Paste Again: pasted where you clicked (not"
+                             " verified).",
+        "target_changed": "Paste Again did not paste: the place you"
+                          " clicked changed. The text stays here.",
+        "saved_not_inserted": "Paste Again did not paste there. The text"
+                              " stays here.",
+        "destination_not_in_front": "Paste Again did not paste: the app you"
+                                    " clicked did not come to the front.",
+        "source_unverified": "Paste Again did not paste: LocalFlow is busy"
+                             " — try again.",
+        "superseded": "Paste Again replaced by a newer one.",
+        "reopened": "Paste Again cancelled.",
         "recording": "Paste Again refused: recording in progress.",
         "insertion_in_flight": "Paste Again refused: an insertion is in"
                                " progress. Try again when it finishes.",
         "job_deleted": "Paste Again refused: this dictation was deleted.",
-        "copy_only": "Copied instead: pasting is unavailable here.",
-        "copy_only_no_service": "Copied instead: pasting is unavailable.",
+        "source_deleted": "Paste Again cancelled: this dictation was"
+                          " deleted.",
+        "source_purged": "Paste Again refused: this text is no longer"
+                         " kept.",
+        "source_changed": "Paste Again refused: this text changed since"
+                          " it was shown.",
+        "cancelled": "Paste Again cancelled.",
+        "timed_out": "Paste Again cancelled: no place was clicked.",
+        "unavailable": "Paste Again is unavailable.",
         "nothing_to_paste": "Nothing to paste.",
     }
 
@@ -969,10 +990,12 @@ class HubController(NSObject):
             self._history_note("Nothing to paste: this row has no retained"
                                " final text.")
             return
-        # The job id rides along so the re-paste keeps its insertion
-        # attribution (contracts/insertion.md); legacy rows pass None.
-        out = self.coordinator.hubPasteText(text, job_id=ctx.get("job_id")) \
-            or {}
+        # The job id keeps the re-paste's insertion attribution
+        # (contracts/insertion.md; legacy rows pass None); the final's
+        # artifact binds the source as shown (POLICY-D03).
+        out = self.coordinator.hubPasteText(
+            text, job_id=ctx.get("job_id"),
+            source={"artifact_id": self._final_artifact_id(ctx)}) or {}
         outcome = out.get("outcome")
         self._history_note(self._PASTE_NOTES.get(
             outcome, f"Paste Again returned {outcome}."))
@@ -1190,6 +1213,20 @@ class HubController(NSObject):
         return final_text(detail)
 
     @objc.python_method
+    def _final_artifact_id(self, detail):
+        """The artifact of the rendered final stage, or None (legacy)."""
+        stage = next((s for s in detail.get("lineage") or ()
+                      if s.get("stage") == detail.get("final_stage")), None)
+        return ((stage or {}).get("artifact") or {}).get("artifact_id")
+
+    @objc.python_method
+    def pasteAgainEnded(self, outcome):
+        """Paste Again's pick finished (the coordinator's report): the
+        row's note says how, for when the Hub is next in front."""
+        self._history_note(self._PASTE_NOTES.get(
+            outcome, f"Paste Again returned {outcome}."))
+
+    @objc.python_method
     def _live_final_text(self, detail):
         """The rendered final text, only while its artifact is still live
         in the store: a retention pass or deletion may have purged it
@@ -1200,9 +1237,7 @@ class HubController(NSObject):
         store = self.spec.get("store")
         if text is None or store is None:
             return text
-        stage = next((s for s in detail.get("lineage") or ()
-                      if s.get("stage") == detail.get("final_stage")), None)
-        aid = ((stage or {}).get("artifact") or {}).get("artifact_id")
+        aid = self._final_artifact_id(detail)
         if not aid:
             return text
         row = store.submit(lambda conn: conn.execute(

@@ -1438,10 +1438,13 @@ def g06_xm_c040_revoked_lease_grants_no_authority():
         # validated transaction into the cleared field.
         a.w.fields["F1"].text, a.w.fields["F1"].sel = "", (0, 0)
         reps0 = _repastes(store)
+        from m08_world import pick_destination
+        click = pick_destination(a.d)
         with inline_after():
             out = a.d.hubPasteText(text, job_id=jid)
+            click()              # POLICY-D03: the user picks F1
         _svc_idle(a)
-        assert out.get("outcome") == "repaste_queued" and \
+        assert out.get("outcome") == "choosing_destination" and \
             a.w.text("F1") == text and _repastes(store) == reps0 + 1, (
             f"control: {out} F1={a.w.text('F1')!r}")
         a.w.fields["F1"].text, a.w.fields["F1"].sel = "", (0, 0)
@@ -1477,8 +1480,11 @@ def g06_xm_c040_revoked_lease_grants_no_authority():
         a.w.focus("B")
         a.svc.note_session_unlocked()
         mark = a.w.seq
+        from m08_world import pick_destination
+        click = pick_destination(a.d)
         with inline_after():
             a.d.hubPasteText(text, job_id=job["job_id"])
+            click()              # the user picks B's field
             a.d.pasteLastResultAgain_(None)
         _svc_idle(a)
         reads, writes = _field_touches(a.w, mark)

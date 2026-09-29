@@ -250,12 +250,19 @@ window holding equal text, a newer edit, a stale range, an unsupported
 surface) degrades to offering the previous text on the clipboard (none
 for a caret insert). No synthetic Backspace exists.
 
-`paste_again` (the last result) and `paste_text(text, job_id=None,
-on_done=None)` (History) are explicit user intent: on the queue thread
-they read the frontmost application's own focused element (only where
-reading is permitted) and report `already_present` when it already
-contains the text — a substring guard, approximate by design — else run
-a fresh transaction (insert-on-faith, never confirmed). They return
+`paste_again` (the last result, from the Recovery menu, invoked while
+the user's own app stays in front) is explicit user intent: on the queue
+thread it reads the frontmost application's own focused element (only
+where reading is permitted) and reports `already_present` when it
+already contains the text — a substring guard, approximate by design —
+else runs a fresh transaction (insert-on-faith, never confirmed).
+`paste_text(text, job_id=None, on_done=None, target=None)` (History,
+POLICY-D03) requires the destination the user explicitly picked after
+invoking Paste Again — a `TargetSnapshot` captured from the app whose
+window was clicked — and returns `no_destination` without one: the app
+that merely comes to the front is never authority. It reconciles only
+inside the picked app, and its transaction revalidates that target like
+any job's (`target_changed` when it moved). Both return
 `repaste_queued` at once; `on_done(result)` fires when a transaction
 ran. The job id keeps the `insertions` row attributed; a jobless
 repaste records no row.

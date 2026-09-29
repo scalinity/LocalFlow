@@ -187,11 +187,14 @@ def test_repaste_command_records_activity_not_words():
         h.d._insertion = InsertionService(
             host=tgt, pasteboard=tgt.pb, keyboard=tgt,
             store=h.d.store, emit=lambda *a, **k: None, settle_sec=0.05)
+        from m08_world import pick_destination
+        click = pick_destination(h.d)
         out = h.d.hubPasteText("RAW FOR job wav again",
                                job_id=before[0])
-        # M08 remediation: the reconcile-then-paste runs whole on the
-        # insertion queue; the command answers at once.
-        assert out["outcome"] == "repaste_queued", out
+        # POLICY-D03: the paste waits for the user's click; the
+        # reconcile-then-paste then runs whole on the insertion queue.
+        assert out["outcome"] == "choosing_destination", out
+        click()
         deadline = time.monotonic() + 5.0
         while "again" not in tgt.content and time.monotonic() < deadline:
             time.sleep(0.02)

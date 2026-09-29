@@ -377,8 +377,13 @@ def test_R4_scan_and_retry_claim_exclusively():
 
             d.collector.job_started = held
             out = {}
+            # XM-C042: the retry carries an explicitly captured target, so
+            # its one delivery is observable.
+            fresh = types.SimpleNamespace(target=types.SimpleNamespace(
+                target_snapshot_id="tgt-r4", category="unknown",
+                app_bundle="com.example.a", app_name="A", app_pid=101))
             t = threading.Thread(target=lambda: out.update(
-                r=d._retry_job(info)))
+                r=d._retry_job(info, fresh)))
             t.start()
             assert entered.wait(5)
             assert a.state(jid) == "queued"  # re-opened, not yet live

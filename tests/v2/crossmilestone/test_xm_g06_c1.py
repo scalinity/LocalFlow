@@ -1070,9 +1070,9 @@ def c_g06_xm_c106_unpurged_row_admits_once():
         _press_all(w)
         got, cands = _admitted(w, c, rec)
         kinds = sorted(k for k, _t in got)
-        # Paste Again under the harness's stub copies instead (copy_only),
-        # which runs through hubCopyText as well.
-        assert kinds == ["copy", "copy", "paste"] and cands == 1, (
+        # Paste Again admits once (hubPasteText); it never turns into a
+        # copy (POLICY-D03), so Copy is the only copy.
+        assert kinds == ["copy", "paste"] and cands == 1, (
             got, cands)
     finally:
         w.__exit__(None, None, None)

@@ -23,6 +23,7 @@ sys.path.insert(0, str(HERE.parents[1] / "lifecycle"))
 sys.path.insert(0, str(HERE.parents[1] / "insertion"))
 
 import test_m09_remediation as R  # noqa: E402  (also initializes NSApp)
+from m08_world import pick_destination  # noqa: E402
 from m09_world import (APP_A, APP_B, CANARY_A, CANARY_B,  # noqa: E402
                        CANARY_C, Latch, MainQueue, World, advance_stage,
                        event, history_rows, iso, is_main, join_work,
@@ -571,8 +572,12 @@ def c031_queued_before_busy():
         tgt.hold.set()
         svc = R._real_insertion(w, tgt)
         gated = _gate_worker(svc)
+        # POLICY-D03: the repaste queues at the user's destination click.
+        click = pick_destination(w.d)
         out = w.d.hubPasteText("queued m09 text")
-        assert out["outcome"] == "repaste_queued"
+        assert out["outcome"] == "choosing_destination", out
+        click()
+        assert svc.pending, "precondition: the picked repaste is queued"
         assert not svc.busy, "precondition: queued, not executing"
         w.d.openHub_(None)
         shown_while_queued = w.d._hub is not None
@@ -668,11 +673,17 @@ def c009_retry_double_click_one_claim():
         assert "Retry queued" in first, first[-200:]
         assert "already being retried" in second, second[-200:]
         assert len(w.d._active_jobs) == 1
+        assert w.d._jobs.qsize() == 1, "double click queued extra attempts"
         job = w.d._active_jobs[0]
         fn, args = w.h.run_coordinator()
         fn(*args)
         w.drain()
-        assert len(w.h.pastes) == 1, w.h.pastes
+        # XM-C042: the History button's retry captured no destination, so
+        # its one attempt settles saved_not_inserted — never pasted into
+        # whatever has focus (no insertion at all, so none duplicated).
+        assert len(w.h.pastes) == 0, w.h.pastes
+        assert w.h.job_state(jid) == "saved_not_inserted", \
+            w.h.job_state(jid)
         assert job.get("norm_source") == "retry_unscoped_default"
     return {"retries_admitted": 1}
 
@@ -793,13 +804,18 @@ def c010_two_deliberate_paste_agains():
         ops = _op_ids(svc)
         open_view(w.hub, w.mq, "history")
         R.select_history(w, "job", jid)
+        # POLICY-D03: each request queues at its own destination click.
+        click = pick_destination(w.d)
         w.hub.historyPasteAgain_(None)       # one click
+        click()
         assert len(ops) == 1, f"one click queued {len(ops)} ops"
         R._wait_idle(svc)
         while svc.pending:
             time.sleep(0.01)
         w.drain()
+        click = pick_destination(w.d)
         w.hub.historyPasteAgain_(None)       # a second deliberate click
+        click()
         R._wait_idle(svc)
         while svc.pending:
             time.sleep(0.01)
@@ -823,7 +839,9 @@ def c069_v2_paste_again_attribution():
         ops = _op_ids(svc)
         open_view(w.hub, w.mq, "history")
         R.select_history(w, "job", jid)
+        click = pick_destination(w.d)
         w.hub.historyPasteAgain_(None)
+        click()                              # POLICY-D03: the user's pick
         while svc.pending:
             time.sleep(0.01)
         w.drain()
@@ -852,7 +870,9 @@ def c070_legacy_paste_again_jobless():
         w.d._insertion = svc
         open_view(w.hub, w.mq, "history")
         R.select_history(w, "legacy_db", rid)
+        click = pick_destination(w.d)
         w.hub.historyPasteAgain_(None)
+        click()                              # POLICY-D03: the user's pick
         while svc.pending:
             time.sleep(0.01)
         w.drain()
@@ -874,7 +894,9 @@ def c071_paste_refusals_visible():
         svc = R._real_insertion(w, tgt)
         open_view(w.hub, w.mq, "history")
         R.select_history(w, "job", jid)
-        w.hub.historyPasteAgain_(None)       # queued, held in the target
+        click = pick_destination(w.d)
+        w.hub.historyPasteAgain_(None)
+        click()          # POLICY-D03: picked, queued, held in the target
         assert tgt.arrived.wait(5)
         w.hub.historyPasteAgain_(None)       # while the first runs
         busy_note = rendered_text(w.hub.history_detail).lower()
@@ -902,7 +924,9 @@ def c072_late_deletion_revokes_queued_paste():
         w.store.add_job_deletion_listener(svc.revoke_job)
         open_view(w.hub, w.mq, "history")
         R.select_history(w, "job", jid)
+        click = pick_destination(w.d)
         w.hub.historyPasteAgain_(None)
+        click()          # POLICY-D03: picked, queued, held in the target
         assert tgt.arrived.wait(5)
         w.store.delete_everywhere("job", jid)
         tgt.hold.set()
@@ -2441,11 +2465,17 @@ def mr05_retry_idempotence():
             for _ in range(clicks):
                 w.hub.historyRetry_(None)
             admitted = len(w.d._active_jobs)
+            queued = w.d._jobs.qsize()
             fn, args = w.h.run_coordinator()
             fn(*args)
             w.drain()
-            outcomes[clicks] = (admitted, len(w.h.pastes))
-            assert outcomes[clicks] == (1, 1), (clicks, outcomes[clicks])
+            # XM-C042: the button's retry has no captured destination, so
+            # its single attempt is kept, never pasted: one admission, one
+            # queued attempt, no insertion, whatever the click count.
+            outcomes[clicks] = (admitted, queued, len(w.h.pastes),
+                                w.h.job_state(jid))
+            assert outcomes[clicks] == (1, 1, 0, "saved_not_inserted"), \
+                (clicks, outcomes[clicks])
     return {str(k): v for k, v in outcomes.items()}
 
 
@@ -2463,7 +2493,9 @@ def mr06_repaste_intent_identity():
             open_view(w.hub, w.mq, "history")
             R.select_history(w, "job", jid)
             for _ in range(clicks):
+                click = pick_destination(w.d)
                 w.hub.historyPasteAgain_(None)
+                click()                  # POLICY-D03: the user's pick
                 while svc.pending:
                     time.sleep(0.01)
                 w.drain()

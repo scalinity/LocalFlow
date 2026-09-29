@@ -3019,6 +3019,269 @@ def x17_m07_obligations_have_stable_runbook_ownership():
             f"a baked-in state in {head}")
 
 
+@case("XM-IF-001 (a failed writer op's event is content-free whatever its"
+      " exception message quotes)")
+def if001_store_failure_event_carries_no_message_text():
+    import tempfile
+    from localflow.v2 import store as store_mod
+    secret = "PRIVATE_DICTATED_TEXT_7f3"
+    events = []
+    with tempfile.TemporaryDirectory() as td:
+        td = pathlib.Path(td)
+        s = store_mod.Store(td / "v2.db", artifacts_dir=td / "artifacts",
+                            emit=lambda ev, **kw: events.append(
+                                {"event": ev, **kw}))
+        try:
+            def op(db):
+                raise ValueError(f"refused {secret!r}")
+            try:
+                s.submit(op)
+            except RuntimeError:
+                pass
+            failed = [e for e in events if e["event"] == "store.write_failed"]
+            assert len(failed) == 1, f"fixture: failure events {failed}"
+            assert secret not in json.dumps(events), (
+                f"the op's message reached the event log: {failed}")
+            assert failed[0].get("detail") == "ValueError", failed
+            assert any(secret in e for e in s.last_errors), \
+                "the full message is no longer kept in memory"
+        finally:
+            s.close()
+
+
+def _admitted_timeout(*_a, **_k):
+    # Store._submit's own signal: the op was admitted and stays queued.
+    raise TimeoutError("store writer did not respond")
+
+
+def _recording_emit(d):
+    seen, real = [], d.v2log.emit
+
+    def emit(ev, **kw):
+        seen.append(ev)
+        return real(ev, **kw)
+    d.v2log.emit = emit
+    return seen
+
+
+@case("XM-IF-002/011 (an admitted Dictionary write that timed out reads as"
+      " outcome unknown, never as not added; the import is not failed)")
+def if002_dictionary_timeout_is_not_a_refusal():
+    import tempfile
+    sys.path.insert(0, str(ROOT / "tests" / "v2" / "vocabulary"))
+    import m05_helpers
+    from localflow.v2 import store as store_mod
+    from localflow.v2.vocabulary_store import VocabularyStore
+    with tempfile.TemporaryDirectory() as td:
+        td = pathlib.Path(td)
+        s = store_mod.Store(td / "v2.db", artifacts_dir=td / "artifacts")
+        try:
+            vs = VocabularyStore(s)
+            ctl = m05_helpers.panel(vs)
+            ctl.canonical.setStringValue_("Orion SDK")
+            vs.add_entry = _admitted_timeout
+            ctl.addEntry_(None)
+            shown = ctl.sandbox.stringValue()
+            assert "outcome not known yet" in shown \
+                and "not added" not in shown, (
+                    f"an admitted timeout was shown as {shown!r}")
+
+            def refused(*_a, **_k):
+                raise ValueError("duplicate")
+            vs.add_entry = refused
+            ctl.addEntry_(None)
+            assert ctl.sandbox.stringValue().startswith("not added"), \
+                f"control: a refusal shows {ctl.sandbox.stringValue()!r}"
+        finally:
+            s.close()
+    h = Harness(durations=[1.0])
+    try:
+        import AppKit
+        seen = _recording_emit(h.d)
+
+        class _URL:
+            def path(self):
+                return "/nonexistent/dictionary.json"
+
+        class _Panel:
+            @classmethod
+            def openPanel(cls):
+                return cls()
+
+            def setAllowedFileTypes_(self, _t):
+                pass
+
+            def setCanChooseDirectories_(self, _b):
+                pass
+
+            def runModal(self):
+                return 1
+
+            def URLs(self):
+                return [_URL()]
+        real_panel, AppKit.NSOpenPanel = AppKit.NSOpenPanel, _Panel
+        try:
+            if h.d._vocab is None:
+                raise AssertionError("fixture: no vocabulary service")
+            h.d._vocab.import_json = _admitted_timeout
+            h.d.importDictionaryJSON_(None)
+        finally:
+            AppKit.NSOpenPanel = real_panel
+        assert "vocabulary.import_outcome_unknown" in seen \
+            and "vocabulary.import_failed" not in seen, (
+                f"an admitted import timeout was logged as {seen[-3:]}")
+    finally:
+        h.close()
+
+
+@case("XM-IF-009 (a consent change that timed out after admission is"
+      " reported as outcome unknown, never failed; menu toggles survive it)")
+def if009_consent_timeout_is_outcome_unknown():
+    h = Harness(durations=[1.0])
+    try:
+        seen = _recording_emit(h.d)
+        h.d.consent.set = _admitted_timeout
+        out = h.d.hubSetCollection("disabled")
+        assert (out or {}).get("outcome") == "outcome_unknown", (
+            f"the Hub's collection change returned {out}")
+        h.d.toggleTrainingCollection_(None)
+        h.d.consent.state = _admitted_timeout
+        h.d.toggleTrainingPause_(None)
+        assert seen.count("training.consent_outcome_unknown") == 2, seen
+    finally:
+        h.close()
+
+
+@case("LF-R04 (a configured microphone is chosen by name among input"
+      " devices and opened; an unknown one falls back to the default,"
+      " said so)")
+def r04_mic_switch_opens_the_configured_input():
+    from localflow import audio
+    devices = [{"name": "MacBook Pro Microphone", "max_input_channels": 1},
+               {"name": "USB Audio Speakers", "max_input_channels": 0},
+               {"name": "USB Audio Microphone", "max_input_channels": 1}]
+    opened, notes = [], []
+
+    class _Stream:
+        def __init__(self, **kw):
+            self.device = kw.get("device")
+            opened.append(self.device)
+
+        def start(self):
+            pass
+
+        def stop(self):
+            pass
+
+        def close(self):
+            pass
+    real_query, real_stream = audio.sd.query_devices, audio.sd.InputStream
+    audio.sd.query_devices = lambda i=None: devices if i is None \
+        else devices[i]
+    audio.sd.InputStream = _Stream
+    try:
+        got = {}
+        for wanted in ("usb audio", 0, None, "Studio Mic"):
+            r = audio.Recorder(input_device=wanted, notifier=notes.append)
+            got[repr(wanted)] = r._resolve_device()
+        r = audio.Recorder(input_device="usb audio", notifier=notes.append)
+        r.start()
+        r.stop()
+    finally:
+        audio.sd.query_devices, audio.sd.InputStream = real_query, real_stream
+    assert got == {"'usb audio'": 2, "0": 0, "None": None,
+                   "'Studio Mic'": None}, got
+    assert opened == [2] and r.device_name == "USB Audio Microphone", (
+        f"the stream opened device {opened} ({r.device_name!r})")
+    assert len(notes) == 1 and "Studio Mic" in notes[0], notes
+
+
+@case("LF-R04 (a nearly silent capture and a long silent tail are reported"
+      " as such, and the dictation still proceeds)")
+def r04_silence_warnings_are_reported():
+    h = Harness(durations=[3.0, 12.0, 3.0])
+    try:
+        seen = _recording_emit(h.d)
+        real_stop = h.d.recorder.stop
+        shapes = iter([{"voiced_pct": 2.0},
+                       {"voiced_pct": 60.0, "trailing_silence_sec": 6.0},
+                       {"voiced_pct": 60.0}])
+
+        def stop():
+            out = real_stop()
+            h.d.recorder.stats.update(next(shapes))
+            return out
+        h.d.recorder.stop = stop
+        marks = []
+        for _ in range(3):
+            n = len(seen)
+            h.press()
+            h.release()
+            fn, a = h.run_coordinator()
+            fn(*a)
+            marks.append([e for e in seen[n:] if e in (
+                "capture.near_silence", "capture.dead_tail",
+                "capture.completed")])
+        assert marks == [["capture.completed", "capture.near_silence"],
+                         ["capture.completed", "capture.dead_tail"],
+                         ["capture.completed"]], marks
+        states = [r[0] for r in h.d.store.submit(lambda db: db.execute(
+            "SELECT state FROM jobs ORDER BY rowid").fetchall())]
+        assert len(states) == 3 and "failed_recoverable" not in states, \
+            f"a warned capture did not proceed: {states}"
+    finally:
+        h.close()
+
+
+@case("LF-R25 (no LocalFlow module imports a network client; whole-app"
+      " offline operation at runtime is M16's native acceptance)")
+def r25_no_network_client_imports():
+    import ast
+    banned = ("socket", "ssl", "http", "urllib.request", "urllib3",
+              "requests", "httpx", "aiohttp", "ftplib", "smtplib",
+              "websocket", "websockets")
+    hits = []
+    for path in sorted((ROOT / "localflow").rglob("*.py")):
+        tree = ast.parse(path.read_text(), filename=str(path))
+        for node in ast.walk(tree):
+            names = [a.name for a in node.names] \
+                if isinstance(node, ast.Import) else \
+                [node.module or ""] if isinstance(node, ast.ImportFrom) \
+                else []
+            for n in names:
+                if any(n == b or n.startswith(b + ".") for b in banned):
+                    hits.append(f"{path.relative_to(ROOT)}:{node.lineno}"
+                                f" {n}")
+    assert not hits, f"network client imports: {hits}"
+    scanned = len(list((ROOT / "localflow").rglob("*.py")))
+    assert scanned > 50, f"fixture: only {scanned} modules scanned"
+
+
+@case("LF-R28 (the cross-milestone handoff and STATUS agree on the current"
+      " state and name a production commit HEAD contains)")
+def r28_handoff_and_status_are_fresh():
+    import re
+    import subprocess
+    status = json.loads((ROOT / "docs/v2/STATUS.json").read_text())
+    current = status["current_state"]
+    commit = current["production_commit"]
+    assert subprocess.run(
+        ["git", "merge-base", "--is-ancestor", commit, "HEAD"],
+        cwd=ROOT, capture_output=True).returncode == 0, (
+        f"STATUS names production commit {commit}, which HEAD does not"
+        " contain")
+    handoff = (ROOT / "docs/v2/handoffs/CROSS-MILESTONE.md").read_text()
+    state_line = next(ln for ln in handoff.splitlines()
+                      if ln.startswith("State:"))
+    assert current["campaign_state"] in state_line, (
+        f"handoff state {state_line[:120]!r} vs STATUS"
+        f" {current['campaign_state']}")
+    named = re.findall(r"Final production commit `([0-9a-f]{7,40})`",
+                       state_line)
+    assert named and named[0][:7] == commit[:7], (
+        f"handoff names production commit {named}, STATUS {commit}")
+
+
 # =============================================================================
 # runner
 # =============================================================================

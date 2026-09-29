@@ -915,10 +915,14 @@ def undo_repaste_cohorts(scale):
             w.user_replace("F1", rig.m.u16(full) - rig.m.u16(text),
                            rig.m.u16(full), "")
             for label, bucket in (("absent", absent), ("present", present)):
+                # POLICY-D03: History's repaste runs only into the
+                # destination the user picked — here A/F1, in front.
+                picked = snapshot_for(w).target
                 seq = w.seq
                 t_call = perf()
                 rig.probe.last_repaste = None
-                out = rig.svc.paste_text(text, job_id=base.key)
+                out = rig.svc.paste_text(text, job_id=base.key,
+                                         target=picked)
                 t_ret = perf()
                 s = Sample(f"{base.key}-{label}", f"repaste_{label}")
                 s.d["repaste_call"] = round((t_ret - t_call) * 1000.0, 4)
@@ -1034,9 +1038,13 @@ def ui_cohorts(scale):
                "ui_undo_last_insertion": []}
     n = max(3, int(20 * scale))
 
-    def ui_checks(s, t_call, t_ret, effect_pred, name):
+    def ui_checks(s, t_call, t_ret, effect_pred, name, pick=False):
         s.ms("callback", t_call, t_ret)
-        on_caller = [c for c in rig.log.since(t_call) if c[1] == caller]
+        # POLICY-D03: the History pick captures the front app's identity
+        # (NSWorkspace, no Accessibility) on the main thread at the click;
+        # every other host call on the caller still counts.
+        on_caller = [c for c in rig.log.since(t_call) if c[1] == caller
+                     and not (pick and c[3] == "frontmost")]
         if on_caller:
             s.problems.append(f"{len(on_caller)} AX call(s) on the "
                               f"calling thread")
@@ -1146,16 +1154,21 @@ def ui_cohorts(scale):
             tok = token(200 + i)
             text = f"hi-{tok} "
             s = Sample(f"hi-{tok}", "ui_history")
+            # POLICY-D03: History's Paste Again queues only at the user's
+            # destination click; both main-thread callbacks (invoke, then
+            # the settled pick) are timed together as one callback.
+            click = rig.m.pick_destination(d)
             seq = w.seq
             t_call = perf()
             out = d.hubPasteText(text, job_id=None)
+            click()
             t_ret = perf()
-            if out.get("outcome") != "repaste_queued":
+            if out.get("outcome") != "choosing_destination":
                 s.problems.append(f"hub refused: {out}")
             ui_checks(s, t_call, t_ret,
                       lambda: any(e[0] > seq and e[1] == "ax_set_text"
                                   and e[3] == text for e in w.effects),
-                      "history")
+                      "history", pick=True)
             rig.idle()
             rig.flush()
             cohorts["ui_history_paste_text"].append(s)
@@ -1516,7 +1529,8 @@ def main(argv):
         "thread; to_effect = call -> witnessed repaste effect", gate=gate)
     cohorts["ui_history_paste_text"] = cohort_doc(
         ui["ui_history_paste_text"], ["callback", "to_effect"],
-        "AppDelegate.hubPasteText (History) on the calling thread",
+        "AppDelegate.hubPasteText (History) and its destination pick "
+        "(POLICY-D03) on the calling thread",
         gate=gate)
     cohorts["ui_undo_last_insertion"] = cohort_doc(
         ui["ui_undo_last_insertion"], ["callback", "to_effect"],
