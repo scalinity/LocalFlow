@@ -11,9 +11,17 @@ nothing on the user's desktop changes. Window images come from the
 window server (the window's own backing, titlebar included) when it
 answers, else from the web view's snapshot.
 
-    .venv/bin/python scripts/v2/companion_screens.py --out DIR
-        [--only home,dictionary] [--themes light,dark] [--size 1150x715]
-        [--dump-fixtures DIR]
+    .venv/bin/python tests/v2/context/run_isolated.py \
+        scripts/v2/companion_screens.py --out DIR [--only home,dictionary]
+        [--themes light,dark] [--size 1150x715] [--dump-fixtures DIR]
+        [--script STEPS.json]
+
+The review set (every route plus the modal and state shots the
+reference-fidelity review cites, in both themes):
+
+    .venv/bin/python tests/v2/context/run_isolated.py \
+        scripts/v2/companion_screens.py --out DIR \
+        --script scripts/v2/companion_review_steps.json
 """
 
 from __future__ import annotations
@@ -30,9 +38,16 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests/v2/ui"))
 sys.path.insert(0, str(ROOT / "tests/v2/lifecycle"))
 
+import AppKit  # noqa: E402
 from AppKit import (NSApplication, NSBitmapImageFileTypePNG,  # noqa: E402
                     NSBitmapImageRep, NSWorkspace)
 from Foundation import NSDate, NSRunLoop  # noqa: E402
+
+# The real coordinator runs here: the general pasteboard must be the
+# isolating runner's private one.
+if type(AppKit.NSPasteboard).__name__ != "_PasteboardClass":
+    sys.exit("companion_screens: run under tests/v2/context/run_isolated.py"
+             " (the desktop-isolating runner); refusing to start")
 
 ROUTE_LABELS = {"home": "Home", "history": "History", "insights": "Insights",
                 "dictionary": "Dictionary", "snippets": "Snippets",
