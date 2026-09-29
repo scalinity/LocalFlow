@@ -274,7 +274,10 @@ class CompanionController:
         engine = shell.get("engine") or {}
         waiting = any(engine.get(k) in ("not_started", "loading", "warming")
                       for k in ("asr", "cleanup"))
-        if not waiting or self._engine_recheck or not self.state.visible:
+        # state.visible stays set while Paste Again orders the window out,
+        # so the window itself is asked too.
+        shown = self.state.visible and self.host.window.isVisible()
+        if not waiting or self._engine_recheck or not shown:
             return
         self._engine_recheck = True
 

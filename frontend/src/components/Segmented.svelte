@@ -22,9 +22,13 @@
     const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
     if (!d) return;
     e.preventDefault();
-    const i = (current + d + items.length) % items.length;
+    // Step from the focused option: a bridge-backed value may lag a quick
+    // second press.
+    const radios = [...(e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role=radio]')];
+    const from = radios.indexOf(document.activeElement as HTMLElement);
+    const i = ((from >= 0 ? from : current) + d + items.length) % items.length;
     onselect(items[i].id);
-    (e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role=radio]')[i]?.focus();
+    radios[i]?.focus();
   }
 </script>
 

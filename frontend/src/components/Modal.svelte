@@ -65,7 +65,8 @@
     if (!items.length) return;
     const first = items[0];
     const last = items[items.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
+    // The panel itself holds focus after a click on plain text in it.
+    if (e.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
       e.preventDefault();
       last.focus();
     } else if (!e.shiftKey && document.activeElement === last) {

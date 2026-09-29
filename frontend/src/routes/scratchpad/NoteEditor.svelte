@@ -113,8 +113,12 @@
 
   // A Quick Scratchpad asked for this note: focus it once it is bound
   // (the note may bind before or after the request reaches the page).
+  let claimed: string | null = null;
   function claimFocus() {
-    if (focus && bound === noteId && area && document.activeElement !== area) area.focus();
+    if (focus && bound === noteId && area && claimed !== noteId) {
+      claimed = noteId;
+      area.focus();
+    }
   }
 
   $effect(() => {

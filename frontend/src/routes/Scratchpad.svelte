@@ -21,9 +21,15 @@
   const heroHidden = $derived(app.shell.dismissed.includes('hero.scratchpad'));
 
   let index = $state(false); // show the list while a note stays open
-  // A Quick Scratchpad opens its new note in the writing view.
+  // A Quick Scratchpad opens its new note in the writing view, once per
+  // request: later pushes never pull the page out of the note list.
+  let opened: string | null = null;
   $effect(() => {
-    if (sp?.focus_note && sp.focus_note === sp.selected_id) index = false;
+    const f = sp?.focus_note;
+    if (f && f === sp.selected_id && f !== opened) {
+      opened = f;
+      index = false;
+    }
   });
   let searching = $state(false);
   let query = $state(app.views.scratchpad?.search ?? '');
