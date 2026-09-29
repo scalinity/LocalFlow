@@ -9,8 +9,8 @@
  "code": {
   "suite": "tests/v2/personalization/m14_corpus_runner.py",
   "suite_sha256": "c8af29a008dd9316089e6085bb0a4921444ff08276011663083561c4b676dc4e",
-  "code_root_sha": "356a08a37651e007c9813b732406bc46f6d44b49",
-  "tracked_files_modified": true,
+  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+  "tracked_files_modified": false,
   "production_tree_modified": false,
   "python": "3.14.7"
  },
@@ -28,7 +28,7 @@
  "drivers_sha256": {
   "m14_corpus_runner.py": "c8af29a008dd9316089e6085bb0a4921444ff08276011663083561c4b676dc4e",
   "m14_drivers_a.py": "2c082c32e58d0cd4f35facaeb634acb37541285a00e7c1c73ce5a975199c2cc5",
-  "m14_drivers_b.py": "88b598065384cfc74b826789aa2a117511f1a2baf33903dbf973a892152962fa",
+  "m14_drivers_b.py": "a384489ecef1471bad25cde17860d640141d62a9846740ee9df3dbfa9394803c",
   "m14_drivers_c.py": "3e101d6eef07dd4c81db26c37b354af7f7ef741e138986ad14f4f965614b3f91",
   "m14_drivers_common.py": "cfe42fa3fca264a49ab9e9e6723b637d6c25b9160822bd7d552f6d1b13290796",
   "m14_drivers_d.py": "5df1396d1a8b4cb3497c95424795e21daa0272b7f5522988f4cb82257bd22bab",
@@ -57,8 +57,7 @@
    }
   },
   "probes": {
-   "PASS": 33,
-   "FAIL": 1
+   "PASS": 34
   },
   "relations": {
    "PASS": 14
@@ -262,7 +261,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.24,
+   "seconds": 0.22,
    "driver": "c007_transformed_final_guard"
   },
   {
@@ -533,7 +532,7 @@
    "decision": "m14-policy-r1:D14",
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "c017_edit_first_of_two"
   },
   {
@@ -560,7 +559,7 @@
    "decision": "m14-policy-r1:D14",
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "c018_edit_second_of_two"
   },
   {
@@ -719,7 +718,7 @@
    "decision": "m14-policy-r1:D14",
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c023_whitespace_unicode"
   },
   {
@@ -819,7 +818,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "c027_pending_expiry"
   },
   {
@@ -843,7 +842,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "c028_pending_job_delete"
   },
   {
@@ -867,7 +866,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "c029_pending_example_delete"
   },
   {
@@ -1341,7 +1340,7 @@
    "decision": "m14-policy-r1:D01",
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.07,
    "driver": "c042_ambiguous_resolved"
   },
   {
@@ -1415,7 +1414,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c044_changed_intent_history"
   },
   {
@@ -1680,7 +1679,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.11,
+   "seconds": 0.1,
    "driver": "c051_audio_missing_purged"
   },
   {
@@ -1712,7 +1711,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c052_graft_only"
   },
   {
@@ -1747,7 +1746,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.05,
    "driver": "c053_foreign_audio"
   },
   {
@@ -2034,7 +2033,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c061_foreign_transform"
   },
   {
@@ -2109,7 +2108,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.16,
+   "seconds": 0.17,
    "driver": "c063_deleted_artifact_row"
   },
   {
@@ -2212,7 +2211,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c066_positive_several"
   },
   {
@@ -2419,7 +2418,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.07,
    "driver": "c072_no_gold_upgrade"
   },
   {
@@ -2461,7 +2460,7 @@
      ]
     ],
     "ce": {
-     "artifact_id": "art-920c85685631489dbe19ae8feae101d6",
+     "artifact_id": "art-a428eb73d51e47c687899fec85e9488f",
      "flips": 0,
      "scope": [
       "app",
@@ -2601,7 +2600,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c077_disabled_entry"
   },
   {
@@ -2649,7 +2648,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.09,
    "driver": "c078_equivalent_scope"
   },
   {
@@ -2696,7 +2695,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.08,
    "driver": "c079_s029_revocation_between_phases"
   },
   {
@@ -2718,14 +2717,14 @@
      "first_timed_out": true,
      "first": null,
      "retry_refused": null,
-     "retry_entry": "vocab-1eb9f452a5d14f00bc22a32d216cff4e",
+     "retry_entry": "vocab-a828504c796f48228546a40024c83388",
      "one_entry": true,
      "no_extra_effect": true,
      "rev_at_commit": 1,
      "rev_final": 1,
      "alias_once": true,
      "status": "approved",
-     "eid": "vocab-1eb9f452a5d14f00bc22a32d216cff4e",
+     "eid": "vocab-a828504c796f48228546a40024c83388",
      "deltas": 1,
      "receipts": 1,
      "op_id": true,
@@ -2734,16 +2733,16 @@
     "control": {
      "injected": false,
      "first_timed_out": false,
-     "first": "vocab-376299a8de474b33a7cd39b3c7b09b8d",
+     "first": "vocab-984d1f4f947c4f30b293629703836947",
      "retry_refused": null,
-     "retry_entry": "vocab-376299a8de474b33a7cd39b3c7b09b8d",
+     "retry_entry": "vocab-984d1f4f947c4f30b293629703836947",
      "one_entry": true,
      "no_extra_effect": true,
      "rev_at_commit": null,
      "rev_final": 1,
      "alias_once": true,
      "status": "approved",
-     "eid": "vocab-376299a8de474b33a7cd39b3c7b09b8d",
+     "eid": "vocab-984d1f4f947c4f30b293629703836947",
      "deltas": 1,
      "receipts": 1,
      "op_id": true,
@@ -2755,7 +2754,7 @@
    "decision": "m14-policy-r1:D12",
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "c080_s006_unknown_after_effect"
   },
   {
@@ -2782,7 +2781,7 @@
     "delta": {
      "action": "created",
      "alias": "modul",
-     "entry_id": "vocab-72256801ae3b4257ae7680557ff9abf1",
+     "entry_id": "vocab-afc80c8498e9400fb34aa0c0856025bf",
      "revision_after_approval": 1,
      "undo_revision": 2
     }
@@ -2850,7 +2849,7 @@
    "decision": "m14-policy-r1:D12",
    "note": null,
    "reached": null,
-   "seconds": 0.04,
+   "seconds": 0.07,
    "driver": "c082_s007_created_then_user_edit"
   },
   {
@@ -2877,7 +2876,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "c083_alias_added_then_user_alias"
   },
   {
@@ -3016,7 +3015,7 @@
      "effective": true
     },
     "alias": {
-     "eid0": "vocab-48cc23e4e97b458a80fe4fe5c5e457d8",
+     "eid0": "vocab-e5a192f24f534cd99d2c822fe1daa5a0",
      "undo_refused": null,
      "first": "alias_added",
      "again": "alias_added",
@@ -3048,7 +3047,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "c086_undo_reapprove"
   },
   {
@@ -3119,7 +3118,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c088_positive_actual_flip"
   },
   {
@@ -3136,7 +3135,7 @@
    "status": "PASS",
    "observed": {
     "ce": {
-     "artifact_id": "art-0e798a488d6e452a8cbfab5875c5f16b",
+     "artifact_id": "art-2af52c375de04def9bfca1f5b1bb2e67",
      "flips": 0,
      "scope": [
       "app",
@@ -3153,7 +3152,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "c089_safe_populated"
   },
   {
@@ -3260,7 +3259,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.05,
    "driver": "c091_scope_app_site"
   },
   {
@@ -3347,7 +3346,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.04,
+   "seconds": 0.03,
    "driver": "c093_composition"
   },
   {
@@ -3374,7 +3373,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "c094_private_phrase_deletion"
   },
   {
@@ -3422,7 +3421,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.02,
    "driver": "c095_positive_new_pair"
   },
   {
@@ -3460,7 +3459,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.04,
    "driver": "c096_same_exact_pair"
   },
   {
@@ -3551,7 +3550,7 @@
    "decision": "m14-policy-r1:D05",
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "c098_different_scope"
   },
   {
@@ -3591,7 +3590,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "c099_different_canonical"
   },
   {
@@ -3631,7 +3630,7 @@
    "decision": "m14-policy-r1:D05",
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "c100_pair_only_privacy"
   },
   {
@@ -3647,7 +3646,7 @@
    "status": "PASS",
    "observed": {
     "examples": 40,
-    "representative": 14,
+    "representative": 13,
     "rows": 40,
     "reasons": [
      "bernoulli_excluded",
@@ -3659,7 +3658,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.2,
+   "seconds": 0.15,
    "driver": "c101_positive_base_stream"
   },
   {
@@ -3696,7 +3695,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c102_explicit"
   },
   {
@@ -3765,7 +3764,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.07,
    "driver": "c105_late_trigger"
   },
   {
@@ -3858,7 +3857,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.26,
+   "seconds": 0.25,
    "driver": "c107_exclusion_commit"
   },
   {
@@ -3885,7 +3884,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c108_population_change"
   },
   {
@@ -4035,7 +4034,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.1,
+   "seconds": 0.09,
    "driver": "c112_swapped_display"
   },
   {
@@ -4175,7 +4174,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.04,
    "driver": "c116_task_key_corruption"
   },
   {
@@ -4220,9 +4219,8 @@
    "status": "PASS",
    "observed": {
     "partitions": {
-     "frozen_test": 3,
-     "train": 6,
-     "validation": 1
+     "validation": 1,
+     "train": 9
     }
    },
    "witness": "families(10, asr=True) \u2192 SplitService.assign; recount by family_bucket",
@@ -4255,7 +4253,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.12,
+   "seconds": 0.11,
    "driver": "c119_nine_floor"
   },
   {
@@ -4281,7 +4279,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.22,
+   "seconds": 0.27,
    "driver": "c120_permutation"
   },
   {
@@ -4306,7 +4304,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.06,
    "driver": "c121_related_variants"
   },
   {
@@ -4330,7 +4328,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.12,
+   "seconds": 0.11,
    "driver": "c122_family_corruption"
   },
   {
@@ -4354,7 +4352,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c123_tags_not_partitions"
   },
   {
@@ -4406,7 +4404,7 @@
    "decision": "m14-policy-r1:D02",
    "note": null,
    "reached": null,
-   "seconds": 0.2,
+   "seconds": 0.15,
    "driver": "c125_task_rows"
   },
   {
@@ -4421,8 +4419,8 @@
    "policy_adjudication_required": false,
    "status": "PASS",
    "observed": {
-    "frozen_families": 5,
-    "exported": 5
+    "frozen_families": 4,
+    "exported": 4
    },
    "witness": "families(30, frozen=3) \u2192 assign \u2192 frozen_test export; then expose one \u2192 export again",
    "grading": "semantic",
@@ -4476,7 +4474,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.15,
+   "seconds": 0.14,
    "driver": "c128_absent_version"
   },
   {
@@ -4500,7 +4498,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.15,
+   "seconds": 0.13,
    "driver": "c129_old_version_export"
   },
   {
@@ -4516,7 +4514,7 @@
    "status": "PASS",
    "observed": {
     "exposed_rows": 1,
-    "other_rows": 20
+    "other_rows": 22
    },
    "witness": "expose frozen family (now train) \u2192 export train",
    "grading": "semantic",
@@ -4677,7 +4675,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.06,
    "driver": "c135_cleanup_no_edit"
   },
   {
@@ -4924,7 +4922,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.09,
    "driver": "c143_nonempty_destination"
   },
   {
@@ -5101,7 +5099,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.3,
+   "seconds": 0.26,
    "driver": "c148_path_and_id_escape"
   },
   {
@@ -5138,7 +5136,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.22,
+   "seconds": 0.21,
    "driver": "c149_cli_explicit_db"
   },
   {
@@ -5162,7 +5160,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c150_positive_no_change"
   },
   {
@@ -5208,7 +5206,7 @@
    "decision": null,
    "note": null,
    "reached": "after read",
-   "seconds": 0.13,
+   "seconds": 0.12,
    "driver": "c152_s020_unrelated_delete"
   },
   {
@@ -5261,7 +5259,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": null,
-   "seconds": 0.16,
+   "seconds": 0.15,
    "driver": "c154_consent_revoke"
   },
   {
@@ -5286,7 +5284,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": null,
-   "seconds": 0.28,
+   "seconds": 0.23,
    "driver": "c155_label_preference_change"
   },
   {
@@ -5309,7 +5307,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": null,
-   "seconds": 0.13,
+   "seconds": 0.1,
    "driver": "c156_missing_dependency_row"
   },
   {
@@ -5344,7 +5342,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": "both builders at staging creation",
-   "seconds": 0.2,
+   "seconds": 0.16,
    "driver": "c157_s032_two_builds"
   },
   {
@@ -5411,7 +5409,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": null,
-   "seconds": 0.55,
+   "seconds": 0.49,
    "driver": "c158_crash_boundaries"
   },
   {
@@ -5451,7 +5449,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.24,
+   "seconds": 0.21,
    "driver": "c159_positive_offline"
   },
   {
@@ -5484,7 +5482,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.3,
+   "seconds": 0.29,
    "driver": "c160_no_repo_source"
   },
   {
@@ -5522,7 +5520,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.09,
+   "seconds": 0.08,
    "driver": "c161_hash_tamper"
   },
   {
@@ -5576,7 +5574,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.12,
+   "seconds": 0.11,
    "driver": "c162_semantic_consistent_tamper"
   },
   {
@@ -5638,7 +5636,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.11,
+   "seconds": 0.1,
    "driver": "c163_missing_payload"
   },
   {
@@ -5720,7 +5718,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.3,
+   "seconds": 0.27,
    "driver": "c164_unsupported_schema"
   },
   {
@@ -5788,7 +5786,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.22,
+   "seconds": 0.19,
    "driver": "c165_unsafe_paths"
   },
   {
@@ -5859,7 +5857,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.14,
+   "seconds": 0.12,
    "driver": "c166_counts_and_duplicates"
   },
   {
@@ -5912,7 +5910,7 @@
    "decision": "m14-policy-r1:D03",
    "note": null,
    "reached": null,
-   "seconds": 0.1,
+   "seconds": 0.06,
    "driver": "c167_positive_parity"
   },
   {
@@ -5939,7 +5937,7 @@
    "decision": "m14-policy-r1:D11",
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c168_foreign_audio"
   },
   {
@@ -5965,7 +5963,7 @@
    "decision": "m14-policy-r1:D11",
    "note": null,
    "reached": null,
-   "seconds": 0.11,
+   "seconds": 0.07,
    "driver": "c169_wrong_cleanup_source"
   },
   {
@@ -5990,7 +5988,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.06,
    "driver": "c170_incorrect_intended"
   },
   {
@@ -6059,7 +6057,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c172_latest_preference"
   },
   {
@@ -6117,7 +6115,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.32,
+   "seconds": 0.29,
    "driver": "c173_split_current"
   },
   {
@@ -6152,7 +6150,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.06,
    "driver": "c174_last_export_label"
   },
   {
@@ -6238,7 +6236,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.08,
+   "seconds": 0.07,
    "driver": "c177_below_words"
   },
   {
@@ -6298,7 +6296,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c179_restricted"
   },
   {
@@ -6381,7 +6379,7 @@
    "decision": "m14-policy-r1:D11",
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "c182_foreign_raw"
   },
   {
@@ -6407,9 +6405,9 @@
     },
     "signatures": 4,
     "kinds": {
-     "recognition_error": 2,
+     "punctuation_or_structure": 1,
      "style_preference": 1,
-     "punctuation_or_structure": 1
+     "recognition_error": 2
     }
    },
    "witness": "idle recompute skipped when unchanged; source revision, latest label and exclusion changes at stable counts each recompute with a new evidence signature; label committed between read and write op (after_each_op seam)",
@@ -6447,7 +6445,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.04,
    "driver": "c184_cards_follow_live_support"
   },
   {
@@ -6474,7 +6472,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.04,
    "driver": "c185_arbitrary_citation_fails_oracle"
   },
   {
@@ -6608,7 +6606,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c190_new_speech_one_snapshot"
   },
   {
@@ -6632,7 +6630,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.14,
+   "seconds": 0.12,
    "driver": "c191_delete_mid_compute"
   },
   {
@@ -6656,7 +6654,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.14,
+   "seconds": 0.12,
    "driver": "c192_purge_mid_compute"
   },
   {
@@ -6686,7 +6684,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.15,
+   "seconds": 0.13,
    "driver": "c193_label_mid_compute"
   },
   {
@@ -6715,7 +6713,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.15,
+   "seconds": 0.13,
    "driver": "c194_exclude_mid_compute"
   },
   {
@@ -6738,7 +6736,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.14,
+   "seconds": 0.09,
    "driver": "c195_old_snapshot_exclusion"
   },
   {
@@ -6765,7 +6763,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c196_secondary_signature_cannot_absorb"
   },
   {
@@ -6823,7 +6821,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "c198_delete_all_redacts_in_one_op"
   },
   {
@@ -6953,7 +6951,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.05,
    "driver": "c203_transform_counts"
   },
   {
@@ -7028,7 +7026,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c206_unchanged_idle_no_reads"
   },
   {
@@ -7146,7 +7144,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c210_threshold_or_algorithm_change"
   },
   {
@@ -7407,7 +7405,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.15,
+   "seconds": 0.13,
    "driver": "c220_content_free_events"
   },
   {
@@ -7462,7 +7460,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c222_delete_derived"
   },
   {
@@ -7490,7 +7488,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.06,
    "driver": "c223_explicit_local_export"
   },
   {
@@ -7521,7 +7519,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.1,
+   "seconds": 0.07,
    "driver": "c224_no_private_paths"
   },
   {
@@ -7544,7 +7542,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.09,
+   "seconds": 0.07,
    "driver": "c225_forward_redaction"
   },
   {
@@ -7571,7 +7569,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.13,
+   "seconds": 0.11,
    "driver": "c226_network_mic_traps"
   },
   {
@@ -7754,7 +7752,7 @@
    "decision": null,
    "note": null,
    "reached": "m14_s001_authority_boundary",
-   "seconds": 0.04,
+   "seconds": 0.03,
    "driver": "s001_teach_while_example_deleted"
   },
   {
@@ -7778,7 +7776,7 @@
    "decision": "m14-policy-r1:D11",
    "note": null,
    "reached": "m14_s002_authority_boundary",
-   "seconds": 0.04,
+   "seconds": 0.03,
    "driver": "s002_mined_while_artifact_expires"
   },
   {
@@ -7803,7 +7801,7 @@
    "decision": null,
    "note": null,
    "reached": "m14_s003_authority_boundary",
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "s003_two_concurrent_miners"
   },
   {
@@ -7843,7 +7841,7 @@
    "decision": "m14-policy-r1:D05",
    "note": null,
    "reached": "m14_s004_authority_boundary",
-   "seconds": 0.08,
+   "seconds": 0.07,
    "driver": "s004_reject_then_identical"
   },
   {
@@ -7925,7 +7923,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.04,
+   "seconds": 0.03,
    "driver": "s005_approval_against_existing_user_entry"
   },
   {
@@ -7942,14 +7940,14 @@
      "first_timed_out": true,
      "first": null,
      "retry_refused": null,
-     "retry_entry": "vocab-8c2e6707904a451689741114b3a172a4",
+     "retry_entry": "vocab-6989758e9ee84bd3b70f6e8530fd4878",
      "one_entry": true,
      "no_extra_effect": true,
      "rev_at_commit": 1,
      "rev_final": 1,
      "alias_once": true,
      "status": "approved",
-     "eid": "vocab-8c2e6707904a451689741114b3a172a4",
+     "eid": "vocab-6989758e9ee84bd3b70f6e8530fd4878",
      "deltas": 1,
      "receipts": 1,
      "op_id": true,
@@ -7958,16 +7956,16 @@
     "control": {
      "injected": false,
      "first_timed_out": false,
-     "first": "vocab-8eb882cb779149e0a4f5376e19b14f7a",
+     "first": "vocab-f1da38bdd15a471f8efddfc78b90b611",
      "retry_refused": null,
-     "retry_entry": "vocab-8eb882cb779149e0a4f5376e19b14f7a",
+     "retry_entry": "vocab-f1da38bdd15a471f8efddfc78b90b611",
      "one_entry": true,
      "no_extra_effect": true,
      "rev_at_commit": null,
      "rev_final": 1,
      "alias_once": true,
      "status": "approved",
-     "eid": "vocab-8eb882cb779149e0a4f5376e19b14f7a",
+     "eid": "vocab-f1da38bdd15a471f8efddfc78b90b611",
      "deltas": 1,
      "receipts": 1,
      "op_id": true,
@@ -8091,7 +8089,7 @@
    "decision": "m14-policy-r1:D01",
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.04,
    "driver": "s008_ambiguous_resolved_later"
   },
   {
@@ -8101,7 +8099,7 @@
     "M14-AUDIT-01"
    ],
    "barrier": "m14_s009_authority_boundary",
-   "status": "FAIL",
+   "status": "PASS",
    "observed": {
     "interleaved": {
      "reached": true,
@@ -8130,22 +8128,22 @@
     "alternate": {
      "reached": true,
      "pre": true,
-     "published": true,
-     "err": null,
+     "published": false,
+     "err": "consent revoked or selected content changed during the build (example_revised) \u2014 export aborted before completion (S29.13)",
      "a_gate": false,
      "b_gate": true,
      "a_exported": false,
      "a_has_b_bytes": false,
      "a_has_own_bytes": false,
-     "b_exported": true
+     "b_exported": false
     }
    },
    "witness": "after_each_op after A's eligible gate read (and, alternate order, after the export snapshot op)",
    "grading": "semantic",
    "decision": null,
-   "note": "failed: alternate_never_publishes_b_bytes_as_a",
+   "note": null,
    "reached": null,
-   "seconds": 0.17,
+   "seconds": 0.16,
    "driver": "s009_asr_foreign_audio"
   },
   {
@@ -8189,7 +8187,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.24,
+   "seconds": 0.19,
    "driver": "s010_cleanup_foreign_wrong_role"
   },
   {
@@ -8289,7 +8287,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.04,
+   "seconds": 0.03,
    "driver": "s013_deletion_while_form_open"
   },
   {
@@ -8338,7 +8336,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.16,
+   "seconds": 0.15,
    "driver": "s014_refresh_with_exclusion"
   },
   {
@@ -8432,7 +8430,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.2,
+   "seconds": 0.18,
    "driver": "s015_display_swapped_after_render"
   },
   {
@@ -8490,7 +8488,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.15,
+   "seconds": 0.16,
    "driver": "s017_nine_versus_ten"
   },
   {
@@ -8550,7 +8548,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.42,
+   "seconds": 0.41,
    "driver": "s018_exposed_through_next_version"
   },
   {
@@ -8569,7 +8567,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": "after source read",
-   "seconds": 0.12,
+   "seconds": 0.11,
    "driver": "c151_s019_selected_purge_before_fence"
   },
   {
@@ -8588,7 +8586,7 @@
    "decision": null,
    "note": null,
    "reached": "after read",
-   "seconds": 0.13,
+   "seconds": 0.14,
    "driver": "c152_s020_unrelated_delete"
   },
   {
@@ -8658,7 +8656,7 @@
    "decision": null,
    "note": null,
    "reached": 2,
-   "seconds": 0.45,
+   "seconds": 0.44,
    "driver": "s022_offline_validator_without_db"
   },
   {
@@ -8679,7 +8677,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.16,
+   "seconds": 0.12,
    "driver": "c191_delete_mid_compute"
   },
   {
@@ -8700,7 +8698,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.13,
+   "seconds": 0.12,
    "driver": "c192_purge_mid_compute"
   },
   {
@@ -8717,7 +8715,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "s025_usage_deletion_with_profile"
   },
   {
@@ -8934,7 +8932,7 @@
    "decision": null,
    "note": null,
    "reached": 6,
-   "seconds": 0.73,
+   "seconds": 0.71,
    "driver": "s028_readiness_export_parity"
   },
   {
@@ -8976,7 +8974,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.06,
    "driver": "c079_s029_revocation_between_phases"
   },
   {
@@ -9080,8 +9078,8 @@
      "failed"
     ],
     "same_id_outcomes": {
-     "B": "refused",
-     "A": "ok"
+     "A": "refused",
+     "B": "ok"
     }
    },
    "witness": "threading.Barrier inside os.mkdir of the staging name; both builders past destination checks",
@@ -9089,7 +9087,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": "both builders at staging creation",
-   "seconds": 0.16,
+   "seconds": 0.17,
    "driver": "c157_s032_two_builds"
   },
   {
@@ -9205,7 +9203,7 @@
      "effective": true
     },
     "alias": {
-     "eid0": "vocab-092b926722a745db856de2e17b9c9474",
+     "eid0": "vocab-78e7c0e3bd6b4f28bbba1fea21db188c",
      "undo_refused": null,
      "first": "alias_added",
      "again": "alias_added",
@@ -9237,7 +9235,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "mr002_undo_and_reapproval"
   },
   {
@@ -9284,7 +9282,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.11,
+   "seconds": 0.1,
    "driver": "mr004_deletion_monotonicity"
   },
   {
@@ -9323,7 +9321,7 @@
    "decision": "m14-policy-r1:D01",
    "note": null,
    "reached": null,
-   "seconds": 0.12,
+   "seconds": 0.07,
    "driver": "mr005_review_resolution"
   },
   {
@@ -9344,7 +9342,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.21,
+   "seconds": 0.2,
    "driver": "c120_permutation"
   },
   {
@@ -9385,7 +9383,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.38,
+   "seconds": 0.37,
    "driver": "mr007_exposure_forward_only"
   },
   {
@@ -9401,7 +9399,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.1,
+   "seconds": 0.11,
    "driver": "mr008_profile_floor"
   },
   {
@@ -9442,7 +9440,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.17,
+   "seconds": 0.21,
    "driver": "mr010_export_dependency_locality"
   },
   {
@@ -9497,7 +9495,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.1,
+   "seconds": 0.09,
    "driver": "mr011_display_permutation"
   },
   {
@@ -9575,7 +9573,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.25,
+   "seconds": 0.22,
    "driver": "mr014_pack_relocation"
   }
  ]

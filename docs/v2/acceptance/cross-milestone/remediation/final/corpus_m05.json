@@ -300,8 +300,8 @@
   }
  },
  "cases_run": 226,
- "code_root_modified": true,
- "code_root_sha": "356a08a37651e007c9813b732406bc46f6d44b49",
+ "code_root_modified": false,
+ "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
  "corpus_execution_status_as_delivered": "NOT_RUN",
  "corpus_file": "tests/v2/vocabulary/m05_audit_corpus.json",
  "corpus_sha256": "c9c51adc9e531e9777f817879171ed763d9bc69183d763917f9d285eed983088",
@@ -317,7 +317,7 @@
   "sqlite": "3.53.4",
   "system": "Darwin"
  },
- "evaluated_utc": "2026-09-28T21:50:49Z",
+ "evaluated_utc": "2026-09-29T00:16:18Z",
  "label": "final",
  "results": [
   {
@@ -537,7 +537,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "negative",
-   "seconds": 0.0,
+   "seconds": 0.001,
    "status": "pass",
    "trace_tail": null
   },
@@ -698,7 +698,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "negative",
-   "seconds": 0.001,
+   "seconds": 0.0,
    "status": "pass",
    "trace_tail": null
   },
@@ -721,7 +721,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "negative",
-   "seconds": 0.001,
+   "seconds": 0.0,
    "status": "pass",
    "trace_tail": null
   },
@@ -1186,7 +1186,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "positive",
-   "seconds": 0.0,
+   "seconds": 0.001,
    "status": "pass",
    "trace_tail": null
   },
@@ -1231,7 +1231,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "negative",
-   "seconds": 0.0,
+   "seconds": 0.001,
    "status": "pass",
    "trace_tail": null
   },
@@ -1390,7 +1390,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "negative",
-   "seconds": 0.001,
+   "seconds": 0.0,
    "status": "pass",
    "trace_tail": null
   },
@@ -2016,7 +2016,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "positive",
-   "seconds": 0.0,
+   "seconds": 0.001,
    "status": "pass",
    "trace_tail": null
   },
@@ -2663,7 +2663,7 @@
    "policy_status": "CHARACTERIZATION",
    "reason": null,
    "role": "characterization",
-   "seconds": 0.0,
+   "seconds": 0.001,
    "status": "pass",
    "trace_tail": null
   },
@@ -2738,7 +2738,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "negative",
-   "seconds": 0.001,
+   "seconds": 0.0,
    "status": "pass",
    "trace_tail": null
   },
@@ -2759,7 +2759,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "negative",
-   "seconds": 0.001,
+   "seconds": 0.0,
    "status": "pass",
    "trace_tail": null
   },
@@ -2780,7 +2780,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "negative",
-   "seconds": 0.001,
+   "seconds": 0.0,
    "status": "pass",
    "trace_tail": null
   },
@@ -2813,7 +2813,7 @@
    "policy_status": "CHARACTERIZATION",
    "reason": null,
    "role": "characterization",
-   "seconds": 0.001,
+   "seconds": 0.0,
    "status": "pass",
    "trace_tail": null
   },
@@ -2846,7 +2846,7 @@
    "policy_status": "CHARACTERIZATION",
    "reason": null,
    "role": "characterization",
-   "seconds": 0.001,
+   "seconds": 0.0,
    "status": "pass",
    "trace_tail": null
   },
@@ -3226,7 +3226,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "positive",
-   "seconds": 0.236,
+   "seconds": 0.217,
    "status": "pass",
    "trace_tail": null
   },
@@ -3332,7 +3332,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "positive",
-   "seconds": 0.013,
+   "seconds": 0.011,
    "status": "pass",
    "trace_tail": null
   },
@@ -3427,7 +3427,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "negative",
-   "seconds": 0.012,
+   "seconds": 0.011,
    "status": "pass",
    "trace_tail": null
   },
@@ -3451,7 +3451,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "negative",
-   "seconds": 0.012,
+   "seconds": 0.011,
    "status": "pass",
    "trace_tail": null
   },
@@ -3601,7 +3601,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "challenge",
-   "seconds": 0.025,
+   "seconds": 0.024,
    "status": "pass",
    "trace_tail": null
   },
@@ -3796,7 +3796,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "challenge",
-   "seconds": 0.013,
+   "seconds": 0.012,
    "status": "pass",
    "trace_tail": null
   },
@@ -3827,7 +3827,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "challenge",
-   "seconds": 0.012,
+   "seconds": 0.011,
    "status": "pass",
    "trace_tail": null
   },
@@ -3858,7 +3858,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "challenge",
-   "seconds": 0.011,
+   "seconds": 0.012,
    "status": "pass",
    "trace_tail": null
   },
@@ -4013,7 +4013,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "challenge",
-   "seconds": 0.012,
+   "seconds": 0.011,
    "status": "pass",
    "trace_tail": null
   },
@@ -4493,7 +4493,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "reproduction",
-   "seconds": 0.006,
+   "seconds": 0.008,
    "status": "pass",
    "trace_tail": null
   },
@@ -4533,7 +4533,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "reproduction",
-   "seconds": 0.006,
+   "seconds": 0.007,
    "status": "pass",
    "trace_tail": null
   },
@@ -4573,7 +4573,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "reproduction",
-   "seconds": 0.006,
+   "seconds": 0.009,
    "status": "pass",
    "trace_tail": null
   },
@@ -5133,7 +5133,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "reproduction",
-   "seconds": 0.008,
+   "seconds": 0.006,
    "status": "pass",
    "trace_tail": null
   },
@@ -5662,7 +5662,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.008,
+   "seconds": 0.007,
    "status": "pass",
    "trace_tail": null
   },
@@ -5747,7 +5747,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.008,
+   "seconds": 0.007,
    "status": "pass",
    "trace_tail": null
   },
@@ -5772,7 +5772,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.077,
+   "seconds": 0.097,
    "status": "pass",
    "trace_tail": null
   },
@@ -5798,7 +5798,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.097,
+   "seconds": 0.11,
    "status": "pass",
    "trace_tail": null
   },
@@ -5840,7 +5840,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.009,
+   "seconds": 0.01,
    "status": "pass",
    "trace_tail": null
   },
@@ -5884,7 +5884,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.004,
+   "seconds": 0.005,
    "status": "pass",
    "trace_tail": null
   },
@@ -5995,7 +5995,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.012,
+   "seconds": 0.013,
    "status": "pass",
    "trace_tail": null
   },
@@ -6009,7 +6009,7 @@
       "updated": 0
      },
      "revision": 1,
-     "snapshot": "m05:73516af2c375",
+     "snapshot": "m05:ea51c6e69cd1",
      "store_revision": 1
     },
     {
@@ -6020,7 +6020,7 @@
       "updated": 0
      },
      "revision": 1,
-     "snapshot": "m05:73516af2c375",
+     "snapshot": "m05:ea51c6e69cd1",
      "store_revision": 1
     },
     {
@@ -6031,7 +6031,7 @@
       "updated": 0
      },
      "revision": 1,
-     "snapshot": "m05:73516af2c375",
+     "snapshot": "m05:ea51c6e69cd1",
      "store_revision": 1
     }
    ],
@@ -6063,7 +6063,7 @@
     ],
     "dismissed": [
      [
-      "vocab-c73a383cd1934e00be24452a28289864",
+      "vocab-07f80670c6b64c8e8d3ece67eba82cef",
       false
      ]
     ]
@@ -6081,7 +6081,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.016,
+   "seconds": 0.013,
    "status": "pass",
    "trace_tail": null
   },
@@ -6119,7 +6119,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.012,
+   "seconds": 0.013,
    "status": "pass",
    "trace_tail": null
   },
@@ -6251,7 +6251,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.017,
+   "seconds": 0.016,
    "status": "pass",
    "trace_tail": null
   },
@@ -6275,7 +6275,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.045,
+   "seconds": 0.049,
    "status": "pass",
    "trace_tail": null
   },
@@ -6310,7 +6310,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.03,
+   "seconds": 0.031,
    "status": "pass",
    "trace_tail": null
   },
@@ -6397,7 +6397,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.016,
+   "seconds": 0.015,
    "status": "pass",
    "trace_tail": null
   },
@@ -6516,7 +6516,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.11,
+   "seconds": 0.104,
    "status": "pass",
    "trace_tail": null
   },
@@ -6552,8 +6552,8 @@
   },
   {
    "actual": {
-    "h1": "m05hs:e07329dbcc36",
-    "h2": "m05hs:20960ad9857d"
+    "h1": "m05hs:dd9cd95d2853",
+    "h2": "m05hs:c58c2d74ca40"
    },
    "case_id": "STATE-021",
    "category": "mutability/stateful probes",
@@ -6569,7 +6569,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.011,
+   "seconds": 0.01,
    "status": "pass",
    "trace_tail": null
   },
@@ -6607,7 +6607,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.014,
+   "seconds": 0.013,
    "status": "pass",
    "trace_tail": null
   },
@@ -6616,14 +6616,14 @@
     "drop_aliases": {
      "after": [
       [
-       "vocab-597600e969774e1ea12e1429190749d3",
+       "vocab-44695f586b16467c92f03ad7fb3c7bd4",
        "Claude",
        2,
        3,
        []
       ],
       [
-       "vocab-1baac1490608457f9c802d43256c43ab",
+       "vocab-4eee1455d75244449b60a03f48c53cbe",
        "Cloud",
        1,
        0,
@@ -6667,7 +6667,7 @@
     "drop_history": {
      "after": [
       [
-       "vocab-597600e969774e1ea12e1429190749d3",
+       "vocab-44695f586b16467c92f03ad7fb3c7bd4",
        "Claude",
        2,
        3,
@@ -6683,7 +6683,7 @@
        ]
       ],
       [
-       "vocab-1baac1490608457f9c802d43256c43ab",
+       "vocab-4eee1455d75244449b60a03f48c53cbe",
        "Cloud",
        1,
        0,
@@ -6714,7 +6714,7 @@
     "drop_meta": {
      "after": [
       [
-       "vocab-597600e969774e1ea12e1429190749d3",
+       "vocab-44695f586b16467c92f03ad7fb3c7bd4",
        "Claude",
        2,
        3,
@@ -6730,7 +6730,7 @@
        ]
       ],
       [
-       "vocab-1baac1490608457f9c802d43256c43ab",
+       "vocab-4eee1455d75244449b60a03f48c53cbe",
        "Cloud",
        1,
        0,
@@ -6761,7 +6761,7 @@
     "drop_unique_index": {
      "after": [
       [
-       "vocab-597600e969774e1ea12e1429190749d3",
+       "vocab-44695f586b16467c92f03ad7fb3c7bd4",
        "Claude",
        2,
        3,
@@ -6777,7 +6777,7 @@
        ]
       ],
       [
-       "vocab-1baac1490608457f9c802d43256c43ab",
+       "vocab-4eee1455d75244449b60a03f48c53cbe",
        "Cloud",
        1,
        0,
@@ -6819,7 +6819,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.021,
+   "seconds": 0.022,
    "status": "pass",
    "trace_tail": null
   },
@@ -6829,7 +6829,7 @@
      "callers": {
       "A": [
        "ok",
-       "vocab-ad7e9c10f9a9420788332ea364c24878"
+       "vocab-9df7581ef7eb47ffa581e9a56edc2c85"
       ],
       "B": [
        "error",
@@ -6862,7 +6862,7 @@
       ],
       "B": [
        "ok",
-       "vocab-a00c4aeb92bc4b05be99fb204c7f6cc7"
+       "vocab-e9b5871dcbc241969dcc077481e444d4"
       ]
      },
      "canary_free": true,
@@ -7050,7 +7050,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.043,
+   "seconds": 0.045,
    "status": "pass",
    "trace_tail": null
   },
@@ -7074,7 +7074,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.028,
+   "seconds": 0.03,
    "status": "pass",
    "trace_tail": null
   },
@@ -7102,7 +7102,7 @@
   {
    "actual": {
     "applied": "ship the Claude code branch",
-    "entry_id": "vocab-7c260cdd0bce4d01b4358b2cf4a8640a",
+    "entry_id": "vocab-71c01fb4d5024addb135444819b95156",
     "scope": [
      "global",
      null
@@ -7123,7 +7123,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "stateful",
-   "seconds": 0.011,
+   "seconds": 0.01,
    "status": "pass",
    "trace_tail": null
   },
@@ -7288,7 +7288,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "mutation",
-   "seconds": 0.009,
+   "seconds": 0.008,
    "status": "pass",
    "trace_tail": null
   },
@@ -7420,7 +7420,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "mutation",
-   "seconds": 0.009,
+   "seconds": 0.008,
    "status": "pass",
    "trace_tail": null
   },
@@ -7793,7 +7793,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "metamorphic",
-   "seconds": 0.011,
+   "seconds": 0.012,
    "status": "pass",
    "trace_tail": null
   },
@@ -7820,7 +7820,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "metamorphic",
-   "seconds": 0.501,
+   "seconds": 0.492,
    "status": "pass",
    "trace_tail": null
   },
@@ -7863,7 +7863,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "fault",
-   "seconds": 0.008,
+   "seconds": 0.007,
    "status": "pass",
    "trace_tail": null
   },
@@ -7983,7 +7983,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "fault",
-   "seconds": 0.027,
+   "seconds": 0.028,
    "status": "pass",
    "trace_tail": null
   },
@@ -8016,7 +8016,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "fault",
-   "seconds": 0.03,
+   "seconds": 0.028,
    "status": "pass",
    "trace_tail": null
   },
@@ -8092,7 +8092,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "fault",
-   "seconds": 0.009,
+   "seconds": 0.008,
    "status": "pass",
    "trace_tail": null
   },
@@ -8300,8 +8300,8 @@
     "relevant": [
      "WorkspaceName",
      "ProfileName",
-     "Claude Code",
      "Claude",
+     "Claude Code",
      "SiteName",
      "AppName",
      "GlobalName"
@@ -8324,7 +8324,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "challenge",
-   "seconds": 0.03,
+   "seconds": 0.029,
    "status": "pass",
    "trace_tail": null
   },
@@ -8360,8 +8360,8 @@
      "WorkspaceName",
      "SuggestedTerm",
      "ProfileName",
-     "Claude Code",
      "Claude",
+     "Claude Code",
      "SiteName",
      "AppName",
      "GlobalName"
@@ -8384,7 +8384,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "challenge",
-   "seconds": 0.03,
+   "seconds": 0.029,
    "status": "pass",
    "trace_tail": null
   },
@@ -8555,44 +8555,44 @@
     "relevant": [
      "WorkspaceName",
      "ProfileName",
-     "Claude Code",
      "Claude",
+     "Claude Code",
      "SiteName",
      "AppName",
      "GlobalName",
-     "CapAm",
-     "CapAp",
-     "CapG",
-     "CapAd",
-     "CapD",
-     "CapAq",
-     "CapN",
-     "CapAn",
-     "CapAe",
-     "CapAb",
-     "CapZ",
-     "CapU",
-     "CapM",
-     "CapL",
-     "CapV",
-     "CapA",
+     "CapAs",
      "CapAc",
-     "CapJ",
-     "CapF",
-     "CapH",
-     "CapAo",
-     "CapAf",
-     "CapE",
-     "CapAl",
-     "CapAg",
-     "CapI",
-     "CapS",
+     "CapAd",
+     "CapAq",
+     "CapAa",
      "CapAj",
-     "CapAi",
-     "CapQ",
-     "CapR",
+     "CapAh",
+     "CapAg",
+     "CapL",
+     "CapK",
+     "CapAm",
+     "CapS",
+     "CapU",
+     "CapD",
+     "CapF",
+     "CapJ",
+     "CapH",
+     "CapAb",
      "CapB",
-     "CapX"
+     "CapAi",
+     "CapG",
+     "CapC",
+     "CapA",
+     "CapX",
+     "CapP",
+     "CapAp",
+     "CapI",
+     "CapE",
+     "CapY",
+     "CapAl",
+     "CapAk",
+     "CapM",
+     "CapAn"
     ],
     "text": "ask WorkspaceName now"
    },
@@ -8612,7 +8612,7 @@
    "policy_status": "CONTRACT",
    "reason": null,
    "role": "challenge",
-   "seconds": 0.046,
+   "seconds": 0.044,
    "status": "pass",
    "trace_tail": null
   },

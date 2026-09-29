@@ -2,13 +2,13 @@
  "tool": "scripts/v2/m09_benchmark_mutation_check.py",
  "benchmark": "scripts/v2/benchmark_m09.py --quick",
  "control_environment": {
-  "code_sha": "356a08a37651e007c9813b732406bc46f6d44b49",
+  "code_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
   "production_tree_clean": true,
   "mac_model": "Mac17,8",
   "chip": "Apple M5 Pro",
   "macos": "27.0",
   "python": "3.14.7",
-  "loadavg_at_start": "{ 2.63 3.25 3.30 }"
+  "loadavg_at_start": "{ 2.46 2.77 3.03 }"
  },
  "summary": {
   "killed": 8,
@@ -181,12 +181,12 @@
   "timer_sensitivity": {
    "injected_ms": 50.0,
    "p50_delta_ms": {
-    "text_hit": 57.8,
-    "text_miss": 56.3,
-    "app_filter": 58.1,
-    "mode_filter": 57.1,
-    "browse_mixed": 57.9,
-    "legacy_mode": 53.2
+    "text_hit": 53.0,
+    "text_miss": 52.7,
+    "app_filter": 53.1,
+    "mode_filter": 53.4,
+    "browse_mixed": 53.2,
+    "legacy_mode": 56.2
    },
    "sensitive": true,
    "cases": [

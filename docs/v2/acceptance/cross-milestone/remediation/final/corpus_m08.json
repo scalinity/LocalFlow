@@ -2,8 +2,8 @@
  "runner": "tests/v2/insertion/m08_corpus_runner.py",
  "corpus_sha256": "31feb051bc656eb10837edf85f265dc5bb7e0aa3bef10828fa5c4b16723e3f29",
  "policy_version": "m08-policy-v1",
- "code_root_sha": "356a08a37651e007c9813b732406bc46f6d44b49",
- "tracked_files_modified": true,
+ "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+ "tracked_files_modified": false,
  "production_tree_modified": false,
  "localflow_imported_from_root": "localflow/__init__.py",
  "python": "3.14.7",
@@ -152,7 +152,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.008,
+   "seconds": 0.009,
    "family": "M08-F01",
    "role": "positive_control"
   },
@@ -193,7 +193,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.006,
+   "seconds": 0.007,
    "family": "M08-F01",
    "role": "negative"
   },
@@ -275,7 +275,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.132,
+   "seconds": 0.137,
    "family": "M08-F01",
    "role": "positive_control"
   },
@@ -335,7 +335,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.023,
+   "seconds": 0.02,
    "family": "M08-F01",
    "role": "negative"
   },
@@ -382,7 +382,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.01,
+   "seconds": 0.009,
    "family": "M08-F02",
    "role": "negative"
   },
@@ -418,7 +418,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.009,
+   "seconds": 0.008,
    "family": "M08-F02",
    "role": "negative"
   },
@@ -461,7 +461,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.008,
+   "seconds": 0.053,
    "family": "M08-F02",
    "role": "negative"
   },
@@ -500,7 +500,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.007,
+   "seconds": 0.013,
    "family": "M08-F02",
    "role": "negative"
   },
@@ -542,7 +542,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.007,
+   "seconds": 0.008,
    "family": "M08-F02",
    "role": "positive_control"
   },
@@ -581,7 +581,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.006,
+   "seconds": 0.007,
    "family": "M08-F03",
    "role": "positive_control"
   },
@@ -663,7 +663,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.005,
+   "seconds": 0.006,
    "family": "M08-F03",
    "role": "negative"
   },
@@ -704,7 +704,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.005,
+   "seconds": 0.006,
    "family": "M08-F03",
    "role": "negative"
   },
@@ -747,7 +747,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.005,
+   "seconds": 0.006,
    "family": "M08-F03",
    "role": "negative"
   },
@@ -867,7 +867,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.006,
+   "seconds": 0.005,
    "family": "M08-F04",
    "role": "negative"
   },
@@ -898,7 +898,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.123,
+   "seconds": 0.121,
    "family": "M08-F04",
    "role": "preservation_control"
   },
@@ -940,7 +940,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.007,
+   "seconds": 0.006,
    "family": "M08-F04",
    "role": "positive_control"
   },
@@ -1017,7 +1017,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.609,
+   "seconds": 0.629,
    "family": "M08-F05",
    "role": "negative"
   },
@@ -1052,7 +1052,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.019,
+   "seconds": 0.014,
    "family": "M08-F05",
    "role": "negative"
   },
@@ -1091,7 +1091,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.016,
+   "seconds": 0.01,
    "family": "M08-F05",
    "role": "negative"
   },
@@ -1118,7 +1118,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.022,
+   "seconds": 0.015,
    "family": "M08-F05",
    "role": "positive_control"
   },
@@ -1157,7 +1157,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.009,
+   "seconds": 0.007,
    "family": "M08-F06",
    "role": "negative"
   },
@@ -1196,7 +1196,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.008,
+   "seconds": 0.006,
    "family": "M08-F06",
    "role": "negative"
   },
@@ -1234,7 +1234,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.008,
+   "seconds": 0.007,
    "family": "M08-F06",
    "role": "negative"
   },
@@ -1272,7 +1272,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.007,
+   "seconds": 0.006,
    "family": "M08-F06",
    "role": "negative"
   },
@@ -1361,7 +1361,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.062,
+   "seconds": 0.024,
    "family": "M08-F06",
    "role": "design_probe"
   },
@@ -1474,7 +1474,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.009,
+   "seconds": 0.005,
    "family": "M08-F07",
    "role": "negative"
   },
@@ -1521,7 +1521,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.011,
+   "seconds": 0.006,
    "family": "M08-F08",
    "role": "positive_control"
   },
@@ -1567,7 +1567,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.225,
+   "seconds": 0.228,
    "family": "M08-F08",
    "role": "negative"
   },
@@ -1604,7 +1604,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.024,
+   "seconds": 0.016,
    "family": "M08-F08",
    "role": "negative"
   },
@@ -1643,7 +1643,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.015,
+   "seconds": 0.01,
    "family": "M08-F08",
    "role": "negative"
   },
@@ -1683,7 +1683,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.012,
+   "seconds": 0.009,
    "family": "M08-F08",
    "role": "negative"
   },
@@ -1722,7 +1722,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.011,
+   "seconds": 0.008,
    "family": "M08-F09",
    "role": "positive_control"
   },
@@ -1761,7 +1761,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.009,
+   "seconds": 0.008,
    "family": "M08-F09",
    "role": "preservation_control"
   },
@@ -1814,7 +1814,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.008,
+   "seconds": 0.007,
    "family": "M08-F09",
    "role": "negative"
   },
@@ -1889,7 +1889,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.007,
+   "seconds": 0.006,
    "family": "M08-F10",
    "role": "negative"
   },
@@ -2069,7 +2069,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.167,
+   "seconds": 0.127,
    "family": "M08-F11",
    "role": "negative"
   },
@@ -2119,7 +2119,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.174,
+   "seconds": 0.187,
    "family": "M08-F11",
    "role": "negative"
   },
@@ -2162,7 +2162,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.339,
+   "seconds": 0.336,
    "family": "M08-F11",
    "role": "negative"
   },
@@ -2200,7 +2200,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.13,
+   "seconds": 0.128,
    "family": "M08-F11",
    "role": "positive_control"
   },
@@ -2239,7 +2239,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.185,
+   "seconds": 0.186,
    "family": "M08-F12",
    "role": "preservation_control"
   },
@@ -2271,7 +2271,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.02,
+   "seconds": 0.014,
    "family": "M08-F12",
    "role": "negative"
   },
@@ -2312,7 +2312,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.138,
+   "seconds": 0.141,
    "family": "M08-F12",
    "role": "negative"
   },
@@ -2366,7 +2366,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.18,
+   "seconds": 0.186,
    "family": "M08-F12",
    "role": "negative"
   },
@@ -2405,7 +2405,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.179,
+   "seconds": 0.181,
    "family": "M08-F13",
    "role": "positive_control"
   },
@@ -2444,7 +2444,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.182,
+   "seconds": 0.183,
    "family": "M08-F13",
    "role": "negative"
   },
@@ -2484,7 +2484,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.181,
+   "seconds": 0.193,
    "family": "M08-F13",
    "role": "negative"
   },
@@ -2523,7 +2523,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.019,
+   "seconds": 0.012,
    "family": "M08-F13",
    "role": "negative"
   },
@@ -2557,7 +2557,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.174,
+   "seconds": 0.182,
    "family": "M08-F13",
    "role": "negative"
   },
@@ -2596,7 +2596,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.02,
+   "seconds": 0.016,
    "family": "M08-F14",
    "role": "preservation_control"
   },
@@ -2634,7 +2634,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.015,
+   "seconds": 0.01,
    "family": "M08-F14",
    "role": "negative"
   },
@@ -2677,7 +2677,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.01,
+   "seconds": 0.009,
    "family": "M08-F14",
    "role": "negative"
   },
@@ -2715,7 +2715,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.175,
+   "seconds": 0.129,
    "family": "M08-F14",
    "role": "negative"
   },
@@ -2749,7 +2749,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.14,
+   "seconds": 0.127,
    "family": "M08-F14",
    "role": "preservation_control"
   },
@@ -2796,7 +2796,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.028,
+   "seconds": 0.026,
    "family": "M08-F15",
    "role": "negative"
   },
@@ -2822,7 +2822,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.121,
+   "seconds": 0.123,
    "family": "M08-F15",
    "role": "negative"
   },
@@ -2882,7 +2882,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.026,
+   "seconds": 0.025,
    "family": "M08-F15",
    "role": "negative"
   },
@@ -2917,7 +2917,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.025,
+   "seconds": 0.023,
    "family": "M08-F15",
    "role": "positive_control"
   },
@@ -2985,7 +2985,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.01,
+   "seconds": 0.009,
    "family": "M08-F16",
    "role": "preservation_control"
   },
@@ -3019,7 +3019,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.009,
+   "seconds": 0.008,
    "family": "M08-F16",
    "role": "preservation_control"
   },
@@ -3130,7 +3130,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.031,
+   "seconds": 0.03,
    "family": "M08-F16",
    "role": "negative"
   },
@@ -3179,7 +3179,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.025,
+   "seconds": 0.023,
    "family": "M08-F16",
    "role": "design_probe"
   },
@@ -3257,7 +3257,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.008,
+   "seconds": 0.006,
    "family": "M08-F17",
    "role": "negative"
   },
@@ -3291,7 +3291,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.007,
+   "seconds": 0.006,
    "family": "M08-F17",
    "role": "preservation_control"
   },
@@ -3361,7 +3361,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.112,
+   "seconds": 0.122,
    "family": "M08-F17",
    "role": "negative"
   },
@@ -3395,7 +3395,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.581,
+   "seconds": 0.597,
    "family": "M08-F18",
    "role": "preservation_control"
   },
@@ -3426,7 +3426,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.877,
+   "seconds": 0.886,
    "family": "M08-F18",
    "role": "negative"
   },
@@ -3454,7 +3454,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.645,
+   "seconds": 0.647,
    "family": "M08-F18",
    "role": "negative"
   },
@@ -3465,8 +3465,8 @@
    "graded_as": "callback_queued_without_AX_on_UI",
    "observed": {
     "callback_ms": [
-     0.13,
-     0.06
+     0.05,
+     0.03
     ]
    },
    "installed": {},
@@ -3485,7 +3485,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.13,
+   "seconds": 1.132,
    "family": "M08-F18",
    "role": "negative"
   },
@@ -3514,7 +3514,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.491,
+   "seconds": 0.503,
    "family": "M08-F18",
    "role": "design_probe"
   },
@@ -3529,7 +3529,7 @@
      "before_artifact_id": null,
      "edited": false,
      "no_edit_observed": true,
-     "observation_id": "obs-95755404850e4529931a23fb88766119",
+     "observation_id": "obs-17b391bb4d674f7f8f04796c42d9c2e9",
      "reanchors": 0,
      "recorded": true,
      "status": "observed",
@@ -3559,7 +3559,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.145,
+   "seconds": 1.139,
    "family": "M08-F19",
    "role": "positive_control"
   },
@@ -3598,7 +3598,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.523,
+   "seconds": 0.519,
    "family": "M08-F19",
    "role": "negative"
   },
@@ -3632,7 +3632,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.525,
+   "seconds": 0.526,
    "family": "M08-F19",
    "role": "negative"
   },
@@ -3663,7 +3663,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.426,
+   "seconds": 1.435,
    "family": "M08-F19",
    "role": "negative"
   },
@@ -3754,7 +3754,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.528,
+   "seconds": 0.522,
    "family": "M08-F20",
    "role": "negative"
   },
@@ -3783,7 +3783,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.524,
+   "seconds": 0.519,
    "family": "M08-F20",
    "role": "negative"
   },
@@ -3801,7 +3801,7 @@
     "f1_sel": null,
     "role": "AXTextField",
     "clipboard_generation": 40,
-    "clock": "<__main__.FakeClock object at 0x10c0a7620>"
+    "clock": "<__main__.FakeClock object at 0x10c6f3620>"
    },
    "barriers_declared": [
     "CLOCK_PAST_DEADLINE"
@@ -3817,7 +3817,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.528,
+   "seconds": 0.522,
    "family": "M08-F20",
    "role": "negative"
   },
@@ -3852,7 +3852,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.057,
+   "seconds": 1.046,
    "family": "M08-F20",
    "role": "negative"
   },
@@ -3886,7 +3886,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.522,
+   "seconds": 0.521,
    "family": "M08-F21",
    "role": "preservation_control"
   },
@@ -3917,7 +3917,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.029,
+   "seconds": 1.034,
    "family": "M08-F21",
    "role": "preservation_control"
   },
@@ -3946,7 +3946,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.038,
+   "seconds": 1.04,
    "family": "M08-F21",
    "role": "positive_control"
   },
@@ -3975,7 +3975,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.523,
+   "seconds": 0.526,
    "family": "M08-F21",
    "role": "preservation_control"
   },
@@ -3996,7 +3996,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.329,
+   "seconds": 1.346,
    "family": "M08-F21",
    "role": "negative"
   },
@@ -4029,7 +4029,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.135,
+   "seconds": 0.129,
    "family": "M08-F22",
    "role": "preservation_control"
   },
@@ -4063,7 +4063,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.013,
+   "seconds": 0.011,
    "family": "M08-F22",
    "role": "negative"
   },
@@ -4097,7 +4097,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.01,
+   "seconds": 0.008,
    "family": "M08-F22",
    "role": "negative"
   },
@@ -4130,7 +4130,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.834,
+   "seconds": 0.835,
    "family": "M08-F22",
    "role": "preservation_control"
   },
@@ -4159,7 +4159,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.85,
+   "seconds": 0.833,
    "family": "M08-F22",
    "role": "preservation_control"
   },
@@ -4177,7 +4177,7 @@
     "f1_sel": null,
     "role": "AXTextField",
     "clipboard_generation": 40,
-    "job_row": "job-fca8abfe9be141b1898b72d21ac26ee9",
+    "job_row": "job-1163631281794e73ade51dc509cdb4e0",
     "listener": "svc.revoke_job via the real store"
    },
    "barriers_declared": [
@@ -4199,7 +4199,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.034,
+   "seconds": 0.023,
    "family": "M08-F23",
    "role": "negative"
   },
@@ -4218,7 +4218,7 @@
     "f1_sel": null,
     "role": "AXTextField",
     "clipboard_generation": 40,
-    "job_row": "job-bfea79ca59334788bf4c1fea0215fb2c",
+    "job_row": "job-a9531f2a818a448f977f58d22d99ddec",
     "listener": "svc.revoke_job via the real store"
    },
    "barriers_declared": [
@@ -4240,7 +4240,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.015,
+   "seconds": 0.008,
    "family": "M08-F23",
    "role": "negative"
   },
@@ -4256,7 +4256,7 @@
     "f1_sel": null,
     "role": "AXTextField",
     "clipboard_generation": 40,
-    "job_row": "job-2a114280b68d401c83388dcb0bfb7cc9",
+    "job_row": "job-53d64df778514f2aafc48e21aac1e383",
     "listener": "svc.revoke_job via the real store"
    },
    "barriers_declared": [
@@ -4295,7 +4295,7 @@
     "f1_sel": null,
     "role": "AXTextField",
     "clipboard_generation": 40,
-    "job_row": "job-b7b2805d0f104c4a81b1f0c6f61bacc9",
+    "job_row": "job-ed363a44df184072806aff764d2881f0",
     "listener": "svc.revoke_job via the real store"
    },
    "barriers_declared": [],
@@ -4336,7 +4336,7 @@
     "f1_sel": null,
     "role": "AXTextField",
     "clipboard_generation": 40,
-    "job_row": "job-867b902a0943411499d6f0a53917f449",
+    "job_row": "job-00e37fbaf4784340a6e200fd6648669a",
     "listener": "svc.revoke_job via the real store",
     "decision": "D13"
    },
@@ -4355,7 +4355,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.018,
+   "seconds": 0.014,
    "family": "M08-F23",
    "role": "design_probe"
   },
@@ -4367,11 +4367,11 @@
    "observed": {
     "artifacts": [
      [
-      "art-30de238e9f824d45a8d73da28fb85403",
+      "art-c3127534df5c41dbadf03e3fe4ac1c93",
       1
      ],
      [
-      "art-a826ecb34e164e23b9a880dc3db563bf",
+      "art-44f05efecc474f1ba2fef5473a012cf8",
       0
      ]
     ],
@@ -4388,7 +4388,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.638,
+   "seconds": 1.644,
    "family": "M08-F24",
    "role": "preservation_control"
   },
@@ -4400,11 +4400,11 @@
    "observed": {
     "artifacts": [
      [
-      "art-d298f2fdc7124ac4bc42e13865f7a2b9",
+      "art-f06e676ebe2e4afbb98ef378fb69eabe",
       1
      ],
      [
-      "art-d7c3e9d9128a42e19b38d0d5dee81a25",
+      "art-8acafb72d4b949f2adadd474af2ef5e1",
       1
      ]
     ],
@@ -4421,7 +4421,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.647,
+   "seconds": 1.648,
    "family": "M08-F24",
    "role": "negative"
   },
@@ -4444,7 +4444,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.635,
+   "seconds": 1.639,
    "family": "M08-F24",
    "role": "preservation_control"
   },
@@ -4468,7 +4468,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.625,
+   "seconds": 1.635,
    "family": "M08-F24",
    "role": "negative"
   },
@@ -4491,8 +4491,8 @@
     "f1_sel": null,
     "role": "AXTextField",
     "clipboard_generation": 40,
-    "clock": "<__main__.FakeClock object at 0x10c4db9d0>",
-    "job_row": "job-5eaf641a018e43f9817c2a486fb8bd1a",
+    "clock": "<__main__.FakeClock object at 0x10cb17c50>",
+    "job_row": "job-a50fa9faa8c14b81b4e10db3712d1c8a",
     "listener": "svc.revoke_job via the real store"
    },
    "barriers_declared": [
@@ -4519,7 +4519,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.036,
+   "seconds": 0.028,
    "family": "M08-F24",
    "role": "negative"
   },
@@ -4648,7 +4648,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.011
+   "seconds": 0.008
   },
   {
    "case_id": "LF-M08-ST-02",
@@ -4688,7 +4688,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.01
+   "seconds": 0.007
   },
   {
    "case_id": "LF-M08-ST-03",
@@ -4721,7 +4721,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.009
+   "seconds": 0.007
   },
   {
    "case_id": "LF-M08-ST-04",
@@ -4754,7 +4754,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.008
+   "seconds": 0.006
   },
   {
    "case_id": "LF-M08-ST-05",
@@ -4791,7 +4791,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "case_id": "LF-M08-ST-06",
@@ -4822,7 +4822,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.073
+   "seconds": 0.087
   },
   {
    "case_id": "LF-M08-ST-07",
@@ -4891,7 +4891,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.171
+   "seconds": 0.187
   },
   {
    "case_id": "LF-M08-ST-09",
@@ -4916,7 +4916,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.179
+   "seconds": 0.194
   },
   {
    "case_id": "LF-M08-ST-10",
@@ -4946,7 +4946,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.184
+   "seconds": 0.193
   },
   {
    "case_id": "LF-M08-ST-11",
@@ -4976,7 +4976,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.02
+   "seconds": 0.016
   },
   {
    "case_id": "LF-M08-ST-12",
@@ -5017,7 +5017,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.334
+   "seconds": 0.343
   },
   {
    "case_id": "LF-M08-ST-13",
@@ -5047,7 +5047,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.022
+   "seconds": 0.013
   },
   {
    "case_id": "LF-M08-ST-14",
@@ -5077,7 +5077,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.388
+   "seconds": 0.392
   },
   {
    "case_id": "LF-M08-ST-15",
@@ -5106,7 +5106,7 @@
      "detail": null
     }
    ],
-   "seconds": 1.03
+   "seconds": 1.024
   },
   {
    "case_id": "LF-M08-ST-16",
@@ -5136,7 +5136,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.531
+   "seconds": 0.521
   },
   {
    "case_id": "LF-M08-ST-17",
@@ -5150,7 +5150,7 @@
     "f1_sel": null,
     "role": "AXTextField",
     "clipboard_generation": 40,
-    "job_row": "job-63d23219dfff47aaab0490f31ee33842",
+    "job_row": "job-feb754a4663f42fa9df2b7fda175c34d",
     "listener": "svc.revoke_job via the real store"
    },
    "barriers_declared": [
@@ -5167,7 +5167,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.529
+   "seconds": 0.531
   },
   {
    "case_id": "LF-M08-ST-18",
@@ -5200,7 +5200,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.016
+   "seconds": 0.014
   }
  ],
  "metamorphic": [
@@ -5232,7 +5232,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.043
+   "seconds": 0.033
   },
   {
    "case_id": "LF-M08-MR-02",
@@ -5260,7 +5260,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.015
+   "seconds": 0.013
   },
   {
    "case_id": "LF-M08-MR-03",
@@ -5288,7 +5288,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.013
+   "seconds": 0.012
   },
   {
    "case_id": "LF-M08-MR-04",
@@ -5316,7 +5316,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.012
+   "seconds": 0.011
   },
   {
    "case_id": "LF-M08-MR-05",
@@ -5345,7 +5345,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.013
+   "seconds": 0.011
   },
   {
    "case_id": "LF-M08-MR-06",
@@ -5370,7 +5370,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.014
+   "seconds": 0.012
   },
   {
    "case_id": "LF-M08-MR-07",
@@ -5400,7 +5400,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.012
+   "seconds": 0.011
   },
   {
    "case_id": "LF-M08-MR-08",
@@ -5414,7 +5414,7 @@
     "f1_sel": null,
     "role": "AXTextField",
     "clipboard_generation": 40,
-    "job_row": "job-3d35b9d5ba2240ab9020011c94ce9617",
+    "job_row": "job-167fed34050c46b3941acbb4a20dbe66",
     "listener": "svc.revoke_job via the real store"
    },
    "barriers_declared": [],
@@ -5427,7 +5427,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.4
+   "seconds": 0.411
   },
   {
    "case_id": "LF-M08-MR-09",
@@ -5458,7 +5458,7 @@
      "detail": null
     }
    ],
-   "seconds": 0.028
+   "seconds": 0.022
   }
  ]
 }

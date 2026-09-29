@@ -1,0 +1,198 @@
+{
+ "suite": "tests/v2/crossmilestone/test_xm_g06_b.py",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_xm_g06_b.py",
+  "suite_sha256": "b1ff6c4e6b09ee00a6bb8c9985b912d8d489cfecefa2c3c8e4d6c6a465c4458c",
+  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "counts": {
+  "PASS": 20
+ },
+ "invoked": [
+  "g06_xm_c043_raw_route_never_claims_cleanup",
+  "g06_xm_c043_control_clean_route",
+  "g06_xm_c066_identical_text_keeps_ownership",
+  "g06_xm_c066_control_different_texts",
+  "g06_xm_c067_cleanup_fault_is_reason_coded",
+  "g06_xm_c067_control_healthy_cleanup",
+  "g06_xm_c070_collection_off_invents_nothing",
+  "g06_xm_c076_race_then_export_carries_executed_definition",
+  "g06_xm_c076_control_sequential_updates",
+  "g06_xm_r07_history_action_during_load_refuses",
+  "g06_xm_mh18_transform_mode_end_to_end",
+  "g06_xm_mh18_control_without_update",
+  "g06_xm_mh20_failed_retention_never_exports_raw_as_input",
+  "g06_xm_mh20_control_retained_exports_exact_input",
+  "g06_xm_mr19_normalization_provenance_relation",
+  "g06_xm_r21_edit_after_snapshot_keeps_frozen_task",
+  "g06_xm_r21_control_no_edit",
+  "g06_xm_mu12_approve_unknown_then_retry_is_one",
+  "g06_xm_mu12_control_mutants_are_killed",
+  "g06_xm_mu12_control_unheld_approve"
+ ],
+ "results": [
+  {
+   "case": "g06_xm_c043_raw_route_never_claims_cleanup",
+   "finding": "G06 XM-C043 (Raw delivers the ASR bytes; no consumer claims cleanup ran)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.21
+  },
+  {
+   "case": "g06_xm_c043_control_clean_route",
+   "finding": "G06 XM-C043 control (the same ASR in Clean runs one cleanup pass)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "g06_xm_c066_identical_text_keeps_ownership",
+   "finding": "G06 XM-C066 (identical-text interleaved jobs keep their own artifacts)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "g06_xm_c066_control_different_texts",
+   "finding": "G06 XM-C066 control (different texts, same interleaving)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "g06_xm_c067_cleanup_fault_is_reason_coded",
+   "finding": "G06 XM-C067 (cleanup fault: raw traceable, reason-coded fallback, never a model output)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "g06_xm_c067_control_healthy_cleanup",
+   "finding": "G06 XM-C067 control (a healthy cleanup is a cleaned stage, path llm)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "g06_xm_c070_collection_off_invents_nothing",
+   "finding": "G06 XM-C070 (collection off: raw/clean/transform, History and usage work; no evidence or export eligibility)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.34
+  },
+  {
+   "case": "g06_xm_c076_race_then_export_carries_executed_definition",
+   "finding": "G06 XM-C076 (after the disjoint-update race the export carries the executed definition)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "g06_xm_c076_control_sequential_updates",
+   "finding": "G06 XM-C076 control (sequential updates export the same fields)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.12
+  },
+  {
+   "case": "g06_xm_r07_history_action_during_load_refuses",
+   "finding": "G06 XM-R07 (an action during a row's detail load refuses visibly; never acts on A or B)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.22
+  },
+  {
+   "case": "g06_xm_mh18_transform_mode_end_to_end",
+   "finding": "G06 XM-MH18 (opt-in transform: permitted final, distinct stages; an accepted unsourced dictation candidate is disclosed, never exported without its source)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.2
+  },
+  {
+   "case": "g06_xm_mh18_control_without_update",
+   "finding": "G06 XM-MH18 control (no later update)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.2
+  },
+  {
+   "case": "g06_xm_mh20_failed_retention_never_exports_raw_as_input",
+   "finding": "G06 XM-MH20 (a failed changed-normalization retention is never exported as a complete task with raw input)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.12
+  },
+  {
+   "case": "g06_xm_mh20_control_retained_exports_exact_input",
+   "finding": "G06 XM-MH20 control (retained changed normalization exports the exact input)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.12
+  },
+  {
+   "case": "g06_xm_mr19_normalization_provenance_relation",
+   "finding": "G06 XM-MR19 (not-run and valid-unchanged normalization are the same complete task; failed changed retention is not)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.4
+  },
+  {
+   "case": "g06_xm_r21_edit_after_snapshot_keeps_frozen_task",
+   "finding": "G06 XM-R21 (an edit after the task snapshot never changes the frozen prompt, definition or opt-in)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.35
+  },
+  {
+   "case": "g06_xm_r21_control_no_edit",
+   "finding": "G06 XM-R21 control (no edit: both jobs use one revision)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "g06_xm_mu12_approve_unknown_then_retry_is_one",
+   "finding": "G06 XM-MU12 (a timed-out Hub Approve is unknown; the retry reuses its operation id: one effect)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.31
+  },
+  {
+   "case": "g06_xm_mu12_control_mutants_are_killed",
+   "finding": "G06 XM-MU12 control (the driver kills both named mutants)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.64
+  },
+  {
+   "case": "g06_xm_mu12_control_unheld_approve",
+   "finding": "G06 XM-MU12 control (an unheld Approve succeeds once)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  }
+ ]
+}

@@ -1,0 +1,108 @@
+{
+ "suite": "tests/v2/crossmilestone/test_xm_g06_d.py",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_xm_g06_d.py",
+  "suite_sha256": "2653f26f074644168c23f0ddf39510194c63e5c8d612d030e4e741c1ed86571c",
+  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "counts": {
+  "PASS": 10
+ },
+ "invoked": [
+  "g06_xm_c137_wrong_role_never_history_final",
+  "g06_xm_c144_exclusion_reason_parity",
+  "c_g06_xm_c144_all_eligible_world",
+  "g06_xm_c145_late_family_is_reason_coded",
+  "g06_xm_mh01_c146_exposure_forward_old_package_historical",
+  "g06_xm_mh05_older_generation_never_republishes_excluded",
+  "c_g06_xm_mh05_release_last_without_exclusion",
+  "g06_xm_mh10_note_capture_counts_dictated_words_only",
+  "g06_xm_c154_speech_measures_exclude_typed_and_snippet_words",
+  "g06_xm_mh12_retry_agrees_across_consumers"
+ ],
+ "results": [
+  {
+   "case": "g06_xm_c137_wrong_role_never_history_final",
+   "finding": "G06 XM-C137 (a same-job wrong-role artifact never qualifies and is never served as History's final text)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.22
+  },
+  {
+   "case": "g06_xm_c144_exclusion_reason_parity",
+   "finding": "G06 XM-C144 (every export exclusion matches a named readiness reason and tier on the four contracted readiness views; the weak graft view is export-only by contract)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "c_g06_xm_c144_all_eligible_world",
+   "finding": "G06 XM-C144 control (an all-eligible world: exact membership, no exclusion on either side)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "g06_xm_c145_late_family_is_reason_coded",
+   "finding": "G06 XM-C145 (a family created after the selected assignment is not_in_assignment_version, never guessed into a partition)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "g06_xm_mh01_c146_exposure_forward_old_package_historical",
+   "finding": "G06 XM-MH01 + XM-C146 (an exposed family never regains a blind claim, even under an older assignment; the pre-exposure package stays byte-identical and valid)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.07
+  },
+  {
+   "case": "g06_xm_mh05_older_generation_never_republishes_excluded",
+   "finding": "G06 XM-MH05 (an older held Your Voice generation released last never republishes excluded support)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.44
+  },
+  {
+   "case": "c_g06_xm_mh05_release_last_without_exclusion",
+   "finding": "G06 XM-MH05 control (no exclusion: releasing A last leaves B's generation rendered)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.38
+  },
+  {
+   "case": "g06_xm_mh10_note_capture_counts_dictated_words_only",
+   "finding": "G06 XM-MH10 (a note-bound capture with typed autosaves counts one dictation, no typed words, no external AX delivery)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.26
+  },
+  {
+   "case": "g06_xm_c154_speech_measures_exclude_typed_and_snippet_words",
+   "finding": "G06 XM-C154 (only eligible user speech \u2014 never typed or snippet-expanded words \u2014 feeds speech-derived measures)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.31
+  },
+  {
+   "case": "g06_xm_mh12_retry_agrees_across_consumers",
+   "finding": "G06 XM-MH12 (a History retry with changed transcription: final, one usage job, one profile contribution, per-attempt evidence attributed)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.27
+  }
+ ]
+}

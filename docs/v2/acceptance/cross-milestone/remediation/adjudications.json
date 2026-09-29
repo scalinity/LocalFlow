@@ -4,12 +4,12 @@
  "audited_base": "340c566686c7123bfcf721e16160aacabbe0b97d",
  "policy_id": "xm-policy-r1",
  "campaign_state": "CROSS_MILESTONE_REMEDIATION_INCOMPLETE",
- "campaign_state_reason": "Every one of the 17 merged findings was reproduced on the audited base and is repaired with its regressions green; seven independent review rounds converged. The campaign is not complete because GATE-G06 (current cross-service semantic execution of the merged corpus) is largely open: of the 309 merged cases, the committed witnesses execute the finding reproductions and their controls, and the remaining cases have no driver yet (gates/casemap.json). The interface union keeps 5 partial and 3 unbound rows, GATE-G02 binds 24 of 33 requirements fully (5 partial, 4 future), GATE-G07's active native tier and GATE-G08's end-to-end timing are not run.",
+ "campaign_state_reason": "Every one of the 17 merged findings was reproduced on the audited base and is repaired with its regressions green; seven independent review rounds converged. GATE-G06 is closed under the owner's revised rule: all 309 merged cases are dispositioned (gates/g06_disposition.json) and the 58 mandatory drivers pass after repairing the seven defects they reproduced. The campaign is not complete because the interface union keeps 5 partial and 3 unbound rows, GATE-G02 binds 24 of 33 requirements fully (5 partial, 4 future), GATE-G07's active native tier and GATE-G08's end-to-end timing are not run.",
  "production": {
   "first_pass": "63f9ef25148b4d10381693527e4679e351dcd60a",
-  "final": "d6a555d",
-  "tests_final": "356a08a",
-  "note": "Commits after d6a555d change tests, the mutation catalog and documents only."
+  "final": "cabc756",
+  "tests_final": "26f8afe",
+  "note": "d6a555d closed the 17 merged findings; 6a4dcfc and cabc756 repair the seven GATE-G06 defects. Commits after cabc756 change tests and documents only."
  },
  "dispositions": ["reproduced", "narrowed", "test_gap_only", "design_only", "residual"],
  "findings": [
@@ -53,7 +53,14 @@
  "local_findings": [
   {"id": "LOCAL-XM-01", "disposition": "reproduced", "decision": "D04", "title": "Filling the Transforms editor raised before the instruction was shown (setEnabled_ on a text view), so a name-only Update erased the instruction", "repair": "setEditable_; the editor fills the selected row's instruction."},
   {"id": "LOCAL-XM-02", "disposition": "reproduced", "title": "Settings Apply Retention sat past the minimum window's content width", "repair": "the retention row ends inside 700 pt."},
-  {"id": "LOCAL-XM-03", "disposition": "reproduced", "title": "History Move to Scratchpad and Delete Usage were unreachable at the minimum window", "repair": "History actions laid out again at every size in two rows."}
+  {"id": "LOCAL-XM-03", "disposition": "reproduced", "title": "History Move to Scratchpad and Delete Usage were unreachable at the minimum window", "repair": "History actions laid out again at every size in two rows."},
+  {"id": "G06-XM-C137", "disposition": "reproduced", "decision": "POLICY-D04", "source": "test_xm_g06_d.py::g06_xm_c137_wrong_role_never_history_final", "mutant": "XM-MU66", "title": "History's manifest branch served an artifact of the wrong role as the job's final text", "repair": "HistoryQueryService._job_artifacts uses a manifest id only for the role it names; corrupt data leaves the stage absent."},
+  {"id": "G06-XM-C016", "disposition": "reproduced", "source": "test_xm_g06_a.py::g06_xm_c016_corrupt_locator_never_touches_outside", "mutant": "XM-MU67, XM-MU68", "title": "The artifact purge unlinked, and payload reads opened, corrupt locators outside the managed root", "repair": "Artifact unlinks, payload reads and the deep integrity check go through the confined no-follow helpers."},
+  {"id": "G06-XM-C005", "disposition": "reproduced", "decision": "D01", "source": "test_xm_g06_a.py::g06_xm_c005_lost_core_table_is_refused", "mutant": "XM-MU69, XM-MU70", "title": "A lost jobs or artifacts table was recreated empty while never-deleted referrers survived", "repair": "_CORE_DEPENDENTS refuses the repair when usage, insertion or target rows, or a job naming its audio artifact, survive."},
+  {"id": "G06-XM-C106", "disposition": "reproduced", "source": "test_xm_g06_c1.py::g06_xm_c106_purge_after_render_revokes_content_actions", "mutant": "XM-MU71", "title": "History Copy and Paste Again could publish a final purged after its detail rendered", "repair": "Both re-check the final's artifact before publishing."},
+  {"id": "G06-XM-C108", "disposition": "reproduced", "source": "test_xm_g06_c1.py::g06_xm_c108_unavailable_replay_stops_and_reports_reason", "mutant": "XM-MU72", "title": "Replay reported no_audio_artifact for purged audio", "repair": "Replay shows the detail's own unavailable reason."},
+  {"id": "G06-XM-R18", "disposition": "reproduced", "source": "test_xm_g06_c2.py::g06_xm_r18_retry_commits_while_history_read_is_held", "mutant": "XM-MU73", "title": "A retry committing attempt 2 while History read attempt 1 left the Hub on attempt 1", "repair": "The commit reloads History (HubState.job_changed), superseding the older read."},
+  {"id": "G06-XM-C020", "disposition": "reproduced", "source": "test_xm_g06_c2.py::g06_xm_c020_mh06_control_clean_capture", "mutant": "XM-MU74", "title": "Push-to-talk minted the capture instant three times, so the usage fact trailed History's capture time by the mic-open latency and a retry moved it", "repair": "startDictation mints one instant for the job row, the capture journal and the in-memory job."}
  ],
  "gates": {
   "GATE-G01": {"state": "closed", "evidence": "remediation/caller_inventory.json; gates/census.json"},
@@ -61,7 +68,7 @@
   "GATE-G03": {"state": "closed", "evidence": "tests/v2/crossmilestone/test_xm_runbook.py"},
   "GATE-G04": {"state": "closed", "evidence": "test_xm_store_families.py c_every_historical_schema_upgrades_with_an_exact_backup, x01l, x01m"},
   "GATE-G05": {"state": "closed", "evidence": "tests/v2/crossmilestone/test_xm_privacy.py"},
-  "GATE-G06": {"state": "open", "evidence": "gates/casemap.json", "detail": "309 merged cases from 511 source declarations; the committed witnesses execute the finding reproductions and their controls; the other merged cases have no driver yet."},
+  "GATE-G06": {"state": "closed", "evidence": "gates/g06_disposition.json, gates/g06_summary.md, final/g06_*.json", "detail": "Closed under the owner's revised rule (2026-09-28): all 309 merged cases dispositioned — 96 EXECUTED_PASS (58 by G06 drivers, 38 by cross-milestone witnesses), 159 COVERED_BY_CURRENT_ACCEPTED_SUITE, 3 DEFERRED_NATIVE, 2 DEFERRED_MODEL, 8 DEFERRED_M15, 1 NOT_APPLICABLE_WITH_REASON, 40 DRIVER_REQUIRED, none mandatory before merge. The 58 mandatory drivers reproduced seven defects, all repaired. 309 declarative cases are not 309 bespoke drivers: overlapping invariants name their owner and evidence."},
   "GATE-G07": {"state": "partial", "evidence": "tests/v2/crossmilestone/test_native_xm_hub.py (passive tier)", "detail": "active tier, real keyboard/focus and the Hub's human checks not run."},
   "GATE-G08": {"state": "partial", "evidence": "docs/v2/benchmarks (cross-milestone final)", "detail": "writer contention and Hub acknowledgement measured on this Mac after correctness; dictation end-to-end needs a human speaker and is not run."},
   "GATE-G09": {"state": "closed", "evidence": "tests/v2/crossmilestone/test_xm_validator.py; X14 crash witnesses"},
@@ -104,7 +111,7 @@
   "schema_family_subledger": "schema_family_subledger.json",
   "caller_inventory": "caller_inventory.json",
   "base": ["regressions_base_340c566.json", "families_base_340c566.json", "matrix_base_340c566.json"],
-  "gates": "gates/",
-  "final": {"regressions": "final/regressions.json", "families": "final/families.json", "mutation": "final/mutation.json", "native": "final/native_xm_hub.json", "sweep": "final/sweep.json", "sweep_rechecks": "final/recheck_*.json", "compatibility_corpora": "final/corpus_m05.json .. corpus_m14.json", "m09_benchmark_validity": "final/m09_bench_mutation.json", "benchmarks": "docs/v2/benchmarks/20260928-180600-xm-remediation-final/"}
+  "gates": "gates/ (G06: g06_disposition.json, g06_summary.md, g06_changed_functions.txt)",
+  "final": {"regressions": "final/regressions.json", "families": "final/families.json", "mutation": "final/mutation.json", "native": "final/native_xm_hub.json", "sweep": "final/sweep.json", "sweep_rechecks": "final/recheck_test_m02_remediation_store.json", "g06_drivers": "final/g06_a.json .. g06_d.json", "compatibility_corpora": "final/corpus_m05.json .. corpus_m14.json", "m09_benchmark_validity": "final/m09_bench_mutation.json", "benchmarks": "docs/v2/benchmarks/20260928-203300-xm-remediation-g06/"}
  }
 }

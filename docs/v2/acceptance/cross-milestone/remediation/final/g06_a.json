@@ -1,0 +1,180 @@
+{
+ "suite": "tests/v2/crossmilestone/test_xm_g06_a.py",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_xm_g06_a.py",
+  "suite_sha256": "03d12f1e5a4e5a4536f91f9ca71f031a4ff1c9e6a6817a5ae16c600ef773da2b",
+  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "counts": {
+  "PASS": 18
+ },
+ "invoked": [
+  "g06_xm_c001_older_stores_keep_domain_rows",
+  "g06_xm_c002_failed_backup_refuses_untouched",
+  "g06_xm_c003_entrypoints_back_up_and_validator_opens_no_db",
+  "g06_xm_c004_killed_migration_reopens_and_upgrades",
+  "g06_xm_c005_lost_core_table_is_refused",
+  "g06_xm_c005_control_fresh_and_intact_stores_open",
+  "g06_xm_c016_corrupt_locator_never_touches_outside",
+  "g06_xm_c016_control_in_root_locator_reads_exports_purges",
+  "g06_xm_c018_nonregular_nodes_refused_without_blocking",
+  "g06_xm_mu15_export_confines_its_own_open",
+  "g06_xm_mu15_control_no_swap_exports",
+  "g06_xm_mu15_mutant_is_killed",
+  "g06_xm_c193_noop_and_wrong_cohort_are_invalid",
+  "g06_xm_c032_worker_death_keeps_audio_never_a_transcript",
+  "g06_xm_c033_unverified_is_never_confirmed",
+  "g06_xm_c034_refused_target_is_saved_not_failed",
+  "g06_xm_c040_revoked_lease_grants_no_authority",
+  "g06_xm_mh17_one_dictation_one_identity_everywhere"
+ ],
+ "results": [
+  {
+   "case": "g06_xm_c001_older_stores_keep_domain_rows",
+   "finding": "G06 XM-C001 (older store at each schema upgrades after an exact backup, rows and meanings kept)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.13
+  },
+  {
+   "case": "g06_xm_c002_failed_backup_refuses_untouched",
+   "finding": "G06 XM-C002 (failed pre-migration backup: open refused, store byte-unchanged)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "g06_xm_c003_entrypoints_back_up_and_validator_opens_no_db",
+   "finding": "G06 XM-C003 (every store-opening entrypoint backs up before migrating; the validator opens no database)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.52
+  },
+  {
+   "case": "g06_xm_c004_killed_migration_reopens_and_upgrades",
+   "finding": "G06 XM-C004 (a migration killed after DDL, before commit, reopens at the old version with no rows lost and upgrades cleanly)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "g06_xm_c005_lost_core_table_is_refused",
+   "finding": "G06 XM-C005 (a lost jobs/artifacts table with surviving referrers is refused with a backup, never recreated empty)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.04
+  },
+  {
+   "case": "g06_xm_c005_control_fresh_and_intact_stores_open",
+   "finding": "G06 XM-C005 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "g06_xm_c016_corrupt_locator_never_touches_outside",
+   "finding": "G06 XM-C016 (a corrupt locator is refused by every read, export and purge; nothing outside the managed root is touched)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.23
+  },
+  {
+   "case": "g06_xm_c016_control_in_root_locator_reads_exports_purges",
+   "finding": "G06 XM-C016 control",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "g06_xm_c018_nonregular_nodes_refused_without_blocking",
+   "finding": "G06 XM-C018 (a FIFO/directory/socket locator is refused by open_managed_file, qualify and export without blocking)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.22
+  },
+  {
+   "case": "g06_xm_mu15_export_confines_its_own_open",
+   "finding": "G06 XM-MU15 (the export never reads an in-root file swapped for a symlink after qualification)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.05
+  },
+  {
+   "case": "g06_xm_mu15_control_no_swap_exports",
+   "finding": "G06 XM-MU15 control (no swap: export completes and validates)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.13
+  },
+  {
+   "case": "g06_xm_mu15_mutant_is_killed",
+   "finding": "G06 XM-MU15 mutant (copy_audio plain open) is killed",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "g06_xm_c193_noop_and_wrong_cohort_are_invalid",
+   "finding": "G06 XM-C193 (a no-op or wrong-cohort component makes the benchmark INVALID with its own reason)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.79
+  },
+  {
+   "case": "g06_xm_c032_worker_death_keeps_audio_never_a_transcript",
+   "finding": "G06 XM-C032 (worker death at ASR keeps a recoverable job with the original audio and no fabricated transcript)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.41
+  },
+  {
+   "case": "g06_xm_c033_unverified_is_never_confirmed",
+   "finding": "G06 XM-C033 (posted_unverified stays unverified in History, usage and review eligibility; no confirmation or label is minted)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.33
+  },
+  {
+   "case": "g06_xm_c034_refused_target_is_saved_not_failed",
+   "finding": "G06 XM-C034 (refused revalidation stays saved_not_inserted with its text and words, distinct from a failed pipeline)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.28
+  },
+  {
+   "case": "g06_xm_c040_revoked_lease_grants_no_authority",
+   "finding": "G06 XM-C040 (after the lease is revoked, History and menu Paste Again make no read or write on the recorded target)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.25
+  },
+  {
+   "case": "g06_xm_mh17_one_dictation_one_identity_everywhere",
+   "finding": "G06 XM-MH17 (one clean dictation keeps one family and exact stage identities through History, usage, review, export and profile)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.97
+  }
+ ]
+}

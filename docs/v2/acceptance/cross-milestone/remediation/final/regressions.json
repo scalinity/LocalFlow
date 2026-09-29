@@ -3,8 +3,8 @@
  "code": {
   "suite": "tests/v2/crossmilestone/test_xm_remediation.py",
   "suite_sha256": "3a268b0f610b336fe314f80e144aac4e354e4c916e2d0e1e17a6141f295b6216",
-  "code_root_sha": "b29640877feb3725ec5b7035d9eb32fdcb933571",
-  "tracked_files_modified": true,
+  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+  "tracked_files_modified": false,
   "production_tree_modified": false,
   "python": "3.14.7"
  },
@@ -107,7 +107,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.13
+   "seconds": 0.14
   },
   {
    "case": "x02_recovery_copy_refusal_is_shown_in_the_recovery_menu",
@@ -123,7 +123,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.13
+   "seconds": 0.14
   },
   {
    "case": "c_recovery_copy_publishes_when_nothing_is_pending",
@@ -155,7 +155,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.1
+   "seconds": 0.11
   },
   {
    "case": "c_ledger_failure_with_unchanged_text_keeps_raw_input",
@@ -179,7 +179,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.17
+   "seconds": 0.18
   },
   {
    "case": "x06_absent_current_attempt_stages_say_why",
@@ -187,7 +187,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.17
+   "seconds": 0.18
   },
   {
    "case": "c_current_attempt_with_stages_carries_no_absent_reason",
@@ -195,7 +195,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.17
+   "seconds": 0.18
   },
   {
    "case": "x06_teach_ignores_the_superseded_attempts_example_state",
@@ -203,7 +203,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.18
+   "seconds": 0.19
   },
   {
    "case": "c_collection_on_retry_resolves_the_new_manifest",
@@ -211,7 +211,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.17
+   "seconds": 0.18
   },
   {
    "case": "x07_retries_never_manufacture_dictations_or_words",
@@ -219,7 +219,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.81
+   "seconds": 0.86
   },
   {
    "case": "x07_excluded_latest_attempt_never_falls_back_to_an_older_one",
@@ -251,7 +251,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.86
+   "seconds": 0.88
   },
   {
    "case": "x03_interleaved_updates_preserve_the_committed_definition",
@@ -259,7 +259,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.02
+   "seconds": 0.01
   },
   {
    "case": "c_sequential_updates_each_preserve_their_definition",
@@ -291,7 +291,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.06
+   "seconds": 0.05
   },
   {
    "case": "c_fresh_form_update_changes_only_the_edited_field",
@@ -315,7 +315,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.3
+   "seconds": 0.29
   },
   {
    "case": "x08_admitted_toggle_timeout_is_not_reported_as_failed",
@@ -323,7 +323,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.31
+   "seconds": 0.3
   },
   {
    "case": "c_refused_add_saves_nothing_and_a_fixed_form_adds_once",
@@ -347,7 +347,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.31
+   "seconds": 0.3
   },
   {
    "case": "c_save_refused_before_admission_is_not_saved_then_saves_once",
@@ -355,7 +355,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.04
+   "seconds": 0.02
   },
   {
    "case": "x09_panel_save_without_scratchpad_is_shown_not_saved",
@@ -363,7 +363,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.03
+   "seconds": 0.02
   },
   {
    "case": "c_distinct_saves_make_distinct_notes",
@@ -371,7 +371,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.02
+   "seconds": 0.01
   },
   {
    "case": "x10_unknown_source_deletion_is_reported_and_retry_settles",
@@ -387,7 +387,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.36
+   "seconds": 0.35
   },
   {
    "case": "c_unknown_create_never_deletes_the_source",
@@ -395,7 +395,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.36
+   "seconds": 0.37
   },
   {
    "case": "x11_renamed_entry_never_relabels_historical_speech",
@@ -403,7 +403,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.11
+   "seconds": 0.12
   },
   {
    "case": "x11_missing_frozen_record_is_unrecorded_never_relabeled",
@@ -435,7 +435,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.07
+   "seconds": 0.08
   },
   {
    "case": "x12_validate_result_binds_to_its_destination_across_pane_switch",
@@ -467,7 +467,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.36
+   "seconds": 0.37
   },
   {
    "case": "x12_older_validate_never_shows_during_or_after_a_failed_export",
@@ -499,7 +499,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.07
+   "seconds": 0.06
   },
   {
    "case": "x12_validate_resolves_the_folder_like_export",
@@ -555,7 +555,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.31
+   "seconds": 0.3
   },
   {
    "case": "c_service_undo_reverses_exactly_and_keeps_user_edits",
@@ -579,7 +579,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.25
+   "seconds": 0.26
   },
   {
    "case": "x14_lost_export_records_never_leave_a_hidden_export",
@@ -691,7 +691,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.11
+   "seconds": 0.07
   },
   {
    "case": "x14_lost_record_before_rename_puts_the_earlier_export_back",
@@ -707,7 +707,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.26
+   "seconds": 0.25
   },
   {
    "case": "x16_status_separates_current_state_from_historical_record",

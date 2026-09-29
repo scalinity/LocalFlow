@@ -1,0 +1,354 @@
+{
+ "build_and_run_seconds": 16.7,
+ "definitions": {
+  "probe_wait": "submit\u2192commit of a dictation-shaped write (artifact row + lease) submitted continuously while the component runs",
+  "wall": "one component call, wall clock (p50/p95/p99 over its repetitions; one_shot components run once)",
+  "warm_state": "a freshly built store per run; each timed component follows the one before it (no process restart between components)",
+  "writer_hold": "time each of the component's own ops occupied the single writer, measured inside the writer thread"
+ },
+ "environment": {
+  "code_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+  "cpu": "Apple M5 Pro",
+  "load_average": [
+   4.39013671875,
+   3.220703125,
+   2.8984375
+  ],
+  "mac_model": "Mac17,8",
+  "macos": "27.0 (26A428)",
+  "memory_bytes": 51539607552,
+  "power": [
+   "Now drawing from 'AC Power'"
+  ],
+  "pyobjc": "12.2.1",
+  "python": "3.14.7",
+  "sqlite": "3.53.4",
+  "tree_modified": false
+ },
+ "environment_after": {
+  "code_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+  "cpu": "Apple M5 Pro",
+  "load_average": [
+   4.68505859375,
+   3.34033203125,
+   2.9462890625
+  ],
+  "mac_model": "Mac17,8",
+  "macos": "27.0 (26A428)",
+  "memory_bytes": 51539607552,
+  "power": [
+   "Now drawing from 'AC Power'"
+  ],
+  "pyobjc": "12.2.1",
+  "python": "3.14.7",
+  "sqlite": "3.53.4",
+  "tree_modified": false
+ },
+ "milestone": "M14",
+ "noop": null,
+ "results": {
+  "contamination_check": {
+   "one_shot": false,
+   "probe_wait": {
+    "max_ms": 34.18,
+    "n": 10,
+    "p50_ms": 32.84,
+    "p95_ms": 34.18,
+    "p99_ms": 34.18
+   },
+   "wall": {
+    "max_ms": 39.41,
+    "n": 10,
+    "p50_ms": 38.33,
+    "p95_ms": 39.41,
+    "p99_ms": 39.41
+   },
+   "writer_hold": {
+    "max_ms": 39.36,
+    "n": 10,
+    "p50_ms": 38.27,
+    "p95_ms": 39.36,
+    "p99_ms": 39.36
+   },
+   "writer_ops": 10
+  },
+  "export_asr_cleanup": {
+   "dataset_bytes": 257560567,
+   "one_shot": false,
+   "probe_wait": {
+    "max_ms": 172.53,
+    "n": 137,
+    "p50_ms": 0.52,
+    "p95_ms": 0.96,
+    "p99_ms": 171.58
+   },
+   "python_peak_mb": 46.1,
+   "throughput_mb_per_s": 537.4,
+   "wall": {
+    "max_ms": 506.94,
+    "n": 3,
+    "p50_ms": 479.3,
+    "p95_ms": 506.94,
+    "p99_ms": 506.94
+   },
+   "writer_hold": {
+    "max_ms": 177.93,
+    "n": 18,
+    "p50_ms": 0.12,
+    "p95_ms": 176.01,
+    "p99_ms": 177.93
+   },
+   "writer_ops": 18
+  },
+  "export_text_only_control": {
+   "python_peak_mb": 45.8
+  },
+  "mining_observations": {
+   "one_shot": true,
+   "probe_wait": {
+    "max_ms": 37.23,
+    "n": 141,
+    "p50_ms": 0.85,
+    "p95_ms": 1.4,
+    "p99_ms": 2.8
+   },
+   "wall": {
+    "max_ms": 1011.23,
+    "n": 1,
+    "p50_ms": 1011.23,
+    "p95_ms": 1011.23,
+    "p99_ms": 1011.23
+   },
+   "writer_hold": {
+    "max_ms": 37.9,
+    "n": 1002,
+    "p50_ms": 0.66,
+    "p95_ms": 0.78,
+    "p99_ms": 0.84
+   },
+   "writer_ops": 1002
+  },
+  "note_mining": {
+   "one_shot": true,
+   "probe_wait": {
+    "max_ms": 75.82,
+    "n": 1,
+    "p50_ms": 75.82,
+    "p95_ms": 75.82,
+    "p99_ms": 75.82
+   },
+   "wall": {
+    "max_ms": 81.72,
+    "n": 1,
+    "p50_ms": 81.72,
+    "p95_ms": 81.72,
+    "p99_ms": 81.72
+   },
+   "writer_hold": {
+    "max_ms": 79.73,
+    "n": 1,
+    "p50_ms": 79.73,
+    "p95_ms": 79.73,
+    "p99_ms": 79.73
+   },
+   "writer_ops": 1
+  },
+  "profile_compute": {
+   "one_shot": false,
+   "probe_wait": {
+    "max_ms": 160.99,
+    "n": 93,
+    "p50_ms": 2.37,
+    "p95_ms": 76.34,
+    "p99_ms": 159.92
+   },
+   "python_peak_mb": 47.8,
+   "wall": {
+    "max_ms": 541.9,
+    "n": 5,
+    "p50_ms": 454.19,
+    "p95_ms": 541.9,
+    "p99_ms": 541.9
+   },
+   "writer_hold": {
+    "max_ms": 155.22,
+    "n": 235,
+    "p50_ms": 2.47,
+    "p95_ms": 4.43,
+    "p99_ms": 146.49
+   },
+   "writer_ops": 235
+  },
+  "profile_idle_unchanged": {
+   "one_shot": false,
+   "probe_wait": {
+    "max_ms": 84.7,
+    "n": 14,
+    "p50_ms": 0.72,
+    "p95_ms": 83.03,
+    "p99_ms": 84.7
+   },
+   "wall": {
+    "max_ms": 95.76,
+    "n": 7,
+    "p50_ms": 92.49,
+    "p95_ms": 95.76,
+    "p99_ms": 95.76
+   },
+   "writer_hold": {
+    "max_ms": 90.06,
+    "n": 21,
+    "p50_ms": 4.55,
+    "p95_ms": 88.35,
+    "p99_ms": 90.06
+   },
+   "writer_ops": 21
+  },
+  "review_queue": {
+   "one_shot": false,
+   "probe_wait": {
+    "max_ms": 3.02,
+    "n": 10,
+    "p50_ms": 1.67,
+    "p95_ms": 3.02,
+    "p99_ms": 3.02
+   },
+   "wall": {
+    "max_ms": 7.74,
+    "n": 10,
+    "p50_ms": 7.39,
+    "p95_ms": 7.74,
+    "p99_ms": 7.74
+   },
+   "writer_hold": {
+    "max_ms": 7.67,
+    "n": 10,
+    "p50_ms": 7.35,
+    "p95_ms": 7.67,
+    "p99_ms": 7.67
+   },
+   "writer_ops": 10
+  },
+  "sampling_refresh": {
+   "one_shot": false,
+   "probe_wait": {
+    "max_ms": 135.96,
+    "n": 5,
+    "p50_ms": 104.36,
+    "p95_ms": 135.96,
+    "p99_ms": 135.96
+   },
+   "wall": {
+    "max_ms": 141.88,
+    "n": 5,
+    "p50_ms": 110.67,
+    "p95_ms": 141.88,
+    "p99_ms": 141.88
+   },
+   "writer_hold": {
+    "max_ms": 133.29,
+    "n": 5,
+    "p50_ms": 105.56,
+    "p95_ms": 133.29,
+    "p99_ms": 133.29
+   },
+   "writer_ops": 5
+  },
+  "split_assign": {
+   "one_shot": false,
+   "probe_wait": {
+    "max_ms": 78.87,
+    "n": 5,
+    "p50_ms": 65.7,
+    "p95_ms": 78.87,
+    "p99_ms": 78.87
+   },
+   "wall": {
+    "max_ms": 84.85,
+    "n": 5,
+    "p50_ms": 71.25,
+    "p95_ms": 84.85,
+    "p99_ms": 84.85
+   },
+   "writer_hold": {
+    "max_ms": 82.73,
+    "n": 5,
+    "p50_ms": 69.56,
+    "p95_ms": 82.73,
+    "p99_ms": 82.73
+   },
+   "writer_ops": 5
+  },
+  "timed_seconds": 12.9,
+  "validate": {
+   "python_peak_mb": 7.8,
+   "valid": true,
+   "wall": {
+    "max_ms": 121.32,
+    "n": 3,
+    "p50_ms": 118.92,
+    "p95_ms": 121.32,
+    "p99_ms": 121.32
+   }
+  }
+ },
+ "scale": "full",
+ "sizes": {
+  "audio": 400,
+  "audio_seconds": 10.0,
+  "examples": 10000,
+  "notes": 200,
+  "observations": 1000,
+  "unchanged_observations": 100
+ },
+ "status": "valid",
+ "tool": "scripts/v2/benchmark_m14.py",
+ "validity": {
+  "reasons": [],
+  "valid": true,
+  "work": {
+   "export": {
+    "asr_supervised": 400,
+    "audio_bytes_on_disk": 256017600,
+    "cleanup_supervised": 400,
+    "expected_asr": 400,
+    "expected_audio_bytes": 256017600,
+    "expected_cleanup": 400,
+    "validator_valid": true
+   },
+   "mining": {
+    "candidates": 900,
+    "dismissed": 100,
+    "expected_candidates": 900,
+    "expected_dismissed": 100
+   },
+   "note_mining": {
+    "candidates": 200,
+    "expected": 200
+   },
+   "profile": {
+    "eligible_examples": 10000,
+    "eligible_words": 286190,
+    "expected_examples": 10000,
+    "expected_words": 286190,
+    "snapshots_written": 1
+   },
+   "sampling": {
+    "decisions": 10000,
+    "expected_decisions": 10000,
+    "expected_representative": 862,
+    "representative": 862
+   },
+   "splits": {
+    "expected": 10000,
+    "memberships": 10000
+   },
+   "store": {
+    "audio_artifacts": 400,
+    "example_rows": 10000,
+    "expected_audio": 400,
+    "expected_examples": 10000
+   }
+  }
+ }
+}

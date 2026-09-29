@@ -1,0 +1,87 @@
+# Functions changed by the remediation, 340c566..d6a555d (the mandatory-driver set).
+localflow/app.py::<module>
+localflow/app.py::AppDelegate._refresh_recovery_menu
+localflow/app.py::AppDelegate._setup_status_item
+localflow/app.py::AppDelegate.configure
+localflow/app.py::AppDelegate.copyLastRaw_
+localflow/app.py::AppDelegate.hubSaveHistoryRow
+localflow/app.py::AppDelegate.tfSaveToScratchpad
+localflow/v2/analytics.py::AnalyticsStore.ensure_current
+localflow/v2/analytics.py::AnalyticsStore.ensure_current.op
+localflow/v2/curation/evidence.py::<module>
+localflow/v2/curation/evidence.py::cleanup_qualification_in
+localflow/v2/curation/export.py::<module>
+localflow/v2/curation/export.py::DatasetExporter.__init__
+localflow/v2/curation/export.py::DatasetExporter._abort
+localflow/v2/curation/export.py::DatasetExporter._reconcile_destination
+localflow/v2/curation/export.py::DatasetExporter._reconcile_intent
+localflow/v2/curation/export.py::DatasetExporter.build
+localflow/v2/curation/export.py::DatasetExporter.reconcile_interrupted
+localflow/v2/curation/export.py::_hold
+localflow/v2/curation/export.py::_owner_alive
+localflow/v2/curation/export.py::_release
+localflow/v2/curation/export.py::_write_sums
+localflow/v2/curation/review.py::_latest_job_artifact
+localflow/v2/curation/review.py::stage_texts_for
+localflow/v2/history_queries.py::HistoryQueryService._job_artifacts
+localflow/v2/history_queries.py::HistoryQueryService._search_op
+localflow/v2/history_queries.py::HistoryQueryService.job_detail
+localflow/v2/history_queries.py::HistoryQueryService.job_detail.op
+localflow/v2/learning.py::LearningService.teach_correction
+localflow/v2/learning.py::LearningService.teach_correction.op
+localflow/v2/profile.py::ProfileService._compute_once
+localflow/v2/profile.py::ProfileService._compute_once.write
+localflow/v2/profile.py::ProfileService._eligible
+localflow/v2/profile.py::ProfileService._read_candidates
+localflow/v2/profile.py::_applied_canonicals
+localflow/v2/store.py::<module>
+localflow/v2/store.py::Store._migrate
+localflow/v2/training.py::CaptureContext.__init__
+localflow/v2/training.py::EvidenceCollector._envelope
+localflow/v2/training.py::EvidenceCollector.on_normalization_result
+localflow/v2/transforms_store.py::<module>
+localflow/v2/transforms_store.py::TransformStore.add_transform
+localflow/v2/transforms_store.py::TransformStore.add_transform.op
+localflow/v2/transforms_store.py::TransformStore.update_transform
+localflow/v2/transforms_store.py::TransformStore.update_transform.op
+localflow/v2/ui/hub.py::HubController._build_history_view
+localflow/v2/ui/hub.py::HubController._build_settings_view
+localflow/v2/ui/hub.py::HubController._build_training_review_pane
+localflow/v2/ui/hub.py::HubController._fill_transform_editor
+localflow/v2/ui/hub.py::HubController._history_to_scratchpad
+localflow/v2/ui/hub.py::HubController._layout_history
+localflow/v2/ui/hub.py::HubController._refresh_approved_popup
+localflow/v2/ui/hub.py::HubController._refresh_export_pane
+localflow/v2/ui/hub.py::HubController._refresh_review_pane
+localflow/v2/ui/hub.py::HubController._refresh_transforms_view
+localflow/v2/ui/hub.py::HubController._transform_form
+localflow/v2/ui/hub.py::HubController._transform_outcome
+localflow/v2/ui/hub.py::HubController._transform_row_form
+localflow/v2/ui/hub.py::HubController._transform_write
+localflow/v2/ui/hub.py::HubController.exportRun_
+localflow/v2/ui/hub.py::HubController.exportRun_.done
+localflow/v2/ui/hub.py::HubController.exportValidate_
+localflow/v2/ui/hub.py::HubController.exportValidate_.done
+localflow/v2/ui/hub.py::HubController.initWithSpec_
+localflow/v2/ui/hub.py::HubController.reviewUndoApproval_
+localflow/v2/ui/hub.py::HubController.transformsToggle_
+localflow/v2/ui/hub.py::_export_folder
+localflow/v2/ui/state.py::HubState._load_training_review
+localflow/v2/ui/transforms_panel.py::TransformPreviewPanel.reoffer_save
+# Functions changed by the GATE-G06 repairs, d6a555d..cabc756, and the behaviour each changed.
+localflow/v2/history_queries.py::HistoryQueryService._job_artifacts	XM-C137: a manifest id serves only the role it names
+localflow/v2/store.py::<module>	XM-C005: _CORE_DEPENDENTS refuses a lost jobs/artifacts table under surviving referrers
+localflow/v2/store.py::Store._drain_purge_intents	XM-C016: artifact unlinks confined to the managed root
+localflow/v2/store.py::Store.artifact_payload	XM-C016: payload reads confined to the managed root
+localflow/v2/store.py::read_wav	XM-C016: WAV parsing split from the file read
+localflow/v2/store.py::wav_from_bytes	XM-C016: WAV parsing split from the file read
+localflow/v2/store.py::Store.verify.op	XM-C016: deep-check reads confined to the managed root
+localflow/v2/ui/hub.py::HubController._final_text	XM-C106: the final's artifact is re-checked before Copy/Paste Again
+localflow/v2/ui/hub.py::HubController._live_final_text	XM-C106: the final's artifact is re-checked before Copy/Paste Again
+localflow/v2/ui/hub.py::HubController.historyCopy_	XM-C106: Copy never publishes a purged final
+localflow/v2/ui/hub.py::HubController.historyPasteAgain_	XM-C106: Paste Again never publishes a purged final
+localflow/v2/ui/hub.py::HubController.historyReplay_	XM-C108: Replay shows the detail's own unavailable reason
+localflow/v2/ui/state.py::HubState.job_changed	XM-R18: a retry commit reloads History
+localflow/v2/ui/state.py::HubState.select_history_row	XM-R18: a newer History read supersedes an older one
+localflow/app.py::AppDelegate._worker	XM-R18: a retry commit reloads History (Hub attached only)
+localflow/app.py::AppDelegate.startDictation	XM-C020: one capture instant for the job row, journal and in-memory job

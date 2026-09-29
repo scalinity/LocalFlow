@@ -1,0 +1,198 @@
+{
+ "suite": "tests/v2/crossmilestone/test_xm_g06_c1.py",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_xm_g06_c1.py",
+  "suite_sha256": "56628e0bb3b8b43c41cf91d949f82fb321f0a6ef27b97c85268f80030fa3f924",
+  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+  "tracked_files_modified": false,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "counts": {
+  "PASS": 20
+ },
+ "invoked": [
+  "g06_xm_c094_note_delivery_receipt_is_labeled_note",
+  "c_g06_xm_c094_external_dictation_records_external_outcome",
+  "g06_xm_mh22_delayed_move_never_resurrects_source_in_profile",
+  "g06_xm_mh23_unknown_save_opens_its_one_note",
+  "c_g06_xm_mh23_unheld_save_opens_once",
+  "g06_xm_mh29_copy_callers_respect_pending_and_outcome_is_honest",
+  "c_g06_xm_mh29_each_caller_copies_when_nothing_pending",
+  "g06_xm_r05_reordered_history_never_redirects_actions",
+  "c_g06_xm_r05_actions_act_on_rendered_row_once",
+  "g06_xm_r06_teach_after_real_retry_is_stale",
+  "c_g06_xm_r06_teach_without_retry_creates_one_candidate",
+  "g06_xm_c104_applied_transform_is_the_delivered_final",
+  "c_g06_xm_c104_clean_is_the_final_without_auto_apply",
+  "g06_xm_c106_purge_after_render_revokes_content_actions",
+  "c_g06_xm_c106_unpurged_row_admits_once",
+  "g06_xm_c107_old_attempt_search_opens_current_final",
+  "g06_xm_c108_unavailable_replay_stops_and_reports_reason",
+  "c_g06_xm_c108_available_replay_switches_to_b",
+  "g06_xm_c109_transform_of_moved_note_never_revives_job",
+  "c_g06_xm_c109_copied_row_job_stays_unchanged"
+ ],
+ "results": [
+  {
+   "case": "g06_xm_c094_note_delivery_receipt_is_labeled_note",
+   "finding": "G06 XM-C094 (a note-bound dictation's receipt is note delivery, never an external AX/readback confirmation)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.26
+  },
+  {
+   "case": "c_g06_xm_c094_external_dictation_records_external_outcome",
+   "finding": "G06 XM-C094 control (an external dictation records its external outcome)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.12
+  },
+  {
+   "case": "g06_xm_mh22_delayed_move_never_resurrects_source_in_profile",
+   "finding": "G06 XM-MH22 (a Move with a delayed source deletion yields one note, a truthful status and no resurrected source downstream)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.37
+  },
+  {
+   "case": "g06_xm_mh23_unknown_save_opens_its_one_note",
+   "finding": "G06 XM-MH23 (an admitted-then-unknown transform Save resolves to one note id, stays unknown until settled, and opens as that note)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.33
+  },
+  {
+   "case": "c_g06_xm_mh23_unheld_save_opens_once",
+   "finding": "G06 XM-MH23 control (an unheld Save opens its new note once)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.06
+  },
+  {
+   "case": "g06_xm_mh29_copy_callers_respect_pending_and_outcome_is_honest",
+   "finding": "G06 XM-MH29 (copyLastRaw_, hubCopyText and tfCopyTransform all respect a pending payload; the reconciled History outcome never overclaims consumption)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.14
+  },
+  {
+   "case": "c_g06_xm_mh29_each_caller_copies_when_nothing_pending",
+   "finding": "G06 XM-MH29 control (with nothing pending each caller copies once)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.02
+  },
+  {
+   "case": "g06_xm_r05_reordered_history_never_redirects_actions",
+   "finding": "G06 XM-R05 (a History action acts on the rendered job and revision or refuses; a reordered backing list never redirects it)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.3
+  },
+  {
+   "case": "c_g06_xm_r05_actions_act_on_rendered_row_once",
+   "finding": "G06 XM-R05 control (no reorder: each action acts on J1 once)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.21
+  },
+  {
+   "case": "g06_xm_r06_teach_after_real_retry_is_stale",
+   "finding": "G06 XM-R06 (Teach rendered against attempt-1 final F1 refuses stale_final after a real retry commits F2; collection on and off)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.4
+  },
+  {
+   "case": "c_g06_xm_r06_teach_without_retry_creates_one_candidate",
+   "finding": "G06 XM-R06 control (without the retry the same Teach creates one candidate whose before is F1)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.25
+  },
+  {
+   "case": "g06_xm_c104_applied_transform_is_the_delivered_final",
+   "finding": "G06 XM-C104 (an applied auto-transform output is the one delivered final for History, Copy, Paste Again, the Scratchpad transfer and usage final_words; raw and Clean kept apart)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.24
+  },
+  {
+   "case": "c_g06_xm_c104_clean_is_the_final_without_auto_apply",
+   "finding": "G06 XM-C104 control (auto-apply off: every consumer carries Clean)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.24
+  },
+  {
+   "case": "g06_xm_c106_purge_after_render_revokes_content_actions",
+   "finding": "G06 XM-C106 (after the rendered final is purged, Copy, Paste Again and Teach have no effect with the purged text; the detail is revalidated) [suspected defect]",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.11
+  },
+  {
+   "case": "c_g06_xm_c106_unpurged_row_admits_once",
+   "finding": "G06 XM-C106 control (on an unpurged rendered row each action admits once)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "g06_xm_c107_old_attempt_search_opens_current_final",
+   "finding": "G06 XM-C107 (an old-attempt-only token may find the job under the declared retained-artifact search policy; the opened result shows the current attempt's final, never the old text)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.36
+  },
+  {
+   "case": "g06_xm_c108_unavailable_replay_stops_and_reports_reason",
+   "finding": "G06 XM-C108 (replaying B whose audio is purged or absent while A plays stops A, starts nothing and reports B's reason)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.09
+  },
+  {
+   "case": "c_g06_xm_c108_available_replay_switches_to_b",
+   "finding": "G06 XM-C108 control (B with audio: A stops and B plays)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.03
+  },
+  {
+   "case": "g06_xm_c109_transform_of_moved_note_never_revives_job",
+   "finding": "G06 XM-C109 (a note moved from History stays live and independent after its source job is deleted; a whole-note transform never recreates the job; consent on and off)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.31
+  },
+  {
+   "case": "c_g06_xm_c109_copied_row_job_stays_unchanged",
+   "finding": "G06 XM-C109 control (Copy then a transform leaves the job live and unchanged)",
+   "kind": "control",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.15
+  }
+ ]
+}

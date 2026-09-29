@@ -1,12 +1,12 @@
 {
  "suite": "tests/v2/notes/m12_corpus_runner.py",
  "suite_sha256": "cc4348289f90b20d979314ea6cf94127fb97714a26c006e13cce88db0ffd5d1f",
- "code_root_sha": "356a08a37651e007c9813b732406bc46f6d44b49",
- "tracked_files_modified": true,
+ "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+ "tracked_files_modified": false,
  "production_tree_modified": false,
  "localflow_imported_from_root": "LocalFlow",
  "python": "3.14.7",
- "localflow_tree": "79c3cff8463c14bb330ec3ca9d42db91cc42eab8",
+ "localflow_tree": "83e21ebf712e7da9c324dd9c72eda5e0c60fda91",
  "driver_sha256": {
   "m12_drivers.py": "86491364719310d18c530bd04409728d45920b29a8fc013ce23405db0d8b335f",
   "m12_drivers_b.py": "f6ee598f6b052611276f5126427326cd955d6a16cbfb2fbba9696210043b3914",
@@ -64,7 +64,7 @@
    "observed": {
     "regression": "c01_serial_appends_keep_an_immutable_parent_chain"
    },
-   "seconds": 0.008
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-C002",
@@ -127,7 +127,7 @@
    "observed": {
     "regression": "c07_clean_restore_rebinds_before_the_next_keystroke"
    },
-   "seconds": 0.24
+   "seconds": 0.253
   },
   {
    "id": "LF-M12-C005",
@@ -153,7 +153,7 @@
      "saved_then_restored": true
     }
    },
-   "seconds": 0.047
+   "seconds": 0.053
   },
   {
    "id": "LF-M12-C006",
@@ -177,7 +177,7 @@
      "newest_first_exact_ids": true
     }
    },
-   "seconds": 0.063
+   "seconds": 0.068
   },
   {
    "id": "LF-M12-C007",
@@ -201,7 +201,7 @@
      "newest_first_exact_ids": true
     }
    },
-   "seconds": 0.061
+   "seconds": 0.068
   },
   {
    "id": "LF-M12-C008",
@@ -225,7 +225,7 @@
      "newest_first_exact_ids": true
     }
    },
-   "seconds": 0.309
+   "seconds": 0.343
   },
   {
    "id": "LF-M12-C009",
@@ -266,7 +266,7 @@
    "observed": {
     "regression": "l02_populated_m12_table_loss_is_refused"
    },
-   "seconds": 0.032
+   "seconds": 0.034
   },
   {
    "id": "LF-M12-C011",
@@ -310,7 +310,7 @@
      "exact_literal_matches": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C013",
@@ -332,7 +332,7 @@
      "exact_literal_matches": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C014",
@@ -354,7 +354,7 @@
      "exact_literal_matches": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C015",
@@ -485,7 +485,7 @@
      "receipt_returned": true
     }
    },
-   "seconds": 0.0
+   "seconds": 0.001
   },
   {
    "id": "LF-M12-C020",
@@ -711,7 +711,7 @@
      "selection_kept": true
     }
    },
-   "seconds": 0.006
+   "seconds": 0.004
   },
   {
    "id": "LF-M12-C029",
@@ -732,7 +732,7 @@
      "commits_typed_autosave": true
     }
    },
-   "seconds": 0.006
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C030",
@@ -757,7 +757,7 @@
      "newest_save_settles_it": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C031",
@@ -777,7 +777,7 @@
    "observed": {
     "regression": "r03a_failed_switch_save_keeps_the_tail"
    },
-   "seconds": 0.047
+   "seconds": 0.054
   },
   {
    "id": "LF-M12-C032",
@@ -803,7 +803,7 @@
      "status_names_saved_state": true
     }
    },
-   "seconds": 0.257
+   "seconds": 0.252
   },
   {
    "id": "LF-M12-C033",
@@ -828,7 +828,7 @@
      "receipt_committed": true
     }
    },
-   "seconds": 0.013
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C034",
@@ -850,7 +850,7 @@
    "observed": {
     "regression": "r09b_failed_older_arrival_never_overwrites_newer_identity"
    },
-   "seconds": 0.051
+   "seconds": 0.044
   },
   {
    "id": "LF-M12-C035",
@@ -919,7 +919,7 @@
    "observed": {
     "regression": "c07_clean_restore_rebinds_before_the_next_keystroke"
    },
-   "seconds": 0.051
+   "seconds": 0.05
   },
   {
    "id": "LF-M12-C038",
@@ -991,7 +991,7 @@
      "only_output_words": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C041",
@@ -1045,7 +1045,7 @@
      "only_arrival": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C043",
@@ -1077,7 +1077,7 @@
      "store_path": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C044",
@@ -1335,7 +1335,7 @@
      "edit_after_anchor_delivers": true
     }
    },
-   "seconds": 0.274
+   "seconds": 0.275
   },
   {
    "id": "LF-M12-C053",
@@ -1366,7 +1366,7 @@
      "no_external": true
     }
    },
-   "seconds": 0.144
+   "seconds": 0.148
   },
   {
    "id": "LF-M12-C054",
@@ -1391,7 +1391,7 @@
    "observed": {
     "regression": "r19a_closed_note_dictation_does_not_touch_the_clipboard"
    },
-   "seconds": 0.13
+   "seconds": 0.129
   },
   {
    "id": "LF-M12-C055",
@@ -1446,7 +1446,7 @@
      "went_to_external_path": true
     }
    },
-   "seconds": 0.122
+   "seconds": 0.125
   },
   {
    "id": "LF-M12-C057",
@@ -1477,7 +1477,7 @@
      "no_external": true
     }
    },
-   "seconds": 0.046
+   "seconds": 0.047
   },
   {
    "id": "LF-M12-C058",
@@ -1503,7 +1503,7 @@
      "no_external": true
     }
    },
-   "seconds": 10.109
+   "seconds": 10.091
   },
   {
    "id": "LF-M12-C059",
@@ -1525,7 +1525,7 @@
    "observed": {
     "regression": "r13_whole_note_accept_refuses_after_growth"
    },
-   "seconds": 10.095
+   "seconds": 10.086
   },
   {
    "id": "LF-M12-C060",
@@ -1547,7 +1547,7 @@
    "observed": {
     "regression": "c05_selection_transform_allows_an_outside_edit"
    },
-   "seconds": 10.106
+   "seconds": 10.091
   },
   {
    "id": "LF-M12-C061",
@@ -1572,7 +1572,7 @@
      "never_retargets_the_other_copy": true
     }
    },
-   "seconds": 20.186
+   "seconds": 20.155
   },
   {
    "id": "LF-M12-C062",
@@ -1597,7 +1597,7 @@
      "no_clipboard": true
     }
    },
-   "seconds": 10.079
+   "seconds": 10.069
   },
   {
    "id": "LF-M12-C063",
@@ -1622,7 +1622,7 @@
      "replaced_original_region": true
     }
    },
-   "seconds": 20.113
+   "seconds": 20.095
   },
   {
    "id": "LF-M12-C064",
@@ -1647,7 +1647,7 @@
      "note_unchanged": true
     }
    },
-   "seconds": 0.075
+   "seconds": 0.06
   },
   {
    "id": "LF-M12-C065",
@@ -1672,7 +1672,7 @@
      "no_clipboard": true
     }
    },
-   "seconds": 10.097
+   "seconds": 10.09
   },
   {
    "id": "LF-M12-C066",
@@ -1699,7 +1699,7 @@
      "outside_never_touched": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.01
   },
   {
    "id": "LF-M12-C067",
@@ -1727,7 +1727,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C068",
@@ -1755,7 +1755,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.01
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C069",
@@ -1782,7 +1782,7 @@
      "outside_never_touched": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C070",
@@ -1810,7 +1810,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C071",
@@ -1865,7 +1865,7 @@
      "outside_never_touched": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-C073",
@@ -1948,7 +1948,7 @@
      "outside_never_touched": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C076",
@@ -1977,7 +1977,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-C077",
@@ -2006,7 +2006,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-C078",
@@ -2091,7 +2091,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-C081",
@@ -2118,7 +2118,7 @@
      "outside_never_touched": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C082",
@@ -2147,7 +2147,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-C083",
@@ -2281,7 +2281,7 @@
    "observed": {
     "regression": "r05c_failed_unlink_is_durably_pending_and_retried"
    },
-   "seconds": 0.007
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C089",
@@ -2421,7 +2421,7 @@
      "link_untouched": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-C095",
@@ -2469,7 +2469,7 @@
      "both_ok": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C097",
@@ -2493,7 +2493,7 @@
      "nothing_outside_dest": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C098",
@@ -2536,7 +2536,7 @@
    "observed": {
     "regression": "r14a_copy_uses_the_current_attempt_final_artifact"
    },
-   "seconds": 0.025
+   "seconds": 0.027
   },
   {
    "id": "LF-M12-C100",
@@ -2576,7 +2576,7 @@
    "observed": {
     "regression": "r14a_copy_uses_the_current_attempt_final_artifact"
    },
-   "seconds": 0.023
+   "seconds": 0.025
   },
   {
    "id": "LF-M12-C102",
@@ -2623,7 +2623,7 @@
    "observed": {
     "regression": "r24b_history_copy_unknown_is_not_failure_and_never_deletes"
    },
-   "seconds": 0.228
+   "seconds": 0.226
   },
   {
    "id": "LF-M12-C104",
@@ -2641,7 +2641,7 @@
    "observed": {
     "regression": "l01_legacy_row_transfer_is_honest"
    },
-   "seconds": 0.052
+   "seconds": 0.027
   },
   {
    "id": "LF-M12-C105",
@@ -2665,7 +2665,7 @@
      "move_degrades": true
     }
    },
-   "seconds": 0.031
+   "seconds": 0.024
   },
   {
    "id": "LF-M12-C106",
@@ -2707,7 +2707,7 @@
      "editor_bound": true
     }
    },
-   "seconds": 0.05
+   "seconds": 0.042
   },
   {
    "id": "LF-M12-C108",
@@ -2729,7 +2729,7 @@
      "view": true
     }
    },
-   "seconds": 0.047
+   "seconds": 0.04
   },
   {
    "id": "LF-M12-C109",
@@ -2775,7 +2775,7 @@
      "no_new_note": true
     }
    },
-   "seconds": 0.024
+   "seconds": 0.023
   },
   {
    "id": "LF-M12-C111",
@@ -2817,7 +2817,7 @@
    "observed": {
     "regression": "r23_chosen_transform_and_version_survive_refresh"
    },
-   "seconds": 0.043
+   "seconds": 0.045
   },
   {
    "id": "LF-M12-C113",
@@ -2864,7 +2864,7 @@
    "observed": {
     "regression": "r16b_same_revision_event_counts_once"
    },
-   "seconds": 0.133
+   "seconds": 0.135
   },
   {
    "id": "LF-M12-C115",
@@ -2887,7 +2887,7 @@
      "no_title_or_filename": true
     }
    },
-   "seconds": 0.136
+   "seconds": 0.14
   },
   {
    "id": "LF-M12-C116",
@@ -2931,7 +2931,7 @@
    "observed": {
     "regression": "r16a_late_callback_cannot_reopen_a_deleted_note"
    },
-   "seconds": 0.133
+   "seconds": 0.135
   },
   {
    "id": "LF-M12-C118",
@@ -2953,7 +2953,7 @@
      "closed_unavailable": true
     }
    },
-   "seconds": 0.137
+   "seconds": 0.14
   },
   {
    "id": "LF-M12-C119",
@@ -2971,7 +2971,7 @@
    "observed": {
     "regression": "c06_consent_off_keeps_notes_working"
    },
-   "seconds": 0.131
+   "seconds": 0.132
   },
   {
    "id": "LF-M12-C120",
@@ -3001,7 +3001,7 @@
      "final_words_of_the_job": true
     }
    },
-   "seconds": 0.148
+   "seconds": 0.152
   },
   {
    "id": "LF-M12-C121",
@@ -3021,7 +3021,7 @@
      "usage_unchanged": true
     }
    },
-   "seconds": 0.142
+   "seconds": 0.145
   },
   {
    "id": "LF-M12-C122",
@@ -3046,7 +3046,7 @@
      "never_asr_example": true
     }
    },
-   "seconds": 0.138
+   "seconds": 0.141
   },
   {
    "id": "LF-M12-C123",
@@ -3067,7 +3067,7 @@
      "no_source_job": true
     }
    },
-   "seconds": 0.01
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-C124",
@@ -3092,7 +3092,7 @@
      "rejected_decision_kept": true
     }
    },
-   "seconds": 0.012
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C125",
@@ -3112,7 +3112,7 @@
    "observed": {
     "regression": "r15a_delete_purges_the_note_transform_graph"
    },
-   "seconds": 10.098
+   "seconds": 10.077
   },
   {
    "id": "LF-M12-S001",
@@ -3140,7 +3140,7 @@
      "confirmed": true
     }
    },
-   "seconds": 0.145
+   "seconds": 0.138
   },
   {
    "id": "LF-M12-S002",
@@ -3172,7 +3172,7 @@
      "no_external": true
     }
    },
-   "seconds": 0.135
+   "seconds": 0.136
   },
   {
    "id": "LF-M12-S003",
@@ -3203,7 +3203,7 @@
      "no_external": true
     }
    },
-   "seconds": 0.142
+   "seconds": 0.143
   },
   {
    "id": "LF-M12-S004",
@@ -3234,7 +3234,7 @@
      "no_clipboard": true
     }
    },
-   "seconds": 0.238
+   "seconds": 0.241
   },
   {
    "id": "LF-M12-S005",
@@ -3258,7 +3258,7 @@
    "observed": {
     "regression": "r13_whole_note_accept_refuses_after_growth"
    },
-   "seconds": 10.104
+   "seconds": 10.085
   },
   {
    "id": "LF-M12-S006",
@@ -3293,7 +3293,7 @@
      "dirty_text_kept_when_refused": true
     }
    },
-   "seconds": 2.36
+   "seconds": 2.319
   },
   {
    "id": "LF-M12-S007",
@@ -3324,7 +3324,7 @@
      "b_not_overwritten": true
     }
    },
-   "seconds": 0.747
+   "seconds": 0.675
   },
   {
    "id": "LF-M12-S008",
@@ -3359,7 +3359,7 @@
      "marker_settled_only_at_newest": true
     }
    },
-   "seconds": 0.077
+   "seconds": 0.053
   },
   {
    "id": "LF-M12-S009",
@@ -3383,7 +3383,7 @@
    "observed": {
     "regression": "r09a_two_arrivals_keep_their_own_provenance"
    },
-   "seconds": 0.049
+   "seconds": 0.045
   },
   {
    "id": "LF-M12-S010",
@@ -3412,7 +3412,7 @@
      "not_retained_for_recovery": true
     }
    },
-   "seconds": 0.055
+   "seconds": 0.05
   },
   {
    "id": "LF-M12-S011",
@@ -3442,7 +3442,7 @@
      "no_accepted_revision": true
     }
    },
-   "seconds": 10.088
+   "seconds": 10.073
   },
   {
    "id": "LF-M12-S012",
@@ -3470,7 +3470,7 @@
      "no_unowned_orphan": true
     }
    },
-   "seconds": 0.011
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-S013",
@@ -3496,7 +3496,7 @@
    "observed": {
     "regression": "r05a_rolled_back_attachment_delete_keeps_payload"
    },
-   "seconds": 0.009
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-S014",
@@ -3522,7 +3522,7 @@
    "observed": {
     "regression": "r05b_rolled_back_note_delete_keeps_payload"
    },
-   "seconds": 0.008
+   "seconds": 0.01
   },
   {
    "id": "LF-M12-S015",
@@ -3550,7 +3550,7 @@
      "no_partial_set_left": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.01
   },
   {
    "id": "LF-M12-S016",
@@ -3578,7 +3578,7 @@
      "preexisting_tree_identical": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.01
   },
   {
    "id": "LF-M12-S017",
@@ -3607,7 +3607,7 @@
      "exactly_one_copy": true
     }
    },
-   "seconds": 0.025
+   "seconds": 0.026
   },
   {
    "id": "LF-M12-S018",
@@ -3635,7 +3635,7 @@
      "one_note": true
     }
    },
-   "seconds": 0.046
+   "seconds": 0.044
   },
   {
    "id": "LF-M12-S019",
@@ -3663,7 +3663,7 @@
      "no_duplicate_after_retry": true
     }
    },
-   "seconds": 0.135
+   "seconds": 0.137
   },
   {
    "id": "LF-M12-S020",
@@ -3729,7 +3729,7 @@
      "never_asr_example": true
     }
    },
-   "seconds": 0.14
+   "seconds": 0.139
   },
   {
    "id": "LF-M12-S022",
@@ -3758,7 +3758,7 @@
      "inserted_exact": true
     }
    },
-   "seconds": 0.139
+   "seconds": 0.144
   },
   {
    "id": "LF-M12-S023",
@@ -3786,7 +3786,7 @@
    "observed": {
     "regression": "r06b_timeout_then_late_commit_keeps_payload"
    },
-   "seconds": 0.217
+   "seconds": 0.214
   },
   {
    "id": "LF-M12-S024",
@@ -3812,7 +3812,7 @@
    "observed": {
     "regression": "r18_old_save_cannot_clear_a_newer_generation"
    },
-   "seconds": 0.072
+   "seconds": 0.07
   },
   {
    "id": "LF-M12-S025",
@@ -3839,7 +3839,7 @@
    "observed": {
     "regression": "r09b_failed_older_arrival_never_overwrites_newer_identity"
    },
-   "seconds": 0.044
+   "seconds": 0.045
   },
   {
    "id": "LF-M12-S026",
@@ -3865,7 +3865,7 @@
    "observed": {
     "regression": "r16a_late_callback_cannot_reopen_a_deleted_note"
    },
-   "seconds": 0.133
+   "seconds": 0.139
   },
   {
    "id": "LF-M12-S027",
@@ -3892,7 +3892,7 @@
    "observed": {
     "regression": "r08b_quit_settles_admitted_note_work"
    },
-   "seconds": 0.048
+   "seconds": 0.047
   },
   {
    "id": "LF-M12-S028",

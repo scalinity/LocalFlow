@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "status_reason": "Cross-milestone three-audit remediation of 340c566: all 17 merged findings reproduced and repaired on branch xm-local-remediation-20260928 (final production d6a555d), regressions and mutants green, independent review converged over seven rounds. The campaign is INCOMPLETE and unmerged: the merged cross-milestone corpus (GATE-G06) is largely unexecuted, and GATE-G02, GATE-G07 and GATE-G08 are partial. The M14 implementation record below is historical.",
+  "status_reason": "Cross-milestone three-audit remediation of 340c566: all 17 merged findings reproduced and repaired on branch xm-local-remediation-20260928 (final production cabc756), regressions and mutants green, independent review converged over seven rounds. The merged cross-milestone corpus (GATE-G06) is closed under the owner's revised rule: all 309 cases dispositioned, 58 mandatory drivers executed, seven further defects repaired. The campaign is INCOMPLETE, unpushed and unmerged: GATE-G02, the interface union, GATE-G07 and GATE-G08 are partial. The M14 implementation record below is historical.",
   "current_state": {
     "as_of": "2026-09-28",
     "store_schema_version": 13,
@@ -8,22 +8,21 @@
     "campaign": "Three-audit cross-milestone remediation (Audits A, C, B of 340c566; 17 merged findings, gates G01-G10, policies D01-D04)",
     "campaign_state": "CROSS_MILESTONE_REMEDIATION_INCOMPLETE",
     "blockers": [
-      "GATE-G06: of the 309 merged cross-milestone cases (gates/casemap.json), only the finding reproductions and their controls have executed drivers",
       "GATE-G02: 24 of 33 requirements bound to tests and production branches; 5 partial, 4 future (gates/binding_summary.md)",
       "Interface union: 70 of 78 rows bound; 5 partial, 3 unbound (gates/ifunion_summary.md)",
       "GATE-G07: the owned native Hub suite runs its passive tier only; active tier, real keyboard and focus are not run",
       "GATE-G08: dictation end-to-end timing needs a human speaker and is not run"
     ],
     "branch": "xm-local-remediation-20260928 (not merged onto main; an incomplete remediation is never merged)",
-    "production_commit": "d6a555d",
+    "production_commit": "cabc756",
     "evidence": [
       "docs/v2/acceptance/cross-milestone/remediation/adjudications.json",
       "docs/v2/acceptance/cross-milestone/remediation/decisions.json",
       "docs/v2/acceptance/cross-milestone/merged_ledger.json",
       "docs/v2/handoffs/CROSS-MILESTONE.md"
     ],
-    "performance": "Current performance on this Mac is read from docs/v2/benchmarks/20260928-180600-xm-remediation-final (M14 curation, profile and export cost with the dictation-shaped writer probe; M09 Hub construction, publication and History search), measured after correctness on the final production code. Dictation end-to-end is not measured. The benchmark figures under historical_implementation are historical and describe the M14 implementation code.",
-    "may_run_next": "The owner decides how GATE-G06 closes (drivers for the remaining merged cases, or a narrower assignment) and whether the branch is pushed; until the campaign completes nothing merges. The owner's manual runbook checks (docs/v2/VERIFICATION.html, 82 checks, all Not run as committed) may run beside it. M15 is not started: it stays gated by this campaign, by M11's incomplete verification and by M07's pending qualification.",
+    "performance": "Current performance on this Mac is read from docs/v2/benchmarks/20260928-203300-xm-remediation-g06 (M14 curation, profile and export cost with the dictation-shaped writer probe; M09 Hub construction, publication and History search), measured after correctness on the final production code. Dictation end-to-end is not measured. The benchmark figures under historical_implementation are historical and describe the M14 implementation code.",
+    "may_run_next": "GATE-G06 is closed under the owner's revised rule (gates/g06_disposition.json). The owner decides how the remaining blockers close — GATE-G02's partial requirements, the interface union's partial and unbound rows, GATE-G07's active native tier and GATE-G08's end-to-end timing (bound, re-scoped, or moved to the manual/human qualification gates) — and whether a retry may insert at the current focus (XM-C042); until the campaign completes nothing is pushed or merged. The owner's manual runbook checks (docs/v2/VERIFICATION.html, 82 checks, all Not run as committed) may run beside it. M15 is not started: it stays gated by this campaign, by M11's incomplete verification and by M07's pending qualification.",
     "pending_human": "docs/v2/VERIFICATION.html: the M01-M14 checks, including M07-V001 and M07-V002 (M07-V002 blocked: its private review tool does not exist)",
     "next_milestone": "M15 (not started)"
   },
