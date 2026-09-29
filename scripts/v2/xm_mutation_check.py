@@ -461,6 +461,16 @@ MUTATIONS = [
      [(APP, "                            self._hub.state.job_changed(job_id)\n",
        mark("XM-MU73", 28) + "                            pass\n")],
      {G06C2: ["g06_xm_r18_retry_commits_while_history_read_is_held"]}),
+    ("XM-MU74", "G06 XM-C020",
+     "the usage fact's capture instant is minted after the mic opens",
+     [(APP, "        self._job = {\n"
+            "            \"job_id\": job_id, \"family_id\": family_id,\n"
+            "            \"captured_at_utc\": captured_at,\n",
+       mark("XM-MU74", 8)
+       + "        self._job = {\n"
+         "            \"job_id\": job_id, \"family_id\": family_id,\n"
+         "            \"captured_at_utc\": v2.ids.now_utc_iso(),\n")],
+     {G06C2: ["g06_xm_c020_mh06_control_clean_capture"]}),
 ]
 
 

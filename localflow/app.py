@@ -3406,10 +3406,14 @@ class AppDelegate(NSObject):
             # S29.8 stop condition: a new dictation ends any live
             # outcome-observation window.
             self._insertion.note_new_dictation()
+        # One capture instant for the job row, the journal and the job
+        # the usage fact is recorded from (minting it after the mic opens
+        # would move Insights off History's capture time).
+        captured_at = v2.ids.now_utc_iso()
         job_id, family_id = self.store.create_job(
             kind="dictation", session_id=self.v2log.session_id,
             boot_id=self.v2log.boot_id,
-            captured_at_utc=v2.ids.now_utc_iso(), time_quality="known",
+            captured_at_utc=captured_at, time_quality="known",
             timezone=v2.ids.local_zone_name(),
             utc_offset_minutes=v2.ids.utc_offset_minutes(),
             state="capturing", source_revision=v2.ids.source_revision(),
@@ -3435,7 +3439,7 @@ class AppDelegate(NSObject):
                     V2_JOURNAL, job_id=job_id, family_id=family_id,
                     sample_rate=self.cfg["sample_rate"],
                     emit=self.v2log.emit,
-                    meta={"captured_at_utc": v2.ids.now_utc_iso(),
+                    meta={"captured_at_utc": captured_at,
                           "time_quality": "known"},
                     boot_id=self.v2log.boot_id,
                     open_gate=self._journal_open_gate(job_id))
@@ -3452,7 +3456,7 @@ class AppDelegate(NSObject):
             return
         self._job = {
             "job_id": job_id, "family_id": family_id,
-            "captured_at_utc": v2.ids.now_utc_iso(),
+            "captured_at_utc": captured_at,
             "timezone": v2.ids.local_zone_name(),
             "utc_offset_minutes": v2.ids.utc_offset_minutes(),
             "journal": journal,

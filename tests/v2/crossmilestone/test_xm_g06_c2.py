@@ -532,6 +532,171 @@ def g06_xm_r18_control_reads_on_either_side_of_the_commit():
 
 
 # =============================================================================
+# XM-C020 / XM-MH06 — a recoverable failure retried through the coordinator
+# into the real InsertionService: one logical dictation in usage and Insights
+# =============================================================================
+
+_WRITES = ("ax_set_text", "ax_set_range", "paste_consumed", "ax_set_noop")
+
+
+def _run_inline(a, *, snapshot):
+    """The coordinator's next main-thread handoff run inline (callbacks
+    too), then the real service settled. ``snapshot`` attaches the M08
+    world's destination to a fresh capture, as AppEnv.dictate does; a
+    retry keeps whatever job ``_retry_job`` built."""
+    import localflow.app as app_mod
+    from m08_world import wait_for
+    from test_m08_remediation import snap
+    fn, args = a.h.run_coordinator()
+    if snapshot and fn == a.d._finishWithText_:
+        s = snap(a.w)
+        args[1]["context_snapshot"] = s
+        args[1]["target"] = s.target
+    real = app_mod.AppHelper.callAfter
+    app_mod.AppHelper.callAfter = lambda f, *x: f(*x)
+    try:
+        fn(*args)
+        assert wait_for(lambda: not a.d._active_jobs and not a.svc.pending,
+                        10), "fixture: the job never settled"
+    finally:
+        app_mod.AppHelper.callAfter = real
+    a.d.store.sync()
+
+
+def _instant(text):
+    from datetime import datetime
+    return datetime.fromisoformat(text).isoformat() if text else text
+
+
+def _facts(store, job):
+    return rows(store, "SELECT insertion_outcome, attempt, activity_at_utc,"
+                " final_words, day_local FROM usage_facts WHERE job_id=?"
+                " AND kind='dictation'", (job,))
+
+
+def _one_logical_dictation(retry):
+    """One capture in AppEnv (the real app, its own InsertionService over
+    the M08 world, F1 focused). With ``retry`` attempt 1 (ALPHA) fails in
+    cleanup and History's Retry runs attempt 2 (BETA) to insertion.
+    Returns the witness ledger and what the product recorded."""
+    from test_m08_remediation import AppEnv
+    import localflow.app as app_mod
+    a = AppEnv(consent=True, window=0.3)
+    try:
+        app_mod.AUDIO_DEBUG_DIR = a.h.tmp / "dbg"
+        a.d.recorder.durations.extend([1.0] * 4)
+        sup = Scripted(asr=lambda j, n: ALPHA if n == 1 else BETA,
+                       fail_clean={1} if retry else ())
+        a.d.supervisor = sup
+        store = a.d.store
+        since = a.w.effects[-1][0] if a.w.effects else 0
+        # A clock that moves 5 ms per read across the press: the mic-open
+        # latency a real capture has, so every instant minted at the
+        # capture boundary is distinguishable.
+        real_now, ticks = ids.now_utc_iso, [0]
+
+        def ticking(ts=None):
+            ticks[0] += 1
+            return real_now(ts if ts is not None
+                            else time.time() + 0.005 * ticks[0])
+        ids.now_utc_iso = ticking
+        try:
+            a.h.press_release()
+        finally:
+            ids.now_utc_iso = real_now
+        _run_inline(a, snapshot=True)
+        job = one(store, "SELECT job_id FROM jobs ORDER BY rowid DESC")[0]
+        captured = one(store, "SELECT captured_at_utc FROM jobs WHERE"
+                       " job_id=?", (job,))[0]
+        want_attempt = 1
+        if retry:
+            assert one(store, "SELECT state FROM jobs WHERE job_id=?",
+                       (job,))[0] == "failed_recoverable", \
+                "fixture: attempt 1 did not fail recoverably"
+            first = _facts(store, job)
+            assert [f[0] for f in first] == ["failed"], \
+                f"fixture: attempt 1's usage fact {first}"
+            out = a.d.hubRetryJob(job) or {}
+            assert out.get("outcome") in (None, "requeued", "queued"), \
+                f"fixture: retry refused {out}"
+            _run_inline(a, snapshot=False)
+            want_attempt = 2
+        text = [t for j, n, t in sup.clean_inputs
+                if j == job and n == want_attempt]
+        assert len(text) == 1, f"fixture: cleanup inputs {text}"
+        final = one(store, "SELECT content_text FROM artifacts WHERE"
+                    " job_id=? AND role='applied_output' ORDER BY rowid"
+                    " DESC", (job,))[0]
+        assert final == text[0].upper(), \
+            f"fixture: applied final {final!r} is not attempt" \
+            f" {want_attempt}'s cleanup"
+        settled = one(store, "SELECT state FROM insertions WHERE job_id=?"
+                      " ORDER BY rowid DESC", (job,))[0]
+        facts = _facts(store, job)
+        day = facts[0][4] if facts else None
+        # The independent daily recomputation, from the raw facts.
+        recomputed = one(store, "SELECT COUNT(*), SUM(final_words) FROM"
+                         " usage_facts WHERE kind='dictation' AND"
+                         " day_local=?", (day,))
+        daily = {r["day"]: r for r in a.d._insights.report()["daily"]}
+        writes = [e for e in a.w.effects if e[2] == "F1" and e[0] > since
+                  and e[1] in _WRITES]
+        return {
+            # Instants compared as instants: the job row and the fact
+            # write the same time at different fractional precision.
+            "facts": [(f[0], f[1], _instant(f[2]), f[3]) for f in facts],
+            "want_fact": [(settled, want_attempt, _instant(captured),
+                           len(final.split()))],
+            "settled": settled,
+            "report_day": {k: (daily.get(day) or {}).get(k) for k in
+                           ("dictations", "final_words", "transforms")},
+            "want_day": {"dictations": recomputed[0],
+                         "final_words": recomputed[1], "transforms": 0},
+            "one_day_row": recomputed[0] == 1,
+            "transform_facts": one(store, "SELECT COUNT(*) FROM usage_facts"
+                                   " WHERE kind='transform'")[0],
+            "f1": a.w.text("F1"), "final": final,
+            "f1_writes": len(writes),
+        }
+    finally:
+        a.close()
+
+
+def _ledger_violations(got):
+    bad = {}
+    if got["facts"] != got["want_fact"]:
+        bad["usage_fact"] = (got["facts"], got["want_fact"])
+    if got["settled"] in ("failed", None):
+        bad["settled"] = got["settled"]
+    if got["report_day"] != got["want_day"] or not got["one_day_row"]:
+        bad["insights_day"] = (got["report_day"], got["want_day"])
+    if got["transform_facts"]:
+        bad["transform_facts"] = got["transform_facts"]
+    if got["f1"].strip() != got["final"] or got["f1_writes"] != 1:
+        bad["F1"] = (got["f1"], got["final"], got["f1_writes"])
+    return bad
+
+
+@case("G06 XM-C020 / XM-MH06 (a failed attempt retried through the"
+      " coordinator and inserted by the real service is one logical"
+      " dictation: attempt 2's outcome, the original instant, counted once)")
+def g06_xm_c020_mh06_retry_is_one_logical_dictation():
+    got = _one_logical_dictation(retry=True)
+    bad = _ledger_violations(got)
+    assert not bad, ("the retried capture's usage, Insights or insertion"
+                     " ledger (got, want): " + json.dumps(bad, default=str))
+
+
+@case("G06 XM-C020 / XM-MH06 control (one clean capture has the same"
+      " one-fact ledger with attempt 1)", kind="control")
+def g06_xm_c020_mh06_control_clean_capture():
+    got = _one_logical_dictation(retry=False)
+    bad = _ledger_violations(got)
+    assert not bad, ("a clean capture's ledger (got, want): "
+                     + json.dumps(bad, default=str))
+
+
+# =============================================================================
 # XM-MH13 — the applied transformed final from the real pipeline, and Teach
 # =============================================================================
 
