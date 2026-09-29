@@ -14,10 +14,10 @@ A suite name in a docstring was never counted as coverage.
 
 ## Counts
 
-| | bound | partial | unbound | future |
-|---|---|---|---|---|
-| Requirements (33) | 24 | 5 | 0 | 4 |
-| Suites (22) | 17 | 2 | 0 | 3 |
+| | bound | bound with later qualification | partial | unbound | future |
+|---|---|---|---|---|---|
+| Requirements (33) | 25 (24 + LF-R28) | 4 | 0 | 0 | 4 |
+| Suites (22) | 17 | 2 (EV-04 human, EV-18 model) | 0 | 0 | 3 |
 
 - 19 suites have at least one tracked test file. Three have none: EV-16, EV-17 and EV-22.
 - The 188 binding rows break down as: 144 portable_automated, 8 native_owned_window, 8 model_backed, 20 human and 12 unbound.
@@ -29,16 +29,17 @@ A suite name in a docstring was never counted as coverage.
 - **LF-R26:** packaging, upgrade and final acceptance (EV-17). Sleep/wake and store upgrades are tested only under EV-04 and EV-03.
 - **LF-R33:** comparator and challenge evaluation (EV-22). `test_short_command_scoring.py` is text-only.
 
-## Partial requirements, with the reason
+## Final dispositions of the five requirements that were partly bound
 
-- **LF-R04:** EV-04 names "silence" and "mic switch", and neither has a case.
-  - `localflow/audio.py:46 Recorder._resolve_device` is never exercised: every tracked config sets `input_device: None`.
-  - The `capture.near_silence` / `capture.dead_tail` branch in `localflow/app.py` (~3700) is referenced by no test.
-  - Device loss, journal, cancel, wake and Fn are bound. Real hardware is covered only by human check M03-V006.
-- **LF-R25:** storage, deletion and export privacy (EV-03/19/21) are bound. EV-17's whole-app no-network acceptance is M16.
-- **LF-R27:** the V1 watchdog and cleanup controls are bound. EV-17 is M16, and ASR language coverage has no case: the only language case is one Spanish normalization case, `test_R13_spanish_accented_numbers`.
-- **LF-R28:** registry and runbook traceability are checked only as documents (`test_registry.py`, `test_xm_runbook.py`, and the xm cases `x16`/`x17`). Nothing tests handoff or contract freshness. EV-17 sign-off is M16.
-- **LF-R29:** the selector and the unsupported-adapter boundary are bound. No qualified decoder adapter exists: `test_request_fields_shape_pinned_for_qualified_adapter` uses a synthetic manifest, and applied-hint decoding plus the acoustic strata are M15.
+Every automatable source-path gap was closed with a test on the real production path; what remains is named with its later gate. Full records: `binding.json` → each requirement's `g02_final`.
+
+| Requirement | Disposition | Owner / suite | Current tests (added here in bold) | Production path | Remaining |
+|---|---|---|---|---|---|
+| LF-R04 capture, hotkeys, mic switching, crash recovery | BOUND_WITH_LATER_HUMAN_QUALIFICATION | M03 / EV-04 | **`test_xm_remediation.py::r04_mic_switch_opens_the_configured_input`**, **`r04_silence_warnings_are_reported`**; lifecycle, journal and stuck-overlay suites | `audio.py Recorder._resolve_device → Recorder.start`; `app.py AppDelegate._finishCapture` (near-silence / dead-tail warnings) | real microphones and device switching: M03-V006 |
+| LF-R25 offline operation, private storage, deletion | BOUND_WITH_LATER_NATIVE_QUALIFICATION | M02 / EV-03, EV-19, EV-21; EV-17 | store, collector, export, validator and privacy suites; **`r25_no_network_client_imports`** | `store.py Store`; `training.py EvidenceCollector`; `curation/export.py`; no network client import anywhere under `localflow/` | whole-app offline operation at runtime: EV-17 (M16) |
+| LF-R27 existing behaviour and language coverage | BOUND_WITH_LATER_MODEL_QUALIFICATION | M03/M04; EV-04, EV-17 | `test_stuck_overlay.py`, `test_m04_review_round.py::test_R13_spanish_accented_numbers`, `test_cleanup.py` (model-backed) | `app.py` watchdog, `hotkey.py`, `cleanup.py`, `v2/normalize` | ASR language coverage needs the real model: M15; EV-17 (M16) |
+| LF-R28 contracts, handoffs, traceable verification | FULLY_BOUND | EV-01 | `test_registry.py`, `test_xm_runbook.py`, `x16`, `x17`, **`r28_handoff_and_status_are_fresh`** (the STATUS production commit is in HEAD; the handoff names the same state and commit) | `build_registry.py`; `STATUS.json current_state`; `handoffs/CROSS-MILESTONE.md`; `VERIFICATION.html` | none here; the M16 sign-off is its own later requirement |
+| LF-R29 pre-decode hint capabilities, one selector | BOUND_WITH_LATER_MODEL_QUALIFICATION | M05 / EV-18 | `test_hint_selection.py`, `test_audio_fidelity.py`, `test_vocabulary_pipeline.py`, `test_context_pipeline.py` | `vocabulary.py RelevantVocabularySelector/HintSet`; `capabilities.py`; app hint freeze | a qualified decoder adapter and acoustic strata: M15 |
 
 ## Harness-only, fake, static, dead or mislabelled tests
 

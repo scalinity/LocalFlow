@@ -2,14 +2,14 @@
  "suite": "tests/v2/crossmilestone/test_xm_remediation.py",
  "code": {
   "suite": "tests/v2/crossmilestone/test_xm_remediation.py",
-  "suite_sha256": "3a268b0f610b336fe314f80e144aac4e354e4c916e2d0e1e17a6141f295b6216",
-  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
-  "tracked_files_modified": false,
+  "suite_sha256": "6c88eb80ac429bb5cdb2a958ead73ab7b9dc9dc593593ac0ce9596b7ab40ab4b",
+  "code_root_sha": "00e8cad0933e4f43be4216e5cdae2d86d40056dd",
+  "tracked_files_modified": true,
   "production_tree_modified": false,
   "python": "3.14.7"
  },
  "counts": {
-  "PASS": 79
+  "PASS": 86
  },
  "invoked": [
   "c_app_refuses_a_torn_dictionary",
@@ -90,7 +90,14 @@
   "x14_lost_record_before_rename_puts_the_earlier_export_back",
   "c_crash_before_rename_restores_and_the_retry_completes",
   "x16_status_separates_current_state_from_historical_record",
-  "x17_m07_obligations_have_stable_runbook_ownership"
+  "x17_m07_obligations_have_stable_runbook_ownership",
+  "if001_store_failure_event_carries_no_message_text",
+  "if002_dictionary_timeout_is_not_a_refusal",
+  "if009_consent_timeout_is_outcome_unknown",
+  "r04_mic_switch_opens_the_configured_input",
+  "r04_silence_warnings_are_reported",
+  "r25_no_network_client_imports",
+  "r28_handoff_and_status_are_fresh"
  ],
  "results": [
   {
@@ -107,7 +114,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.14
+   "seconds": 0.13
   },
   {
    "case": "x02_recovery_copy_refusal_is_shown_in_the_recovery_menu",
@@ -123,7 +130,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.14
+   "seconds": 0.13
   },
   {
    "case": "c_recovery_copy_publishes_when_nothing_is_pending",
@@ -155,7 +162,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.11
+   "seconds": 0.1
   },
   {
    "case": "c_ledger_failure_with_unchanged_text_keeps_raw_input",
@@ -203,7 +210,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.19
+   "seconds": 0.18
   },
   {
    "case": "c_collection_on_retry_resolves_the_new_manifest",
@@ -219,7 +226,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.86
+   "seconds": 0.82
   },
   {
    "case": "x07_excluded_latest_attempt_never_falls_back_to_an_older_one",
@@ -251,7 +258,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.88
+   "seconds": 0.85
   },
   {
    "case": "x03_interleaved_updates_preserve_the_committed_definition",
@@ -291,7 +298,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.05
+   "seconds": 0.06
   },
   {
    "case": "c_fresh_form_update_changes_only_the_edited_field",
@@ -323,7 +330,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.3
+   "seconds": 0.31
   },
   {
    "case": "c_refused_add_saves_nothing_and_a_fixed_form_adds_once",
@@ -347,7 +354,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.3
+   "seconds": 0.29
   },
   {
    "case": "c_save_refused_before_admission_is_not_saved_then_saves_once",
@@ -387,7 +394,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.35
+   "seconds": 0.34
   },
   {
    "case": "c_unknown_create_never_deletes_the_source",
@@ -395,7 +402,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.37
+   "seconds": 0.34
   },
   {
    "case": "x11_renamed_entry_never_relabels_historical_speech",
@@ -403,7 +410,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.12
+   "seconds": 0.1
   },
   {
    "case": "x11_missing_frozen_record_is_unrecorded_never_relabeled",
@@ -427,7 +434,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.1
+   "seconds": 0.09
   },
   {
    "case": "x12_older_refresh_never_repaints_over_a_validate_result",
@@ -435,7 +442,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.08
+   "seconds": 0.07
   },
   {
    "case": "x12_validate_result_binds_to_its_destination_across_pane_switch",
@@ -459,7 +466,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.39
+   "seconds": 0.37
   },
   {
    "case": "x12_unknown_export_instruction_outranks_the_replaced_validation",
@@ -467,7 +474,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.37
+   "seconds": 0.35
   },
   {
    "case": "x12_older_validate_never_shows_during_or_after_a_failed_export",
@@ -475,7 +482,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.57
+   "seconds": 0.55
   },
   {
    "case": "x12_completed_export_supersedes_a_validate_pressed_during_it",
@@ -483,7 +490,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.37
+   "seconds": 0.35
   },
   {
    "case": "x12_validate_refused_exactly_while_an_export_may_replace_the_folder",
@@ -491,7 +498,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 15.11
+   "seconds": 15.09
   },
   {
    "case": "x14_hub_export_presses_while_one_runs",
@@ -499,7 +506,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.06
+   "seconds": 0.05
   },
   {
    "case": "x12_validate_resolves_the_folder_like_export",
@@ -507,7 +514,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.04
+   "seconds": 0.05
   },
   {
    "case": "x12_failed_export_never_shows_a_validation_taken_during_it",
@@ -523,7 +530,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.07
+   "seconds": 0.05
   },
   {
    "case": "x15_hub_offers_undo_approval_for_the_rendered_candidate",
@@ -563,7 +570,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.03
+   "seconds": 0.02
   },
   {
    "case": "x14_post_rename_crash_is_recognized_not_lost_or_relabeled",
@@ -595,7 +602,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.13
+   "seconds": 0.14
   },
   {
    "case": "x14_a_concurrent_export_never_reconciles_a_live_build",
@@ -619,7 +626,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.07
+   "seconds": 0.08
   },
   {
    "case": "x14_interrupted_export_leaves_no_copy_of_recordings_behind",
@@ -627,7 +634,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.09
+   "seconds": 0.1
   },
   {
    "case": "x14_interrupted_export_is_cleaned_wherever_it_was_written",
@@ -675,7 +682,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.08
+   "seconds": 0.09
   },
   {
    "case": "x14_another_exporter_never_reconciles_a_publishing_build",
@@ -707,7 +714,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.25
+   "seconds": 0.26
   },
   {
    "case": "x16_status_separates_current_state_from_historical_record",
@@ -724,6 +731,62 @@
    "status": "PASS",
    "detail": null,
    "seconds": 0.0
+  },
+  {
+   "case": "if001_store_failure_event_carries_no_message_text",
+   "finding": "XM-IF-001 (a failed writer op's event is content-free whatever its exception message quotes)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "if002_dictionary_timeout_is_not_a_refusal",
+   "finding": "XM-IF-002/011 (an admitted Dictionary write that timed out reads as outcome unknown, never as not added; the import is not failed)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.04
+  },
+  {
+   "case": "if009_consent_timeout_is_outcome_unknown",
+   "finding": "XM-IF-009 (a consent change that timed out after admission is reported as outcome unknown, never failed; menu toggles survive it)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
+  },
+  {
+   "case": "r04_mic_switch_opens_the_configured_input",
+   "finding": "LF-R04 (a configured microphone is chosen by name among input devices and opened; an unknown one falls back to the default, said so)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.0
+  },
+  {
+   "case": "r04_silence_warnings_are_reported",
+   "finding": "LF-R04 (a nearly silent capture and a long silent tail are reported as such, and the dictation still proceeds)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.25
+  },
+  {
+   "case": "r25_no_network_client_imports",
+   "finding": "LF-R25 (no LocalFlow module imports a network client; whole-app offline operation at runtime is M16's native acceptance)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.26
+  },
+  {
+   "case": "r28_handoff_and_status_are_fresh",
+   "finding": "LF-R28 (the cross-milestone handoff and STATUS agree on the current state and name a production commit HEAD contains)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.01
   }
  ]
 }

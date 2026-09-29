@@ -3,13 +3,13 @@
  "kind": "cross_milestone_adjudications",
  "audited_base": "340c566686c7123bfcf721e16160aacabbe0b97d",
  "policy_id": "xm-policy-r1",
- "campaign_state": "CROSS_MILESTONE_REMEDIATION_INCOMPLETE",
- "campaign_state_reason": "Every one of the 17 merged findings was reproduced on the audited base and is repaired with its regressions green; seven independent review rounds converged. GATE-G06 is closed under the owner's revised rule: all 309 merged cases are dispositioned (gates/g06_disposition.json) and the 58 mandatory drivers pass after repairing the seven defects they reproduced. The campaign is not complete because the interface union keeps 5 partial and 3 unbound rows, GATE-G02 binds 24 of 33 requirements fully (5 partial, 4 future), GATE-G07's active native tier and GATE-G08's end-to-end timing are not run.",
+ "campaign_state": "CROSS_MILESTONE_REMEDIATION_COMPLETE_PENDING_MANUAL_MODEL_VERIFICATION",
+ "campaign_state_reason": "The source-remediation campaign is complete: all 17 merged findings reproduced and repaired; GATE-G01..G06 and G09 closed (G02 with no partial requirement, the interface union with no unbound row, G06 with DRIVER_REQUIRED 0); G07 and G08 closed for the source remediation under the owner's decisions; XM-C042 and POLICY-D03 implemented with their regressions; 88 of 88 mutants killed; ten independent review rounds, the last converged. Pending, never implied passed (gates/qualification_ledger.md): native — G07's active tier, the real-click Paste Again pick, XM-C196/C121/C197; manual — the runbook checks in docs/v2/VERIFICATION.html, M03-V006; model — M07-V001, M07-V002 (blocked on the separate review tool), the M11 integrated record (GATE-G10), LF-R27/LF-R29; human/M15 — human-speaker end-to-end timing (XM-C191/C192/C194/C195/MH32) and M15's own qualification.",
  "production": {
   "first_pass": "63f9ef25148b4d10381693527e4679e351dcd60a",
-  "final": "cabc756",
-  "tests_final": "26f8afe",
-  "note": "d6a555d closed the 17 merged findings; 6a4dcfc and cabc756 repair the seven GATE-G06 defects. Commits after cabc756 change tests and documents only."
+  "final": "a33f681",
+  "tests_final": "00e8cad",
+  "note": "d6a555d closed the 17 merged findings; 6a4dcfc and cabc756 repair the seven GATE-G06 defects; a33f681 implements the final owner decisions (XM-C042, POLICY-D03, the interface-union consumers, the G02 cases). Commits after a33f681 change tests and documents only."
  },
  "dispositions": ["reproduced", "narrowed", "test_gap_only", "design_only", "residual"],
  "findings": [
@@ -64,23 +64,24 @@
  ],
  "gates": {
   "GATE-G01": {"state": "closed", "evidence": "remediation/caller_inventory.json; gates/census.json"},
-  "GATE-G02": {"state": "partial", "evidence": "gates/binding.json, gates/binding_summary.md", "detail": "33 requirements: 24 bound, 5 partial, 4 future (M15/M16); 22 suites: 17 bound, 2 partial, 3 future."},
+  "GATE-G02": {"state": "closed", "evidence": "gates/binding.json, gates/binding_summary.md", "detail": "33 requirements: 25 bound (LF-R28 fully bound by r28), 4 bound with later qualification (LF-R04 human M03-V006, LF-R25 native EV-17/M16, LF-R27 and LF-R29 model M15), 4 future (M15/M16), none partial; the missing automatable parts were closed (r04 mic switch and silence warnings, r25 network-client guard, r28 handoff freshness). 22 suites: 17 bound, EV-04 bound with later human and EV-18 with later model qualification, 3 future."},
   "GATE-G03": {"state": "closed", "evidence": "tests/v2/crossmilestone/test_xm_runbook.py"},
   "GATE-G04": {"state": "closed", "evidence": "test_xm_store_families.py c_every_historical_schema_upgrades_with_an_exact_backup, x01l, x01m"},
   "GATE-G05": {"state": "closed", "evidence": "tests/v2/crossmilestone/test_xm_privacy.py"},
-  "GATE-G06": {"state": "closed", "evidence": "gates/g06_disposition.json, gates/g06_summary.md, final/g06_*.json", "detail": "Closed under the owner's revised rule (2026-09-28): all 309 merged cases dispositioned — 96 EXECUTED_PASS (58 by G06 drivers, 38 by cross-milestone witnesses), 159 COVERED_BY_CURRENT_ACCEPTED_SUITE, 3 DEFERRED_NATIVE, 2 DEFERRED_MODEL, 8 DEFERRED_M15, 1 NOT_APPLICABLE_WITH_REASON, 40 DRIVER_REQUIRED, none mandatory before merge. The 58 mandatory drivers reproduced seven defects, all repaired. 309 declarative cases are not 309 bespoke drivers: overlapping invariants name their owner and evidence."},
-  "GATE-G07": {"state": "partial", "evidence": "tests/v2/crossmilestone/test_native_xm_hub.py (passive tier)", "detail": "active tier, real keyboard/focus and the Hub's human checks not run."},
-  "GATE-G08": {"state": "partial", "evidence": "docs/v2/benchmarks (cross-milestone final)", "detail": "writer contention and Hub acknowledgement measured on this Mac after correctness; dictation end-to-end needs a human speaker and is not run."},
+  "GATE-G06": {"state": "closed", "evidence": "gates/g06_disposition.json, gates/g06_summary.md, final/g06_*.json", "detail": "Closed under the owner's revised rule and the non-cascading semantic-impact rule (2026-09-28): all 309 merged cases dispositioned — 97 EXECUTED_PASS (59 by G06 drivers incl. the XM-C042 regressions, 38 by cross-milestone witnesses), 159 COVERED_BY_CURRENT_ACCEPTED_SUITE, 3 DEFERRED_NATIVE, 1 DEFERRED_MODEL, 1 DEFERRED_HUMAN, 8 DEFERRED_M15, 1 NOT_APPLICABLE_WITH_REASON, 39 FUTURE_HARDENING_SPEC (invariant, proposed driver, reason and owning phase kept), DRIVER_REQUIRED 0. The drivers reproduced seven defects, all repaired. 309 declarative cases are not 309 bespoke drivers: overlapping invariants name their owner and evidence."},
+  "GATE-G07": {"state": "CLOSED_FOR_CROSS_MILESTONE_SOURCE_REMEDIATION_WITH_REMAINING_NATIVE_QUALIFICATION", "evidence": "tests/v2/crossmilestone/test_native_xm_hub.py (passive tier, final/native_xm_hub.json); gates/qualification_ledger.md", "detail": "Owner decision 2026-09-28: the owned synthetic Hub evidence stands for what it exercised; the active tier, real keyboard and focus, and the real-click Paste Again pick move to the native/manual ledger with their case ids (XM-C196, XM-C121, XM-C197) and owners. No deferred native case is marked passed."},
+  "GATE-G08": {"state": "CLOSED_FOR_CROSS_MILESTONE_SOURCE_REMEDIATION_WITH_REMAINING_HUMAN_M15_PERFORMANCE_QUALIFICATION", "evidence": "docs/v2/benchmarks (cross-milestone final); gates/qualification_ledger.md", "detail": "Owner decision 2026-09-28: writer wait, Hub responsiveness and History search, each with its benchmark's validity controls, stand as measured after correctness; the human-speaker release-to-terminal measurement stays pending before M15 (XM-C191, XM-C192, XM-C194, XM-C195, XM-MH32). No synthetic-audio figure stands in for it."},
   "GATE-G09": {"state": "closed", "evidence": "tests/v2/crossmilestone/test_xm_validator.py; X14 crash witnesses"},
   "GATE-G10": {"state": "pending_manual_model", "detail": "M11 integrated record not all-green (one misdirected review, fourteen output-limit fallbacks); M07 long-prompt trial and real-text stratum pending (M07-V001/V002)."}
  },
  "policies": {
   "POLICY-D01": "measured after correctness; see the cross-milestone benchmark record",
   "POLICY-D02": "not implemented (design only)",
-  "POLICY-D03": "open product decision; nothing changed",
+  "POLICY-D03": "resolved: History Paste Again uses explicit one-shot destination acquisition. Invoking the command does not authorize incidental foreground focus. LocalFlow steps aside, waits for a deliberate user destination selection, captures a fresh M08 target authority from that selection, revalidates source and destination, and inserts through the canonical M08 service (test_xm_paste_again.py).",
+  "POLICY-XM-C042": "a retry keeps its original capture provenance; its insertion authority is only a destination its own action captured, revalidated by M08; without one its result is kept as saved_not_inserted (test_xm_g06_c2.py XM-C042 cases)",
   "POLICY-D04": "threat-model policy; supported producers bind identity, export requalifies pairs"
  },
- "interface_union": {"evidence": "gates/ifunion.json, gates/ifunion_summary.md", "rows": 78, "bound": 70, "partial": 5, "unbound": 3},
+ "interface_union": {"evidence": "gates/ifunion.json, gates/ifunion_summary.md", "rows": 78, "bound": 77, "bound_with_later_qualification": 1, "partial": 0, "unbound": 0},
  "independent_review": {
   "method": "Each round a fresh-context agent reviewed the delta in a detached read-only worktree, given the audits, decisions, records and code, not the author's dispositions. Every allegation was reproduced by the author with an independently written fail-first witness before any change; mutants were added for each repair.",
   "convergence_bar": "From round 7: a round converges when it finds no correctness, data-loss or privacy defect reachable in single-user use; lesser items are recorded as residuals.",
@@ -91,9 +92,16 @@
    {"round": 4, "reviewed": "4942e54..309df21", "allegations": 9, "outcome": "settled by simplification in 121aa55: the staging sweep withdrawn, Validate refused during an Export into its folder; R4-08 residual"},
    {"round": 5, "reviewed": "7ac3759..121aa55", "allegations": 5, "outcome": "R5-05 (interrupted exports left copies of recordings, pre-existing) and R5-01..R5-04 repaired in 8bf804d"},
    {"round": 6, "reviewed": "121aa55..8bf804d", "allegations": 6, "outcome": "repaired in d6a555d (owner lock, absolute destinations, one build per folder); XM-MU58 masking resolved in 8e286c6"},
-   {"round": 7, "reviewed": "8bf804d..d6a555d", "allegations": 0, "outcome": "converged; release bookkeeping witnessed in 356a08a (XM-MU64/65)"}
+   {"round": 7, "reviewed": "8bf804d..d6a555d", "allegations": 0, "outcome": "converged; release bookkeeping witnessed in 356a08a (XM-MU64/65)"},
+   {"round": 8, "reviewed": "cabc756..working tree (final owner decisions: XM-C042, POLICY-D03, interface consumers)", "allegations": 3, "outcome": "all in the Paste Again pick — destination taken from any click, a reopened or superseded pick, a busy source check — each reproduced fail-first and repaired (XM-MU88..MU91)"},
+   {"round": 9, "reviewed": "the round-8 repairs", "allegations": 1, "outcome": "a self-ended pick reopened the Hub on a timer and could take the front from an in-flight dictation's insert; reproduced and repaired (XM-MU92/93)"},
+   {"round": 10, "reviewed": "cabc756..a33f681 (production)", "allegations": 0, "outcome": "converged"}
   ],
   "residuals": [
+   "Paste Again: a deliberate click during a dictation is honoured, queued behind that dictation's insert (round 10)",
+   "Paste Again: an already_present reconcile leaves the row's 'sent' note (round 10)",
+   "Paste Again: a click directly under the hint panel may be refused as destination_not_in_front (a refusal, never a misrouted paste; round 10)",
+   "Paste Again: the source check can block the main thread for the store's bounded wait when the writer is stalled, as History's live-final check already does (round 10)",
    "vocabulary_history / vocabulary_meta loss is silently repaired (M05-owned)",
    "two processes first-opening a fresh store at once get a spurious pre-repair backup and warning (no data effect)",
    "an unknown-outcome Export's 'Export again' instruction is replaced by the refresh's last-export text (cosmetic)",
@@ -111,7 +119,7 @@
   "schema_family_subledger": "schema_family_subledger.json",
   "caller_inventory": "caller_inventory.json",
   "base": ["regressions_base_340c566.json", "families_base_340c566.json", "matrix_base_340c566.json"],
-  "gates": "gates/ (G06: g06_disposition.json, g06_summary.md, g06_changed_functions.txt)",
-  "final": {"regressions": "final/regressions.json", "families": "final/families.json", "mutation": "final/mutation.json", "native": "final/native_xm_hub.json", "sweep": "final/sweep.json", "sweep_rechecks": "final/recheck_test_m02_remediation_store.json", "g06_drivers": "final/g06_a.json .. g06_d.json", "compatibility_corpora": "final/corpus_m05.json .. corpus_m14.json", "m09_benchmark_validity": "final/m09_bench_mutation.json", "benchmarks": "docs/v2/benchmarks/20260928-203300-xm-remediation-g06/"}
+  "gates": "gates/ (G06: g06_disposition.json, g06_summary.md, g06_changed_functions.txt; qualification_ledger.md)",
+  "final": {"regressions": "final/regressions.json", "families": "final/families.json", "mutation": "final/mutation.json", "native": "final/native_xm_hub.json", "sweep": "final/sweep.json", "paste_again": "final/paste_again.json", "g06_drivers": "final/g06_a.json .. g06_d.json", "compatibility_corpora": "final/corpus_m05.json .. corpus_m14.json", "m09_benchmark_validity": "final/m09_bench_mutation.json", "benchmarks": "docs/v2/benchmarks/20260928-230400-xm-remediation-final-decisions/"}
  }
 }

@@ -2,8 +2,8 @@
   "schema": "localflow-xm-g06-disposition/1",
   "code_sha": "cabc756",
   "paths_relative_to": "docs/v2/acceptance/cross-milestone/remediation/",
-  "closure_rule": "Every merged corpus case is explicitly dispositioned. Every unique automatable obligation that touches changed production code or a materially affected producer-to-consumer seam has executable evidence. Duplicate aliases, invariants already proven by a current accepted production-path suite, and explicitly later native/model/human/M15 obligations need no new bespoke driver, but name their exact owner and evidence.",
-  "mandatory_driver_test": "A DRIVER_REQUIRED case is mandatory before merge when (a) its exact producer or consumer runs through one of the 69 functions the remediation changed (340c566..d6a555d), or (b) its oracle reads behaviour a GATE-G06 repair changed (d6a555d..cabc756, each listed with that behaviour). Both lists: gates/g06_changed_functions.txt. Rule (b) is semantic because the G06 repairs sit on paths nearly every dictation runs (startDictation, _worker); a repair's own reproducing driver and mutant witness it. Mandatory cases carry an executed driver in tests/v2/crossmilestone/test_xm_g06_*.py; the others stay DRIVER_REQUIRED with their driver specification.",
+  "closure_rule": "Every merged corpus case is explicitly dispositioned. A new driver is required when the case asserts a unique semantic invariant whose truth may have been materially changed by this remediation AND that invariant is not already established by current executable evidence. Merely traversing changed code is insufficient. Duplicate aliases, invariants proven by a current accepted production-path suite, and later native/model/human/M15 obligations name their owner and evidence instead of a bespoke driver.",
+  "mandatory_driver_test": "DRIVER_REQUIRED means executable evidence still required before this campaign may close; a completed campaign has none. FUTURE_HARDENING_SPEC is a fully specified driver that is valuable but not required here: its oracle is not materially affected by the remediation, or the affected part is proven by current executable evidence. Each keeps its invariant, proposed driver (driver_spec), the reason it is not required and its owning future phase. gates/g06_changed_functions.txt lists the changed functions the impact analysis read.",
   "evidence_classes": {
     "xm": "a cross-milestone witness or G06 driver run on the final tree",
     "sweep": "a test file's exit status in the final broad sweep",
@@ -11,11 +11,12 @@
   },
   "totals": {
     "COVERED_BY_CURRENT_ACCEPTED_SUITE": 159,
+    "DEFERRED_HUMAN": 1,
     "DEFERRED_M15": 8,
-    "DEFERRED_MODEL": 2,
+    "DEFERRED_MODEL": 1,
     "DEFERRED_NATIVE": 3,
-    "DRIVER_REQUIRED": 40,
-    "EXECUTED_PASS": 96,
+    "EXECUTED_PASS": 97,
+    "FUTURE_HARDENING_SPEC": 39,
     "NOT_APPLICABLE_WITH_REASON": 1
   },
   "cases": [
@@ -800,7 +801,7 @@
     },
     {
       "merged_case_id": "XM-C023",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "LF-M12-S020 (m12_drivers_c.s020, PASS in milestone_corpus.tsv) proves the autosave half: 8 autosaves after note dictation J leave usage_facts == [('confirmed', 3)]. Nothing proves the restore half with a usage or job oracle. LF-M12-C123 checks only that restore leaves no dictated span or source job on revisions, and neither test reads the jobs count or InsightsQueryService.summary.",
       "driver_spec": {
@@ -812,7 +813,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M12 notes suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C024",
@@ -891,7 +894,7 @@
     },
     {
       "merged_case_id": "XM-C026",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Only fragments are proven. test_m02_remediation_collector.py::test_retry_uses_original_capture_permission and test_m03_remediation_app.py::test_23 exercise EvidenceCollector.retry_snapshot directly: the original revision id is reused and paused means not collecting. test_09 shows family_id unchanged. No test drives AppDelegate._retry_job and compares the raw consent_revision_id and family_id of the retry's example row with the original's, or shows that a revocation between attempts yields no new example with exactly one attempt increment.",
       "driver_spec": {
@@ -903,11 +906,13 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M03 lifecycle suite",
+      "not_required_reason": "The XM-C042 change alters only a retry's terminal insertion branch; this oracle reads the retry's consent snapshot, family and example publication, which that branch leaves as it was (on_insertion is still called; test_xm_g06_d.py's retry case shows both per-attempt examples publish on the new branch)."
     },
     {
       "merged_case_id": "XM-C027",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "No test combines a queued Next Mode override with a retry. The M10 override tests (tests/v2/profiles/test_m10_remediation.py, m10_drivers.py) cover capture admission only. From source: _retry_job (app.py:5865-6000) never calls _take_next_job_mode or _m10_freeze, so the override should survive, but that is unproven.",
       "driver_spec": {
@@ -919,7 +924,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M03 lifecycle suite",
+      "not_required_reason": "The XM-C042 change alters only a retry's terminal insertion branch; the one-shot Next Mode is taken at a new press and never read by a retry."
     },
     {
       "merged_case_id": "XM-C028",
@@ -947,7 +954,7 @@
     },
     {
       "merged_case_id": "XM-C029",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "The existing duplicate tests duplicate _insertionDone_ (M13-C003 d_duplicate_callback; test_m08_remediation.py::test_a14_duplicate_completion_retires_once), not the successful _finishWithText_ callback. _finishWithText_ (app.py:4719) has a cancelled guard and a failed branch but no settle-once guard on the text branch, so a second delivery could submit a second insertion. Unproven either way.",
       "driver_spec": {
@@ -959,7 +966,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M03 lifecycle suite",
+      "not_required_reason": "The new _finishWithText_ branch runs only for a retry with no captured destination; this oracle delivers a normal job's terminal callback twice, whose path is unchanged."
     },
     {
       "merged_case_id": "XM-C030",
@@ -1047,7 +1056,7 @@
     },
     {
       "merged_case_id": "XM-C031",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "test_m03_remediation_app.py::test_02_delete_vs_worker_wav_publication_both_orders covers an ordinary dictation deleted mid-processing: no WAV, no delivery, no usage fact. test_02_retry_recovery_and_debug_copy_after_delete covers deletion BEFORE a retry (refused). No test has a retry in flight when delete-everywhere lands and then checks artifacts, examples, candidates and profile_evidence for the job.",
       "driver_spec": {
@@ -1059,7 +1068,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M03 lifecycle suite",
+      "not_required_reason": "Deleting an active job marks it cancelled, and _finishWithText_ returns on that before any terminal branch, including the new retry branch; the deletion guard this oracle reads is unchanged."
     },
     {
       "merged_case_id": "XM-C032",
@@ -1348,7 +1359,7 @@
     },
     {
       "merged_case_id": "XM-C039",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "No accepted test uses one field holding two identical occurrences with the selection moved to the second one. The nearest tests (test_transform_pipeline.py::test_changed_selection_never_overwritten, test_m08_remediation.py::test_r03_strict_selection_changed_after_validation_is_refused, the f06 strict tests) change or extend the selection or the surroundings; none moves it to an identical twin. LF-M08-F20-C02 is about observation attribution, not replacement.",
       "driver_spec": {
@@ -1360,7 +1371,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M11 transforms suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C040",
@@ -1435,9 +1448,9 @@
     },
     {
       "merged_case_id": "XM-C042",
-      "disposition": "DRIVER_REQUIRED",
-      "touches_changed_code": false,
-      "reason": "The usage half is proven: M13-C013 (d_retry_provenance, real hubRetryJob) keeps the original app 'Synthetic Alpha' on the retried fact. The insertion half is not tested, because the lifecycle harness stubs insertion. From source, _retry_job (app.py:5952-5967) builds the retry job without a target or context_snapshot, and validate_target's target-None branch (validation.py:240-270) inserts on faith into the frontmost focused element. A retry while app B is focused would therefore write into B as posted_unverified, which conflicts with the case's '0 writes into B' oracle. An owner decision is needed on whether a retry may insert at the current focus.",
+      "disposition": "EXECUTED_PASS",
+      "touches_changed_code": true,
+      "reason": "Executed by the XM-C042 regressions under the owner's retry policy: a retry keeps its original capture's provenance and inserts only into a destination its own action captured, revalidated by M08; without one the result is kept as saved-not-inserted and nothing is inserted or copied.",
       "driver_spec": {
         "invariant": "A retry while another app is focused keeps the original capture app in its usage metadata and applies current insertion safety independently.",
         "producer": "localflow.app.AppDelegate._retry_job of a failed_recoverable job whose job_targets names app A, with the real InsertionService over the M08 world and B frontmost",
@@ -1448,7 +1461,38 @@
       },
       "changed_functions": [],
       "suspected_defect": true,
-      "defect_note": "_retry_job builds the retry job with no target or context_snapshot, and validate_target's target-None branch inserts into whatever element is focused. A retry while app B is frontmost is predicted to write into B, labeled posted_unverified."
+      "defect_note": "_retry_job builds the retry job with no target or context_snapshot, and validate_target's target-None branch inserts into whatever element is focused. A retry while app B is frontmost is predicted to write into B, labeled posted_unverified.",
+      "executed_by": "GATE-G06 driver",
+      "bindings": [
+        {
+          "file": "tests/v2/crossmilestone/test_xm_g06_c2.py",
+          "case": "g06_xm_c042_retry_with_hub_focus_never_inserts",
+          "evidence": "xm",
+          "key": "g06_xm_c042_retry_with_hub_focus_never_inserts",
+          "record": "final/g06_c2.json"
+        },
+        {
+          "file": "tests/v2/crossmilestone/test_xm_g06_c2.py",
+          "case": "g06_xm_c042_retry_without_target_keeps_result",
+          "evidence": "xm",
+          "key": "g06_xm_c042_retry_without_target_keeps_result",
+          "record": "final/g06_c2.json"
+        },
+        {
+          "file": "tests/v2/crossmilestone/test_xm_g06_c2.py",
+          "case": "g06_xm_c042_fresh_target_inserts_and_keeps_provenance",
+          "evidence": "xm",
+          "key": "g06_xm_c042_fresh_target_inserts_and_keeps_provenance",
+          "record": "final/g06_c2.json"
+        },
+        {
+          "file": "tests/v2/crossmilestone/test_xm_g06_c2.py",
+          "case": "g06_xm_c042_target_changed_after_capture_is_refused",
+          "evidence": "xm",
+          "key": "g06_xm_c042_target_changed_after_capture_is_refused",
+          "record": "final/g06_c2.json"
+        }
+      ]
     },
     {
       "merged_case_id": "XM-C065",
@@ -1487,7 +1531,7 @@
     },
     {
       "merged_case_id": "XM-C183",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "MERGED-X16 control. x16 keeps historical_implementation.benchmark_runs verbatim and requires a current_state.performance field, but asserts only that the field is non-empty. Nothing checks that the pre-remediation benchmark record (docs/v2/benchmarks/20260924-010937-m14/m14.json) is unchanged since it was committed, carries its date and code identity, and is never cited as current.",
       "producer": "scripts/v2/benchmark_m14.py::main (historical record)",
@@ -1501,7 +1545,9 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "the next read-only audit (evidence tooling)",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C184",
@@ -1566,7 +1612,7 @@
     },
     {
       "merged_case_id": "XM-C186",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "tests/v2/test_registry.py checks registry.json edges against the Spec S05/Evaluation E08 catalogs only. The requirement-to-test-to-production binding is gates/binding.json from GATE-G02, a read-only analysis, not an executed check (24/33 bound, 5 partial, 4 future). No executable test proves every LF-R and EV entry resolves to a tracked test that calls production code, or that partial and unbound nodes are reported as gaps.",
       "producer": "scripts/v2/build_registry.py::derive",
@@ -1581,7 +1627,9 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "the next read-only audit (evidence tooling)",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C187",
@@ -1625,13 +1673,14 @@
     },
     {
       "merged_case_id": "XM-C191",
-      "disposition": "DEFERRED_MODEL",
+      "disposition": "DEFERRED_HUMAN",
       "touches_changed_code": false,
       "reason": "Fresh end-to-end release-to-terminal latency needs the real ASR and cleanup models and a human speaker. GATE-G08 records dictation end-to-end as not measured (adjudications.json, CROSS-MILESTONE.md), and M15-AC04 requires actual insertion latency including failures.",
       "owner_gate": "GATE-G08 (human-speaker end-to-end timing) + M15-AC04",
       "producer": "AppDelegate._worker, InsertionService.submit",
       "consumer": "AppDelegate._insertionDone_",
-      "changed_functions": []
+      "changed_functions": [],
+      "reclassified": "Its owner is GATE-G08's human-speaker end-to-end timing, a human/M15 performance qualification (owner decision 2026-09-28), not a model-only obligation."
     },
     {
       "merged_case_id": "XM-C192",
@@ -1792,7 +1841,7 @@
     },
     {
       "merged_case_id": "XM-MH19",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Each hop is proven alone: stale-generation discard (test_worker_protocol.py), a retry with a monotonic attempt and one fact (test_m03_remediation_app.py::test_05) and stale-attempt insertion refusal (LF-M08-F01-C05). No test chains ASR failure, worker restart, a retry, an injected old-generation response and insertion with a stale lease through one job and checks the identities and the single usage fact end to end.",
       "driver_spec": {
@@ -1804,7 +1853,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M03 lifecycle suite",
+      "not_required_reason": "Its insertion-authority leg is materially affected by XM-C042 and is proven by the XM-C042 regressions (a retry inserts only into a destination its action captured); stale-generation discard and identity are unchanged and bound by test_worker_protocol.py and test_m03_remediation_supervisor.py; the whole multi-hop chain in one driver remains a hardening idea."
     },
     {
       "merged_case_id": "XM-MH32",
@@ -2195,7 +2246,7 @@
     },
     {
       "merged_case_id": "XM-C045",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Equivalent origins (case, trailing slash, padding) are proven by M10-C016/C017 and test_m05_review_round.py::test_Q5_scope_values_have_one_canonical_form, but no test asserts that port or www variants never alias. The only port tests (test_m06_remediation.py lines 804-809) cover origin derivation, not scope matching.",
       "driver_spec": {
@@ -2207,11 +2258,13 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M10 profiles suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C046",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Trimmed-exact workspace/profile matching and approval are proven (M10-C018/C019/C021/C022, test_Q5, LF-M14-C078 workspace/profile case variants stay distinct), but no test covers the undo arm (undo touches only the exact scope row when case-variant scope rows coexist) or Unicode-spelling variants (NFC vs NFD) in matching.",
       "driver_spec": {
@@ -2223,7 +2276,9 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M10 profiles suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C047",
@@ -2287,7 +2342,7 @@
     },
     {
       "merged_case_id": "XM-C048",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "test_permission_unavailable_degrades and test_no_focused_element assert only the focused_field omission reason and no content canary; test_a13_cached_absence covers an absent origin. None asserts that an unreadable field leaves site_origin, workspace and selection null with omission reasons (the A3 fixture carries an AXDocument that could seed a workspace).",
       "driver_spec": {
@@ -2299,7 +2354,9 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M06 context suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C049",
@@ -2345,7 +2402,7 @@
     },
     {
       "merged_case_id": "XM-C050",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Handle ownership (test_m06_remediation.py::test_a11_finalize_is_handle_owned_and_idempotent) and a single capture's sealed late delta (test_a12_downstream_sealed_with_parent_link) are proven separately, but no test releases capture 1's delayed provider after capture 2 has begun and compares both captures' handles, parent links and scope fingerprints.",
       "driver_spec": {
@@ -2357,11 +2414,13 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M06 context suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C051",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Workspace A to workspace B is proven (M10-C130/C208) and a display name without a document guesses no path (M10-C131), but no test runs job 1 in workspace A and then a job with no usable workspace to show that A's workspace skills/file tags are not frozen into job 2.",
       "driver_spec": {
@@ -2373,7 +2432,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M10 profiles suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C052",
@@ -3588,7 +3649,7 @@
     },
     {
       "merged_case_id": "XM-C085",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "LF-M14-C138 shows applied-only candidates are not transform_supervised targets, but its candidates come from a synthetic MWorld, not the app's auto-apply path. test_auto_apply_transforms_before_insertion (applied) never checks accept/preference rows, and the needs_review test covers only a non-applied path.",
       "driver_spec": {
@@ -3600,11 +3661,13 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M11 transforms suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C086",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "test_transform_remediation_native.py::f07_accept_checks_the_captured_note_identity switches notes after A's result is already shown. No test holds A's worker completion until after the panel/Hub moved to B and then releases it. Only reoffer_save changed in transforms_panel.py (X09); the display/accept path is unchanged.",
       "driver_spec": {
@@ -3616,7 +3679,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M11 transforms suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C087",
@@ -3716,7 +3781,7 @@
     },
     {
       "merged_case_id": "XM-C174",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "test_diagnostics.py::test_engine_block and test_event_writer.py::test_envelope_validity assert a present source_revision only. No test feeds an event with an unavailable source revision or unknown time quality and checks that rendered diagnostics and the redacted export carry null plus a reason, not a guessed current value.",
       "driver_spec": {
@@ -3729,11 +3794,13 @@
       },
       "changed_functions": [],
       "suspected_defect": true,
-      "defect_note": "EventWriter stamps ids.source_revision() on every event (eventlog.py:93), which returns the string sentinel 'unknown:no-git' (ids.py:68) rather than null plus a reason, and diagnostics.engine_block copies it through (diagnostics.py:108). A null-with-reason oracle is predicted to fail unless the sentinel is accepted as the reason form."
+      "defect_note": "EventWriter stamps ids.source_revision() on every event (eventlog.py:93), which returns the string sentinel 'unknown:no-git' (ids.py:68) rather than null plus a reason, and diagnostics.engine_block copies it through (diagnostics.py:108). A null-with-reason oracle is predicted to fail unless the sentinel is accepted as the reason form.",
+      "future_phase": "M02 event log suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C175",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "test_event_writer.py::test_concurrent_emitters asserts dropped_low == 0 without pressure, and test_disk_full_degrades_and_criticals_survive covers ENOSPC. No test floods low-priority events past the queue bound and reconciles admitted/written/dropped/coalesced counts or the terminal degradation mark.",
       "driver_spec": {
@@ -3745,7 +3812,9 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M02 event log suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C176",
@@ -3854,7 +3923,7 @@
     },
     {
       "merged_case_id": "XM-C179",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "M09-C004 proves a completion during a closed Hub never re-shows the window and M09-C038 proves shutdown accounts for every tail; test_a02_late_detail_publication_after_delete covers deletion with the Hub open. No test combines close, source deletion during the in-flight query and reopen, and checks that the cache holds no deleted payload and actions are not resurrected.",
       "driver_spec": {
@@ -3866,7 +3935,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M09 Hub suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-R15",
@@ -4038,7 +4109,7 @@
     },
     {
       "merged_case_id": "XM-MH08",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "The collector never reads B after a focus switch (test_m06_remediation.py::test_a01_*), and a switched-to app gets saved_not_inserted (test_insertion_pipeline.py::test_app_switch_midprocessing_routes_to_saved). No test freezes a job in A with an auto-apply transform, moves focus to B before the transform runs, and checks that the transform ran from A's policy and nothing was pasted into B.",
       "driver_spec": {
@@ -4050,7 +4121,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M11 transforms suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-MH18",
@@ -4119,7 +4192,7 @@
     },
     {
       "merged_case_id": "XM-MH31",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Quit ordering is proven for an in-flight dictation (test_04_quit_is_ordered), deferred Hub shows (M09-C036), note admission (LF-M12-C110/S027) and query tails (M09-C038) one at a time. No run quits while an insertion, a note arrival and a review mutation are all settling; LF-M12-N012 (quit with accepted note transform) is NOT_RUN.",
       "driver_spec": {
@@ -4131,11 +4204,13 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M03 lifecycle suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-R19",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Two of the three hops are proven separately: the collector never reads B after a focus switch (test_m06_remediation.py::test_a01_focus_switch_never_reads_other_destination) and insertion revalidation refuses the switched target (test_insertion_pipeline.py::test_app_switch_midprocessing_routes_to_saved). No run holds the job at context_frozen, switches to B and checks that cleanup and transform inputs use A's frozen context.",
       "driver_spec": {
@@ -4147,7 +4222,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M11 transforms suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-R20",
@@ -4258,7 +4335,7 @@
     },
     {
       "merged_case_id": "XM-MR05",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "The same obligation as XM-R19 stated as a paired-world relation. The component guarantees exist (collector a01, insertion switch refusal), but no paired run compares the frozen job's cleanup/transform inputs with and without a post-freeze foreground change. One driver can serve R19, MR05, MH08 and MU04.",
       "driver_spec": {
@@ -4270,7 +4347,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M11 transforms suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-MR10",
@@ -4316,7 +4395,7 @@
     },
     {
       "merged_case_id": "XM-MR13",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Only the empty update is proven a no-op (test_vocabulary_store.py::test_aliases_only_update_versions_entry). No test re-saves a style rule or vocabulary entry with identical values and compares the job's effective output, task input and scope across the re-save.",
       "driver_spec": {
@@ -4328,7 +4407,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M10 profiles suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-MR14",
@@ -4533,7 +4614,7 @@
     },
     {
       "merged_case_id": "XM-MU04",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "No current test would kill a mutant that makes _m11_apply_transform resolve its mode/definition from live context instead of the job's frozen m10 tuple: no test changes the foreground between freeze and the transform. Transform requests carry no context fields (app.py _m11_run_transform), so the mutant is only observable through the policy it resolves.",
       "driver_spec": {
@@ -4545,7 +4626,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M11 transforms suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-MU12",
@@ -4759,7 +4842,7 @@
     },
     {
       "merged_case_id": "XM-MU30",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "The invariant is proven (test_a02_late_detail_publication_after_delete), but the mutant may survive behind a second guard: _fence's revoked-set filter (state.py:986-1002) removes revoked History/Training rows even when the epoch re-run is skipped. No kill run exists, so the mutant must be run and, if it survives, widened to a surface only the epoch guards.",
       "driver_spec": {
@@ -4771,7 +4854,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M09 Hub suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C088",
@@ -4808,7 +4893,7 @@
     },
     {
       "merged_case_id": "XM-C089",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "No current test drives AppDelegate.hubCopyText against a pending payload: every M09 test that reaches hubCopyText replaces it with record_coordinator, and x02 exercises only the copyLastRaw_ caller. The refusal-then-exactly-one-write-after-release obligation of the existing guarded History caller is unproven.",
       "driver_spec": {
@@ -4820,11 +4905,13 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M08 insertion suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C090",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Current tests prove the in-settle restore guard (LF-M08-F10-C02/C03 f10_c02, test_user_copy_during_restoration_wins: user_copy_won inside _clipboard_insert), but no test writes an external canary AFTER the post while the payload is pending and then drives the later reconcile in InsertionService._resolve_pending (the board-moved branch); M09-C033 calls _resolve_pending with no canary.",
       "driver_spec": {
@@ -4836,7 +4923,9 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M08 insertion suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C091",
@@ -4909,7 +4998,7 @@
     },
     {
       "merged_case_id": "XM-C093",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "The ordering half is proven (test_m12_remediation.py::r07a_held_commit_is_not_confirmed: job and usage not confirmed while append_revision is latched, confirmed once after), but the retry half is not proven on the arrival seam: r07b injects a pre-admission failure and checks only content containment, LF-M12-MR09 retries a typed append_revision (not an Arrival), and M13-C222/C223 settle a hand-built Arrival with the producer bypassed.",
       "driver_spec": {
@@ -4921,11 +5010,13 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M12 notes suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-R04",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "LF-M12-S008 (m12_drivers_c.py::s008, PASS) proves one release order only: autosave held at append_revision, arrival received, then typed and dictated revisions paired with exact spans. The reverse order (arrival commit held while a typed tail's autosave is pending) is not driven, and the case is 'distinct' (both orders).",
       "driver_spec": {
@@ -4937,7 +5028,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M12 notes suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C094",
@@ -4971,7 +5064,7 @@
     },
     {
       "merged_case_id": "XM-C095",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Pieces exist but each stubs the producer: LF-M12-C056 routes to the external path with a harness paste recorder (note content unchanged, revision count not read, no fact counted) and M13-C003 replaces InsertionService.submit; no test runs a real owned external insertion with a note open and counts note_revisions and usage facts.",
       "driver_spec": {
@@ -4983,7 +5076,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M12 notes suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C096",
@@ -5089,7 +5184,7 @@
     },
     {
       "merged_case_id": "XM-C099",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "test_m12_remediation.py::r08b_quit_settles_admitted_note_work (and LF-M12-S027 via it) proves quit drains an admitted typed autosave, not a dictation arrival; no test quits with an admitted-but-unacknowledged Arrival and tracks its receipt, revision row and the job's claimed state separately (LF-M12-N012 is a native transform case, NOT_RUN).",
       "driver_spec": {
@@ -5101,11 +5196,13 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M12 notes suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-MH21",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "The hops are proven only separately (LF-M12-S008 typed/dictated span pairing, r07a count-on-durable, test_m12_remediation.py::v02a_per_word_ambiguity_abstains); no single run carries one dictation into a note being edited through durable counting and into mining at an ambiguous edit.",
       "driver_spec": {
@@ -5117,7 +5214,9 @@
         "platform": "appkit_headless"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M12 notes suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-MH22",
@@ -6296,7 +6395,7 @@
     },
     {
       "merged_case_id": "XM-C134",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "Mostly proven: M14-C080 (m14_drivers_c.py::c080_s006_unknown_after_effect, PASS) times out after the commit and retries with the same operation id, giving one delta, one receipt and one entry revision. test_m14_remediation.py::ir05_operation_id_reused_on_another_target_refuses proves reuse on another target refuses. The 'different action' leg (the kind check in curation/evidence.py::receipt_in) is never executed: no test reuses an approve operation id for reject or undo.",
       "driver_spec": {
@@ -6307,7 +6406,9 @@
         "control": "undo_approval with a fresh operation id succeeds (status pending, enabled=0). Mutant: drop 'row[0] != kind' from receipt_in, so the undo returns the approve receipt as done; the driver must fail.",
         "platform": "portable"
       },
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M14 learning suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-MH07",
@@ -6865,7 +6966,7 @@
     },
     {
       "merged_case_id": "XM-C127",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "changed_functions": [],
       "reason": "Service-level evidence exists: test_a05_intended_mark_refuses_non_reviewable writes no revision on expired or quarantined examples, M09-MR13 keeps the restriction through span, verbatim and mark operations, and conn_assert_reviewable runs inside the writer op. No Hub-level test prepares a span or intended mark on a reviewable example, restricts it before the save, and then presses trainingSpan_ or the intended mark. trainingSpan_, _mark_intended and the training_data writers are not changed functions.",
@@ -6877,7 +6978,9 @@
         "oracle": "Raw SQL: training_examples.state stays quarantined_sensitive or expired; the training_revisions row count and the review-stage artifact count are unchanged after the press; a refusal is shown.",
         "control": "The same prepared form with no state change saves exactly one span annotation (one new revision), and the example becomes annotated.",
         "platform": "appkit_headless"
-      }
+      },
+      "future_phase": "M14 training suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C128",
@@ -7223,7 +7326,7 @@
     },
     {
       "merged_case_id": "XM-R24",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "changed_functions": [],
       "reason": "Existing drivers mine chains holding several typed revisions in one pass: LF-M14-C020 keeps only the dictated regions and LF-M12-C122 mints nothing. None interleaves an autosave with a mining pass, and none checks that each candidate's observation_id names the exact revision pair it was diffed from, in both orders. append_revision and the note-mining path are not changed functions.",
@@ -7235,7 +7338,9 @@
         "oracle": "Order 1: an after_each_op hook fires after the insertion-observation scan op and appends typed rev3 (a typed-only edit) before the note-mining op. Order 2: rev3 is appended after the first mining pass and a second pass runs. In both, raw SQL gives exactly one candidate whose observation_id == rev2 (the dictated correction), whose job is the dictating job, and whose payload regions equal the witness ledger; rev3 mints nothing and the second pass adds nothing.",
         "control": "A no-race run (rev2 only, one pass) yields the same single candidate bound to rev2.",
         "platform": "portable"
-      }
+      },
+      "future_phase": "M12 notes suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-MR17",
@@ -7861,7 +7966,7 @@
     },
     {
       "merged_case_id": "XM-C147",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "No current test deletes the example through which a family was exposed and reassigns. By source, delete_everywhere never touches training_memberships and assign reads exposure from every earlier version (splits.py _exposure_before), but that is unexecuted.",
       "driver_spec": {
@@ -7873,7 +7978,9 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M14 training suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C148",
@@ -9166,7 +9273,7 @@
     },
     {
       "merged_case_id": "XM-C168",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "SamplingService never grants leases by source (sampling.py has no lease call), but no current test samples an unreviewed example and then expires the buffer to prove no review retention was granted.",
       "driver_spec": {
@@ -9178,7 +9285,9 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "M14 training suite",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-C169",
@@ -9383,7 +9492,7 @@
     },
     {
       "merged_case_id": "XM-C173",
-      "disposition": "DRIVER_REQUIRED",
+      "disposition": "FUTURE_HARDENING_SPEC",
       "touches_changed_code": false,
       "reason": "The case has no production seam: it is a close-out scan of the planned cross-milestone evidence set. LF-M14-C224 scans only M14 evidence and does not look for truncated fragments or a session id. A spot grep of docs/v2/acceptance/cross-milestone found only descriptive pattern text, which is not evidence for this case.",
       "driver_spec": {
@@ -9395,7 +9504,9 @@
         "platform": "portable"
       },
       "changed_functions": [],
-      "suspected_defect": false
+      "suspected_defect": false,
+      "future_phase": "the next read-only audit (evidence tooling)",
+      "not_required_reason": "Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destination, the XM-IF-001/002/009/011 consumers) alters the behaviour its oracle reads."
     },
     {
       "merged_case_id": "XM-MH10",

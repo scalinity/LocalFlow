@@ -10,15 +10,15 @@
  "code": {
   "suite": "tests/v2/analytics/m13_corpus_runner.py",
   "suite_sha256": "66a0fbf8368687e7933bc7f92d0e675ac6d93efbbc7533675b0ec030f5abfe47",
-  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
-  "tracked_files_modified": false,
+  "code_root_sha": "a33f68133d22f55e9b9e7ae6f1bedd2ca2fef500",
+  "tracked_files_modified": true,
   "production_tree_modified": false,
   "localflow_imported_from_root": "LocalFlow",
   "python": "3.14.7"
  },
  "drivers_sha256": {
-  "m13_drivers.py": "249cdc031cb27c0420a905d4ba552dca8e3de3915a71bcb06d730f73e137bd81",
-  "m13_drivers_b.py": "a9607170743bff44467a7f44696f557e54530d5c5a7cb8c43525e933562d47e4",
+  "m13_drivers.py": "208c63765a13d60667f1bfa713bc609c1b3b2ce230c1cf14f7d5288344ef832a",
+  "m13_drivers_b.py": "6d5eb66f8c2398471206c37bb672489bbb723714fb22b8500bce0bbfe9763843",
   "m13_oracle.py": "636b36de8b491ef4432bf7d1b086eab116d9c63bea4b26d521a0718837a954d1",
   "m13_world.py": "36456fe2b708163c349168c8c83adc7a2deadfc2211885a879a9f234972bd380",
   "test_m13_remediation.py": "83da63dfbfa8a39bcbfdfda49d4cadbb3d68f340f9da45a576568095622ad87a"
@@ -142,7 +142,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.23,
+   "seconds": 0.21,
    "driver": "d_duplicate_callback"
   },
   {
@@ -236,7 +236,7 @@
    "grading": "structural",
    "decision": null,
    "note": "raw writer is last-writer-wins (evidence only): no production producer delivers attempt 1 after attempt 2",
-   "seconds": 0.12,
+   "seconds": 0.1,
    "driver": "d_stale_attempt"
   },
   {
@@ -272,7 +272,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.12,
+   "seconds": 0.11,
    "driver": "d_terminal"
   },
   {
@@ -308,7 +308,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.12,
+   "seconds": 0.11,
    "driver": "d_terminal"
   },
   {
@@ -380,7 +380,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.12,
+   "seconds": 0.11,
    "driver": "d_terminal"
   },
   {
@@ -449,7 +449,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.11,
+   "seconds": 0.1,
    "driver": "d_empty_transcription"
   },
   {
@@ -470,7 +470,7 @@
    "observed": {
     "retry": {
      "outcome": "requeued",
-     "job_id": "job-b6db90e949dd4cb5823fd4895f986521"
+     "job_id": "job-d1aa11870b494df0817c048657a0c206"
     },
     "rows": 1,
     "activity_at_utc": "2026-09-25T23:30:00.000000Z",
@@ -484,7 +484,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.11,
+   "seconds": 0.1,
    "driver": "d_retry_provenance"
   },
   {
@@ -505,7 +505,7 @@
    "observed": {
     "retry": {
      "outcome": "requeued",
-     "job_id": "job-07907aa905694342a294cce859328411"
+     "job_id": "job-44eccb9cf52141ada2346c43cf529ecd"
     },
     "rows": 1,
     "activity_at_utc": "2026-09-25T23:30:00.000000Z",
@@ -519,7 +519,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.11,
+   "seconds": 0.1,
    "driver": "d_retry_provenance"
   },
   {
@@ -587,7 +587,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.11,
+   "seconds": 0.12,
    "driver": "d_retry_missing_instant"
   },
   {
@@ -614,7 +614,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.01,
+   "seconds": 0.02,
    "driver": "d_retry_tuple"
   },
   {
@@ -785,7 +785,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "d_words"
   },
   {
@@ -963,7 +963,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.11,
+   "seconds": 0.09,
    "driver": "d_explicit_transform"
   },
   {
@@ -1059,7 +1059,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "d_explicit_transform"
   },
   {
@@ -1290,7 +1290,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "d_repaste_counted"
   },
   {
@@ -1321,7 +1321,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "d_repaste_counted"
   },
   {
@@ -1362,7 +1362,7 @@
    "grading": "decision",
    "decision": "D04_ACTIVITY_SCOPE",
    "note": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "d_repaste_policy"
   },
   {
@@ -1436,7 +1436,7 @@
    "grading": "decision",
    "decision": "D04_ACTIVITY_SCOPE",
    "note": null,
-   "seconds": 10.05,
+   "seconds": 10.06,
    "driver": "d_repaste_policy"
   },
   {
@@ -1477,7 +1477,7 @@
    "grading": "decision",
    "decision": "D04_ACTIVITY_SCOPE",
    "note": null,
-   "seconds": 0.07,
+   "seconds": 0.08,
    "driver": "d_repaste_policy"
   },
   {
@@ -1518,7 +1518,7 @@
    "grading": "decision",
    "decision": "D04_ACTIVITY_SCOPE",
    "note": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "d_repaste_policy"
   },
   {
@@ -1686,7 +1686,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.01,
+   "seconds": 0.0,
    "driver": "d_admission"
   },
   {
@@ -1770,7 +1770,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.01,
+   "seconds": 0.0,
    "driver": "d_admission"
   },
   {
@@ -2338,7 +2338,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "d_query_vs_rebuild"
   },
   {
@@ -2694,7 +2694,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.01,
+   "seconds": 0.0,
    "driver": "d_zone_admission"
   },
   {
@@ -4036,14 +4036,14 @@
    "status": "PASS",
    "observed": {
     "outcome": "confirmed",
-    "e2e": 329.9,
+    "e2e": 325.7,
     "recorded": "confirmed"
    },
    "witness": null,
    "grading": "decision",
    "decision": "D06_LATENCY_CLOCK",
    "note": null,
-   "seconds": 0.35,
+   "seconds": 0.34,
    "driver": "d_clock"
   },
   {
@@ -4063,7 +4063,7 @@
    "status": "PASS",
    "observed": {
     "outcome": "posted_unverified",
-    "e2e": 331.4,
+    "e2e": 327.2,
     "recorded": "posted_unverified"
    },
    "witness": null,
@@ -4090,14 +4090,14 @@
    "status": "PASS",
    "observed": {
     "outcome": "saved_not_inserted",
-    "e2e": 329.5,
+    "e2e": 325.4,
     "recorded": "saved_not_inserted"
    },
    "witness": null,
    "grading": "decision",
    "decision": "D06_LATENCY_CLOCK",
    "note": null,
-   "seconds": 0.36,
+   "seconds": 0.37,
    "driver": "d_clock"
   },
   {
@@ -4117,7 +4117,7 @@
    "status": "PASS",
    "observed": {
     "outcome": "failed",
-    "e2e": 337.7,
+    "e2e": 323.9,
     "recorded": "failed"
    },
    "witness": null,
@@ -4144,14 +4144,14 @@
    "status": "PASS",
    "observed": {
     "outcome": "cancelled_after_release",
-    "e2e": 308.3,
+    "e2e": 306.1,
     "recorded": "cancelled"
    },
    "witness": null,
    "grading": "decision",
    "decision": "D06_LATENCY_CLOCK",
    "note": null,
-   "seconds": 0.34,
+   "seconds": 0.35,
    "driver": "d_clock"
   },
   {
@@ -4178,7 +4178,7 @@
    "grading": "decision",
    "decision": "D06_LATENCY_CLOCK",
    "note": null,
-   "seconds": 0.29,
+   "seconds": 0.3,
    "driver": "d_clock"
   },
   {
@@ -4198,13 +4198,13 @@
    "status": "PASS",
    "observed": {
     "outcome": "committed_note",
-    "e2e": 331.3
+    "e2e": 329.4
    },
    "witness": null,
    "grading": "decision",
    "decision": "D06_LATENCY_CLOCK",
    "note": null,
-   "seconds": 0.36,
+   "seconds": 0.37,
    "driver": "d_clock"
   },
   {
@@ -4226,14 +4226,14 @@
     "outcome": "retry_success",
     "e2e": null,
     "missing": "retry_no_release_clock",
-    "retry_ms": 319.5,
+    "retry_ms": 327.1,
     "activity": "2026-09-25T23:30:00.000000Z"
    },
    "witness": null,
    "grading": "decision",
    "decision": "D06_LATENCY_CLOCK",
    "note": null,
-   "seconds": 0.35,
+   "seconds": 0.37,
    "driver": "d_clock"
   },
   {
@@ -4287,7 +4287,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.01,
+   "seconds": 0.02,
    "driver": "d_app_identity"
   },
   {
@@ -4580,7 +4580,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "d_effective_mode"
   },
   {
@@ -4826,7 +4826,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.22,
+   "seconds": 0.17,
    "driver": "d_completeness"
   },
   {
@@ -5398,7 +5398,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.04,
+   "seconds": 0.03,
    "driver": "d_apply_vs_expiry"
   },
   {
@@ -5565,7 +5565,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.36,
+   "seconds": 0.35,
    "driver": "d_delete_all_timeout"
   },
   {
@@ -5594,7 +5594,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.38,
+   "seconds": 0.4,
    "driver": "d_delete_one_timeout"
   },
   {
@@ -5619,7 +5619,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.04,
+   "seconds": 0.06,
    "driver": "d_delete_all_rollback"
   },
   {
@@ -6026,7 +6026,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "d_legacy_repaste"
   },
   {
@@ -6189,7 +6189,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.02,
+   "seconds": 0.01,
    "driver": "d_ready_completeness"
   },
   {
@@ -6536,7 +6536,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.48,
+   "seconds": 0.44,
    "driver": "d_ready_activation"
   },
   {
@@ -6555,7 +6555,7 @@
    "observed": {
     "rows": 1,
     "outcome": "confirmed",
-    "e2e": 331.0
+    "e2e": 327.6
    },
    "witness": {
     "barrier": "receipt pending before settlement"
@@ -6588,7 +6588,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.11,
+   "seconds": 0.12,
    "driver": "d_note_not_confirmed"
   },
   {
@@ -6613,7 +6613,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.1,
+   "seconds": 0.11,
    "driver": "d_note_not_confirmed"
   },
   {
@@ -6664,7 +6664,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.1,
+   "seconds": 0.11,
    "driver": "d_note_duplicate"
   },
   {
@@ -6693,7 +6693,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.01,
+   "seconds": 0.02,
    "driver": "d_note_revisions"
   },
   {
@@ -6722,7 +6722,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.01,
+   "seconds": 0.02,
    "driver": "d_note_revisions"
   },
   {
@@ -6964,7 +6964,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "d_hub_retention"
   },
   {
@@ -7309,7 +7309,7 @@
    "status": "PASS",
    "observed": {
     "validity_exit": 0,
-    "tail": "0.99 ms (cold 0.968)\n  acceptance.per_mode_30d: p50 0.056 \u00b7 p95 0.056 \u00b7 p99 0.056 ms (cold 0.051)\n  acceptance.write: wall p95 0.844 ms (queue 0.013 \u00b7 writer 0.346 \u00b7 commit 0.482) on 5 facts that day\n",
+    "tail": "0.958 ms (cold 0.935)\n  acceptance.per_mode_30d: p50 0.057 \u00b7 p95 0.057 \u00b7 p99 0.057 ms (cold 0.06)\n  acceptance.write: wall p95 0.734 ms (queue 0.011 \u00b7 writer 0.328 \u00b7 commit 0.385) on 5 facts that day\n",
     "full_run": null
    },
    "witness": null,
@@ -7336,14 +7336,14 @@
    "status": "PASS",
    "observed": {
     "validity_exit": 0,
-    "tail": "82 ms (cold 0.794)\n  mixed_facts.per_mode_30d: p50 0.047 \u00b7 p95 0.047 \u00b7 p99 0.047 ms (cold 0.051)\n  mixed_facts.write: wall p95 0.854 ms (queue 0.009 \u00b7 writer 0.355 \u00b7 commit 0.477) on 4 facts that day\n",
+    "tail": ".814 ms (cold 0.8)\n  mixed_facts.per_mode_30d: p50 0.044 \u00b7 p95 0.044 \u00b7 p99 0.044 ms (cold 0.049)\n  mixed_facts.write: wall p95 0.796 ms (queue 0.012 \u00b7 writer 0.377 \u00b7 commit 0.397) on 4 facts that day\n",
     "full_run": null
    },
    "witness": null,
    "grading": "semantic",
    "decision": null,
    "note": "full-scale timing graded from the benchmark record when supplied",
-   "seconds": 0.22,
+   "seconds": 0.23,
    "driver": "d_bench_shape"
   },
   {
@@ -7369,7 +7369,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.18,
+   "seconds": 0.19,
    "driver": "d_bench_rejects"
   },
   {
@@ -7395,7 +7395,7 @@
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 0.18,
+   "seconds": 0.19,
    "driver": "d_bench_rejects"
   },
   {
@@ -7467,14 +7467,14 @@
    "status": "PASS",
    "observed": {
     "validity_exit": 0,
-    "tail": "busy_day: valid (0.1s)\n  busy_day.write: wall p95 1.17 ms (queue 0.013 \u00b7 writer 0.762 \u00b7 commit 0.376) on 2000 facts that day\n",
+    "tail": "busy_day: valid (0.1s)\n  busy_day.write: wall p95 1.06 ms (queue 0.011 \u00b7 writer 0.67 \u00b7 commit 0.37) on 2000 facts that day\n",
     "full_run": null
    },
    "witness": null,
    "grading": "semantic",
    "decision": null,
    "note": "full-scale timing graded from the benchmark record when supplied",
-   "seconds": 0.2,
+   "seconds": 0.19,
    "driver": "d_bench_shape"
   },
   {
@@ -7494,7 +7494,7 @@
    "status": "PASS",
    "observed": {
     "validity_exit": 0,
-    "tail": " 1.119 ms (cold 1.131)\n  many_days.per_mode_30d: p50 0.041 \u00b7 p95 0.041 \u00b7 p99 0.041 ms (cold 0.046)\n  many_days.write: wall p95 0.859 ms (queue 0.009 \u00b7 writer 0.379 \u00b7 commit 0.459) on 4 facts that day\n",
+    "tail": "99 1.1 ms (cold 1.122)\n  many_days.per_mode_30d: p50 0.047 \u00b7 p95 0.047 \u00b7 p99 0.047 ms (cold 0.048)\n  many_days.write: wall p95 0.836 ms (queue 0.009 \u00b7 writer 0.365 \u00b7 commit 0.448) on 4 facts that day\n",
     "full_run": null
    },
    "witness": null,
@@ -7521,7 +7521,7 @@
    "status": "PASS",
    "observed": {
     "validity_exit": 0,
-    "tail": "rebuild: valid (0.1s)\n  rebuild: p50 19.589 \u00b7 p95 19.589 ms over 2000 facts\n",
+    "tail": "rebuild: valid (0.1s)\n  rebuild: p50 20.24 \u00b7 p95 20.24 ms over 2000 facts\n",
     "full_run": null
    },
    "witness": null,
@@ -7548,7 +7548,7 @@
    "status": "PASS",
    "observed": {
     "validity_exit": 0,
-    "tail": "expiry: valid (0.0s)\n  expiry: p50 2.704 \u00b7 p95 2.704 ms over 2002 facts\n",
+    "tail": "expiry: valid (0.0s)\n  expiry: p50 2.606 \u00b7 p95 2.606 ms over 2002 facts\n",
     "full_run": null
    },
    "witness": null,
@@ -7576,24 +7576,24 @@
    "observed": {
     "base": [
      0,
-     2.404
+     2.363
     ],
     "inside": [
      4,
-     214.979
+     214.254
     ],
     "outside": [
      0,
-     6.573
+     6.336
     ],
-    "shift_inside_ms": 212.57500000000002,
-    "shift_outside_ms": 4.1690000000000005
+    "shift_inside_ms": 211.891,
+    "shift_outside_ms": 3.9730000000000003
    },
    "witness": null,
    "grading": "semantic",
    "decision": null,
    "note": null,
-   "seconds": 9.63,
+   "seconds": 9.59,
    "driver": "d_bench_delay"
   },
   {
@@ -7977,18 +7977,18 @@
    "observed": {
     "base": [
      0,
-     2.677
+     2.371
     ],
     "inside": [
      4,
-     214.984
+     212.647
     ],
     "outside": [
      0,
-     7.691
+     8.887
     ],
-    "shift_inside_ms": 212.30700000000002,
-    "shift_outside_ms": 5.013999999999999
+    "shift_inside_ms": 210.27599999999998,
+    "shift_outside_ms": 6.516
    }
   }
  ],

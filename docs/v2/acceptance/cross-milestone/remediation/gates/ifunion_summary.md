@@ -25,13 +25,32 @@ Split rows: XF-IF-035 and C IF-22 cover both approval (XM-IF-052) and Undo Appro
 
 | State | Rows |
 |---|---|
-| bound | 70 |
-| partial | 5 (XM-IF-001, 002, 009, 011, 063) |
-| unbound | 3 (XM-IF-074, 076, 077) |
+| bound | 77 (70 at the census, then XM-IF-001, 002, 009, 011, 063, 074, 076) |
+| bound_with_later_qualification | 1 (XM-IF-077) |
+| partial | 0 |
+| unbound | 0 |
 
 Rule: `bound` means every production caller of the producer that the census (or the pinned-commit grep) finds is listed as a consumer; every other pattern hit is classified per row in `closure_residue` (producer internals, name collisions, comment mentions, callers listed on a sibling row, scripts/ harnesses). 396 consumer sites and 29 missing-consumer sites were resolved to `file:line` at the pinned commit; none is unresolved.
 
-## Partial and unbound rows
+## Final dispositions of the eight rows that were partial or unbound
+
+Allowed final states are bound, bound_with_later_qualification and not_applicable_with_reason; none stays partial or unbound. Records: `ifunion.json` → each row's `final_disposition` (former missing consumers kept under `resolved_consumers`).
+
+| Row | Final state | How it closed | Executable evidence |
+|---|---|---|---|
+| XM-IF-001 content-free event envelope | bound | `Store._run`'s `store.write_failed` carries the exception type only; `CaptureJournal._degrade` details are type names and errno numbers by construction | `test_xm_remediation.py::if001_…` (XM-MU77), `test_xm_privacy.py`, `test_m03_remediation_journal.py::test_19_…` |
+| XM-IF-002 Store submission admission | bound | the Dictionary panel reads an admitted timeout as "outcome not known yet", never "not added" | `if002_dictionary_timeout_is_not_a_refusal` (XM-MU78) |
+| XM-IF-009 capture-boundary consent | bound | `hubSetCollection` returns `outcome_unknown`; the menu toggles catch the timeout and leave the menu to the next read | `if009_consent_timeout_is_outcome_unknown` (XM-MU80, XM-MU81) |
+| XM-IF-011 scoped vocabulary identity | bound | the same panel consumers; the JSON import logs `import_outcome_unknown`, not `import_failed` | `if002_…` (XM-MU78, XM-MU79) |
+| XM-IF-063 managed artifact reads | bound | `artifact_payload` and Replay read through `read_managed_file` (G06 XM-C016); `_retry_job` reads the capture journal's own WAV, never a stored locator, so it is not a consumer | `test_xm_g06_a.py::g06_xm_c016_…` (XM-MU67, XM-MU68) |
+| XM-IF-074 STATUS / runbook / registry projection | bound | its consumers are document tests | `x16`, `x17`, `r28_handoff_and_status_are_fresh`, `test_xm_runbook.py`, `test_registry.py` |
+| XM-IF-076 performance validity | bound | `run_validity` refuses a no-op or wrong cohort; M09 validity is mutation-checked | `test_m14_remediation.py::f28_…`, `g06_xm_c193_…`, `final/m09_bench_mutation.json` |
+| XM-IF-077 M15 qualification gate | bound_with_later_qualification | stated by the milestone plan and projected by STATUS `current_state` | `x16`; the gate itself is M15 (GATE-G10, the runbook, human-speaker timing) |
+
+## Rows that were partial or unbound at the census commit
+
+The per-row analysis below, and the state column in the tables further down, are the census at the pinned commit; the section above is their final state.
+
 
 ### XM-IF-001 — Content-free event envelope (event taxonomy) (`partial`)
 

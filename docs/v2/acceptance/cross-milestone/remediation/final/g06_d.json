@@ -3,8 +3,8 @@
  "code": {
   "suite": "tests/v2/crossmilestone/test_xm_g06_d.py",
   "suite_sha256": "2653f26f074644168c23f0ddf39510194c63e5c8d612d030e4e741c1ed86571c",
-  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
-  "tracked_files_modified": false,
+  "code_root_sha": "a33f68133d22f55e9b9e7ae6f1bedd2ca2fef500",
+  "tracked_files_modified": true,
   "production_tree_modified": false,
   "python": "3.14.7"
  },
@@ -54,7 +54,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.07
+   "seconds": 0.09
   },
   {
    "case": "g06_xm_mh01_c146_exposure_forward_old_package_historical",
@@ -62,7 +62,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.07
+   "seconds": 0.08
   },
   {
    "case": "g06_xm_mh05_older_generation_never_republishes_excluded",
@@ -70,7 +70,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.44
+   "seconds": 0.46
   },
   {
    "case": "c_g06_xm_mh05_release_last_without_exclusion",
@@ -78,7 +78,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.38
+   "seconds": 0.4
   },
   {
    "case": "g06_xm_mh10_note_capture_counts_dictated_words_only",
@@ -94,7 +94,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.31
+   "seconds": 0.32
   },
   {
    "case": "g06_xm_mh12_retry_agrees_across_consumers",

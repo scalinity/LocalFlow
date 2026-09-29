@@ -1,0 +1,153 @@
+{
+ "suite": "tests/v2/crossmilestone/test_xm_paste_again.py",
+ "code": {
+  "suite": "tests/v2/crossmilestone/test_xm_paste_again.py",
+  "suite_sha256": "07ba721ad298ac420755bab66f43a28295f58c02812e2c0eab636ee35661e0fa",
+  "code_root_sha": "00e8cad0933e4f43be4216e5cdae2d86d40056dd",
+  "tracked_files_modified": true,
+  "production_tree_modified": false,
+  "python": "3.14.7"
+ },
+ "counts": {
+  "PASS": 15
+ },
+ "invoked": [
+  "d03_invoke_and_incidental_front_app_paste_nothing",
+  "d03_click_in_app_pastes_there",
+  "d03_focus_change_without_click_pastes_nothing",
+  "d03_click_in_other_app_pastes_only_there",
+  "d03_cancel_before_click_pastes_nothing",
+  "d03_target_changed_after_pick_is_refused",
+  "d03_source_deleted_or_purged_while_choosing",
+  "d03_pick_bound_to_invoked_source",
+  "d03_success_is_counted_once",
+  "d03_normal_dictation_unchanged",
+  "d03_click_not_owned_by_front_app_pastes_nothing",
+  "d03_reopening_hub_cancels_the_pick",
+  "d03_second_paste_again_replaces_the_first",
+  "d03_source_check_timeout_ends_the_pick",
+  "d03_pick_ending_never_steals_focus_from_dictation"
+ ],
+ "results": [
+  {
+   "case": "d03_invoke_and_incidental_front_app_paste_nothing",
+   "finding": "POLICY-D03 1 (invoking Paste Again and an app merely coming to the front pastes nothing)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.54
+  },
+  {
+   "case": "d03_click_in_app_pastes_there",
+   "finding": "POLICY-D03 2 (a deliberate click on field F2 of app A captures a fresh target and pastes the History text there, once)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.12
+  },
+  {
+   "case": "d03_focus_change_without_click_pastes_nothing",
+   "finding": "POLICY-D03 3 (another app coming to the front before any click pastes nothing)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.41
+  },
+  {
+   "case": "d03_click_in_other_app_pastes_only_there",
+   "finding": "POLICY-D03 4 (the paste goes only to the destination clicked, here field FB of app B)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.12
+  },
+  {
+   "case": "d03_cancel_before_click_pastes_nothing",
+   "finding": "POLICY-D03 5 (Esc, or the timeout, before a click pastes nothing, and a later click does nothing)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "d03_target_changed_after_pick_is_refused",
+   "finding": "POLICY-D03 6 (a destination that changes after the click is refused by M08 revalidation \u2014 no fallback target)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.11
+  },
+  {
+   "case": "d03_source_deleted_or_purged_while_choosing",
+   "finding": "POLICY-D03 7 (a source deleted, or purged, while the destination is being chosen is refused; nothing stale is pasted)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.19
+  },
+  {
+   "case": "d03_pick_bound_to_invoked_source",
+   "finding": "POLICY-D03 8 (the pick stays bound to the History source invoked, whatever History renders or selects meanwhile)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.27
+  },
+  {
+   "case": "d03_success_is_counted_once",
+   "finding": "POLICY-D03 9 (a successful paste is one insertion and one repaste activity fact, never repeated)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.11
+  },
+  {
+   "case": "d03_normal_dictation_unchanged",
+   "finding": "POLICY-D03 10 (normal push-to-talk dictation after a pick still inserts automatically into its captured destination)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.21
+  },
+  {
+   "case": "d03_click_not_owned_by_front_app_pastes_nothing",
+   "finding": "POLICY-D03 review 1 (a click owned by an app that does not come to the front \u2014 a menu-bar item, a banner \u2014 pastes nothing into the app that is in front)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "d03_reopening_hub_cancels_the_pick",
+   "finding": "POLICY-D03 review 2a (reopening the Hub cancels a waiting pick; a later click pastes nothing)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "d03_second_paste_again_replaces_the_first",
+   "finding": "POLICY-D03 review 2b (a second Paste Again replaces the first pick and pastes its own source)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.21
+  },
+  {
+   "case": "d03_source_check_timeout_ends_the_pick",
+   "finding": "POLICY-D03 review 3 (a busy store during the source check ends the pick honestly; nothing is pasted)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.1
+  },
+  {
+   "case": "d03_pick_ending_never_steals_focus_from_dictation",
+   "finding": "POLICY-D03 review 4 (a pick that ends on its own never brings the Hub forward, and nothing does while a dictation is in flight)",
+   "kind": "regression",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.19
+  }
+ ]
+}

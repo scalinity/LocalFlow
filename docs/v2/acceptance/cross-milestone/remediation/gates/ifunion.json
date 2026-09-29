@@ -17,7 +17,7 @@
       "gates/census.json"
     ]
   },
-  "closure_rule": "bound = every production caller of the producer found by the tracked census (or, where the census has no symbol, by the same git grep at the pinned commit) is listed as a consumer, with every other pattern hit classified in closure_residue; partial = a census-found production consumer does not honour the interface (missing_consumers, with the reason); unbound = no production callable consumes it",
+  "closure_rule": "bound = every production caller of the producer found by the tracked census (or, where the census has no symbol, by the same git grep at the pinned commit) is listed as a consumer, with every other pattern hit classified in closure_residue; partial = a census-found production consumer does not honour the interface (missing_consumers, with the reason); unbound = no production callable consumes it Final states after the owner's decisions (2026-09-28): bound, bound_with_later_qualification or not_applicable_with_reason; no row stays partial or unbound (each resolved row keeps its former missing consumers under resolved_consumers).",
   "rows": [
     {
       "union_id": "XM-IF-001",
@@ -62,8 +62,21 @@
         "B": []
       },
       "merged_findings": [],
-      "closure_state": "partial",
-      "missing_consumers": [
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census emitters (321 emit call sites, 83 with free-text detail=; detail stored verbatim per census eventlog note)",
+      "closure_residue": [],
+      "final_disposition": {
+        "state": "bound",
+        "resolution": "Store._run's store.write_failed event now carries the exception type only; the op's message stays in memory (last_errors). CaptureJournal._degrade details are built only from exception type names and errno numbers (capture_journal.py _write/_writer/finalize), content-free by construction.",
+        "evidence": [
+          "tests/v2/crossmilestone/test_xm_remediation.py::if001_store_failure_event_carries_no_message_text (XM-MU77)",
+          "tests/v2/crossmilestone/test_xm_privacy.py",
+          "tests/v2/lifecycle/test_m03_remediation_journal.py::test_19_recorder_memory_complete_while_journal_degrades"
+        ],
+        "later_qualification": null
+      },
+      "resolved_consumers": [
         {
           "name": "Store._run",
           "site": "localflow/v2/store.py:1290",
@@ -74,9 +87,7 @@
           "site": "localflow/v2/capture_journal.py:348",
           "reason": "reason string concatenated into free-text detail; same verbatim-storage dependency"
         }
-      ],
-      "closure_basis": "census emitters (321 emit call sites, 83 with free-text detail=; detail stored verbatim per census eventlog note)",
-      "closure_residue": []
+      ]
     },
     {
       "union_id": "XM-IF-002",
@@ -165,8 +176,19 @@
         "MERGED-X09",
         "MERGED-X10"
       ],
-      "closure_state": "partial",
-      "missing_consumers": [
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census submit_callers + caller_inventory.unknown_outcome_callers (classes a/b/c)",
+      "closure_residue": [],
+      "final_disposition": {
+        "state": "bound",
+        "resolution": "The Dictionary panel's add/approve/toggle/pin/delete read an admitted TimeoutError (Store._submit: the op stays queued and may commit) as 'outcome not known yet', never as not done; every other census caller already honoured the contract.",
+        "evidence": [
+          "tests/v2/crossmilestone/test_xm_remediation.py::if002_dictionary_timeout_is_not_a_refusal (XM-MU78)"
+        ],
+        "later_qualification": null
+      },
+      "resolved_consumers": [
         {
           "name": "DictionaryPanelController.addEntry_",
           "site": "localflow/v2/dictionary_panel.py:239",
@@ -242,9 +264,7 @@
           "site": "localflow/app.py:5960",
           "reason": "direct store.submit read; TimeoutError collapses into usage.retry_provenance_unavailable"
         }
-      ],
-      "closure_basis": "census submit_callers + caller_inventory.unknown_outcome_callers (classes a/b/c)",
-      "closure_residue": []
+      ]
     },
     {
       "union_id": "XM-IF-003",
@@ -798,8 +818,25 @@
         "B": []
       },
       "merged_findings": [],
-      "closure_state": "partial",
-      "missing_consumers": [
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "census (UI/controller callers that collapse TimeoutError) + pinned-commit git grep of capture_snapshot/consent_revision_id",
+      "closure_residue": [
+        {
+          "function": "ConsentManager.snapshot_now",
+          "site": "localflow/v2/training.py:146",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        }
+      ],
+      "final_disposition": {
+        "state": "bound",
+        "resolution": "hubSetCollection returns outcome_unknown on an admitted timeout (the Hub's settings path already renders it); the menu toggles catch it, log training.consent_outcome_unknown and leave the menu for the next open to read.",
+        "evidence": [
+          "tests/v2/crossmilestone/test_xm_remediation.py::if009_consent_timeout_is_outcome_unknown (XM-MU80, XM-MU81)"
+        ],
+        "later_qualification": null
+      },
+      "resolved_consumers": [
         {
           "name": "AppDelegate.toggleTrainingCollection_",
           "site": "localflow/app.py:5305",
@@ -814,14 +851,6 @@
           "name": "HubController._set_collection",
           "site": "localflow/v2/ui/hub.py:4718",
           "reason": "census class b: TimeoutError shown as failed while the append_consent write may commit"
-        }
-      ],
-      "closure_basis": "census (UI/controller callers that collapse TimeoutError) + pinned-commit git grep of capture_snapshot/consent_revision_id",
-      "closure_residue": [
-        {
-          "function": "ConsentManager.snapshot_now",
-          "site": "localflow/v2/training.py:146",
-          "class": "internal to the producer (its definition, helper or writer op)"
         }
       ]
     },
@@ -926,8 +955,35 @@
         "B": []
       },
       "merged_findings": [],
-      "closure_state": "partial",
-      "missing_consumers": [
+      "closure_state": "bound",
+      "missing_consumers": [],
+      "closure_basis": "caller_inventory.unknown_outcome_callers (dictionary_panel, importDictionaryJSON_) + pinned-commit git grep",
+      "closure_residue": [
+        {
+          "function": "VocabularyStore.add_entry_in",
+          "site": "localflow/v2/vocabulary_store.py:296",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "VocabularyStore.find_in",
+          "site": "localflow/v2/vocabulary_store.py:289",
+          "class": "internal to the producer (its definition, helper or writer op)"
+        },
+        {
+          "function": "(scripts/ harness functions: 5)",
+          "site": "scripts/",
+          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ],
+      "final_disposition": {
+        "state": "bound",
+        "resolution": "The same Dictionary panel consumers as XM-IF-002, and importDictionaryJSON_ logs vocabulary.import_outcome_unknown (not import_failed) on an admitted timeout.",
+        "evidence": [
+          "tests/v2/crossmilestone/test_xm_remediation.py::if002_dictionary_timeout_is_not_a_refusal (XM-MU78, XM-MU79)"
+        ],
+        "later_qualification": null
+      },
+      "resolved_consumers": [
         {
           "name": "DictionaryPanelController.addEntry_",
           "site": "localflow/v2/dictionary_panel.py:239",
@@ -957,24 +1013,6 @@
           "name": "AppDelegate.importDictionaryJSON_",
           "site": "localflow/app.py:5751",
           "reason": "class b residual"
-        }
-      ],
-      "closure_basis": "caller_inventory.unknown_outcome_callers (dictionary_panel, importDictionaryJSON_) + pinned-commit git grep",
-      "closure_residue": [
-        {
-          "function": "VocabularyStore.add_entry_in",
-          "site": "localflow/v2/vocabulary_store.py:296",
-          "class": "internal to the producer (its definition, helper or writer op)"
-        },
-        {
-          "function": "VocabularyStore.find_in",
-          "site": "localflow/v2/vocabulary_store.py:289",
-          "class": "internal to the producer (its definition, helper or writer op)"
-        },
-        {
-          "function": "(scripts/ harness functions: 5)",
-          "site": "scripts/",
-          "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
         }
       ]
     },
@@ -4032,24 +4070,8 @@
         ]
       },
       "merged_findings": [],
-      "closure_state": "partial",
-      "missing_consumers": [
-        {
-          "name": "Store.artifact_payload",
-          "site": "localflow/v2/store.py:1759",
-          "reason": "managed audio read by path (census file_io store.py read_wav/read_bytes) outside the confined no-follow helper; reached by ReplayService.play_artifact"
-        },
-        {
-          "name": "AppDelegate._retry_job",
-          "site": "localflow/app.py:5883",
-          "reason": "retry reads managed audio by path outside the confined helper"
-        },
-        {
-          "name": "ReplayService.play_artifact",
-          "site": "localflow/v2/ui/replay.py:84",
-          "reason": "History/training replay reaches Store.artifact_payload (plain-path read of managed audio)"
-        }
-      ],
+      "closure_state": "bound",
+      "missing_consumers": [],
       "closure_basis": "census file_io (managed-file helpers vs plain open/read_bytes) + pinned-commit git grep",
       "closure_residue": [
         {
@@ -4076,6 +4098,31 @@
           "function": "(scripts/ harness functions: 3)",
           "site": "scripts/",
           "class": "scripts/ benchmark, repro or mutation-check harness, not a product consumer"
+        }
+      ],
+      "final_disposition": {
+        "state": "bound",
+        "resolution": "Store.artifact_payload (and so ReplayService.play_artifact) reads managed audio through the confined no-follow read_managed_file since the G06 XM-C016 repair. AppDelegate._retry_job is not a consumer of this interface: it reads the capture journal's own WAV (the recovery item or V2_JOURNAL/job-<id>.wav), never a stored artifact locator.",
+        "evidence": [
+          "tests/v2/crossmilestone/test_xm_g06_a.py::g06_xm_c016_corrupt_locator_never_touches_outside (XM-MU67, XM-MU68)"
+        ],
+        "later_qualification": null
+      },
+      "resolved_consumers": [
+        {
+          "name": "Store.artifact_payload",
+          "site": "localflow/v2/store.py:1759",
+          "reason": "managed audio read by path (census file_io store.py read_wav/read_bytes) outside the confined no-follow helper; reached by ReplayService.play_artifact"
+        },
+        {
+          "name": "AppDelegate._retry_job",
+          "site": "localflow/app.py:5883",
+          "reason": "retry reads managed audio by path outside the confined helper"
+        },
+        {
+          "name": "ReplayService.play_artifact",
+          "site": "localflow/v2/ui/replay.py:84",
+          "reason": "History/training replay reaches Store.artifact_payload (plain-path read of managed audio)"
         }
       ]
     },
@@ -4642,11 +4689,24 @@
         "MERGED-X16",
         "MERGED-X17"
       ],
-      "closure_state": "unbound",
+      "closure_state": "bound",
       "missing_consumers": [],
       "closure_basis": "census STATUS.json (0 production) / VERIFICATION.html (4 production, all script comments)",
       "closure_reason": "document projection with no production callable: census STATUS.json has 0 production hits; VERIFICATION.html production hits are comments in scripts. At the pinned commit STATUS.json has no current_state projection (D15 not landed) and VERIFICATION.html M07 is still the placeholder at line 2514 (D16 not landed; GATE-G03 records M07 has none)",
-      "closure_residue": []
+      "closure_residue": [],
+      "final_disposition": {
+        "state": "bound",
+        "resolution": "The projection's consumers are tests that read it as documents: STATUS current_state (x16), the M07 runbook ownership (x17), handoff/STATUS freshness (r28), the runbook's ids (test_xm_runbook) and the registry derivation (test_registry).",
+        "evidence": [
+          "tests/v2/crossmilestone/test_xm_remediation.py::x16_status_separates_current_state_from_historical_record",
+          "::x17_m07_obligations_have_stable_runbook_ownership",
+          "::r28_handoff_and_status_are_fresh",
+          "tests/v2/crossmilestone/test_xm_runbook.py",
+          "tests/v2/test_registry.py"
+        ],
+        "later_qualification": null
+      },
+      "resolved_consumers": []
     },
     {
       "union_id": "XM-IF-075",
@@ -4743,11 +4803,22 @@
         "B": []
       },
       "merged_findings": [],
-      "closure_state": "unbound",
+      "closure_state": "bound",
       "missing_consumers": [],
       "closure_basis": "pinned-commit git grep of run_validity",
       "closure_reason": "the producer exists only as benchmark scripts; its consumers are acceptance documents and humans, not a production callable",
-      "closure_residue": []
+      "closure_residue": [],
+      "final_disposition": {
+        "state": "bound",
+        "resolution": "benchmark_m14.run_validity reports a no-op or wrong-cohort component invalid; the M09 benchmark's validity is mutation-checked; every committed benchmark record carries its validity.",
+        "evidence": [
+          "tests/v2/personalization/test_m14_remediation.py::f28_benchmark_rejects_a_noop_component",
+          "tests/v2/crossmilestone/test_xm_g06_a.py::g06_xm_c193_noop_and_wrong_cohort_are_invalid",
+          "remediation/final/m09_bench_mutation.json"
+        ],
+        "later_qualification": null
+      },
+      "resolved_consumers": []
     },
     {
       "union_id": "XM-IF-077",
@@ -4772,11 +4843,20 @@
         "B": []
       },
       "merged_findings": [],
-      "closure_state": "unbound",
+      "closure_state": "bound_with_later_qualification",
       "missing_consumers": [],
       "closure_basis": "docs/v2/LOCALFLOW_V2_MILESTONES.md dependency table",
       "closure_reason": "M15 is not implemented; the gate is a document requirement with no producer or consumer callable",
-      "closure_residue": []
+      "closure_residue": [],
+      "final_disposition": {
+        "state": "bound_with_later_qualification",
+        "resolution": "The gate is stated by docs/v2/LOCALFLOW_V2_MILESTONES.md (M15 preconditions) and projected by STATUS current_state (next_milestone, may_run_next), which x16 checks; passing it is M15's own qualification.",
+        "evidence": [
+          "tests/v2/crossmilestone/test_xm_remediation.py::x16_status_separates_current_state_from_historical_record"
+        ],
+        "later_qualification": "M15 qualification: GATE-G10 (M11 integrated record, M07-V001/V002), the native/manual runbook and human-speaker end-to-end timing."
+      },
+      "resolved_consumers": []
     },
     {
       "union_id": "XM-IF-078",

@@ -2,9 +2,9 @@
 
 The merged corpus (`gates/casemap.json`) is a declarative semantic specification: 511 source declarations from the three audits' corpora, merged into 309 cases. Much of it overlaps other audit generations, accepted milestone suites, the cross-milestone regressions, native/model/human qualification and M15. **309 declarative cases do not mean 309 bespoke executable drivers.**
 
-Closure rule (owner decision, 2026-09-28): Every merged corpus case is explicitly dispositioned. Every unique automatable obligation that touches changed production code or a materially affected producer-to-consumer seam has executable evidence. Duplicate aliases, invariants already proven by a current accepted production-path suite, and explicitly later native/model/human/M15 obligations need no new bespoke driver, but name their exact owner and evidence.
+Closure rule (owner decision, 2026-09-28): Every merged corpus case is explicitly dispositioned. A new driver is required when the case asserts a unique semantic invariant whose truth may have been materially changed by this remediation AND that invariant is not already established by current executable evidence. Merely traversing changed code is insufficient. Duplicate aliases, invariants proven by a current accepted production-path suite, and later native/model/human/M15 obligations name their owner and evidence instead of a bespoke driver.
 
-Mandatory drivers: A DRIVER_REQUIRED case is mandatory before merge when (a) its exact producer or consumer runs through one of the 69 functions the remediation changed (340c566..d6a555d), or (b) its oracle reads behaviour a GATE-G06 repair changed (d6a555d..cabc756, each listed with that behaviour). Both lists: gates/g06_changed_functions.txt. Rule (b) is semantic because the G06 repairs sit on paths nearly every dictation runs (startDictation, _worker); a repair's own reproducing driver and mutant witness it. Mandatory cases carry an executed driver in tests/v2/crossmilestone/test_xm_g06_*.py; the others stay DRIVER_REQUIRED with their driver specification.
+Mandatory drivers: DRIVER_REQUIRED means executable evidence still required before this campaign may close; a completed campaign has none. FUTURE_HARDENING_SPEC is a fully specified driver that is valuable but not required here: its oracle is not materially affected by the remediation, or the affected part is proven by current executable evidence. Each keeps its invariant, proposed driver (driver_spec), the reason it is not required and its owning future phase. gates/g06_changed_functions.txt lists the changed functions the impact analysis read.
 
 Machine-readable manifest: `gates/g06_disposition.json` (every case, its category, reason, bindings, producer/consumer, oracle argument, owner gate or driver specification). Code: `cabc756`.
 
@@ -13,17 +13,18 @@ Machine-readable manifest: `gates/g06_disposition.json` (every case, its categor
 | Category | Cases |
 |---|---|
 | COVERED_BY_CURRENT_ACCEPTED_SUITE | 159 |
+| DEFERRED_HUMAN | 1 |
 | DEFERRED_M15 | 8 |
-| DEFERRED_MODEL | 2 |
+| DEFERRED_MODEL | 1 |
 | DEFERRED_NATIVE | 3 |
-| DRIVER_REQUIRED | 40 |
-| EXECUTED_PASS | 96 |
+| EXECUTED_PASS | 97 |
+| FUTURE_HARDENING_SPEC | 39 |
 | NOT_APPLICABLE_WITH_REASON | 1 |
 | ALIAS_OF_EXECUTED_CASE | 0 — duplicates were merged into their case by the case map; each case's source declarations are its `aliases` in the case map |
-| DEFERRED_HUMAN / EXECUTED_FAIL | 0 |
+| EXECUTED_FAIL | 0 |
 | **Total** | 309 |
 
-## Executed by a G06 driver (58 cases, all PASS on the final tree)
+## Executed by a G06 driver (59 cases, all PASS on the final tree)
 
 | Case | Driver | Note |
 |---|---|---|
@@ -39,6 +40,7 @@ Machine-readable manifest: `gates/g06_disposition.json` (every case, its categor
 | XM-C033 | `test_xm_g06_a.py::g06_xm_c033_unverified_is_never_confirmed` |  |
 | XM-C034 | `test_xm_g06_a.py::g06_xm_c034_refused_target_is_saved_not_failed` |  |
 | XM-C040 | `test_xm_g06_a.py::g06_xm_c040_revoked_lease_grants_no_authority` |  |
+| XM-C042 | `test_xm_g06_c2.py::g06_xm_c042_retry_with_hub_focus_never_inserts`, `test_xm_g06_c2.py::g06_xm_c042_retry_without_target_keeps_result`, `test_xm_g06_c2.py::g06_xm_c042_fresh_target_inserts_and_keeps_provenance`, `test_xm_g06_c2.py::g06_xm_c042_target_changed_after_capture_is_refused` |  |
 | XM-C193 | `test_xm_g06_a.py::g06_xm_c193_noop_and_wrong_cohort_are_invalid` |  |
 | XM-MH06 | `test_xm_g06_c2.py::g06_xm_c020_mh06_retry_is_one_logical_dictation`, `test_xm_g06_c2.py::g06_xm_c020_mh06_control_clean_capture` |  |
 | XM-MH17 | `test_xm_g06_a.py::g06_xm_mh17_one_dictation_one_identity_everywhere` |  |
@@ -302,7 +304,7 @@ Each names its exact test, current evidence, producer and consumer and why its o
 | XM-C188 | DEFERRED_M15 | M15 completion report (M15-AC01..AC08 evidence mapping) |
 | XM-C189 | DEFERRED_M15 | M15-AC05, M15-AC08 |
 | XM-C190 | DEFERRED_M15 | M15-AC06, M15-AC07 |
-| XM-C191 | DEFERRED_MODEL | GATE-G08 (human-speaker end-to-end timing) + M15-AC04 |
+| XM-C191 | DEFERRED_HUMAN | GATE-G08 (human-speaker end-to-end timing) + M15-AC04 |
 | XM-C192 | DEFERRED_M15 | GATE-G08 + M15-AC03/AC04 (reference-condition budgets) |
 | XM-C194 | DEFERRED_M15 | M15-AC03/AC04 (reference Mac) + GATE-G08 |
 | XM-C195 | DEFERRED_M15 | M15-AC03/AC04 |
@@ -315,50 +317,53 @@ Each names its exact test, current evidence, producer and consumer and why its o
 
 - XM-MU22: The mutant's target does not exist. AppDelegate._worker (app.py:4031-4640) has no attempt or generation discard guard: it takes whatever supervisor.transcribe/clean returns and only copies res['attempt'] (app.py:4096-4102). Stale old-generation and old-attempt completions are rejected upstream in WorkerSupervisor._handle_message (supervisor.py:470-500), and at insertion by the stale_attempt gate (service.py:520). The equivalent invariant at those real guards is covered: test_worker_protocol.py::test_stale_generation_echo_resolves_as_fault and test_stale_generation_result_discarded, test_m03_remediation_supervisor.py::test_13_expected_identity_matrix (sweep exit=0), and LF-M08-F01-C05 (pass). Retries cannot overlap a live attempt (M13-C006 PASS).
 
-## DRIVER_REQUIRED, not mandatory before merge (40 cases)
+## DRIVER_REQUIRED (0 cases)
 
-A unique automatable obligation no current suite proves, whose path runs through none of the remediation's changed functions and whose oracle reads no behaviour a G06 repair changed. Each keeps its driver specification in the manifest. XM-C042 carries an open product question: a retry has no target and inserts at the current focus (validate_target's target-less branch), which conflicts with the case's "0 writes into another app" oracle.
+DRIVER_REQUIRED means executable evidence still required before this campaign may close. None remains.
 
-| Case | Invariant |
-|---|---|
-| XM-C023 | Autosaving and restoring a note that received dictation J creates no new capture, job or dictation count. |
-| XM-C026 | A retry publishes its example under the original capture's consent revision and family, publishes nothing after a later revocation, never mints a new family, and increments jobs.attempt exactly once. |
-| XM-C027 | Retrying an old job never consumes a queued one-shot Next Mode override; the next new capture receives it. |
-| XM-C029 | Delivering the same successful terminal _finishWithText_ callback twice yields one terminal outcome, one dictation fact and one insertion submission. |
-| XM-C031 | A retry result released after delete-everywhere recreates no governed content, learning or profile eligibility. |
-| XM-C039 | Moving the selection to another occurrence of identical text needs proof of the original region; text equality never retargets a strict replacement. |
-| XM-C042 (flagged) | A retry while another app is focused keeps the original capture app in its usage metadata and applies current insertion safety independently. |
-| XM-C183 | Pre-remediation benchmark results stay dated and source-bound, are never relabeled current and are never overwritten by a rerun. |
-| XM-C186 | Every registry requirement and suite entry resolves to a git-tracked current test entrypoint that imports and calls production code; dead or unbound nodes are reported as gaps, and future (M15/M16) suites are labeled ... |
-| XM-MH19 | After ASR failure and worker restart, a retry keeps job, family and capture identity, rejects an old-generation response, cannot reuse stale insertion permission, and leaves one usage fact. |
-| XM-C045 | Only documented canonical site-origin equivalents match; port and www variants never alias. |
-| XM-C046 | Workspace/profile scopes are exact opaque identities after trimming across matching, approval and undo. |
-| XM-C048 | When field context cannot be read, the finalized snapshot invents no site, workspace or selection authority. |
-| XM-C050 | A late context delta stays attached to its own capture handle and parent revision and never replaces another capture's scope. |
-| XM-C051 | A job with no usable workspace freezes no skill or file-tag authority cached from a prior workspace. |
-| XM-C085 | An auto-applied transform never synthesizes a user accept or preference, and the auto path stays distinct in transform-supervised readiness. |
-| XM-C086 | A held transform completion for source A released after the panel moved to B cannot replace B's display, destination or acceptance authority. |
-| XM-C174 (flagged) | Unavailable source-revision or time-quality fields stay null-with-reason in rendered diagnostics and redacted exports. |
-| XM-C175 | Under a low-priority flood the bounded queue counts loss and coalescing and marks terminal degradation explicitly. |
-| XM-C179 | A query in flight when its pane or the Hub closes, including one whose source is deleted, never publishes, caches or resurrects focus or actions after reopen. |
-| XM-MH08 | A job frozen in A generates its auto-transform from A's frozen policy after focus moves to B, is never pasted into B, and reports an honest saved disposition. |
-| XM-MH31 | Quitting while an insertion, a note arrival and a review mutation settle causes no premature resource release, stale UI reopen, duplicate effect or false completion claim. |
-| XM-R19 | A foreground change after context freeze never rereads B or pulls B's content or rules into A's job, and insertion revalidation refuses the unrelated target. |
-| XM-MR05 | Changing live foreground context after freeze never alters the frozen job's policy or pulls unrelated content, apart from an independently checked insertion refusal. |
-| XM-MR13 | Re-saving settings with identical values leaves effective output, task input and scope equal; any new revision is labeled without changed semantics. |
-| XM-MU04 | Changing unrelated foreground context after freeze does not change the transform task's inputs. |
-| XM-MU30 | A result read before deletion never repaints after revoke_job. |
-| XM-C089 | History Copy refuses (outcome clipboard_busy, board untouched) while the M08 service owns the pasteboard, and after release copies exactly once. |
-| XM-C090 | A reconcile of a pending clipboard payload never restores the obsolete prior clipboard over a newer external owner. |
-| XM-C093 | A note arrival is reported delivered only after its revision commits; an admitted-but-timed-out arrival commit retried by the editor yields exactly one revision and one usage fact. |
-| XM-R04 | An autosave pending while a dictation arrival commits never overwrites the typed tail or duplicates the arrival, in either release order. |
-| XM-C095 | An owned external insertion writes no note revision and records exactly one external dictation fact. |
-| XM-C099 | Quitting with an admitted but unacknowledged note arrival drains it or preserves recovery authority, and never claims saved/confirmed merely on enqueue. |
-| XM-MH21 | Dictation into a note being edited keeps typed bytes typed, counts the arrival only when durable, and stops correction ownership at ambiguity. |
-| XM-C134 | An operation id recorded for one action refuses when reused for a different action (kind) on the same target, leaving state unchanged. |
-| XM-C127 | A span correction or intended-writing mark prepared in the Hub on a reviewable example that became quarantined_sensitive or expired before Save is refused and never overwrites the restriction. |
-| XM-R24 | Mining interleaved with autosave binds each mined change to one exact (previous, current) revision pair and one job, and never promotes typed-region words from a stale diff. |
-| XM-C147 | Deleting the example through which a family was exposed never washes the family's exposure. |
-| XM-C168 | Being sampled never grants an unreviewed candidate indefinite human-review retention. |
-| XM-C173 | Planned evidence artifacts and docs carry no user path, session id or live content, including truncated fragments without a /Users/ prefix. |
+## FUTURE_HARDENING_SPEC (39 cases)
+
+A fully specified driver that is valuable but not required here, under the semantic-impact rule: the remediation does not materially change the behaviour its oracle reads, or the affected part is proven by current executable evidence. Each keeps its invariant and proposed driver (`driver_spec`) in the manifest.
+
+| Case | Invariant | Owning future phase | Why not required now |
+|---|---|---|---|
+| XM-C023 | Autosaving and restoring a note that received dictation J creates no new capture, job or dictation count. | M12 notes suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C026 | A retry publishes its example under the original capture's consent revision and family, publishes nothing after a later revocation, never mints a new family, and increments jobs.attempt exactly once. | M03 lifecycle suite | The XM-C042 change alters only a retry's terminal insertion branch; this oracle reads the retry's consent snapshot, family and example publication, which that branch leaves as it was (on_insertion is still called; tes... |
+| XM-C027 | Retrying an old job never consumes a queued one-shot Next Mode override; the next new capture receives it. | M03 lifecycle suite | The XM-C042 change alters only a retry's terminal insertion branch; the one-shot Next Mode is taken at a new press and never read by a retry. |
+| XM-C029 | Delivering the same successful terminal _finishWithText_ callback twice yields one terminal outcome, one dictation fact and one insertion submission. | M03 lifecycle suite | The new _finishWithText_ branch runs only for a retry with no captured destination; this oracle delivers a normal job's terminal callback twice, whose path is unchanged. |
+| XM-C031 | A retry result released after delete-everywhere recreates no governed content, learning or profile eligibility. | M03 lifecycle suite | Deleting an active job marks it cancelled, and _finishWithText_ returns on that before any terminal branch, including the new retry branch; the deletion guard this oracle reads is unchanged. |
+| XM-C039 | Moving the selection to another occurrence of identical text needs proof of the original region; text equality never retargets a strict replacement. | M11 transforms suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C183 | Pre-remediation benchmark results stay dated and source-bound, are never relabeled current and are never overwritten by a rerun. | the next read-only audit (evidence tooling) | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C186 | Every registry requirement and suite entry resolves to a git-tracked current test entrypoint that imports and calls production code; dead or unbound nodes are reported as gaps, and future (M15/M16) suites are labeled ... | the next read-only audit (evidence tooling) | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-MH19 | After ASR failure and worker restart, a retry keeps job, family and capture identity, rejects an old-generation response, cannot reuse stale insertion permission, and leaves one usage fact. | M03 lifecycle suite | Its insertion-authority leg is materially affected by XM-C042 and is proven by the XM-C042 regressions (a retry inserts only into a destination its action captured); stale-generation discard and identity are unchanged... |
+| XM-C045 | Only documented canonical site-origin equivalents match; port and www variants never alias. | M10 profiles suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C046 | Workspace/profile scopes are exact opaque identities after trimming across matching, approval and undo. | M10 profiles suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C048 | When field context cannot be read, the finalized snapshot invents no site, workspace or selection authority. | M06 context suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C050 | A late context delta stays attached to its own capture handle and parent revision and never replaces another capture's scope. | M06 context suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C051 | A job with no usable workspace freezes no skill or file-tag authority cached from a prior workspace. | M10 profiles suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C085 | An auto-applied transform never synthesizes a user accept or preference, and the auto path stays distinct in transform-supervised readiness. | M11 transforms suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C086 | A held transform completion for source A released after the panel moved to B cannot replace B's display, destination or acceptance authority. | M11 transforms suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C174 | Unavailable source-revision or time-quality fields stay null-with-reason in rendered diagnostics and redacted exports. | M02 event log suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C175 | Under a low-priority flood the bounded queue counts loss and coalescing and marks terminal degradation explicitly. | M02 event log suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C179 | A query in flight when its pane or the Hub closes, including one whose source is deleted, never publishes, caches or resurrects focus or actions after reopen. | M09 Hub suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-MH08 | A job frozen in A generates its auto-transform from A's frozen policy after focus moves to B, is never pasted into B, and reports an honest saved disposition. | M11 transforms suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-MH31 | Quitting while an insertion, a note arrival and a review mutation settle causes no premature resource release, stale UI reopen, duplicate effect or false completion claim. | M03 lifecycle suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-R19 | A foreground change after context freeze never rereads B or pulls B's content or rules into A's job, and insertion revalidation refuses the unrelated target. | M11 transforms suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-MR05 | Changing live foreground context after freeze never alters the frozen job's policy or pulls unrelated content, apart from an independently checked insertion refusal. | M11 transforms suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-MR13 | Re-saving settings with identical values leaves effective output, task input and scope equal; any new revision is labeled without changed semantics. | M10 profiles suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-MU04 | Changing unrelated foreground context after freeze does not change the transform task's inputs. | M11 transforms suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-MU30 | A result read before deletion never repaints after revoke_job. | M09 Hub suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C089 | History Copy refuses (outcome clipboard_busy, board untouched) while the M08 service owns the pasteboard, and after release copies exactly once. | M08 insertion suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C090 | A reconcile of a pending clipboard payload never restores the obsolete prior clipboard over a newer external owner. | M08 insertion suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C093 | A note arrival is reported delivered only after its revision commits; an admitted-but-timed-out arrival commit retried by the editor yields exactly one revision and one usage fact. | M12 notes suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-R04 | An autosave pending while a dictation arrival commits never overwrites the typed tail or duplicates the arrival, in either release order. | M12 notes suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C095 | An owned external insertion writes no note revision and records exactly one external dictation fact. | M12 notes suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C099 | Quitting with an admitted but unacknowledged note arrival drains it or preserves recovery authority, and never claims saved/confirmed merely on enqueue. | M12 notes suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-MH21 | Dictation into a note being edited keeps typed bytes typed, counts the arrival only when durable, and stops correction ownership at ambiguity. | M12 notes suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C134 | An operation id recorded for one action refuses when reused for a different action (kind) on the same target, leaving state unchanged. | M14 learning suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C127 | A span correction or intended-writing mark prepared in the Hub on a reviewable example that became quarantined_sensitive or expired before Save is refused and never overwrites the restriction. | M14 training suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-R24 | Mining interleaved with autosave binds each mined change to one exact (previous, current) revision pair and one job, and never promotes typed-region words from a stale diff. | M12 notes suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C147 | Deleting the example through which a family was exposed never washes the family's exposure. | M14 training suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C168 | Being sampled never grants an unreviewed candidate indefinite human-review retention. | M14 training suite | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
+| XM-C173 | Planned evidence artifacts and docs carry no user path, session id or live content, including truncated fragments without a /Users/ prefix. | the next read-only audit (evidence tooling) | Not materially affected: its producer and consumer run through none of the remediation's changed functions, and none of the later changes (the GATE-G06 repairs, XM-C042 retry authority, POLICY-D03 Paste Again destinat... |
 

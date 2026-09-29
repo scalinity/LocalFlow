@@ -9,8 +9,8 @@
  "code": {
   "suite": "tests/v2/personalization/m14_corpus_runner.py",
   "suite_sha256": "c8af29a008dd9316089e6085bb0a4921444ff08276011663083561c4b676dc4e",
-  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
-  "tracked_files_modified": false,
+  "code_root_sha": "a33f68133d22f55e9b9e7ae6f1bedd2ca2fef500",
+  "tracked_files_modified": true,
   "production_tree_modified": false,
   "python": "3.14.7"
  },
@@ -147,7 +147,7 @@
    "decision": "m14-policy-r1:D13",
    "note": null,
    "reached": null,
-   "seconds": 0.01,
+   "seconds": 0.02,
    "driver": "c003_punctuation_only"
   },
   {
@@ -212,7 +212,7 @@
    "decision": "m14-policy-r1:D13",
    "note": null,
    "reached": null,
-   "seconds": 0.01,
+   "seconds": 0.02,
    "driver": "c005_stale_final"
   },
   {
@@ -261,7 +261,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.22,
+   "seconds": 0.26,
    "driver": "c007_transformed_final_guard"
   },
   {
@@ -684,7 +684,7 @@
    "decision": "m14-policy-r1:D14",
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c022_repeated_words"
   },
   {
@@ -718,7 +718,7 @@
    "decision": "m14-policy-r1:D14",
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "c023_whitespace_unicode"
   },
   {
@@ -818,7 +818,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c027_pending_expiry"
   },
   {
@@ -1340,7 +1340,7 @@
    "decision": "m14-policy-r1:D01",
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.06,
    "driver": "c042_ambiguous_resolved"
   },
   {
@@ -1379,7 +1379,7 @@
    "decision": "m14-policy-r1:D01",
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.07,
    "driver": "c043_rewrite_resolved"
   },
   {
@@ -1414,7 +1414,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c044_changed_intent_history"
   },
   {
@@ -1446,7 +1446,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c045_abstain_then_explicit"
   },
   {
@@ -1627,7 +1627,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.07,
    "driver": "c050_no_listen"
   },
   {
@@ -1679,7 +1679,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.1,
+   "seconds": 0.12,
    "driver": "c051_audio_missing_purged"
   },
   {
@@ -1711,7 +1711,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c052_graft_only"
   },
   {
@@ -1746,7 +1746,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c053_foreign_audio"
   },
   {
@@ -1777,7 +1777,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.08,
    "driver": "c054_wrong_role_audio"
   },
   {
@@ -1808,7 +1808,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.13,
    "driver": "c055_foreign_verbatim"
   },
   {
@@ -1857,7 +1857,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.07,
    "driver": "c056_historical_blocker"
   },
   {
@@ -1888,7 +1888,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.08,
    "driver": "c057_positive_owned_roles"
   },
   {
@@ -1934,7 +1934,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.09,
+   "seconds": 0.13,
    "driver": "c058_foreign_raw"
   },
   {
@@ -1971,7 +1971,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.09,
    "driver": "c059_transform_as_raw"
   },
   {
@@ -2000,7 +2000,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.07,
    "driver": "c060_same_job_wrong_stage"
   },
   {
@@ -2063,7 +2063,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.08,
    "driver": "c062_wrong_verbatim_role"
   },
   {
@@ -2108,7 +2108,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.17,
+   "seconds": 0.21,
    "driver": "c063_deleted_artifact_row"
   },
   {
@@ -2151,7 +2151,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.04,
    "driver": "c064_fallback_job_role"
   },
   {
@@ -2176,7 +2176,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c065_positive_one_span"
   },
   {
@@ -2326,7 +2326,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c069_unicode_offsets"
   },
   {
@@ -2418,7 +2418,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.06,
    "driver": "c072_no_gold_upgrade"
   },
   {
@@ -2460,7 +2460,7 @@
      ]
     ],
     "ce": {
-     "artifact_id": "art-a428eb73d51e47c687899fec85e9488f",
+     "artifact_id": "art-33ed3a1a1b09484cbd6bfb183010f393",
      "flips": 0,
      "scope": [
       "app",
@@ -2476,7 +2476,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.01,
+   "seconds": 0.02,
    "driver": "c073_positive_new_entry"
   },
   {
@@ -2648,7 +2648,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.09,
+   "seconds": 0.06,
    "driver": "c078_equivalent_scope"
   },
   {
@@ -2717,14 +2717,14 @@
      "first_timed_out": true,
      "first": null,
      "retry_refused": null,
-     "retry_entry": "vocab-a828504c796f48228546a40024c83388",
+     "retry_entry": "vocab-04197afbb4554226a77c373b5861df45",
      "one_entry": true,
      "no_extra_effect": true,
      "rev_at_commit": 1,
      "rev_final": 1,
      "alias_once": true,
      "status": "approved",
-     "eid": "vocab-a828504c796f48228546a40024c83388",
+     "eid": "vocab-04197afbb4554226a77c373b5861df45",
      "deltas": 1,
      "receipts": 1,
      "op_id": true,
@@ -2733,16 +2733,16 @@
     "control": {
      "injected": false,
      "first_timed_out": false,
-     "first": "vocab-984d1f4f947c4f30b293629703836947",
+     "first": "vocab-53de7ef735fe464887f0bb47e2fae553",
      "retry_refused": null,
-     "retry_entry": "vocab-984d1f4f947c4f30b293629703836947",
+     "retry_entry": "vocab-53de7ef735fe464887f0bb47e2fae553",
      "one_entry": true,
      "no_extra_effect": true,
      "rev_at_commit": null,
      "rev_final": 1,
      "alias_once": true,
      "status": "approved",
-     "eid": "vocab-984d1f4f947c4f30b293629703836947",
+     "eid": "vocab-53de7ef735fe464887f0bb47e2fae553",
      "deltas": 1,
      "receipts": 1,
      "op_id": true,
@@ -2754,7 +2754,7 @@
    "decision": "m14-policy-r1:D12",
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c080_s006_unknown_after_effect"
   },
   {
@@ -2781,7 +2781,7 @@
     "delta": {
      "action": "created",
      "alias": "modul",
-     "entry_id": "vocab-afc80c8498e9400fb34aa0c0856025bf",
+     "entry_id": "vocab-812cef80561d42f2a9ad7db4a0e1b707",
      "revision_after_approval": 1,
      "undo_revision": 2
     }
@@ -2849,7 +2849,7 @@
    "decision": "m14-policy-r1:D12",
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.04,
    "driver": "c082_s007_created_then_user_edit"
   },
   {
@@ -2976,7 +2976,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c085_preexisting_approved_alias"
   },
   {
@@ -3015,7 +3015,7 @@
      "effective": true
     },
     "alias": {
-     "eid0": "vocab-e5a192f24f534cd99d2c822fe1daa5a0",
+     "eid0": "vocab-121dbd48b3ca49c487ec032598415b9d",
      "undo_refused": null,
      "first": "alias_added",
      "again": "alias_added",
@@ -3047,7 +3047,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c086_undo_reapprove"
   },
   {
@@ -3135,7 +3135,7 @@
    "status": "PASS",
    "observed": {
     "ce": {
-     "artifact_id": "art-2af52c375de04def9bfca1f5b1bb2e67",
+     "artifact_id": "art-03ba0b9c94654ecaa3eb9ce9859b5367",
      "flips": 0,
      "scope": [
       "app",
@@ -3152,7 +3152,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.01,
+   "seconds": 0.02,
    "driver": "c089_safe_populated"
   },
   {
@@ -3259,7 +3259,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.07,
    "driver": "c091_scope_app_site"
   },
   {
@@ -3346,7 +3346,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.04,
    "driver": "c093_composition"
   },
   {
@@ -3373,7 +3373,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.01,
+   "seconds": 0.02,
    "driver": "c094_private_phrase_deletion"
   },
   {
@@ -3421,7 +3421,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c095_positive_new_pair"
   },
   {
@@ -3459,7 +3459,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.04,
+   "seconds": 0.06,
    "driver": "c096_same_exact_pair"
   },
   {
@@ -3590,7 +3590,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c099_different_canonical"
   },
   {
@@ -3630,7 +3630,7 @@
    "decision": "m14-policy-r1:D05",
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c100_pair_only_privacy"
   },
   {
@@ -3658,7 +3658,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.15,
+   "seconds": 0.2,
    "driver": "c101_positive_base_stream"
   },
   {
@@ -3695,7 +3695,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c102_explicit"
   },
   {
@@ -3733,15 +3733,15 @@
    "policy_adjudication_required": false,
    "status": "PASS",
    "observed": {
-    "supplemental_expected": 26,
-    "supplemental_rows": 26
+    "supplemental_expected": 24,
+    "supplemental_rows": 24
    },
    "witness": "30 language=de examples at 10%: the non-drawn ones are the supplemental pool",
    "grading": "semantic",
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.15,
+   "seconds": 0.16,
    "driver": "c104_supplemental"
   },
   {
@@ -3786,7 +3786,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.22,
+   "seconds": 0.27,
    "driver": "c106_determinism"
   },
   {
@@ -3857,7 +3857,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.25,
+   "seconds": 0.28,
    "driver": "c107_exclusion_commit"
   },
   {
@@ -4034,7 +4034,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.09,
+   "seconds": 0.1,
    "driver": "c112_swapped_display"
   },
   {
@@ -4219,8 +4219,9 @@
    "status": "PASS",
    "observed": {
     "partitions": {
-     "validation": 1,
-     "train": 9
+     "train": 8,
+     "frozen_test": 1,
+     "validation": 1
     }
    },
    "witness": "families(10, asr=True) \u2192 SplitService.assign; recount by family_bucket",
@@ -4228,7 +4229,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.04,
    "driver": "c118_positive_ten"
   },
   {
@@ -4253,7 +4254,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.11,
+   "seconds": 0.1,
    "driver": "c119_nine_floor"
   },
   {
@@ -4279,7 +4280,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.27,
+   "seconds": 0.22,
    "driver": "c120_permutation"
   },
   {
@@ -4328,7 +4329,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.11,
+   "seconds": 0.14,
    "driver": "c122_family_corruption"
   },
   {
@@ -4352,7 +4353,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c123_tags_not_partitions"
   },
   {
@@ -4419,8 +4420,8 @@
    "policy_adjudication_required": false,
    "status": "PASS",
    "observed": {
-    "frozen_families": 4,
-    "exported": 4
+    "frozen_families": 7,
+    "exported": 7
    },
    "witness": "families(30, frozen=3) \u2192 assign \u2192 frozen_test export; then expose one \u2192 export again",
    "grading": "semantic",
@@ -4449,7 +4450,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.14,
+   "seconds": 0.17,
    "driver": "c127_next_version"
   },
   {
@@ -4474,7 +4475,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.14,
+   "seconds": 0.15,
    "driver": "c128_absent_version"
   },
   {
@@ -4498,7 +4499,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.13,
+   "seconds": 0.14,
    "driver": "c129_old_version_export"
   },
   {
@@ -4609,7 +4610,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c133_cleanup_intended_correct"
   },
   {
@@ -4645,7 +4646,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.07,
    "driver": "c134_cleanup_incorrect"
   },
   {
@@ -4844,7 +4845,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.12,
+   "seconds": 0.13,
    "driver": "c140_restricted_all_views"
   },
   {
@@ -4896,7 +4897,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.07,
    "driver": "c142_empty_destination"
   },
   {
@@ -4922,7 +4923,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.09,
+   "seconds": 0.07,
    "driver": "c143_nonempty_destination"
   },
   {
@@ -4952,7 +4953,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c144_unowned_staging_directory"
   },
   {
@@ -5010,7 +5011,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.08,
+   "seconds": 0.09,
    "driver": "c146_nested_source_root"
   },
   {
@@ -5099,7 +5100,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.26,
+   "seconds": 0.29,
    "driver": "c148_path_and_id_escape"
   },
   {
@@ -5136,7 +5137,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.21,
+   "seconds": 0.22,
    "driver": "c149_cli_explicit_db"
   },
   {
@@ -5160,7 +5161,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.05,
    "driver": "c150_positive_no_change"
   },
   {
@@ -5206,7 +5207,7 @@
    "decision": null,
    "note": null,
    "reached": "after read",
-   "seconds": 0.12,
+   "seconds": 0.13,
    "driver": "c152_s020_unrelated_delete"
   },
   {
@@ -5259,7 +5260,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": null,
-   "seconds": 0.15,
+   "seconds": 0.17,
    "driver": "c154_consent_revoke"
   },
   {
@@ -5284,7 +5285,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": null,
-   "seconds": 0.23,
+   "seconds": 0.25,
    "driver": "c155_label_preference_change"
   },
   {
@@ -5324,8 +5325,8 @@
    "status": "PASS",
    "observed": {
     "outcomes": {
-     "B": "ok",
-     "A": "refused"
+     "A": "ok",
+     "B": "refused"
     },
     "created": 2,
     "rows": [
@@ -5333,8 +5334,8 @@
      "failed"
     ],
     "same_id_outcomes": {
-     "A": "refused",
-     "B": "ok"
+     "B": "refused",
+     "A": "ok"
     }
    },
    "witness": "threading.Barrier inside os.mkdir of the staging name; both builders past destination checks",
@@ -5342,7 +5343,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": "both builders at staging creation",
-   "seconds": 0.16,
+   "seconds": 0.17,
    "driver": "c157_s032_two_builds"
   },
   {
@@ -5409,7 +5410,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": null,
-   "seconds": 0.49,
+   "seconds": 0.5,
    "driver": "c158_crash_boundaries"
   },
   {
@@ -5449,7 +5450,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.21,
+   "seconds": 0.24,
    "driver": "c159_positive_offline"
   },
   {
@@ -5482,7 +5483,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.29,
+   "seconds": 0.26,
    "driver": "c160_no_repo_source"
   },
   {
@@ -5574,7 +5575,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.11,
+   "seconds": 0.1,
    "driver": "c162_semantic_consistent_tamper"
   },
   {
@@ -5718,7 +5719,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.27,
+   "seconds": 0.29,
    "driver": "c164_unsupported_schema"
   },
   {
@@ -5786,7 +5787,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.19,
+   "seconds": 0.21,
    "driver": "c165_unsafe_paths"
   },
   {
@@ -5963,7 +5964,7 @@
    "decision": "m14-policy-r1:D11",
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.06,
    "driver": "c169_wrong_cleanup_source"
   },
   {
@@ -6015,7 +6016,7 @@
    "decision": "m14-policy-r1:D01",
    "note": null,
    "reached": null,
-   "seconds": 0.08,
+   "seconds": 0.07,
    "driver": "c171_blocked_asr"
   },
   {
@@ -6115,7 +6116,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.29,
+   "seconds": 0.3,
    "driver": "c173_split_current"
   },
   {
@@ -6355,7 +6356,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.04,
+   "seconds": 0.03,
    "driver": "c181_repeat_variants"
   },
   {
@@ -6405,9 +6406,9 @@
     },
     "signatures": 4,
     "kinds": {
+     "recognition_error": 2,
      "punctuation_or_structure": 1,
-     "style_preference": 1,
-     "recognition_error": 2
+     "style_preference": 1
     }
    },
    "witness": "idle recompute skipped when unchanged; source revision, latest label and exclusion changes at stable counts each recompute with a new evidence signature; label committed between read and write op (after_each_op seam)",
@@ -6525,7 +6526,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.04,
    "driver": "c187_delete_one_support"
   },
   {
@@ -6550,7 +6551,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.04,
    "driver": "c188_exclude_support"
   },
   {
@@ -6654,7 +6655,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.12,
+   "seconds": 0.13,
    "driver": "c192_purge_mid_compute"
   },
   {
@@ -6763,7 +6764,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "c196_secondary_signature_cannot_absorb"
   },
   {
@@ -6846,7 +6847,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.02,
    "driver": "c199_expiry"
   },
   {
@@ -6951,7 +6952,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.02,
    "driver": "c203_transform_counts"
   },
   {
@@ -7052,7 +7053,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.05,
+   "seconds": 0.04,
    "driver": "c207_same_count_label_revision"
   },
   {
@@ -7542,7 +7543,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.07,
+   "seconds": 0.08,
    "driver": "c225_forward_redaction"
   },
   {
@@ -7569,7 +7570,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.11,
+   "seconds": 0.12,
    "driver": "c226_network_mic_traps"
   },
   {
@@ -7752,7 +7753,7 @@
    "decision": null,
    "note": null,
    "reached": "m14_s001_authority_boundary",
-   "seconds": 0.03,
+   "seconds": 0.04,
    "driver": "s001_teach_while_example_deleted"
   },
   {
@@ -7776,7 +7777,7 @@
    "decision": "m14-policy-r1:D11",
    "note": null,
    "reached": "m14_s002_authority_boundary",
-   "seconds": 0.03,
+   "seconds": 0.04,
    "driver": "s002_mined_while_artifact_expires"
   },
   {
@@ -7801,7 +7802,7 @@
    "decision": null,
    "note": null,
    "reached": "m14_s003_authority_boundary",
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "s003_two_concurrent_miners"
   },
   {
@@ -7841,7 +7842,7 @@
    "decision": "m14-policy-r1:D05",
    "note": null,
    "reached": "m14_s004_authority_boundary",
-   "seconds": 0.07,
+   "seconds": 0.08,
    "driver": "s004_reject_then_identical"
   },
   {
@@ -7923,7 +7924,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.04,
    "driver": "s005_approval_against_existing_user_entry"
   },
   {
@@ -7940,14 +7941,14 @@
      "first_timed_out": true,
      "first": null,
      "retry_refused": null,
-     "retry_entry": "vocab-6989758e9ee84bd3b70f6e8530fd4878",
+     "retry_entry": "vocab-9be58eb693bb4ee3acf1bf5999b8624f",
      "one_entry": true,
      "no_extra_effect": true,
      "rev_at_commit": 1,
      "rev_final": 1,
      "alias_once": true,
      "status": "approved",
-     "eid": "vocab-6989758e9ee84bd3b70f6e8530fd4878",
+     "eid": "vocab-9be58eb693bb4ee3acf1bf5999b8624f",
      "deltas": 1,
      "receipts": 1,
      "op_id": true,
@@ -7956,16 +7957,16 @@
     "control": {
      "injected": false,
      "first_timed_out": false,
-     "first": "vocab-f1da38bdd15a471f8efddfc78b90b611",
+     "first": "vocab-168f466b5da046bc8d3d04cb25f281f9",
      "retry_refused": null,
-     "retry_entry": "vocab-f1da38bdd15a471f8efddfc78b90b611",
+     "retry_entry": "vocab-168f466b5da046bc8d3d04cb25f281f9",
      "one_entry": true,
      "no_extra_effect": true,
      "rev_at_commit": null,
      "rev_final": 1,
      "alias_once": true,
      "status": "approved",
-     "eid": "vocab-f1da38bdd15a471f8efddfc78b90b611",
+     "eid": "vocab-168f466b5da046bc8d3d04cb25f281f9",
      "deltas": 1,
      "receipts": 1,
      "op_id": true,
@@ -7977,7 +7978,7 @@
    "decision": "m14-policy-r1:D12",
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "c080_s006_unknown_after_effect"
   },
   {
@@ -8143,7 +8144,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.16,
+   "seconds": 0.17,
    "driver": "s009_asr_foreign_audio"
   },
   {
@@ -8211,7 +8212,7 @@
    "decision": "m14-policy-r1:D14",
    "note": null,
    "reached": "m14_s011_authority_boundary",
-   "seconds": 0.01,
+   "seconds": 0.02,
    "driver": "s011_note_a_edited_among_ab"
   },
   {
@@ -8287,7 +8288,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.04,
    "driver": "s013_deletion_while_form_open"
   },
   {
@@ -8430,7 +8431,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.18,
+   "seconds": 0.21,
    "driver": "s015_display_swapped_after_render"
   },
   {
@@ -8488,7 +8489,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.16,
+   "seconds": 0.15,
    "driver": "s017_nine_versus_ten"
   },
   {
@@ -8548,7 +8549,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.41,
+   "seconds": 0.44,
    "driver": "s018_exposed_through_next_version"
   },
   {
@@ -8586,7 +8587,7 @@
    "decision": null,
    "note": null,
    "reached": "after read",
-   "seconds": 0.14,
+   "seconds": 0.15,
    "driver": "c152_s020_unrelated_delete"
   },
   {
@@ -8656,7 +8657,7 @@
    "decision": null,
    "note": null,
    "reached": 2,
-   "seconds": 0.44,
+   "seconds": 0.46,
    "driver": "s022_offline_validator_without_db"
   },
   {
@@ -8677,7 +8678,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.12,
+   "seconds": 0.14,
    "driver": "c191_delete_mid_compute"
   },
   {
@@ -8698,7 +8699,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.12,
+   "seconds": 0.13,
    "driver": "c192_purge_mid_compute"
   },
   {
@@ -8715,7 +8716,7 @@
    "decision": null,
    "note": null,
    "reached": true,
-   "seconds": 0.05,
+   "seconds": 0.06,
    "driver": "s025_usage_deletion_with_profile"
   },
   {
@@ -8932,7 +8933,7 @@
    "decision": null,
    "note": null,
    "reached": 6,
-   "seconds": 0.71,
+   "seconds": 0.7,
    "driver": "s028_readiness_export_parity"
   },
   {
@@ -8974,7 +8975,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.06,
+   "seconds": 0.07,
    "driver": "c079_s029_revocation_between_phases"
   },
   {
@@ -9000,7 +9001,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": "after final recheck before rename",
-   "seconds": 0.21,
+   "seconds": 0.24,
    "driver": "c153_s030_purge_after_fence"
   },
   {
@@ -9087,7 +9088,7 @@
    "decision": "m14-policy-r1:D09",
    "note": null,
    "reached": "both builders at staging creation",
-   "seconds": 0.17,
+   "seconds": 0.19,
    "driver": "c157_s032_two_builds"
   },
   {
@@ -9168,7 +9169,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.04,
    "driver": "mr001_approval_locality"
   },
   {
@@ -9203,7 +9204,7 @@
      "effective": true
     },
     "alias": {
-     "eid0": "vocab-78e7c0e3bd6b4f28bbba1fea21db188c",
+     "eid0": "vocab-82eb13f861a0443ca5bd68b2ce4e15fa",
      "undo_refused": null,
      "first": "alias_added",
      "again": "alias_added",
@@ -9235,7 +9236,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.03,
+   "seconds": 0.04,
    "driver": "mr002_undo_and_reapproval"
   },
   {
@@ -9282,7 +9283,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.1,
+   "seconds": 0.11,
    "driver": "mr004_deletion_monotonicity"
   },
   {
@@ -9342,7 +9343,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.2,
+   "seconds": 0.21,
    "driver": "c120_permutation"
   },
   {
@@ -9383,7 +9384,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.37,
+   "seconds": 0.42,
    "driver": "mr007_exposure_forward_only"
   },
   {
@@ -9420,7 +9421,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.02,
+   "seconds": 0.03,
    "driver": "mr009_usage_redaction_monotone"
   },
   {
@@ -9440,7 +9441,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.21,
+   "seconds": 0.19,
    "driver": "mr010_export_dependency_locality"
   },
   {
@@ -9495,7 +9496,7 @@
    "decision": null,
    "note": null,
    "reached": null,
-   "seconds": 0.09,
+   "seconds": 0.1,
    "driver": "mr011_display_permutation"
   },
   {

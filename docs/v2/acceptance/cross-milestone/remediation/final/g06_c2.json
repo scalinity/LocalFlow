@@ -2,20 +2,24 @@
  "suite": "tests/v2/crossmilestone/test_xm_g06_c2.py",
  "code": {
   "suite": "tests/v2/crossmilestone/test_xm_g06_c2.py",
-  "suite_sha256": "2968674e2aeeba44ed6b8cd24d9b2eec3028e973768aa8867abad111ef60f165",
-  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
-  "tracked_files_modified": false,
+  "suite_sha256": "2b2a5d858833146033938264106bbd68c827e9e18d9e727d6675a466b2a1f62a",
+  "code_root_sha": "a33f68133d22f55e9b9e7ae6f1bedd2ca2fef500",
+  "tracked_files_modified": true,
   "production_tree_modified": false,
   "python": "3.14.7"
  },
  "counts": {
-  "PASS": 21
+  "PASS": 25
  },
  "invoked": [
   "g06_xm_r18_retry_commits_while_history_read_is_held",
   "g06_xm_r18_control_reads_on_either_side_of_the_commit",
   "g06_xm_c020_mh06_retry_is_one_logical_dictation",
   "g06_xm_c020_mh06_control_clean_capture",
+  "g06_xm_c042_retry_with_hub_focus_never_inserts",
+  "g06_xm_c042_retry_without_target_keeps_result",
+  "g06_xm_c042_fresh_target_inserts_and_keeps_provenance",
+  "g06_xm_c042_target_changed_after_capture_is_refused",
   "g06_xm_mh13_transformed_final_teach_refused",
   "g06_xm_mh13_cleaned_render_then_transform_commits",
   "g06_xm_mh13_control_cleaned_final_teaches_once",
@@ -57,7 +61,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.19
+   "seconds": 0.18
   },
   {
    "case": "g06_xm_c020_mh06_control_clean_capture",
@@ -68,12 +72,44 @@
    "seconds": 0.11
   },
   {
+   "case": "g06_xm_c042_retry_with_hub_focus_never_inserts",
+   "finding": "G06 XM-C042 (a retry while the Hub has focus and no destination was captured never inserts into the Hub)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.18
+  },
+  {
+   "case": "g06_xm_c042_retry_without_target_keeps_result",
+   "finding": "G06 XM-C042 (a retry with no valid destination keeps its result as saved-not-inserted; nothing is pasted anywhere)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.19
+  },
+  {
+   "case": "g06_xm_c042_fresh_target_inserts_and_keeps_provenance",
+   "finding": "G06 XM-C042 (a retry bound to a freshly captured destination inserts there through M08, and the capture's provenance is unchanged)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.2
+  },
+  {
+   "case": "g06_xm_c042_target_changed_after_capture_is_refused",
+   "finding": "G06 XM-C042 (a destination that changes after the retry captured it is refused by M08 revalidation and the result is kept)",
+   "kind": "defect",
+   "status": "PASS",
+   "detail": null,
+   "seconds": 0.2
+  },
+  {
    "case": "g06_xm_mh13_transformed_final_teach_refused",
    "finding": "G06 XM-MH13 (History shows the pipeline's applied transformed final and Teach refuses it explicitly)",
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.25
+   "seconds": 0.29
   },
   {
    "case": "g06_xm_mh13_cleaned_render_then_transform_commits",
@@ -81,7 +117,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.04
+   "seconds": 0.05
   },
   {
    "case": "g06_xm_mh13_control_cleaned_final_teaches_once",
@@ -89,7 +125,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.11
+   "seconds": 0.12
   },
   {
    "case": "g06_xm_c110_collection_off_hub_teach",
@@ -113,7 +149,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 1.66
+   "seconds": 1.71
   },
   {
    "case": "g06_xm_mh14_mid_flight_approval_applies_from_next_job",
@@ -121,7 +157,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.35
+   "seconds": 0.37
   },
   {
    "case": "g06_xm_mh14_control_approval_before_press",
@@ -129,7 +165,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.35
+   "seconds": 0.36
   },
   {
    "case": "g06_xm_mh09_certified_edit_to_scoped_next_job",
@@ -137,7 +173,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.87
+   "seconds": 0.89
   },
   {
    "case": "g06_xm_mh09_control_unattributable_windows_mint_nothing",
@@ -145,7 +181,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 2.31
+   "seconds": 2.34
   },
   {
    "case": "g06_xm_mh24_collection_off_teach_approved_in_scope",
@@ -153,7 +189,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.29
+   "seconds": 0.32
   },
   {
    "case": "g06_xm_mh24_control_adverse_counterexample",
@@ -161,7 +197,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.29
+   "seconds": 0.32
   },
   {
    "case": "g06_xm_c123_typed_only_note_contributes_nothing",
@@ -177,7 +213,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.18
+   "seconds": 0.19
   },
   {
    "case": "g06_xm_c125_span_corrections_never_whole_gold",
@@ -193,7 +229,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.21
+   "seconds": 0.2
   },
   {
    "case": "g06_xm_mh11_control_single_region_and_verbatim_export",
@@ -201,7 +237,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.21
+   "seconds": 0.2
   }
  ]
 }

@@ -3,8 +3,8 @@
  "code": {
   "suite": "tests/v2/crossmilestone/test_xm_g06_b.py",
   "suite_sha256": "b1ff6c4e6b09ee00a6bb8c9985b912d8d489cfecefa2c3c8e4d6c6a465c4458c",
-  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
-  "tracked_files_modified": false,
+  "code_root_sha": "a33f68133d22f55e9b9e7ae6f1bedd2ca2fef500",
+  "tracked_files_modified": true,
   "production_tree_modified": false,
   "python": "3.14.7"
  },
@@ -40,7 +40,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.21
+   "seconds": 0.23
   },
   {
    "case": "g06_xm_c043_control_clean_route",
@@ -64,7 +64,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.02
+   "seconds": 0.03
   },
   {
    "case": "g06_xm_c067_cleanup_fault_is_reason_coded",
@@ -72,7 +72,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.18
+   "seconds": 0.17
   },
   {
    "case": "g06_xm_c067_control_healthy_cleanup",
@@ -88,7 +88,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.34
+   "seconds": 0.39
   },
   {
    "case": "g06_xm_c076_race_then_export_carries_executed_definition",
@@ -136,7 +136,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.12
+   "seconds": 0.11
   },
   {
    "case": "g06_xm_mh20_control_retained_exports_exact_input",
@@ -144,7 +144,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.12
+   "seconds": 0.11
   },
   {
    "case": "g06_xm_mr19_normalization_provenance_relation",
@@ -152,7 +152,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.4
+   "seconds": 0.38
   },
   {
    "case": "g06_xm_r21_edit_after_snapshot_keeps_frozen_task",
@@ -168,7 +168,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.18
+   "seconds": 0.19
   },
   {
    "case": "g06_xm_mu12_approve_unknown_then_retry_is_one",
@@ -176,7 +176,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.31
+   "seconds": 0.33
   },
   {
    "case": "g06_xm_mu12_control_mutants_are_killed",
@@ -184,7 +184,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.64
+   "seconds": 0.68
   },
   {
    "case": "g06_xm_mu12_control_unheld_approve",
@@ -192,7 +192,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.07
+   "seconds": 0.09
   }
  ]
 }

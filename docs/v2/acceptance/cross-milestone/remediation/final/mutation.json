@@ -1,6 +1,6 @@
 {
  "tool": "scripts/v2/xm_mutation_check.py",
- "code_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
+ "code_sha": "00e8cad0933e4f43be4216e5cdae2d86d40056dd",
  "killer_rule": "the fail-first regressions/controls of tests/v2/crossmilestone/ named per mutation; a kill needs the reach marker AND a failed killer",
  "control": {
   "cases": {
@@ -10,7 +10,19 @@
    "g06_xm_c108_unavailable_replay_stops_and_reports_reason": "PASS",
    "g06_xm_r18_retry_commits_while_history_read_is_held": "PASS",
    "g06_xm_c020_mh06_control_clean_capture": "PASS",
+   "g06_xm_c042_retry_with_hub_focus_never_inserts": "PASS",
+   "g06_xm_c042_retry_without_target_keeps_result": "PASS",
+   "g06_xm_c042_fresh_target_inserts_and_keeps_provenance": "PASS",
    "g06_xm_c137_wrong_role_never_history_final": "PASS",
+   "d03_invoke_and_incidental_front_app_paste_nothing": "PASS",
+   "d03_cancel_before_click_pastes_nothing": "PASS",
+   "d03_target_changed_after_pick_is_refused": "PASS",
+   "d03_source_deleted_or_purged_while_choosing": "PASS",
+   "d03_click_not_owned_by_front_app_pastes_nothing": "PASS",
+   "d03_reopening_hub_cancels_the_pick": "PASS",
+   "d03_second_paste_again_replaces_the_first": "PASS",
+   "d03_source_check_timeout_ends_the_pick": "PASS",
+   "d03_pick_ending_never_steals_focus_from_dictation": "PASS",
    "x02_recovery_copy_never_replaces_a_pending_payload": "PASS",
    "x02_recovery_copy_refusal_is_shown_in_the_recovery_menu": "PASS",
    "x02_refusal_title_does_not_outlive_its_failure": "PASS",
@@ -63,6 +75,9 @@
    "x14_another_exporter_never_reconciles_a_publishing_build": "PASS",
    "c_settled_builds_release_their_mark_and_lock": "PASS",
    "x14_lost_record_before_rename_puts_the_earlier_export_back": "PASS",
+   "if001_store_failure_event_carries_no_message_text": "PASS",
+   "if002_dictionary_timeout_is_not_a_refusal": "PASS",
+   "if009_consent_timeout_is_outcome_unknown": "PASS",
    "x01a_lost_memberships_never_return_exposed_family_to_holdout": "PASS",
    "x01b_lost_profile_evidence_never_keeps_dead_private_text": "PASS",
    "x01c_lost_deltas_never_let_undo_destroy_a_user_edit": "PASS",
@@ -77,7 +92,7 @@
   "reached": []
  },
  "summary": {
-  "killed": 69
+  "killed": 88
  },
  "results": [
   {
@@ -94,8 +109,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "3c4be53e5d323f8b",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "5e93605a4282f128",
       "changed": true
      }
     }
@@ -114,7 +129,7 @@
     "x01a_lost_memberships_never_return_exposed_family_to_holdout"
    ],
    "mutant_details": {
-    "x01a_lost_memberships_never_return_exposed_family_to_holdout": "exposed family fam-synth-frozen-3 returned to the blind holdout as unexposed after the repair: [('frozen_test', 0)]"
+    "x01a_lost_memberships_never_return_exposed_family_to_holdout": "exposed family fam-93a2b9b22fd941d692629b997f5a2a4b returned to the blind holdout as unexposed after the repair: [('frozen_test', 0)]"
    },
    "outcome": "killed",
    "reason": null
@@ -133,8 +148,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "8a6c7a6719e02050",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "1362532b3dc96524",
       "changed": true
      }
     }
@@ -172,8 +187,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "85dad0ae5781e35b",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "a6296a842734efa5",
       "changed": true
      }
     }
@@ -211,8 +226,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "85dbb0298d9f186c",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "efedf486974fadcb",
       "changed": true
      }
     }
@@ -250,8 +265,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "b28b1523bb409231",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "a780467885186da0",
       "changed": true
      }
     }
@@ -289,8 +304,8 @@
     ],
     "files": {
      "localflow/app.py": {
-      "sha_before": "dabe9701e1a358c1",
-      "sha_after": "0c085e0d77631a77",
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "7de5452a3c07d7c1",
       "changed": true
      }
     }
@@ -368,8 +383,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "c628ee19d8bdaaee",
+      "sha_before": "196155357b564b32",
+      "sha_after": "1afd7a58e2103a2d",
       "changed": true
      }
     }
@@ -409,8 +424,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "ef73412cb23b5675",
+      "sha_before": "196155357b564b32",
+      "sha_after": "4173062c5381f89f",
       "changed": true
      }
     }
@@ -448,8 +463,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "245e18559842fcf3",
+      "sha_before": "196155357b564b32",
+      "sha_after": "1a111ea6657f9956",
       "changed": true
      }
     }
@@ -487,8 +502,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "6518c9f9efe2619a",
+      "sha_before": "196155357b564b32",
+      "sha_after": "11a12297cdb3772d",
       "changed": true
      }
     }
@@ -526,8 +541,8 @@
     ],
     "files": {
      "localflow/app.py": {
-      "sha_before": "dabe9701e1a358c1",
-      "sha_after": "ac664f19f25e25b6",
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "6c09c3270c73629e",
       "changed": true
      }
     }
@@ -537,7 +552,7 @@
      "x09_admitted_save_timeout_then_retry_makes_one_note"
     ]
    },
-   "seconds": 0.7,
+   "seconds": 0.6,
    "mutant": {
     "x09_admitted_save_timeout_then_retry_makes_one_note": "FAIL"
    },
@@ -565,8 +580,8 @@
     ],
     "files": {
      "localflow/app.py": {
-      "sha_before": "dabe9701e1a358c1",
-      "sha_after": "589591f1eadf428d",
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "705961088f5caab1",
       "changed": true
      }
     }
@@ -585,7 +600,7 @@
     "x10_unknown_source_deletion_is_reported_and_retry_settles"
    ],
    "mutant_details": {
-    "x10_unknown_source_deletion_is_reported_and_retry_settles": "the source deletion was reported as definitely failed while it was admitted and later committed: {'outcome': 'move_failed_note_copied', 'note_id': 'note-9c8cca2a3bb84401b9b06a3ec73cdb1f'}"
+    "x10_unknown_source_deletion_is_reported_and_retry_settles": "the source deletion was reported as definitely failed while it was admitted and later committed: {'outcome': 'move_failed_note_copied', 'note_id': 'note-57eee19114e748568228efd1d2a42829'}"
    },
    "outcome": "killed",
    "reason": null
@@ -604,8 +619,8 @@
     ],
     "files": {
      "localflow/app.py": {
-      "sha_before": "dabe9701e1a358c1",
-      "sha_after": "a843f8eb63409ef4",
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "b8a01b58d228a5f9",
       "changed": true
      }
     }
@@ -624,7 +639,7 @@
     "x10_unknown_copy_create_then_retry_makes_one_note"
    ],
    "mutant_details": {
-    "x10_unknown_copy_create_then_retry_makes_one_note": "a repeated Copy after an unknown create made 2 notes: {'outcome': 'create_unknown', 'note_id': 'note-5971fffe611440b489f103237ac70d6a'} then {'outcome': 'copied', 'note_id': 'note-b5ffbfbc306c4141860982dfde7b538e'}"
+    "x10_unknown_copy_create_then_retry_makes_one_note": "a repeated Copy after an unknown create made 2 notes: {'outcome': 'create_unknown', 'note_id': 'note-f763dc0fe565489b9f54d856b1cc81f5'} then {'outcome': 'copied', 'note_id': 'note-46955ff0476c48fbbedc560e169a6dbe'}"
    },
    "outcome": "killed",
    "reason": null
@@ -853,7 +868,7 @@
      "x11_renamed_entry_never_relabels_historical_speech"
     ]
    },
-   "seconds": 0.4,
+   "seconds": 0.5,
    "mutant": {
     "x11_renamed_entry_never_relabels_historical_speech": "FAIL"
    },
@@ -881,8 +896,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "b311cd6156065712",
+      "sha_before": "196155357b564b32",
+      "sha_after": "3838fc01623d22c1",
       "changed": true
      }
     }
@@ -924,8 +939,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "6864619f46d6717a",
+      "sha_before": "196155357b564b32",
+      "sha_after": "10a043914b55ea2b",
       "changed": true
      }
     }
@@ -1041,8 +1056,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "98b3e2fa58b3e8d0",
+      "sha_before": "196155357b564b32",
+      "sha_after": "063e9b1abfc3758f",
       "changed": true
      }
     }
@@ -1131,7 +1146,7 @@
      "x14_lost_export_records_never_leave_a_hidden_export"
     ]
    },
-   "seconds": 0.7,
+   "seconds": 0.8,
    "mutant": {
     "x14_restarted_export_reconciles_the_crashed_intent": "FAIL",
     "x14_lost_export_records_never_leave_a_hidden_export": "FAIL"
@@ -1162,8 +1177,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "01c71e992005300f",
+      "sha_before": "196155357b564b32",
+      "sha_after": "f8ff3ab8c202d64e",
       "changed": true
      }
     }
@@ -1205,8 +1220,8 @@
     ],
     "files": {
      "localflow/app.py": {
-      "sha_before": "dabe9701e1a358c1",
-      "sha_after": "994b93adb5f78e60",
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "e6ac8c592d539361",
       "changed": true
      }
     }
@@ -1244,8 +1259,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "314c3eb5b065e21d",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "c8cb16179555e1fa",
       "changed": true
      }
     }
@@ -1322,8 +1337,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "94dad9735cb03bab",
+      "sha_before": "196155357b564b32",
+      "sha_after": "6f069c9de92ec00c",
       "changed": true
      }
     }
@@ -1361,8 +1376,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "03c58c1a28839f50",
+      "sha_before": "196155357b564b32",
+      "sha_after": "571deb1503ccc5bf",
       "changed": true
      }
     }
@@ -1381,7 +1396,7 @@
     "x15_hub_undo_outcome_stays_on_screen_after_refresh"
    ],
    "mutant_details": {
-    "x15_hub_undo_outcome_stays_on_screen_after_refresh": "the Undo Approval outcome was wiped by the refresh it triggered: \"1 review rows \u00b7 strata {}\\n\u2014 review queue \u2014\\nex-3a51851b51a543258a09a83d1de7c9f3  [learning_candidate/pending]  axes: recognition_error ['asr']  suggest: modul \u2192 module\""
+    "x15_hub_undo_outcome_stays_on_screen_after_refresh": "the Undo Approval outcome was wiped by the refresh it triggered: \"1 review rows \u00b7 strata {}\\n\u2014 review queue \u2014\\nex-7154d70a5fc2416491783a711be3d41d  [learning_candidate/pending]  axes: recognition_error ['asr']  suggest: modul \u2192 module\""
    },
    "outcome": "killed",
    "reason": null
@@ -1400,8 +1415,8 @@
     ],
     "files": {
      "localflow/app.py": {
-      "sha_before": "dabe9701e1a358c1",
-      "sha_after": "ab43a77a8b0f22f1",
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "b04595e365eb4a70",
       "changed": true
      }
     }
@@ -1489,7 +1504,7 @@
      "x06_teach_ignores_the_superseded_attempts_example_state"
     ]
    },
-   "seconds": 0.6,
+   "seconds": 0.5,
    "mutant": {
     "x06_teach_ignores_the_superseded_attempts_example_state": "FAIL"
    },
@@ -1556,8 +1571,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "4f90aeeff608f8bb",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "e68df1456bced9d5",
       "changed": true
      }
     }
@@ -1684,7 +1699,7 @@
      "c_current_attempt_with_stages_carries_no_absent_reason"
     ]
    },
-   "seconds": 0.6,
+   "seconds": 0.5,
    "mutant": {
     "c_current_attempt_with_stages_carries_no_absent_reason": "FAIL"
    },
@@ -1712,8 +1727,8 @@
     ],
     "files": {
      "localflow/app.py": {
-      "sha_before": "dabe9701e1a358c1",
-      "sha_after": "03fc98e87dd5f144",
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "a96da1361a61d96b",
       "changed": true
      }
     }
@@ -1751,8 +1766,8 @@
     ],
     "files": {
      "localflow/app.py": {
-      "sha_before": "dabe9701e1a358c1",
-      "sha_after": "4aa931c159c42e32",
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "055c1dfe11d90fa5",
       "changed": true
      }
     }
@@ -1762,7 +1777,7 @@
      "x09_panel_save_without_scratchpad_is_shown_not_saved"
     ]
    },
-   "seconds": 0.5,
+   "seconds": 0.4,
    "mutant": {
     "x09_panel_save_without_scratchpad_is_shown_not_saved": "FAIL"
    },
@@ -1801,7 +1816,7 @@
      "x07_restoring_the_blocking_attempt_during_compute_restarts_it"
     ]
    },
-   "seconds": 0.6,
+   "seconds": 0.5,
    "mutant": {
     "x07_restoring_the_blocking_attempt_during_compute_restarts_it": "FAIL"
    },
@@ -1829,8 +1844,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "71f3b136c0f99703",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "a9594206f7e6c8cb",
       "changed": true
      }
     }
@@ -1868,8 +1883,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "38c9b5fc6fcd73fe",
+      "sha_before": "196155357b564b32",
+      "sha_after": "0ff3b9389822b2ad",
       "changed": true
      }
     }
@@ -1881,7 +1896,7 @@
      "x12_failed_export_never_shows_a_validation_taken_during_it"
     ]
    },
-   "seconds": 0.6,
+   "seconds": 0.5,
    "mutant": {
     "x12_unknown_export_instruction_outranks_the_replaced_validation": "FAIL",
     "x12_completed_export_supersedes_a_validate_pressed_during_it": "FAIL",
@@ -1894,9 +1909,9 @@
     "x12_unknown_export_instruction_outranks_the_replaced_validation"
    ],
    "mutant_details": {
-    "x12_unknown_export_instruction_outranks_the_replaced_validation": "validating <tmp>/tmpr_ic322l/invalid-ds \u2026",
-    "x12_completed_export_supersedes_a_validate_pressed_during_it": "validating <tmp>/tmpnerswnid/invalid-ds \u2026",
-    "x12_failed_export_never_shows_a_validation_taken_during_it": "validating <tmp>/tmpfim99n5y/invalid-ds \u2026"
+    "x12_unknown_export_instruction_outranks_the_replaced_validation": "validating <tmp>/tmp5x6qxky1/invalid-ds \u2026",
+    "x12_completed_export_supersedes_a_validate_pressed_during_it": "validating <tmp>/tmpmkm72flk/invalid-ds \u2026",
+    "x12_failed_export_never_shows_a_validation_taken_during_it": "validating <tmp>/tmpfpa1ahjo/invalid-ds \u2026"
    },
    "outcome": "killed",
    "reason": null
@@ -1915,8 +1930,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "7ccc134c8f4363c8",
+      "sha_before": "196155357b564b32",
+      "sha_after": "37ba33d1b22b8b66",
       "changed": true
      }
     }
@@ -1926,7 +1941,7 @@
      "x12_validate_refused_exactly_while_an_export_may_replace_the_folder"
     ]
    },
-   "seconds": 15.6,
+   "seconds": 15.5,
    "mutant": {
     "x12_validate_refused_exactly_while_an_export_may_replace_the_folder": "FAIL"
    },
@@ -1954,8 +1969,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "5c89fe32e348184d",
+      "sha_before": "196155357b564b32",
+      "sha_after": "356bb02cd5043139",
       "changed": true
      }
     }
@@ -1965,7 +1980,7 @@
      "x12_validate_refused_exactly_while_an_export_may_replace_the_folder"
     ]
    },
-   "seconds": 15.6,
+   "seconds": 15.5,
    "mutant": {
     "x12_validate_refused_exactly_while_an_export_may_replace_the_folder": "FAIL"
    },
@@ -1993,8 +2008,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "cc51a49d8ef7f3ca",
+      "sha_before": "196155357b564b32",
+      "sha_after": "2e6b0ba4f4ece8e0",
       "changed": true
      }
     }
@@ -2005,7 +2020,7 @@
      "x12_validate_resolves_the_folder_like_export"
     ]
    },
-   "seconds": 15.7,
+   "seconds": 15.6,
    "mutant": {
     "x12_validate_refused_exactly_while_an_export_may_replace_the_folder": "FAIL",
     "x12_validate_resolves_the_folder_like_export": "FAIL"
@@ -2086,7 +2101,7 @@
      "c_reconcile_never_touches_a_build_another_process_runs"
     ]
    },
-   "seconds": 0.4,
+   "seconds": 0.5,
    "mutant": {
     "c_reconcile_never_touches_a_build_another_process_runs": "FAIL"
    },
@@ -2350,8 +2365,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "9fed6b17eea64fe1",
+      "sha_before": "196155357b564b32",
+      "sha_after": "6ee050701f480393",
       "changed": true
      }
     }
@@ -2370,7 +2385,7 @@
     "x14_hub_export_presses_while_one_runs"
    ],
    "mutant_details": {
-    "x14_hub_export_presses_while_one_runs": "builds started: ['<tmp>/tmp_oxx6g5_/folder-x', '<tmp>/tmp_oxx6g5_/folder-x', '<tmp>/tmp_oxx6g5_/folder-y']"
+    "x14_hub_export_presses_while_one_runs": "builds started: ['<tmp>/tmp6dbz4wjw/folder-x', '<tmp>/tmp6dbz4wjw/folder-x', '<tmp>/tmp6dbz4wjw/folder-y']"
    },
    "outcome": "killed",
    "reason": null
@@ -2478,7 +2493,7 @@
      "g06_xm_c137_wrong_role_never_history_final"
     ]
    },
-   "seconds": 0.6,
+   "seconds": 0.5,
    "mutant": {
     "g06_xm_c137_wrong_role_never_history_final": "FAIL"
    },
@@ -2487,7 +2502,7 @@
     "g06_xm_c137_wrong_role_never_history_final"
    ],
    "mutant_details": {
-    "g06_xm_c137_wrong_role_never_history_final": "History served the job's own normalized_text artifact as the final text: final_text='swap alpha holds 25 apples' (normalized stage text 'swap alpha holds 25 apples'); cleaned stage artifact=art-b219048cd83d4b99a8afabee22dfea5c is the normalized_text id; HistoryQueryService._job_artifacts' manifest b"
+    "g06_xm_c137_wrong_role_never_history_final": "History served the job's own normalized_text artifact as the final text: final_text='swap alpha holds 25 apples' (normalized stage text 'swap alpha holds 25 apples'); cleaned stage artifact=art-f744516774b54b4799a87b4145ee9718 is the normalized_text id; HistoryQueryService._job_artifacts' manifest b"
    },
    "outcome": "killed",
    "reason": null
@@ -2506,8 +2521,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "35ec1ca5f715a380",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "c2d53f5a0ae841dc",
       "changed": true
      }
     }
@@ -2517,7 +2532,7 @@
      "g06_xm_c016_corrupt_locator_never_touches_outside"
     ]
    },
-   "seconds": 0.6,
+   "seconds": 0.5,
    "mutant": {
     "g06_xm_c016_corrupt_locator_never_touches_outside": "FAIL"
    },
@@ -2545,8 +2560,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "2eedd9753e5ad014",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "682429e05347d296",
       "changed": true
      }
     }
@@ -2556,7 +2571,7 @@
      "g06_xm_c016_corrupt_locator_never_touches_outside"
     ]
    },
-   "seconds": 0.6,
+   "seconds": 0.5,
    "mutant": {
     "g06_xm_c016_corrupt_locator_never_touches_outside": "FAIL"
    },
@@ -2584,8 +2599,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "e8afd0518fd98b2f",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "7b155ce98f2eb469",
       "changed": true
      }
     }
@@ -2623,8 +2638,8 @@
     ],
     "files": {
      "localflow/v2/store.py": {
-      "sha_before": "b9a089a21c11d58d",
-      "sha_after": "9bb74b9a5e34178d",
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "8f7c37a152aaff5e",
       "changed": true
      }
     }
@@ -2662,8 +2677,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "f115f4eca57c8c98",
+      "sha_before": "196155357b564b32",
+      "sha_after": "9f83deb170592896",
       "changed": true
      }
     }
@@ -2673,7 +2688,7 @@
      "g06_xm_c106_purge_after_render_revokes_content_actions"
     ]
    },
-   "seconds": 0.6,
+   "seconds": 0.5,
    "mutant": {
     "g06_xm_c106_purge_after_render_revokes_content_actions": "FAIL"
    },
@@ -2682,7 +2697,7 @@
     "g06_xm_c106_purge_after_render_revokes_content_actions"
    ],
    "mutant_details": {
-    "g06_xm_c106_purge_after_render_revokes_content_actions": "a History content action admitted the purged final text (variant: [(action, text)], candidates): {'a_before_revalidate': ([('copy', 'PURGEDFINALCANARY final words here'), ('copy', 'PURGEDFINALCANARY final words here'), ('paste', 'PURGEDFINALCANARY final words here')], 0), 'b_reload_in_flight': ([('c"
+    "g06_xm_c106_purge_after_render_revokes_content_actions": "a History content action admitted the purged final text (variant: [(action, text)], candidates): {'a_before_revalidate': ([('copy', 'PURGEDFINALCANARY final words here'), ('paste', 'PURGEDFINALCANARY final words here')], 0), 'b_reload_in_flight': ([('copy', 'PURGEDFINALCANARY final words here'), ('p"
    },
    "outcome": "killed",
    "reason": null
@@ -2701,8 +2716,8 @@
     ],
     "files": {
      "localflow/v2/ui/hub.py": {
-      "sha_before": "1e524a3726234b86",
-      "sha_after": "61415e15e21251f2",
+      "sha_before": "196155357b564b32",
+      "sha_after": "77402fd078bca803",
       "changed": true
      }
     }
@@ -2740,8 +2755,8 @@
     ],
     "files": {
      "localflow/app.py": {
-      "sha_before": "dabe9701e1a358c1",
-      "sha_after": "e7c1184ee37dc2af",
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "3ca777868fcd8f01",
       "changed": true
      }
     }
@@ -2779,8 +2794,8 @@
     ],
     "files": {
      "localflow/app.py": {
-      "sha_before": "dabe9701e1a358c1",
-      "sha_after": "afc648acef50cee4",
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "1e08c05a99477b97",
       "changed": true
      }
     }
@@ -2799,7 +2814,752 @@
     "g06_xm_c020_mh06_control_clean_capture"
    ],
    "mutant_details": {
-    "g06_xm_c020_mh06_control_clean_capture": "a clean capture's ledger (got, want): {\"usage_fact\": [[[\"confirmed\", 1, \"2026-09-29T00:32:34.072000+00:00\", 4]], [[\"confirmed\", 1, \"2026-09-29T00:32:34.062000+00:00\", 4]]]}"
+    "g06_xm_c020_mh06_control_clean_capture": "a clean capture's ledger (got, want): {\"usage_fact\": [[[\"confirmed\", 1, \"2026-09-29T03:07:53.496000+00:00\", 4]], [[\"confirmed\", 1, \"2026-09-29T03:07:53.486000+00:00\", 4]]]}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU75",
+   "finding": "XM-C042",
+   "name": "a retry without a captured target inserts",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "254ba7c72f386d5b",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_g06_c2.py": [
+     "g06_xm_c042_retry_with_hub_focus_never_inserts",
+     "g06_xm_c042_retry_without_target_keeps_result"
+    ]
+   },
+   "seconds": 0.7,
+   "mutant": {
+    "g06_xm_c042_retry_with_hub_focus_never_inserts": "FAIL",
+    "g06_xm_c042_retry_without_target_keeps_result": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "g06_xm_c042_retry_with_hub_focus_never_inserts",
+    "g06_xm_c042_retry_without_target_keeps_result"
+   ],
+   "mutant_details": {
+    "g06_xm_c042_retry_with_hub_focus_never_inserts": "a retry with the Hub in front and no captured destination: state insertion_unverified, insertions ['posted_unverified'], writes [(7, 'ax_set_text', 'FH')], pasteboard 0->0, FH 'BETA ATTEMPT 2 WORDS'",
+    "g06_xm_c042_retry_without_target_keeps_result": "a retry with focus on an ordinary app but no captured destination: {\"state\": \"insertion_unverified\", \"insertions\": [\"posted_unverified\"], \"final\": \"BETA ATTEMPT 2 WORDS\", \"want_final\": \"BETA ATTEMPT 2 WORDS\", \"facts\": [[\"posted_unverified\", 2, \"2026-09-29T03:07:54.313000Z\", 4, \"2026-09-28\"]]}, write"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU76",
+   "finding": "XM-C042",
+   "name": "a retry ignores its captured target",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "f0b982f9e396d01f",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_g06_c2.py": [
+     "g06_xm_c042_fresh_target_inserts_and_keeps_provenance"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "g06_xm_c042_fresh_target_inserts_and_keeps_provenance": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "g06_xm_c042_fresh_target_inserts_and_keeps_provenance"
+   ],
+   "mutant_details": {
+    "g06_xm_c042_fresh_target_inserts_and_keeps_provenance": "a retry into a freshly captured destination (got): {\"insertion\": [\"saved_not_inserted\", [], [], [], \"\"]}"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU77",
+   "finding": "XM-IF-001",
+   "name": "a store failure event quotes the message",
+   "files": [
+    "localflow/v2/store.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/store.py": {
+      "sha_before": "48a62484c10c67b0",
+      "sha_after": "f8a298fb7d044ee6",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "if001_store_failure_event_carries_no_message_text"
+    ]
+   },
+   "seconds": 0.3,
+   "mutant": {
+    "if001_store_failure_event_carries_no_message_text": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "if001_store_failure_event_carries_no_message_text"
+   ],
+   "mutant_details": {
+    "if001_store_failure_event_carries_no_message_text": "the op's message reached the event log: [{'event': 'store.write_failed', 'level': 'ERROR', 'reason_code': 'store_error', 'detail': \"ValueError: refused 'PRIVATE_DICTATED_TEXT_7f3'\"}]"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU78",
+   "finding": "XM-IF-002",
+   "name": "a panel timeout reads as not added",
+   "files": [
+    "localflow/v2/dictionary_panel.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/dictionary_panel.py": {
+      "sha_before": "8ffbb6ba8865450e",
+      "sha_after": "aeadde8bb3c245be",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "if002_dictionary_timeout_is_not_a_refusal"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "if002_dictionary_timeout_is_not_a_refusal": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "if002_dictionary_timeout_is_not_a_refusal"
+   ],
+   "mutant_details": {
+    "if002_dictionary_timeout_is_not_a_refusal": "an admitted timeout was shown as 'not added: store writer did not respond'"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU79",
+   "finding": "XM-IF-011",
+   "name": "an import timeout is logged as failed",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "2bb86a8bbe98761c",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "if002_dictionary_timeout_is_not_a_refusal"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "if002_dictionary_timeout_is_not_a_refusal": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "if002_dictionary_timeout_is_not_a_refusal"
+   ],
+   "mutant_details": {
+    "if002_dictionary_timeout_is_not_a_refusal": "an admitted import timeout was logged as ['vocabulary.import_failed']"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU80",
+   "finding": "XM-IF-009",
+   "name": "a Hub consent timeout reads as failed",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "47f617311524f9a6",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "if009_consent_timeout_is_outcome_unknown"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "if009_consent_timeout_is_outcome_unknown": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "if009_consent_timeout_is_outcome_unknown"
+   ],
+   "mutant_details": {
+    "if009_consent_timeout_is_outcome_unknown": "an admitted consent timeout escaped"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU81",
+   "finding": "XM-IF-009",
+   "name": "a menu consent timeout escapes the toggle",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "7ba7a040e8d2809a",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_remediation.py": [
+     "if009_consent_timeout_is_outcome_unknown"
+    ]
+   },
+   "seconds": 0.4,
+   "mutant": {
+    "if009_consent_timeout_is_outcome_unknown": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "if009_consent_timeout_is_outcome_unknown"
+   ],
+   "mutant_details": {
+    "if009_consent_timeout_is_outcome_unknown": "an admitted consent timeout escaped"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU82",
+   "finding": "POLICY-D03",
+   "name": "Paste Again pastes at once into the front app",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "61d81a7a3d0c4fce",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_invoke_and_incidental_front_app_paste_nothing"
+    ]
+   },
+   "seconds": 0.8,
+   "mutant": {
+    "d03_invoke_and_incidental_front_app_paste_nothing": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_invoke_and_incidental_front_app_paste_nothing"
+   ],
+   "mutant_details": {
+    "d03_invoke_and_incidental_front_app_paste_nothing": "({'outcome': 'repaste_queued'}, [])"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU83",
+   "finding": "POLICY-D03",
+   "name": "the picked source is not revalidated",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "be034a92f10a0f0f",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_source_deleted_or_purged_while_choosing"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "d03_source_deleted_or_purged_while_choosing": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_source_deleted_or_purged_while_choosing"
+   ],
+   "mutant_details": {
+    "d03_source_deleted_or_purged_while_choosing": "([(42, 'ax_set_text', 'F2')], ['source_deleted', 'repaste_queued'])"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU84",
+   "finding": "POLICY-D03",
+   "name": "Esc does not cancel the pick",
+   "files": [
+    "localflow/v2/ui/paste_picker.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/paste_picker.py": {
+      "sha_before": "0e5a6382b1e55792",
+      "sha_after": "1ff9907a2330090a",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_cancel_before_click_pastes_nothing"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "d03_cancel_before_click_pastes_nothing": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_cancel_before_click_pastes_nothing"
+   ],
+   "mutant_details": {
+    "d03_cancel_before_click_pastes_nothing": "([(27, 'ax_set_text', 'F2')], ['repaste_queued', 'timed_out'])"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU85",
+   "finding": "POLICY-D03",
+   "name": "the timeout does not cancel the pick",
+   "files": [
+    "localflow/v2/ui/paste_picker.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/ui/paste_picker.py": {
+      "sha_before": "0e5a6382b1e55792",
+      "sha_after": "30b557a466b57c4e",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_cancel_before_click_pastes_nothing"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "d03_cancel_before_click_pastes_nothing": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_cancel_before_click_pastes_nothing"
+   ],
+   "mutant_details": {
+    "d03_cancel_before_click_pastes_nothing": "([(27, 'ax_set_text', 'FB')], ['cancelled', 'repaste_queued'])"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU86",
+   "finding": "POLICY-D03",
+   "name": "deleting the source leaves the pick armed",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "7eee3ffab389d3b0",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_source_deleted_or_purged_while_choosing"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "d03_source_deleted_or_purged_while_choosing": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_source_deleted_or_purged_while_choosing"
+   ],
+   "mutant_details": {
+    "d03_source_deleted_or_purged_while_choosing": "('deleting the source did not end the pick', ['test_end'])"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU87",
+   "finding": "POLICY-D03",
+   "name": "the repaste ignores the picked destination",
+   "files": [
+    "localflow/v2/insertion/service.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/v2/insertion/service.py": {
+      "sha_before": "8c5d60a511ddaac8",
+      "sha_after": "379b582193370646",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_target_changed_after_pick_is_refused"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "d03_target_changed_after_pick_is_refused": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_target_changed_after_pick_is_refused"
+   ],
+   "mutant_details": {
+    "d03_target_changed_after_pick_is_refused": "writes [(22, 'ax_set_text', 'F1')], insertion states ['confirmed', 'posted_unverified']"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU88",
+   "finding": "POLICY-D03 review",
+   "name": "any front app counts as the click",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "0192569f020901a6",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_click_not_owned_by_front_app_pastes_nothing"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "d03_click_not_owned_by_front_app_pastes_nothing": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_click_not_owned_by_front_app_pastes_nothing"
+   ],
+   "mutant_details": {
+    "d03_click_not_owned_by_front_app_pastes_nothing": "([(26, 'ax_set_text', 'F1')], ['repaste_queued'])"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU89",
+   "finding": "POLICY-D03 review",
+   "name": "reopening the Hub leaves the pick",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "91ffea9920a9cc60",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_reopening_hub_cancels_the_pick"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "d03_reopening_hub_cancels_the_pick": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_reopening_hub_cancels_the_pick"
+   ],
+   "mutant_details": {
+    "d03_reopening_hub_cancels_the_pick": "([(27, 'ax_set_text', 'F2')], ['repaste_queued'])"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU90",
+   "finding": "POLICY-D03 review",
+   "name": "a second pick loses its source",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "8af28abf194cc1a1",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_second_paste_again_replaces_the_first"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "d03_second_paste_again_replaces_the_first": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_second_paste_again_replaces_the_first"
+   ],
+   "mutant_details": {
+    "d03_second_paste_again_replaces_the_first": "('', ['superseded'])"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU91",
+   "finding": "POLICY-D03 review",
+   "name": "a busy source check escapes the pick",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "c7f5c0c1bee963e8",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_source_check_timeout_ends_the_pick"
+    ]
+   },
+   "seconds": 0.5,
+   "mutant": {
+    "d03_source_check_timeout_ends_the_pick": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_source_check_timeout_ends_the_pick"
+   ],
+   "mutant_details": {
+    "d03_source_check_timeout_ends_the_pick": "the busy source check escaped the pick"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU92",
+   "finding": "POLICY-D03 review",
+   "name": "a pick ending by itself reopens the Hub",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "1993559c366242d2",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_pick_ending_never_steals_focus_from_dictation"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "d03_pick_ending_never_steals_focus_from_dictation": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_pick_ending_never_steals_focus_from_dictation"
+   ],
+   "mutant_details": {
+    "d03_pick_ending_never_steals_focus_from_dictation": "([None], [None], 'insertion_confirmed', [None, None])"
+   },
+   "outcome": "killed",
+   "reason": null
+  },
+  {
+   "mutation_id": "XM-MU93",
+   "finding": "POLICY-D03 review",
+   "name": "the Hub reopens mid-dictation",
+   "files": [
+    "localflow/app.py"
+   ],
+   "proof": {
+    "applied": true,
+    "match_counts": [
+     1
+    ],
+    "files": {
+     "localflow/app.py": {
+      "sha_before": "2f38386a99bd6f9f",
+      "sha_after": "4bedc4e0f06f865b",
+      "changed": true
+     }
+    }
+   },
+   "killers": {
+    "tests/v2/crossmilestone/test_xm_paste_again.py": [
+     "d03_pick_ending_never_steals_focus_from_dictation"
+    ]
+   },
+   "seconds": 0.6,
+   "mutant": {
+    "d03_pick_ending_never_steals_focus_from_dictation": "FAIL"
+   },
+   "branch_reached": true,
+   "failed_killers": [
+    "d03_pick_ending_never_steals_focus_from_dictation"
+   ],
+   "mutant_details": {
+    "d03_pick_ending_never_steals_focus_from_dictation": "([], [None], 'insertion_confirmed', [None, None])"
    },
    "outcome": "killed",
    "reason": null

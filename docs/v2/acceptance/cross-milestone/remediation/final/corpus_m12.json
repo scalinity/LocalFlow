@@ -1,12 +1,12 @@
 {
  "suite": "tests/v2/notes/m12_corpus_runner.py",
  "suite_sha256": "cc4348289f90b20d979314ea6cf94127fb97714a26c006e13cce88db0ffd5d1f",
- "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
- "tracked_files_modified": false,
+ "code_root_sha": "a33f68133d22f55e9b9e7ae6f1bedd2ca2fef500",
+ "tracked_files_modified": true,
  "production_tree_modified": false,
  "localflow_imported_from_root": "LocalFlow",
  "python": "3.14.7",
- "localflow_tree": "83e21ebf712e7da9c324dd9c72eda5e0c60fda91",
+ "localflow_tree": "9f55018234b6684ed10c4c80fdd1855f08b969ab",
  "driver_sha256": {
   "m12_drivers.py": "86491364719310d18c530bd04409728d45920b29a8fc013ce23405db0d8b335f",
   "m12_drivers_b.py": "f6ee598f6b052611276f5126427326cd955d6a16cbfb2fbba9696210043b3914",
@@ -109,7 +109,7 @@
      "b_unchanged": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C004",
@@ -153,7 +153,7 @@
      "saved_then_restored": true
     }
    },
-   "seconds": 0.053
+   "seconds": 0.05
   },
   {
    "id": "LF-M12-C006",
@@ -177,7 +177,7 @@
      "newest_first_exact_ids": true
     }
    },
-   "seconds": 0.068
+   "seconds": 0.061
   },
   {
    "id": "LF-M12-C007",
@@ -201,7 +201,7 @@
      "newest_first_exact_ids": true
     }
    },
-   "seconds": 0.068
+   "seconds": 0.059
   },
   {
    "id": "LF-M12-C008",
@@ -225,7 +225,7 @@
      "newest_first_exact_ids": true
     }
    },
-   "seconds": 0.343
+   "seconds": 0.297
   },
   {
    "id": "LF-M12-C009",
@@ -248,7 +248,7 @@
      "other_note_kept": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C010",
@@ -266,7 +266,7 @@
    "observed": {
     "regression": "l02_populated_m12_table_loss_is_refused"
    },
-   "seconds": 0.034
+   "seconds": 0.031
   },
   {
    "id": "LF-M12-C011",
@@ -288,7 +288,7 @@
      "exact_literal_matches": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C012",
@@ -310,7 +310,7 @@
      "exact_literal_matches": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C013",
@@ -332,7 +332,7 @@
      "exact_literal_matches": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C014",
@@ -354,7 +354,7 @@
      "exact_literal_matches": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C015",
@@ -377,7 +377,7 @@
      "positive_control": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C016",
@@ -485,7 +485,7 @@
      "receipt_returned": true
     }
    },
-   "seconds": 0.001
+   "seconds": 0.0
   },
   {
    "id": "LF-M12-C020",
@@ -711,7 +711,7 @@
      "selection_kept": true
     }
    },
-   "seconds": 0.004
+   "seconds": 0.013
   },
   {
    "id": "LF-M12-C029",
@@ -757,7 +757,7 @@
      "newest_save_settles_it": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C031",
@@ -777,7 +777,7 @@
    "observed": {
     "regression": "r03a_failed_switch_save_keeps_the_tail"
    },
-   "seconds": 0.054
+   "seconds": 0.048
   },
   {
    "id": "LF-M12-C032",
@@ -803,7 +803,7 @@
      "status_names_saved_state": true
     }
    },
-   "seconds": 0.252
+   "seconds": 0.262
   },
   {
    "id": "LF-M12-C033",
@@ -828,7 +828,7 @@
      "receipt_committed": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.016
   },
   {
    "id": "LF-M12-C034",
@@ -850,7 +850,7 @@
    "observed": {
     "regression": "r09b_failed_older_arrival_never_overwrites_newer_identity"
    },
-   "seconds": 0.044
+   "seconds": 0.065
   },
   {
    "id": "LF-M12-C035",
@@ -901,7 +901,7 @@
      "no_row_recreated": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C037",
@@ -919,7 +919,7 @@
    "observed": {
     "regression": "c07_clean_restore_rebinds_before_the_next_keystroke"
    },
-   "seconds": 0.05
+   "seconds": 0.044
   },
   {
    "id": "LF-M12-C038",
@@ -943,7 +943,7 @@
      "closed_after": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.015
   },
   {
    "id": "LF-M12-C039",
@@ -964,7 +964,7 @@
    "observed": {
     "regression": "r04_typed_prefix_never_gets_dictated_provenance"
    },
-   "seconds": 0.045
+   "seconds": 0.04
   },
   {
    "id": "LF-M12-C040",
@@ -1018,7 +1018,7 @@
      "only_arrival": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C042",
@@ -1045,7 +1045,7 @@
      "only_arrival": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C043",
@@ -1167,7 +1167,7 @@
      "word_count_whitespace": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C047",
@@ -1195,7 +1195,7 @@
      "word_count_whitespace": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C048",
@@ -1222,7 +1222,7 @@
      "word_count_whitespace": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C049",
@@ -1250,7 +1250,7 @@
      "word_count_whitespace": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C050",
@@ -1278,7 +1278,7 @@
      "word_count_whitespace": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C051",
@@ -1306,7 +1306,7 @@
      "word_count_whitespace": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C052",
@@ -1335,7 +1335,7 @@
      "edit_after_anchor_delivers": true
     }
    },
-   "seconds": 0.275
+   "seconds": 0.268
   },
   {
    "id": "LF-M12-C053",
@@ -1366,7 +1366,7 @@
      "no_external": true
     }
    },
-   "seconds": 0.148
+   "seconds": 0.144
   },
   {
    "id": "LF-M12-C054",
@@ -1421,7 +1421,7 @@
      "no_external": true
     }
    },
-   "seconds": 0.134
+   "seconds": 0.135
   },
   {
    "id": "LF-M12-C056",
@@ -1446,7 +1446,7 @@
      "went_to_external_path": true
     }
    },
-   "seconds": 0.125
+   "seconds": 0.122
   },
   {
    "id": "LF-M12-C057",
@@ -1503,7 +1503,7 @@
      "no_external": true
     }
    },
-   "seconds": 10.091
+   "seconds": 10.075
   },
   {
    "id": "LF-M12-C059",
@@ -1525,7 +1525,7 @@
    "observed": {
     "regression": "r13_whole_note_accept_refuses_after_growth"
    },
-   "seconds": 10.086
+   "seconds": 10.083
   },
   {
    "id": "LF-M12-C060",
@@ -1547,7 +1547,7 @@
    "observed": {
     "regression": "c05_selection_transform_allows_an_outside_edit"
    },
-   "seconds": 10.091
+   "seconds": 10.092
   },
   {
    "id": "LF-M12-C061",
@@ -1572,7 +1572,7 @@
      "never_retargets_the_other_copy": true
     }
    },
-   "seconds": 20.155
+   "seconds": 20.178
   },
   {
    "id": "LF-M12-C062",
@@ -1597,7 +1597,7 @@
      "no_clipboard": true
     }
    },
-   "seconds": 10.069
+   "seconds": 10.092
   },
   {
    "id": "LF-M12-C063",
@@ -1622,7 +1622,7 @@
      "replaced_original_region": true
     }
    },
-   "seconds": 20.095
+   "seconds": 20.11
   },
   {
    "id": "LF-M12-C064",
@@ -1647,7 +1647,7 @@
      "note_unchanged": true
     }
    },
-   "seconds": 0.06
+   "seconds": 0.061
   },
   {
    "id": "LF-M12-C065",
@@ -1672,7 +1672,7 @@
      "no_clipboard": true
     }
    },
-   "seconds": 10.09
+   "seconds": 10.109
   },
   {
    "id": "LF-M12-C066",
@@ -1699,7 +1699,7 @@
      "outside_never_touched": true
     }
    },
-   "seconds": 0.01
+   "seconds": 0.013
   },
   {
    "id": "LF-M12-C067",
@@ -1727,7 +1727,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.01
   },
   {
    "id": "LF-M12-C068",
@@ -1755,7 +1755,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-C069",
@@ -1782,7 +1782,7 @@
      "outside_never_touched": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C070",
@@ -1838,7 +1838,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C072",
@@ -1865,7 +1865,7 @@
      "outside_never_touched": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C073",
@@ -1893,7 +1893,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C074",
@@ -1921,7 +1921,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C075",
@@ -1977,7 +1977,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C077",
@@ -2006,7 +2006,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C078",
@@ -2033,7 +2033,7 @@
      "outside_never_touched": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C079",
@@ -2062,7 +2062,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C080",
@@ -2091,7 +2091,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C081",
@@ -2118,7 +2118,7 @@
      "outside_never_touched": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C082",
@@ -2147,7 +2147,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C083",
@@ -2176,7 +2176,7 @@
      "row_purged": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C084",
@@ -2221,7 +2221,7 @@
      "no_open_staging_intent": true
     }
    },
-   "seconds": 0.007
+   "seconds": 0.006
   },
   {
    "id": "LF-M12-C086",
@@ -2304,7 +2304,7 @@
      "reported": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C090",
@@ -2353,7 +2353,7 @@
      "complete_set": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-C092",
@@ -2421,7 +2421,7 @@
      "link_untouched": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.008
   },
   {
    "id": "LF-M12-C095",
@@ -2493,7 +2493,7 @@
      "nothing_outside_dest": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.007
   },
   {
    "id": "LF-M12-C098",
@@ -2516,7 +2516,7 @@
      "tree_identical": true
     }
    },
-   "seconds": 0.008
+   "seconds": 0.011
   },
   {
    "id": "LF-M12-C099",
@@ -2536,7 +2536,7 @@
    "observed": {
     "regression": "r14a_copy_uses_the_current_attempt_final_artifact"
    },
-   "seconds": 0.027
+   "seconds": 0.028
   },
   {
    "id": "LF-M12-C100",
@@ -2576,7 +2576,7 @@
    "observed": {
     "regression": "r14a_copy_uses_the_current_attempt_final_artifact"
    },
-   "seconds": 0.025
+   "seconds": 0.027
   },
   {
    "id": "LF-M12-C102",
@@ -2601,7 +2601,7 @@
      "source_kept": true
     }
    },
-   "seconds": 0.023
+   "seconds": 0.025
   },
   {
    "id": "LF-M12-C103",
@@ -2623,7 +2623,7 @@
    "observed": {
     "regression": "r24b_history_copy_unknown_is_not_failure_and_never_deletes"
    },
-   "seconds": 0.226
+   "seconds": 0.23
   },
   {
    "id": "LF-M12-C104",
@@ -2641,7 +2641,7 @@
    "observed": {
     "regression": "l01_legacy_row_transfer_is_honest"
    },
-   "seconds": 0.027
+   "seconds": 0.046
   },
   {
    "id": "LF-M12-C105",
@@ -2665,7 +2665,7 @@
      "move_degrades": true
     }
    },
-   "seconds": 0.024
+   "seconds": 0.035
   },
   {
    "id": "LF-M12-C106",
@@ -2685,7 +2685,7 @@
    "observed": {
     "regression": "r20_move_selector_reaches_the_transfer"
    },
-   "seconds": 0.033
+   "seconds": 0.036
   },
   {
    "id": "LF-M12-C107",
@@ -2707,7 +2707,7 @@
      "editor_bound": true
     }
    },
-   "seconds": 0.042
+   "seconds": 0.061
   },
   {
    "id": "LF-M12-C108",
@@ -2729,7 +2729,7 @@
      "view": true
     }
    },
-   "seconds": 0.04
+   "seconds": 0.044
   },
   {
    "id": "LF-M12-C109",
@@ -2752,7 +2752,7 @@
      "one_note": true
     }
    },
-   "seconds": 0.042
+   "seconds": 0.043
   },
   {
    "id": "LF-M12-C110",
@@ -2775,7 +2775,7 @@
      "no_new_note": true
     }
    },
-   "seconds": 0.023
+   "seconds": 0.026
   },
   {
    "id": "LF-M12-C111",
@@ -2797,7 +2797,7 @@
    "observed": {
     "regression": "r11a_pin_and_delete_never_act_on_an_unrendered_note"
    },
-   "seconds": 0.043
+   "seconds": 0.044
   },
   {
    "id": "LF-M12-C112",
@@ -2817,7 +2817,7 @@
    "observed": {
     "regression": "r23_chosen_transform_and_version_survive_refresh"
    },
-   "seconds": 0.045
+   "seconds": 0.043
   },
   {
    "id": "LF-M12-C113",
@@ -2864,7 +2864,7 @@
    "observed": {
     "regression": "r16b_same_revision_event_counts_once"
    },
-   "seconds": 0.135
+   "seconds": 0.132
   },
   {
    "id": "LF-M12-C115",
@@ -2887,7 +2887,7 @@
      "no_title_or_filename": true
     }
    },
-   "seconds": 0.14
+   "seconds": 0.138
   },
   {
    "id": "LF-M12-C116",
@@ -2931,7 +2931,7 @@
    "observed": {
     "regression": "r16a_late_callback_cannot_reopen_a_deleted_note"
    },
-   "seconds": 0.135
+   "seconds": 0.134
   },
   {
    "id": "LF-M12-C118",
@@ -2953,7 +2953,7 @@
      "closed_unavailable": true
     }
    },
-   "seconds": 0.14
+   "seconds": 0.138
   },
   {
    "id": "LF-M12-C119",
@@ -2971,7 +2971,7 @@
    "observed": {
     "regression": "c06_consent_off_keeps_notes_working"
    },
-   "seconds": 0.132
+   "seconds": 0.135
   },
   {
    "id": "LF-M12-C120",
@@ -3001,7 +3001,7 @@
      "final_words_of_the_job": true
     }
    },
-   "seconds": 0.152
+   "seconds": 0.149
   },
   {
    "id": "LF-M12-C121",
@@ -3021,7 +3021,7 @@
      "usage_unchanged": true
     }
    },
-   "seconds": 0.145
+   "seconds": 0.143
   },
   {
    "id": "LF-M12-C122",
@@ -3046,7 +3046,7 @@
      "never_asr_example": true
     }
    },
-   "seconds": 0.141
+   "seconds": 0.139
   },
   {
    "id": "LF-M12-C123",
@@ -3112,7 +3112,7 @@
    "observed": {
     "regression": "r15a_delete_purges_the_note_transform_graph"
    },
-   "seconds": 10.077
+   "seconds": 10.102
   },
   {
    "id": "LF-M12-S001",
@@ -3140,7 +3140,7 @@
      "confirmed": true
     }
    },
-   "seconds": 0.138
+   "seconds": 0.152
   },
   {
    "id": "LF-M12-S002",
@@ -3203,7 +3203,7 @@
      "no_external": true
     }
    },
-   "seconds": 0.143
+   "seconds": 0.155
   },
   {
    "id": "LF-M12-S004",
@@ -3258,7 +3258,7 @@
    "observed": {
     "regression": "r13_whole_note_accept_refuses_after_growth"
    },
-   "seconds": 10.085
+   "seconds": 10.105
   },
   {
    "id": "LF-M12-S006",
@@ -3293,7 +3293,7 @@
      "dirty_text_kept_when_refused": true
     }
    },
-   "seconds": 2.319
+   "seconds": 2.398
   },
   {
    "id": "LF-M12-S007",
@@ -3324,7 +3324,7 @@
      "b_not_overwritten": true
     }
    },
-   "seconds": 0.675
+   "seconds": 0.757
   },
   {
    "id": "LF-M12-S008",
@@ -3359,7 +3359,7 @@
      "marker_settled_only_at_newest": true
     }
    },
-   "seconds": 0.053
+   "seconds": 0.062
   },
   {
    "id": "LF-M12-S009",
@@ -3383,7 +3383,7 @@
    "observed": {
     "regression": "r09a_two_arrivals_keep_their_own_provenance"
    },
-   "seconds": 0.045
+   "seconds": 0.05
   },
   {
    "id": "LF-M12-S010",
@@ -3412,7 +3412,7 @@
      "not_retained_for_recovery": true
     }
    },
-   "seconds": 0.05
+   "seconds": 0.052
   },
   {
    "id": "LF-M12-S011",
@@ -3442,7 +3442,7 @@
      "no_accepted_revision": true
     }
    },
-   "seconds": 10.073
+   "seconds": 10.106
   },
   {
    "id": "LF-M12-S012",
@@ -3470,7 +3470,7 @@
      "no_unowned_orphan": true
     }
    },
-   "seconds": 0.009
+   "seconds": 0.014
   },
   {
    "id": "LF-M12-S013",
@@ -3496,7 +3496,7 @@
    "observed": {
     "regression": "r05a_rolled_back_attachment_delete_keeps_payload"
    },
-   "seconds": 0.008
+   "seconds": 0.011
   },
   {
    "id": "LF-M12-S014",
@@ -3522,7 +3522,7 @@
    "observed": {
     "regression": "r05b_rolled_back_note_delete_keeps_payload"
    },
-   "seconds": 0.01
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-S015",
@@ -3550,7 +3550,7 @@
      "no_partial_set_left": true
     }
    },
-   "seconds": 0.01
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-S016",
@@ -3578,7 +3578,7 @@
      "preexisting_tree_identical": true
     }
    },
-   "seconds": 0.01
+   "seconds": 0.009
   },
   {
    "id": "LF-M12-S017",
@@ -3607,7 +3607,7 @@
      "exactly_one_copy": true
     }
    },
-   "seconds": 0.026
+   "seconds": 0.028
   },
   {
    "id": "LF-M12-S018",
@@ -3635,7 +3635,7 @@
      "one_note": true
     }
    },
-   "seconds": 0.044
+   "seconds": 0.055
   },
   {
    "id": "LF-M12-S019",
@@ -3663,7 +3663,7 @@
      "no_duplicate_after_retry": true
     }
    },
-   "seconds": 0.137
+   "seconds": 0.138
   },
   {
    "id": "LF-M12-S020",
@@ -3729,7 +3729,7 @@
      "never_asr_example": true
     }
    },
-   "seconds": 0.139
+   "seconds": 0.14
   },
   {
    "id": "LF-M12-S022",
@@ -3758,7 +3758,7 @@
      "inserted_exact": true
     }
    },
-   "seconds": 0.144
+   "seconds": 0.142
   },
   {
    "id": "LF-M12-S023",
@@ -3786,7 +3786,7 @@
    "observed": {
     "regression": "r06b_timeout_then_late_commit_keeps_payload"
    },
-   "seconds": 0.214
+   "seconds": 0.213
   },
   {
    "id": "LF-M12-S024",
@@ -3812,7 +3812,7 @@
    "observed": {
     "regression": "r18_old_save_cannot_clear_a_newer_generation"
    },
-   "seconds": 0.07
+   "seconds": 0.067
   },
   {
    "id": "LF-M12-S025",
@@ -3892,7 +3892,7 @@
    "observed": {
     "regression": "r08b_quit_settles_admitted_note_work"
    },
-   "seconds": 0.047
+   "seconds": 0.046
   },
   {
    "id": "LF-M12-S028",
@@ -3916,7 +3916,7 @@
    "observed": {
     "regression": "r11b_add_image_revalidates_after_the_dialog"
    },
-   "seconds": 0.052
+   "seconds": 0.054
   },
   {
    "id": "LF-M12-N001",

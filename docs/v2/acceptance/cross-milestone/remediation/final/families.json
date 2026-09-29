@@ -3,8 +3,8 @@
  "code": {
   "suite": "tests/v2/crossmilestone/test_xm_store_families.py",
   "suite_sha256": "381635f72b76dbddbfa967390b2f7e55ab29ba5659eb0094317d4b3a81dd0650",
-  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
-  "tracked_files_modified": false,
+  "code_root_sha": "a33f68133d22f55e9b9e7ae6f1bedd2ca2fef500",
+  "tracked_files_modified": true,
   "production_tree_modified": false,
   "python": "3.14.7"
  },
@@ -18,7 +18,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.06
+   "seconds": 0.07
   },
   {
    "case": "x01b_lost_profile_evidence_never_keeps_dead_private_text",
@@ -154,7 +154,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.07
+   "seconds": 0.06
   },
   {
    "case": "c_lost_sampling_decisions_redraw_identically",
@@ -162,7 +162,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.14
+   "seconds": 0.12
   },
   {
    "case": "c_genuinely_older_store_upgrades_with_backup",
@@ -170,7 +170,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.02
+   "seconds": 0.01
   },
   {
    "case": "x01l_older_store_without_its_stamp_is_never_refused",
@@ -226,7 +226,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.1
+   "seconds": 0.11
   }
  ]
 }

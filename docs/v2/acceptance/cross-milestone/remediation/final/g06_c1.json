@@ -2,9 +2,9 @@
  "suite": "tests/v2/crossmilestone/test_xm_g06_c1.py",
  "code": {
   "suite": "tests/v2/crossmilestone/test_xm_g06_c1.py",
-  "suite_sha256": "56628e0bb3b8b43c41cf91d949f82fb321f0a6ef27b97c85268f80030fa3f924",
-  "code_root_sha": "cabc7566d5279868a160204edb80634240ab2f2d",
-  "tracked_files_modified": false,
+  "suite_sha256": "b34b12144b83370faa5872c745755d4ba62af7386c210858ac70f343c5617510",
+  "code_root_sha": "a33f68133d22f55e9b9e7ae6f1bedd2ca2fef500",
+  "tracked_files_modified": true,
   "production_tree_modified": false,
   "python": "3.14.7"
  },
@@ -40,7 +40,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.26
+   "seconds": 0.27
   },
   {
    "case": "c_g06_xm_c094_external_dictation_records_external_outcome",
@@ -56,7 +56,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.37
+   "seconds": 0.36
   },
   {
    "case": "g06_xm_mh23_unknown_save_opens_its_one_note",
@@ -64,7 +64,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.33
+   "seconds": 0.34
   },
   {
    "case": "c_g06_xm_mh23_unheld_save_opens_once",
@@ -72,7 +72,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.06
+   "seconds": 0.07
   },
   {
    "case": "g06_xm_mh29_copy_callers_respect_pending_and_outcome_is_honest",
@@ -96,7 +96,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.3
+   "seconds": 0.31
   },
   {
    "case": "c_g06_xm_r05_actions_act_on_rendered_row_once",
@@ -104,7 +104,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.21
+   "seconds": 0.22
   },
   {
    "case": "g06_xm_r06_teach_after_real_retry_is_stale",
@@ -112,7 +112,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.4
+   "seconds": 0.42
   },
   {
    "case": "c_g06_xm_r06_teach_without_retry_creates_one_candidate",
@@ -120,7 +120,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.25
+   "seconds": 0.26
   },
   {
    "case": "g06_xm_c104_applied_transform_is_the_delivered_final",
@@ -128,7 +128,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.24
+   "seconds": 0.25
   },
   {
    "case": "c_g06_xm_c104_clean_is_the_final_without_auto_apply",
@@ -152,7 +152,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.03
+   "seconds": 0.04
   },
   {
    "case": "g06_xm_c107_old_attempt_search_opens_current_final",
@@ -160,7 +160,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.36
+   "seconds": 0.37
   },
   {
    "case": "g06_xm_c108_unavailable_replay_stops_and_reports_reason",
@@ -168,7 +168,7 @@
    "kind": "defect",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.09
+   "seconds": 0.1
   },
   {
    "case": "c_g06_xm_c108_available_replay_switches_to_b",
@@ -176,7 +176,7 @@
    "kind": "control",
    "status": "PASS",
    "detail": null,
-   "seconds": 0.03
+   "seconds": 0.04
   },
   {
    "case": "g06_xm_c109_transform_of_moved_note_never_revives_job",
