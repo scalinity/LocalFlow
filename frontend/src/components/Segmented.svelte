@@ -79,6 +79,6 @@
   .opt[aria-checked='true'] {
     background: var(--canvas);
     color: var(--text);
-    box-shadow: 0 1px 2px rgba(30, 24, 16, 0.12);
+    box-shadow: inset 0 0 0 1px var(--text-3), 0 1px 2px rgba(30, 24, 16, 0.12);
   }
 </style>

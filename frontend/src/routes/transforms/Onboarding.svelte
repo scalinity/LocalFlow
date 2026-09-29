@@ -345,7 +345,7 @@
     line-height: 1.7;
   }
   .review-body del {
-    color: #7e7972;
+    color: #908b83;
   }
   .review-body ins {
     color: #f3f0ea;
