@@ -22,8 +22,10 @@ second undo engine.
 from __future__ import annotations
 
 import objc
-from AppKit import (NSButton, NSMakeRect, NSMenu, NSMenuItem, NSPanel,
-                    NSSize, NSScrollView, NSTextView, NSView,
+from AppKit import (NSAppearance, NSAttributedString, NSButton, NSFont,
+                    NSMakeRect, NSMenu, NSMenuItem,
+                    NSMutableAttributedString, NSPanel, NSSize,
+                    NSScrollView, NSTextField, NSTextView, NSView,
                     NSWindowStyleMaskClosable,
                     NSWindowStyleMaskNonactivatingPanel,
                     NSWindowStyleMaskResizable,
@@ -48,6 +50,71 @@ _ACTIONS = (
 
 BUTTON_GAP = 8.0
 BUTTON_H = 28.0
+HEADER_H = 40.0
+
+# The review surface is drawn in warm ink in both appearances (the
+# desktop companion's change-review style).
+_INK = (0x1C, 0x1B, 0x19)
+_INK_TEXT = (0xF3, 0xF0, 0xEA)
+_INK_MUTED = (0x7E, 0x79, 0x72)
+_INK_ADDED = (0x55, 0xAA, 0xA4)
+
+
+def _rgb(c, alpha=1.0):
+    from AppKit import NSColor
+    return NSColor.colorWithSRGBRed_green_blue_alpha_(
+        c[0] / 255.0, c[1] / 255.0, c[2] / 255.0, alpha)
+
+
+def inline_changes(source, output):
+    """Presentation only: the output as written, with each change marked.
+    Whitespace is kept as its own token so the output's text (line
+    breaks included) reads exactly as produced. Returns ``(pieces,
+    changes)``: pieces are ``(kind, text)`` with kind equal / added /
+    removed; changes counts the edited stretches."""
+    import difflib
+    import re
+    a = re.findall(r"\s+|\S+", source)
+    b = re.findall(r"\s+|\S+", output)
+    sm = difflib.SequenceMatcher(a=a, b=b, autojunk=False)
+    ops = sm.get_opcodes()
+    pieces, changes = [], 0
+    run = None  # [removed, added] of the change being collected
+
+    def close():
+        nonlocal run, changes
+        if run is None:
+            return
+        removed, added = run[0].strip(), run[1]
+        if removed or added.strip():
+            changes += 1
+            if removed:
+                pieces.append(("removed", removed))
+                if added.strip():
+                    pieces.append(("equal", " "))
+            lead = added[:len(added) - len(added.lstrip())]
+            if lead:
+                pieces.append(("equal", lead))
+            if added.strip():
+                pieces.append(("added", added.strip()))
+            trail = added[len(added.rstrip()):]
+            if trail:
+                pieces.append(("equal", trail))
+        run = None
+
+    for k, (tag, i1, i2, j1, j2) in enumerate(ops):
+        same = "".join(b[j1:j2])
+        if tag == "equal" and not (run is not None and not same.strip()
+                                   and k + 1 < len(ops)):
+            close()
+            pieces.append(("equal", same))
+            continue
+        # A change, or whitespace between two changes: one edited stretch.
+        run = run or ["", ""]
+        run[0] += "".join(a[i1:i2])
+        run[1] += same if tag == "equal" else "".join(b[j1:j2])
+    close()
+    return pieces, changes
 
 
 def action_frames(actions=_ACTIONS):
@@ -81,17 +148,42 @@ class TransformPreviewPanel(NSObject):
         self.panel.setTitle_("Transform Preview")
         self.panel.setReleasedWhenClosed_(False)
         self.panel.setMinSize_(NSSize(460.0, 360.0))
+        self._style_panel()
         content = NSView.alloc().initWithFrame_(
             self.panel.contentView().bounds())
         self.panel.setContentView_(content)
+        # Header: how many edits, and the way to the transform's settings.
+        self.count = NSTextField.labelWithString_("")
+        self.count.setFont_(NSFont.boldSystemFontOfSize_(15.0))
+        self.count.setTextColor_(_rgb(_INK_TEXT))
+        self.count.setFrame_(NSMakeRect(16, PANEL_H - HEADER_H + 8,
+                                        260, 22))
+        self.count.setAutoresizingMask_(8)  # pinned to the top
+        content.addSubview_(self.count)
+        self.configure = NSButton.buttonWithTitle_target_action_(
+            "Configure", self, "panelConfigure:")
+        self.configure.setBordered_(False)
+        self.configure.setContentTintColor_(_rgb(_INK_TEXT))
+        self.configure.setFrame_(NSMakeRect(PANEL_W - 176,
+                                            PANEL_H - HEADER_H + 6,
+                                            164, 26))
+        self.configure.setAlignment_(2)  # right
+        self.configure.setAutoresizingMask_(1 | 8)
+        content.addSubview_(self.configure)
         self.text = NSTextView.alloc().initWithFrame_(
-            NSMakeRect(12, 118, PANEL_W - 24, PANEL_H - 142))
+            NSMakeRect(12, 118, PANEL_W - 24, PANEL_H - 142 - HEADER_H))
         self.text.setEditable_(False)
         self.text.setRichText_(False)
+        self.text.setDrawsBackground_(False)
+        self.text.setTextContainerInset_(NSSize(4.0, 6.0))
+        self.text.setFont_(NSFont.systemFontOfSize_(15.0))
+        self.text.setTextColor_(_rgb(_INK_TEXT))
         self.scroll = NSScrollView.alloc().initWithFrame_(
-            NSMakeRect(12, 118, PANEL_W - 24, PANEL_H - 142))
+            NSMakeRect(12, 118, PANEL_W - 24, PANEL_H - 142 - HEADER_H))
         self.scroll.setDocumentView_(self.text)
         self.scroll.setHasVerticalScroller_(True)
+        self.scroll.setDrawsBackground_(False)
+        self.scroll.setBorderType_(0)
         self.scroll.setAutoresizingMask_(2 | 16)  # w+h flexible
         content.addSubview_(self.scroll)
         self._buttons = {}
@@ -109,6 +201,72 @@ class TransformPreviewPanel(NSObject):
         return self
 
     @objc.python_method
+    def _style_panel(self):
+        """Warm ink in either appearance; the native titlebar stays (the
+        panel keeps its title, controls and non-activating behavior)."""
+        try:
+            self.panel.setAppearance_(NSAppearance.appearanceNamed_(
+                "NSAppearanceNameDarkAqua"))
+            self.panel.setTitlebarAppearsTransparent_(True)
+            self.panel.setBackgroundColor_(_rgb(_INK))
+        except Exception:
+            pass
+
+    @objc.python_method
+    def _append(self, text, s, kind):
+        """One run of the review text: kept words in ink, added words on
+        a teal wash, removed words struck in muted ink."""
+        from AppKit import (NSBackgroundColorAttributeName,
+                            NSFontAttributeName,
+                            NSForegroundColorAttributeName,
+                            NSMutableParagraphStyle,
+                            NSParagraphStyleAttributeName,
+                            NSStrikethroughStyleAttributeName)
+        para = NSMutableParagraphStyle.alloc().init()
+        para.setLineSpacing_(6.0)
+        attrs = {NSFontAttributeName: NSFont.systemFontOfSize_(15.0),
+                 NSForegroundColorAttributeName: _rgb(_INK_TEXT),
+                 NSParagraphStyleAttributeName: para}
+        if kind == "added":
+            attrs[NSBackgroundColorAttributeName] = _rgb(_INK_ADDED, 0.32)
+        elif kind == "removed":
+            attrs[NSForegroundColorAttributeName] = _rgb(_INK_MUTED)
+            attrs[NSStrikethroughStyleAttributeName] = 1
+        elif kind == "note":
+            attrs[NSForegroundColorAttributeName] = _rgb((0xAA, 0xA5, 0x9D))
+            attrs[NSFontAttributeName] = NSFont.systemFontOfSize_(13.0)
+        text.appendAttributedString_(
+            NSAttributedString.alloc().initWithString_attributes_(s, attrs))
+
+    @objc.python_method
+    def _fit_height(self):
+        """Size the panel to its text (a short result is a compact card;
+        a long one scrolls inside the full height)."""
+        lm = self.text.layoutManager()
+        tc = self.text.textContainer()
+        frame = self.panel.frame()
+        width = frame.size.width - 24
+        tc.setContainerSize_(NSSize(width - 8, 1e7))
+        lm.ensureLayoutForTextContainer_(tc)
+        used = lm.usedRectForTextContainer_(tc).size.height + 20
+        content_h = min(PANEL_H, max(300.0, 118 + HEADER_H + used + 20))
+        self.panel.setContentSize_(NSSize(frame.size.width, content_h))
+        self.scroll.setFrame_(NSMakeRect(12, 118, width,
+                                         content_h - 142 - HEADER_H + 24))
+
+    def panelConfigure_(self, sender):
+        """Open this transform in the Hub (its settings). The Hub opens
+        through the coordinator's own guard; the review stays here."""
+        coord = self.coordinator
+        try:
+            coord.openHub_(None)
+            hub = getattr(coord, "_hub", None)
+            if hub is not None and hasattr(hub, "show_route"):
+                hub.show_route("transforms")
+        except Exception:
+            pass
+
+    @objc.python_method
     def show(self, result, capture, defn, candidate_id):
         self._state = {"result": result, "capture": capture,
                        "defn": defn, "candidate_id": candidate_id}
@@ -117,27 +275,33 @@ class TransformPreviewPanel(NSObject):
                  "fallback_original": "fallback: original kept"}.get(
             result.path, result.path)
         self.panel.setTitle_(f"{defn.name} — {title}")
-        parts = [diffview.block_diff(result.job.source if result.job
-                                     else capture["source"],
-                                     result.output)]
         source = result.job.source if result.job else capture["source"]
+        pieces, changes = inline_changes(source, result.output)
+        self.count.setStringValue_(
+            "No changes" if not changes else
+            f"{changes} change{'' if changes == 1 else 's'}")
+        self.configure.setTitle_(f"Configure {defn.name}")
+        text = NSMutableAttributedString.alloc().init()
         if len(source.split()) <= WORD_DIFF_MAX_WORDS:
-            parts.append("")
-            parts.append("Word diff: "
-                         + diffview.render_word_diff(source,
-                                                     result.output))
+            # Short text: the output as written, each change marked.
+            for kind, s in pieces:
+                self._append(text, s, kind)
+        else:
+            self._append(text, diffview.block_diff(source, result.output),
+                         "equal")
+        tail = []
         if result.review_excerpts:
-            parts.append("\nREVIEW — these source requirements have"
-                         " uncertain coverage; their original wording"
-                         " is kept for review:")
+            tail.append("\n\nREVIEW — these source requirements have"
+                        " uncertain coverage; their original wording"
+                        " is kept for review:")
             for ex in result.review_excerpts:
-                parts.append(f"  • {ex}")
+                tail.append(f"\n  • {ex}")
         if result.path == "fallback_original":
-            parts.append(f"\nReason: {result.reason}")
-        self.text.setString_("\n".join(parts))
-        frame = self.panel.frame()
-        self.scroll.setFrameSize_(
-            NSSize(frame.size.width - 24, frame.size.height - 142))
+            tail.append(f"\n\nReason: {result.reason}")
+        if tail:
+            self._append(text, "".join(tail), "note")
+        self.text.textStorage().setAttributedString_(text)
+        self._fit_height()
         # Retry needs a task (a refused job has none to re-run).
         self._buttons["panelRetry:"].setEnabled_(result.job is not None)
         self._buttons["panelAccept:"].setEnabled_(True)
