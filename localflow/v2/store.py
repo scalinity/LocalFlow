@@ -713,11 +713,24 @@ _MIGRATIONS[13] = [
 # at the current version is always external damage: a genuinely older
 # store never reaches this map (it upgrades), a fresh one has no rows.
 _CORE_DEPENDENTS = {
+    # A dictation job that was never deleted still named by its usage,
+    # insertion or target rows (deleting a job keeps its usage, M13) —
+    # and a job naming its audio artifact — prove the lost table held
+    # rows (G06 XM-C005); transform and candidate ids are not jobs.
     "jobs": ("SELECT 1 FROM artifacts WHERE job_id LIKE 'job-%' LIMIT 1",
-             "SELECT 1 FROM training_examples LIMIT 1"),
+             "SELECT 1 FROM training_examples LIMIT 1",
+             "SELECT 1 FROM usage_facts WHERE kind='dictation' AND job_id"
+             " LIKE 'job-%' AND job_id NOT IN (SELECT job_id FROM"
+             " job_deletions) LIMIT 1",
+             "SELECT 1 FROM insertions WHERE job_id LIKE 'job-%' AND"
+             " job_id NOT IN (SELECT job_id FROM job_deletions) LIMIT 1",
+             "SELECT 1 FROM job_targets WHERE job_id LIKE 'job-%' AND"
+             " job_id NOT IN (SELECT job_id FROM job_deletions) LIMIT 1"),
     "artifacts": ("SELECT 1 FROM artifact_leases LIMIT 1",
                   "SELECT 1 FROM training_revisions LIMIT 1",
-                  "SELECT 1 FROM imports LIMIT 1"),
+                  "SELECT 1 FROM imports LIMIT 1",
+                  "SELECT 1 FROM jobs WHERE audio_artifact_id IS NOT NULL"
+                  " LIMIT 1"),
     "training_examples": ("SELECT 1 FROM training_revisions LIMIT 1",),
     "training_revisions": ("SELECT 1 FROM training_examples WHERE"
                            " latest_revision_id IS NOT NULL LIMIT 1",),
@@ -1174,7 +1187,11 @@ def read_wav(path: pathlib.Path) -> tuple[np.ndarray, int]:
     and is recorded on the artifact, not hidden by re-expanding bits).
     Strict like ``read_wav_f32``: a truncated payload raises."""
     with open(path, "rb") as f:
-        raw = f.read()
+        return wav_from_bytes(f.read())
+
+
+def wav_from_bytes(raw: bytes) -> tuple[np.ndarray, int]:
+    """``read_wav`` over bytes already read (a confined managed read)."""
     audio_format, rate, bits, data_size, width = _parse_wav_header(raw)
     if len(raw) - 44 < data_size:
         raise WavIncompleteError(data_size // width,
@@ -1786,11 +1803,15 @@ class Store:
         if art is None or art["purged"]:
             return None
         if art["content_path"]:
-            path = self.artifacts_dir / art["content_path"]
-            if verify and ids.sha256_bytes(path.read_bytes()) \
-                    != art["sha256"]:
+            # Confined like every managed payload: a bare name directly in
+            # the artifacts directory, a regular file, never a symlink or
+            # FIFO — a corrupt locator reads nothing (G06 XM-C016).
+            raw = read_managed_file(self.artifacts_dir, art["content_path"])
+            if raw is None:
+                return None
+            if verify and ids.sha256_bytes(raw) != art["sha256"]:
                 raise ValueError("artifact payload hash mismatch")
-            arr, _rate = read_wav(path)
+            arr, _rate = wav_from_bytes(raw)
             return arr
         if verify and art["content_text"] is not None \
                 and ids.sha256_text(art["content_text"]) != art["sha256"]:
@@ -2760,6 +2781,23 @@ class Store:
                             " attempts=attempts+1, last_error=? WHERE"
                             " intent_id=?", (now_iso, err, intent_id))
                         continue
+                elif root == "artifacts":
+                    # The same confined no-follow removal as notes, in the
+                    # artifacts directory and its orphans/ (G06 XM-C016): a
+                    # corrupt locator never reaches outside either.
+                    for d in (self.artifacts_dir,
+                              self.artifacts_dir / "orphans"):
+                        e2 = unlink_managed_file(d, path)
+                        if e2 in (PATH_REFUSED, NONREGULAR_REFUSED):
+                            err = err or e2
+                        elif e2 is not None:
+                            err = e2
+                    if err in (PATH_REFUSED, NONREGULAR_REFUSED):
+                        self._db.execute(
+                            "UPDATE purge_intents SET completed_at_utc=?,"
+                            " attempts=attempts+1, last_error=? WHERE"
+                            " intent_id=?", (now_iso, err, intent_id))
+                        continue
                 else:
                     for p in self._intent_paths(root, path):
                         try:
@@ -2981,10 +3019,10 @@ class Store:
                         " sha256, bytes FROM artifacts WHERE purged=0"
                         ).fetchall():
                     if path:
-                        p = self.artifacts_dir / path
-                        try:
-                            data = p.read_bytes()
-                        except OSError:
+                        # Confined read (G06 XM-C016): a corrupt locator
+                        # is reported, never followed or opened.
+                        data = read_managed_file(self.artifacts_dir, path)
+                        if data is None:
                             payload_issues.append(
                                 f"artifact {aid} payload file missing")
                             continue

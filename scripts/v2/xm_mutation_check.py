@@ -46,6 +46,10 @@ PY = ROOT / ".venv" / "bin" / "python"
 ISOLATED = "tests/v2/context/run_isolated.py"
 FAM = "tests/v2/crossmilestone/test_xm_store_families.py"
 REM = "tests/v2/crossmilestone/test_xm_remediation.py"
+G06A = "tests/v2/crossmilestone/test_xm_g06_a.py"
+G06C1 = "tests/v2/crossmilestone/test_xm_g06_c1.py"
+G06D = "tests/v2/crossmilestone/test_xm_g06_d.py"
+G06C2 = "tests/v2/crossmilestone/test_xm_g06_c2.py"
 
 ST = "localflow/v2/store.py"
 APP = "localflow/app.py"
@@ -418,6 +422,45 @@ MUTATIONS = [
      [(EX, "        owner.close()  # releases the lock\n",
        mark("XM-MU65", 8) + "        _OWNER_LOCKS[export_id] = owner\n")],
      {REM: ["c_settled_builds_release_their_mark_and_lock"]}),
+    # GATE-G06 drivers' reproduced defects (XM-C137, C016, C005, C106,
+    # C108).
+    ("XM-MU66", "G06 XM-C137", "History serves a wrong-role manifest artifact",
+     [(HQ, "                      and entries[aid][\"_role\"] == role}\n",
+       "                      and " + mexpr("XM-MU66") + "}\n")],
+     {G06D: ["g06_xm_c137_wrong_role_never_history_final"]}),
+    ("XM-MU67", "G06 XM-C016", "the artifact purge unlinks unconfined",
+     [(ST, "                        e2 = unlink_managed_file(d, path)\n",
+       mark("XM-MU67", 24)
+       + "                        (d / path).unlink(missing_ok=True)\n"
+       "                        e2 = None\n")],
+     {G06A: ["g06_xm_c016_corrupt_locator_never_touches_outside"]}),
+    ("XM-MU68", "G06 XM-C016", "an artifact payload is read unconfined",
+     [(ST, "            raw = read_managed_file(self.artifacts_dir,"
+           " art[\"content_path\"])\n",
+       mark("XM-MU68", 12)
+       + "            raw = (self.artifacts_dir / art[\"content_path\"])"
+         ".read_bytes()\n")],
+     {G06A: ["g06_xm_c016_corrupt_locator_never_touches_outside"]}),
+    ("XM-MU69", "G06 XM-C005", "a lost jobs table is recreated empty",
+     skip_family("XM-MU69", "jobs"),
+     {G06A: ["g06_xm_c005_lost_core_table_is_refused"]}),
+    ("XM-MU70", "G06 XM-C005", "a lost artifacts table is recreated empty",
+     skip_family("XM-MU70", "artifacts"),
+     {G06A: ["g06_xm_c005_lost_core_table_is_refused"]}),
+    ("XM-MU71", "G06 XM-C106", "Copy and Paste Again use a purged final",
+     [(HUB, "        return text if row is not None and not row[0] else None\n",
+       mark("XM-MU71", 8) + "        return text\n")],
+     {G06C1: ["g06_xm_c106_purge_after_render_revokes_content_actions"]}),
+    ("XM-MU72", "G06 XM-C108", "Replay reports the service's generic reason",
+     [(HUB, "            reason = audio.get(\"reason\") if not"
+            " audio.get(\"available\") \\\n",
+       "            reason = out.get(\"reason\") if " + mexpr("XM-MU72")
+       + " \\\n")],
+     {G06C1: ["g06_xm_c108_unavailable_replay_stops_and_reports_reason"]}),
+    ("XM-MU73", "G06 XM-R18", "a retry's commit leaves History stale",
+     [(APP, "                            self._hub.state.job_changed(job_id)\n",
+       mark("XM-MU73", 28) + "                            pass\n")],
+     {G06C2: ["g06_xm_r18_retry_commits_while_history_read_is_held"]}),
 ]
 
 
@@ -470,8 +513,8 @@ def run_killers(root, killers, timeout=5400):
             if not names:
                 continue
             out = root / "killer_out.json"
-            cmd = ([str(PY), ISOLATED, suite] if suite == REM
-                   else [str(PY), suite])
+            cmd = ([str(PY), suite] if suite == FAM
+                   else [str(PY), ISOLATED, suite])
             p = subprocess.run(cmd + ["--json", str(out), *sorted(names)],
                                cwd=root, capture_output=True, text=True,
                                timeout=timeout, env=env)

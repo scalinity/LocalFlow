@@ -391,8 +391,13 @@ class HistoryQueryService:
                       "original_audio": arts.get("original_audio"),
                       "transform_output": (tf.get("artifact_ids")
                                            or {}).get("output")}
+            # A manifest id is used only for the role it names: an
+            # artifact of another role (corrupt data) leaves the stage
+            # absent — fail closed, never another stage's text served as
+            # this one (POLICY-D04, G06 XM-C137).
             chosen = {role: entries[aid] for role, aid in wanted.items()
-                      if aid and aid in entries}
+                      if aid and aid in entries
+                      and entries[aid]["_role"] == role}
             info = {"source": "manifest",
                     "attempt": manifest.get("attempt"),
                     "transform": ({"path": tf.get("path"),

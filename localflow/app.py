@@ -4521,6 +4521,15 @@ class AppDelegate(NSObject):
                                   "attempt": int(job.get("attempt") or 1)})
                     self._job_state(job_id, "ready_to_insert")
                     self.store.sync()
+                    if self._hub is not None and \
+                            int(job.get("attempt") or 1) > 1:
+                        # A retry's attempt committed: History reloads so
+                        # an older attempt's read never stays current
+                        # (G06 XM-R18).
+                        try:
+                            self._hub.state.job_changed(job_id)
+                        except Exception:
+                            pass
                 except Exception as e:
                     self.v2log.emit("training.capture_failed", level="ERROR",
                                     job_id=job_id,

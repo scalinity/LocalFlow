@@ -377,6 +377,19 @@ class HubState:
         self._spawn_history_detail()
         self._publish()
 
+    def job_changed(self, job_id):
+        """A job's new attempt committed (a retry finished): History
+        reloads its list, and the selected row's detail when it is that
+        job — a newer load, so a read of the earlier attempt still in
+        flight is superseded and never published (G06 XM-R18)."""
+        with self._lock:
+            view = self.views["history"]
+            selected = (view["selected_kind"], view["selected_id"]) == \
+                ("job", job_id)
+        self.reload_history()
+        if selected:
+            self._spawn_history_detail()
+
     def reload_history(self):
         with self._lock:
             view = self.views["history"]

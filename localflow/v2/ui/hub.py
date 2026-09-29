@@ -926,14 +926,17 @@ class HubController(NSObject):
         out = self.replay.play_artifact(self.spec["store"],
                                         audio.get("artifact_id"))
         if not out.get("available"):
-            self._history_note(
-                f"Replay unavailable ({out.get('reason')}).")
+            # The detail's own reason (purged, expired …) when it has one:
+            # the replay service only sees the missing id (G06 XM-C108).
+            reason = audio.get("reason") if not audio.get("available") \
+                and audio.get("reason") else out.get("reason")
+            self._history_note(f"Replay unavailable ({reason}).")
 
     def historyCopy_(self, sender):
         ctx = self._history_ctx()
         if ctx is None or self.coordinator is None:
             return
-        text = self._final_text(ctx)
+        text = self._live_final_text(ctx)
         if text is None:
             self._history_note("Nothing to copy: this row has no retained"
                                " final text.")
@@ -961,7 +964,7 @@ class HubController(NSObject):
         ctx = self._history_ctx()
         if ctx is None or self.coordinator is None:
             return
-        text = self._final_text(ctx)
+        text = self._live_final_text(ctx)
         if text is None:
             self._history_note("Nothing to paste: this row has no retained"
                                " final text.")
@@ -1185,6 +1188,27 @@ class HubController(NSObject):
         transcript is never a substitute for it."""
         from ..history_queries import final_text
         return final_text(detail)
+
+    @objc.python_method
+    def _live_final_text(self, detail):
+        """The rendered final text, only while its artifact is still live
+        in the store: a retention pass or deletion may have purged it
+        after the detail was rendered, and Copy / Paste Again must never
+        publish purged text (G06 XM-C106). A final with no artifact row
+        (legacy text) is unchanged."""
+        text = self._final_text(detail)
+        store = self.spec.get("store")
+        if text is None or store is None:
+            return text
+        stage = next((s for s in detail.get("lineage") or ()
+                      if s.get("stage") == detail.get("final_stage")), None)
+        aid = ((stage or {}).get("artifact") or {}).get("artifact_id")
+        if not aid:
+            return text
+        row = store.submit(lambda conn: conn.execute(
+            "SELECT purged FROM artifacts WHERE artifact_id=?",
+            (aid,)).fetchone())
+        return text if row is not None and not row[0] else None
 
     @objc.python_method
     def _current_detail_text(self):
