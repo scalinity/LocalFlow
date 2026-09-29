@@ -96,7 +96,7 @@
   }
   .panel {
     position: relative;
-    background: var(--canvas);
+    background: var(--raised);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-modal);
     max-height: calc(100vh - 72px);

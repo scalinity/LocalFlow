@@ -41,7 +41,8 @@
       }
       weeks.push(week);
     }
-    return { weeks, months };
+    // A label needs two columns of room; a month cut shorter goes unlabeled.
+    return { weeks, months: months.filter((m, i) => !months[i + 1] || months[i + 1].col - m.col >= 2) };
   });
 
   function level(v: number | null) {

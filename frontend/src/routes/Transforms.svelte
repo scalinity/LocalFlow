@@ -100,19 +100,18 @@
           <button type="button" class="card-open" onclick={() => (editor = { id: t.transform_id })} aria-label="Open {t.name}">
             <div class="key-row">
               {#if t.shortcut}<Kbd>⌘ {t.shortcut.toUpperCase()}</Kbd>{:else}<span class="nokey">No menu key</span>{/if}
+              <span class="tag">{ORIGIN[t.origin] ?? t.origin}</span>
+              {#if t.auto_apply}<span class="tag lav">While dictating</span>{/if}
             </div>
             <h3>{t.name}</h3>
             <p class="desc">{t.description || DESCRIBE[t.mode] || ''}</p>
           </button>
-          <div class="card-foot">
-            <span class="tags">
-              <span class="tag">{ORIGIN[t.origin] ?? t.origin}</span>
-              {#if t.auto_apply}<span class="tag lav">While dictating</span>{/if}
-            </span>
-            {#if t.origin !== 'legacy'}
+          {#if t.origin !== 'legacy'}
+            <!-- Outside the open button: a switch can't nest in a button. -->
+            <div class="card-switch">
               <Switch label="{t.name} on" checked={t.enabled} busy={busyId === t.transform_id} onchange={(v) => toggle(t, v)} />
-            {/if}
-          </div>
+            </div>
+          {/if}
         </article>
       {/each}
       <button type="button" class="card create" onclick={() => (editor = { id: null })}>
@@ -209,12 +208,13 @@
     gap: 20px;
   }
   .card {
+    position: relative;
     display: flex;
     flex-direction: column;
     border-radius: var(--radius-lg);
     border: 1px solid var(--hairline);
     background: var(--canvas);
-    min-height: 196px;
+    min-height: 160px;
     transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
   }
   .card:hover {
@@ -229,13 +229,18 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
-    padding: 24px 24px 10px;
+    padding: 22px 24px 24px;
     text-align: left;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-radius: var(--radius-lg);
   }
   .key-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
     min-height: 26px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
+    padding-right: 48px;
   }
   .nokey {
     font-size: var(--text-sm);
@@ -250,17 +255,10 @@
     color: var(--text-2);
     line-height: 1.45;
   }
-  .card-foot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 12px 18px 16px 24px;
-  }
-  .tags {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+  .card-switch {
+    position: absolute;
+    top: 22px;
+    right: 20px;
   }
   .tag {
     font-size: var(--text-xs);

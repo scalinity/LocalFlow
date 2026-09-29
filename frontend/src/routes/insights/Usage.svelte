@@ -42,7 +42,7 @@
     </article>
     <article class="card metric">
       <p class="big tabular">{num(s.dictionary_hits)}</p>
-      <p class="caps label">Dictionary corrections</p>
+      <p class="caps label">Dictionary fixes</p>
       <div class="rule"></div>
       <p class="line">{num(s.snippet_hits)} snippet{s.snippet_hits === 1 ? '' : 's'} expanded</p>
       <p class="line">{s.cleanup_fallback?.fallbacks != null ? `${num(s.cleanup_fallback.fallbacks)} cleanup${s.cleanup_fallback.fallbacks === 1 ? '' : 's'} fell back` : 'Cleanup fallbacks not recorded'}</p>
@@ -118,11 +118,11 @@
     background: var(--card);
     border: 1px solid var(--hairline);
     border-radius: var(--radius-lg);
-    padding: 24px 26px;
+    padding: 24px 22px;
   }
   .row3 {
     display: grid;
-    grid-template-columns: 1fr 1fr 2.1fr;
+    grid-template-columns: 1fr 1fr 1.9fr;
     gap: 22px;
   }
   .row2 {
