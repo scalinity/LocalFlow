@@ -3141,12 +3141,15 @@ def if009_consent_timeout_is_outcome_unknown():
     try:
         seen = _recording_emit(h.d)
         h.d.consent.set = _admitted_timeout
-        out = h.d.hubSetCollection("disabled")
+        try:
+            out = h.d.hubSetCollection("disabled")
+            h.d.toggleTrainingCollection_(None)
+            h.d.consent.state = _admitted_timeout
+            h.d.toggleTrainingPause_(None)
+        except TimeoutError:
+            raise AssertionError("an admitted consent timeout escaped")
         assert (out or {}).get("outcome") == "outcome_unknown", (
             f"the Hub's collection change returned {out}")
-        h.d.toggleTrainingCollection_(None)
-        h.d.consent.state = _admitted_timeout
-        h.d.toggleTrainingPause_(None)
         assert seen.count("training.consent_outcome_unknown") == 2, seen
     finally:
         h.close()

@@ -407,6 +407,8 @@ def d03_source_check_timeout_ends_the_pick():
         e.store.submit = busy
         try:
             e.click("A", "F2")
+        except TimeoutError:
+            raise AssertionError("the busy source check escaped the pick")
         finally:
             e.store.submit = real
         assert not e.writes(since) and not e.picker.active \

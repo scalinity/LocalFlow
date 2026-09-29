@@ -526,7 +526,8 @@ MUTATIONS = [
      [(APP, "        self._paste_picker.arm(self._paste_destination_picked,\n"
             "                               self._paste_pick_cancelled)\n",
        mark("XM-MU82", 8)
-       + "        self._paste_destination_picked()\n"
+       + "        self._paste_destination_picked((self._insertion.host"
+         ".frontmost() or {}).get(\"pid\"))\n"
          "        return {\"outcome\": \"repaste_queued\"}\n")],
      {PASTE: ["d03_invoke_and_incidental_front_app_paste_nothing"]}),
     ("XM-MU83", "POLICY-D03", "the picked source is not revalidated",
