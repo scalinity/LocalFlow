@@ -249,6 +249,8 @@ def main(argv):
     ap.add_argument("--seed-out", help="Export synthetic data to a new isolated data home")
     ap.add_argument("--review-panel", action="store_true",
                     help="Also capture the native review panel with synthetic text")
+    ap.add_argument("--paste-hint", action="store_true",
+                    help="Also capture the native Paste Again hint")
     args = ap.parse_args(argv)
     if args.package:
         resources = pathlib.Path(args.package).resolve() / "Contents/Resources"
@@ -368,6 +370,21 @@ def main(argv):
             assert kind == "window", "native panel capture unavailable"
             panel.panel.orderOut_(None)
             shots.append(("transform-review-panel", "native ink", kind))
+        if args.paste_hint:
+            from localflow.v2.ui.paste_picker import HINT, PasteHint
+            hint = PasteHint()
+            hint.show(HINT)
+            hint._panel.setFrameOrigin_((-4000, 300))
+            pump(0.5)
+            kind = window_image(hint._panel, None, out / "paste-again-hint.png")
+            assert kind == "window", "native hint capture unavailable"
+            print("paste_hint", {"panel": hint._panel.frame(),
+                                "label": hint._label.frame(),
+                                "alignment": hint._label.alignment(),
+                                "radius": hint._panel.contentView()
+                                .layer().cornerRadius()})
+            hint.hide()
+            shots.append(("paste-again-hint", "native ink", kind))
         if args.dump_fixtures:
             from localflow.v2.ui.companion import readmodels
             fx = pathlib.Path(args.dump_fixtures)

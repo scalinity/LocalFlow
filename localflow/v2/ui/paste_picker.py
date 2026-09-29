@@ -69,10 +69,11 @@ class PasteHint:
         from AppKit import (NSBackingStoreBuffered, NSColor, NSEvent,
                             NSFont, NSMakeRect, NSPanel, NSPointInRect,
                             NSScreen, NSStatusWindowLevel, NSTextField,
+                            NSTextAlignmentCenter, NSView,
                             NSWindowStyleMaskBorderless,
                             NSWindowStyleMaskNonactivatingPanel)
         if self._panel is None:
-            w, h = 360.0, 30.0
+            w, h = 360.0, 38.0
             panel = NSPanel.alloc()
             panel = panel.initWithContentRect_styleMask_backing_defer_(
                 NSMakeRect(0, 0, w, h),
@@ -83,13 +84,24 @@ class PasteHint:
             panel.setIgnoresMouseEvents_(True)
             panel.setHidesOnDeactivate_(False)
             panel.setOpaque_(False)
-            panel.setBackgroundColor_(
-                NSColor.colorWithWhite_alpha_(0.1, 0.85))
+            panel.setBackgroundColor_(NSColor.clearColor())
+            panel.setHasShadow_(True)
+            pill = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, w, h))
+            pill.setWantsLayer_(True)
+            pill.layer().setCornerRadius_(h / 2.0)
+            pill.layer().setBackgroundColor_(
+                NSColor.colorWithCalibratedWhite_alpha_(0.05, 0.97).CGColor())
+            panel.setContentView_(pill)
             label = NSTextField.labelWithString_(text)
             label.setFont_(NSFont.systemFontOfSize_(13))
-            label.setTextColor_(NSColor.whiteColor())
-            label.setFrame_(NSMakeRect(12, 6, w - 24, h - 12))
-            panel.contentView().addSubview_(label)
+            label.setTextColor_(
+                NSColor.colorWithCalibratedWhite_alpha_(1.0, 0.95))
+            label.setAlignment_(NSTextAlignmentCenter)
+            label.sizeToFit()
+            label_height = label.frame().size.height
+            label.setFrame_(NSMakeRect(18, (h - label_height) / 2.0,
+                                      w - 36, label_height))
+            pill.addSubview_(label)
             self._panel, self._label = panel, label
         self._label.setStringValue_(text)
         loc = NSEvent.mouseLocation()
