@@ -137,7 +137,7 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background: linear-gradient(90deg, rgba(20, 15, 11, 0.5) 0%, rgba(20, 15, 11, 0.38) 50%, rgba(20, 15, 11, 0) 82%);
+    background: linear-gradient(90deg, rgba(20, 15, 11, 0.5) 0%, rgba(20, 15, 11, 0.4) 50%, rgba(20, 15, 11, 0.38) 90%, rgba(20, 15, 11, 0.12) 100%);
   }
   .compact .body {
     padding: 34px 40px;

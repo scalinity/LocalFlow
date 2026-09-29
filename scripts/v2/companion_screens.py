@@ -17,11 +17,12 @@ answers, else from the web view's snapshot.
         [--script STEPS.json]
 
 The review set (every route plus the modal and state shots the
-reference-fidelity review cites, in both themes):
+reference-fidelity review cites), one process per theme so no selection
+or tab carries from one theme's shots into the other's:
 
-    .venv/bin/python tests/v2/context/run_isolated.py \
-        scripts/v2/companion_screens.py --out DIR \
-        --script scripts/v2/companion_review_steps.json
+    for t in light dark; do .venv/bin/python tests/v2/context/run_isolated.py \
+        scripts/v2/companion_screens.py --out DIR --themes $t \
+        --script scripts/v2/companion_review_steps.json; done
 """
 
 from __future__ import annotations

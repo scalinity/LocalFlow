@@ -96,21 +96,6 @@
     true
   ],
   [
-    "insights",
-    "[...document.querySelectorAll(\"[role=tab]\")].find(b => b.textContent.trim() === \"Your Usage\").click(); 1",
-    "insights"
-  ],
-  [
-    "scratchpad",
-    "document.querySelector(\"button.back\")?.click(); 1",
-    "scratchpad"
-  ],
-  [
-    "models",
-    "[...document.querySelectorAll(\"[role=tab]\")].find(b => b.textContent.trim() === \"Engines\").click(); 1",
-    "models"
-  ],
-  [
     "home",
     "window.webkit.messageHandlers.lf.postMessage(JSON.stringify({bridge_version: 1, request_id: \"c1\", command: \"prefs.set_sidebar\", payload: {collapsed: true}})); 1",
     "home-collapsed",

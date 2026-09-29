@@ -7,11 +7,11 @@ synthetic world. What follows records, for each reference, what the
 companion takes from it, what it leaves out, and how close the result is.
 
 The shots named below are regenerated, in both themes and over synthetic
-content only, by:
+content only, one process per theme, by:
 
-    .venv/bin/python tests/v2/context/run_isolated.py \
-        scripts/v2/companion_screens.py --out DIR \
-        --script scripts/v2/companion_review_steps.json
+    for t in light dark; do .venv/bin/python tests/v2/context/run_isolated.py \
+        scripts/v2/companion_screens.py --out DIR --themes $t \
+        --script scripts/v2/companion_review_steps.json; done
 
 Window: 1150 × 715 pt. Each shot is written as `<name>-light.png` and
 `<name>-dark.png`.
