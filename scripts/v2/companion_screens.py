@@ -243,7 +243,15 @@ def main(argv):
     ap.add_argument("--script", default=None,
                     help="a JSON list of [route, js] steps run after"
                          " navigating (for modals and states)")
+    ap.add_argument("--package", help="Load production modules from this .app")
+    ap.add_argument("--seed-out", help="Export synthetic data to a new isolated data home")
     args = ap.parse_args(argv)
+    if args.package:
+        resources = pathlib.Path(args.package).resolve() / "Contents/Resources"
+        sys.path.insert(0, str(resources))
+        import localflow
+        assert pathlib.Path(localflow.__file__).resolve().is_relative_to(resources)
+        print("packaged_modules", localflow.__file__)
     if args.dump_fixtures:
         # Committed fixtures never carry this machine's zone: History,
         # the seed and the reporting zone all resolve TZ (the slash form
@@ -270,6 +278,19 @@ def main(argv):
     try:
         d = h.d
         seed(d, d.store)
+        if args.seed_out:
+            import shutil
+            import sqlite3
+            dest = pathlib.Path(args.seed_out).resolve()
+            dest.mkdir(exist_ok=False)
+            support = dest / "Library/Application Support/LocalFlow"
+            support.mkdir(parents=True)
+            def backup(conn):
+                with sqlite3.connect(support / "v2.db") as copy:
+                    conn.backup(copy)
+            d.store.submit(backup)
+            shutil.copytree(h.tmp / "artifacts", support / "v2-artifacts")
+            print("synthetic_seed_exported", dest)
         spec, _sounds = W.hub_spec(d)
         spec.update(vocabulary_store=d._vocab, display_name="Alex",
                     prefs_path=h.tmp / "companion.json")
@@ -315,6 +336,8 @@ def main(argv):
                         continue
                     js(ctl.host, src)
                     pump(1.0)
+                    if args.eval:
+                        print("eval", name, theme, js(ctl.host, args.eval))
                     window_image(win, ctl.host,
                                  out / f"{name}-{theme}.png")
                     if not (len(step) > 3 and step[3]):

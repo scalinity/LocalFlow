@@ -51,7 +51,7 @@
     height: var(--control-md);
     padding: 0 32px 0 12px;
     border-radius: var(--radius-md);
-    border: 1px solid var(--hairline);
+    border: 1px solid var(--control-border);
     background: var(--field);
     font-size: var(--text-md);
     color: var(--text);
@@ -62,7 +62,7 @@
     padding-left: 10px;
   }
   select:hover {
-    border-color: var(--divider);
+    border-color: var(--text-2);
   }
   select:focus-visible {
     border-color: var(--text-2);

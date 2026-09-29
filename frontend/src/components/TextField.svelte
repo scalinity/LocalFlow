@@ -69,7 +69,7 @@
     height: var(--control-md);
     padding: 0 12px;
     border-radius: var(--radius-md);
-    border: 1px solid var(--hairline);
+    border: 1px solid var(--control-border);
     background: var(--field);
     font-size: var(--text-md);
     color: var(--text);
@@ -91,7 +91,7 @@
     color: var(--text-3);
   }
   input:hover {
-    border-color: var(--divider);
+    border-color: var(--text-2);
   }
   input:focus {
     border-color: var(--text-2);

@@ -237,7 +237,8 @@ class Bridge:
             request_id = env.get("request_id")
             if not isinstance(request_id, str) or len(request_id) > 64:
                 return self._answer(None, "refusal", "bad_envelope")
-            if env.get("bridge_version") != BRIDGE_VERSION:
+            if type(env.get("bridge_version")) is not int or \
+                    env["bridge_version"] != BRIDGE_VERSION:
                 return self._answer(request_id, "refusal",
                                     "bridge_version_mismatch")
             if set(env) - {"bridge_version", "request_id", "command",

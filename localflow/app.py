@@ -70,15 +70,15 @@ COPY_RAW_TITLE = "Copy Raw Transcript of Last Failure"
 
 # Audio of the last few dictations, kept for replay when a transcript
 # comes out wrong (local only, pruned to the newest AUDIO_DEBUG_KEEP)
-AUDIO_DEBUG_DIR = pathlib.Path.home() / "Library" / "Logs" / "LocalFlow-audio"
+AUDIO_DEBUG_DIR = config_mod.data_home() / "Library" / "Logs" / "LocalFlow-audio"
 AUDIO_DEBUG_KEEP = 5
 
-APP_SUPPORT = pathlib.Path.home() / "Library" / "Application Support" / "LocalFlow"
+APP_SUPPORT = config_mod.data_home() / "Library" / "Application Support" / "LocalFlow"
 V2_DB = APP_SUPPORT / "v2.db"
 V2_ARTIFACTS = APP_SUPPORT / "v2-artifacts"
 V2_BACKUPS = APP_SUPPORT / "v2-evidence" / "backups"
 V2_JOURNAL = APP_SUPPORT / "v2-journal"
-V2_EVENTS_DIR = pathlib.Path.home() / "Library" / "Logs" / "LocalFlow"
+V2_EVENTS_DIR = config_mod.data_home() / "Library" / "Logs" / "LocalFlow"
 
 # Hands-free (M03, Spec S09): a release shorter than min_duration_sec (a
 # tap) followed by a new press within DOUBLE_TAP_SEC starts continuous

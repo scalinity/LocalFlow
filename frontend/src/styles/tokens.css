@@ -30,6 +30,7 @@
   --text-inverse: #FCFCFB;
 
   /* lines */
+  --control-border: #888177;
   --hairline: #E7E4DE;
   --divider: #D6D1C7;
 
@@ -159,6 +160,7 @@
     --text-2: #AAA59D;
     --text-3: #908B83;
     --text-inverse: #1A1917;
+    --control-border: #83796E;
     --hairline: #34312C;
     --divider: #454038;
     --accent: #55AAA4;
@@ -213,6 +215,7 @@
   --text-2: #AAA59D;
   --text-3: #908B83;
   --text-inverse: #1A1917;
+  --control-border: #83796E;
   --hairline: #34312C;
   --divider: #454038;
   --accent: #55AAA4;

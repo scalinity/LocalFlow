@@ -74,7 +74,15 @@ ROUTE_READY = ("document.querySelector('nav [aria-current=\"page\"]')"
 def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("--rows", type=int, default=2000)
+    ap.add_argument("--trials", type=int, default=20)
+    ap.add_argument("--cycles", type=int, default=10)
+    ap.add_argument("--package")
     args = ap.parse_args(argv)
+    if args.package:
+        resources = pathlib.Path(args.package).resolve() / "Contents/Resources"
+        sys.path.insert(0, str(resources))
+        import localflow
+        assert pathlib.Path(localflow.__file__).resolve().is_relative_to(resources)
     import m09_world as W
     from test_lifecycle import Harness
     from localflow.v2.ui.companion.controller import CompanionController
@@ -168,10 +176,46 @@ def main(argv):
         CS.pump(1.5)
         out["rss_kb_largest_surface_history"] = {
             "python": rss_kb(me), "webkit": rss_kb(wk_ours)}
-        ctl.on_close()
+        host.on_close()
         CS.pump(5.0)
         out["rss_kb_closed"] = {"python": rss_kb(me),
                                 "webkit": rss_kb(wk_ours)}
+        out["memory_cycles"] = []
+        for cycle in range(1, args.cycles + 1):
+            win.orderFront_(None)  # owned off-screen window; no activation
+            ctl.state.show()
+            CS.pump(0.5)
+            host.on_close()
+            CS.pump(2.0)
+            out["memory_cycles"].append({"cycle": cycle,
+                "python": rss_kb(me), "webkit": rss_kb(wk_ours)})
+        CS.pump(5.0)
+        out["rss_kb_final_settled"] = {"python": rss_kb(me),
+                                      "webkit": rss_kb(wk_ours)}
+        win.orderFront_(None)
+        ctl.state.show()
+        samples = {"route": [], "theme": []}
+        for i in range(args.trials):
+            label = ("Dictionary", "History")[i % 2]
+            ready = ROUTE_READY.format(label=json.dumps(label))
+            if label == "History":
+                ready += " && document.querySelectorAll('main [data-row]').length === 200"
+            samples["route"].append(timed(host, nav_action(label), ready))
+            theme = ("light", "dark")[i % 2]
+            color = ("#fcfcfb", "#1a1917")[i % 2]
+            samples["theme"].append(timed(host,
+                "window.webkit.messageHandlers.lf.postMessage(" + json.dumps(json.dumps({
+                    "bridge_version": 1, "request_id": f"perf-{i}",
+                    "command": "prefs.set_theme", "payload": {"theme": theme}})) + ")",
+                "getComputedStyle(document.documentElement).getPropertyValue('--canvas').trim().toLowerCase() === " + json.dumps(color)))
+        def stats(values):
+            assert values and all(v is not None for v in values), values
+            ordered = sorted(values)
+            import math
+            return {"n": len(values), "p50": ordered[math.ceil(len(values) * .5) - 1],
+                    "p95": ordered[math.ceil(len(values) * .95) - 1],
+                    "max": max(values), "samples": values}
+        out["repeated_ms"] = {key: stats(values) for key, values in samples.items()}
         ctl.state.shutdown()
         win.orderOut_(None)
     finally:

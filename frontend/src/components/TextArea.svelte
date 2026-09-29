@@ -40,7 +40,7 @@
     resize: vertical;
     padding: 10px 12px;
     border-radius: var(--radius-md);
-    border: 1px solid var(--hairline);
+    border: 1px solid var(--control-border);
     background: var(--field);
     font-size: var(--text-md);
     line-height: 1.5;
@@ -51,7 +51,7 @@
     font-size: var(--text-base);
   }
   textarea:hover {
-    border-color: var(--divider);
+    border-color: var(--text-2);
   }
   textarea:focus {
     border-color: var(--text-2);

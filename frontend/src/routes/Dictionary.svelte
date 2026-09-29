@@ -148,8 +148,8 @@
       <Hero tone="umber" ondismiss={() => act('prefs.dismiss', { id: 'hero.dictionary' })}>
         <h2>LocalFlow spells the way <em>you</em> do.</h2>
         <p>
-          Teach it names, jargon and the words the speech model gets wrong. <strong>A correction rewrites what it
-          hears into your spelling</strong> — on this Mac, and nowhere else.
+          Teach it names and jargon. <strong>Corrections turn what it hears into your spelling</strong>
+          — on this Mac, and nowhere else.
         </p>
         <div class="chips">
           <Button variant="paper" onclick={() => (modal = { entry: null })}>Add new word</Button>

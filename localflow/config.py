@@ -143,8 +143,19 @@ DEFAULTS = {
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
+def data_home() -> pathlib.Path:
+    """Optional isolated home for app data; model caches stay independent."""
+    override = os.environ.get("LOCALFLOW_DATA_HOME")
+    if override is None:
+        return pathlib.Path.home()
+    path = pathlib.Path(override)
+    if not path.is_absolute():
+        raise ValueError("LOCALFLOW_DATA_HOME must be an absolute path")
+    return path
+
+
 def user_override_path() -> pathlib.Path:
-    return pathlib.Path.home() / "Library" / "Application Support" / \
+    return data_home() / "Library" / "Application Support" / \
         "LocalFlow" / "config.json"
 
 
@@ -154,7 +165,7 @@ def load(path=None) -> dict:
     candidates = [
         path,
         os.environ.get("LOCALFLOW_CONFIG"),
-        pathlib.Path.home() / "Library" / "Application Support" / "LocalFlow" / "config.json",
+        user_override_path(),
         ROOT / "config.json",
     ]
     cfg = dict(DEFAULTS)

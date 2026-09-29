@@ -200,6 +200,9 @@ def test_envelope_and_schema_refusals():
     assert br.handle(json.dumps([1]))["reason_code"] == "bad_envelope"
     assert br.handle(env(bridge_version=2))["reason_code"] == \
         "bridge_version_mismatch"
+    for invalid_version in (True, 1.0, "1", None):
+        assert br.handle(env(bridge_version=invalid_version))["reason_code"] == \
+            "bridge_version_mismatch"
     assert br.handle(env(command="os.system"))["reason_code"] == \
         "unknown_command"
     assert br.handle(env(extra=1))["reason_code"] == "bad_envelope"
