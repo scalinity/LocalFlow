@@ -848,8 +848,10 @@ def f11_action_frames_do_not_overlap():
     stubs = {}
     if importlib.util.find_spec("AppKit") is None:
         appkit = types.ModuleType("AppKit")
-        for name in ("NSButton", "NSMakeRect", "NSMenu", "NSMenuItem",
-                     "NSPanel", "NSSize", "NSScrollView", "NSTextView",
+        for name in ("NSAppearance", "NSAttributedString", "NSButton",
+                     "NSFont", "NSMakeRect", "NSMenu", "NSMenuItem",
+                     "NSMutableAttributedString", "NSPanel", "NSSize",
+                     "NSScrollView", "NSTextField", "NSTextView",
                      "NSView", "NSWindowStyleMaskClosable",
                      "NSWindowStyleMaskNonactivatingPanel",
                      "NSWindowStyleMaskResizable",

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import Sidebar from './Sidebar.svelte';
   import UtilityMenu from './UtilityMenu.svelte';
+  import { modalOpen } from '../components/Modal.svelte';
   import Settings from '../routes/Settings.svelte';
   import Home from '../routes/Home.svelte';
   import History from '../routes/History.svelte';
@@ -54,14 +55,14 @@
   });
 
   function keydown(e: KeyboardEvent) {
-    if (!e.metaKey || e.altKey || e.ctrlKey) return;
+    if (!e.metaKey || e.altKey || e.ctrlKey || modalOpen()) return;
     if (e.key === ',') {
       e.preventDefault();
       openSettings();
       return;
     }
     const n = Number(e.key);
-    if (n >= 1 && n <= ORDER.length && !app.settingsOpen) {
+    if (n >= 1 && n <= ORDER.length) {
       e.preventDefault();
       navigate(ORDER[n - 1]);
     }

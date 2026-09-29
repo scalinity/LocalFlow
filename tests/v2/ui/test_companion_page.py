@@ -188,6 +188,23 @@ def test_history_arrow_keys_move_the_selection():
         pump(0.6)
         assert w.ctl.state.views["history"].get("selected_id") \
             == rows[0]["id"]
+        # A segmented control is one tab stop; arrows move its selection.
+        w.nav("models")
+        w.js("[...document.querySelectorAll('[role=tab]')].find(b =>"
+             " b.textContent.trim() === 'Training data').click(); 1")
+        pump(0.8)
+        stops = w.js("[...document.querySelectorAll('[role=radio]')]"
+                     ".filter(b => b.tabIndex === 0).length")
+        assert stops == 1, stops
+        w.js("document.querySelector('[role=radio][tabindex=\"0\"]')"
+             ".focus(); 1")
+        before = w.ctl.state.views["models"].get("training_tab")
+        w.key("ArrowRight")
+        pump(0.6)
+        after = w.ctl.state.views["models"].get("training_tab")
+        assert after != before and w.js(
+            "document.activeElement.getAttribute('aria-checked')") \
+            == "true", (before, after)
     print("ok  keyboard: arrow keys move focus and the selection through"
           " History")
 
@@ -230,6 +247,13 @@ def test_modal_cancels_without_writing_and_returns_focus():
         assert w.js("document.activeElement?.textContent.trim()") \
             == "Add new", "focus did not return to the opener"
         w.click("Add new")
+        # A window shortcut waits while a modal is open: typed input is
+        # never thrown away by navigating under it.
+        w.js("window.dispatchEvent(new KeyboardEvent('keydown', {key: '3',"
+             " metaKey: true, bubbles: true})); 1")
+        pump(0.4)
+        assert w.js("!!document.querySelector('[role=dialog]')") and \
+            w.ctl.state.selected_view == "dictionary", "⌘3 left the modal"
         w.click("Cancel")
         assert not w.js("!!document.querySelector('[role=dialog]')")
         assert len(w.d._vocab.entries()) == before, "cancel wrote"
@@ -294,6 +318,32 @@ def test_theme_explicit_live_and_relaunch():
           " the system; the choice persists across a relaunch")
 
 
+def test_quick_scratchpad_leaves_the_new_note_focused():
+    focused = ("document.activeElement?.matches('textarea.note') && "
+               "document.activeElement.value === ''")
+    with PWorld() as w:
+        w.nav("home")
+        w.ctl.scratchpad_quick_open()
+        pump(1.5)
+        assert w.js(focused), "the new note's editor is not focused"
+        assert w.ctl.state.selected_view == "scratchpad"
+    # The first Quick Scratchpad after launch: the page is still loading
+    # when the coordinator asks.
+    with PWorld() as w:
+        from localflow.v2.ui.companion.controller import CompanionController
+        ctl = CompanionController(w.spec)
+        w.d._hub = ctl
+        ctl.scratchpad_quick_open()
+        host = w.host = ctl.host
+        w.win2 = PWorld.open(ctl)
+        pump(1.0)
+        assert w.js(focused), "the first quick-open lost its focus"
+        ctl.state.shutdown()
+        w.win2.orderOut_(None)
+    print("ok  quick scratchpad: the new note's editor has focus, also on"
+          " the first open while the page loads")
+
+
 def test_stale_snapshot_is_ignored():
     with PWorld() as w:
         w.nav("home")
@@ -323,5 +373,6 @@ if __name__ == "__main__":
             test_modal_cancels_without_writing_and_returns_focus,
             test_every_route_fits_the_minimum_and_a_large_window,
             test_theme_explicit_live_and_relaunch,
+            test_quick_scratchpad_leaves_the_new_note_focused,
             test_stale_snapshot_is_ignored):
         test()

@@ -429,6 +429,24 @@ def test_revocation_scrubs_every_pushed_view():
           " the deleted text")
 
 
+def test_retention_on_home_reloads_the_open_recent_row():
+    with CWorld() as w:
+        job, _raw, _applied = seed_history(w)
+        w.select("home")
+        r = w.host.send("history.select", {"kind": "job", "id": job})
+        assert r["status"] == "success", r
+        w.drain()
+        assert w.host.latest("history")["detail"] is not None
+        # A retention pass while Home shows the row inline.
+        w.ctl.state.revalidate()
+        w.drain()
+        latest = w.host.latest("history")
+        assert latest["detail"] is not None or latest["detail_loading"], \
+            "Home's open row was dropped and never reloaded"
+        assert latest["detail"] is not None, latest["detail_error"]
+    print("ok  retention: Home's open recent row reloads after a pass")
+
+
 def test_home_read_model_is_real_and_bounded():
     with CWorld() as w:
         for i in range(25):
@@ -606,6 +624,7 @@ if __name__ == "__main__":
             test_retry_refuses_non_failed_and_imported,
             test_teach_binds_and_reuses_op_after_unknown,
             test_revocation_scrubs_every_pushed_view,
+            test_retention_on_home_reloads_the_open_recent_row,
             test_home_read_model_is_real_and_bounded,
             test_dictionary_double_cas_and_unapproved_add,
             test_dictionary_import_export_never_take_a_path_from_the_page,

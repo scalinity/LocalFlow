@@ -49,6 +49,12 @@ class CompanionState(HubState):
                 if name != self.selected_view:
                     self.views[name].update(data=None)
         super().revalidate()
+        # Home shows the selected History row's detail inline: reload it
+        # there too, as HubState does for a visible History.
+        if self.selected_view == "home" and \
+                self.views["history"].get("selected_id"):
+            self._spawn_history_detail()
+            self._publish()
 
     # ---- Dictionary (M05 vocabulary) --------------------------------------
 

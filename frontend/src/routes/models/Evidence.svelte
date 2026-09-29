@@ -70,7 +70,7 @@
     {/if}
   </div>
 
-  <div class="inspector" aria-live="polite">
+  <div class="inspector">
     {#if d}
       <header class="head">
         <div>

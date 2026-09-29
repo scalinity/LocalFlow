@@ -2,7 +2,6 @@
  "shell": {
   "view": "home",
   "theme": "light",
-  "is_dark": false,
   "sidebar_collapsed": false,
   "engine": {
    "asr": "ready",
@@ -20,7 +19,7 @@
    "error": null,
    "data": {
     "summary": {
-     "today_count": 5,
+     "today_count": 6,
      "total_jobs": 58,
      "legacy_rows": 0,
      "last_dictation": {
@@ -42,7 +41,7 @@
       "rows": [
        {
         "kind": "job",
-        "id": "job-bf8ae00a090e480e9687e548b1a5bb6c",
+        "id": "job-eace5b89e26546348cf30cd9587e8d23",
         "date": "2026-09-29",
         "time": "11:42 am",
         "time_quality": "known",
@@ -55,7 +54,7 @@
        },
        {
         "kind": "job",
-        "id": "job-3dc4454e350d4fb6a83233e094eb034f",
+        "id": "job-8f1ba94c7c9449c59c937309d878f1eb",
         "date": "2026-09-29",
         "time": "11:05 am",
         "time_quality": "known",
@@ -68,7 +67,7 @@
        },
        {
         "kind": "job",
-        "id": "job-12849d5e338f4e8e80b1a49fce0f632c",
+        "id": "job-e18f5e1d95bf446ca886d9d8271ab205",
         "date": "2026-09-29",
         "time": "10:28 am",
         "time_quality": "known",
@@ -81,7 +80,7 @@
        },
        {
         "kind": "job",
-        "id": "job-b8918215c052449babb570a4d6c21573",
+        "id": "job-4f04f2d07a0747d59fde20ec0d49b920",
         "date": "2026-09-29",
         "time": "9:51 am",
         "time_quality": "known",
@@ -94,15 +93,28 @@
        },
        {
         "kind": "job",
-        "id": "job-0b90f857c8a14cc28ffff049d471f9ff",
+        "id": "job-005a406a71874374b2469ae1b9b64cc4",
         "date": "2026-09-29",
-        "time": "4:49 am",
+        "time": "6:11 am",
         "time_quality": "known",
         "app": null,
         "mode": "llm",
         "state": "insertion_unverified",
         "state_reason": null,
         "preview": "note 1: can we move the design review to thursday afternoon so the prototype has one more pass? add oat milk, lemons and fresh basil to the …",
+        "has_audio": true
+       },
+       {
+        "kind": "job",
+        "id": "job-b1f11044b73945eb992656a13f62b851",
+        "date": "2026-09-29",
+        "time": "1:11 am",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 2: remember to water the plants before the long weekend. draft a short note thanking the team for the careful review of the parser chan…",
         "has_audio": true
        }
       ]
@@ -112,22 +124,9 @@
       "rows": [
        {
         "kind": "job",
-        "id": "job-7a5094414533468e85fb0854888fe7e4",
+        "id": "job-ba474dcd76e0487cb36603c9c4f0eed9",
         "date": "2026-09-28",
-        "time": "11:49 pm",
-        "time_quality": "known",
-        "app": null,
-        "mode": "llm",
-        "state": "insertion_unverified",
-        "state_reason": null,
-        "preview": "note 2: remember to water the plants before the long weekend. draft a short note thanking the team for the careful review of the parser chan…",
-        "has_audio": true
-       },
-       {
-        "kind": "job",
-        "id": "job-4d4c461d161e4fec980257f135b3b5af",
-        "date": "2026-09-28",
-        "time": "6:49 pm",
+        "time": "8:11 pm",
         "time_quality": "known",
         "app": null,
         "mode": "llm",
@@ -138,9 +137,9 @@
        },
        {
         "kind": "job",
-        "id": "job-9bbf290a2d7e41bfb6bc15f13d5ae768",
+        "id": "job-64725af605d64e9db434fa1592a868f9",
         "date": "2026-09-28",
-        "time": "1:49 pm",
+        "time": "3:11 pm",
         "time_quality": "known",
         "app": null,
         "mode": "llm",
@@ -151,7 +150,7 @@
        },
        {
         "kind": "job",
-        "id": "job-307d8f6e24f04796848d19302c9fc851",
+        "id": "job-98404f45dae84dc39ca5a147b04fb0aa",
         "date": "2026-09-28",
         "time": "11:42 am",
         "time_quality": "known",
@@ -164,7 +163,7 @@
        },
        {
         "kind": "job",
-        "id": "job-f083d536fb71432fb0c47b60afd30762",
+        "id": "job-a78d6c3afe9648c991288636235ab54a",
         "date": "2026-09-28",
         "time": "11:05 am",
         "time_quality": "known",
@@ -177,7 +176,7 @@
        },
        {
         "kind": "job",
-        "id": "job-83aff881f0264908aa13fbc2f676616e",
+        "id": "job-82eafbf6d9c84d2f89dc637acaa3da14",
         "date": "2026-09-28",
         "time": "10:28 am",
         "time_quality": "known",
@@ -190,7 +189,20 @@
        },
        {
         "kind": "job",
-        "id": "job-bff8040aa1804a119f9bb0028fb368b5",
+        "id": "job-1f0f3d2b715b43c0934853ee80426c17",
+        "date": "2026-09-28",
+        "time": "10:11 am",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 5: the chart needs a clearer legend and a label on the vertical axis. pick up the prints from the framing shop on saturday. can we move…",
+        "has_audio": true
+       },
+       {
+        "kind": "job",
+        "id": "job-ec385df071ff492b962240a2c35bf8f7",
         "date": "2026-09-28",
         "time": "9:51 am",
         "time_quality": "known",
@@ -203,28 +215,28 @@
        },
        {
         "kind": "job",
-        "id": "job-93f63412ec614da29c7afa38c457d6ad",
+        "id": "job-9ddd60d96be44744a5db91194f48e4ef",
         "date": "2026-09-28",
-        "time": "8:49 am",
-        "time_quality": "known",
-        "app": null,
-        "mode": "llm",
-        "state": "insertion_unverified",
-        "state_reason": null,
-        "preview": "note 5: the chart needs a clearer legend and a label on the vertical axis. pick up the prints from the framing shop on saturday. can we move…",
-        "has_audio": true
-       },
-       {
-        "kind": "job",
-        "id": "job-0dfbfce9dbe74a7aa944371e3c186f64",
-        "date": "2026-09-28",
-        "time": "3:49 am",
+        "time": "5:11 am",
         "time_quality": "known",
         "app": null,
         "mode": "llm",
         "state": "insertion_unverified",
         "state_reason": null,
         "preview": "note 6: add oat milk, lemons and fresh basil to the shopping list. the build finished and every check passed, so i'll tag the release after …",
+        "has_audio": true
+       },
+       {
+        "kind": "job",
+        "id": "job-fa2f78d9f59348749e846378df58a7b9",
+        "date": "2026-09-28",
+        "time": "12:11 am",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 7: draft a short note thanking the team for the careful review of the parser changes. the train leaves at seven fifteen tomorrow mornin…",
         "has_audio": true
        }
       ]
@@ -234,22 +246,9 @@
       "rows": [
        {
         "kind": "job",
-        "id": "job-b2be10412e2a49faa1ef486bf92789c9",
+        "id": "job-07844efbab1c4ddb8ba4c4f656ee7d7c",
         "date": "2026-09-27",
-        "time": "10:49 pm",
-        "time_quality": "known",
-        "app": null,
-        "mode": "llm",
-        "state": "insertion_unverified",
-        "state_reason": null,
-        "preview": "note 7: draft a short note thanking the team for the careful review of the parser changes. the train leaves at seven fifteen tomorrow mornin…",
-        "has_audio": true
-       },
-       {
-        "kind": "job",
-        "id": "job-3271d44e5a1d4422aca919d5abba411c",
-        "date": "2026-09-27",
-        "time": "5:49 pm",
+        "time": "7:11 pm",
         "time_quality": "known",
         "app": null,
         "mode": "llm",
@@ -260,9 +259,9 @@
        },
        {
         "kind": "job",
-        "id": "job-3d7368ecf88548f6ab8c798854a482f4",
+        "id": "job-0604913c7dc24d8fa7fee9259b35619d",
         "date": "2026-09-27",
-        "time": "12:49 pm",
+        "time": "2:11 pm",
         "time_quality": "known",
         "app": null,
         "mode": "llm",
@@ -273,7 +272,7 @@
        },
        {
         "kind": "job",
-        "id": "job-f1f784457e11495582e966b54a5cebd9",
+        "id": "job-d1f92204a58f4ba7812d31e17b201c96",
         "date": "2026-09-27",
         "time": "11:42 am",
         "time_quality": "known",
@@ -299,7 +298,7 @@
     "profile": {
      "state": "current",
      "invalidated_reason": null,
-     "computed_at_utc": "2026-09-29T05:49:47.600Z",
+     "computed_at_utc": "2026-09-29T07:11:49.632Z",
      "eligible_words": 2578,
      "min_words_threshold": 2000,
      "cards": [
@@ -333,7 +332,7 @@
      "rows": [
       {
        "kind": "job",
-       "id": "job-bf8ae00a090e480e9687e548b1a5bb6c",
+       "id": "job-eace5b89e26546348cf30cd9587e8d23",
        "date": "2026-09-29",
        "time": "11:42 am",
        "time_quality": "known",
@@ -346,7 +345,7 @@
       },
       {
        "kind": "job",
-       "id": "job-3dc4454e350d4fb6a83233e094eb034f",
+       "id": "job-8f1ba94c7c9449c59c937309d878f1eb",
        "date": "2026-09-29",
        "time": "11:05 am",
        "time_quality": "known",
@@ -359,7 +358,7 @@
       },
       {
        "kind": "job",
-       "id": "job-12849d5e338f4e8e80b1a49fce0f632c",
+       "id": "job-e18f5e1d95bf446ca886d9d8271ab205",
        "date": "2026-09-29",
        "time": "10:28 am",
        "time_quality": "known",
@@ -372,7 +371,7 @@
       },
       {
        "kind": "job",
-       "id": "job-b8918215c052449babb570a4d6c21573",
+       "id": "job-4f04f2d07a0747d59fde20ec0d49b920",
        "date": "2026-09-29",
        "time": "9:51 am",
        "time_quality": "known",
@@ -385,15 +384,28 @@
       },
       {
        "kind": "job",
-       "id": "job-0b90f857c8a14cc28ffff049d471f9ff",
+       "id": "job-005a406a71874374b2469ae1b9b64cc4",
        "date": "2026-09-29",
-       "time": "4:49 am",
+       "time": "6:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
        "state": "insertion_unverified",
        "state_reason": null,
        "preview": "note 1: can we move the design review to thursday afternoon so the prototype has one more pass? add oat milk, lemons and fresh basil to the …",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-b1f11044b73945eb992656a13f62b851",
+       "date": "2026-09-29",
+       "time": "1:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 2: remember to water the plants before the long weekend. draft a short note thanking the team for the careful review of the parser chan…",
        "has_audio": true
       }
      ]
@@ -403,22 +415,9 @@
      "rows": [
       {
        "kind": "job",
-       "id": "job-7a5094414533468e85fb0854888fe7e4",
+       "id": "job-ba474dcd76e0487cb36603c9c4f0eed9",
        "date": "2026-09-28",
-       "time": "11:49 pm",
-       "time_quality": "known",
-       "app": null,
-       "mode": "llm",
-       "state": "insertion_unverified",
-       "state_reason": null,
-       "preview": "note 2: remember to water the plants before the long weekend. draft a short note thanking the team for the careful review of the parser chan…",
-       "has_audio": true
-      },
-      {
-       "kind": "job",
-       "id": "job-4d4c461d161e4fec980257f135b3b5af",
-       "date": "2026-09-28",
-       "time": "6:49 pm",
+       "time": "8:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -429,9 +428,9 @@
       },
       {
        "kind": "job",
-       "id": "job-9bbf290a2d7e41bfb6bc15f13d5ae768",
+       "id": "job-64725af605d64e9db434fa1592a868f9",
        "date": "2026-09-28",
-       "time": "1:49 pm",
+       "time": "3:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -442,7 +441,7 @@
       },
       {
        "kind": "job",
-       "id": "job-307d8f6e24f04796848d19302c9fc851",
+       "id": "job-98404f45dae84dc39ca5a147b04fb0aa",
        "date": "2026-09-28",
        "time": "11:42 am",
        "time_quality": "known",
@@ -455,7 +454,7 @@
       },
       {
        "kind": "job",
-       "id": "job-f083d536fb71432fb0c47b60afd30762",
+       "id": "job-a78d6c3afe9648c991288636235ab54a",
        "date": "2026-09-28",
        "time": "11:05 am",
        "time_quality": "known",
@@ -468,7 +467,7 @@
       },
       {
        "kind": "job",
-       "id": "job-83aff881f0264908aa13fbc2f676616e",
+       "id": "job-82eafbf6d9c84d2f89dc637acaa3da14",
        "date": "2026-09-28",
        "time": "10:28 am",
        "time_quality": "known",
@@ -481,7 +480,20 @@
       },
       {
        "kind": "job",
-       "id": "job-bff8040aa1804a119f9bb0028fb368b5",
+       "id": "job-1f0f3d2b715b43c0934853ee80426c17",
+       "date": "2026-09-28",
+       "time": "10:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 5: the chart needs a clearer legend and a label on the vertical axis. pick up the prints from the framing shop on saturday. can we move…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-ec385df071ff492b962240a2c35bf8f7",
        "date": "2026-09-28",
        "time": "9:51 am",
        "time_quality": "known",
@@ -494,28 +506,28 @@
       },
       {
        "kind": "job",
-       "id": "job-93f63412ec614da29c7afa38c457d6ad",
+       "id": "job-9ddd60d96be44744a5db91194f48e4ef",
        "date": "2026-09-28",
-       "time": "8:49 am",
-       "time_quality": "known",
-       "app": null,
-       "mode": "llm",
-       "state": "insertion_unverified",
-       "state_reason": null,
-       "preview": "note 5: the chart needs a clearer legend and a label on the vertical axis. pick up the prints from the framing shop on saturday. can we move…",
-       "has_audio": true
-      },
-      {
-       "kind": "job",
-       "id": "job-0dfbfce9dbe74a7aa944371e3c186f64",
-       "date": "2026-09-28",
-       "time": "3:49 am",
+       "time": "5:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
        "state": "insertion_unverified",
        "state_reason": null,
        "preview": "note 6: add oat milk, lemons and fresh basil to the shopping list. the build finished and every check passed, so i'll tag the release after …",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-fa2f78d9f59348749e846378df58a7b9",
+       "date": "2026-09-28",
+       "time": "12:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 7: draft a short note thanking the team for the careful review of the parser changes. the train leaves at seven fifteen tomorrow mornin…",
        "has_audio": true
       }
      ]
@@ -525,22 +537,9 @@
      "rows": [
       {
        "kind": "job",
-       "id": "job-b2be10412e2a49faa1ef486bf92789c9",
+       "id": "job-07844efbab1c4ddb8ba4c4f656ee7d7c",
        "date": "2026-09-27",
-       "time": "10:49 pm",
-       "time_quality": "known",
-       "app": null,
-       "mode": "llm",
-       "state": "insertion_unverified",
-       "state_reason": null,
-       "preview": "note 7: draft a short note thanking the team for the careful review of the parser changes. the train leaves at seven fifteen tomorrow mornin…",
-       "has_audio": true
-      },
-      {
-       "kind": "job",
-       "id": "job-3271d44e5a1d4422aca919d5abba411c",
-       "date": "2026-09-27",
-       "time": "5:49 pm",
+       "time": "7:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -551,9 +550,9 @@
       },
       {
        "kind": "job",
-       "id": "job-3d7368ecf88548f6ab8c798854a482f4",
+       "id": "job-0604913c7dc24d8fa7fee9259b35619d",
        "date": "2026-09-27",
-       "time": "12:49 pm",
+       "time": "2:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -564,7 +563,7 @@
       },
       {
        "kind": "job",
-       "id": "job-f1f784457e11495582e966b54a5cebd9",
+       "id": "job-d1f92204a58f4ba7812d31e17b201c96",
        "date": "2026-09-27",
        "time": "11:42 am",
        "time_quality": "known",
@@ -577,7 +576,7 @@
       },
       {
        "kind": "job",
-       "id": "job-89dd4f8aec9d4e1ab3dfa99b9c2f8f41",
+       "id": "job-ffab0efb1d8d46b69fa7320b7a5101a8",
        "date": "2026-09-27",
        "time": "11:05 am",
        "time_quality": "known",
@@ -590,7 +589,7 @@
       },
       {
        "kind": "job",
-       "id": "job-fe1d4102d4844b99969557b29ac1dd6d",
+       "id": "job-4978569ba2974584ae3a52005213bca7",
        "date": "2026-09-27",
        "time": "10:28 am",
        "time_quality": "known",
@@ -603,7 +602,7 @@
       },
       {
        "kind": "job",
-       "id": "job-5d067591946647c9ad88e7470122e5e3",
+       "id": "job-4fec7a88c45d4365bda04d85e80f8a66",
        "date": "2026-09-27",
        "time": "9:51 am",
        "time_quality": "known",
@@ -616,9 +615,9 @@
       },
       {
        "kind": "job",
-       "id": "job-beecae40c2b44452ac236bf82b308d4a",
+       "id": "job-12b0cd16dadc46a8babfb0630aa9cd76",
        "date": "2026-09-27",
-       "time": "7:49 am",
+       "time": "9:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -629,9 +628,9 @@
       },
       {
        "kind": "job",
-       "id": "job-3a63dea7daf648a7b7a810cc1870b746",
+       "id": "job-480d6117d2c1466c9ccb9b66daabb168",
        "date": "2026-09-27",
-       "time": "2:49 am",
+       "time": "4:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -647,9 +646,9 @@
      "rows": [
       {
        "kind": "job",
-       "id": "job-e79cba0cd57d4fc2a03cdc17586aaf20",
+       "id": "job-78ff82b3b4444be7a9aae7a82c7361cf",
        "date": "2026-09-26",
-       "time": "9:49 pm",
+       "time": "11:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -660,9 +659,9 @@
       },
       {
        "kind": "job",
-       "id": "job-688562c4932943a4bcdbd136c4827463",
+       "id": "job-c2923ae233a540a181689f7523b5a4c4",
        "date": "2026-09-26",
-       "time": "4:49 pm",
+       "time": "6:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -673,9 +672,9 @@
       },
       {
        "kind": "job",
-       "id": "job-a505d3a666824b1faa8b0a3ae9b1230d",
+       "id": "job-43660b1cda0347898458d0597a879602",
        "date": "2026-09-26",
-       "time": "11:49 am",
+       "time": "1:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -686,7 +685,7 @@
       },
       {
        "kind": "job",
-       "id": "job-b43f104c7ae3430494d85d5395bf228b",
+       "id": "job-52070f7cc5824d48872de448d0a98359",
        "date": "2026-09-26",
        "time": "11:42 am",
        "time_quality": "known",
@@ -699,7 +698,7 @@
       },
       {
        "kind": "job",
-       "id": "job-c0d3db3b4a3443a69bd7e99130120ab2",
+       "id": "job-0c94abb4d919468d8fa51410f50cfae6",
        "date": "2026-09-26",
        "time": "11:05 am",
        "time_quality": "known",
@@ -712,9 +711,9 @@
       },
       {
        "kind": "job",
-       "id": "job-68813759a60242479239b25a998d97d7",
+       "id": "job-3ef390b1f5c04d8e9d788e28c21402e8",
        "date": "2026-09-26",
-       "time": "6:49 am",
+       "time": "8:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -725,9 +724,9 @@
       },
       {
        "kind": "job",
-       "id": "job-f434d9d0c8ee4245a0e1ed16e6ee8bfb",
+       "id": "job-009a982f0f73400a84721acf72ed10cb",
        "date": "2026-09-26",
-       "time": "1:49 am",
+       "time": "3:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -743,9 +742,9 @@
      "rows": [
       {
        "kind": "job",
-       "id": "job-779037e6e02349ca8c8e0ee36913c211",
+       "id": "job-cba59bd8524d41a880d615d41dbe9740",
        "date": "2026-09-25",
-       "time": "8:49 pm",
+       "time": "10:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -756,9 +755,9 @@
       },
       {
        "kind": "job",
-       "id": "job-40f6d026301b4ed5b356efa654810418",
+       "id": "job-e6c6397c9f904096ba31ed04aa3ac8f3",
        "date": "2026-09-25",
-       "time": "3:49 pm",
+       "time": "5:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -769,9 +768,9 @@
       },
       {
        "kind": "job",
-       "id": "job-d64c313e52d04ba89d6b00110074c1fd",
+       "id": "job-c46d8e34d7ce479a8bb3fd647f8b0582",
        "date": "2026-09-25",
-       "time": "10:49 am",
+       "time": "12:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -782,9 +781,9 @@
       },
       {
        "kind": "job",
-       "id": "job-ad829aa9ee06459f99556ba0606d2f46",
+       "id": "job-0d6da61558cf4f1daa83405f86b62b29",
        "date": "2026-09-25",
-       "time": "5:49 am",
+       "time": "7:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -795,9 +794,9 @@
       },
       {
        "kind": "job",
-       "id": "job-847be2c694a841098c69fe092ff2863e",
+       "id": "job-d22e013306154918a0d7663e4f19ca2f",
        "date": "2026-09-25",
-       "time": "12:49 am",
+       "time": "2:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -813,9 +812,9 @@
      "rows": [
       {
        "kind": "job",
-       "id": "job-facd4f8939c64e058fdf7b1c2cdd9e1a",
+       "id": "job-e37244d193464b2abece14cc143f803f",
        "date": "2026-09-24",
-       "time": "7:49 pm",
+       "time": "9:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -826,9 +825,9 @@
       },
       {
        "kind": "job",
-       "id": "job-037cbd5eb8a84c9c9fb78e82d91ae75a",
+       "id": "job-b95e72146c334e1ea871ea7fdeaff91f",
        "date": "2026-09-24",
-       "time": "2:49 pm",
+       "time": "4:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -839,9 +838,9 @@
       },
       {
        "kind": "job",
-       "id": "job-7fcbb34085af44edbcaa328824ee420e",
+       "id": "job-68271d39885446c5be1e6d7c046c4c56",
        "date": "2026-09-24",
-       "time": "9:49 am",
+       "time": "11:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -852,15 +851,28 @@
       },
       {
        "kind": "job",
-       "id": "job-7abb64223eab459aba1d87bfd6d9e763",
+       "id": "job-684e9b5b5d1e45c3b326a8b3e133ec03",
        "date": "2026-09-24",
-       "time": "4:49 am",
+       "time": "6:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
        "state": "insertion_unverified",
        "state_reason": null,
        "preview": "note 25: the build finished and every check passed, so i'll tag the release after lunch. remember to water the plants before the long weeken…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-e6fab1312b41401e970f8425cad9cdaf",
+       "date": "2026-09-24",
+       "time": "1:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 26: the train leaves at seven fifteen tomorrow morning from platform four. rename the folder to archive before sharing it with the grou…",
        "has_audio": true
       }
      ]
@@ -870,22 +882,9 @@
      "rows": [
       {
        "kind": "job",
-       "id": "job-c785ff1815154f479f679b6da316915e",
+       "id": "job-3e45f64d51c94bf093a4e5a082d1fbce",
        "date": "2026-09-23",
-       "time": "11:49 pm",
-       "time_quality": "known",
-       "app": null,
-       "mode": "llm",
-       "state": "insertion_unverified",
-       "state_reason": null,
-       "preview": "note 26: the train leaves at seven fifteen tomorrow morning from platform four. rename the folder to archive before sharing it with the grou…",
-       "has_audio": true
-      },
-      {
-       "kind": "job",
-       "id": "job-64eae10717214146b1b25252c77cd9eb",
-       "date": "2026-09-23",
-       "time": "6:49 pm",
+       "time": "8:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -896,9 +895,9 @@
       },
       {
        "kind": "job",
-       "id": "job-f692e7bd723449b1ae44f3e2b5a3685e",
+       "id": "job-57f216b38b9c44e9b60ff92b9c11bd83",
        "date": "2026-09-23",
-       "time": "1:49 pm",
+       "time": "3:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -909,9 +908,9 @@
       },
       {
        "kind": "job",
-       "id": "job-01804c3098df4970af216dcf441c553f",
+       "id": "job-449f15554183463984bd8775d8851843",
        "date": "2026-09-23",
-       "time": "8:49 am",
+       "time": "10:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -922,15 +921,28 @@
       },
       {
        "kind": "job",
-       "id": "job-6eb3c9ebe28c46b9bd797662376a4780",
+       "id": "job-91e4f69dadac4db8ad475a7aaa23611c",
        "date": "2026-09-23",
-       "time": "3:49 am",
+       "time": "5:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
        "state": "insertion_unverified",
        "state_reason": null,
        "preview": "note 30: remember to water the plants before the long weekend. draft a short note thanking the team for the careful review of the parser cha…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-c77b2fbfb7df4f8abdaedad837485d3c",
+       "date": "2026-09-23",
+       "time": "12:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 31: rename the folder to archive before sharing it with the group. let's keep the introduction to two paragraphs and move the history t…",
        "has_audio": true
       }
      ]
@@ -940,22 +952,9 @@
      "rows": [
       {
        "kind": "job",
-       "id": "job-e1dcf18c1af545189a7b5da61b593a1f",
+       "id": "job-f032405909d1451782582a9036c70535",
        "date": "2026-09-22",
-       "time": "10:49 pm",
-       "time_quality": "known",
-       "app": null,
-       "mode": "llm",
-       "state": "insertion_unverified",
-       "state_reason": null,
-       "preview": "note 31: rename the folder to archive before sharing it with the group. let's keep the introduction to two paragraphs and move the history t…",
-       "has_audio": true
-      },
-      {
-       "kind": "job",
-       "id": "job-df659d3b542b449eacf5584512468932",
-       "date": "2026-09-22",
-       "time": "5:49 pm",
+       "time": "7:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -966,9 +965,9 @@
       },
       {
        "kind": "job",
-       "id": "job-249a25b1ac15489d8b21b93e62d36c87",
+       "id": "job-c1d72b835a09424f9e2b5b7081129df0",
        "date": "2026-09-22",
-       "time": "12:49 pm",
+       "time": "2:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -979,20 +978,7 @@
       },
       {
        "kind": "job",
-       "id": "job-7caf758e2faf479c8bfbb2a38dd5c7fd",
-       "date": "2026-09-22",
-       "time": "10:00 am",
-       "time_quality": "known",
-       "app": null,
-       "mode": "llm",
-       "state": "insertion_unverified",
-       "state_reason": null,
-       "preview": "call the library about the overdue book",
-       "has_audio": true
-      },
-      {
-       "kind": "job",
-       "id": "job-9700ff51111a40e4ae60b263bcd35264",
+       "id": "job-59d004ad0c5f402da267a29c9c5d8df5",
        "date": "2026-09-22",
        "time": "10:00 am",
        "time_quality": "known",
@@ -1005,9 +991,22 @@
       },
       {
        "kind": "job",
-       "id": "job-1818ce4df16b4752bd4a4dd4330a9c33",
+       "id": "job-ad7f6770e0634c70bd3235ca073dbaf2",
        "date": "2026-09-22",
-       "time": "7:49 am",
+       "time": "10:00 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "call the library about the overdue book",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-87d8cd1a4b544830a621ec796260b8be",
+       "date": "2026-09-22",
+       "time": "9:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -1018,9 +1017,9 @@
       },
       {
        "kind": "job",
-       "id": "job-3e6d7ee80356464c8af0facb9beb0e4f",
+       "id": "job-dd5eebd4c996487ba8342363ec349fe1",
        "date": "2026-09-22",
-       "time": "2:49 am",
+       "time": "4:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -1036,9 +1035,9 @@
      "rows": [
       {
        "kind": "job",
-       "id": "job-e4e27a9214ab4f99a4be5ec615d1bad6",
+       "id": "job-7231a8de6489461cabc5526a84a080e5",
        "date": "2026-09-21",
-       "time": "9:49 pm",
+       "time": "11:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -1049,9 +1048,9 @@
       },
       {
        "kind": "job",
-       "id": "job-bd1c2d84aaa243f2b25a34de657d2280",
+       "id": "job-101ab8f1603340b2b9defe51355bdc96",
        "date": "2026-09-21",
-       "time": "4:49 pm",
+       "time": "6:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -1062,9 +1061,9 @@
       },
       {
        "kind": "job",
-       "id": "job-e4e22db50de1484cade1bcbdf18952ad",
+       "id": "job-a282520e447042fcafb1eef0c5d8ec5c",
        "date": "2026-09-21",
-       "time": "11:49 am",
+       "time": "1:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -1075,9 +1074,9 @@
       },
       {
        "kind": "job",
-       "id": "job-b82a4b8a82124f9a8cd070418aa1a752",
+       "id": "job-a81c957dc7eb475598103dde4cc17e56",
        "date": "2026-09-21",
-       "time": "6:49 am",
+       "time": "8:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -1088,9 +1087,9 @@
       },
       {
        "kind": "job",
-       "id": "job-4595dfb5046d437bbf74e2cbc5f45fb6",
+       "id": "job-5d7ed313f3f84ed7af12b5168d6b33e0",
        "date": "2026-09-21",
-       "time": "1:49 am",
+       "time": "3:11 am",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -1106,9 +1105,9 @@
      "rows": [
       {
        "kind": "job",
-       "id": "job-71f936d373cd491fa984369913a5f490",
+       "id": "job-1b892b0253bb49bb8d19308a2264fa91",
        "date": "2026-09-20",
-       "time": "8:49 pm",
+       "time": "10:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -1119,9 +1118,9 @@
       },
       {
        "kind": "job",
-       "id": "job-4ca58da7fb234760a858563596f92efb",
+       "id": "job-45875584ab1b4155820f03bd36ae9236",
        "date": "2026-09-20",
-       "time": "3:49 pm",
+       "time": "5:11 pm",
        "time_quality": "known",
        "app": null,
        "mode": "llm",
@@ -1136,14 +1135,14 @@
    "total": 58,
    "selected": {
     "kind": "job",
-    "id": "job-bf8ae00a090e480e9687e548b1a5bb6c"
+    "id": "job-eace5b89e26546348cf30cd9587e8d23"
    },
    "detail_loading": false,
    "detail_error": null,
    "detail": {
     "token": "hi1",
     "kind": "job",
-    "job_id": "job-bf8ae00a090e480e9687e548b1a5bb6c",
+    "job_id": "job-eace5b89e26546348cf30cd9587e8d23",
     "captured_at_utc": "2026-09-29T11:42:00.000Z",
     "time": "11:42 am",
     "time_quality": "known",
@@ -1208,7 +1207,7 @@
    "search": "",
    "entries": [
     {
-     "entry_id": "vocab-4137e04f30bb40d8b7d73cc01d467964",
+     "entry_id": "vocab-9668a786ca0e403699a521475ffe6a3e",
      "canonical": "Claude",
      "kind": "term",
      "scope": [
@@ -1232,7 +1231,7 @@
      ]
     },
     {
-     "entry_id": "vocab-940560c57ce54dc78ebb69f6d7b942ae",
+     "entry_id": "vocab-58bffea8813740ff81e1b2d67d483da1",
      "canonical": "Claude Code",
      "kind": "term",
      "scope": [
@@ -1256,7 +1255,7 @@
      ]
     },
     {
-     "entry_id": "vocab-229c0f85afec4f75819da5a98faac50d",
+     "entry_id": "vocab-314f1370084a4b0db5856aaf9f020150",
      "canonical": "Figma",
      "kind": "term",
      "scope": [
@@ -1275,7 +1274,7 @@
      "aliases": []
     },
     {
-     "entry_id": "vocab-c52c98e4fc8848f981805d145559fb1a",
+     "entry_id": "vocab-a76f94d38a9a49feb12d644dd7304b35",
      "canonical": "Kubernetes",
      "kind": "term",
      "scope": [
@@ -1299,7 +1298,7 @@
      ]
     },
     {
-     "entry_id": "vocab-f0a5b54d880442daaaaa1bb299bdeb77",
+     "entry_id": "vocab-f4271ff8f046484e9b63cf2bb19d01e8",
      "canonical": "LocalFlow",
      "kind": "term",
      "scope": [
@@ -1323,7 +1322,7 @@
      ]
     },
     {
-     "entry_id": "vocab-c0071d6abc314b17a3bfa5defe047435",
+     "entry_id": "vocab-fc6dff0351334c809dfc42f497e0ae6d",
      "canonical": "Parakeet",
      "kind": "term",
      "scope": [
@@ -1347,7 +1346,7 @@
      ]
     },
     {
-     "entry_id": "vocab-a07535d5950c467f8990f9c17eba60a5",
+     "entry_id": "vocab-ef15a6510fe846a494319735e41e102a",
      "canonical": "SwiftUI",
      "kind": "term",
      "scope": [
@@ -1412,7 +1411,7 @@
    "note": null,
    "rules": [
     {
-     "rule_id": "style-fb9db28bc6a746f1aa98cc4e66125220",
+     "rule_id": "style-cd4be6fea842453fbcefe36412d88da7",
      "name": "Email stays polished",
      "scope": [
       "category",
@@ -1425,7 +1424,7 @@
      "revision": 1
     },
     {
-     "rule_id": "style-158b4b80bf804d2cb79eb85d42081be7",
+     "rule_id": "style-2c1c0c52ffc14bc790c512880b2b5746",
      "name": "Terminal is raw",
      "scope": [
       "app",
@@ -1476,7 +1475,7 @@
    "note": null,
    "snippets": [
     {
-     "snippet_id": "snip-bccade48adec42d797b6b8c49b46189b",
+     "snippet_id": "snip-bb50df5797444b01bab6a6164a5194ed",
      "trigger": "my address",
      "name": "my address",
      "content": "14 Harbour Lane, Brightwater",
@@ -1486,7 +1485,7 @@
      "revision": 1
     },
     {
-     "snippet_id": "snip-bb456837771a4763a2ec3064c32bfb39",
+     "snippet_id": "snip-39515cf7efb548efa6276d6f61536c1c",
      "trigger": "review prompt",
      "name": "review prompt",
      "content": "Review this change for correctness first, then clarity. List issues by severity.",
@@ -1496,7 +1495,7 @@
      "revision": 1
     },
     {
-     "snippet_id": "snip-aa60de4c688d432581637bcf559c392f",
+     "snippet_id": "snip-08b769bc6e7949f184966ffc04b2abed",
      "trigger": "standup notes",
      "name": "standup notes",
      "content": "Yesterday:\nToday:\nBlockers:",
@@ -1576,54 +1575,55 @@
    "search": "",
    "notes": [
     {
-     "note_id": "note-aee7a8d48f5a449996cbf521ef7cf05d",
+     "note_id": "note-ded2da06eca943bbaf527e1ac058dda7",
      "title": "Weekend",
      "pinned": false,
-     "updated_at_utc": "2026-09-29T05:49:47.530Z",
-     "created_at_utc": "2026-09-29T05:49:47.530Z",
+     "updated_at_utc": "2026-09-29T07:11:49.563Z",
+     "created_at_utc": "2026-09-29T07:11:49.563Z",
      "word_count": 10,
      "revision_count": 1
     },
     {
-     "note_id": "note-80a513dfd9e848e7b9a135c53196a83a",
+     "note_id": "note-2f910c06ee3542498bd90fdb6b906cbe",
      "title": "Parser ideas",
      "pinned": false,
-     "updated_at_utc": "2026-09-29T05:49:47.530Z",
-     "created_at_utc": "2026-09-29T05:49:47.530Z",
+     "updated_at_utc": "2026-09-29T07:11:49.563Z",
+     "created_at_utc": "2026-09-29T07:11:49.563Z",
      "word_count": 8,
      "revision_count": 1
     },
     {
-     "note_id": "note-a3443df060c747949349cf3d92f43060",
+     "note_id": "note-82bfe7449e024154bc5dd9ff9df2648c",
      "title": "Trip checklist",
      "pinned": false,
-     "updated_at_utc": "2026-09-29T05:49:47.530Z",
-     "created_at_utc": "2026-09-29T05:49:47.530Z",
+     "updated_at_utc": "2026-09-29T07:11:49.562Z",
+     "created_at_utc": "2026-09-29T07:11:49.562Z",
      "word_count": 9,
      "revision_count": 1
     }
    ],
    "tabs": [
     {
-     "note_id": "note-aee7a8d48f5a449996cbf521ef7cf05d",
+     "note_id": "note-ded2da06eca943bbaf527e1ac058dda7",
      "title": "Weekend"
     }
    ],
-   "selected_id": "note-aee7a8d48f5a449996cbf521ef7cf05d",
+   "selected_id": "note-ded2da06eca943bbaf527e1ac058dda7",
+   "focus_note": null,
    "detail": {
-    "note_id": "note-aee7a8d48f5a449996cbf521ef7cf05d",
+    "note_id": "note-ded2da06eca943bbaf527e1ac058dda7",
     "title": "Weekend",
     "pinned": false,
     "word_count": 10,
-    "updated_at_utc": "2026-09-29T05:49:47.530Z",
+    "updated_at_utc": "2026-09-29T07:11:49.563Z",
     "versions": [
      {
-      "revision_id": "nrev-854ffdb11b33476882c502398a89944b",
+      "revision_id": "nrev-415c9ab341db438dab7cb024e62d894f",
       "origin": "created",
       "trigger": "system",
       "word_count": 10,
       "restore_of": null,
-      "created_at_utc": "2026-09-29T05:49:47.530Z"
+      "created_at_utc": "2026-09-29T07:11:49.563Z"
      }
     ],
     "versions_truncated": false,
@@ -1631,7 +1631,7 @@
     "unsaved_tail_risk": null
    },
    "editor": {
-    "note_id": "note-aee7a8d48f5a449996cbf521ef7cf05d",
+    "note_id": "note-ded2da06eca943bbaf527e1ac058dda7",
     "unsaved": []
    },
    "transforms": [
@@ -1851,14 +1851,14 @@
    "voice_running": false,
    "data": {
     "profile": {
-     "snapshot_id": "prof-2e5d495a2c7740c49282b8a69fedfa50",
+     "snapshot_id": "prof-9d8abc34ce3f4e0ab7d4c333692609dd",
      "state": "current",
      "invalidated_reason": null,
-     "computed_at_utc": "2026-09-29T05:49:47.600Z",
+     "computed_at_utc": "2026-09-29T07:11:49.632Z",
      "source_example_count": 44,
      "coverage": [
-      "2026-09-20T15:49:47.508Z",
-      "2026-09-29T04:49:47.508Z"
+      "2026-09-20T17:11:49.539Z",
+      "2026-09-29T06:11:49.539Z"
      ],
      "measured": {
       "eligible_examples": 44,
@@ -1975,15 +1975,15 @@
        "title": "long-form utterances",
        "statement": "Median dictation runs 61 words — interpreted from 44 eligible utterances.",
        "evidence": [
-        "ex-8bd33186d8d946f5a5af8058d6dd258d",
-        "ex-94fff73fab544661be2ad4b122a08a0c",
-        "ex-b0f696ceb1ef4e2da532631b7a817208",
-        "ex-b534104d04554e5b9d11353167c88133",
-        "ex-d36262936ba84075bd99cc1911fbdac8"
+        "ex-283c80af77854659972cca0366a30fcd",
+        "ex-6f0950ed8c584fb48cde6373f4a62209",
+        "ex-7d693df039044f7395219a95e79e0e19",
+        "ex-7f17fdbdb2ee46f19c49e86a8414897f",
+        "ex-8f8ef4fe940d48fc84978f6224e45f19"
        ],
        "coverage": [
-        "2026-09-20T15:49:47.508Z",
-        "2026-09-29T04:49:47.508Z"
+        "2026-09-20T17:11:49.539Z",
+        "2026-09-29T06:11:49.539Z"
        ]
       }
      ]
@@ -2002,21 +2002,21 @@
    "data": {
     "token": "di2",
     "events": [
-     "2026-09-29 05:49:47.486 +00:00 INFO store_schema_v1",
-     "2026-09-29 05:49:47.486 +00:00 INFO store_schema_v2",
-     "2026-09-29 05:49:47.487 +00:00 INFO store_schema_v3",
-     "2026-09-29 05:49:47.488 +00:00 INFO store_schema_v4",
-     "2026-09-29 05:49:47.488 +00:00 INFO store_schema_v5",
-     "2026-09-29 05:49:47.488 +00:00 INFO store_schema_v6",
-     "2026-09-29 05:49:47.489 +00:00 INFO store_schema_v7",
-     "2026-09-29 05:49:47.490 +00:00 INFO store_schema_v8",
-     "2026-09-29 05:49:47.490 +00:00 INFO store_schema_v9",
-     "2026-09-29 05:49:47.491 +00:00 INFO store_schema_v10",
-     "2026-09-29 05:49:47.491 +00:00 INFO store_schema_v11",
-     "2026-09-29 05:49:47.491 +00:00 INFO store_schema_v12",
-     "2026-09-29 05:49:47.492 +00:00 INFO store_schema_v13",
-     "2026-09-29 05:49:47.493 +00:00 INFO launch_drift",
-     "2026-09-29 05:49:47.601 +00:00 INFO v2"
+     "2026-09-29 07:11:49.517 +00:00 INFO store_schema_v1",
+     "2026-09-29 07:11:49.518 +00:00 INFO store_schema_v2",
+     "2026-09-29 07:11:49.519 +00:00 INFO store_schema_v3",
+     "2026-09-29 07:11:49.519 +00:00 INFO store_schema_v4",
+     "2026-09-29 07:11:49.519 +00:00 INFO store_schema_v5",
+     "2026-09-29 07:11:49.520 +00:00 INFO store_schema_v6",
+     "2026-09-29 07:11:49.521 +00:00 INFO store_schema_v7",
+     "2026-09-29 07:11:49.521 +00:00 INFO store_schema_v8",
+     "2026-09-29 07:11:49.522 +00:00 INFO store_schema_v9",
+     "2026-09-29 07:11:49.522 +00:00 INFO store_schema_v10",
+     "2026-09-29 07:11:49.523 +00:00 INFO store_schema_v11",
+     "2026-09-29 07:11:49.523 +00:00 INFO store_schema_v12",
+     "2026-09-29 07:11:49.524 +00:00 INFO store_schema_v13",
+     "2026-09-29 07:11:49.524 +00:00 INFO launch_drift",
+     "2026-09-29 07:11:49.632 +00:00 INFO v2"
     ],
     "count": 15,
     "timeline": [],
@@ -2028,7 +2028,7 @@
      "asr_revision": null,
      "cleanup_model": "test-llm",
      "cleanup_revision": null,
-     "source_revision": "8164ab32da62f9a5066b2f0a9dcdac04d1b5a8e0+dirty",
+     "source_revision": "1a9350d5dffe269320a2b4766f637747dbda59ad+dirty",
      "pipeline_revision": "v2.0",
      "config_hash": "3ab5d763e86f21cbf93ee61632550d5ba1adb14138644a1a4f84ee53bf9d736c",
      "runtime": {
@@ -2047,7 +2047,7 @@
      "utc": false,
      "last": 500
     },
-    "loaded_at_utc": "2026-09-29T05:50:02.501Z"
+    "loaded_at_utc": "2026-09-29T07:12:04.621Z"
    }
   },
   "models": {
@@ -2067,7 +2067,7 @@
      "asr_revision": null,
      "cleanup_model": "test-llm",
      "cleanup_revision": null,
-     "source_revision": "8164ab32da62f9a5066b2f0a9dcdac04d1b5a8e0+dirty",
+     "source_revision": "1a9350d5dffe269320a2b4766f637747dbda59ad+dirty",
      "pipeline_revision": "v2.0",
      "config_hash": "3ab5d763e86f21cbf93ee61632550d5ba1adb14138644a1a4f84ee53bf9d736c",
      "runtime": {
@@ -2148,9 +2148,9 @@
     },
     "examples": [
      {
-      "example_id": "ex-94fff73fab544661be2ad4b122a08a0c",
-      "job_id": "job-4ca58da7fb234760a858563596f92efb",
-      "captured_at_utc": "2026-09-20T15:49:47.508Z",
+      "example_id": "ex-7f17fdbdb2ee46f19c49e86a8414897f",
+      "job_id": "job-45875584ab1b4155820f03bd36ae9236",
+      "captured_at_utc": "2026-09-20T17:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2163,9 +2163,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-64e990c51a6a4c83b636660d9e200b82",
-      "job_id": "job-71f936d373cd491fa984369913a5f490",
-      "captured_at_utc": "2026-09-20T20:49:47.508Z",
+      "example_id": "ex-e8dc177d01c34f878ef74e8f518f16f5",
+      "job_id": "job-1b892b0253bb49bb8d19308a2264fa91",
+      "captured_at_utc": "2026-09-20T22:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2178,9 +2178,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-902945bd333a4b2b8c2314bdcece6298",
-      "job_id": "job-4595dfb5046d437bbf74e2cbc5f45fb6",
-      "captured_at_utc": "2026-09-21T01:49:47.508Z",
+      "example_id": "ex-a879add9b5304fa0ad842d58e158a497",
+      "job_id": "job-5d7ed313f3f84ed7af12b5168d6b33e0",
+      "captured_at_utc": "2026-09-21T03:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2193,9 +2193,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-33800d0d62de492aadc937b2c2b04b00",
-      "job_id": "job-b82a4b8a82124f9a8cd070418aa1a752",
-      "captured_at_utc": "2026-09-21T06:49:47.508Z",
+      "example_id": "ex-3165d290a6164cd98307d689cbb367c3",
+      "job_id": "job-a81c957dc7eb475598103dde4cc17e56",
+      "captured_at_utc": "2026-09-21T08:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2208,9 +2208,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-e44bfb07eca14697bf0ca3bf211db419",
-      "job_id": "job-e4e22db50de1484cade1bcbdf18952ad",
-      "captured_at_utc": "2026-09-21T11:49:47.508Z",
+      "example_id": "ex-817578eadf8046a59935286fe6d088f1",
+      "job_id": "job-a282520e447042fcafb1eef0c5d8ec5c",
+      "captured_at_utc": "2026-09-21T13:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2223,9 +2223,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-1ed2e5ff81e340aaa67d7485d71793e6",
-      "job_id": "job-bd1c2d84aaa243f2b25a34de657d2280",
-      "captured_at_utc": "2026-09-21T16:49:47.508Z",
+      "example_id": "ex-91ce46c243984f0a91b2cfabcdc9e146",
+      "job_id": "job-101ab8f1603340b2b9defe51355bdc96",
+      "captured_at_utc": "2026-09-21T18:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2238,9 +2238,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-cdf29670ca36447baf7dc42038226f1f",
-      "job_id": "job-e4e27a9214ab4f99a4be5ec615d1bad6",
-      "captured_at_utc": "2026-09-21T21:49:47.508Z",
+      "example_id": "ex-a54e9ecb4ac245898ac3290a5b184983",
+      "job_id": "job-7231a8de6489461cabc5526a84a080e5",
+      "captured_at_utc": "2026-09-21T23:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2253,9 +2253,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-3377242868d44b5b8f38bfb49333f531",
-      "job_id": "job-3e6d7ee80356464c8af0facb9beb0e4f",
-      "captured_at_utc": "2026-09-22T02:49:47.508Z",
+      "example_id": "ex-daf49230701f4d8bac49432243ee1efc",
+      "job_id": "job-dd5eebd4c996487ba8342363ec349fe1",
+      "captured_at_utc": "2026-09-22T04:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2268,9 +2268,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-e1ceda637c9f4a27927681b2cdf1b054",
-      "job_id": "job-1818ce4df16b4752bd4a4dd4330a9c33",
-      "captured_at_utc": "2026-09-22T07:49:47.508Z",
+      "example_id": "ex-afe8ceb05f784bb9a96592379bdf9e54",
+      "job_id": "job-87d8cd1a4b544830a621ec796260b8be",
+      "captured_at_utc": "2026-09-22T09:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2283,9 +2283,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-0f1228829ef14cadbe730edc388fb141",
-      "job_id": "job-249a25b1ac15489d8b21b93e62d36c87",
-      "captured_at_utc": "2026-09-22T12:49:47.508Z",
+      "example_id": "ex-a601fa7e241c4645a1427fea1d86850b",
+      "job_id": "job-c1d72b835a09424f9e2b5b7081129df0",
+      "captured_at_utc": "2026-09-22T14:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2298,9 +2298,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-1b80ff33b58842f5b61df08e41415b00",
-      "job_id": "job-df659d3b542b449eacf5584512468932",
-      "captured_at_utc": "2026-09-22T17:49:47.508Z",
+      "example_id": "ex-4956bd8aabcf444b8c0d02468ab375d2",
+      "job_id": "job-f032405909d1451782582a9036c70535",
+      "captured_at_utc": "2026-09-22T19:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2313,9 +2313,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-d5f3eb6512ad4930b9ca5c1ed0b36d86",
-      "job_id": "job-e1dcf18c1af545189a7b5da61b593a1f",
-      "captured_at_utc": "2026-09-22T22:49:47.508Z",
+      "example_id": "ex-283c80af77854659972cca0366a30fcd",
+      "job_id": "job-c77b2fbfb7df4f8abdaedad837485d3c",
+      "captured_at_utc": "2026-09-23T00:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2328,9 +2328,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-8905f0f609734ffaa22e7cd2055aff45",
-      "job_id": "job-6eb3c9ebe28c46b9bd797662376a4780",
-      "captured_at_utc": "2026-09-23T03:49:47.508Z",
+      "example_id": "ex-5cf16ede17da4d6fa5bd7991ba15e0ae",
+      "job_id": "job-91e4f69dadac4db8ad475a7aaa23611c",
+      "captured_at_utc": "2026-09-23T05:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2343,9 +2343,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-f01794d8cb5f4d538cb8c5f85afd75a5",
-      "job_id": "job-01804c3098df4970af216dcf441c553f",
-      "captured_at_utc": "2026-09-23T08:49:47.508Z",
+      "example_id": "ex-5874559f1ee4497f992efe4dce206dd2",
+      "job_id": "job-449f15554183463984bd8775d8851843",
+      "captured_at_utc": "2026-09-23T10:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2358,9 +2358,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-b534104d04554e5b9d11353167c88133",
-      "job_id": "job-f692e7bd723449b1ae44f3e2b5a3685e",
-      "captured_at_utc": "2026-09-23T13:49:47.508Z",
+      "example_id": "ex-6f0950ed8c584fb48cde6373f4a62209",
+      "job_id": "job-57f216b38b9c44e9b60ff92b9c11bd83",
+      "captured_at_utc": "2026-09-23T15:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2373,9 +2373,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-180b3a8e7412466ca63d9a72c79c9ba7",
-      "job_id": "job-64eae10717214146b1b25252c77cd9eb",
-      "captured_at_utc": "2026-09-23T18:49:47.508Z",
+      "example_id": "ex-68c3c5d8da6444989fa713011352017b",
+      "job_id": "job-3e45f64d51c94bf093a4e5a082d1fbce",
+      "captured_at_utc": "2026-09-23T20:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2388,9 +2388,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-1f389e42c8cd487d99a618a1affeac91",
-      "job_id": "job-c785ff1815154f479f679b6da316915e",
-      "captured_at_utc": "2026-09-23T23:49:47.508Z",
+      "example_id": "ex-3adbfb1fa63c48ab8545eadb801ba43f",
+      "job_id": "job-e6fab1312b41401e970f8425cad9cdaf",
+      "captured_at_utc": "2026-09-24T01:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2403,9 +2403,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-04bde9f2d3cd4d8ea084410f8ea47b65",
-      "job_id": "job-7abb64223eab459aba1d87bfd6d9e763",
-      "captured_at_utc": "2026-09-24T04:49:47.508Z",
+      "example_id": "ex-c073a7e86ca24bb5b80c5d858525a9d7",
+      "job_id": "job-684e9b5b5d1e45c3b326a8b3e133ec03",
+      "captured_at_utc": "2026-09-24T06:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2418,9 +2418,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-868f16fed2e84f19b82cb15c60d76a10",
-      "job_id": "job-7fcbb34085af44edbcaa328824ee420e",
-      "captured_at_utc": "2026-09-24T09:49:47.508Z",
+      "example_id": "ex-c5e2bb9bf3d74a4f9df8d2488576d89a",
+      "job_id": "job-68271d39885446c5be1e6d7c046c4c56",
+      "captured_at_utc": "2026-09-24T11:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2433,9 +2433,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-a4ac362ddbc84146bedf5f275d03aa61",
-      "job_id": "job-037cbd5eb8a84c9c9fb78e82d91ae75a",
-      "captured_at_utc": "2026-09-24T14:49:47.508Z",
+      "example_id": "ex-545edfa1d5174f0183b4cbc140de420f",
+      "job_id": "job-b95e72146c334e1ea871ea7fdeaff91f",
+      "captured_at_utc": "2026-09-24T16:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2448,9 +2448,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-7e2a00235f1e4784982b034886f41228",
-      "job_id": "job-facd4f8939c64e058fdf7b1c2cdd9e1a",
-      "captured_at_utc": "2026-09-24T19:49:47.508Z",
+      "example_id": "ex-97dbde9400e5426680b5f51499b38f3f",
+      "job_id": "job-e37244d193464b2abece14cc143f803f",
+      "captured_at_utc": "2026-09-24T21:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2463,9 +2463,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-7d1647be91e440dd9925cfe9f744cad8",
-      "job_id": "job-847be2c694a841098c69fe092ff2863e",
-      "captured_at_utc": "2026-09-25T00:49:47.508Z",
+      "example_id": "ex-4cc5f260ada54b93a9f9541f06793a06",
+      "job_id": "job-d22e013306154918a0d7663e4f19ca2f",
+      "captured_at_utc": "2026-09-25T02:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2478,9 +2478,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-45b234ef8c0c4e7b9289b7ce20af676f",
-      "job_id": "job-ad829aa9ee06459f99556ba0606d2f46",
-      "captured_at_utc": "2026-09-25T05:49:47.508Z",
+      "example_id": "ex-470e16253b2c469c835a6dc784e0c7f5",
+      "job_id": "job-0d6da61558cf4f1daa83405f86b62b29",
+      "captured_at_utc": "2026-09-25T07:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2493,9 +2493,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-9c86a79601444e4c9f51c94ff4f422e6",
-      "job_id": "job-d64c313e52d04ba89d6b00110074c1fd",
-      "captured_at_utc": "2026-09-25T10:49:47.508Z",
+      "example_id": "ex-a80abb08ef05448290f36318d4a7a918",
+      "job_id": "job-c46d8e34d7ce479a8bb3fd647f8b0582",
+      "captured_at_utc": "2026-09-25T12:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2508,9 +2508,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-1bf2fe16098c4e2d8446dfe8b29ec112",
-      "job_id": "job-40f6d026301b4ed5b356efa654810418",
-      "captured_at_utc": "2026-09-25T15:49:47.508Z",
+      "example_id": "ex-39bb813456aa42b5a0feea9550a37258",
+      "job_id": "job-e6c6397c9f904096ba31ed04aa3ac8f3",
+      "captured_at_utc": "2026-09-25T17:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2523,9 +2523,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-d36262936ba84075bd99cc1911fbdac8",
-      "job_id": "job-779037e6e02349ca8c8e0ee36913c211",
-      "captured_at_utc": "2026-09-25T20:49:47.508Z",
+      "example_id": "ex-7d693df039044f7395219a95e79e0e19",
+      "job_id": "job-cba59bd8524d41a880d615d41dbe9740",
+      "captured_at_utc": "2026-09-25T22:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2538,9 +2538,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-bc39f04f19814fcdbc9444dc21ddc17d",
-      "job_id": "job-f434d9d0c8ee4245a0e1ed16e6ee8bfb",
-      "captured_at_utc": "2026-09-26T01:49:47.508Z",
+      "example_id": "ex-03462bf4f502415586e0405e7862871f",
+      "job_id": "job-009a982f0f73400a84721acf72ed10cb",
+      "captured_at_utc": "2026-09-26T03:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2553,9 +2553,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-c9ef24e686854105b98b7f71cf5b8a8c",
-      "job_id": "job-68813759a60242479239b25a998d97d7",
-      "captured_at_utc": "2026-09-26T06:49:47.508Z",
+      "example_id": "ex-90afed648fbb4edba2f51945a3b65cee",
+      "job_id": "job-3ef390b1f5c04d8e9d788e28c21402e8",
+      "captured_at_utc": "2026-09-26T08:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2568,9 +2568,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-b0f696ceb1ef4e2da532631b7a817208",
-      "job_id": "job-a505d3a666824b1faa8b0a3ae9b1230d",
-      "captured_at_utc": "2026-09-26T11:49:47.508Z",
+      "example_id": "ex-e1b07eea65d6496ebade39f91c01d9c6",
+      "job_id": "job-43660b1cda0347898458d0597a879602",
+      "captured_at_utc": "2026-09-26T13:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2583,9 +2583,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-a2dbfc43fec445628ea5c383c43d5a35",
-      "job_id": "job-688562c4932943a4bcdbd136c4827463",
-      "captured_at_utc": "2026-09-26T16:49:47.508Z",
+      "example_id": "ex-d16a0aab4d434a5997a7b765b727e9fe",
+      "job_id": "job-c2923ae233a540a181689f7523b5a4c4",
+      "captured_at_utc": "2026-09-26T18:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2598,9 +2598,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-6903610dec8047469e2ff6d6f349b1d9",
-      "job_id": "job-e79cba0cd57d4fc2a03cdc17586aaf20",
-      "captured_at_utc": "2026-09-26T21:49:47.508Z",
+      "example_id": "ex-8f6a2592bc324e87852a158fe5edc615",
+      "job_id": "job-78ff82b3b4444be7a9aae7a82c7361cf",
+      "captured_at_utc": "2026-09-26T23:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2613,9 +2613,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-d72f7a52d13047598c46c85c00db5162",
-      "job_id": "job-3a63dea7daf648a7b7a810cc1870b746",
-      "captured_at_utc": "2026-09-27T02:49:47.508Z",
+      "example_id": "ex-67cf7b9457674f91bab2f1482f19b349",
+      "job_id": "job-480d6117d2c1466c9ccb9b66daabb168",
+      "captured_at_utc": "2026-09-27T04:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2628,9 +2628,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-57e9dfa53b7d4d0c91983e31061f43e8",
-      "job_id": "job-beecae40c2b44452ac236bf82b308d4a",
-      "captured_at_utc": "2026-09-27T07:49:47.508Z",
+      "example_id": "ex-3fe1744ab0334bfa8f5de0f666a27918",
+      "job_id": "job-12b0cd16dadc46a8babfb0630aa9cd76",
+      "captured_at_utc": "2026-09-27T09:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2643,9 +2643,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-2050689dd22e4c32a00f898483d5f6dc",
-      "job_id": "job-3d7368ecf88548f6ab8c798854a482f4",
-      "captured_at_utc": "2026-09-27T12:49:47.508Z",
+      "example_id": "ex-35735253beba475090b4678b8c444eb9",
+      "job_id": "job-0604913c7dc24d8fa7fee9259b35619d",
+      "captured_at_utc": "2026-09-27T14:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2658,9 +2658,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-74ae105d13a3400eaa594895639bb073",
-      "job_id": "job-3271d44e5a1d4422aca919d5abba411c",
-      "captured_at_utc": "2026-09-27T17:49:47.508Z",
+      "example_id": "ex-205262c55b7e4c1f8582fc93f41714e0",
+      "job_id": "job-07844efbab1c4ddb8ba4c4f656ee7d7c",
+      "captured_at_utc": "2026-09-27T19:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2673,9 +2673,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-c8c1a3faf3ad4179a433149e788a74ff",
-      "job_id": "job-b2be10412e2a49faa1ef486bf92789c9",
-      "captured_at_utc": "2026-09-27T22:49:47.508Z",
+      "example_id": "ex-40abae2c45da4e6eb4fcab8aed5b2505",
+      "job_id": "job-fa2f78d9f59348749e846378df58a7b9",
+      "captured_at_utc": "2026-09-28T00:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2688,9 +2688,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-ad97c1cda78a41a2a9d2c327cca2f8fb",
-      "job_id": "job-0dfbfce9dbe74a7aa944371e3c186f64",
-      "captured_at_utc": "2026-09-28T03:49:47.508Z",
+      "example_id": "ex-30f8dc11de97480dbd17363432fb4d18",
+      "job_id": "job-9ddd60d96be44744a5db91194f48e4ef",
+      "captured_at_utc": "2026-09-28T05:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2703,9 +2703,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-e75c5d26e28d4333bc657f1163f60baf",
-      "job_id": "job-93f63412ec614da29c7afa38c457d6ad",
-      "captured_at_utc": "2026-09-28T08:49:47.508Z",
+      "example_id": "ex-7bc965365b964be4a2b6ab2e623b1000",
+      "job_id": "job-1f0f3d2b715b43c0934853ee80426c17",
+      "captured_at_utc": "2026-09-28T10:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2718,9 +2718,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-d6c8c68dc2a14380bdfef34055357c00",
-      "job_id": "job-9bbf290a2d7e41bfb6bc15f13d5ae768",
-      "captured_at_utc": "2026-09-28T13:49:47.508Z",
+      "example_id": "ex-b0105b64243644168aa70ea30f52f3e9",
+      "job_id": "job-64725af605d64e9db434fa1592a868f9",
+      "captured_at_utc": "2026-09-28T15:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2733,9 +2733,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-8bd33186d8d946f5a5af8058d6dd258d",
-      "job_id": "job-4d4c461d161e4fec980257f135b3b5af",
-      "captured_at_utc": "2026-09-28T18:49:47.508Z",
+      "example_id": "ex-8f8ef4fe940d48fc84978f6224e45f19",
+      "job_id": "job-ba474dcd76e0487cb36603c9c4f0eed9",
+      "captured_at_utc": "2026-09-28T20:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2748,9 +2748,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-d262e37a4a064f54bc5c21ae241d11bf",
-      "job_id": "job-7a5094414533468e85fb0854888fe7e4",
-      "captured_at_utc": "2026-09-28T23:49:47.508Z",
+      "example_id": "ex-121b235bbe0a4acd97e8514f4ea6d5d0",
+      "job_id": "job-b1f11044b73945eb992656a13f62b851",
+      "captured_at_utc": "2026-09-29T01:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2763,9 +2763,9 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-fa35b0fabfab4264acec264735b6b37a",
-      "job_id": "job-0b90f857c8a14cc28ffff049d471f9ff",
-      "captured_at_utc": "2026-09-29T04:49:47.508Z",
+      "example_id": "ex-7bb2b38307be40e3b7bb0f725d07a62f",
+      "job_id": "job-005a406a71874374b2469ae1b9b64cc4",
+      "captured_at_utc": "2026-09-29T06:11:49.539Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
       "families": [],
@@ -2778,8 +2778,8 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-88300ca5b4b04d979506258d21e88865",
-      "job_id": "job-9700ff51111a40e4ae60b263bcd35264",
+      "example_id": "ex-1b566aca76e443a9bbc30bef6ba48551",
+      "job_id": "job-59d004ad0c5f402da267a29c9c5d8df5",
       "captured_at_utc": "2026-09-22T10:00:00.000Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
@@ -2793,8 +2793,8 @@
       "annotations": 0
      },
      {
-      "example_id": "ex-8fa72bd4597c4c90af2018a24d9f4b04",
-      "job_id": "job-7caf758e2faf479c8bfbb2a38dd5c7fd",
+      "example_id": "ex-c0e1c9146f9a4d439f09e80509b54f44",
+      "job_id": "job-ad7f6770e0634c70bd3235ca073dbaf2",
       "captured_at_utc": "2026-09-22T10:00:00.000Z",
       "time_quality": "known",
       "state": "captured_unreviewed",
@@ -2808,14 +2808,14 @@
       "annotations": 0
      }
     ],
-    "selected_id": "ex-94fff73fab544661be2ad4b122a08a0c",
+    "selected_id": "ex-7f17fdbdb2ee46f19c49e86a8414897f",
     "listened_for": null,
     "detail_loading": false,
     "detail_error": null,
     "detail": {
-     "example_id": "ex-94fff73fab544661be2ad4b122a08a0c",
-     "job_id": "job-4ca58da7fb234760a858563596f92efb",
-     "captured_at_utc": "2026-09-20T15:49:47.508Z",
+     "example_id": "ex-7f17fdbdb2ee46f19c49e86a8414897f",
+     "job_id": "job-45875584ab1b4155820f03bd36ae9236",
+     "captured_at_utc": "2026-09-20T17:11:49.539Z",
      "time_quality": "known",
      "state": "captured_unreviewed",
      "families": [],
@@ -2987,7 +2987,7 @@
   }
  },
  "scratchpad_content": {
-  "note_id": "note-aee7a8d48f5a449996cbf521ef7cf05d",
+  "note_id": "note-ded2da06eca943bbaf527e1ac058dda7",
   "version": 1,
   "content": "Weekend\n\nFarmers market, then the long walk by the river."
  },

@@ -20,7 +20,8 @@ Vite), `localflow/v2/ui/companion/web/` (the committed build).
   companion answers every call the coordinator makes into the Hub
   (`showWindow_`, `window`, `state`, `pasteAgainEnded`, the
   `scratchpad_*` calls) with the AppKit Hub's rules.
-- Closing hides the window and keeps the page. Quit is the only exit.
+- Closing (the close button or ⌘W) hides the window and keeps the page.
+  Quit is the only exit.
 - The page's own preferences (theme, sidebar, dismissed heroes,
   onboarding seen) live in `companion.json` beside the user's config
   override. Everything else stays in the services.
@@ -48,15 +49,18 @@ one JSON string.
     {"bridge_version": 1, "request_id": "<≤64 chars>",
      "command": "<allowlisted>", "payload": {...}}
 
-- The envelope is at most 2,000,000 bytes, with exactly these four keys.
+- The envelope is at most 2,000,000 characters and has no keys but these
+  four (a missing command is unknown; a missing payload is empty).
   A wrong version is refused (`bridge_version_mismatch`), an unknown
   command is refused (`unknown_command`), and a payload failing its
   per-command schema is refused (`invalid_payload:<field>`). Unknown
   payload keys fail the schema.
 - Every answer has one status: `success`, `refusal`, `outcome_unknown`,
   `cancelled`, `stale`, `unavailable` or `error`. It may carry a
-  `reason_code` and a `result`. An exception crosses as its type name
-  only, never as a message or a traceback.
+  `reason_code` and a `result`. An unexpected exception crosses as its
+  type name only, never as a message or a traceback; a service's own
+  refusal crosses as its reason code, which for some services is its
+  short refusal text.
 - Python → JS: `window.__lfBridge.receive(json)` delivers a `snapshot`
   (`view`, `shell`, `data`, and a `seq` that increases per push) or an
   `event` (`name`, `payload`). The page ignores a snapshot whose `seq`
@@ -89,7 +93,9 @@ one JSON string.
   - Review lists (queue, pairs, approved): a list token plus the row's
     own candidate id.
   - Dictionary edits: the entry's revision, checked twice.
-  - Styles, snippets and transforms: the rendered revision.
+  - Styles and snippets: Enable/Disable names the rendered revision.
+    Their edits and deletes, and a transform's edit or enable, act on the
+    row by id, as the AppKit Hub's do.
   - Your Voice exclusion: the snapshot id.
   - Scratchpad edits: the note id and the text version they were typed
     on. A dictation that arrived meanwhile is rebased, never
@@ -115,7 +121,7 @@ one JSON string.
 | Models: Engines, Training Data (Evidence, Review, Splits, Export) | Models | `test_companion_models` |
 | Diagnostics | Diagnostics | `test_companion_models` (Export Redacted), `test_companion_page` |
 | Settings | Settings modal | `test_companion_bridge` (outcomes, confirmation, theme) |
-| Transform review panel | native panel, restyled | `tests/v2/transforms` M11 suites |
+| Transform review panel | native panel, restyled; a short result shows its changes inline in place of the block diff and its "Word diff:" line | `tests/v2/transforms` M11 suites |
 
 ## The AppKit Hub
 

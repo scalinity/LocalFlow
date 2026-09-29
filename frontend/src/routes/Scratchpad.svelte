@@ -21,6 +21,10 @@
   const heroHidden = $derived(app.shell.dismissed.includes('hero.scratchpad'));
 
   let index = $state(false); // show the list while a note stays open
+  // A Quick Scratchpad opens its new note in the writing view.
+  $effect(() => {
+    if (sp?.focus_note && sp.focus_note === sp.selected_id) index = false;
+  });
   let searching = $state(false);
   let query = $state(app.views.scratchpad?.search ?? '');
   let note = $state<Outcome | null>(null);
@@ -44,6 +48,7 @@
     choose_transform: 'Choose a transform first.',
     selection_unreadable: 'The selection could not be read — select the text again.',
     note_changed: 'The note changed while the image was chosen — nothing was added.',
+    marker_not_placed: 'The image was saved, but its place in the note could not be marked — click in the note and try again.',
     notes_unavailable: 'The Scratchpad is unavailable.',
   };
   const SNAP: Record<string, Outcome> = {
@@ -242,7 +247,7 @@
       {/if}
       {#if note}<Note tone={note.tone} text={note.text} ondismiss={() => (note = null)} />{/if}
       <div class="paper">
-        <NoteEditor noteId={sp.selected_id} onstatus={(s) => (note = { tone: 'warning', text: s })} />
+        <NoteEditor noteId={sp.selected_id} focus={sp.focus_note === sp.selected_id} onstatus={(s) => (note = { tone: 'warning', text: s })} />
       </div>
       <footer class="foot">
         {#if detail}

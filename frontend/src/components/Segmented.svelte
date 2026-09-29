@@ -13,14 +13,28 @@
     onselect: (id: string) => void;
     size?: 'sm' | 'md';
   } = $props();
+
+  // One tab stop (the checked option); arrow keys move and select, as a
+  // radio group does.
+  const current = $derived(Math.max(0, items.findIndex((it) => it.id === value)));
+
+  function keydown(e: KeyboardEvent) {
+    const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    const i = (current + d + items.length) % items.length;
+    onselect(items[i].id);
+    (e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role=radio]')[i]?.focus();
+  }
 </script>
 
-<div class="seg {size}" role="radiogroup" aria-label={label}>
-  {#each items as item (item.id)}
+<div class="seg {size}" role="radiogroup" aria-label={label} tabindex="-1" onkeydown={keydown}>
+  {#each items as item, i (item.id)}
     <button
       type="button"
       role="radio"
       aria-checked={item.id === value}
+      tabindex={i === current ? 0 : -1}
       class="opt"
       onclick={() => onselect(item.id)}
     >

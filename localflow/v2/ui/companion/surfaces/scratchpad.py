@@ -166,6 +166,10 @@ def register(ctl):
     st = ctl.state
     mirror = WebText(ctl)
     editor = WebScratchpadEditor.alloc().init_with_mirror(ctl, mirror)
+    # The note a Quick Scratchpad opened, until the page reports its
+    # editor focused on it: state, not an event, so a page that is still
+    # loading (or showing the note list) focuses it once it renders it.
+    ctl.scratchpad_focus_note = None
     ctl.scratchpad_editor = editor
     ctl.scratchpad_mirror = mirror
     panels = ctl.spec.get("file_panels")
@@ -274,6 +278,9 @@ def register(ctl):
                           mirror.version)
         mirror.focused = bool(p["focused"]) and \
             p["note_id"] == mirror.note_id
+        if mirror.focused and p["note_id"] == ctl.scratchpad_focus_note:
+            ctl.scratchpad_focus_note = None
+            ctl.request_flush()
         return {}
 
     # ---- note actions ----------------------------------------------------------------
@@ -354,6 +361,10 @@ def register(ctl):
         # that was shown when it opened.
         if editor.note_id != p["note_id"] or editor.model is not model:
             B.stale("note_changed")
+        # The marker goes at the caret the page reported for the current
+        # text; without one, nothing is stored.
+        if editor.selection()[0] == "invalid":
+            B.refuse("selection_unreadable")
         try:
             data = pathlib.Path(path).read_bytes()
             ext = pathlib.Path(path).suffix.lstrip(".").lower() or "png"
@@ -361,8 +372,10 @@ def register(ctl):
                                    pathlib.Path(path).name)
         except Exception as e:
             failed("add_image", e)
-        editor.insert_attachment_marker(out["marker"])
+        placed = editor.insert_attachment_marker(out["marker"])
         st.reload_scratchpad()
+        if placed is None:
+            B.refuse("marker_not_placed")
         return {}
 
     @br.command("scratchpad.transform", {**NOTE,
@@ -511,10 +524,11 @@ def register(ctl):
         st.select_view("scratchpad")
         ctl.emit("shell.route", {"view": "scratchpad"})
         try:
-            new({})
+            out = new({})
         except B.Outcome:
             return
-        ctl.emit("scratchpad.focus_editor", {})
+        ctl.scratchpad_focus_note = out["note_id"]
+        ctl.request_flush()
 
     ctl.scratchpad_editor_active = editor_active
     ctl.scratchpad_capture_target = capture_target
@@ -576,6 +590,7 @@ def scratchpad_model(ctl):
                   "title": (by_id.get(nid) or {}).get("title")}
                  for nid in v.get("open_ids") or ()],
         "selected_id": v.get("selected_id"),
+        "focus_note": getattr(ctl, "scratchpad_focus_note", None),
         "detail": None if not detail else {
             "note_id": detail.get("note_id"), "title": detail.get("title"),
             "pinned": bool(detail.get("pinned")),

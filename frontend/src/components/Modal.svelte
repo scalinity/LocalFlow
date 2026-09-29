@@ -2,6 +2,11 @@
   // Open modals, innermost last: only the topmost answers Escape, so a
   // confirmation over Settings closes alone.
   const stack: symbol[] = [];
+
+  /** True while any modal is open: window shortcuts wait for it. */
+  export function modalOpen(): boolean {
+    return stack.length > 0;
+  }
 </script>
 
 <script lang="ts">
@@ -26,7 +31,7 @@
   let previous: Element | null = null;
 
   const FOCUSABLE =
-    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    'button:not([disabled]):not([tabindex="-1"]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
   const me = Symbol('modal');
 

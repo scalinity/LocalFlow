@@ -42,15 +42,23 @@ companion's cost is the difference: about 41 MB in the app process and
 95–155 MB across WebKit's content, networking and GPU processes.
 
 Closing hides the window and keeps the web view, so reopening is
-immediate and keeps the route. Nothing runs while it is hidden: pushes
-are event-driven, the one timer (a two-second recheck while a model is
-still loading) runs only while the window is shown, and WebKit suspends
-a hidden page. The memory stays in use. Releasing the web view on close
-would return about 150 MB, and the next open would cost the 124 ms first
-render again.
+immediate and keeps the route. While it is hidden, pushes are
+event-driven, the engine recheck (every two seconds while a model is
+still loading) stops, and WebKit suspends the page; the Scratchpad
+autosave tick below keeps running. The memory stays in use. Releasing
+the web view on close would return about 150 MB, and the next open
+would cost the 124 ms first render again.
 
 ## Wake-ups
 
-There is no polling loop. The page has no `setInterval`, and its single
-`requestAnimationFrame` is a one-shot debounce of caret reports in the
-Scratchpad editor.
+The page has no `setInterval`, and its single `requestAnimationFrame` is
+a one-shot debounce of caret reports in the Scratchpad editor.
+
+One native timer wakes the app: the Scratchpad editor (the same
+`ScratchpadEditor` the AppKit Hub uses) ticks every 0.5 s from the
+companion's first open, shown or hidden, and saves any note whose
+debounce has expired. With nothing unsaved, a tick checks the open
+note and the list of kept unsaved buffers, and saves nothing. Stopping
+it while no note is open and no unsaved text is kept would remove the
+last wake-up; that change belongs to the shared editor, which the M12
+suites qualify.

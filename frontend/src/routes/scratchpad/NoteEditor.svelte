@@ -9,7 +9,11 @@
   import { call } from '../../bridge/bridge';
   import { onEvent } from '../../stores/app.svelte';
 
-  let { noteId, onstatus }: { noteId: string; onstatus?: (s: string) => void } = $props();
+  let {
+    noteId,
+    focus = false,
+    onstatus,
+  }: { noteId: string; focus?: boolean; onstatus?: (s: string) => void } = $props();
 
   let area: HTMLTextAreaElement;
   let value = $state('');
@@ -103,8 +107,19 @@
     bound = r.result.note_id;
     version = r.result.version;
     show(r.result.content ?? '');
+    claimFocus();
     cursor();
   }
+
+  // A Quick Scratchpad asked for this note: focus it once it is bound
+  // (the note may bind before or after the request reaches the page).
+  function claimFocus() {
+    if (focus && bound === noteId && area && document.activeElement !== area) area.focus();
+  }
+
+  $effect(() => {
+    if (focus) claimFocus();
+  });
 
   onMount(() => {
     const off = onEvent('scratchpad.content', (p) => {
@@ -117,6 +132,7 @@
         ahead = null;
         value = p.content;
         if (area) area.value = p.content;
+        claimFocus();
         cursor();
         return;
       }
@@ -128,7 +144,6 @@
       show(p.content);
       cursor();
     });
-    const offFocus = onEvent('scratchpad.focus_editor', () => area?.focus());
     const sel = () => {
       if (document.activeElement === area) cursor();
     };
@@ -139,7 +154,6 @@
     resync();
     return () => {
       off();
-      offFocus();
       document.removeEventListener('selectionchange', sel);
       window.removeEventListener('blur', blur);
       window.removeEventListener('focus', blur);

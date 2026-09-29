@@ -224,12 +224,6 @@ class CompanionController:
         elif name == "utility":
             self.emit("shell.utility", {})
 
-    def on_key_changed(self, key):
-        pass
-
-    def on_appearance_changed(self):
-        self.request_flush()
-
     # ---- publication -----------------------------------------------------------
 
     def _state_updated(self, state):
@@ -307,8 +301,6 @@ class CompanionController:
         cfg = self._config_summary()
         return {"view": self.state.selected_view,
                 "theme": self.prefs.values["theme"],
-                "is_dark": self.host.is_dark()
-                if hasattr(self.host, "is_dark") else False,
                 "sidebar_collapsed": self.prefs.values["sidebar_collapsed"],
                 "engine": {"asr": engine.get("asr"),
                            "cleanup": engine.get("cleanup")},

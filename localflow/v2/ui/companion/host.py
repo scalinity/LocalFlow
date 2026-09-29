@@ -328,17 +328,12 @@ class _WindowDelegate(NSObject, protocols=[
         self.host.on_close()
         return False
 
-    def windowDidBecomeKey_(self, notification):
-        self.host.on_key_changed(True)
-
-    def windowDidResignKey_(self, notification):
-        self.host.on_key_changed(False)
-
 
 def _ensure_edit_menu():
-    """Text fields take ⌘A/⌘C/⌘V/⌘X/⌘Z from the application's Edit menu;
-    a menu-bar-only app has none, so the companion installs a minimal
-    one (its key equivalents work without a visible menu bar)."""
+    """Text fields take ⌘A/⌘C/⌘V/⌘X/⌘Z from the application's Edit menu,
+    and a window ⌘M/⌘W from its Window menu; a menu-bar-only app has
+    neither, so the companion installs minimal ones (their key
+    equivalents work without a visible menu bar)."""
     app = NSApplication.sharedApplication()
     if app.mainMenu() is not None:
         return
@@ -357,14 +352,23 @@ def _ensure_edit_menu():
                                                            key))
     top.setSubmenu_(edit)
     main.addItem_(top)
+    # ⌘M and ⌘W, as in any Mac window (Close hides the companion).
+    win_top = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+        "Window", None, "")
+    win = NSMenu.alloc().initWithTitle_("Window")
+    for title, action, key in (("Minimize", "performMiniaturize:", "m"),
+                               ("Close", "performClose:", "w")):
+        win.addItem_(NSMenuItem.alloc()
+                     .initWithTitle_action_keyEquivalent_(title, action, key))
+    win_top.setSubmenu_(win)
+    main.addItem_(win_top)
     app.setMainMenu_(main)
 
 
 class CompanionHost:
     """Owns the window and web view. ``client`` receives:
     ``on_message(raw) -> str`` (the bridge), ``on_page_loaded()``,
-    ``on_close()``, ``on_toolbar(name)``, ``on_key_changed(bool)`` and
-    ``on_appearance_changed()``."""
+    ``on_close()`` and ``on_toolbar(name)``."""
 
     def __init__(self, client, theme="system"):
         self.client = client
@@ -549,9 +553,3 @@ class CompanionHost:
 
     def on_toolbar(self, name):
         self.client.on_toolbar(name)
-
-    def on_key_changed(self, key):
-        self.client.on_key_changed(key)
-
-    def on_appearance_changed(self):
-        self.client.on_appearance_changed()

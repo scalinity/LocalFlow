@@ -166,10 +166,54 @@ def test_actions_bind_to_the_shown_note():
           " delete forgets the buffer")
 
 
+class ImagePanel:
+    def __init__(self, path):
+        self.path = path
+
+    def open_image(self):
+        return str(self.path)
+
+
+def test_attach_needs_a_current_caret_and_says_so():
+    # a 1x1 PNG
+    png = bytes.fromhex(
+        "89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+        "1f15c4890000000d49444154789c6300010000000500010d0a2db40000"
+        "000049454e44ae426082")
+    import tempfile
+    tmp = pathlib.Path(tempfile.mkdtemp()) / "figure.png"
+    tmp.write_bytes(png)
+    with CWorld(file_panels=ImagePanel(tmp)) as w:
+        nid, ed, m = open_new_note(w)
+        type_text(w, nid, "Trip checklist")
+        # The text moved on (e.g. a dictation arrived) after the page's
+        # last caret report: there is no current place for the marker.
+        m.version += 1
+        m.history[m.version] = m.value
+        before = ed.model.content
+        out = w.host.send("scratchpad.attach", {"note_id": nid})
+        assert out["status"] == "refusal" and \
+            out["reason_code"] == "selection_unreadable", out
+        assert ed.model.content == before
+        svc = w.ctl.spec["notes_service"]
+        assert not (svc.open_note(nid).get("attachments") or []), \
+            "an attachment was stored without its marker"
+        # With a caret reported for the current text, the image lands.
+        w.host.send("scratchpad.cursor", {
+            "note_id": nid, "version": m.version, "sel_start": 4,
+            "sel_end": 4, "focused": True})
+        out = w.host.send("scratchpad.attach", {"note_id": nid})
+        assert out["status"] == "success", out
+        assert ed.model.content != before, "no marker was inserted"
+    print("ok  scratchpad: Attach refuses without a caret for the current"
+          " text, and inserts its marker with one")
+
+
 if __name__ == "__main__":
     for test in (test_rebase_keeps_both_changes,
                  test_typing_reaches_the_model_and_saves,
                  test_ptt_capture_needs_key_focus_and_current_selection,
                  test_arrival_lands_at_anchor_and_races_typing,
-                 test_actions_bind_to_the_shown_note):
+                 test_actions_bind_to_the_shown_note,
+                 test_attach_needs_a_current_caret_and_says_so):
         test()

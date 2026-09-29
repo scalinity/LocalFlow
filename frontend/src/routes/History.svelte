@@ -91,7 +91,7 @@
       {/if}
     </div>
 
-    <aside class="detail" aria-live="polite">
+    <aside class="detail">
       {#if detail}
         {#key `${detail.kind}:${detail.job_id ?? detail.captured_at_utc}:${hist?.selected?.id}`}
           <Inspector {detail} />
