@@ -119,6 +119,27 @@
      "test_owner": "tests/v2/training/test_dataset_export.py"},
     {"file": "scripts/v2/benchmark_m14.py", "symbols": ["main"], "role": "synthetic benchmark (temp store)", "authority": "explicit run",
      "source_dependency": "its own synthetic store", "writer": "temp store only", "action_identity": "n/a", "deletion_route": "temp dir",
-     "test_owner": "tests/v2/personalization/test_m14_remediation.py (validity gate)"}
+     "test_owner": "tests/v2/personalization/test_m14_remediation.py (validity gate)"},
+    {"file": "localflow/v2/ui/companion/surfaces/history.py", "symbols": ["history.teach (bridge command)"],
+     "role": "History → Teach from the desktop companion: explicit correction of the rendered job",
+     "authority": "the History detail token the page rendered; refuses an imported row, a transformed final and a job without retained cleaned text",
+     "source_dependency": "the job's cleaned-stage (applied_output) artifact shown in the rendered lineage", "writer": "LearningService.teach_correction",
+     "action_identity": "rendered job id + the shown final artifact id and sha256; one operation id per (job, artifact, corrected text), kept only after an unknown outcome",
+     "deletion_route": "job deletion stales job-keyed candidates; a revoked or changed detail token is stale",
+     "test_owner": "tests/v2/ui/test_companion_bridge.py"},
+    {"file": "localflow/v2/ui/companion/surfaces/insights.py", "symbols": ["voice.generate (bridge command)", "voice.exclude (bridge command)"],
+     "role": "Your Voice Measure again (background) and evidence exclusion from the desktop companion",
+     "authority": "explicit page action; exclusion names the snapshot id the page rendered and is stale when it is no longer current",
+     "source_dependency": "eligible raw transcripts", "writer": "ProfileService.compute / exclude_evidence",
+     "action_identity": "snapshot id + example id", "deletion_route": "exclusion durable; deletion clears snapshots",
+     "test_owner": "tests/v2/ui/test_companion_models.py"},
+    {"file": "localflow/v2/ui/companion/surfaces/models.py", "symbols": ["review.sample", "review.mine", "review.approve", "review.reject", "review.label", "review.pair", "review.undo", "splits.assign", "splits.expose", "export.run", "export.validate (bridge commands)"],
+     "role": "Training Data Review, Splits and Export from the desktop companion",
+     "authority": "the queue, pair list or approved list the page rendered (list tokens) and the row's own candidate id; export takes its folder from a native panel",
+     "source_dependency": "learning_candidates rows, review samples and pairs, split assignments, consented examples",
+     "writer": "LearningService.approve / reject / undo_approval / mine_observation_candidates; ReviewService; SplitService; DatasetExporter.build; curation.export.validate_dataset",
+     "action_identity": "candidate id or pair ids per action; operation ids kept only after an unknown outcome; one export per folder at a time, Validate refused while an export of that folder runs or has an unknown outcome",
+     "deletion_route": "stale candidates refuse; a changed list is stale",
+     "test_owner": "tests/v2/ui/test_companion_models.py"}
   ]
 }

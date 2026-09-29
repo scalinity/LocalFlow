@@ -6,7 +6,8 @@ the coordinator do: typed edits naming the version they were typed on,
 cursor reports, a PTT-time capture and a dictation arrival, a typed edit
 racing that arrival, and the actions that must act on the note shown.
 
-Run: .venv/bin/python tests/v2/ui/test_companion_scratchpad.py
+Run: .venv/bin/python tests/v2/context/run_isolated.py \
+    tests/v2/ui/test_companion_scratchpad.py
 """
 
 from __future__ import annotations

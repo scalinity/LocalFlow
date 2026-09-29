@@ -9,7 +9,8 @@ transitions, keyboard navigation, modal cancellation and focus, window
 resize, theme (explicit, live system change, relaunch) and stale
 publications. Every string is synthetic.
 
-Run: .venv/bin/python tests/v2/ui/test_companion_page.py
+Run: .venv/bin/python tests/v2/context/run_isolated.py \
+    tests/v2/ui/test_companion_page.py
 """
 
 from __future__ import annotations
@@ -24,8 +25,15 @@ HERE = pathlib.Path(__file__).resolve()
 for p in (HERE.parents[3], HERE.parent, HERE.parents[1] / "lifecycle"):
     sys.path.insert(0, str(p))
 
+import AppKit  # noqa: E402
 from AppKit import NSAppearance, NSApplication  # noqa: E402
 from Foundation import NSDate, NSRunLoop  # noqa: E402
+
+# The real coordinator and page run here; the general pasteboard must be
+# the isolating runner's private one.
+if type(AppKit.NSPasteboard).__name__ != "_PasteboardClass":
+    sys.exit("companion suites: run under tests/v2/context/run_isolated.py"
+             " (the desktop-isolating runner); refusing to start")
 
 import m09_world as W  # noqa: E402
 

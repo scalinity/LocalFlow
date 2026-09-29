@@ -7,7 +7,8 @@ so a test can assert what crossed the bridge. Callbacks go through
 ``m09_world.MainQueue`` (queued, drained on this main thread), as in the
 app. Every string is synthetic.
 
-Run: .venv/bin/python tests/v2/ui/test_companion_bridge.py
+Run: .venv/bin/python tests/v2/context/run_isolated.py \
+    tests/v2/ui/test_companion_bridge.py
 """
 
 from __future__ import annotations
@@ -20,6 +21,15 @@ HERE = pathlib.Path(__file__).resolve()
 sys.path.insert(0, str(HERE.parents[3]))
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parents[1] / "lifecycle"))
+
+import AppKit  # noqa: E402
+
+# These suites drive the real coordinator, whose copy and paste paths use
+# the general pasteboard: refuse to run without the desktop isolation (a
+# private pasteboard, no Accessibility, no posted events).
+if type(AppKit.NSPasteboard).__name__ != "_PasteboardClass":
+    sys.exit("companion suites: run under tests/v2/context/run_isolated.py"
+             " (the desktop-isolating runner); refusing to start")
 
 import m09_world as W  # noqa: E402
 from m09_world import MainQueue  # noqa: E402
@@ -93,7 +103,11 @@ class FakeHost:
 
 
 class CWorld:
-    """Harness + MainQueue + a CompanionController with a FakeHost."""
+    """Harness + MainQueue + a CompanionController with a FakeHost;
+    ``extra`` spec entries (e.g. file_panels) are read at install."""
+
+    def __init__(self, **extra):
+        self.extra = extra
 
     def __enter__(self):
         from test_lifecycle import Harness
@@ -105,7 +119,7 @@ class CWorld:
         spec, _ = W.hub_spec(self.d)
         spec.update(vocabulary_store=self.d._vocab, host_factory=FakeHost,
                     prefs_path=self.h.tmp / "companion.json",
-                    display_name="Alex")
+                    display_name="Alex", **self.extra)
         self.ctl = CompanionController(spec)
         self.d._hub = self.ctl
         self.host = self.ctl.host

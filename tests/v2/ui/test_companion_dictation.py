@@ -10,7 +10,8 @@ Callbacks go through m09_world.MainQueue, as in the app. History Paste
 Again through the companion is test_companion_bridge's
 test_paste_again_through_companion. Every string is synthetic.
 
-Run: .venv/bin/python tests/v2/ui/test_companion_dictation.py
+Run: .venv/bin/python tests/v2/context/run_isolated.py \
+    tests/v2/ui/test_companion_dictation.py
 """
 
 from __future__ import annotations
