@@ -96,6 +96,7 @@ def seed(d, store):
         if d._analytics is not None:
             d._analytics.record_dictation_fact(
                 job_id=job_id, activity_at_utc=iso(at),
+                utc_offset_minutes=int(at.utcoffset().total_seconds() // 60),
                 duration_sec=words / 2.4, raw_words=words, final_words=words,
                 cleanup_path=mode, mode=mode, app_name=app_name,
                 app_bundle=bundle, insertion_outcome="confirmed",
@@ -122,19 +123,21 @@ def seed(d, store):
                 ("review prompt", "Review this change for correctness first,"
                  " then clarity. List issues by severity.", "prompt")):
             try:
-                snips.add_snippet(trigger, name=trigger, content=content,
-                                  kind=kind, allow_rewrite=False)
-            except Exception:
-                pass
+                snips.add_snippet(trigger=trigger, name=trigger,
+                                  content=content, kind=kind,
+                                  allow_rewrite=False)
+            except Exception as e:
+                print("seed skipped:", type(e).__name__, e)
     styles = d._styles
     if styles is not None:
         for name, kind, value, mode in (
                 ("Email stays polished", "category", "email", "polish"),
                 ("Terminal is raw", "app", "com.apple.Terminal", "raw")):
             try:
-                styles.add_rule(name, kind, value, mode, "inherit")
-            except Exception:
-                pass
+                styles.add_rule(name=name, scope_kind=kind, scope_value=value,
+                                mode=mode, number_policy="inherit")
+            except Exception as e:
+                print("seed skipped:", type(e).__name__, e)
     notes = d._notes_store
     if notes is not None:
         for text in ("Trip checklist\n\n- passport\n- chargers\n- train tickets",
@@ -142,11 +145,26 @@ def seed(d, store):
                      "Weekend\n\nFarmers market, then the long walk by the river."):
             try:
                 notes.create_note(text)
-            except Exception:
-                pass
+            except Exception as e:
+                print("seed skipped:", type(e).__name__, e)
     for raw in ("call the library about the overdue book",
                 "the draft needs one more pass on the introduction"):
         W.seed_example(store, raw)
+    # Enough synthetic evidence for Your Voice to interpret (2,000 words
+    # over at least 10 examples), then the real profile computation.
+    n = len(SENTENCES)
+    for i in range(42):
+        parts = [SENTENCES[(i * 3 + k) % n] for k in range(4)]
+        text = f"note {i + 1}: " + " ".join(parts) + \
+            " the parser keeps offsets as code points for the release notes"
+        W.seed_example(store, text.lower(),
+                       captured=iso(now - dt.timedelta(hours=5 * i + 1)))
+    store.sync()
+    if d._profile is not None:
+        try:
+            d._profile.compute()
+        except Exception as e:
+            print("seed skipped: profile", type(e).__name__, e)
     store.sync()
 
 
@@ -267,16 +285,19 @@ def main(argv):
                 kind = window_image(win, ctl.host,
                                     out / f"{route}-{theme}.png")
                 shots.append((route, theme, kind))
-                for i, (step_route, src, name) in enumerate(steps):
+                for step in steps:
+                    # [route, js, shot name, keep open?]
+                    step_route, src, name = step[:3]
                     if step_route != route:
                         continue
                     js(ctl.host, src)
                     pump(1.0)
                     window_image(win, ctl.host,
                                  out / f"{name}-{theme}.png")
-                    js(ctl.host, "document.dispatchEvent(new KeyboardEvent("
-                                 "'keydown', {key: 'Escape', bubbles: true}))")
-                    pump(0.4)
+                    if not (len(step) > 3 and step[3]):
+                        js(ctl.host, "window.dispatchEvent(new KeyboardEvent("
+                                     "'keydown', {key: 'Escape'}))")
+                        pump(0.4)
         if args.dump_fixtures:
             from localflow.v2.ui.companion import readmodels
             fx = pathlib.Path(args.dump_fixtures)

@@ -66,6 +66,11 @@
   --chart-4: #CFC7B8;
   --chart-5: #9B6BC9;
   --chart-empty: #ECE8E0;
+  /* sequential magnitude, low -> high */
+  --seq-1: #E3F1ED;
+  --seq-2: #8FC7BF;
+  --seq-3: #3A968B;
+  --seq-4: #134A4B;
 
   /* focus */
   --focus: #379489;
@@ -178,6 +183,10 @@
     --chart-4: #5A544B;
     --chart-5: #C58AE5;
     --chart-empty: #2A2723;
+    --seq-1: #22393A;
+    --seq-2: #2E6A64;
+    --seq-3: #48A39A;
+    --seq-4: #A6DDD5;
     --focus: #55AAA4;
   }
 }
@@ -226,6 +235,10 @@
   --chart-4: #5A544B;
   --chart-5: #C58AE5;
   --chart-empty: #2A2723;
+  --seq-1: #22393A;
+  --seq-2: #2E6A64;
+  --seq-3: #48A39A;
+  --seq-4: #A6DDD5;
   --focus: #55AAA4;
 }
 

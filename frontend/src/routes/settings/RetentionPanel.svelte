@@ -1,6 +1,7 @@
 <script lang="ts">
   import TextField from '../../components/TextField.svelte';
   import Button from '../../components/Button.svelte';
+  import { untrack } from 'svelte';
 
   // Mounted once the retention policy has loaded: the fields start from
   // it and are the user's own from then on (a refresh never rewrites
@@ -15,7 +16,7 @@
     metadata: ['Dictation records', 'Times, apps and outcomes without their text.'],
     training_buffer: ['Training evidence', 'Examples collected for review and export.'],
   };
-  const initial = Object.fromEntries(KEYS.map((k) => [k, retention?.[k] != null ? String(retention[k]) : '']));
+  const initial = untrack(() => Object.fromEntries(KEYS.map((k) => [k, retention?.[k] != null ? String(retention[k]) : '']))) ;
   let values = $state<Record<string, string>>(initial);
 </script>
 

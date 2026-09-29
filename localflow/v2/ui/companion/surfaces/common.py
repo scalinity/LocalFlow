@@ -56,11 +56,19 @@ class Background:
     def __init__(self):
         self._seq = 0
         self._tokens = {}
+        self.running = set()  # keys with an action in flight
 
     def run(self, key, work, done):
         self._seq += 1
         token = self._seq
         self._tokens[key] = token
+        self.running.add(key)
+
+        def finish(out, err):
+            current = self._tokens.get(key) == token
+            if current:
+                self.running.discard(key)
+            done(out, err, current)
 
         def body():
             out, err = None, None
@@ -68,8 +76,7 @@ class Background:
                 out = work()
             except BaseException as e:  # reported, never raised off-thread
                 err = e
-            AppHelper.callAfter(
-                lambda: done(out, err, self._tokens.get(key) == token))
+            AppHelper.callAfter(finish, out, err)
         threading.Thread(target=body, name="localflow-hub-work",
                          daemon=True).start()
         return token

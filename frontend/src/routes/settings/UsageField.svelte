@@ -1,8 +1,9 @@
 <script lang="ts">
   import TextField from '../../components/TextField.svelte';
   import Button from '../../components/Button.svelte';
+  import { untrack } from 'svelte';
   let { initial, busy, onapply }: { initial: string; busy: boolean; onapply: (v: string) => void } = $props();
-  let value = $state(initial);
+  let value = $state(untrack(() => initial)); // filled once, then the user's own
 </script>
 
 <div class="field">

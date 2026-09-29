@@ -17,13 +17,16 @@
   import Icon from '../../components/Icon.svelte';
   import { act } from '../../stores/app.svelte';
   import { outcome, type Outcome } from '../../stores/outcome';
+  import { untrack } from 'svelte';
 
   let { entry = null, onclose }: { entry?: EntryRef | null; onclose: () => void } = $props();
 
-  const editing = !!entry;
-  let misspelling = $state(editing ? entry!.aliases.length > 0 : true);
-  let heard = $state(editing ? entry!.aliases.map((a) => a.alias).join(', ') : '');
-  let canonical = $state(editing ? entry!.canonical : '');
+  // The form starts from the entry as it was when the modal opened.
+  const opened = untrack(() => entry);
+  const editing = !!opened;
+  let misspelling = $state(opened ? opened.aliases.length > 0 : true);
+  let heard = $state(opened ? opened.aliases.map((a) => a.alias).join(', ') : '');
+  let canonical = $state(opened ? opened.canonical : '');
   let scopeKind = $state('global');
   let scopeValue = $state('');
   let busy = $state(false);
@@ -62,8 +65,8 @@
     let r;
     if (editing) {
       r = await act('dictionary.edit', {
-        entry_id: entry!.entry_id,
-        revision: entry!.revision,
+        entry_id: opened!.entry_id,
+        revision: opened!.revision,
         canonical,
         aliases,
       });
