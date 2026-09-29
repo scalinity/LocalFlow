@@ -65,6 +65,16 @@ class FakeHost:
     def show(self):
         self.window.visible = True
 
+    # the native answers the Scratchpad's PTT-time check reads
+    key = False
+    focus = False
+
+    def is_key(self):
+        return self.key
+
+    def webview_has_focus(self):
+        return self.focus
+
     # what the page sends
     def send(self, command, payload=None, request_id="r1"):
         raw = json.dumps({"bridge_version": 1, "request_id": request_id,

@@ -134,6 +134,7 @@ class CompanionController:
         self._flush_posted = False
         self._engine_recheck = False
         self.usage_reconciled_hooks = []
+        self.pre_flush_hooks = []  # main thread, before read models build
         self.paste_again_ended = lambda outcome: None
         self._register()
         self.state.on_update = self._state_updated
@@ -249,6 +250,11 @@ class CompanionController:
         if not getattr(self.host, "_loaded", False):
             return
         from . import readmodels
+        for hook in list(self.pre_flush_hooks):
+            try:
+                hook()
+            except Exception as e:
+                self._command_failed("pre_flush", type(e).__name__)
         shell = self.shell_model()
         for view in VIEWS:
             try:
