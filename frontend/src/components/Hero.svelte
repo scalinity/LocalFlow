@@ -162,7 +162,7 @@
     font-size: var(--text-md);
     line-height: 1.5;
     color: rgba(251, 247, 240, 0.9);
-    max-width: 44em;
+    max-width: 35em;
   }
   .hero :global(p strong) {
     color: #fffdf8;
