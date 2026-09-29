@@ -186,11 +186,48 @@ def test_voice_exclusion_names_the_rendered_snapshot():
           " names the snapshot the page rendered")
 
 
+class SavePanels(Panels):
+    def save_jsonl(self, name):
+        return self.answer
+
+
+def test_diagnostics_export_writes_the_rendered_window_redacted():
+    import json
+    panels = SavePanels()
+    with CWorld(file_panels=panels) as w:
+        w.d.v2log.emit("companion.test_event", level="INFO",
+                       detail="CANARY_detail_text_never_exported")
+        w.d.v2log.flush()
+        w.select("diagnostics")
+        w.ctl.request_flush()
+        w.drain()
+        token = w.host.latest("diagnostics")["data"]["token"]
+        out = w.host.send("diagnostics.export", {"token": "0" * 16})
+        assert out["status"] == "stale", out
+        out = w.host.send("diagnostics.export", {"token": token})
+        assert out["status"] == "cancelled", out
+        path = w.h.tmp / "events.jsonl"
+        panels.answer = str(path)
+        out = w.host.send("diagnostics.export", {"token": token})
+        assert out["status"] == "success", out
+        w.drain()
+        lines = path.read_text().splitlines()
+        assert len(lines) == out["result"]["records"] > 0, len(lines)
+        assert all(json.loads(x) for x in lines)
+        # the event is in the window; only its free text is withheld
+        assert "companion.test_event" in path.read_text()
+        assert "CANARY_detail_text_never_exported" not in path.read_text()
+        assert w.ctl.notes["diagnostics"]["code"] == "exported"
+    print("ok  diagnostics: Export Redacted writes the window the page"
+          " rendered, through the allowlist, to the panel's path")
+
+
 if __name__ == "__main__":
     from AppKit import NSApplication
     NSApplication.sharedApplication().setActivationPolicy_(1)
     for test in (
             test_mine_approve_undo_bind_to_the_rendered_lists,
             test_export_and_validate_bind_to_the_chosen_folder,
-            test_voice_exclusion_names_the_rendered_snapshot):
+            test_voice_exclusion_names_the_rendered_snapshot,
+            test_diagnostics_export_writes_the_rendered_window_redacted):
         test()

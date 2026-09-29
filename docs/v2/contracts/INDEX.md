@@ -26,6 +26,7 @@
 | `analytics.md` | Usage facts (one per logical dictation), versioned daily aggregates, reporting-timezone day buckets, metric labels/denominators, usage retention + delete controls, the Insights view, readiness aggregates | M13 | S08, S21, S19, E06, E13, S29.15 |
 | `learning.md` | Correction learning (candidates, the S29.7 classifier, the suggestion gate, approval/undo composing with M05, rejection suppression), review labels and grafts, the ASR promotion gate, review sampling | M14 | S22, S11, S29.6–S29.9, E13, E19.3–E19.4 |
 | `profile.md` | Your Voice: eligible evidence, measured views, evidence-linked interpretive cards, snapshots as records, deletion clearing, idle generation, no injection | M14 | S22, S25, S29.14, E13 |
+| `companion.md` | Desktop companion: WKWebView host and offline boundary, the allowlisted bridge and its statuses, read models, rendered-identity binding, the functionality matrix, the AppKit Hub kept as fallback | Quiet Editorial redesign | S19 (with `hub.md`) |
 | `targets.md` | Target snapshot identity and insertion outcomes | M01 (shape), M06/M08 (live) | S12, S18 |
 | `metrics.md` | Metric definitions and honest-null reporting | M01 | E06 |
 | `asr_hints.md` | Capability-qualified hint sets (immutable `HintSet`) | M01 (shape), M03/M05/M06 (live) | S30.1 |
