@@ -200,6 +200,8 @@ def window_image(win, host, path):
             return "window"
     except Exception:
         pass
+    if host is None:
+        return None
     box = {}
     host.webview.takeSnapshotWithConfiguration_completionHandler_(
         None, lambda img, err: box.setdefault("img", img))
@@ -245,6 +247,8 @@ def main(argv):
                          " navigating (for modals and states)")
     ap.add_argument("--package", help="Load production modules from this .app")
     ap.add_argument("--seed-out", help="Export synthetic data to a new isolated data home")
+    ap.add_argument("--review-panel", action="store_true",
+                    help="Also capture the native review panel with synthetic text")
     args = ap.parse_args(argv)
     if args.package:
         resources = pathlib.Path(args.package).resolve() / "Contents/Resources"
@@ -344,6 +348,26 @@ def main(argv):
                         js(ctl.host, "window.dispatchEvent(new KeyboardEvent("
                                      "'keydown', {key: 'Escape'}))")
                         pump(0.4)
+        if args.review_panel:
+            from types import SimpleNamespace
+            from localflow.v2.ui.transforms_panel import TransformPreviewPanel
+            panel = TransformPreviewPanel.alloc().init_panel(d)
+            panel.panel.setAlphaValue_(0)
+            source = "Please send the draft on monday, if the review is complete."
+            result = SimpleNamespace(
+                path="applied", job=SimpleNamespace(source=source),
+                output="Please send the draft on Monday if the review is complete.",
+                review_excerpts=())
+            panel.show(result, {"source": source},
+                       SimpleNamespace(name="Polish"), "synthetic-review")
+            panel.panel.setFrameOrigin_((-4000, 300))
+            panel.panel.setAlphaValue_(1)
+            pump(0.5)
+            kind = window_image(panel.panel, None,
+                                out / "transform-review-panel.png")
+            assert kind == "window", "native panel capture unavailable"
+            panel.panel.orderOut_(None)
+            shots.append(("transform-review-panel", "native ink", kind))
         if args.dump_fixtures:
             from localflow.v2.ui.companion import readmodels
             fx = pathlib.Path(args.dump_fixtures)
