@@ -134,6 +134,10 @@ DEFAULTS = {
     # Bernoulli percent over eligible jobs. The seed/policy are
     # recorded with every sampling decision.
     "review_sample_percent": 10,
+    # Which window Open Hub… shows: "companion" (the desktop companion,
+    # WKWebView) or "appkit" (the original AppKit Hub, kept as a
+    # fallback). A companion that cannot start falls back to "appkit".
+    "hub_ui": "companion",
 }
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent

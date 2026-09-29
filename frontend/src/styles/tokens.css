@@ -1,0 +1,238 @@
+/* Quiet Editorial — LocalFlow design tokens.
+ *
+ * Warm paper in light mode, warm ink in dark mode. Every page reads its
+ * neutrals, accents, radii, type and motion from here; no page invents
+ * its own palette. The native window pins `prefers-color-scheme` (System
+ * follows macOS; Light/Dark set the window appearance), so the dark set
+ * below is chosen by the platform, not by page state. `data-theme` exists
+ * for the browser preview only. */
+
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --shell: #F5F4F1;
+  --canvas: #FCFCFB;
+  --surface: #F8F7F4;
+  --card: #F4F2EE;
+  --raised: #FDFDFC;
+  --stone: #EFEBE3;
+  --hover: #F0EEE9;
+  --pressed: #E9E5DD;
+  --field: #FDFDFC;
+
+  /* text */
+  --text: #1A1A1A;
+  --text-2: #5C5852;
+  --text-3: #8A857D;
+  --text-inverse: #FCFCFB;
+
+  /* lines */
+  --hairline: #E7E4DE;
+  --divider: #D6D1C7;
+
+  /* accents */
+  --accent: #195C5D;
+  --accent-2: #379489;
+  --accent-wash: #E4EFEC;
+  --accent-muted: #7FB5AE;
+  --lavender: #8A5AB5;
+  --lavender-wash: #FBF2FF;
+  --lavender-line: #EBDDF5;
+
+  /* status */
+  --danger: #A63D2F;
+  --danger-wash: #F8E9E5;
+  --warning: #8A6212;
+  --warning-wash: #F7EEDC;
+  --success: #2E6F5E;
+  --success-wash: #E4EFEA;
+
+  /* primary control (charcoal ink) */
+  --primary: #1A1A1A;
+  --primary-hover: #2E2C29;
+  --primary-text: #FCFCFB;
+
+  /* shadows — only floating layers carry one */
+  --shadow-popover: 0 14px 34px -10px rgba(38, 30, 18, 0.20), 0 1px 3px rgba(38, 30, 18, 0.07);
+  --shadow-modal: 0 28px 70px -16px rgba(38, 30, 18, 0.28), 0 2px 8px rgba(38, 30, 18, 0.06);
+  --shadow-card-float: 0 10px 30px -14px rgba(38, 30, 18, 0.22), 0 1px 2px rgba(38, 30, 18, 0.05);
+  --scrim: rgba(28, 25, 20, 0.30);
+
+  /* chart palette (sequential teal + one warm neutral + lavender) */
+  --chart-1: #195C5D;
+  --chart-2: #379489;
+  --chart-3: #8CC5BD;
+  --chart-4: #CFC7B8;
+  --chart-5: #9B6BC9;
+  --chart-empty: #ECE8E0;
+
+  /* focus */
+  --focus: #379489;
+  --focus-ring: 0 0 0 2px var(--canvas), 0 0 0 4px var(--focus);
+
+  /* typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-serif: "New York", "Iowan Old Style", ui-serif, Georgia, serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
+
+  --text-xs: 11.5px;
+  --text-sm: 12.5px;
+  --text-base: 13.5px;
+  --text-md: 14.5px;
+  --text-lg: 16px;
+  --title: 20px;
+  --heading: 17px;
+  --display-sm: 26px;
+  --display: 34px;
+  --display-lg: 44px;
+  --stat: 32px;
+
+  --leading-tight: 1.2;
+  --leading: 1.45;
+  --leading-serif: 1.55;
+  --tracking-caps: 0.07em;
+
+  /* shape */
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* space (4 pt grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 60px;
+
+  /* controls */
+  --control-sm: 28px;
+  --control-md: 36px;
+  --control-lg: 38px;
+
+  /* shell geometry (measured from the design references) */
+  --titlebar: 52px;
+  --sidebar-width: 216px;
+  --rail-width: 60px;
+  --canvas-inset: 9px;
+  --canvas-top: 54px;
+  --page-pad: 60px;
+  --page-pad-wide: 40px;
+  --content-max: 1080px;
+  --nav-item: 36px;
+
+  /* motion */
+  --dur-fast: 110ms;
+  --dur: 170ms;
+  --dur-slow: 260ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --shell: #141311;
+    --canvas: #1A1917;
+    --surface: #1E1D1A;
+    --card: #211F1C;
+    --raised: #282521;
+    --stone: #282521;
+    --hover: #302C27;
+    --pressed: #37322C;
+    --field: #1E1C19;
+    --text: #F3F0EA;
+    --text-2: #AAA59D;
+    --text-3: #7E7972;
+    --text-inverse: #1A1917;
+    --hairline: #34312C;
+    --divider: #454038;
+    --accent: #55AAA4;
+    --accent-2: #55AAA4;
+    --accent-wash: #1E2E2C;
+    --accent-muted: #3E7F7A;
+    --lavender: #C58AE5;
+    --lavender-wash: #2C2231;
+    --lavender-line: #43334D;
+    --danger: #E08A78;
+    --danger-wash: #3A2320;
+    --warning: #D9AB55;
+    --warning-wash: #372C1A;
+    --success: #74C2A6;
+    --success-wash: #1D2F29;
+    --primary: #F3F0EA;
+    --primary-hover: #FFFFFF;
+    --primary-text: #1A1917;
+    --shadow-popover: 0 16px 40px -10px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 245, 230, 0.05);
+    --shadow-modal: 0 30px 80px -16px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 245, 230, 0.05);
+    --shadow-card-float: 0 12px 34px -14px rgba(0, 0, 0, 0.6);
+    --scrim: rgba(8, 7, 6, 0.55);
+    --chart-1: #55AAA4;
+    --chart-2: #3E7F7A;
+    --chart-3: #9AD3CC;
+    --chart-4: #5A544B;
+    --chart-5: #C58AE5;
+    --chart-empty: #2A2723;
+    --focus: #55AAA4;
+  }
+}
+
+/* Browser-preview override (the native window sets the appearance). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --shell: #141311;
+  --canvas: #1A1917;
+  --surface: #1E1D1A;
+  --card: #211F1C;
+  --raised: #282521;
+  --stone: #282521;
+  --hover: #302C27;
+  --pressed: #37322C;
+  --field: #1E1C19;
+  --text: #F3F0EA;
+  --text-2: #AAA59D;
+  --text-3: #7E7972;
+  --text-inverse: #1A1917;
+  --hairline: #34312C;
+  --divider: #454038;
+  --accent: #55AAA4;
+  --accent-2: #55AAA4;
+  --accent-wash: #1E2E2C;
+  --accent-muted: #3E7F7A;
+  --lavender: #C58AE5;
+  --lavender-wash: #2C2231;
+  --lavender-line: #43334D;
+  --danger: #E08A78;
+  --danger-wash: #3A2320;
+  --warning: #D9AB55;
+  --warning-wash: #372C1A;
+  --success: #74C2A6;
+  --success-wash: #1D2F29;
+  --primary: #F3F0EA;
+  --primary-hover: #FFFFFF;
+  --primary-text: #1A1917;
+  --shadow-popover: 0 16px 40px -10px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 245, 230, 0.05);
+  --shadow-modal: 0 30px 80px -16px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 245, 230, 0.05);
+  --shadow-card-float: 0 12px 34px -14px rgba(0, 0, 0, 0.6);
+  --scrim: rgba(8, 7, 6, 0.55);
+  --chart-1: #55AAA4;
+  --chart-2: #3E7F7A;
+  --chart-3: #9AD3CC;
+  --chart-4: #5A544B;
+  --chart-5: #C58AE5;
+  --chart-empty: #2A2723;
+  --focus: #55AAA4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur: 0ms;
+    --dur-slow: 0ms;
+  }
+}

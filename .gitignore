@@ -46,3 +46,9 @@ docs/LocalFlow_M11_Read_Only_Audit_1ee8e44.md
 # Agent runtime state (never committed)
 .claude/
 .codex/
+
+# Desktop companion frontend: build-time dependencies and caches only
+# (the production build is committed under localflow/v2/ui/companion/web/)
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/

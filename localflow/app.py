@@ -5412,6 +5412,13 @@ class AppDelegate(NSObject):
     # ---- Dictionary management (Spec S11, M05) ---------------------------
 
     def openDictionaryPanel_(self, sender):
+        if self.cfg.get("hub_ui", "appkit") == "companion":
+            # The companion carries the Dictionary as a route (the same
+            # focus-steal guard applies through openHub_).
+            self.openHub_(sender)
+            if self._hub is not None and hasattr(self._hub, "show_route"):
+                self._hub.show_route("dictionary")
+            return
         if self._vocab is None:
             return
         try:
@@ -5444,35 +5451,64 @@ class AppDelegate(NSObject):
             return
         try:
             if self._hub is None:
-                from .v2 import ui as v2_ui
-                from .v2 import history_queries, training_data
-                self._hub = v2_ui.HubController.alloc().initWithSpec_({
-                    "store": self.store,
-                    "history_service": history_queries.HistoryQueryService(
-                        self.store),
-                    "training_service": training_data.TrainingDataService(
-                        self.store, emit=self.v2log.emit),
-                    "styles_service": self._styles,
-                    "snippets_service": self._snip_store,
-                    "transforms_service": self._tf_store,
-                    "notes_service": self._notes_store,
-                    "insights_service": self._insights,
-                    "learning_service": self._learning,
-                    "review_service": self._review,
-                    "sampling_service": self._sampling,
-                    "splits_service": self._splits,
-                    "profile_service": self._profile,
-                    "export_service": self._exporter,
-                    "transforms_store": self._tf_store,
-                    "diagnostics_provider": self._hub_diagnostics_spec,
-                    "coordinator": self,
-                    "replay": v2_ui.ReplayService(),
-                    "capabilities": self._capability_manifest,
-                })
+                self._hub = self._make_hub()
             self._hub.showWindow_(sender)
         except Exception as e:
             self.v2log.emit("hub.open_failed", level="WARNING",
                             reason_code=type(e).__name__)
+
+    @objc.python_method
+    def _make_hub(self):
+        """The Hub window object: the desktop companion (``hub_ui``
+        "companion", the default) or the AppKit Hub. Both take the same
+        services and answer the same coordinator calls; a companion that
+        cannot start (e.g. its bundled page is missing) falls back to the
+        AppKit Hub so Open Hub… always opens something."""
+        from .v2 import ui as v2_ui
+        from .v2 import history_queries, training_data
+        spec = {
+            "store": self.store,
+            "history_service": history_queries.HistoryQueryService(
+                self.store),
+            "training_service": training_data.TrainingDataService(
+                self.store, emit=self.v2log.emit),
+            "styles_service": self._styles,
+            "snippets_service": self._snip_store,
+            "transforms_service": self._tf_store,
+            "notes_service": self._notes_store,
+            "insights_service": self._insights,
+            "learning_service": self._learning,
+            "review_service": self._review,
+            "sampling_service": self._sampling,
+            "splits_service": self._splits,
+            "profile_service": self._profile,
+            "export_service": self._exporter,
+            "transforms_store": self._tf_store,
+            "vocabulary_store": self._vocab,
+            "diagnostics_provider": self._hub_diagnostics_spec,
+            "coordinator": self,
+            "replay": v2_ui.ReplayService(),
+            "capabilities": self._capability_manifest,
+        }
+        if self.cfg.get("hub_ui", "appkit") == "companion":
+            try:
+                from .v2.ui.companion.controller import CompanionController
+                return CompanionController(spec)
+            except Exception as e:
+                self.v2log.emit("hub.companion_failed", level="WARNING",
+                                reason_code=type(e).__name__)
+        return v2_ui.HubController.alloc().initWithSpec_(spec)
+
+    @objc.python_method
+    def hubConfigSummary(self):
+        """The configured dictation settings the companion's Settings shows
+        (read-only there: they are set in config.json). An allowlist —
+        no paths, no retention internals."""
+        cfg = self.cfg or {}
+        return {k: cfg.get(k) for k in (
+            "hotkey", "input_device", "model", "cleanup", "cleanup_model",
+            "append_space", "restore_clipboard", "min_duration_sec",
+            "max_duration_sec", "hands_free", "normalization_locale")}
 
     @objc.python_method
     def _hub_diagnostics_spec(self):
