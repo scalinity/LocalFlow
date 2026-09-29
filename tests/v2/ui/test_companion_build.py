@@ -74,9 +74,13 @@ def test_document_loads_only_its_own_assets():
 
 
 def test_preview_fixtures_never_ship():
+    # A string literal survives minification; an identifier may not.
+    fixture_note = json.loads((ROOT / "frontend/src/fixtures/synthetic.json")
+                              .read_text())["note"][:40]
     for js in WEB.glob("assets/*.js"):
         text = js.read_text()
-        for marker in ("connectPreview", "synthetic.json", "__preview__"):
+        for marker in ("connectPreview", "synthetic.json", "__preview__",
+                       fixture_note):
             assert marker not in text, f"{marker} in {js.name}"
     print("ok  browser-preview fixtures are not in the production bundle")
 

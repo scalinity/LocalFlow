@@ -9,6 +9,7 @@
   import Empty from '../../components/Empty.svelte';
   import Icon from '../../components/Icon.svelte';
   import Annotate from './Annotate.svelte';
+  import { untrack } from 'svelte';
   import { act } from '../../stores/app.svelte';
   import { shortDate } from '../../stores/format';
   import type { Outcome } from '../../stores/outcome';
@@ -18,7 +19,7 @@
   const d = $derived(data.detail);
   const listened = $derived(!!d && data.listened_for === d.example_id);
 
-  let q = $state(search);
+  let q = $state(untrack(() => search));
   let note = $state<Outcome | null>(null);
   let busy = $state(false);
   let confirmDelete = $state(false);

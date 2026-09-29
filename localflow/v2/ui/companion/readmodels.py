@@ -217,15 +217,13 @@ def settings(ctl):
     return out
 
 
-# ---- the rest (filled in per surface) --------------------------------------------------
+# ---- dispatch --------------------------------------------------------------------
 
 
-def passthrough(ctl, view):
-    v = ctl.state.views[view]
-    out = _base(v)
-    out["data"] = v.get("data")
-    out["note"] = ctl.notes.get(view)
-    return out
+def unmodeled(ctl, view):
+    """A view without its own read model shows nothing: raw service data
+    never crosses because nobody picked its fields."""
+    return {"loading": False, "error": "unmodeled", "data": None}
 
 
 BUILDERS = {"home": home, "history": history, "dictionary": dictionary,
@@ -235,4 +233,4 @@ BUILDERS = {"home": home, "history": history, "dictionary": dictionary,
 def build(ctl, view):
     from . import surfaces
     fn = BUILDERS.get(view) or surfaces.READ_MODELS.get(view)
-    return fn(ctl) if fn is not None else passthrough(ctl, view)
+    return fn(ctl) if fn is not None else unmodeled(ctl, view)

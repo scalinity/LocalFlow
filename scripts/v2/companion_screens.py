@@ -228,6 +228,13 @@ def main(argv):
                     help="a JSON list of [route, js] steps run after"
                          " navigating (for modals and states)")
     args = ap.parse_args(argv)
+    if args.dump_fixtures:
+        # Committed fixtures never carry this machine's zone: History,
+        # the seed and the reporting zone all resolve TZ (the slash form
+        # is the one ids.local_zone_name() accepts).
+        import os
+        os.environ["TZ"] = "Etc/UTC"
+        time.tzset()
     out = pathlib.Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     width, height = (float(x) for x in args.size.split("x"))
@@ -302,14 +309,65 @@ def main(argv):
             from localflow.v2.ui.companion import readmodels
             fx = pathlib.Path(args.dump_fixtures)
             fx.mkdir(parents=True, exist_ok=True)
-            payload = {"shell": ctl.shell_model(), "views": {}}
-            for view in ("home", "history", "dictionary", "settings"):
-                ctl.state.select_view(view)
-                ctl.state.wait_for_queries(5)
+            st = ctl.state
+
+            def settle():
+                st.wait_for_queries(5)
                 pump(0.6)
+                ctl.request_flush()
+                pump(0.3)
+
+            payload = {"shell": ctl.shell_model(), "views": {}}
+            for view in ("home", "history", "dictionary", "settings",
+                         "styles", "snippets", "transforms", "scratchpad",
+                         "insights", "diagnostics", "models"):
+                st.select_view(view)
+                settle()
+                if view == "history":
+                    rows = W.history_rows(ctl)
+                    if rows:
+                        st.select_history_row(rows[0]["kind"], rows[0]["id"])
+                        settle()
+                if view == "scratchpad":
+                    notes = (st.views["scratchpad"].get("data") or {}) \
+                        .get("notes") or []
+                    if notes:
+                        st.select_scratchpad_note(notes[0]["note_id"])
+                        settle()
+                    payload["scratchpad_content"] = {
+                        "note_id": ctl.scratchpad_editor.note_id,
+                        "version": ctl.scratchpad_mirror.version,
+                        "content": ctl.scratchpad_mirror.value}
                 payload["views"][view] = readmodels.build(ctl, view)
+                if view == "insights":
+                    st.select_insights_subview("voice")
+                    settle()
+                    payload["views"]["insights_voice"] = \
+                        readmodels.build(ctl, view)
+                    st.select_insights_subview("usage")
+                    settle()
+                if view == "models":
+                    for tab in ("evidence", "review", "splits", "export"):
+                        st.select_models_subview("training")
+                        st.select_training_tab(tab)
+                        settle()
+                        if tab == "evidence":
+                            ex = ((st.views["models"].get("data") or {})
+                                  .get("examples") or [])
+                            if ex:
+                                st.select_training_example(
+                                    ex[0]["example_id"])
+                                settle()
+                        payload["views"][f"models_{tab}"] = \
+                            readmodels.build(ctl, view)
+                    st.select_models_subview("engines")
+                    settle()
+            payload["note"] = ("Synthetic fixtures for the browser preview"
+                               " (npm run dev): read models captured from"
+                               " scripts/v2/companion_screens.py over a"
+                               " temporary store. Never used by the app.")
             (fx / "synthetic.json").write_text(
-                json.dumps(payload, indent=1, ensure_ascii=False))
+                json.dumps(payload, indent=1, ensure_ascii=False) + "\n")
         print(json.dumps({
             "shots": shots, "csp_violations": ctl.csp_violations,
             "frontmost_unchanged": NSWorkspace.sharedWorkspace()

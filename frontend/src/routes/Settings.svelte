@@ -393,22 +393,6 @@
     color: var(--text);
     font-weight: 600;
   }
-  .days {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 180px;
-    flex: none;
-  }
-  .unit {
-    color: var(--text-2);
-    font-size: var(--text-base);
-  }
-  .apply {
-    margin-top: 18px;
-    display: flex;
-    justify-content: flex-end;
-  }
   .foot {
     margin-top: 16px;
     font-size: var(--text-sm);

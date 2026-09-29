@@ -557,6 +557,19 @@ def test_theme_preference_persists():
     print("ok  prefs: theme persists, invalid values fall back")
 
 
+def test_every_view_has_its_own_read_model():
+    from localflow.v2.ui.companion import readmodels, surfaces
+    from localflow.v2.ui.companion.state import VIEWS
+    with CWorld() as w:
+        for view in VIEWS:
+            assert view in readmodels.BUILDERS or \
+                view in surfaces.READ_MODELS, f"{view} has no read model"
+            w.select(view)
+            model = readmodels.build(w.ctl, view)
+            assert model.get("error") != "unmodeled", view
+    print("ok  read models: every view picks its own fields")
+
+
 def test_close_hides_and_reopen_keeps_state():
     with CWorld() as w:
         w.select("dictionary")
@@ -584,5 +597,6 @@ if __name__ == "__main__":
             test_dictionary_import_export_never_take_a_path_from_the_page,
             test_settings_outcomes_and_confirmation,
             test_theme_preference_persists,
+            test_every_view_has_its_own_read_model,
             test_close_hides_and_reopen_keeps_state):
         test()

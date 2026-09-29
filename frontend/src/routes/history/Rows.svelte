@@ -35,6 +35,8 @@
   }
 </script>
 
+<!-- Arrow keys bubble up from the focused row buttons inside. -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="groups" role="list" aria-label={label} onkeydown={keydown}>
   {#each groups as group (group.label)}
     <section class="group" role="listitem">
