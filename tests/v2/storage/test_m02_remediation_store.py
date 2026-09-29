@@ -12,6 +12,7 @@ Run: .venv/bin/python tests/v2/storage/test_m02_remediation_store.py
 
 import errno
 import json
+import os
 import pathlib
 import sqlite3
 import subprocess
@@ -158,13 +159,16 @@ def test_failed_unlink_stays_pending_then_retries():
         job, _ = st.create_job()
         aid = audio(st, job)
         name = f"{aid}.wav"
-        real = pathlib.Path.unlink
+        # Injected at os.unlink: the purge removes artifacts through the
+        # confined no-follow helper (unlink via a directory descriptor),
+        # and Path.unlink reaches the same call.
+        real = os.unlink
 
-        def failing(self, *a, **k):
-            if self.name == name:
+        def failing(path, *a, **k):
+            if pathlib.Path(path).name == name:
                 raise PermissionError(errno.EACCES, "injected")
-            return real(self, *a, **k)
-        pathlib.Path.unlink = failing
+            return real(path, *a, **k)
+        os.unlink = failing
         try:
             res = st.delete_everywhere("job", job)
             # Honest: the row is purged but the file is pending.
@@ -181,7 +185,7 @@ def test_failed_unlink_stays_pending_then_retries():
             assert not v["ok"] and v["pending_purges"] == 1
             assert v["orphan_files"] == []
         finally:
-            pathlib.Path.unlink = real
+            os.unlink = real
         assert st.reconcile_purges() == 0
         assert wavs(st) == []
         assert st.verify()["ok"]
@@ -194,13 +198,13 @@ def test_pending_intent_finishes_at_next_open():
     with tempfile.TemporaryDirectory() as td:
         st = new_store(td)
         aid = audio(st, "job-p")
-        real = pathlib.Path.unlink
-        pathlib.Path.unlink = lambda self, *a, **k: (_ for _ in ()).throw(
+        real = os.unlink
+        os.unlink = lambda *a, **k: (_ for _ in ()).throw(
             PermissionError(errno.EPERM, "injected"))
         try:
             st.delete_everywhere("job", "job-p")
         finally:
-            pathlib.Path.unlink = real
+            os.unlink = real
         st.close()
         assert wavs(st) == [f"{aid}.wav"]
         st2 = new_store(td)  # the open drains pending intents first
