@@ -77,8 +77,8 @@ clearly synthetic.
   dark primary.
 - **Adapted:** "Where it applies" (the entry's scope) replaces sharing,
   and the primary stays disabled until both fields are filled.
-- **Result:** `dictionary-add`. **Mismatch:** the modal is about 10%
-  wider than the reference, to fit the scope row.
+- **Result:** `dictionary-add`. **Mismatch:** the modal is the reference's width and about
+  20 pt taller, for the scope row.
 
 ## insights-usage.png → Insights, Your Usage
 
@@ -99,7 +99,8 @@ clearly synthetic.
 
 ## insights-your-voice.png and insights-your-voice-details.png → Insights, Your Voice
 
-- **Adopted:** the progress track with a meta line, a large serif profile
+- **Adopted:** the progress track (shown while fewer words than the
+  threshold are measured) with a meta line, a large serif profile
   hero with a caps "Voice profile" label and an illustration slot, then
   two columns of serif phrase and time cards with caps labels.
 - **Adapted:** every card is the local ProfileService's deterministic
@@ -132,8 +133,8 @@ clearly synthetic.
 - **Not copied:** Beta badge, Opt-in switch, the "⌥ O to view changes"
   hint, Reset to defaults.
 - **Result:** `transforms-page`. **Mismatch:** the synthetic transforms
-  have no menu keys, so cards read "No menu key" where the reference
-  shows keycaps.
+  have no menu keys, so the cards show no keycap where the reference
+  does.
 
 ## transform-onboarding-overview.png, -hotkey.png, -enable.png → Transforms onboarding
 

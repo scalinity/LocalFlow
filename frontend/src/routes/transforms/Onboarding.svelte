@@ -101,12 +101,12 @@
       <h2 class="serif headline">Review the change, then accept it</h2>
       <div class="stage center">
         <div class="review" aria-hidden="true">
-          <div class="review-head"><span>2 changes</span><span class="muted-ink">Polish</span></div>
+          <div class="review-head"><span>2 changes</span><span class="muted-ink">Configure Polish</span></div>
           <p class="review-body">
             <del>hey can we push</del><ins>Can we move</ins> the launch review to <del>thursday</del><ins>Thursday?</ins> The demo still needs another pass, and I’d like Sam to be there.
           </p>
           <div class="review-acts">
-            <span class="pill">Accept</span><span class="ghost">Copy</span><span class="ghost">Retry original</span>
+            {#each ['Accept', 'Copy', 'Retry Original', 'Apply Another…', 'Transform Output…', 'Save to Scratchpad'] as a (a)}<span class="act">{a}</span>{/each}
           </div>
         </div>
       </div>
@@ -333,9 +333,7 @@
   .review-head {
     display: flex;
     justify-content: space-between;
-    padding-bottom: 12px;
     margin-bottom: 14px;
-    border-bottom: 1px solid #34312c;
     font-weight: 600;
   }
   .muted-ink {
@@ -357,19 +355,16 @@
   }
   .review-acts {
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
     margin-top: 16px;
     font-size: var(--text-base);
   }
-  .pill {
+  /* The real panel's six actions, equal weight. */
+  .act {
     padding: 5px 12px;
     border-radius: 7px;
-    background: #f3f0ea;
-    color: #1a1917;
-    font-weight: 500;
-  }
-  .ghost {
-    padding: 5px 10px;
-    color: #aaa59d;
+    background: #34312c;
+    color: #f3f0ea;
   }
 </style>

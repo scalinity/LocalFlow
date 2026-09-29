@@ -118,17 +118,21 @@
     background: var(--card);
     border: 1px solid var(--hairline);
     border-radius: var(--radius-lg);
-    padding: 24px 22px;
+    padding: 24px 18px;
   }
-  .row3 {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1.9fr;
-    gap: 22px;
-  }
+  /* One four-column grid for both rows, so the lower split sits under
+     the upper gutter. */
+  .row3,
   .row2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 22px;
+  }
+  .row3 .wide,
+  .row2 > * {
+    grid-column: span 2;
+  }
+  .row2 {
     margin-top: 22px;
   }
   .big {
@@ -221,6 +225,9 @@
     }
     .row2 {
       grid-template-columns: 1fr;
+    }
+    .row2 > * {
+      grid-column: auto;
     }
   }
 </style>

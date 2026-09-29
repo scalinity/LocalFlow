@@ -24,7 +24,7 @@
         <span class="text">{it.label}</span>
       </span>
       <span class="track" aria-hidden="true">
-        <span class="fill" style:width="{Math.max(2, (it.value / max) * 100)}%"></span>
+        <span class="fill" class:top={it.value === max} style:width="{Math.max(2, (it.value / max) * 100)}%"></span>
       </span>
       <span class="value tabular" aria-label="{it.value} {unit}, {pct(it.value)} percent">{pct(it.value)}%</span>
     </li>
@@ -72,7 +72,7 @@
     border-radius: 4px;
     background: var(--seq-3);
   }
-  .bar-row:first-child .fill {
+  .fill.top {
     background: var(--seq-4);
   }
   .value {

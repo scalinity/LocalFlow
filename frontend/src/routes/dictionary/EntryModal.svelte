@@ -163,14 +163,14 @@
     font-size: 19px;
     font-weight: 600;
     letter-spacing: -0.01em;
-    margin-bottom: 22px;
+    margin-bottom: 14px;
   }
   .option {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 40px;
-    margin-bottom: 8px;
+    min-height: 36px;
+    margin-bottom: 4px;
   }
   .opt-label {
     display: inline-flex;
@@ -193,7 +193,7 @@
     grid-template-columns: 1fr;
     gap: 14px;
     align-items: center;
-    margin-top: 14px;
+    margin-top: 10px;
   }
   .fields.pair {
     grid-template-columns: 1fr auto 1fr;
@@ -206,7 +206,7 @@
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    margin-top: 22px;
+    margin-top: 18px;
   }
   .note {
     margin-top: 14px;

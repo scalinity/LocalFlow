@@ -73,7 +73,7 @@
   ],
   [
     "models",
-    "[...document.querySelectorAll('[role=tab]')].find(b => b.textContent.trim() === 'Training data').click(); 1",
+    "[...document.querySelectorAll(\"[role=tab]\")].find(b => b.textContent.trim() === \"Training data\").click(); setTimeout(() => [...document.querySelectorAll(\"[role=radio]\")].find(b => b.textContent.trim() === \"Evidence\")?.click(), 400); 1",
     "models-evidence",
     true
   ],

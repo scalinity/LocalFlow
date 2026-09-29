@@ -60,7 +60,7 @@
   {/snippet}
 
   <div class="hero">
-    <Hero tone="dusk">
+    <Hero tone="dusk" compact>
       <div class="hero-grid">
         <div>
           <h2>Rewrite anything you’ve written.</h2>
@@ -99,7 +99,7 @@
         <article class="card" class:off={!t.enabled}>
           <button type="button" class="card-open" onclick={() => (editor = { id: t.transform_id })} aria-label="Open {t.name}">
             <div class="key-row">
-              {#if t.shortcut}<Kbd>⌘ {t.shortcut.toUpperCase()}</Kbd>{:else}<span class="nokey">No menu key</span>{/if}
+              {#if t.shortcut}<Kbd>⌘ {t.shortcut.toUpperCase()}</Kbd>{/if}
               <span class="tag">{ORIGIN[t.origin] ?? t.origin}</span>
               {#if t.auto_apply}<span class="tag lav">While dictating</span>{/if}
             </div>
@@ -241,10 +241,6 @@
     min-height: 26px;
     margin-bottom: 12px;
     padding-right: 48px;
-  }
-  .nokey {
-    font-size: var(--text-sm);
-    color: var(--text-3);
   }
   .card h3 {
     font-size: var(--text-lg);

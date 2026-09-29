@@ -81,7 +81,9 @@
 
 <div class="voice">
   <div class="progress-row">
-    <div class="track" aria-hidden="true"><span class="fill" style:width="{p?.state === 'current' ? 100 * progress : 0}%"></span></div>
+    {#if p?.state === 'current' && words < threshold}
+      <div class="track" aria-hidden="true"><span class="fill" style:width="{100 * progress}%"></span></div>
+    {/if}
     <div class="meta">
       <span>{p?.computed_at_utc ? `Measured ${shortDate(p.computed_at_utc)}` : 'Not measured yet'}</span>
       <span class="gen">

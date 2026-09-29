@@ -76,7 +76,7 @@
     transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
   }
   .lg input {
-    height: 46px;
+    height: var(--control-lg);
     font-size: var(--text-lg);
     padding: 0 16px;
   }

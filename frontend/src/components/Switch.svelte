@@ -38,6 +38,10 @@
     transition: background-color var(--dur) var(--ease);
     flex: none;
   }
+  /* Off: a ring carries the boundary (3:1) while the track stays light. */
+  .switch:not(.on) {
+    box-shadow: inset 0 0 0 1px var(--switch-ring);
+  }
   .switch.on {
     background: var(--primary);
   }
@@ -48,7 +52,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: var(--canvas);
+    background: var(--switch-knob);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
     transition: transform var(--dur) var(--ease);
   }

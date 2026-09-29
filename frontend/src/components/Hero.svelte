@@ -129,6 +129,16 @@
     position: relative;
     padding: 40px 50px 34px;
   }
+  /* Keeps the copy readable where the warm glow runs lightest: above
+     the field (-2), under the text. */
+  .body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(20, 15, 11, 0.5) 0%, rgba(20, 15, 11, 0.38) 50%, rgba(20, 15, 11, 0) 82%);
+  }
   .compact .body {
     padding: 34px 40px;
   }
@@ -136,6 +146,8 @@
     position: absolute;
     top: 16px;
     right: 16px;
+    border-radius: 50%;
+    background: rgba(20, 15, 11, 0.32);
   }
   .hero :global(h2) {
     font-family: var(--font-serif);

@@ -95,7 +95,6 @@
   .export {
     display: grid;
     gap: 18px;
-    max-width: 760px;
   }
   .card {
     background: var(--card);

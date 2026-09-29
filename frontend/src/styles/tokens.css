@@ -19,12 +19,14 @@
   --stone: #EFEBE3;
   --hover: #F0EEE9;
   --pressed: #E9E5DD;
+  --switch-ring: var(--text-3);
+  --switch-knob: var(--canvas);
   --field: #FDFDFC;
 
   /* text */
   --text: #1A1A1A;
   --text-2: #5C5852;
-  --text-3: #8A857D;
+  --text-3: #736E67;
   --text-inverse: #FCFCFB;
 
   /* lines */
@@ -78,7 +80,7 @@
 
   /* typography */
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-  --font-serif: "New York", "Iowan Old Style", ui-serif, Georgia, serif;
+  --font-serif: "New York", ui-serif, "Iowan Old Style", Georgia, serif;
   --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
 
   --text-xs: 11.5px;
@@ -90,7 +92,7 @@
   --heading: 17px;
   --display-sm: 26px;
   --display: 34px;
-  --display-lg: 44px;
+  --display-lg: 38px;
   --stat: 32px;
 
   --leading-tight: 1.2;
@@ -147,13 +149,15 @@
     --surface: #1E1D1A;
     --card: #211F1C;
     --raised: #282521;
-    --stone: #282521;
+    --stone: #34302B;
     --hover: #302C27;
-    --pressed: #37322C;
+    --pressed: #3D3832;
+    --switch-ring: transparent;
+    --switch-knob: var(--text-2);
     --field: #1E1C19;
     --text: #F3F0EA;
     --text-2: #AAA59D;
-    --text-3: #7E7972;
+    --text-3: #908B83;
     --text-inverse: #1A1917;
     --hairline: #34312C;
     --divider: #454038;
@@ -199,13 +203,15 @@
   --surface: #1E1D1A;
   --card: #211F1C;
   --raised: #282521;
-  --stone: #282521;
+  --stone: #34302B;
   --hover: #302C27;
-  --pressed: #37322C;
+  --pressed: #3D3832;
+  --switch-ring: transparent;
+  --switch-knob: var(--text-2);
   --field: #1E1C19;
   --text: #F3F0EA;
   --text-2: #AAA59D;
-  --text-3: #7E7972;
+  --text-3: #908B83;
   --text-inverse: #1A1917;
   --hairline: #34312C;
   --divider: #454038;
