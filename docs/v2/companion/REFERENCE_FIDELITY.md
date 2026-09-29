@@ -68,7 +68,9 @@ clearly synthetic.
   own vocabulary states), rows show scope tags, and unapproved rows
   carry Approve.
 - **Not copied:** Personal and Shared with team.
-- **Result:** `dictionary`. **Mismatch:** none structural.
+- **Result:** `dictionary`. **Mismatch:** the hero is about 25 pt taller:
+  hero copy is capped at 35em so its line ends keep 4.5:1 over the
+  warm glow, and this body wraps to three lines.
 
 ## dictionary-add-word.png → Dictionary, Add modal
 
