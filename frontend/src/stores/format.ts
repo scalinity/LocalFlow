@@ -22,10 +22,12 @@ export function minutes(seconds: number | null | undefined): string {
 }
 
 const STATE_LABEL: Record<string, string> = {
+  confirmed: 'Inserted',
   insertion_confirmed: 'Inserted',
   insertion_posted: 'Sent',
-  insertion_unverified: 'Sent, not verified',
-  posted_unverified: 'Sent, not verified',
+  insertion_unverified: 'Sent',
+  posted_unverified: 'Sent',
+  target_changed: 'Destination changed',
   saved_not_inserted: 'Kept, not inserted',
   failed_recoverable: 'Failed — can retry',
   failed: 'Failed',
@@ -37,6 +39,25 @@ const STATE_LABEL: Record<string, string> = {
 export function stateLabel(s: string | null | undefined): string {
   if (!s) return '';
   return STATE_LABEL[s] ?? s.replace(/_/g, ' ');
+}
+
+export function historyBadge(s: string | null | undefined): string {
+  return ['insertion_confirmed', 'insertion_unverified', 'posted_unverified', 'insertion_posted'].includes(s ?? '') ? '' : stateLabel(s);
+}
+
+export function deliveryExplanation(s: string | null | undefined): string {
+  return ['insertion_unverified', 'posted_unverified'].includes(s ?? '')
+    ? 'LocalFlow sent the text but could not independently verify the destination.' : '';
+}
+
+export function insertionMethod(method: string): string {
+  return ({ clipboard_transaction: 'paste', ax_replacement: 'direct insertion', none: 'no insertion' } as Record<string, string>)[method] ?? method.replace(/_/g, ' ');
+}
+
+export function capabilityLabel(c: { supported?: boolean; reason?: string | null } | null | undefined): string {
+  if (c?.supported === true) return 'Available';
+  const reasons: Record<string, string> = { disabled_until_qualified: 'Not enabled', not_exposed_on_dictation_path: 'Not exposed', unsupported_by_adapter: 'Not available in this adapter' };
+  return reasons[c?.reason ?? ''] ?? 'Unknown';
 }
 
 export function words(text: string | null | undefined): number {

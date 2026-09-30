@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { dayLabel, stateLabel } from '../../stores/format';
+  import { dayLabel, stateLabel, historyBadge } from '../../stores/format';
 
   import type { Group, Row } from "./types";
 
@@ -59,8 +59,8 @@
               {:else}
                 <span class="text empty">No text kept · {stateLabel(row.state)}</span>
               {/if}
-              {#if row.state && row.state !== 'insertion_confirmed' && row.preview}
-                <span class="state">{stateLabel(row.state)}</span>
+              {#if historyBadge(row.state) && row.preview}
+                <span class="state">{historyBadge(row.state)}</span>
               {/if}
             </button>
             {#if expanded && isSel(row)}

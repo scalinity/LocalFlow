@@ -6,7 +6,7 @@
   import Popover from '../../components/Popover.svelte';
   import MenuList from '../../components/MenuList.svelte';
   import { app, onEvent } from '../../stores/app.svelte';
-  import { stateLabel } from '../../stores/format';
+  import { stateLabel, deliveryExplanation, insertionMethod } from '../../stores/format';
   import type { Outcome } from '../../stores/outcome';
   import { onMount } from 'svelte';
   import {
@@ -76,7 +76,11 @@
     if (note?.tone === 'success') teaching = false;
   }
 
-  const finalLabel = $derived(detail.final_stage === 'transformed' ? 'Inserted text · transformed' : 'Inserted text');
+  const finalLabel = $derived(
+    (detail.state === 'insertion_confirmed' ? 'Inserted text' :
+      ['insertion_unverified', 'posted_unverified'].includes(detail.state ?? '') ? 'Sent text' : 'Final text') +
+    (detail.final_stage === 'transformed' ? ' · transformed' : ''),
+  );
   const persisted = $derived(app.views.history?.note);
   const persistedText = $derived(
     persisted?.kind === 'usage_reconciled' ? usageReconciledText(persisted.code) : null,
@@ -185,7 +189,10 @@
   <section class="facts">
     <dl>
       {#if detail.insertion}
-        <div><dt>Insertion</dt><dd>{stateLabel(detail.insertion.state)} via {detail.insertion.method}{#if detail.insertion.reason_code} — {detail.insertion.reason_code.replace(/_/g, ' ')}{/if}</dd></div>
+        <div><dt>Insertion</dt><dd>{stateLabel(detail.insertion.state)} via {insertionMethod(detail.insertion.method)}{#if detail.insertion.reason_code} — {detail.insertion.reason_code.replace(/_/g, ' ')}{/if}</dd></div>
+      {/if}
+      {#if deliveryExplanation(detail.insertion?.state ?? detail.state)}
+        <div><dt>Delivery</dt><dd>{deliveryExplanation(detail.insertion?.state ?? detail.state)}</dd></div>
       {/if}
       <div><dt>Recording</dt><dd>{detail.audio.available ? 'Kept' : (detail.audio.reason ?? 'not kept').replace(/_/g, ' ')}</dd></div>
       {#if detail.lineage_attempt && detail.attempt && detail.lineage_attempt !== detail.attempt}

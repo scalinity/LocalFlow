@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '../../components/Icon.svelte';
+  import { capabilityLabel } from '../../stores/format';
   let { data }: { data: any } = $props();
   const e = $derived(data?.engine ?? {});
   const caps = $derived(data?.capabilities);
@@ -59,22 +60,27 @@
 
   {#if caps}
     <article class="card">
-      <h3 class="sub">What the speech model can do</h3>
+      <h3 class="sub">Optional speech features</h3>
+      <p class="muted small">Core transcription is separate from these optional decoder and adapter features, which LocalFlow may expose or qualify separately.</p>
       <p class="muted small">{caps.adapter ?? ''} {caps.model_revision ? `· ${caps.model_revision}` : ''}</p>
+      <details>
+      <summary>Feature availability</summary>
       <ul class="caps-list">
         {#each capList as [k, c] (k)}
           <li>
             <span class="dot" class:yes={c.supported}></span>
             <span>{CAP[k] ?? k.replace(/_/g, ' ')}</span>
-            <span class="faint">{c.supported ? 'Supported' : 'Not supported'}</span>
+            <span class="faint" title={c.reason ?? 'No capability evidence available'}>{capabilityLabel(c)}</span>
           </li>
         {/each}
       </ul>
+      </details>
     </article>
   {/if}
 </div>
 
 <style>
+  summary { margin-top: 14px; cursor: pointer; color: var(--text-2); font-size: var(--text-base); }
   .engines {
     display: grid;
     gap: 20px;
