@@ -46,7 +46,9 @@ app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
 
 def _window(y, title):
     w = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
-        NSMakeRect(-20000, y, 320, 140), 1, NSBackingStoreBuffered, False)
+        NSMakeRect(120 if SPEC.get("activate") else -20000,
+                   480 if SPEC.get("activate") else y, 320, 140),
+        1, NSBackingStoreBuffered, False)
     w.setTitle_(title)
     return w
 
@@ -70,6 +72,9 @@ W["W1"].orderFrontRegardless()
 W["W1"].makeKeyWindow()
 W["W1"].makeFirstResponder_(V["F1"])
 CURRENT = {"view": "F1"}
+if SPEC.get("activate"):
+    # LaunchServices activation is available once the app's run loop starts.
+    AppHelper.callAfter(app.activateIgnoringOtherApps_, True)
 
 
 def _state():
@@ -93,6 +98,12 @@ def _handle(msg):
     cmd = msg.get("cmd")
     if cmd == "state":
         return {"ok": True, "views": _state()}
+    if cmd == "restore_front":
+        from AppKit import NSRunningApplication
+        prior = NSRunningApplication.runningApplicationWithProcessIdentifier_(msg["pid"])
+        app.yieldActivationToApplication_(prior)
+        prior.activateWithOptions_(0)
+        return {"ok": True}
     if cmd == "focus":
         name = msg["view"]
         win = W[WINDOW_OF[name]]
@@ -151,5 +162,5 @@ def _serve():
 
 print(f"READY {os.getpid()}", flush=True)
 threading.Thread(target=_serve, daemon=True).start()
-threading.Timer(60.0, lambda: os._exit(0)).start()
+threading.Timer(float(SPEC.get("lifetime", 60)), lambda: os._exit(0)).start()
 AppHelper.runEventLoop()
