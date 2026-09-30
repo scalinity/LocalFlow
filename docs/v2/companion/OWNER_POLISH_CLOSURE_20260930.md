@@ -117,3 +117,52 @@ WKWebView recorder/persistence/presentation checks; genuine owned-target
 native tests for defaults, rebound/custom, repeat/leakage, focus continuity
 and Accept/stale refusal; Daniel's visual review. The ten-record audit
 coverage gap must remain explicit. Publication is a separate owner decision.
+
+## Final owner qualification — September 30, 2026 (superseding addendum)
+
+The twelve bounded owner-polish gates are now closed. Earlier incomplete
+results above remain historical evidence. Later owner approval of the
+buttonless design and refreshed bundle supersedes the older approval/build
+gaps without retroactively changing them.
+
+The review bundle at clean `ff14f38edd8d47b35645c66db46e7171477b9974`
+matched all 116 embedded source files. A genuine owned external AppKit target
+now supplies valid NSWorkspace and AX application/window/editable-field identity
+and a selected synthetic text witness. The actual global HID event path passes
+Polish Option–1, Prompt Engineer Option–2 and Concise Option–3, with one
+generation and one confirmed M08 replacement each. A down/two-repeat/up Polish
+gesture produces one generation and no target edit before Accept. The review
+preserves target authority. Deliberately changed text refuses Accept with
+target_changed/revalidation_failed and zero arbitrary edits.
+
+The real companion recorder saves Concise to Control–Option–C; Option–3 becomes
+free, the new chord succeeds before/after app restart, and Reset restores its
+default. A real synthetic custom Control–Option–R succeeds once and stops
+dispatching when disabled. Ordinary-key passthrough passes. A short native fn
+press/release admits one capture and discards it below the existing duration
+minimum, without a transform. This is trigger compatibility evidence, not
+microphone/model qualification.
+
+The read-only History audit finds 12 qualifying unverified jobs and classifies
+exactly 10 recent records: three clipboard/readback_mismatch, one
+AX/readback_pending and six legacy/v1_target_unobservable. Classification:
+EXPECTED_STRICT_VERIFICATION_LIMIT. No falsely unverified confirmed effect or
+new confirmation bug is established; no confirmation code or stored state
+changes. Missing historic capability fields remain explicitly unknown.
+
+Prior targeted regression, clear/collision/lifecycle, review-action, Paste Again,
+Codex caret compatibility, owner visual approval, formatting and frozen S13
+evidence is retained within its original scope. Models' current native page
+shows Speech recognition — Ready and Optional speech features. Typing-anomaly
+OWNER_MANUAL_OVERRIDE remains an acceptance of uncertainty, not a diagnosis.
+The later explicit owner request changes only the Home greeting from danny to
+Daniel (`899f6ba`); the supported bundle refresh is recorded in the final report.
+
+The qualification ledger and VERIFICATION notice record closure additively.
+M07/M11 extended human/model obligations remain separate; M15/M16 are not
+started. No installed-app, launchd, main, push or merge change. Full numbered
+report and native/content-free audit artifacts live in the owner's local
+`final/owner-polish/final-qualification/` review directory.
+
+State: **OWNER_POLISH_QUALIFIED_READY_FOR_PUBLICATION_DECISION**.
+

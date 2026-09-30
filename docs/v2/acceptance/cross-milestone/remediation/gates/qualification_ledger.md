@@ -43,3 +43,32 @@ Remaining: the true human-speaker release-to-terminal dictation measurement (p50
 | Whole-app offline operation observed at runtime | LF-R25 | EV-17 (M16) |
 | The runbook's manual checks, all Not run as committed | — | docs/v2/VERIFICATION.html |
 | M15 preconditions and acceptance | XM-C187, XM-C188, XM-C189, XM-C190 | M15 |
+
+## Owner-polish closure — September 30, 2026 (additive)
+
+The twelve owner-polish gates are closed. Native evidence uses the clean
+`ff14f38edd8d47b35645c66db46e7171477b9974` review bundle, an isolated
+LocalFlow data home, and an owned external AppKit target with valid
+LaunchServices/NSWorkspace and AX process, window, field and selection identity.
+The later owner-requested Home greeting change (`899f6ba`) affects no shortcut,
+transform, insertion or PTT behavior. Its bundle refresh is recorded separately
+in the final owner report. Historical obligations above retain their scope.
+
+| Relevant item | Disposition | Evidence / boundary |
+|---|---|---|
+| Real default global Polish, Prompt Engineer and Concise; leakage; repeat | CLOSED_BY_CURRENT_EVIDENCE | Each default dispatches one production transform. Unchanged synthetic selection survives review; each Accept makes one confirmed strict replacement. Polish down/two repeats/up produces one generation. Ordinary keys pass. |
+| Built-in reassignment and custom hotkey | CLOSED_BY_CURRENT_EVIDENCE | Real companion recorder saves Concise to Control–Option–C; old Option–3 dispatches nothing; new chord works before/after restart; reset restores Option–3. One custom Control–Option–R invokes its actual id and confirms one replacement; disabling unregisters it. |
+| Expanded review authority and stale Accept | CLOSED_BY_CURRENT_EVIDENCE | External NSWorkspace and AX window/field pids remain the owned target during review. Changed synthetic text refuses with target_changed/revalidation_failed and zero edits. |
+| Existing PTT trigger | CLOSED_BY_CURRENT_EVIDENCE | Native fn flags-changed press admits one capture; release yields the expected below_min_duration discard. No transform dispatch. Separate speech/device qualification is unchanged. |
+| Bounded real History audit | CLOSED_BY_CURRENT_EVIDENCE | 12 qualifying jobs available; exactly 10 classified: 3 clipboard/readback_mismatch, 1 AX/readback_pending, 6 legacy/v1_target_unobservable. EXPECTED_STRICT_VERIFICATION_LIMIT; no new confirmation bug established; no confirmation/state relabeling changes. |
+| Prior action routing, clear/collision/delete/reconstruction, Models, Paste Again, formatting and S13 evidence | RETAIN_PRIOR_EVIDENCE | Prior targeted suites and owner-approved visual state retained; Models also shows Speech recognition — Ready and Optional speech features in the current native companion. |
+| Typing-anomaly uncertainty | OWNER_OVERRIDE | OWNER_MANUAL_OVERRIDE retained; no attribution to another app is claimed. Test-helper event plumbing is not a new production diagnosis. |
+| M07-V001/V002, cleanup model/semantic residuals | STILL_OPEN_SEPARATE_QUALIFICATION | No M07 advancement or new model campaign. |
+| M11-V001–V006, GATE-G10 and model/semantic measurements | STILL_OPEN_SEPARATE_QUALIFICATION | Interaction evidence does not complete the milestone's extended human/model trial. |
+| GATE-G07/G08, older runbook/manual/device/accessibility obligations | STILL_OPEN_SEPARATE_QUALIFICATION | Only overlapping owner-polish facts above are closed; broader clipboard, picker, speech, VoiceOver, Reduce Motion, whole-app and performance trials are not newly passed. |
+| M15/M16, installation, publication and merge | OUT_OF_SCOPE | Not started; main and installed app untouched; no push or merge. |
+
+Detailed content-free metadata, synthetic target witnesses and the 89-item final
+report remain in the owner's local review directory under
+`final/owner-polish/final-qualification/`. This supplement does not modify the
+runbook's saved statuses or certify any complete milestone.
