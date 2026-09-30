@@ -266,7 +266,10 @@ never grants authority. There is no fallback to an old focused field.
 The resolver proves current text editability/writability, enabled state,
 ownership and click containment; a rendered descendant may resolve only
 to its associated editable ancestor, never through an independent
-control/window. Insufficient AX semantics abstain. A non-editable click
+control/window. Explicit `AXEnabled=false` refuses; a missing enabled
+attribute alone does not invalidate positive text-write capability
+(ordinary native text views can omit it). Insufficient AX semantics
+abstain. A non-editable click
 leaves the picker armed under its original timeout, without a target.
 After an editable click settles, the exact hit element must be the
 owning app's focused writable destination. Duplicate reconciliation
