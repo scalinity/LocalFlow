@@ -10,7 +10,8 @@ const KEYS: Record<string, number> = {
   Backspace: 51, Escape: 53, ArrowLeft: 123, ArrowRight: 124, ArrowDown: 125, ArrowUp: 126,
 };
 const GLYPHS: Record<string, string> = { control: '⌃', option: '⌥', shift: '⇧', command: '⌘' };
-export function shortcutFromEvent(e: Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>): Shortcut | null {
+export function shortcutFromEvent(e: Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'> & Partial<Pick<KeyboardEvent, 'getModifierState'>>): Shortcut | null {
+  if (e.getModifierState?.('Fn')) return null;
   const modifiers = [e.ctrlKey && 'control', e.altKey && 'option', e.shiftKey && 'shift', e.metaKey && 'command'].filter(Boolean) as string[];
   const key_code = KEYS[e.code];
   return key_code != null && modifiers.length ? { key_code, modifiers } : null;

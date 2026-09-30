@@ -34,6 +34,7 @@ test('Recorder uses physical code even when Option produces a symbol', () => {
   assert.equal(shortcutLabel(chord), '⌥1');
   assert.equal(shortcutFromEvent({ code: 'KeyA', altKey: false, ctrlKey: false, shiftKey: false, metaKey: false }), null);
   assert.equal(shortcutFromEvent({ code: 'AltLeft', altKey: true, ctrlKey: false, shiftKey: false, metaKey: false }), null);
+  assert.equal(shortcutFromEvent({ code: 'Digit1', altKey: true, ctrlKey: false, shiftKey: false, metaKey: false, getModifierState: (key) => key === 'Fn' }), null);
 });
 
 test('Models hierarchy and precise optional-feature framing', () => {
