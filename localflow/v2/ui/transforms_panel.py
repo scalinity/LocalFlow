@@ -23,19 +23,17 @@ from __future__ import annotations
 
 import objc
 from AppKit import (NSAppearance, NSAttributedString, NSButton, NSFont,
+                    NSColor, NSEvent, NSScreen, NSStatusWindowLevel,
                     NSMakeRect, NSMenu, NSMenuItem,
                     NSMutableAttributedString, NSPanel, NSSize,
                     NSScrollView, NSTextField, NSTextView, NSView,
-                    NSWindowStyleMaskClosable,
+                    NSWindowStyleMaskBorderless,
                     NSWindowStyleMaskNonactivatingPanel,
-                    NSWindowStyleMaskResizable,
-                    NSWindowStyleMaskTitled)
+                    NSWindowCollectionBehaviorCanJoinAllSpaces,
+                    NSWindowCollectionBehaviorFullScreenAuxiliary)
 from Foundation import NSObject
 
-from ..transforms import diffview
-
 PANEL_W, PANEL_H = 580.0, 480.0
-WORD_DIFF_MAX_WORDS = 40   # inline word diff below this size
 
 # Two action rows (title, action, enabled, width, row).
 _ACTIONS = (
@@ -50,7 +48,7 @@ _ACTIONS = (
 
 BUTTON_GAP = 8.0
 BUTTON_H = 28.0
-HEADER_H = 40.0
+HEADER_H = 72.0
 
 # The review surface is drawn in warm ink in both appearances (the
 # desktop companion's change-review style).
@@ -58,6 +56,14 @@ _INK = (0x1C, 0x1B, 0x19)
 _INK_TEXT = (0xF3, 0xF0, 0xEA)
 _INK_MUTED = (0x90, 0x8B, 0x83)
 _INK_ADDED = (0x55, 0xAA, 0xA4)
+
+
+class SpeechReviewPanel(NSPanel):
+    def canBecomeKeyWindow(self):
+        return False
+
+    def canBecomeMainWindow(self):
+        return False
 
 
 def _rgb(c, alpha=1.0):
@@ -138,38 +144,49 @@ class TransformPreviewPanel(NSObject):
     def init_panel(self, coordinator):
         self = self.init()
         self.coordinator = coordinator
-        self.panel = NSPanel.alloc()\
+        self.panel = SpeechReviewPanel.alloc()\
             .initWithContentRect_styleMask_backing_defer_(
                 NSMakeRect(0, 0, PANEL_W, PANEL_H),
-                NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
-                | NSWindowStyleMaskResizable
-                | NSWindowStyleMaskNonactivatingPanel,
+                NSWindowStyleMaskBorderless | NSWindowStyleMaskNonactivatingPanel,
                 2, False)
-        self.panel.setTitle_("Transform Preview")
         self.panel.setReleasedWhenClosed_(False)
-        self.panel.setMinSize_(NSSize(460.0, 360.0))
+        self.panel.setMinSize_(NSSize(460.0, 240.0))
         self._style_panel()
         content = NSView.alloc().initWithFrame_(
             self.panel.contentView().bounds())
         self.panel.setContentView_(content)
+        content.setWantsLayer_(True)
+        content.layer().setCornerRadius_(26.0)
+        content.layer().setBackgroundColor_(_rgb(_INK).CGColor())
+        content.layer().setMasksToBounds_(True)
+        self.name = NSTextField.labelWithString_("")
+        self.name.setFont_(NSFont.boldSystemFontOfSize_(17.0))
+        self.name.setTextColor_(_rgb(_INK_TEXT))
+        self.name.setFrame_(NSMakeRect(24, PANEL_H - 38, 330, 24))
+        self.name.setAutoresizingMask_(8)
+        content.addSubview_(self.name)
         # Header: how many edits, and the way to the transform's settings.
         self.count = NSTextField.labelWithString_("")
-        self.count.setFont_(NSFont.boldSystemFontOfSize_(15.0))
-        self.count.setTextColor_(_rgb(_INK_TEXT))
-        self.count.setFrame_(NSMakeRect(16, PANEL_H - HEADER_H + 8,
-                                        260, 22))
+        self.count.setFont_(NSFont.systemFontOfSize_(12.0))
+        self.count.setTextColor_(_rgb(_INK_MUTED))
+        self.count.setFrame_(NSMakeRect(24, PANEL_H - 60, 450, 20))
         self.count.setAutoresizingMask_(8)  # pinned to the top
         content.addSubview_(self.count)
         self.configure = NSButton.buttonWithTitle_target_action_(
             "Configure", self, "panelConfigure:")
         self.configure.setBordered_(False)
         self.configure.setContentTintColor_(_rgb(_INK_TEXT))
-        self.configure.setFrame_(NSMakeRect(PANEL_W - 176,
-                                            PANEL_H - HEADER_H + 6,
-                                            164, 26))
+        self.configure.setFrame_(NSMakeRect(PANEL_W - 146, PANEL_H - 38, 90, 26))
         self.configure.setAlignment_(2)  # right
         self.configure.setAutoresizingMask_(1 | 8)
         content.addSubview_(self.configure)
+        self.dismiss = NSButton.buttonWithTitle_target_action_("×", self, "panelDismiss:")
+        self.dismiss.setBordered_(False)
+        self.dismiss.setContentTintColor_(_rgb(_INK_TEXT))
+        self.dismiss.setAccessibilityLabel_("Dismiss transform review")
+        self.dismiss.setFrame_(NSMakeRect(PANEL_W - 48, PANEL_H - 38, 26, 26))
+        self.dismiss.setAutoresizingMask_(1 | 8)
+        content.addSubview_(self.dismiss)
         self.text = NSTextView.alloc().initWithFrame_(
             NSMakeRect(12, 118, PANEL_W - 24, PANEL_H - 142 - HEADER_H))
         self.text.setEditable_(False)
@@ -202,13 +219,16 @@ class TransformPreviewPanel(NSObject):
 
     @objc.python_method
     def _style_panel(self):
-        """Warm ink in either appearance; the native titlebar stays (the
-        panel keeps its title, controls and non-activating behavior)."""
+        """Matte warm ink, speech-pill shadow and no titlebar chrome."""
         try:
             self.panel.setAppearance_(NSAppearance.appearanceNamed_(
                 "NSAppearanceNameDarkAqua"))
-            self.panel.setTitlebarAppearsTransparent_(True)
-            self.panel.setBackgroundColor_(_rgb(_INK))
+            self.panel.setOpaque_(False)
+            self.panel.setBackgroundColor_(NSColor.clearColor())
+            self.panel.setHasShadow_(True)
+            self.panel.setHidesOnDeactivate_(False)
+            self.panel.setLevel_(NSStatusWindowLevel)
+            self.panel.setCollectionBehavior_(NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary)
         except Exception:
             pass
 
@@ -249,10 +269,31 @@ class TransformPreviewPanel(NSObject):
         tc.setContainerSize_(NSSize(width - 8, 1e7))
         lm.ensureLayoutForTextContainer_(tc)
         used = lm.usedRectForTextContainer_(tc).size.height + 20
-        content_h = min(PANEL_H, max(300.0, 118 + HEADER_H + used + 20))
+        content_h = min(PANEL_H, max(240.0, 118 + HEADER_H + used + 20))
         self.panel.setContentSize_(NSSize(frame.size.width, content_h))
         self.scroll.setFrame_(NSMakeRect(12, 118, width,
                                          content_h - 142 - HEADER_H + 24))
+
+    @objc.python_method
+    def _anchor(self):
+        """Grow upward from the same bottom-center pill anchor."""
+        overlay = getattr(self.coordinator, "overlay", None)
+        pill = getattr(overlay, "_panel", None)
+        frame = self.panel.frame()
+        if pill is not None:
+            anchor = pill.frame()
+            x = anchor.origin.x + (anchor.size.width - frame.size.width) / 2
+            y = anchor.origin.y
+        else:
+            from Foundation import NSPointInRect
+            screen = next((s for s in NSScreen.screens() if NSPointInRect(NSEvent.mouseLocation(), s.frame())), NSScreen.mainScreen())
+            visible = screen.visibleFrame()
+            x = visible.origin.x + (visible.size.width - frame.size.width) / 2
+            y = visible.origin.y + 20
+        self.panel.setFrameOrigin_((x, y))
+
+    def panelDismiss_(self, sender):
+        self.panel.orderOut_(None)
 
     def panelConfigure_(self, sender):
         """Open this transform in the Hub (its settings). The Hub opens
@@ -275,20 +316,15 @@ class TransformPreviewPanel(NSObject):
                  "fallback_original": "fallback: original kept"}.get(
             result.path, result.path)
         self.panel.setTitle_(f"{defn.name} — {title}")
+        self.name.setStringValue_(defn.name)
         source = result.job.source if result.job else capture["source"]
         pieces, changes = inline_changes(source, result.output)
         self.count.setStringValue_(
-            "No changes" if not changes else
-            f"{changes} change{'' if changes == 1 else 's'}")
-        self.configure.setTitle_(f"Configure {defn.name}")
+            ("No changes" if not changes else f"{changes} change{'' if changes == 1 else 's'}") + " · " + title)
+        self.configure.setTitle_("Configure")
         text = NSMutableAttributedString.alloc().init()
-        if len(source.split()) <= WORD_DIFF_MAX_WORDS:
-            # Short text: the output as written, each change marked.
-            for kind, s in pieces:
-                self._append(text, s, kind)
-        else:
-            self._append(text, diffview.block_diff(source, result.output),
-                         "equal")
+        for kind, s in pieces:
+            self._append(text, s, kind)
         tail = []
         if result.review_excerpts:
             tail.append("\n\nREVIEW — these source requirements have"
@@ -305,7 +341,7 @@ class TransformPreviewPanel(NSObject):
         # Retry needs a task (a refused job has none to re-run).
         self._buttons["panelRetry:"].setEnabled_(result.job is not None)
         self._buttons["panelAccept:"].setEnabled_(True)
-        self.panel.center()
+        self._anchor()
         self.panel.orderFrontRegardless()
 
     @objc.python_method
@@ -320,6 +356,7 @@ class TransformPreviewPanel(NSObject):
         defn = self._state.get("defn")
         self.panel.setTitle_(f"{defn.name if defn else 'Transform'} —"
                              f" not applied: {message}")
+        self.count.setStringValue_(f"Not applied: {message}")
         self._buttons["panelAccept:"].setEnabled_(False)
         self.panel.orderFrontRegardless()
 
@@ -393,6 +430,7 @@ class TransformPreviewPanel(NSObject):
         defn = self._state.get("defn")
         self.panel.setTitle_(f"{defn.name if defn else 'Transform'} —"
                              f" Save to Scratchpad: {message}")
+        self.count.setStringValue_(f"Save to Scratchpad: {message}")
         self.panel.orderFrontRegardless()
 
     def panelResultChosen_(self, sender):
