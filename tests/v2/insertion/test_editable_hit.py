@@ -73,13 +73,20 @@ class EditableHitTests(unittest.TestCase):
             self.assertIsNone(resolve_editable_hit(h, 7, (20, 20)))
 
     def test_disabled_readonly_secure_or_unknown_abstain(self):
-        for patch in ({"AXEnabled": False}, {"AXEnabled": None},
+        for patch in ({"AXEnabled": False},
                       {"AXEditable": False}, {"writes": set()},
                       {"AXSubrole": "AXSecureTextField"},
                       {"AXRole": "AXUnknown"}):
             h = Host()
             h.nodes["field"].update(patch)
             self.assertIsNone(resolve_editable_hit(h, 7, (20, 20)), patch)
+
+    def test_missing_enabled_with_positive_text_write_capability(self):
+        # Native TextEdit AXTextArea omits AXEnabled. Its settable text
+        # capability proves writability; explicit disabled still refuses.
+        h = Host()
+        del h.nodes["field"]["AXEnabled"]
+        self.assertIsNotNone(resolve_editable_hit(h, 7, (20, 20)))
 
     def test_geometry_owner_and_window_must_be_proven(self):
         for patch in ({"frame": None}, {"frame": (50, 50, 20, 20)},

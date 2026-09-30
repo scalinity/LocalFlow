@@ -35,7 +35,8 @@ def is_editable(host, el):
     """Positive text and write evidence; uncertainty never grants authority."""
     role = host.attribute(el, "AXRole")
     subrole = host.attribute(el, "AXSubrole")
-    if subrole == "AXSecureTextField" or host.attribute(el, "AXEnabled") is not True:
+    enabled = host.attribute(el, "AXEnabled")
+    if subrole == "AXSecureTextField" or (enabled is not None and not enabled):
         return False
     text = classify_field(role, subrole) == FIELD_TEXT
     editable = host.attribute(el, "AXEditable")
