@@ -106,6 +106,84 @@ def test_repeated_replace_has_one_registration_map():
     assert len(runs) == 1
 
 
+def test_menu_preference_migration_once():
+    with Env() as e:
+        e.ts.seed_built_ins()
+        e.ts.update_transform("builtin:polish", shortcut="p")
+        original = e.ts.revisions_of("builtin:polish")
+        assert e.ts.hotkeys()["builtin:polish"] == {"source": "user", "binding": {"key_code": 35, "modifiers": ["command"]}}
+        e.ts.set_hotkey("builtin:polish", None)
+        e.ts.seed_built_ins()
+        assert e.ts.hotkeys()["builtin:polish"]["binding"] is None
+        assert e.ts.revisions_of("builtin:polish") == original
+
+
+def test_restart_reopens_database():
+    from localflow.v2 import store as S
+    from localflow.v2.transforms_store import TransformStore
+    with Env() as e:
+        e.ts.seed_built_ins()
+        e.ts.set_hotkey("builtin:polish", {"key_code": 35, "modifiers": ["control", "option"]})
+        e.ts.set_hotkey("builtin:concise", None)
+        expected = e.ts.hotkeys()
+        e.store.close()
+        e.store = S.Store(e.tmp / "v2.db", artifacts_dir=e.tmp / "arts", backup_dir=e.tmp / "bk")
+        e.ts = TransformStore(e.store)
+        e.ts.seed_built_ins()
+        assert e.ts.hotkeys() == expected
+        assert len(e.ts.active_hotkeys()) == 2
+
+
+def test_bridge_builtin_and_custom_preferences():
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "ui"))
+    from test_companion_bridge import CWorld
+    with CWorld() as w:
+        w.select("transforms")
+        svc = w.ctl.spec["transforms_service"]
+        before = svc.revisions_of("builtin:polish")
+        reply = w.host.send("transforms.update", {"transform_id": "builtin:polish", "changes": {"hotkey": None}})
+        assert reply["status"] == "success", reply
+        assert svc.revisions_of("builtin:polish") == before
+        form = {"name": "Synthetic", "mode": "custom", "prompt": "Tidy", "shortcut": None, "auto_apply": False, "target_profiles": [], "hotkey": {"key_code": 18, "modifiers": ["option"]}}
+        reply = w.host.send("transforms.add", form)
+        assert reply["status"] == "success", reply
+        assert w.host.send("transforms.reset_hotkey", {"transform_id": "builtin:polish"})["status"] == "refusal"
+        assert w.host.send("transforms.update", {"transform_id": "builtin:polish", "changes": {"hotkey": {"key_code": True, "modifiers": ["option"]}}})["status"] == "refusal"
+        assert w.host.send("transforms.record_shortcut", {"active": True})["status"] == "success"
+
+
+def test_native_tap_lifecycle_and_exact_consumption():
+    from unittest.mock import patch
+    import Quartz as Q
+    from localflow.transform_hotkey import TransformHotkeyListener
+    reports = []
+    runs = []
+    listener = TransformHotkeyListener(runs.append, lambda *r: reports.append(r))
+    listener.replace({(18, ("option",)): "builtin:polish"})
+    with patch.object(Q, "CGEventTapCreate", return_value=None) as create:
+        assert listener.start() is False
+        assert create.call_args.args[2] == Q.kCGEventTapOptionDefault
+        assert reports[-1] == ("unavailable", "event_tap_permission_required")
+    # Exercise real CGEvent objects but never post them.
+    with patch('localflow.transform_hotkey.AppHelper.callAfter', side_effect=lambda fn, *a: fn(*a)):
+        event = Q.CGEventCreateKeyboardEvent(None, 18, True)
+        Q.CGEventSetFlags(event, Q.kCGEventFlagMaskAlternate)
+        assert listener._event(None, Q.kCGEventKeyDown, event, None) is None
+        Q.CGEventSetIntegerValueField(event, Q.kCGKeyboardEventAutorepeat, 1)
+        assert listener._event(None, Q.kCGEventKeyDown, event, None) is None
+        assert runs == ["builtin:polish"]
+        assert listener._event(None, Q.kCGEventKeyUp, event, None) is None
+        Q.CGEventSetFlags(event, Q.kCGEventFlagMaskSecondaryFn | Q.kCGEventFlagMaskAlternate)
+        assert listener._event(None, Q.kCGEventKeyDown, event, None) is event
+    with patch.object(Q, "CGEventTapCreate", return_value=object()) as create, patch.object(Q, "CFMachPortCreateRunLoopSource", return_value=object()), patch.object(Q, "CFRunLoopAddSource") as add, patch.object(Q, "CGEventTapEnable"), patch.object(Q, "CFRunLoopRemoveSource") as remove, patch.object(Q, "CFMachPortInvalidate") as invalidate:
+        listener.start()
+        listener.start()
+        assert create.call_count == add.call_count == 1
+        listener.stop()
+        listener.stop()
+        assert remove.call_count == invalidate.call_count == 1
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for test in tests:

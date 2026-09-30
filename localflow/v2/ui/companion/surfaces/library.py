@@ -38,6 +38,14 @@ TRANSFORM_FORM = {"name": Str(max_len=200), "mode": Enum(TRANSFORM_MODES),
                   "shortcut": Nullable(Str(max_len=1)),
                   "target_profiles": List(Str(max_len=80), max_items=20),
                   "auto_apply": Bool()}
+HOTKEY = Nullable(Obj({"key_code": Int(lo=0, hi=126),
+                       "modifiers": List(Enum(("control", "option", "shift", "command")), max_items=4)}), optional=True)
+TRANSFORM_FORM["hotkey"] = HOTKEY
+
+
+def _refresh_hotkeys(coord):
+    if coord is not None and hasattr(coord, "tfRefreshHotkeys"):
+        coord.tfRefreshHotkeys()
 
 
 def _partial(form):
@@ -247,11 +255,14 @@ def register(ctl):
     @br.command("transforms.add", TRANSFORM_FORM)
     def transforms_add(p):
         s = svc("transforms")
-        return add("transforms", p, "tf", lambda i: s.add_transform(
+        out = add("transforms", p, "tf", lambda i: s.add_transform(
             name=p["name"], mode=p["mode"], prompt=p["prompt"],
             shortcut=p["shortcut"] or None,
             target_profiles=tuple(p["target_profiles"]),
-            auto_apply=p["auto_apply"], transform_id=i), _tf_failed)
+            auto_apply=p["auto_apply"], transform_id=i,
+            hotkey=p.get("hotkey")), _tf_failed)
+        _refresh_hotkeys(coord)
+        return out
 
     @br.command("transforms.update", {
         "transform_id": Str(max_len=200),
@@ -271,6 +282,7 @@ def register(ctl):
             st.reload_transforms()
             _tf_failed(e)
         st.reload_transforms()
+        _refresh_hotkeys(coord)
         return {"revision": updated.revision}
 
     @br.command("transforms.set_enabled", {
@@ -283,6 +295,24 @@ def register(ctl):
             st.reload_transforms()
             _tf_failed(e)
         st.reload_transforms()
+        _refresh_hotkeys(coord)
+        return {}
+
+    @br.command("transforms.reset_hotkey", {"transform_id": Str(max_len=200)})
+    def transforms_reset_hotkey(p):
+        try:
+            svc("transforms").set_hotkey(p["transform_id"], None, reset=True)
+        except Exception as e:
+            st.reload_transforms()
+            _tf_failed(e)
+        st.reload_transforms()
+        _refresh_hotkeys(coord)
+        return {}
+
+    @br.command("transforms.record_shortcut", {"active": Bool()})
+    def transforms_record_shortcut(p):
+        if coord is not None and hasattr(coord, "tfRecordShortcut"):
+            coord.tfRecordShortcut(p["active"])
         return {}
 
 
@@ -352,7 +382,7 @@ def transforms_model(ctl):
         "transforms": [{k: t.get(k) for k in (
             "transform_id", "name", "mode", "origin", "description",
             "prompt", "edit_types", "shortcut", "target_profiles",
-            "auto_apply", "enabled", "revision")}
+            "auto_apply", "enabled", "revision", "hotkey", "hotkey_source", "hotkey_display")}
             for t in data.get("transforms") or ()],
         "shortcut_conflicts": [
             {"shortcut": c.get("shortcut"),

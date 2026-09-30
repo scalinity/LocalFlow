@@ -1550,6 +1550,13 @@ class AppDelegate(NSObject):
         chosen definition. The pill acknowledges immediately (S24);
         capture + generation run off the UI callback."""
         transform_id = sender.representedObject()
+        self.tfRunShortcut(transform_id)
+
+    @objc.python_method
+    def tfRunShortcut(self, transform_id):
+        """Menu and consumed global commands share this exact entry."""
+        if getattr(self, "_closing", False):
+            return
         if self._tf_pipeline_busy():
             self.v2log.emit("transforms.busy", level="INFO",
                             reason_code="pipeline_active")
@@ -1576,6 +1583,23 @@ class AppDelegate(NSObject):
             AppHelper.callAfter(
                 self._tfShowResult_, result, capture, defn)
         self._tf_spawn(work)
+
+    @objc.python_method
+    def tfRefreshHotkeys(self):
+        listener = getattr(self, "_transform_hotkeys", None)
+        if listener is not None and self._tf_store is not None:
+            try:
+                listener.replace(self._tf_store.active_hotkeys())
+            except Exception as e:
+                listener.replace({})
+                self.v2log.emit("transforms.hotkeys", level="WARNING",
+                    outcome="unavailable", reason_code=type(e).__name__)
+
+    @objc.python_method
+    def tfRecordShortcut(self, active):
+        listener = getattr(self, "_transform_hotkeys", None)
+        if listener is not None:
+            listener.recording(active)
 
     @objc.python_method
     def _tf_pipeline_busy(self):
@@ -2629,6 +2653,15 @@ class AppDelegate(NSObject):
             on_other_key=self.cancelDictation,
         )
         self.hotkey.start()
+        from .transform_hotkey import TransformHotkeyListener
+        self._transform_hotkeys = TransformHotkeyListener(
+            self.tfRunShortcut,
+            lambda outcome, reason: self.v2log.emit(
+                "transforms.hotkeys", level="INFO" if reason is None else "WARNING",
+                outcome=outcome, reason_code=reason))
+        self.tfRefreshHotkeys()
+        self._transform_hotkeys.start()
+        self._transform_hotkey_state = self._tf_store.revision() if self._tf_store else None
         if self.cfg.get("mouse_trigger"):
             self.mouse_trigger = MouseTriggerListener(
                 self.cfg["mouse_trigger"],
@@ -2699,6 +2732,9 @@ class AppDelegate(NSObject):
         the store and event writer close admission and drain. Nothing here
         waits for a main-thread callback."""
         self._closing = True
+        listener = getattr(self, "_transform_hotkeys", None)
+        if listener is not None:
+            listener.stop()
         # M09: no deferred Hub show or quick-open after quit began, and
         # the Hub's query admission closes before the store drains.
         self._hub_show_pending = False
@@ -3975,6 +4011,12 @@ class AppDelegate(NSObject):
     # ---- watchdog ---------------------------------------------------------
 
     def watchdog_(self, timer):
+        # Legacy AppKit editor mutations also refresh the one tap's map.
+        if getattr(self, "_transform_hotkeys", None) is not None and self._tf_store:
+            revision = self._tf_store.revision()
+            if revision != self._transform_hotkey_state:
+                self.tfRefreshHotkeys()
+                self._transform_hotkey_state = revision
         if self.state == STATE_RECORDING:
             listener = (self.mouse_trigger
                         if getattr(self, "_capture_source", "hotkey")
@@ -6097,10 +6139,15 @@ class AppDelegate(NSObject):
             return
         for d in defs:
             title = f"{d.name} ({d.mode})"
+            if self._tf_store is not None:
+                from .v2.transform_hotkeys import display
+                pref = self._tf_store.hotkeys().get(d.transform_id)
+                if pref and pref["binding"]:
+                    title += "    " + display(pref["binding"])
             if d.origin == "legacy":
                 title += " — legacy"
             item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-                title, "runTransform:", d.shortcut or "")
+                title, "runTransform:", "")
             item.setTarget_(self)
             item.setRepresentedObject_(d.transform_id)
             menu.addItem_(item)
