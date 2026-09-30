@@ -11,9 +11,8 @@ from test_xm_paste_again import Env, CASES, case, main
 CASES.clear()
 
 
-def hit(e, app="A", fid="F2"):
+def hit(e, app="A"):
     el = e.w.focused_element_for(e.w.apps[app]["pid"])
-    # The caller focuses fid before resolving the synthetic click.
     return SimpleNamespace(pid=e.w.apps[app]["pid"], element=el,
                            window=e.w.attribute(el, "AXWindow"))
 
@@ -81,6 +80,89 @@ def pa_edit_05_stale_focus():
 @case("PA-EDIT-06 unsupported AX semantics abstain")
 def pa_edit_06_unsupported():
     refusal("unsupported AX semantics")
+
+
+@case("PA-EDIT-07 same-app field change at M08 admission refuses")
+def pa_edit_07_changed_field():
+    e = Env()
+    try:
+        jid, text, aid = e.dictation()
+        e.w.focus("A", "F2")
+        e.picker.resolve = lambda pid, point: hit(e)
+        real = e.a.svc.paste_text
+        def moved(*args, **kwargs):
+            e.w.focus("A", "F1")
+            return real(*args, **kwargs)
+        e.a.svc.paste_text = moved
+        e.invoke(jid, text, aid)
+        since = e.stamp()
+        e.picker.mouse_down(e.w.apps["A"]["pid"])
+        e.sched.run(e.pp.CLICK_SETTLE_SEC)
+        e.idle()
+        assert not e.writes(since), e.writes(since)
+    finally:
+        e.close()
+
+
+@case("PA-EDIT-08 target invalidated while click settles refuses")
+def pa_edit_08_invalid_during_settle():
+    e = Env()
+    try:
+        jid, text, aid = e.dictation()
+        e.w.focus("A", "F2")
+        e.picker.resolve = lambda pid, point: hit(e)
+        e.invoke(jid, text, aid)
+        since = e.stamp()
+        e.picker.mouse_down(e.w.apps["A"]["pid"])
+        e.w.fields["F2"].settable = False
+        e.sched.run(e.pp.CLICK_SETTLE_SEC)
+        e.idle()
+        assert not e.writes(since), e.writes(since)
+        assert e.ended == ["editable_destination_changed"], e.ended
+    finally:
+        e.close()
+
+
+@case("PA-EDIT-09 non-editable click then editable click inserts once")
+def pa_edit_09_retry_after_noneditable():
+    e = Env()
+    try:
+        jid, text, aid = e.dictation()
+        e.invoke(jid, text, aid)
+        e.w.focus("A", "F1")
+        since = e.stamp()
+        e.picker.resolve = lambda pid, point: None
+        e.picker.mouse_down(e.w.apps["A"]["pid"])
+        assert e.picker.active and e.monitors == ["on"]
+        e.w.focus("A", "F2")
+        e.picker.resolve = lambda pid, point: hit(e)
+        e.picker.mouse_down(e.w.apps["A"]["pid"])
+        e.sched.run(e.pp.CLICK_SETTLE_SEC)
+        e.idle()
+        assert len(e.writes(since, ("F2",))) == 1
+        assert not e.writes(since, ("F1", "FB"))
+        assert e.monitors == ["on", "off"]
+    finally:
+        e.close()
+
+
+@case("PA-EDIT-10 timeout during click settling revokes authority")
+def pa_edit_10_timeout_while_settling():
+    e = Env()
+    try:
+        jid, text, aid = e.dictation()
+        e.w.focus("A", "F2")
+        e.picker.resolve = lambda pid, point: hit(e)
+        e.invoke(jid, text, aid)
+        since = e.stamp()
+        e.picker.mouse_down(e.w.apps["A"]["pid"])
+        e.sched.run(e.pp.PICK_TIMEOUT_SEC)
+        e.sched.run(e.pp.CLICK_SETTLE_SEC)
+        e.idle()
+        assert not e.writes(since) and e.ended == ["timed_out"]
+        assert not e.picker.active and e.monitors == ["on", "off"]
+    finally:
+        e.close()
 
 
 if __name__ == "__main__":

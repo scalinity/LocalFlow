@@ -292,6 +292,8 @@ class World:
             f = self.fields.get(getattr(el, "fid", None))
             if f is None:
                 return None
+            if name == "AXEnabled":
+                return True
             if name in ("AXRole", "AXSubrole", "AXWindow"):
                 self.meta_reads.append((self._stamp(), "attribute",
                                         f.fid, name))
@@ -645,6 +647,14 @@ def pick_destination(d):
     d._paste_picker = paste_picker.DestinationPicker(
         schedule=lambda delay, fn: timers.append((delay, fn)),
         install=lambda on_mouse, on_key: [], remove=lambda handles: None)
+    from types import SimpleNamespace
+    def resolve(pid, point):
+        host = d._insertion.host
+        el = host.focused_element_for(pid)
+        return (SimpleNamespace(pid=pid, element=el,
+                                window=host.attribute(el, "AXWindow"))
+                if el is not None else None)
+    d._paste_picker.resolve = resolve
     d._paste_hint = _NoHint()
 
     def click():

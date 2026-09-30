@@ -5623,7 +5623,8 @@ class AppDelegate(NSObject):
             return {"outcome": "unavailable"}
         if self._paste_picker is None:
             from .v2.ui import paste_picker
-            self._paste_picker = paste_picker.DestinationPicker()
+            self._paste_picker = paste_picker.DestinationPicker(
+                resolve=self._resolve_paste_destination)
             self._paste_hint = paste_picker.PasteHint()
         from .v2.ui.paste_picker import HINT
         # One pick at a time: a newer Paste Again replaces a waiting one
@@ -5644,18 +5645,31 @@ class AppDelegate(NSObject):
         return {"outcome": "choosing_destination"}
 
     @objc.python_method
-    def _paste_destination_picked(self, clicked_pid):
+    def _resolve_paste_destination(self, pid, point):
+        from AppKit import NSRunningApplication
+        from .v2.context.snapshot import app_denied
+        from .v2.insertion.editable_target import resolve_editable_hit
+        if self._insertion is None or self._insertion.deny_invalid:
+            return None
+        app = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid) \
+            if pid is not None else None
+        if app is None or app_denied(app.bundleIdentifier(),
+                                     self._insertion.denied_apps):
+            return None
+        return resolve_editable_hit(self._insertion.host, pid, point)
+
+    @objc.python_method
+    def _paste_destination_picked(self, hit):
         """Main thread, after the user's click settled: the app in front
-        must be the one whose window was clicked (a menu-bar item, banner
-        or Dock click does not bring its app forward); then capture the
-        fresh target from it, revalidate the source, and hand both to
-        the M08 service."""
+        must own the clicked editable element, which must still be its
+        focused, writable destination. Never reuse focus after a
+        non-editable click. Source and destination then go to M08."""
         pick, self._paste_pick = self._paste_pick, None
         self._paste_hint.hide()
         if pick is None or self._insertion is None:
             return
         fm = self._insertion.host.frontmost() or {}
-        if clicked_pid is None or fm.get("pid") != clicked_pid:
+        if hit is None or fm.get("pid") != hit.pid:
             self._paste_pick_ended("destination_not_in_front",
                                    show_hub=True)
             return
@@ -5664,14 +5678,22 @@ class AppDelegate(NSObject):
             self._paste_pick_ended(refusal, show_hub=True)
             return
         from .v2.context.providers import categorize
-        from .v2.context.snapshot import TargetSnapshot, app_denied
+        from .v2.context.snapshot import app_denied
+        from .v2.insertion.editable_target import EditableTargetSnapshot
         bundle = fm.get("bundle")
-        target = TargetSnapshot(
+        target = EditableTargetSnapshot(
             target_snapshot_id=v2.ids.new_id("tgt"), app_bundle=bundle,
             app_name=fm.get("name"), app_pid=fm.get("pid"),
             denied=app_denied(bundle, self._insertion.denied_apps),
             category=categorize(bundle),
-            captured_at_utc=v2.ids.now_utc_iso())
+            captured_at_utc=v2.ids.now_utc_iso(),
+            element=hit.element, window_element=hit.window)
+        host = self._insertion.host
+        if target.denied or self._insertion.deny_invalid \
+                or not target.matches_element(
+                    host, host.focused_element_for(hit.pid)):
+            self._paste_pick_ended("editable_destination_changed", show_hub=False)
+            return
         job_id = pick["job_id"]
         out = self._insertion.paste_text(
             pick["text"], job_id=job_id, target=target,

@@ -429,6 +429,13 @@ class InsertionService:
             # refuses it.
             el, owned = None, False
         allowed = False
+        # History's narrowed authority must still name this exact
+        # editable element before even duplicate-reconciliation reads.
+        from .editable_target import EditableTargetSnapshot
+        if isinstance(target, EditableTargetSnapshot) and (
+                self.deny_invalid or target.denied
+                or not target.matches_element(self.host, el)):
+            el, owned = None, False
         if owned and el is not None:
             allowed, _why, _role = read_permission(
                 self.host, el, bundle=fm.get("bundle") if fm else None,

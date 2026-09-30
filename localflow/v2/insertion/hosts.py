@@ -153,6 +153,35 @@ class SystemInsertionHost:
             return False
         return err == 0 and bool(settable)
 
+    def element_at_position(self, pid, point):
+        """Application-owned AX hit at Quartz screen coordinates."""
+        import ApplicationServices as AS
+        try:
+            app = AS.AXUIElementCreateApplication(pid)
+            AS.AXUIElementSetMessagingTimeout(app, self.messaging_timeout)
+            err, el = AS.AXUIElementCopyElementAtPosition(
+                app, float(point[0]), float(point[1]), None)
+            if err != 0 or el is None:
+                return None
+            AS.AXUIElementSetMessagingTimeout(el, self.messaging_timeout)
+            return el
+        except Exception:
+            return None
+
+    def element_frame(self, el):
+        import ApplicationServices as AS
+        try:
+            ok_p, pos = AS.AXValueGetValue(
+                self.attribute(el, "AXPosition"), AS.kAXValueCGPointType, None)
+            ok_s, size = AS.AXValueGetValue(
+                self.attribute(el, "AXSize"), AS.kAXValueCGSizeType, None)
+            if ok_p and ok_s:
+                return (float(pos.x), float(pos.y),
+                        float(size.width), float(size.height))
+        except Exception:
+            pass
+        return None
+
     def set_attribute(self, el, name, value) -> bool:
         import ApplicationServices as AS
         from ..context.providers import ax_box_range

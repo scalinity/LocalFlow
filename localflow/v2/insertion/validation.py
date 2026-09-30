@@ -74,6 +74,7 @@ from ..context.providers import ax_range
 from ..context.snapshot import (FIELD_SECURE, FIELD_TEXT, ContextSnapshot,
                                 TargetSnapshot, app_denied, classify_field)
 from .hosts import InsertionHost
+from .editable_target import EditableTargetSnapshot
 from .target_lease import (VERIFICATION_FAIL, VERIFICATION_NOT_RECORDED,
                            VERIFICATION_PASS, VERIFICATION_UNAVAILABLE,
                            TargetLease)
@@ -287,6 +288,14 @@ def _validate(host, snapshot, job, denied_apps, deny_invalid):
         return None, verification
     verification["owner"] = (VERIFICATION_PASS if el is not None
                              else VERIFICATION_UNAVAILABLE)
+    if isinstance(target, EditableTargetSnapshot):
+        proven = (not deny_invalid and not target.denied
+                  and not app_denied(live_bundle, denied_apps or ())
+                  and target.matches_element(host, el))
+        verification["editable_hit"] = (
+            VERIFICATION_PASS if proven else VERIFICATION_FAIL)
+        if not proven:
+            return None, verification
     denied = deny_invalid or bool(target.denied) \
         or app_denied(live_bundle, denied_apps or ())
     allowed, why, role = read_permission(
@@ -300,7 +309,7 @@ def _validate(host, snapshot, job, denied_apps, deny_invalid):
     # readable title (tabs share one window). A moved caret or another
     # field of the same window and title is not a change.
     recorded_win = getattr(snapshot, "window_element", None) \
-        if isinstance(snapshot, ContextSnapshot) else None
+        if isinstance(snapshot, (ContextSnapshot, EditableTargetSnapshot)) else None
     live_win = _window_verdicts(host, el, recorded_win, window_title,
                                 verification, title_allowed=not denied)
     if verification["window"] == VERIFICATION_FAIL:
