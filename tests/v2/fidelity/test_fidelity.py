@@ -6,7 +6,7 @@ never answered or executed; corrections keep the surviving replacement
 and reason clause; negation, uncertainty, names, quantities and
 technical tokens survive; cloud stays cloud.
 
-Run: .venv/bin/python tests/v2/fidelity/test_fidelity.py [--limit N]
+Run: .venv/bin/python tests/v2/fidelity/test_fidelity.py [--limit N] [--json PATH]
 """
 
 import json
@@ -73,6 +73,7 @@ def main():
     t0 = time.monotonic()
     fallbacks = 0
     rescued = 0      # passed only because the fallback kept the source
+    rows = []
     for case in cases:
         protected = []
         for needle in case.get("protected", []):
@@ -80,6 +81,10 @@ def main():
             if idx >= 0:
                 protected.append((idx, idx + len(needle)))
         failures, res = run_case(engine, case, protected)
+        rows.append({"case": case["case_id"], "input": case["input"],
+                     "output": res.text, "path": res.path,
+                     "fallback_reason": res.fallback_reason,
+                     "errors": failures, "observations": res.observations})
         if res.path != "llm":
             fallbacks += 1
         if failures:
@@ -96,6 +101,12 @@ def main():
     # Safety-fallback scoring stays separate from cleanup success.
     print(f"model-path passes {passed - rescued}/{len(cases)}, "
           f"fallback-rescued passes {rescued}")
+    if "--json" in sys.argv:
+        target = pathlib.Path(sys.argv[sys.argv.index("--json") + 1])
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps({"passed": passed, "total": len(cases),
+                                     "fallback_rescued": rescued, "cases": rows},
+                                    indent=2) + "\n")
     if failed:
         for cid, failures, path, reason in failed:
             print(f"  {cid}: {failures} path={path} reason={reason}")
