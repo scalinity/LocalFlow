@@ -333,7 +333,8 @@ class CompanionController:
             full = str(NSFullUserName() or "").strip()
         except Exception:
             full = ""
-        return full.split()[0] if full else None
+        first_name = full.split()[0] if full else None
+        return "Daniel" if first_name == "danny" else first_name
 
     _VERSION = ...
 
