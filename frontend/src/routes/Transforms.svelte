@@ -64,7 +64,7 @@
       <div class="hero-grid">
         <div>
           <h2>Rewrite anything you’ve written.</h2>
-          <p>Select text in any app, choose a transform from the LocalFlow menu, and review the change before it replaces your selection.</p>
+          <p>Select text in any app, press a transform shortcut, and review the change before it replaces your selection.</p>
           <div class="hero-cta">
             <Button variant="paper" onclick={() => navigate('scratchpad')}>Try it in Scratchpad</Button>
             <button type="button" class="link" onclick={() => (onboarding = true)}>How it works</button>
@@ -85,7 +85,7 @@
   </div>
 
   {#if conflicts.length}
-    <div class="note"><Note tone="warning" text={`Two transforms share the menu key “${conflicts[0].shortcut}”.`} /></div>
+    <div class="note"><Note tone="warning" text={`Two transforms share the shortcut “${conflicts[0].shortcut}”.`} /></div>
   {/if}
   {#if note}<div class="note"><Note tone={note.tone} text={note.text} ondismiss={() => (note = null)} /></div>{/if}
 
@@ -99,7 +99,7 @@
         <article class="card" class:off={!t.enabled}>
           <button type="button" class="card-open" onclick={() => (editor = { id: t.transform_id })} aria-label="Open {t.name}">
             <div class="key-row">
-              {#if t.shortcut}<Kbd>⌘ {t.shortcut.toUpperCase()}</Kbd>{/if}
+              {#if t.hotkey}<Kbd>{t.hotkey_display}</Kbd>{:else}<span class="tag">No shortcut</span>{/if}
               <span class="tag">{ORIGIN[t.origin] ?? t.origin}</span>
               {#if t.auto_apply}<span class="tag lav">While dictating</span>{/if}
             </div>

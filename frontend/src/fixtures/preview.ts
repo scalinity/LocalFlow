@@ -38,6 +38,7 @@ function reply(command: string, p: any): Omit<Reply, 'request_id'> {
     case 'scratchpad.edit':
       return { status: 'success', result: { version: p.base + 1, content: null } };
     case 'history.select':
+    case 'transforms.record_shortcut':
     case 'training.select':
     case 'scratchpad.open':
     case 'scratchpad.cursor':

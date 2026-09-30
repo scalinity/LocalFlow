@@ -74,7 +74,7 @@
       </ul>
       <div class="cta"><Button variant="primary" size="lg" onclick={() => (step = 1)} data-autofocus>Show me how</Button></div>
     {:else if step === 1}
-      <h2 class="serif headline"><span class="hl">Select text</span>, then choose a transform from the LocalFlow menu</h2>
+      <h2 class="serif headline"><span class="hl">Select text</span>, then press a transform shortcut</h2>
       <div class="stage">
         <div class="editor" aria-hidden="true">
           <div class="toolbar">
@@ -89,13 +89,13 @@
           <div class="menu-row dim">Open Hub…</div>
           <div class="menu-row active">Transforms <Icon name="chevron-right" size={14} /></div>
           <div class="submenu">
-            <div class="menu-row hi">Polish (polish) <span class="key">⌘P</span></div>
-            <div class="menu-row">Concise (concise)</div>
-            <div class="menu-row">Prompt Engineer (prompt_engineer)</div>
+            <div class="menu-row hi">Polish <span class="key">⌥1</span></div>
+            <div class="menu-row">Prompt Engineer <span class="key">⌥2</span></div>
+            <div class="menu-row">Concise <span class="key">⌥3</span></div>
           </div>
         </div>
       </div>
-      <p class="caption">A transform’s menu key works while the LocalFlow menu is open.</p>
+      <p class="caption">Shortcuts work while another app is open. Change or clear them in Transforms; the menu is always available too.</p>
       <div class="cta"><Button variant="primary" size="lg" onclick={() => (step = 2)} data-autofocus>Next</Button></div>
     {:else}
       <h2 class="serif headline">Review the change, then accept it</h2>

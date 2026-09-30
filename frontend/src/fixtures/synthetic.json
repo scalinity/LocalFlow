@@ -290,8 +290,8 @@
     "usage": {
      "dictations": 14,
      "final_words": 168,
-     "wpm": 144.0,
-     "capture_seconds": 70.0,
+     "wpm": 144,
+     "capture_seconds": 70,
      "range_first_day": "2026-09-26"
     },
     "usage_error": null,
@@ -338,7 +338,7 @@
        "time_quality": "known",
        "app": "Mail",
        "mode": "llm",
-       "state": "insertion_confirmed",
+       "state": "insertion_unverified",
        "state_reason": null,
        "preview": "Can we move the design review to Thursday afternoon so the prototype has one more pass?",
        "has_audio": false
@@ -1146,7 +1146,7 @@
     "captured_at_utc": "2026-09-29T11:42:00.000Z",
     "time": "11:42 am",
     "time_quality": "known",
-    "state": "insertion_confirmed",
+    "state": "insertion_unverified",
     "state_reason": null,
     "attempt": 1,
     "lineage_attempt": null,
@@ -1528,7 +1528,15 @@
      "target_profiles": [],
      "auto_apply": false,
      "enabled": true,
-     "revision": 1
+     "revision": 1,
+     "hotkey": {
+      "key_code": 20,
+      "modifiers": [
+       "option"
+      ]
+     },
+     "hotkey_source": "default",
+     "hotkey_display": "⌥3"
     },
     {
      "transform_id": "builtin:polish",
@@ -1546,7 +1554,15 @@
      "target_profiles": [],
      "auto_apply": false,
      "enabled": true,
-     "revision": 1
+     "revision": 1,
+     "hotkey": {
+      "key_code": 18,
+      "modifiers": [
+       "option"
+      ]
+     },
+     "hotkey_source": "default",
+     "hotkey_display": "⌥1"
     },
     {
      "transform_id": "builtin:prompt_engineer",
@@ -1564,7 +1580,15 @@
      "target_profiles": [],
      "auto_apply": false,
      "enabled": true,
-     "revision": 1
+     "revision": 1,
+     "hotkey": {
+      "key_code": 19,
+      "modifiers": [
+       "option"
+      ]
+     },
+     "hotkey_source": "default",
+     "hotkey_display": "⌥2"
     }
    ],
    "shortcut_conflicts": []
@@ -1675,23 +1699,23 @@
      },
      "raw_words": 168,
      "final_words": 168,
-     "capture_seconds": 70.0,
-     "wpm": 144.0,
+     "capture_seconds": 70,
+     "wpm": 144,
      "wpm_denominator": {
       "jobs": 14,
       "words": 168,
-      "capture_seconds": 70.0
+      "capture_seconds": 70
      },
      "wpm_excluded": {
       "missing_duration": 0,
       "nonpositive_duration": 0
      },
      "fallback_jobs": 0,
-     "fallback_rate": 0.0,
+     "fallback_rate": 0,
      "cleanup_fallback": {
       "requested": 14,
       "fallbacks": 0,
-      "rate": 0.0
+      "rate": 0
      },
      "dictionary_hits": 13,
      "snippet_hits": 0,
@@ -1706,18 +1730,18 @@
     "latency": {
      "asr": {
       "n": 14,
-      "p50": 222.0,
-      "p95": 271.0
+      "p50": 222,
+      "p95": 271
      },
      "cleanup": {
       "n": 14,
-      "p50": 486.0,
-      "p95": 563.0
+      "p50": 486,
+      "p95": 563
      },
      "end_to_end": {
       "n": 14,
-      "p50": 1038.0,
-      "p95": 1199.0
+      "p50": 1038,
+      "p95": 1199
      }
     },
     "daily": [
@@ -1784,7 +1808,7 @@
       "app": "TextEdit",
       "dictations": 2,
       "final_words": 24,
-      "capture_seconds": 10.0
+      "capture_seconds": 10
      },
      {
       "key": "bundle:com.apple.dt.Xcode",
@@ -1873,7 +1897,7 @@
       },
       "utterance_words": {
        "mean": 58.6,
-       "median": 61.0
+       "median": 61
       },
       "frequent_phrases": [
        {

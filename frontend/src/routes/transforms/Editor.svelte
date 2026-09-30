@@ -4,6 +4,8 @@
   import Switch from '../../components/Switch.svelte';
   import TextField from '../../components/TextField.svelte';
   import TextArea from '../../components/TextArea.svelte';
+  import ShortcutRecorder from '../../components/ShortcutRecorder.svelte';
+  import type { Shortcut } from '../../stores/shortcuts';
   import Select from '../../components/Select.svelte';
   import Note from '../../components/Note.svelte';
   import { act } from '../../stores/app.svelte';
@@ -14,7 +16,7 @@
     name: string;
     mode: string;
     prompt: string;
-    shortcut: string | null;
+    hotkey: Shortcut | null;
     target_profiles: string[];
     auto_apply: boolean;
   }
@@ -25,11 +27,11 @@
     name: t.name ?? '',
     mode: t.mode ?? 'custom',
     prompt: t.prompt ?? '',
-    shortcut: t.shortcut ?? null,
+    hotkey: t.hotkey ?? null,
     target_profiles: [...(t.target_profiles ?? [])],
     auto_apply: !!t.auto_apply,
   });
-  const EMPTY: Form = { name: '', mode: 'custom', prompt: '', shortcut: null, target_profiles: [], auto_apply: false };
+  const EMPTY: Form = { name: '', mode: 'custom', prompt: '', hotkey: null, target_profiles: [], auto_apply: false };
   const start = untrack(() => (id ? rows.find((t) => t.transform_id === id) : null));
   const fill: Form = start ? toForm(start) : EMPTY;
   const origin: string = start?.origin ?? 'user';
@@ -44,7 +46,7 @@
   const rowForm = $derived(current ? toForm(current) : fill);
   const form = $derived({ ...rowForm, ...edits } as Form);
   const touched = $derived(
-    Object.fromEntries(Object.entries(edits).filter(([k, v]) => JSON.stringify(v) !== JSON.stringify((fill as any)[k]))),
+    Object.fromEntries(Object.entries(edits).filter(([k, v]) => (k === 'hotkey' && current?.hotkey_source !== 'user') || JSON.stringify(v) !== JSON.stringify((rowForm as any)[k]))),
   );
   const gone = $derived(!!id && !current);
 
@@ -65,11 +67,22 @@
     e.preventDefault();
     busy = true;
     note = null;
-    const r = id ? await act('transforms.update', { transform_id: id, changes: touched }) : await act('transforms.add', { ...form });
+    const r = id ? await act('transforms.update', { transform_id: id, changes: touched }) : await act('transforms.add', { ...form, shortcut: null });
     busy = false;
     if (r.status === 'success') return onclose();
     note = outcome(r, MSG);
-    if (r.reason_code?.startsWith('shortcut ')) note.text = `The menu key “${form.shortcut}” is already used by another transform.`;
+    if (r.reason_code?.startsWith('shortcut ')) note.text = r.reason_code;
+  }
+
+  async function resetShortcut() {
+    busy = true;
+    const r = await act('transforms.reset_hotkey', { transform_id: id });
+    busy = false;
+    if (r.status === 'success') {
+      const { hotkey, ...remaining } = edits;
+      edits = remaining;
+      note = null;
+    } else note = outcome(r, MSG);
   }
 
   const MODES = [
@@ -99,7 +112,10 @@
         <p class="hint">Uses LocalFlow’s own {MODES.find((m) => m.value === form.mode)?.label} instructions, which keep your meaning and every fact.</p>
       {/if}
       <div class="grid">
-        <TextField label="Menu key (optional)" placeholder="one letter" maxlength={1} value={form.shortcut ?? ''} oninput={(e) => set('shortcut', e.currentTarget.value || null)} />
+        <div>
+          <ShortcutRecorder value={form.hotkey} disabled={busy} onchange={(v) => set('hotkey', v)} />
+          {#if builtin}<Button size="sm" variant="ghost" disabled={busy} onclick={resetShortcut}>Reset to default</Button>{/if}
+        </div>
         <TextField
           label="Only for styles (optional)"
           placeholder="e.g. email, work_messaging"
