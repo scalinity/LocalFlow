@@ -141,7 +141,9 @@ default. A real synthetic custom Control–Option–R succeeds once and stops
 dispatching when disabled. Ordinary-key passthrough passes. A short native fn
 press/release admits one capture and discards it below the existing duration
 minimum, without a transform. This is trigger compatibility evidence, not
-microphone/model qualification.
+microphone/model qualification. Live CGGetEventTapList reports exactly one
+consuming session key-down/up tap; controlled shutdown leaves zero taps for
+that UI process.
 
 The read-only History audit finds 12 qualifying unverified jobs and classifies
 exactly 10 recent records: three clipboard/readback_mismatch, one
@@ -165,4 +167,3 @@ report and native/content-free audit artifacts live in the owner's local
 `final/owner-polish/final-qualification/` review directory.
 
 State: **OWNER_POLISH_QUALIFIED_READY_FOR_PUBLICATION_DECISION**.
-
