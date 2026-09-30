@@ -22,7 +22,7 @@ second undo engine.
 from __future__ import annotations
 
 import objc
-from AppKit import (NSAppearance, NSAttributedString, NSButton, NSFont,
+from AppKit import (NSAppearance, NSAttributedString, NSBezierPath, NSButton, NSFont,
                     NSColor, NSEvent, NSScreen, NSStatusWindowLevel,
                     NSMakeRect, NSMenu, NSMenuItem,
                     NSMutableAttributedString, NSPanel, NSSize,
@@ -30,25 +30,28 @@ from AppKit import (NSAppearance, NSAttributedString, NSButton, NSFont,
                     NSWindowStyleMaskBorderless,
                     NSWindowStyleMaskNonactivatingPanel,
                     NSWindowCollectionBehaviorCanJoinAllSpaces,
-                    NSWindowCollectionBehaviorFullScreenAuxiliary)
+                    NSWindowCollectionBehaviorFullScreenAuxiliary,
+                    NSTrackingArea, NSTrackingMouseEnteredAndExited,
+                    NSTrackingActiveAlways, NSTrackingInVisibleRect)
 from Foundation import NSObject
 
 PANEL_W, PANEL_H = 580.0, 480.0
 
 # Two action rows (title, action, enabled, width, row).
 _ACTIONS = (
-    ("Accept", "panelAccept:", True, 76.0, 0),
+    ("Accept", "panelAccept:", True, 74.0, 0),
     ("Copy", "panelCopy:", True, 62.0, 0),
-    ("Retry Original", "panelRetry:", True, 108.0, 0),
-    ("Apply Another…", "panelApplyOther:", True, 118.0, 0),
-    ("Transform Output…", "panelTransformResult:", True, 138.0, 1),
-    ("Save to Scratchpad", "panelSaveToScratchpad:", True, 148.0, 1),
+    ("Retry Original", "panelRetry:", True, 114.0, 0),
+    ("Apply Another…", "panelApplyOther:", True, 126.0, 0),
+    ("Transform Output…", "panelTransformResult:", True, 146.0, 1),
+    ("Save to Scratchpad", "panelSaveToScratchpad:", True, 158.0, 1),
 )
 
 
-BUTTON_GAP = 8.0
-BUTTON_H = 28.0
-HEADER_H = 72.0
+BUTTON_GAP = 10.0
+BUTTON_H = 32.0
+HEADER_H = 94.0
+FOOTER_H = 112.0
 
 # The review surface is drawn in warm ink in both appearances (the
 # desktop companion's change-review style).
@@ -70,6 +73,84 @@ def _rgb(c, alpha=1.0):
     from AppKit import NSColor
     return NSColor.colorWithSRGBRed_green_blue_alpha_(
         c[0] / 255.0, c[1] / 255.0, c[2] / 255.0, alpha)
+
+
+class ReviewActionButton(NSButton):
+    """Native button semantics, with centered type and a quiet hover wash."""
+
+    @objc.python_method
+    def review_style(self, *, text_only=False, primary=False, sliders=False):
+        self._text_only, self._primary, self._sliders = text_only, primary, sliders
+        self._hovered = False
+        self.setBordered_(False)
+        self.setFont_(NSFont.systemFontOfSize_weight_(13, .23))
+        self.setNeedsDisplay_(True)
+
+    def updateTrackingAreas(self):
+        tracking = getattr(self, '_tracking', None)
+        if tracking is not None:
+            self.removeTrackingArea_(tracking)
+        self._tracking = NSTrackingArea.alloc().initWithRect_options_owner_userInfo_(
+            NSMakeRect(0, 0, 0, 0), NSTrackingMouseEnteredAndExited |
+            NSTrackingActiveAlways | NSTrackingInVisibleRect, self, None)
+        self.addTrackingArea_(self._tracking)
+        objc.super(ReviewActionButton, self).updateTrackingAreas()
+
+    def mouseEntered_(self, event):
+        self._hovered = True
+        self.setNeedsDisplay_(True)
+
+    def mouseExited_(self, event):
+        self._hovered = False
+        self.setNeedsDisplay_(True)
+
+    def drawRect_(self, rect):
+        from AppKit import NSFontAttributeName, NSForegroundColorAttributeName
+        bounds = self.bounds()
+        active = self.isEnabled()
+        hover = active and (getattr(self, '_hovered', False) or self.isHighlighted())
+        text_only = getattr(self, '_text_only', False)
+        primary = getattr(self, '_primary', False)
+        fill = _INK
+        if not text_only or hover:
+            if primary and not text_only:
+                fill = (0xAE, 0xDA, 0xCF) if hover else (0x9C, 0xC9, 0xBE)
+            else:
+                fill = (0x3C, 0x3B, 0x37) if hover else (0x2D, 0x2C, 0x29)
+            shape = NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(
+                bounds, 10, 10)
+            _rgb(fill, 1 if active else .45).setFill()
+            shape.fill()
+        if primary:
+            color = (0xB1, 0xD8, 0xCD) if text_only else _INK
+        else:
+            color = _INK_TEXT if hover else (0xD1, 0xCE, 0xC8)
+        if getattr(self, '_sliders', False):
+            # Two horizontal rails, with opposite-positioned circular knobs.
+            cx, cy = bounds.size.width / 2, bounds.size.height / 2
+            rails = NSBezierPath.bezierPath()
+            rails.setLineWidth_(1.5)
+            rails.setLineCapStyle_(1)
+            for dy in (4, -4):
+                rails.moveToPoint_((cx - 8, cy + dy))
+                rails.lineToPoint_((cx + 8, cy + dy))
+            _rgb(color).setStroke()
+            rails.stroke()
+            for dx, dy in ((-4, 4), (4, -4)):
+                knob = NSBezierPath.bezierPathWithOvalInRect_(
+                    NSMakeRect(cx + dx - 2.5, cy + dy - 2.5, 5, 5))
+                _rgb(fill).setFill()
+                knob.fill()
+                knob.setLineWidth_(1.5)
+                _rgb(color).setStroke()
+                knob.stroke()
+            return
+        label = NSAttributedString.alloc().initWithString_attributes_(str(self.title()), {
+            NSFontAttributeName: self.font(),
+            NSForegroundColorAttributeName: _rgb(color, 1 if active else .4)})
+        size = label.size()
+        label.drawAtPoint_(((bounds.size.width - size.width) / 2,
+                           (bounds.size.height - size.height) / 2))
 
 
 def inline_changes(source, output):
@@ -124,14 +205,12 @@ def inline_changes(source, output):
 
 
 def action_frames(actions=_ACTIONS):
-    """(x, y, w, h) for every action: buttons in a row sit side by side
-    from the left margin with a fixed gap (the widest row, 76+62+108+118
-    plus gaps = 388 pt, fits the 460-pt minimum width)."""
+    """Two centered-label rows, aligned to the body's 24-pt margin."""
     frames = []
     next_x = {}
     for _title, _action, _enabled, w, row in actions:
-        x = next_x.get(row, 12.0)
-        frames.append((x, 62.0 - row * 34.0, w, BUTTON_H))
+        x = next_x.get(row, 24.0)
+        frames.append((x, 64.0 - row * 40.0, w, BUTTON_H))
         next_x[row] = x + w + BUTTON_GAP
     return frames
 
@@ -141,7 +220,7 @@ class TransformPreviewPanel(NSObject):
     for the latest result. All calls land on the main thread."""
 
     @objc.python_method
-    def init_panel(self, coordinator):
+    def init_panel(self, coordinator, *, action_style='buttons'):
         self = self.init()
         self.coordinator = coordinator
         self.panel = SpeechReviewPanel.alloc()\
@@ -162,41 +241,41 @@ class TransformPreviewPanel(NSObject):
         self.name = NSTextField.labelWithString_("")
         self.name.setFont_(NSFont.boldSystemFontOfSize_(17.0))
         self.name.setTextColor_(_rgb(_INK_TEXT))
-        self.name.setFrame_(NSMakeRect(24, PANEL_H - 38, 330, 24))
+        self.name.setFrame_(NSMakeRect(24, PANEL_H - 52, 440, 24))
         self.name.setAutoresizingMask_(8)
         content.addSubview_(self.name)
         # Header: how many edits, and the way to the transform's settings.
         self.count = NSTextField.labelWithString_("")
         self.count.setFont_(NSFont.systemFontOfSize_(12.0))
         self.count.setTextColor_(_rgb(_INK_MUTED))
-        self.count.setFrame_(NSMakeRect(24, PANEL_H - 60, 450, 20))
+        self.count.setFrame_(NSMakeRect(24, PANEL_H - 76, 500, 18))
         self.count.setAutoresizingMask_(8)  # pinned to the top
         content.addSubview_(self.count)
-        self.configure = NSButton.buttonWithTitle_target_action_(
-            "Configure", self, "panelConfigure:")
-        self.configure.setBordered_(False)
-        self.configure.setContentTintColor_(_rgb(_INK_TEXT))
-        self.configure.setFrame_(NSMakeRect(PANEL_W - 146, PANEL_H - 38, 90, 26))
-        self.configure.setAlignment_(2)  # right
+        self.configure = ReviewActionButton.buttonWithTitle_target_action_(
+            "", self, "panelConfigure:")
+        self.configure.review_style(text_only=True, sliders=True)
+        self.configure.setAccessibilityLabel_("Configure transform")
+        self.configure.setToolTip_("Configure transform")
+        self.configure.setFrame_(NSMakeRect(PANEL_W - 96, PANEL_H - 56, 32, 32))
         self.configure.setAutoresizingMask_(1 | 8)
         content.addSubview_(self.configure)
-        self.dismiss = NSButton.buttonWithTitle_target_action_("×", self, "panelDismiss:")
-        self.dismiss.setBordered_(False)
-        self.dismiss.setContentTintColor_(_rgb(_INK_TEXT))
+        self.dismiss = ReviewActionButton.buttonWithTitle_target_action_("×", self, "panelDismiss:")
+        self.dismiss.review_style(text_only=True)
+        self.dismiss.setFont_(NSFont.systemFontOfSize_(20))
         self.dismiss.setAccessibilityLabel_("Dismiss transform review")
-        self.dismiss.setFrame_(NSMakeRect(PANEL_W - 48, PANEL_H - 38, 26, 26))
+        self.dismiss.setFrame_(NSMakeRect(PANEL_W - 56, PANEL_H - 56, 32, 32))
         self.dismiss.setAutoresizingMask_(1 | 8)
         content.addSubview_(self.dismiss)
         self.text = NSTextView.alloc().initWithFrame_(
-            NSMakeRect(12, 118, PANEL_W - 24, PANEL_H - 142 - HEADER_H))
+            NSMakeRect(24, FOOTER_H, PANEL_W - 48, PANEL_H - FOOTER_H - HEADER_H))
         self.text.setEditable_(False)
         self.text.setRichText_(False)
         self.text.setDrawsBackground_(False)
-        self.text.setTextContainerInset_(NSSize(4.0, 6.0))
+        self.text.setTextContainerInset_(NSSize(0.0, 4.0))
         self.text.setFont_(NSFont.systemFontOfSize_(15.0))
         self.text.setTextColor_(_rgb(_INK_TEXT))
         self.scroll = NSScrollView.alloc().initWithFrame_(
-            NSMakeRect(12, 118, PANEL_W - 24, PANEL_H - 142 - HEADER_H))
+            NSMakeRect(24, FOOTER_H, PANEL_W - 48, PANEL_H - FOOTER_H - HEADER_H))
         self.scroll.setDocumentView_(self.text)
         self.scroll.setHasVerticalScroller_(True)
         self.scroll.setDrawsBackground_(False)
@@ -206,8 +285,9 @@ class TransformPreviewPanel(NSObject):
         self._buttons = {}
         for (title, action, enabled, _w, _row), (x, y, w, h) in zip(
                 _ACTIONS, action_frames()):
-            btn = NSButton.buttonWithTitle_target_action_(
+            btn = ReviewActionButton.buttonWithTitle_target_action_(
                 title, self if action else None, action)
+            btn.review_style(text_only=action_style == 'text', primary=action == 'panelAccept:')
             btn.setEnabled_(enabled)
             btn.setFrame_(NSMakeRect(x, y, w, h))
             content.addSubview_(btn)
@@ -265,14 +345,15 @@ class TransformPreviewPanel(NSObject):
         lm = self.text.layoutManager()
         tc = self.text.textContainer()
         frame = self.panel.frame()
-        width = frame.size.width - 24
-        tc.setContainerSize_(NSSize(width - 8, 1e7))
+        width = frame.size.width - 48
+        tc.setContainerSize_(NSSize(width, 1e7))
         lm.ensureLayoutForTextContainer_(tc)
-        used = lm.usedRectForTextContainer_(tc).size.height + 20
-        content_h = min(PANEL_H, max(240.0, 118 + HEADER_H + used + 20))
+        used = lm.usedRectForTextContainer_(tc).size.height + 8
+        content_h = min(PANEL_H, max(240.0, FOOTER_H + HEADER_H + used + 16))
         self.panel.setContentSize_(NSSize(frame.size.width, content_h))
-        self.scroll.setFrame_(NSMakeRect(12, 118, width,
-                                         content_h - 142 - HEADER_H + 24))
+        self.scroll.setFrame_(NSMakeRect(24, FOOTER_H, width,
+                                         content_h - FOOTER_H - HEADER_H))
+        self.text.setFrameSize_(NSSize(width, max(used, self.scroll.contentSize().height)))
 
     @objc.python_method
     def _anchor(self):
@@ -321,7 +402,6 @@ class TransformPreviewPanel(NSObject):
         pieces, changes = inline_changes(source, result.output)
         self.count.setStringValue_(
             ("No changes" if not changes else f"{changes} change{'' if changes == 1 else 's'}") + " · " + title)
-        self.configure.setTitle_("Configure")
         text = NSMutableAttributedString.alloc().init()
         for kind, s in pieces:
             self._append(text, s, kind)

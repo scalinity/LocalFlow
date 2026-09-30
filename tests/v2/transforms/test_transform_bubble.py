@@ -75,6 +75,29 @@ def test_native_geometry_states_and_focus():
     assert not panel._buttons['panelAccept:'].isEnabled()
     assert 'target changed' in panel.count.stringValue()
     panel.panelDismiss_(None)
+
+
+def test_action_variations():
+    for style in ('buttons', 'text'):
+        c = Coordinator()
+        panel = TransformPreviewPanel.alloc().init_panel(c, action_style=style)
+        r = result('Please send the draft on monday, if the review is complete.',
+                   'Please send the draft on Monday if the review is complete.')
+        panel.show(r, {'source': r.job.source}, Obj(name='Polish'), 'same-candidate')
+        assert panel.configure.title() == ''
+        assert panel.configure.accessibilityLabel() == 'Configure transform'
+        assert panel._buttons['panelAccept:'].frame().origin.x == 24
+        assert panel._buttons['panelSaveToScratchpad:'].frame().origin.y == 24
+        capture(panel.panel, 'actions-' + style)
+        hover = panel._buttons['panelCopy:' if style == 'text' else 'panelAccept:']
+        hover.mouseEntered_(None)
+        capture(panel.panel, 'actions-' + style + '-hover')
+        hover.mouseExited_(None)
+        panel.configure.performClick_(None)
+        assert c.calls[-1][0] == 'openHub_'
+        panel._buttons['panelAccept:'].performClick_(None)
+        assert c.calls[-1] == ('tfAcceptTransform', (r, {'source': r.job.source}, 'same-candidate'))
+        assert not panel.panel.isVisible()
     from localflow.overlay import Overlay, MODE_TRANSFORMING
     overlay = Overlay.alloc().init()
     overlay._panel.setAlphaValue_(0)
@@ -109,4 +132,6 @@ if __name__ == '__main__':
     print('ok native geometry, themes, bounded scroll, needs review, fallback and no activation')
     test_seven_action_paths_keep_candidate_identity()
     print('ok all seven action paths retain existing coordinator/candidate binding')
-    print('2/2 passed')
+    test_action_variations()
+    print('ok button/text variants, hover, sliders accessibility and actual native button routing')
+    print('3/3 passed')
