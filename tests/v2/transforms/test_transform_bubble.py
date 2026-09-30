@@ -43,6 +43,7 @@ def test_native_geometry_states_and_focus():
     NSApplication.sharedApplication().setActivationPolicy_(1)
     prior = NSWorkspace.sharedWorkspace().frontmostApplication().processIdentifier()
     panel = TransformPreviewPanel.alloc().init_panel(Coordinator())
+    assert panel._buttons['panelAccept:']._text_only, 'Owner chose text-only actions'
     for theme in ('NSAppearanceNameAqua', 'NSAppearanceNameDarkAqua'):
         NSApplication.sharedApplication().setAppearance_(NSAppearance.appearanceNamed_(theme))
         r = result('Send the draft on monday.', 'Send the draft on Monday.')

@@ -220,7 +220,7 @@ class TransformPreviewPanel(NSObject):
     for the latest result. All calls land on the main thread."""
 
     @objc.python_method
-    def init_panel(self, coordinator, *, action_style='buttons'):
+    def init_panel(self, coordinator, *, action_style='text'):
         self = self.init()
         self.coordinator = coordinator
         self.panel = SpeechReviewPanel.alloc()\
