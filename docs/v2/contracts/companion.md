@@ -9,6 +9,33 @@ Vite), `localflow/v2/ui/companion/web/` (the committed build).
 
 ## Architecture
 
+### Owner polish supplement (2026-09-30)
+
+The companion's Transforms editor records physical modifier/key shortcuts
+for built-ins and custom definitions, with Clear and built-in Reset to
+default. Its allowlist additionally includes `transforms.reset_hotkey`
+(transform id) and `transforms.record_shortcut` (active Boolean); add/update
+accept a nullable structured `hotkey` alongside the compatibility field.
+Read models expose the current binding, source, display and effective
+conflicts. Every successful preference/lifecycle mutation refreshes the
+one native tap's map. Built-in mode/prompt identity stays protected.
+
+History list presentation omits common confirmed/unverified send badges.
+Kept, destination-changed, failed and cancelled outcomes remain visible.
+The inspector calls unverified sends **Sent**, labels their output **Sent
+text**, and explains that destination delivery could not be independently
+verified. Method labels say paste/direct insertion. This changes no database
+state, insertion truth, confirmation standard or M08 contract.
+
+Models keeps engine readiness prominent and labels the secondary disclosure
+**Optional speech features**. True means Available; disabled-until-qualified
+means Not enabled; unsupported-by-adapter means Not available in this
+adapter; not-exposed-on-dictation-path means Not exposed; absent/unknown
+evidence means Unknown. The runtime capability manifest remains unchanged.
+
+Paste Again's existing 360 × 38 pill says **Click where you want to paste**.
+Escape cancellation, timeout and POLICY-D03 authority remain unchanged.
+
 - One `NSWindow` hosts one `WKWebView`. The AppKit app, its menu bar item,
   the coordinator and every service are unchanged. `hub_ui` in
   `config.json` chooses the window: `"companion"` (the default) or
