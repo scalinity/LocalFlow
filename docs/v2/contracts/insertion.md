@@ -140,9 +140,15 @@ that one element.
    certifies a real surface.
 3. **Accessibility not trusted** ⇒ copy-only offer
    (`accessibility_not_trusted`).
-4. **The bound element's `AXSelectedText` is settable** ⇒ **AX
+4. **Codex (`com.openai.codex`) caret delivery**, with no recorded
+   replacement selection and no strict replacement request ⇒ the
+   **serialized clipboard transaction**. The composer can acknowledge an
+   `AXSelectedText` write without applying it. This choice occurs before
+   any text write; it never retries an uncertain AX write with paste.
+   Destination validation, effect guards and confirmation rules still apply.
+5. **The bound element's `AXSelectedText` is settable** ⇒ **AX
    replacement**; the clipboard is never touched.
-5. Otherwise ⇒ the **serialized clipboard transaction**.
+6. Otherwise ⇒ the **serialized clipboard transaction**.
 
 ## Clipboard ownership (S18)
 

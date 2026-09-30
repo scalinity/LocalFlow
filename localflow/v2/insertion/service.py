@@ -643,7 +643,16 @@ class InsertionService:
 
         # 5. Method selection on the bound destination.
         el = lease.element
-        if el is not None and self.host.is_settable(el, "AXSelectedText"):
+        # Codex's composer can advertise AXSelectedText as settable and
+        # acknowledge the setter without applying the edit. Choose paste
+        # upfront for caret delivery; never paste after an uncertain AX
+        # write. Recorded selections and strict transform replacement keep
+        # their existing method and authority checks.
+        codex_caret = (lease.frontmost_bundle == "com.openai.codex"
+                       and not lease.replace_selection
+                       and not job.get("strict_replacement"))
+        if (not codex_caret and el is not None
+                and self.host.is_settable(el, "AXSelectedText")):
             return self._ax_insert(text, lease, job, common, facts,
                                    on_observation)
         return self._clipboard_insert(text, lease, job, common, facts,
