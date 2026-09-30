@@ -105,7 +105,8 @@ one JSON string.
 - Revocation and retention scrub the state, and every view (shown or
   hidden) is re-pushed from it on the next flush.
 - Copy and Paste Again check the purge state live. Paste Again keeps the
-  explicit-target click workflow (POLICY-D03). A retry without a freshly
+  explicit editable-target click workflow (POLICY-D03; owner refinement
+  September 29, 2026), never arbitrary window/focus authority. A retry without a freshly
   captured destination is kept as saved-not-inserted (XM-C042).
 
 ## Functionality matrix
