@@ -1,8 +1,9 @@
 """Faithful cleanup contract, curated examples and prompt rendering
 (M07, Spec S13).
 
-The contract text below is the S13 clean-prompt contract verbatim. The
-curated examples satisfy the same contract — numbers rendered as digits
+The contract text below is the S13 clean-prompt contract verbatim, supplemented
+by owner-approved list-formatting guidance. The curated examples satisfy
+the same contract — numbers rendered as digits
 where required (normalization has already run), a correct slash token,
 retained questions, and a counterexample where "cloud" stays cloud.
 The prompt is versioned by content hash so evidence records exactly
@@ -39,6 +40,20 @@ A discussion of a phrase is not an instruction to edit that phrase here.
 When uncertain, preserve the original wording rather than guessing.
 Format the entire document coherently. Keep introductions and closing
 sentences outside lists. Do not create sentence fragments at chunk edges."""
+
+# Owner-approved formatting guidance supplements the frozen S13 contract.
+LIST_FORMATTING = """List formatting: When the transcript explicitly introduces a
+list of distinct items (for example, "here is a list of grocery items" or
+"packing list"), keep the complete introduction as prose ending with a
+colon, then put each item on its own bulleted line. Keep closing sentences
+outside the list. A final "and" joining separate items becomes the list
+separator; keep "and" within an item, such as "salt and pepper".
+Do not turn ordinary prose, discussion of a list, or quoted uses of the
+word "list" into bullets. A destination allowing Markdown does not mean
+every sentence should become a list. List formatting alone must not change
+item wording or omit the introduction, except for the final list-joining
+"and". Apply authorized filler removal and explicit self-corrections as
+usual. Never invent items."""
 
 # Curated examples — each pair satisfies the contract itself: digits stay
 # digits (input is already normalized), the slash skill token is exact,
@@ -81,9 +96,31 @@ EXAMPLES = [
         "revisa claude code manana no cambies archivos",
         "Revisa claude code manana, no cambies archivos.",
     ),
+    # An explicit list introduction supplies structure without requiring
+    # spoken "bullet point" markers. Ordinary prose and quoted mentions
+    # of "list" are controls; they must not turn into lists.
+    (
+        "here is a list of grocery items tomatoes potatoes and lemons",
+        "Here is a list of grocery items:\n"
+        "- tomatoes\n- potatoes\n- lemons",
+    ),
+    (
+        "packing list rain jacket phone charger and hiking boots. "
+        "do not pack the spare battery.",
+        "Packing list:\n- rain jacket\n- phone charger\n- hiking boots\n\n"
+        "Do not pack the spare battery.",
+    ),
+    (
+        "i bought tomatoes potatoes and lemons for dinner",
+        "I bought tomatoes, potatoes, and lemons for dinner.",
+    ),
+    (
+        'the phrase "shopping list" appears in the title',
+        'The phrase "shopping list" appears in the title.',
+    ),
 ]
 
-PROMPT_VERSION = "m07-v1"
+PROMPT_VERSION = "m07-v2-introduced-lists"
 
 # The edits the clean mode may make (S13/S15); rendered into the payload
 # so the model sees the permitted-edits policy as data.
@@ -117,10 +154,11 @@ def structure_hints(destination_profile: str | None) -> list[str]:
 
 
 def prompt_revision() -> str:
-    """Content hash over contract + examples (an edited word can never
+    """Content hash over contract, guidance and examples (an edited word can never
     share a revision id with the old prompt)."""
     payload = json.dumps(
-        {"contract": CONTRACT, "examples": EXAMPLES, "version": PROMPT_VERSION},
+        {"contract": CONTRACT, "list_formatting": LIST_FORMATTING,
+         "examples": EXAMPLES, "version": PROMPT_VERSION},
         ensure_ascii=False, sort_keys=True)
     return f"m07:{hashlib.sha256(payload.encode('utf-8')).hexdigest()[:12]}"
 
@@ -157,10 +195,14 @@ def build_payload(transcript: str, *, mode: str = "clean",
 def build_messages(payload: dict) -> list[dict]:
     """Contract + examples + the structured payload, instructions kept
     separate from transcript/context content."""
-    messages = [{"role": "system", "content": CONTRACT}]
+    messages = [{"role": "system", "content": CONTRACT + "\n\n" + LIST_FORMATTING}]
     for raw, cleaned in EXAMPLES:
+        # Match only the content-free destination hints. The examples
+        # teach prose restraint even when this destination allows Markdown.
         messages.append({"role": "user", "content": json.dumps(
-            build_payload(raw), ensure_ascii=False)})
+            build_payload(raw, destination_profile=payload.get("destination_profile"),
+                          structure_hint_list=payload.get("structure_hints")),
+            ensure_ascii=False)})
         messages.append({"role": "assistant", "content": cleaned})
     messages.append({"role": "user",
                      "content": json.dumps(payload, ensure_ascii=False)})

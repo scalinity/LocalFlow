@@ -339,6 +339,47 @@ _ENUM_VALUE = {
 _ITEM_LINE_RE = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+(.*)$")
 
 
+def _introduced_list_join_spans(source: str, output: str) -> list:
+    """A final list-joining 'and' may become a bullet separator.
+    Bind the complete introduction and every item, verbatim in source-word
+    order. Only the connector before the last item is authorized away;
+    conjunctions within an item and ordinary prose remain content.
+    """
+    from . import document_nodes as dn
+    atoms = _word_atoms(source)
+    words = [w for _s, _e, w in atoms]
+    nodes = dn.parse(output).nodes
+    spans = []
+    for intro, group in zip(nodes, nodes[1:]):
+        if (not isinstance(intro, dn.Paragraph)
+                or not isinstance(group, dn.ListGroup) or group.ordered
+                or len(group.items) < 2 or not intro.render().rstrip().endswith(":")):
+            continue
+        head = [w for _s, _e, w in _word_atoms(intro.render())]
+        if "list" not in head or not (
+                head[:2] in (["here", "is"], ["here", "are"])
+                or head[-1:] == ["list"]):
+            continue
+        matches = [i for i in range(len(words) - len(head) + 1)
+                   if words[i:i + len(head)] == head]
+        if len(matches) != 1:
+            continue
+        cursor = matches[0] + len(head)
+        join = None
+        for index, item in enumerate(group.items):
+            item_words = [w for _s, _e, w in _word_atoms(item)]
+            if index == len(group.items) - 1 and words[cursor:cursor + 1] == ["and"]:
+                join = atoms[cursor][:2]
+                cursor += 1
+            if not item_words or words[cursor:cursor + len(item_words)] != item_words:
+                join = None
+                break
+            cursor += len(item_words)
+        if join is not None:
+            spans.append(join)
+    return spans
+
+
 def _enum_spans_when_list_rendered(source: str, output: str,
                                    correction_spans=()) -> list:
     """Authorized enumeration-marker spans: only when the output renders
@@ -359,7 +400,7 @@ def _enum_spans_when_list_rendered(source: str, output: str,
     intro_tails = {(_word_atoms(ln) or [(0, 0, "")])[-1][2]
                    for ln, nxt in zip(lines, lines[1:])
                    if ln.rstrip().endswith(":") and _ITEM_LINE_RE.match(nxt)}
-    spans = []
+    spans = _introduced_list_join_spans(source, output)
     for m in _ENUM_MARKER_RE.finditer(source):
         # The marker's content is what follows it in its own sentence.
         rest_start = m.end()

@@ -16,19 +16,33 @@ the default is `v2` on the M07 ablation evidence
 
 `prompts.CONTRACT` is the S13 clean-prompt contract word for word. The
 prompt is versioned by content hash: `prompt_revision()` =
-`m07:<sha256-12>` over contract + examples + version — an edited word
+`m07:<sha256-12>` over contract + formatting guidance + examples + version — an edited word
 can never share a revision id with the old prompt. Curated examples
 satisfy the contract themselves (digits stay digits, the exact
 `/code-review` token, retained questions, cloud stays cloud, discourse
 words like "like"/"you know" are content, Spanish stays Spanish).
 
 Instructions stay separate from payloads: system message = the
-contract; examples = few-shot turns; the final user message is a JSON
+contract plus owner-approved formatting guidance; examples = few-shot turns;
+the final user message is a JSON
 payload with the S13 field names — `transcript`, `mode`, `locale`,
 `destination_profile`, `relevant_vocabulary`, `protected_spans`,
 `structure_hints`, `permitted_edits` (plus an explicitly labeled
 `read_only_context` for window overlap). Vocabulary alias→canonical
 pairs are validator data only and never enter the prompt.
+
+The owner-approved introduced-list guidance (`m07-v2-introduced-lists`)
+formats explicit introductions such as “here is a list of grocery items”
+into a retained prose heading and one bullet per item. Ordinary prose,
+discussion of lists and quoted uses of “list” stay prose; closing conditions
+remain outside the list. The few-shot examples use the same content-free
+destination profile and structure hints as the job, so Markdown support
+does not become a request to turn every sentence into bullets.
+
+The validator permits the final list-joining “and” to become a bullet
+separator only when an unambiguous matching introduction and every item
+match the source words in order. It does not authorize dropping “and”
+within an item, introduction words, protected text, or item content.
 
 ## Sampling (recorded, explicit)
 
