@@ -21,7 +21,7 @@ ESC_KEY_CODE = 53
 # read once that settles.
 CLICK_SETTLE_SEC = 0.2
 PICK_TIMEOUT_SEC = 30.0
-HINT = "Click where you'd like to paste — Esc to cancel"
+HINT = "Click where you want to paste"
 
 
 def _call_later(delay, fn):
