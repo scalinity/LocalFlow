@@ -1542,6 +1542,8 @@ Existing stt/cleanup adapters. New: localflow/v2/model_registry.py, model_adapte
 9. Validate M14 exports and run the 25-case portable pack plus at least 10 live retained/reviewed jobs; report task eligibility and missing evidence honestly.
 10. Publish dataset-readiness and comparator-disagreement reports, with approved/skipped external runs distinguished and no automatic reference replacement.
 
+11. Prepare **M15-A — Automated cleanup-model challenger qualification**: versioned candidate manifest, configured global HF-cache resolution, frozen Normalized-input shootout and frozen-audio replay, reusable M07-V002 real-text corpus, fidelity/correction/fallback scoring, precision ablation, dense/MoE ceiling comparison, resumable checkpoints, exact runtime/template identity, memory measurement, safety-first promotion and optional blinded text tie-break. Setup infrastructure does not start full M15 acceptance. The additive execution and promotion contract is [benchmarks/M15-A.md](benchmarks/M15-A.md).
+
 ### Required automated tests
 
 EV-16 plus all critical EV-06/07/09/13 cases; empty/NaN/short/no-speech audio; offline cache load; unsupported model adapter; version mismatch.
@@ -1563,6 +1565,9 @@ At least 30 unique cases per latency band ×5 warm runs, ten cached cold process
 - **M15-AC06:** Short/acoustic/context reports include exact corpus/family counts, false-substitution controls and human reference quality.
 - **M15-AC07:** The portable pack and live-evidence pilot reconstruct supported tasks, with no false gold labels, split leakage or hidden LocalFlow database dependency.
 - **M15-AC08:** Missing cloud credentials or declined uploads never break local operation or force a production provider change.
+
+- **M15-AC09:** The production control and every supported required challenger are evaluated on identical frozen semantic inputs, with critical fidelity, correction behavior, fallback/useful cleanup, latency, memory and exact model/revision/runtime evidence. Setup smoke does not satisfy this acceptance criterion.
+- **M15-AC10:** Human speech/reference collection happens once; the same hashed audio/reference corpus is replayed across candidates, without repeated owner dictation per model. Synthetic mechanics remain separate from required human evidence.
 
 ### Human verification
 
@@ -1589,6 +1594,10 @@ Separate measured local results, synthetic contract tests, live cloud results an
 ### Stop conditions
 
 Unavailable hardware, gold references or a failing candidate blocks its certification. Retain the working default and complete every available comparison rather than inventing scores. Follow P04. After the assigned automatable scope, write the complete handoff and stop; do not begin another milestone.
+
+### M15-A — Automated cleanup-model challenger qualification
+
+Additive sub-phase: [benchmarks/M15-A.md](benchmarks/M15-A.md), with the seven pinned conditions in [benchmarks/m15-cleanup-candidates.json](benchmarks/m15-cleanup-candidates.json). The current Qwen3-4B-2507 is the required control; its reported M07 model-behavior blocker remains open. No default changes or M07/M11 closure occur during setup. Promotion requires all eleven safety, fidelity, offline, latency, memory and explicit owner-approval conditions in the sub-phase contract.
 
 <a id="m16"></a>
 ## Milestone 16 — Integration, offline packaging and V2 acceptance
