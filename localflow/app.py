@@ -3415,6 +3415,7 @@ class AppDelegate(NSObject):
     # ---- dictation state machine (all on main thread) ------------------
 
     def startDictation(self, source="hotkey"):
+        t_press = time.monotonic()
         if getattr(self, "_closing", False):
             return  # quitting: app admission is closed (M03-AUDIT-04)
         if self._hands_free_active:
@@ -3539,6 +3540,7 @@ class AppDelegate(NSObject):
                         outcome="hands_free" if hands_free else None)
         self.state = STATE_RECORDING
         self.overlay.showWithMode_(MODE_RECORDING)
+        t_overlay = time.monotonic()
         # M06 (Spec S12): cheap destination identity at PTT start —
         # AFTER the overlay (no Accessibility read ever delays visible
         # feedback) and BEFORE the trio, so the pre-decode hint set is
@@ -3649,6 +3651,15 @@ class AppDelegate(NSObject):
             self._max_timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
                 cap, self, "maxDurationHit:", None, False
             )
+        # The main thread cannot run the pill's timer until this returns:
+        # record how long the press-to-overlay and overlay-to-return
+        # stretches took, so a start lag is measured, not guessed.
+        t_end = time.monotonic()
+        self.v2log.emit(
+            "capture.start_path", level="INFO", job_id=job_id,
+            duration_ms=round((t_end - t_press) * 1000, 1),
+            detail=f"to_overlay_ms={(t_overlay - t_press) * 1000:.1f}"
+                   f" overlay_to_return_ms={(t_end - t_overlay) * 1000:.1f}")
 
     def maxDurationHit_(self, timer):
         if self.state == STATE_RECORDING:
