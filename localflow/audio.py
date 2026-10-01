@@ -44,16 +44,24 @@ class Recorder:
         self.teardown_error = None
 
     def _resolve_device(self):
+        """``input_device`` is None (system default), an index, a name
+        fragment, or an ordered list of those: the first one connected
+        wins, so a preferred microphone can sit ahead of a built-in one
+        and the system default (a headset's late-starting mic) is only
+        the last resort."""
         if self.input_device is None:
             return None
-        if isinstance(self.input_device, int):
-            return self.input_device
-        for i, dev in enumerate(sd.query_devices()):
-            if (
-                dev["max_input_channels"] > 0
-                and str(self.input_device).lower() in dev["name"].lower()
-            ):
-                return i
+        choices = self.input_device if isinstance(
+            self.input_device, (list, tuple)) else [self.input_device]
+        for choice in choices:
+            if isinstance(choice, int):
+                return choice
+            for i, dev in enumerate(sd.query_devices()):
+                if (
+                    dev["max_input_channels"] > 0
+                    and str(choice).lower() in dev["name"].lower()
+                ):
+                    return i
         if self.notifier is not None:
             self.notifier(f"input device {self.input_device!r} not found,"
                           " using default")
