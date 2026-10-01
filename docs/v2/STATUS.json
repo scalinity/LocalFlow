@@ -1,32 +1,51 @@
 {
   "schema_version": 2,
-  "status_reason": "Cross-milestone three-audit remediation of 340c566 is complete as a source remediation (final production a33f681): all 17 merged findings and the seven GATE-G06 defects repaired, the final owner decisions implemented (XM-C042 retry authority, POLICY-D03 explicit Paste Again destination), every gate closed or closed for the source remediation, 88 of 88 mutants killed, independent review converged at round 10. Native, manual, model and human qualification remain pending (gates/qualification_ledger.md). The M14 implementation record below is historical.",
+  "status_reason": "Quiet Editorial desktop redesign and owner-polish implementation are merged onto main. All twelve owner-polish gates are closed by the final September 30 evidence; owner visual approval is recorded. This redesign / M14-adjacent owner-polish phase is over. Separate M07/M11 and broader native, manual, model and human qualification obligations remain outstanding according to qualification_ledger.md. M15 and M16 are not started. Historical implementation records remain historical.",
   "current_state": {
-    "as_of": "2026-09-28",
+    "as_of": "2026-09-30",
     "store_schema_version": 13,
     "store_schema_source": "max(_MIGRATIONS) in localflow/v2/store.py",
-    "campaign": "Three-audit cross-milestone remediation (Audits A, C, B of 340c566; 17 merged findings, gates G01-G10, policies D01-D04)",
-    "campaign_state": "CROSS_MILESTONE_REMEDIATION_COMPLETE_PENDING_MANUAL_MODEL_VERIFICATION",
+    "campaign": "Quiet Editorial desktop redesign and M14-adjacent owner-polish closure",
+    "campaign_state": "QUIET_EDITORIAL_OWNER_POLISH_MERGED_AND_CLOSED",
     "blockers": [],
     "pending_qualification": [
-      "Native: GATE-G07 active tier (real keyboard and focus), the real-click Paste Again pick, XM-C196, XM-C121, XM-C197",
+      "Native: remaining GATE-G07 and broader runbook obligations according to qualification_ledger.md; overlapping owner-polish hotkey, review authority, Accept/refusal and PTT gates are closed by the final evidence",
       "Manual: the runbook checks in docs/v2/VERIFICATION.html, including M03-V006 (real microphones)",
       "Model: M07-V001, M07-V002 (blocked until the separate private legacy-transcript review tool exists), the M11 integrated record (GATE-G10), LF-R27 and LF-R29",
       "Human / M15: human-speaker end-to-end dictation timing (XM-C191, XM-C192, XM-C194, XM-C195, XM-MH32) and M15's own qualification"
     ],
-    "branch": "xm-local-remediation-20260928 (complete; merged onto main)",
-    "production_commit": "a33f681",
+    "branch": "main",
+    "production_commit": "b096d5636c6a02e3db0d7f451a04133c51209d19",
     "evidence": [
       "docs/v2/acceptance/cross-milestone/remediation/adjudications.json",
       "docs/v2/acceptance/cross-milestone/remediation/decisions.json",
       "docs/v2/acceptance/cross-milestone/remediation/gates/qualification_ledger.md",
       "docs/v2/acceptance/cross-milestone/merged_ledger.json",
-      "docs/v2/handoffs/CROSS-MILESTONE.md"
+      "docs/v2/handoffs/CROSS-MILESTONE.md",
+      "docs/v2/companion/OWNER_POLISH_CLOSURE_20260930.md"
     ],
     "performance": "Current performance on this Mac is read from docs/v2/benchmarks/20260928-230400-xm-remediation-final-decisions (M14 curation, profile and export cost with the dictation-shaped writer probe; M09 Hub construction, publication and History search), measured after correctness on the final production code. Dictation end-to-end is not measured. The benchmark figures under historical_implementation are historical and describe the M14 implementation code.",
-    "may_run_next": "The cross-milestone source remediation is complete and on main. Next, as separate work: the private legacy-transcript review tool for M07-V002 (a pre-M15 qualification-support workstream), and the native, manual, model and human qualification in gates/qualification_ledger.md, which may run beside it. M15 is not started: it stays gated by that qualification, by M11's incomplete verification and by M07's pending qualification. Quiet Editorial, AI-powered Your Voice interpretation, M16 and installed-app rollout are not authorized.",
+    "may_run_next": "Next planned separate workstream: the private legacy-transcript review tool for M07-V002 (pre-M15 qualification support), with the remaining native, manual, model and human qualification in gates/qualification_ledger.md beside it. M15 is not started and remains gated by M07 pending qualification and M11 incomplete verification. M16 is not started. Quiet Editorial and owner-polish are merged and closed; no next workstream began during this closure. AI-powered Your Voice interpretation and installed-app rollout remain unauthorized.",
     "pending_human": "docs/v2/VERIFICATION.html: the M01-M14 checks, including M07-V001 and M07-V002 (M07-V002 blocked: its private review tool does not exist)",
-    "next_milestone": "M15 (not started)"
+    "next_milestone": "M15 (not started)",
+    "merge_commit": "ac77035005477bc7030ea0e3713be0f0408ff5c6",
+    "owner_polish": {
+      "redesign": "MERGED",
+      "implementation": "MERGED",
+      "qualification": "CLOSED",
+      "owner_visual_approval": "RECORDED",
+      "global_transform_hotkeys": "QUALIFIED_BY_FINAL_CLOSURE_EVIDENCE",
+      "paste_again_policy": "POLICY-D03-EDITABLE-TARGET",
+      "typing_anomaly": {
+        "disposition": "OWNER_MANUAL_OVERRIDE",
+        "root_cause": "UNRESOLVED",
+        "unrelated_cause": "NOT_PROVEN"
+      },
+      "M07": "SEPARATE_OUTSTANDING_QUALIFICATION_PER_LEDGER",
+      "M11": "SEPARATE_OUTSTANDING_QUALIFICATION_PER_LEDGER",
+      "M15": "NOT_STARTED",
+      "M16": "NOT_STARTED"
+    }
   },
   "historical_implementation": {
     "active_milestone": "M14",
