@@ -66,6 +66,15 @@ def source_revision() -> str:
             ).stdout.strip()
         except (OSError, subprocess.SubprocessError):
             _source_revision_cache = "unknown:no-git"
+            try:
+                record = json.loads((root / "BUILD.json").read_text())
+                sha = record["source_revision"]
+                if isinstance(sha, str) and len(sha) == 40 and \
+                        all(c in "0123456789abcdef" for c in sha):
+                    _source_revision_cache = sha + (
+                        "+dirty" if record.get("dirty", True) else "")
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
             return _source_revision_cache
         try:
             dirty = bool(subprocess.run(

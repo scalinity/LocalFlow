@@ -140,9 +140,15 @@ that one element.
    certifies a real surface.
 3. **Accessibility not trusted** ⇒ copy-only offer
    (`accessibility_not_trusted`).
-4. **The bound element's `AXSelectedText` is settable** ⇒ **AX
+4. **Codex (`com.openai.codex`) caret delivery**, with no recorded
+   replacement selection and no strict replacement request ⇒ the
+   **serialized clipboard transaction**. The composer can acknowledge an
+   `AXSelectedText` write without applying it. This choice occurs before
+   any text write; it never retries an uncertain AX write with paste.
+   Destination validation, effect guards and confirmation rules still apply.
+5. **The bound element's `AXSelectedText` is settable** ⇒ **AX
    replacement**; the clipboard is never touched.
-5. Otherwise ⇒ the **serialized clipboard transaction**.
+6. Otherwise ⇒ the **serialized clipboard transaction**.
 
 ## Clipboard ownership (S18)
 
@@ -258,14 +264,37 @@ already contains the text — a substring guard, approximate by design —
 else runs a fresh transaction (insert-on-faith, never confirmed).
 `paste_text(text, job_id=None, on_done=None, target=None)` (History,
 POLICY-D03) requires the destination the user explicitly picked after
-invoking Paste Again — a `TargetSnapshot` captured from the app whose
-window was clicked — and returns `no_destination` without one: the app
-that merely comes to the front is never authority. It reconciles only
-inside the picked app, and its transaction revalidates that target like
-any job's (`target_changed` when it moved). Both return
+invoking Paste Again — an `EditableTargetSnapshot` bound to the editable
+AX element hit at the actual click coordinate and its owning window —
+and returns `no_destination` without one. Focus alone, a window/titlebar,
+toolbar, button, sidebar, static/background content, menu or Dock click
+never grants authority. There is no fallback to an old focused field.
+The resolver proves current text editability/writability, enabled state,
+ownership and click containment; a rendered descendant may resolve only
+to its associated editable ancestor, never through an independent
+control/window. Explicit `AXEnabled=false` refuses; a missing enabled
+attribute alone does not invalidate positive text-write capability
+(ordinary native text views can omit it). Insufficient AX semantics
+abstain. A non-editable click
+leaves the picker armed under its original timeout, without a target.
+After an editable click settles, the exact hit element must be the
+owning app's focused writable destination. Duplicate reconciliation
+reads and M08 revalidation require that same element/window and current
+editability; a different same-role field is refused for this History
+operation. Normal PTT and strict selected-text replacement retain their
+existing semantics. Both return
 `repaste_queued` at once; `on_done(result)` fires when a transaction
 ran. The job id keeps the `insertions` row attributed; a jobless
 repaste records no row.
+
+**POLICY-D03 editable-target refinement (owner, September 29, 2026).**
+The prior contract allowed broader application-window click authority.
+Packaged native qualification demonstrated a non-editable titlebar
+click inserting into the previously focused field. The owner explicitly
+narrowed History Paste Again to editable-target click authority. This
+supersedes the old current rule; historical evidence remains dated and
+unchanged. The additive decision is recorded in
+`acceptance/cross-milestone/remediation/decisions.json`.
 
 **Recovery lifetime.** The in-memory recovery cache (the last result's
 text and its undo record) ends after `RECOVERY_CACHE_TTL_SEC` (3600 s),

@@ -81,7 +81,7 @@ CORRECTIONS_INSTRUCTION = (
     "actually shipped\") are not corrections. If there are no "
     "corrections, output NONE. Output nothing else.")
 
-# Few-shot corrections examples (V1's curated set).
+# V1's curated set, plus spoken-step and multiword-place correction controls.
 CORRECTIONS_EXAMPLES = [
     (
         "book the flight for friday actually saturday and send the "
@@ -109,6 +109,14 @@ CORRECTIONS_EXAMPLES = [
     (
         "the answer is no i checked twice",
         "NONE",
+    ),
+    (
+        "step one um check monday no wait tuesday and step two write the report",
+        "monday no wait",
+    ),
+    (
+        "meet at the bus station no wait the airport at 8",
+        "the bus station no wait",
     ),
 ]
 
@@ -485,6 +493,16 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
         return "emphasis_not_correction"
     if not _has_content(" ".join(after)):
         return "no_replacement"
+    from .validation import FUNCTION_WORDS, FILLERS
+    before_words = [w.lower().strip(",;:") for w in window_text[s:ms].split()]
+    after_words = [w.lower().strip(",;:") for w in after]
+    replacement = next((w for w in after_words
+                        if w not in FUNCTION_WORDS and w not in FILLERS), "")
+    for values in (_WEEKDAYS, _MONTHS):
+        if before_words[-1] in values and replacement in values and any(
+                w not in FUNCTION_WORDS and w not in FILLERS
+                for w in before_words[:-1]):
+            return "overbroad_calendar_value"
     if marker in _SINGLE_WORD_MARKERS:
         words = lambda t: [w.lower().strip(",;:") for w in t.split()]
         if not _parallel(words(window_text[s:ms]), words(" ".join(after))):

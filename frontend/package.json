@@ -1,0 +1,21 @@
+{
+  "name": "localflow-companion",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "LocalFlow desktop companion view (WKWebView). Build output is committed to localflow/v2/ui/companion/web/.",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5317 --strictPort",
+    "build": "vite build",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@lucide/svelte": "1.48.0",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@tsconfig/svelte": "5.0.8",
+    "svelte": "5.57.1",
+    "svelte-check": "4.7.6",
+    "typescript": "6.0.3",
+    "vite": "8.3.1"
+  }
+}

@@ -641,12 +641,16 @@ class HubState:
                                  loading=False)
             return
         try:
-            from .. import transforms as transforms_mod
             stored = self.transforms_service.definitions()
             rows = [d.to_json() for d in stored]
-            snapshot = transforms_mod.TransformSnapshot(stored)
-            conflicts = transforms_mod.shortcut_conflicts(
-                snapshot.definitions)
+            from ..transform_hotkeys import display
+            prefs = self.transforms_service.hotkeys()
+            for row in rows:
+                pref = prefs[row["transform_id"]]
+                row["hotkey"] = pref["binding"]
+                row["hotkey_source"] = pref["source"]
+                row["hotkey_display"] = display(pref["binding"])
+            conflicts = self.transforms_service.hotkey_conflicts()
         except Exception as e:
             self._publish_locked("transforms", req, error=type(e).__name__,
                                  loading=False)

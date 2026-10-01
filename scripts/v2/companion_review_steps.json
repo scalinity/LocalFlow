@@ -1,0 +1,109 @@
+[
+  [
+    "transforms",
+    "document.querySelector(\"[role=dialog]\") || [...document.querySelectorAll(\"button\")].find(b => b.textContent.trim() === \"How it works\").click(); 1",
+    "transform-onboarding-1",
+    true
+  ],
+  [
+    "transforms",
+    "[...document.querySelectorAll(\"button\")].find(b => b.textContent.trim() === \"Show me how\").click(); 1",
+    "transform-onboarding-2",
+    true
+  ],
+  [
+    "transforms",
+    "[...document.querySelectorAll(\"button\")].find(b => b.textContent.trim() === \"Next\").click(); 1",
+    "transform-onboarding-3",
+    true
+  ],
+  [
+    "home",
+    "[...document.querySelectorAll('nav button')].find(b => b.textContent.trim() === 'Settings').click(); 1",
+    "settings-general"
+  ],
+  [
+    "home",
+    "[...document.querySelectorAll('nav button')].find(b => b.textContent.trim() === 'Settings').click(); setTimeout(() => [...document.querySelectorAll('.nav-item')].find(b => b.textContent.trim() === 'Data and privacy').click(), 300); 1",
+    "settings-privacy"
+  ],
+  [
+    "history",
+    "document.querySelector('[data-row]').click(); 1",
+    "history-detail"
+  ],
+  [
+    "dictionary",
+    "[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Add new').click(); 1",
+    "dictionary-add"
+  ],
+  [
+    "transforms",
+    "document.querySelector(\"[role=dialog]\") && [...document.querySelectorAll(\"button\")].find(b => b.textContent.trim() === \"Done\")?.click(); 1",
+    "transforms-page",
+    true
+  ],
+  [
+    "snippets",
+    "[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Add new').click(); 1",
+    "snippets-add"
+  ],
+  [
+    "styles",
+    "[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Add rule').click(); 1",
+    "styles-add"
+  ],
+  [
+    "insights",
+    "[...document.querySelectorAll('[role=tab]')].find(b => b.textContent.trim() === 'Your Voice').click(); 1",
+    "insights-voice",
+    true
+  ],
+  [
+    "scratchpad",
+    "document.querySelector('ul.list .row').click(); 1",
+    "scratchpad-editor",
+    true
+  ],
+  [
+    "scratchpad",
+    "document.querySelector('textarea.note').focus(); document.querySelector('textarea.note').setSelectionRange(0, 14); 1",
+    "scratchpad-editor-focused",
+    true
+  ],
+  [
+    "models",
+    "[...document.querySelectorAll(\"[role=tab]\")].find(b => b.textContent.trim() === \"Training data\").click(); setTimeout(() => [...document.querySelectorAll(\"[role=radio]\")].find(b => b.textContent.trim() === \"Evidence\")?.click(), 400); 1",
+    "models-evidence",
+    true
+  ],
+  [
+    "models",
+    "document.querySelector('ul[aria-label=Examples] .row').click(); 1",
+    "models-evidence-detail",
+    true
+  ],
+  [
+    "models",
+    "[...document.querySelectorAll('[role=radio]')].find(b => b.textContent.trim() === 'Review').click(); 1",
+    "models-review",
+    true
+  ],
+  [
+    "models",
+    "[...document.querySelectorAll('[role=radio]')].find(b => b.textContent.trim() === 'Export').click(); 1",
+    "models-export",
+    true
+  ],
+  [
+    "home",
+    "window.webkit.messageHandlers.lf.postMessage(JSON.stringify({bridge_version: 1, request_id: \"c1\", command: \"prefs.set_sidebar\", payload: {collapsed: true}})); 1",
+    "home-collapsed",
+    true
+  ],
+  [
+    "home",
+    "window.webkit.messageHandlers.lf.postMessage(JSON.stringify({bridge_version: 1, request_id: \"c2\", command: \"prefs.set_sidebar\", payload: {collapsed: false}})); 1",
+    "home"
+  ]
+]

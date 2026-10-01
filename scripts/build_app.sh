@@ -8,6 +8,21 @@ set -e
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
 
+# Qualification builds use the same bundle recipe without replacing the
+# installed app. Refuse an existing output rather than deleting it.
+OUTPUT=""
+if (( $# )); then
+    if [[ $# != 2 || "$1" != "--output" || "$2" != /*.app ]]; then
+        echo "Usage: $0 [--output /absolute/path/LocalFlow.app]" >&2
+        exit 2
+    fi
+    OUTPUT="$2"
+    if [[ -e "$OUTPUT" || -L "$OUTPUT" ]]; then
+        echo "Output already exists: $OUTPUT" >&2
+        exit 2
+    fi
+fi
+
 BUILD="$(mktemp -d)"
 APP="$BUILD/LocalFlow.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
@@ -43,6 +58,11 @@ PLIST
 ditto "$ROOT/localflow" "$APP/Contents/Resources/localflow"
 find "$APP/Contents/Resources/localflow" -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
 cp "$ROOT/config.json" "$APP/Contents/Resources/config.json"
+REVISION=$(git rev-parse HEAD)
+DIRTY=false
+if [[ -n "$(git status --porcelain)" ]]; then DIRTY=true; fi
+printf '{"source_revision":"%s","dirty":%s}\n' "$REVISION" "$DIRTY" \
+    > "$APP/Contents/Resources/BUILD.json"
 echo "Copying venv into bundle (~600 MB)..."
 ditto "$ROOT/.venv" "$APP/Contents/Resources/venv"
 
@@ -62,6 +82,7 @@ cat > "$BUILD/launcher.c" <<'LAUNCHER'
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 static pid_t child = 0;
@@ -88,10 +109,18 @@ int main(void) {
     child = fork();
     if (child < 0) return 1;
     if (child == 0) {
-        const char *home = getenv("HOME");
-        char log[1024];
-        snprintf(log, sizeof log, "%s/Library/Logs/LocalFlow.log",
-                 home ? home : "/tmp");
+        const char *home = getenv("LOCALFLOW_DATA_HOME");
+        if (home && home[0] != '/') _exit(2);
+        if (!home) home = getenv("HOME");
+        char log[4096];
+        if (snprintf(log, sizeof log, "%s/Library", home ? home : "/tmp")
+                >= sizeof log) _exit(2);
+        mkdir(log, 0700);
+        if (snprintf(log, sizeof log, "%s/Library/Logs", home ? home : "/tmp")
+                >= sizeof log) _exit(2);
+        mkdir(log, 0700);
+        if (snprintf(log, sizeof log, "%s/Library/Logs/LocalFlow.log",
+                     home ? home : "/tmp") >= sizeof log) _exit(2);
         int fd = open(log, O_WRONLY | O_CREAT | O_APPEND, 0644);
         if (fd >= 0) { dup2(fd, 1); dup2(fd, 2); close(fd); }
         setenv("PYTHONPATH", res, 1);
@@ -139,6 +168,13 @@ done
 iconutil -c icns -o "$APP/Contents/Resources/LocalFlow.icns" "$ICONSET"
 
 # Install
+if [[ -n "$OUTPUT" ]]; then
+    mkdir -p "$(dirname "$OUTPUT")"
+    ditto "$APP" "$OUTPUT"
+    rm -rf "$BUILD"
+    echo "Built $OUTPUT (not installed)"
+    exit 0
+fi
 DEST="/Applications/LocalFlow.app"
 if [[ ! -w /Applications ]]; then
     DEST="$HOME/Applications/LocalFlow.app"

@@ -190,9 +190,12 @@ live as of M13, the refusal check uses any unregistered name).
   explicit one-shot destination acquisition: it binds the source as
   shown (the job and its rendered final artifact), the Hub steps aside
   with a click-through hint ("Click where you'd like to paste — Esc to
-  cancel"), and only the user's next click in another app names the
-  destination — the app whose window was clicked must be the app in
-  front. At that click the source is revalidated (deleted, purged or
+  cancel"), and only a deliberate click resolving to a currently
+  editable text destination names the target. The exact hit field/window
+  must remain valid in the app in front; an arbitrary window click never
+  reuses previous field focus. Non-editable clicks keep the picker armed
+  without authority (POLICY-D03 editable-target refinement, September 29,
+  2026). At a valid click the source is revalidated (deleted, purged or
   changed text refuses; a busy store refuses as `source_unverified`) and
   a fresh target goes to the M08 engine (`InsertionService.paste_text`),
   which revalidates it. Esc, a 30-second timeout, quit, deleting the

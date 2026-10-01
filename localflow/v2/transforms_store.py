@@ -25,6 +25,7 @@ from typing import Optional
 
 from . import ids
 from . import transforms as tf
+from . import transform_hotkeys as hotkeys
 from .store import (Store, conn_job_deleted, grant_lease_row,
                     insert_text_artifact_row)
 
@@ -127,6 +128,43 @@ class TransformStore:
                 return d
         return None
 
+    def hotkeys(self) -> dict:
+        return self.store.submit(hotkeys.conn_preferences)
+
+    def active_hotkeys(self) -> dict:
+        def op(db):
+            prefs = hotkeys.conn_preferences(db)
+            active = {}
+            duplicates = set()
+            for tid, in db.execute("SELECT transform_id FROM transforms WHERE enabled=1"):
+                chord = hotkeys.identity(prefs[tid]["binding"])
+                if chord is None:
+                    continue
+                if chord in active:
+                    duplicates.add(chord)
+                active[chord] = tid
+            # A corrupted/imported duplicate never chooses a winner.
+            return {k: v for k, v in active.items() if k not in duplicates}
+        return self.store.submit(op)
+
+    def hotkey_conflicts(self):
+        return self.store.submit(hotkeys.conn_conflicts)
+
+    def set_hotkey(self, transform_id, binding, *, reset=False):
+        def op(db):
+            pref = hotkeys.conn_write(db, transform_id, binding, reset)
+            self._bump(db)
+            return pref
+        return self._submit_hotkey_op(op)
+
+    def _submit_hotkey_op(self, op):
+        try:
+            return self.store.submit(op)
+        except RuntimeError as e:
+            if str(e).startswith("ValueError: "):
+                raise ValueError(str(e)[12:]) from e
+            raise
+
     def revisions_of(self, transform_id: str) -> list[dict]:
         """Every preserved revision (append-only history, AC01)."""
         def op(db):
@@ -193,7 +231,8 @@ class TransformStore:
                       transform_id: Optional[str] = None,
                       origin: str = "user",
                       source_locator: Optional[str] = None,
-                      legacy_key: Optional[str] = None
+                      legacy_key: Optional[str] = None,
+                      hotkey=None
                       ) -> tf.TransformDefinition:
         defn = tf.TransformDefinition(
             transform_id=transform_id or ids.new_id("tf"),
@@ -222,15 +261,12 @@ class TransformStore:
                         for k in _EDITABLE if k != "edit_types")
                     return ("already_applied", have) if same \
                         else ("id_in_use", None)
-            if defn.shortcut is not None and tf.shortcut_conflicts(
-                    [_row_to_def(r) for r in db.execute(
-                        f"SELECT {', '.join(_COLS)} FROM transforms"
-                    ).fetchall()] + [defn]):
-                return ("shortcut", None)
             self._insert(db, defn, now)
+            if hotkey is not None or defn.shortcut:
+                hotkeys.conn_write(db, defn.transform_id, hotkey if hotkey is not None else hotkeys.legacy_binding(defn.shortcut))
             self._bump(db)
             return ("ok", defn)
-        status, out = self.store.submit(op)
+        status, out = self._submit_hotkey_op(op)
         if status == "id_in_use":
             raise ValueError("id_in_use")
         if status == "shortcut":
@@ -247,6 +283,16 @@ class TransformStore:
         revision it names are always the same definition — fields a
         caller did not name keep the row's current values, whatever
         committed since the caller read (xm-policy-r1 D03, MERGED-X03)."""
+        hotkey = changes.pop("hotkey", ...)
+        # Compatibility for the old AppKit field: it edits the separate
+        # preference, never a new semantic revision or stale menu registry.
+        old_shortcut = changes.pop("shortcut", ...)
+        if old_shortcut is not ... and hotkey is ...:
+            if old_shortcut is not None and (not isinstance(old_shortcut, str) or len(old_shortcut) != 1):
+                raise ValueError("shortcut must be a single character (menu key equivalent) or None")
+            hotkey = hotkeys.legacy_binding(old_shortcut)
+        if hotkey is not ...:
+            hotkey = hotkeys.normalize(hotkey)
         # The auto-apply opt-in and enablement are refused unless they
         # are real Booleans — before any read or write (M10-AUDIT-06).
         for field in ("auto_apply", "enabled"):
@@ -277,6 +323,13 @@ class TransformStore:
                 # A built-in IS its mode (the mode executors bind by
                 # id+mode) — an edit can never silently rebind it.
                 return ("builtin_mode", current)
+            if current.origin == "builtin" and "prompt" in changes and changes["prompt"] != current.prompt:
+                raise ValueError("a built-in transform's prompt is fixed")
+            if changes.get("enabled") is True and not current.enabled:
+                hotkeys.conn_check(db, transform_id, hotkeys.conn_preferences(db)[transform_id]["binding"] if hotkey is ... else hotkey)
+            if hotkey is not ...:
+                hotkeys.conn_write(db, transform_id, hotkey)
+                self._bump(db)
             merged = {
                 "name": current.name, "mode": current.mode,
                 "description": current.description,
@@ -293,14 +346,6 @@ class TransformStore:
                 # A no-op update appends nothing — the append-only
                 # history records real changes only.
                 return ("ok", current)
-            if merged["shortcut"] is not None and tf.shortcut_conflicts(
-                    [_row_to_def(r) for r in db.execute(
-                        f"SELECT {', '.join(_COLS)} FROM transforms WHERE"
-                        " transform_id != ?", (transform_id,)).fetchall()]
-                    + [tf.TransformDefinition(
-                        transform_id="pending", name="pending",
-                        mode="custom", shortcut=merged["shortcut"])]):
-                return ("shortcut", merged["shortcut"])
             updated = tf.TransformDefinition(
                 transform_id=current.transform_id,
                 name=merged["name"], mode=merged["mode"],
@@ -334,7 +379,7 @@ class TransformStore:
             self._append_revision(db, updated, now)
             self._bump(db)
             return ("ok", updated)
-        status, out = self.store.submit(op)
+        status, out = self._submit_hotkey_op(op)
         if status == "missing":
             raise KeyError(f"no transform {transform_id}")
         if status == "legacy":

@@ -70,15 +70,15 @@ COPY_RAW_TITLE = "Copy Raw Transcript of Last Failure"
 
 # Audio of the last few dictations, kept for replay when a transcript
 # comes out wrong (local only, pruned to the newest AUDIO_DEBUG_KEEP)
-AUDIO_DEBUG_DIR = pathlib.Path.home() / "Library" / "Logs" / "LocalFlow-audio"
+AUDIO_DEBUG_DIR = config_mod.data_home() / "Library" / "Logs" / "LocalFlow-audio"
 AUDIO_DEBUG_KEEP = 5
 
-APP_SUPPORT = pathlib.Path.home() / "Library" / "Application Support" / "LocalFlow"
+APP_SUPPORT = config_mod.data_home() / "Library" / "Application Support" / "LocalFlow"
 V2_DB = APP_SUPPORT / "v2.db"
 V2_ARTIFACTS = APP_SUPPORT / "v2-artifacts"
 V2_BACKUPS = APP_SUPPORT / "v2-evidence" / "backups"
 V2_JOURNAL = APP_SUPPORT / "v2-journal"
-V2_EVENTS_DIR = pathlib.Path.home() / "Library" / "Logs" / "LocalFlow"
+V2_EVENTS_DIR = config_mod.data_home() / "Library" / "Logs" / "LocalFlow"
 
 # Hands-free (M03, Spec S09): a release shorter than min_duration_sec (a
 # tap) followed by a new press within DOUBLE_TAP_SEC starts continuous
@@ -1550,6 +1550,13 @@ class AppDelegate(NSObject):
         chosen definition. The pill acknowledges immediately (S24);
         capture + generation run off the UI callback."""
         transform_id = sender.representedObject()
+        self.tfRunShortcut(transform_id)
+
+    @objc.python_method
+    def tfRunShortcut(self, transform_id):
+        """Menu and consumed global commands share this exact entry."""
+        if getattr(self, "_closing", False):
+            return
         if self._tf_pipeline_busy():
             self.v2log.emit("transforms.busy", level="INFO",
                             reason_code="pipeline_active")
@@ -1576,6 +1583,23 @@ class AppDelegate(NSObject):
             AppHelper.callAfter(
                 self._tfShowResult_, result, capture, defn)
         self._tf_spawn(work)
+
+    @objc.python_method
+    def tfRefreshHotkeys(self):
+        listener = getattr(self, "_transform_hotkeys", None)
+        if listener is not None and self._tf_store is not None:
+            try:
+                listener.replace(self._tf_store.active_hotkeys())
+            except Exception as e:
+                listener.replace({})
+                self.v2log.emit("transforms.hotkeys", level="WARNING",
+                    outcome="unavailable", reason_code=type(e).__name__)
+
+    @objc.python_method
+    def tfRecordShortcut(self, active):
+        listener = getattr(self, "_transform_hotkeys", None)
+        if listener is not None:
+            listener.recording(active)
 
     @objc.python_method
     def _tf_pipeline_busy(self):
@@ -2629,6 +2653,15 @@ class AppDelegate(NSObject):
             on_other_key=self.cancelDictation,
         )
         self.hotkey.start()
+        from .transform_hotkey import TransformHotkeyListener
+        self._transform_hotkeys = TransformHotkeyListener(
+            self.tfRunShortcut,
+            lambda outcome, reason: self.v2log.emit(
+                "transforms.hotkeys", level="INFO" if reason is None else "WARNING",
+                outcome=outcome, reason_code=reason))
+        self.tfRefreshHotkeys()
+        self._transform_hotkeys.start()
+        self._transform_hotkey_state = self._tf_store.revision() if self._tf_store else None
         if self.cfg.get("mouse_trigger"):
             self.mouse_trigger = MouseTriggerListener(
                 self.cfg["mouse_trigger"],
@@ -2699,6 +2732,9 @@ class AppDelegate(NSObject):
         the store and event writer close admission and drain. Nothing here
         waits for a main-thread callback."""
         self._closing = True
+        listener = getattr(self, "_transform_hotkeys", None)
+        if listener is not None:
+            listener.stop()
         # M09: no deferred Hub show or quick-open after quit began, and
         # the Hub's query admission closes before the store drains.
         self._hub_show_pending = False
@@ -3975,6 +4011,12 @@ class AppDelegate(NSObject):
     # ---- watchdog ---------------------------------------------------------
 
     def watchdog_(self, timer):
+        # Legacy AppKit editor mutations also refresh the one tap's map.
+        if getattr(self, "_transform_hotkeys", None) is not None and self._tf_store:
+            revision = self._tf_store.revision()
+            if revision != self._transform_hotkey_state:
+                self.tfRefreshHotkeys()
+                self._transform_hotkey_state = revision
         if self.state == STATE_RECORDING:
             listener = (self.mouse_trigger
                         if getattr(self, "_capture_source", "hotkey")
@@ -5412,6 +5454,13 @@ class AppDelegate(NSObject):
     # ---- Dictionary management (Spec S11, M05) ---------------------------
 
     def openDictionaryPanel_(self, sender):
+        if self.cfg.get("hub_ui", "appkit") == "companion":
+            # The companion carries the Dictionary as a route (the same
+            # focus-steal guard applies through openHub_).
+            self.openHub_(sender)
+            if self._hub is not None and hasattr(self._hub, "show_route"):
+                self._hub.show_route("dictionary")
+            return
         if self._vocab is None:
             return
         try:
@@ -5444,35 +5493,64 @@ class AppDelegate(NSObject):
             return
         try:
             if self._hub is None:
-                from .v2 import ui as v2_ui
-                from .v2 import history_queries, training_data
-                self._hub = v2_ui.HubController.alloc().initWithSpec_({
-                    "store": self.store,
-                    "history_service": history_queries.HistoryQueryService(
-                        self.store),
-                    "training_service": training_data.TrainingDataService(
-                        self.store, emit=self.v2log.emit),
-                    "styles_service": self._styles,
-                    "snippets_service": self._snip_store,
-                    "transforms_service": self._tf_store,
-                    "notes_service": self._notes_store,
-                    "insights_service": self._insights,
-                    "learning_service": self._learning,
-                    "review_service": self._review,
-                    "sampling_service": self._sampling,
-                    "splits_service": self._splits,
-                    "profile_service": self._profile,
-                    "export_service": self._exporter,
-                    "transforms_store": self._tf_store,
-                    "diagnostics_provider": self._hub_diagnostics_spec,
-                    "coordinator": self,
-                    "replay": v2_ui.ReplayService(),
-                    "capabilities": self._capability_manifest,
-                })
+                self._hub = self._make_hub()
             self._hub.showWindow_(sender)
         except Exception as e:
             self.v2log.emit("hub.open_failed", level="WARNING",
                             reason_code=type(e).__name__)
+
+    @objc.python_method
+    def _make_hub(self):
+        """The Hub window object: the desktop companion (``hub_ui``
+        "companion", the default) or the AppKit Hub. Both take the same
+        services and answer the same coordinator calls; a companion that
+        cannot start (e.g. its bundled page is missing) falls back to the
+        AppKit Hub so Open Hub… always opens something."""
+        from .v2 import ui as v2_ui
+        from .v2 import history_queries, training_data
+        spec = {
+            "store": self.store,
+            "history_service": history_queries.HistoryQueryService(
+                self.store),
+            "training_service": training_data.TrainingDataService(
+                self.store, emit=self.v2log.emit),
+            "styles_service": self._styles,
+            "snippets_service": self._snip_store,
+            "transforms_service": self._tf_store,
+            "notes_service": self._notes_store,
+            "insights_service": self._insights,
+            "learning_service": self._learning,
+            "review_service": self._review,
+            "sampling_service": self._sampling,
+            "splits_service": self._splits,
+            "profile_service": self._profile,
+            "export_service": self._exporter,
+            "transforms_store": self._tf_store,
+            "vocabulary_store": self._vocab,
+            "diagnostics_provider": self._hub_diagnostics_spec,
+            "coordinator": self,
+            "replay": v2_ui.ReplayService(),
+            "capabilities": self._capability_manifest,
+        }
+        if self.cfg.get("hub_ui", "appkit") == "companion":
+            try:
+                from .v2.ui.companion.controller import CompanionController
+                return CompanionController(spec)
+            except Exception as e:
+                self.v2log.emit("hub.companion_failed", level="WARNING",
+                                reason_code=type(e).__name__)
+        return v2_ui.HubController.alloc().initWithSpec_(spec)
+
+    @objc.python_method
+    def hubConfigSummary(self):
+        """The configured dictation settings the companion's Settings shows
+        (read-only there: they are set in config.json). An allowlist —
+        no paths, no retention internals."""
+        cfg = self.cfg or {}
+        return {k: cfg.get(k) for k in (
+            "hotkey", "input_device", "model", "cleanup", "cleanup_model",
+            "append_space", "restore_clipboard", "min_duration_sec",
+            "max_duration_sec", "hands_free", "normalization_locale")}
 
     @objc.python_method
     def _hub_diagnostics_spec(self):
@@ -5587,7 +5665,8 @@ class AppDelegate(NSObject):
             return {"outcome": "unavailable"}
         if self._paste_picker is None:
             from .v2.ui import paste_picker
-            self._paste_picker = paste_picker.DestinationPicker()
+            self._paste_picker = paste_picker.DestinationPicker(
+                resolve=self._resolve_paste_destination)
             self._paste_hint = paste_picker.PasteHint()
         from .v2.ui.paste_picker import HINT
         # One pick at a time: a newer Paste Again replaces a waiting one
@@ -5608,18 +5687,31 @@ class AppDelegate(NSObject):
         return {"outcome": "choosing_destination"}
 
     @objc.python_method
-    def _paste_destination_picked(self, clicked_pid):
+    def _resolve_paste_destination(self, pid, point):
+        from AppKit import NSRunningApplication
+        from .v2.context.snapshot import app_denied
+        from .v2.insertion.editable_target import resolve_editable_hit
+        if self._insertion is None or self._insertion.deny_invalid:
+            return None
+        app = NSRunningApplication.runningApplicationWithProcessIdentifier_(pid) \
+            if pid is not None else None
+        if app is None or app_denied(app.bundleIdentifier(),
+                                     self._insertion.denied_apps):
+            return None
+        return resolve_editable_hit(self._insertion.host, pid, point)
+
+    @objc.python_method
+    def _paste_destination_picked(self, hit):
         """Main thread, after the user's click settled: the app in front
-        must be the one whose window was clicked (a menu-bar item, banner
-        or Dock click does not bring its app forward); then capture the
-        fresh target from it, revalidate the source, and hand both to
-        the M08 service."""
+        must own the clicked editable element, which must still be its
+        focused, writable destination. Never reuse focus after a
+        non-editable click. Source and destination then go to M08."""
         pick, self._paste_pick = self._paste_pick, None
         self._paste_hint.hide()
         if pick is None or self._insertion is None:
             return
         fm = self._insertion.host.frontmost() or {}
-        if clicked_pid is None or fm.get("pid") != clicked_pid:
+        if hit is None or fm.get("pid") != hit.pid:
             self._paste_pick_ended("destination_not_in_front",
                                    show_hub=True)
             return
@@ -5628,14 +5720,22 @@ class AppDelegate(NSObject):
             self._paste_pick_ended(refusal, show_hub=True)
             return
         from .v2.context.providers import categorize
-        from .v2.context.snapshot import TargetSnapshot, app_denied
+        from .v2.context.snapshot import app_denied
+        from .v2.insertion.editable_target import EditableTargetSnapshot
         bundle = fm.get("bundle")
-        target = TargetSnapshot(
+        target = EditableTargetSnapshot(
             target_snapshot_id=v2.ids.new_id("tgt"), app_bundle=bundle,
             app_name=fm.get("name"), app_pid=fm.get("pid"),
             denied=app_denied(bundle, self._insertion.denied_apps),
             category=categorize(bundle),
-            captured_at_utc=v2.ids.now_utc_iso())
+            captured_at_utc=v2.ids.now_utc_iso(),
+            element=hit.element, window_element=hit.window)
+        host = self._insertion.host
+        if target.denied or self._insertion.deny_invalid \
+                or not target.matches_element(
+                    host, host.focused_element_for(hit.pid)):
+            self._paste_pick_ended("editable_destination_changed", show_hub=False)
+            return
         job_id = pick["job_id"]
         out = self._insertion.paste_text(
             pick["text"], job_id=job_id, target=target,
@@ -6039,10 +6139,15 @@ class AppDelegate(NSObject):
             return
         for d in defs:
             title = f"{d.name} ({d.mode})"
+            if self._tf_store is not None:
+                from .v2.transform_hotkeys import display
+                pref = self._tf_store.hotkeys().get(d.transform_id)
+                if pref and pref["binding"]:
+                    title += "    " + display(pref["binding"])
             if d.origin == "legacy":
                 title += " — legacy"
             item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-                title, "runTransform:", d.shortcut or "")
+                title, "runTransform:", "")
             item.setTarget_(self)
             item.setRepresentedObject_(d.transform_id)
             menu.addItem_(item)

@@ -1,0 +1,3019 @@
+{
+ "shell": {
+  "view": "home",
+  "theme": "light",
+  "sidebar_collapsed": false,
+  "engine": {
+   "asr": "ready",
+   "cleanup": "ready"
+  },
+  "dictation_key": "fn",
+  "version": null,
+  "dismissed": [],
+  "onboarding_seen": false,
+  "name": "Alex"
+ },
+ "views": {
+  "home": {
+   "loading": false,
+   "error": null,
+   "data": {
+    "summary": {
+     "today_count": 6,
+     "total_jobs": 58,
+     "legacy_rows": 0,
+     "last_dictation": {
+      "date_iso": "2026-09-29T11:42:00.000Z",
+      "state": "insertion_confirmed"
+     }
+    },
+    "engine": {
+     "asr": "ready",
+     "cleanup": "ready"
+    },
+    "recovery": {
+     "last_failed": false,
+     "recoverable": 0
+    },
+    "recent": [
+     {
+      "label": "2026-09-29",
+      "rows": [
+       {
+        "kind": "job",
+        "id": "job-eace5b89e26546348cf30cd9587e8d23",
+        "date": "2026-09-29",
+        "time": "11:42 am",
+        "time_quality": "known",
+        "app": "Mail",
+        "mode": "llm",
+        "state": "insertion_confirmed",
+        "state_reason": null,
+        "preview": "Can we move the design review to Thursday afternoon so the prototype has one more pass?",
+        "has_audio": false
+       },
+       {
+        "kind": "job",
+        "id": "job-8f1ba94c7c9449c59c937309d878f1eb",
+        "date": "2026-09-29",
+        "time": "11:05 am",
+        "time_quality": "known",
+        "app": "Notes",
+        "mode": "llm",
+        "state": "insertion_confirmed",
+        "state_reason": null,
+        "preview": "Add oat milk, lemons and fresh basil to the shopping list.",
+        "has_audio": false
+       },
+       {
+        "kind": "job",
+        "id": "job-e18f5e1d95bf446ca886d9d8271ab205",
+        "date": "2026-09-29",
+        "time": "10:28 am",
+        "time_quality": "known",
+        "app": "TextEdit",
+        "mode": "basic",
+        "state": "insertion_confirmed",
+        "state_reason": null,
+        "preview": "The build finished and every check passed, so I'll tag the release after lunch.",
+        "has_audio": false
+       },
+       {
+        "kind": "job",
+        "id": "job-4f04f2d07a0747d59fde20ec0d49b920",
+        "date": "2026-09-29",
+        "time": "9:51 am",
+        "time_quality": "known",
+        "app": "Terminal",
+        "mode": "llm",
+        "state": "insertion_confirmed",
+        "state_reason": null,
+        "preview": "Remember to water the plants before the long weekend.",
+        "has_audio": false
+       },
+       {
+        "kind": "job",
+        "id": "job-005a406a71874374b2469ae1b9b64cc4",
+        "date": "2026-09-29",
+        "time": "6:11 am",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 1: can we move the design review to thursday afternoon so the prototype has one more pass? add oat milk, lemons and fresh basil to the …",
+        "has_audio": true
+       },
+       {
+        "kind": "job",
+        "id": "job-b1f11044b73945eb992656a13f62b851",
+        "date": "2026-09-29",
+        "time": "1:11 am",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 2: remember to water the plants before the long weekend. draft a short note thanking the team for the careful review of the parser chan…",
+        "has_audio": true
+       }
+      ]
+     },
+     {
+      "label": "2026-09-28",
+      "rows": [
+       {
+        "kind": "job",
+        "id": "job-ba474dcd76e0487cb36603c9c4f0eed9",
+        "date": "2026-09-28",
+        "time": "8:11 pm",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 3: rename the folder to archive before sharing it with the group. let's keep the introduction to two paragraphs and move the history to…",
+        "has_audio": true
+       },
+       {
+        "kind": "job",
+        "id": "job-64725af605d64e9db434fa1592a868f9",
+        "date": "2026-09-28",
+        "time": "3:11 pm",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 4: book a table for four on friday evening, somewhere quiet near the river. summarise the three open questions from the planning meetin…",
+        "has_audio": true
+       },
+       {
+        "kind": "job",
+        "id": "job-98404f45dae84dc39ca5a147b04fb0aa",
+        "date": "2026-09-28",
+        "time": "11:42 am",
+        "time_quality": "known",
+        "app": "Xcode",
+        "mode": "llm",
+        "state": "insertion_confirmed",
+        "state_reason": null,
+        "preview": "Draft a short note thanking the team for the careful review of the parser changes.",
+        "has_audio": false
+       },
+       {
+        "kind": "job",
+        "id": "job-a78d6c3afe9648c991288636235ab54a",
+        "date": "2026-09-28",
+        "time": "11:05 am",
+        "time_quality": "known",
+        "app": "Messages",
+        "mode": "llm",
+        "state": "saved_not_inserted",
+        "state_reason": null,
+        "preview": "The train leaves at seven fifteen tomorrow morning from platform four.",
+        "has_audio": false
+       },
+       {
+        "kind": "job",
+        "id": "job-82eafbf6d9c84d2f89dc637acaa3da14",
+        "date": "2026-09-28",
+        "time": "10:28 am",
+        "time_quality": "known",
+        "app": "Mail",
+        "mode": "basic",
+        "state": "insertion_confirmed",
+        "state_reason": null,
+        "preview": "Rename the folder to archive before sharing it with the group.",
+        "has_audio": false
+       },
+       {
+        "kind": "job",
+        "id": "job-1f0f3d2b715b43c0934853ee80426c17",
+        "date": "2026-09-28",
+        "time": "10:11 am",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 5: the chart needs a clearer legend and a label on the vertical axis. pick up the prints from the framing shop on saturday. can we move…",
+        "has_audio": true
+       },
+       {
+        "kind": "job",
+        "id": "job-ec385df071ff492b962240a2c35bf8f7",
+        "date": "2026-09-28",
+        "time": "9:51 am",
+        "time_quality": "known",
+        "app": "Notes",
+        "mode": "llm",
+        "state": "insertion_confirmed",
+        "state_reason": null,
+        "preview": "Let's keep the introduction to two paragraphs and move the history to an appendix.",
+        "has_audio": false
+       },
+       {
+        "kind": "job",
+        "id": "job-9ddd60d96be44744a5db91194f48e4ef",
+        "date": "2026-09-28",
+        "time": "5:11 am",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 6: add oat milk, lemons and fresh basil to the shopping list. the build finished and every check passed, so i'll tag the release after …",
+        "has_audio": true
+       },
+       {
+        "kind": "job",
+        "id": "job-fa2f78d9f59348749e846378df58a7b9",
+        "date": "2026-09-28",
+        "time": "12:11 am",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 7: draft a short note thanking the team for the careful review of the parser changes. the train leaves at seven fifteen tomorrow mornin…",
+        "has_audio": true
+       }
+      ]
+     },
+     {
+      "label": "2026-09-27",
+      "rows": [
+       {
+        "kind": "job",
+        "id": "job-07844efbab1c4ddb8ba4c4f656ee7d7c",
+        "date": "2026-09-27",
+        "time": "7:11 pm",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 8: let's keep the introduction to two paragraphs and move the history to an appendix. check the tyre pressure before the drive to the c…",
+        "has_audio": true
+       },
+       {
+        "kind": "job",
+        "id": "job-0604913c7dc24d8fa7fee9259b35619d",
+        "date": "2026-09-27",
+        "time": "2:11 pm",
+        "time_quality": "known",
+        "app": null,
+        "mode": "llm",
+        "state": "insertion_unverified",
+        "state_reason": null,
+        "preview": "note 9: summarise the three open questions from the planning meeting in one list. please send the slides to everyone after the call. the cha…",
+        "has_audio": true
+       },
+       {
+        "kind": "job",
+        "id": "job-d1f92204a58f4ba7812d31e17b201c96",
+        "date": "2026-09-27",
+        "time": "11:42 am",
+        "time_quality": "known",
+        "app": "TextEdit",
+        "mode": "llm",
+        "state": "insertion_confirmed",
+        "state_reason": null,
+        "preview": "Check the tyre pressure before the drive to the coast.",
+        "has_audio": false
+       }
+      ]
+     }
+    ],
+    "recent_error": null,
+    "usage": {
+     "dictations": 14,
+     "final_words": 168,
+     "wpm": 144,
+     "capture_seconds": 70,
+     "range_first_day": "2026-09-26"
+    },
+    "usage_error": null,
+    "profile": {
+     "state": "current",
+     "invalidated_reason": null,
+     "computed_at_utc": "2026-09-29T07:11:49.632Z",
+     "eligible_words": 2578,
+     "min_words_threshold": 2000,
+     "cards": [
+      {
+       "title": "long-form utterances",
+       "kind": "interpretive"
+      }
+     ]
+    },
+    "profile_available": true
+   }
+  },
+  "history": {
+   "loading": false,
+   "error": null,
+   "search": "",
+   "app": null,
+   "mode": null,
+   "modes": [
+    "llm",
+    "llm_partial",
+    "llm_fallback_normalized",
+    "basic",
+    "raw",
+    "basic_empty_input",
+    "legacy"
+   ],
+   "groups": [
+    {
+     "label": "2026-09-29",
+     "rows": [
+      {
+       "kind": "job",
+       "id": "job-eace5b89e26546348cf30cd9587e8d23",
+       "date": "2026-09-29",
+       "time": "11:42 am",
+       "time_quality": "known",
+       "app": "Mail",
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "Can we move the design review to Thursday afternoon so the prototype has one more pass?",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-8f1ba94c7c9449c59c937309d878f1eb",
+       "date": "2026-09-29",
+       "time": "11:05 am",
+       "time_quality": "known",
+       "app": "Notes",
+       "mode": "llm",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "Add oat milk, lemons and fresh basil to the shopping list.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-e18f5e1d95bf446ca886d9d8271ab205",
+       "date": "2026-09-29",
+       "time": "10:28 am",
+       "time_quality": "known",
+       "app": "TextEdit",
+       "mode": "basic",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "The build finished and every check passed, so I'll tag the release after lunch.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-4f04f2d07a0747d59fde20ec0d49b920",
+       "date": "2026-09-29",
+       "time": "9:51 am",
+       "time_quality": "known",
+       "app": "Terminal",
+       "mode": "llm",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "Remember to water the plants before the long weekend.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-005a406a71874374b2469ae1b9b64cc4",
+       "date": "2026-09-29",
+       "time": "6:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 1: can we move the design review to thursday afternoon so the prototype has one more pass? add oat milk, lemons and fresh basil to the …",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-b1f11044b73945eb992656a13f62b851",
+       "date": "2026-09-29",
+       "time": "1:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 2: remember to water the plants before the long weekend. draft a short note thanking the team for the careful review of the parser chan…",
+       "has_audio": true
+      }
+     ]
+    },
+    {
+     "label": "2026-09-28",
+     "rows": [
+      {
+       "kind": "job",
+       "id": "job-ba474dcd76e0487cb36603c9c4f0eed9",
+       "date": "2026-09-28",
+       "time": "8:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 3: rename the folder to archive before sharing it with the group. let's keep the introduction to two paragraphs and move the history to…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-64725af605d64e9db434fa1592a868f9",
+       "date": "2026-09-28",
+       "time": "3:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 4: book a table for four on friday evening, somewhere quiet near the river. summarise the three open questions from the planning meetin…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-98404f45dae84dc39ca5a147b04fb0aa",
+       "date": "2026-09-28",
+       "time": "11:42 am",
+       "time_quality": "known",
+       "app": "Xcode",
+       "mode": "llm",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "Draft a short note thanking the team for the careful review of the parser changes.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-a78d6c3afe9648c991288636235ab54a",
+       "date": "2026-09-28",
+       "time": "11:05 am",
+       "time_quality": "known",
+       "app": "Messages",
+       "mode": "llm",
+       "state": "saved_not_inserted",
+       "state_reason": null,
+       "preview": "The train leaves at seven fifteen tomorrow morning from platform four.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-82eafbf6d9c84d2f89dc637acaa3da14",
+       "date": "2026-09-28",
+       "time": "10:28 am",
+       "time_quality": "known",
+       "app": "Mail",
+       "mode": "basic",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "Rename the folder to archive before sharing it with the group.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-1f0f3d2b715b43c0934853ee80426c17",
+       "date": "2026-09-28",
+       "time": "10:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 5: the chart needs a clearer legend and a label on the vertical axis. pick up the prints from the framing shop on saturday. can we move…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-ec385df071ff492b962240a2c35bf8f7",
+       "date": "2026-09-28",
+       "time": "9:51 am",
+       "time_quality": "known",
+       "app": "Notes",
+       "mode": "llm",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "Let's keep the introduction to two paragraphs and move the history to an appendix.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-9ddd60d96be44744a5db91194f48e4ef",
+       "date": "2026-09-28",
+       "time": "5:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 6: add oat milk, lemons and fresh basil to the shopping list. the build finished and every check passed, so i'll tag the release after …",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-fa2f78d9f59348749e846378df58a7b9",
+       "date": "2026-09-28",
+       "time": "12:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 7: draft a short note thanking the team for the careful review of the parser changes. the train leaves at seven fifteen tomorrow mornin…",
+       "has_audio": true
+      }
+     ]
+    },
+    {
+     "label": "2026-09-27",
+     "rows": [
+      {
+       "kind": "job",
+       "id": "job-07844efbab1c4ddb8ba4c4f656ee7d7c",
+       "date": "2026-09-27",
+       "time": "7:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 8: let's keep the introduction to two paragraphs and move the history to an appendix. check the tyre pressure before the drive to the c…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-0604913c7dc24d8fa7fee9259b35619d",
+       "date": "2026-09-27",
+       "time": "2:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 9: summarise the three open questions from the planning meeting in one list. please send the slides to everyone after the call. the cha…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-d1f92204a58f4ba7812d31e17b201c96",
+       "date": "2026-09-27",
+       "time": "11:42 am",
+       "time_quality": "known",
+       "app": "TextEdit",
+       "mode": "llm",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "Check the tyre pressure before the drive to the coast.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-ffab0efb1d8d46b69fa7320b7a5101a8",
+       "date": "2026-09-27",
+       "time": "11:05 am",
+       "time_quality": "known",
+       "app": "Terminal",
+       "mode": "llm",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "Book a table for four on Friday evening, somewhere quiet near the river.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-4978569ba2974584ae3a52005213bca7",
+       "date": "2026-09-27",
+       "time": "10:28 am",
+       "time_quality": "known",
+       "app": "Xcode",
+       "mode": "basic",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "Summarise the three open questions from the planning meeting in one list.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-4fec7a88c45d4365bda04d85e80f8a66",
+       "date": "2026-09-27",
+       "time": "9:51 am",
+       "time_quality": "known",
+       "app": "Messages",
+       "mode": "llm",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "Please send the slides to everyone after the call.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-12b0cd16dadc46a8babfb0630aa9cd76",
+       "date": "2026-09-27",
+       "time": "9:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 10: pick up the prints from the framing shop on saturday. can we move the design review to thursday afternoon so the prototype has one …",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-480d6117d2c1466c9ccb9b66daabb168",
+       "date": "2026-09-27",
+       "time": "4:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 11: the build finished and every check passed, so i'll tag the release after lunch. remember to water the plants before the long weeken…",
+       "has_audio": true
+      }
+     ]
+    },
+    {
+     "label": "2026-09-26",
+     "rows": [
+      {
+       "kind": "job",
+       "id": "job-78ff82b3b4444be7a9aae7a82c7361cf",
+       "date": "2026-09-26",
+       "time": "11:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 12: the train leaves at seven fifteen tomorrow morning from platform four. rename the folder to archive before sharing it with the grou…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-c2923ae233a540a181689f7523b5a4c4",
+       "date": "2026-09-26",
+       "time": "6:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 13: check the tyre pressure before the drive to the coast. book a table for four on friday evening, somewhere quiet near the river. sum…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-43660b1cda0347898458d0597a879602",
+       "date": "2026-09-26",
+       "time": "1:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 14: please send the slides to everyone after the call. the chart needs a clearer legend and a label on the vertical axis. pick up the p…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-52070f7cc5824d48872de448d0a98359",
+       "date": "2026-09-26",
+       "time": "11:42 am",
+       "time_quality": "known",
+       "app": "Mail",
+       "mode": "llm",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "The chart needs a clearer legend and a label on the vertical axis.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-0c94abb4d919468d8fa51410f50cfae6",
+       "date": "2026-09-26",
+       "time": "11:05 am",
+       "time_quality": "known",
+       "app": "Notes",
+       "mode": "llm",
+       "state": "insertion_confirmed",
+       "state_reason": null,
+       "preview": "Pick up the prints from the framing shop on Saturday.",
+       "has_audio": false
+      },
+      {
+       "kind": "job",
+       "id": "job-3ef390b1f5c04d8e9d788e28c21402e8",
+       "date": "2026-09-26",
+       "time": "8:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 15: can we move the design review to thursday afternoon so the prototype has one more pass? add oat milk, lemons and fresh basil to the…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-009a982f0f73400a84721acf72ed10cb",
+       "date": "2026-09-26",
+       "time": "3:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 16: remember to water the plants before the long weekend. draft a short note thanking the team for the careful review of the parser cha…",
+       "has_audio": true
+      }
+     ]
+    },
+    {
+     "label": "2026-09-25",
+     "rows": [
+      {
+       "kind": "job",
+       "id": "job-cba59bd8524d41a880d615d41dbe9740",
+       "date": "2026-09-25",
+       "time": "10:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 17: rename the folder to archive before sharing it with the group. let's keep the introduction to two paragraphs and move the history t…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-e6c6397c9f904096ba31ed04aa3ac8f3",
+       "date": "2026-09-25",
+       "time": "5:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 18: book a table for four on friday evening, somewhere quiet near the river. summarise the three open questions from the planning meeti…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-c46d8e34d7ce479a8bb3fd647f8b0582",
+       "date": "2026-09-25",
+       "time": "12:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 19: the chart needs a clearer legend and a label on the vertical axis. pick up the prints from the framing shop on saturday. can we mov…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-0d6da61558cf4f1daa83405f86b62b29",
+       "date": "2026-09-25",
+       "time": "7:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 20: add oat milk, lemons and fresh basil to the shopping list. the build finished and every check passed, so i'll tag the release after…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-d22e013306154918a0d7663e4f19ca2f",
+       "date": "2026-09-25",
+       "time": "2:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 21: draft a short note thanking the team for the careful review of the parser changes. the train leaves at seven fifteen tomorrow morni…",
+       "has_audio": true
+      }
+     ]
+    },
+    {
+     "label": "2026-09-24",
+     "rows": [
+      {
+       "kind": "job",
+       "id": "job-e37244d193464b2abece14cc143f803f",
+       "date": "2026-09-24",
+       "time": "9:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 22: let's keep the introduction to two paragraphs and move the history to an appendix. check the tyre pressure before the drive to the …",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-b95e72146c334e1ea871ea7fdeaff91f",
+       "date": "2026-09-24",
+       "time": "4:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 23: summarise the three open questions from the planning meeting in one list. please send the slides to everyone after the call. the ch…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-68271d39885446c5be1e6d7c046c4c56",
+       "date": "2026-09-24",
+       "time": "11:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 24: pick up the prints from the framing shop on saturday. can we move the design review to thursday afternoon so the prototype has one …",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-684e9b5b5d1e45c3b326a8b3e133ec03",
+       "date": "2026-09-24",
+       "time": "6:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 25: the build finished and every check passed, so i'll tag the release after lunch. remember to water the plants before the long weeken…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-e6fab1312b41401e970f8425cad9cdaf",
+       "date": "2026-09-24",
+       "time": "1:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 26: the train leaves at seven fifteen tomorrow morning from platform four. rename the folder to archive before sharing it with the grou…",
+       "has_audio": true
+      }
+     ]
+    },
+    {
+     "label": "2026-09-23",
+     "rows": [
+      {
+       "kind": "job",
+       "id": "job-3e45f64d51c94bf093a4e5a082d1fbce",
+       "date": "2026-09-23",
+       "time": "8:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 27: check the tyre pressure before the drive to the coast. book a table for four on friday evening, somewhere quiet near the river. sum…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-57f216b38b9c44e9b60ff92b9c11bd83",
+       "date": "2026-09-23",
+       "time": "3:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 28: please send the slides to everyone after the call. the chart needs a clearer legend and a label on the vertical axis. pick up the p…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-449f15554183463984bd8775d8851843",
+       "date": "2026-09-23",
+       "time": "10:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 29: can we move the design review to thursday afternoon so the prototype has one more pass? add oat milk, lemons and fresh basil to the…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-91e4f69dadac4db8ad475a7aaa23611c",
+       "date": "2026-09-23",
+       "time": "5:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 30: remember to water the plants before the long weekend. draft a short note thanking the team for the careful review of the parser cha…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-c77b2fbfb7df4f8abdaedad837485d3c",
+       "date": "2026-09-23",
+       "time": "12:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 31: rename the folder to archive before sharing it with the group. let's keep the introduction to two paragraphs and move the history t…",
+       "has_audio": true
+      }
+     ]
+    },
+    {
+     "label": "2026-09-22",
+     "rows": [
+      {
+       "kind": "job",
+       "id": "job-f032405909d1451782582a9036c70535",
+       "date": "2026-09-22",
+       "time": "7:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 32: book a table for four on friday evening, somewhere quiet near the river. summarise the three open questions from the planning meeti…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-c1d72b835a09424f9e2b5b7081129df0",
+       "date": "2026-09-22",
+       "time": "2:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 33: the chart needs a clearer legend and a label on the vertical axis. pick up the prints from the framing shop on saturday. can we mov…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-59d004ad0c5f402da267a29c9c5d8df5",
+       "date": "2026-09-22",
+       "time": "10:00 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "the draft needs one more pass on the introduction",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-ad7f6770e0634c70bd3235ca073dbaf2",
+       "date": "2026-09-22",
+       "time": "10:00 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "call the library about the overdue book",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-87d8cd1a4b544830a621ec796260b8be",
+       "date": "2026-09-22",
+       "time": "9:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 34: add oat milk, lemons and fresh basil to the shopping list. the build finished and every check passed, so i'll tag the release after…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-dd5eebd4c996487ba8342363ec349fe1",
+       "date": "2026-09-22",
+       "time": "4:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 35: draft a short note thanking the team for the careful review of the parser changes. the train leaves at seven fifteen tomorrow morni…",
+       "has_audio": true
+      }
+     ]
+    },
+    {
+     "label": "2026-09-21",
+     "rows": [
+      {
+       "kind": "job",
+       "id": "job-7231a8de6489461cabc5526a84a080e5",
+       "date": "2026-09-21",
+       "time": "11:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 36: let's keep the introduction to two paragraphs and move the history to an appendix. check the tyre pressure before the drive to the …",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-101ab8f1603340b2b9defe51355bdc96",
+       "date": "2026-09-21",
+       "time": "6:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 37: summarise the three open questions from the planning meeting in one list. please send the slides to everyone after the call. the ch…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-a282520e447042fcafb1eef0c5d8ec5c",
+       "date": "2026-09-21",
+       "time": "1:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 38: pick up the prints from the framing shop on saturday. can we move the design review to thursday afternoon so the prototype has one …",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-a81c957dc7eb475598103dde4cc17e56",
+       "date": "2026-09-21",
+       "time": "8:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 39: the build finished and every check passed, so i'll tag the release after lunch. remember to water the plants before the long weeken…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-5d7ed313f3f84ed7af12b5168d6b33e0",
+       "date": "2026-09-21",
+       "time": "3:11 am",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 40: the train leaves at seven fifteen tomorrow morning from platform four. rename the folder to archive before sharing it with the grou…",
+       "has_audio": true
+      }
+     ]
+    },
+    {
+     "label": "2026-09-20",
+     "rows": [
+      {
+       "kind": "job",
+       "id": "job-1b892b0253bb49bb8d19308a2264fa91",
+       "date": "2026-09-20",
+       "time": "10:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 41: check the tyre pressure before the drive to the coast. book a table for four on friday evening, somewhere quiet near the river. sum…",
+       "has_audio": true
+      },
+      {
+       "kind": "job",
+       "id": "job-45875584ab1b4155820f03bd36ae9236",
+       "date": "2026-09-20",
+       "time": "5:11 pm",
+       "time_quality": "known",
+       "app": null,
+       "mode": "llm",
+       "state": "insertion_unverified",
+       "state_reason": null,
+       "preview": "note 42: please send the slides to everyone after the call. the chart needs a clearer legend and a label on the vertical axis. pick up the p…",
+       "has_audio": true
+      }
+     ]
+    }
+   ],
+   "total": 58,
+   "selected": {
+    "kind": "job",
+    "id": "job-eace5b89e26546348cf30cd9587e8d23"
+   },
+   "detail_loading": false,
+   "detail_error": null,
+   "detail": {
+    "token": "hi1",
+    "kind": "job",
+    "job_id": "job-eace5b89e26546348cf30cd9587e8d23",
+    "captured_at_utc": "2026-09-29T11:42:00.000Z",
+    "time": "11:42 am",
+    "time_quality": "known",
+    "state": "insertion_unverified",
+    "state_reason": null,
+    "attempt": 1,
+    "lineage_attempt": null,
+    "lineage_ambiguous": false,
+    "app": "Mail",
+    "final_stage": "cleaned",
+    "final_text": "Can we move the design review to Thursday afternoon so the prototype has one more pass?",
+    "audio": {
+     "available": false,
+     "reason": "no_audio_artifact"
+    },
+    "insertion": null,
+    "lineage": [
+     {
+      "stage": "source",
+      "label": "Source (raw transcript)",
+      "present": true,
+      "purged": false,
+      "text": "can we move the design review to thursday afternoon so the prototype has one more pass",
+      "reason": null,
+      "decision": null
+     },
+     {
+      "stage": "normalized",
+      "label": "Normalized",
+      "present": false,
+      "purged": false,
+      "text": null,
+      "reason": null,
+      "decision": null
+     },
+     {
+      "stage": "cleaned",
+      "label": "Cleaned (applied output)",
+      "present": true,
+      "purged": false,
+      "text": "Can we move the design review to Thursday afternoon so the prototype has one more pass?",
+      "reason": null,
+      "decision": null
+     },
+     {
+      "stage": "transformed",
+      "label": "Transformed",
+      "present": false,
+      "purged": false,
+      "text": null,
+      "reason": "not_applicable",
+      "decision": null
+     }
+    ]
+   },
+   "note": null
+  },
+  "dictionary": {
+   "loading": false,
+   "error": null,
+   "available": true,
+   "search": "",
+   "entries": [
+    {
+     "entry_id": "vocab-9668a786ca0e403699a521475ffe6a3e",
+     "canonical": "Claude",
+     "kind": "term",
+     "scope": [
+      "profile",
+      "coding"
+     ],
+     "priority": 0,
+     "pinned": false,
+     "usage_count": 0,
+     "last_used_utc": null,
+     "origin": "suggested",
+     "enabled": true,
+     "approved": false,
+     "verification": "suggested",
+     "revision": 1,
+     "aliases": [
+      {
+       "alias": "clod",
+       "approved": true
+      }
+     ]
+    },
+    {
+     "entry_id": "vocab-58bffea8813740ff81e1b2d67d483da1",
+     "canonical": "Claude Code",
+     "kind": "term",
+     "scope": [
+      "profile",
+      "coding"
+     ],
+     "priority": 0,
+     "pinned": false,
+     "usage_count": 0,
+     "last_used_utc": null,
+     "origin": "suggested",
+     "enabled": true,
+     "approved": false,
+     "verification": "suggested",
+     "revision": 1,
+     "aliases": [
+      {
+       "alias": "clod code",
+       "approved": true
+      }
+     ]
+    },
+    {
+     "entry_id": "vocab-314f1370084a4b0db5856aaf9f020150",
+     "canonical": "Figma",
+     "kind": "term",
+     "scope": [
+      "global",
+      null
+     ],
+     "priority": 0,
+     "pinned": false,
+     "usage_count": 0,
+     "last_used_utc": null,
+     "origin": "user",
+     "enabled": true,
+     "approved": false,
+     "verification": "suggested",
+     "revision": 1,
+     "aliases": []
+    },
+    {
+     "entry_id": "vocab-a76f94d38a9a49feb12d644dd7304b35",
+     "canonical": "Kubernetes",
+     "kind": "term",
+     "scope": [
+      "global",
+      null
+     ],
+     "priority": 0,
+     "pinned": false,
+     "usage_count": 0,
+     "last_used_utc": null,
+     "origin": "user",
+     "enabled": true,
+     "approved": true,
+     "verification": "explicit",
+     "revision": 2,
+     "aliases": [
+      {
+       "alias": "cube a net ease",
+       "approved": true
+      }
+     ]
+    },
+    {
+     "entry_id": "vocab-f4271ff8f046484e9b63cf2bb19d01e8",
+     "canonical": "LocalFlow",
+     "kind": "term",
+     "scope": [
+      "global",
+      null
+     ],
+     "priority": 0,
+     "pinned": false,
+     "usage_count": 0,
+     "last_used_utc": null,
+     "origin": "user",
+     "enabled": true,
+     "approved": true,
+     "verification": "explicit",
+     "revision": 2,
+     "aliases": [
+      {
+       "alias": "local flow",
+       "approved": true
+      }
+     ]
+    },
+    {
+     "entry_id": "vocab-fc6dff0351334c809dfc42f497e0ae6d",
+     "canonical": "Parakeet",
+     "kind": "term",
+     "scope": [
+      "global",
+      null
+     ],
+     "priority": 0,
+     "pinned": false,
+     "usage_count": 0,
+     "last_used_utc": null,
+     "origin": "user",
+     "enabled": true,
+     "approved": true,
+     "verification": "explicit",
+     "revision": 2,
+     "aliases": [
+      {
+       "alias": "para keet",
+       "approved": true
+      }
+     ]
+    },
+    {
+     "entry_id": "vocab-ef15a6510fe846a494319735e41e102a",
+     "canonical": "SwiftUI",
+     "kind": "term",
+     "scope": [
+      "global",
+      null
+     ],
+     "priority": 0,
+     "pinned": false,
+     "usage_count": 0,
+     "last_used_utc": null,
+     "origin": "user",
+     "enabled": true,
+     "approved": false,
+     "verification": "suggested",
+     "revision": 1,
+     "aliases": [
+      {
+       "alias": "swift you eye",
+       "approved": true
+      }
+     ]
+    }
+   ],
+   "note": null
+  },
+  "settings": {
+   "loading": false,
+   "error": null,
+   "loaded": true,
+   "collection_state": "disabled",
+   "retention": {
+    "transcript": 30,
+    "audio_success": 7,
+    "audio_failed": 30,
+    "metadata": 14,
+    "training_buffer": 30,
+    "usage": null
+   },
+   "usage": {
+    "usage_retention_days": "keep",
+    "reporting_timezone": "Etc/UTC",
+    "available": true
+   },
+   "config": {
+    "hotkey": "fn",
+    "input_device": null,
+    "model": "test",
+    "cleanup": "llm",
+    "cleanup_model": "test-llm",
+    "append_space": true,
+    "restore_clipboard": false,
+    "min_duration_sec": 0.3,
+    "max_duration_sec": 0,
+    "hands_free": "off",
+    "normalization_locale": null
+   },
+   "note": null
+  },
+  "styles": {
+   "loading": false,
+   "error": null,
+   "note": null,
+   "rules": [
+    {
+     "rule_id": "style-cd4be6fea842453fbcefe36412d88da7",
+     "name": "Email stays polished",
+     "scope": [
+      "category",
+      "email"
+     ],
+     "mode": "polish",
+     "number_policy": "inherit",
+     "profile_name": null,
+     "enabled": true,
+     "revision": 1
+    },
+    {
+     "rule_id": "style-2c1c0c52ffc14bc790c512880b2b5746",
+     "name": "Terminal is raw",
+     "scope": [
+      "app",
+      "com.apple.Terminal"
+     ],
+     "mode": "raw",
+     "number_policy": "inherit",
+     "profile_name": null,
+     "enabled": true,
+     "revision": 1
+    }
+   ],
+   "invalid_rows": 0,
+   "effective": {
+    "profile": null,
+    "next_job_mode": null,
+    "categories": [
+     "personal_messaging",
+     "work_messaging",
+     "messaging",
+     "email",
+     "documents",
+     "ai_prompt",
+     "coding",
+     "terminal"
+    ],
+    "modes": [
+     "raw",
+     "clean",
+     "polish",
+     "concise",
+     "prompt_engineer",
+     "custom"
+    ],
+    "executable_modes": [
+     "raw",
+     "clean",
+     "polish",
+     "concise",
+     "prompt_engineer",
+     "custom"
+    ]
+   }
+  },
+  "snippets": {
+   "loading": false,
+   "error": null,
+   "note": null,
+   "snippets": [
+    {
+     "snippet_id": "snip-bb50df5797444b01bab6a6164a5194ed",
+     "trigger": "my address",
+     "name": "my address",
+     "content": "14 Harbour Lane, Brightwater",
+     "kind": "plain",
+     "allow_rewrite": false,
+     "enabled": true,
+     "revision": 1
+    },
+    {
+     "snippet_id": "snip-39515cf7efb548efa6276d6f61536c1c",
+     "trigger": "review prompt",
+     "name": "review prompt",
+     "content": "Review this change for correctness first, then clarity. List issues by severity.",
+     "kind": "prompt",
+     "allow_rewrite": false,
+     "enabled": true,
+     "revision": 1
+    },
+    {
+     "snippet_id": "snip-08b769bc6e7949f184966ffc04b2abed",
+     "trigger": "standup notes",
+     "name": "standup notes",
+     "content": "Yesterday:\nToday:\nBlockers:",
+     "kind": "plain",
+     "allow_rewrite": false,
+     "enabled": true,
+     "revision": 1
+    }
+   ],
+   "conflicts": []
+  },
+  "transforms": {
+   "loading": false,
+   "error": null,
+   "note": null,
+   "transforms": [
+    {
+     "transform_id": "builtin:concise",
+     "name": "Concise",
+     "mode": "concise",
+     "origin": "builtin",
+     "description": "Remove redundancy, not substantive requirements",
+     "prompt": "",
+     "edit_types": [
+      "redundancy_removal",
+      "punctuation",
+      "structure"
+     ],
+     "shortcut": null,
+     "target_profiles": [],
+     "auto_apply": false,
+     "enabled": true,
+     "revision": 1,
+     "hotkey": {
+      "key_code": 20,
+      "modifiers": [
+       "option"
+      ]
+     },
+     "hotkey_source": "default",
+     "hotkey_display": "⌥3"
+    },
+    {
+     "transform_id": "builtin:polish",
+     "name": "Polish",
+     "mode": "polish",
+     "origin": "builtin",
+     "description": "Rephrase for clarity and tone, preserving meaning and all constraints",
+     "prompt": "",
+     "edit_types": [
+      "rephrase",
+      "punctuation",
+      "structure"
+     ],
+     "shortcut": null,
+     "target_profiles": [],
+     "auto_apply": false,
+     "enabled": true,
+     "revision": 1,
+     "hotkey": {
+      "key_code": 18,
+      "modifiers": [
+       "option"
+      ]
+     },
+     "hotkey_source": "default",
+     "hotkey_display": "⌥1"
+    },
+    {
+     "transform_id": "builtin:prompt_engineer",
+     "name": "Prompt Engineer",
+     "mode": "prompt_engineer",
+     "origin": "builtin",
+     "description": "Reorganize instructions without adding or deleting requirements",
+     "prompt": "",
+     "edit_types": [
+      "reorganize",
+      "sections",
+      "punctuation"
+     ],
+     "shortcut": null,
+     "target_profiles": [],
+     "auto_apply": false,
+     "enabled": true,
+     "revision": 1,
+     "hotkey": {
+      "key_code": 19,
+      "modifiers": [
+       "option"
+      ]
+     },
+     "hotkey_source": "default",
+     "hotkey_display": "⌥2"
+    }
+   ],
+   "shortcut_conflicts": []
+  },
+  "scratchpad": {
+   "loading": false,
+   "error": null,
+   "search": "",
+   "notes": [
+    {
+     "note_id": "note-ded2da06eca943bbaf527e1ac058dda7",
+     "title": "Weekend",
+     "pinned": false,
+     "updated_at_utc": "2026-09-29T07:11:49.563Z",
+     "created_at_utc": "2026-09-29T07:11:49.563Z",
+     "word_count": 10,
+     "revision_count": 1
+    },
+    {
+     "note_id": "note-2f910c06ee3542498bd90fdb6b906cbe",
+     "title": "Parser ideas",
+     "pinned": false,
+     "updated_at_utc": "2026-09-29T07:11:49.563Z",
+     "created_at_utc": "2026-09-29T07:11:49.563Z",
+     "word_count": 8,
+     "revision_count": 1
+    },
+    {
+     "note_id": "note-82bfe7449e024154bc5dd9ff9df2648c",
+     "title": "Trip checklist",
+     "pinned": false,
+     "updated_at_utc": "2026-09-29T07:11:49.562Z",
+     "created_at_utc": "2026-09-29T07:11:49.562Z",
+     "word_count": 9,
+     "revision_count": 1
+    }
+   ],
+   "tabs": [
+    {
+     "note_id": "note-ded2da06eca943bbaf527e1ac058dda7",
+     "title": "Weekend"
+    }
+   ],
+   "selected_id": "note-ded2da06eca943bbaf527e1ac058dda7",
+   "focus_note": null,
+   "detail": {
+    "note_id": "note-ded2da06eca943bbaf527e1ac058dda7",
+    "title": "Weekend",
+    "pinned": false,
+    "word_count": 10,
+    "updated_at_utc": "2026-09-29T07:11:49.563Z",
+    "versions": [
+     {
+      "revision_id": "nrev-415c9ab341db438dab7cb024e62d894f",
+      "origin": "created",
+      "trigger": "system",
+      "word_count": 10,
+      "restore_of": null,
+      "created_at_utc": "2026-09-29T07:11:49.563Z"
+     }
+    ],
+    "versions_truncated": false,
+    "attachments": [],
+    "unsaved_tail_risk": null
+   },
+   "editor": {
+    "note_id": "note-ded2da06eca943bbaf527e1ac058dda7",
+    "unsaved": []
+   },
+   "transforms": [
+    {
+     "transform_id": "builtin:concise",
+     "name": "Concise"
+    },
+    {
+     "transform_id": "builtin:polish",
+     "name": "Polish"
+    },
+    {
+     "transform_id": "builtin:prompt_engineer",
+     "name": "Prompt Engineer"
+    }
+   ],
+   "note": null
+  },
+  "insights": {
+   "loading": false,
+   "error": null,
+   "subview": "usage",
+   "range": 30,
+   "app": null,
+   "mode": null,
+   "note": null,
+   "voice_running": false,
+   "data": {
+    "summary": {
+     "reporting_timezone": "Etc/UTC",
+     "day_start": "2026-08-31",
+     "day_end": "2026-09-29",
+     "dictations": 14,
+     "dictations_with_text": 14,
+     "outcomes": {
+      "confirmed": 14,
+      "posted_unverified": 0,
+      "saved_not_inserted": 0,
+      "cancelled": 0,
+      "failed": 0
+     },
+     "raw_words": 168,
+     "final_words": 168,
+     "capture_seconds": 70,
+     "wpm": 144,
+     "wpm_denominator": {
+      "jobs": 14,
+      "words": 168,
+      "capture_seconds": 70
+     },
+     "wpm_excluded": {
+      "missing_duration": 0,
+      "nonpositive_duration": 0
+     },
+     "fallback_jobs": 0,
+     "fallback_rate": 0,
+     "cleanup_fallback": {
+      "requested": 14,
+      "fallbacks": 0,
+      "rate": 0
+     },
+     "dictionary_hits": 13,
+     "snippet_hits": 0,
+     "transforms": 0,
+     "transform_words": 0,
+     "repastes": 0,
+     "future_dated": 0,
+     "range_first_day": "2026-09-26",
+     "range_last_day": "2026-09-29",
+     "mixed_word_count_versions": false
+    },
+    "latency": {
+     "asr": {
+      "n": 14,
+      "p50": 222,
+      "p95": 271
+     },
+     "cleanup": {
+      "n": 14,
+      "p50": 486,
+      "p95": 563
+     },
+     "end_to_end": {
+      "n": 14,
+      "p50": 1038,
+      "p95": 1199
+     }
+    },
+    "daily": [
+     {
+      "day": "2026-09-29",
+      "dictations": 4,
+      "final_words": 50,
+      "capture_seconds": 20.8,
+      "transforms": 0
+     },
+     {
+      "day": "2026-09-28",
+      "dictations": 4,
+      "final_words": 51,
+      "capture_seconds": 21.2,
+      "transforms": 0
+     },
+     {
+      "day": "2026-09-27",
+      "dictations": 4,
+      "final_words": 44,
+      "capture_seconds": 18.3,
+      "transforms": 0
+     },
+     {
+      "day": "2026-09-26",
+      "dictations": 2,
+      "final_words": 23,
+      "capture_seconds": 9.6,
+      "transforms": 0
+     }
+    ],
+    "per_app": [
+     {
+      "key": "bundle:com.apple.Notes",
+      "app": "Notes",
+      "dictations": 3,
+      "final_words": 35,
+      "capture_seconds": 14.6
+     },
+     {
+      "key": "bundle:com.apple.mail",
+      "app": "Mail",
+      "dictations": 3,
+      "final_words": 40,
+      "capture_seconds": 16.7
+     },
+     {
+      "key": "bundle:com.apple.MobileSMS",
+      "app": "Messages",
+      "dictations": 2,
+      "final_words": 20,
+      "capture_seconds": 8.3
+     },
+     {
+      "key": "bundle:com.apple.Terminal",
+      "app": "Terminal",
+      "dictations": 2,
+      "final_words": 22,
+      "capture_seconds": 9.2
+     },
+     {
+      "key": "bundle:com.apple.TextEdit",
+      "app": "TextEdit",
+      "dictations": 2,
+      "final_words": 24,
+      "capture_seconds": 10
+     },
+     {
+      "key": "bundle:com.apple.dt.Xcode",
+      "app": "Xcode",
+      "dictations": 2,
+      "final_words": 27,
+      "capture_seconds": 11.2
+     }
+    ],
+    "per_mode": [
+     {
+      "mode": "llm",
+      "dictations": 11,
+      "final_words": 131
+     },
+     {
+      "mode": "basic",
+      "dictations": 3,
+      "final_words": 37
+     }
+    ],
+    "apps": [
+     {
+      "key": "bundle:com.apple.mail",
+      "label": "Mail"
+     },
+     {
+      "key": "bundle:com.apple.MobileSMS",
+      "label": "Messages"
+     },
+     {
+      "key": "bundle:com.apple.Notes",
+      "label": "Notes"
+     },
+     {
+      "key": "bundle:com.apple.Terminal",
+      "label": "Terminal"
+     },
+     {
+      "key": "bundle:com.apple.TextEdit",
+      "label": "TextEdit"
+     },
+     {
+      "key": "bundle:com.apple.dt.Xcode",
+      "label": "Xcode"
+     }
+    ],
+    "modes": [
+     "basic",
+     "llm"
+    ],
+    "undated": 0,
+    "legacy": null
+   }
+  },
+  "insights_voice": {
+   "loading": false,
+   "error": null,
+   "subview": "voice",
+   "range": 30,
+   "app": null,
+   "mode": null,
+   "note": null,
+   "voice_running": false,
+   "data": {
+    "profile": {
+     "snapshot_id": "prof-9d8abc34ce3f4e0ab7d4c333692609dd",
+     "state": "current",
+     "invalidated_reason": null,
+     "computed_at_utc": "2026-09-29T07:11:49.632Z",
+     "source_example_count": 44,
+     "coverage": [
+      "2026-09-20T17:11:49.539Z",
+      "2026-09-29T06:11:49.539Z"
+     ],
+     "measured": {
+      "eligible_examples": 44,
+      "eligible_words": 2578,
+      "min_words_threshold": 2000,
+      "excluded": {
+       "background_speech": 0,
+       "repeated_verbatim": 0,
+       "snippet_expanded": 0,
+       "superseded_attempt": 0,
+       "user_excluded": 0
+      },
+      "utterance_words": {
+       "mean": 58.6,
+       "median": 61
+      },
+      "frequent_phrases": [
+       {
+        "phrase": "as code",
+        "count": 42
+       },
+       {
+        "phrase": "as code points",
+        "count": 42
+       },
+       {
+        "phrase": "code points",
+        "count": 42
+       },
+       {
+        "phrase": "code points for",
+        "count": 42
+       },
+       {
+        "phrase": "for the release",
+        "count": 42
+       },
+       {
+        "phrase": "keeps offsets",
+        "count": 42
+       }
+      ],
+      "technical_terms": [],
+      "corrections_by_kind": {},
+      "self_corrections": {
+       "applied": 0,
+       "definition": "eligible dictations whose cleanup detected at least one spoken self-correction, over those whose cleanup recorded the count",
+       "denominator": 0,
+       "dictations_with": 0
+      },
+      "app_usage": [
+       {
+        "app": "Mail",
+        "dictations": 3
+       },
+       {
+        "app": "Notes",
+        "dictations": 3
+       },
+       {
+        "app": "Messages",
+        "dictations": 2
+       },
+       {
+        "app": "Terminal",
+        "dictations": 2
+       },
+       {
+        "app": "TextEdit",
+        "dictations": 2
+       },
+       {
+        "app": "Xcode",
+        "dictations": 2
+       }
+      ],
+      "hours_unknown": 0,
+      "hour_histogram": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       3,
+       3,
+       8,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "requested_transforms": {
+       "auto_applied": {},
+       "explicit": {}
+      },
+      "interpretive_note": null,
+      "usage_redacted": false
+     },
+     "cards": [
+      {
+       "card_id": "style-length",
+       "title": "long-form utterances",
+       "statement": "Median dictation runs 61 words — interpreted from 44 eligible utterances.",
+       "evidence": [
+        "ex-283c80af77854659972cca0366a30fcd",
+        "ex-6f0950ed8c584fb48cde6373f4a62209",
+        "ex-7d693df039044f7395219a95e79e0e19",
+        "ex-7f17fdbdb2ee46f19c49e86a8414897f",
+        "ex-8f8ef4fe940d48fc84978f6224e45f19"
+       ],
+       "coverage": [
+        "2026-09-20T17:11:49.539Z",
+        "2026-09-29T06:11:49.539Z"
+       ]
+      }
+     ]
+    },
+    "profile_reason": null
+   }
+  },
+  "diagnostics": {
+   "loading": false,
+   "error": null,
+   "job": "",
+   "level": null,
+   "utc": false,
+   "note": null,
+   "running": false,
+   "data": {
+    "token": "di2",
+    "events": [
+     "2026-09-29 07:11:49.517 +00:00 INFO store_schema_v1",
+     "2026-09-29 07:11:49.518 +00:00 INFO store_schema_v2",
+     "2026-09-29 07:11:49.519 +00:00 INFO store_schema_v3",
+     "2026-09-29 07:11:49.519 +00:00 INFO store_schema_v4",
+     "2026-09-29 07:11:49.519 +00:00 INFO store_schema_v5",
+     "2026-09-29 07:11:49.520 +00:00 INFO store_schema_v6",
+     "2026-09-29 07:11:49.521 +00:00 INFO store_schema_v7",
+     "2026-09-29 07:11:49.521 +00:00 INFO store_schema_v8",
+     "2026-09-29 07:11:49.522 +00:00 INFO store_schema_v9",
+     "2026-09-29 07:11:49.522 +00:00 INFO store_schema_v10",
+     "2026-09-29 07:11:49.523 +00:00 INFO store_schema_v11",
+     "2026-09-29 07:11:49.523 +00:00 INFO store_schema_v12",
+     "2026-09-29 07:11:49.524 +00:00 INFO store_schema_v13",
+     "2026-09-29 07:11:49.524 +00:00 INFO launch_drift",
+     "2026-09-29 07:11:49.632 +00:00 INFO v2"
+    ],
+    "count": 15,
+    "timeline": [],
+    "skipped_lines": 0,
+    "engine": {
+     "asr_state": "ready",
+     "cleanup_state": "ready",
+     "asr_model": "test",
+     "asr_revision": null,
+     "cleanup_model": "test-llm",
+     "cleanup_revision": null,
+     "source_revision": "1a9350d5dffe269320a2b4766f637747dbda59ad+dirty",
+     "pipeline_revision": "v2.0",
+     "config_hash": "3ab5d763e86f21cbf93ee61632550d5ba1adb14138644a1a4f84ee53bf9d736c",
+     "runtime": {
+      "python": "3.14.7",
+      "mlx": "0.31.2",
+      "mlx-lm": "0.31.3",
+      "parakeet-mlx": "0.5.2",
+      "transformers": "5.10.4",
+      "numpy": "2.4.6",
+      "sounddevice": "0.5.5"
+     }
+    },
+    "filters": {
+     "job": null,
+     "level": null,
+     "utc": false,
+     "last": 500
+    },
+    "loaded_at_utc": "2026-09-29T07:12:04.621Z"
+   }
+  },
+  "models": {
+   "loading": false,
+   "error": null,
+   "subview": "engines",
+   "training_tab": "evidence",
+   "search": "",
+   "note": null,
+   "export_note": null,
+   "running": [],
+   "data": {
+    "engine": {
+     "asr_state": "ready",
+     "cleanup_state": "ready",
+     "asr_model": "test",
+     "asr_revision": null,
+     "cleanup_model": "test-llm",
+     "cleanup_revision": null,
+     "source_revision": "1a9350d5dffe269320a2b4766f637747dbda59ad+dirty",
+     "pipeline_revision": "v2.0",
+     "config_hash": "3ab5d763e86f21cbf93ee61632550d5ba1adb14138644a1a4f84ee53bf9d736c",
+     "runtime": {
+      "python": "3.14.7",
+      "mlx": "0.31.2",
+      "mlx-lm": "0.31.3",
+      "parakeet-mlx": "0.5.2",
+      "transformers": "5.10.4",
+      "numpy": "2.4.6",
+      "sounddevice": "0.5.5"
+     }
+    },
+    "capabilities": {
+     "adapter": "localflow.stt.Transcriber(parakeet_mlx)",
+     "model_id": "test",
+     "model_revision": null,
+     "capabilities": {
+      "contextual_biasing": {
+       "supported": false,
+       "reason": "disabled_until_qualified"
+      },
+      "key_terms": {
+       "supported": false,
+       "reason": "disabled_until_qualified"
+      },
+      "language_hint": {
+       "supported": false,
+       "reason": "unsupported_by_adapter"
+      },
+      "word_timestamps": {
+       "supported": false,
+       "reason": "not_exposed_on_dictation_path"
+      },
+      "word_confidence": {
+       "supported": false,
+       "reason": "unsupported_by_adapter"
+      },
+      "n_best": {
+       "supported": false,
+       "reason": "unsupported_by_adapter"
+      },
+      "token_log_probs": {
+       "supported": false,
+       "reason": "unsupported_by_adapter"
+      },
+      "independent_itn": {
+       "supported": false,
+       "reason": "unsupported_by_adapter"
+      }
+     }
+    }
+   }
+  },
+  "models_evidence": {
+   "loading": false,
+   "error": null,
+   "subview": "training",
+   "training_tab": "evidence",
+   "search": "",
+   "note": null,
+   "export_note": null,
+   "running": [],
+   "data": {
+    "readiness": {
+     "examples_by_state": {
+      "captured_unreviewed": 44
+     },
+     "storage_bytes": 2846894,
+     "consent_state": "disabled",
+     "infrastructure_ready": true,
+     "coverage": {
+      "retained_audio_examples": 44,
+      "verbatim_reviewed_examples": 0,
+      "span_annotations": 0,
+      "unreviewed_outcomes": 44,
+      "explicitly_correct": 0
+     }
+    },
+    "examples": [
+     {
+      "example_id": "ex-7f17fdbdb2ee46f19c49e86a8414897f",
+      "job_id": "job-45875584ab1b4155820f03bd36ae9236",
+      "captured_at_utc": "2026-09-20T17:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-e8dc177d01c34f878ef74e8f518f16f5",
+      "job_id": "job-1b892b0253bb49bb8d19308a2264fa91",
+      "captured_at_utc": "2026-09-20T22:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-a879add9b5304fa0ad842d58e158a497",
+      "job_id": "job-5d7ed313f3f84ed7af12b5168d6b33e0",
+      "captured_at_utc": "2026-09-21T03:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-3165d290a6164cd98307d689cbb367c3",
+      "job_id": "job-a81c957dc7eb475598103dde4cc17e56",
+      "captured_at_utc": "2026-09-21T08:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-817578eadf8046a59935286fe6d088f1",
+      "job_id": "job-a282520e447042fcafb1eef0c5d8ec5c",
+      "captured_at_utc": "2026-09-21T13:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-91ce46c243984f0a91b2cfabcdc9e146",
+      "job_id": "job-101ab8f1603340b2b9defe51355bdc96",
+      "captured_at_utc": "2026-09-21T18:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-a54e9ecb4ac245898ac3290a5b184983",
+      "job_id": "job-7231a8de6489461cabc5526a84a080e5",
+      "captured_at_utc": "2026-09-21T23:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-daf49230701f4d8bac49432243ee1efc",
+      "job_id": "job-dd5eebd4c996487ba8342363ec349fe1",
+      "captured_at_utc": "2026-09-22T04:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-afe8ceb05f784bb9a96592379bdf9e54",
+      "job_id": "job-87d8cd1a4b544830a621ec796260b8be",
+      "captured_at_utc": "2026-09-22T09:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-a601fa7e241c4645a1427fea1d86850b",
+      "job_id": "job-c1d72b835a09424f9e2b5b7081129df0",
+      "captured_at_utc": "2026-09-22T14:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-4956bd8aabcf444b8c0d02468ab375d2",
+      "job_id": "job-f032405909d1451782582a9036c70535",
+      "captured_at_utc": "2026-09-22T19:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-283c80af77854659972cca0366a30fcd",
+      "job_id": "job-c77b2fbfb7df4f8abdaedad837485d3c",
+      "captured_at_utc": "2026-09-23T00:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-5cf16ede17da4d6fa5bd7991ba15e0ae",
+      "job_id": "job-91e4f69dadac4db8ad475a7aaa23611c",
+      "captured_at_utc": "2026-09-23T05:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-5874559f1ee4497f992efe4dce206dd2",
+      "job_id": "job-449f15554183463984bd8775d8851843",
+      "captured_at_utc": "2026-09-23T10:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-6f0950ed8c584fb48cde6373f4a62209",
+      "job_id": "job-57f216b38b9c44e9b60ff92b9c11bd83",
+      "captured_at_utc": "2026-09-23T15:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-68c3c5d8da6444989fa713011352017b",
+      "job_id": "job-3e45f64d51c94bf093a4e5a082d1fbce",
+      "captured_at_utc": "2026-09-23T20:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-3adbfb1fa63c48ab8545eadb801ba43f",
+      "job_id": "job-e6fab1312b41401e970f8425cad9cdaf",
+      "captured_at_utc": "2026-09-24T01:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-c073a7e86ca24bb5b80c5d858525a9d7",
+      "job_id": "job-684e9b5b5d1e45c3b326a8b3e133ec03",
+      "captured_at_utc": "2026-09-24T06:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-c5e2bb9bf3d74a4f9df8d2488576d89a",
+      "job_id": "job-68271d39885446c5be1e6d7c046c4c56",
+      "captured_at_utc": "2026-09-24T11:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-545edfa1d5174f0183b4cbc140de420f",
+      "job_id": "job-b95e72146c334e1ea871ea7fdeaff91f",
+      "captured_at_utc": "2026-09-24T16:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-97dbde9400e5426680b5f51499b38f3f",
+      "job_id": "job-e37244d193464b2abece14cc143f803f",
+      "captured_at_utc": "2026-09-24T21:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-4cc5f260ada54b93a9f9541f06793a06",
+      "job_id": "job-d22e013306154918a0d7663e4f19ca2f",
+      "captured_at_utc": "2026-09-25T02:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-470e16253b2c469c835a6dc784e0c7f5",
+      "job_id": "job-0d6da61558cf4f1daa83405f86b62b29",
+      "captured_at_utc": "2026-09-25T07:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-a80abb08ef05448290f36318d4a7a918",
+      "job_id": "job-c46d8e34d7ce479a8bb3fd647f8b0582",
+      "captured_at_utc": "2026-09-25T12:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-39bb813456aa42b5a0feea9550a37258",
+      "job_id": "job-e6c6397c9f904096ba31ed04aa3ac8f3",
+      "captured_at_utc": "2026-09-25T17:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-7d693df039044f7395219a95e79e0e19",
+      "job_id": "job-cba59bd8524d41a880d615d41dbe9740",
+      "captured_at_utc": "2026-09-25T22:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-03462bf4f502415586e0405e7862871f",
+      "job_id": "job-009a982f0f73400a84721acf72ed10cb",
+      "captured_at_utc": "2026-09-26T03:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-90afed648fbb4edba2f51945a3b65cee",
+      "job_id": "job-3ef390b1f5c04d8e9d788e28c21402e8",
+      "captured_at_utc": "2026-09-26T08:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-e1b07eea65d6496ebade39f91c01d9c6",
+      "job_id": "job-43660b1cda0347898458d0597a879602",
+      "captured_at_utc": "2026-09-26T13:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-d16a0aab4d434a5997a7b765b727e9fe",
+      "job_id": "job-c2923ae233a540a181689f7523b5a4c4",
+      "captured_at_utc": "2026-09-26T18:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-8f6a2592bc324e87852a158fe5edc615",
+      "job_id": "job-78ff82b3b4444be7a9aae7a82c7361cf",
+      "captured_at_utc": "2026-09-26T23:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-67cf7b9457674f91bab2f1482f19b349",
+      "job_id": "job-480d6117d2c1466c9ccb9b66daabb168",
+      "captured_at_utc": "2026-09-27T04:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-3fe1744ab0334bfa8f5de0f666a27918",
+      "job_id": "job-12b0cd16dadc46a8babfb0630aa9cd76",
+      "captured_at_utc": "2026-09-27T09:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-35735253beba475090b4678b8c444eb9",
+      "job_id": "job-0604913c7dc24d8fa7fee9259b35619d",
+      "captured_at_utc": "2026-09-27T14:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-205262c55b7e4c1f8582fc93f41714e0",
+      "job_id": "job-07844efbab1c4ddb8ba4c4f656ee7d7c",
+      "captured_at_utc": "2026-09-27T19:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-40abae2c45da4e6eb4fcab8aed5b2505",
+      "job_id": "job-fa2f78d9f59348749e846378df58a7b9",
+      "captured_at_utc": "2026-09-28T00:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-30f8dc11de97480dbd17363432fb4d18",
+      "job_id": "job-9ddd60d96be44744a5db91194f48e4ef",
+      "captured_at_utc": "2026-09-28T05:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-7bc965365b964be4a2b6ab2e623b1000",
+      "job_id": "job-1f0f3d2b715b43c0934853ee80426c17",
+      "captured_at_utc": "2026-09-28T10:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-b0105b64243644168aa70ea30f52f3e9",
+      "job_id": "job-64725af605d64e9db434fa1592a868f9",
+      "captured_at_utc": "2026-09-28T15:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-8f8ef4fe940d48fc84978f6224e45f19",
+      "job_id": "job-ba474dcd76e0487cb36603c9c4f0eed9",
+      "captured_at_utc": "2026-09-28T20:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-121b235bbe0a4acd97e8514f4ea6d5d0",
+      "job_id": "job-b1f11044b73945eb992656a13f62b851",
+      "captured_at_utc": "2026-09-29T01:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-7bb2b38307be40e3b7bb0f725d07a62f",
+      "job_id": "job-005a406a71874374b2469ae1b9b64cc4",
+      "captured_at_utc": "2026-09-29T06:11:49.539Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-1b566aca76e443a9bbc30bef6ba48551",
+      "job_id": "job-59d004ad0c5f402da267a29c9c5d8df5",
+      "captured_at_utc": "2026-09-22T10:00:00.000Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     },
+     {
+      "example_id": "ex-c0e1c9146f9a4d439f09e80509b54f44",
+      "job_id": "job-ad7f6770e0634c70bd3235ca073dbaf2",
+      "captured_at_utc": "2026-09-22T10:00:00.000Z",
+      "time_quality": "known",
+      "state": "captured_unreviewed",
+      "families": [],
+      "correctness": "unreviewed",
+      "pinned": false,
+      "audio": {
+       "available": true,
+       "reason": null
+      },
+      "annotations": 0
+     }
+    ],
+    "selected_id": "ex-7f17fdbdb2ee46f19c49e86a8414897f",
+    "listened_for": null,
+    "detail_loading": false,
+    "detail_error": null,
+    "detail": {
+     "example_id": "ex-7f17fdbdb2ee46f19c49e86a8414897f",
+     "job_id": "job-45875584ab1b4155820f03bd36ae9236",
+     "captured_at_utc": "2026-09-20T17:11:49.539Z",
+     "time_quality": "known",
+     "state": "captured_unreviewed",
+     "families": [],
+     "correctness": "unreviewed",
+     "pinned": false,
+     "audio": {
+      "available": true,
+      "reason": null
+     },
+     "annotations": 0,
+     "token": "mo3",
+     "stages": [
+      {
+       "stage": "source_text",
+       "label": "Source (raw)",
+       "available": true,
+       "text": "note 42: please send the slides to everyone after the call. the chart needs a clearer legend and a label on the vertical axis. pick up the prints from the framing shop on saturday. can we move the design review to thursday afternoon so the prototype has one more pass? the parser keeps offsets as code points for the release notes",
+       "reason": null
+      },
+      {
+       "stage": "normalization",
+       "label": "Normalized",
+       "available": false,
+       "text": null,
+       "reason": "not_captured"
+      },
+      {
+       "stage": "applied_output",
+       "label": "Applied (cleaned)",
+       "available": true,
+       "text": "note 42: please send the slides to everyone after the call. the chart needs a clearer legend and a label on the vertical axis. pick up the prints from the framing shop on saturday. can we move the design review to thursday afternoon so the prototype has one more pass? the parser keeps offsets as code points for the release notes",
+       "reason": null
+      }
+     ],
+     "cleanup_path": null,
+     "outcome": {
+      "correctness": "unreviewed",
+      "insertion": "posted_unverified"
+     },
+     "context": {
+      "present": false,
+      "reason": "not_captured",
+      "app": null,
+      "category": null,
+      "field_omission_reason": null
+     },
+     "revisions": 1,
+     "annotations_detail": []
+    }
+   }
+  },
+  "models_review": {
+   "loading": false,
+   "error": null,
+   "subview": "training",
+   "training_tab": "review",
+   "search": "",
+   "note": null,
+   "export_note": null,
+   "running": [],
+   "data": {
+    "readiness": {
+     "examples_by_state": {
+      "captured_unreviewed": 44
+     },
+     "storage_bytes": 2846894,
+     "consent_state": "disabled",
+     "infrastructure_ready": true,
+     "coverage": {
+      "retained_audio_examples": 44,
+      "verbatim_reviewed_examples": 0,
+      "span_annotations": 0,
+      "unreviewed_outcomes": 44,
+      "explicitly_correct": 0
+     }
+    },
+    "queue_token": "mo4",
+    "pairs_token": "mo5",
+    "approved_token": "mo6",
+    "queue": [],
+    "coverage": {
+     "policy": "m14_review_sampling_v1",
+     "decisions_total": 0,
+     "decisions_distinct_examples": 0,
+     "one_inclusion_per_example": true,
+     "late_inclusions": 0,
+     "by_stratum": {},
+     "with_known_probability": 0,
+     "probability_note": "enriched selections carry null — no fabricated probability (S29.9)",
+     "live_examples": 44
+    },
+    "pairs": [],
+    "approved": []
+   }
+  },
+  "models_splits": {
+   "loading": false,
+   "error": null,
+   "subview": "training",
+   "training_tab": "splits",
+   "search": "",
+   "note": null,
+   "export_note": null,
+   "running": [],
+   "data": {
+    "readiness": {
+     "examples_by_state": {
+      "captured_unreviewed": 44
+     },
+     "storage_bytes": 2846894,
+     "consent_state": "disabled",
+     "infrastructure_ready": true,
+     "coverage": {
+      "retained_audio_examples": 44,
+      "verbatim_reviewed_examples": 0,
+      "span_annotations": 0,
+      "unreviewed_outcomes": 44,
+      "explicitly_correct": 0
+     }
+    },
+    "summary": {
+     "assignment_version": null,
+     "reason": "no_assignment_yet"
+    },
+    "families": [],
+    "contamination": {
+     "checked": false,
+     "reason": "no_assignment_yet"
+    }
+   }
+  },
+  "models_export": {
+   "loading": false,
+   "error": null,
+   "subview": "training",
+   "training_tab": "export",
+   "search": "",
+   "note": null,
+   "export_note": null,
+   "running": [],
+   "data": {
+    "readiness": {
+     "examples_by_state": {
+      "captured_unreviewed": 44
+     },
+     "storage_bytes": 2846894,
+     "consent_state": "disabled",
+     "infrastructure_ready": true,
+     "coverage": {
+      "retained_audio_examples": 44,
+      "verbatim_reviewed_examples": 0,
+      "span_annotations": 0,
+      "unreviewed_outcomes": 44,
+      "explicitly_correct": 0
+     }
+    },
+    "views": [
+     "asr_supervised",
+     "asr_span_graft_weak",
+     "cleanup_supervised",
+     "transform_supervised",
+     "preference_pairs"
+    ],
+    "last_export": null,
+    "folder": null,
+    "folder_busy": false,
+    "validation": null
+   }
+  }
+ },
+ "scratchpad_content": {
+  "note_id": "note-ded2da06eca943bbaf527e1ac058dda7",
+  "version": 1,
+  "content": "Weekend\n\nFarmers market, then the long walk by the river."
+ },
+ "note": "Synthetic fixtures for the browser preview (npm run dev): read models captured from scripts/v2/companion_screens.py over a temporary store. Never used by the app."
+}

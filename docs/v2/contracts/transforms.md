@@ -13,6 +13,52 @@ loosening of faithful cleanup (S16: a transform never expands the S13
 permitted edits; requirement preservation is this contract, not a
 cleanup relaxation).
 
+## Current owner polish supplement (2026-09-30)
+
+This supplement supersedes the earlier menu-only shortcut presentation
+below. Historical milestone evidence and semantic revisions stay preserved.
+
+- Selected-text transforms now enter through one consuming session event
+  tap, or the Transforms menu as a fallback. Both use the same coordinator
+  selection capture, denied/secure-field rules, M11 generation/gate and M08
+  strict replacement. Dictation's fn listener remains separate.
+- Fresh built-ins default to Polish **⌥1**, Prompt Engineer **⌥2**, Concise
+  **⌥3**. All three can be reassigned, explicitly cleared, or reset to
+  default. Custom transforms can record a modifier/key chord too. Mode
+  identity and built-in prompt contracts stay fixed.
+- Effective shortcuts are physical macOS virtual key codes plus a canonical
+  modifier set (Control, Option, Shift, Command), never Option-generated
+  Unicode. A chord needs a supported nonmodifier key and at least one
+  modifier; fn is excluded. Display glyphs derive from that identity.
+- Namespaced `transform_meta` rows store `source=default|user` with a nullable
+  binding. A user null means explicit clear and survives restart. Missing
+  rows seed once; existing representable menu choices migrate to Command
+  plus physical key without changing preserved definition revisions.
+- Collision checks use effective enabled bindings in the writer transaction.
+  Reassignment/clear releases the old chord. Disabled/deleted definitions
+  register nothing; re-enabling checks ownership again. Reset refuses an
+  occupied shipped chord, including for a disabled definition. Corrupt
+  duplicate effective bindings register neither candidate; the UI lists
+  the conflict. Nothing steals a chord or silently chooses a winner.
+- The single event tap consumes registered down, repeat and paired up
+  events; only the initial down dispatches. No keys are reposted. Other
+  chords pass unchanged. Shortcut recording leases suspension only while
+  LocalFlow itself is foreground, then ends on completion, cancel, blur,
+  editor disposal or expiry. Failure to obtain the tap leaves the menu
+  fallback available and records an honest permission reason.
+- Selected-text review is a borderless, nonactivating expanded speech
+  bubble, centered over the existing pill anchor and growing upward. Warm
+  ink, rounded corners and bounded scrolling keep short results compact.
+  The transform name, change count, added/removed text, needs-review clauses
+  and fallback reasons remain visible. Accept, Copy, Retry Original, Apply
+  Another, Transform Output, Configure, Save to Scratchpad and Dismiss
+  retain their existing routing and candidate identities.
+- Shortcut edits have their own mutable preference lifetime. They do not
+  append a semantic definition/prompt revision, alter task keys or change
+  the M11 requirement-preservation gate. This implementation does not
+  establish final native qualification; the owner-polish closure records
+  the actual evidence and open checks.
+
 ## Definitions and revisions
 
 - A `TransformDefinition` carries id, name, mode

@@ -337,6 +337,110 @@ _ENUM_VALUE = {
 
 
 _ITEM_LINE_RE = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+(.*)$")
+_STEP_MARKER_RE = re.compile(
+    r"\bstep\s+(?:number\s+)?([1-9]\d*|"
+    + "|".join(w for w, n in _NUMBERS.items() if 1 <= n <= 20)
+    + r")\b", re.I)
+_STEP_ITEM_RE = re.compile(r"^[^\S\n]*(\d+)[.)][^\S\n]+(.+)$")
+
+
+def _spoken_step_spans(source: str, output: str, correction_spans=()) -> list:
+    """Bind each complete step item to consecutive source labels and numbers.
+
+    Match full item tokens, not a shared head word. A reference within an
+    item is content, while quotes and ambiguous/repeated sequences cannot
+    authorize marker deletion. Other fidelity gates still judge the result.
+    """
+    token_re = re.compile(r"\w+(?:['’-]\w+)*")
+    atoms = [(m.start(), m.end(), m.group().lower())
+             for m in token_re.finditer(source)
+             if not _overlaps(correction_spans, *m.span())
+             and m.group().lower() not in FILLERS]
+    words = [w for _s, _e, w in atoms]
+    quoted = [m.span() for m in _QUOTED_RE.finditer(source)]
+    markers = {m.start(): m for m in _STEP_MARKER_RE.finditer(source)
+               if not _overlaps(quoted, *m.span())
+               and not _overlaps(correction_spans, *m.span())}
+    runs, run = [], []
+    for line in output.splitlines() + ["end"]:
+        item = _STEP_ITEM_RE.match(line)
+        if item:
+            run.append((int(item[1]), item[2]))
+        elif line.strip():
+            if len(run) >= 2:
+                runs.append(run)
+            run = []
+    spans = []
+    for run in runs:
+        matches = []
+        for start, atom in enumerate(atoms):
+            if atom[0] not in markers:
+                continue
+            cursor, matched = start, []
+            for index, (number, item) in enumerate(run):
+                marker = markers.get(atoms[cursor][0]) if cursor < len(atoms) else None
+                label = marker[1].lower() if marker else ""
+                value = (_NUMBERS.get(label) if marker and not label.isdigit()
+                         else int(marker[1]) if marker else None)
+                if value != number or (index and number != run[index - 1][0] + 1):
+                    break
+                matched.append(marker.span())
+                while cursor < len(atoms) and atoms[cursor][0] < marker.end():
+                    cursor += 1
+                item_words = [m.group().lower() for m in token_re.finditer(item)]
+                if not item_words or words[cursor:cursor + len(item_words)] != item_words:
+                    break
+                cursor += len(item_words)
+                if index < len(run) - 1:
+                    while cursor < len(atoms) and words[cursor] in ("and", "also", "then"):
+                        matched.append(atoms[cursor][:2])
+                        cursor += 1
+            else:
+                matches.append(matched)
+        if len(matches) == 1:
+            spans.extend(matches[0])
+    return spans
+
+
+def _introduced_list_join_spans(source: str, output: str) -> list:
+    """A final list-joining 'and' may become a bullet separator.
+    Bind the complete introduction and every item, verbatim in source-word
+    order. Only the connector before the last item is authorized away;
+    conjunctions within an item and ordinary prose remain content.
+    """
+    from . import document_nodes as dn
+    atoms = _word_atoms(source)
+    words = [w for _s, _e, w in atoms]
+    nodes = dn.parse(output).nodes
+    spans = []
+    for intro, group in zip(nodes, nodes[1:]):
+        if (not isinstance(intro, dn.Paragraph)
+                or not isinstance(group, dn.ListGroup) or group.ordered
+                or len(group.items) < 2 or not intro.render().rstrip().endswith(":")):
+            continue
+        head = [w for _s, _e, w in _word_atoms(intro.render())]
+        if "list" not in head or not (
+                head[:2] in (["here", "is"], ["here", "are"])
+                or head[-1:] == ["list"]):
+            continue
+        matches = [i for i in range(len(words) - len(head) + 1)
+                   if words[i:i + len(head)] == head]
+        if len(matches) != 1:
+            continue
+        cursor = matches[0] + len(head)
+        join = None
+        for index, item in enumerate(group.items):
+            item_words = [w for _s, _e, w in _word_atoms(item)]
+            if index == len(group.items) - 1 and words[cursor:cursor + 1] == ["and"]:
+                join = atoms[cursor][:2]
+                cursor += 1
+            if not item_words or words[cursor:cursor + len(item_words)] != item_words:
+                join = None
+                break
+            cursor += len(item_words)
+        if join is not None:
+            spans.append(join)
+    return spans
 
 
 def _enum_spans_when_list_rendered(source: str, output: str,
@@ -359,7 +463,8 @@ def _enum_spans_when_list_rendered(source: str, output: str,
     intro_tails = {(_word_atoms(ln) or [(0, 0, "")])[-1][2]
                    for ln, nxt in zip(lines, lines[1:])
                    if ln.rstrip().endswith(":") and _ITEM_LINE_RE.match(nxt)}
-    spans = []
+    spans = (_introduced_list_join_spans(source, output)
+             + _spoken_step_spans(source, output, correction_spans))
     for m in _ENUM_MARKER_RE.finditer(source):
         # The marker's content is what follows it in its own sentence.
         rest_start = m.end()
@@ -679,7 +784,8 @@ def _numeric_values(source, output, ctx) -> Component:
     # the rendered "1.").
     marker_values = set()
     for s, e in ctx.enum_spans:
-        word = _ENUM_VALUE.get(source[s:e].strip().lower().split()[-1])
+        label = source[s:e].strip().lower().split()[-1]
+        word = int(label) if label.isdigit() else _ENUM_VALUE.get(label, _NUMBERS.get(label))
         if word is not None:
             marker_values.add(word)
     # A rendered list marker is skippable only as list structure: a

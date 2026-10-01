@@ -25,9 +25,10 @@ import threading
 import time
 
 from . import ids
+from ..config import data_home
 
 SCHEMA_VERSION = 2
-DEFAULT_LOG_DIR = pathlib.Path.home() / "Library" / "Logs" / "LocalFlow"
+DEFAULT_LOG_DIR = data_home() / "Library" / "Logs" / "LocalFlow"
 ROTATE_BYTES = 10 * 1024 * 1024  # 10 MiB
 KEEP_ROLLS = 8
 QUEUE_BOUND = 10000

@@ -89,6 +89,13 @@ class Env:
             schedule=self.sched.add,
             install=lambda m, k: self.monitors.append("on") or ["mon"],
             remove=lambda h: self.monitors.append("off"))
+        from types import SimpleNamespace
+        def resolve(pid, point):
+            el = self.w.focused_element_for(pid)
+            return (SimpleNamespace(pid=pid, element=el,
+                                    window=self.w.attribute(el, "AXWindow"))
+                    if el is not None else None)
+        self.picker.resolve = resolve
         self.d._paste_picker, self.d._paste_hint = self.picker, Hint()
         self.ended = []
         real_end = self.d._paste_pick_ended

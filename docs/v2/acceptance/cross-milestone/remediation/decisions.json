@@ -43,5 +43,15 @@
   {"id": "POLICY-D02", "decision": "No AI-powered Your Voice interpretation in this remediation: no provider, key, network dependency or local model interpretation. Recorded as a later optional product phase."},
   {"id": "POLICY-D03", "decision": "History Paste Again while the Hub is in front needs an explicit user-facing destination policy; this campaign changes nothing there and carries it as an open product decision with native qualification, not as an insertion bug."},
   {"id": "POLICY-D04", "decision": "Direct SQL rewriting of the store is outside the supported threat model. Supported producers bind task/source identity, export requalifies every pair, corrupt data fails closed; the pair-forgery residual stays a defense-in-depth note unless a supported bypass is found."}
- ]
+ ],
+ "policy_refinements": [
+  {
+    "id": "POLICY-D03-EDITABLE-TARGET",
+    "date": "2026-09-29",
+    "authority": "Explicit owner domain-policy decision",
+    "supersedes_current_rule": "Application/window click authority for History Paste Again; historical POLICY-D03 decisions and evidence remain unchanged.",
+    "trigger": "Packaged native PA-7 titlebar click produced a confirmed 58-character AX replacement into the previously focused field.",
+    "decision": "Only a fresh actual click resolving to a currently valid editable AX text destination grants History Paste Again authority. Prove hit containment, editability/writability, enabled state, owning process/window; bind exact element/window and revalidate before reconciliation and insertion. Non-editable or unsupported hits grant no authority and keep the picker armed under its existing timeout. Never fall back to focused/default/stale fields. Normal PTT, Recovery Paste Last Result Again, M08 strict replacement, source binding, clipboard policy and model behavior are unchanged."
+  }
+]
 }
