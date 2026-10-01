@@ -142,7 +142,9 @@ that one element.
    (`accessibility_not_trusted`).
 4. **Codex (`com.openai.codex`) and Chromium-browser caret delivery**
    (`_AX_WRITE_IGNORED_BUNDLES`: Chrome, Chrome Canary/Dev, Edge, Brave,
-   Arc), with no recorded replacement selection and no strict
+   Arc) **and any Electron app** (the bundle embeds
+   `Electron Framework.framework`: Claude desktop, Slack, VS Code ...),
+   with no recorded replacement selection and no strict
    replacement request ⇒ the **serialized clipboard transaction**. These
    web-content fields (the Codex composer, a page or extension side-panel
    field) can acknowledge an `AXSelectedText` write without applying it. This choice occurs before

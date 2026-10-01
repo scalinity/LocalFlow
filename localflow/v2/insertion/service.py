@@ -660,7 +660,7 @@ class InsertionService:
         # never paste after an uncertain AX write. Recorded selections and
         # strict transform replacement keep their existing method and
         # authority checks.
-        codex_caret = (lease.frontmost_bundle in _AX_WRITE_IGNORED_BUNDLES
+        codex_caret = (self._ax_write_ignored(lease.frontmost_bundle)
                        and not lease.replace_selection
                        and not job.get("strict_replacement"))
         if (not codex_caret and el is not None
@@ -669,6 +669,14 @@ class InsertionService:
                                    on_observation)
         return self._clipboard_insert(text, lease, job, common, facts,
                                       on_observation)
+
+    def _ax_write_ignored(self, bundle) -> bool:
+        """Web-content fields that acknowledge an AXSelectedText write
+        without applying it: the named apps, and any Electron app."""
+        if bundle in _AX_WRITE_IGNORED_BUNDLES:
+            return True
+        probe = getattr(self.host, "is_electron_app", None)
+        return bool(probe and probe(bundle))
 
     @staticmethod
     def _terminal_hazard(text, snapshot, category) -> bool:

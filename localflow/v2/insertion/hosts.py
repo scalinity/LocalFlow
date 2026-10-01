@@ -16,10 +16,19 @@ delayed restore may block the UI thread).
 
 from __future__ import annotations
 
+import os
 import threading
 from typing import Optional, Protocol
 
 AX_MESSAGING_TIMEOUT = 0.2
+
+
+def bundle_has_electron_framework(app_path: Optional[str]) -> bool:
+    """True when the .app at ``app_path`` embeds the Electron framework."""
+    if not app_path:
+        return False
+    return os.path.isdir(os.path.join(
+        app_path, "Contents", "Frameworks", "Electron Framework.framework"))
 
 
 class InsertionHost(Protocol):
@@ -70,6 +79,18 @@ class SystemInsertionHost:
                 AS.AXUIElementSetMessagingTimeout(el, self.messaging_timeout)
                 self._system_el = el
             return self._system_el
+
+    def is_electron_app(self, bundle: Optional[str]) -> bool:
+        if not bundle:
+            return False
+        try:
+            from AppKit import NSWorkspace
+            url = NSWorkspace.sharedWorkspace() \
+                .URLForApplicationWithBundleIdentifier_(bundle)
+            return bundle_has_electron_framework(
+                url.path() if url is not None else None)
+        except Exception:
+            return False
 
     def frontmost(self) -> Optional[dict]:
         try:
