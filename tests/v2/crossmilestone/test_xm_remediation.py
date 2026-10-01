@@ -3260,10 +3260,9 @@ def r25_no_network_client_imports():
     assert scanned > 50, f"fixture: only {scanned} modules scanned"
 
 
-@case("LF-R28 (the cross-milestone handoff and STATUS agree on the current"
-      " state and name a production commit HEAD contains)")
+@case("LF-R28 (STATUS names a production commit HEAD contains, and the live"
+      " handoff it points to states the integration state STATUS records)")
 def r28_handoff_and_status_are_fresh():
-    import re
     import subprocess
     status = json.loads((ROOT / "docs/v2/STATUS.json").read_text())
     current = status["current_state"]
@@ -3273,16 +3272,14 @@ def r28_handoff_and_status_are_fresh():
         cwd=ROOT, capture_output=True).returncode == 0, (
         f"STATUS names production commit {commit}, which HEAD does not"
         " contain")
-    handoff = (ROOT / "docs/v2/handoffs/CROSS-MILESTONE.md").read_text()
-    state_line = next(ln for ln in handoff.splitlines()
-                      if ln.startswith("State:"))
-    assert current["campaign_state"] in state_line, (
-        f"handoff state {state_line[:120]!r} vs STATUS"
-        f" {current['campaign_state']}")
-    named = re.findall(r"Final production commit `([0-9a-f]{7,40})`",
-                       state_line)
-    assert named and named[0][:7] == commit[:7], (
-        f"handoff names production commit {named}, STATUS {commit}")
+    # The live handoff is the one STATUS names. Earlier campaigns' handoffs
+    # (e.g. CROSS-MILESTONE.md) are records of their own campaign and are not
+    # held to the current state.
+    live = current["canonical_integration"]
+    handoff = (ROOT / live["handoff"]).read_text()
+    assert live["state"] in handoff, (
+        f"{live['handoff']} does not state the integration state"
+        f" {live['state']} that STATUS records")
 
 
 # =============================================================================

@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "status_reason": "Quiet Editorial and owner-polish are merged and closed. The bounded M07 correction-admission repair and M15-A benchmark infrastructure are integrated locally. Current Qwen M07 qualification remains model-behavior blocked. Human corpus adjudication/freeze is required; full M15 comparison, M07-V002, final M11 qualification and M16 have not run. Production cleanup defaults are unchanged.",
+  "status_reason": "Quiet Editorial and owner-polish are merged and closed. The bounded M07 correction-admission repair and M15-A benchmark infrastructure are integrated locally. Current Qwen M07 qualification remains model-behavior blocked. Human corpus adjudication/freeze is required; full M15 comparison, M07-V002, final M11 qualification and M16 have not run. Production cleanup defaults and model are unchanged. The cleanup validator and engine carry two repairs that landed before any model comparison ran (coverage alignment by longest in-order match; restore-and-revalidate for a candidate whose only failure is a few deleted words), so the benchmarks run on them. Insertion (Chromium and Electron delivery, resized readback, readback detail), Hub replay and the ordered input_device list also changed on main. Repository history was rewritten on 2026-10-01 for commit identity: hashes recorded before then name pre-rewrite commits, whose rewritten twins have the same subject and an identical tree.",
   "current_state": {
     "as_of": "2026-10-01",
     "pre_m15_qualification": {
@@ -28,7 +28,7 @@
       "Human / M15: human-speaker end-to-end dictation timing (XM-C191, XM-C192, XM-C194, XM-C195, XM-MH32) and M15's own qualification"
     ],
     "branch": "main",
-    "production_commit": "b096d5636c6a02e3db0d7f451a04133c51209d19",
+    "production_commit": "6dc8a449ace90f3d5e307bdb1dfd6de02a82a5a5",
     "evidence": [
       "docs/v2/acceptance/cross-milestone/remediation/adjudications.json",
       "docs/v2/acceptance/cross-milestone/remediation/decisions.json",
@@ -68,7 +68,7 @@
       "m15a_merge": "23acfe5f92d97c1e12b599d2d3d3567e89f9bdc4",
       "branch": "pre-m15-m15a-integration-20261001",
       "production_default_changed": false,
-      "push": "NOT_PUSHED",
+      "push": "PUSHED_TO_ORIGIN_MAIN",
       "handoff": "docs/v2/handoffs/PRE-M15-M15A-INTEGRATION.md"
     }
   },

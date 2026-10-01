@@ -144,3 +144,40 @@ packaging obligation. No third-party code is copied.
 only the residual missing recordings. Then authorize corpus assembly with one
 pinned ASR/normalization pass and the model-free freeze gate. Do not begin
 candidate comparison before the gate passes.
+
+## Changes after the integration (2026-10-01)
+
+The integration is published on `origin/main`. Production defaults and the
+cleanup model are unchanged. These production changes landed on `main` before
+any model comparison ran, so the benchmarks run on them; the benchmark
+freeze test pins `engine.py` and `validation.py` to `0441d15` (the last of
+the two cleanup repairs) and `config.py`/`model.py` to `3505659`.
+
+- **Cleanup validator** (`3f2f5cc`): the coverage check aligns source words by
+  longest in-order match. A greedy cursor counted one dropped repeated word as
+  many missing words and sent most windows back to the raw transcript.
+- **Cleanup engine** (`0441d15`): a candidate whose only failure is a few
+  deleted source words (at most 8 and 10% of the window) is repaired by
+  restoring exactly those words and validated again in full. Candidates that
+  add words, change numbers or lose negations are still rejected whole.
+- **Insertion**: caret delivery to Chromium browsers and any Electron app uses
+  the clipboard transaction (their AX writes are acknowledged and ignored; `9ceeb9c`
+  and earlier); a paste that landed in a resized field is consumed (`resized`);
+  a non-matching readback records content-free `readback_detail`.
+- **Hub replay** (`d1bfdfc`): the Play button builds its `NSSound` with
+  `initWithData:`; the previous class method did not exist.
+- **Capture** (`6d58425`, `428b69d`): `input_device` accepts an ordered list so a
+  preferred microphone sits ahead of a headset that is the system default
+  (a Bluetooth microphone delivered 0.7-0.8 s of exact silence at the start);
+  `capture.start_path` records the key-press timing.
+
+Repository history was rewritten on 2026-10-01 for commit identity. Commit
+hashes recorded in these documents before then name pre-rewrite commits; each
+has a rewritten twin with the same subject and an identical tree, and a fresh
+clone does not contain the originals. `STATUS.json` and the freeze-test pins
+name the rewritten commits.
+
+Remaining open work is unchanged: human corpus adjudication and freeze, then
+the model comparison. The spoken-correction pass of the 4B cleanup model still
+returns bare markers that the deterministic guards reject (measured 6/10), which
+is a model-capability limit for the benchmark to address.

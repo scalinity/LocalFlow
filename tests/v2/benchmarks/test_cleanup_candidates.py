@@ -306,7 +306,7 @@ class Contracts(unittest.TestCase):
             # defaults or model.
             revision = ("0441d15dbdc0eb28b7b1a49255c5e914883dfa3f"
                         if path.endswith(("/engine.py", "/validation.py"))
-                        else "5da68360a0e5b1ea9303f799ea5c550db4f210fe")
+                        else "3505659e11562174086fe48756ab23d8bd5a96c5")
             original = subprocess.check_output(["git", "show", revision + ":" + path], cwd=ROOT)
             self.assertEqual((ROOT / path).read_bytes(), original)
     def test_atomic_checkpoint_no_partial(self):
