@@ -275,7 +275,10 @@ class Contracts(unittest.TestCase):
                 {"status": "COMPLETE", "input_sha256": self.case["normalized"]["sha256"], "private": {"output": text}})
         args = ["runner", "--corpus", str(self.base / "corpus.json"), "--output", str(self.base / "run"),
                 "--blind-finalists", self.candidate["candidate_id"] + "," + self.manifest["candidates"][1]["candidate_id"]]
-        with patch.object(sys, "argv", args), patch.object(runner, "private_output", return_value=self.base / "run"):
+        # This unit owns blind-queue mechanics; the CLI gate regression below
+        # separately proves that unreviewed acceptance cannot start models.
+        with patch.object(sys, "argv", args), patch.object(runner, "private_output", return_value=self.base / "run"), \
+                patch.object(runner, "validate_freeze_lock"):
             self.assertEqual(runner.main(), 0)
         queue = (self.base / "run/blind-finalists.json").read_text()
         self.assertNotIn(self.candidate["candidate_id"], queue)
@@ -296,12 +299,117 @@ class Contracts(unittest.TestCase):
     def test_production_default_unchanged(self):
         import subprocess
         for path in ("localflow/config.py", "localflow/v2/cleanup/model.py", "localflow/v2/cleanup/engine.py", "localflow/v2/cleanup/validation.py"):
-            original = subprocess.check_output(["git", "show", "5da68360a0e5b1ea9303f799ea5c550db4f210fe:" + path], cwd=ROOT)
+            # Integration preserves the authorized M07 engine repair; M15-A
+            # still changes no production defaults, model or validation.
+            revision = ("8c08b82f15e75e83fb06bcd5aa2e102c50761903"
+                        if path.endswith("/engine.py") else
+                        "5da68360a0e5b1ea9303f799ea5c550db4f210fe")
+            original = subprocess.check_output(["git", "show", revision + ":" + path], cwd=ROOT)
             self.assertEqual((ROOT / path).read_bytes(), original)
     def test_atomic_checkpoint_no_partial(self):
         b.atomic_json(self.base / "checkpoint.json", {"status": "COMPLETE"})
         self.assertEqual(json.loads((self.base / "checkpoint.json").read_text())["status"], "COMPLETE")
         self.assertFalse(list(self.base.glob(".checkpoint-*")))
+
+    def freeze_fixture(self):
+        """Synthetic test declarations, never an owner corpus or gold."""
+        import numpy as np
+        import soundfile as sf
+        corpus = copy.deepcopy(self.corpus)
+        corpus["owner_review_complete"] = True
+        corpus["asr"] = {"repository_id": "mlx-community/parakeet-tdt-0.6b-v3",
+                         "immutable_revision": "ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15"}
+        normalizer = ROOT / "localflow/v2/normalize"
+        files = sorted([*normalizer.rglob("*.py"), *normalizer.rglob("*.json")])
+        corpus["normalized_input_identity"] = {"asr": corpus["asr"],
+            "normalizer_files_sha256": b.digest({str(p.relative_to(ROOT)): b.file_hash(p) for p in files}),
+            "runtime": b.runtime_versions()}
+        b.atomic_json(self.base / "ref.json", {"text": "Keep café and 30.", "author": "owner", "candidate_output_used": False})
+        b.atomic_json(self.base / "negative.json", {"text": "", "author": "owner", "candidate_output_used": False})
+        (self.base / "verbatim.txt").write_text("synthetic fixture words")
+        corpus["cases"] = []
+        tags = ["ordinary_prose", "long_developer_prompt", "corrections", "standalone_markers",
+                "numeric", "technical_names", "questions", "negation_constraints", "literal",
+                "lists_steps", "paragraphs", "multilingual", "quiet", "noisy"]
+        for n in range(220):
+            case = copy.deepcopy(self.case)
+            case.update(case_id=f"case_{n}", family_id=f"family_{n}",
+                        split="dev", exposed=False, adjudication_status="CONFIRMED",
+                        retention_status="OWNER_APPROVED", privacy_class="PRIVATE_OWNER_ONLY")
+            case["reference"] = {"path": "ref.json", "sha256": b.file_hash(self.base / "ref.json")}
+            if n < 160:
+                wav = self.base / f"audio_{n}.wav"
+                sf.write(wav, np.full(160, n / 1000, dtype=np.float32), 16000, subtype="FLOAT")
+                case["audio"] = {"path": wav.name, "sha256": b.file_hash(wav)}
+            if n < 140:
+                case.update(speech_band="short" if n < 60 else "diverse", coverage_tags=tags,
+                    verbatim_reference={"path": "verbatim.txt", "sha256": b.file_hash(self.base / "verbatim.txt")})
+            elif n < 160:
+                case.update(reference_type="negative", negative_type="silence")
+                case["reference"] = {"path": "negative.json", "sha256": b.file_hash(self.base / "negative.json")}
+            else:
+                case.update(m07_v002=True, m07_source="legacy_749",
+                            split="dev" if n < 190 else "validation" if n < 200 else "held_out")
+            corpus["cases"].append(case)
+        path = self.base / "freeze.json"
+        b.atomic_json(path, corpus)
+        return path, corpus
+
+    def test_freeze_requires_owner_review(self):
+        with self.assertRaisesRegex(ValueError, "owner review"):
+            b.freeze_requirements(self.write_corpus(), self.corpus)
+
+    def test_cli_freeze_gate_precedes_model_work(self):
+        args = ["benchmark_cleanup_candidates.py", "--corpus", str(self.write_corpus()),
+                "--output", str(self.base)]
+        with patch.object(sys, "argv", args), patch.object(runner, "private_output", return_value=self.base), \
+                patch.object(runner, "run_candidate") as run:
+            with self.assertRaisesRegex(ValueError, "owner review"):
+                runner.main()
+            run.assert_not_called()
+
+    def test_freeze_requires_full_coverage(self):
+        path, corpus = self.freeze_fixture()
+        corpus["cases"].pop(0)
+        with self.assertRaisesRegex(ValueError, "60 short"):
+            b.freeze_requirements(path, corpus)
+
+    def test_freeze_rejects_candidate_gold(self):
+        path, corpus = self.freeze_fixture()
+        b.atomic_json(self.base / "ref.json", {"text": "Keep café and 30.", "author": "owner", "candidate_output_used": True})
+        for case in corpus["cases"]:
+            if case["reference"]["path"] == "ref.json":
+                case["reference"]["sha256"] = b.file_hash(self.base / "ref.json")
+        with self.assertRaisesRegex(ValueError, "owner reference provenance"):
+            b.freeze_requirements(path, corpus)
+
+    def test_freeze_requires_verbatim_reference(self):
+        path, corpus = self.freeze_fixture()
+        del corpus["cases"][0]["verbatim_reference"]
+        with self.assertRaisesRegex(ValueError, "asset schema"):
+            b.freeze_requirements(path, corpus)
+
+    def test_freeze_requires_legacy_reuse(self):
+        path, corpus = self.freeze_fixture()
+        del corpus["cases"][-1]["m07_source"]
+        with self.assertRaisesRegex(ValueError, "legacy provenance"):
+            b.freeze_requirements(path, corpus)
+
+    def test_freeze_lock_protects_split_and_context(self):
+        path, corpus = self.freeze_fixture()
+        b.atomic_json(str(path) + ".freeze-lock.json", {"state": "M15A_CORPUS_FROZEN_READY_TO_BENCHMARK",
+                                                       "corpus_sha256": b.file_hash(path)})
+        b.validate_freeze_lock(path, b.load_corpus(path))
+        corpus["cases"][0]["destination_profile"] = "changed"
+        b.atomic_json(path, corpus)
+        with self.assertRaisesRegex(ValueError, "freeze lock drift"):
+            b.validate_freeze_lock(path, b.load_corpus(path))
+
+    def test_freeze_rechecks_verbatim_bytes(self):
+        path, corpus = self.freeze_fixture()
+        (self.base / "verbatim.txt").write_text("changed")
+        with self.assertRaisesRegex(ValueError, "hash mismatch"):
+            b.frozen_case(path.parent, corpus["cases"][0])
 
 
 if __name__ == "__main__":

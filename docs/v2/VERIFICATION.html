@@ -2622,11 +2622,11 @@ lf07_evidence() { "$PY" "$OUT07/m07_evidence.py"; }</code></pre></div>
         </article>
 
         <h3 class="group">Real text</h3>
-        <article class="check" id="M07-V002" data-milestone="M07" data-rev="M07-r1" data-code="340c566" data-tags="human privacy">
+        <article class="check" id="M07-V002" data-milestone="M07" data-rev="M07-r2" data-code="23acfe5" data-tags="human privacy">
           <header class="check-head">
             <span class="cid">M07-V002</span>
             <h4>Adjudicate the real-text stratum: review 60 cases from the 749 legacy candidates</h4>
-            <ul class="tags"><li>Human judgment</li><li>Private data</li><li>several sessions</li></ul>
+            <ul class="tags"><li>Human judgment</li><li>Private data</li><li>one reusable review</li></ul>
             <div class="status-slot"></div>
           </header>
           <p class="proves"><b>What it proves.</b> Cleanup is judged against your own past dictations, not only synthetic text: 60 real raw/cleaned pairs (30 development, 10 validation, 20 held-out), each reviewed by you for critical defects, become the <code>adjudicated_real_text</code> family the evaluation plan (E04) reserves. Until it exists, M07's real-text claim rests on synthetic cases only.</p>
@@ -2634,18 +2634,20 @@ lf07_evidence() { "$PY" "$OUT07/m07_evidence.py"; }</code></pre></div>
           <details class="more"><summary>Instructions &amp; expected results</summary>
             <dl class="facts">
               <dt>Environment</dt><dd>Reference Mac · your legacy LocalFlow log (private, never committed)</dd>
-              <dt>Preconditions</dt><dd><b>Not yet possible.</b> There is no tool that draws the stratified sample and presents the pairs for review: the legacy parser (<code>scripts/v2/parse_legacy_log.py</code>) never writes transcript text, by design. Building that private review tool is part of this obligation (fixture owner M07, <code>tests/v2/fixtures/manifest.json</code>); M15's corpus needs its output.</dd>
+              <dt>Preconditions</dt><dd>A private 60-case provisional legacy review queue is prepared under the established LocalFlow <code>v2-evidence</code> root, in <code>pre-m15-m15a-integration-20261001/owner-review-queue.json</code>. Source bytes match the historical baseline. Human origin, suitability, families, exposure and references remain unverified. Read <code>docs/v2/benchmarks/M15-CORPUS-FREEZE.md</code>; this is not a passed check or a frozen fixture.</dd>
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Mark this check <b>Blocked</b> with the note “review tool not built”. It moves to Not run when the tool exists; the instructions will then be revised (M07-r2).</li>
+              <li>Review each private raw input once and independently write intended writing. Then assess the historical cleaned output for critical defects; that output is a candidate, never gold. Confirm real-text origin, retention, family and prior exposure. Mark confirmed, uncertain or exclude.</li>
+              <li>Replace unsuitable or exposed held-out cases before locking exactly 30 development, 10 validation and 20 held-out cases. Related inputs stay in one split. Reuse these same adjudicated cases for M15 Track A without a second owner judgment.</li>
+              <li>Keep this check <b>Not run / pending adjudication</b> until all owning human and qualification evidence exists. Complete the model-free corpus freeze gate before any model comparison; no benchmark or M07 PASS is implied by preparing the queue.</li>
             </ol>
             <h5>Expected</h5>
             <ul class="list">
-              <li>Nothing to run yet. No case is reviewed, and no fixture is created, before the tool and its instructions exist.</li>
+              <li>60 owner-adjudicated real-text cases with protected family/exposure boundaries and immutable references; current count is zero. Missing audio never becomes an invented verbatim reference.</li>
             </ul>
             <h5>Evidence</h5>
-            <p>None yet. Reviewed pairs stay private (outside Git); only sanitized case records would ever be committed.</p>
+            <p>Preparation counts only: <code>docs/v2/benchmarks/m15-corpus-freeze-preparation.json</code>. Private queue prepared; no human correctness judgments or acceptance result recorded. Raw inputs, historical outputs and references stay outside Git.</p>
             <h5>Contract relevance</h5>
             <p>M07-AC04 (its human half); Evaluation E04 family <code>adjudicated_real_text</code>; cross-milestone MERGED-X17.</p>
           </details>

@@ -1,0 +1,60 @@
+{
+  "schema": "pre-m15-m15a-integration/1",
+  "state": "PRE_M15_AND_M15A_SETUP_INTEGRATED_READY_FOR_CORPUS_FREEZE",
+  "corpus_state": "CORPUS_FREEZE_REQUIRED",
+  "m07_state": "PRE_M15_BLOCKED_M07_V001_MODEL_BEHAVIOR",
+  "tests": {
+    "remediation": "40/40",
+    "cleanup_engine": "19 tests PASS",
+    "cleanup_pipeline": "13/13 desktop isolated",
+    "normalization_pipeline": "PASS desktop isolated",
+    "m15_harness": "49/49 (41 owning + 8 freeze)",
+    "literal": "20/20; 19 model-path, 1 fallback",
+    "fidelity_deterministic": "PASS remediation/engine/list/spoken-step",
+    "fidelity_model_backed": "not rerun; retained source evidence 58/60",
+    "list": "12/12",
+    "spoken_steps": "31/31",
+    "registry": "5/5",
+    "baseline_manifest": "5/5"
+  },
+  "candidate_cache": {
+    "exact_revisions": 7,
+    "complete": 7,
+    "incomplete_files": 0,
+    "weights_downloaded": 0
+  },
+  "parakeet": {
+    "repository_id": "mlx-community/parakeet-tdt-0.6b-v3",
+    "immutable_revision": "ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15",
+    "verified_files": 7,
+    "missing_files": 0,
+    "extra_files": 0,
+    "incomplete_files": 0,
+    "logical_bytes": 2509044141,
+    "allocated_bytes": 2509062144,
+    "restored_support_files": 5,
+    "reused_weights": true,
+    "smoke": {
+      "loaded": true,
+      "consumable_output": true,
+      "sample_count": 16000,
+      "sample_rate": 16000,
+      "duration_ms": 45.8,
+      "worker_exit": 0,
+      "input_kind": "synthetic_silence"
+    }
+  },
+  "boundaries": {
+    "production_default_changed": false,
+    "seven_model_track_a": false,
+    "seven_model_track_b": false,
+    "m07_v001_live_retry": false,
+    "m07_v002_evaluation": false,
+    "m07_passed": false,
+    "m11_final_qualification": false,
+    "winner_selected": false,
+    "m16_started": false,
+    "private_content_committed": false,
+    "pushed": false
+  }
+}

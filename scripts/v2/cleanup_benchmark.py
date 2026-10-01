@@ -173,7 +173,63 @@ def frozen_case(base, case):
     audio = asset(base, case["audio"]) if "audio" in case else None
     if "asr_artifact" in case:
         asset(base, case["asr_artifact"])
+    if "verbatim_reference" in case:
+        asset(base, case["verbatim_reference"])
     return source, reference, audio
+
+
+def freeze_requirements(path, corpus):
+    """Owner adjudication and coverage gate; never creates a reference."""
+    require(corpus.get("owner_review_complete") is True, "CORPUS_FREEZE_REQUIRED: owner review")
+    require(corpus.get("asr") == {
+        "repository_id": "mlx-community/parakeet-tdt-0.6b-v3",
+        "immutable_revision": "ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15"}, "pinned Parakeet required")
+    cases = corpus["cases"]
+    speech = [c for c in cases if c.get("speech_band") in {"short", "diverse"}]
+    require(Counter(c["speech_band"] for c in speech) == {"short": 60, "diverse": 80},
+            "CORPUS_FREEZE_REQUIRED: 60 short / 80 diverse speech")
+    negatives = [c for c in cases if c["reference_type"] == "negative"]
+    require(len(negatives) == 20, "CORPUS_FREEZE_REQUIRED: 20 negatives")
+    reuse = [c for c in cases if c.get("m07_v002")]
+    require(Counter(c["split"] for c in reuse) == {"dev": 30, "validation": 10, "held_out": 20},
+            "CORPUS_FREEZE_REQUIRED: M07-V002 30/10/20")
+    require(all(c.get("m07_source") == "legacy_749" for c in reuse), "M07 legacy provenance required")
+    required = {"ordinary_prose", "long_developer_prompt", "corrections", "standalone_markers",
+                "numeric", "technical_names", "questions", "negation_constraints", "literal",
+                "lists_steps", "paragraphs", "multilingual", "quiet", "noisy"}
+    require(required <= {tag for c in speech for tag in c.get("coverage_tags", [])},
+            "CORPUS_FREEZE_REQUIRED: speech strata")
+    audio_hashes = set()
+    for c in cases:
+        require(c.get("adjudication_status") == "CONFIRMED" and c.get("retention_status") == "OWNER_APPROVED"
+                and c.get("privacy_class") == "PRIVATE_OWNER_ONLY", "review/retention/privacy required")
+        _, reference, audio = frozen_case(pathlib.Path(path).parent, c)
+        require(reference.get("author") == "owner" and reference.get("candidate_output_used") is False,
+                "owner reference provenance required")
+        if c in speech or c in negatives:
+            require(audio is not None, "speech/negative WAV required")
+            require(c["audio"]["sha256"] not in audio_hashes, "duplicate counted audio")
+            audio_hashes.add(c["audio"]["sha256"])
+        if c in speech:
+            require(c["origin"] == "human" and c["reference_type"] == "intended_writing",
+                    "human speech intended-writing reference required")
+            asset(pathlib.Path(path).parent, c.get("verbatim_reference"))
+        if c in negatives:
+            require(c.get("negative_type") in {"silence", "background"} and reference["text"] == "",
+                    "reviewed no-speech negative required")
+    normalizer = ROOT / "localflow/v2/normalize"
+    files = sorted([*normalizer.rglob("*.py"), *normalizer.rglob("*.json")])
+    require(corpus.get("normalized_input_identity") == {
+        "asr": corpus["asr"],
+        "normalizer_files_sha256": digest({str(p.relative_to(ROOT)): file_hash(p) for p in files}),
+        "runtime": runtime_versions()}, "normalized input generation identity drift")
+
+
+def validate_freeze_lock(path, corpus):
+    freeze_requirements(path, corpus)
+    lock = json.loads(pathlib.Path(str(path) + ".freeze-lock.json").read_text())
+    require(lock == {"state": "M15A_CORPUS_FROZEN_READY_TO_BENCHMARK",
+                    "corpus_sha256": file_hash(path)}, "corpus/split/context freeze lock drift")
 
 
 def runtime_versions():

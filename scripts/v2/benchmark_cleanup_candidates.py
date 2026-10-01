@@ -19,7 +19,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 from cleanup_benchmark import (ID, STATES, aggregate, atomic_json, digest, failure_state,
         file_hash, frozen_case, load_corpus, blind_queue, require, score, source_identity,
-        utc_now, validate_manifest, write_report)
+        utc_now, validate_manifest, write_report, freeze_requirements, validate_freeze_lock)
 
 
 def private_output(path):
@@ -243,7 +243,10 @@ def main():
     p.add_argument("--corpus", type=pathlib.Path)
     p.add_argument("--track", choices=["cleanup-only", "end-to-end-audio"], default="cleanup-only")
     p.add_argument("--candidates", default="core")
-    p.add_argument("--output", type=pathlib.Path, required=True)
+    p.add_argument("--output", type=pathlib.Path)
+    gate = p.add_mutually_exclusive_group()
+    gate.add_argument("--freeze-corpus", action="store_true", help="validate owner references and write immutable manifest lock; no models")
+    gate.add_argument("--validate-corpus", action="store_true", help="verify freeze lock and coverage; no models")
     p.add_argument("--smoke", action="store_true")
     p.add_argument("--rerun", action="store_true")
     p.add_argument("--repetitions", type=int, default=5)
@@ -251,14 +254,30 @@ def main():
     p.add_argument("--timeout", type=float, default=600)
     p.add_argument("--blind-finalists", help="two candidate ids; prepare private queue from completed units only")
     args = p.parse_args()
+    if args.freeze_corpus or args.validate_corpus:
+        require(args.corpus is not None and not args.smoke, "private corpus required")
+        private_output(args.corpus.resolve().parent)
+        corpus = load_corpus(args.corpus)
+        if args.freeze_corpus:
+            freeze_requirements(args.corpus, corpus)
+            lock_path = pathlib.Path(str(args.corpus) + ".freeze-lock.json")
+            require(not lock_path.exists(), "existing freeze lock: create a new corpus version")
+            atomic_json(lock_path, {"state": "M15A_CORPUS_FROZEN_READY_TO_BENCHMARK",
+                                    "corpus_sha256": file_hash(args.corpus)})
+        validate_freeze_lock(args.corpus, corpus)
+        print("M15A_CORPUS_FROZEN_READY_TO_BENCHMARK")
+        return 0
     require(args.repetitions > 0 and args.cold_processes > 0 and args.timeout > 0, "positive run bounds")
     require(not args.smoke or args.corpus is None, "smoke does not accept acceptance corpus")
     require(not args.smoke or args.track == "cleanup-only", "smoke is cleanup-only")
+    require(args.output is not None, "private output required")
     output = private_output(args.output)
     candidates = select(validate_manifest(json.loads(args.manifest.read_text())), args.candidates)
     corpus_path = smoke_case(output) if args.smoke else args.corpus
     require(corpus_path is not None, "private frozen corpus required")
     corpus = load_corpus(corpus_path)
+    if not args.smoke:
+        validate_freeze_lock(corpus_path, corpus)
     if args.blind_finalists:
         finalists = args.blind_finalists.split(",")
         require(len(finalists) == 2 and finalists[0] != finalists[1], "two distinct finalists")

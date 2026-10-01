@@ -30,7 +30,7 @@ Remaining: the true human-speaker release-to-terminal dictation measurement (p50
 | Obligation | Case / requirement | Owner |
 |---|---|---|
 | M07 long-prompt cleanup trial | M07-V001; XM-C065 | VERIFICATION.html M07-V001; `tests/v2/fidelity/test_fidelity.py` (model-backed EV-09); M15-AC02 |
-| M07 adjudicated real-text stratum | M07-V002 | BLOCKED until the separate private legacy-transcript review tool exists and the 749 candidates are reviewed (a pre-M15 workstream after this remediation reaches `main`) |
+| M07 adjudicated real-text stratum | M07-V002 | PENDING owner adjudication/corpus freeze; private 60-case provisional legacy review queue prepared, zero human judgments; preserve 30 dev / 10 validation / 20 held-out boundaries |
 | M11 integrated record (one misdirected review, fourteen output-limit fallbacks) | GATE-G10 | M11 local verification |
 | ASR language coverage | LF-R27 | M15; EV-17 (M16) |
 | A qualified decoder adapter and acoustic strata | LF-R29 | M15 |

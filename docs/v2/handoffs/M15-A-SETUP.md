@@ -4,6 +4,12 @@ October 1, 2026. State:
 `M15_AUTOMATED_CLEANUP_BENCHMARK_READY_TO_INTEGRATE_AFTER_PRE_M15`.
 This is preparation evidence, not a full M15/M07/M11 acceptance result.
 
+This document preserves the original setup history. The subsequent local
+canonical integration is recorded in [PRE-M15-M15A-INTEGRATION.md](PRE-M15-M15A-INTEGRATION.md):
+M07 repair and setup integrated, pinned Parakeet complete/smoked, corpus still
+`CORPUS_FREEZE_REQUIRED`. Statements below about an absent Parakeet, unmerged
+branches or unchanged old-main engine describe the original setup only.
+
 ## Identity and scope
 
 Base main: `5da68360a0e5b1ea9303f799ea5c550db4f210fe`.
