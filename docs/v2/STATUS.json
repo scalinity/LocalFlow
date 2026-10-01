@@ -1,8 +1,21 @@
 {
   "schema_version": 2,
-  "status_reason": "Quiet Editorial desktop redesign and owner-polish implementation are merged onto main. All twelve owner-polish gates are closed by the final September 30 evidence; owner visual approval is recorded. This redesign / M14-adjacent owner-polish phase is over. Separate M07/M11 and broader native, manual, model and human qualification obligations remain outstanding according to qualification_ledger.md. M15 and M16 are not started. Historical implementation records remain historical.",
+  "status_reason": "Quiet Editorial and owner-polish are merged and closed. The bounded M07 correction-admission repair and M15-A benchmark infrastructure are integrated locally. Current Qwen M07 qualification remains model-behavior blocked. Human corpus adjudication/freeze is required; full M15 comparison, M07-V002, final M11 qualification and M16 have not run. Production cleanup defaults are unchanged.",
   "current_state": {
-    "as_of": "2026-09-30",
+    "as_of": "2026-10-01",
+    "pre_m15_qualification": {
+      "state": "PRE_M15_BLOCKED_M07_V001_MODEL_BEHAVIOR",
+      "source_sha": "aafedbe5eeb422fbcbb7117458fe2002275d3871",
+      "branch": "pre-m15-qualification-closure-20260930",
+      "evidence": "docs/v2/acceptance/M07/results.json:pre_m15_v001_narrow_remediation (prior speech attempt retained as pre_m15_qualification_20260930)",
+      "M07_V001": "Narrow guarded trigger repair passes deterministic tests; focused current-model correction measurement is 6/10 and owning fidelity is 58/60, with both fidelity failures reproduced before repair. No new speech retry: automated prerequisites are not green. Prior real-speech failure/inconclusive literal attempt preserved; not passed.",
+      "M07_V002": "Pending one-time private legacy real-text adjudication and corpus freeze; 60 provisional review cases, zero human judgments",
+      "M11": "Current suite, benchmark and Polish/Concise measurement not run; stopped at M07-V001",
+      "GATE_G10": "OPEN",
+      "M15": "INFRASTRUCTURE_INTEGRATED; COMPARATIVE_ACCEPTANCE_NOT_RUN",
+      "M16": "NOT_STARTED",
+      "next": "Complete the private one-time owner review and corpus-freeze gate before any candidate comparison; current-model M07 blocker remains open."
+    },
     "store_schema_version": 13,
     "store_schema_source": "max(_MIGRATIONS) in localflow/v2/store.py",
     "campaign": "Quiet Editorial desktop redesign and M14-adjacent owner-polish closure",
@@ -11,7 +24,7 @@
     "pending_qualification": [
       "Native: remaining GATE-G07 and broader runbook obligations according to qualification_ledger.md; overlapping owner-polish hotkey, review authority, Accept/refusal and PTT gates are closed by the final evidence",
       "Manual: the runbook checks in docs/v2/VERIFICATION.html, including M03-V006 (real microphones)",
-      "Model: M07-V001, M07-V002 (blocked until the separate private legacy-transcript review tool exists), the M11 integrated record (GATE-G10), LF-R27 and LF-R29",
+      "Model: M07-V001, M07-V002 (pending prepared private review queue, owner adjudication and corpus freeze), the M11 integrated record (GATE-G10), LF-R27 and LF-R29",
       "Human / M15: human-speaker end-to-end dictation timing (XM-C191, XM-C192, XM-C194, XM-C195, XM-MH32) and M15's own qualification"
     ],
     "branch": "main",
@@ -25,9 +38,9 @@
       "docs/v2/companion/OWNER_POLISH_CLOSURE_20260930.md"
     ],
     "performance": "Current performance on this Mac is read from docs/v2/benchmarks/20260928-230400-xm-remediation-final-decisions (M14 curation, profile and export cost with the dictation-shaped writer probe; M09 Hub construction, publication and History search), measured after correctness on the final production code. Dictation end-to-end is not measured. The benchmark figures under historical_implementation are historical and describe the M14 implementation code.",
-    "may_run_next": "Next planned separate workstream: the private legacy-transcript review tool for M07-V002 (pre-M15 qualification support), with the remaining native, manual, model and human qualification in gates/qualification_ledger.md beside it. M15 is not started and remains gated by M07 pending qualification and M11 incomplete verification. M16 is not started. Quiet Editorial and owner-polish are merged and closed; no next workstream began during this closure. AI-powered Your Voice interpretation and installed-app rollout remain unauthorized.",
-    "pending_human": "docs/v2/VERIFICATION.html: the M01-M14 checks, including M07-V001 and M07-V002 (M07-V002 blocked: its private review tool does not exist)",
-    "next_milestone": "M15 (not started)",
+    "may_run_next": "One-time owner adjudication of retained audio and 60 legacy real-text candidates, followed by minimum residual recordings and model-free corpus freeze validation. No candidate comparison before CORPUS_FREEZE_REQUIRED closes. M07 is not passed; final M11 qualification and M16 remain pending. Quiet Editorial/owner-polish remain closed.",
+    "pending_human": "M07-V001 remains model-behavior blocked. M07-V002 and M15 require the prepared private one-time corpus review; other native/manual obligations remain per qualification_ledger.md.",
+    "next_milestone": "M15-A corpus freeze (comparative acceptance not run)",
     "merge_commit": "ac77035005477bc7030ea0e3713be0f0408ff5c6",
     "owner_polish": {
       "redesign": "MERGED",
@@ -43,8 +56,20 @@
       },
       "M07": "SEPARATE_OUTSTANDING_QUALIFICATION_PER_LEDGER",
       "M11": "SEPARATE_OUTSTANDING_QUALIFICATION_PER_LEDGER",
-      "M15": "NOT_STARTED",
+      "M15": "INFRASTRUCTURE_INTEGRATED; ACCEPTANCE_NOT_RUN",
       "M16": "NOT_STARTED"
+    },
+    "canonical_integration": {
+      "state": "PRE_M15_AND_M15A_SETUP_INTEGRATED_READY_FOR_CORPUS_FREEZE",
+      "base_main": "5da68360a0e5b1ea9303f799ea5c550db4f210fe",
+      "m07_input": "8c08b82f15e75e83fb06bcd5aa2e102c50761903",
+      "m15a_input": "9b47e2f72012752b8146f57b3cce0194adfac221",
+      "m07_merge": "60d7641c655f05cc1725ea00b60c26ba0e0ad6af",
+      "m15a_merge": "23acfe5f92d97c1e12b599d2d3d3567e89f9bdc4",
+      "branch": "pre-m15-m15a-integration-20261001",
+      "production_default_changed": false,
+      "push": "NOT_PUSHED",
+      "handoff": "docs/v2/handoffs/PRE-M15-M15A-INTEGRATION.md"
     }
   },
   "historical_implementation": {
@@ -79,5 +104,32 @@
     "handoff": "docs/v2/handoffs/M14.md",
     "next_milestone": "M15",
     "next_milestone_dependency_eligible": true
+  },
+  "benchmark_preparation": {
+    "as_of": "2026-10-01",
+    "scope": "M15-A setup only; full M15 acceptance not started",
+    "state": "PRE_M15_AND_M15A_SETUP_INTEGRATED_READY_FOR_CORPUS_FREEZE",
+    "branch": "pre-m15-m15a-integration-20261001",
+    "base_commit": "5da68360a0e5b1ea9303f799ea5c550db4f210fe",
+    "specification": "docs/v2/benchmarks/M15-A.md",
+    "candidate_manifest": "docs/v2/benchmarks/m15-cleanup-candidates.json",
+    "pending": [
+      "One-time owner adjudication, minimum residual recordings and M07-V002 30/10/20 corpus freeze",
+      "Actual M15-A comparison and production co-resident memory measurement",
+      "M07 final selected-model qualification and final M11 integrated qualification"
+    ],
+    "production_default_changed": false,
+    "M07_passed": false,
+    "M11_passed": false,
+    "M15_acceptance_started": false,
+    "M16_started": false,
+    "candidate_artifacts_ready": 7,
+    "parakeet": {
+      "repository_id": "mlx-community/parakeet-tdt-0.6b-v3",
+      "immutable_revision": "ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15",
+      "state": "COMPLETE_PINNED_BOUNDED_SMOKE_PASSED"
+    },
+    "corpus_state": "CORPUS_FREEZE_REQUIRED",
+    "corpus_workflow": "docs/v2/benchmarks/M15-CORPUS-FREEZE.md"
   }
 }

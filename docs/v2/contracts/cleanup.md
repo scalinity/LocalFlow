@@ -100,8 +100,15 @@ The fixed 35/50-word chunking is gone. `plan_windows`:
 ## Corrections (exact offsets, S13)
 
 Corrections run as a separate proposal pass **only when a marker is
-present** (never a second call on plain input); the trigger covers every
-marker the proposal format supports, standalone `actually` included.
+present** (never a second call on plain input). Existing direct triggers,
+including standalone `actually`, are retained. Standalone `sorry` and `no`
+are admitted only when a possible deletion ending at that marker passes
+the existing `_evidence_reason` guard: a nearby outdated value and a
+parallel replacement, within the same sentence and six-word span budget.
+This admission proposes or deletes nothing. The model's exact proposal
+still passes offset resolution, all protection/evidence guards, and full
+candidate validation; ordinary negative/interjection prose does not gain
+an unconditional extra correction-model call.
 The proposal format is V1's production-proven line format — the model
 lists the exact words to delete (the outdated value together with its
 correction marker), one span per line. The engine resolves each span to

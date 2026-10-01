@@ -45,3 +45,15 @@ three canonical Markdown documents are. Package entry point: `README.md`.
   `PENDING_LOCAL_VERIFICATION` entries (append to your milestone's section;
   never renumber). Pending entries do not block the next read-only audit
   unless an unverified condition invalidates its static premise.
+
+## M15-A preparation (additive, October 1, 2026)
+
+The automated cleanup-model comparison is prepared in `benchmarks/M15-A.md`
+and `benchmarks/m15-cleanup-candidates.json`. Setup smoke is compatibility
+evidence only; M15 acceptance remains not started. The bounded M07 remediation
+and M15-A infrastructure are now integrated. Current Qwen remains model-behavior
+blocked; all seven cleanup artifacts and the exact Parakeet pin are ready.
+Next is the private one-time owner review and `CORPUS_FREEZE_REQUIRED` gate;
+see `benchmarks/M15-CORPUS-FREEZE.md` and
+`handoffs/PRE-M15-M15A-INTEGRATION.md`. `handoffs/M15-A-SETUP.md` preserves
+the historical setup evidence. No comparison, promotion or M16 work has run.

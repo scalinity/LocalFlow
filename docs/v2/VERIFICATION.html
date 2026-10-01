@@ -2530,12 +2530,11 @@ grep -h '"context.provider_failed"' "$SANDBOX6"/Library/Logs/LocalFlow/events-*.
 
         <div class="callout">
           <h3>M07 set-up (once per Terminal window, after the set-up above)</h3>
-          <p style="margin:0 0 8px">The current code gets its own worktree, and the dev app runs with a <b>sandbox home folder</b> (<code>$SANDBOX07</code>), so its store, logs and History land in a throw-away folder — never your real Application Support data or the installed app. The sandbox config keeps transcripts in History so each dictation's stages can be compared. Quit the installed LocalFlow.app first. The evidence reader prints stages, cleanup paths and reasons — never the text you dictated.</p>
+          <p style="margin:0 0 8px">After the narrow repair's automated prerequisites pass, the local qualification code gets its own worktree containing <code>aafedbe</code>; do not use unmodified main or the older review bundle for the retry. If an existing verification worktree lacks that repair, stop rather than run stale code. The dev app uses a <b>sandbox data home</b> (<code>$SANDBOX07</code>), so its store, logs and History never touch real Application Support data or the installed app. The sandbox config keeps transcripts in History. Quit the running LocalFlow first; enable Collect Training Evidence in this isolated instance before dictating. The evidence reader prints stages, paths and reasons — never transcript text.</p>
           <div class="cmdwrap"><pre class="cmd"><code><span class="c"># Current code in its own worktree (first time only)</span>
 export LF_M07="$(dirname "$LF_MAIN")/LocalFlow-m07-verify"
-git -C "$LF_MAIN" fetch origin main
-[ -d "$LF_M07" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M07" origin/main
-git -C "$LF_M07" merge-base --is-ancestor 340c566 HEAD &amp;&amp; echo "current code present"
+[ -d "$LF_M07" ] || git -C "$LF_MAIN" worktree add --detach "$LF_M07" aafedbe
+git -C "$LF_M07" merge-base --is-ancestor aafedbe HEAD &amp;&amp; echo "correction-trigger repair present"
 export OUT07="$EV/m07-verification"; mkdir -p "$OUT07" &amp;&amp; chmod 700 "$OUT07"
 
 <span class="c"># Sandbox home and config for the dev app</span>
@@ -2549,7 +2548,7 @@ p = pathlib.Path(os.environ["OUT07"], "sandbox-config.json")
 p.write_text(json.dumps(c, indent=1)); print("wrote", p)
 EOF
 <span class="c"># Start the dev app; $LF07_PID is its process</span>
-lf07_start() { ( cd "$LF_M07" &amp;&amp; exec env HOME="$SANDBOX07" \
+lf07_start() { ( cd "$LF_M07" &amp;&amp; exec env LOCALFLOW_DATA_HOME="$SANDBOX07" \
     HF_HOME="$REAL_HOME/.cache/huggingface" HF_HUB_OFFLINE=1 \
     LOCALFLOW_CONFIG="$OUT07/sandbox-config.json" "$PY" -m localflow ) \
     &gt;&gt; "$OUT07/app-console.txt" 2&gt;&amp;1 &amp;
@@ -2572,14 +2571,17 @@ lf07_evidence() { "$PY" "$OUT07/m07_evidence.py"; }</code></pre></div>
         </div>
 
         <h3 class="group">Long AI prompts</h3>
-        <article class="check" id="M07-V001" data-milestone="M07" data-rev="M07-r1" data-code="340c566" data-tags="native human model">
+        <article class="check" id="M07-V001" data-milestone="M07" data-rev="M07-r2" data-code="aafedbe" data-tags="native human model">
+          <p class="proves"><b>September 30, 2026 pre-M15 attempt (source <code>5da6836</code>).</b> Daniel performed both dictations; assessment was delegated to the agent from owner screenshots and private stage metadata. <b>Needs follow-up; not passed.</b> All three stages are retained. The long prompt's model candidates failed fidelity validation, so the applied output is the unchanged Normalized source: constraints, four items and sign-off survive, but both corrections remain unresolved. No output limit or correction proposal pass occurred. The short attempt exercised a normalization literal escape and did not establish paired quoted-literal preservation; initial capitalization is permitted by the cleanup contract. Content-free evidence: <code>acceptance/M07/results.json</code> → <code>pre_m15_qualification_20260930</code>. State: <code>PRE_M15_BLOCKED_M07_V001</code>; no browser-saved status or historical result is overwritten.</p>
+          <p class="proves"><b>M07-r2 spoken-literal clarification.</b> The historical attempt requested a quoted literal, but ASR produced no paired quote characters. LocalFlow correctly recognized the supported literal-escape instruction. The old procedure depended on quote punctuation the speech path does not promise; that inconclusive attempt remains preserved. The current speech trial uses <code>Write the phrase ship happens</code>: normalization removes the marker and protects <code>ship happens</code> as <code>literal_escape</code>; cleanup must preserve it, allowing only the existing sentence-initial capitalization rule. This proves the spoken literal path, not ASR-generated quote punctuation. Existing paired quotes remain covered separately by the automated literal fixtures. Re-run only after the narrow repair's automated prerequisites pass.</p>
+          <p class="proves"><b>Narrow repair checkpoint.</b> Source <code>aafedbe</code> fixes guarded single-word trigger admission. Deterministic remediation, engine and isolated pipeline checks pass, but current model prerequisites are not green: focused correction measurement 6/10; owning fidelity 58/60, with its two failures reproduced before repair; literal fixtures 20/20 (one fallback). No new real-speech A/B attempt was performed. State <code>PRE_M15_BLOCKED_M07_V001_MODEL_BEHAVIOR</code>; exact content-free evidence is in <code>acceptance/M07/results.json</code> → <code>pre_m15_v001_narrow_remediation</code>. The earlier real-speech result remains unchanged.</p>
           <header class="check-head">
             <span class="cid">M07-V001</span>
-            <h4>Dictate a long AI prompt with constraints, corrections, a list and a quoted literal; compare its stages</h4>
+            <h4>Dictate an AI prompt with constraints, corrections, a list and a spoken literal escape; compare its stages</h4>
             <ul class="tags"><li>Native macOS</li><li>Human visual</li><li>Microphone</li><li>Model-backed</li><li>~15 min</li></ul>
             <div class="status-slot"></div>
           </header>
-          <p class="proves"><b>What it proves.</b> On real speech and the real cleanup model, a long prompt keeps what you asked for: all three constraints survive, both self-corrections are applied, a spoken list keeps its exact item count, and a quoted literal is left untouched. Each dictation's stages (raw transcript, normalized, cleaned) are kept in History, so the raw transcript is recoverable without running a model again. This is M07's <code>native-m07-long-prompt-cleanup-trial</code>, which was never performed; the synthetic corpus cannot show real speech.</p>
+          <p class="proves"><b>What it proves.</b> On real speech and the real cleanup model, the prompt keeps what you asked for: all three constraints survive, both self-corrections are applied, a spoken list keeps its exact item count, and the protected spoken literal is preserved under the existing capitalization rule. Source, Normalized and Cleaned stages remain recoverable in History. This re-runs <code>native-m07-long-prompt-cleanup-trial</code> after its unsuccessful September 30 attempt; synthetic tests do not substitute for speech. Existing paired-quote fidelity is a separate automated fixture obligation.</p>
           <p class="plain"><b>In plain terms.</b> You dictate a long request to an AI assistant the way you normally would — with a word limit, things to mention and avoid, a couple of “no, I mean…” corrections and a list — then look at what LocalFlow did to it, stage by stage.</p>
           <details class="more"><summary>Instructions &amp; expected results</summary>
             <dl class="facts">
@@ -2590,8 +2592,8 @@ lf07_evidence() { "$PY" "$OUT07/m07_evidence.py"; }</code></pre></div>
             <h5>Manual actions</h5>
             <ol class="list">
               <li>Run <code>lf07_start</code>; wait for “ASR: ready”. Open a new TextEdit document and click into it.</li>
-              <li>Dictate one long prompt containing: a word limit (“keep it under two hundred words”), something it must mention, something it must not mention, two self-corrections (“on Tuesday — no, Wednesday”), a spoken list of four or more items, and a sign-off.</li>
-              <li>Dictate a second, short one with a quoted literal: “write the phrase <em>exactly as typed</em> verbatim”.</li>
+              <li>After the repair's automated checks pass, dictate this reproducible prompt: “Write a project update under two hundred words. It must mention the Atlas migration and it must not mention the acquisition. Schedule the review for Tuesday, no Wednesday. Send the draft to six reviewers, sorry eight reviewers. Include four items: current status, blockers, next steps, and owner. End with Thanks, Daniel.” Weekday and numeric/shared-noun replacements exercise the existing single-word evidence guards; different names alone do not satisfy those guards.</li>
+              <li>Separately dictate: “Write the phrase ship happens”. In Source confirm that the literal instruction and intended object were recognized; in Normalized confirm that the marker was removed and the object retained. Private normalization evidence must record <code>literal_escape</code> protection. Do not rely on spoken “quote/unquote” producing paired punctuation.</li>
               <li>Open the Hub (<b>Open Hub…</b> in the menu) → <b>History</b>, select each dictation and read its stages: <b>Source (raw transcript)</b>, <b>Normalized</b>, <b>Cleaned (applied output)</b>.</li>
               <li>Quit from the menu, then run the command block. Close the TextEdit document without saving.</li>
             </ol>
@@ -2601,14 +2603,14 @@ lf07_evidence() { "$PY" "$OUT07/m07_evidence.py"; }</code></pre></div>
             <ul class="list">
               <li>Step 4: each Cleaned stage is your prompt, tidied — never an answer to it or a carried-out instruction.</li>
               <li>Step 4, first dictation: the Cleaned stage keeps the word limit, the must-mention and the must-not-mention; both corrections are applied (only the corrected value remains); the list has exactly as many items as you said; nothing you did not say is added.</li>
-              <li>Step 4, second dictation: the quoted phrase appears in the Cleaned stage exactly as you said it.</li>
+              <li>Step 4, second dictation: the protected object remains exactly <code>ship happens</code>, with only the explicitly allowed initial capitalization (<code>Ship happens</code>). The marker must have been recognized and the object protected; no claim about ASR-generated paired quotes follows.</li>
               <li>Each dictation's Source stage holds your raw words — recoverable without dictating again.</li>
               <li>The evidence shows one <code>normalizing</code> and one <code>cleaning</code> line per dictation. A <code>cleaning</code> path other than <code>llm</code> (a fallback) is acceptable only when its reason is shown; note it.</li>
             </ul>
             <h5>If it fails</h5>
             <ul class="list">
               <li>A Cleaned stage answers or carries out the prompt instead of keeping it: <b>Failed</b>.</li>
-              <li>A constraint, a correction, a list item or the quoted literal is lost or changed in the Cleaned stage: <b>Failed</b> — note which, keep <code>V001-evidence.txt</code> and <code>app-console.txt</code>.</li>
+              <li>A constraint, correction, list item or protected literal object is lost or changed outside the allowed capitalization rule: <b>Failed</b> — note which, keep <code>V001-evidence.txt</code> and <code>app-console.txt</code>.</li>
               <li>A Source stage is missing: <b>Failed</b>.</li>
               <li>The model fell back on either dictation: <b>Needs follow-up</b> — note the reason; the trial needs a cleaned output to judge.</li>
             </ul>
@@ -2620,11 +2622,11 @@ lf07_evidence() { "$PY" "$OUT07/m07_evidence.py"; }</code></pre></div>
         </article>
 
         <h3 class="group">Real text</h3>
-        <article class="check" id="M07-V002" data-milestone="M07" data-rev="M07-r1" data-code="340c566" data-tags="human privacy">
+        <article class="check" id="M07-V002" data-milestone="M07" data-rev="M07-r2" data-code="23acfe5" data-tags="human privacy">
           <header class="check-head">
             <span class="cid">M07-V002</span>
             <h4>Adjudicate the real-text stratum: review 60 cases from the 749 legacy candidates</h4>
-            <ul class="tags"><li>Human judgment</li><li>Private data</li><li>several sessions</li></ul>
+            <ul class="tags"><li>Human judgment</li><li>Private data</li><li>one reusable review</li></ul>
             <div class="status-slot"></div>
           </header>
           <p class="proves"><b>What it proves.</b> Cleanup is judged against your own past dictations, not only synthetic text: 60 real raw/cleaned pairs (30 development, 10 validation, 20 held-out), each reviewed by you for critical defects, become the <code>adjudicated_real_text</code> family the evaluation plan (E04) reserves. Until it exists, M07's real-text claim rests on synthetic cases only.</p>
@@ -2632,18 +2634,20 @@ lf07_evidence() { "$PY" "$OUT07/m07_evidence.py"; }</code></pre></div>
           <details class="more"><summary>Instructions &amp; expected results</summary>
             <dl class="facts">
               <dt>Environment</dt><dd>Reference Mac · your legacy LocalFlow log (private, never committed)</dd>
-              <dt>Preconditions</dt><dd><b>Not yet possible.</b> There is no tool that draws the stratified sample and presents the pairs for review: the legacy parser (<code>scripts/v2/parse_legacy_log.py</code>) never writes transcript text, by design. Building that private review tool is part of this obligation (fixture owner M07, <code>tests/v2/fixtures/manifest.json</code>); M15's corpus needs its output.</dd>
+              <dt>Preconditions</dt><dd>A private 60-case provisional legacy review queue is prepared under the established LocalFlow <code>v2-evidence</code> root, in <code>pre-m15-m15a-integration-20261001/owner-review-queue.json</code>. Source bytes match the historical baseline. Human origin, suitability, families, exposure and references remain unverified. Read <code>docs/v2/benchmarks/M15-CORPUS-FREEZE.md</code>; this is not a passed check or a frozen fixture.</dd>
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Mark this check <b>Blocked</b> with the note “review tool not built”. It moves to Not run when the tool exists; the instructions will then be revised (M07-r2).</li>
+              <li>Review each private raw input once and independently write intended writing. Then assess the historical cleaned output for critical defects; that output is a candidate, never gold. Confirm real-text origin, retention, family and prior exposure. Mark confirmed, uncertain or exclude.</li>
+              <li>Replace unsuitable or exposed held-out cases before locking exactly 30 development, 10 validation and 20 held-out cases. Related inputs stay in one split. Reuse these same adjudicated cases for M15 Track A without a second owner judgment.</li>
+              <li>Keep this check <b>Not run / pending adjudication</b> until all owning human and qualification evidence exists. Complete the model-free corpus freeze gate before any model comparison; no benchmark or M07 PASS is implied by preparing the queue.</li>
             </ol>
             <h5>Expected</h5>
             <ul class="list">
-              <li>Nothing to run yet. No case is reviewed, and no fixture is created, before the tool and its instructions exist.</li>
+              <li>60 owner-adjudicated real-text cases with protected family/exposure boundaries and immutable references; current count is zero. Missing audio never becomes an invented verbatim reference.</li>
             </ul>
             <h5>Evidence</h5>
-            <p>None yet. Reviewed pairs stay private (outside Git); only sanitized case records would ever be committed.</p>
+            <p>Preparation counts only: <code>docs/v2/benchmarks/m15-corpus-freeze-preparation.json</code>. Private queue prepared; no human correctness judgments or acceptance result recorded. Raw inputs, historical outputs and references stay outside Git.</p>
             <h5>Contract relevance</h5>
             <p>M07-AC04 (its human half); Evaluation E04 family <code>adjudicated_real_text</code>; cross-milestone MERGED-X17.</p>
           </details>

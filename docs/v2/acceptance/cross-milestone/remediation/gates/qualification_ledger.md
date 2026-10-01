@@ -30,7 +30,7 @@ Remaining: the true human-speaker release-to-terminal dictation measurement (p50
 | Obligation | Case / requirement | Owner |
 |---|---|---|
 | M07 long-prompt cleanup trial | M07-V001; XM-C065 | VERIFICATION.html M07-V001; `tests/v2/fidelity/test_fidelity.py` (model-backed EV-09); M15-AC02 |
-| M07 adjudicated real-text stratum | M07-V002 | BLOCKED until the separate private legacy-transcript review tool exists and the 749 candidates are reviewed (a pre-M15 workstream after this remediation reaches `main`) |
+| M07 adjudicated real-text stratum | M07-V002 | PENDING owner adjudication/corpus freeze; private 60-case provisional legacy review queue prepared, zero human judgments; preserve 30 dev / 10 validation / 20 held-out boundaries |
 | M11 integrated record (one misdirected review, fourteen output-limit fallbacks) | GATE-G10 | M11 local verification |
 | ASR language coverage | LF-R27 | M15; EV-17 (M16) |
 | A qualified decoder adapter and acoustic strata | LF-R29 | M15 |
@@ -72,3 +72,53 @@ Detailed content-free metadata, synthetic target witnesses and the 89-item final
 report remain in the owner's local review directory under
 `final/owner-polish/final-qualification/`. This supplement does not modify the
 runbook's saved statuses or certify any complete milestone.
+
+## Pre-M15 qualification attempt — September 30, 2026 (additive)
+
+State: `PRE_M15_BLOCKED_M07_V001`. Source `5da6836`; dedicated branch
+`pre-m15-qualification-closure-20260930`. M14 / Quiet Editorial remains closed.
+
+Daniel performed both M07-V001 dictations in an isolated private data home.
+He supplied Hub and TextEdit screenshots and delegated their assessment to the
+agent; this is not a separately supplied human PASS judgment. Source, Normalized
+and Cleaned stages are retained for both cases. The long prompt's two model
+candidates failed fidelity validation (coverage, numeric values, negation and
+novelty); the applied output equals the Normalized source exactly. Constraints,
+four list items and sign-off survive, but both corrections remain unresolved.
+No output limit was hit, and no correction proposal pass ran. Inspection found
+the single-word marker supported by the correction guards absent from the
+proposal-pass trigger. The literal attempt used an existing normalization escape
+and did not establish paired quoted-literal preservation; initial capitalization
+alone is permitted by the cleanup contract. Neither attempt closes M07-V001.
+
+Content-free stage hashes, paths/reasons, model/runtime/prompt identities and
+dispositions: `acceptance/M07/results.json` → `pre_m15_qualification_20260930`.
+Actual transcripts, audio, rejected proposals and owner images stay private.
+No production fix or model/prompt change was made. Stop at this blocker:
+M07-V002's reviewer and human adjudication, current M11 suite/benchmark and
+Polish/Concise measurements remain unperformed. GATE-G10 is open; M15 and M16
+are not started. Historical records and owner-polish closure remain unchanged.
+
+## Authorized M07-V001 narrow remediation (additive)
+
+Starting record `d43a326` remains intact. Trigger repair `aafedbe` admits
+standalone ambiguous markers only through the existing nearby parallel-value
+evidence guard; it changes no deletion, validation, prompt, model or sampling
+semantics. Fail-first positives fail at `00eabba` for the missing proposal pass;
+after repair the remediation suite is 40/40, engine suite passes, and isolated
+pipeline is 13/13. Six ordinary-prose admission controls gain zero model calls.
+
+Current Qwen correction measurement: 6/10 successful, including all three
+negative controls. Four correction cases remain unsuccessful. The new standalone
+markers reach the proposal pass, but both produce no deletion proposal; the
+standalone negative marker's cleanup candidate rejects and falls back intact.
+Owning fidelity is 58/60 (49 model-path passes, 9 fallback-rescued); LF-FID-012
+and LF-FID-016 reproduce on the pre-repair source with identical output and path.
+Literal fixtures are 20/20 (19 model-path, 1 fallback-rescued).
+
+M07-r2 clarifies the supported spoken literal escape and retains the prior
+inconclusive quote attempt; it does not change production quote handling.
+No new real-speech retry occurred because automated prerequisites are not green.
+State: `PRE_M15_BLOCKED_M07_V001_MODEL_BEHAVIOR`. Content-free per-case evidence:
+`acceptance/M07/results.json` → `pre_m15_v001_narrow_remediation`. No further
+prompt/model tuning, V002/M11 qualification, M15/M16, build, push or merge.
