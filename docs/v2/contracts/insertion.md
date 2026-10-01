@@ -225,6 +225,14 @@ pending, never a consumed partial),
 partial effect, `posted_unverified`), `unavailable`. A setter that
 reports failure with no change is `failed/ax_write_failed`.
 
+A readback other than `match` also records `readback_detail` in the
+verification JSON — content-free numbers and booleans only: `pre_total`,
+`total`, `n`, `extra_units` (growth beyond inserted minus replaced),
+`region_matches`, and `found_near_start` / `found_at_tail` (the text
+sits within 8 units of the owned range / at the field's end). It tells a
+surface that took the paste but reads back differently from one that
+never took it.
+
 **Transaction truth.** The insertion id is minted before the
 transaction and a phase ledger records publication, the post and the
 AX write. A fault after any of them keeps the same id, the real method

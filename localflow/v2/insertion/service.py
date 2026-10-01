@@ -115,6 +115,9 @@ _AX_WRITE_IGNORED_BUNDLES = frozenset({
 # as never landed (a dropped ⌘V) and the payload no longer blocks later
 # publications — the user's clipboard is restored while still ours.
 PENDING_PAYLOAD_SEC = 5.0
+# Units either side of the owned range searched for the text when a
+# readback did not attribute the insert (readback_detail).
+READBACK_DETAIL_MARGIN = 8
 
 # paste_again's reconciliation reads at most this many units of the
 # destination field (bounded so a pathological document cannot stall
@@ -758,7 +761,8 @@ class InsertionService:
         owned = facts["owned"]
         result = InsertionResult(
             state=state, reason_code=reason, method=METHOD_AX,
-            verification=lease.verification,
+            verification=self._verification_with_detail(
+                lease, el, pre, text, readback),
             owned_start=owned[0], owned_end=owned[1],
             inserted_chars=len(text), readback=readback or "unavailable",
             **common)
@@ -852,6 +856,31 @@ class InsertionService:
         if total == expected and region != pre["region"]:
             return "normalized"
         return "mismatch"
+
+    def _verification_with_detail(self, lease, el, pre, text, readback):
+        """The lease verification, plus — when a readback did not
+        attribute the insert — why: lengths, offsets and booleans only
+        (never any text), so a surface that lands the paste but reads
+        back differently can be told from one that never took it."""
+        if readback in (None, "match") or pre is None or el is None:
+            return lease.verification
+        total = self.host.number_of_characters(el)
+        if total is None:
+            return lease.verification
+        n, start = pre["n"], pre["start"]
+        near_lo = max(0, start - READBACK_DETAIL_MARGIN)
+        near_hi = min(total, start + n + READBACK_DETAIL_MARGIN)
+        tail_lo = max(0, total - n - READBACK_DETAIL_MARGIN)
+        near = (self.host.string_for_range(el, near_lo, near_hi - near_lo)
+                if near_hi > near_lo else "")
+        tail = (self.host.string_for_range(el, tail_lo, total - tail_lo)
+                if total > tail_lo else "")
+        return {**lease.verification, "readback_detail": {
+            "pre_total": pre["total"], "total": total, "n": n,
+            "extra_units": total - pre["total"] - (n - pre["replaced"]),
+            "region_matches": self._region(el, start, n, total) == text,
+            "found_near_start": near is not None and text in near,
+            "found_at_tail": tail is not None and text in tail}}
 
     def _outcome(self, lease, readback) -> tuple:
         if readback == "match":
@@ -1008,7 +1037,9 @@ class InsertionService:
         owned = facts["owned"]
         result = InsertionResult(
             state=state, reason_code=reason,
-            method=METHOD_CLIPBOARD, verification=lease.verification,
+            method=METHOD_CLIPBOARD,
+            verification=self._verification_with_detail(
+                lease, el, pre, text, readback),
             owned_start=owned[0], owned_end=owned[1],
             inserted_chars=len(text),
             readback=("mismatch" if readback == "unchanged"
