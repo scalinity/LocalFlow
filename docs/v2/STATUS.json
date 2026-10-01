@@ -4,17 +4,17 @@
   "current_state": {
     "as_of": "2026-09-30",
     "pre_m15_qualification": {
-      "state": "PRE_M15_BLOCKED_M07_V001",
-      "source_sha": "5da68360a0e5b1ea9303f799ea5c550db4f210fe",
+      "state": "PRE_M15_BLOCKED_M07_V001_MODEL_BEHAVIOR",
+      "source_sha": "aafedbe5eeb422fbcbb7117458fe2002275d3871",
       "branch": "pre-m15-qualification-closure-20260930",
-      "evidence": "docs/v2/acceptance/M07/results.json:pre_m15_qualification_20260930",
-      "M07_V001": "Real speech performed; long prompt used a byte-exact Normalized fallback after model fidelity rejections, with unresolved corrections; short attempt did not establish paired quoted-literal preservation. Not passed.",
+      "evidence": "docs/v2/acceptance/M07/results.json:pre_m15_v001_narrow_remediation (prior speech attempt retained as pre_m15_qualification_20260930)",
+      "M07_V001": "Narrow guarded trigger repair passes deterministic tests; focused current-model correction measurement is 6/10 and owning fidelity is 58/60, with both fidelity failures reproduced before repair. No new speech retry: automated prerequisites are not green. Prior real-speech failure/inconclusive literal attempt preserved; not passed.",
       "M07_V002": "Not started; private reviewer absent; zero human judgments",
       "M11": "Current suite, benchmark and Polish/Concise measurement not run; stopped at M07-V001",
       "GATE_G10": "OPEN",
       "M15": "NOT_STARTED",
       "M16": "NOT_STARTED",
-      "next": "Stop at this prerequisite. Resolve the M07-V001 qualification failure before resuming; no generalized tuning or unrelated qualification work. M14 and owner-polish remain closed."
+      "next": "Stop on current-model behavior before requesting another real-speech retry. The bounded trigger repair is complete; further model/prompt or semantics work is outside this authorization. M14 and owner-polish remain closed."
     },
     "store_schema_version": 13,
     "store_schema_source": "max(_MIGRATIONS) in localflow/v2/store.py",
@@ -38,7 +38,7 @@
       "docs/v2/companion/OWNER_POLISH_CLOSURE_20260930.md"
     ],
     "performance": "Current performance on this Mac is read from docs/v2/benchmarks/20260928-230400-xm-remediation-final-decisions (M14 curation, profile and export cost with the dictation-shaped writer probe; M09 Hub construction, publication and History search), measured after correctness on the final production code. Dictation end-to-end is not measured. The benchmark figures under historical_implementation are historical and describe the M14 implementation code.",
-    "may_run_next": "Pre-M15 qualification stopped at PRE_M15_BLOCKED_M07_V001: the real-speech trial did not pass. Resolve that prerequisite before resuming the private M07-V002 reviewer and current M11 qualification. M15 remains gated and is not started; M16 is not started. Quiet Editorial and owner-polish remain merged and closed. AI-powered Your Voice interpretation and installed-app rollout remain unauthorized.",
+    "may_run_next": "Pre-M15 qualification stopped at PRE_M15_BLOCKED_M07_V001_MODEL_BEHAVIOR. The narrow trigger repair is complete, but automated current-model prerequisites prevent the speech retry. Further model/prompt work requires an owner decision outside the bounded authorization. M07-V002 and M11 qualification remain unstarted; M15/M16 remain unstarted. Quiet Editorial and owner-polish remain merged and closed. AI-powered Your Voice interpretation and installed-app rollout remain unauthorized.",
     "pending_human": "docs/v2/VERIFICATION.html: the M01-M14 checks, including M07-V001 and M07-V002 (M07-V002 blocked: its private review tool does not exist)",
     "next_milestone": "M15 (not started)",
     "merge_commit": "ac77035005477bc7030ea0e3713be0f0408ff5c6",

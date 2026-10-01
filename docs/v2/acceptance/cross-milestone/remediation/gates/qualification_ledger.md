@@ -98,3 +98,27 @@ No production fix or model/prompt change was made. Stop at this blocker:
 M07-V002's reviewer and human adjudication, current M11 suite/benchmark and
 Polish/Concise measurements remain unperformed. GATE-G10 is open; M15 and M16
 are not started. Historical records and owner-polish closure remain unchanged.
+
+## Authorized M07-V001 narrow remediation (additive)
+
+Starting record `d43a326` remains intact. Trigger repair `aafedbe` admits
+standalone ambiguous markers only through the existing nearby parallel-value
+evidence guard; it changes no deletion, validation, prompt, model or sampling
+semantics. Fail-first positives fail at `00eabba` for the missing proposal pass;
+after repair the remediation suite is 40/40, engine suite passes, and isolated
+pipeline is 13/13. Six ordinary-prose admission controls gain zero model calls.
+
+Current Qwen correction measurement: 6/10 successful, including all three
+negative controls. Four correction cases remain unsuccessful. The new standalone
+markers reach the proposal pass, but both produce no deletion proposal; the
+standalone negative marker's cleanup candidate rejects and falls back intact.
+Owning fidelity is 58/60 (49 model-path passes, 9 fallback-rescued); LF-FID-012
+and LF-FID-016 reproduce on the pre-repair source with identical output and path.
+Literal fixtures are 20/20 (19 model-path, 1 fallback-rescued).
+
+M07-r2 clarifies the supported spoken literal escape and retains the prior
+inconclusive quote attempt; it does not change production quote handling.
+No new real-speech retry occurred because automated prerequisites are not green.
+State: `PRE_M15_BLOCKED_M07_V001_MODEL_BEHAVIOR`. Content-free per-case evidence:
+`acceptance/M07/results.json` → `pre_m15_v001_narrow_remediation`. No further
+prompt/model tuning, V002/M11 qualification, M15/M16, build, push or merge.
