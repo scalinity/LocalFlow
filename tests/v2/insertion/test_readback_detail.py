@@ -47,7 +47,7 @@ def _run(target):
 
 def test_extra_growth_is_recorded():
     result, verification = _run(TrailingNewlineTarget())
-    assert result.reason_code == "readback_mismatch", result.reason_code
+    assert result.reason_code == "readback_resized", result.reason_code
     detail = verification["readback_detail"]
     assert detail["region_matches"] is True, detail
     assert detail["extra_units"] == 1, detail

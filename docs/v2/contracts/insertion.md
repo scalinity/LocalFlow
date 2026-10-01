@@ -219,7 +219,10 @@ an early restore), `partial` (a changed proper prefix and a grown field
 field grew by exactly the inserted minus the replaced units and the
 owned region changed, but not to the text — the target consumed the
 paste and rewrote it, e.g. a newline or spaces normalized; restoring is
-safe, never confirmed), `mismatch` (a readback that did not change is
+safe, never confirmed), `resized` (the owned region changed to exactly
+the text but the field length is not the expected one — a composer
+clearing its placeholder; the paste demonstrably landed, so it is
+consumed and the clipboard restored, never confirmed), `mismatch` (a readback that did not change is
 pending, never a consumed partial),
 `changed` (an AX setter reported failure but the field changed — a
 partial effect, `posted_unverified`), `unavailable`. A setter that

@@ -100,7 +100,7 @@ READBACK_POLL_SEC = 0.05
 
 # Readbacks that show the destination consumed the paste (restoring the
 # user's clipboard is then safe).
-_CONSUMED = ("match", "partial", "normalized")
+_CONSUMED = ("match", "partial", "normalized", "resized")
 
 # Web-content fields that advertise AXSelectedText as settable and
 # acknowledge the setter without applying the edit: the Codex composer and
@@ -825,7 +825,10 @@ class InsertionService:
         text was already there), ``partial`` (a changed proper prefix —
         the target consumed part of it), ``normalized`` (the field grew
         by exactly the text's length but the region holds other text —
-        the target consumed the paste and rewrote it), ``mismatch``
+        the target consumed the paste and rewrote it), ``resized`` (the
+        owned region changed to exactly the text but the field length
+        is not the expected one — a composer clearing its placeholder),
+        ``mismatch``
         (anything else; ``unchanged`` is kept separately as pending) or
         None (unreadable)."""
         total = self.host.number_of_characters(el)
@@ -847,7 +850,7 @@ class InsertionService:
                             == (end, end) and pre["sel"] != (end, end):
                         return "match"
                 return "match_ambiguous"
-            return "match" if total == expected else "mismatch"
+            return "match" if total == expected else "resized"
         if not changed:
             return "unchanged"
         if total > pre["total"] and 0 < len(region) < len(text) \
@@ -1103,7 +1106,7 @@ class InsertionService:
             return None
         while True:
             cls = self._classify(el, pre, text)
-            if cls in ("match", "normalized") \
+            if cls in ("match", "normalized", "resized") \
                     or time.monotonic() >= deadline:
                 return cls
             self._sleep(READBACK_POLL_SEC)
