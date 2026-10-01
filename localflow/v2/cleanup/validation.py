@@ -602,16 +602,11 @@ def _align(source, output, ctx) -> tuple:
     src = _word_atoms(source)
     out_atoms = _word_atoms(output)
     out_words = [w for _, _, w in out_atoms]
-    out_set = {}
-    for i, w in enumerate(out_words):
-        out_set.setdefault(w, []).append(i)
     # Symbol-rendering quota: surplus symbol occurrences in the output.
     symbol_quota = {
         sym: output.count(sym) - source.count(sym)
         for sym in set(SPOKEN_SYMBOLS.values())}
-    missing = []
-    pairs = []
-    cursor = 0
+    pending = []             # unauthorized source words, in order
     prev_kept_word = None    # previous word outside any correction span
     prev_end = 0
     phrase_start = True      # at text start or after ; : . ! ? newline
@@ -651,19 +646,64 @@ def _align(source, output, ctx) -> tuple:
         if not in_correction:
             prev_kept_word = w
         if not authorized:
-            idxs = out_set.get(w)
-            pos = next((i for i in (idxs or []) if i >= cursor), None)
-            # Article adjustment before a vowel sound: "a rfc" → "an
-            # RFC" is grammar, not a deletion.
-            if pos is None and w in ("a", "an"):
-                alt = out_set.get("an" if w == "a" else "a")
-                pos = next((i for i in (alt or []) if i >= cursor), None)
-            if pos is None:
-                missing.append((start, end, w))
-                continue
-            pairs.append((idx, pos))
-            cursor = pos + 1
+            pending.append((idx, start, end, w))
+    missing, pairs = _match_in_order(pending, out_words)
     return missing, pairs, src, out_atoms
+
+
+_ARTICLES = ("a", "an")
+_MATCH_CELL_LIMIT = 1_000_000
+
+
+def _same_word(source_word, output_word) -> bool:
+    # Article adjustment before a vowel sound: "a rfc" → "an RFC" is
+    # grammar, not a deletion.
+    return source_word == output_word or (
+        source_word in _ARTICLES and output_word in _ARTICLES)
+
+
+def _match_in_order(pending, out_words) -> tuple:
+    """Match the unauthorized source words ``(idx, start, end, word)``
+    onto the output words in order, keeping as many as fit (longest
+    common subsequence) and taking each at its earliest position among
+    the best matches. A word with no place is missing. A greedy forward
+    match bound a deleted occurrence of a repeated word to a later one and
+    skipped the cursor past everything between, counting those words
+    missing too."""
+    n, m = len(pending), len(out_words)
+    missing, pairs = [], []
+    if n * m > _MATCH_CELL_LIMIT:       # pathological size: plain scan
+        j = 0
+        for idx, start, end, w in pending:
+            k = next((k for k in range(j, m)
+                      if _same_word(w, out_words[k])), None)
+            if k is None:
+                missing.append((start, end, w))
+            else:
+                pairs.append((idx, k))
+                j = k + 1
+        return missing, pairs
+    # best[i][j]: how many of pending[i:] fit in order into out_words[j:].
+    best = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(n - 1, -1, -1):
+        w = pending[i][3]
+        row, below = best[i], best[i + 1]
+        for j in range(m - 1, -1, -1):
+            row[j] = max(below[j], row[j + 1],
+                         below[j + 1] + 1
+                         if _same_word(w, out_words[j]) else 0)
+    j = 0
+    for i, (idx, start, end, w) in enumerate(pending):
+        target = best[i][j] - 1
+        k = next((k for k in range(j, m)
+                  if _same_word(w, out_words[k])
+                  and best[i + 1][k + 1] == target), None)
+        if k is None:
+            missing.append((start, end, w))
+        else:
+            pairs.append((idx, k))
+            j = k + 1
+    return missing, pairs
 
 
 def _component_coverage(source, output, ctx, aligned) -> Component:
