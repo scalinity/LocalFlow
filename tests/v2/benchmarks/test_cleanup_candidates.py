@@ -299,15 +299,14 @@ class Contracts(unittest.TestCase):
     def test_production_default_unchanged(self):
         import subprocess
         for path in ("localflow/config.py", "localflow/v2/cleanup/model.py", "localflow/v2/cleanup/engine.py", "localflow/v2/cleanup/validation.py"):
-            # Integration preserves the authorized M07 engine repair and the
-            # coverage-alignment validator repair (benchmarks run on it, none
-            # had run before it); M15-A still changes no production defaults
-            # or model.
-            revision = ("8c08b82f15e75e83fb06bcd5aa2e102c50761903"
-                        if path.endswith("/engine.py") else
-                        "8aad066378f0423f00df329548246453ad0f4d8b"
-                        if path.endswith("/validation.py") else
-                        "5da68360a0e5b1ea9303f799ea5c550db4f210fe")
+            # Integration preserves the authorized M07 engine repair, the
+            # coverage-alignment validator repair and the coverage-salvage
+            # repair of the engine and validator (benchmarks run on them,
+            # none had run before); M15-A still changes no production
+            # defaults or model.
+            revision = ("0441d15dbdc0eb28b7b1a49255c5e914883dfa3f"
+                        if path.endswith(("/engine.py", "/validation.py"))
+                        else "5da68360a0e5b1ea9303f799ea5c550db4f210fe")
             original = subprocess.check_output(["git", "show", revision + ":" + path], cwd=ROOT)
             self.assertEqual((ROOT / path).read_bytes(), original)
     def test_atomic_checkpoint_no_partial(self):
