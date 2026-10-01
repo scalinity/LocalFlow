@@ -92,10 +92,13 @@ See [M15-CORPUS-FREEZE.md](../benchmarks/M15-CORPUS-FREEZE.md) and
 [m15-corpus-freeze-preparation.json](../benchmarks/m15-corpus-freeze-preparation.json).
 Private evidence is under the established v2-evidence integration folder.
 
-16 retained WAV files: prior 11 plus five live-log files. Thirteen identical-
-sample families; further related copies require review. Four all-zero files
+27 retained WAV files: prior 11 plus five live-log files and 11 live-store
+artifacts. Twenty-four sample-distinct families; further related copies require
+review. Read-only live-store counts show zero correction labels and preference
+observations, ten captured-unreviewed examples and one excluded example. The
+existing excluded audio stays excluded; it is not reauthorized by this queue. Four all-zero files
 represent one sample-identical family, with no approved negative reference.
-Confirmed eligible human: 0; adjudicated: 0; unverified audio: 16; confirmed
+Confirmed eligible human: 0; adjudicated: 0; unverified audio: 27; confirmed
 synthetic: 0; approved negatives: 0. Those zeros are confirmed eligibility
 counts, not claims about actual origin. No microphone was used.
 
@@ -107,9 +110,10 @@ truth. Family/origin/exposure checks and substitution of unsuitable cases
 precede the 30/10/20 lock. There are zero existing confirmed reusable M07 cases;
 60 remain missing. No held-out set is falsely declared frozen.
 
-One private queue has 76 items: 16 audio items and 60 legacy items. Additional
+One private queue has 87 items: 27 audio items and 60 legacy items. Of these,
+86 require owner adjudication; one live-store item is already excluded. Additional
 recordings are deferred until review. Verified speech deficit is 140 (60 short /
-80 diverse), negatives deficit 20; conditional residual estimate is 147–160,
+80 diverse), negatives deficit 20; conditional residual estimate is 137–160,
 subject to actual distinct-case/family/stratum eligibility. No recording is
 commissioned. Text-only legacy cases can satisfy M07 plus M15 Track A once
 adjudicated; they cannot fill M15 speech or Track B coverage. References are
