@@ -14,9 +14,12 @@ and `OWNER-REVIEW.md`. Nothing in those files is public evidence.
 The content-free preparation counts are in `m15-corpus-freeze-preparation.json`.
 
 Inventory coverage: the prior 11 evidence-root WAVs plus five live audio-log
-WAVs, 16 total. All 16 need origin/reference/retention review. There are 13
-sample-identical families; distinct sample hashes do not prove distinct speech
-families. Four files have all-zero samples, grouped as one identical family;
+WAVs and 11 live-store artifact WAVs, 27 total. Twenty-six audio items need
+origin/reference/retention review; one live-store item remains excluded by its
+existing store state. Read-only store counts show zero correction labels and
+preference observations (ten unreviewed examples, one excluded). There are 24
+sample-distinct families, 23 without the excluded item; distinct sample hashes
+do not prove distinct speech families. Four files have all-zero samples, grouped as one identical family;
 that proves silence bytes, not owner approval as benchmark negatives.
 All are 16 kHz mono; both float32 and PCM16 appear. Keep original bytes;
 never relabel a PCM derivative as the original float capture. No audio is copied
@@ -52,9 +55,9 @@ missing counts are therefore 60 M07 real-text cases, 140 speech cases and
 After review, additional speech = `max(0,60-eligible_short)` +
 `max(0,80-eligible_diverse)`; additional negatives = `max(0,20-eligible_negatives)`.
 Do not count the same case twice, synthetic speech as human, an audio copy as a
-new case, or text-only cases as speech. The retained files offer at most 13
-sample-distinct candidates before family review; the conditional recording
-estimate is 147–160 total, with **zero recordings commissioned**. This lower
+new case, or text-only cases as speech. The retained files offer at most 23
+unexcluded sample-distinct candidates before family review; the conditional recording
+estimate is 137–160 total, with **zero recordings commissioned**. This lower
 bound is potential reuse, not confirmed eligibility. Other valid existing
 material may reduce the estimate only after inventory and review.
 
