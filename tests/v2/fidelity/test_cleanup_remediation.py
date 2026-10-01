@@ -25,6 +25,8 @@ from localflow.v2.cleanup import (  # noqa: E402
     protected_spans_for_cleanup,
 )
 from localflow.v2.cleanup.engine import (  # noqa: E402
+    CORRECTION_MARKER_RE,
+    _has_correction_marker,
     _halve_at_sentence,
     parse_correction_output,
 )
@@ -773,6 +775,59 @@ def test_r12_split_retry_counts_and_incomplete_flag():
     assert res2.text == text.replace("monday no wait ", "").strip()
     assert res2.incomplete and res2.termination["kind"] == "output_limit", \
         (res2.fallback_reason, res2.incomplete)
+
+
+def test_prem15_single_sorry_trigger():
+    # Inputs here are post-M04 normalization, so numeric values are digits.
+    calls = []
+    res = clean("Set the timeout to 30 sorry 45 seconds.",
+                make_gen(corrections="30 sorry", log=calls))
+    assert sum(k == "corrections" for k, _ in calls) == 1, \
+        "supported single sorry marker did not reach the proposal pass"
+    assert res.path == "llm" and res.text == "Set the timeout to 45 seconds."
+    assert res.corrections["applied"] == 1
+
+
+def test_prem15_single_no_trigger():
+    # Different names alone are not parallel under the existing guard;
+    # weekdays exercise the already-supported unambiguous replacement form.
+    calls = []
+    res = clean("Send it Thursday no Friday.",
+                make_gen(corrections="Thursday no", log=calls))
+    assert sum(k == "corrections" for k, _ in calls) == 1, \
+        "supported single no marker did not reach the proposal pass"
+    assert res.path == "llm" and res.text == "Send it Friday."
+    assert res.corrections["applied"] == 1
+
+
+def test_prem15_single_marker_negative_controls():
+    for source, proposal, admitted in [
+            ("No we cannot ship today.", "No", 0),
+            ("Sorry to ask again but send the report.", "Sorry", 0),
+            ("We actually shipped yesterday.", "We actually", 1)]:
+        calls = []
+        res = clean(source, make_gen(corrections=proposal, log=calls))
+        assert sum(k == "corrections" for k, _ in calls) == admitted
+        assert res.path == "llm" and res.text == source
+        assert res.corrections["applied"] == 0
+
+
+def test_prem15_bounded_admission_and_rollback():
+    positives = ["Timeout 30 sorry 45 seconds.", "Meet Thursday no Friday.",
+                 "We expect 6 reviewers sorry 8 reviewers."]
+    negatives = ["No we cannot ship today.",
+                 "Sorry to ask again but send the report.",
+                 "There is no deadline.", "The answer is no.",
+                 "I am sorry about the delay.", "There are no open tasks."]
+    assert sum(bool(CORRECTION_MARKER_RE.search(s)) for s in positives) == 0
+    assert all(_has_correction_marker(s) for s in positives)
+    assert not any(_has_correction_marker(s) for s in negatives)
+    source = positives[0]
+    res = clean(source, make_gen(corrections="30 sorry",
+                                main=lambda p: "Timeout 450 seconds."))
+    assert res.text == source and res.path == "llm_fallback_normalized"
+    assert res.corrections["applied"] == 0
+    assert res.corrections["rolled_back"] == 1
 
 
 TESTS = [v for k, v in sorted(globals().items())

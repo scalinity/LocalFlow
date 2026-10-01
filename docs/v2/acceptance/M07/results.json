@@ -176,5 +176,499 @@
     ],
     "human_verification": "native-m07-long-prompt-cleanup-trial and the adjudicated real-text stratum remain pending — not performed"
   },
-  "privacy": "Nothing private entered Git: fixtures are synthetic (origin-tagged); the envelope's cleanup.v2 block is content-free (ids/counts/statuses/ranges); prompts, proposals, protected texts and vocabulary terms live exclusively in lease-governed store artifacts (cleanup_input_*/cleanup_proposal/cleanup_rejected_proposal/cleanup_context) under the training buffer lease; the benchmark JSON carries latencies, counts and fixture ids only; the baseline-manifest privacy scan passes over every new path."
+  "privacy": "Nothing private entered Git: fixtures are synthetic (origin-tagged); the envelope's cleanup.v2 block is content-free (ids/counts/statuses/ranges); prompts, proposals, protected texts and vocabulary terms live exclusively in lease-governed store artifacts (cleanup_input_*/cleanup_proposal/cleanup_rejected_proposal/cleanup_context) under the training buffer lease; the benchmark JSON carries latencies, counts and fixture ids only; the baseline-manifest privacy scan passes over every new path.",
+  "pre_m15_qualification_20260930": {
+    "state": "PRE_M15_BLOCKED_M07_V001",
+    "owner_local_date": "2026-09-30",
+    "observed_utc": "2026-10-01T02:54:46.163Z",
+    "source_sha": "5da68360a0e5b1ea9303f799ea5c550db4f210fe",
+    "qualification_branch": "pre-m15-qualification-closure-20260930",
+    "source_bundle": {
+      "sha": "b096d5636c6a02e3db0d7f451a04133c51209d19",
+      "current_source_files_compared": 116,
+      "mismatches": 0
+    },
+    "model_identity": {
+      "asr": {
+        "model_id": "mlx-community/parakeet-tdt-0.6b-v3",
+        "revision": "ed2b7e8c15f9aaa0b5772e2efb986255eaef7e15",
+        "provenance": "captured recognition envelope"
+      },
+      "cleanup": {
+        "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+        "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+        "provenance": "captured generation model id and sole offline cached snapshot/ref"
+      },
+      "runtime": {
+        "mlx": "0.31.2",
+        "mlx-lm": "0.31.3",
+        "numpy": "2.4.6",
+        "parakeet-mlx": "0.5.2",
+        "python": "3.14.7",
+        "sounddevice": "0.5.5",
+        "transformers": "5.10.4"
+      }
+    },
+    "cases": [
+      {
+        "case_id": "M07-V001-A",
+        "performed_by": "Daniel",
+        "assessment_by": "agent_from_owner_supplied_screenshots_and_private_metadata",
+        "stage_hashes": {
+          "source": "c1cf19f3293ac4c45d0feb8d539fb23c7681c80fccaeb357967fc5027292e5e8",
+          "normalized": "b26a8d9379be2694c01aa6a37e66c4a47f148886c5fd796bdc5ff761dfef7a9b",
+          "cleaned": "b26a8d9379be2694c01aa6a37e66c4a47f148886c5fd796bdc5ff761dfef7a9b"
+        },
+        "lineage": "Source, Normalized and Cleaned retained",
+        "cleanup_path": "llm_fallback_normalized",
+        "fallback_reason": "validation_rejected:coverage,negation_coverage,novelty;validation_rejected:coverage,numeric_values,negation_coverage,novelty",
+        "prompt_revision": "m07:c7d4547a4246",
+        "template_revision": "tmpl:c5f099f02e34",
+        "corrections_prompt_revision": "m07c:8c186a9e9fb9",
+        "window_count": 2,
+        "output_limit_hits": 0,
+        "correction_pass_count": 0,
+        "corrections_applied": 0,
+        "result": {
+          "disposition": "NEEDS_FOLLOW_UP",
+          "prompt_not_executed_in_applied_output": true,
+          "constraints_retained": true,
+          "list_items_retained": 4,
+          "sign_off_retained": true,
+          "no_invented_requirement_in_applied_output": true,
+          "self_corrections_resolved": false,
+          "applied_equals_normalized": true,
+          "model_candidates_rejected": 2,
+          "failed_component_union": [
+            "coverage",
+            "numeric_values",
+            "negation_coverage",
+            "novelty"
+          ]
+        }
+      },
+      {
+        "case_id": "M07-V001-B",
+        "performed_by": "Daniel",
+        "assessment_by": "agent_from_owner_supplied_screenshots_and_private_metadata",
+        "stage_hashes": {
+          "source": "b855ea2cc0467ca9f7d47e6e4f63a5344d9721868c6390ac2777572a66125c97",
+          "normalized": "99d6a26883d2d2280628f24608c8b11f21079e5e93e1096c87528bfd7bafbcc9",
+          "cleaned": "5a881fc7795f810ee3e9ceb4b73899a7afca3785234aa666fc37d293ff2a3ff6"
+        },
+        "lineage": "Source, Normalized and Cleaned retained",
+        "cleanup_path": "llm",
+        "fallback_reason": null,
+        "prompt_revision": "m07:c7d4547a4246",
+        "template_revision": "tmpl:c5f099f02e34",
+        "corrections_prompt_revision": "m07c:8c186a9e9fb9",
+        "window_count": 1,
+        "output_limit_hits": 0,
+        "correction_pass_count": 0,
+        "corrections_applied": 0,
+        "result": {
+          "disposition": "INSUFFICIENT_EXACT_LITERAL_PROOF",
+          "paired_quote_in_source": false,
+          "normalization_literal_escape": true,
+          "initial_capitalization_permitted_by_cleanup_contract": true,
+          "exact_literal_gate_passed": false
+        }
+      }
+    ],
+    "classification": {
+      "long_prompt": "Fail-safe model-candidate fidelity rejections; applied normalized fallback retains source but does not satisfy successful cleanup/correction qualification",
+      "correction_trigger": "Bare no supported by correction-span guards but absent from CORRECTION_MARKER_RE; zero proposal passes observed",
+      "literal": "Attempt exercised literal escape; paired quoted literal not established; capitalization alone is permitted by contract"
+    },
+    "remaining": {
+      "M07_V002": "NOT_STARTED_REVIEW_TOOL_ABSENT",
+      "human_real_text_judgments": 0,
+      "M11": "NOT_RUN_IN_THIS_SESSION",
+      "GATE_G10": "OPEN",
+      "M15": "NOT_STARTED",
+      "M16": "NOT_STARTED"
+    },
+    "fixes": [],
+    "tests_added": [],
+    "production_changes": [],
+    "privacy": {
+      "transcript_text_committed": false,
+      "agent_initiated_private_payload_uploads": false,
+      "owner_supplied_screenshots_in_chat": true,
+      "private_evidence_root": "~/Library/Application Support/LocalFlow/v2-evidence/pre-m15-qualification-20260930/",
+      "repository_evidence": "Only stage hashes, counts, model/runtime/prompt identities, reason codes and content-free dispositions"
+    },
+    "stop_reason": "Required M07-V001 trial did not qualify the current cleanup control; stop at this blocker under owner instructions. No unrelated work or generalized prompt tuning."
+  },
+  "pre_m15_v001_narrow_remediation": {
+    "state": "PRE_M15_BLOCKED_M07_V001_MODEL_BEHAVIOR",
+    "starting_sha": "d43a326d87387192c609ff00ef127ac18db14757",
+    "fail_first_commit": "00eabba",
+    "production_repair_commit": "aafedbe5eeb422fbcbb7117458fe2002275d3871",
+    "runbook_commit": "32f983dd6f627434b7a0869d072ebcd7fe4ae111",
+    "main_sha": "5da68360a0e5b1ea9303f799ea5c550db4f210fe",
+    "source_file_sha256": "ebc1e8fe8257ce19c13247106c69ed69f3ad37afc1c1cfc5a50588ee4f12f211",
+    "mismatch_confirmed": true,
+    "fail_first": {
+      "suite_total": 39,
+      "passed": 37,
+      "failed": [
+        "test_prem15_single_no_trigger",
+        "test_prem15_single_sorry_trigger"
+      ],
+      "reason": "Supported marker did not reach correction proposal pass",
+      "negative_controls": "PASS"
+    },
+    "production_files_changed": [
+      "localflow/v2/cleanup/engine.py"
+    ],
+    "trigger_strategy": "Retain existing direct triggers; standalone no/sorry require an existing _evidence_reason-approved nearby parallel value span. No text is deleted by admission; proposal parser, protection, offsets, guards, validation and rollback unchanged.",
+    "tests": {
+      "remediation": {
+        "passed": 40,
+        "total": 40
+      },
+      "engine": "PASS (18 ok lines)",
+      "pipeline": {
+        "result": "PASS",
+        "checks": 13,
+        "desktop_isolated": true,
+        "system_ax_reads_blocked": 0,
+        "trust_queries_blocked": 14,
+        "event_posts_blocked": 0,
+        "pasteboard_redirects": 9
+      },
+      "fidelity": {
+        "passed": 58,
+        "total": 60,
+        "fallback_rescued": 9,
+        "model_path_passes": 49,
+        "fallback_jobs": 9,
+        "failures": [
+          {
+            "case_id": "LF-FID-012",
+            "path": "llm",
+            "errors": [
+              "forbidden present: 'tuesday'"
+            ]
+          },
+          {
+            "case_id": "LF-FID-016",
+            "path": "llm",
+            "errors": [
+              "missing ['?']"
+            ]
+          }
+        ]
+      },
+      "inherited_failure_recheck": {
+        "source": "00eabba (pre-production-repair)",
+        "passed": 14,
+        "total": 16,
+        "failures": [
+          "LF-FID-012",
+          "LF-FID-016"
+        ],
+        "outputs_and_paths_identical_to_post_repair": true,
+        "interpretation": "Adjacent correction and question-punctuation failures reproduce before the repair"
+      },
+      "literal": {
+        "passed": 20,
+        "total": 20,
+        "model_path_passes": 19,
+        "fallback_rescued": 1
+      }
+    },
+    "correction_model": {
+      "model_id": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+      "template_revision": "tmpl:c5f099f02e34",
+      "prompt_revision": "m07:c7d4547a4246",
+      "corrections_prompt_revision": "m07c:8c186a9e9fb9",
+      "runtime": {
+        "python": "3.14.7",
+        "mlx": "0.31.2",
+        "mlx-lm": "0.31.3",
+        "parakeet-mlx": "0.5.2",
+        "transformers": "5.10.4",
+        "numpy": "2.4.6",
+        "sounddevice": "0.5.5"
+      },
+      "cases": [
+        {
+          "case_id": "NO-WAIT",
+          "origin": "synthetic",
+          "successful": false,
+          "trigger_before": true,
+          "trigger_after": true,
+          "correction_passes": 1,
+          "proposal_lines": 0,
+          "proposals": [],
+          "corrections": {
+            "applied": 0,
+            "proposed": 0,
+            "rolled_back": 0,
+            "rejected": 0,
+            "rejected_reasons": [],
+            "applied_span_count": 0
+          },
+          "cleanup_path": "llm",
+          "fallback_reason": null,
+          "failed_components": [],
+          "duration_ms": 1535.11
+        },
+        {
+          "case_id": "NO-SORRY",
+          "origin": "synthetic",
+          "successful": true,
+          "trigger_before": true,
+          "trigger_after": true,
+          "correction_passes": 1,
+          "proposal_lines": 1,
+          "proposals": [
+            {
+              "status": "selected",
+              "reason": null
+            }
+          ],
+          "corrections": {
+            "applied": 1,
+            "proposed": 1,
+            "rolled_back": 0,
+            "rejected": 0,
+            "rejected_reasons": [],
+            "applied_span_count": 1
+          },
+          "cleanup_path": "llm",
+          "fallback_reason": null,
+          "failed_components": [],
+          "duration_ms": 1507.91
+        },
+        {
+          "case_id": "ACTUALLY",
+          "origin": "synthetic",
+          "successful": false,
+          "trigger_before": true,
+          "trigger_after": true,
+          "correction_passes": 1,
+          "proposal_lines": 0,
+          "proposals": [],
+          "corrections": {
+            "applied": 0,
+            "proposed": 0,
+            "rolled_back": 0,
+            "rejected": 0,
+            "rejected_reasons": [],
+            "applied_span_count": 0
+          },
+          "cleanup_path": "llm",
+          "fallback_reason": null,
+          "failed_components": [],
+          "duration_ms": 1498.48
+        },
+        {
+          "case_id": "I-MEAN",
+          "origin": "synthetic",
+          "successful": true,
+          "trigger_before": true,
+          "trigger_after": true,
+          "correction_passes": 1,
+          "proposal_lines": 1,
+          "proposals": [
+            {
+              "status": "selected",
+              "reason": null
+            }
+          ],
+          "corrections": {
+            "applied": 1,
+            "proposed": 1,
+            "rolled_back": 0,
+            "rejected": 0,
+            "rejected_reasons": [],
+            "applied_span_count": 1
+          },
+          "cleanup_path": "llm",
+          "fallback_reason": null,
+          "failed_components": [],
+          "duration_ms": 1523.13
+        },
+        {
+          "case_id": "SINGLE-ACTUALLY",
+          "origin": "synthetic",
+          "successful": true,
+          "trigger_before": true,
+          "trigger_after": true,
+          "correction_passes": 1,
+          "proposal_lines": 1,
+          "proposals": [
+            {
+              "status": "selected",
+              "reason": null
+            }
+          ],
+          "corrections": {
+            "applied": 1,
+            "proposed": 1,
+            "rolled_back": 0,
+            "rejected": 0,
+            "rejected_reasons": [],
+            "applied_span_count": 1
+          },
+          "cleanup_path": "llm",
+          "fallback_reason": null,
+          "failed_components": [],
+          "duration_ms": 1492.34
+        },
+        {
+          "case_id": "SINGLE-SORRY",
+          "origin": "synthetic",
+          "successful": false,
+          "trigger_before": false,
+          "trigger_after": true,
+          "correction_passes": 1,
+          "proposal_lines": 0,
+          "proposals": [],
+          "corrections": {
+            "applied": 0,
+            "proposed": 0,
+            "rolled_back": 0,
+            "rejected": 0,
+            "rejected_reasons": [],
+            "applied_span_count": 0
+          },
+          "cleanup_path": "llm",
+          "fallback_reason": null,
+          "failed_components": [],
+          "duration_ms": 1573.59
+        },
+        {
+          "case_id": "SINGLE-NO",
+          "origin": "synthetic",
+          "successful": false,
+          "trigger_before": false,
+          "trigger_after": true,
+          "correction_passes": 1,
+          "proposal_lines": 0,
+          "proposals": [],
+          "corrections": {
+            "applied": 0,
+            "proposed": 0,
+            "rolled_back": 0,
+            "rejected": 0,
+            "rejected_reasons": [],
+            "applied_span_count": 0
+          },
+          "cleanup_path": "llm_fallback_normalized",
+          "fallback_reason": "validation_rejected:coverage,negation_coverage,novelty",
+          "failed_components": [
+            "coverage",
+            "negation_coverage",
+            "novelty"
+          ],
+          "duration_ms": 1498.43
+        },
+        {
+          "case_id": "NEGATIVE-NO",
+          "origin": "synthetic",
+          "successful": true,
+          "trigger_before": false,
+          "trigger_after": false,
+          "correction_passes": 0,
+          "proposal_lines": 0,
+          "proposals": [],
+          "corrections": {
+            "applied": 0,
+            "proposed": 0,
+            "rolled_back": 0,
+            "rejected": 0,
+            "rejected_reasons": [],
+            "applied_span_count": 0
+          },
+          "cleanup_path": "llm",
+          "fallback_reason": null,
+          "failed_components": [],
+          "duration_ms": 1230.35
+        },
+        {
+          "case_id": "NEGATIVE-SORRY",
+          "origin": "synthetic",
+          "successful": true,
+          "trigger_before": false,
+          "trigger_after": false,
+          "correction_passes": 0,
+          "proposal_lines": 0,
+          "proposals": [],
+          "corrections": {
+            "applied": 0,
+            "proposed": 0,
+            "rolled_back": 0,
+            "rejected": 0,
+            "rejected_reasons": [],
+            "applied_span_count": 0
+          },
+          "cleanup_path": "llm",
+          "fallback_reason": null,
+          "failed_components": [],
+          "duration_ms": 1295.1
+        },
+        {
+          "case_id": "NEGATIVE-ACTUALLY",
+          "origin": "synthetic",
+          "successful": true,
+          "trigger_before": true,
+          "trigger_after": true,
+          "correction_passes": 1,
+          "proposal_lines": 0,
+          "proposals": [],
+          "corrections": {
+            "applied": 0,
+            "proposed": 0,
+            "rolled_back": 0,
+            "rejected": 0,
+            "rejected_reasons": [],
+            "applied_span_count": 0
+          },
+          "cleanup_path": "llm",
+          "fallback_reason": null,
+          "failed_components": [],
+          "duration_ms": 1461.14
+        }
+      ],
+      "successful": 6,
+      "total": 10,
+      "admissions_before": 6,
+      "admissions_after": 8,
+      "new_false_admissions": 0,
+      "admission_corpus_median_ms": 0.01752050593495369
+    },
+    "model_revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+    "model_revision_provenance": "unchanged sole cached Qwen snapshot/ref; runs offline",
+    "bounded_admission_sanity": {
+      "synthetic_positives": 3,
+      "ordinary_no_sorry_negatives": 6,
+      "before_positive_admissions": 0,
+      "after_positive_admissions": 3,
+      "false_admissions": 0,
+      "negative_actually_admission": "unchanged; proposal NONE and no deletion",
+      "incremental_model_latency": "Not separately measured; focused new-marker calls total about 1.5 seconds each. Trigger check median for ten-case corpus is reported separately; intended extra proposal pass is not prose overhead."
+    },
+    "literal_procedure": "M07-r2 uses the supported literal escape, verifies marker removal and literal_escape protection, and permits existing initial capitalization. Paired quote fixtures stay separate. Earlier inconclusive speech result preserved.",
+    "live_retry": {
+      "A": "NOT_PERFORMED_AUTOMATED_PREREQUISITES_FAILED",
+      "B": "NOT_PERFORMED_AUTOMATED_PREREQUISITES_FAILED",
+      "automated_prerequisites": "NOT_GREEN"
+    },
+    "remaining": {
+      "M07_V002": "NOT_STARTED",
+      "M11": "NOT_STARTED",
+      "M15": "NOT_STARTED",
+      "M16": "NOT_STARTED"
+    },
+    "privacy": {
+      "all_new_test_inputs": "synthetic",
+      "private_transcript_text_committed": false,
+      "agent_initiated_private_payload_transmission": false
+    },
+    "decision": "Bounded trigger defect repaired; automated current-control model failures prevent the authorized speech retry. Stop without prompt/model tuning, validation weakening, V002/M11 work, build, push or merge."
+  }
 }

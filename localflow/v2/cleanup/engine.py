@@ -37,9 +37,8 @@ WINDOW_MAX_WORDS = 200
 # Correction-span guards shared with V1 semantics: a valid deletion
 # ends with the correction marker, is short, and never a bare marker.
 SPAN_MAX_WORDS = 6
-# The proposal pass runs when any marker the proposal format supports is
-# present — standalone "actually" included; whether a given "actually"
-# is a correction or emphasis is decided by the proposal guards below.
+# Existing direct triggers, including standalone "actually". Ambiguous
+# "no"/"sorry" admission additionally reuses the evidence guards below.
 CORRECTION_MARKER_RE = re.compile(
     r"\b(no wait|no sorry|no actually|actually no|wait no|i mean|"
     r"no espera|espera no|digo|scratch that|scratch|actually)\b",
@@ -585,6 +584,20 @@ def parse_correction_output(output: str, window_text: str,
     return accepted, rejected
 
 
+def _has_correction_marker(text: str) -> bool:
+    if CORRECTION_MARKER_RE.search(text):
+        return True
+    # Admit only shapes an existing single-word evidence guard could
+    # accept. This proposes no deletion; model spans still pass every
+    # parser/protection guard and the complete candidate validator.
+    for marker in re.finditer(r"\b(?:sorry|no)\b", text, re.IGNORECASE):
+        preceding = list(re.finditer(r"\S+", text[:marker.start()]))
+        for word in reversed(preceding[-(SPAN_MAX_WORDS - 1):]):
+            if _evidence_reason(text, (word.start(), marker.end())) is None:
+                return True
+    return False
+
+
 def apply_corrections(window_text: str,
                       accepted: list[tuple[tuple[int, int], str]]) -> str:
     out = window_text
@@ -806,7 +819,7 @@ class CleanupEngine:
         final — the window's validation against the ORIGINAL text
         settles each proposal as selected or rolled back."""
         text = window.text
-        if not CORRECTION_MARKER_RE.search(text):
+        if not _has_correction_marker(text):
             return text, [], None
         res, rec = self._generate(
             payload_base, kind="corrections",
