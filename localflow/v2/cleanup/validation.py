@@ -1086,6 +1086,69 @@ def _structure(source, output) -> Component:
     return Component("structure", DETERMINISTIC, "pass", detail)
 
 
+def _auth_context(source, output, vocabulary_pairs, continued_list_start,
+                  correction_spans, protected_positions) -> "_AuthCtx":
+    pairs = tuple(vocabulary_pairs or ())
+    # Number-word→digit representation changes are authorized when the
+    # value survives in the output ("thirty percent" → "30%").
+    output_values = _numeric_values_in(output)
+    numeric_spans = [
+        (s, e) for s, e, v in _numeric_phrase_spans(source)
+        if v in output_values]
+    enum_spans = _enum_spans_when_list_rendered(
+        source, output, correction_spans or ())
+    vocab_spans, allowance = _vocabulary_authorizations(
+        source, output, pairs)
+    return _AuthCtx(correction_spans=list(correction_spans or []),
+                    protected_positions=[tuple(p[:2]) for p in
+                                         protected_positions or []],
+                    numeric_spans=numeric_spans,
+                    enum_spans=enum_spans,
+                    vocab_spans=vocab_spans, vocab_allowance=allowance,
+                    continued_list_start=continued_list_start)
+
+
+def restore_missing_words(source: str, output: str, *,
+                          vocabulary_pairs: tuple | None = None,
+                          continued_list_start: int | None = None,
+                          correction_spans: list | None = None,
+                          protected_positions: list | None = None
+                          ) -> tuple | None:
+    """Put back, verbatim from ``source``, the words ``output`` dropped
+    without authorization: ``(repaired text, words restored)``, or None
+    when nothing is missing. Each run of dropped source words goes right
+    after the output word that the source word before it matched (at the
+    start when none did). The result is a candidate, not a verdict — the
+    caller validates it again in full."""
+    ctx = _auth_context(source, output, vocabulary_pairs,
+                        continued_list_start, correction_spans,
+                        protected_positions)
+    missing, pairs, src_atoms, out_atoms = _align(source, output, ctx)
+    if not missing:
+        return None
+    gone = {m[0] for m in missing}
+    out_end_of = {si: out_atoms[oi][1] for si, oi in pairs}
+    inserts = {}                      # output offset -> source text runs
+    run = []
+    after = 0                         # offset after the last matched word
+    for si, (start, end, _w) in enumerate(src_atoms):
+        if start in gone:
+            run.append((start, end))
+            continue
+        if run:
+            inserts.setdefault(after, []).append(
+                source[run[0][0]:run[-1][1]])
+            run = []
+        after = out_end_of.get(si, after)
+    if run:
+        inserts.setdefault(after, []).append(source[run[0][0]:run[-1][1]])
+    text = output
+    for offset in sorted(inserts, reverse=True):
+        text = (text[:offset] + " " + " ".join(inserts[offset])
+                + text[offset:])
+    return text, len(missing)
+
+
 def validate(source: str, output: str, *,
              protected: list | None = None,
              vocabulary_pairs: tuple | None = None,
@@ -1101,24 +1164,9 @@ def validate(source: str, output: str, *,
     ``(start, end)`` source occurrences, whose words are never
     authorized away (filler, stutter, interjector), so the designated
     occurrence — not merely an equal text elsewhere — must survive."""
-    pairs = tuple(vocabulary_pairs or ())
-    # Number-word→digit representation changes are authorized when the
-    # value survives in the output ("thirty percent" → "30%").
-    output_values = _numeric_values_in(output)
-    numeric_spans = [
-        (s, e) for s, e, v in _numeric_phrase_spans(source)
-        if v in output_values]
-    enum_spans = _enum_spans_when_list_rendered(
-        source, output, correction_spans or ())
-    vocab_spans, allowance = _vocabulary_authorizations(
-        source, output, pairs)
-    ctx = _AuthCtx(correction_spans=list(correction_spans or []),
-                   protected_positions=[tuple(p[:2]) for p in
-                                        protected_positions or []],
-                   numeric_spans=numeric_spans,
-                   enum_spans=enum_spans,
-                   vocab_spans=vocab_spans, vocab_allowance=allowance,
-                   continued_list_start=continued_list_start)
+    ctx = _auth_context(source, output, vocabulary_pairs,
+                        continued_list_start, correction_spans,
+                        protected_positions)
     aligned = _align(source, output, ctx)
     report = ValidationReport(components=[
         _component_coverage(source, output, ctx, aligned),

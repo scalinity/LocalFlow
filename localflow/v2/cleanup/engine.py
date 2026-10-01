@@ -27,12 +27,18 @@ from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
-from .validation import validate, ValidationReport
+from .validation import validate, restore_missing_words, ValidationReport
 
 # Tested input/output budget (S13 "tested context/output budget"); the
 # M07 ablation measures against it. Whole dictations below this are one
 # generation.
 WINDOW_MAX_WORDS = 200
+
+# A candidate whose only failure is deleted source words is repaired by
+# putting them back (then validated again in full) when it dropped at most
+# this many words and at most this share of the window.
+SALVAGE_MAX_WORDS = 8
+SALVAGE_MAX_SHARE = 0.10
 
 # Correction-span guards shared with V1 semantics: a valid deletion
 # ends with the correction marker, is short, and never a bare marker.
@@ -998,6 +1004,28 @@ class CleanupEngine:
             continued_list_start=list_continue,
             correction_spans=corr_spans,
             protected_positions=protected_positions)
+        salvaged = 0
+        if [c.name for c in report.critical_failures] == ["coverage"]:
+            # Deletions are the only problem: put exactly those source
+            # words back and validate the repaired text in full. Added
+            # words, changed numbers or lost negations never reach here.
+            fixed = restore_missing_words(
+                window.text, out, vocabulary_pairs=vocabulary_pairs,
+                continued_list_start=list_continue,
+                correction_spans=corr_spans,
+                protected_positions=protected_positions)
+            if fixed is not None and fixed[1] <= min(
+                    SALVAGE_MAX_WORDS,
+                    SALVAGE_MAX_SHARE * len(window.text.split())):
+                again = validate(
+                    window.text, fixed[0],
+                    protected=protected_texts,
+                    vocabulary_pairs=vocabulary_pairs,
+                    continued_list_start=list_continue,
+                    correction_spans=corr_spans,
+                    protected_positions=protected_positions)
+                if again.accepted:
+                    out, report, salvaged = fixed[0], again, fixed[1]
         status = "selected" if report.accepted else "rejected"
         rec["accepted"], rec["status"] = report.accepted, status
         _settle(corr_record, "selected" if report.accepted
@@ -1014,6 +1042,8 @@ class CleanupEngine:
             "window_range": [rng[0], rng[1]],
             "validation": report.to_json(),
         }
+        if salvaged:
+            decision["salvaged_words"] = salvaged
         observations.append(decision)
         records = [rec, decision] + ([corr_record] if corr_record else [])
         if report.accepted:
