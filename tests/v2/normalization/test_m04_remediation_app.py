@@ -303,6 +303,18 @@ CALLERS = {
         "M10 collision preview only",
     ("localflow/v2/training.py", "on_normalization_result",
      "is_idempotent"): "diagnostic second pass, never applied",
+    # The scan matches by call name, and the transform hotkey code has its
+    # own unrelated normalize(): it canonicalizes a keyboard shortcut
+    # binding, never dictated text.
+    ("localflow/v2/transform_hotkeys.py", "identity", "normalize"):
+        "hotkey binding canonicalization, not the text normalizer",
+    ("localflow/v2/transform_hotkeys.py", "display", "normalize"):
+        "hotkey binding canonicalization, not the text normalizer",
+    ("localflow/v2/transform_hotkeys.py", "conn_write", "normalize"):
+        "hotkey binding canonicalization, not the text normalizer",
+    ("localflow/v2/transforms_store.py", "update_transform", "normalize"):
+        "hotkey binding canonicalization (hotkeys.normalize), not the text"
+        " normalizer",
 }
 
 
@@ -331,8 +343,9 @@ def test_21c_caller_inventory():
     # The applied call passes the raw transcript.
     src = (ROOT / "localflow" / "app.py").read_text()
     assert "v2_normalize.normalize(\n                            raw," in src
-    print(f"ok  21c: {len(CALLERS)} reviewed normalization callers; one "
-          "applied (raw ASR), the rest preview/diagnostic")
+    print(f"ok  21c: {len(CALLERS)} reviewed call sites; one applies the "
+          "text normalizer (raw ASR), the rest are preview, diagnostic or "
+          "the unrelated hotkey normalize")
 
 
 def main():
