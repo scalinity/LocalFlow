@@ -3,6 +3,19 @@
   "status_reason": "Quiet Editorial desktop redesign and owner-polish implementation are merged onto main. All twelve owner-polish gates are closed by the final September 30 evidence; owner visual approval is recorded. This redesign / M14-adjacent owner-polish phase is over. Separate M07/M11 and broader native, manual, model and human qualification obligations remain outstanding according to qualification_ledger.md. M15 and M16 are not started. Historical implementation records remain historical.",
   "current_state": {
     "as_of": "2026-09-30",
+    "pre_m15_qualification": {
+      "state": "PRE_M15_BLOCKED_M07_V001",
+      "source_sha": "5da68360a0e5b1ea9303f799ea5c550db4f210fe",
+      "branch": "pre-m15-qualification-closure-20260930",
+      "evidence": "docs/v2/acceptance/M07/results.json:pre_m15_qualification_20260930",
+      "M07_V001": "Real speech performed; long prompt used a byte-exact Normalized fallback after model fidelity rejections, with unresolved corrections; short attempt did not establish paired quoted-literal preservation. Not passed.",
+      "M07_V002": "Not started; private reviewer absent; zero human judgments",
+      "M11": "Current suite, benchmark and Polish/Concise measurement not run; stopped at M07-V001",
+      "GATE_G10": "OPEN",
+      "M15": "NOT_STARTED",
+      "M16": "NOT_STARTED",
+      "next": "Stop at this prerequisite. Resolve the M07-V001 qualification failure before resuming; no generalized tuning or unrelated qualification work. M14 and owner-polish remain closed."
+    },
     "store_schema_version": 13,
     "store_schema_source": "max(_MIGRATIONS) in localflow/v2/store.py",
     "campaign": "Quiet Editorial desktop redesign and M14-adjacent owner-polish closure",
@@ -25,7 +38,7 @@
       "docs/v2/companion/OWNER_POLISH_CLOSURE_20260930.md"
     ],
     "performance": "Current performance on this Mac is read from docs/v2/benchmarks/20260928-230400-xm-remediation-final-decisions (M14 curation, profile and export cost with the dictation-shaped writer probe; M09 Hub construction, publication and History search), measured after correctness on the final production code. Dictation end-to-end is not measured. The benchmark figures under historical_implementation are historical and describe the M14 implementation code.",
-    "may_run_next": "Next planned separate workstream: the private legacy-transcript review tool for M07-V002 (pre-M15 qualification support), with the remaining native, manual, model and human qualification in gates/qualification_ledger.md beside it. M15 is not started and remains gated by M07 pending qualification and M11 incomplete verification. M16 is not started. Quiet Editorial and owner-polish are merged and closed; no next workstream began during this closure. AI-powered Your Voice interpretation and installed-app rollout remain unauthorized.",
+    "may_run_next": "Pre-M15 qualification stopped at PRE_M15_BLOCKED_M07_V001: the real-speech trial did not pass. Resolve that prerequisite before resuming the private M07-V002 reviewer and current M11 qualification. M15 remains gated and is not started; M16 is not started. Quiet Editorial and owner-polish remain merged and closed. AI-powered Your Voice interpretation and installed-app rollout remain unauthorized.",
     "pending_human": "docs/v2/VERIFICATION.html: the M01-M14 checks, including M07-V001 and M07-V002 (M07-V002 blocked: its private review tool does not exist)",
     "next_milestone": "M15 (not started)",
     "merge_commit": "ac77035005477bc7030ea0e3713be0f0408ff5c6",

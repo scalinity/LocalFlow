@@ -72,3 +72,29 @@ Detailed content-free metadata, synthetic target witnesses and the 89-item final
 report remain in the owner's local review directory under
 `final/owner-polish/final-qualification/`. This supplement does not modify the
 runbook's saved statuses or certify any complete milestone.
+
+## Pre-M15 qualification attempt — September 30, 2026 (additive)
+
+State: `PRE_M15_BLOCKED_M07_V001`. Source `5da6836`; dedicated branch
+`pre-m15-qualification-closure-20260930`. M14 / Quiet Editorial remains closed.
+
+Daniel performed both M07-V001 dictations in an isolated private data home.
+He supplied Hub and TextEdit screenshots and delegated their assessment to the
+agent; this is not a separately supplied human PASS judgment. Source, Normalized
+and Cleaned stages are retained for both cases. The long prompt's two model
+candidates failed fidelity validation (coverage, numeric values, negation and
+novelty); the applied output equals the Normalized source exactly. Constraints,
+four list items and sign-off survive, but both corrections remain unresolved.
+No output limit was hit, and no correction proposal pass ran. Inspection found
+the single-word marker supported by the correction guards absent from the
+proposal-pass trigger. The literal attempt used an existing normalization escape
+and did not establish paired quoted-literal preservation; initial capitalization
+alone is permitted by the cleanup contract. Neither attempt closes M07-V001.
+
+Content-free stage hashes, paths/reasons, model/runtime/prompt identities and
+dispositions: `acceptance/M07/results.json` → `pre_m15_qualification_20260930`.
+Actual transcripts, audio, rejected proposals and owner images stay private.
+No production fix or model/prompt change was made. Stop at this blocker:
+M07-V002's reviewer and human adjudication, current M11 suite/benchmark and
+Polish/Concise measurements remain unperformed. GATE-G10 is open; M15 and M16
+are not started. Historical records and owner-polish closure remain unchanged.
