@@ -45,3 +45,11 @@ three canonical Markdown documents are. Package entry point: `README.md`.
   `PENDING_LOCAL_VERIFICATION` entries (append to your milestone's section;
   never renumber). Pending entries do not block the next read-only audit
   unless an unverified condition invalidates its static premise.
+
+## M15-A preparation (additive, October 1, 2026)
+
+The automated cleanup-model comparison is prepared in `benchmarks/M15-A.md`
+and `benchmarks/m15-cleanup-candidates.json`. Setup smoke is compatibility
+evidence only; M15 acceptance remains not started. Integrate the completed
+pre-M15 remediation first, then freeze the one-time human/reference corpus.
+See `handoffs/M15-A-SETUP.md` for downloads, tests and remaining prerequisites.

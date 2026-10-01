@@ -92,5 +92,25 @@
     "handoff": "docs/v2/handoffs/M14.md",
     "next_milestone": "M15",
     "next_milestone_dependency_eligible": true
+  },
+  "benchmark_preparation": {
+    "as_of": "2026-10-01",
+    "scope": "M15-A setup only; full M15 acceptance not started",
+    "state": "M15_AUTOMATED_CLEANUP_BENCHMARK_READY_TO_INTEGRATE_AFTER_PRE_M15",
+    "branch": "m15-cleanup-model-benchmark-setup-20261001",
+    "base_commit": "5da68360a0e5b1ea9303f799ea5c550db4f210fe",
+    "specification": "docs/v2/benchmarks/M15-A.md",
+    "candidate_manifest": "docs/v2/benchmarks/m15-cleanup-candidates.json",
+    "pending": [
+      "Integrate completed pre-M15 work on its approved canonical base",
+      "Freeze eligible human audio/reference corpus and reusable M07-V002 30/10/20 real-text set",
+      "Restore/verify pinned Parakeet in configured cache before Track B",
+      "Actual M15-A qualification and production co-resident memory measurement"
+    ],
+    "production_default_changed": false,
+    "M07_passed": false,
+    "M11_passed": false,
+    "M15_acceptance_started": false,
+    "M16_started": false
   }
 }
