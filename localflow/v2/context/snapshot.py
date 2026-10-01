@@ -239,6 +239,11 @@ class ContextSnapshot:
     # Never serialized, compared or hashed with the snapshot.
     window_element: Optional[object] = dataclasses.field(
         default=None, compare=False, repr=False)
+    # The focused field itself, same contract as ``window_element``: lets
+    # M08 accept a window title that drifted while the very same field
+    # stayed focused (a page retitling behind a browser side panel).
+    field_element: Optional[object] = dataclasses.field(
+        default=None, compare=False, repr=False)
 
     def __post_init__(self):
         # Private frozen copies: a caller-owned dict/list handed in (or

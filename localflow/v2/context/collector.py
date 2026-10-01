@@ -132,6 +132,7 @@ class _Collection:
         self.errors: dict[str, str] = {}
         self.window_title: Optional[str] = None
         self.window_element = None
+        self.field_element = None
         self.cache_key: Optional[tuple] = None
         self.finalized = False
         self.sealed = False
@@ -464,6 +465,7 @@ class ContextCollector:
         with coll.lock:
             coll.window_title = window_title
             coll.window_element = win_el
+            coll.field_element = el
             coll.cache_key = key
         cached = self._cached_origin(key)
         if self._stop(coll):
@@ -612,6 +614,8 @@ class ContextCollector:
             window_title=None if target.denied else coll.window_title,
             window_element=None if target.denied or stage != STAGE_PRE_DECODE
             else coll.window_element,
+            field_element=None if target.denied or stage != STAGE_PRE_DECODE
+            else coll.field_element,
             workspace=workspace,
             workspace_source=ws_res.provenance
             if ws_res is not None and workspace is not None else None,

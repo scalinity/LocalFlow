@@ -29,6 +29,10 @@ import dataclasses
 from typing import Optional
 
 VERIFICATION_PASS = "pass"
+# The window title differed from the capture but the live focused element
+# is the recorded one: enough for plain insertion, never for strict
+# replacement (which requires an exact ``pass``).
+VERIFICATION_PASS_SAME_FIELD = "pass_same_field"
 VERIFICATION_FAIL = "fail"
 VERIFICATION_UNAVAILABLE = "unavailable"
 VERIFICATION_NOT_RECORDED = "not_recorded"

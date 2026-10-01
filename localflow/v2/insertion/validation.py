@@ -29,7 +29,9 @@ replacement authority is still valid. The settled matrix
   is target_changed even under an equal title; the window title check
   also applies when the snapshot recorded one and it is readable
   (tabs share one window element). The two verdicts are kept apart
-  (``window_element``, ``window_title``) and combined as ``window``;
+  (``window_element``, ``window_title``) and combined as ``window``; a
+  differing title is ``pass_same_field`` when the live focused element
+  is the recorded one (strict replacement still needs an exact pass);
   unreadable ⇒ ``unavailable``, identity alone governs (plain-dictation
   contract).
 - field classification/role: mismatch ⇒ target_changed. A snapshot
@@ -76,8 +78,8 @@ from ..context.snapshot import (FIELD_SECURE, FIELD_TEXT, ContextSnapshot,
 from .hosts import InsertionHost
 from .editable_target import EditableTargetSnapshot
 from .target_lease import (VERIFICATION_FAIL, VERIFICATION_NOT_RECORDED,
-                           VERIFICATION_PASS, VERIFICATION_UNAVAILABLE,
-                           TargetLease)
+                           VERIFICATION_PASS, VERIFICATION_PASS_SAME_FIELD,
+                           VERIFICATION_UNAVAILABLE, TargetLease)
 
 
 def _as_range(rng) -> Optional[tuple]:
@@ -174,7 +176,7 @@ def _surroundings_verdict(host, el, field) -> str:
 
 
 def _window_verdicts(host, el, recorded_win, window_title, verification,
-                     *, title_allowed):
+                     *, title_allowed, recorded_field=None):
     """Fill ``window_element``/``window_title`` and the combined
     ``window`` verdict; the live window element (or None)."""
     live_win = host.attribute(el, "AXWindow") if el is not None else None
@@ -204,14 +206,23 @@ def _window_verdicts(host, el, recorded_win, window_title, verification,
             if win is not None:
                 t = host.attribute(win, "AXTitle")
                 title = str(t) if t else None
-        verification["window_title"] = (
-            VERIFICATION_UNAVAILABLE if title is None
-            else (VERIFICATION_PASS if title == window_title
-                  else VERIFICATION_FAIL))
+        if title is None:
+            verdict = VERIFICATION_UNAVAILABLE
+        elif title == window_title:
+            verdict = VERIFICATION_PASS
+        elif recorded_field is not None and el == recorded_field:
+            # A retitled page behind the same focused field is not a
+            # different destination; another tab's field is another
+            # element and still fails below.
+            verdict = VERIFICATION_PASS_SAME_FIELD
+        else:
+            verdict = VERIFICATION_FAIL
+        verification["window_title"] = verdict
     parts = (verification["window_element"], verification["window_title"])
     if VERIFICATION_FAIL in parts:
         verification["window"] = VERIFICATION_FAIL
-    elif VERIFICATION_PASS in parts:
+    elif VERIFICATION_PASS in parts \
+            or VERIFICATION_PASS_SAME_FIELD in parts:
         verification["window"] = VERIFICATION_PASS
     elif VERIFICATION_UNAVAILABLE in parts:
         verification["window"] = VERIFICATION_UNAVAILABLE
@@ -310,8 +321,11 @@ def _validate(host, snapshot, job, denied_apps, deny_invalid):
     # field of the same window and title is not a change.
     recorded_win = getattr(snapshot, "window_element", None) \
         if isinstance(snapshot, (ContextSnapshot, EditableTargetSnapshot)) else None
+    recorded_field = getattr(snapshot, "field_element", None) \
+        if isinstance(snapshot, ContextSnapshot) else None
     live_win = _window_verdicts(host, el, recorded_win, window_title,
-                                verification, title_allowed=not denied)
+                                verification, title_allowed=not denied,
+                                recorded_field=recorded_field)
     if verification["window"] == VERIFICATION_FAIL:
         verification["field"] = VERIFICATION_UNAVAILABLE
         verification["selection"] = VERIFICATION_UNAVAILABLE
