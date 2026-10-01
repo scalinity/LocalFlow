@@ -100,7 +100,7 @@ READBACK_POLL_SEC = 0.05
 
 # Readbacks that show the destination consumed the paste (restoring the
 # user's clipboard is then safe).
-_CONSUMED = ("match", "partial", "normalized")
+_CONSUMED = ("match", "partial", "normalized", "resized")
 
 # Web-content fields that advertise AXSelectedText as settable and
 # acknowledge the setter without applying the edit: the Codex composer and
@@ -115,6 +115,9 @@ _AX_WRITE_IGNORED_BUNDLES = frozenset({
 # as never landed (a dropped ⌘V) and the payload no longer blocks later
 # publications — the user's clipboard is restored while still ours.
 PENDING_PAYLOAD_SEC = 5.0
+# Units either side of the owned range searched for the text when a
+# readback did not attribute the insert (readback_detail).
+READBACK_DETAIL_MARGIN = 8
 
 # paste_again's reconciliation reads at most this many units of the
 # destination field (bounded so a pathological document cannot stall
@@ -657,7 +660,7 @@ class InsertionService:
         # never paste after an uncertain AX write. Recorded selections and
         # strict transform replacement keep their existing method and
         # authority checks.
-        codex_caret = (lease.frontmost_bundle in _AX_WRITE_IGNORED_BUNDLES
+        codex_caret = (self._ax_write_ignored(lease.frontmost_bundle)
                        and not lease.replace_selection
                        and not job.get("strict_replacement"))
         if (not codex_caret and el is not None
@@ -666,6 +669,14 @@ class InsertionService:
                                    on_observation)
         return self._clipboard_insert(text, lease, job, common, facts,
                                       on_observation)
+
+    def _ax_write_ignored(self, bundle) -> bool:
+        """Web-content fields that acknowledge an AXSelectedText write
+        without applying it: the named apps, and any Electron app."""
+        if bundle in _AX_WRITE_IGNORED_BUNDLES:
+            return True
+        probe = getattr(self.host, "is_electron_app", None)
+        return bool(probe and probe(bundle))
 
     @staticmethod
     def _terminal_hazard(text, snapshot, category) -> bool:
@@ -758,7 +769,8 @@ class InsertionService:
         owned = facts["owned"]
         result = InsertionResult(
             state=state, reason_code=reason, method=METHOD_AX,
-            verification=lease.verification,
+            verification=self._verification_with_detail(
+                lease, el, pre, text, readback),
             owned_start=owned[0], owned_end=owned[1],
             inserted_chars=len(text), readback=readback or "unavailable",
             **common)
@@ -821,7 +833,10 @@ class InsertionService:
         text was already there), ``partial`` (a changed proper prefix —
         the target consumed part of it), ``normalized`` (the field grew
         by exactly the text's length but the region holds other text —
-        the target consumed the paste and rewrote it), ``mismatch``
+        the target consumed the paste and rewrote it), ``resized`` (the
+        owned region changed to exactly the text but the field length
+        is not the expected one — a composer clearing its placeholder),
+        ``mismatch``
         (anything else; ``unchanged`` is kept separately as pending) or
         None (unreadable)."""
         total = self.host.number_of_characters(el)
@@ -843,7 +858,7 @@ class InsertionService:
                             == (end, end) and pre["sel"] != (end, end):
                         return "match"
                 return "match_ambiguous"
-            return "match" if total == expected else "mismatch"
+            return "match" if total == expected else "resized"
         if not changed:
             return "unchanged"
         if total > pre["total"] and 0 < len(region) < len(text) \
@@ -852,6 +867,31 @@ class InsertionService:
         if total == expected and region != pre["region"]:
             return "normalized"
         return "mismatch"
+
+    def _verification_with_detail(self, lease, el, pre, text, readback):
+        """The lease verification, plus — when a readback did not
+        attribute the insert — why: lengths, offsets and booleans only
+        (never any text), so a surface that lands the paste but reads
+        back differently can be told from one that never took it."""
+        if readback in (None, "match") or pre is None or el is None:
+            return lease.verification
+        total = self.host.number_of_characters(el)
+        if total is None:
+            return lease.verification
+        n, start = pre["n"], pre["start"]
+        near_lo = max(0, start - READBACK_DETAIL_MARGIN)
+        near_hi = min(total, start + n + READBACK_DETAIL_MARGIN)
+        tail_lo = max(0, total - n - READBACK_DETAIL_MARGIN)
+        near = (self.host.string_for_range(el, near_lo, near_hi - near_lo)
+                if near_hi > near_lo else "")
+        tail = (self.host.string_for_range(el, tail_lo, total - tail_lo)
+                if total > tail_lo else "")
+        return {**lease.verification, "readback_detail": {
+            "pre_total": pre["total"], "total": total, "n": n,
+            "extra_units": total - pre["total"] - (n - pre["replaced"]),
+            "region_matches": self._region(el, start, n, total) == text,
+            "found_near_start": near is not None and text in near,
+            "found_at_tail": tail is not None and text in tail}}
 
     def _outcome(self, lease, readback) -> tuple:
         if readback == "match":
@@ -1008,7 +1048,9 @@ class InsertionService:
         owned = facts["owned"]
         result = InsertionResult(
             state=state, reason_code=reason,
-            method=METHOD_CLIPBOARD, verification=lease.verification,
+            method=METHOD_CLIPBOARD,
+            verification=self._verification_with_detail(
+                lease, el, pre, text, readback),
             owned_start=owned[0], owned_end=owned[1],
             inserted_chars=len(text),
             readback=("mismatch" if readback == "unchanged"
@@ -1072,7 +1114,7 @@ class InsertionService:
             return None
         while True:
             cls = self._classify(el, pre, text)
-            if cls in ("match", "normalized") \
+            if cls in ("match", "normalized", "resized") \
                     or time.monotonic() >= deadline:
                 return cls
             self._sleep(READBACK_POLL_SEC)

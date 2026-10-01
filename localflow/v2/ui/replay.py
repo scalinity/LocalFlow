@@ -54,7 +54,9 @@ class ReplayService:
     @staticmethod
     def _nssound_factory(wav_bytes: bytes):
         from AppKit import NSSound
-        sound = NSSound.soundWithData_(wav_bytes)
+        from Foundation import NSData
+        sound = NSSound.alloc().initWithData_(
+            NSData.dataWithBytes_length_(wav_bytes, len(wav_bytes)))
         if sound is None:
             raise ValueError("sound backend rejected the wav data")
         return sound

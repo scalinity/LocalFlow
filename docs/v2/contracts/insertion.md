@@ -142,7 +142,9 @@ that one element.
    (`accessibility_not_trusted`).
 4. **Codex (`com.openai.codex`) and Chromium-browser caret delivery**
    (`_AX_WRITE_IGNORED_BUNDLES`: Chrome, Chrome Canary/Dev, Edge, Brave,
-   Arc), with no recorded replacement selection and no strict
+   Arc) **and any Electron app** (the bundle embeds
+   `Electron Framework.framework`: Claude desktop, Slack, VS Code ...),
+   with no recorded replacement selection and no strict
    replacement request ⇒ the **serialized clipboard transaction**. These
    web-content fields (the Codex composer, a page or extension side-panel
    field) can acknowledge an `AXSelectedText` write without applying it. This choice occurs before
@@ -219,11 +221,22 @@ an early restore), `partial` (a changed proper prefix and a grown field
 field grew by exactly the inserted minus the replaced units and the
 owned region changed, but not to the text — the target consumed the
 paste and rewrote it, e.g. a newline or spaces normalized; restoring is
-safe, never confirmed), `mismatch` (a readback that did not change is
+safe, never confirmed), `resized` (the owned region changed to exactly
+the text but the field length is not the expected one — a composer
+clearing its placeholder; the paste demonstrably landed, so it is
+consumed and the clipboard restored, never confirmed), `mismatch` (a readback that did not change is
 pending, never a consumed partial),
 `changed` (an AX setter reported failure but the field changed — a
 partial effect, `posted_unverified`), `unavailable`. A setter that
 reports failure with no change is `failed/ax_write_failed`.
+
+A readback other than `match` also records `readback_detail` in the
+verification JSON — content-free numbers and booleans only: `pre_total`,
+`total`, `n`, `extra_units` (growth beyond inserted minus replaced),
+`region_matches`, and `found_near_start` / `found_at_tail` (the text
+sits within 8 units of the owned range / at the field's end). It tells a
+surface that took the paste but reads back differently from one that
+never took it.
 
 **Transaction truth.** The insertion id is minted before the
 transaction and a phase ledger records publication, the post and the
