@@ -775,6 +775,41 @@ def test_r12_split_retry_counts_and_incomplete_flag():
         (res2.fallback_reason, res2.incomplete)
 
 
+def test_prem15_single_sorry_trigger():
+    # Inputs here are post-M04 normalization, so numeric values are digits.
+    calls = []
+    res = clean("Set the timeout to 30 sorry 45 seconds.",
+                make_gen(corrections="30 sorry", log=calls))
+    assert sum(k == "corrections" for k, _ in calls) == 1, \
+        "supported single sorry marker did not reach the proposal pass"
+    assert res.path == "llm" and res.text == "Set the timeout to 45 seconds."
+    assert res.corrections["applied"] == 1
+
+
+def test_prem15_single_no_trigger():
+    # Different names alone are not parallel under the existing guard;
+    # weekdays exercise the already-supported unambiguous replacement form.
+    calls = []
+    res = clean("Send it Thursday no Friday.",
+                make_gen(corrections="Thursday no", log=calls))
+    assert sum(k == "corrections" for k, _ in calls) == 1, \
+        "supported single no marker did not reach the proposal pass"
+    assert res.path == "llm" and res.text == "Send it Friday."
+    assert res.corrections["applied"] == 1
+
+
+def test_prem15_single_marker_negative_controls():
+    for source, proposal, admitted in [
+            ("No we cannot ship today.", "No", 0),
+            ("Sorry to ask again but send the report.", "Sorry", 0),
+            ("We actually shipped yesterday.", "We actually", 1)]:
+        calls = []
+        res = clean(source, make_gen(corrections=proposal, log=calls))
+        assert sum(k == "corrections" for k, _ in calls) == admitted
+        assert res.path == "llm" and res.text == source
+        assert res.corrections["applied"] == 0
+
+
 TESTS = [v for k, v in sorted(globals().items())
          if k.startswith("test_") and callable(v)]
 
