@@ -25,6 +25,8 @@ from localflow.v2.cleanup import (  # noqa: E402
     protected_spans_for_cleanup,
 )
 from localflow.v2.cleanup.engine import (  # noqa: E402
+    CORRECTION_MARKER_RE,
+    _has_correction_marker,
     _halve_at_sentence,
     parse_correction_output,
 )
@@ -808,6 +810,24 @@ def test_prem15_single_marker_negative_controls():
         assert sum(k == "corrections" for k, _ in calls) == admitted
         assert res.path == "llm" and res.text == source
         assert res.corrections["applied"] == 0
+
+
+def test_prem15_bounded_admission_and_rollback():
+    positives = ["Timeout 30 sorry 45 seconds.", "Meet Thursday no Friday.",
+                 "We expect 6 reviewers sorry 8 reviewers."]
+    negatives = ["No we cannot ship today.",
+                 "Sorry to ask again but send the report.",
+                 "There is no deadline.", "The answer is no.",
+                 "I am sorry about the delay.", "There are no open tasks."]
+    assert sum(bool(CORRECTION_MARKER_RE.search(s)) for s in positives) == 0
+    assert all(_has_correction_marker(s) for s in positives)
+    assert not any(_has_correction_marker(s) for s in negatives)
+    source = positives[0]
+    res = clean(source, make_gen(corrections="30 sorry",
+                                main=lambda p: "Timeout 450 seconds."))
+    assert res.text == source and res.path == "llm_fallback_normalized"
+    assert res.corrections["applied"] == 0
+    assert res.corrections["rolled_back"] == 1
 
 
 TESTS = [v for k, v in sorted(globals().items())
