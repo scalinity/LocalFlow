@@ -44,7 +44,8 @@ docs/LocalFlow_M07_Read_Only_Audit_d3d3e4b.md
 docs/LocalFlow_M11_Read_Only_Audit_1ee8e44.md
 
 # Agent runtime state (never committed)
-.claude/
+.claude/*
+!.claude/settings.json
 .codex/
 
 # Desktop companion frontend: build-time dependencies and caches only
