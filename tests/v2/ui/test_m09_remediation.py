@@ -2136,6 +2136,15 @@ class _HeldTarget:
                 self.arrived = threading.Event()
                 self._held = False
 
+            def is_settable(self, el, name):
+                # The editable-click proof (is_editable) needs positive
+                # write evidence. AXValue is read only by that proof, so
+                # the insertion route stays paste-only: AXSelectedText and
+                # AXSelectedTextRange remain unsettable.
+                if el is self and name == "AXValue":
+                    return True
+                return super().is_settable(el, name)
+
             def frontmost(self):
                 if not self._held and threading.current_thread() \
                         is not threading.main_thread():
