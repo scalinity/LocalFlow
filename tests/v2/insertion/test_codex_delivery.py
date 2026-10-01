@@ -11,8 +11,8 @@ from localflow.v2.insertion.selection import capture_selection
 
 
 class CodexTarget(FixtureTargetApp):
-    def __init__(self):
-        super().__init__(bundle="com.openai.codex", settable=True)
+    def __init__(self, bundle="com.openai.codex"):
+        super().__init__(bundle=bundle, settable=True)
         self.ax_writes = 0
 
     def set_attribute(self, el, name, value):
@@ -36,6 +36,35 @@ def test_caret_delivery():
         assert target.ax_writes == 0, "Do not write AX and then attempt paste"
         assert len(target.paste_events) == 1
         assert target.pb.current_string() == "original clipboard"
+    finally:
+        env.close()
+
+
+def test_chromium_caret_delivery():
+    """A Chromium web field (the Claude side panel) acknowledges the AX
+    setter without applying it, exactly like the Codex composer."""
+    for bundle in ("com.google.Chrome", "com.microsoft.edgemac"):
+        env = Env(CodexTarget(bundle), settle=.05)
+        try:
+            target = env.target
+            result = env.run("Synthetic dictation", {
+                "job_id": "chromium-caret", "attempt": 1,
+                "context_snapshot": snapshot(target)})
+            assert result.method == METHOD_CLIPBOARD, (bundle, result.method)
+            assert target.content == "Synthetic dictation", bundle
+            assert target.ax_writes == 0, bundle
+        finally:
+            env.close()
+
+
+def test_safari_keeps_ax():
+    env = Env(CodexTarget("com.apple.Safari"), settle=.05)
+    try:
+        result = env.run("Synthetic dictation", {
+            "job_id": "safari-caret", "attempt": 1,
+            "context_snapshot": snapshot(env.target)})
+        assert result.method == "ax_replacement", result.method
+        assert env.target.ax_writes == 1
     finally:
         env.close()
 
@@ -113,7 +142,8 @@ def test_focus_change_before_paste_refuses():
 
 
 if __name__ == "__main__":
-    tests = (test_caret_delivery, test_other_app_keeps_ax,
+    tests = (test_caret_delivery, test_chromium_caret_delivery,
+             test_safari_keeps_ax, test_other_app_keeps_ax,
              test_recorded_selection_keeps_ax, test_dropped_paste_is_unverified,
              test_focus_change_before_paste_refuses)
     for test in tests:

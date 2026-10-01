@@ -140,10 +140,12 @@ that one element.
    certifies a real surface.
 3. **Accessibility not trusted** ⇒ copy-only offer
    (`accessibility_not_trusted`).
-4. **Codex (`com.openai.codex`) caret delivery**, with no recorded
-   replacement selection and no strict replacement request ⇒ the
-   **serialized clipboard transaction**. The composer can acknowledge an
-   `AXSelectedText` write without applying it. This choice occurs before
+4. **Codex (`com.openai.codex`) and Chromium-browser caret delivery**
+   (`_AX_WRITE_IGNORED_BUNDLES`: Chrome, Chrome Canary/Dev, Edge, Brave,
+   Arc), with no recorded replacement selection and no strict
+   replacement request ⇒ the **serialized clipboard transaction**. These
+   web-content fields (the Codex composer, a page or extension side-panel
+   field) can acknowledge an `AXSelectedText` write without applying it. This choice occurs before
    any text write; it never retries an uncertain AX write with paste.
    Destination validation, effect guards and confirmation rules still apply.
 5. **The bound element's `AXSelectedText` is settable** ⇒ **AX

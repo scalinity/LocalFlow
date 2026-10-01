@@ -102,6 +102,14 @@ READBACK_POLL_SEC = 0.05
 # user's clipboard is then safe).
 _CONSUMED = ("match", "partial", "normalized")
 
+# Web-content fields that advertise AXSelectedText as settable and
+# acknowledge the setter without applying the edit: the Codex composer and
+# the Chromium family (a page or extension side-panel field).
+_AX_WRITE_IGNORED_BUNDLES = frozenset({
+    "com.openai.codex", "com.google.Chrome", "com.google.Chrome.canary",
+    "com.google.Chrome.dev", "com.microsoft.edgemac", "com.brave.Browser",
+    "company.thebrowser.Browser"})
+
 # How long an unconsumed clipboard payload stays pending after its post.
 # A late consumer is protected for this long; after it the paste is taken
 # as never landed (a dropped ⌘V) and the payload no longer blocks later
@@ -643,12 +651,13 @@ class InsertionService:
 
         # 5. Method selection on the bound destination.
         el = lease.element
-        # Codex's composer can advertise AXSelectedText as settable and
-        # acknowledge the setter without applying the edit. Choose paste
-        # upfront for caret delivery; never paste after an uncertain AX
-        # write. Recorded selections and strict transform replacement keep
-        # their existing method and authority checks.
-        codex_caret = (lease.frontmost_bundle == "com.openai.codex"
+        # Codex's composer and Chromium web fields can advertise
+        # AXSelectedText as settable and acknowledge the setter without
+        # applying the edit. Choose paste upfront for caret delivery;
+        # never paste after an uncertain AX write. Recorded selections and
+        # strict transform replacement keep their existing method and
+        # authority checks.
+        codex_caret = (lease.frontmost_bundle in _AX_WRITE_IGNORED_BUNDLES
                        and not lease.replace_selection
                        and not job.get("strict_replacement"))
         if (not codex_caret and el is not None
