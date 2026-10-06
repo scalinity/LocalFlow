@@ -42,7 +42,7 @@ external 71-item report records that exact hash after this commit.
 ## Actual evidence and limits
 
 Evidence directory:
-`~/Desktop/LocalFlow Companion Review/final/owner-polish/`.
+`<repo>/build/companion-review/final/owner-polish/`.
 Frontend screenshots are **source development previews**, using synthetic
 fixtures; they do not qualify the committed WKWebView bundle. Native bubble,
 progress and Paste Again images are actual off-screen AppKit source objects.

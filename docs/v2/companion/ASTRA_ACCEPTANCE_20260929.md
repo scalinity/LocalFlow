@@ -30,7 +30,7 @@ Final production: `8c64746cc8a83ccc64a5d6322f3eb22f043bc5cd`.
 Exact final build command:
 
 ```sh
-zsh scripts/build_app.sh --output "$HOME/Desktop/LocalFlow Companion Review/final/LocalFlow-final.app"
+zsh scripts/build_app.sh --output "$HOME/Documents/Tools/LocalFlow/build/companion-review/final/LocalFlow-final.app"
 ```
 
 The bundle is `com.danny.localflow`, version `0.1.0`. Its source stamp is the
@@ -53,7 +53,7 @@ used by the installed app. No ambiguous Python instance was driven. Consequently
 the menu-bar UI, close-button behavior, packaged PTT and launcher-driven route
 walkthrough remain unqualified.
 
-Private evidence lives at `~/Desktop/LocalFlow Companion Review/final/`:
+Private evidence lives at `<repo>/build/companion-review/final/`:
 
 - `index.html`: self-contained offline comparison page, 24 surface comparisons.
 - `light/`, `dark/`: 32 captures each, including the native review panel.
