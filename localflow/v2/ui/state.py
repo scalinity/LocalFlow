@@ -642,7 +642,9 @@ class HubState:
             return
         try:
             stored = self.transforms_service.definitions()
-            rows = [d.to_json() for d in stored]
+            # The preserved V1 rows duplicate the built-ins; they stay in
+            # the store but are not listed.
+            rows = [d.to_json() for d in stored if d.origin != "legacy"]
             from ..transform_hotkeys import display
             prefs = self.transforms_service.hotkeys()
             for row in rows:

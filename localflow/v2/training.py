@@ -1,8 +1,9 @@
 """Training-evidence capture (Spec S29.1-S29.4, contract training_evidence.md).
 
-Collection is a one-time, persistent, opt-in choice: the store starts with
-no consent revision, which reads as disabled, so merely installing or
-importing never enables capture. While enabled, ordinary dictations are
+Collection is a one-time, persistent choice: a store with no consent
+revision reads as disabled, and the app records "enabled" once at launch
+when it finds none, so importing this module never enables capture. A saved
+choice is never overridden. While enabled, ordinary dictations are
 captured without per-utterance prompts; while paused or disabled, no
 training payload is created at all and dictation is unaffected (M02-AC07).
 

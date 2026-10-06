@@ -2635,6 +2635,7 @@ class AppDelegate(NSObject):
                 detail="the hotkey and paste will not work until enabled in"
                        " System Settings → Privacy & Security → Accessibility")
 
+        self._seed_default_collection()
         self._setup_status_item()
 
         self.overlay = Overlay.alloc().init()
@@ -5321,26 +5322,10 @@ class AppDelegate(NSObject):
         scratchpad_item.setTarget_(self)
         menu.addItem_(scratchpad_item)
 
-        # Minimal training-evidence controls (Spec S29.2, M02): collection
-        # is opt-in, one persistent choice; nothing is collected until the
-        # user turns it on here.
-        training = NSMenu.alloc().init()
-        for title, action in (
-            ("Collect Training Evidence", "toggleTrainingCollection:"),
-            ("Pause Collection", "toggleTrainingPause:"),
-            ("Exclude Last Dictation", "excludeLastDictation:"),
-            ("Mark Last Dictation Correct", "markLastCorrect:"),
-        ):
-            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-                title, action, ""
-            )
-            item.setTarget_(self)
-            training.addItem_(item)
-            self._training_items[action.rstrip(":")] = item
         training_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
             "Training", None, ""
         )
-        training_item.setSubmenu_(training)
+        training_item.setSubmenu_(self._build_training_menu())
         menu.addItem_(training_item)
 
         # Recovery actions (Spec S09 / M03): after a fault exhausted its
@@ -5404,6 +5389,44 @@ class AppDelegate(NSObject):
         )
         menu.addItem_(quit_item)
         self.status_item.setMenu_(menu)
+
+    @objc.python_method
+    def _seed_default_collection(self):
+        """A store with no saved consent choice starts with collection on.
+        Any saved choice (off and paused included) is kept untouched."""
+        try:
+            if self.consent.revision_id() is None:
+                self.consent.set("enabled", note="default on")
+        except TimeoutError:
+            self._consent_outcome_unknown()
+
+    @objc.python_method
+    def _build_training_menu(self):
+        # Minimal training-evidence controls (Spec S29.2, M02): collection
+        # is one persistent choice (on until switched off here).
+        training = NSMenu.alloc().init()
+        # Auto-enabling would re-validate every item against its target on
+        # open and undo setEnabled_ (Pause Collection must grey out while
+        # collection is off).
+        training.setAutoenablesItems_(False)
+        for title, action in (
+            ("Collect Training Evidence", "toggleTrainingCollection:"),
+            ("Pause Collection", "toggleTrainingPause:"),
+            ("Exclude Last Dictation", "excludeLastDictation:"),
+            ("Mark Last Dictation Correct", "markLastCorrect:"),
+        ):
+            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+                title, action, ""
+            )
+            item.setTarget_(self)
+            training.addItem_(item)
+            self._training_items[action.rstrip(":")] = item
+        # Draw the saved consent state now, not only after the first click.
+        try:
+            self._refresh_training_menu()
+        except TimeoutError:
+            self._consent_outcome_unknown()
+        return training
 
     @objc.python_method
     def _refresh_training_menu(self):
@@ -6141,7 +6164,10 @@ class AppDelegate(NSObject):
             return
         menu.removeAllItems()
         snapshot = self._transforms_snapshot()
-        defs = list(snapshot.definitions) if snapshot is not None else []
+        # The preserved V1 rows duplicate the built-ins; they stay in the
+        # store but are not offered here.
+        defs = [d for d in (snapshot.definitions if snapshot is not None
+                            else ()) if d.origin != "legacy"]
         if not defs:
             hint = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
                 "No transforms configured (Hub → Transforms)", None, "")
@@ -6149,14 +6175,12 @@ class AppDelegate(NSObject):
             menu.addItem_(hint)
             return
         for d in defs:
-            title = f"{d.name} ({d.mode})"
+            title = d.name
             if self._tf_store is not None:
                 from .v2.transform_hotkeys import display
                 pref = self._tf_store.hotkeys().get(d.transform_id)
                 if pref and pref["binding"]:
                     title += "    " + display(pref["binding"])
-            if d.origin == "legacy":
-                title += " — legacy"
             item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
                 title, "runTransform:", "")
             item.setTarget_(self)

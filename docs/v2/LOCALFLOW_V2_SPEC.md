@@ -818,7 +818,7 @@ M02 delivers live evidence capture and a small menu/settings control using the e
 
 ### S29.2. Controls without daily friction
 
-Expose **Collect training evidence on this Mac** as a one-time, persistent choice beginning in M02. First installation starts disabled until the user chooses it; Daniel can enable it immediately when that milestone lands. This planning document authorizes building the capability, not silently changing an installed app's data settings. When enabled, ordinary eligible dictations are captured without a per-utterance approval dialog. Collection consent, label verification, permission to export, and permission to send selected material to a comparator are different states.
+Expose **Collect training evidence on this Mac** as a one-time, persistent choice beginning in M02. A store with no saved choice starts enabled; any saved choice, including off or paused, is kept across launches and updates and is never overridden. This planning document authorizes building the capability, not silently changing an installed app's data settings. When enabled, ordinary eligible dictations are captured without a per-utterance approval dialog. Collection consent, label verification, permission to export, and permission to send selected material to a comparator are different states.
 
 Offer: pause collection; exclude this dictation; pin for review; mark correct; teach a correction; exclude an app/workspace; choose audio/context retention; review storage use; export selected eligible examples; delete training copy; delete this content everywhere. Never-store mode takes precedence over all retention leases. The mic remains push-to-talk; collection does not introduce ambient recording or general keyboard surveillance.
 
