@@ -24,6 +24,12 @@
   or an unmet requirement), never force-push, and never settle a merge
   conflict by guesswork: stop and report the conflicting paths instead.
 
+## Agent docs
+
+- `AGENTS.md` is a symlink to this file, so tools that read `AGENTS.md`
+  see the same instructions. Edit `CLAUDE.md` only, and keep the link: do
+  not replace `AGENTS.md` with a copy.
+
 ## Orchestration overview
 
 - `ORCHESTRATION.html` in the project root is the page used to decide what
