@@ -79,7 +79,8 @@ Paths are repo-relative unless marked `~`.
   code (native window timing).
 - The real `applicationDidFinishLaunching_` path is not covered by any test;
   the default seeding was checked by a real launch (no new errors in the event
-  log). The menu itself was not inspected on screen in this session.
+  log). The Training and Transforms menus were inspected on screen afterwards
+  and displayed correctly.
 
 ## 6. Files consolidated into the repository
 
@@ -109,4 +110,3 @@ Paths are repo-relative unless marked `~`.
 ## Open items
 
 - `docs/v2/VERIFICATION.html` manual steps for the collection default (above).
-- Verify the Training and Transforms menus on screen after the next launch.
