@@ -1107,12 +1107,12 @@ EOF</code></pre></div>
           <details class="more"><summary>Instructions &amp; expected results</summary>
             <dl class="facts">
               <dt>Environment</dt><dd>Reference Mac · microphone · sandbox home · hands-free double-tap enabled by the sandbox config</dd>
-              <dt>Preconditions</dt><dd>M02 set-up done. Start from a fresh sandbox (<code>rm -rf "$SANDBOX"; mkdir -p "$SANDBOX"</code>) so collection starts <b>disabled</b>.</dd>
+              <dt>Preconditions</dt><dd>M02 set-up done. Start from a fresh sandbox (<code>rm -rf "$SANDBOX"; mkdir -p "$SANDBOX"</code>) so the store holds no saved collection choice; a fresh store starts with collection <b>enabled</b>.</dd>
               <dt>Working dir</dt><dd>any</dd>
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Run <code>lf_sandbox</code>. In the menu-bar Training submenu, confirm <b>Collect Training Evidence</b> has no check mark.</li>
+              <li>Run <code>lf_sandbox</code>. In the menu-bar Training submenu, confirm <b>Collect Training Evidence</b> has a check mark (a fresh sandbox starts with collection on), then choose it to turn collection off: the check mark goes and <b>Pause Collection</b> is greyed out.</li>
               <li><b>Case A.</b> Double-tap fn to start hands-free capture. While it records, turn <b>Collect Training Evidence</b> on from the menu. Say a sentence, then tap fn to finish.</li>
               <li><b>Case B.</b> With collection now on, double-tap fn to start. While it records, choose <b>Pause Collection</b>. Say a sentence, tap fn to finish.</li>
               <li><b>Case C.</b> Collection is paused. Hold fn normally and dictate once more.</li>
@@ -1929,7 +1929,7 @@ done</code></pre></div>
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Run <code>lf4_start technical</code>; wait for the menu-bar icon and “ASR: ready”. In its menu choose <b>Training → Collect Training Evidence</b> (the sandbox store only).</li>
+              <li>Run <code>lf4_start technical</code>; wait for the menu-bar icon and “ASR: ready”. In its menu confirm <b>Training → Collect Training Evidence</b> has a check mark (a fresh sandbox starts with collection on; choose it only if the check mark is missing) (the sandbox store only).</li>
               <li>Click into TextEdit. Hold fn and say each line below as its own dictation, releasing fn after each:
                 <ol>
                   <li>“version one point two six point four shipped”</li>
@@ -2131,7 +2131,7 @@ echo "corpus exit=$?  $(tail -n 1 "$OUT5/V001-corpus.txt")"</code></pre></div>
             </dl>
             <h5>Manual actions — panel</h5>
             <ol class="list">
-              <li>Run <code>lf5_start</code>; wait for the menu-bar icon and “ASR: ready”. In its menu choose <b>Training → Collect Training Evidence</b> (the sandbox store only), then <b>Dictionary…</b>.</li>
+              <li>Run <code>lf5_start</code>; wait for the menu-bar icon and “ASR: ready”. In its menu confirm <b>Training → Collect Training Evidence</b> has a check mark (a fresh sandbox starts with collection on; choose it only if the check mark is missing) (the sandbox store only), then <b>Dictionary…</b>.</li>
               <li>The list reads “2 entries” with <code>Claude</code> and <code>Claude Code</code>, each <code>· profile:coding</code> and <code>[suggested (suggested)]</code>.</li>
               <li>Add three entries, one at a time (type into Canonical / Alias, pick the scope in the pop-up, type the scope value when not global, press <b>Add / Preview Conflicts</b>):
                 <ol>
@@ -2344,7 +2344,7 @@ lf6_evidence() { ( cd "$LF_M06" &amp;&amp; HOME="$SANDBOX6" "$PY" "$OUT6/m06_evi
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Run <code>lf6_start</code>; wait for the menu-bar icon and “ASR: ready”. In its menu choose <b>Training → Collect Training Evidence</b> (the sandbox store only).</li>
+              <li>Run <code>lf6_start</code>; wait for the menu-bar icon and “ASR: ready”. In its menu confirm <b>Training → Collect Training Evidence</b> has a check mark (a fresh sandbox starts with collection on; choose it only if the check mark is missing) (the sandbox store only).</li>
               <li>Run <code>open -a TextEdit "$OUT6/lf-m06-trial/note-one.txt"</code>. Click at the end of “Trial note one.”, hold fn and say “the parse config function returns early”, release.</li>
               <li>In Safari open <code>https://duckduckgo.com</code>, click into the search box and dictate “weather in lisbon tomorrow”. Do not press Return.</li>
               <li>If Chrome is installed, do the same in Chrome. Otherwise skip this step and note “no Chrome”.</li>
@@ -2968,7 +2968,7 @@ lf08_evidence() { ( cd "$LF_M08" &amp;&amp; "$PY" "$OUT08/m08_evidence.py" ); }<
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Run <code>lf08_start</code>; wait for “ASR: ready”. In its menu choose <b>Training → Collect Training Evidence</b> (the sandbox store only).</li>
+              <li>Run <code>lf08_start</code>; wait for “ASR: ready”. In its menu confirm <b>Training → Collect Training Evidence</b> has a check mark (a fresh sandbox starts with collection on; choose it only if the check mark is missing) (the sandbox store only).</li>
               <li>Open Notes, make a new note and dictate “private note words”. Then choose <b>Recovery → Undo Last Insertion</b>. Delete the note afterwards.</li>
               <li>In Safari open <code>https://github.com/login</code>, click into the <b>Password</b> box (leave the username empty) and dictate “test”. Clear the box; never submit the form.</li>
               <li>Open <code>"$OUT08/lf-m08-trial/a/draft.txt"</code>, select <code>The meeting is on Thursday.</code> and choose <b>Transforms → Polish</b>. When the preview panel shows, ⌘Tab to Safari, then click <b>Accept</b> in the panel.</li>
@@ -3014,7 +3014,7 @@ lf08_evidence() { ( cd "$LF_M08" &amp;&amp; "$PY" "$OUT08/m08_evidence.py" ); }<
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Run <code>lf08_start</code>; wait for “ASR: ready”. Choose <b>Training → Collect Training Evidence</b>.</li>
+              <li>Run <code>lf08_start</code>; wait for “ASR: ready”. Confirm <b>Training → Collect Training Evidence</b> has a check mark (choose it only if the check mark is missing).</li>
               <li>Open <code>"$OUT08/lf-m08-trial/a/draft.txt"</code>, click at the end of the last line and dictate “the report is due on monday”. Within 20 seconds, double-click <code>monday</code> and type <code>Friday</code>. Wait 40 seconds.</li>
               <li>Dictate “another sentence here”. Within 20 seconds, click at the very start of the first line and type <code>X </code>. Wait 40 seconds.</li>
               <li>Dictate “third sentence here” and, within 10 seconds, open <code>"$OUT08/lf-m08-trial/b/draft.txt"</code> and type anything there. Wait 40 seconds.</li>
@@ -3062,7 +3062,7 @@ lf08_evidence() { ( cd "$LF_M08" &amp;&amp; "$PY" "$OUT08/m08_evidence.py" ); }<
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Run <code>"$PY" -c "print('lorem ipsum dolor sit amet ' * 20000)" &gt; "$OUT08/lf-m08-trial/long.txt"</code>, then <code>lf08_start</code>; wait for “ASR: ready”. Choose <b>Training → Collect Training Evidence</b> (the sandbox store only — deletion works on collected dictations).</li>
+              <li>Run <code>"$PY" -c "print('lorem ipsum dolor sit amet ' * 20000)" &gt; "$OUT08/lf-m08-trial/long.txt"</code>, then <code>lf08_start</code>; wait for “ASR: ready”. Confirm <b>Training → Collect Training Evidence</b> has a check mark (a fresh sandbox starts with collection on; choose it only if the check mark is missing) (the sandbox store only — deletion works on collected dictations).</li>
               <li>Open <code>long.txt</code> in TextEdit, click at the end and dictate “history test sentence”.</li>
               <li>Open the Hub (<b>Open Hub…</b> in the menu) → <b>History</b>, select that dictation and click <b>Paste Again</b> while <code>long.txt</code> is behind the Hub. Then click into <code>long.txt</code> and use <b>Recovery → Paste Last Result Again</b>.</li>
               <li>In the Hub go to <b>Models → Training Data</b>, select the newest example (this dictation), click <b>Delete Everywhere</b> and confirm <b>Delete</b>. Then, with <code>long.txt</code> in front, choose <b>Recovery → Paste Last Result Again</b> and <b>Recovery → Undo Last Insertion</b>.</li>
@@ -3776,7 +3776,7 @@ lf11_evidence() { ( cd "$LF_M11" &amp;&amp; "$PY" "$OUT11/m11_evidence.py" ); }<
             </dl>
             <h5>Manual actions</h5>
             <ol class="list">
-              <li>Run <code>lf11_start</code>; wait for “ASR: ready”. In its menu choose <b>Training → Collect Training Evidence</b> (the sandbox store only).</li>
+              <li>Run <code>lf11_start</code>; wait for “ASR: ready”. In its menu confirm <b>Training → Collect Training Evidence</b> has a check mark (a fresh sandbox starts with collection on; choose it only if the check mark is missing) (the sandbox store only).</li>
               <li>Run <code>open -a TextEdit "$OUT11/lf-m11-trial/a/draft.txt"</code>. Drag to select <code>make this sentence a bit clearer</code>. In the menu choose <b>Transforms → Polish</b>. When the <b>Transform Preview</b> panel shows, click <b>Accept</b>.</li>
               <li>Run <code>open -a TextEdit "$OUT11/lf-m11-trial/b/draft.txt" "$OUT11/lf-m11-trial/c/draft.txt"</code> (two windows, both titled <code>draft.txt</code>). In the <code>b</code> window select the same words and choose <b>Transforms → Polish</b>. When the panel shows, click into the <code>c</code> window, select the same words there, then click <b>Accept</b> in the panel.</li>
               <li>Back in the <code>b</code> window, select the same words again and choose <b>Transforms → Polish</b>. When the panel shows, click once at the end of the last line of <code>b</code> (the selection disappears), then click <b>Accept</b>.</li>

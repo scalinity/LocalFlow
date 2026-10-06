@@ -46,9 +46,12 @@ Paths are repo-relative unless marked `~`.
   `owner request: collection on`), after a copy of `v2.db` was taken.
 - `docs/v2/LOCALFLOW_V2_SPEC.md` S29.2 and the `localflow/v2/training.py`
   docstring state the new default.
-- `docs/v2/VERIFICATION.html` still tells a manual tester that a fresh sandbox
-  shows "Collect Training Evidence" without a check mark. Under the new default
-  it is checked. That script records past manual runs and was not rewritten.
+- The manual steps in `docs/v2/VERIFICATION.html` that assumed a fresh sandbox
+  starts with collection off were reworded: M02-V005 now confirms the check
+  mark and turns collection off before Case A, and the M04, M05, M06, M08 and
+  M11 steps that said to choose "Collect Training Evidence" now say to confirm
+  its check mark and choose it only when the mark is missing (choosing it in a
+  fresh sandbox would otherwise switch collection off).
 
 ## 4. Transforms listings
 
@@ -109,4 +112,6 @@ Paths are repo-relative unless marked `~`.
 
 ## Open items
 
-- `docs/v2/VERIFICATION.html` manual steps for the collection default (above).
+None. `ORCHESTRATION.html` asserts nothing this session changed (no unit
+completed, no decision numbers taken, no ownership boundary moved), so it was
+not realigned.
