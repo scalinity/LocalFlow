@@ -395,7 +395,8 @@ def limits(summary) -> list[str]:
     out.append("The unauthorized-edit counts on conversational audio include some stutter removals: when a model "
                "deletes one copy of \"and and\", the word alignment may charge the first copy. This raises every "
                "model's absolute rate; the paired differences used by the rules are much less affected.")
-    out.append("Switching means pointing cleanup_model at C's folder and restarting LocalFlow; nothing was changed for you.")
+    out.append("Switching means linking C into the Hugging Face cache LocalFlow reads, pointing cleanup_model at it and "
+               "restarting LocalFlow; the experiment itself changes nothing in LocalFlow.")
     return out
 
 

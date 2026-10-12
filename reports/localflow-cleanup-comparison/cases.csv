@@ -1,0 +1,1087 @@
+case_id,source,category,profile,noop,A_path,A_flags,A_repair_right,A_ms,B_path,B_flags,B_repair_right,B_ms,C_path,C_flags,C_repair_right,C_ms
+fte00000-base,synthetic,quoted_instruction,,False,llm,,False,1939,llm,,True,1558,llm,,True,1563
+fte00000-fixpoint,synthetic,quoted_instruction,,True,llm,,False,2040,llm,,False,1572,llm,,False,1561
+fte00002-base,synthetic,coding_agent_instruction,ai_prompt,True,llm,,False,2311,llm,,False,1541,llm,,False,1566
+fte00003-base,synthetic,software_ai_terms,,True,llm,,False,2155,llm,,False,1469,llm,,False,1494
+fte00004-base,synthetic,software_ai_terms,,True,llm,,False,2534,llm,,False,1581,llm,,False,1579
+fte00005-base,synthetic,self_correction_single,terminal,False,llm,damage omission,False,2999,llm_fallback_normalized,,False,1936,llm,,True,1919
+fte00005-fixpoint,synthetic,self_correction_single,terminal,True,llm,,False,1750,llm,,False,1568,llm,,False,1560
+fte00008-base,synthetic,molecular_biology,documents,False,llm_fallback_normalized,,False,2470,llm,,True,2018,llm,,True,1937
+fte00009-base,synthetic,ending_critical,,True,llm,,False,6855,llm,,False,2930,llm,,False,2890
+fte00010-base,synthetic,ending_critical,notes,False,llm_fallback_normalized,,False,6056,llm_fallback_normalized,,False,2788,llm,,True,2761
+fte00010-fixpoint,synthetic,ending_critical,notes,True,llm,,False,6094,llm_fallback_normalized,,False,2821,llm,,False,2772
+fte00011-base,synthetic,asr_mishearing_preserve,messaging,True,llm,,False,2746,llm,,False,1712,llm,,False,1691
+fte00012-base,synthetic,asr_mishearing_preserve,terminal,False,llm_fallback_normalized,damage facts_changed hallucination omission,False,1549,llm,,True,1714,llm,damage facts_changed omission,True,1658
+fte00013-base,synthetic,casual_message,messaging,True,llm,,False,1739,llm,,False,1881,llm,,False,1871
+fte00015-base,synthetic,casual_message,email,False,llm_fallback_normalized,,False,2101,llm_fallback_normalized,damage omission,False,2062,llm,,True,2111
+fte00015-fixpoint,synthetic,casual_message,email,True,llm,,False,1627,llm,,False,1769,llm,,False,1747
+fte00016-base,synthetic,self_correction_multiple,coding,False,llm,,True,2482,llm,,True,2642,llm,,True,2638
+fte00016-fixpoint,synthetic,self_correction_multiple,coding,True,llm,,False,2002,llm,,False,2103,llm,,False,2110
+fte00018-base,synthetic,academic,coding,True,llm,,False,1827,llm,,False,1944,llm,,False,1923
+fte00019-base,synthetic,self_correction_single,,False,llm_fallback_normalized,,False,2044,llm_fallback_normalized,,False,2220,llm,,True,2189
+fte00019-fixpoint,synthetic,self_correction_single,,True,llm,,False,1662,llm,,False,1804,llm,,False,1794
+fte00020-base,synthetic,self_correction_single,coding,False,llm_fallback_normalized,,False,2080,llm,,False,2305,llm,,True,2245
+fte00020-fixpoint,synthetic,self_correction_single,coding,True,llm,,False,1742,llm,,False,1873,llm,,False,1906
+fte00021-base,synthetic,technical_literals,coding,False,llm,,True,2011,llm_fallback_normalized,,False,2198,llm,,True,2113
+fte00021-fixpoint,synthetic,technical_literals,coding,True,llm,,False,2001,llm_fallback_normalized,,False,2215,llm,,False,2099
+fte00022-base,synthetic,casual_message,messaging,False,llm,,True,1509,llm,,True,1627,llm,,True,1607
+fte00022-fixpoint,synthetic,casual_message,messaging,True,llm,,False,1508,llm,,False,1637,llm,,False,1626
+fte00024-base,synthetic,ending_critical,email,False,llm,,False,2817,llm,,False,2834,llm,,True,2794
+fte00025-base,synthetic,self_correction_multiple,email,False,llm_fallback_normalized,,False,1964,llm_fallback_normalized,,False,2214,llm,,True,2159
+fte00025-fixpoint,synthetic,self_correction_multiple,email,True,llm,,False,1649,llm,,False,1764,llm,,False,1726
+fte00026-base,synthetic,technical_literals,,False,llm,,True,1579,llm,,True,1704,llm,,True,1688
+fte00027-base,synthetic,technical_literals,,True,llm,,False,1442,llm,,False,1556,llm,,False,1551
+fte00028-base,synthetic,question_or_request_as_content,coding,False,llm,,True,1829,llm,,True,1958,llm,,True,1959
+fte00028-fixpoint,synthetic,question_or_request_as_content,coding,True,llm,,False,1825,llm,,False,1954,llm,,False,1968
+fte00029-base,synthetic,academic,,False,llm,,True,2864,llm,,False,2910,llm,,True,2863
+fte00029-fixpoint,synthetic,academic,,True,llm,,False,2923,llm,,False,2881,llm,,False,2868
+fte00030-base,synthetic,self_correction_single,,False,llm_fallback_normalized,,False,2153,llm_fallback_normalized,,False,2242,llm,,True,2190
+fte00031-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,,True,3141,llm_fallback_normalized,damage omission,False,3261,llm,,True,3089
+fte00032-base,synthetic,coding_agent_instruction,coding,True,llm,,False,1848,llm,,False,1997,llm,,False,1933
+fte00033-base,synthetic,coding_agent_instruction,coding,False,llm,,True,1497,llm,,True,1658,llm,,True,1630
+fte00034-base,synthetic,ending_critical,ai_prompt,False,llm_fallback_normalized,,False,2922,llm,,True,2948,llm,,True,2943
+fte00035-base,synthetic,academic,terminal,False,llm,,True,1719,llm,,True,1861,llm,,True,1858
+fte00036-base,synthetic,self_correction_single,,False,llm_fallback_normalized,,False,2695,llm_fallback_normalized,,False,2391,llm,,True,2396
+fte00038-base,synthetic,academic,,False,llm,,True,1723,llm,,True,1847,llm,,True,1863
+fte00039-base,synthetic,casual_message,,False,llm,,True,1384,llm,,True,1558,llm,,True,1528
+fte00040-base,synthetic,preservation_discourse,,True,llm,,False,1909,llm,,False,1994,llm,,False,1981
+fte00041-base,synthetic,ending_critical,terminal,False,llm,,False,3002,llm,,True,3036,llm,,True,2992
+fte00041-fixpoint,synthetic,ending_critical,terminal,True,llm,,False,3008,llm,,False,3006,llm,,False,2990
+fte00042-base,synthetic,self_correction_single,,False,llm,,True,2069,llm_fallback_normalized,,False,2279,llm,,True,2284
+fte00044-base,synthetic,coding_agent_instruction,coding,False,llm_fallback_normalized,,False,1719,llm_fallback_normalized,damage omission,False,1848,llm,,True,1890
+fte00044-fixpoint,synthetic,coding_agent_instruction,coding,True,llm_fallback_normalized,,False,1720,llm_fallback_normalized,damage omission,False,1855,llm,,False,1875
+fte00045-base,synthetic,self_correction_single,email,False,llm,,False,1622,llm,,True,1843,llm,,True,1847
+fte00046-base,synthetic,ending_critical,documents,False,llm,,True,2914,llm_fallback_normalized,,False,2932,llm,,True,2929
+fte00046-fixpoint,synthetic,ending_critical,documents,True,llm,,False,2940,llm,,False,2944,llm,,False,2924
+fte00048-base,synthetic,question_or_request_as_content,messaging,True,llm,,False,2576,llm,,False,2640,llm,,False,2638
+fte00049-base,synthetic,question_or_request_as_content,,False,llm,,True,1303,llm,,True,1437,llm,,True,1443
+fte00049-fixpoint,synthetic,question_or_request_as_content,,True,llm,,False,1307,llm,,False,1427,llm,,False,1432
+fte00050-base,synthetic,question_or_request_as_content,,False,llm,,True,1678,llm,,True,1770,llm,,True,1780
+fte00050-fixpoint,synthetic,question_or_request_as_content,,True,llm,,False,1676,llm,,False,1781,llm,,False,1760
+fte00051-base,synthetic,technical_literals,,False,llm,,True,1813,llm,,True,1956,llm,,True,1921
+fte00052-base,synthetic,technical_literals,coding,False,llm,,True,1845,llm_fallback_normalized,damage hallucination,False,2053,llm,,True,1970
+fte00052-fixpoint,synthetic,technical_literals,coding,True,llm,,False,1841,llm_fallback_normalized,,False,2026,llm,,False,1966
+fte00053-base,synthetic,academic,messaging,False,llm,,True,1840,llm,,True,1946,llm,,True,1937
+fte00053-fixpoint,synthetic,academic,messaging,True,llm,,False,1844,llm,,False,1945,llm,,False,1946
+fte00055-base,synthetic,ending_critical,,False,llm_fallback_normalized,damage omission,False,2464,llm_fallback_normalized,damage omission,False,2605,llm,,True,2547
+fte00056-base,synthetic,molecular_biology,coding,False,llm_fallback_normalized,damage facts_changed hallucination omission,False,2835,llm_fallback_normalized,damage facts_changed hallucination omission,False,2875,llm,,True,2928
+fte00056-fixpoint,synthetic,molecular_biology,coding,True,llm,,False,2932,llm_fallback_normalized,damage facts_changed hallucination omission,False,2911,llm,,False,2922
+fte00057-base,synthetic,technical_literals,terminal,False,llm,,True,1530,llm,,True,1684,llm,,True,1669
+fte00058-base,synthetic,self_correction_single,,False,llm_fallback_normalized,,False,1764,llm_fallback_normalized,,False,1853,llm,,True,1840
+fte00058-fixpoint,synthetic,self_correction_single,,True,llm,,False,1364,llm,,False,1498,llm,,False,1500
+fte00059-base,synthetic,ending_critical,ai_prompt,True,llm,,False,2841,llm,,False,2826,llm,,False,2823
+fte00060-base,synthetic,casual_message,messaging,True,llm,,False,1402,llm,,False,1534,llm,,False,1522
+fte00061-base,synthetic,academic,,False,llm,,True,1643,llm,,True,1772,llm,,True,1764
+fte00063-base,synthetic,coding_agent_instruction,coding,False,llm,,True,1716,llm,,True,1868,llm,,True,1835
+fte00065-base,synthetic,casual_message,,True,llm,,False,1434,llm,,False,1584,llm,,False,1574
+fte00067-base,synthetic,academic,documents,False,llm,,True,2514,llm,,True,2569,llm,,True,2559
+fte00069-base,synthetic,preservation_discourse,coding,True,llm,,False,1710,llm,damage omission,False,1873,llm,,False,1897
+fte00070-base,synthetic,casual_message,messaging,False,llm,,True,1904,llm,,True,2001,llm,,True,2032
+fte00070-fixpoint,synthetic,casual_message,messaging,True,llm,,False,1910,llm,,False,1996,llm,,False,2029
+fte00071-base,synthetic,molecular_biology,,False,llm_fallback_normalized,,False,3583,llm_fallback_normalized,damage facts_changed hallucination omission,False,3679,llm,,True,3650
+fte00071-fixpoint,synthetic,molecular_biology,,True,llm,,False,3170,llm_fallback_normalized,damage facts_changed hallucination omission,False,3146,llm,,False,3179
+fte00072-base,synthetic,asr_mishearing_preserve,messaging,True,llm,,False,1813,llm,,False,1923,llm,,False,1936
+fte00075-base,synthetic,technical_literals,,True,llm_fallback_normalized,damage hallucination omission,False,2696,llm_fallback_normalized,damage hallucination omission,False,2686,llm,,False,2685
+fte00076-base,synthetic,software_ai_terms,,False,llm,,True,1836,llm,,True,1926,llm,,True,1919
+fte00077-base,synthetic,spoken_list,documents,False,llm_fallback_normalized,damage omission,False,1713,llm,,True,1913,llm,,True,1884
+fte00078-base,synthetic,asr_mishearing_preserve,documents,False,llm,damage omission,True,1950,llm,damage omission,True,2099,llm,,True,2034
+fte00082-base,synthetic,software_ai_terms,,False,llm,,True,2943,llm_fallback_normalized,damage facts_changed hallucination omission,False,2885,llm,,True,2866
+fte00083-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,damage facts_changed omission,True,1898,llm,damage facts_changed omission,True,1957,llm,,True,1958
+fte00083-fixpoint,synthetic,coding_agent_instruction,ai_prompt,True,llm,damage facts_changed omission,False,1871,llm,damage facts_changed omission,False,1961,llm,,False,1955
+fte00090-base,synthetic,quoted_instruction,coding,False,llm_fallback_normalized,damage omission,False,1777,llm,,True,1974,llm,,True,1977
+fte00091-base,synthetic,vocabulary_authorized,,False,llm,,False,1506,llm,,False,1604,llm,,True,1614
+fte00092-base,synthetic,question_or_request_as_content,notes,False,llm,,True,2491,llm,,True,2567,llm,,True,2493
+fte00094-base,synthetic,ending_critical,,True,llm,,False,2805,llm,,False,2860,llm,,False,2797
+fte00095-base,synthetic,software_ai_terms,,False,llm,,False,1714,llm,damage omission,True,1905,llm,,True,2013
+fte00095-fixpoint,synthetic,software_ai_terms,,True,llm,,False,1697,llm,,False,1934,llm,,False,1882
+fte00097-base,synthetic,quoted_instruction,messaging,False,llm,,True,1503,llm,,True,1633,llm,,True,1662
+fte00097-fixpoint,synthetic,quoted_instruction,messaging,True,llm,,False,1500,llm,,False,1642,llm,,False,1647
+fte00098-base,synthetic,spoken_list,ai_prompt,False,llm,,True,1682,llm,,True,1833,llm,,True,1837
+fte00099-base,synthetic,question_or_request_as_content,,False,llm,,True,2251,llm_fallback_normalized,,False,2316,llm,,True,2326
+fte00099-fixpoint,synthetic,question_or_request_as_content,,True,llm,,False,2239,llm_fallback_normalized,,False,2312,llm,,False,2306
+fte00100-base,synthetic,self_correction_single,coding,False,llm,,False,1860,llm,damage hallucination,False,2117,llm,,True,1976
+fte00100-fixpoint,synthetic,self_correction_single,coding,True,llm,,False,1458,llm,,False,1608,llm,,False,1596
+fte00101-base,synthetic,molecular_biology,email,False,llm,,True,2696,llm_fallback_normalized,damage facts_changed omission,False,2711,llm,,True,2717
+fte00102-base,synthetic,preservation_discourse,terminal,True,llm,,False,2064,llm,,False,2694,llm,,False,2238
+fte00103-base,synthetic,software_ai_terms,,False,llm,,False,3590,llm,,False,3479,llm,,True,3350
+fte00103-fixpoint,synthetic,software_ai_terms,,True,llm,,False,2950,llm,,False,3024,llm,,False,2950
+fte00104-base,synthetic,academic,,False,llm,,True,1306,llm,,True,1450,llm,,True,1442
+fte00104-fixpoint,synthetic,academic,,True,llm,,False,1298,llm,,False,1441,llm,,False,1445
+fte00105-base,synthetic,academic,ai_prompt,False,llm,,True,2500,llm_fallback_normalized,damage hallucination omission,False,2489,llm,,True,2537
+fte00107-base,synthetic,vocabulary_authorized,email,False,llm,damage facts_changed,False,2828,llm,damage facts_changed,False,2842,llm,,True,2821
+fte00108-base,synthetic,spoken_list,documents,False,llm,,False,2981,llm_fallback_normalized,,False,3074,llm,,True,3008
+fte00110-base,synthetic,asr_mishearing_preserve,,False,llm,,True,1389,llm,,True,1564,llm,,True,1557
+fte00110-fixpoint,synthetic,asr_mishearing_preserve,,True,llm,,False,1392,llm,,False,1561,llm,,False,1545
+fte00111-base,synthetic,technical_literals,notes,False,llm_fallback_normalized,,False,2361,llm_fallback_normalized,,False,2607,llm,,True,2392
+fte00111-fixpoint,synthetic,technical_literals,notes,True,llm,,False,1921,llm,,False,1979,llm,,False,1978
+fte00112-base,synthetic,coding_agent_instruction,ai_prompt,True,llm,,False,1444,llm,,False,1596,llm,,False,1599
+fte00113-base,synthetic,question_or_request_as_content,ai_prompt,True,llm,,False,2665,llm,,False,2736,llm,,False,2722
+fte00117-base,synthetic,software_ai_terms,notes,False,llm,,True,1928,llm,,True,2081,llm,,True,2055
+fte00118-base,synthetic,ending_critical,messaging,False,llm,,True,2726,llm,,True,2793,llm,,True,2732
+fte00119-base,synthetic,academic,,True,llm,,False,2197,llm,,False,2293,llm,,False,2305
+fte00120-base,synthetic,coding_agent_instruction,coding,False,llm,,True,1430,llm,,False,1588,llm,,True,1586
+fte00121-base,synthetic,ending_critical,email,False,llm_fallback_normalized,,False,2615,llm,,True,2683,llm,,True,2671
+fte00122-base,synthetic,technical_literals,coding,False,llm,,True,1977,llm_fallback_normalized,,False,2115,llm,,True,2062
+fte00123-base,synthetic,molecular_biology,ai_prompt,False,llm,,True,1679,llm,,True,1796,llm,,True,1798
+fte00124-base,synthetic,spoken_list,email,True,llm,damage facts_changed omission,False,1485,llm,damage facts_changed omission,False,1629,llm,,False,1655
+fte00125-base,synthetic,ending_critical,,True,llm,,False,2609,llm,,False,2692,llm,,False,2696
+fte00126-base,synthetic,casual_message,messaging,False,llm,,True,2888,llm,damage omission,True,2905,llm,,True,2909
+fte00126-fixpoint,synthetic,casual_message,messaging,True,llm,,False,2878,llm,,False,2947,llm,,False,2888
+fte00127-base,synthetic,self_correction_single,,False,llm_fallback_normalized,,False,2247,llm_fallback_normalized,,False,2376,llm,,True,2440
+fte00128-base,synthetic,preservation_discourse,email,True,llm,,False,3508,llm,,False,3370,llm,,False,3425
+fte00129-base,synthetic,asr_mishearing_preserve,notes,False,llm,,True,1402,llm,,True,1566,llm,,True,1581
+fte00130-base,synthetic,molecular_biology,email,False,llm,,True,1431,llm,,True,1568,llm,,True,1582
+fte00130-fixpoint,synthetic,molecular_biology,email,True,llm,,False,1440,llm,,False,1575,llm,,False,1579
+fte00131-base,synthetic,casual_message,,False,llm,,True,1544,llm,,True,1698,llm,,True,1712
+fte00133-base,synthetic,technical_literals,,False,llm,,True,2163,llm,,True,2266,llm,,True,2254
+fte00134-base,synthetic,academic,,False,llm,,False,1859,llm,,True,1941,llm,,True,1964
+fte00134-fixpoint,synthetic,academic,,True,llm,,False,1813,llm,,False,1947,llm,,False,1957
+fte00135-base,synthetic,preservation_discourse,,True,llm,,False,1721,llm,,False,1850,llm,,False,1856
+fte00138-base,synthetic,asr_mishearing_preserve,terminal,False,llm,,True,2133,llm,,True,2270,llm,,True,2246
+fte00138-fixpoint,synthetic,asr_mishearing_preserve,terminal,True,llm,,False,2132,llm,,False,2276,llm,,False,2242
+fte00139-base,synthetic,question_or_request_as_content,email,False,llm,,True,1840,llm,,True,1957,llm,,True,1971
+fte00140-base,synthetic,spoken_list,coding,False,llm,,False,1873,llm,,True,2079,llm,,True,2041
+fte00141-base,synthetic,self_correction_multiple,email,False,llm,,False,2217,llm,,False,2434,llm,,True,2344
+fte00141-fixpoint,synthetic,self_correction_multiple,email,True,llm,,False,1828,llm,,False,1929,llm,,False,1917
+fte00142-base,synthetic,preservation_discourse,coding,False,llm,,True,1811,llm,,True,1901,llm,,True,1911
+fte00144-base,synthetic,question_or_request_as_content,,False,llm,,True,1725,llm,,True,1893,llm,,True,1865
+fte00145-base,synthetic,vocabulary_authorized,ai_prompt,False,llm,,True,1438,llm_fallback_normalized,damage hallucination,False,1642,llm,,True,1586
+fte00146-base,synthetic,molecular_biology,ai_prompt,True,llm,,False,2720,llm_fallback_normalized,damage facts_changed hallucination missing_ending negation_changed omission unwanted_answer,False,4672,llm,,False,2732
+fte00147-base,synthetic,spoken_list,terminal,False,llm,,True,2296,llm,,True,2435,llm,,True,2392
+fte00148-base,synthetic,vocabulary_authorized,coding,False,llm,,True,1462,llm,,True,1597,llm,,True,1602
+fte00149-base,synthetic,quoted_instruction,email,False,llm,,True,1637,llm,,True,1777,llm,,True,1771
+fte00149-fixpoint,synthetic,quoted_instruction,email,True,llm,,False,1639,llm,,False,1765,llm,,False,1783
+fte00151-base,synthetic,question_or_request_as_content,ai_prompt,False,llm,,True,2090,llm,,False,2253,llm,,True,2185
+fte00151-fixpoint,synthetic,question_or_request_as_content,ai_prompt,True,llm,,False,2103,llm,,False,2189,llm,,False,2196
+fte00152-base,synthetic,molecular_biology,ai_prompt,False,llm,,True,1994,llm,,True,2042,llm,,True,2040
+fte00152-fixpoint,synthetic,molecular_biology,ai_prompt,True,llm,,False,1966,llm,,False,2052,llm,,False,2034
+fte00154-base,synthetic,technical_literals,notes,True,llm_fallback_normalized,damage facts_changed hallucination omission,False,1590,llm_fallback_normalized,,False,1788,llm,,False,1723
+fte00155-base,synthetic,ending_critical,,False,llm_fallback_normalized,,False,3177,llm_fallback_normalized,,False,3225,llm,,True,3200
+fte00156-base,synthetic,ending_critical,email,False,llm,,True,2545,llm,,True,2640,llm,,True,2628
+fte00157-base,synthetic,spoken_list,,False,llm,,True,1557,llm,,True,1748,llm,,True,1711
+fte00158-base,synthetic,ending_critical,terminal,True,llm_fallback_normalized,damage facts_changed omission,False,2600,llm_fallback_normalized,damage facts_changed omission,False,2656,llm,,False,2731
+fte00159-base,synthetic,preservation_discourse,ai_prompt,True,llm,,False,1751,llm,,False,1897,llm,,False,1916
+fte00160-base,synthetic,question_or_request_as_content,email,False,llm,,True,1670,llm,,True,1811,llm,,True,1820
+fte00161-base,synthetic,coding_agent_instruction,coding,False,llm,,True,1762,llm,,True,1878,llm,,True,1872
+fte00162-base,synthetic,self_correction_multiple,messaging,False,llm,,False,2322,llm_fallback_normalized,,False,2353,llm,,True,2267
+fte00163-base,synthetic,casual_message,email,False,llm_fallback_normalized,damage hallucination omission,False,3206,llm_fallback_normalized,damage hallucination omission,False,3232,llm,,True,3218
+fte00163-fixpoint,synthetic,casual_message,email,True,llm_fallback_normalized,damage hallucination omission,False,3192,llm_fallback_normalized,damage hallucination omission,False,3250,llm,,False,3219
+fte00164-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,,True,1445,llm,,True,1578,llm,,True,1571
+fte00165-base,synthetic,molecular_biology,email,False,llm_fallback_normalized,,False,2211,llm_fallback_normalized,,False,2148,llm,,True,2118
+fte00166-base,synthetic,academic,coding,False,llm,,True,3069,llm,,True,3108,llm,,True,3097
+fte00167-base,synthetic,software_ai_terms,,False,llm,,True,1412,llm,,True,1584,llm,,True,1568
+fte00168-base,synthetic,technical_literals,terminal,False,llm_fallback_normalized,,False,3238,llm_fallback_normalized,,False,3300,llm,,True,3252
+fte00170-base,synthetic,coding_agent_instruction,,False,llm,,True,1345,llm,,True,1518,llm,,True,1490
+fte00170-fixpoint,synthetic,coding_agent_instruction,,True,llm,,False,1352,llm,,False,1498,llm,,False,1476
+fte00171-base,synthetic,ending_critical,terminal,False,llm,,True,2909,llm_fallback_normalized,damage omission,False,2934,llm,,True,2938
+fte00172-base,synthetic,software_ai_terms,,False,llm,,True,1365,llm,,True,1518,llm,,True,1519
+fte00173-base,synthetic,software_ai_terms,messaging,False,llm,,True,1532,llm,,True,1672,llm,,True,1670
+fte00174-base,synthetic,self_correction_single,email,False,llm,,True,2112,llm_fallback_normalized,,False,2224,llm,,True,2286
+fte00175-base,synthetic,spoken_list,coding,False,llm,,False,1881,llm,,True,2055,llm,,True,2026
+fte00176-base,synthetic,spoken_list,ai_prompt,False,llm_fallback_normalized,,False,2152,llm,,True,2382,llm,,True,2374
+fte00177-base,synthetic,coding_agent_instruction,coding,False,llm,damage facts_changed omission,True,2707,llm_fallback_normalized,damage facts_changed hallucination missing_ending omission unwanted_answer,False,2917,llm,,True,2724
+fte00177-fixpoint,synthetic,coding_agent_instruction,coding,True,llm,damage facts_changed omission,False,2684,llm_fallback_normalized,damage facts_changed hallucination missing_ending omission unwanted_answer,False,2866,llm,,False,2724
+fte00178-base,synthetic,quoted_instruction,,True,llm,,False,1745,llm,,False,1876,llm_fallback_normalized,damage facts_changed,False,1863
+fte00179-base,synthetic,self_correction_single,terminal,False,llm,,False,2063,llm,,False,3790,llm,,True,2153
+fte00180-base,synthetic,molecular_biology,coding,True,llm,,False,3455,llm_fallback_normalized,damage facts_changed hallucination omission,False,3462,llm,,False,3460
+fte00181-base,synthetic,molecular_biology,coding,False,llm,,True,1538,llm,,True,1675,llm,,True,1708
+fte00183-base,synthetic,coding_agent_instruction,,False,llm,,True,1747,llm,,True,1881,llm,,True,1895
+fte00183-fixpoint,synthetic,coding_agent_instruction,,True,llm,,False,1744,llm,,False,1859,llm,,False,1886
+fte00184-base,synthetic,coding_agent_instruction,,False,llm,,True,1934,llm_fallback_normalized,,True,2098,llm,,True,2043
+fte00184-fixpoint,synthetic,coding_agent_instruction,,True,llm,,False,1947,llm_fallback_normalized,,False,2089,llm,,False,2036
+fte00185-base,synthetic,preservation_discourse,messaging,True,llm,,False,2886,llm,,False,3547,llm,,False,3027
+fte00186-base,synthetic,self_correction_single,coding,False,llm,,False,1923,llm_fallback_normalized,,False,2146,llm,,True,2000
+fte00187-base,synthetic,molecular_biology,notes,False,llm_fallback_normalized,,False,2068,llm,,False,2262,llm,,True,2177
+fte00187-fixpoint,synthetic,molecular_biology,notes,True,llm,,False,1693,llm,,False,1826,llm,,False,1812
+fte00188-base,synthetic,software_ai_terms,documents,False,llm,,True,1652,llm,,True,1808,llm,,True,1787
+fte00189-base,synthetic,preservation_discourse,coding,True,llm,,False,1715,llm,,False,1848,llm,,False,1863
+fte00190-base,synthetic,molecular_biology,,False,llm_fallback_normalized,,False,1966,llm_fallback_normalized,,False,3689,llm,,True,2121
+fte00191-base,synthetic,ending_critical,terminal,False,llm,,True,2261,llm,,True,2410,llm,,True,2359
+fte00191-fixpoint,synthetic,ending_critical,terminal,True,llm,,False,2257,llm,,False,2367,llm,,False,2363
+fte00192-base,synthetic,software_ai_terms,email,False,llm,,True,1456,llm,,True,1575,llm,,True,1580
+fte00193-base,synthetic,software_ai_terms,messaging,False,llm,,True,1390,llm,,True,1513,llm,,True,1523
+fte00194-base,synthetic,self_correction_multiple,,False,llm,,False,2114,llm,,False,2076,llm,,False,2074
+fte00194-fixpoint,synthetic,self_correction_multiple,,True,llm,,False,1439,llm,,False,1583,llm,,False,1582
+fte00195-base,synthetic,academic,,False,llm,,True,1363,llm,,True,1486,llm,,True,1476
+fte00195-fixpoint,synthetic,academic,,True,llm,,False,1371,llm,,False,1487,llm,,False,1490
+fte00196-base,synthetic,academic,,True,llm,,False,1296,llm,,False,1446,llm,,False,1436
+fte00197-base,synthetic,coding_agent_instruction,coding,True,llm,,False,1476,llm,,False,1621,llm,,False,1610
+fte00198-base,synthetic,preservation_discourse,coding,True,llm,,False,1528,llm,,False,1685,llm,,False,1677
+fte00200-base,synthetic,preservation_discourse,,False,llm,,True,1743,llm_fallback_normalized,,False,1942,llm,,True,1956
+fte00201-base,synthetic,technical_literals,coding,False,llm,,False,1557,llm_fallback_normalized,,False,1697,llm,,True,1697
+fte00202-base,synthetic,self_correction_multiple,ai_prompt,False,llm_fallback_normalized,,False,1942,llm,damage hallucination,False,2743,llm,,True,2248
+fte00203-base,synthetic,ending_critical,ai_prompt,False,llm,,False,2540,llm_fallback_normalized,damage hallucination omission,False,2752,llm,,True,2568
+fte00205-base,synthetic,casual_message,,True,llm,,False,1456,llm,,False,1595,llm,,False,1594
+fte00206-base,synthetic,casual_message,,False,llm,,False,1731,llm,,True,1987,llm,,True,1825
+fte00207-base,synthetic,self_correction_single,notes,False,llm_fallback_normalized,,False,2041,llm_fallback_normalized,,False,2191,llm,,True,2226
+fte00207-fixpoint,synthetic,self_correction_single,notes,True,llm_fallback_normalized,,False,1691,llm_fallback_normalized,,False,1819,llm,,False,1801
+fte00208-base,synthetic,question_or_request_as_content,terminal,False,llm,,True,2998,llm_fallback_normalized,,True,3041,llm,,True,2988
+fte00208-fixpoint,synthetic,question_or_request_as_content,terminal,True,llm,,False,2994,llm,,False,2980,llm,,False,2983
+fte00209-base,synthetic,technical_literals,notes,True,llm_fallback_normalized,,False,3167,llm_fallback_normalized,,False,3195,llm,,False,3156
+fte00210-base,synthetic,molecular_biology,email,True,llm,,False,1493,llm,,False,1646,llm,,False,1657
+fte00211-base,synthetic,self_correction_single,messaging,False,llm_fallback_normalized,damage missing_ending,False,2130,llm_fallback_normalized,damage missing_ending,False,2084,llm,,True,2136
+fte00211-fixpoint,synthetic,self_correction_single,messaging,True,llm,,False,1624,llm,,False,1760,llm,,False,1764
+fte00212-base,synthetic,casual_message,messaging,True,llm,,False,1626,llm,,False,1773,llm,,False,1769
+fte00214-base,synthetic,coding_agent_instruction,,False,llm_fallback_normalized,,False,1891,llm_fallback_normalized,damage facts_changed hallucination omission,False,2180,llm,,True,2067
+fte00215-base,synthetic,casual_message,messaging,False,llm,damage omission,True,2202,llm,damage omission,True,2302,llm,,True,2323
+fte00215-fixpoint,synthetic,casual_message,messaging,True,llm,,False,2248,llm,,False,2341,llm,,False,2333
+fte00216-base,synthetic,ending_critical,notes,False,llm,,True,2813,llm_fallback_normalized,,False,2884,llm,,True,2848
+fte00217-base,synthetic,preservation_discourse,documents,True,llm,,False,1878,llm,,False,1997,llm,,False,1981
+fte00218-base,synthetic,question_or_request_as_content,coding,False,llm,,True,1849,llm,,True,1989,llm,,True,1962
+fte00220-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,,True,1819,llm,,True,1917,llm,,True,1922
+fte00222-base,synthetic,molecular_biology,messaging,True,llm,,False,3770,llm,,False,3668,llm,,False,3674
+fte00224-base,synthetic,technical_literals,notes,False,llm,,False,3144,llm_fallback_normalized,,False,2859,llm,,True,2448
+fte00224-fixpoint,synthetic,technical_literals,notes,True,llm,damage omission,False,2000,llm_fallback_normalized,,False,2171,llm,,False,2076
+fte00225-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,,True,1319,llm,,True,1461,llm,,True,1455
+fte00226-base,synthetic,ending_critical,,False,llm_fallback_normalized,,False,2958,llm,,False,3039,llm,,True,2978
+fte00227-base,synthetic,preservation_discourse,messaging,False,llm,,False,3318,llm,,False,3236,llm,,True,3225
+fte00229-base,synthetic,academic,,False,llm,,True,1688,llm,,True,1817,llm,,True,1812
+fte00230-base,synthetic,asr_mishearing_preserve,coding,True,llm,,False,1716,llm_fallback_normalized,damage facts_changed hallucination omission,False,1865,llm,,False,1862
+fte00231-base,synthetic,molecular_biology,email,False,llm,,True,2655,llm_fallback_normalized,damage facts_changed omission,False,2703,llm,,True,2744
+fte00233-base,synthetic,casual_message,,False,llm,,True,1331,llm,,True,1486,llm,,True,1498
+fte00233-fixpoint,synthetic,casual_message,,True,llm,,False,1328,llm,,False,1479,llm,,False,1487
+fte00235-base,synthetic,preservation_discourse,documents,True,llm,,False,1645,llm,,False,1851,llm,,False,1856
+fte00240-base,synthetic,spoken_list,,False,llm,,True,2066,llm,,True,2188,llm,,True,2180
+fte00241-base,synthetic,technical_literals,coding,False,llm,,True,1680,llm,,True,1880,llm,,True,1811
+fte00243-base,synthetic,question_or_request_as_content,,False,llm,,True,1426,llm,,True,1564,llm,,True,1573
+fte00244-base,synthetic,self_correction_single,notes,False,llm,,False,3273,llm,,False,3380,llm,,False,3367
+fte00245-base,synthetic,spoken_list,email,False,llm_fallback_normalized,,False,2661,llm_fallback_normalized,damage hallucination,False,2922,llm,,True,2855
+fte00247-base,synthetic,spoken_list,ai_prompt,False,llm,,True,2364,llm,,False,2545,llm,,True,2494
+fte00249-base,synthetic,asr_mishearing_preserve,coding,False,llm,,True,1406,llm_fallback_normalized,damage facts_changed hallucination omission,False,1575,llm,,True,1556
+fte00250-base,synthetic,software_ai_terms,email,False,llm,,True,2975,llm,,True,2996,llm,,True,2964
+fte00251-base,synthetic,preservation_discourse,notes,True,llm,,False,1458,llm,,False,1614,llm,,False,1598
+fte00252-base,synthetic,technical_literals,coding,False,llm,,True,2029,llm_fallback_normalized,,True,2178,llm,,True,2113
+fte00253-base,synthetic,vocabulary_authorized,ai_prompt,False,llm,,True,1492,llm,,True,1643,llm,,True,1620
+fte00254-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,,True,1694,llm_fallback_normalized,damage facts_changed hallucination negation_changed omission unwanted_answer,False,1917,llm,,True,1838
+fte00255-base,synthetic,technical_literals,coding,True,llm,,False,1946,llm,,False,2057,llm,,False,2065
+fte00256-base,synthetic,software_ai_terms,ai_prompt,False,llm,,True,1448,llm,,True,1621,llm,,True,1587
+fte00257-base,synthetic,self_correction_single,,False,llm_fallback_normalized,,False,1940,llm,,False,2113,llm,,True,1862
+fte00257-fixpoint,synthetic,self_correction_single,,True,llm,,False,1397,llm,,False,1511,llm,,False,1489
+fte00258-base,synthetic,software_ai_terms,messaging,False,llm,,True,1835,llm,,True,1985,llm,,True,1939
+fte00259-base,synthetic,casual_message,messaging,False,llm,,True,1682,llm,,True,1807,llm,,True,1756
+fte00260-base,synthetic,spoken_list,coding,False,llm,,True,1765,llm,,True,1935,llm,,True,1930
+fte00262-base,synthetic,academic,coding,False,llm,,True,1495,llm,,True,1634,llm,,True,1630
+fte00263-base,synthetic,self_correction_single,coding,False,llm_fallback_normalized,,False,2049,llm_fallback_normalized,damage hallucination,False,2342,llm,,True,2257
+fte00265-base,synthetic,technical_literals,terminal,False,llm_fallback_normalized,,False,1876,llm_fallback_normalized,,False,1979,llm,,True,1973
+fte00266-base,synthetic,vocabulary_authorized,,False,llm,,False,1477,llm,,True,1641,llm,,False,1624
+fte00266-fixpoint,synthetic,vocabulary_authorized,,True,llm,,False,1465,llm,,False,1619,llm,,False,1614
+fte00267-base,synthetic,question_or_request_as_content,,False,llm,,True,1491,llm,,True,1639,llm,,True,1649
+fte00268-base,synthetic,quoted_instruction,messaging,False,llm,,True,1542,llm,,True,1696,llm,,True,1709
+fte00269-base,synthetic,self_correction_single,notes,False,llm_fallback_normalized,,False,1692,llm_fallback_normalized,,False,1875,llm,,True,1907
+fte00270-base,synthetic,academic,,False,llm,,True,1364,llm,,True,1510,llm,,True,1510
+fte00271-base,synthetic,spoken_list,coding,True,llm_fallback_normalized,damage facts_changed hallucination missing_ending omission,False,1617,llm,,False,1762,llm,,False,1759
+fte00272-base,synthetic,casual_message,,False,llm,,True,1612,llm,,True,1751,llm,,True,1755
+fte00274-base,synthetic,preservation_discourse,email,True,llm,,False,1747,llm,damage facts_changed omission,False,1803,llm,,False,1875
+fte00275-base,synthetic,casual_message,,False,llm,,True,1653,llm,,True,1809,llm,,True,1795
+fte00276-base,synthetic,preservation_discourse,notes,True,llm,,False,3174,llm_fallback_normalized,,False,3318,llm,,False,3261
+fte00277-base,synthetic,casual_message,messaging,False,llm,damage omission,True,2724,llm,,True,2792,llm,,True,2786
+fte00277-fixpoint,synthetic,casual_message,messaging,True,llm,,False,2775,llm,,False,2771,llm,,False,2807
+fte00279-base,synthetic,question_or_request_as_content,messaging,False,llm,,True,2773,llm,,True,2824,llm,,True,2799
+fte00279-fixpoint,synthetic,question_or_request_as_content,messaging,True,llm,,False,2770,llm,,False,2846,llm,,False,2787
+fte00280-base,synthetic,academic,,False,llm,,True,1551,llm,,True,1706,llm,,True,1677
+fte00281-base,synthetic,molecular_biology,,True,llm,,False,2983,llm,,False,3017,llm,,False,3009
+fte00282-base,synthetic,software_ai_terms,,True,llm,,False,1491,llm,,False,1637,llm,,False,1637
+fte00283-base,synthetic,question_or_request_as_content,,False,llm,,True,1577,llm,,True,1708,llm,,True,1712
+fte00283-fixpoint,synthetic,question_or_request_as_content,,True,llm,,False,1586,llm,,False,1709,llm,,False,1706
+fte00284-base,synthetic,technical_literals,notes,False,llm,,True,1848,llm_fallback_normalized,,False,1981,llm,,True,1948
+fte00285-base,synthetic,vocabulary_authorized,,False,llm,,True,1385,llm,,True,1549,llm,,True,1546
+fte00286-base,synthetic,casual_message,email,False,llm,,True,1939,llm,,True,2016,llm,,True,1924
+fte00288-base,synthetic,coding_agent_instruction,terminal,False,llm,,True,2729,llm,,True,2816,llm,,True,2693
+fte00289-base,synthetic,asr_mishearing_preserve,,False,llm_fallback_normalized,,False,2612,llm_fallback_normalized,,False,2629,llm,,True,2613
+fte00289-fixpoint,synthetic,asr_mishearing_preserve,,True,llm_fallback_normalized,,False,2584,llm,,False,2611,llm,,False,2619
+fte00290-base,synthetic,preservation_discourse,ai_prompt,True,llm,,False,1654,llm,,False,1853,llm,,False,1860
+fte00292-base,synthetic,vocabulary_authorized,,False,llm,,True,1960,llm,,True,2030,llm,,True,2045
+fte00292-fixpoint,synthetic,vocabulary_authorized,,True,llm,,False,1980,llm,,False,2033,llm,,False,2056
+fte00294-base,synthetic,self_correction_single,,False,llm_fallback_normalized,,False,1690,llm,,False,2009,llm,,True,1904
+fte00294-fixpoint,synthetic,self_correction_single,,True,llm,,False,1388,llm,,False,1542,llm,,False,1533
+fte00296-base,synthetic,software_ai_terms,,False,llm,,True,2173,llm,,True,2050,llm,,True,2049
+fte00297-base,synthetic,academic,terminal,False,llm,,True,1381,llm,,True,1550,llm,,True,1577
+fte00298-base,synthetic,molecular_biology,,True,llm,,False,3559,llm,,False,3522,llm,,False,3539
+fte00299-base,synthetic,academic,,True,llm,,False,1455,llm,,False,1614,llm,,False,1621
+fte00300-base,synthetic,technical_literals,terminal,False,llm,,True,2797,llm_fallback_normalized,,False,2962,llm,,True,2844
+fte00303-base,synthetic,self_correction_multiple,messaging,False,llm_fallback_normalized,,False,2179,llm_fallback_normalized,,False,3807,llm,,True,2349
+fte00304-base,synthetic,self_correction_multiple,notes,False,llm_fallback_normalized,,False,2108,llm_fallback_normalized,,False,2291,llm,,True,2177
+fte00305-base,synthetic,coding_agent_instruction,coding,False,llm,,True,1920,llm_fallback_normalized,,False,2082,llm,,True,2034
+fte00305-fixpoint,synthetic,coding_agent_instruction,coding,True,llm,,False,1919,llm_fallback_normalized,,False,2100,llm,,False,2037
+fte00307-base,synthetic,self_correction_multiple,messaging,False,llm_fallback_normalized,,False,2244,llm_fallback_normalized,,False,2310,llm,,True,2293
+fte00309-base,synthetic,question_or_request_as_content,terminal,False,llm,,True,1582,llm,,False,1732,llm,,True,1711
+fte00309-fixpoint,synthetic,question_or_request_as_content,terminal,True,llm,,False,1581,llm,,False,1731,llm,,False,1726
+fte00310-base,synthetic,self_correction_single,terminal,False,llm,,False,1772,llm,damage omission,False,1928,llm,,True,1924
+fte00311-base,synthetic,question_or_request_as_content,coding,False,llm,,True,1430,llm_fallback_normalized,damage missing_ending omission,False,1561,llm,,True,1568
+fte00312-base,synthetic,preservation_discourse,ai_prompt,True,llm,,False,1702,llm,,False,1912,llm,,False,1910
+fte00313-base,synthetic,technical_literals,terminal,False,llm_fallback_normalized,damage hallucination omission,False,2262,llm_fallback_normalized,,False,2559,llm,,True,2483
+fte00315-base,synthetic,preservation_discourse,terminal,True,llm,damage omission,False,2075,llm,,False,2223,llm,,False,2225
+fte00316-base,synthetic,preservation_discourse,,False,llm,damage omission,True,1351,llm,,False,1570,llm,,True,1529
+fte00317-base,synthetic,molecular_biology,notes,False,llm,,True,2643,llm,,True,2677,llm,,True,2684
+fte00318-base,synthetic,self_correction_single,coding,False,llm_fallback_normalized,,False,1706,llm_fallback_normalized,,False,1860,llm,,True,1935
+fte00318-fixpoint,synthetic,self_correction_single,coding,True,llm,,False,1429,llm,,False,1554,llm,,False,1565
+fte00319-base,synthetic,self_correction_single,ai_prompt,False,llm_fallback_normalized,damage hallucination omission,False,2046,llm_fallback_normalized,,False,2655,llm,,True,1952
+fte00320-base,synthetic,molecular_biology,,False,llm,,True,1661,llm,,True,1799,llm,,True,1783
+fte00321-base,synthetic,ending_critical,,False,llm,,True,2927,llm,,True,2983,llm,,True,2952
+fte00322-base,synthetic,self_correction_multiple,,False,llm_fallback_normalized,,False,1908,llm_fallback_normalized,damage hallucination omission,False,2325,llm,,True,2045
+fte00322-fixpoint,synthetic,self_correction_multiple,,True,llm,,False,1452,llm,,False,1597,llm,,False,1614
+fte00324-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,,True,1693,llm,,True,1823,llm,,True,1838
+fte00326-base,synthetic,preservation_discourse,messaging,True,llm,,False,1755,llm,,False,1866,llm,,False,1872
+fte00327-base,synthetic,coding_agent_instruction,,True,llm,,False,1350,llm,,False,1502,llm,,False,1487
+fte00328-base,synthetic,casual_message,,False,llm,,True,2645,llm,,True,2700,llm,,True,2681
+fte00328-fixpoint,synthetic,casual_message,,True,llm,,False,2650,llm,,False,2711,llm,,False,2700
+fte00329-base,synthetic,self_correction_single,documents,False,llm,,True,1919,llm_fallback_normalized,,False,2151,llm,,True,2136
+fte00330-base,synthetic,self_correction_single,messaging,False,llm_fallback_normalized,damage hallucination,False,2209,llm_fallback_normalized,damage hallucination,False,2198,llm,,True,2244
+fte00331-base,synthetic,molecular_biology,coding,False,llm,,True,1431,llm,,True,1595,llm,,True,1567
+fte00332-base,synthetic,academic,documents,False,llm,,True,1363,llm,,True,1549,llm,,True,1517
+fte00333-base,synthetic,self_correction_single,ai_prompt,False,llm,,True,1965,llm_fallback_normalized,,False,2256,llm,,True,2142
+fte00334-base,synthetic,spoken_list,messaging,False,llm,,True,1524,llm,,True,1682,llm,,False,1665
+fte00335-base,synthetic,spoken_list,coding,False,llm,,False,2267,llm,,False,2421,llm,,True,2174
+fte00336-base,synthetic,casual_message,,False,llm,,True,1820,llm,,True,1939,llm,,True,1921
+fte00337-base,synthetic,technical_literals,terminal,False,llm,,True,2012,llm,,True,2124,llm,,True,2105
+fte00338-base,synthetic,technical_literals,,False,llm,,True,1875,llm,,True,1994,llm,,True,1982
+fte00339-base,synthetic,vocabulary_authorized,email,False,llm,,True,1849,llm,,True,1970,llm,,True,1966
+fte00340-base,synthetic,vocabulary_authorized,,False,llm,,True,1388,llm,,True,1542,llm,,True,1528
+fte00340-fixpoint,synthetic,vocabulary_authorized,,True,llm,,False,1387,llm,,False,1545,llm,,False,1533
+fte00341-base,synthetic,ending_critical,messaging,False,llm,,True,3032,llm_fallback_normalized,damage facts_changed hallucination omission,False,3050,llm,,True,3036
+fte00341-fixpoint,synthetic,ending_critical,messaging,True,llm,,False,3020,llm_fallback_normalized,damage facts_changed hallucination omission,False,3123,llm,,False,3033
+fte00342-base,synthetic,casual_message,email,False,llm_fallback_normalized,,False,1851,llm_fallback_normalized,,False,2073,llm,,True,2042
+fte00342-fixpoint,synthetic,casual_message,email,True,llm,,False,1587,llm,,False,1705,llm,,False,1703
+fte00343-base,synthetic,preservation_discourse,email,True,llm,,False,2042,llm,,False,2225,llm,,False,2209
+fte00344-base,synthetic,preservation_discourse,,True,llm,,False,1953,llm,,False,2414,llm,,False,2141
+fte00345-base,synthetic,self_correction_single,,False,llm,,True,1842,llm_fallback_normalized,,False,2080,llm,,True,2081
+fte00346-base,synthetic,vocabulary_authorized,messaging,False,llm,,True,1528,llm,,True,1658,llm,,True,1686
+fte00347-base,synthetic,academic,messaging,False,llm,,True,2600,llm_fallback_normalized,damage facts_changed hallucination missing_ending omission,False,2631,llm,,True,2680
+fte00348-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,,True,1823,llm_fallback_normalized,damage hallucination,False,1991,llm,,True,1962
+fte00349-base,synthetic,coding_agent_instruction,,False,llm,,True,1794,llm,,True,1900,llm,,True,1907
+fte00350-base,synthetic,molecular_biology,,False,llm,,True,1678,llm,,True,1806,llm,,True,1820
+fte00351-base,synthetic,quoted_instruction,,False,llm,,True,2703,llm_fallback_normalized,,False,2773,llm,,True,2761
+fte00353-base,synthetic,coding_agent_instruction,,False,llm_fallback_normalized,,False,1651,llm_fallback_normalized,,False,1821,llm,,True,1838
+fte00355-base,synthetic,question_or_request_as_content,terminal,False,llm,,True,1507,llm,,True,1647,llm,,True,1630
+fte00356-base,synthetic,self_correction_multiple,,False,llm,,False,2524,llm_fallback_normalized,,False,2692,llm,,True,2667
+fte00357-base,synthetic,asr_mishearing_preserve,notes,False,llm,,True,1473,llm,,True,1644,llm,,True,1621
+fte00358-base,synthetic,asr_mishearing_preserve,,True,llm,,False,1565,llm,,False,1725,llm,,False,1708
+fte00359-base,synthetic,spoken_list,messaging,False,llm_fallback_normalized,damage omission,False,2058,llm,,False,2356,llm,,True,2243
+fte00360-base,synthetic,preservation_discourse,,True,llm,,False,1659,llm,,False,1864,llm,,False,1872
+fte00361-base,synthetic,quoted_instruction,email,False,llm,,True,1533,llm,,True,1669,llm,,True,1674
+fte00361-fixpoint,synthetic,quoted_instruction,email,True,llm,,False,1529,llm,,False,1669,llm,,False,1693
+fte00362-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,,True,1738,llm_fallback_normalized,,False,1864,llm,,True,1865
+fte00363-base,synthetic,quoted_instruction,coding,False,llm,,True,1696,llm,,True,1841,llm,,True,1837
+fte00364-base,synthetic,casual_message,email,False,llm,,False,2736,llm_fallback_normalized,damage facts_changed omission,False,2736,llm,,True,2764
+fte00365-base,synthetic,question_or_request_as_content,terminal,True,llm,,False,1604,llm,,False,1734,llm,,False,1732
+fte00368-base,synthetic,spoken_list,,False,llm,,True,1576,llm,,True,1752,llm,,True,1744
+fte00369-base,synthetic,coding_agent_instruction,ai_prompt,True,llm,,False,1427,llm,,False,1565,llm,,False,1564
+fte00371-base,synthetic,technical_literals,terminal,True,llm,,False,3001,llm_fallback_normalized,,False,3087,llm,,False,3036
+fte00372-base,synthetic,casual_message,email,False,llm,,True,1828,llm,,True,1936,llm,,True,1937
+fte00372-fixpoint,synthetic,casual_message,email,True,llm,,False,1821,llm,,False,1944,llm,,False,1935
+fte00373-base,synthetic,self_correction_multiple,messaging,False,llm_fallback_normalized,,False,2428,llm_fallback_normalized,,False,2301,llm,,True,2275
+fte00374-base,synthetic,asr_mishearing_preserve,coding,False,llm,damage facts_changed omission,False,2929,llm_fallback_normalized,damage facts_changed hallucination omission,False,2831,llm,,True,2814
+fte00375-base,synthetic,asr_mishearing_preserve,coding,False,llm,,True,3224,llm,,True,2985,llm,,True,2912
+fte00376-base,synthetic,asr_mishearing_preserve,coding,False,llm,,False,2756,llm_fallback_normalized,damage facts_changed hallucination omission,False,2530,llm,,True,2345
+fte00376-fixpoint,synthetic,asr_mishearing_preserve,coding,True,llm,damage facts_changed omission,False,1821,llm_fallback_normalized,damage facts_changed hallucination omission,False,1944,llm,,False,1986
+fte00377-base,synthetic,ending_critical,,False,llm,,True,2820,llm,,True,2816,llm,,True,2828
+fte00378-base,synthetic,question_or_request_as_content,,False,llm,,True,1774,llm,,True,1909,llm,,True,1887
+fte00378-fixpoint,synthetic,question_or_request_as_content,,True,llm,,False,1771,llm,,False,1905,llm,,False,1909
+fte00379-base,synthetic,self_correction_multiple,notes,False,llm_fallback_normalized,,False,1971,llm,,True,2213,llm,,True,2223
+fte00380-base,synthetic,coding_agent_instruction,terminal,False,llm_fallback_normalized,,False,2002,llm_fallback_normalized,,False,2112,llm,,True,2153
+fte00380-fixpoint,synthetic,coding_agent_instruction,terminal,True,llm,,False,1640,llm,,False,1760,llm,,False,1772
+fte00382-base,synthetic,self_correction_multiple,email,False,llm,,False,2989,llm_fallback_normalized,,False,2828,llm,,True,2818
+fte00383-base,synthetic,question_or_request_as_content,documents,True,llm,,False,1369,llm,,False,1531,llm,,False,1518
+fte00384-base,synthetic,casual_message,email,False,llm,,False,1949,llm,,False,2032,llm,,True,2008
+fte00385-base,synthetic,academic,documents,False,llm,,True,1784,llm,,True,1878,llm,,True,1862
+fte00386-base,synthetic,academic,ai_prompt,False,llm,,True,1465,llm,,True,1599,llm,,True,1600
+fte00388-base,synthetic,quoted_instruction,,True,llm,,False,1915,llm,,False,2007,llm,,False,2012
+fte00389-base,synthetic,ending_critical,,False,llm,,False,2719,llm,,False,2779,llm,,True,2705
+fte00390-base,synthetic,coding_agent_instruction,terminal,False,llm_fallback_normalized,,False,1971,llm_fallback_normalized,,False,2093,llm,,True,2061
+fte00391-base,synthetic,software_ai_terms,,False,llm,,True,1755,llm_fallback_normalized,,False,1924,llm,,True,1840
+fte00392-base,synthetic,software_ai_terms,ai_prompt,False,llm,,True,1427,llm,,True,1563,llm,,True,1552
+fte00392-fixpoint,synthetic,software_ai_terms,ai_prompt,True,llm,,False,1420,llm,,False,1554,llm,,False,1552
+fte00394-base,synthetic,software_ai_terms,ai_prompt,True,llm,,False,3100,llm,,False,3124,llm,,False,3151
+fte00395-base,synthetic,question_or_request_as_content,notes,False,llm,,True,1677,llm,,True,1800,llm,,True,1813
+fte00397-base,synthetic,casual_message,messaging,False,llm,,True,1812,llm,,True,1916,llm,,True,1917
+fte00397-fixpoint,synthetic,casual_message,messaging,True,llm,,False,1798,llm,,False,1929,llm,,False,1932
+fte00398-base,synthetic,self_correction_single,email,False,llm_fallback_normalized,,False,4367,llm_fallback_normalized,,False,3698,llm,,True,3169
+fte00399-base,synthetic,self_correction_single,notes,False,llm_fallback_normalized,,False,1995,llm_fallback_normalized,,False,2124,llm,,True,2112
+fte00399-fixpoint,synthetic,self_correction_single,notes,True,llm,,False,1614,llm,,False,1733,llm,,False,1730
+fte00401-base,synthetic,technical_literals,coding,False,llm,,True,1511,llm_fallback_normalized,,False,1629,llm,,True,1630
+fte00402-base,synthetic,casual_message,messaging,False,llm,,True,1472,llm,,True,1609,llm,,True,1626
+fte00404-base,synthetic,self_correction_multiple,ai_prompt,False,llm_fallback_normalized,,False,1935,llm_fallback_normalized,,False,2077,llm,,True,2134
+fte00404-fixpoint,synthetic,self_correction_multiple,ai_prompt,True,llm,,False,1524,llm,,False,1682,llm,,False,1659
+fte00405-base,synthetic,preservation_discourse,documents,True,llm,,False,1618,llm,,False,1760,llm,,False,1761
+fte00406-base,synthetic,ending_critical,messaging,False,llm,,True,2475,llm,,True,2557,llm,,True,2538
+fte00407-base,synthetic,coding_agent_instruction,terminal,False,llm_fallback_normalized,,False,1845,llm_fallback_normalized,,False,2047,llm,,True,2064
+fte00408-base,synthetic,self_correction_single,terminal,False,llm,,False,2049,llm_fallback_normalized,damage hallucination,False,2338,llm,,True,2146
+fte00408-fixpoint,synthetic,self_correction_single,terminal,True,llm,,False,1630,llm,,False,1798,llm,,False,1760
+fte00409-base,synthetic,software_ai_terms,ai_prompt,False,llm,,True,1750,llm,,True,1898,llm,,True,1865
+fte00410-base,synthetic,academic,notes,False,llm,,True,2838,llm,,True,2884,llm,,True,2871
+fte00411-base,synthetic,self_correction_single,email,False,llm_fallback_normalized,,False,1715,llm,,True,1979,llm,,True,1944
+fte00412-base,synthetic,casual_message,,False,llm,,True,1340,llm,,True,1488,llm,,True,1477
+fte00412-fixpoint,synthetic,casual_message,,True,llm,,False,1349,llm,,False,1490,llm,,False,1465
+fte00413-base,synthetic,preservation_discourse,email,True,llm,,False,4537,llm,,False,3197,llm,,False,3190
+fte00415-base,synthetic,coding_agent_instruction,ai_prompt,True,llm,,False,1439,llm,,False,1587,llm,,False,1573
+fte00416-base,synthetic,preservation_discourse,terminal,False,llm,damage omission,True,1953,llm_fallback_normalized,damage omission,False,1935,llm,,True,1931
+fte00417-base,synthetic,software_ai_terms,,False,llm,,True,1815,llm_fallback_normalized,,False,1935,llm,,True,1944
+fte00418-base,synthetic,molecular_biology,messaging,False,llm_fallback_normalized,,False,1919,llm_fallback_normalized,,False,2331,llm,,True,2030
+fte00419-base,synthetic,molecular_biology,ai_prompt,False,llm,,False,3087,llm,,True,3076,llm,,True,3095
+fte00420-base,synthetic,coding_agent_instruction,coding,False,llm,,True,1385,llm,,True,1521,llm,,True,1534
+fte00421-base,synthetic,preservation_discourse,documents,False,llm,,True,2665,llm,,False,2807,llm,,True,2716
+fte00422-base,synthetic,software_ai_terms,,True,llm,,False,1731,llm,,False,1852,llm,,False,1847
+fte00423-base,synthetic,spoken_list,ai_prompt,False,llm,,True,1729,llm,,False,1828,llm,,True,1872
+fte00425-base,synthetic,coding_agent_instruction,,True,llm,damage omission,False,1724,llm,damage omission,False,1872,llm,,False,1857
+fte00426-base,synthetic,preservation_discourse,,True,llm,,False,3149,llm,,False,3222,llm,,False,3201
+fte00427-base,synthetic,casual_message,messaging,False,llm_fallback_normalized,,False,1779,llm,,True,1983,llm,,True,1968
+fte00428-base,synthetic,software_ai_terms,coding,False,llm_fallback_normalized,,False,1783,llm_fallback_normalized,damage hallucination missing_ending omission,False,1961,llm,,True,2029
+fte00428-fixpoint,synthetic,software_ai_terms,coding,True,llm,,False,1489,llm,,False,1645,llm,,False,1635
+fte00429-base,synthetic,preservation_discourse,messaging,True,llm,damage facts_changed omission,False,1665,llm,damage facts_changed omission,False,1883,llm,,False,1912
+fte00430-base,synthetic,quoted_instruction,,False,llm,,True,1470,llm,,False,1629,llm,,True,1606
+fte00430-fixpoint,synthetic,quoted_instruction,,True,llm,,False,1461,llm,,False,1614,llm,,False,1607
+fte00431-base,synthetic,casual_message,,True,llm,,False,1866,llm,,False,1982,llm,,False,2003
+fte00432-base,synthetic,ending_critical,terminal,False,llm,,True,2423,llm,,True,2532,llm,,True,2502
+fte00433-base,synthetic,question_or_request_as_content,notes,True,llm,,False,1842,llm,,False,1952,llm,,False,1957
+fte00434-base,synthetic,quoted_instruction,,False,llm,,True,2639,llm,,False,2405,llm,,True,2243
+fte00436-base,synthetic,technical_literals,,False,llm,damage hallucination omission,False,1974,llm_fallback_normalized,damage hallucination omission,False,2162,llm,,True,2069
+fte00437-base,synthetic,technical_literals,coding,False,llm_fallback_normalized,,False,2118,llm_fallback_normalized,damage hallucination,False,2320,llm,,True,2194
+fte00438-base,synthetic,spoken_list,,False,llm,,True,1520,llm,,True,1671,llm,,True,1626
+fte00439-base,synthetic,self_correction_single,,False,llm_fallback_normalized,,False,1978,llm_fallback_normalized,,False,2014,llm,,True,2033
+fte00441-base,synthetic,casual_message,messaging,False,llm,,True,1628,llm,,True,1753,llm,,True,1756
+fte00441-fixpoint,synthetic,casual_message,messaging,True,llm,,False,1633,llm,,False,1760,llm,,False,1758
+fte00442-base,synthetic,preservation_discourse,ai_prompt,False,llm,damage omission,False,3097,llm,damage facts_changed hallucination omission,False,2875,llm,,False,2517
+fte00443-base,synthetic,quoted_instruction,documents,False,llm,,True,1983,llm,,True,2100,llm,,True,2094
+fte00444-base,synthetic,software_ai_terms,,False,llm_fallback_normalized,,False,1883,llm,,False,2241,llm,,True,1969
+fte00445-base,synthetic,ending_critical,email,False,llm,,True,2811,llm,,True,2858,llm,,True,2835
+fte00447-base,synthetic,molecular_biology,,False,llm,,True,3065,llm_fallback_normalized,damage facts_changed hallucination omission,False,3129,llm,,True,3094
+fte00447-fixpoint,synthetic,molecular_biology,,True,llm,,False,3116,llm_fallback_normalized,damage facts_changed hallucination omission,False,3164,llm,,False,3079
+fte00448-base,synthetic,self_correction_single,messaging,False,llm_fallback_normalized,damage facts_changed hallucination omission,False,4205,llm_fallback_normalized,,False,3188,llm,,True,3031
+fte00448-fixpoint,synthetic,self_correction_single,messaging,True,llm_fallback_normalized,damage facts_changed hallucination omission,False,2611,llm,,False,2623,llm,,False,2641
+fte00449-base,synthetic,asr_mishearing_preserve,,False,llm,,True,1524,llm,,False,1664,llm,,True,1690
+fte00450-base,synthetic,casual_message,messaging,False,llm,,True,1738,llm,,True,1841,llm,,True,1831
+fte00451-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,,True,1929,llm_fallback_normalized,,False,2050,llm,,True,2033
+fte00452-base,synthetic,coding_agent_instruction,,False,llm,,True,1750,llm,,True,1872,llm,,True,1884
+fte00453-base,synthetic,question_or_request_as_content,ai_prompt,False,llm_fallback_normalized,,False,2845,llm_fallback_normalized,damage facts_changed,False,2802,llm,,True,2867
+fte00454-base,synthetic,technical_literals,coding,False,llm,,True,2094,llm,,True,2189,llm,,True,2190
+fte00456-base,synthetic,self_correction_single,notes,False,llm,,False,2106,llm,,False,2739,llm,,True,2230
+fte00457-base,synthetic,ending_critical,,True,llm,,False,3080,llm,,False,3117,llm,,False,3072
+fte00459-base,synthetic,coding_agent_instruction,,False,llm,,True,1877,llm,,True,2006,llm,,True,1988
+fte00460-base,synthetic,question_or_request_as_content,email,False,llm_fallback_normalized,,False,2506,llm_fallback_normalized,damage hallucination omission unwanted_answer,False,2657,llm,,True,2579
+fte00461-base,synthetic,coding_agent_instruction,coding,False,llm,damage facts_changed omission,True,1774,llm,damage facts_changed omission,True,1975,llm,,True,1928
+fte00463-base,synthetic,coding_agent_instruction,ai_prompt,False,llm,,True,2867,llm_fallback_normalized,damage facts_changed hallucination omission unwanted_answer,False,2971,llm,,True,2907
+fte00464-base,synthetic,coding_agent_instruction,ai_prompt,True,llm,,False,2156,llm,,False,2250,llm,,False,2230
+fte00465-base,synthetic,technical_literals,coding,False,llm,,True,2405,llm_fallback_normalized,,False,2581,llm,,True,2479
+fte00465-fixpoint,synthetic,technical_literals,coding,True,llm,,False,2398,llm_fallback_normalized,,False,2579,llm,,False,2474
+fte00466-base,synthetic,quoted_instruction,,False,llm,,True,2979,llm,,False,3087,llm,,True,2992
+fte00467-base,synthetic,quoted_instruction,notes,True,llm,,False,2030,llm,,False,2134,llm,,False,2136
+ds-test-0000,disfluencyspeech,conversational_disfluent,,,llm,,,1396,llm,,,1522,llm,,,1497
+ds-test-0001,disfluencyspeech,conversational_disfluent,,,llm,,,1278,llm,,,1443,llm,,,1420
+ds-test-0002,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1305,llm_fallback_normalized,damage unauthorized_edit,,1475,llm,,,1493
+ds-test-0003,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1315,llm,,,1567,llm,,,1559
+ds-test-0004,disfluencyspeech,conversational_disfluent,,,llm,,,1607,llm,,,1998,llm,,,1820
+ds-test-0005,disfluencyspeech,conversational_disfluent,,,llm,,,1341,llm,,,1487,llm,,,1484
+ds-test-0006,disfluencyspeech,conversational_disfluent,,,llm,,,1286,llm,,,1430,llm,,,1420
+ds-test-0007,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1316,llm,,,1455,llm,,,1455
+ds-test-0008,disfluencyspeech,conversational_disfluent,,,llm,,,1319,llm,,,1463,llm,,,1447
+ds-test-0009,disfluencyspeech,conversational_disfluent,,,llm,,,1601,llm,,,1816,llm,,,1768
+ds-test-0010,disfluencyspeech,conversational_disfluent,,,llm,,,1317,llm,,,1456,llm,,,1457
+ds-test-0011,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1313,llm,damage unauthorized_edit,,1469,llm,damage unauthorized_edit,,1476
+ds-test-0012,disfluencyspeech,conversational_disfluent,,,llm,,,1319,llm,,,1463,llm,,,1464
+ds-test-0013,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1423,llm,,,1597,llm,damage unauthorized_edit,,1561
+ds-test-0014,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1363,llm,damage unauthorized_edit,,1568,llm,damage unauthorized_edit,,1539
+ds-test-0015,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1262,llm,,,1463,llm,damage unauthorized_edit,,1403
+ds-test-0016,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1422,llm,,,1585,llm,damage unauthorized_edit,,1566
+ds-test-0017,disfluencyspeech,conversational_disfluent,,,llm,,,1409,llm,damage unauthorized_edit,,1540,llm,,,1566
+ds-test-0018,disfluencyspeech,conversational_disfluent,,,llm,,,1397,llm,,,1572,llm,,,1535
+ds-test-0019,disfluencyspeech,conversational_disfluent,,,llm,,,1568,llm,,,1792,llm,,,1797
+ds-test-0020,disfluencyspeech,conversational_disfluent,,,llm,,,1312,llm,,,1438,llm,,,1441
+ds-test-0021,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,,,1654,llm_fallback_normalized,damage unauthorized_edit,,2110,llm,,,1876
+ds-test-0022,disfluencyspeech,conversational_disfluent,,,llm,,,1328,llm,,,1455,llm,,,1459
+ds-test-0023,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1295,llm_fallback_normalized,damage unauthorized_edit,,1446,llm_fallback_normalized,damage unauthorized_edit,,1413
+ds-test-0024,disfluencyspeech,conversational_disfluent,,,llm,,,1507,llm,,,1654,llm,,,1616
+ds-test-0025,disfluencyspeech,conversational_disfluent,,,llm,,,1298,llm,,,1467,llm,,,1441
+ds-test-0026,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1342,llm,damage unauthorized_edit,,1567,llm,,,1529
+ds-test-0027,disfluencyspeech,conversational_disfluent,,,llm,,,1569,llm,damage unauthorized_edit,,1813,llm,,,1787
+ds-test-0028,disfluencyspeech,conversational_disfluent,,,llm,,,1278,llm,,,1425,llm,,,1419
+ds-test-0029,disfluencyspeech,conversational_disfluent,,,llm,,,1435,llm,,,1612,llm,,,1578
+ds-test-0030,disfluencyspeech,conversational_disfluent,,,llm,,,1435,llm,,,1618,llm,,,1579
+ds-test-0031,disfluencyspeech,conversational_disfluent,,,llm,,,1281,llm,damage unauthorized_edit,,1483,llm,,,1401
+ds-test-0032,disfluencyspeech,conversational_disfluent,,,llm,,,1434,llm,,,1611,llm,,,1583
+ds-test-0033,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1309,llm_fallback_normalized,damage unauthorized_edit,,1508,llm_fallback_normalized,damage unauthorized_edit,,1462
+ds-test-0034,disfluencyspeech,conversational_disfluent,,,llm,,,1558,llm,,,1724,llm,,,1697
+ds-test-0035,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1399,llm,damage unauthorized_edit,,1560,llm,,,1575
+ds-test-0036,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1377,llm,,,1541,llm,,,1539
+ds-test-0037,disfluencyspeech,conversational_disfluent,,,llm,,,1453,llm,,,1628,llm,,,1568
+ds-test-0038,disfluencyspeech,conversational_disfluent,,,llm,,,1474,llm_fallback_normalized,damage unauthorized_edit,,1481,llm,,,1614
+ds-test-0039,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1328,llm_fallback_normalized,damage unauthorized_edit,,1530,llm,,,1497
+ds-test-0040,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1240,llm_fallback_normalized,damage unauthorized_edit,,1372,llm,damage unauthorized_edit,,1388
+ds-test-0041,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1328,llm_fallback_normalized,damage unauthorized_edit,,1518,llm,damage unauthorized_edit,,1488
+ds-test-0042,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1251,llm_fallback_normalized,damage unauthorized_edit,,1427,llm_fallback_normalized,damage unauthorized_edit,,1400
+ds-test-0043,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1260,llm,damage unauthorized_edit,,1443,llm,damage unauthorized_edit,,1401
+ds-test-0044,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1362,llm_fallback_normalized,damage unauthorized_edit,,1571,llm,damage unauthorized_edit,,1524
+ds-test-0045,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1400,llm,damage unauthorized_edit,,1542,llm,damage unauthorized_edit,,1540
+ds-test-0046,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1442,llm_fallback_normalized,damage unauthorized_edit,,1605,llm,damage unauthorized_edit,,1615
+ds-test-0047,disfluencyspeech,conversational_disfluent,,,llm,,,1484,llm,,,1635,llm,,,1620
+ds-test-0048,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1342,llm_fallback_normalized,damage unauthorized_edit,,1494,llm,,,1487
+ds-test-0049,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1725,llm,damage unauthorized_edit,,2007,llm,damage unauthorized_edit,,1962
+ds-test-0050,disfluencyspeech,conversational_disfluent,,,llm,,,1498,llm,,,1663,llm,,,1623
+ds-test-0051,disfluencyspeech,conversational_disfluent,,,llm,,,1502,llm,,,1655,llm,,,1635
+ds-test-0052,disfluencyspeech,conversational_disfluent,,,llm,,,1485,llm,,,1626,llm,,,1616
+ds-test-0053,disfluencyspeech,conversational_disfluent,,,llm,,,1373,llm,,,1568,llm,,,1491
+ds-test-0054,disfluencyspeech,conversational_disfluent,,,llm,,,1282,llm,,,1487,llm,,,1423
+ds-test-0055,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1442,llm_fallback_normalized,damage unauthorized_edit,,1599,llm,,,1615
+ds-test-0056,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1310,llm,damage unauthorized_edit,,1458,llm,damage unauthorized_edit,,1445
+ds-test-0057,disfluencyspeech,conversational_disfluent,,,llm,,,1306,llm_fallback_normalized,damage unauthorized_edit,,1442,llm,,,1451
+ds-test-0058,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1457,llm,damage unauthorized_edit,,1611,llm,,,1632
+ds-test-0059,disfluencyspeech,conversational_disfluent,,,llm,,,1310,llm,,,1458,llm,,,1456
+ds-test-0060,disfluencyspeech,conversational_disfluent,,,llm,,,1408,llm_fallback_normalized,damage unauthorized_edit,,1560,llm,,,1571
+ds-test-0061,disfluencyspeech,conversational_disfluent,,,llm,,,1481,llm,,,1683,llm,,,1650
+ds-test-0062,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1367,llm_fallback_normalized,damage unauthorized_edit,,1540,llm,damage unauthorized_edit,,1563
+ds-test-0063,disfluencyspeech,conversational_disfluent,,,llm,,,1339,llm,,,1477,llm,,,1488
+ds-test-0064,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1349,llm_fallback_normalized,damage unauthorized_edit,,1483,llm_fallback_normalized,damage unauthorized_edit,,1460
+ds-test-0065,disfluencyspeech,conversational_disfluent,,,llm,,,1466,llm,,,1602,llm,,,1591
+ds-test-0066,disfluencyspeech,conversational_disfluent,,,llm,,,1458,llm,,,1582,llm,,,1568
+ds-test-0067,disfluencyspeech,conversational_disfluent,,,llm,,,1434,llm,,,1563,llm,,,1548
+ds-test-0068,disfluencyspeech,conversational_disfluent,,,llm,,,1373,llm,,,1490,llm,,,1498
+ds-test-0069,disfluencyspeech,conversational_disfluent,,,llm,,,1408,llm,,,1541,llm,,,1539
+ds-test-0070,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1309,llm_fallback_normalized,damage unauthorized_edit,,1446,llm,,,1475
+ds-test-0071,disfluencyspeech,conversational_disfluent,,,llm,,,1309,llm,,,1481,llm,,,1444
+ds-test-0072,disfluencyspeech,conversational_disfluent,,,llm,,,1421,llm,,,1603,llm,,,1571
+ds-test-0073,disfluencyspeech,conversational_disfluent,,,llm,,,1386,llm,,,1530,llm,,,1510
+ds-test-0074,disfluencyspeech,conversational_disfluent,,,llm,,,1365,llm,,,1516,llm,,,1508
+ds-test-0075,disfluencyspeech,conversational_disfluent,,,llm,,,1398,llm,,,1603,llm,,,1562
+ds-test-0076,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1393,llm,,,1499,llm,,,1494
+ds-test-0077,disfluencyspeech,conversational_disfluent,,,llm,,,1439,llm,,,1587,llm_fallback_normalized,damage unauthorized_edit,,1533
+ds-test-0078,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1366,llm,damage unauthorized_edit,,1536,llm,damage unauthorized_edit,,1504
+ds-test-0079,disfluencyspeech,conversational_disfluent,,,llm,,,1267,llm,,,1412,llm,,,1413
+ds-test-0080,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1375,llm_fallback_normalized,damage unauthorized_edit,,1572,llm,damage unauthorized_edit,,1529
+ds-test-0081,disfluencyspeech,conversational_disfluent,,,llm,,,1406,llm,,,1557,llm,,,1556
+ds-test-0082,disfluencyspeech,conversational_disfluent,,,llm,,,1329,llm,,,1472,llm,,,1466
+ds-test-0083,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1241,llm,damage unauthorized_edit,,1509,llm,,,1482
+ds-test-0084,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1254,llm_fallback_normalized,damage unauthorized_edit,,1402,llm,,,1443
+ds-test-0085,disfluencyspeech,conversational_disfluent,,,llm,,,1387,llm,,,1554,llm,,,1529
+ds-test-0086,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1375,llm,damage unauthorized_edit,,1529,llm,damage unauthorized_edit,,1520
+ds-test-0087,disfluencyspeech,conversational_disfluent,,,llm,,,1326,llm,,,1464,llm,,,1454
+ds-test-0088,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1335,llm,damage unauthorized_edit,,1477,llm,damage unauthorized_edit,,1462
+ds-test-0089,disfluencyspeech,conversational_disfluent,,,llm,,,1377,llm,,,1517,llm,,,1512
+ds-test-0090,disfluencyspeech,conversational_disfluent,,,llm,,,1308,llm,,,1461,llm,,,1446
+ds-test-0091,disfluencyspeech,conversational_disfluent,,,llm,,,1426,llm,,,1581,llm,,,1547
+ds-test-0092,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1275,llm,,,1479,llm,,,1457
+ds-test-0093,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1248,llm,,,1474,llm,,,1410
+ds-test-0094,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1389,llm,,,1533,llm,,,1528
+ds-test-0095,disfluencyspeech,conversational_disfluent,,,llm,,,1537,llm,,,1661,llm,,,1666
+ds-test-0096,disfluencyspeech,conversational_disfluent,,,llm,,,1301,llm,,,1463,llm,,,1451
+ds-test-0097,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1451,llm_fallback_normalized,damage unauthorized_edit,,1592,llm_fallback_normalized,damage unauthorized_edit,,1518
+ds-test-0098,disfluencyspeech,conversational_disfluent,,,llm,,,1380,llm,damage unauthorized_edit,,1507,llm,,,1509
+ds-test-0099,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1654,llm,damage unauthorized_edit,,1815,llm,damage unauthorized_edit,,1787
+ds-test-0100,disfluencyspeech,conversational_disfluent,,,llm,,,1359,llm,,,1500,llm,,,1509
+ds-test-0101,disfluencyspeech,conversational_disfluent,,,llm,,,1353,llm,,,1497,llm,,,1496
+ds-test-0102,disfluencyspeech,conversational_disfluent,,,llm,,,1477,llm,,,1647,llm,,,1612
+ds-test-0103,disfluencyspeech,conversational_disfluent,,,llm,,,1363,llm_fallback_normalized,damage unauthorized_edit,,1513,llm,,,1505
+ds-test-0104,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1828,llm,,,2062,llm,,,1873
+ds-test-0105,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1515,llm_fallback_normalized,damage unauthorized_edit,,1599,llm,damage unauthorized_edit,,1673
+ds-test-0106,disfluencyspeech,conversational_disfluent,,,llm,,,1320,llm,,,1458,llm,,,1473
+ds-test-0107,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1524,llm,damage unauthorized_edit,,1666,llm,damage unauthorized_edit,,1649
+ds-test-0108,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1321,llm,damage unauthorized_edit,,1489,llm,,,1489
+ds-test-0109,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1502,llm_fallback_normalized,damage unauthorized_edit,,1646,llm,,,1615
+ds-test-0110,disfluencyspeech,conversational_disfluent,,,llm,,,1423,llm,,,1578,llm,,,1570
+ds-test-0111,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1492,llm,damage unauthorized_edit,,1632,llm,,,1649
+ds-test-0112,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1602,llm,damage unauthorized_edit,,1842,llm,damage unauthorized_edit,,1781
+ds-test-0113,disfluencyspeech,conversational_disfluent,,,llm,,,1553,llm_fallback_normalized,damage unauthorized_edit,,1716,llm,,,1645
+ds-test-0114,disfluencyspeech,conversational_disfluent,,,llm,,,1650,llm,damage unauthorized_edit,,1898,llm,damage unauthorized_edit,,1769
+ds-test-0115,disfluencyspeech,conversational_disfluent,,,llm,,,1458,llm,,,1634,llm,,,1589
+ds-test-0116,disfluencyspeech,conversational_disfluent,,,llm,,,1574,llm,damage unauthorized_edit,,1756,llm,,,1780
+ds-test-0117,disfluencyspeech,conversational_disfluent,,,llm,,,1413,llm,,,1569,llm,,,1553
+ds-test-0118,disfluencyspeech,conversational_disfluent,,,llm,,,1480,llm,,,1643,llm,,,1609
+ds-test-0119,disfluencyspeech,conversational_disfluent,,,llm,,,1443,llm,,,1601,llm,,,1585
+ds-test-0120,disfluencyspeech,conversational_disfluent,,,llm,,,1303,llm,,,1466,llm,,,1431
+ds-test-0121,disfluencyspeech,conversational_disfluent,,,llm,,,1481,llm,,,1640,llm,,,1615
+ds-test-0122,disfluencyspeech,conversational_disfluent,,,llm,,,1332,llm,damage unauthorized_edit,,1482,llm,,,1444
+ds-test-0123,disfluencyspeech,conversational_disfluent,,,llm,,,1368,llm,,,1509,llm,,,1509
+ds-test-0124,disfluencyspeech,conversational_disfluent,,,llm,,,1330,llm,,,1490,llm,,,1475
+ds-test-0125,disfluencyspeech,conversational_disfluent,,,llm,,,1731,llm,,,1944,llm,,,1914
+ds-test-0126,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1349,llm,damage unauthorized_edit,,1483,llm,damage unauthorized_edit,,1487
+ds-test-0127,disfluencyspeech,conversational_disfluent,,,llm,,,1364,llm,,,1508,llm,,,1506
+ds-test-0128,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1335,llm,,,1573,llm_fallback_normalized,damage unauthorized_edit,,1489
+ds-test-0129,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1437,llm_fallback_normalized,damage unauthorized_edit,,1587,llm_fallback_normalized,damage unauthorized_edit,,1593
+ds-test-0130,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1303,llm_fallback_normalized,damage unauthorized_edit,,1444,llm,,,1471
+ds-test-0131,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1284,llm,,,1518,llm,damage unauthorized_edit,,1433
+ds-test-0132,disfluencyspeech,conversational_disfluent,,,llm,,,1500,llm,,,1647,llm,,,1646
+ds-test-0133,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1285,llm_fallback_normalized,damage unauthorized_edit,,1443,llm_fallback_normalized,damage unauthorized_edit,,1436
+ds-test-0134,disfluencyspeech,conversational_disfluent,,,llm,,,1292,llm,,,1445,llm,,,1436
+ds-test-0135,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1430,llm,damage unauthorized_edit,,1639,llm,damage unauthorized_edit,,1612
+ds-test-0136,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1355,llm_fallback_normalized,damage unauthorized_edit,,1477,llm,damage unauthorized_edit,,1490
+ds-test-0137,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1273,llm,,,1497,llm,,,1475
+ds-test-0138,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1260,llm_fallback_normalized,damage unauthorized_edit,,1406,llm_fallback_normalized,damage unauthorized_edit,,1403
+ds-test-0139,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1325,llm,damage unauthorized_edit,,1456,llm,damage unauthorized_edit,,1465
+ds-test-0140,disfluencyspeech,conversational_disfluent,,,llm,,,1519,llm,,,1658,llm,,,1629
+ds-test-0141,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1331,llm,damage unauthorized_edit,,1483,llm,,,1486
+ds-test-0142,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1347,llm_fallback_normalized,damage unauthorized_edit,,1523,llm_fallback_normalized,damage unauthorized_edit,,1498
+ds-test-0143,disfluencyspeech,conversational_disfluent,,,llm,,,1404,llm,,,1562,llm,,,1570
+ds-test-0144,disfluencyspeech,conversational_disfluent,,,llm,,,1292,llm,,,1449,llm,,,1452
+ds-test-0145,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1332,llm_fallback_normalized,damage unauthorized_edit,,1481,llm_fallback_normalized,damage unauthorized_edit,,1504
+ds-test-0146,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1328,llm,damage unauthorized_edit,,1477,llm,damage unauthorized_edit,,1496
+ds-test-0147,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1400,llm,damage unauthorized_edit,,1572,llm,damage unauthorized_edit,,1569
+ds-test-0148,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1421,llm_fallback_normalized,damage unauthorized_edit,,1615,llm,,,1594
+ds-test-0149,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1301,llm_fallback_normalized,damage unauthorized_edit,,1435,llm_fallback_normalized,damage unauthorized_edit,,1410
+ds-test-0150,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1383,llm,damage unauthorized_edit,,1529,llm,,,1553
+ds-test-0151,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1262,llm,damage unauthorized_edit,,1414,llm,,,1435
+ds-test-0152,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1302,llm,,,1478,llm,,,1456
+ds-test-0153,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1613,llm_fallback_normalized,damage unauthorized_edit,,1850,llm,,,1800
+ds-test-0154,disfluencyspeech,conversational_disfluent,,,llm,,,1614,llm,,,1859,llm,,,1818
+ds-test-0155,disfluencyspeech,conversational_disfluent,,,llm,,,1528,llm,damage unauthorized_edit,,1790,llm,,,1713
+ds-test-0156,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1442,llm,damage unauthorized_edit,,1576,llm,damage unauthorized_edit,,1554
+ds-test-0157,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1288,llm,damage unauthorized_edit,,1436,llm,,,1444
+ds-test-0158,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1320,llm_fallback_normalized,damage unauthorized_edit,,1436,llm_fallback_normalized,damage unauthorized_edit,,1423
+ds-test-0159,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1432,llm,damage unauthorized_edit,,1601,llm,damage unauthorized_edit,,1560
+ds-test-0160,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1298,llm_fallback_normalized,damage unauthorized_edit,,1446,llm,,,1466
+ds-test-0161,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1411,llm,damage unauthorized_edit,,1555,llm,damage unauthorized_edit,,1562
+ds-test-0162,disfluencyspeech,conversational_disfluent,,,llm,,,1301,llm,,,1458,llm,,,1433
+ds-test-0163,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1410,llm_fallback_normalized,damage unauthorized_edit,,1562,llm,,,1603
+ds-test-0164,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1380,llm,damage unauthorized_edit,,1550,llm,damage unauthorized_edit,,1542
+ds-test-0165,disfluencyspeech,conversational_disfluent,,,llm,,,1464,llm_fallback_normalized,,,1633,llm,,,1603
+ds-test-0166,disfluencyspeech,conversational_disfluent,,,llm,,,1521,llm,,,1724,llm,,,1658
+ds-test-0167,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1428,llm,,,1593,llm,,,1586
+ds-test-0168,disfluencyspeech,conversational_disfluent,,,llm,,,1362,llm_fallback_normalized,damage unauthorized_edit,,1536,llm,,,1494
+ds-test-0169,disfluencyspeech,conversational_disfluent,,,llm,,,1287,llm,,,1471,llm,,,1435
+ds-test-0170,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1488,llm_fallback_normalized,damage unauthorized_edit,,1645,llm,,,1669
+ds-test-0171,disfluencyspeech,conversational_disfluent,,,llm,,,1477,llm,,,1624,llm,,,1608
+ds-test-0172,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1328,llm,damage unauthorized_edit,,1487,llm,damage unauthorized_edit,,1466
+ds-test-0173,disfluencyspeech,conversational_disfluent,,,llm,,,1451,llm,,,1593,llm,,,1579
+ds-test-0174,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1545,llm,damage unauthorized_edit,,1775,llm,,,1741
+ds-test-0175,disfluencyspeech,conversational_disfluent,,,llm,,,1412,llm,damage unauthorized_edit,,1593,llm,,,1554
+ds-test-0176,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1224,llm_fallback_normalized,damage unauthorized_edit,,1371,llm_fallback_normalized,damage unauthorized_edit,,1424
+ds-test-0177,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,,,1349,llm_fallback_normalized,,,1519,llm,,,1492
+ds-test-0178,disfluencyspeech,conversational_disfluent,,,llm,,,1680,llm,,,1899,llm,,,1911
+ds-test-0179,disfluencyspeech,conversational_disfluent,,,llm,,,1335,llm_fallback_normalized,damage unauthorized_edit,,1419,llm,,,1506
+ds-test-0180,disfluencyspeech,conversational_disfluent,,,llm,,,1349,llm,,,1489,llm,,,1491
+ds-test-0181,disfluencyspeech,conversational_disfluent,,,llm,,,1376,llm_fallback_normalized,,,1539,llm,,,1507
+ds-test-0182,disfluencyspeech,conversational_disfluent,,,llm,,,1690,llm,,,1906,llm,,,1899
+ds-test-0183,disfluencyspeech,conversational_disfluent,,,llm,,,1317,llm,,,1456,llm,,,1448
+ds-test-0184,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1312,llm_fallback_normalized,damage unauthorized_edit,,1464,llm,,,1470
+ds-test-0185,disfluencyspeech,conversational_disfluent,,,llm,,,1352,llm,,,1496,llm,,,1458
+ds-test-0186,disfluencyspeech,conversational_disfluent,,,llm,,,1351,llm_fallback_normalized,,,1535,llm,,,1496
+ds-test-0187,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1389,llm,damage unauthorized_edit,,1543,llm,,,1582
+ds-test-0188,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1442,llm_fallback_normalized,damage unauthorized_edit,,1554,llm,damage unauthorized_edit,,1629
+ds-test-0189,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1330,llm,,,1455,llm,,,1465
+ds-test-0190,disfluencyspeech,conversational_disfluent,,,llm,,,1378,llm,,,1513,llm,,,1518
+ds-test-0191,disfluencyspeech,conversational_disfluent,,,llm,,,1466,llm,,,1615,llm,,,1624
+ds-test-0192,disfluencyspeech,conversational_disfluent,,,llm,,,1511,llm_fallback_normalized,damage unauthorized_edit,,1595,llm,,,1654
+ds-test-0193,disfluencyspeech,conversational_disfluent,,,llm,,,1308,llm,,,1452,llm,,,1443
+ds-test-0194,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1632,llm_fallback_normalized,damage unauthorized_edit,,1949,llm,,,1773
+ds-test-0195,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1535,llm,,,1818,llm,,,1766
+ds-test-0196,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1374,llm,,,1602,llm,,,1540
+ds-test-0197,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1494,llm,damage unauthorized_edit,,1685,llm,,,1719
+ds-test-0198,disfluencyspeech,conversational_disfluent,,,llm,,,1434,llm,damage unauthorized_edit,,1583,llm,,,1560
+ds-test-0199,disfluencyspeech,conversational_disfluent,,,llm,,,1457,llm,damage unauthorized_edit,,1575,llm,,,1569
+ds-test-0200,disfluencyspeech,conversational_disfluent,,,llm,,,1493,llm,,,1635,llm,,,1627
+ds-test-0201,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1381,llm,,,1604,llm,damage unauthorized_edit,,1519
+ds-test-0202,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1386,llm,damage unauthorized_edit,,1613,llm,damage unauthorized_edit,,1571
+ds-test-0203,disfluencyspeech,conversational_disfluent,,,llm,,,2195,llm,,,2025,llm,,,1991
+ds-test-0204,disfluencyspeech,conversational_disfluent,,,llm,,,1430,llm,,,1562,llm,,,1562
+ds-test-0205,disfluencyspeech,conversational_disfluent,,,llm,,,1318,llm,,,1452,llm,,,1442
+ds-test-0206,disfluencyspeech,conversational_disfluent,,,llm,,,1444,llm,,,1560,llm,,,1559
+ds-test-0207,disfluencyspeech,conversational_disfluent,,,llm,,,1281,llm_fallback_normalized,damage unauthorized_edit,,1401,llm,,,1414
+ds-test-0208,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1293,llm_fallback_normalized,damage unauthorized_edit,,1444,llm,,,1423
+ds-test-0209,disfluencyspeech,conversational_disfluent,,,llm,,,1298,llm,,,1455,llm_fallback_normalized,damage unauthorized_edit,,1400
+ds-test-0210,disfluencyspeech,conversational_disfluent,,,llm,,,1438,llm,,,1570,llm,,,1562
+ds-test-0211,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,,,1375,llm,,,1523,llm,,,1497
+ds-test-0212,disfluencyspeech,conversational_disfluent,,,llm,,,1353,llm,,,1545,llm,,,1486
+ds-test-0213,disfluencyspeech,conversational_disfluent,,,llm,,,1564,llm_fallback_normalized,damage unauthorized_edit,,1745,llm,,,1710
+ds-test-0214,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1287,llm,damage unauthorized_edit,,1455,llm,damage unauthorized_edit,,1432
+ds-test-0215,disfluencyspeech,conversational_disfluent,,,llm,,,1326,llm,,,1469,llm,,,1466
+ds-test-0216,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1510,llm,,,1667,llm,,,1668
+ds-test-0217,disfluencyspeech,conversational_disfluent,,,llm,,,1350,llm,,,1486,llm,,,1486
+ds-test-0218,disfluencyspeech,conversational_disfluent,,,llm,,,1305,llm,,,1444,llm,,,1434
+ds-test-0219,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1818,llm,damage unauthorized_edit,,1991,llm,damage unauthorized_edit,,1955
+ds-test-0220,disfluencyspeech,conversational_disfluent,,,llm,,,1301,llm,,,1442,llm,,,1441
+ds-test-0221,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1260,llm_fallback_normalized,damage unauthorized_edit,,1402,llm_fallback_normalized,damage unauthorized_edit,,1405
+ds-test-0222,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1472,llm_fallback_normalized,damage unauthorized_edit,,1588,llm_fallback_normalized,damage unauthorized_edit,,1571
+ds-test-0223,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1451,llm,,,1657,llm,,,1649
+ds-test-0224,disfluencyspeech,conversational_disfluent,,,llm,,,1284,llm_fallback_normalized,damage unauthorized_edit,,1372,llm,,,1422
+ds-test-0225,disfluencyspeech,conversational_disfluent,,,llm,,,1400,llm,damage unauthorized_edit,,1566,llm,,,1560
+ds-test-0226,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1350,llm,damage unauthorized_edit,,1498,llm,damage unauthorized_edit,,1479
+ds-test-0227,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1316,llm,damage unauthorized_edit,,1455,llm,damage unauthorized_edit,,1484
+ds-test-0228,disfluencyspeech,conversational_disfluent,,,llm,,,1618,llm,,,1734,llm,,,1765
+ds-test-0229,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1567,llm,damage unauthorized_edit,,1771,llm,damage unauthorized_edit,,1784
+ds-test-0230,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1491,llm_fallback_normalized,damage unauthorized_edit,,1694,llm,,,1774
+ds-test-0231,disfluencyspeech,conversational_disfluent,,,llm,,,1308,llm,,,1485,llm,,,1454
+ds-test-0232,disfluencyspeech,conversational_disfluent,,,llm,,,1326,llm,,,1469,llm,,,1467
+ds-test-0233,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1341,llm,damage unauthorized_edit,,1511,llm,damage unauthorized_edit,,1476
+ds-test-0234,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,damage unauthorized_edit,,1486,llm_fallback_normalized,damage unauthorized_edit,,1726,llm,,,1754
+ds-test-0235,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1361,llm_fallback_normalized,damage unauthorized_edit,,1474,llm,damage unauthorized_edit,,1481
+ds-test-0236,disfluencyspeech,conversational_disfluent,,,llm,,,1320,llm,,,1497,llm,,,1464
+ds-test-0237,disfluencyspeech,conversational_disfluent,,,llm,,,1354,llm,damage unauthorized_edit,,1527,llm,,,1499
+ds-test-0238,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1345,llm_fallback_normalized,damage unauthorized_edit,,1530,llm,damage unauthorized_edit,,1486
+ds-test-0239,disfluencyspeech,conversational_disfluent,,,llm,,,1342,llm,,,1492,llm,,,1488
+ds-test-0240,disfluencyspeech,conversational_disfluent,,,llm,,,1656,llm,,,1840,llm,,,1805
+ds-test-0241,disfluencyspeech,conversational_disfluent,,,llm,damage unauthorized_edit,,1473,llm_fallback_normalized,damage unauthorized_edit,,1681,llm,,,1644
+ds-test-0242,disfluencyspeech,conversational_disfluent,,,llm,,,1329,llm,,,1490,llm,,,1461
+ds-test-0243,disfluencyspeech,conversational_disfluent,,,llm,,,1271,llm,,,1402,llm,,,1389
+ds-test-0244,disfluencyspeech,conversational_disfluent,,,llm,,,1342,llm,,,1497,llm,,,1473
+ds-test-0245,disfluencyspeech,conversational_disfluent,,,llm,,,1387,llm_fallback_normalized,damage unauthorized_edit,,1521,llm,,,1500
+ds-test-0246,disfluencyspeech,conversational_disfluent,,,llm,,,1347,llm,,,1479,llm,,,1467
+ds-test-0247,disfluencyspeech,conversational_disfluent,,,llm_fallback_normalized,,,1287,llm,,,1474,llm,,,1444
+ds-test-0248,disfluencyspeech,conversational_disfluent,,,llm,,,1330,llm_fallback_normalized,damage unauthorized_edit,,1423,llm,,,1464
+ds-test-0249,disfluencyspeech,conversational_disfluent,,,llm,,,1401,llm,,,1620,llm,,,1538
+fleurs-1908,fleurs,read_speech,,,llm,,,1245,llm,,,1373,llm,,,1382
+fleurs-1932,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1847,llm_fallback_normalized,damage unauthorized_edit,,1967,llm,,,1880
+fleurs-1885,fleurs,read_speech,,,llm,damage unauthorized_edit,,1381,llm,damage unauthorized_edit,,1512,llm,,,1509
+fleurs-1948,fleurs,read_speech,,,llm_fallback_normalized,,,1514,llm_fallback_normalized,,,1655,llm,,,1633
+fleurs-1748,fleurs,read_speech,,,llm_fallback_normalized,,,1284,llm_fallback_normalized,,,1416,llm,,,1392
+fleurs-1956,fleurs,read_speech,,,llm,,,1347,llm,,,1490,llm,,,1495
+fleurs-1740,fleurs,read_speech,,,llm,,,1297,llm,,,1442,llm,,,1444
+fleurs-1980,fleurs,read_speech,,,llm,damage unauthorized_edit,,1329,llm,damage unauthorized_edit,,1491,llm,,,1475
+fleurs-1731,fleurs,read_speech,,,llm,,,1261,llm,,,1414,llm,,,1400
+fleurs-1945,fleurs,read_speech,,,llm,,,1287,llm,,,1410,llm,,,1409
+fleurs-1772,fleurs,read_speech,,,llm,,,1258,llm,,,1405,llm,,,1393
+fleurs-1997,fleurs,read_speech,,,llm,,,1653,llm,,,1777,llm,,,1782
+fleurs-1665,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1451,llm,,,1602,llm,,,1620
+fleurs-1972,fleurs,read_speech,,,llm,,,1280,llm,,,1423,llm,,,1436
+fleurs-1825,fleurs,read_speech,,,llm,,,1423,llm,,,1562,llm,,,1558
+fleurs-1744,fleurs,read_speech,,,llm,,,1315,llm,,,1444,llm,,,1442
+fleurs-1897,fleurs,read_speech,,,llm,,,1355,llm,,,1500,llm,,,1498
+fleurs-1680,fleurs,read_speech,,,llm,,,1463,llm_fallback_normalized,,,1614,llm,,,1592
+fleurs-1808,fleurs,read_speech,,,llm,,,1364,llm_fallback_normalized,,,1488,llm,,,1477
+fleurs-1715,fleurs,read_speech,,,llm,,,1542,llm,,,1678,llm,,,1683
+fleurs-1979,fleurs,read_speech,,,llm,,,1361,llm,,,1501,llm,,,1511
+fleurs-1894,fleurs,read_speech,,,llm,,,1284,llm,,,1434,llm,,,1455
+fleurs-1886,fleurs,read_speech,,,llm,,,1333,llm,,,1478,llm,,,1488
+fleurs-1876,fleurs,read_speech,,,llm,,,1296,llm,,,1443,llm,,,1426
+fleurs-1785,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1540,llm_fallback_normalized,damage unauthorized_edit,,1686,llm,,,1658
+fleurs-1708,fleurs,read_speech,,,llm,,,1498,llm,damage unauthorized_edit,,1636,llm,,,1634
+fleurs-1671,fleurs,read_speech,,,llm,,,1431,llm,,,1573,llm,,,1573
+fleurs-1750,fleurs,read_speech,,,llm,,,1231,llm,,,1381,llm,,,1379
+fleurs-1862,fleurs,read_speech,,,llm,,,1420,llm,,,1575,llm,,,1558
+fleurs-1741,fleurs,read_speech,,,llm,,,1318,llm,,,1489,llm,,,1465
+fleurs-1678,fleurs,read_speech,,,llm,,,1463,llm,,,1644,llm,,,1605
+fleurs-1829,fleurs,read_speech,,,llm,,,1389,llm,,,1555,llm,,,1539
+fleurs-1810,fleurs,read_speech,,,llm,,,1372,llm,,,1500,llm,,,1496
+fleurs-1710,fleurs,read_speech,,,llm,,,1414,llm,,,1516,llm,,,1514
+fleurs-1701,fleurs,read_speech,,,llm,,,1391,llm_fallback_normalized,,,1528,llm,,,1506
+fleurs-1831,fleurs,read_speech,,,llm,,,1475,llm,,,1615,llm,,,1615
+fleurs-1994,fleurs,read_speech,,,llm,,,1337,llm,,,1475,llm,,,1473
+fleurs-1712,fleurs,read_speech,,,llm,,,1615,llm_fallback_normalized,damage unauthorized_edit,,1744,llm,,,1767
+fleurs-1734,fleurs,read_speech,,,llm,,,1320,llm,,,1460,llm,,,1466
+fleurs-1849,fleurs,read_speech,,,llm,,,1375,llm,,,1507,llm,,,1510
+fleurs-1850,fleurs,read_speech,,,llm,,,1588,llm,,,1755,llm,,,1721
+fleurs-1853,fleurs,read_speech,,,llm,,,1328,llm,,,1468,llm,,,1463
+fleurs-1975,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1365,llm,,,1501,llm,,,1501
+fleurs-1801,fleurs,read_speech,,,llm,,,1475,llm,,,1605,llm,,,1627
+fleurs-1838,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1306,llm,damage unauthorized_edit,,1446,llm,,,1443
+fleurs-1719,fleurs,read_speech,,,llm,,,1411,llm,,,1559,llm,,,1563
+fleurs-1926,fleurs,read_speech,,,llm,,,1243,llm,,,1392,llm,,,1383
+fleurs-1857,fleurs,read_speech,,,llm,damage unauthorized_edit,,1397,llm,,,1544,llm,,,1515
+fleurs-1903,fleurs,read_speech,,,llm,,,1367,llm,,,1496,llm,,,1486
+fleurs-1747,fleurs,read_speech,,,llm,,,1209,llm,,,1343,llm,,,1330
+fleurs-1692,fleurs,read_speech,,,llm,damage unauthorized_edit,,1328,llm_fallback_normalized,damage unauthorized_edit,,1457,llm,,,1462
+fleurs-1919,fleurs,read_speech,,,llm,,,1408,llm,,,1550,llm,,,1567
+fleurs-1889,fleurs,read_speech,,,llm,,,1263,llm,,,1414,llm,,,1403
+fleurs-1971,fleurs,read_speech,,,llm,,,1469,llm,,,1613,llm,,,1602
+fleurs-1922,fleurs,read_speech,,,llm,,,1377,llm,,,1512,llm,,,1488
+fleurs-1814,fleurs,read_speech,,,llm,,,1409,llm,,,1559,llm,,,1545
+fleurs-1824,fleurs,read_speech,,,llm,damage unauthorized_edit,,1610,llm,damage unauthorized_edit,,1709,llm,,,1700
+fleurs-1823,fleurs,read_speech,,,llm_fallback_normalized,,,1388,llm,,,1550,llm,,,1558
+fleurs-1935,fleurs,read_speech,,,llm,,,1382,llm,,,1515,llm,,,1511
+fleurs-1688,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1536,llm,,,1685,llm,,,1675
+fleurs-1726,fleurs,read_speech,,,llm,,,1460,llm_fallback_normalized,damage unauthorized_edit,,1585,llm,,,1582
+fleurs-1867,fleurs,read_speech,,,llm,,,1390,llm,,,1498,llm,,,1484
+fleurs-1684,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1445,llm_fallback_normalized,damage unauthorized_edit,,1587,llm,,,1609
+fleurs-1662,fleurs,read_speech,,,llm,,,1366,llm,,,1502,llm,,,1523
+fleurs-1698,fleurs,read_speech,,,llm,,,1320,llm,,,1446,llm,,,1464
+fleurs-1738,fleurs,read_speech,,,llm,,,1379,llm_fallback_normalized,damage unauthorized_edit,,1558,llm,,,1514
+fleurs-1759,fleurs,read_speech,,,llm,,,1720,llm,,,1827,llm,,,1825
+fleurs-1713,fleurs,read_speech,,,llm,,,1455,llm,,,1595,llm,,,1595
+fleurs-1668,fleurs,read_speech,,,llm,,,1456,llm,,,1610,llm,,,1602
+fleurs-1848,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1432,llm_fallback_normalized,damage unauthorized_edit,,1591,llm,,,1570
+fleurs-1717,fleurs,read_speech,,,llm,,,1406,llm,,,1565,llm,,,1555
+fleurs-1758,fleurs,read_speech,,,llm,,,1428,llm,,,1603,llm,,,1580
+fleurs-1951,fleurs,read_speech,,,llm,,,1478,llm,,,1646,llm,,,1614
+fleurs-1695,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1474,llm,,,1646,llm,,,1613
+fleurs-1751,fleurs,read_speech,,,llm,,,1465,llm,,,1615,llm,,,1604
+fleurs-1816,fleurs,read_speech,,,llm,,,1436,llm,,,1561,llm,,,1561
+fleurs-1924,fleurs,read_speech,,,llm,,,1530,llm,,,1666,llm,,,1656
+fleurs-1705,fleurs,read_speech,,,llm,,,1386,llm,,,1530,llm,,,1515
+fleurs-1675,fleurs,read_speech,,,llm,,,1331,llm,,,1525,llm,,,1473
+fleurs-1682,fleurs,read_speech,,,llm,,,1581,llm_fallback_normalized,damage unauthorized_edit,,1711,llm,,,1722
+fleurs-1842,fleurs,read_speech,,,llm,,,1625,llm_fallback_normalized,damage unauthorized_edit,,1787,llm,,,1763
+fleurs-1913,fleurs,read_speech,,,llm,,,1415,llm,,,1553,llm,,,1580
+fleurs-1855,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1463,llm,damage unauthorized_edit,,1596,llm,,,1591
+fleurs-1821,fleurs,read_speech,,,llm,,,1231,llm,,,1377,llm,,,1381
+fleurs-1996,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1519,llm,,,1647,llm,,,1637
+fleurs-1927,fleurs,read_speech,,,llm,,,1391,llm,,,1523,llm,,,1514
+fleurs-1777,fleurs,read_speech,,,llm,,,1412,llm,,,1534,llm,,,1539
+fleurs-1837,fleurs,read_speech,,,llm,,,1319,llm,,,1472,llm,,,1479
+fleurs-1936,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1680,llm_fallback_normalized,damage unauthorized_edit,,1809,llm,,,1839
+fleurs-1950,fleurs,read_speech,,,llm,,,1500,llm,,,1647,llm,,,1652
+fleurs-1872,fleurs,read_speech,,,llm,,,1440,llm_fallback_normalized,damage unauthorized_edit,,1573,llm,,,1598
+fleurs-1992,fleurs,read_speech,,,llm,,,1345,llm,damage unauthorized_edit,,1535,llm,,,1504
+fleurs-1859,fleurs,read_speech,,,llm,,,1606,llm,,,1735,llm,,,1733
+fleurs-1669,fleurs,read_speech,,,llm,,,1328,llm,,,1443,llm,,,1444
+fleurs-1724,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1449,llm_fallback_normalized,damage unauthorized_edit,,1575,llm,,,1550
+fleurs-1689,fleurs,read_speech,,,llm,,,1509,llm,,,1647,llm,,,1648
+fleurs-1687,fleurs,read_speech,,,llm,,,1312,llm,,,1437,llm,,,1443
+fleurs-1907,fleurs,read_speech,,,llm,,,1272,llm,,,1414,llm,,,1419
+fleurs-1727,fleurs,read_speech,,,llm,,,1285,llm,,,1436,llm,,,1440
+fleurs-1720,fleurs,read_speech,,,llm,,,1264,llm,,,1411,llm,,,1410
+fleurs-1779,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1375,llm,,,1455,llm,,,1454
+fleurs-1917,fleurs,read_speech,,,llm,,,1299,llm,,,1449,llm,,,1444
+fleurs-1978,fleurs,read_speech,,,llm,,,1249,llm,,,1393,llm,,,1387
+fleurs-1694,fleurs,read_speech,,,llm,,,1350,llm,,,1478,llm,,,1494
+fleurs-1776,fleurs,read_speech,,,llm,,,1397,llm,,,1512,llm,,,1540
+fleurs-2004,fleurs,read_speech,,,llm,,,1354,llm,,,1481,llm,,,1509
+fleurs-1902,fleurs,read_speech,,,llm,,,1283,llm,,,1424,llm,,,1437
+fleurs-1982,fleurs,read_speech,,,llm,damage unauthorized_edit,,1292,llm,,,1446,llm,,,1433
+fleurs-1822,fleurs,read_speech,,,llm,,,1462,llm,,,1587,llm,,,1568
+fleurs-1976,fleurs,read_speech,,,llm,,,1389,llm,,,1517,llm,,,1498
+fleurs-1768,fleurs,read_speech,,,llm,,,1399,llm,,,1543,llm,,,1546
+fleurs-1984,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1422,llm,,,1599,llm,,,1586
+fleurs-1845,fleurs,read_speech,,,llm,,,1374,llm,,,1544,llm,,,1508
+fleurs-1861,fleurs,read_speech,,,llm,,,1355,llm,,,1515,llm,,,1499
+fleurs-1828,fleurs,read_speech,,,llm,,,1295,llm,,,1467,llm,,,1436
+fleurs-1809,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1517,llm_fallback_normalized,damage unauthorized_edit,,1676,llm,,,1659
+fleurs-1852,fleurs,read_speech,,,llm,,,1684,llm,,,1833,llm,,,1806
+fleurs-1757,fleurs,read_speech,,,llm,,,1352,llm,,,1495,llm,,,1498
+fleurs-1967,fleurs,read_speech,,,llm,,,1475,llm,,,1618,llm,,,1631
+fleurs-1871,fleurs,read_speech,,,llm,,,1272,llm,,,1431,llm,,,1414
+fleurs-1958,fleurs,read_speech,,,llm,,,1397,llm,,,1540,llm,,,1538
+fleurs-1827,fleurs,read_speech,,,llm,,,1373,llm,,,1506,llm,,,1508
+fleurs-1983,fleurs,read_speech,,,llm,,,1573,llm,,,1778,llm,,,1697
+fleurs-1890,fleurs,read_speech,,,llm,,,1271,llm,,,1416,llm,,,1411
+fleurs-1918,fleurs,read_speech,,,llm,,,1409,llm,,,1568,llm,,,1559
+fleurs-1673,fleurs,read_speech,,,llm,,,1416,llm,,,1575,llm,,,1564
+fleurs-1905,fleurs,read_speech,,,llm,,,1348,llm,,,1480,llm,,,1467
+fleurs-1977,fleurs,read_speech,,,llm_fallback_normalized,,,1390,llm,,,1540,llm,,,1538
+fleurs-1963,fleurs,read_speech,,,llm,,,1453,llm,,,1593,llm,,,1582
+fleurs-1953,fleurs,read_speech,,,llm,,,1226,llm,,,1372,llm,,,1364
+fleurs-1895,fleurs,read_speech,,,llm,,,1315,llm,,,1456,llm,,,1452
+fleurs-1941,fleurs,read_speech,,,llm,,,1238,llm,,,1379,llm,,,1381
+fleurs-1847,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1416,llm_fallback_normalized,damage unauthorized_edit,,1581,llm,,,1562
+fleurs-1664,fleurs,read_speech,,,llm,,,1340,llm,damage unauthorized_edit,,1491,llm,,,1464
+fleurs-1931,fleurs,read_speech,,,llm,,,1366,llm,,,1509,llm,,,1506
+fleurs-1959,fleurs,read_speech,,,llm,,,1304,llm,,,1440,llm,,,1445
+fleurs-1860,fleurs,read_speech,,,llm,,,1252,llm,,,1402,llm,,,1394
+fleurs-1879,fleurs,read_speech,,,llm,,,1266,llm,,,1414,llm,,,1394
+fleurs-1781,fleurs,read_speech,,,llm,,,1305,llm,,,1442,llm,,,1443
+fleurs-1790,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1470,llm_fallback_normalized,damage unauthorized_edit,,1625,llm,,,1593
+fleurs-1929,fleurs,read_speech,,,llm,,,1412,llm,,,1542,llm,,,1550
+fleurs-1799,fleurs,read_speech,,,llm,,,1308,llm,,,1434,llm,,,1423
+fleurs-1666,fleurs,read_speech,,,llm,,,1376,llm,,,1501,llm,,,1494
+fleurs-1836,fleurs,read_speech,,,llm,,,1548,llm,,,1678,llm,,,1685
+fleurs-1960,fleurs,read_speech,,,llm,damage unauthorized_edit,,1585,llm,,,1738,llm,,,1723
+fleurs-1892,fleurs,read_speech,,,llm,,,1488,llm,,,1638,llm,,,1634
+fleurs-1943,fleurs,read_speech,,,llm,,,1381,llm,,,1521,llm,,,1531
+fleurs-1805,fleurs,read_speech,,,llm,,,1323,llm,,,1458,llm,,,1479
+fleurs-1771,fleurs,read_speech,,,llm,,,1434,llm,,,1582,llm,,,1609
+fleurs-1839,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1217,llm,,,1369,llm,,,1382
+fleurs-1753,fleurs,read_speech,,,llm,,,1596,llm,,,1747,llm,,,1744
+fleurs-1820,fleurs,read_speech,,,llm,,,1285,llm,,,1432,llm,,,1420
+fleurs-1756,fleurs,read_speech,,,llm,,,1427,llm_fallback_normalized,damage unauthorized_edit,,1575,llm,,,1564
+fleurs-1920,fleurs,read_speech,,,llm,,,1384,llm,,,1520,llm,,,1509
+fleurs-2002,fleurs,read_speech,,,llm,,,1320,llm,,,1473,llm,,,1457
+fleurs-1737,fleurs,read_speech,,,llm,,,1272,llm,,,1437,llm,,,1402
+fleurs-1681,fleurs,read_speech,,,llm,,,1499,llm,,,1676,llm,,,1649
+fleurs-1938,fleurs,read_speech,,,llm,,,1349,llm,,,1497,llm,,,1488
+fleurs-1690,fleurs,read_speech,,,llm,,,1521,llm,,,1652,llm,,,1654
+fleurs-1952,fleurs,read_speech,,,llm,,,1400,llm,,,1524,llm,,,1511
+fleurs-2006,fleurs,read_speech,,,llm,,,1327,llm,,,1466,llm,,,1468
+fleurs-1882,fleurs,read_speech,,,llm,,,1358,llm,,,1496,llm,,,1498
+fleurs-1691,fleurs,read_speech,,,llm,,,1388,llm,,,1506,llm,,,1478
+fleurs-1930,fleurs,read_speech,,,llm,damage unauthorized_edit,,1316,llm,damage unauthorized_edit,,1443,llm,,,1433
+fleurs-1817,fleurs,read_speech,,,llm,,,1282,llm,,,1435,llm,,,1432
+fleurs-1782,fleurs,read_speech,,,llm,,,1556,llm_fallback_normalized,damage unauthorized_edit,,1691,llm,,,1677
+fleurs-1987,fleurs,read_speech,,,llm,,,1325,llm,,,1470,llm,,,1454
+fleurs-1714,fleurs,read_speech,,,llm,,,1431,llm,,,1571,llm,,,1570
+fleurs-1881,fleurs,read_speech,,,llm,,,1330,llm,,,1478,llm,,,1479
+fleurs-1770,fleurs,read_speech,,,llm,,,1297,llm,,,1444,llm,,,1446
+fleurs-1846,fleurs,read_speech,,,llm,,,1441,llm,,,1585,llm,,,1579
+fleurs-1735,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1848,llm_fallback_normalized,damage unauthorized_edit,,1984,llm,,,1944
+fleurs-2003,fleurs,read_speech,,,llm,,,1337,llm,,,1475,llm,,,1474
+fleurs-1834,fleurs,read_speech,,,llm,,,1378,llm,,,1535,llm,,,1513
+fleurs-1686,fleurs,read_speech,,,llm,,,1409,llm,,,1565,llm,,,1561
+fleurs-1773,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1403,llm_fallback_normalized,damage unauthorized_edit,,1554,llm,,,1551
+fleurs-1985,fleurs,read_speech,,,llm,,,1518,llm,,,1648,llm,,,1648
+fleurs-1707,fleurs,read_speech,,,llm,damage unauthorized_edit,,1333,llm,,,1498,llm,,,1502
+fleurs-1778,fleurs,read_speech,,,llm,,,1206,llm,,,1362,llm,,,1356
+fleurs-1798,fleurs,read_speech,,,llm,,,1431,llm,,,1571,llm,,,1573
+fleurs-1702,fleurs,read_speech,,,llm,,,1354,llm,,,1475,llm,,,1464
+fleurs-1723,fleurs,read_speech,,,llm,,,1495,llm,,,1613,llm,,,1614
+fleurs-1796,fleurs,read_speech,,,llm,,,1276,llm,,,1416,llm,,,1423
+fleurs-1899,fleurs,read_speech,,,llm,,,1473,llm,,,1615,llm,,,1613
+fleurs-1683,fleurs,read_speech,,,llm,,,1490,llm,,,1658,llm,,,1629
+fleurs-1942,fleurs,read_speech,,,llm,,,1414,llm,,,1563,llm,,,1561
+fleurs-1898,fleurs,read_speech,,,llm,damage unauthorized_edit,,1513,llm_fallback_normalized,damage unauthorized_edit,,1629,llm,,,1624
+fleurs-1925,fleurs,read_speech,,,llm,,,1359,llm,,,1502,llm,,,1478
+fleurs-1915,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1510,llm_fallback_normalized,damage unauthorized_edit,,1633,llm,,,1671
+fleurs-2000,fleurs,read_speech,,,llm,,,1391,llm,,,1511,llm,,,1540
+fleurs-1716,fleurs,read_speech,,,llm,,,1689,llm,,,1830,llm,,,1857
+fleurs-1988,fleurs,read_speech,,,llm,damage unauthorized_edit,,1379,llm,damage unauthorized_edit,,1547,llm,,,1519
+fleurs-1949,fleurs,read_speech,,,llm,,,1304,llm,,,1467,llm,,,1443
+fleurs-1661,fleurs,read_speech,,,llm,,,1331,llm,,,1478,llm,,,1471
+fleurs-1783,fleurs,read_speech,,,llm,,,1321,llm,,,1504,llm,,,1469
+fleurs-2001,fleurs,read_speech,,,llm,damage unauthorized_edit,,1367,llm,damage unauthorized_edit,,1517,llm,,,1505
+fleurs-1851,fleurs,read_speech,,,llm,,,1319,llm,,,1491,llm,,,1465
+fleurs-1793,fleurs,read_speech,,,llm,,,1440,llm,,,1615,llm,,,1571
+fleurs-1792,fleurs,read_speech,,,llm,,,1283,llm,,,1461,llm,,,1429
+fleurs-1677,fleurs,read_speech,,,llm,,,1286,llm,,,1456,llm,,,1438
+fleurs-1878,fleurs,read_speech,,,llm,,,1479,llm,,,1634,llm,,,1628
+fleurs-1733,fleurs,read_speech,,,llm,,,1550,llm,,,1704,llm,,,1689
+fleurs-1844,fleurs,read_speech,,,llm,,,1338,llm,,,1485,llm,,,1484
+fleurs-1946,fleurs,read_speech,,,llm,,,1444,llm_fallback_normalized,damage unauthorized_edit,,1602,llm,,,1591
+fleurs-1868,fleurs,read_speech,,,llm,,,1502,llm,,,1656,llm,,,1650
+fleurs-1909,fleurs,read_speech,,,llm,,,1327,llm,,,1466,llm,,,1476
+fleurs-1993,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1330,llm_fallback_normalized,damage unauthorized_edit,,1477,llm,,,1465
+fleurs-1887,fleurs,read_speech,,,llm,,,1323,llm,,,1457,llm,,,1453
+fleurs-1991,fleurs,read_speech,,,llm,,,1333,llm,,,1481,llm,,,1464
+fleurs-1947,fleurs,read_speech,,,llm,,,1366,llm,,,1511,llm,,,1499
+fleurs-1986,fleurs,read_speech,,,llm,,,1499,llm,,,1616,llm,,,1626
+fleurs-1775,fleurs,read_speech,,,llm,,,1376,llm,,,1515,llm,,,1514
+fleurs-1818,fleurs,read_speech,,,llm,,,1272,llm,,,1411,llm,,,1434
+fleurs-1904,fleurs,read_speech,,,llm,,,1375,llm_fallback_normalized,,,1508,llm,,,1490
+fleurs-1989,fleurs,read_speech,,,llm,,,1541,llm,,,1678,llm,,,1677
+fleurs-1934,fleurs,read_speech,,,llm,,,1384,llm,,,1509,llm,,,1516
+fleurs-1858,fleurs,read_speech,,,llm,,,1331,llm,,,1466,llm,,,1466
+fleurs-1869,fleurs,read_speech,,,llm,,,1537,llm,,,1686,llm,,,1678
+fleurs-1815,fleurs,read_speech,,,llm,,,1365,llm,,,1503,llm,,,1522
+fleurs-1939,fleurs,read_speech,,,llm,,,1351,llm,,,1478,llm,,,1489
+fleurs-1874,fleurs,read_speech,,,llm,,,1421,llm,,,1586,llm,,,1583
+fleurs-1807,fleurs,read_speech,,,llm,,,1385,llm,,,1521,llm,,,1504
+fleurs-1736,fleurs,read_speech,,,llm,,,1253,llm,,,1413,llm,,,1393
+fleurs-1729,fleurs,read_speech,,,llm,,,1580,llm,,,1723,llm,,,1708
+fleurs-1954,fleurs,read_speech,,,llm,,,1399,llm,,,1535,llm,,,1513
+fleurs-1888,fleurs,read_speech,,,llm,,,1415,llm,,,1551,llm,,,1546
+fleurs-1819,fleurs,read_speech,,,llm,,,1414,llm,,,1551,llm,,,1549
+fleurs-1763,fleurs,read_speech,,,llm,,,1410,llm,,,1558,llm,,,1562
+fleurs-1962,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1329,llm,damage unauthorized_edit,,1476,llm,,,1452
+fleurs-1863,fleurs,read_speech,,,llm,,,1535,llm,,,1669,llm,,,1669
+fleurs-1973,fleurs,read_speech,,,llm,,,1538,llm,,,1695,llm,,,1669
+fleurs-1896,fleurs,read_speech,,,llm,,,1542,llm,,,1689,llm,,,1700
+fleurs-1841,fleurs,read_speech,,,llm,,,1491,llm,,,1633,llm,,,1637
+fleurs-1663,fleurs,read_speech,,,llm,,,1427,llm,,,1561,llm,,,1565
+fleurs-1755,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1214,llm,damage unauthorized_edit,,1373,llm,,,1360
+fleurs-1764,fleurs,read_speech,,,llm,damage unauthorized_edit,,1415,llm,,,1540,llm,,,1558
+fleurs-1873,fleurs,read_speech,,,llm,,,1393,llm,damage unauthorized_edit,,1537,llm,,,1527
+fleurs-1728,fleurs,read_speech,,,llm,,,1293,llm,,,1427,llm,,,1425
+fleurs-1784,fleurs,read_speech,,,llm,,,1488,llm_fallback_normalized,damage unauthorized_edit,,1698,llm,,,1625
+fleurs-2005,fleurs,read_speech,,,llm,,,1272,llm,,,1425,llm,,,1425
+fleurs-1968,fleurs,read_speech,,,llm,,,1593,llm,,,1732,llm,,,1732
+fleurs-1906,fleurs,read_speech,,,llm_fallback_normalized,,,1345,llm_fallback_normalized,,,1488,llm,,,1506
+fleurs-1762,fleurs,read_speech,,,llm,,,1262,llm,,,1419,llm,,,1420
+fleurs-1901,fleurs,read_speech,,,llm,,,1467,llm,,,1617,llm,,,1592
+fleurs-1910,fleurs,read_speech,,,llm,,,1268,llm,,,1413,llm,,,1409
+fleurs-1754,fleurs,read_speech,,,llm,,,1399,llm_fallback_normalized,damage unauthorized_edit,,1552,llm,,,1550
+fleurs-1806,fleurs,read_speech,,,llm,,,1494,llm,,,1629,llm,,,1635
+fleurs-1981,fleurs,read_speech,,,llm,,,1387,llm,,,1548,llm,,,1539
+fleurs-1811,fleurs,read_speech,,,llm_fallback_normalized,damage unauthorized_edit,,1385,llm_fallback_normalized,damage unauthorized_edit,,1522,llm,,,1513
+fleurs-1990,fleurs,read_speech,,,llm,,,1428,llm,,,1566,llm,,,1572
+LF-FID-001,localflow_fixtures,"correction,critical",,,llm,,,1450,llm,,,1663,llm,,,1670
+LF-FID-002,localflow_fixtures,"correction,numeric,critical",,,llm,,,1558,llm,,,1779,llm,,,1768
+LF-FID-003,localflow_fixtures,"correction,multi,critical",,,llm_fallback_normalized,,,1481,llm,,,1685,llm,,,1685
+LF-FID-004,localflow_fixtures,"correction,reason_clause,critical",,,llm,,,1468,llm,,,1697,llm,,,1699
+LF-FID-005,localflow_fixtures,"correction,name,critical",,,llm,,,1464,llm,,,1683,llm,,,1664
+LF-FID-006,localflow_fixtures,"correction,numeric,critical",,,llm,,,1491,llm,,,1724,llm,,,1696
+LF-FID-007,localflow_fixtures,"correction,preposition,critical",,,llm,,,1528,llm,,,1742,llm,,,1729
+LF-FID-008,localflow_fixtures,"correction,list_context,critical",,,llm,,,1764,llm,,,1995,llm,,,1997
+LF-FID-009,localflow_fixtures,"correction,duplicate_span,critical",,,llm,,,1550,llm,,,1765,llm,,,1761
+LF-FID-010,localflow_fixtures,"correction,duplicate_span,numeric,critical",,,llm_fallback_normalized,,,1832,llm_fallback_normalized,,,2051,llm,,,1838
+LF-FID-011,localflow_fixtures,"correction,same_value,critical",,,llm,,,1436,llm,,,1661,llm,,,1722
+LF-FID-012,localflow_fixtures,"correction,adjacent,critical",,,llm,,,1498,llm_fallback_normalized,,,1734,llm,,,1694
+LF-FID-013,localflow_fixtures,"question,critical",,,llm,,,1250,llm,,,1387,llm,,,1388
+LF-FID-014,localflow_fixtures,"question,dom,technical_token,critical",,,llm,,,1183,llm,,,1327,llm,,,1331
+LF-FID-015,localflow_fixtures,"question,final_clause,critical",,,llm,,,1299,llm,,,1441,llm,,,1421
+LF-FID-016,localflow_fixtures,"question,multiple,critical",,,llm,,,1281,llm,,,1416,llm,,,1412
+LF-FID-017,localflow_fixtures,"negation,critical",,,llm,,,1136,llm,,,1306,llm,,,1301
+LF-FID-018,localflow_fixtures,"negation,answer_forbidden,critical",,,llm_fallback_normalized,,,1173,llm,,,1441,llm,,,1444
+LF-FID-019,localflow_fixtures,"conditional,critical",,,llm,,,1144,llm,,,1306,llm,,,1315
+LF-FID-020,localflow_fixtures,"negation,constraint,critical",,,llm,,,1286,llm,,,1433,llm,,,1413
+LF-FID-021,localflow_fixtures,"uncertainty,numeric,critical",,,llm,,,1159,llm,,,1326,llm,,,1313
+LF-FID-022,localflow_fixtures,"uncertainty,hedge,critical",,,llm,,,1247,llm,,,1378,llm,,,1378
+LF-FID-023,localflow_fixtures,"uncertainty,hedge,critical",,,llm,,,1274,llm,,,1424,llm,,,1411
+LF-FID-024,localflow_fixtures,"uncertainty,conditional,critical",,,llm,,,1318,llm,,,1463,llm,,,1479
+LF-FID-025,localflow_fixtures,"emphasis,not_correction,critical",,,llm,,,1357,llm,,,1596,llm,,,1630
+LF-FID-026,localflow_fixtures,"emphasis,not_correction,critical",,,llm,,,1496,llm,,,1691,llm,,,1710
+LF-FID-027,localflow_fixtures,"repetition,meaningful,critical",,,llm_fallback_normalized,,,1271,llm,,,1425,llm_fallback_normalized,,,1395
+LF-FID-028,localflow_fixtures,"repetition,stutter,critical",,,llm,,,1198,llm,,,1348,llm,,,1348
+LF-FID-029,localflow_fixtures,"instruction_as_data,deletion_request,critical",,,llm,,,1238,llm,,,1432,llm,,,1390
+LF-FID-030,localflow_fixtures,"instruction_as_data,prompt_injection,critical",,,llm,,,1302,llm,,,1432,llm,,,1433
+LF-FID-031,localflow_fixtures,"instruction_as_data,answer_forbidden,critical",,,llm,,,1340,llm,,,1512,llm,,,1455
+LF-FID-032,localflow_fixtures,"instruction_as_data,editing_command,critical",,,llm,,,1305,llm,,,1467,llm,,,1411
+LF-FID-033,localflow_fixtures,"name,quantity,critical",,,llm,,,1259,llm,,,1419,llm,,,1401
+LF-FID-034,localflow_fixtures,"technical_token,file_name,critical",,,llm,,,1242,llm,,,1391,llm,,,1391
+LF-FID-035,localflow_fixtures,"technical_token,flag,critical",,,llm,,,1271,llm,,,1412,llm,,,1418
+LF-FID-036,localflow_fixtures,"technical_token,version,critical",,,llm,,,1393,llm,,,1539,llm,,,1540
+LF-FID-037,localflow_fixtures,"greeting,signoff,critical",,,llm,,,1263,llm,,,1423,llm,,,1410
+LF-FID-038,localflow_fixtures,"greeting,message,critical",,,llm,,,1316,llm,,,1475,llm,,,1453
+LF-FID-039,localflow_fixtures,"signoff,email,critical",,,llm,,,1274,llm,,,1427,llm,,,1421
+LF-FID-040,localflow_fixtures,"greeting,question,critical",,,llm,,,1271,llm,,,1413,llm,,,1401
+LF-FID-041,localflow_fixtures,"numeric,value_preserved,critical",,,llm,,,1315,llm,,,1455,llm,,,1452
+LF-FID-042,localflow_fixtures,"numeric,value_preserved,critical",,,llm,,,1306,llm,,,1449,llm,,,1442
+LF-FID-043,localflow_fixtures,"numeric,signed,critical",,,llm,,,1296,llm,,,1455,llm,,,1445
+LF-FID-044,localflow_fixtures,"numeric,ordinal_anchor,critical",,,llm,,,1252,llm,,,1401,llm,,,1400
+LF-FID-045,localflow_fixtures,"filler,critical",,,llm,,,1218,llm,,,1376,llm,,,1349
+LF-FID-046,localflow_fixtures,"filler,content_words_kept,critical",,,llm,,,1330,llm,,,1477,llm,,,1479
+LF-FID-047,localflow_fixtures,"filler,like_is_content,critical",,,llm,,,1219,llm,,,1367,llm,,,1373
+LF-FID-048,localflow_fixtures,"filler,hedge,critical",,,llm,,,1294,llm,,,1409,llm,,,1378
+LF-FID-049,localflow_fixtures,"multilingual,instruction_as_data,critical",,,llm,,,1229,llm,,,1408,llm,,,1377
+LF-FID-050,localflow_fixtures,"multilingual,correction,critical",,,llm_fallback_normalized,,,1475,llm_fallback_normalized,,,1678,llm_fallback_normalized,,,1686
+LF-FID-051,localflow_fixtures,"technical_token,slash_token,critical",,,llm,,,1251,llm,,,1406,llm,,,1403
+LF-FID-052,localflow_fixtures,"technical_token,path,critical",,,llm,,,1258,llm,,,1407,llm,,,1399
+LF-FID-053,localflow_fixtures,"constraints,multi,critical",,,llm_fallback_normalized,,,2634,llm_fallback_normalized,,,2587,llm,,,1551
+LF-FID-054,localflow_fixtures,"constraints,ordering,critical",,,llm,,,1365,llm,,,1520,llm,,,1474
+LF-FID-055,localflow_fixtures,"constraints,ai_prompt,critical",,,llm_partial,,,2754,llm_partial,,,2799,llm,,,1486
+LF-FID-056,localflow_fixtures,"constraints,both_kept,critical",,,llm,,,1288,llm,,,1432,llm,,,1442
+LF-FID-057,localflow_fixtures,"cloud_counterexample,critical",,,llm,,,1196,llm,,,1347,llm,,,1360
+LF-FID-058,localflow_fixtures,"cloud_counterexample,coding,critical",,,llm,,,1199,llm,,,1348,llm,,,1346
+LF-FID-059,localflow_fixtures,"cloud_counterexample,mixed,critical",,,llm,,,1259,llm,,,1402,llm,,,1392
+LF-FID-060,localflow_fixtures,"short_statement,no_rewrite,critical",,,llm,,,1131,llm,,,1306,llm,,,1306
+LF-LIT-001,localflow_fixtures,"literal_escape,symbol_word,critical",,,llm,,,1207,llm,,,1360,llm,,,1346
+LF-LIT-002,localflow_fixtures,"literal_escape,number_words,critical",,,llm,,,1187,llm,,,1353,llm,,,1335
+LF-LIT-003,localflow_fixtures,"literal_escape,punctuation_word,critical",,,llm,,,1193,llm,,,1336,llm,,,1337
+LF-LIT-004,localflow_fixtures,"literal_escape,mixed,critical",,,llm,,,1310,llm_fallback_normalized,,,1481,llm,,,1467
+LF-LIT-005,localflow_fixtures,"quoted,repetition,critical",,,llm,,,1238,llm,,,1390,llm,,,1381
+LF-LIT-006,localflow_fixtures,"quoted,editing_instruction,critical",,,llm,,,1275,llm,,,1424,llm,,,1428
+LF-LIT-007,localflow_fixtures,"quoted,do_not_edit_inside,critical",,,llm,,,1282,llm,,,1425,llm,,,1409
+LF-LIT-008,localflow_fixtures,"quoted,commands_are_content,critical",,,llm,,,1270,llm,,,1413,llm,,,1417
+LF-LIT-009,localflow_fixtures,"quoted,question,critical",,,llm,,,1221,llm,,,1371,llm,,,1392
+LF-LIT-010,localflow_fixtures,"literal,code_line,critical",,,llm,,,1285,llm,,,1447,llm,,,1442
+LF-LIT-011,localflow_fixtures,"literal,flag_sequence,critical",,,llm_fallback_normalized,,,1284,llm,,,1407,llm,,,1406
+LF-LIT-012,localflow_fixtures,"literal,path_verbatim,critical",,,llm,,,1279,llm,,,1428,llm,,,1423
+LF-LIT-013,localflow_fixtures,"literal,url_verbatim,critical",,,llm,,,1282,llm,,,1421,llm,,,1426
+LF-LIT-014,localflow_fixtures,"literal,email_verbatim,critical",,,llm,,,1241,llm,,,1403,llm,,,1385
+LF-LIT-015,localflow_fixtures,"literal_escape,do_not_translate,critical",,,llm,,,1209,llm,,,1408,llm,,,1390
+LF-LIT-016,localflow_fixtures,"quoted,no_synonym_inside,critical",,,llm,,,1247,llm,,,1414,llm,,,1401
+LF-LIT-017,localflow_fixtures,"literal_escape,marker_word,critical",,,llm,,,1208,llm,,,1413,llm,,,1359
+LF-LIT-018,localflow_fixtures,"quoted,nested_quotes,critical",,,llm,,,1255,llm,,,1400,llm,,,1377
+LF-LIT-019,localflow_fixtures,"literal_escape,version_words,critical",,,llm,,,1290,llm_fallback_normalized,,,1424,llm,,,1404
+LF-LIT-020,localflow_fixtures,"quoted,instruction_discussion,critical",,,llm,,,1399,llm,,,1517,llm,,,1520
+long-000,synthetic_longform,long_form_multi_window,,False,llm,,True,5458,llm_fallback_normalized,damage hallucination omission,False,6105,llm,,True,5498
+long-001,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,7495,llm_fallback_normalized,,False,9476,llm,,True,6658
+long-002,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,6289,llm_fallback_normalized,,False,7003,llm,,True,6231
+long-003,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,7407,llm_fallback_normalized,,False,7469,llm,,True,6790
+long-004,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,7335,llm_fallback_normalized,,False,7267,llm_fallback_normalized,,False,7413
+long-005,synthetic_longform,long_form_multi_window,,False,llm,,True,5121,llm_fallback_normalized,,False,5808,llm,,True,5253
+long-006,synthetic_longform,long_form_multi_window,,False,llm,,True,5540,llm_fallback_normalized,,False,6344,llm,,True,5551
+long-007,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,5948,llm_fallback_normalized,,False,6153,llm,,True,5604
+long-008,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,7975,llm_fallback_normalized,,False,6975,llm,,True,6245
+long-009,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,6023,llm_fallback_normalized,,False,6148,llm,,True,5703
+long-010,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,6534,llm_fallback_normalized,,False,7582,llm,,True,6564
+long-011,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,7630,llm_fallback_normalized,,False,8433,llm,,True,7670
+long-012,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,6195,llm_partial,,False,11749,llm,,True,5628
+long-013,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,5389,llm_fallback_normalized,,False,5981,llm,,True,5568
+long-014,synthetic_longform,long_form_multi_window,,False,llm,,False,6047,llm_fallback_normalized,,False,7045,llm,,True,6046
+long-015,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,True,6142,llm_fallback_normalized,,True,5988,llm,,True,5625
+long-016,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,6627,llm_fallback_normalized,damage facts_changed hallucination,False,6851,llm,,False,6231
+long-017,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,7254,llm_fallback_normalized,,False,6991,llm,,True,6393
+long-018,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,6870,llm_fallback_normalized,,False,6923,llm,,True,6307
+long-019,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,7956,llm_fallback_normalized,,False,7342,llm,,True,6548
+long-020,synthetic_longform,long_form_multi_window,,False,llm,,True,6359,llm,,False,6416,llm,,True,6394
+long-021,synthetic_longform,long_form_multi_window,,False,llm,,False,6311,llm_fallback_normalized,,False,8523,llm,,True,6490
+long-022,synthetic_longform,long_form_multi_window,,False,llm,,False,6879,llm,,False,6906,llm,,True,6808
+long-023,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,6444,llm_fallback_normalized,,False,6699,llm,,True,6118
+long-024,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,8548,llm_fallback_normalized,,False,8032,llm,,False,7250
+long-025,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,7016,llm_fallback_normalized,,False,7619,llm,,True,6999
+long-026,synthetic_longform,long_form_multi_window,,False,llm,,False,5756,llm_fallback_normalized,,False,6479,llm,,True,5792
+long-027,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,10192,llm_fallback_normalized,,False,8708,llm,,True,8012
+long-028,synthetic_longform,long_form_multi_window,,False,llm,,True,6202,llm_fallback_normalized,,True,7143,llm,,True,6241
+long-029,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,True,6066,llm_fallback_normalized,,True,6451,llm,,True,5706
+long-030,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,7525,llm_fallback_normalized,,False,8356,llm,,True,6193
+long-031,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,5844,llm_fallback_normalized,,False,5953,llm,,True,5888
+long-032,synthetic_longform,long_form_multi_window,,False,llm,,False,5409,llm_fallback_normalized,,False,6190,llm,,True,5471
+long-033,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,8051,llm_fallback_normalized,,False,7419,llm,,True,6370
+long-034,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,6632,llm_fallback_normalized,,False,6259,llm,,True,5941
+long-035,synthetic_longform,long_form_multi_window,,False,llm,,False,6170,llm_fallback_normalized,,False,6779,llm,,False,6351
+long-036,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,6113,llm_fallback_normalized,,False,6612,llm,,True,6239
+long-037,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,False,6706,llm_fallback_normalized,,False,7368,llm,,True,6474
+long-038,synthetic_longform,long_form_multi_window,,False,llm,,False,6666,llm_fallback_normalized,,True,6916,llm,,True,6279
+long-039,synthetic_longform,long_form_multi_window,,False,llm_fallback_normalized,,True,6526,llm_fallback_normalized,,True,6708,llm_fallback_normalized,,False,6476
