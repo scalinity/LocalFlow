@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LocalFlow cleanup models</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="Measured comparison of LocalFlow's current cleanup model, untuned Qwen3.5-4B and a LocalFlow-tuned Qwen3.5-4B.">
+<style>
+:root {
+  --canvas: #FCFCFB; --card: #F4F2EE; --field: #FDFDFC; --ink: #1F1D1A; --ink-2: #57514A; --ink-3: #7A7268;
+  --hairline: #E7E4DE; --divider: #D6D1C7; --accent: #195C5D; --accent-2: #379489; --accent-wash: #E4EFEC;
+  --lavender: #8A5AB5; --lavender-wash: #FBF2FF; --danger: #A63D2F; --danger-wash: #F8E9E5;
+  --ok: #2F6B3A; --ok-wash: #E7F1E6; --warn: #8A5A12; --warn-wash: #F6EEDC;
+  --model-A: #5A544B; --model-B: #379489; --model-C: #8A5AB5; --threshold: #A63D2F;
+  --font-serif: "New York", ui-serif, "Iowan Old Style", Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
+  --measure: 760px; --wide: 1080px; --radius: 10px; --radius-sm: 6px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #1A1917; --card: #211F1C; --field: #1E1C19; --ink: #ECE7DF; --ink-2: #BDB5A9; --ink-3: #958C80;
+    --hairline: #34312C; --divider: #454038; --accent: #55AAA4; --accent-2: #55AAA4; --accent-wash: #1E2E2C;
+    --lavender: #C58AE5; --lavender-wash: #2C2231; --danger: #E08A78; --danger-wash: #3A2320;
+    --ok: #8BC98F; --ok-wash: #1F2E21; --warn: #E2B867; --warn-wash: #33291A;
+    --model-A: #CFC7B8; --model-B: #55AAA4; --model-C: #C58AE5; --threshold: #E08A78; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --canvas: #1A1917; --card: #211F1C; --field: #1E1C19; --ink: #ECE7DF; --ink-2: #BDB5A9; --ink-3: #958C80;
+  --hairline: #34312C; --divider: #454038; --accent: #55AAA4; --accent-2: #55AAA4; --accent-wash: #1E2E2C;
+  --lavender: #C58AE5; --lavender-wash: #2C2231; --danger: #E08A78; --danger-wash: #3A2320;
+  --ok: #8BC98F; --ok-wash: #1F2E21; --warn: #E2B867; --warn-wash: #33291A;
+  --model-A: #CFC7B8; --model-B: #55AAA4; --model-C: #C58AE5; --threshold: #E08A78; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--canvas); color: var(--ink); font: 15px/1.5 var(--font-sans);
+  font-variant-numeric: tabular-nums; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; border-radius: 3px; }
+.page { max-width: var(--wide); margin: 0 auto; padding: 28px 24px 96px; }
+.prose { max-width: var(--measure); }
+header.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; color: var(--ink-3);
+  font-size: 13px; padding-bottom: 28px; }
+header.top b { color: var(--ink-2); font-weight: 600; }
+.theme-toggle { border: 1px solid var(--divider); background: var(--field); color: var(--ink-2); border-radius: 999px;
+  padding: 5px 12px; font: inherit; cursor: pointer; }
+h1, h2, h3 { font-family: var(--font-serif); font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+h1.verdict { font-size: clamp(34px, 6vw, 54px); line-height: 1.08; margin: 0 0 18px; max-width: 16ch; }
+h2 { font-size: 28px; line-height: 1.2; margin: 72px 0 12px; }
+h3 { font-size: 20px; line-height: 1.3; margin: 32px 0 8px; }
+p { margin: 0 0 14px; }
+.lede { font-family: var(--font-serif); font-size: 20px; line-height: 1.55; color: var(--ink-2); max-width: var(--measure); }
+.muted { color: var(--ink-3); }
+.small { font-size: 13px; }
+.serif { font-family: var(--font-serif); }
+.status { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+.status.pass { background: var(--ok-wash); color: var(--ok); }
+.status.fail { background: var(--danger-wash); color: var(--danger); }
+.status.na { background: var(--card); color: var(--ink-3); }
+.status.warn { background: var(--warn-wash); color: var(--warn); }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: 0; }
+/* rule ledger */
+.ledger { margin: 28px 0 8px; border-top: 1px solid var(--divider); }
+.rule { display: grid; grid-template-columns: minmax(170px, 260px) 1fr; gap: 6px 24px; padding: 16px 0;
+  border-bottom: 1px solid var(--hairline); }
+.rule .what { font-weight: 600; }
+.rule .why { color: var(--ink-3); font-size: 13px; }
+.rule .bars { display: grid; gap: 6px; }
+.cirow { display: grid; grid-template-columns: 54px 1fr 132px; align-items: center; gap: 10px; font-size: 13px; }
+.cirow svg { width: 100%; height: 22px; overflow: visible; }
+.cirow .val { text-align: right; color: var(--ink-2); }
+/* specimen */
+.specimen { margin: 36px 0 0; padding: 22px 24px; background: var(--card); border-radius: var(--radius); }
+.specimen .said { font-family: var(--font-serif); font-size: 19px; line-height: 1.6; }
+.specimen .outs { display: grid; gap: 10px; margin-top: 14px; }
+.specimen .outs div { display: grid; grid-template-columns: 34px 1fr; gap: 8px; font-family: var(--font-serif);
+  font-size: 17px; line-height: 1.55; }
+.tag { font-family: var(--font-sans); font-size: 12px; font-weight: 700; border-radius: 5px; padding: 1px 0;
+  text-align: center; height: 20px; color: var(--canvas); align-self: start; margin-top: 3px; }
+del.pm { color: var(--danger); text-decoration: line-through; text-decoration-thickness: 1.5px; background: var(--danger-wash); }
+ins.pm { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px;
+  background: var(--accent-wash); }
+/* comparison grid */
+.grid3 { display: grid; grid-template-columns: minmax(150px, 1.2fr) repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--divider); }
+.grid3 > div { padding: 9px 10px; border-bottom: 1px solid var(--hairline); font-size: 14px; }
+.grid3 .h { font-weight: 600; font-family: var(--font-serif); font-size: 17px; border-bottom: 2px solid currentColor; }
+.grid3 .lbl { color: var(--ink-2); }
+.grid3 .best { font-weight: 700; }
+.grid3 .num { text-align: right; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; }
+.seg { display: inline-flex; border: 1px solid var(--divider); border-radius: 999px; overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--ink-2); padding: 6px 14px; font: inherit; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--canvas); }
+select, input[type="search"] { font: inherit; color: var(--ink); background: var(--field); border: 1px solid var(--divider);
+  border-radius: var(--radius-sm); padding: 6px 10px; min-height: 34px; }
+label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); }
+.fig { margin: 18px 0 8px; }
+.fig svg { width: 100%; height: auto; display: block; }
+.fig .cap { font-size: 13px; color: var(--ink-3); margin-top: 6px; max-width: var(--measure); }
+svg text { fill: var(--ink-2); font: 12px var(--font-sans); }
+svg .axis { stroke: var(--divider); }
+svg .grid { stroke: var(--hairline); }
+svg .thr { stroke: var(--threshold); stroke-dasharray: 4 3; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--ink-2); }
+.heat { display: grid; grid-template-columns: minmax(160px, 1.4fr) repeat(3, minmax(0, 1fr)); font-size: 13px; }
+.heat > div { padding: 7px 8px; border-bottom: 1px solid var(--hairline); }
+.heat .cell { text-align: right; border-radius: 4px; margin: 2px; }
+.heat .hd { font-weight: 600; color: var(--ink-2); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+/* explorer */
+.case { border-top: 1px solid var(--hairline); padding: 12px 0; }
+.case > button { all: unset; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 10px; width: 100%; }
+.case > button:focus-visible { outline: 2px solid var(--accent-2); }
+.case .snip { font-family: var(--font-serif); font-size: 16px; line-height: 1.5; color: var(--ink); overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.case .meta { font-size: 12px; color: var(--ink-3); text-align: right; white-space: nowrap; }
+.dots { display: inline-flex; gap: 4px; margin-left: 8px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; border: 1.5px solid; }
+.detail { margin: 12px 0 4px; display: grid; gap: 12px; }
+.detail .blk { background: var(--card); border-radius: var(--radius-sm); padding: 12px 14px; }
+.detail .blk h4 { margin: 0 0 6px; font: 600 13px var(--font-sans); color: var(--ink-2); display: flex; gap: 8px;
+  align-items: center; flex-wrap: wrap; }
+.detail .txt { font-family: var(--font-serif); font-size: 16px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.flag { font: 600 11px var(--font-sans); padding: 1px 7px; border-radius: 999px; background: var(--danger-wash); color: var(--danger); }
+.flag.okf { background: var(--ok-wash); color: var(--ok); }
+.flag.neutral { background: var(--hairline); color: var(--ink-2); }
+.pager { display: flex; gap: 10px; align-items: center; margin-top: 14px; font-size: 14px; color: var(--ink-2); }
+button.btn { font: inherit; border: 1px solid var(--divider); background: var(--field); color: var(--ink); border-radius: var(--radius-sm);
+  padding: 6px 12px; cursor: pointer; }
+button.btn:hover { border-color: var(--accent-2); }
+pre.cmd { font: 13px/1.5 var(--font-mono); background: var(--card); border-radius: var(--radius-sm); padding: 12px 14px;
+  overflow-x: auto; margin: 6px 0 4px; white-space: pre; }
+.cmdrow { margin: 18px 0; }
+.cmdrow .bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.kv { display: grid; grid-template-columns: minmax(150px, 240px) 1fr; gap: 4px 18px; font-size: 14px; }
+.kv dt { color: var(--ink-3); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+table.plain { border-collapse: collapse; width: 100%; font-size: 14px; }
+table.plain th, table.plain td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+table.plain th { font-weight: 600; color: var(--ink-2); }
+table.plain td.num, table.plain th.num { text-align: right; }
+.scroll { overflow-x: auto; }
+.blocked { border-left: 3px solid var(--danger); padding: 8px 14px; background: var(--danger-wash); border-radius: 0 6px 6px 0; }
+.limits { padding-left: 20px; color: var(--ink-2); }
+.limits li { margin: 0 0 6px; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; margin: 30px 0 0; padding-top: 14px; border-top: 1px solid var(--hairline); }
+.toc a { color: var(--ink-2); text-decoration: none; }
+.toc a:hover { color: var(--accent); }
+#slider { width: 100%; accent-color: var(--accent); }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--canvas);
+  padding: 8px 14px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.on { opacity: 1; }
+@media (max-width: 760px) {
+  .page { padding: 18px 16px 72px; }
+  .rule { grid-template-columns: 1fr; }
+  .cirow { grid-template-columns: 40px 1fr 104px; }
+  .two { grid-template-columns: 1fr; }
+  .grid3 { grid-template-columns: minmax(110px, 1.1fr) repeat(3, minmax(0, 1fr)); }
+  .grid3 > div { padding: 8px 5px; font-size: 13px; }
+  .heat { grid-template-columns: minmax(110px, 1.2fr) repeat(3, minmax(0, 1fr)); }
+  .kv { grid-template-columns: 1fr; }
+  .kv dt { margin-top: 8px; }
+  h2 { font-size: 24px; margin-top: 56px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="page" id="app">
+  <header class="top"><span><b>LocalFlow</b> cleanup model comparison</span>
+    <button class="theme-toggle" id="theme" type="button" aria-label="Switch colour theme">Dark</button></header>
+  <noscript><p>This report renders its figures with JavaScript; the raw data is embedded in the page source and in summary.json.</p></noscript>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="report-data">__DATA__</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById("report-data").textContent);
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v; else if (k === "text") n.textContent = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat()) if (k != null) n.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return n;
+};
+const NS = "http://www.w3.org/2000/svg";
+const sv = (tag, attrs = {}, ...kids) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) if (v != null) n.setAttribute(k, v);
+  for (const k of kids.flat()) if (k != null) n.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return n;
+};
+const MODELS = ["A", "B", "C"];
+const MC = m => `var(--model-${m})`;
+const fmt = (x, d = 1) => x == null || Number.isNaN(x) ? "–" : Number(x).toFixed(d);
+const pctf = (x, d = 1) => x == null ? "–" : `${fmt(x, d)}%`;
+const ms = x => x == null ? "–" : x >= 1000 ? `${fmt(x / 1000, 2)} s` : `${Math.round(x)} ms`;
+const app = $("#app");
+const has = m => (D.models || []).includes(m);
+
+/* theme */
+(function () {
+  const btn = $("#theme");
+  let saved = null;
+  try { saved = localStorage.getItem("lf-report-theme"); } catch (e) {}
+  if (saved) document.documentElement.dataset.theme = saved;
+  const dark = () => (document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
+  const label = () => { btn.textContent = dark() ? "Light" : "Dark"; };
+  label();
+  try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", label); } catch (e) {}
+  btn.addEventListener("click", () => {
+    const next = dark() ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("lf-report-theme", next); } catch (e) {}
+    label();
+  });
+})();
+
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("on"); setTimeout(() => t.classList.remove("on"), 1600); }
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); toast("Copied"); return; } catch (e) {}
+  const ta = el("textarea", { style: "position:fixed;opacity:0" }); ta.value = text; document.body.append(ta); ta.select();
+  try { document.execCommand("copy"); toast("Copied"); } catch (e) { toast("Copy failed — select the text instead"); }
+  ta.remove();
+}
+function download(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = el("a", { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* word diff as proofreader's marks */
+function tokens(s) { return (s || "").match(/\s+|[^\s]+/g) || []; }
+function diffNodes(src, out) {
+  const a = tokens(src).filter(t => t.trim()), b = tokens(out).filter(t => t.trim());
+  const norm = t => t.toLowerCase().replace(/^[^\w$]+|[^\w%]+$/g, "");
+  const n = a.length, m = b.length;
+  if (n * m > 400000) return [document.createTextNode(out || "")];
+  const L = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+    L[i][j] = norm(a[i]) === norm(b[j]) ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const parts = []; let i = 0, j = 0;
+  const push = (kind, t) => { const last = parts[parts.length - 1]; if (last && last.kind === kind) last.t.push(t); else parts.push({ kind, t: [t] }); };
+  while (i < n && j < m) {
+    if (norm(a[i]) === norm(b[j])) { push("eq", b[j]); i++; j++; }
+    else if (L[i + 1][j] >= L[i][j + 1]) { push("del", a[i]); i++; } else { push("ins", b[j]); j++; }
+  }
+  while (i < n) push("del", a[i++]); while (j < m) push("ins", b[j++]);
+  const nodes = [];
+  parts.forEach((p, k) => {
+    if (k) nodes.push(document.createTextNode(" "));
+    const txt = p.t.join(" ");
+    nodes.push(p.kind === "eq" ? document.createTextNode(txt) : el(p.kind === "del" ? "del" : "ins", { class: "pm", text: txt }));
+  });
+  return nodes;
+}
+
+/* ---------- sections ---------- */
+const OUTCOME = {
+  keep_A: ["Keep the current model.", "Neither alternative met the frozen rules, so LocalFlow keeps Qwen3-4B-Instruct-2507."],
+  switch_to_B: ["Switch to untuned Qwen3.5-4B.", "Qwen3.5-4B met every frozen rule against the current model without fine-tuning."],
+  consider_C: ["Consider the LocalFlow-tuned Qwen3.5-4B.", "The fine-tuned model met the frozen meaning and cleanup rules; switching is your call."],
+  insufficient_evidence: ["Not enough evidence to choose.", "A required part of the comparison is missing, so no recommendation is made."]
+};
+
+function section(id, title, ...kids) { return el("section", { id }, el("h2", { text: title }), ...kids); }
+
+function renderHero() {
+  const dec = D.decision || {};
+  const [head, sub] = OUTCOME[dec.outcome] || OUTCOME.insufficient_evidence;
+  app.append(el("h1", { class: "verdict", text: head }));
+  app.append(el("p", { class: "lede", text: D.headline_reason || sub }));
+  if (D.blocked && D.blocked.length) app.append(el("div", { class: "blocked prose" },
+    el("strong", { text: "Unfinished work. " }), D.blocked.join(" ")));
+  app.append(renderLedger());
+  app.append(el("p", { class: "small muted prose", text: "Bars show paired differences against the current model (A), in percentage points, with 95% family-bootstrap intervals. The dashed line is the frozen threshold each candidate had to clear; the rules were hashed before any candidate output on the test cases existed." }));
+  if (D.limits && D.limits.length) app.append(el("h3", { text: "Limits" }), el("ul", { class: "prose limits" }, D.limits.map(t => el("li", { text: t }))));
+  const sp = D.specimen;
+  if (sp) {
+    const box = el("div", { class: "specimen prose" },
+      el("div", { class: "small muted", text: `What was said (${sp.label})` }),
+      el("div", { class: "said", text: sp.input }),
+      el("div", { class: "outs" }, MODELS.filter(m => sp.out[m] != null).map(m =>
+        el("div", {}, el("span", { class: "tag", style: `background:${MC(m)}`, text: m }), el("span", {}, diffNodes(sp.input, sp.out[m]))))));
+    app.append(box);
+  }
+  app.append(el("nav", { class: "toc", "aria-label": "Sections" },
+    [["models", "The three models"], ["evidence", "Synthetic test"], ["audio", "Real audio"], ["fixtures", "LocalFlow fixtures"], ["judge", "Blinded judge"],
+     ["speed", "Speed and footprint"], ["explore", "Examples"], ["training", "How C was trained"], ["data", "Data and spend"],
+     ["use", "Try, switch, roll back"], ["files", "Downloads and sources"]].map(([h, t]) => el("a", { href: `#${h}`, text: t }))));
+}
+
+function ciSvg(diff, lo, hi, thr, dir, span) {
+  const W = 300, H = 22, pad = 6;
+  const x = v => pad + (v + span) / (2 * span) * (W - 2 * pad);
+  const clamp = v => Math.max(-span, Math.min(span, v));
+  const g = sv("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", role: "img",
+    "aria-label": `difference ${fmt(diff)} points, interval ${fmt(lo)} to ${fmt(hi)}` });
+  g.append(sv("line", { x1: x(0), x2: x(0), y1: 2, y2: H - 2, class: "axis" }));
+  if (thr != null) g.append(sv("line", { x1: x(clamp(thr)), x2: x(clamp(thr)), y1: 0, y2: H, class: "thr" }));
+  const ok = dir === "upper" ? hi <= thr : lo > thr;
+  const col = ok ? "var(--ok)" : "var(--danger)";
+  g.append(sv("line", { x1: x(clamp(lo)), x2: x(clamp(hi)), y1: H / 2, y2: H / 2, stroke: col, "stroke-width": 4, "stroke-linecap": "round" }));
+  g.append(sv("circle", { cx: x(clamp(diff)), cy: H / 2, r: 5, fill: "var(--canvas)", stroke: col, "stroke-width": 2.5 }));
+  return g;
+}
+
+function renderLedger() {
+  const comps = D.comparisons || {}, dec = D.decision || {}, rules = (D.rules || {});
+  const rowsDef = [
+    ["Meaning: model-only damage", "Candidate minus A, synthetic test, raw model output. Must not exceed the threshold.", "model_only_damage", "upper", rules.meaning ? rules.meaning.model_only_damage_upper_ci_pp : 1, -1],
+    ["Meaning: delivered damage", "After LocalFlow's validator and fallback.", "delivered_damage", "upper", rules.meaning ? rules.meaning.delivered_damage_upper_ci_pp : 0.5, -1],
+    ["Meaning: unauthorized edits, conversational audio", "DisfluencySpeech, words changed beyond fillers and corrections.", "disfluencyspeech_unauthorized_edit_model_only", "upper", rules.meaning ? rules.meaning.real_audio_unauthorized_edit_upper_ci_pp : 0.5, -1],
+    ["Meaning: unauthorized edits, read speech", "FLEURS English, words changed beyond fillers and corrections.", "fleurs_unauthorized_edit_model_only", "upper", rules.meaning ? rules.meaning.real_audio_unauthorized_edit_upper_ci_pp : 0.5, -1],
+    ["Useful cleanup: repairs delivered", "Share of dictations needing repair that come out right. Must improve on A.", "delivered_repair_success", "lower", rules.useful_cleanup ? rules.useful_cleanup.delivered_repair_success_lower_ci_pp : 0, 1],
+  ];
+  const wrap = el("div", { class: "ledger" });
+  for (const [what, why, key, dir, thr, sign] of rowsDef) {
+    const bars = el("div", { class: "bars" });
+    let spanMax = 4;
+    for (const x of ["B", "C"]) { const c = (comps[`${x}-A`] || {})[key]; if (c && c.diff_pp != null) spanMax = Math.max(spanMax, Math.abs(c.ci95_pp[0]), Math.abs(c.ci95_pp[1]), Math.abs(thr) + 1); }
+    const span = Math.min(60, Math.ceil(spanMax / 2) * 2);
+    for (const x of ["B", "C"]) {
+      const c = (comps[`${x}-A`] || {})[key];
+      if (!c || c.diff_pp == null) { bars.append(el("div", { class: "cirow" }, el("span", { text: x, style: `color:${MC(x)};font-weight:700` }), el("span", { class: "muted", text: "not measured" }), el("span"))); continue; }
+      const [lo, hi] = c.ci95_pp;
+      bars.append(el("div", { class: "cirow" }, el("span", { text: `${x} − A`, style: `color:${MC(x)};font-weight:700` }),
+        ciSvg(c.diff_pp, lo, hi, thr, dir, span),
+        el("span", { class: "val", text: `${c.diff_pp > 0 ? "+" : ""}${fmt(c.diff_pp)} [${fmt(lo)}, ${fmt(hi)}]` })));
+    }
+    wrap.append(el("div", { class: "rule" }, el("div", {}, el("div", { class: "what", text: what }), el("div", { class: "why", text: why })), bars));
+  }
+  const speed = el("div", { class: "rule" }, el("div", {}, el("div", { class: "what", text: "Responsiveness" }),
+    el("div", { class: "why", text: "Warm p95 cleanup time within 1.25× of A and cold load within 2×." })),
+    el("div", { class: "bars" }, ["B", "C"].map(x => {
+      const cand = (dec.candidates || {})[x] || {};
+      const ch = cand.checks || {};
+      const lat = (((D.aggregates || {})[x] || {}).latency || {}).total_cleanup_ms || {};
+      const st = cand.status === "unavailable" ? ["na", "unavailable"] : (ch.R3_warm_p95 && ch.R3_cold_load) ? ["pass", "within limits"] : ["fail", "too slow"];
+      return el("div", { class: "cirow" }, el("span", { text: x, style: `color:${MC(x)};font-weight:700` }),
+        el("span", {}, el("span", { class: `status ${st[0]}`, text: st[1] })), el("span", { class: "val", text: `p95 ${ms(lat.p95)}` }));
+    })));
+  wrap.append(speed);
+  const extra = [["R1c_disfluencyspeech_wer", "word error on conversational audio"], ["R1c_fleurs_wer", "word error on read speech"],
+    ["R1d_fixtures_not_below_A", "LocalFlow's hand-written fixtures"]];
+  const verdict = (x, k) => { const v = (((dec.candidates || {})[x] || {}).checks || {})[k]; return v === true ? "pass" : v === false ? "fail" : "not measured"; };
+  wrap.append(el("p", { class: "small muted", style: "margin-top:10px", text: "Also checked under the meaning rule: " +
+    extra.map(([k, t]) => `${t} (B ${verdict("B", k)}, C ${verdict("C", k)})`).join("; ") + "." }));
+  return wrap;
+}
+
+function renderModels() {
+  const ag = D.aggregates || {}, sizes = D.artifact_sizes || {}, cold = D.cold_loads || {};
+  const s = el("div", { class: "grid3", role: "table", "aria-label": "Model comparison" });
+  const hd = m => el("div", { class: "h", role: "columnheader", style: `color:${MC(m)}` }, el("span", { text: (D.model_info[m] || {}).short || m }));
+  s.append(el("div", { class: "h", role: "columnheader", text: "" }), ...MODELS.map(hd));
+  const row = (label, f, better) => {
+    const vals = MODELS.map(m => has(m) ? f(m) : null);
+    const nums = vals.map(v => (v && typeof v === "object") ? v.n : v).filter(v => typeof v === "number");
+    const best = better && nums.length ? (better === "high" ? Math.max(...nums) : Math.min(...nums)) : null;
+    s.append(el("div", { class: "lbl", role: "rowheader", text: label }));
+    vals.forEach((v, i) => {
+      const n = (v && typeof v === "object") ? v.n : v; const txt = (v && typeof v === "object") ? v.t : v;
+      s.append(el("div", { class: "num" + (best != null && n === best ? " best" : ""), role: "cell", text: txt == null ? (has(MODELS[i]) ? "–" : "not run") : String(txt) }));
+    });
+  };
+  const g = (m, slice, mode, k) => ((((ag[m] || {})[slice] || {})[mode] || {})[k]);
+  const pv = (m, slice, mode, k) => { const v = g(m, slice, mode, k); return v == null ? null : { n: v, t: pctf(v) }; };
+  row("Damage, model-only", m => pv(m, "synthetic", "model_only", "damage"), "low");
+  row("Damage, delivered", m => pv(m, "synthetic", "delivered", "damage"), "low");
+  row("Repairs right, delivered", m => pv(m, "synthetic_repair", "delivered", "repair_success"), "high");
+  row("Repairs right, model-only", m => pv(m, "synthetic_repair", "model_only", "repair_success"), "high");
+  row("Already-clean text kept exactly", m => pv(m, "synthetic_noop", "model_only", "noop_preserved"), "high");
+  row("Self-corrections resolved", m => pv(m, "synthetic", "delivered", "correction_success"), "high");
+  row("Word error vs reference, delivered", m => pv(m, "synthetic", "delivered", "wer") , "low");
+  row("Validator fallback", m => { const v = (((ag[m] || {}).synthetic || {}).engine || {}).fallback; return v == null ? null : { n: v, t: pctf(v) }; }, "low");
+  row("Warm cleanup, median", m => { const v = (((ag[m] || {}).latency || {}).total_cleanup_ms || {}).median; return v == null ? null : { n: v, t: ms(v) }; }, "low");
+  row("Warm cleanup, p95", m => { const v = (((ag[m] || {}).latency || {}).total_cleanup_ms || {}).p95; return v == null ? null : { n: v, t: ms(v) }; }, "low");
+  row("First token, median", m => { const v = (((ag[m] || {}).latency || {}).first_token_ms || {}).median; return v == null ? null : { n: v, t: ms(v) }; }, "low");
+  row("Cold load, median of 3", m => { const a = cold[m]; if (!a || !a.length) return null; const v = a.map(x => x.process_to_ready_ms).sort((x, y) => x - y)[Math.floor(a.length / 2)]; return { n: v, t: ms(v) }; }, "low");
+  row("Peak memory", m => { const v = ((ag[m] || {}).latency || {}).peak_mem_gb; return v == null ? null : { n: v, t: `${fmt(v, 1)} GB` }; }, "low");
+  row("Weights on disk", m => sizes[m] ? { n: sizes[m], t: `${fmt(sizes[m] / 1e9, 2)} GB` } : null, "low");
+  const ids = el("dl", { class: "kv" });
+  for (const m of MODELS) {
+    const i = D.model_info[m] || {};
+    ids.append(el("dt", {}, el("span", { class: "swatch", style: `background:${MC(m)}` }), i.short || m),
+      el("dd", { text: [i.repo, i.revision ? `@ ${i.revision.slice(0, 12)}` : null, i.quant, i.status].filter(Boolean).join(", ") }));
+  }
+  const eng = el("table", { class: "plain" }, el("thead", {}, el("tr", {}, ["Engine outcome (synthetic test)", ...MODELS.filter(has)].map((h, i) => el("th", { class: i ? "num" : "", text: h })))));
+  const etb = el("tbody");
+  for (const [k, label] of [["fallback", "Fell back to the input"], ["salvaged", "Validator restored dropped words"], ["output_limit", "Hit the output limit"], ["think_leak", "Leaked a thinking block"]])
+    etb.append(el("tr", {}, el("td", { text: label }), ...MODELS.filter(has).map(m => el("td", { class: "num", text: pctf((((ag[m] || {}).synthetic || {}).engine || {})[k]) }))));
+  etb.append(el("tr", {}, el("td", { text: "Runtime errors" }), ...MODELS.filter(has).map(m => el("td", { class: "num", text: String((((ag[m] || {}).synthetic || {}).engine || {}).errors ?? "–") }))));
+  etb.append(el("tr", {}, el("td", { text: "Main fallback reasons" }), ...MODELS.filter(has).map(m => el("td", { class: "num small", text: Object.entries((((ag[m] || {}).synthetic || {}).engine || {}).fallback_reasons || {}).map(([k, v]) => `${k.replace("validation_rejected", "validator")} ${v}`).join(", ") || "–" }))));
+  eng.append(etb);
+  const fid = D.fidelity || {};
+  const fidText = Object.keys(fid).length ? `Runtime check: on 50 frozen cases per model, LocalFlow's own interpreter and ModelRunner produced ${MODELS.filter(m => fid[m]).map(m => `${fid[m].identical}/${fid[m].cases} byte-identical outputs for ${m}`).join(", ")} compared with the evaluation runtime.` : "The runtime fidelity check was not run.";
+  return section("models", "The three models", el("p", { class: "prose", text: "All three run through LocalFlow's real cleanup engine with its production prompts, greedy decoding and thinking switched off. “Model-only” scores the model's own proposal; “delivered” scores what LocalFlow would paste after its validator, which falls back to the uncleaned text whenever an edit looks unsafe." }),
+    el("div", { class: "scroll" }, s), el("h3", { text: "How LocalFlow's engine handled each model" }), el("div", { class: "scroll" }, eng),
+    el("h3", { text: "Exact identities" }), ids, el("p", { class: "small muted prose", text: fidText }));
+}
+
+function barChart(groups, series, opts = {}) {
+  /* groups: [{label, values: {A,B,C}}] ; horizontal grouped bars 0..max */
+  const niceCeil = v => { const p = Math.pow(10, Math.floor(Math.log10(v))); return [1, 2, 2.5, 5, 10].map(k => k * p).find(k => k >= v); };
+  const rowH = 16, gap = 14, left = opts.left || 190, W = 760, maxV = opts.max || niceCeil(Math.max(1, ...groups.flatMap(g => series.map(s => g.values[s] || 0))));
+  const H = groups.length * (series.length * rowH + gap) + 24;
+  const svg = sv("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || "bar chart" });
+  const x = v => left + (W - left - 60) * (v / maxV);
+  for (let t = 0; t <= 4; t++) { const v = maxV * t / 4; svg.append(sv("line", { x1: x(v), x2: x(v), y1: 0, y2: H - 18, class: "grid" }), sv("text", { x: x(v), y: H - 4, "text-anchor": "middle" }, opts.unit === "ms" ? ms(v) : `${Math.round(v)}${opts.unit || "%"}`)); }
+  groups.forEach((g, gi) => {
+    const y0 = gi * (series.length * rowH + gap);
+    svg.append(sv("text", { x: left - 10, y: y0 + series.length * rowH / 2 + 4, "text-anchor": "end" }, g.label));
+    series.forEach((s, si) => {
+      const v = g.values[s]; if (v == null) return;
+      const y = y0 + si * rowH;
+      const r = sv("rect", { x: left, y: y + 2, width: Math.max(1, x(v) - left), height: rowH - 4, rx: 3, fill: MC(s) });
+      r.append(sv("title", {}, `${s}: ${opts.unit === "ms" ? ms(v) : fmt(v) + (opts.unit || "%")}`));
+      svg.append(r, sv("text", { x: x(v) + 6, y: y + rowH - 4 }, opts.unit === "ms" ? ms(v) : fmt(v)));
+    });
+  });
+  return svg;
+}
+
+function renderEvidence() {
+  const ag = D.aggregates || {};
+  let mode = "model_only";
+  const fig = el("div", { class: "fig" });
+  const metrics = [["damage", "Damage (any meaning change)"], ["facts_changed", "Critical fact changed"], ["hallucination", "Added content"],
+    ["omission", "Dropped content"], ["negation_changed", "Negation changed"], ["missing_ending", "Lost the ending"],
+    ["unwanted_answer", "Answered the request instead"], ["repair_success", "Repairs right"], ["noop_preserved", "Clean text kept exactly"],
+    ["correction_success", "Self-corrections resolved"], ["list_ok", "Spoken lists formatted"]];
+  const draw = () => {
+    fig.replaceChildren();
+    const group = keys => keys.map(([k, label]) => ({ label, values: Object.fromEntries(MODELS.filter(has).map(m => {
+      const slice = k === "repair_success" ? "synthetic_repair" : k === "noop_preserved" ? "synthetic_noop" : "synthetic";
+      return [m, (((ag[m] || {})[slice] || {})[mode] || {})[k]]; })) }));
+    const bad = metrics.slice(0, 7), good = metrics.slice(7);
+    const badMax = Math.max(10, ...group(bad).flatMap(g => Object.values(g.values).filter(v => v != null)));
+    fig.append(el("h3", { text: "What went wrong (lower is better)" }),
+      barChart(group(bad), MODELS.filter(has), { max: Math.min(100, Math.ceil(badMax / 10) * 10), left: 240, label: "Error rates by model" }),
+      el("h3", { text: "What went right (higher is better)" }),
+      barChart(group(good), MODELS.filter(has), { max: 100, left: 240, label: "Success rates by model" }),
+      el("div", { class: "cap", text: mode === "model_only" ? "Model-only: the model's own cleanup proposal, before LocalFlow's validator." :
+        mode === "delivered" ? "Delivered: what LocalFlow would insert after validation. Fallbacks return the input, which hides model errors but also forgoes the cleanup." :
+        "Teacher-forced main pass: gold self-corrections applied first, so these rows isolate the main cleanup call on correction cases." }));
+  };
+  const seg = el("div", { class: "seg", role: "group", "aria-label": "Which output to score" });
+  [["model_only", "Model-only"], ["delivered", "Delivered"], ["teacher_forced", "Teacher-forced"]].forEach(([k, t]) => {
+    const b = el("button", { type: "button", "aria-pressed": String(k === mode), text: t, onclick: () => { mode = k; seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); draw(); } });
+    seg.append(b);
+  });
+  draw();
+  // category heat table
+  const cats = Object.keys((ag.A || {}).by_category || {});
+  let hk = "repair_success";
+  const heat = el("div", { class: "heat" });
+  const drawHeat = () => {
+    heat.replaceChildren(el("div", { class: "hd", text: "Category" }), ...MODELS.map(m => el("div", { class: "hd", style: `text-align:right;color:${MC(m)}`, text: m })));
+    for (const c of cats) {
+      heat.append(el("div", { text: c.replace(/_/g, " ") }));
+      for (const m of MODELS) {
+        const v = has(m) ? ((((ag[m] || {}).by_category || {})[c] || {}).delivered || {})[hk] : null;
+        const n = has(m) ? ((((ag[m] || {}).by_category || {})[c] || {}).delivered || {}).n : 0;
+        const good = hk === "damage" ? 100 - (v || 0) : (v || 0);
+        heat.append(el("div", { class: "cell", title: `n = ${n}`, style: v == null ? "" : `background: color-mix(in srgb, var(--accent-2) ${Math.round(good * 0.45)}%, transparent)`, text: v == null ? "–" : pctf(v, 0) }));
+      }
+    }
+  };
+  const hsel = el("select", { "aria-label": "Category metric", onchange: e => { hk = e.target.value; drawHeat(); } },
+    [["repair_success", "Repairs right (delivered)"], ["damage", "Damage (delivered)"], ["noop_preserved", "Clean text kept (delivered)"], ["correction_success", "Self-corrections resolved (delivered)"]].map(([v, t]) => el("option", { value: v, text: t })));
+  drawHeat();
+  const longf = (ag.A || {}).longform ? el("p", { class: "small muted prose", text: `Long dictations (over 200 words, cleaned in several windows): delivered damage ${MODELS.filter(has).map(m => `${m} ${pctf((((ag[m] || {}).longform || {}).delivered || {}).damage)}`).join(", ")} across ${((ag.A.longform || {}).delivered || {}).n || 0} cases; fallback ${MODELS.filter(has).map(m => `${m} ${pctf((((ag[m] || {}).longform || {}).engine || {}).fallback)}`).join(", ")}. Model-only scores are not computed here because the runner kept only the first window's raw proposal.` }) : null;
+  return section("evidence", "Synthetic test",
+    el("p", { class: "prose", text: D.synthetic_blurb || "" }),
+    el("div", { class: "toolbar" }, seg), fig,
+    el("h3", { text: "By category" }), el("div", { class: "toolbar" }, hsel), el("div", { class: "scroll" }, heat), longf);
+}
+
+function renderAudio() {
+  const ag = D.aggregates || {}, bl = D.baselines || {};
+  const out = [];
+  for (const [src, title, blurb] of [["disfluencyspeech", "Conversational, disfluent speech", "DisfluencySpeech test split: one speaker re-recording Switchboard conversations. The reference is machine-derived from its annotations: verbatim words minus filled pauses, with dropped reparanda and phrase-initial interjections accepted."],
+                                     ["fleurs", "Read speech", "FLEURS English test split, one recording per sentence. Read speech has nothing to clean, so any word change is unnecessary. WER uses FLEURS's normalized transcription."]]) {
+    const rows = [["Raw Parakeet", (bl.raw_asr || {})[src] || {}], ["After normalization", (bl.normalized_input || {})[src] || {}]];
+    const t = el("table", { class: "plain" }, el("thead", {}, el("tr", {}, ["Output", "WER vs reference", "Unauthorized word edits", "Fallback", "Fillers removed"].map((h, i) => el("th", { class: i ? "num" : "", text: h })))));
+    const tb = el("tbody");
+    for (const [label, r] of rows) tb.append(el("tr", {}, el("td", { text: label }), el("td", { class: "num", text: pctf(r.wer, 2) }), el("td", { class: "num", text: label === "Raw Parakeet" ? "–" : "0%" }), el("td", { class: "num", text: "–" }), el("td", { class: "num", text: "–" })));
+    for (const m of MODELS.filter(has)) {
+      const a = (ag[m] || {})[src] || {};
+      tb.append(el("tr", {}, el("td", {}, el("span", { class: "swatch", style: `background:${MC(m)}` }), `${m}, delivered`), el("td", { class: "num", text: pctf((a.delivered || {}).wer, 2) }),
+        el("td", { class: "num", text: pctf((a.delivered || {}).unauthorized_edit) }), el("td", { class: "num", text: pctf((a.engine || {}).fallback) }), el("td", { class: "num", text: pctf((a.delivered || {}).filler_removed_share) })));
+      tb.append(el("tr", {}, el("td", { class: "muted", text: `${m}, model-only` }), el("td", { class: "num muted", text: pctf((a.model_only || {}).wer, 2) }),
+        el("td", { class: "num muted", text: pctf((a.model_only || {}).unauthorized_edit) }), el("td", { class: "num muted", text: "" }), el("td", { class: "num muted", text: pctf((a.model_only || {}).filler_removed_share) })));
+    }
+    t.append(tb);
+    out.push(el("h3", { text: `${title} (${((ag.A || {})[src] || {}).model_only ? ag.A[src].model_only.n : 0} recordings)` }), el("p", { class: "prose small muted", text: blurb }), el("div", { class: "scroll" }, t));
+  }
+  return section("audio", "Real audio", el("p", { class: "prose", text: "Each recording was transcribed once through LocalFlow's own Parakeet and normalization path; every model then cleaned the same text. These sets test meaning preservation on real recognizer output, not the owner's voice or accent." }), ...out);
+}
+
+function renderFixtures() {
+  const ag = D.aggregates || {};
+  const t = el("table", { class: "plain" }, el("thead", {}, el("tr", {}, ["Model", "Pass, delivered", "Pass, model-only", "Fallback"].map((h, i) => el("th", { class: i ? "num" : "", text: h })))));
+  const tb = el("tbody");
+  for (const m of MODELS.filter(has)) { const f = (ag[m] || {}).fixtures || {};
+    tb.append(el("tr", {}, el("td", {}, el("span", { class: "swatch", style: `background:${MC(m)}` }), m), el("td", { class: "num", text: pctf((f.delivered || {}).fixture_pass) }),
+      el("td", { class: "num", text: pctf((f.model_only || {}).fixture_pass) }), el("td", { class: "num", text: pctf((f.engine || {}).fallback) }))); }
+  t.append(tb);
+  return section("fixtures", "LocalFlow's own fixtures", el("p", { class: "prose", text: "The 80 hand-written fidelity and literal cases from tests/v2/fidelity, scored with the same expect and forbid checks as LocalFlow's model-backed suite. Claude did not write them, so they guard against a tuned model learning the generator's habits." }), el("div", { class: "scroll" }, t));
+}
+
+function renderJudge() {
+  const j = D.judge || {};
+  if (!j.by_model) return section("judge", "Blinded judge (supplementary)", el("p", { class: "muted prose", text: "The blinded judge did not run." }));
+  const t = el("table", { class: "plain" }, el("thead", {}, el("tr", {}, ["Model", "Meaning kept", "Cleanup complete", "Partial", "Harmful", "Most common problems"].map((h, i) => el("th", { class: i && i < 5 ? "num" : "", text: h })))));
+  const tb = el("tbody");
+  for (const m of MODELS.filter(x => j.by_model[x])) {
+    const b = j.by_model[m], n = b.n || 1, c = b.cleanup || {};
+    const top = Object.entries(b.problems || {}).sort((a, z) => z[1] - a[1]).slice(0, 3).map(([k, v]) => `${k.replace(/_/g, " ")} ${v}`).join(", ");
+    tb.append(el("tr", {}, el("td", {}, el("span", { class: "swatch", style: `background:${MC(m)}` }), m), el("td", { class: "num", text: pctf(b.meaning_preserved) }),
+      el("td", { class: "num", text: pctf(100 * ((c.complete || 0) + (c.none_needed_and_none_made || 0)) / n) }), el("td", { class: "num", text: pctf(100 * (c.partial || 0) / n) }),
+      el("td", { class: "num", text: pctf(100 * (c.harmful || 0) / n) }), el("td", { class: "small", text: top || "–" })));
+  }
+  t.append(tb);
+  return section("judge", "Blinded judge (supplementary)",
+    el("p", { class: "prose", text: `Claude (${j.judge_model}) rated ${j.rated_cases} stratified test cases with the three model-only outputs shown under shuffled labels and a fixed rubric. These judge-derived scores are a second opinion on cases where deterministic checks can miss nuance; they never feed the recommendation.` }),
+    el("div", { class: "scroll" }, t));
+}
+
+function renderSpeed() {
+  const ag = D.aggregates || {}, pipe = D.pipeline || {};
+  const groups = [["Warm cleanup, median", "total_cleanup_ms", "median"], ["Warm cleanup, p95", "total_cleanup_ms", "p95"], ["First token, median", "first_token_ms", "median"],
+    ["Main pass first token", "main_pass_first_token_ms", "median"], ["Validation, median", "validation_ms", "median"]].map(([label, k, q]) => ({ label, values: Object.fromEntries(MODELS.filter(has).map(m => [m, (((ag[m] || {}).latency || {})[k] || {})[q]])) }));
+  const pt = el("table", { class: "plain" }, el("thead", {}, el("tr", {}, ["Stage (median, ms)", ...MODELS.filter(m => pipe[m])].map((h, i) => el("th", { class: i ? "num" : "", text: h })))));
+  const ptb = el("tbody");
+  for (const [k, label] of [["asr_ms", "Parakeet ASR"], ["normalize_ms", "Normalization"], ["generation_ms", "Model generation"], ["validation_ms", "Validation"], ["cleanup_ms", "Cleanup total"], ["pipeline_ms", "Audio to text total"]])
+    ptb.append(el("tr", {}, el("td", { text: label }), MODELS.filter(m => pipe[m]).map(m => el("td", { class: "num", text: ms((pipe[m][k] || {}).median) }))));
+  pt.append(ptb);
+  if (!MODELS.some(m => pipe[m])) ptb.append(el("tr", {}, el("td", { class: "muted", text: "The audio replay was not run." })));
+  // exploratory slider
+  const out = el("div", { class: "fig" });
+  const slider = el("input", { type: "range", id: "slider", min: 0, max: 100, value: 70, "aria-label": "Weight on quality versus speed" });
+  const drawTrade = () => {
+    const w = slider.value / 100;
+    const rows = MODELS.filter(has).map(m => {
+      const q = ((((ag[m] || {}).synthetic_repair || {}).delivered || {}).repair_success || 0) - 2 * ((((ag[m] || {}).synthetic || {}).delivered || {}).damage || 0);
+      const p95 = (((ag[m] || {}).latency || {}).total_cleanup_ms || {}).median || 0;
+      return { m, q, p95 };
+    });
+    const qs = rows.map(r => r.q), ps = rows.map(r => r.p95).filter(v => v > 0);
+    const nq = v => Math.max(...qs) > 0 ? Math.max(0, v) / Math.max(...qs) : 1;
+    const np = v => v > 0 ? Math.min(...ps) / v : 0;
+    rows.forEach(r => r.u = w * nq(r.q) + (1 - w) * np(r.p95));
+    rows.sort((a, b) => b.u - a.u);
+    out.replaceChildren(el("p", { class: "small muted", text: `${Math.round(w * 100)}% weight on quality, ${Math.round((1 - w) * 100)}% on speed.` }),
+      el("table", { class: "plain" }, el("tbody", {}, rows.map((r, i) => el("tr", {}, el("td", { text: i === 0 ? "Preferred at this weighting" : "" }),
+        el("td", {}, el("span", { class: "swatch", style: `background:${MC(r.m)}` }), r.m), el("td", { class: "num", text: `quality index ${fmt(r.q)}` }), el("td", { class: "num", text: `median ${ms(r.p95)}` }))))));
+  };
+  slider.addEventListener("input", drawTrade);
+  drawTrade();
+  return section("speed", "Speed and footprint",
+    el("p", { class: "prose", text: "Cleanup latency is the time from a normalized transcript to validated text, measured warm, one dictation at a time, on this Mac. Every call carries LocalFlow's full few-shot prompt (about 3,300 tokens), so prefill dominates the first token." }),
+    el("div", { class: "fig" }, barChart(groups, MODELS.filter(has), { unit: "ms", label: "Latency by model", left: 170 })),
+    el("h3", { text: "Audio to text" }), el("p", { class: "prose small muted", text: "A replay of 40 recordings (two warm-ups, three timed repeats each) with Parakeet and the cleanup model loaded together, as in LocalFlow's worker. It excludes recording, hotkey handling and insertion." }),
+    el("div", { class: "scroll" }, pt),
+    el("h3", { text: "Your own weighting (exploratory)" }),
+    el("p", { class: "prose small muted", text: "This does not change the recommendation above. It ranks the models by a simple index (delivered repair rate minus twice the delivered damage rate) against median warm cleanup time, each as a fraction of the best model's value." }),
+    slider, out);
+}
+
+const FLAG_LABEL = { damage: "meaning changed", facts_changed: "fact changed", hallucination: "added words", omission: "dropped words",
+  negation_changed: "negation changed", missing_ending: "lost ending", unwanted_answer: "answered", unauthorized_edit: "unauthorized edit" };
+
+function renderExplorer() {
+  const cases = D.cases || [];
+  const state = { q: "", src: "all", cat: "all", kind: "all", fail: false, dis: false, mode: "mo", page: 0 };
+  const cats = [...new Set(cases.map(c => c.cat).filter(Boolean))].sort();
+  const list = el("div"), count = el("span", { class: "muted small" });
+  const pager = el("div", { class: "pager" });
+  const filtered = () => cases.filter(c => {
+    if (state.src !== "all" && c.src !== state.src) return false;
+    if (state.cat !== "all" && c.cat !== state.cat) return false;
+    if (state.kind === "noop" && c.noop !== true) return false;
+    if (state.kind === "repair" && c.noop !== false) return false;
+    if (state.fail && !MODELS.some(m => c.out[m] && (c.out[m].flags.length || c.out[m].path !== "llm"))) return false;
+    if (state.dis && !c.disagree) return false;
+    if (state.q) { const q = state.q.toLowerCase(); const hay = [c.input, c.target, c.id, ...MODELS.map(m => c.out[m] ? c.out[m].mo || "" : "")].join(" ").toLowerCase(); if (!hay.includes(q)) return false; }
+    return true;
+  });
+  const PER = 25;
+  const draw = () => {
+    const f = filtered();
+    const pages = Math.max(1, Math.ceil(f.length / PER));
+    state.page = Math.min(state.page, pages - 1);
+    count.textContent = `${f.length} of ${cases.length} cases`;
+    list.replaceChildren(...f.slice(state.page * PER, state.page * PER + PER).map(renderCase));
+    pager.replaceChildren(el("button", { class: "btn", type: "button", disabled: state.page === 0, text: "Previous", onclick: () => { state.page--; draw(); } }),
+      el("span", { text: `Page ${state.page + 1} of ${pages}` }),
+      el("button", { class: "btn", type: "button", disabled: state.page >= pages - 1, text: "Next", onclick: () => { state.page++; draw(); } }));
+  };
+  const renderCase = c => {
+    const dots = el("span", { class: "dots", "aria-hidden": "true" }, MODELS.map(m => { const o = c.out[m]; if (!o) return null;
+      const bad = o.flags.length > 0; return el("span", { class: "dot", title: `${m}: ${bad ? o.flags.map(x => FLAG_LABEL[x] || x).join(", ") : "no flags"}${o.path !== "llm" ? ", fell back" : ""}`, style: `border-color:${MC(m)};background:${bad ? "transparent" : MC(m)}` }); }));
+    const det = el("div", { class: "detail", hidden: true });
+    const btn = el("button", { type: "button", "aria-expanded": "false" },
+      el("span", { class: "snip", text: c.redacted ? `${c.src === "fleurs" ? "FLEURS" : "DisfluencySpeech"} recording ${c.id} (transcript not republished)` : c.input }),
+      el("span", { class: "meta" }, `${c.src.replace("_", " ")}${c.cat ? ", " + c.cat.replace(/_/g, " ") : ""}`, dots));
+    btn.addEventListener("click", () => {
+      const open = det.hidden; det.hidden = !open; btn.setAttribute("aria-expanded", String(open));
+      if (open && !det.childElementCount) fill(det, c);
+    });
+    return el("div", { class: "case" }, btn, det);
+  };
+  const fill = (det, c) => {
+    if (c.redacted) {
+      det.append(el("div", { class: "blk" }, el("h4", { text: "Transcript not republished" }),
+        el("div", { class: "small muted", text: D.public_note || "" })));
+      for (const m of MODELS) { const o = c.out[m]; if (!o) continue;
+        det.append(el("div", { class: "blk" }, el("h4", {}, el("span", { class: "tag", style: `background:${MC(m)};width:22px;display:inline-block`, text: m }),
+          `${ms(o.ms)}, ${o.path === "llm" ? "cleaned" : "fell back to input"}`, ...o.flags.map(f => el("span", { class: "flag", text: FLAG_LABEL[f] || f }))))); }
+      det.append(el("div", { class: "small muted", text: c.id }));
+      return;
+    }
+    det.append(el("div", { class: "blk" }, el("h4", { text: "Model input (normalized transcript)" }), el("div", { class: "txt", text: c.input }),
+      c.raw && c.raw !== c.input ? el("div", { class: "small muted", text: `Raw Parakeet: ${c.raw}` }) : null));
+    if (c.target) det.append(el("div", { class: "blk" }, el("h4", { text: `Reference (${c.target_kind})` }), el("div", { class: "txt", text: c.target })));
+    for (const m of MODELS) {
+      const o = c.out[m]; if (!o) continue;
+      const shown = state.mode === "mo" ? o.mo : o.dl;
+      const flags = [...o.flags.map(f => el("span", { class: "flag", text: FLAG_LABEL[f] || f })),
+        o.path !== "llm" ? el("span", { class: "flag neutral", text: "fell back to input" }) : null,
+        o.repair === true ? el("span", { class: "flag okf", text: "repair right" }) : null,
+        o.fx === true ? el("span", { class: "flag okf", text: "fixture pass" }) : o.fx === false ? el("span", { class: "flag", text: "fixture fail" }) : null];
+      det.append(el("div", { class: "blk" }, el("h4", {}, el("span", { class: "tag", style: `background:${MC(m)};width:22px;display:inline-block`, text: m }),
+        `${state.mode === "mo" ? (o.mo_partial ? "model-only, first cleanup window only" : "model-only") : "delivered"}, ${ms(o.ms)}`, ...flags),
+        el("div", { class: "txt" }, shown == null ? el("span", { class: "muted", text: "no output" }) : diffNodes(c.input, shown))));
+    }
+    const prov = [c.id, c.verification ? `verifier: ${c.verification}` : null, c.facts && c.facts.length ? `critical facts: ${c.facts.join(", ")}` : null,
+      c.gold && c.gold.length ? `gold deletions: ${c.gold.join(" | ")}` : null].filter(Boolean);
+    det.append(el("div", { class: "small muted", text: prov.join("; ") }));
+  };
+  const search = el("input", { type: "search", placeholder: "Search transcripts", "aria-label": "Search transcripts", oninput: e => { state.q = e.target.value; state.page = 0; draw(); } });
+  const sel = (label, key, opts) => el("select", { "aria-label": label, onchange: e => { state[key] = e.target.value; state.page = 0; draw(); } }, opts.map(([v, t]) => el("option", { value: v, text: t })));
+  const modeSeg = el("div", { class: "seg", role: "group", "aria-label": "Output shown" });
+  [["mo", "Model-only"], ["dl", "Delivered"]].forEach(([k, t]) => { const b = el("button", { type: "button", "aria-pressed": String(k === state.mode), text: t, onclick: () => { state.mode = k; modeSeg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); draw(); } }); modeSeg.append(b); });
+  const tools = el("div", { class: "toolbar" }, search,
+    sel("Source", "src", [["all", "All sources"], ["synthetic", "Synthetic"], ["disfluencyspeech", "Conversational audio"], ["fleurs", "Read audio"], ["localflow_fixtures", "LocalFlow fixtures"], ["synthetic_longform", "Long dictations"]]),
+    sel("Category", "cat", [["all", "All categories"], ...cats.map(c => [c, c.replace(/_/g, " ")])]),
+    sel("Kind", "kind", [["all", "Repair and no-op"], ["repair", "Needs repair"], ["noop", "Already clean"]]),
+    el("label", { class: "chk" }, el("input", { type: "checkbox", onchange: e => { state.fail = e.target.checked; state.page = 0; draw(); } }), "Any failure or fallback"),
+    el("label", { class: "chk" }, el("input", { type: "checkbox", onchange: e => { state.dis = e.target.checked; state.page = 0; draw(); } }), "Models disagree"),
+    modeSeg, count);
+  draw();
+  return section("explore", "Examples",
+    el("p", { class: "prose", text: "Every frozen test case with each model's output marked against the input: struck words were removed, underlined words were added. Punctuation and capitalization changes are not marked. A filled dot means no meaning flags; a hollow dot means the deterministic checks flagged that output." }),
+    el("p", { class: "legend" }, el("span", {}, el("del", { class: "pm", text: "removed" })), el("span", {}, el("ins", { class: "pm", text: "added" })),
+      MODELS.map(m => el("span", {}, el("span", { class: "swatch", style: `background:${MC(m)}` }), (D.model_info[m] || {}).short || m))),
+    tools, list, pager);
+}
+
+function lineChart(series, opts) {
+  const W = 760, H = 240, l = 52, r = 16, t = 12, b = 30;
+  const all = series.flatMap(s => s.points);
+  if (!all.length) return el("p", { class: "muted", text: "No training metrics recorded." });
+  const xs = all.map(p => p[0]), ys = all.map(p => p[1]).filter(v => v > 0);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const ly0 = Math.floor(Math.log10(Math.min(...ys))), ly1 = Math.ceil(Math.log10(Math.max(...ys)));
+  const X = v => l + (W - l - r) * (v - x0) / ((x1 - x0) || 1);
+  const Y = v => t + (H - t - b) * (1 - (Math.log10(Math.max(v, 1e-9)) - ly0) / ((ly1 - ly0) || 1));
+  const svg = sv("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label });
+  for (let e = ly0; e <= ly1; e++) { const v = Math.pow(10, e); svg.append(sv("line", { x1: l, x2: W - r, y1: Y(v), y2: Y(v), class: "grid" }), sv("text", { x: l - 6, y: Y(v) + 4, "text-anchor": "end" }, String(v))); }
+  for (let i = 0; i <= 4; i++) { const v = x0 + (x1 - x0) * i / 4; svg.append(sv("text", { x: X(v), y: H - 8, "text-anchor": "middle" }, Math.round(v))); }
+  for (const s of series) {
+    if (!s.points.length) continue;
+    svg.append(sv("path", { d: s.points.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(""), fill: "none", stroke: s.color, "stroke-width": 2, "stroke-dasharray": s.dash || null }));
+    if (s.dots) s.points.forEach(p => { const c = sv("circle", { cx: X(p[0]), cy: Y(p[1]), r: 3.5, fill: s.color }); c.append(sv("title", {}, `update ${p[0]}: ${fmt(p[1], 4)}`)); svg.append(c); });
+  }
+  return svg;
+}
+
+function renderTraining() {
+  const tr = D.training || {};
+  if (!tr.metrics || !tr.metrics.length) return section("training", "How C was trained", el("div", { class: "blocked prose", text: tr.status || "Training did not complete; C is unavailable." }));
+  const train = tr.metrics.filter(m => m.event === "train").map(m => [m.update, m.loss]);
+  const val = tr.metrics.filter(m => m.event === "val").map(m => [m.update, m.val_loss]);
+  const sel = tr.selection || {};
+  const st = el("table", { class: "plain" }, el("thead", {}, el("tr", {}, ["Checkpoint", "Damage, model-only", "Clean kept", "Repairs right, delivered", "Fallback"].map((h, i) => el("th", { class: i ? "num" : "", text: h })))));
+  const stb = el("tbody");
+  for (const [k, v] of Object.entries(sel.results || {})) stb.append(el("tr", {}, el("td", { text: (k === sel.selected ? "Selected: " : "") + (k.startsWith("ckpt") ? `C, ${k.replace("ckpt-", "update ")}` : k) }),
+    el("td", { class: "num", text: pctf(v.model_only_damage) }), el("td", { class: "num", text: pctf(v.noop_preserved) }), el("td", { class: "num", text: pctf(v.delivered_repair) }), el("td", { class: "num", text: pctf(v.fallback) })));
+  st.append(stb);
+  const kv = el("dl", { class: "kv" });
+  for (const [k, v] of tr.config_rows || []) kv.append(el("dt", { text: k }), el("dd", { text: v }));
+  return section("training", "How C was trained",
+    el("p", { class: "prose", text: tr.blurb || "" }),
+    el("div", { class: "fig" }, lineChart([{ points: train, color: "var(--model-C)" }, { points: val, color: "var(--accent)", dash: "5 4", dots: true }], { label: "Training and validation loss" }),
+      el("div", { class: "legend" }, el("span", {}, el("span", { class: "swatch", style: "background:var(--model-C)" }), "training loss (response tokens, mean of the last 5 updates; log scale)"), el("span", {}, el("span", { class: "swatch", style: "background:var(--accent)" }), "validation loss, fixed 100 examples"))),
+    el("h3", { text: "Checkpoint choice on the validation set" }), el("p", { class: "prose small muted", text: sel.rule ? `Rule: ${sel.rule}. A and B are listed for context only.` : "" }),
+    el("div", { class: "scroll" }, st), el("h3", { text: "Settings" }), kv);
+}
+
+function renderData() {
+  const dd = D.data || {};
+  const kv = el("dl", { class: "kv" });
+  for (const [k, v] of dd.rows || []) kv.append(el("dt", { text: k }), el("dd", { text: v }));
+  const rej = el("table", { class: "plain" }, el("thead", {}, el("tr", {}, el("th", { text: "Reason a generated pair was set aside" }), el("th", { class: "num", text: "Pairs" }))));
+  const rtb = el("tbody"); for (const [k, v] of dd.rejections || []) rtb.append(el("tr", {}, el("td", { text: k }), el("td", { class: "num", text: v }))); rej.append(rtb);
+  const spend = el("table", { class: "plain" }, el("thead", {}, el("tr", {}, ["Claude work", "Requests", "Input tokens", "Output tokens", "Cost"].map((h, i) => el("th", { class: i ? "num" : "", text: h })))));
+  const stb = el("tbody"); for (const r of dd.spend || []) stb.append(el("tr", {}, el("td", { text: r.purpose }), el("td", { class: "num", text: r.requests }), el("td", { class: "num", text: r.input.toLocaleString() }), el("td", { class: "num", text: r.output.toLocaleString() }), el("td", { class: "num", text: `$${fmt(r.usd, 2)}` }))); spend.append(stb);
+  return section("data", "Data and spend", el("p", { class: "prose", text: dd.blurb || "" }), kv,
+    el("h3", { text: "What was set aside" }), el("div", { class: "scroll" }, rej),
+    el("h3", { text: "Claude Message Batches spend" }), el("div", { class: "scroll" }, spend), el("p", { class: "small muted prose", text: dd.spend_note || "" }));
+}
+
+function renderUse() {
+  const cmds = D.commands || [];
+  return section("use", "Try, switch, roll back",
+    el("p", { class: "prose", text: "Nothing here changes LocalFlow on its own. Each command was run once while this report was built; copy one only when you want to act on it." }),
+    cmds.map(c => el("div", { class: "cmdrow prose" }, el("div", { class: "bar" }, el("strong", { text: c.title }), el("button", { class: "btn", type: "button", text: "Copy", onclick: () => copy(c.text) })),
+      el("pre", { class: "cmd", text: c.text }), el("div", { class: "small muted", text: c.note || "" }))));
+}
+
+function renderFiles() {
+  const rows = D.cases || [];
+  const csv = () => {
+    const head = ["case_id", "source", "category", "profile", "noop", ...MODELS.flatMap(m => [`${m}_path`, `${m}_flags`, `${m}_repair_right`, `${m}_ms`])];
+    const q = v => v == null ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
+    return [head.join(","), ...rows.map(c => [c.id, c.src, c.cat, c.profile, c.noop, ...MODELS.flatMap(m => { const o = c.out[m] || {}; return [o.path, (o.flags || []).join(" "), o.repair, o.ms]; })].map(q).join(","))].join("\n");
+  };
+  const summary = () => JSON.stringify({ decision: D.decision, comparisons: D.comparisons, aggregates: D.aggregates, baselines: D.baselines, model_info: D.model_info }, null, 1);
+  return section("files", "Downloads and sources",
+    el("div", { class: "toolbar" }, el("button", { class: "btn", type: "button", text: "Download per-case CSV", onclick: () => download("localflow-cleanup-cases.csv", csv(), "text/csv") }),
+      el("button", { class: "btn", type: "button", text: "Download summary JSON", onclick: () => download("localflow-cleanup-summary.json", summary(), "application/json") })),
+    el("p", { class: "small muted prose", text: "The same files sit next to this page as summary.json and cases.csv." }),
+    el("ul", { class: "prose" }, (D.links || []).map(([t, h]) => el("li", {}, el("a", { href: h, text: t })))),
+    el("p", { class: "small muted prose", text: D.footer || "" }));
+}
+
+renderHero();
+app.append(renderModels(), renderEvidence(), renderAudio(), renderFixtures(), renderJudge(), renderSpeed(), renderExplorer(), renderTraining(), renderData(), renderUse(), renderFiles());
+</script>
+</body>
+</html>
