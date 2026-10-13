@@ -43,17 +43,26 @@ def canon(text):
 
 def synthetic(case,text,delivered):
     base=score_synthetic(case,text,delivered=delivered)
-    if text is None:
-        return {**base,"reference_complete":False,"punctuation_f1":0,"punctuation_exact":False}
     target=case["target"]
-    punct=punctuation(text,target)
     initial=punctuation(case["model_input"],target)
+    # Isolate boundary-mark repairs from cases that also require a word change.
+    # The broader legacy field below intentionally retains its original meaning.
+    punctuation_only_needed=(punctuation_slots(case['model_input'])[0]==punctuation_slots(target)[0]
+                             and not initial['exact'])
+    if text is None:
+        return {**base,"reference_complete":False,"reference_repair":False if not case['is_noop'] else None,
+                "punctuation_f1":0,"punctuation_exact":False,
+                "punctuation_repaired":False if not initial['exact'] else None,
+                "punctuation_only_repaired":False if punctuation_only_needed else None}
+    punct=punctuation(text,target)
     base.update(reference_complete=canon(text)==canon(target),
                 reference_repair=(canon(text)==canon(target)) if not case["is_noop"] else None,
                 punctuation_f1=punct["f1"],punctuation_exact=punct["exact"],
                 punctuation_tp=punct["tp"],punctuation_fp=punct["fp"],punctuation_fn=punct["fn"],
                 punctuation_needed=not initial["exact"],
                 punctuation_repaired=punct["exact"] if not initial["exact"] else None,
+                punctuation_only_needed=punctuation_only_needed,
+                punctuation_only_repaired=punct['exact'] if punctuation_only_needed else None,
                 punctuation_gain=punct["f1"]-initial["f1"],
                 unchanged=text==case["model_input"])
     return base
@@ -80,7 +89,7 @@ def aggregate(cases,rows):
             measured=[synthetic(c,r.get(mode),mode=="delivered") if origin=="synthetic" else real(c,r.get(mode)) for c,r in selected]
             a={"n":len(measured)}
             for field in ("damage","facts_changed","hallucination","omission","negation_changed","noop_preserved",
-                          "reference_complete","reference_repair","repair_success","correction_success","punctuation_repaired",
+                          "reference_complete","reference_repair","repair_success","correction_success","punctuation_repaired","punctuation_only_repaired",
                           "punctuation_exact","punctuation_f1","punctuation_gain","unnecessary_edit","unauthorized_edit","list_ok"):
                 vals=[m[field] for m in measured if m.get(field) is not None]
                 if vals:a[field]={"value":sum(vals)/len(vals),"n":len(vals),"sum":sum(vals)}

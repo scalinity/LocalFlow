@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from v2.data import plan
 from v2.assemble import Dedup, window_targets
-from v2.score import punctuation
+from v2.score import punctuation, synthetic
 from localflow.v2.cleanup.engine import plan_windows
 
 
@@ -31,6 +31,19 @@ class DataAndMetricTests(unittest.TestCase):
         parts=window_targets({'model_input':source,'target':target},windows)
         self.assertGreater(len(windows),1)
         self.assertEqual(' '.join(parts[(w.start,w.end)] for w in windows),target)
+
+    def test_punctuation_only_denominator_excludes_word_repairs(self):
+        case={'model_input':'Can you check this.', 'target':'Can you check this?', 'is_noop':False}
+        score=synthetic(case,case['target'],True)
+        self.assertTrue(score['punctuation_only_repaired'])
+        self.assertFalse(synthetic(case,case['model_input'],True)['punctuation_only_repaired'])
+        self.assertFalse(synthetic(case,None,False)['punctuation_only_repaired'])
+        case={'model_input':'Use three samples.', 'target':'Use four samples.', 'is_noop':False}
+        score=synthetic(case,case['target'],True)
+        self.assertTrue(score['punctuation_repaired'])
+        self.assertIsNone(score['punctuation_only_repaired'])
+        case={'model_input':'Keep this.', 'target':'Keep this.', 'is_noop':True}
+        self.assertIsNone(synthetic(case,case['target'],True)['punctuation_only_repaired'])
 
 
 if __name__=='__main__':unittest.main()
