@@ -2,3 +2,4 @@
 # Keep it on this machine; source and aggregate receipts are committed separately.
 index.html
 *.png
+prior-round.html

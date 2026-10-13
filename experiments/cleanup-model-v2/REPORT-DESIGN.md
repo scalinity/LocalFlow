@@ -48,3 +48,35 @@ No external assets, remote requests, decorative gradients, dashboard shadows,
 or automatic motion. Charts have text equivalents. Controls have visible focus,
 native labels, keyboard support, and honest empty states. Both appearances and
 a narrow viewport receive visual inspection before completion.
+
+## Fresh comparison extension
+
+Keep the same six colors, offline type stacks, left alignment, and comparison
+desk layout. The main view now answers whether source repairs improve the
+new weights on a genuinely fresh set: C, the recorded E configuration, and F.
+The opening specimen shows one measured fresh example; the engine section
+separately explains the known failures used during development. Label those
+two roles explicitly so a repaired demonstration cannot stand in for validation.
+
+```text
+Decision      Fresh recommendation       Fresh source | C | F
+              Earlier 701-example report (retained, separate)
+Quality       Same fresh inputs: C | E | F, two output stages
+Training      Original training curves and selected weights
+Engine        Restriction attachment | identifiers | restoration
+Examples      All fresh examples, with raw checks and inspection notes
+Reproduce     Frozen inputs, source versions, exact installation / rollback
+```
+
+Brief review: a before/after victory page centered only on the two known
+failures would answer the wrong question. Use the full fresh comparison for
+the recommendation and keep the earlier complete report available as a
+separate local file. Retain explicit denominators, raw automated flags, and
+limitations of the fresh read-speech recordings. No new visual system or
+decorative chart is needed; the change is which evidence the desk compares.
+
+The full runtime table retains all measurements. Because the opening C samples
+overlapped another GPU workload, a completed repeat on the predetermined first
+30 synthetic cases gets a second compact table in the same section. Label its
+selection and limits beside the figures; never replace the full measurements
+with a faster subset or present an incomplete repeat as a result.

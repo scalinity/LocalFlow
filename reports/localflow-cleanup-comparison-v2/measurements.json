@@ -1,7 +1,2452 @@
 {
- "created": "2026-10-13T20:43:13Z",
- "recommendation": "Keep C installed.",
+ "created": "2026-10-13T23:20:46Z",
+ "recommendation": "F is the stronger cleanup candidate, with fidelity gaps still open.",
  "aggregates": {
+  "C": {
+   "synthetic": {
+    "model_only": {
+     "n": 394,
+     "damage": {
+      "value": 0.08375634517766498,
+      "n": 394,
+      "sum": 33
+     },
+     "facts_changed": {
+      "value": 0.04314720812182741,
+      "n": 394,
+      "sum": 17
+     },
+     "hallucination": {
+      "value": 0.050761421319796954,
+      "n": 394,
+      "sum": 20
+     },
+     "omission": {
+      "value": 0.07106598984771574,
+      "n": 394,
+      "sum": 28
+     },
+     "negation_changed": {
+      "value": 0.007614213197969543,
+      "n": 394,
+      "sum": 3
+     },
+     "noop_preserved": {
+      "value": 0.9719626168224299,
+      "n": 107,
+      "sum": 104
+     },
+     "reference_complete": {
+      "value": 0.35786802030456855,
+      "n": 394,
+      "sum": 141
+     },
+     "reference_repair": {
+      "value": 0.1289198606271777,
+      "n": 287,
+      "sum": 37
+     },
+     "repair_success": {
+      "value": 0.4010152284263959,
+      "n": 394,
+      "sum": 158
+     },
+     "correction_success": {
+      "value": 0.24427480916030533,
+      "n": 131,
+      "sum": 32
+     },
+     "punctuation_repaired": {
+      "value": 0.13732394366197184,
+      "n": 284,
+      "sum": 39
+     },
+     "punctuation_only_repaired": {
+      "value": 0.02654867256637168,
+      "n": 113,
+      "sum": 3
+     },
+     "punctuation_exact": {
+      "value": 0.3680203045685279,
+      "n": 394,
+      "sum": 145
+     },
+     "punctuation_f1": {
+      "value": 0.8307787070811435,
+      "n": 394,
+      "sum": 327.32681058997053
+     },
+     "punctuation_gain": {
+      "value": 0.06657089113985386,
+      "n": 394,
+      "sum": 26.228931109102422
+     },
+     "unnecessary_edit": {
+      "value": 0.028037383177570093,
+      "n": 107,
+      "sum": 3
+     },
+     "list_ok": {
+      "value": 0.35714285714285715,
+      "n": 14,
+      "sum": 5
+     },
+     "wer": {
+      "value": 0.03533345382251943,
+      "errors": 782,
+      "denominator": 22132
+     },
+     "cer": {
+      "value": 0.028601566687993914,
+      "errors": 3308,
+      "denominator": 115658
+     }
+    },
+    "delivered": {
+     "n": 394,
+     "damage": {
+      "value": 0.02284263959390863,
+      "n": 394,
+      "sum": 9
+     },
+     "facts_changed": {
+      "value": 0.0025380710659898475,
+      "n": 394,
+      "sum": 1
+     },
+     "hallucination": {
+      "value": 0.0025380710659898475,
+      "n": 394,
+      "sum": 1
+     },
+     "omission": {
+      "value": 0.015228426395939087,
+      "n": 394,
+      "sum": 6
+     },
+     "negation_changed": {
+      "value": 0.005076142131979695,
+      "n": 394,
+      "sum": 2
+     },
+     "noop_preserved": {
+      "value": 1.0,
+      "n": 107,
+      "sum": 107
+     },
+     "reference_complete": {
+      "value": 0.35786802030456855,
+      "n": 394,
+      "sum": 141
+     },
+     "reference_repair": {
+      "value": 0.11846689895470383,
+      "n": 287,
+      "sum": 34
+     },
+     "repair_success": {
+      "value": 0.41116751269035534,
+      "n": 394,
+      "sum": 162
+     },
+     "correction_success": {
+      "value": 0.19083969465648856,
+      "n": 131,
+      "sum": 25
+     },
+     "punctuation_repaired": {
+      "value": 0.1267605633802817,
+      "n": 284,
+      "sum": 36
+     },
+     "punctuation_only_repaired": {
+      "value": 0.02654867256637168,
+      "n": 113,
+      "sum": 3
+     },
+     "punctuation_exact": {
+      "value": 0.37055837563451777,
+      "n": 394,
+      "sum": 146
+     },
+     "punctuation_f1": {
+      "value": 0.820509561682419,
+      "n": 394,
+      "sum": 323.2807673028731
+     },
+     "punctuation_gain": {
+      "value": 0.056301745741129276,
+      "n": 394,
+      "sum": 22.182887822004936
+     },
+     "unnecessary_edit": {
+      "value": 0.0,
+      "n": 107,
+      "sum": 0
+     },
+     "list_ok": {
+      "value": 0.35714285714285715,
+      "n": 14,
+      "sum": 5
+     },
+     "wer": {
+      "value": 0.03980661485631665,
+      "errors": 881,
+      "denominator": 22132
+     },
+     "cer": {
+      "value": 0.03243182486295803,
+      "errors": 3751,
+      "denominator": 115658
+     }
+    },
+    "runtime": {
+     "median_ms": 2423.992603988154,
+     "p95_ms": 8715.525208011968,
+     "peak_mlx_bytes": 4225785398,
+     "peak_rss_bytes": 2994143232,
+     "fallback_count": 43,
+     "fallback_rate": 0.10913705583756345,
+     "validator_failures": {
+      "technical_tokens": 24,
+      "coverage": 20,
+      "numeric_values": 4,
+      "novelty": 20,
+      "negation_coverage": 1
+     }
+    }
+   },
+   "real_audio": {
+    "model_only": {
+     "n": 100,
+     "damage": {
+      "value": 0.0,
+      "n": 100,
+      "sum": 0
+     },
+     "unauthorized_edit": {
+      "value": 0.0,
+      "n": 100,
+      "sum": 0
+     },
+     "wer": {
+      "value": 0.06375838926174497,
+      "errors": 133,
+      "denominator": 2086
+     },
+     "cer": {
+      "value": 0.030676348209186587,
+      "errors": 376,
+      "denominator": 12257
+     }
+    },
+    "delivered": {
+     "n": 100,
+     "damage": {
+      "value": 0.0,
+      "n": 100,
+      "sum": 0
+     },
+     "unauthorized_edit": {
+      "value": 0.0,
+      "n": 100,
+      "sum": 0
+     },
+     "wer": {
+      "value": 0.06375838926174497,
+      "errors": 133,
+      "denominator": 2086
+     },
+     "cer": {
+      "value": 0.030676348209186587,
+      "errors": 376,
+      "denominator": 12257
+     }
+    },
+    "runtime": {
+     "median_ms": 1542.950478993589,
+     "p95_ms": 4783.540417003678,
+     "peak_mlx_bytes": 4225785398,
+     "peak_rss_bytes": 2994143232,
+     "fallback_count": 0,
+     "fallback_rate": 0.0,
+     "validator_failures": {}
+    }
+   }
+  },
+  "E": {
+   "synthetic": {
+    "model_only": {
+     "n": 394,
+     "damage": {
+      "value": 0.04314720812182741,
+      "n": 394,
+      "sum": 17
+     },
+     "facts_changed": {
+      "value": 0.005076142131979695,
+      "n": 394,
+      "sum": 2
+     },
+     "hallucination": {
+      "value": 0.0025380710659898475,
+      "n": 394,
+      "sum": 1
+     },
+     "omission": {
+      "value": 0.04314720812182741,
+      "n": 394,
+      "sum": 17
+     },
+     "negation_changed": {
+      "value": 0.0,
+      "n": 394,
+      "sum": 0
+     },
+     "noop_preserved": {
+      "value": 0.9439252336448598,
+      "n": 107,
+      "sum": 101
+     },
+     "reference_complete": {
+      "value": 0.6675126903553299,
+      "n": 394,
+      "sum": 263
+     },
+     "reference_repair": {
+      "value": 0.5644599303135889,
+      "n": 287,
+      "sum": 162
+     },
+     "repair_success": {
+      "value": 0.6598984771573604,
+      "n": 394,
+      "sum": 260
+     },
+     "correction_success": {
+      "value": 0.9770992366412213,
+      "n": 131,
+      "sum": 128
+     },
+     "punctuation_repaired": {
+      "value": 0.5880281690140845,
+      "n": 284,
+      "sum": 167
+     },
+     "punctuation_only_repaired": {
+      "value": 0.504424778761062,
+      "n": 113,
+      "sum": 57
+     },
+     "punctuation_exact": {
+      "value": 0.6878172588832487,
+      "n": 394,
+      "sum": 271
+     },
+     "punctuation_f1": {
+      "value": 0.9562456510540986,
+      "n": 394,
+      "sum": 376.76078651531486
+     },
+     "punctuation_gain": {
+      "value": 0.192037835112809,
+      "n": 394,
+      "sum": 75.66290703444675
+     },
+     "unnecessary_edit": {
+      "value": 0.056074766355140186,
+      "n": 107,
+      "sum": 6
+     },
+     "list_ok": {
+      "value": 0.6428571428571429,
+      "n": 14,
+      "sum": 9
+     },
+     "wer": {
+      "value": 0.002575456352792337,
+      "errors": 57,
+      "denominator": 22132
+     },
+     "cer": {
+      "value": 0.002299884141174843,
+      "errors": 266,
+      "denominator": 115658
+     }
+    },
+    "delivered": {
+     "n": 394,
+     "damage": {
+      "value": 0.025380710659898477,
+      "n": 394,
+      "sum": 10
+     },
+     "facts_changed": {
+      "value": 0.0,
+      "n": 394,
+      "sum": 0
+     },
+     "hallucination": {
+      "value": 0.0025380710659898475,
+      "n": 394,
+      "sum": 1
+     },
+     "omission": {
+      "value": 0.025380710659898477,
+      "n": 394,
+      "sum": 10
+     },
+     "negation_changed": {
+      "value": 0.0,
+      "n": 394,
+      "sum": 0
+     },
+     "noop_preserved": {
+      "value": 0.9532710280373832,
+      "n": 107,
+      "sum": 102
+     },
+     "reference_complete": {
+      "value": 0.5203045685279187,
+      "n": 394,
+      "sum": 205
+     },
+     "reference_repair": {
+      "value": 0.3588850174216028,
+      "n": 287,
+      "sum": 103
+     },
+     "repair_success": {
+      "value": 0.46446700507614214,
+      "n": 394,
+      "sum": 183
+     },
+     "correction_success": {
+      "value": 0.3435114503816794,
+      "n": 131,
+      "sum": 45
+     },
+     "punctuation_repaired": {
+      "value": 0.3767605633802817,
+      "n": 284,
+      "sum": 107
+     },
+     "punctuation_only_repaired": {
+      "value": 0.49557522123893805,
+      "n": 113,
+      "sum": 56
+     },
+     "punctuation_exact": {
+      "value": 0.5380710659898477,
+      "n": 394,
+      "sum": 212
+     },
+     "punctuation_f1": {
+      "value": 0.8946530405377868,
+      "n": 394,
+      "sum": 352.493297971888
+     },
+     "punctuation_gain": {
+      "value": 0.1304452245964972,
+      "n": 394,
+      "sum": 51.3954184910199
+     },
+     "unnecessary_edit": {
+      "value": 0.04672897196261682,
+      "n": 107,
+      "sum": 5
+     },
+     "list_ok": {
+      "value": 0.6428571428571429,
+      "n": 14,
+      "sum": 9
+     },
+     "wer": {
+      "value": 0.04608711368154708,
+      "errors": 1020,
+      "denominator": 22132
+     },
+     "cer": {
+      "value": 0.037022946964325856,
+      "errors": 4282,
+      "denominator": 115658
+     }
+    },
+    "runtime": {
+     "median_ms": 2506.991187488893,
+     "p95_ms": 8251.262749981834,
+     "peak_mlx_bytes": 4226866742,
+     "peak_rss_bytes": 3214622720,
+     "fallback_count": 84,
+     "fallback_rate": 0.2131979695431472,
+     "validator_failures": {
+      "technical_tokens": 78,
+      "coverage": 65,
+      "negation_coverage": 23,
+      "numeric_values": 54,
+      "novelty": 1,
+      "clause_scope": 1
+     }
+    }
+   },
+   "real_audio": {
+    "model_only": {
+     "n": 100,
+     "damage": {
+      "value": 0.01,
+      "n": 100,
+      "sum": 1
+     },
+     "unauthorized_edit": {
+      "value": 0.01,
+      "n": 100,
+      "sum": 1
+     },
+     "wer": {
+      "value": 0.06423777564717162,
+      "errors": 134,
+      "denominator": 2086
+     },
+     "cer": {
+      "value": 0.03092110630660031,
+      "errors": 379,
+      "denominator": 12257
+     }
+    },
+    "delivered": {
+     "n": 100,
+     "damage": {
+      "value": 0.01,
+      "n": 100,
+      "sum": 1
+     },
+     "unauthorized_edit": {
+      "value": 0.01,
+      "n": 100,
+      "sum": 1
+     },
+     "wer": {
+      "value": 0.06423777564717162,
+      "errors": 134,
+      "denominator": 2086
+     },
+     "cer": {
+      "value": 0.03092110630660031,
+      "errors": 379,
+      "denominator": 12257
+     }
+    },
+    "runtime": {
+     "median_ms": 1526.2728545203572,
+     "p95_ms": 1737.03525000019,
+     "peak_mlx_bytes": 4226866742,
+     "peak_rss_bytes": 3214622720,
+     "fallback_count": 0,
+     "fallback_rate": 0.0,
+     "validator_failures": {}
+    }
+   }
+  },
+  "F": {
+   "synthetic": {
+    "model_only": {
+     "n": 394,
+     "damage": {
+      "value": 0.050761421319796954,
+      "n": 394,
+      "sum": 20
+     },
+     "facts_changed": {
+      "value": 0.007614213197969543,
+      "n": 394,
+      "sum": 3
+     },
+     "hallucination": {
+      "value": 0.005076142131979695,
+      "n": 394,
+      "sum": 2
+     },
+     "omission": {
+      "value": 0.048223350253807105,
+      "n": 394,
+      "sum": 19
+     },
+     "negation_changed": {
+      "value": 0.0,
+      "n": 394,
+      "sum": 0
+     },
+     "noop_preserved": {
+      "value": 0.9439252336448598,
+      "n": 107,
+      "sum": 101
+     },
+     "reference_complete": {
+      "value": 0.6725888324873096,
+      "n": 394,
+      "sum": 265
+     },
+     "reference_repair": {
+      "value": 0.5714285714285714,
+      "n": 287,
+      "sum": 164
+     },
+     "repair_success": {
+      "value": 0.6548223350253807,
+      "n": 394,
+      "sum": 258
+     },
+     "correction_success": {
+      "value": 0.9770992366412213,
+      "n": 131,
+      "sum": 128
+     },
+     "punctuation_repaired": {
+      "value": 0.5950704225352113,
+      "n": 284,
+      "sum": 169
+     },
+     "punctuation_only_repaired": {
+      "value": 0.49557522123893805,
+      "n": 113,
+      "sum": 56
+     },
+     "punctuation_exact": {
+      "value": 0.6928934010152284,
+      "n": 394,
+      "sum": 273
+     },
+     "punctuation_f1": {
+      "value": 0.9567347724998292,
+      "n": 394,
+      "sum": 376.9535003649327
+     },
+     "punctuation_gain": {
+      "value": 0.19252695655853966,
+      "n": 394,
+      "sum": 75.85562088406462
+     },
+     "unnecessary_edit": {
+      "value": 0.056074766355140186,
+      "n": 107,
+      "sum": 6
+     },
+     "list_ok": {
+      "value": 0.6428571428571429,
+      "n": 14,
+      "sum": 9
+     },
+     "wer": {
+      "value": 0.002982107355864811,
+      "errors": 66,
+      "denominator": 22132
+     },
+     "cer": {
+      "value": 0.0027235470092859984,
+      "errors": 315,
+      "denominator": 115658
+     }
+    },
+    "delivered": {
+     "n": 394,
+     "damage": {
+      "value": 0.027918781725888325,
+      "n": 394,
+      "sum": 11
+     },
+     "facts_changed": {
+      "value": 0.0,
+      "n": 394,
+      "sum": 0
+     },
+     "hallucination": {
+      "value": 0.0,
+      "n": 394,
+      "sum": 0
+     },
+     "omission": {
+      "value": 0.027918781725888325,
+      "n": 394,
+      "sum": 11
+     },
+     "negation_changed": {
+      "value": 0.0,
+      "n": 394,
+      "sum": 0
+     },
+     "noop_preserved": {
+      "value": 0.9532710280373832,
+      "n": 107,
+      "sum": 102
+     },
+     "reference_complete": {
+      "value": 0.6624365482233503,
+      "n": 394,
+      "sum": 261
+     },
+     "reference_repair": {
+      "value": 0.554006968641115,
+      "n": 287,
+      "sum": 159
+     },
+     "repair_success": {
+      "value": 0.649746192893401,
+      "n": 394,
+      "sum": 256
+     },
+     "correction_success": {
+      "value": 0.9236641221374046,
+      "n": 131,
+      "sum": 121
+     },
+     "punctuation_repaired": {
+      "value": 0.573943661971831,
+      "n": 284,
+      "sum": 163
+     },
+     "punctuation_only_repaired": {
+      "value": 0.48672566371681414,
+      "n": 113,
+      "sum": 55
+     },
+     "punctuation_exact": {
+      "value": 0.6802030456852792,
+      "n": 394,
+      "sum": 268
+     },
+     "punctuation_f1": {
+      "value": 0.9463831949957426,
+      "n": 394,
+      "sum": 372.8749788283226
+     },
+     "punctuation_gain": {
+      "value": 0.18217537905445297,
+      "n": 394,
+      "sum": 71.77709934745447
+     },
+     "unnecessary_edit": {
+      "value": 0.04672897196261682,
+      "n": 107,
+      "sum": 5
+     },
+     "list_ok": {
+      "value": 0.5714285714285714,
+      "n": 14,
+      "sum": 8
+     },
+     "wer": {
+      "value": 0.005873847822157961,
+      "errors": 130,
+      "denominator": 22132
+     },
+     "cer": {
+      "value": 0.004962907883587819,
+      "errors": 574,
+      "denominator": 115658
+     }
+    },
+    "runtime": {
+     "median_ms": 2400.339479005197,
+     "p95_ms": 4617.940833995817,
+     "peak_mlx_bytes": 4359642678,
+     "peak_rss_bytes": 3214622720,
+     "fallback_count": 11,
+     "fallback_rate": 0.027918781725888325,
+     "validator_failures": {
+      "technical_tokens": 4,
+      "clause_scope": 1,
+      "novelty": 2,
+      "coverage": 9,
+      "numeric_values": 1,
+      "negation_coverage": 2
+     }
+    }
+   },
+   "real_audio": {
+    "model_only": {
+     "n": 100,
+     "damage": {
+      "value": 0.01,
+      "n": 100,
+      "sum": 1
+     },
+     "unauthorized_edit": {
+      "value": 0.01,
+      "n": 100,
+      "sum": 1
+     },
+     "wer": {
+      "value": 0.06423777564717162,
+      "errors": 134,
+      "denominator": 2086
+     },
+     "cer": {
+      "value": 0.03092110630660031,
+      "errors": 379,
+      "denominator": 12257
+     }
+    },
+    "delivered": {
+     "n": 100,
+     "damage": {
+      "value": 0.01,
+      "n": 100,
+      "sum": 1
+     },
+     "unauthorized_edit": {
+      "value": 0.01,
+      "n": 100,
+      "sum": 1
+     },
+     "wer": {
+      "value": 0.06423777564717162,
+      "errors": 134,
+      "denominator": 2086
+     },
+     "cer": {
+      "value": 0.03092110630660031,
+      "errors": 379,
+      "denominator": 12257
+     }
+    },
+    "runtime": {
+     "median_ms": 1556.7717910016654,
+     "p95_ms": 1756.8287909962237,
+     "peak_mlx_bytes": 4359642678,
+     "peak_rss_bytes": 3214622720,
+     "fallback_count": 0,
+     "fallback_rate": 0.0,
+     "validator_failures": {}
+    }
+   }
+  }
+ },
+ "spend_usd": 48.255681899999985,
+ "budget_usd": 75.7297738,
+ "new_accepted_families": 6340,
+ "checks": [
+  {
+   "name": "Restriction and identifier regression suite",
+   "status": "PASS",
+   "detail": "12 test methods, including failure-first demonstrations, initial-only/only-then controls, exact identifier counts, and rejection of changed facts."
+  },
+  {
+   "name": "Existing cleanup and formatting checks",
+   "status": "PASS",
+   "detail": "All eight focused suites in followup-regression-checks.json passed, including engine, remediation, coverage salvage, alignment, spoken-step, introduced-list and cross-milestone validator checks."
+  },
+  {
+   "name": "Experiment isolation and recovery tests",
+   "status": "PASS",
+   "detail": "18 tests passed, including frozen-baseline isolation, fresh-source/hash guards, dataset separation, scoring, and missing-only assessment recovery."
+  },
+  {
+   "name": "Fresh final cases and frozen source",
+   "status": "PASS",
+   "detail": "All three versions completed the same 494 case IDs and 2,964 nonempty model-only/delivered outputs; input and selected-source hashes match the pre-evaluation freeze."
+  },
+  {
+   "name": "Complete blinded assessment",
+   "status": "PASS",
+   "detail": "All 2,964 model/stage rows were assessed; no unverified output remains. Identical outputs share an assessment, and raw flags are retained."
+  },
+  {
+   "name": "Inspection of flagged fresh outputs",
+   "status": "PASS",
+   "detail": "All 17 delivered-output case IDs flagged by the checker were compared across C, E and F. Ambiguities remain separate from clear introduced errors; this is not human adjudication."
+  },
+  {
+   "name": "Installed C and original experiment preservation",
+   "status": "PASS",
+   "detail": "19,049 recorded files are unchanged, including the C model, adapter, installed app, live configuration and original experiment/report. The three intended cleanup source files changed on the experiment branch."
+  },
+  {
+   "name": "Selected weights and adapter identity",
+   "status": "PASS",
+   "detail": "The final quantized content digest and adapter SHA-256 match the previously selected newer artifact. No training occurred in this repair round."
+  },
+  {
+   "name": "Optional F deployment instructions",
+   "status": "PASS",
+   "detail": "Four shell blocks and five embedded Python blocks parse. Build, compile, native qualification, installation and rollback were not executed."
+  },
+  {
+   "name": "Application build and native deployment",
+   "status": "NOT RUN",
+   "detail": "The installed application and live model selection were preserved. No native application behavior or rollback result is claimed."
+  },
+  {
+   "name": "Report sources and offline payload",
+   "status": "PASS",
+   "detail": "22 Python files parsed, report JavaScript syntax passed, and no external asset loads or network-request code was found. The earlier report and aggregate measurements are retained verbatim."
+  },
+  {
+   "name": "Fresh report browser checks",
+   "status": "PASS",
+   "detail": "Desktop 1280x720 and phone 390x844 inspected in both appearances. No page-width overflow; wide tables scroll locally. Fresh counts, stage/source controls, case search, preservation filter, training-curve selector, matched timing, deployment steps and the 701-case history link verified; no console errors."
+  }
+ ],
+ "blinded_assessment": {
+  "scopes": {
+   "synthetic:model_only": [
+    [
+     "C",
+     394,
+     14,
+     10,
+     1,
+     24,
+     32,
+     2
+    ],
+    [
+     "E",
+     394,
+     7,
+     3,
+     0,
+     6,
+     152,
+     2
+    ],
+    [
+     "F",
+     394,
+     9,
+     5,
+     1,
+     9,
+     155,
+     3
+    ]
+   ],
+   "synthetic:delivered": [
+    [
+     "C",
+     394,
+     7,
+     5,
+     0,
+     1,
+     28,
+     1
+    ],
+    [
+     "E",
+     394,
+     6,
+     2,
+     0,
+     3,
+     132,
+     5
+    ],
+    [
+     "F",
+     394,
+     3,
+     1,
+     0,
+     3,
+     148,
+     3
+    ]
+   ],
+   "real_audio:model_only": [
+    [
+     "C",
+     100,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ],
+    [
+     "E",
+     100,
+     0,
+     0,
+     1,
+     1,
+     15,
+     1
+    ],
+    [
+     "F",
+     100,
+     0,
+     0,
+     1,
+     1,
+     15,
+     1
+    ]
+   ],
+   "real_audio:delivered": [
+    [
+     "C",
+     100,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ],
+    [
+     "E",
+     100,
+     0,
+     0,
+     1,
+     1,
+     15,
+     1
+    ],
+    [
+     "F",
+     100,
+     0,
+     0,
+     1,
+     1,
+     15,
+     1
+    ]
+   ]
+  },
+  "columns": [
+   "Model",
+   "Judged outputs",
+   "Semantic damage",
+   "Critical facts",
+   "Hallucinations",
+   "Unwanted edits",
+   "Punctuation improved",
+   "Punctuation worse"
+  ],
+  "cleanup_scopes": {
+   "synthetic:model_only": [
+    [
+     "C",
+     394,
+     73,
+     195,
+     115,
+     11,
+     32,
+     95,
+     4
+    ],
+    [
+     "E",
+     394,
+     261,
+     14,
+     114,
+     5,
+     127,
+     2,
+     2
+    ],
+    [
+     "F",
+     394,
+     257,
+     16,
+     114,
+     7,
+     127,
+     2,
+     2
+    ]
+   ],
+   "synthetic:delivered": [
+    [
+     "C",
+     394,
+     65,
+     208,
+     120,
+     1,
+     25,
+     106,
+     0
+    ],
+    [
+     "E",
+     394,
+     175,
+     86,
+     124,
+     9,
+     45,
+     86,
+     0
+    ],
+    [
+     "F",
+     394,
+     246,
+     31,
+     115,
+     2,
+     121,
+     10,
+     0
+    ]
+   ],
+   "real_audio:model_only": [
+    [
+     "C",
+     100,
+     1,
+     5,
+     94,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     "E",
+     100,
+     5,
+     1,
+     93,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     "F",
+     100,
+     5,
+     1,
+     93,
+     1,
+     0,
+     0,
+     0
+    ]
+   ],
+   "real_audio:delivered": [
+    [
+     "C",
+     100,
+     1,
+     5,
+     94,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     "E",
+     100,
+     5,
+     1,
+     93,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     "F",
+     100,
+     5,
+     1,
+     93,
+     1,
+     0,
+     0,
+     0
+    ]
+   ]
+  },
+  "cleanup_columns": [
+   "Model",
+   "Judged outputs",
+   "Complete repair",
+   "Partial repair",
+   "None needed",
+   "Wrong cleanup",
+   "Correction resolved",
+   "Unresolved",
+   "Wrong correction"
+  ],
+  "note": "Opus 5.5 assessed randomized, anonymous outputs. Identical outputs share one assessment. The tables retain raw checker flags, which can include mistakes; per-example reasons are available in the reading desk. Meaning and fact changes are assessed relative to the common normalized input; recognizer and upstream-normalization errors are separate from damage introduced by cleanup. This is an automated assessment, not human adjudication; all unjudged outputs remain unverified."
+ },
+ "flagged_case_inspection": {
+  "scopes": {
+   "synthetic": [
+    [
+     "C",
+     25,
+     0,
+     0,
+     1
+    ],
+    [
+     "E",
+     25,
+     2,
+     0,
+     2
+    ],
+    [
+     "F",
+     25,
+     2,
+     0,
+     1
+    ]
+   ],
+   "real_audio": [
+    [
+     "C",
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     "E",
+     1,
+     0,
+     1,
+     0
+    ],
+    [
+     "F",
+     1,
+     0,
+     1,
+     0
+    ]
+   ]
+  },
+  "columns": [
+   "Model",
+   "Cases inspected",
+   "Clear meaning / fact changes",
+   "Unauthorized added words",
+   "Unresolved interpretation"
+  ],
+  "note": "Engineering inspection compares C, E and F on the same union of fresh checker-flagged cases and exact-reference regressions against C or E. Checker flags include unwanted edits and wrong cleanup. Raw flags remain available, and ambiguous interpretations are counted separately. This is not independent human adjudication or a count of errors the checker missed."
+ },
+ "fresh_comparison": {
+  "freeze": {
+   "synthetic": 394,
+   "audio": 100,
+   "cases_sha256": "dea1b05c892117b708b9ca75f4d6fccc16945b554afb7e9d8223746025d22b1f",
+   "source_hashes": {
+    "engine.py": "a21e585a68eace9a90e8bd56b63be2f5c980ff277ed1523c9ab17240dc026fcb",
+    "validation.py": "3cadd77ce48706dc9cf46ab8e3318f5589295e44db7e37ba53071f153bc80142",
+    "prompts.py": "b87a70528c78a7c734a235beb46053106ccf8156e49e4224de56fdd6c663aa3a",
+    "document_nodes.py": "cf2437faa0dfb4a6045d98ec12b0c1258ba58df385a6e012a33552d0a1c9a49d"
+   }
+  },
+  "development_cases": 70,
+  "test_categories": {
+   "preserve_scope": 28,
+   "preserve_identifiers": 26,
+   "long_instructions": 15,
+   "preserve_correct": 30,
+   "identifier_corrections": 85,
+   "correction_multiple": 18,
+   "preserve_meaning": 23,
+   "restriction_scope": 54,
+   "technical_literals": 14,
+   "punctuation_scope": 5,
+   "sentence_boundaries": 38,
+   "question_punctuation": 16,
+   "medical_academic": 6,
+   "correction_single": 16,
+   "formatting": 14,
+   "recoverable_asr": 6
+  },
+  "aggregates": {
+   "C": {
+    "synthetic": {
+     "model_only": {
+      "n": 394,
+      "damage": {
+       "value": 0.08375634517766498,
+       "n": 394,
+       "sum": 33
+      },
+      "facts_changed": {
+       "value": 0.04314720812182741,
+       "n": 394,
+       "sum": 17
+      },
+      "hallucination": {
+       "value": 0.050761421319796954,
+       "n": 394,
+       "sum": 20
+      },
+      "omission": {
+       "value": 0.07106598984771574,
+       "n": 394,
+       "sum": 28
+      },
+      "negation_changed": {
+       "value": 0.007614213197969543,
+       "n": 394,
+       "sum": 3
+      },
+      "noop_preserved": {
+       "value": 0.9719626168224299,
+       "n": 107,
+       "sum": 104
+      },
+      "reference_complete": {
+       "value": 0.35786802030456855,
+       "n": 394,
+       "sum": 141
+      },
+      "reference_repair": {
+       "value": 0.1289198606271777,
+       "n": 287,
+       "sum": 37
+      },
+      "repair_success": {
+       "value": 0.4010152284263959,
+       "n": 394,
+       "sum": 158
+      },
+      "correction_success": {
+       "value": 0.24427480916030533,
+       "n": 131,
+       "sum": 32
+      },
+      "punctuation_repaired": {
+       "value": 0.13732394366197184,
+       "n": 284,
+       "sum": 39
+      },
+      "punctuation_only_repaired": {
+       "value": 0.02654867256637168,
+       "n": 113,
+       "sum": 3
+      },
+      "punctuation_exact": {
+       "value": 0.3680203045685279,
+       "n": 394,
+       "sum": 145
+      },
+      "punctuation_f1": {
+       "value": 0.8307787070811435,
+       "n": 394,
+       "sum": 327.32681058997053
+      },
+      "punctuation_gain": {
+       "value": 0.06657089113985386,
+       "n": 394,
+       "sum": 26.228931109102422
+      },
+      "unnecessary_edit": {
+       "value": 0.028037383177570093,
+       "n": 107,
+       "sum": 3
+      },
+      "list_ok": {
+       "value": 0.35714285714285715,
+       "n": 14,
+       "sum": 5
+      },
+      "wer": {
+       "value": 0.03533345382251943,
+       "errors": 782,
+       "denominator": 22132
+      },
+      "cer": {
+       "value": 0.028601566687993914,
+       "errors": 3308,
+       "denominator": 115658
+      }
+     },
+     "delivered": {
+      "n": 394,
+      "damage": {
+       "value": 0.02284263959390863,
+       "n": 394,
+       "sum": 9
+      },
+      "facts_changed": {
+       "value": 0.0025380710659898475,
+       "n": 394,
+       "sum": 1
+      },
+      "hallucination": {
+       "value": 0.0025380710659898475,
+       "n": 394,
+       "sum": 1
+      },
+      "omission": {
+       "value": 0.015228426395939087,
+       "n": 394,
+       "sum": 6
+      },
+      "negation_changed": {
+       "value": 0.005076142131979695,
+       "n": 394,
+       "sum": 2
+      },
+      "noop_preserved": {
+       "value": 1.0,
+       "n": 107,
+       "sum": 107
+      },
+      "reference_complete": {
+       "value": 0.35786802030456855,
+       "n": 394,
+       "sum": 141
+      },
+      "reference_repair": {
+       "value": 0.11846689895470383,
+       "n": 287,
+       "sum": 34
+      },
+      "repair_success": {
+       "value": 0.41116751269035534,
+       "n": 394,
+       "sum": 162
+      },
+      "correction_success": {
+       "value": 0.19083969465648856,
+       "n": 131,
+       "sum": 25
+      },
+      "punctuation_repaired": {
+       "value": 0.1267605633802817,
+       "n": 284,
+       "sum": 36
+      },
+      "punctuation_only_repaired": {
+       "value": 0.02654867256637168,
+       "n": 113,
+       "sum": 3
+      },
+      "punctuation_exact": {
+       "value": 0.37055837563451777,
+       "n": 394,
+       "sum": 146
+      },
+      "punctuation_f1": {
+       "value": 0.820509561682419,
+       "n": 394,
+       "sum": 323.2807673028731
+      },
+      "punctuation_gain": {
+       "value": 0.056301745741129276,
+       "n": 394,
+       "sum": 22.182887822004936
+      },
+      "unnecessary_edit": {
+       "value": 0.0,
+       "n": 107,
+       "sum": 0
+      },
+      "list_ok": {
+       "value": 0.35714285714285715,
+       "n": 14,
+       "sum": 5
+      },
+      "wer": {
+       "value": 0.03980661485631665,
+       "errors": 881,
+       "denominator": 22132
+      },
+      "cer": {
+       "value": 0.03243182486295803,
+       "errors": 3751,
+       "denominator": 115658
+      }
+     },
+     "runtime": {
+      "median_ms": 2423.992603988154,
+      "p95_ms": 8715.525208011968,
+      "peak_mlx_bytes": 4225785398,
+      "peak_rss_bytes": 2994143232,
+      "fallback_count": 43,
+      "fallback_rate": 0.10913705583756345,
+      "validator_failures": {
+       "technical_tokens": 24,
+       "coverage": 20,
+       "numeric_values": 4,
+       "novelty": 20,
+       "negation_coverage": 1
+      }
+     }
+    },
+    "real_audio": {
+     "model_only": {
+      "n": 100,
+      "damage": {
+       "value": 0.0,
+       "n": 100,
+       "sum": 0
+      },
+      "unauthorized_edit": {
+       "value": 0.0,
+       "n": 100,
+       "sum": 0
+      },
+      "wer": {
+       "value": 0.06375838926174497,
+       "errors": 133,
+       "denominator": 2086
+      },
+      "cer": {
+       "value": 0.030676348209186587,
+       "errors": 376,
+       "denominator": 12257
+      }
+     },
+     "delivered": {
+      "n": 100,
+      "damage": {
+       "value": 0.0,
+       "n": 100,
+       "sum": 0
+      },
+      "unauthorized_edit": {
+       "value": 0.0,
+       "n": 100,
+       "sum": 0
+      },
+      "wer": {
+       "value": 0.06375838926174497,
+       "errors": 133,
+       "denominator": 2086
+      },
+      "cer": {
+       "value": 0.030676348209186587,
+       "errors": 376,
+       "denominator": 12257
+      }
+     },
+     "runtime": {
+      "median_ms": 1542.950478993589,
+      "p95_ms": 4783.540417003678,
+      "peak_mlx_bytes": 4225785398,
+      "peak_rss_bytes": 2994143232,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "validator_failures": {}
+     }
+    }
+   },
+   "E": {
+    "synthetic": {
+     "model_only": {
+      "n": 394,
+      "damage": {
+       "value": 0.04314720812182741,
+       "n": 394,
+       "sum": 17
+      },
+      "facts_changed": {
+       "value": 0.005076142131979695,
+       "n": 394,
+       "sum": 2
+      },
+      "hallucination": {
+       "value": 0.0025380710659898475,
+       "n": 394,
+       "sum": 1
+      },
+      "omission": {
+       "value": 0.04314720812182741,
+       "n": 394,
+       "sum": 17
+      },
+      "negation_changed": {
+       "value": 0.0,
+       "n": 394,
+       "sum": 0
+      },
+      "noop_preserved": {
+       "value": 0.9439252336448598,
+       "n": 107,
+       "sum": 101
+      },
+      "reference_complete": {
+       "value": 0.6675126903553299,
+       "n": 394,
+       "sum": 263
+      },
+      "reference_repair": {
+       "value": 0.5644599303135889,
+       "n": 287,
+       "sum": 162
+      },
+      "repair_success": {
+       "value": 0.6598984771573604,
+       "n": 394,
+       "sum": 260
+      },
+      "correction_success": {
+       "value": 0.9770992366412213,
+       "n": 131,
+       "sum": 128
+      },
+      "punctuation_repaired": {
+       "value": 0.5880281690140845,
+       "n": 284,
+       "sum": 167
+      },
+      "punctuation_only_repaired": {
+       "value": 0.504424778761062,
+       "n": 113,
+       "sum": 57
+      },
+      "punctuation_exact": {
+       "value": 0.6878172588832487,
+       "n": 394,
+       "sum": 271
+      },
+      "punctuation_f1": {
+       "value": 0.9562456510540986,
+       "n": 394,
+       "sum": 376.76078651531486
+      },
+      "punctuation_gain": {
+       "value": 0.192037835112809,
+       "n": 394,
+       "sum": 75.66290703444675
+      },
+      "unnecessary_edit": {
+       "value": 0.056074766355140186,
+       "n": 107,
+       "sum": 6
+      },
+      "list_ok": {
+       "value": 0.6428571428571429,
+       "n": 14,
+       "sum": 9
+      },
+      "wer": {
+       "value": 0.002575456352792337,
+       "errors": 57,
+       "denominator": 22132
+      },
+      "cer": {
+       "value": 0.002299884141174843,
+       "errors": 266,
+       "denominator": 115658
+      }
+     },
+     "delivered": {
+      "n": 394,
+      "damage": {
+       "value": 0.025380710659898477,
+       "n": 394,
+       "sum": 10
+      },
+      "facts_changed": {
+       "value": 0.0,
+       "n": 394,
+       "sum": 0
+      },
+      "hallucination": {
+       "value": 0.0025380710659898475,
+       "n": 394,
+       "sum": 1
+      },
+      "omission": {
+       "value": 0.025380710659898477,
+       "n": 394,
+       "sum": 10
+      },
+      "negation_changed": {
+       "value": 0.0,
+       "n": 394,
+       "sum": 0
+      },
+      "noop_preserved": {
+       "value": 0.9532710280373832,
+       "n": 107,
+       "sum": 102
+      },
+      "reference_complete": {
+       "value": 0.5203045685279187,
+       "n": 394,
+       "sum": 205
+      },
+      "reference_repair": {
+       "value": 0.3588850174216028,
+       "n": 287,
+       "sum": 103
+      },
+      "repair_success": {
+       "value": 0.46446700507614214,
+       "n": 394,
+       "sum": 183
+      },
+      "correction_success": {
+       "value": 0.3435114503816794,
+       "n": 131,
+       "sum": 45
+      },
+      "punctuation_repaired": {
+       "value": 0.3767605633802817,
+       "n": 284,
+       "sum": 107
+      },
+      "punctuation_only_repaired": {
+       "value": 0.49557522123893805,
+       "n": 113,
+       "sum": 56
+      },
+      "punctuation_exact": {
+       "value": 0.5380710659898477,
+       "n": 394,
+       "sum": 212
+      },
+      "punctuation_f1": {
+       "value": 0.8946530405377868,
+       "n": 394,
+       "sum": 352.493297971888
+      },
+      "punctuation_gain": {
+       "value": 0.1304452245964972,
+       "n": 394,
+       "sum": 51.3954184910199
+      },
+      "unnecessary_edit": {
+       "value": 0.04672897196261682,
+       "n": 107,
+       "sum": 5
+      },
+      "list_ok": {
+       "value": 0.6428571428571429,
+       "n": 14,
+       "sum": 9
+      },
+      "wer": {
+       "value": 0.04608711368154708,
+       "errors": 1020,
+       "denominator": 22132
+      },
+      "cer": {
+       "value": 0.037022946964325856,
+       "errors": 4282,
+       "denominator": 115658
+      }
+     },
+     "runtime": {
+      "median_ms": 2506.991187488893,
+      "p95_ms": 8251.262749981834,
+      "peak_mlx_bytes": 4226866742,
+      "peak_rss_bytes": 3214622720,
+      "fallback_count": 84,
+      "fallback_rate": 0.2131979695431472,
+      "validator_failures": {
+       "technical_tokens": 78,
+       "coverage": 65,
+       "negation_coverage": 23,
+       "numeric_values": 54,
+       "novelty": 1,
+       "clause_scope": 1
+      }
+     }
+    },
+    "real_audio": {
+     "model_only": {
+      "n": 100,
+      "damage": {
+       "value": 0.01,
+       "n": 100,
+       "sum": 1
+      },
+      "unauthorized_edit": {
+       "value": 0.01,
+       "n": 100,
+       "sum": 1
+      },
+      "wer": {
+       "value": 0.06423777564717162,
+       "errors": 134,
+       "denominator": 2086
+      },
+      "cer": {
+       "value": 0.03092110630660031,
+       "errors": 379,
+       "denominator": 12257
+      }
+     },
+     "delivered": {
+      "n": 100,
+      "damage": {
+       "value": 0.01,
+       "n": 100,
+       "sum": 1
+      },
+      "unauthorized_edit": {
+       "value": 0.01,
+       "n": 100,
+       "sum": 1
+      },
+      "wer": {
+       "value": 0.06423777564717162,
+       "errors": 134,
+       "denominator": 2086
+      },
+      "cer": {
+       "value": 0.03092110630660031,
+       "errors": 379,
+       "denominator": 12257
+      }
+     },
+     "runtime": {
+      "median_ms": 1526.2728545203572,
+      "p95_ms": 1737.03525000019,
+      "peak_mlx_bytes": 4226866742,
+      "peak_rss_bytes": 3214622720,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "validator_failures": {}
+     }
+    }
+   },
+   "F": {
+    "synthetic": {
+     "model_only": {
+      "n": 394,
+      "damage": {
+       "value": 0.050761421319796954,
+       "n": 394,
+       "sum": 20
+      },
+      "facts_changed": {
+       "value": 0.007614213197969543,
+       "n": 394,
+       "sum": 3
+      },
+      "hallucination": {
+       "value": 0.005076142131979695,
+       "n": 394,
+       "sum": 2
+      },
+      "omission": {
+       "value": 0.048223350253807105,
+       "n": 394,
+       "sum": 19
+      },
+      "negation_changed": {
+       "value": 0.0,
+       "n": 394,
+       "sum": 0
+      },
+      "noop_preserved": {
+       "value": 0.9439252336448598,
+       "n": 107,
+       "sum": 101
+      },
+      "reference_complete": {
+       "value": 0.6725888324873096,
+       "n": 394,
+       "sum": 265
+      },
+      "reference_repair": {
+       "value": 0.5714285714285714,
+       "n": 287,
+       "sum": 164
+      },
+      "repair_success": {
+       "value": 0.6548223350253807,
+       "n": 394,
+       "sum": 258
+      },
+      "correction_success": {
+       "value": 0.9770992366412213,
+       "n": 131,
+       "sum": 128
+      },
+      "punctuation_repaired": {
+       "value": 0.5950704225352113,
+       "n": 284,
+       "sum": 169
+      },
+      "punctuation_only_repaired": {
+       "value": 0.49557522123893805,
+       "n": 113,
+       "sum": 56
+      },
+      "punctuation_exact": {
+       "value": 0.6928934010152284,
+       "n": 394,
+       "sum": 273
+      },
+      "punctuation_f1": {
+       "value": 0.9567347724998292,
+       "n": 394,
+       "sum": 376.9535003649327
+      },
+      "punctuation_gain": {
+       "value": 0.19252695655853966,
+       "n": 394,
+       "sum": 75.85562088406462
+      },
+      "unnecessary_edit": {
+       "value": 0.056074766355140186,
+       "n": 107,
+       "sum": 6
+      },
+      "list_ok": {
+       "value": 0.6428571428571429,
+       "n": 14,
+       "sum": 9
+      },
+      "wer": {
+       "value": 0.002982107355864811,
+       "errors": 66,
+       "denominator": 22132
+      },
+      "cer": {
+       "value": 0.0027235470092859984,
+       "errors": 315,
+       "denominator": 115658
+      }
+     },
+     "delivered": {
+      "n": 394,
+      "damage": {
+       "value": 0.027918781725888325,
+       "n": 394,
+       "sum": 11
+      },
+      "facts_changed": {
+       "value": 0.0,
+       "n": 394,
+       "sum": 0
+      },
+      "hallucination": {
+       "value": 0.0,
+       "n": 394,
+       "sum": 0
+      },
+      "omission": {
+       "value": 0.027918781725888325,
+       "n": 394,
+       "sum": 11
+      },
+      "negation_changed": {
+       "value": 0.0,
+       "n": 394,
+       "sum": 0
+      },
+      "noop_preserved": {
+       "value": 0.9532710280373832,
+       "n": 107,
+       "sum": 102
+      },
+      "reference_complete": {
+       "value": 0.6624365482233503,
+       "n": 394,
+       "sum": 261
+      },
+      "reference_repair": {
+       "value": 0.554006968641115,
+       "n": 287,
+       "sum": 159
+      },
+      "repair_success": {
+       "value": 0.649746192893401,
+       "n": 394,
+       "sum": 256
+      },
+      "correction_success": {
+       "value": 0.9236641221374046,
+       "n": 131,
+       "sum": 121
+      },
+      "punctuation_repaired": {
+       "value": 0.573943661971831,
+       "n": 284,
+       "sum": 163
+      },
+      "punctuation_only_repaired": {
+       "value": 0.48672566371681414,
+       "n": 113,
+       "sum": 55
+      },
+      "punctuation_exact": {
+       "value": 0.6802030456852792,
+       "n": 394,
+       "sum": 268
+      },
+      "punctuation_f1": {
+       "value": 0.9463831949957426,
+       "n": 394,
+       "sum": 372.8749788283226
+      },
+      "punctuation_gain": {
+       "value": 0.18217537905445297,
+       "n": 394,
+       "sum": 71.77709934745447
+      },
+      "unnecessary_edit": {
+       "value": 0.04672897196261682,
+       "n": 107,
+       "sum": 5
+      },
+      "list_ok": {
+       "value": 0.5714285714285714,
+       "n": 14,
+       "sum": 8
+      },
+      "wer": {
+       "value": 0.005873847822157961,
+       "errors": 130,
+       "denominator": 22132
+      },
+      "cer": {
+       "value": 0.004962907883587819,
+       "errors": 574,
+       "denominator": 115658
+      }
+     },
+     "runtime": {
+      "median_ms": 2400.339479005197,
+      "p95_ms": 4617.940833995817,
+      "peak_mlx_bytes": 4359642678,
+      "peak_rss_bytes": 3214622720,
+      "fallback_count": 11,
+      "fallback_rate": 0.027918781725888325,
+      "validator_failures": {
+       "technical_tokens": 4,
+       "clause_scope": 1,
+       "novelty": 2,
+       "coverage": 9,
+       "numeric_values": 1,
+       "negation_coverage": 2
+      }
+     }
+    },
+    "real_audio": {
+     "model_only": {
+      "n": 100,
+      "damage": {
+       "value": 0.01,
+       "n": 100,
+       "sum": 1
+      },
+      "unauthorized_edit": {
+       "value": 0.01,
+       "n": 100,
+       "sum": 1
+      },
+      "wer": {
+       "value": 0.06423777564717162,
+       "errors": 134,
+       "denominator": 2086
+      },
+      "cer": {
+       "value": 0.03092110630660031,
+       "errors": 379,
+       "denominator": 12257
+      }
+     },
+     "delivered": {
+      "n": 100,
+      "damage": {
+       "value": 0.01,
+       "n": 100,
+       "sum": 1
+      },
+      "unauthorized_edit": {
+       "value": 0.01,
+       "n": 100,
+       "sum": 1
+      },
+      "wer": {
+       "value": 0.06423777564717162,
+       "errors": 134,
+       "denominator": 2086
+      },
+      "cer": {
+       "value": 0.03092110630660031,
+       "errors": 379,
+       "denominator": 12257
+      }
+     },
+     "runtime": {
+      "median_ms": 1556.7717910016654,
+      "p95_ms": 1756.8287909962237,
+      "peak_mlx_bytes": 4359642678,
+      "peak_rss_bytes": 3214622720,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "validator_failures": {}
+     }
+    }
+   }
+  },
+  "blinded_scopes": {
+   "synthetic:model_only": [
+    [
+     "C",
+     394,
+     14,
+     10,
+     1,
+     24,
+     32,
+     2
+    ],
+    [
+     "E",
+     394,
+     7,
+     3,
+     0,
+     6,
+     152,
+     2
+    ],
+    [
+     "F",
+     394,
+     9,
+     5,
+     1,
+     9,
+     155,
+     3
+    ]
+   ],
+   "synthetic:delivered": [
+    [
+     "C",
+     394,
+     7,
+     5,
+     0,
+     1,
+     28,
+     1
+    ],
+    [
+     "E",
+     394,
+     6,
+     2,
+     0,
+     3,
+     132,
+     5
+    ],
+    [
+     "F",
+     394,
+     3,
+     1,
+     0,
+     3,
+     148,
+     3
+    ]
+   ],
+   "real_audio:model_only": [
+    [
+     "C",
+     100,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ],
+    [
+     "E",
+     100,
+     0,
+     0,
+     1,
+     1,
+     15,
+     1
+    ],
+    [
+     "F",
+     100,
+     0,
+     0,
+     1,
+     1,
+     15,
+     1
+    ]
+   ],
+   "real_audio:delivered": [
+    [
+     "C",
+     100,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0
+    ],
+    [
+     "E",
+     100,
+     0,
+     0,
+     1,
+     1,
+     15,
+     1
+    ],
+    [
+     "F",
+     100,
+     0,
+     0,
+     1,
+     1,
+     15,
+     1
+    ]
+   ]
+  },
+  "cleanup_scopes": {
+   "synthetic:model_only": [
+    [
+     "C",
+     394,
+     73,
+     195,
+     115,
+     11,
+     32,
+     95,
+     4
+    ],
+    [
+     "E",
+     394,
+     261,
+     14,
+     114,
+     5,
+     127,
+     2,
+     2
+    ],
+    [
+     "F",
+     394,
+     257,
+     16,
+     114,
+     7,
+     127,
+     2,
+     2
+    ]
+   ],
+   "synthetic:delivered": [
+    [
+     "C",
+     394,
+     65,
+     208,
+     120,
+     1,
+     25,
+     106,
+     0
+    ],
+    [
+     "E",
+     394,
+     175,
+     86,
+     124,
+     9,
+     45,
+     86,
+     0
+    ],
+    [
+     "F",
+     394,
+     246,
+     31,
+     115,
+     2,
+     121,
+     10,
+     0
+    ]
+   ],
+   "real_audio:model_only": [
+    [
+     "C",
+     100,
+     1,
+     5,
+     94,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     "E",
+     100,
+     5,
+     1,
+     93,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     "F",
+     100,
+     5,
+     1,
+     93,
+     1,
+     0,
+     0,
+     0
+    ]
+   ],
+   "real_audio:delivered": [
+    [
+     "C",
+     100,
+     1,
+     5,
+     94,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     "E",
+     100,
+     5,
+     1,
+     93,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     "F",
+     100,
+     5,
+     1,
+     93,
+     1,
+     0,
+     0,
+     0
+    ]
+   ]
+  },
+  "inspection_scopes": {
+   "synthetic": [
+    [
+     "C",
+     25,
+     0,
+     0,
+     1
+    ],
+    [
+     "E",
+     25,
+     2,
+     0,
+     2
+    ],
+    [
+     "F",
+     25,
+     2,
+     0,
+     1
+    ]
+   ],
+   "real_audio": [
+    [
+     "C",
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     "E",
+     1,
+     0,
+     1,
+     0
+    ],
+    [
+     "F",
+     1,
+     0,
+     1,
+     0
+    ]
+   ]
+  },
+  "matched_timing": {
+   "status": "PASS",
+   "n": 30,
+   "order": [
+    "F",
+    "C",
+    "E"
+   ],
+   "selection": "First 30 frozen synthetic cases in the original order, chosen before inspecting final candidate quality. No case selected by outcome.",
+   "measurements": {
+    "C": {
+     "n": 30,
+     "median_ms": 1995.5772710090969,
+     "p95_ms": 7004.797708999831,
+     "changed_delivered_outputs": 0,
+     "changed_raw_outputs": 0
+    },
+    "E": {
+     "n": 30,
+     "median_ms": 1982.9999579960713,
+     "p95_ms": 7232.794416981051,
+     "changed_delivered_outputs": 0,
+     "changed_raw_outputs": 0
+    },
+    "F": {
+     "n": 30,
+     "median_ms": 2030.585833490477,
+     "p95_ms": 7277.486417006003,
+     "changed_delivered_outputs": 0,
+     "changed_raw_outputs": 0
+    }
+   }
+  },
+  "additional_spend_usd": 4.502008700000005
+ },
+ "previous_round_aggregates": {
   "A": {
    "synthetic": {
     "model_only": {
@@ -1392,516 +3837,5 @@
     }
    }
   }
- },
- "spend_usd": 43.75367319999999,
- "budget_usd": 75.7297738,
- "new_accepted_families": 6340,
- "checks": [
-  {
-   "name": "Isolated parser regression tests",
-   "status": "PASS",
-   "detail": "5 test methods, including original defect reproduction and negative/protection controls."
-  },
-  {
-   "name": "Existing engine and remediation suite on isolated variant",
-   "status": "PASS",
-   "detail": "59 deterministic tests; no failures."
-  },
-  {
-   "name": "Dataset separation and punctuation scoring tests",
-   "status": "PASS",
-   "detail": "5 tests, including family separation, full long-target coverage and punctuation-only denominator with missing-output failure."
-  },
-  {
-   "name": "Reused response-mask and training-data checks",
-   "status": "PASS",
-   "detail": "4 tests, real Qwen3.5 tokenizer; no training pipeline changes."
-  },
-  {
-   "name": "Production application deployment",
-   "status": "NOT RUN",
-   "detail": "No installed model or configuration was changed."
-  },
-  {
-   "name": "Installed cleanup-wrapper source comparison",
-   "status": "PASS",
-   "detail": "Engine, model wrapper, prompts, validation and document parser match the installed application source by SHA-256; no app was launched or modified."
-  },
-  {
-   "name": "Optional deployment instruction checks",
-   "status": "PASS",
-   "detail": "Six shell blocks and their embedded Python passed syntax checks. The isolated E source patch passed git apply --check. Installation, application build and rollback were not executed."
-  },
-  {
-   "name": "Original model, application and experiment preservation",
-   "status": "PASS",
-   "detail": "SHA-256 comparison found no changes across 19,052 recorded files, including the installed app, live configuration, C model and adapter, old benchmark inputs and old HTML."
-  },
-  {
-   "name": "Final evaluation completeness and frozen labels",
-   "status": "PASS",
-   "detail": "All five variants completed the same 701 case IDs, with 7,010 nonempty model-only and delivered outputs. Synthetic and public-audio validation/test hashes match the original freeze receipts."
-  },
-  {
-   "name": "Selected candidate artifact identity",
-   "status": "PASS",
-   "detail": "The quantized candidate content digest and continued-adapter SHA-256 match the validation-selected artifact after every final runtime pass."
-  },
-  {
-   "name": "Blinded final assessment completeness",
-   "status": "PASS",
-   "detail": "All 1,671 distinct outputs have returned assessments, expanded to 7,010 model/stage rows. One bounded recovery request filled two omitted outputs while preserving all 7,001 existing verdict rows."
-  },
-  {
-   "name": "Assessment recovery regression checks",
-   "status": "PASS",
-   "detail": "All 12 experiment tests passed, including missing-only recovery, stable resumed results and rejection of duplicate/unrequested verdict IDs."
-  },
-  {
-   "name": "Inspection of candidate checker flags",
-   "status": "PASS",
-   "detail": "All 18 delivered-output cases flagged for C/D/E were inspected: 17 synthetic and one public-audio case. Raw flags were retained and known failures informed the keep-C recommendation."
-  },
-  {
-   "name": "Offline report source checks",
-   "status": "PASS",
-   "detail": "17 Python sources parse; report JavaScript syntax passes; all 701 comparison examples contain both assessed output stages; no external assets or network calls are required."
-  },
-  {
-   "name": "Report visual and interaction checks",
-   "status": "PASS",
-   "detail": "Desktop 1280px and separate 390px phone view inspected in light and dark appearances. Stage/source controls, search, category and checker-flag filters, empty states, pagination, expanded comparisons, curve selection and six deployment blocks were checked. No horizontal page overflow or browser warnings/errors; temporary viewport reset and phone tab closed."
-  }
- ],
- "blinded_assessment": {
-  "scopes": {
-   "synthetic:model_only": [
-    [
-     "A",
-     481,
-     40,
-     24,
-     23,
-     81,
-     262,
-     15
-    ],
-    [
-     "C",
-     481,
-     13,
-     8,
-     2,
-     13,
-     68,
-     3
-    ],
-    [
-     "D",
-     481,
-     5,
-     3,
-     0,
-     9,
-     280,
-     2
-    ],
-    [
-     "E",
-     481,
-     5,
-     3,
-     0,
-     9,
-     283,
-     2
-    ]
-   ],
-   "synthetic:delivered": [
-    [
-     "A",
-     481,
-     13,
-     14,
-     2,
-     19,
-     189,
-     20
-    ],
-    [
-     "C",
-     481,
-     9,
-     6,
-     1,
-     6,
-     63,
-     5
-    ],
-    [
-     "D",
-     481,
-     9,
-     6,
-     0,
-     6,
-     261,
-     8
-    ],
-    [
-     "E",
-     481,
-     8,
-     5,
-     0,
-     6,
-     264,
-     8
-    ]
-   ],
-   "real_audio:model_only": [
-    [
-     "A",
-     220,
-     14,
-     2,
-     10,
-     43,
-     68,
-     5
-    ],
-    [
-     "C",
-     220,
-     2,
-     1,
-     0,
-     4,
-     4,
-     0
-    ],
-    [
-     "D",
-     220,
-     3,
-     3,
-     0,
-     6,
-     22,
-     0
-    ],
-    [
-     "E",
-     220,
-     3,
-     3,
-     0,
-     6,
-     22,
-     0
-    ]
-   ],
-   "real_audio:delivered": [
-    [
-     "A",
-     220,
-     1,
-     0,
-     5,
-     10,
-     51,
-     6
-    ],
-    [
-     "C",
-     220,
-     0,
-     0,
-     1,
-     1,
-     3,
-     0
-    ],
-    [
-     "D",
-     220,
-     0,
-     0,
-     1,
-     1,
-     21,
-     1
-    ],
-    [
-     "E",
-     220,
-     0,
-     0,
-     1,
-     1,
-     21,
-     1
-    ]
-   ]
-  },
-  "columns": [
-   "Model",
-   "Judged outputs",
-   "Semantic damage",
-   "Critical facts",
-   "Hallucinations",
-   "Unwanted edits",
-   "Punctuation improved",
-   "Punctuation worse"
-  ],
-  "cleanup_scopes": {
-   "synthetic:model_only": [
-    [
-     "A",
-     481,
-     260,
-     91,
-     88,
-     42,
-     68,
-     23,
-     7
-    ],
-    [
-     "C",
-     481,
-     143,
-     231,
-     100,
-     7,
-     48,
-     46,
-     4
-    ],
-    [
-     "D",
-     481,
-     360,
-     19,
-     97,
-     5,
-     97,
-     1,
-     0
-    ],
-    [
-     "E",
-     481,
-     360,
-     19,
-     97,
-     5,
-     97,
-     1,
-     0
-    ]
-   ],
-   "synthetic:delivered": [
-    [
-     "A",
-     481,
-     183,
-     177,
-     106,
-     15,
-     9,
-     89,
-     0
-    ],
-    [
-     "C",
-     481,
-     130,
-     246,
-     101,
-     4,
-     41,
-     56,
-     1
-    ],
-    [
-     "D",
-     481,
-     304,
-     70,
-     102,
-     5,
-     44,
-     53,
-     1
-    ],
-    [
-     "E",
-     481,
-     311,
-     64,
-     101,
-     5,
-     51,
-     46,
-     1
-    ]
-   ],
-   "real_audio:model_only": [
-    [
-     "A",
-     220,
-     77,
-     39,
-     84,
-     20,
-     15,
-     13,
-     8
-    ],
-    [
-     "C",
-     220,
-     60,
-     66,
-     92,
-     2,
-     2,
-     32,
-     1
-    ],
-    [
-     "D",
-     220,
-     64,
-     61,
-     91,
-     4,
-     3,
-     30,
-     3
-    ],
-    [
-     "E",
-     220,
-     64,
-     61,
-     91,
-     4,
-     3,
-     30,
-     3
-    ]
-   ],
-   "real_audio:delivered": [
-    [
-     "A",
-     220,
-     44,
-     82,
-     90,
-     4,
-     1,
-     34,
-     0
-    ],
-    [
-     "C",
-     220,
-     43,
-     85,
-     92,
-     0,
-     0,
-     35,
-     0
-    ],
-    [
-     "D",
-     220,
-     44,
-     84,
-     92,
-     0,
-     0,
-     35,
-     0
-    ],
-    [
-     "E",
-     220,
-     44,
-     84,
-     92,
-     0,
-     0,
-     35,
-     0
-    ]
-   ]
-  },
-  "cleanup_columns": [
-   "Model",
-   "Judged outputs",
-   "Complete repair",
-   "Partial repair",
-   "None needed",
-   "Wrong cleanup",
-   "Correction resolved",
-   "Unresolved",
-   "Wrong correction"
-  ],
-  "note": "Opus 5.5 assessed randomized, anonymous outputs. Identical outputs share one assessment. The tables retain raw checker flags, which can include mistakes; per-example reasons are available in the reading desk. Meaning and fact changes are assessed relative to the common normalized input; recognizer and upstream-normalization errors are separate from damage introduced by cleanup. This is an automated assessment, not human adjudication; all unjudged outputs remain unverified."
- },
- "flagged_case_inspection": {
-  "scopes": {
-   "synthetic": [
-    [
-     "C",
-     17,
-     2,
-     0
-    ],
-    [
-     "D",
-     17,
-     3,
-     0
-    ],
-    [
-     "E",
-     17,
-     3,
-     0
-    ]
-   ],
-   "real_audio": [
-    [
-     "C",
-     1,
-     0,
-     1
-    ],
-    [
-     "D",
-     1,
-     0,
-     1
-    ],
-    [
-     "E",
-     1,
-     0,
-     1
-    ]
-   ]
-  },
-  "columns": [
-   "Model",
-   "Flagged cases inspected",
-   "Clear meaning / fact changes",
-   "Unauthorized added words"
-  ],
-  "note": "Engineering inspection compared C, D and E on the same set of checker-flagged cases, including unwanted edits and wrong cleanup. It distinguishes unchanged fallback, unresolved repairs and awkward formatting from clear introduced meaning or fact changes. Raw verdicts above are retained. This is not independent human adjudication, and it cannot count mistakes the checker missed. Per-case inspection notes are shown in the reading desk."
  }
 }

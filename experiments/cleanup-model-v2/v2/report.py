@@ -14,6 +14,9 @@ def pct(value):
 
 
 def build():
+    if (ART / "remediation/decision.json").exists():
+        from .remediation_report import build as build_fresh
+        return build_fresh()
     decision=read_json(ART/"results/decision.json")
     if not decision:
         raise RuntimeError("A measured recommendation is required before publishing the report")
