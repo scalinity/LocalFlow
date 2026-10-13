@@ -9,15 +9,16 @@ from __future__ import annotations
 import importlib.util
 import re
 import sys
-from .common import ROOT
+from .baseline import load as load_baseline
 
-NAME = "localflow.v2.cleanup._v2_experiment_engine"
+NAME = "localflow.v2.cleanup._experiment_baseline._v2_experiment_engine"
 
 
 def load():
     if NAME in sys.modules:
         return sys.modules[NAME]
-    spec = importlib.util.spec_from_file_location(NAME, ROOT / "localflow/v2/cleanup/engine.py")
+    baseline = load_baseline()
+    spec = importlib.util.spec_from_file_location(NAME, baseline.__file__)
     module = importlib.util.module_from_spec(spec)
     sys.modules[NAME] = module
     spec.loader.exec_module(module)
@@ -40,7 +41,8 @@ def load():
             return "emphasis_not_correction"
         if not module._has_content(" ".join(after)):
             return "no_replacement"
-        from localflow.v2.cleanup.validation import FUNCTION_WORDS, FILLERS
+        validation = sys.modules[baseline.__package__ + ".validation"]
+        FUNCTION_WORDS, FILLERS = validation.FUNCTION_WORDS, validation.FILLERS
         before = tokens(window_text[s:ms])
         replacement = next((w for w in after if w not in FUNCTION_WORDS and w not in FILLERS), "")
         for values in (module._WEEKDAYS, module._MONTHS):

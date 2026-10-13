@@ -4,7 +4,9 @@ import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from v2.engine_variant import load
-from localflow.v2.cleanup import engine as production
+from v2.baseline import load as load_baseline
+
+production = load_baseline()
 
 
 class ParserTests(unittest.TestCase):

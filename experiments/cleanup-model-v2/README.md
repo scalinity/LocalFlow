@@ -31,7 +31,9 @@ The modules have these responsibilities:
 - `training`: continue the existing adapter with the verified MLX loop and
   export separate 4-bit candidates.
 - `evaluate`: run quantized artifacts through production wrappers; optionally
-  substitute only the isolated parser variant.
+  substitute the recorded parser variant or explicitly select updated source.
+- `baseline`: retain the C/D engine from revision `fac0a48` and keep E's
+  separator repair isolated from subsequent product changes.
 - `score`: compute exact repairs, punctuation, preservation, real-audio WER/CER,
   latency, memory, and fallback rates.
 - `judge`: assess anonymous outputs for meaning and fact preservation; retain
