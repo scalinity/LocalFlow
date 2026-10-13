@@ -1,0 +1,70 @@
+# Cleanup model experiment, version 2
+
+This local product experiment continues the installed C adapter, tests a more
+diverse verified corpus, and evaluates an isolated correction-parser change.
+The first experiment, installed model, application, and live configuration are
+read-only inputs. Nothing in this package installs a candidate.
+
+All generated examples, audio transcripts, model weights, API receipts, and
+individual model outputs stay under the ignored `artifacts/` directory. The
+complete offline HTML report also stays local. The report template and
+aggregate measurements can be committed without publishing those records.
+
+## Execution
+
+Run from the repository root with `PYTHONPATH=experiments/cleanup-model-v2`.
+Use the existing LocalAI training environment for training and export, and the
+repository's production Python environment for final model evaluation. Set
+`HF_HOME` to the existing model cache and `HF_HUB_OFFLINE=1` for local model
+operations. The Anthropic client reads the repository's existing `.env` without
+printing its key.
+
+The modules have these responsibilities:
+
+- `investigate`: preserve input hashes and inspect the first experiment.
+- `data`: generate fictional families and independently verify labels through
+  Anthropic Message Batches, with a shared spending ledger.
+- `real_audio`: select disjoint public recordings and run the actual Parakeet
+  transcription pipeline.
+- `assemble`: exclude duplicates, preserve family separation, freeze evaluation
+  labels, and capture the production prompts used for training.
+- `training`: continue the existing adapter with the verified MLX loop and
+  export separate 4-bit candidates.
+- `evaluate`: run quantized artifacts through production wrappers; optionally
+  substitute only the isolated parser variant.
+- `score`: compute exact repairs, punctuation, preservation, real-audio WER/CER,
+  latency, memory, and fallback rates.
+- `judge`: assess anonymous outputs for meaning and fact preservation.
+- `report`: render saved measurements into a self-contained offline report.
+- `generator_study`: compare Haiku, Sonnet, and Opus on 96 shared briefs,
+  retaining initial completion, bounded individual retries, anonymous checks,
+  structural filtering, and all returned token costs separately.
+- `study_report`: render the generator study with side-by-side examples,
+  checker disagreements, and a cost projection into
+  `reports/localflow-generator-comparison/index.html`.
+
+Training uses validation only. Final evaluation cases are never training
+examples, generation demonstrations, or checkpoint-selection material.
+Evaluation labels blocked by the engine remain in the evaluation set. A
+training target is omitted when its exact prompt supervision cannot be safely
+captured, without silently changing that target.
+
+`D` uses the production engine. `E` uses the exact same D weights with
+`engine_variant.py`. `C-engine` is the engine-only control. The variant removes
+punctuation-only separator tokens before the existing parallel-value check;
+protected spans, ambiguity checks, bounds, and final validation remain active.
+
+The final report records the executed configurations, model digests, dataset
+hashes, costs, limitations, deployment steps, and rollback steps. Unrun checks
+are not reported as passed. Verified source and aggregate measurements are pushed on the experiment
+branch. No merge, installed-model change, or app restart is part of this
+experiment.
+
+The generator study does not train any model or change evaluation labels.
+Its common acceptance count requires structural validity and both Sonnet and
+Opus text-check PASS. Text-check acceptance is also shown before structural
+filtering, because exact annotation checks and contextual normalization can
+reject a pair without proving that its target changes meaning. Checker
+agreement is not human ground truth or evidence of downstream equivalence.
+The recorded spending allowance and reservations apply to every batch,
+including the generator comparison and final checks.
