@@ -1,0 +1,4 @@
+# The complete offline report contains local experiment outputs and transcripts.
+# Keep it on this machine; source and aggregate receipts are committed separately.
+index.html
+*.png
