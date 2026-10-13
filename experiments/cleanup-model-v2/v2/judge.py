@@ -1,6 +1,7 @@
 """Blinded independent checking of final outputs; no checkpoint tuning."""
 from __future__ import annotations
 import collections
+import copy
 import json
 import random
 from pathlib import Path
@@ -40,6 +41,18 @@ and exact identifiers are facts, not decorative punctuation. Keep reasons under 
 """
 
 
+def valid_verdicts(outcomes, expected):
+    accepted={}
+    for rid,outcome in outcomes.items():
+        if outcome.get('status')!='succeeded':continue
+        counts=collections.Counter(v['output_id'] for v in outcome['value'])
+        for verdict in outcome['value']:
+            oid=verdict['output_id']
+            if oid in expected.get(rid,set()) and counts[oid]==1:
+                accepted[oid]=verdict
+    return accepted
+
+
 def run(cases_file,models,prefix='final',name='final-judge'):
     cases=read_jsonl(Path(cases_file));request_map={};requests={};request_ids={}
     if prefix!='final' and any(c.get('split')=='test' for c in cases):
@@ -75,13 +88,28 @@ def run(cases_file,models,prefix='final',name='final-judge'):
                'models':models,'prefix':prefix,'created':utc_now()})
     w=wave(name,requests,lambda t:json.loads(t)['verdicts'],'claude-opus-5-5','judging')
     w.run(chunk=200)
-    verdicts={}
-    for rid,o in w.outcomes.items():
-        if o.get('status')!='succeeded':continue
-        counts=collections.Counter(v['output_id'] for v in o['value'])
-        for v in o['value']:
-            if v['output_id'] in request_ids.get(rid,set()) and counts[v['output_id']]==1:
-                verdicts[v['output_id']]=v
+    verdicts=valid_verdicts(w.outcomes,request_ids)
+    # A valid JSON response can still omit an output. Reassess only missing IDs;
+    # retained verdicts must not change merely because another output was absent.
+    for attempt,max_tokens in enumerate((6000,10000),1):
+        missing=set(request_map)-set(verdicts)
+        if not missing:break
+        retry_requests={};retry_ids={}
+        for rid,params in requests.items():
+            wanted=request_ids[rid]&missing
+            if not wanted:continue
+            retry=copy.deepcopy(params)
+            view=json.loads(retry['messages'][0]['content'])
+            view['outputs']=[r for r in view['outputs'] if r['output_id'] in wanted]
+            retry['messages'][0]['content']=json.dumps(view,ensure_ascii=False)
+            retry['max_tokens']=max_tokens
+            retry_requests[rid]=retry;retry_ids[rid]=wanted
+        print(json.dumps({'retry_missing_distinct':len(missing),'attempt':attempt}),flush=True)
+        retry_wave=wave(f'{name}-missing-{attempt}',retry_requests,
+                        lambda t:json.loads(t)['verdicts'],'claude-opus-5-5','judging')
+        retry_wave.run(chunk=100)
+        for oid,verdict in valid_verdicts(retry_wave.outcomes,retry_ids).items():
+            verdicts.setdefault(oid,verdict)
     expanded=[]
     for oid,targets in request_map.items():
         for t in targets:

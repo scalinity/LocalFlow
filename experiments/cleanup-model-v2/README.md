@@ -34,7 +34,8 @@ The modules have these responsibilities:
   substitute only the isolated parser variant.
 - `score`: compute exact repairs, punctuation, preservation, real-audio WER/CER,
   latency, memory, and fallback rates.
-- `judge`: assess anonymous outputs for meaning and fact preservation.
+- `judge`: assess anonymous outputs for meaning and fact preservation; retain
+  known verdicts and retry only missing output IDs in at most two recovery waves.
 - `report`: render saved measurements into a self-contained offline report.
 - `generator_study`: compare Haiku, Sonnet, and Opus on 96 shared briefs,
   retaining initial completion, bounded individual retries, anonymous checks,
