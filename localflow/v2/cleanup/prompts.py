@@ -183,7 +183,15 @@ EXAMPLES = [
     ),
 ]
 
-PROMPT_VERSION = "m07-v2-spoken-steps"
+RESTRICTION_FORMATTING = """Sentence boundaries must preserve what each restriction
+modifies. A trailing 'only' stays with the preceding phrase: 'use the copy only
+do not change the original' becomes 'Use the copy only. Do not change the
+original.' Never put the break before that 'only'. Keep 'only if' and its
+condition attached to the action. Keep legitimate sentence-initial 'Only'
+and the transition 'only then'. Preserve exact identifiers, including their
+underscores and punctuation; an explicit correction keeps the stated replacement."""
+
+PROMPT_VERSION = "m07-v2-restriction-attachment"
 
 # The edits the clean mode may make (S13/S15); rendered into the payload
 # so the model sees the permitted-edits policy as data.
@@ -221,6 +229,7 @@ def prompt_revision() -> str:
     share a revision id with the old prompt)."""
     payload = json.dumps(
         {"contract": CONTRACT, "list_formatting": LIST_FORMATTING,
+         "restriction_formatting": RESTRICTION_FORMATTING,
          "examples": EXAMPLES, "version": PROMPT_VERSION},
         ensure_ascii=False, sort_keys=True)
     return f"m07:{hashlib.sha256(payload.encode('utf-8')).hexdigest()[:12]}"
@@ -258,7 +267,8 @@ def build_payload(transcript: str, *, mode: str = "clean",
 def build_messages(payload: dict) -> list[dict]:
     """Contract + examples + the structured payload, instructions kept
     separate from transcript/context content."""
-    messages = [{"role": "system", "content": CONTRACT + "\n\n" + LIST_FORMATTING}]
+    messages = [{"role": "system", "content": CONTRACT + "\n\n" + LIST_FORMATTING
+                 + "\n\n" + RESTRICTION_FORMATTING}]
     for raw, cleaned in EXAMPLES:
         # Match only the content-free destination hints. The examples
         # teach prose restraint even when this destination allows Markdown.

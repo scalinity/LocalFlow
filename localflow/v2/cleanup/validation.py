@@ -85,10 +85,17 @@ QUESTION_OPENERS = (
 )
 
 _WORD_RE = re.compile(r"[^\W\d_]+(?:['’-][^\W\d_]+)*", re.UNICODE)
+_IDENTIFIER_TOKEN_RE = re.compile(
+    r"(?<!\w)[A-Za-z_]\w*_\w+(?!\w)"
+    r"|\b[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_]+\b")
+_ATOM_RE = re.compile(
+    r"(?P<identifier>" + _IDENTIFIER_TOKEN_RE.pattern + r")"
+    r"|(?P<word>" + _WORD_RE.pattern + r")", re.UNICODE)
 _NUM_TOKEN_RE = re.compile(r"\d[\d,.:%/××$€£]*\d|\d", re.UNICODE)
 _QUOTED_RE = re.compile(r"“([^“”]+)”|\"([^\"]+)\"|‘([^‘’]+)’")
 _TECH_TOKEN_RE = re.compile(
-    r"--[A-Za-z][\w-]*"                 # flags
+    _IDENTIFIER_TOKEN_RE.pattern
+    + r"|--[A-Za-z][\w-]*"              # flags
     r"|\S*/\S+"                          # paths / slash tokens
     r"|\S+@\S+\.\S+"                     # emails
     r"|\b(?:\d+\.)+\d+\b"                # versions
@@ -181,8 +188,11 @@ def _word_atoms(text: str) -> list[tuple[int, int, str]]:
     strip so contraction spelling ("thats" ↔ "that's") matches. Each
     atom carries its sub-span for authorization checks."""
     out = []
-    for m in _WORD_RE.finditer(text):
+    for m in _ATOM_RE.finditer(text):
         tok = m.group(0)
+        if m.lastgroup == "identifier":
+            out.append((m.start(), m.end(), tok.lower()))
+            continue
         parts = [p for p in re.split(r"[-\u2010\u2011\u2012\u2013\u2014]",
                                      tok) if p]
         pos = m.start()
@@ -750,7 +760,7 @@ def _clause_scope(source, output, aligned) -> Component:
     """An explicit source sentence boundary next to a negated or
     conditional sentence survives as a boundary in the output — merging
     "Do not deploy. Run tests." into one clause widens the prohibition.
-    Unpunctuated source is unconstrained (cleanup adds boundaries)."""
+    Added boundaries must also keep 'only' attached to its restriction."""
     _missing, pairs, src, out = aligned
     merged = []
     for (i, oi), (k, ok) in zip(pairs, pairs[1:]):
@@ -761,9 +771,58 @@ def _clause_scope(source, output, aligned) -> Component:
             continue
         if not _OUTPUT_BOUNDARY_RE.search(output, out[oi][1], out[ok][0]):
             merged.append([src[i][1], src[k][0]])
-    status = "fail" if merged else "pass"
+    introduced = _restriction_breaks(source, output, aligned)
+    status = "fail" if merged or introduced else "pass"
     return Component("clause_scope", DETERMINISTIC, status,
-                     {"merged_boundaries": merged})
+                     {"merged_boundaries": merged,
+                      "introduced_restriction_breaks": [list(b[:2]) for b in introduced]})
+
+
+def _restriction_breaks(source, output, aligned):
+    """New sentence breaks immediately beside an attached restriction.
+
+    A trailing 'only' cannot become the next sentence's modifier. 'Only
+    then' may begin a new instruction, and an existing source delimiter
+    is not changed by this rule. A condition or preposition after 'only'
+    stays attached too. This does not infer punctuation for other clauses.
+    """
+    _missing, pairs, src, out = aligned
+    breaks = []
+    for (i, oi), (k, ok) in zip(pairs, pairs[1:]):
+        if k != i + 1 or re.search(r"[.!?;,\n]", source[src[i][1]:src[k][0]]):
+            continue
+        before_only = src[k][2] == "only" and (
+            k + 1 >= len(src) or src[k + 1][2] != "then")
+        after_only = src[i][2] == "only" and src[k][2] in {
+            "if", "when", "unless", "after", "before", "until", "because",
+            "once", "while", "for", "on", "in", "at", "to", "with", "without"}
+        if not (before_only or after_only):
+            continue
+        for match in _SOURCE_BOUNDARY_RE.finditer(output, out[oi][1], out[ok][0]):
+            breaks.append((match.start(), match.end(), out[ok][0], out[ok][1],
+                           source[src[k][0]:src[k][1]]))
+    return breaks
+
+
+def restore_restriction_punctuation(source: str, output: str, **kwargs) -> str | None:
+    """Remove only a newly introduced break that detached a restriction.
+
+    All other model edits remain candidates for full validation. This
+    restores the source's attachment without guessing a new sentence break.
+    """
+    ctx = _auth_context(source, output, kwargs.get("vocabulary_pairs"),
+                        kwargs.get("continued_list_start"), kwargs.get("correction_spans"),
+                        kwargs.get("protected_positions"))
+    breaks = _restriction_breaks(source, output, _align(source, output, ctx))
+    if not breaks:
+        return None
+    edits = {(s, e): " " for s, e, *_ in breaks}
+    for _s, _e, start, end, source_word in breaks:
+        edits[(start, end)] = source_word
+    text = output
+    for (start, end), replacement in sorted(edits.items(), reverse=True):
+        text = text[:start] + replacement + text[end:]
+    return re.sub(r"[ \t]{2,}", " ", text)
 
 
 def _numeric_values_in(text: str) -> list:
@@ -981,9 +1040,10 @@ def _case_words(text: str, skip=()) -> Counter:
 
 
 def _technical_tokens(source, output, ctx) -> Component:
-    src_toks = _TECH_TOKEN_RE.findall(source)
-    missing = [t for t in src_toks if t not in output]
     skip = list(ctx.correction_spans) + list(ctx.vocab_spans)
+    src_toks = [m.group() for m in _TECH_TOKEN_RE.finditer(source)
+                if not any(s <= m.start() and m.end() <= e for s, e, *_ in skip)]
+    missing = list((Counter(src_toks) - Counter(_TECH_TOKEN_RE.findall(output))).elements())
     out_case = _case_words(output)
     case_missing = [t for t, n in _case_words(source, skip).items()
                     if out_case[t] < n]
@@ -1131,8 +1191,14 @@ def restore_missing_words(source: str, output: str, *,
     inserts = {}                      # output offset -> source text runs
     run = []
     after = 0                         # offset after the last matched word
+    source_end = 0
     for si, (start, end, _w) in enumerate(src_atoms):
         if start in gone:
+            if not run and re.search(r"[\d_/:=<>+\-]", source[source_end:start]):
+                # Word alignment does not locate an adjacent retained number
+                # or symbol. Inserting immediately after its preceding word
+                # could split a code such as 'REGION 6201'.
+                return None
             run.append((start, end))
             continue
         if run:
@@ -1140,6 +1206,8 @@ def restore_missing_words(source: str, output: str, *,
                 source[run[0][0]:run[-1][1]])
             run = []
         after = out_end_of.get(si, after)
+        if si in out_end_of:
+            source_end = end
     if run:
         inserts.setdefault(after, []).append(source[run[0][0]:run[-1][1]])
     text = output

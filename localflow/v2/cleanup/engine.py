@@ -27,7 +27,8 @@ from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
-from .validation import validate, restore_missing_words, ValidationReport
+from .validation import (validate, restore_missing_words,
+                         restore_restriction_punctuation, ValidationReport)
 
 # Tested input/output budget (S13 "tested context/output budget"); the
 # M07 ablation measures against it. Whole dictations below this are one
@@ -465,10 +466,12 @@ def _parallel(x_words: list, y_words: list) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
     both months, or they share a content word ("two engineers … three
     engineers")."""
-    from .validation import FUNCTION_WORDS
+    from .validation import FUNCTION_WORDS, FILLERS, _TECH_TOKEN_RE
     if not x_words or not y_words:
         return False
     x, y = x_words[-1], y_words[0]
+    if _TECH_TOKEN_RE.fullmatch(x) and _TECH_TOKEN_RE.fullmatch(y):
+        return all(w in FUNCTION_WORDS or w in FILLERS for w in x_words[:-1])
     for cls in (_WEEKDAYS, _MONTHS):
         if x in cls and y in cls:
             return True
@@ -490,8 +493,9 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
     if not _has_content(window_text[s:ms]):
         return "no_outdated_value"
     tail = window_text[e:]
-    m = re.search(r"[.!?\n]", tail)
-    after = (tail[:m.start()] if m else tail).split()[:4]
+    m = re.search(r"[.!?](?:\s|$)|\n", tail)
+    tokens = lambda t: [w for token in t.split() if (w := token.lower().strip(",;:"))]
+    after = tokens(tail[:m.start()] if m else tail)[:4]
     marker = window_text[ms:e].lower()
     if marker == "i mean" and after and \
             after[0].lower().strip(",;") in _EMPHASIS_AFTER_I_MEAN:
@@ -499,8 +503,8 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
     if not _has_content(" ".join(after)):
         return "no_replacement"
     from .validation import FUNCTION_WORDS, FILLERS
-    before_words = [w.lower().strip(",;:") for w in window_text[s:ms].split()]
-    after_words = [w.lower().strip(",;:") for w in after]
+    before_words = tokens(window_text[s:ms])
+    after_words = after
     replacement = next((w for w in after_words
                         if w not in FUNCTION_WORDS and w not in FILLERS), "")
     for values in (_WEEKDAYS, _MONTHS):
@@ -509,8 +513,7 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
                 for w in before_words[:-1]):
             return "overbroad_calendar_value"
     if marker in _SINGLE_WORD_MARKERS:
-        words = lambda t: [w.lower().strip(",;:") for w in t.split()]
-        if not _parallel(words(window_text[s:ms]), words(" ".join(after))):
+        if not _parallel(before_words, after_words):
             return "not_parallel"
     return None
 
@@ -1005,6 +1008,20 @@ class CleanupEngine:
             correction_spans=corr_spans,
             protected_positions=protected_positions)
         salvaged = 0
+        scope_repaired = False
+        if [c.name for c in report.critical_failures] == ["clause_scope"]:
+            fixed = restore_restriction_punctuation(
+                window.text, out, vocabulary_pairs=vocabulary_pairs,
+                continued_list_start=list_continue, correction_spans=corr_spans,
+                protected_positions=protected_positions)
+            if fixed is not None:
+                again = validate(
+                    window.text, fixed, protected=protected_texts,
+                    vocabulary_pairs=vocabulary_pairs,
+                    continued_list_start=list_continue, correction_spans=corr_spans,
+                    protected_positions=protected_positions)
+                if again.accepted:
+                    out, report, scope_repaired = fixed, again, True
         if [c.name for c in report.critical_failures] == ["coverage"]:
             # Deletions are the only problem: put exactly those source
             # words back and validate the repaired text in full. Added
@@ -1044,6 +1061,8 @@ class CleanupEngine:
         }
         if salvaged:
             decision["salvaged_words"] = salvaged
+        if scope_repaired:
+            decision["restriction_punctuation_restored"] = True
         observations.append(decision)
         records = [rec, decision] + ([corr_record] if corr_record else [])
         if report.accepted:
