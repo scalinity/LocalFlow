@@ -1,9 +1,10 @@
 # Cleanup model experiment, version 2
 
 This local product experiment continues the installed C adapter, tests a more
-diverse verified corpus, and evaluates an isolated correction-parser change.
-The first experiment, installed model, application, and live configuration are
-read-only inputs. Nothing in this package installs a candidate.
+diverse verified corpus, and evaluates cleanup-engine improvements. The fresh
+remediation comparison includes updated application source on the experiment
+branch. The first experiment, installed model, running application, and live
+configuration remain read-only inputs. Nothing in this package installs a candidate.
 
 All generated examples, audio transcripts, model weights, API receipts, and
 individual model outputs stay under the ignored `artifacts/` directory. The
@@ -34,6 +35,9 @@ The modules have these responsibilities:
   substitute the recorded parser variant or explicitly select updated source.
 - `baseline`: retain the C/D engine from revision `fac0a48` and keep E's
   separator repair isolated from subsequent product changes.
+- `remediation`: select unused audio sentence families, run the actual ASR
+  wrapper, exclude earlier text and development examples, and freeze a fresh
+  comparison independently of candidate behavior.
 - `score`: compute exact repairs, punctuation, preservation, real-audio WER/CER,
   latency, memory, and fallback rates.
 - `judge`: assess anonymous outputs for meaning and fact preservation; retain
@@ -52,10 +56,17 @@ Evaluation labels blocked by the engine remain in the evaluation set. A
 training target is omitted when its exact prompt supervision cannot be safely
 captured, without silently changing that target.
 
-`D` uses the production engine. `E` uses the exact same D weights with
+`D` uses the recorded production engine. `E` uses the exact same D weights with
 `engine_variant.py`. `C-engine` is the engine-only control. The variant removes
 punctuation-only separator tokens before the existing parallel-value check;
 protected spans, ambiguity checks, bounds, and final validation remain active.
+
+`F` uses those same D weights with current source fixes for restriction
+attachment, exact identifier corrections, and word-restoration placement.
+Fresh C/E/F runs use `fresh-` output names and require the exact newly frozen
+case file; F also requires the frozen source hashes. The earlier results remain
+separate. Fresh development examples can inform fixes, but fresh final examples
+cannot be used to tune a candidate and then presented as held out.
 
 The final report records the executed configurations, model digests, dataset
 hashes, costs, limitations, deployment steps, and rollback steps. Unrun checks

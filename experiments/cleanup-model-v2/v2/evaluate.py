@@ -96,6 +96,13 @@ def evaluate(key, cases_path, name, path=None, variant=False, limit=None, update
     test = any(c.get("split")=="test" for c in cases)
     if test and not (ART / "dataset/freeze.json").exists():
         raise RuntimeError("Synthetic evaluation labels must exist and be fixed before final model evaluation")
+    if name.startswith("fresh-"):
+        freeze = read_json(ART / "remediation/freeze.json")
+        if not freeze or file_sha256(cases_path) != freeze["cases_sha256"]:
+            raise RuntimeError("Fresh evaluation requires its exact frozen comparison file")
+        if updated_engine and any(file_sha256(ROOT / "localflow/v2/cleanup" / n) != digest
+                                  for n, digest in freeze["source_hashes"].items()):
+            raise RuntimeError("Candidate source changed after the fresh evaluation freeze")
     out = ART / "eval" / f"{name}.jsonl"
     meta_path = out.with_suffix(".meta.json")
     prior = read_json(meta_path)

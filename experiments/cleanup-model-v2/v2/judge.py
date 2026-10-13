@@ -55,7 +55,11 @@ def valid_verdicts(outcomes, expected):
 
 def run(cases_file,models,prefix='final',name='final-judge'):
     cases=read_jsonl(Path(cases_file));request_map={};requests={};request_ids={}
-    if prefix!='final' and any(c.get('split')=='test' for c in cases):
+    if prefix=='fresh':
+        freeze=read_json(ART/'remediation/freeze.json')
+        if not freeze or freeze['cases_sha256']!=file_sha256(Path(cases_file)):
+            raise ValueError('Fresh judging requires its exact frozen comparison file')
+    elif prefix!='final' and any(c.get('split')=='test' for c in cases):
         raise ValueError('Development judging cannot include final-test cases')
     output_dir=ART/'judge' if name=='final-judge' else ART/'judge'/name
     outs={k:{r['case_id']:r for r in read_jsonl(ART/'eval'/f'{prefix}-{k}.jsonl')} for k in models}
