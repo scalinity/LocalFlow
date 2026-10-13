@@ -51,6 +51,17 @@ class ScopeTests(unittest.TestCase):
         proposal = "Review 9 archived photographs. Only do not touch the negatives."
         self.assertEqual(engine(proposal).clean(source).text, source)
 
+    def test_only_then_cannot_be_separated_by_new_punctuation(self):
+        source = "Finish the alignment only then start the recorder"
+        for separator in (",", ".", ";", "\n"):
+            proposal = "Finish the alignment only" + separator + " then start the recorder."
+            with self.subTest(separator=separator):
+                self.assertFalse(validate(source, proposal).accepted)
+                result = engine(proposal).clean(source)
+                self.assertIn("only then", result.text)
+                self.assertEqual(result.path, "llm")
+        self.assertTrue(validate(source, "Finish the alignment; only then start the recorder.").accepted)
+
 
 class IdentifierTests(unittest.TestCase):
     def test_exact_identifier_is_not_interchangeable_with_words(self):
@@ -61,6 +72,13 @@ class IdentifierTests(unittest.TestCase):
         ):
             with self.subTest(source=source):
                 self.assertFalse(validate(source, output).accepted)
+
+    def test_prose_separator_after_path_is_not_part_of_identifier(self):
+        source = "Write to /var/data/run_11 and then close the window"
+        output = "Write to /var/data/run_11, and then close the window."
+        self.assertTrue(validate(source, output).accepted)
+        self.assertFalse(validate(source, output.replace("run_11,", "run_110,")).accepted)
+        self.assertFalse(validate(source, output.replace("run_11,", "run_11/extra,")).accepted)
 
     def test_identifier_corrections_accept_separators_and_exact_replacements(self):
         for source, deletion, output in (

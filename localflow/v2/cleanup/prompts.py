@@ -188,7 +188,8 @@ modifies. A trailing 'only' stays with the preceding phrase: 'use the copy only
 do not change the original' becomes 'Use the copy only. Do not change the
 original.' Never put the break before that 'only'. Keep 'only if' and its
 condition attached to the action. Keep legitimate sentence-initial 'Only'
-and the transition 'only then'. Preserve exact identifiers, including their
+and the transition 'only then'. Put any clause break before 'only then',
+never between those two words. Preserve exact identifiers, including their
 underscores and punctuation; an explicit correction keeps the stated replacement."""
 
 PROMPT_VERSION = "m07-v2-restriction-attachment"

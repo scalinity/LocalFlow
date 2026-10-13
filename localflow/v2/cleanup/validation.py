@@ -795,10 +795,11 @@ def _restriction_breaks(source, output, aligned):
             k + 1 >= len(src) or src[k + 1][2] != "then")
         after_only = src[i][2] == "only" and src[k][2] in {
             "if", "when", "unless", "after", "before", "until", "because",
-            "once", "while", "for", "on", "in", "at", "to", "with", "without"}
+            "once", "while", "for", "on", "in", "at", "to", "with", "without", "then"}
         if not (before_only or after_only):
             continue
-        for match in _SOURCE_BOUNDARY_RE.finditer(output, out[oi][1], out[ok][0]):
+        boundary = re.compile(r"[,;.!?\n]+") if after_only and src[k][2] == "then" else _SOURCE_BOUNDARY_RE
+        for match in boundary.finditer(output, out[oi][1], out[ok][0]):
             breaks.append((match.start(), match.end(), out[ok][0], out[ok][1],
                            source[src[k][0]:src[k][1]]))
     return breaks
@@ -1041,9 +1042,12 @@ def _case_words(text: str, skip=()) -> Counter:
 
 def _technical_tokens(source, output, ctx) -> Component:
     skip = list(ctx.correction_spans) + list(ctx.vocab_spans)
-    src_toks = [m.group() for m in _TECH_TOKEN_RE.finditer(source)
+    # A prose comma or semicolon after a path is not part of its spelling.
+    # Full token counts still reject missing occurrences and longer prefixes.
+    src_toks = [m.group().rstrip(",;") for m in _TECH_TOKEN_RE.finditer(source)
                 if not any(s <= m.start() and m.end() <= e for s, e, *_ in skip)]
-    missing = list((Counter(src_toks) - Counter(_TECH_TOKEN_RE.findall(output))).elements())
+    out_toks = [t.rstrip(",;") for t in _TECH_TOKEN_RE.findall(output)]
+    missing = list((Counter(src_toks) - Counter(out_toks)).elements())
     out_case = _case_words(output)
     case_missing = [t for t, n in _case_words(source, skip).items()
                     if out_case[t] < n]
