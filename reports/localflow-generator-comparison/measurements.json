@@ -1,0 +1,322 @@
+{
+ "created": "2026-10-13T18:16:55Z",
+ "models": {
+  "Haiku": {
+   "requested": 96,
+   "returned": 95,
+   "initial_returned": 29,
+   "individual_retries": 67,
+   "structurally_valid": 87,
+   "dual_pass": 74,
+   "cross_model_pass": 74,
+   "judge_pass": {
+    "Haiku": 82,
+    "Sonnet": 77,
+    "Opus": 81
+   },
+   "judge_text_pass": {
+    "Haiku": 90,
+    "Sonnet": 84,
+    "Opus": 87
+   },
+   "text_dual_pass": 80,
+   "rejection_reasons": {
+    "fact_missing_both": 6,
+    "fact_missing": 2,
+    "obsolete_not_in_span": 1,
+    "obsolete_value_kept": 1
+   },
+   "categories": {
+    "sentence_boundaries": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 7
+    },
+    "question_punctuation": {
+     "returned": 8,
+     "valid": 7,
+     "dual_pass": 6
+    },
+    "punctuation_scope": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 6
+    },
+    "formatting": {
+     "returned": 7,
+     "valid": 7,
+     "dual_pass": 5
+    },
+    "correction_single": {
+     "returned": 8,
+     "valid": 7,
+     "dual_pass": 7
+    },
+    "correction_multiple": {
+     "returned": 8,
+     "valid": 6,
+     "dual_pass": 5
+    },
+    "technical_literals": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 7
+    },
+    "medical_academic": {
+     "returned": 8,
+     "valid": 5,
+     "dual_pass": 5
+    },
+    "recoverable_asr": {
+     "returned": 8,
+     "valid": 7,
+     "dual_pass": 6
+    },
+    "long_instructions": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 5
+    },
+    "preserve_correct": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 8
+    },
+    "preserve_meaning": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 7
+    }
+   },
+   "median_words": 88,
+   "over200": 8,
+   "near_duplicates": 0,
+   "distinct_trigram_ratio": 0.9464356829948227,
+   "requested_source_length_met": 91,
+   "requested_target_length_met": 91,
+   "generation_usd_per_1000_accepted": 1.211807162162162,
+   "generation_usd": 0.08967373,
+   "checking_usd": 0.03673306999999999
+  },
+  "Sonnet": {
+   "requested": 96,
+   "returned": 96,
+   "initial_returned": 96,
+   "individual_retries": 0,
+   "structurally_valid": 81,
+   "dual_pass": 71,
+   "cross_model_pass": 72,
+   "judge_pass": {
+    "Haiku": 74,
+    "Sonnet": 73,
+    "Opus": 78
+   },
+   "judge_text_pass": {
+    "Haiku": 81,
+    "Sonnet": 82,
+    "Opus": 88
+   },
+   "text_dual_pass": 79,
+   "rejection_reasons": {
+    "fact_missing": 6,
+    "requested_noop_mismatch": 3,
+    "empty_repair": 4,
+    "fact_missing_both": 2
+   },
+   "categories": {
+    "sentence_boundaries": {
+     "returned": 8,
+     "valid": 7,
+     "dual_pass": 6
+    },
+    "question_punctuation": {
+     "returned": 8,
+     "valid": 7,
+     "dual_pass": 7
+    },
+    "punctuation_scope": {
+     "returned": 8,
+     "valid": 3,
+     "dual_pass": 2
+    },
+    "formatting": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 6
+    },
+    "correction_single": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 8
+    },
+    "correction_multiple": {
+     "returned": 8,
+     "valid": 7,
+     "dual_pass": 5
+    },
+    "technical_literals": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 7
+    },
+    "medical_academic": {
+     "returned": 8,
+     "valid": 5,
+     "dual_pass": 4
+    },
+    "recoverable_asr": {
+     "returned": 8,
+     "valid": 6,
+     "dual_pass": 5
+    },
+    "long_instructions": {
+     "returned": 8,
+     "valid": 6,
+     "dual_pass": 5
+    },
+    "preserve_correct": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 8
+    },
+    "preserve_meaning": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 8
+    }
+   },
+   "median_words": 61.5,
+   "over200": 8,
+   "near_duplicates": 0,
+   "distinct_trigram_ratio": 0.9488250029822259,
+   "requested_source_length_met": 71,
+   "requested_target_length_met": 70,
+   "generation_usd_per_1000_accepted": 5.0811577464788735,
+   "generation_usd": 0.36076220000000003,
+   "checking_usd": 0.28054919999999994
+  },
+  "Opus": {
+   "requested": 96,
+   "returned": 96,
+   "initial_returned": 80,
+   "individual_retries": 16,
+   "structurally_valid": 89,
+   "dual_pass": 74,
+   "cross_model_pass": 74,
+   "judge_pass": {
+    "Haiku": 85,
+    "Sonnet": 76,
+    "Opus": 85
+   },
+   "judge_text_pass": {
+    "Haiku": 91,
+    "Sonnet": 81,
+    "Opus": 91
+   },
+   "text_dual_pass": 79,
+   "rejection_reasons": {
+    "fact_missing": 5,
+    "fact_missing_both": 2
+   },
+   "categories": {
+    "sentence_boundaries": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 8
+    },
+    "question_punctuation": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 6
+    },
+    "punctuation_scope": {
+     "returned": 8,
+     "valid": 6,
+     "dual_pass": 6
+    },
+    "formatting": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 8
+    },
+    "correction_single": {
+     "returned": 8,
+     "valid": 6,
+     "dual_pass": 6
+    },
+    "correction_multiple": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 8
+    },
+    "technical_literals": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 7
+    },
+    "medical_academic": {
+     "returned": 8,
+     "valid": 7,
+     "dual_pass": 3
+    },
+    "recoverable_asr": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 6
+    },
+    "long_instructions": {
+     "returned": 8,
+     "valid": 6,
+     "dual_pass": 3
+    },
+    "preserve_correct": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 6
+    },
+    "preserve_meaning": {
+     "returned": 8,
+     "valid": 8,
+     "dual_pass": 7
+    }
+   },
+   "median_words": 82.0,
+   "over200": 8,
+   "near_duplicates": 0,
+   "distinct_trigram_ratio": 0.9593924364538128,
+   "requested_source_length_met": 95,
+   "requested_target_length_met": 94,
+   "generation_usd_per_1000_accepted": 21.133297297297293,
+   "generation_usd": 1.5638639999999997,
+   "checking_usd": 0.5816963999999999
+  }
+ },
+ "checker_agreement": {
+  "Haiku": {
+   "comparable": 250,
+   "returned_verdicts": 287,
+   "unverified": 0,
+   "agreement": 233,
+   "pass_when_others_fail": 5,
+   "fail_when_others_pass": 12
+  },
+  "Sonnet": {
+   "comparable": 261,
+   "returned_verdicts": 287,
+   "unverified": 0,
+   "agreement": 233,
+   "pass_when_others_fail": 3,
+   "fail_when_others_pass": 25
+  },
+  "Opus": {
+   "comparable": 242,
+   "returned_verdicts": 287,
+   "unverified": 0,
+   "agreement": 233,
+   "pass_when_others_fail": 3,
+   "fail_when_others_pass": 6
+  }
+ },
+ "comparison_usd": 2.9132785999999995,
+ "conclusion": "Haiku is a credible lower-cost generator."
+}
