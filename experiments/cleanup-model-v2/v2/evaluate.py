@@ -22,6 +22,8 @@ class Runner(BaseRunner):
         if key.startswith("C") and path is None:
             path = c_identity()["snapshot_path"]
         super().__init__(key, Path(path) if path else None)
+        self.updated_engine = updated_engine
+        self.recorded_f = recorded_f
         if variant:
             from .engine_variant import load
             self.module = load()
@@ -37,6 +39,40 @@ class Runner(BaseRunner):
             from .baseline import load
             self.module = load()
             self.engine_name = "production"
+
+    def load(self):
+        import mlx.core as mx
+        if self.updated_engine:
+            from localflow.v2.cleanup.model import ModelRunner
+        else:
+            from .baseline import load_runner
+            ModelRunner = load_runner(self.recorded_f)
+        self.mx = mx
+        mx.reset_peak_memory()
+        start = time.perf_counter()
+        self.mr = ModelRunner(str(self.path))
+        self.mr.load()
+        self.load_ms = (time.perf_counter() - start) * 1000
+        self.tokenizer = self.mr._tokenizer
+        return {"load_ms": self.load_ms, "template_revision": self.mr.template_revision,
+                "peak_after_load_bytes": mx.get_peak_memory(),
+                "inference": "production_prefix_cache" if self.updated_engine else "recorded_uncached",
+                "inference_source_sha256": file_sha256(Path(sys.modules[ModelRunner.__module__].__file__))}
+
+    def generate(self, prompt, max_tokens):
+        if not self.updated_engine:
+            return super().generate(prompt, max_tokens)
+        start = time.perf_counter()
+        first, text, tokens, finish = None, "", 0, None
+        for response in self.mr.stream(prompt, max_tokens):
+            if first is None:
+                first = (time.perf_counter() - start) * 1000
+            text += response.text
+            tokens += 1
+            finish = response.finish_reason
+        self.calls.append({"first_token_ms": first, "generation_ms": (time.perf_counter() - start) * 1000,
+                           "yields": tokens, "max_tokens": max_tokens, "finish_reason": finish})
+        return {"text": text, "output_tokens": tokens, "limit_hit": tokens >= max_tokens, "prompt": prompt}
 
     def engine(self):
         return self.module.CleanupEngine(self.generate, model_id=str(self.path), render_fn=self.render,
@@ -126,7 +162,8 @@ def evaluate(key, cases_path, name, path=None, variant=False, limit=None, update
     meta["runs"].append({"started":utc_now(),"load":info,"pid":os.getpid(),"todo":len(todo),
                          "interpreter":sys.executable,"python":sys.version.split()[0],
                          "engine_sources":{name:file_sha256(Path(runner.module.__file__).with_name(name))
-                                           for name in ("engine.py","validation.py","prompts.py","document_nodes.py")},
+                                           for name in ("engine.py","validation.py","prompts.py","document_nodes.py","correction_retention.py")
+                                           if Path(runner.module.__file__).with_name(name).exists()},
                          "packages":{p:importlib.metadata.version(p) for p in ("mlx","mlx-lm","transformers")}})
     write_json(meta_path,meta)
     with out.open("a") as fh:

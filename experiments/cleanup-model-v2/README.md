@@ -75,6 +75,11 @@ cannot be used to tune a candidate and then presented as held out.
 Further refinement keeps F's `0fba335` engine fixed with `--recorded-f`, while
 `--updated-engine` selects the new source. The already-exposed 494-case comparison
 is now development/regression material; it cannot prove fresh generalization.
+Recorded C/F runners also keep their original generation implementation. Updated
+source runs use the production instruction-prefix cache, including its cold cost;
+the timed evaluator consumes that same production stream. The cache contains
+only complete prefill blocks before the final dictation turn, and each request
+uses a separate cache copy.
 
 The final report records the executed configurations, model digests, dataset
 hashes, costs, limitations, deployment steps, and rollback steps. Unrun checks

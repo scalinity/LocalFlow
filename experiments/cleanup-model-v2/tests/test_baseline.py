@@ -49,6 +49,15 @@ class BaselineTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Choose one'):
             Runner('F', recorded_f=True, updated_engine=True)
 
+    def test_recorded_inference_does_not_acquire_new_prefix_cache(self):
+        from v2.baseline import load_runner
+        from localflow.v2.cleanup.model import ModelRunner
+        for recorded_f in (False, True):
+            old = load_runner(recorded_f)
+            self.assertIsNot(old, ModelRunner)
+            self.assertFalse(hasattr(old, '_cached_prompt'))
+            self.assertIs(old, load_runner(recorded_f))
+
 
 if __name__ == "__main__":
     unittest.main()

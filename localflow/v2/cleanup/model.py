@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import hashlib
 import re
+import copy
+from collections import OrderedDict
 
 
 def render_messages(messages: list[dict],
@@ -41,10 +43,12 @@ class ModelRunner:
         self._model = None
         self._tokenizer = None
         self.template_revision = None
+        self._prefix_caches = OrderedDict()
 
     def load(self):
         from mlx_lm import load as llm_load
         self._model, self._tokenizer = llm_load(self.model_id)
+        self._prefix_caches.clear()
         self.template_revision = self._probe_revision()
         # Warmup: exercise the full generation path once (V1 parity).
         self.generate_fn()("<|probe|> warmup", 8)
@@ -71,18 +75,54 @@ class ModelRunner:
                              notifier=notifier, render_fn=self.render,
                              template_revision=self.template_revision)
 
-    def generate_fn(self):
+    def _cached_prompt(self, prompt):
+        """Reuse only complete prefill blocks before the final user turn.
+
+        Prefix tokens must match the actual whole-prompt tokenization. Each
+        call branches from a private copy: no dictation or generated suffix
+        can become another call's history. Whole 2048-token blocks preserve
+        the uncached generator's prefill grouping for recurrent model layers.
+        """
+        import mlx.core as mx
+        from mlx_lm.models.cache import make_prompt_cache
+        boundary = prompt.rfind("<|im_start|>user\n")
+        if boundary < 0:
+            return prompt, None
+        tok = self._tokenizer
+        special = tok.bos_token is None or not prompt.startswith(tok.bos_token)
+        tokens = tok.encode(prompt, add_special_tokens=special)
+        prefix = tok.encode(prompt[:boundary], add_special_tokens=special)
+        count = (len(prefix) // 2048) * 2048
+        if not count or tokens[:len(prefix)] != prefix or count >= len(tokens):
+            return prompt, None
+        key = tuple(prefix[:count])
+        if key not in self._prefix_caches:
+            cache = make_prompt_cache(self._model)
+            for offset in range(0, count, 2048):
+                self._model(mx.array([prefix[offset:offset + 2048]]), cache=cache)
+                mx.eval([c.state for c in cache])
+                mx.clear_cache()
+            self._prefix_caches[key] = cache
+            while len(self._prefix_caches) > 2:
+                self._prefix_caches.popitem(last=False)
+        self._prefix_caches.move_to_end(key)
+        return tokens[count:], copy.deepcopy(self._prefix_caches[key])
+
+    def stream(self, prompt: str, max_tokens: int):
+        """The production generation path, also used by timed evaluation."""
         from mlx_lm.generate import stream_generate
         from mlx_lm.sample_utils import make_sampler
-        model, tokenizer = self._model, self._tokenizer
-        sampler = make_sampler(temp=0.0)   # greedy, explicit (S13)
+        suffix, cache = self._cached_prompt(prompt)
+        yield from stream_generate(
+            self._model, self._tokenizer, prompt=suffix,
+            max_tokens=max_tokens, sampler=make_sampler(temp=0.0),
+            prompt_cache=cache, prefill_step_size=2048)
 
+    def generate_fn(self):
         def generate(prompt: str, max_tokens: int) -> dict:
             text = ""
             tokens = 0
-            for response in stream_generate(
-                    model, tokenizer, prompt=prompt,
-                    max_tokens=max_tokens, sampler=sampler):
+            for response in self.stream(prompt, max_tokens):
                 text += response.text
                 tokens += 1
             return {

@@ -51,3 +51,25 @@ def load(recorded_f=False):
     write_json(ART / run / "baseline-manifest.json",
                {"revision": revision, "files": manifest})
     return sys.modules[package_name + ".engine"]
+
+
+def load_runner(recorded_f=False):
+    """Keep historical generation and warmup separate from inference changes."""
+    revision = "0fba335" if recorded_f else REVISION
+    name = PACKAGE + ("_f_runner" if recorded_f else "_runner")
+    if name in sys.modules:
+        return sys.modules[name].ModelRunner
+    directory = ART / "refinement" / ("f_inference" if recorded_f else "c_inference")
+    directory.mkdir(parents=True, exist_ok=True)
+    content = subprocess.run(
+        ["git", "show", f"{revision}:localflow/v2/cleanup/model.py"],
+        cwd=ROOT, check=True, capture_output=True).stdout
+    path = directory / "model.py"
+    if path.exists() and path.read_bytes() != content:
+        raise RuntimeError("Recorded inference source changed")
+    path.write_bytes(content)
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module.ModelRunner
