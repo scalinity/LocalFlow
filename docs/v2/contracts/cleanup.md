@@ -35,9 +35,12 @@ The owner-approved list guidance (`m07-v2-spoken-steps`)
 formats explicit introductions such as “here is a list of grocery items”
 into a retained prose heading and one bullet per item. Ordinary prose,
 discussion of lists and quoted uses of “list” stay prose; closing conditions
-remain outside the list. The few-shot examples use the same content-free
-destination profile and structure hints as the job, so Markdown support
-does not become a request to turn every sentence into bullets.
+remain outside the list. Each few-shot example contains its transcript and
+response. One shared instruction assigns clean mode, en-US, no supplied
+vocabulary or protected spans, and the final job's content-free destination
+profile, structure hints and permitted edits. The final job retains its full
+structured payload. Markdown support does not become a request to turn every
+sentence into bullets.
 
 The validator permits the final list-joining “and” to become a bullet
 separator only when an unambiguous matching introduction and every item

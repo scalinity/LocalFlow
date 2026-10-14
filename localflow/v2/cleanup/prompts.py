@@ -224,7 +224,11 @@ EXAMPLES.extend([
      "Do not reset the console. Only the service team may restart it."),
 ])
 
-PROMPT_VERSION = "m07-v2-minimal-source-bound-edits"
+EXAMPLE_CONTEXT = ("Each example uses clean mode and en-US, has no supplied vocabulary "
+                   "or protected spans, and inherits the final input's destination "
+                   "profile, structure hints and permitted edits.")
+
+PROMPT_VERSION = "m07-v2-shared-example-context"
 
 # The edits the clean mode may make (S13/S15); rendered into the payload
 # so the model sees the permitted-edits policy as data.
@@ -264,6 +268,7 @@ def prompt_revision() -> str:
         {"contract": CONTRACT, "list_formatting": LIST_FORMATTING,
          "restriction_formatting": RESTRICTION_FORMATTING,
          "minimal_edits": MINIMAL_EDITS,
+         "example_context": EXAMPLE_CONTEXT,
          "examples": EXAMPLES, "version": PROMPT_VERSION},
         ensure_ascii=False, sort_keys=True)
     return f"m07:{hashlib.sha256(payload.encode('utf-8')).hexdigest()[:12]}"
@@ -302,13 +307,13 @@ def build_messages(payload: dict) -> list[dict]:
     """Contract + examples + the structured payload, instructions kept
     separate from transcript/context content."""
     messages = [{"role": "system", "content": CONTRACT + "\n\n" + LIST_FORMATTING
-                 + "\n\n" + RESTRICTION_FORMATTING + "\n\n" + MINIMAL_EDITS}]
+                 + "\n\n" + RESTRICTION_FORMATTING + "\n\n" + MINIMAL_EDITS
+                 + "\n\n" + EXAMPLE_CONTEXT}]
     for raw, cleaned in EXAMPLES:
-        # Match only the content-free destination hints. The examples
-        # teach prose restraint even when this destination allows Markdown.
+        # Shared metadata is stated once, keeping the reusable instruction
+        # prefix independent of the final dictation's destination category.
         messages.append({"role": "user", "content": json.dumps(
-            build_payload(raw, destination_profile=payload.get("destination_profile"),
-                          structure_hint_list=payload.get("structure_hints")),
+            {"transcript": raw},
             ensure_ascii=False)})
         messages.append({"role": "assistant", "content": cleaned})
     messages.append({"role": "user",

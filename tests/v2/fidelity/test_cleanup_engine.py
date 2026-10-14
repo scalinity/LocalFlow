@@ -395,6 +395,19 @@ def test_prompt_contract_and_payload_separation():
     assert messages[0]["role"] == "system"
     assert "TRANSCRIPT-CANARY" not in messages[0]["content"]
     assert "TRANSCRIPT-CANARY" in messages[-1]["content"]
+    # Shared example metadata does not absorb final input or private context.
+    payload = prompts.build_payload("PRIVATE-FINAL-TRANSCRIPT", destination_profile="terminal",
+                                    structure_hint_list=["terminal_plain_text"],
+                                    read_only_context="PRIVATE-NEIGHBOR")
+    terminal = prompts.build_messages(payload)
+    other = prompts.build_messages(prompts.build_payload("OTHER-INPUT", destination_profile="notes"))
+    assert terminal[:-1] == other[:-1]
+    assert json.loads(terminal[-1]["content"]) == payload
+    assert prompts.EXAMPLE_CONTEXT in terminal[0]["content"]
+    for message in terminal[1:-1]:
+        if message["role"] == "user":
+            assert set(json.loads(message["content"])) == {"transcript"}
+    assert "PRIVATE-" not in json.dumps(terminal[:-1])
     # Nearby text never enters the payload: the engine passes only the
     # permitted fields.
     print("ok  prompt contract verbatim, examples satisfy it, payload"
