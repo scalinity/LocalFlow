@@ -16,9 +16,9 @@ from localflow.v2.cleanup import engine as production
 
 
 class Runner(BaseRunner):
-    def __init__(self, key, path=None, variant=False, updated_engine=False):
-        if variant and updated_engine:
-            raise ValueError("Choose either the recorded E engine or updated source")
+    def __init__(self, key, path=None, variant=False, updated_engine=False, recorded_f=False):
+        if sum((variant, updated_engine, recorded_f)) > 1:
+            raise ValueError("Choose one recorded engine or updated source")
         if key.startswith("C") and path is None:
             path = c_identity()["snapshot_path"]
         super().__init__(key, Path(path) if path else None)
@@ -29,6 +29,10 @@ class Runner(BaseRunner):
         elif updated_engine:
             self.module = production
             self.engine_name = "updated_source"
+        elif recorded_f:
+            from .baseline import load
+            self.module = load(recorded_f=True)
+            self.engine_name = "recorded_f"
         else:
             from .baseline import load
             self.module = load()
@@ -86,7 +90,9 @@ class Runner(BaseRunner):
                 "calls":[{k:c.get(k) for k in ("role","depth","window","first_token_ms","generation_ms","yields","max_tokens","finish_reason")} for c in self.calls]}
 
 
-def evaluate(key, cases_path, name, path=None, variant=False, limit=None, updated_engine=False):
+def evaluate(key, cases_path, name, path=None, variant=False, limit=None, updated_engine=False, recorded_f=False):
+    if sum((variant, updated_engine, recorded_f)) > 1:
+        raise ValueError("Choose one recorded engine or updated source")
     cases_path = Path(cases_path)
     cases = read_jsonl(cases_path)
     if limit:
@@ -107,14 +113,14 @@ def evaluate(key, cases_path, name, path=None, variant=False, limit=None, update
     meta_path = out.with_suffix(".meta.json")
     prior = read_json(meta_path)
     identity = {"model":key,"path":str(path or c_identity()["snapshot_path"] if key.startswith("C") else path or key),
-                "engine":"updated_source" if updated_engine else "separator_fix" if variant else "production","cases_sha256":file_sha256(cases_path),"limit":limit}
+                "engine":"updated_source" if updated_engine else "separator_fix" if variant else "recorded_f" if recorded_f else "production","cases_sha256":file_sha256(cases_path),"limit":limit}
     if prior and prior["identity"] != identity:
         raise RuntimeError("Evaluation name already belongs to another artifact or dataset")
     done = {r["case_id"] for r in read_jsonl(out)}
     todo = [c for c in cases if c["case_id"] not in done]
     if not todo:
         return {"already_complete":len(done)}
-    runner = Runner(key, path, variant, updated_engine)
+    runner = Runner(key, path, variant, updated_engine, recorded_f)
     info = runner.load()
     meta = prior or {"identity":identity,"runs":[]}
     meta["runs"].append({"started":utc_now(),"load":info,"pid":os.getpid(),"todo":len(todo),
@@ -140,5 +146,6 @@ if __name__ == "__main__":
     p.add_argument("model");p.add_argument("cases");p.add_argument("name")
     p.add_argument("--path");p.add_argument("--variant",action="store_true");p.add_argument("--limit",type=int)
     p.add_argument("--updated-engine",action="store_true")
+    p.add_argument("--recorded-f",action="store_true")
     a=p.parse_args()
-    print(json.dumps(evaluate(a.model,a.cases,a.name,a.path,a.variant,a.limit,a.updated_engine)))
+    print(json.dumps(evaluate(a.model,a.cases,a.name,a.path,a.variant,a.limit,a.updated_engine,a.recorded_f)))
