@@ -552,9 +552,10 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
     after = tokens(tail[:m.start()] if m else tail)[:4]
     marker = window_text[ms:e].lower()
     if marker == "i mean actually":
-        _restart, reason = repeated_restart(window_text, span, ms)
-        return reason
-    if marker == "i mean" and after and \
+        restart, reason = repeated_restart(window_text, span, ms)
+        if reason or restart is not None:
+            return reason
+    if marker in {"i mean", "i mean actually"} and after and \
             after[0].lower().strip(",;") in _EMPHASIS_AFTER_I_MEAN:
         return "emphasis_not_correction"
     if not _has_content(" ".join(after)):

@@ -112,9 +112,36 @@ def repeated_restart(source: str, span: tuple, marker_start: int):
     predicate qualify. The original subject and predicate remain in place;
     a changed subject form, modality, negation or unit cannot be discarded.
     Returned coordinates include the separator after the original marker.
+    No span and no reason means ordinary correction admission still applies;
+    an attempted but unproved restart instead returns a rejection reason.
     """
     start, end = span
     if source[marker_start:end].lower() != "i mean actually":
+        return None, None
+    opening = re.split(r"[.!?](?:\s|$)|[,;\n]",
+                       source[end:].lstrip(" \t,;:"), maxsplit=1)[0]
+    words = opening.lower().split()[:5]
+    first = re.split("['’]", words[0])[0] if words else ""
+    pronoun = first in {"i", "you", "he", "she", "it", "we", "they",
+                        "this", "that", "these", "those", "there"}
+    auxiliaries = {"should", "must", "could", "would", "may", "might", "can",
+                   "will", "shall", "am", "is", "are", "was", "were", "be",
+                   "has", "have", "had", "do", "does", "did"}
+    boundaries = set(_PREPOSITIONS.split("|")) | {
+        "and", "or", "but", "then", "because", "before", "after", "until",
+        "when", "while", "if", "unless", "only",
+    }
+    named_predicate = False
+    for index, word in enumerate(words):
+        if word in boundaries or not re.fullmatch(rf"{_WORD}(?:['’]{_WORD})?", word):
+            break
+        if index and word in auxiliaries:
+            named_predicate = True
+            break
+    # Openings outside these bounded restart shapes grant no extra
+    # deletion. Later clauses stay required source text. Pronoun-looking
+    # names and incomplete name/auxiliary openings remain ambiguous.
+    if not pronoun and not named_predicate:
         return None, None
     reason = "unresolved_repeated_restart"
     quantity = re.fullmatch(
