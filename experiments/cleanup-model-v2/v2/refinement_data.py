@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import collections
 import random
+import re
 from .common import *
 from . import data
 
@@ -132,6 +133,27 @@ def generate(split):
         write_jsonl(dest, rows)
 
 
+def correction_offsets(row):
+    """Anchor checked correction labels without running any candidate engine."""
+    source = row["model_input"]
+    offsets, cursor = [], 0
+    for line in row.get("gold_lines", []):
+        if not isinstance(line, str) or not line:
+            raise ValueError(f"Empty correction label in {row['case_id']}")
+        pattern = (r"(?<!\w)" if line[0].isalnum() or line[0] == "_" else "")
+        pattern += re.escape(line)
+        pattern += r"(?!\w)" if line[-1].isalnum() or line[-1] == "_" else ""
+        matches = list(re.finditer(pattern, source[cursor:], re.IGNORECASE))
+        if len(matches) != 1:
+            kind = "Missing" if not matches else "Ambiguous"
+            raise ValueError(f"{kind} correction label in {row['case_id']}")
+        match = matches[0]
+        start, end = cursor + match.start(), cursor + match.end()
+        offsets.append([start, end])
+        cursor = end
+    return offsets
+
+
 def assemble(split):
     """Filter by independent labels and prior text, never candidate success."""
     from .assemble import Dedup
@@ -142,7 +164,10 @@ def assemble(split):
         raise ValueError(split)
     dest = RUN / ("synthetic-" + split + ".jsonl")
     if dest.exists():
-        return {"already_assembled": len(read_jsonl(dest))}
+        existing = read_jsonl(dest)
+        if any(row.get("gold_offsets") != correction_offsets(row) for row in existing):
+            raise RuntimeError("Existing assembled labels lack matching correction offsets; do not reuse them")
+        return {"already_assembled": len(existing)}
     idx = Dedup()
     exclusions = [
         *[OLD_ART / "dataset" / (s + ".jsonl") for s in ("train", "validation")],
@@ -186,6 +211,7 @@ def assemble(split):
             norm = normalize_text(row["raw_input"])
             if norm.text != row["model_input"]:
                 raise RuntimeError("Label normalization changed")
+            row["gold_offsets"] = correction_offsets(row)
             row["protected_spans"] = [list(p) for p in protected_spans_for_cleanup(row["raw_input"], norm.text, norm.protected, norm.edits)]
             accepted.append(row)
         for row in accepted:
