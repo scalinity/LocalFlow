@@ -232,7 +232,19 @@ remain in the correction record.
 Authorized deletions (never inside a protected occurrence): accepted
 corrections (their spans — whose words may not reappear: novelty does
 not count them), pure fillers, immediate function-word stutter (plus
-the doubled preposition a correction leaves), interjectors at a phrase
+the doubled preposition a correction leaves), and the first copy of an
+immediately repeated incomplete opening such as `that we that we should`.
+That opening is `that`/`which`/`who`/`whom` plus a subject pronoun before a
+retained finite auxiliary. Exactly two copies and their preceding word
+must share one clause with only horizontal spacing; a proposed deletion
+qualifies only when the second copy and auxiliary remain at their matched
+position and all other required words survive in order. The removed copy
+cannot fund new words, and unchanged text grants no deletion permission.
+Quote, apostrophe or backtick source windows, existing list-item lines,
+and overlap with protected, correction, vocabulary, list-marker or numeric
+representation spans exclude this rule. It does not authorize repeated
+finite phrases (`who had who had`) or temporal words (`then then`). Other
+authorized deletions are interjectors at a phrase
 start (text start or after `. ! ? ; :`/newline, possibly after other
 fillers — never mid-phrase), number-word→digit representation changes
 whose value survives, spoken-list markers when ≥ 2 items are rendered

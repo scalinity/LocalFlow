@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 
 DETERMINISTIC = "deterministic"
@@ -511,6 +511,8 @@ def _authorized(word: str, start: int, end: int, ctx) -> bool:
         return True
     if _overlaps(ctx.vocab_spans, start, end):
         return True
+    if _overlaps(ctx.restart_spans, start, end):
+        return True
     return False
 
 
@@ -529,6 +531,9 @@ class _AuthCtx:
     # [(s, e)] protected occurrences: no word inside may be authorized
     # away (the designated occurrence survives, not merely the text).
     protected_positions: list = field(default_factory=list)
+    # First copies of incomplete openings actually deleted by this output.
+    # Their words also leave the novelty budget; identity grants no spans.
+    restart_spans: list = field(default_factory=list)
 
 
 def _vocabulary_authorizations(source: str, output: str, pairs) -> tuple:
@@ -1172,9 +1177,10 @@ def _novelty(source, output, ctx) -> Component:
         return "a/an" if word in _ARTICLES else word
     # A corrected-away value may not come back ("send it to mark no wait
     # to lisa" never becomes "… to Lisa and Mark"): words inside
-    # correction spans do not count toward the limit.
+    # correction or proposed incomplete-restart spans do not count toward
+    # the limit.
     limit = Counter(key(w) for s, e, w in _word_atoms(source)
-                    if not _overlaps(ctx.correction_spans, s, e))
+                    if not _overlaps(ctx.correction_spans + ctx.restart_spans, s, e))
     for word, count in ctx.vocab_allowance.items():
         limit[key(word)] += count
     used = Counter(key(w) for _, _, w in _word_atoms(output))
@@ -1244,6 +1250,71 @@ def _structure(source, output) -> Component:
     return Component("structure", DETERMINISTIC, "pass", detail)
 
 
+def _incomplete_restart_spans(source: str, output: str, ctx) -> list:
+    """Permit only a proposed deletion of an unfinished marker + subject.
+
+    A retained second opening and finite auxiliary must occupy the same
+    position between the surrounding required words. This is deliberately
+    narrower than repeated-phrase cleanup or a general grammar judgement.
+    """
+    if re.search(r'''["'`‘’“”]''', source):
+        return []
+    atoms = _word_atoms(source)
+    markers = {"that", "which", "who", "whom"}
+    subjects = {"i", "you", "he", "she", "it", "we", "they"}
+    finite = {"am", "is", "are", "was", "were", "has", "have", "had",
+              "do", "does", "did", "can", "could", "will", "would",
+              "shall", "should", "must", "may", "might"}
+    excluded = (ctx.protected_positions + ctx.correction_spans + ctx.vocab_spans
+                + ctx.enum_spans + ctx.numeric_spans)
+    candidates = []
+    for i in range(1, len(atoms) - 4):
+        opening = [a[2] for a in atoms[i:i + 5]]
+        if (opening[0] not in markers or opening[1] not in subjects
+                or opening[:2] != opening[2:4] or opening[4] not in finite):
+            continue
+        prior_start, prior_end, prior_word = atoms[i - 1]
+        if (any(not re.fullmatch(r"[ \t]+", source[atoms[j][1]:atoms[j + 1][0]])
+                for j in range(i - 1, i + 4))
+                or _overlaps(excluded, prior_start, atoms[i + 4][1])
+                or _authorized(prior_word, prior_start, prior_end, ctx)):
+            continue
+        if (i >= 2 and [a[2] for a in atoms[i - 2:i]] == opening[:2]
+                and all(re.fullmatch(r"[ \t]+", source[atoms[j][1]:atoms[j + 1][0]])
+                        for j in range(i - 2, i))):
+            continue
+        line_start = source.rfind("\n", 0, atoms[i][0]) + 1
+        if _ITEM_LINE_RE.match(source[line_start:].split("\n", 1)[0]):
+            continue
+        candidates.append(i)
+    if not candidates:
+        return []
+    missing, _, _, _ = _align(source, output, ctx)
+    missing_starts = {m[0] for m in missing}
+    proposed = []
+    for i in candidates:
+        absent = {a[0] for a in atoms[i:i + 4]} & missing_starts
+        if absent in ({a[0] for a in atoms[i:i + 2]},
+                      {a[0] for a in atoms[i + 2:i + 4]}):
+            proposed.append(i)
+    if not proposed:
+        return []
+    spans = [(atoms[i][0], atoms[i + 1][1]) for i in proposed]
+    trial = replace(ctx, restart_spans=spans)
+    remaining, pairs, _, out_atoms = _align(source, output, trial)
+    if remaining or _novelty(source, output, trial).status != "pass":
+        return []
+    mapped = dict(pairs)
+    for i in proposed:
+        positions = [mapped.get(j) for j in (i - 1, i + 2, i + 3, i + 4)]
+        if (any(j is None for j in positions)
+                or positions != list(range(positions[0], positions[0] + 4))
+                or any(not re.fullmatch(r"[ \t]+", output[out_atoms[j][1]:out_atoms[j + 1][0]])
+                       for j in positions[:-1])):
+            return []
+    return spans
+
+
 def _auth_context(source, output, vocabulary_pairs, continued_list_start,
                   correction_spans, protected_positions) -> "_AuthCtx":
     pairs = tuple(vocabulary_pairs or ())
@@ -1257,13 +1328,15 @@ def _auth_context(source, output, vocabulary_pairs, continued_list_start,
         source, output, correction_spans or ())
     vocab_spans, allowance = _vocabulary_authorizations(
         source, output, pairs)
-    return _AuthCtx(correction_spans=list(correction_spans or []),
+    ctx = _AuthCtx(correction_spans=list(correction_spans or []),
                     protected_positions=[tuple(p[:2]) for p in
                                          protected_positions or []],
                     numeric_spans=numeric_spans,
                     enum_spans=enum_spans,
                     vocab_spans=vocab_spans, vocab_allowance=allowance,
                     continued_list_start=continued_list_start)
+    ctx.restart_spans = _incomplete_restart_spans(source, output, ctx)
+    return ctx
 
 
 def _next_list_item_boundary(output: str, previous_end: int, following: int):
