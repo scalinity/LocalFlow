@@ -17,6 +17,56 @@ class FinalIsolationTests(unittest.TestCase):
                  'data_freeze_sha256': file_sha256(root / 'dataset/freeze.json'), **fields}
         write_json(root / 'final-freeze.json', value)
 
+    def test_final_freeze_preserves_capture_and_serving_source_identities(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifacts = root / 'artifacts'
+            run = artifacts / 'refinement'
+            dataset = run / 'dataset'
+            source = root / 'prompts.py'
+            source.write_text('original capture prompt')
+            capture_hash = file_sha256(source)
+            write_jsonl(dataset / 'test.jsonl', [{'case_id': 'synthetic-0', 'split': 'test'}])
+            write_json(dataset / 'freeze.json', {
+                'files': {'test.jsonl': file_sha256(dataset / 'test.jsonl')},
+                'capture_source_hashes': {'prompts.py': capture_hash},
+            })
+            dataset_freeze_hash = file_sha256(dataset / 'freeze.json')
+            audio = [{'case_id': f'audio-{i}', 'split': 'test'} for i in range(300)]
+            write_jsonl(run / 'audio-asr.jsonl', audio)
+            write_jsonl(run / 'audio-cases.jsonl', audio)
+            models = {}
+            for key in ('C', 'F', 'G'):
+                model = root / key
+                model.mkdir()
+                (model / 'weights.safetensors').write_text('fixed fixture weights ' + key)
+                models[key] = {'path': str(model), 'content_digest': content_digest(model)}
+            write_json(artifacts / 'export/diverse-6000-ckpt-00761.identity.json', {
+                'quantized': models['F']['path'], 'content_digest': models['F']['content_digest'],
+            })
+            write_json(run / 'candidate-selection.json', {
+                'ready_for_final': True, 'candidate': {'key': 'G', **models['G']},
+            })
+            source.write_text('updated serving prompt')
+            serving_hash = file_sha256(source)
+            with patch.multiple(refinement, ROOT=root, ART=artifacts, RUN=run,
+                                DATASET=dataset, SOURCE_FILES=['prompts.py']), \
+                    patch.object(training, 'ROOT', root), \
+                    patch.object(refinement, 'c_identity', return_value={
+                        'snapshot_path': models['C']['path'], 'revision': models['C']['content_digest'],
+                    }):
+                freeze = refinement.freeze_final()
+                self.assertEqual(freeze['capture_source_hashes'], {'prompts.py': capture_hash})
+                self.assertEqual(freeze['source_hashes'], {'prompts.py': serving_hash})
+                self.assertEqual(freeze['data_freeze_sha256'], dataset_freeze_hash)
+                self.assertEqual(file_sha256(dataset / 'freeze.json'), dataset_freeze_hash)
+                self.assertEqual(freeze['n'], 301)
+                refinement.require_final(run / 'final-cases.jsonl', candidate=True,
+                                         key='G', model_path=models['G']['path'], engine='updated_source')
+                source.write_text('later serving prompt')
+                with self.assertRaisesRegex(ValueError, 'source changed'):
+                    refinement.require_final(run / 'final-cases.jsonl', candidate=True)
+
     def test_missing_and_mismatched_final_inputs_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -91,6 +141,28 @@ class FinalIsolationTests(unittest.TestCase):
 
 
 class TrainingIdentityTests(unittest.TestCase):
+    def test_capture_source_is_required_by_default_but_optional_for_serving(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            dataset = root / 'dataset'
+            source = root / 'prompts.py'
+            source.write_text('original capture prompt')
+            write_jsonl(dataset / 'train_captures.jsonl', [{'input': 'fixed capture'}])
+            freeze = {
+                'files': {'train_captures.jsonl': file_sha256(dataset / 'train_captures.jsonl')},
+                'capture_source_hashes': {'prompts.py': file_sha256(source)},
+            }
+            write_json(dataset / 'freeze.json', freeze)
+            with patch.object(training, 'ROOT', root):
+                self.assertEqual(training.checked_dataset(dataset), freeze)
+                source.write_text('updated serving prompt')
+                with self.assertRaisesRegex(RuntimeError, 'prompt source changed'):
+                    training.checked_dataset(dataset)
+                self.assertEqual(training.checked_dataset(dataset, require_current_capture_source=False), freeze)
+                write_jsonl(dataset / 'train_captures.jsonl', [{'input': 'changed capture'}])
+                with self.assertRaisesRegex(RuntimeError, 'dataset file changed'):
+                    training.checked_dataset(dataset, require_current_capture_source=False)
+
     def test_legacy_split_name_freeze_remains_readable(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -8,14 +8,15 @@ from pathlib import Path
 from .common import *
 
 
-def checked_dataset(dataset):
+def checked_dataset(dataset, *, require_current_capture_source=True):
     freeze = read_json(dataset / "freeze.json")
     if not freeze:
         raise RuntimeError("Evaluation sets must be fixed first")
     if any(file_sha256(dataset / (name + ".jsonl" if name in ("test", "validation") else name)) != digest
            for name, digest in freeze.get("files", {}).items()):
         raise RuntimeError("Frozen dataset file changed")
-    if any(file_sha256(ROOT / path) != digest for path, digest in freeze.get("capture_source_hashes", {}).items()):
+    if require_current_capture_source and any(
+            file_sha256(ROOT / path) != digest for path, digest in freeze.get("capture_source_hashes", {}).items()):
         raise RuntimeError("Training prompt source changed after capture")
     return freeze
 

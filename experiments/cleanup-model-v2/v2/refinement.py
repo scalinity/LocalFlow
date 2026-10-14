@@ -133,7 +133,7 @@ def freeze_final():
     selection = read_json(RUN / "candidate-selection.json")
     if not selection or not selection.get("ready_for_final"):
         raise RuntimeError("Development selection is not complete")
-    checked_dataset(DATASET)
+    dataset_freeze = checked_dataset(DATASET, require_current_capture_source=False)
     selected = selection.get("candidate", {})
     if not selected.get("key") or selected["key"] in ("C", "F") or not selected.get("path") or not selected.get("content_digest"):
         raise RuntimeError("Selection must identify candidate key, model path and content digest")
@@ -166,6 +166,7 @@ def freeze_final():
     freeze = {"created": utc_now(), "n": len(rows), "synthetic": len(synthetic), "audio": len(audio),
               "cases_sha256": file_sha256(path), "selection_sha256": file_sha256(RUN / "candidate-selection.json"),
               "source_hashes": {p: file_sha256(ROOT / p) for p in SOURCE_FILES},
+              "capture_source_hashes": dataset_freeze.get("capture_source_hashes", {}),
               "models":models,
               "data_freeze_sha256": file_sha256(DATASET / "freeze.json"),
               "candidate_outputs_existed": False}
