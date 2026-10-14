@@ -67,21 +67,22 @@ def prepare_audio(count=100):
     return receipt
 
 
-def asr_audio():
+def asr_audio(run=None):
     """Run the production Parakeet wrapper once, preserving the raw transcript."""
     import soundfile as sf
     from huggingface_hub import snapshot_download
     from localflow.stt import Transcriber
     from localflow.v2.normalize import normalize, NormalizationPolicy, ContextSnapshot
     from localflow.v2.cleanup import protected_spans_for_cleanup
-    destination = RUN / "audio-asr.jsonl"
+    run = Path(run) if run is not None else RUN
+    destination = run / "audio-asr.jsonl"
     records = read_jsonl(destination)
     done = {r["case_id"] for r in records}
     cfg = CONFIG["models"]["asr"]
     transcriber = Transcriber(snapshot_download(cfg["repository_id"], revision=cfg["revision"], local_files_only=True))
     transcriber.load()
     policy = NormalizationPolicy()
-    for case in read_jsonl(RUN / "audio-cases.jsonl"):
+    for case in read_jsonl(run / "audio-cases.jsonl"):
         if case["case_id"] in done:
             continue
         samples, rate = sf.read(str(ART / case["audio_path"]), dtype="float32", always_2d=True)
