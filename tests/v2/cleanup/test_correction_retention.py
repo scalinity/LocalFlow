@@ -63,6 +63,88 @@ class CorrectionRetentionTests(unittest.TestCase):
                 self.assertEqual(result.text, source)
                 self.assertEqual(result.corrections["applied"], 0)
 
+    def test_quantity_correction_retains_its_recipient(self):
+        source = "Send 18 entries to the editor, sorry, 24 entries."
+        target = "Send 24 entries to the editor."
+        for proposal in (target, "Send 24 entries."):
+            with self.subTest(proposal=proposal):
+                result, inputs = clean(source, proposal,
+                                       "18 entries to the editor, sorry")
+                self.assertIn("24 entries to the editor", inputs[0])
+                if proposal == target:
+                    self.assertEqual(result.text, target)
+                    self.assertEqual(result.path, "llm")
+                else:
+                    self.assertEqual(result.text, source)
+                    self.assertEqual(result.corrections["applied"], 0)
+
+    def test_quantity_correction_can_explicitly_replace_its_recipient(self):
+        source = "Send 18 entries to the editor, sorry, 24 entries to the translator."
+        target = "Send 24 entries to the translator."
+        result, _ = clean(source, target, "18 entries to the editor, sorry")
+        self.assertEqual(result.text, target)
+        self.assertEqual(result.path, "llm")
+        wrong, _ = clean(source, "Send 24 entries to the editor and the translator.",
+                         "18 entries to the editor, sorry")
+        self.assertEqual(wrong.text, source)
+
+    def test_dropped_recipient_is_restored_within_the_existing_salvage_limit(self):
+        ending = (" Keep each title attached to its entry, preserve the existing "
+                  "spelling, and record the delivery in the shared register before "
+                  "closing the review for this batch.")
+        source = "Send 18 entries to the editor, sorry, 24 entries." + ending
+        target = "Send 24 entries to the editor." + ending
+        result, _ = clean(source, "Send 24 entries." + ending,
+                           "18 entries to the editor, sorry")
+        self.assertEqual(result.text, target)
+        self.assertEqual(result.path, "llm")
+        self.assertEqual(result.corrections["applied"], 1)
+
+    def test_recipient_retention_requires_the_same_quantity_head(self):
+        source = "Send 18 entries to the editor, sorry, 24 files."
+        result, _ = clean(source, "Send 24 files to the editor.",
+                           "18 entries to the editor, sorry")
+        self.assertEqual(result.text, source)
+        self.assertEqual(result.corrections["applied"], 0)
+
+    def test_infinitive_purpose_does_not_replace_a_recipient(self):
+        for purpose in ("to be signed", "to deliver tomorrow", "to Be signed",
+                        "to Deliver tomorrow", "to Be on file", "to Deliver before Friday"):
+            with self.subTest(purpose=purpose):
+                source = f"Send 18 entries to the editor, sorry, 24 entries {purpose}."
+                result, _ = clean(source, f"Send 24 entries {purpose}.",
+                                   "18 entries to the editor, sorry")
+                self.assertEqual(result.text, source)
+                self.assertEqual(result.corrections["applied"], 0)
+                self.assertIn("unresolved_quantity_qualifier",
+                              result.corrections["rejected_reasons"])
+
+    def test_a_new_recipient_does_not_erase_an_old_purpose(self):
+        source = "Send 18 entries to be signed, sorry, 24 entries to the editor."
+        result, _ = clean(source, "Send 24 entries to the editor.",
+                           "18 entries to be signed, sorry")
+        self.assertEqual(result.text, source)
+        self.assertEqual(result.corrections["applied"], 0)
+
+    def test_recipient_replacement_accepts_bounded_noun_phrases_and_pronouns(self):
+        for recipient in ("the senior editor", "the editor before Friday", "her",
+                          "her before Friday"):
+            with self.subTest(recipient=recipient):
+                source = f"Send 18 entries to the editor, sorry, 24 entries to {recipient}."
+                target = f"Send 24 entries to {recipient}."
+                result, _ = clean(source, target, "18 entries to the editor, sorry")
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+
+    def test_capitalization_alone_does_not_classify_a_replacement_recipient(self):
+        for old, new in (("the editor", "Nadia Vale"), ("Mira", "the editor")):
+            with self.subTest(old=old, new=new):
+                source = f"Send 18 entries to {old}, sorry, 24 entries to {new}."
+                result, _ = clean(source, f"Send 24 entries to {new}.",
+                                   f"18 entries to {old}, sorry")
+                self.assertEqual(result.text, source)
+                self.assertEqual(result.corrections["applied"], 0)
+
     def test_multiple_retained_qualifiers_keep_independent_anchors(self):
         source = ("Use 4 liters of dye, no wait, 6 liters, and reserve "
                   "3 grams of varnish, no wait, 5 grams for finishing.")

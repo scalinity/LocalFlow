@@ -15,7 +15,7 @@ import re
 
 
 _NUMBER = r"[+-]?\d+(?:[.,]\d+)*"
-_PREPOSITIONS = r"of|for|per|with|without|at|in|on"
+_PREPOSITIONS = r"of|for|per|with|without|at|in|on|to"
 _WORD = r"[^\W\d_]+"
 _QUANTITY_DETAIL = re.compile(
     rf"{_NUMBER}[ \t]+(?P<unit>{_WORD}"
@@ -48,6 +48,23 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
     # A newly stated value of the same relationship replaces its old
     # detail: ``4 liters of dye ... 6 liters of solvent``.
     if re.match(rf"[ \t,;:]*(?i:{re.escape(match.group('prep'))})\b", following):
+        if match.group("prep").lower() == "to":
+            # "To be signed" is a purpose, not a restated recipient.
+            # Require a bounded determiner-led noun phrase or pronoun on
+            # both sides. Capitalization alone cannot distinguish a name
+            # from an infinitive such as "to Deliver before Friday".
+            boundaries = (rf"{_PREPOSITIONS}|and|or|but|then|because|before|after|"
+                          r"until|when|while|if|unless|be|have|do")
+            noun_word = rf"(?!(?i:{boundaries})\b){_WORD}"
+            recipient = (rf"(?:(?i:the|a|an|this|that|these|those)[ \t]+"
+                         rf"{noun_word}(?:[ \t]+{noun_word}){{0,3}}"
+                         rf"|(?i:me|you|him|her|it|us|them))")
+            old_tail = match.group("detail")[2:].strip()
+            new_tail = re.sub(r"^[ \t,;:]*(?i:to)[ \t]+", "", following)
+            if (re.fullmatch(recipient, old_tail) is None
+                    or re.match(recipient + rf"(?=$|[,;.!?\n]|[ \t]+(?i:{boundaries})\b)",
+                                new_tail) is None):
+                return None, "unresolved_quantity_qualifier"
         return None, None
     relation = re.match(r"[ \t,;:]*(with|without|of)[ \t]+", following, re.IGNORECASE)
     old_relation = match.group("prep").lower()
