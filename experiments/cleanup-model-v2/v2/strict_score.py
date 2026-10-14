@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 
-SCORER_VERSION = "strict-lexical-v1"
+SCORER_VERSION = "strict-lexical-v2-incomplete-openings"
 FILLERS = {"um", "uh", "erm", "ehm", "hmm", "mhm"}
 STUTTER_WORDS = {"a", "an", "the", "to", "of", "in", "on", "at", "for", "and",
                  "or", "but", "is", "it", "i", "we", "you", "he", "she", "they",
@@ -144,6 +144,107 @@ def _identifier_counts(text, annotated=()):
     return counts
 
 
+def _incomplete_openings(case, text, source_tokens, optional, correction_spans, correction_issues):
+    """Prove a proposed restart deletion using an independent sequence walk.
+
+    Only exact token matches, existing optional-token deletions and a bounded
+    two-token opening deletion are walk edges. Substitutions, reordered words
+    and ambiguous occurrence assignments abstain. In particular, vocabulary
+    replacements elsewhere are not handled by this additional authorization.
+    """
+    if text is None:
+        return [], "unavailable"
+    source = case["model_input"]
+    output = _tokens(text)
+    sk, dk = [t.key for t in source_tokens], [t.key for t in output]
+    if sk == dk:
+        return [], "unchanged_lexical_sequence"
+    markers = {"that", "which", "who", "whom"}
+    subjects = {"i", "you", "he", "she", "it", "we", "they"}
+    auxiliaries = {"am", "is", "are", "was", "were", "has", "have", "had", "do", "does", "did",
+                   "can", "could", "will", "would", "shall", "should", "must", "may", "might"}
+    openings = [i for i in range(len(sk) - 4)
+                if sk[i] in markers and sk[i + 1] in subjects
+                and sk[i:i + 2] == sk[i + 2:i + 4] and sk[i + 4] in auxiliaries]
+    if not openings:
+        return [], "no_incomplete_opening"
+    if any(char in source for char in "\"'`‘’“”"):
+        return [], "quoted_or_apostrophe_source"
+    if correction_issues:
+        return [], "invalid_correction_metadata"
+    excluded = list(correction_spans)
+    for span in case.get("protected_spans") or []:
+        if (not isinstance(span, (list, tuple)) or len(span) < 2
+                or any(type(offset) is not int for offset in span[:2])
+                or not 0 <= span[0] < span[1] <= len(source)):
+            return [], "invalid_protected_span"
+        excluded.append(tuple(span[:2]))
+    for pair in case.get("vocabulary_pairs") or []:
+        if not isinstance(pair, (list, tuple)) or len(pair) != 2 or not all(isinstance(x, str) and x for x in pair):
+            return [], "invalid_vocabulary_pair"
+        alias = _keys(pair[0])
+        for start in range(len(sk) - len(alias) + 1) if alias else ():
+            if sk[start:start + len(alias)] == alias:
+                excluded.append((source_tokens[start].start, source_tokens[start + len(alias) - 1].end))
+    sites = {}
+    numeric_anchors = {"hundred", "thousand", "million", "billion", "point",
+                       "percent", "percentage", "dollar", "dollars", "euro", "euros"}
+    for i in openings:
+        if i == 0 or i - 1 in optional:
+            continue
+        # A numeric or enumeration predecessor cannot supply the clause anchor.
+        if not sk[i - 1].isalpha() or sk[i - 1] in ENUMERATION | numeric_anchors:
+            continue
+        section = source_tokens[i - 1:i + 5]
+        if any(not re.fullmatch(r"[ \t]+", source[a.end:b.start]) for a, b in zip(section, section[1:])):
+            continue
+        if any(a < section[-1].end and section[0].start < b for a, b in excluded):
+            continue
+        if (i >= 2 and sk[i - 2:i] == sk[i:i + 2]
+                and all(re.fullmatch(r"[ \t]+", source[source_tokens[j].end:source_tokens[j + 1].start])
+                        for j in (i - 2, i - 1))):
+            continue
+        line_start = source.rfind("\n", 0, section[0].start) + 1
+        # This exclusion covers existing bullet/tab forms without changing the
+        # legacy list-prefix normalization used by the rest of the scorer.
+        if re.match(r"[ \t]*(?:[-*+•]|\d+[.)])[ \t]+", source[line_start:]):
+            continue
+        sites[i] = (source_tokens[i].start, source_tokens[i + 1].end)
+    if not sites:
+        return [], "no_bounded_site"
+
+    # Keep at most two distinct authorization histories per position. Future
+    # edges depend only on these positions; two histories already prove that
+    # the final occurrence assignment would be ambiguous.
+    states = [collections.defaultdict(set) for _ in range(len(sk) + 1)]
+    states[0][0].add(frozenset())
+
+    def advance(i, j, histories, span=None):
+        bucket = states[i][j]
+        for history in histories:
+            if len(bucket) < 2:
+                bucket.add(history | {span} if span is not None else history)
+
+    for i, positions in enumerate(states[:-1]):
+        for j, histories in positions.items():
+            if j < len(dk) and sk[i] == dk[j]:
+                advance(i + 1, j + 1, histories)
+            if i in optional:
+                advance(i + 1, j, histories)
+            if i in sites and j > 0 and sk[i - 1] == dk[j - 1] and dk[j:j + 3] == sk[i + 2:i + 5]:
+                retained = output[j - 1:j + 3]
+                if len(retained) == 4 and all(re.fullmatch(r"[ \t]+", text[a.end:b.start])
+                                              for a, b in zip(retained, retained[1:])):
+                    advance(i + 5, j + 3, histories, sites[i])
+    matches = states[-1].get(len(dk), set())
+    if not matches:
+        return [], "output_sequence_not_proven"
+    if len(matches) != 1:
+        return [], "ambiguous_occurrence_assignment"
+    spans = sorted(next(iter(matches)))
+    return spans, "authorized" if spans else "no_restart_deletion"
+
+
 def score_case(case: dict, text: str | None) -> dict:
     """Return mechanical evidence; no field represents a semantic PASS."""
     source = case["model_input"]
@@ -159,6 +260,7 @@ def score_case(case: dict, text: str | None) -> dict:
     spans = _correction_spans(case, source, issues)
     quoted = [(m.start(), m.end()) for m in QUOTED.finditer(source)]
     authorized = collections.Counter()
+    optional = set()
     for i, token in enumerate(src):
         in_quote = any(a <= token.start < b for a, b in quoted)
         correction = any(a <= token.start and token.end <= b for a, b in spans)
@@ -166,6 +268,19 @@ def score_case(case: dict, text: str | None) -> dict:
                    and source[src[i - 1].end:token.start].isspace())
         if correction or (not in_quote and (token.key in FILLERS or stutter)):
             authorized[token.key] += 1
+            optional.add(i)
+
+    candidate_spans, candidate_restart_status = _incomplete_openings(case, text, src, optional, spans, issues)
+    reference_spans, reference_restart_status = _incomplete_openings(case, target, src, optional, spans, issues)
+    candidate_restart = collections.Counter(t.key for t in src
+        if any(a <= t.start and t.end <= b for a, b in candidate_spans))
+    reference_restart = collections.Counter(t.key for t in src
+        if any(a <= t.start and t.end <= b for a, b in reference_spans))
+    ordinary = {"unavailable", "unchanged_lexical_sequence", "no_incomplete_opening", "no_restart_deletion", "authorized"}
+    if candidate_restart_status not in ordinary:
+        review.append("incomplete_restart_authorization_underdetermined")
+    if reference_restart_status not in ordinary:
+        review.append("reference_incomplete_restart_authorization_underdetermined")
 
     if list_target:
         markerless = [t.key for t in src if t.key not in ENUMERATION]
@@ -179,6 +294,8 @@ def score_case(case: dict, text: str | None) -> dict:
     # Vocabulary licenses full alias-to-canonical replacements, never a bag of
     # canonical words that can be added while the original alias remains.
     reference_authorized = authorized.copy()
+    authorized.update(candidate_restart)
+    reference_authorized.update(reference_restart)
     reference_vocab_additions = collections.Counter()
     vocab_additions, vocab_required_ids = collections.Counter(), collections.Counter()
     unfulfilled_vocab = collections.Counter()
@@ -213,9 +330,11 @@ def score_case(case: dict, text: str | None) -> dict:
 
     required = sc - authorized
     if rc is not None:
-        # Even an overbroad gold correction span cannot license deleting words
-        # that the supplied target requires retaining (for example "of polish").
-        required |= sc & rc
+        # An overbroad correction span cannot license deleting target-required
+        # words. The separately proved opening deletion remains input-authorized
+        # even when a reference retains the duplicate; reference mismatch stays
+        # visible in missing_target_words and reference_exact.
+        required |= (sc & rc) - candidate_restart
         target_unlicensed = (sc - rc) - reference_authorized
         if target_unlicensed:
             issues.append("target_omits_words_without_checked_authorization")
@@ -225,11 +344,11 @@ def score_case(case: dict, text: str | None) -> dict:
     else:
         review.append("no_cleanup_target_reference")
 
-    added = dc - sc - vocab_additions
+    added = dc - (sc - candidate_restart) - vocab_additions
     # Target-consistent deletions with incomplete annotations are uncertain,
     # not proven new damage. Required words shared by input and target remain
     # an independent lower bound, even if correction metadata is overbroad.
-    omitted = ((sc & rc) - dc) if rc is not None else required - dc
+    omitted = ((sc & rc) - candidate_restart - dc) if rc is not None else required - dc
     omitted |= unfulfilled_vocab
     unclassified_omissions = (required - dc) - omitted
     if unclassified_omissions:
@@ -297,6 +416,9 @@ def score_case(case: dict, text: str | None) -> dict:
         "introduced_missing_critical_facts": introduced_missing_facts,
         "unresolved_corrections": sorted(set(unresolved)) if text is not None else None,
         "metadata_issues": sorted(set(issues)), "review_flags": sorted(set(review)),
+        "incomplete_restart_authorization": {
+            "candidate_spans": [list(span) for span in candidate_spans], "candidate_status": candidate_restart_status,
+            "reference_spans": [list(span) for span in reference_spans], "reference_status": reference_restart_status},
         "semantic_assessment": "NOT_ASSESSED",
         "identifier_scope": "annotated_identifiers_and_heuristic_technical_literals",
     }
