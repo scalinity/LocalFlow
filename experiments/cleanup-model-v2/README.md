@@ -38,6 +38,11 @@ The modules have these responsibilities:
 - `remediation`: select unused audio sentence families, run the actual ASR
   wrapper, exclude earlier text and development examples, and freeze a fresh
   comparison independently of candidate behavior.
+- `refinement_data`: create paired repair/preservation scenarios for exposed
+  failure types, keep scenario groups disjoint, and exclude earlier text before
+  assembling independently checked labels. Requested sizes are 2,400 training,
+  600 development and 1,200 final synthetic examples; accepted counts are
+  reported separately. Half are preservation controls and 20% request long text.
 - `score`: compute exact repairs, punctuation, preservation, real-audio WER/CER,
   latency, memory, and fallback rates.
 - `judge`: assess anonymous outputs for meaning and fact preservation; retain
@@ -61,12 +66,15 @@ captured, without silently changing that target.
 punctuation-only separator tokens before the existing parallel-value check;
 protected spans, ambiguity checks, bounds, and final validation remain active.
 
-`F` uses those same D weights with current source fixes for restriction
+`F` uses those same D weights with recorded source fixes for restriction
 attachment, exact identifier corrections, and word-restoration placement.
 Fresh C/E/F runs use `fresh-` output names and require the exact newly frozen
 case file; F also requires the frozen source hashes. The earlier results remain
 separate. Fresh development examples can inform fixes, but fresh final examples
 cannot be used to tune a candidate and then presented as held out.
+Further refinement keeps F's `0fba335` engine fixed with `--recorded-f`, while
+`--updated-engine` selects the new source. The already-exposed 494-case comparison
+is now development/regression material; it cannot prove fresh generalization.
 
 The final report records the executed configurations, model digests, dataset
 hashes, costs, limitations, deployment steps, and rollback steps. Unrun checks

@@ -151,7 +151,7 @@ def wave(name, requests, parse, model, purpose):
     return w
 
 
-def generate(name, split, count, start=0):
+def generate(name, split, count, start=0, *, batch_chunk=800):
     dest = ART / "claude" / name / "specs.json"
     specs = read_json(dest)
     if specs is None:
@@ -181,7 +181,7 @@ def generate(name, split, count, start=0):
             "messages": [{"role": "user", "content": "Create these families:\n" + json.dumps(chunk)}],
             "output_config": {"format": {"type": "json_schema", "schema": synth.GEN_SCHEMA}}}
     w = wave(name, requests, synth.parse_generation, "claude-sonnet-5-5", "generation")
-    w.run(chunk=800)
+    w.run(chunk=batch_chunk)
     specmap = {s["family_id"]: s for s in specs}
     rows, seen, rejects = [], set(), collections.Counter()
     for rid, o in w.outcomes.items():
