@@ -43,11 +43,21 @@ The modules have these responsibilities:
   assembling independently checked labels. Requested sizes are 2,400 training,
   600 development and 1,200 final synthetic examples; accepted counts are
   reported separately. Half are preservation controls and 20% request long text.
+- `refinement_audio`: select clip-disjoint FLEURS, DisfluencySpeech, and AMI
+  recordings from pinned sources; retain their distinct speech types and
+  reference limitations in the comparison.
+- `refinement`: capture current prompts for independently accepted training
+  labels, continue the preserved adapter, and bind the final comparison to
+  a candidate selected on development data.
 - `score`: compute exact repairs, punctuation, preservation, real-audio WER/CER,
   latency, memory, and fallback rates.
+- `strict_score`: count source-anchored word and identifier changes separately
+  from legacy reference metrics and automated meaning judgments.
 - `judge`: assess anonymous outputs for meaning and fact preservation; retain
   known verdicts and retry only missing output IDs in at most two recovery waves.
 - `report`: render saved measurements into a self-contained offline report.
+- `refinement_report`: render the completed refinement with separate output
+  stages, explicit review results, and links to both preserved earlier reports.
 - `generator_study`: compare Haiku, Sonnet, and Opus on 96 shared briefs,
   retaining initial completion, bounded individual retries, anonymous checks,
   structural filtering, and all returned token costs separately.
@@ -55,11 +65,15 @@ The modules have these responsibilities:
   checker disagreements, and a cost projection into
   `reports/localflow-generator-comparison/index.html`.
 
-Training uses validation only. Final evaluation cases are never training
-examples, generation demonstrations, or checkpoint-selection material.
+Training supervision comes only from TRAIN examples; development examples
+support validation and checkpoint selection. Final evaluation cases are never
+training examples, generation demonstrations, or checkpoint-selection material.
 Evaluation labels blocked by the engine remain in the evaluation set. A
 training target is omitted when its exact prompt supervision cannot be safely
-captured, without silently changing that target.
+captured, without silently changing that target. Additional reviewed label
+conflicts exclude training captures only. Their reasons and the original
+training-file hash remain in the dataset freeze; development and final labels
+retain their original bytes.
 
 `D` uses the recorded production engine. `E` uses the exact same D weights with
 `engine_variant.py`. `C-engine` is the engine-only control. The variant removes
