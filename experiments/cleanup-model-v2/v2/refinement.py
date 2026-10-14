@@ -5,6 +5,7 @@ import argparse
 import collections
 import copy
 import random
+import re
 import shutil
 from .common import *
 
@@ -13,6 +14,28 @@ DATASET = RUN / "dataset"
 SOURCE_FILES = ["localflow/v2/cleanup/" + name for name in
                 ("engine.py", "prompts.py", "validation.py", "document_nodes.py",
                  "correction_retention.py", "model.py")]
+
+
+def training_label_conflict(row):
+    """Reject ambiguous repeated-negation deletion from supervision only."""
+    from localflow.v2.cleanup.validation import NEGATION_WORDS
+    source = row["model_input"]
+    for start, end in row.get("gold_offsets", []):
+        if not 0 <= start < end <= len(source):
+            raise ValueError("Invalid gold correction offset")
+        # Keep a non-whitespace gap so removal cannot invent an adjacent repeat.
+        source = source[:start] + "\0" * (end - start) + source[end:]
+    words = list(re.finditer(r"\b\w+(?:['’]\w+)*\b", source))
+    token = lambda match: match.group().casefold().replace("’", "'")
+    repeated = {token(right) for left, right in zip(words, words[1:])
+                if token(left) == token(right) and token(right) in NEGATION_WORDS
+                and source[left.end():right.start()].isspace()}
+    source_counts = collections.Counter(token(word) for word in words)
+    target_counts = collections.Counter(token(word) for word in
+        re.finditer(r"\b\w+(?:['’]\w+)*\b", row["target"]))
+    reduced = [{"word": word, "source_count": source_counts[word], "target_count": target_counts[word]}
+               for word in sorted(repeated) if target_counts[word] < source_counts[word]]
+    return {"reason": "ambiguous_repeated_negation_deletion", "negations": reduced} if reduced else None
 
 
 def prepare():
@@ -30,9 +53,13 @@ def prepare():
         shutil.copyfile(RUN / ("synthetic-" + split + ".jsonl"), DATASET / (split + ".jsonl"))
     stats = {}
     for split in ("validation", "train"):
-        captures, failures, oracle = [], [], collections.Counter()
+        captures, failures, conflicts, oracle = [], [], [], collections.Counter()
         for row in read_jsonl(DATASET / (split + ".jsonl")):
             row = copy.deepcopy(row)
+            conflict = training_label_conflict(row) if split == "train" else None
+            if conflict:
+                conflicts.append({"case_id": row["case_id"], **conflict})
+                continue
             try:
                 captures.append(capture(row))
                 oracle[str(row["engine_oracle"]["exact"])] += 1
@@ -40,12 +67,18 @@ def prepare():
                 failures.append({"case_id": row["case_id"], "reason": str(exc)})
         write_jsonl(DATASET / (split + "_captures.jsonl"), captures)
         stats[split] = {"captured": len(captures), "oracle_exact": dict(oracle), "capture_failures": failures}
+        if split == "train":
+            stats[split]["label_conflicts"] = conflicts
     # Historical TRAIN labels only; exposed evaluations never become supervision.
     replay = [c for c in read_jsonl(ART / "dataset/train.jsonl") if c.get("engine_oracle", {}).get("exact")]
     random.Random(20261014).shuffle(replay)
-    replay_captures, failures = [], []
+    replay_captures, failures, conflicts = [], [], []
     wanted = max(1, stats["train"]["captured"] // 5)
     for row in replay:
+        conflict = training_label_conflict(row)
+        if conflict:
+            conflicts.append({"case_id": row["case_id"], **conflict})
+            continue
         try:
             replay_captures.append(capture(copy.deepcopy(row)))
         except (ValueError, RuntimeError) as exc:
@@ -55,7 +88,7 @@ def prepare():
     if not replay_captures or not all(stats[s]["captured"] for s in stats):
         raise RuntimeError("Focused supervision or historical replay is empty")
     write_jsonl(DATASET / "replay_captures.jsonl", replay_captures)
-    stats["replay"] = {"captured": len(replay_captures), "capture_failures": failures,
+    stats["replay"] = {"captured": len(replay_captures), "capture_failures": failures, "label_conflicts": conflicts,
                        "source": "Historical independently checked training labels, recaptured with current prompts"}
     if any(file_sha256(ROOT / p) != digest for p, digest in source_hashes.items()):
         raise RuntimeError("Prompt source changed during supervision capture")

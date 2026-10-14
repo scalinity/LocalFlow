@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from v2 import refinement, training, evaluate
-from v2.common import file_sha256, write_json
+from v2.common import file_sha256, write_json, write_jsonl, read_jsonl
 from lfx.export import content_digest
 
 
@@ -133,6 +133,104 @@ class TrainingIdentityTests(unittest.TestCase):
                     training.run('run', 11, initial_adapter=adapter)
                 with self.assertRaisesRegex(RuntimeError, 'another or unrecorded request'):
                     training.run('run', 10, initial_adapter=adapter, lr=2e-5)
+
+
+class TrainingLabelConflictTests(unittest.TestCase):
+    def test_adjacent_negation_deletion_is_a_label_conflict(self):
+        for source, target, word in (
+                ('The service is not not up.', 'The service is not up.', 'not'),
+                ('Never never skip this check.', 'Never skip this check.', 'never'),
+                ('No\tno bypass is allowed.', 'No bypass is allowed.', 'no'),
+                ("We can't can't proceed.", "We can't proceed.", "can't"),
+                ('We can’t can’t proceed.', 'We can’t proceed.', "can't"),
+                ('NOT not not ready.', 'Not not ready.', 'not')):
+            with self.subTest(source=source):
+                conflict = refinement.training_label_conflict({'model_input': source, 'target': target})
+                self.assertEqual(conflict['reason'], 'ambiguous_repeated_negation_deletion')
+                self.assertEqual(conflict['negations'][0]['word'], word)
+                self.assertGreater(conflict['negations'][0]['source_count'], conflict['negations'][0]['target_count'])
+
+    def test_punctuation_separated_and_retained_negations_remain_eligible(self):
+        for source, target in (
+                ('Not. Not ready.', 'Not ready.'),
+                ('No, no bypass.', 'No bypass.'),
+                ('Not—not ready.', 'Not ready.'),
+                ('The service is not not up', 'The service is not not up.'),
+                ('The service is not not up.', 'The service is not not up.'),
+                ('The the service is up.', 'The service is up.')):
+            with self.subTest(source=source):
+                self.assertIsNone(refinement.training_label_conflict({'model_input': source, 'target': target}))
+
+    def test_authorized_correction_spans_are_excluded_before_counting(self):
+        row = {'model_input': 'Not not ready.', 'target': 'Not ready.', 'gold_offsets': [[0, 4]]}
+        self.assertIsNone(refinement.training_label_conflict(row))
+        source = 'Not not ready, not sorry, now ready.'
+        start = source.index('not sorry')
+        row = {'model_input': source, 'target': 'Not not ready, now ready.',
+               'gold_offsets': [[start, start + len('not sorry, ')]]}
+        self.assertIsNone(refinement.training_label_conflict(row))
+        # An authorized deletion must not turn separate words into a new repeat.
+        source = 'Not old sorry not ready.'
+        row = {'model_input': source, 'target': 'Not ready.',
+               'gold_offsets': [[source.index('old'), source.index('not ready')]]}
+        self.assertIsNone(refinement.training_label_conflict(row))
+
+    def test_prepare_excludes_only_train_capture_and_keeps_label_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run = root / 'refinement'
+            dataset = run / 'dataset'
+
+            def row(cid, source='Not not ready.', target='Not ready.'):
+                return {'case_id': cid, 'model_input': source, 'target': target, 'gold_offsets': []}
+
+            labels = {
+                'train': [row('train-conflict'), row('train-kept', 'Ready.', 'Ready.'),
+                          row('train-failure', 'Keep this.', 'Keep this.')],
+                'validation': [row('validation-conflict')],
+                'test': [row('test-conflict')],
+            }
+            original_bytes = {}
+            for split, values in labels.items():
+                for path in (root / 'accepted' / ('refinement-' + split + '.jsonl'),
+                             run / ('synthetic-' + split + '.jsonl')):
+                    write_jsonl(path, values)
+                    original_bytes[path] = path.read_bytes()
+            replay = [row('replay-conflict'), row('replay-kept', 'Ready.', 'Ready.')]
+            for value in replay:
+                value['engine_oracle'] = {'exact': True}
+            replay_path = root / 'dataset/train.jsonl'
+            write_jsonl(replay_path, replay)
+            original_bytes[replay_path] = replay_path.read_bytes()
+            captured = []
+
+            def capture(value):
+                captured.append(value['case_id'])
+                if value['case_id'] == 'train-failure':
+                    raise ValueError('fixture_capture_failure')
+                value['engine_oracle'] = {'exact': True}
+                return {'case_id': value['case_id']}
+
+            with patch.object(refinement, 'ART', root), patch.object(refinement, 'RUN', run), \
+                    patch.object(refinement, 'DATASET', dataset), patch.object(refinement, 'SOURCE_FILES', []), \
+                    patch('v2.refinement_data.assemble'), patch('v2.assemble.capture', side_effect=capture), \
+                    patch('v2.refinement.random.Random.shuffle'):
+                freeze = refinement.prepare()
+            self.assertEqual(captured, ['validation-conflict', 'train-kept', 'train-failure', 'replay-kept'])
+            self.assertEqual(freeze['stats']['train']['captured'], 1)
+            self.assertEqual([c['case_id'] for c in freeze['stats']['train']['label_conflicts']], ['train-conflict'])
+            self.assertEqual(freeze['stats']['train']['capture_failures'],
+                             [{'case_id': 'train-failure', 'reason': 'fixture_capture_failure'}])
+            self.assertEqual([c['case_id'] for c in freeze['stats']['replay']['label_conflicts']], ['replay-conflict'])
+            self.assertEqual(freeze['stats']['validation']['captured'], 1)
+            self.assertNotIn('label_conflicts', freeze['stats']['validation'])
+            self.assertFalse((dataset / 'test_captures.jsonl').exists())
+            for path, content in original_bytes.items():
+                self.assertEqual(path.read_bytes(), content)
+            for split in labels:
+                self.assertEqual((dataset / (split + '.jsonl')).read_bytes(),
+                                 (run / ('synthetic-' + split + '.jsonl')).read_bytes())
+            self.assertEqual(read_jsonl(dataset / 'train_captures.jsonl'), [{'case_id': 'train-kept'}])
 
 
 if __name__ == '__main__':
