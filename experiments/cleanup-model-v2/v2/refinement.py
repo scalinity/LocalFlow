@@ -51,11 +51,25 @@ def prepare():
     for split in ("test", "validation", "train"):
         assemble(split)
         shutil.copyfile(RUN / ("synthetic-" + split + ".jsonl"), DATASET / (split + ".jsonl"))
+    review = read_json(RUN / "training-label-review.json", {})
+    reviewed_exclusions = review.get("exclusions", {})
+    if review:
+        train_ids = {r["case_id"] for r in read_jsonl(DATASET / "train.jsonl")}
+        if (review.get("source_sha256") != file_sha256(DATASET / "train.jsonl")
+                or not isinstance(reviewed_exclusions, dict)
+                or set(reviewed_exclusions) - train_ids
+                or any(not isinstance(reason, str) or not reason.strip()
+                       for reason in reviewed_exclusions.values())):
+            raise ValueError("Training label review does not match the current TRAIN labels")
     stats = {}
     for split in ("validation", "train"):
         captures, failures, conflicts, oracle = [], [], [], collections.Counter()
         for row in read_jsonl(DATASET / (split + ".jsonl")):
             row = copy.deepcopy(row)
+            if split == "train" and row["case_id"] in reviewed_exclusions:
+                conflicts.append({"case_id": row["case_id"], "reason": "reviewed_training_label_conflict",
+                                  "detail": reviewed_exclusions[row["case_id"]]})
+                continue
             conflict = training_label_conflict(row) if split == "train" else None
             if conflict:
                 conflicts.append({"case_id": row["case_id"], **conflict})
@@ -94,6 +108,7 @@ def prepare():
         raise RuntimeError("Prompt source changed during supervision capture")
     freeze = {"created": utc_now(), "files": {p.name: file_sha256(p) for p in sorted(DATASET.glob("*.jsonl"))},
               "capture_source_hashes": source_hashes,
+              "training_label_review": review,
               "stats": stats, "final_candidate_outputs_existed": False,
               "labels": "No final oracle capture or candidate-based exclusion. Sibling scenarios remain in their assigned split."}
     write_json(DATASET / "freeze.json", freeze)

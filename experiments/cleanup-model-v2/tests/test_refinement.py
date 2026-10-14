@@ -185,7 +185,8 @@ class TrainingLabelConflictTests(unittest.TestCase):
                 return {'case_id': cid, 'model_input': source, 'target': target, 'gold_offsets': []}
 
             labels = {
-                'train': [row('train-conflict'), row('train-kept', 'Ready.', 'Ready.'),
+                'train': [row('train-conflict'), row('train-reviewed', 'And ready.', 'Ready.'),
+                          row('train-kept', 'Ready.', 'Ready.'),
                           row('train-failure', 'Keep this.', 'Keep this.')],
                 'validation': [row('validation-conflict')],
                 'test': [row('test-conflict')],
@@ -196,6 +197,9 @@ class TrainingLabelConflictTests(unittest.TestCase):
                              run / ('synthetic-' + split + '.jsonl')):
                     write_jsonl(path, values)
                     original_bytes[path] = path.read_bytes()
+            review = {'source_sha256': file_sha256(run / 'synthetic-train.jsonl'),
+                      'exclusions': {'train-reviewed': 'Deletes an original connective without authorization'}}
+            write_json(run / 'training-label-review.json', review)
             replay = [row('replay-conflict'), row('replay-kept', 'Ready.', 'Ready.')]
             for value in replay:
                 value['engine_oracle'] = {'exact': True}
@@ -215,10 +219,17 @@ class TrainingLabelConflictTests(unittest.TestCase):
                     patch.object(refinement, 'DATASET', dataset), patch.object(refinement, 'SOURCE_FILES', []), \
                     patch('v2.refinement_data.assemble'), patch('v2.assemble.capture', side_effect=capture), \
                     patch('v2.refinement.random.Random.shuffle'):
+                write_json(run / 'training-label-review.json', {**review, 'source_sha256': 'stale'})
+                with self.assertRaisesRegex(ValueError, 'current TRAIN labels'):
+                    refinement.prepare()
+                self.assertFalse(captured)
+                write_json(run / 'training-label-review.json', review)
                 freeze = refinement.prepare()
             self.assertEqual(captured, ['validation-conflict', 'train-kept', 'train-failure', 'replay-kept'])
             self.assertEqual(freeze['stats']['train']['captured'], 1)
-            self.assertEqual([c['case_id'] for c in freeze['stats']['train']['label_conflicts']], ['train-conflict'])
+            self.assertEqual([c['case_id'] for c in freeze['stats']['train']['label_conflicts']],
+                             ['train-conflict', 'train-reviewed'])
+            self.assertEqual(freeze['training_label_review'], review)
             self.assertEqual(freeze['stats']['train']['capture_failures'],
                              [{'case_id': 'train-failure', 'reason': 'fixture_capture_failure'}])
             self.assertEqual([c['case_id'] for c in freeze['stats']['replay']['label_conflicts']], ['replay-conflict'])
