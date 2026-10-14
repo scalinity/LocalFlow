@@ -1056,13 +1056,30 @@ def _protected_tokens(source, output, protected) -> Component:
 
 
 def _literal_spans(source, output) -> Component:
-    literals = [m.group(1) or m.group(2) or m.group(3)
-                for m in _QUOTED_RE.finditer(source)]
-    missing = [t for t in literals if t.strip().lower()
-               not in output.lower()]
+    def quoted(text):
+        return [("single" if m.group(3) is not None else "double",
+                 m.group(1) or m.group(2) or m.group(3))
+                for m in _QUOTED_RE.finditer(text)]
+
+    literals = quoted(source)
+    remaining = quoted(output)
+    missing = 0
+    for kind, text in literals:
+        # Quote glyph style may change, but each source literal needs
+        # its own delimited output occurrence. Only the existing
+        # sentence-initial capitalization allowance changes its bytes.
+        variants = {text}
+        if text[0].islower():
+            variants.add(text[0].upper() + text[1:])
+        found = next((i for i, (out_kind, out_text) in enumerate(remaining)
+                      if out_kind == kind and out_text in variants), None)
+        if found is None:
+            missing += 1
+        else:
+            remaining.pop(found)
     status = "fail" if missing else "pass"
     return Component("literal_spans", DETERMINISTIC, status,
-                     {"literal_spans": len(literals), "missing": len(missing)})
+                     {"literal_spans": len(literals), "missing": missing})
 
 
 def _word_multiset_survival(source, output, words: frozenset,
