@@ -3,16 +3,38 @@ from __future__ import annotations
 
 import argparse
 import gc
+import inspect
 import json
 import os
+import re
 import resource
 import sys
 import time
 import importlib.metadata
 from pathlib import Path
 from .common import *
-from lfx.evaluate import Runner as BaseRunner, postprocess
+from lfx.evaluate import Runner as BaseRunner
 from localflow.v2.cleanup import engine as production
+
+
+MODEL_ONLY_POSTPROCESS_VERSION = "literal-quote-boundaries-v2"
+
+
+def postprocess(out: str, source: str) -> str:
+    """Mirror current reply cleanup without changing historical evaluation."""
+    out = (out or "").strip()
+    out = re.sub(r"(?s)^\s*<think>.*?</think>\s*", "", out).strip()
+    src = source.strip()
+    if len(out) >= 2 and out[0] == out[-1] == '"':
+        inner = out[1:-1].strip()
+        source_pair = (src[:1], src[-1:])
+        # A reply wrapper around retained curly quotes may still go.
+        source_is_double_quoted = source_pair == ('"', '"') or (
+            source_pair == ('“', '”')
+            and (inner[:1], inner[-1:]) != ('“', '”'))
+        if not source_is_double_quoted:
+            out = inner
+    return out
 
 
 class Runner(BaseRunner):
@@ -170,6 +192,8 @@ def evaluate(key, cases_path, name, path=None, variant=False, limit=None, update
                 "engine":"updated_source" if updated_engine else "separator_fix" if variant else "recorded_f" if recorded_f else "production","cases_sha256":file_sha256(cases_path),"limit":limit,
                 "model_content_digest":content_digest(runner.path),
                 "inference_source_sha256":file_sha256(inference_source),
+                "model_only_postprocess":{"version":MODEL_ONLY_POSTPROCESS_VERSION,
+                    "source_sha256":sha256_text(inspect.getsource(postprocess))},
                 "engine_source_sha256":{n:file_sha256(Path(runner.module.__file__).with_name(n))
                     for n in ("engine.py","validation.py","prompts.py","document_nodes.py","correction_retention.py")
                     if Path(runner.module.__file__).with_name(n).exists()}}

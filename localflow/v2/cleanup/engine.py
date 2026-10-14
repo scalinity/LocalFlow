@@ -1090,9 +1090,15 @@ class CleanupEngine:
         # its answer — unless the source itself is so quoted. Quotes that
         # belong to the text ('He said "stop"') are never stripped.
         src = window.text.strip()
-        if len(out) >= 2 and out[0] == out[-1] == '"' \
-                and not (src[:1] == src[-1:] == '"'):
-            out = out[1:-1].strip()
+        if len(out) >= 2 and out[0] == out[-1] == '"':
+            inner = out[1:-1].strip()
+            source_pair = (src[:1], src[-1:])
+            # A reply wrapper around retained curly quotes may still go.
+            source_is_double_quoted = source_pair == ('"', '"') or (
+                source_pair == ('“', '”')
+                and (inner[:1], inner[-1:]) != ('“', '”'))
+            if not source_is_double_quoted:
+                out = inner
         protected_positions = [(s, e) for s, e, _k in spans]
         validation_text, validation_corr, validation_positions = correction_view(
             window.text, corr_spans, protected_positions)
