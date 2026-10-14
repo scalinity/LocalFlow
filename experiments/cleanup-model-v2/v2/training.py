@@ -124,18 +124,25 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
     return result
 
 
-def export(name,checkpoint="final"):
+def export(name,checkpoint="final",*,compact_metadata=False):
     from lfx.export import candidate,content_digest
     adapter=ART/"train"/name/checkpoint
     if not (adapter/"adapters.safetensors").exists():
         raise FileNotFoundError(adapter)
-    path=candidate(adapter,name+"-"+checkpoint)
+    export_name=name+"-"+checkpoint+("-compact" if compact_metadata else "")
+    path=candidate(adapter,export_name)
+    metadata_receipt=None
+    if compact_metadata:
+        from .export_metadata import compact_json_metadata
+        metadata_receipt=compact_json_metadata(path)
     identity={"name":name,"checkpoint":checkpoint,"adapter":str(adapter),"quantized":str(path),
               "content_digest":content_digest(path),"adapter_sha256":file_sha256(adapter/"adapters.safetensors"),
               "size_bytes":sum(p.stat().st_size for p in path.iterdir() if p.is_file()),
               "quantization":"4-bit affine, group 64; same verified recipe as C","created":utc_now(),
               "installed":False}
-    write_json(ART/"export"/(name+"-"+checkpoint+".identity.json"),identity)
+    if metadata_receipt is not None:
+        identity["metadata_compaction"]=metadata_receipt
+    write_json(ART/"export"/(export_name+".identity.json"),identity)
     print(json.dumps(identity))
     return identity
 
