@@ -114,6 +114,9 @@ class Runner(BaseRunner):
         return {"case_id":case["case_id"],"model":self.key,"engine":self.engine_name,
                 "delivered":result.text,"model_only":"".join(parts) if parts else None,
                 "model_only_windows":[{"range":o["window_range"],"text":o["output"]} for o in main],
+                "correction_outputs":[{"range":o["window_range"],"depth":o.get("depth",0),"text":o["output"]}
+                                      for o in passes if o["kind"] == "corrections"],
+                "correction_records":corrections,
                 "path":result.path,"fallback_reason":result.fallback_reason,"incomplete":result.incomplete,
                 "windows":result.termination.get("windows"),"limit_hits":result.termination.get("limit_hits"),
                 "total_cleanup_ms":elapsed,"generation_ms":sum(c["generation_ms"] for c in self.calls),
