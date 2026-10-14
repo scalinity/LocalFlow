@@ -27,6 +27,8 @@ from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
+from .correction_retention import (correction_view, qualifier_retention,
+                                   retention_moves)
 from .validation import (validate, restore_missing_words,
                          restore_restriction_punctuation, ValidationReport)
 
@@ -80,7 +82,10 @@ CORRECTIONS_INSTRUCTION = (
     "marker, never the words before the value: in \"from ten to twelve "
     "no wait to fifteen\" the deletion is \"to twelve no wait\", not "
     "\"from ten to twelve no wait\". Never output a marker by itself "
-    "without the outdated value. After deleting those words, the "
+    "without the outdated value. When the replacement repeats a quantity's "
+    "unit but omits its trailing description, include the description in "
+    "the original span; it is retained beside the replacement quantity. "
+    "After resolving the correction, the "
     "transcript must read as if the mistake was never spoken; the final "
     "value Y and everything after it stay. Sentence-initial \"no\" "
     "(\"no we can't\"), \"i mean it\", and emphasis \"actually\" (\"we "
@@ -123,6 +128,14 @@ CORRECTIONS_EXAMPLES = [
     (
         "meet at the bus station no wait the airport at 8",
         "the bus station no wait",
+    ),
+    (
+        "use 4 liters of dye no wait 6 liters",
+        "4 liters of dye no wait",
+    ),
+    (
+        "flag the sample as suspect actually as fine",
+        "as suspect actually",
     ),
 ]
 
@@ -469,6 +482,19 @@ def _parallel(x_words: list, y_words: list) -> bool:
     from .validation import FUNCTION_WORDS, FILLERS, _TECH_TOKEN_RE
     if not x_words or not y_words:
         return False
+    # Repeated predicative frame: ``as suspect, actually, as fine``.
+    # The old complement is one value, optionally with an article; an
+    # extra clause such as ``as suspect and notify Mira`` is not a value.
+    if x_words[0] == y_words[0] == "as":
+        old = x_words[1:]
+        new = y_words[1:]
+        if old[:1] and old[0] in {"a", "an", "the"}:
+            old = old[1:]
+        if new[:1] and new[0] in {"a", "an", "the"}:
+            new = new[1:]
+        return (len(old) == 1 and bool(new)
+                and old[0] not in FUNCTION_WORDS and old[0] not in FILLERS
+                and new[0] not in FUNCTION_WORDS and new[0] not in FILLERS)
     x, y = x_words[-1], y_words[0]
     if _TECH_TOKEN_RE.fullmatch(x) and _TECH_TOKEN_RE.fullmatch(y):
         return all(w in FUNCTION_WORDS or w in FILLERS for w in x_words[:-1])
@@ -516,6 +542,28 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
         if not _parallel(before_words, after_words):
             return "not_parallel"
     return None
+
+
+def _include_repeated_as(text: str, span: tuple, cursor: int) -> tuple:
+    """Include a repeated frame word omitted from a value-only proposal.
+
+    ``as [suspect, actually] as fine`` replaces the first ``as`` together
+    with its value. This is a source-bound duplicate, not a general
+    permission to remove function words.
+    """
+    start, end = span
+    prefix = re.search(r"\bas[ \t]+$", text[:start], re.IGNORECASE)
+    if prefix is None or prefix.start() < cursor:
+        return span
+    marker = correction_marker_start(text, span)
+    old = [w.lower().strip(",;:") for w in text[start:marker].split()]
+    tail = re.match(r"[ \t,;:]*as[ \t]+([^.!?\n]+)", text[end:], re.IGNORECASE)
+    if tail is None:
+        return span
+    new = [w.lower().strip(",;:") for w in tail.group(1).split()][:3]
+    if _parallel(["as", *old], ["as", *new]):
+        return prefix.start(), end
+    return span
 
 
 def parse_correction_output(output: str, window_text: str,
@@ -576,7 +624,9 @@ def parse_correction_output(output: str, window_text: str,
             rejected.append(CorrectionProposal(
                 None, False, "offsets_unresolved"))
             continue
-        span = (cand.start(), cand.end())
+        span = _include_repeated_as(window_text, (cand.start(), cand.end()), cursor)
+        if span[0] != cand.start():
+            delete = window_text[span[0]:span[1]]
         if any(a < span[1] and b > span[0] for a, b, *_ in protected_spans):
             rejected.append(CorrectionProposal(span, False,
                                                "protected_span"))
@@ -585,12 +635,33 @@ def parse_correction_output(output: str, window_text: str,
         if reason:
             rejected.append(CorrectionProposal(span, False, reason))
             continue
+        move, reason = qualifier_retention(
+            window_text, span, correction_marker_start(window_text, span))
+        if move is not None and any(a < move[2] < b
+                                    for a, b, *_ in protected_spans):
+            reason = "protected_retention_anchor"
+        if reason:
+            rejected.append(CorrectionProposal(span, False, reason))
+            continue
         taken.append(span)
         accepted.append((span, delete))
         cursor = span[1]
         if len(accepted) >= 6:        # V1's applied cap
             break
-    return accepted, rejected
+    # A replacement that is itself corrected needs a different edit plan;
+    # never move its retained qualifier inside another admitted deletion.
+    retained = []
+    for span, delete in accepted:
+        move, _ = qualifier_retention(
+            window_text, span, correction_marker_start(window_text, span))
+        if move is not None and any(
+                a < move[2] and b > span[1]
+                for (a, b), _d in accepted if (a, b) != span):
+            rejected.append(CorrectionProposal(
+                span, False, "overlapping_retention_replacement"))
+        else:
+            retained.append((span, delete))
+    return retained, rejected
 
 
 def _has_correction_marker(text: str) -> bool:
@@ -609,8 +680,10 @@ def _has_correction_marker(text: str) -> bool:
 
 def apply_corrections(window_text: str,
                       accepted: list[tuple[tuple[int, int], str]]) -> str:
-    out = window_text
-    for (s, e), _delete in sorted(accepted, key=lambda x: -x[0][0]):
+    spans = [(s, e, correction_marker_start(window_text, (s, e)))
+             for (s, e), _delete in accepted]
+    out, spans, _protected = correction_view(window_text, spans)
+    for s, e, _marker in sorted(spans, reverse=True):
         out = out[:s] + out[e:]
     return re.sub(r"[ \t]{2,}", " ", out).strip()
 
@@ -859,6 +932,11 @@ class CleanupEngine:
                  "status": "rejected", "reason": r.reason}
                 for r in rejected],
         }
+        moves = retention_moves(text, spans)
+        if moves:
+            record["retained_qualifiers"] = [
+                {"span": [s, e], "after": destination}
+                for s, e, destination in moves]
         observations.append(record)
         return corrected, spans, record
 
@@ -899,6 +977,8 @@ class CleanupEngine:
                 and not (src[:1] == src[-1:] == '"'):
             out = out[1:-1].strip()
         protected_positions = [(s, e) for s, e, _k in spans]
+        validation_text, validation_corr, validation_positions = correction_view(
+            window.text, corr_spans, protected_positions)
         if res.get("limit_hit"):
             # Output-limit termination: the truncated output is never
             # pasted and this pass's corrections roll back. Retry the
@@ -940,15 +1020,17 @@ class CleanupEngine:
                         continue_from=list_continue)
                     corr = [(s + a, e + a, m + a) for a, c in children
                             for s, e, m in c.corrections]
+                    assembly_text, assembly_corr, assembly_positions = correction_view(
+                        window.text, corr, protected_positions)
                     # The assembly is itself a candidate for the whole
                     # window: revalidate it (cross-seam duplication,
                     # order and multiplicity) against the parent source.
                     report = validate(
-                        window.text, assembled, protected=protected_texts,
+                        assembly_text, assembled, protected=protected_texts,
                         vocabulary_pairs=vocabulary_pairs,
                         continued_list_start=list_continue,
-                        correction_spans=corr,
-                        protected_positions=protected_positions)
+                        correction_spans=assembly_corr,
+                        protected_positions=assembly_positions)
                     decision = {
                         "kind": "cleanup_decision", "pass_id": rec["pass_id"],
                         "stage": "retry_assembly", "depth": depth,
@@ -960,6 +1042,8 @@ class CleanupEngine:
                         else window.text,
                         "validation": report.to_json(),
                     }
+                    if assembly_text != window.text:
+                        decision["validation_source"] = assembly_text
                     observations.append(decision)
                     if report.accepted:
                         return WindowResult(
@@ -993,33 +1077,33 @@ class CleanupEngine:
             return WindowResult(rng, "normalized", "output_limit",
                                 window.text, None, pass_id=rec["pass_id"],
                                 protected_texts=protected_texts)
-        # The validation reference is the ORIGINAL window text; accepted
-        # correction deletions ride as authorized spans with their
-        # markers, so a false correction is judged against what it
-        # removed, not against the fragment it left. The candidate is
+        # The validation reference keeps the original source, with exact
+        # inherited qualifiers moved beside their replacement quantities.
+        # Accepted obsolete-value deletions ride as authorized spans;
+        # retained details remain ordinary required source words. The candidate is
         # validated as it will render: numbering is applied first, so no
         # digit the validator bound to a source value changes afterwards.
         out = dn.renumber_text(out, continue_from=list_continue)
         report = validate(
-            window.text, out,
+            validation_text, out,
             protected=protected_texts,
             vocabulary_pairs=vocabulary_pairs,
             continued_list_start=list_continue,
-            correction_spans=corr_spans,
-            protected_positions=protected_positions)
+            correction_spans=validation_corr,
+            protected_positions=validation_positions)
         salvaged = 0
         scope_repaired = False
         if [c.name for c in report.critical_failures] == ["clause_scope"]:
             fixed = restore_restriction_punctuation(
-                window.text, out, vocabulary_pairs=vocabulary_pairs,
-                continued_list_start=list_continue, correction_spans=corr_spans,
-                protected_positions=protected_positions)
+                validation_text, out, vocabulary_pairs=vocabulary_pairs,
+                continued_list_start=list_continue, correction_spans=validation_corr,
+                protected_positions=validation_positions)
             if fixed is not None:
                 again = validate(
-                    window.text, fixed, protected=protected_texts,
+                    validation_text, fixed, protected=protected_texts,
                     vocabulary_pairs=vocabulary_pairs,
-                    continued_list_start=list_continue, correction_spans=corr_spans,
-                    protected_positions=protected_positions)
+                    continued_list_start=list_continue, correction_spans=validation_corr,
+                    protected_positions=validation_positions)
                 if again.accepted:
                     out, report, scope_repaired = fixed, again, True
         if [c.name for c in report.critical_failures] == ["coverage"]:
@@ -1027,20 +1111,20 @@ class CleanupEngine:
             # words back and validate the repaired text in full. Added
             # words, changed numbers or lost negations never reach here.
             fixed = restore_missing_words(
-                window.text, out, vocabulary_pairs=vocabulary_pairs,
+                validation_text, out, vocabulary_pairs=vocabulary_pairs,
                 continued_list_start=list_continue,
-                correction_spans=corr_spans,
-                protected_positions=protected_positions)
+                correction_spans=validation_corr,
+                protected_positions=validation_positions)
             if fixed is not None and fixed[1] <= min(
                     SALVAGE_MAX_WORDS,
                     SALVAGE_MAX_SHARE * len(window.text.split())):
                 again = validate(
-                    window.text, fixed[0],
+                    validation_text, fixed[0],
                     protected=protected_texts,
                     vocabulary_pairs=vocabulary_pairs,
                     continued_list_start=list_continue,
-                    correction_spans=corr_spans,
-                    protected_positions=protected_positions)
+                    correction_spans=validation_corr,
+                    protected_positions=validation_positions)
                 if again.accepted:
                     out, report, salvaged = fixed[0], again, fixed[1]
         status = "selected" if report.accepted else "rejected"
@@ -1059,6 +1143,8 @@ class CleanupEngine:
             "window_range": [rng[0], rng[1]],
             "validation": report.to_json(),
         }
+        if validation_text != window.text:
+            decision["validation_source"] = validation_text
         if salvaged:
             decision["salvaged_words"] = salvaged
         if scope_repaired:

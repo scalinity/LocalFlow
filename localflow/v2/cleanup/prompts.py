@@ -192,7 +192,39 @@ and the transition 'only then'. Put any clause break before 'only then',
 never between those two words. Preserve exact identifiers, including their
 underscores and punctuation; an explicit correction keeps the stated replacement."""
 
-PROMPT_VERSION = "m07-v2-restriction-attachment"
+MINIMAL_EDITS = """Make the smallest changes needed for the permitted cleanup.
+Keep already readable text exactly as written, including its existing commas
+and sentence boundaries. Do not add optional commas, replace a valid comma,
+or split an already readable sentence merely to polish its style. Missing
+boundaries may be added when they clearly separate complete clauses,
+instructions or questions; punctuation repair is still allowed.
+Do not complete grammar by adding articles, prepositions, pronouns,
+auxiliaries or conjunctions that were not dictated. Awkward wording is not
+permission to add words. Only supplied vocabulary replacements can introduce
+new wording.
+When a quantity is corrected, keep its unit and descriptive qualifier unless
+the stated replacement explicitly supersedes them. Retain those exact source
+words beside the surviving quantity; do not invent a missing qualifier.
+Keep the words of a multiword term or noun phrase together. A word that can
+also be a verb does not make the rest of that phrase a new instruction.
+Do not split a condition or dependent continuation from the action it modifies.
+Never leave a joining conjunction stranded at the end of a new sentence.
+If no permitted repair is needed, return the transcript unchanged."""
+
+EXAMPLES.extend([
+    ("Okay so the first scene is ready, but maybe the second needs work.",
+     "Okay so the first scene is ready, but maybe the second needs work."),
+    ("Run the small batch first, then inspect it before opening the next one.",
+     "Run the small batch first, then inspect it before opening the next one."),
+    ("The eastern section Granite ridge is icy.",
+     "The eastern section Granite ridge is icy."),
+    ("install the surface mount resistor then check the supply",
+     "Install the surface mount resistor. Then check the supply."),
+    ("do not reset the console only the service team may restart it",
+     "Do not reset the console. Only the service team may restart it."),
+])
+
+PROMPT_VERSION = "m07-v2-minimal-source-bound-edits"
 
 # The edits the clean mode may make (S13/S15); rendered into the payload
 # so the model sees the permitted-edits policy as data.
@@ -231,6 +263,7 @@ def prompt_revision() -> str:
     payload = json.dumps(
         {"contract": CONTRACT, "list_formatting": LIST_FORMATTING,
          "restriction_formatting": RESTRICTION_FORMATTING,
+         "minimal_edits": MINIMAL_EDITS,
          "examples": EXAMPLES, "version": PROMPT_VERSION},
         ensure_ascii=False, sort_keys=True)
     return f"m07:{hashlib.sha256(payload.encode('utf-8')).hexdigest()[:12]}"
@@ -269,7 +302,7 @@ def build_messages(payload: dict) -> list[dict]:
     """Contract + examples + the structured payload, instructions kept
     separate from transcript/context content."""
     messages = [{"role": "system", "content": CONTRACT + "\n\n" + LIST_FORMATTING
-                 + "\n\n" + RESTRICTION_FORMATTING}]
+                 + "\n\n" + RESTRICTION_FORMATTING + "\n\n" + MINIMAL_EDITS}]
     for raw, cleaned in EXAMPLES:
         # Match only the content-free destination hints. The examples
         # teach prose restraint even when this destination allows Markdown.

@@ -54,8 +54,8 @@ UNCERTAINTY_WORDS = frozenset({
     "approximately", "around", "about", "kind", "sort", "honestly",
 })
 
-# Function words carry no content: novelty lets a faithful edit add
-# them ("send email" → "Send the email").
+# Function words help recognize correction/list shapes. They still carry
+# meaning and receive no blanket permission to appear in cleanup output.
 FUNCTION_WORDS = frozenset({
     "the", "a", "an", "and", "or", "but", "of", "to", "in", "on",
     "at", "is", "are", "was", "were", "it", "its", "this", "that",
@@ -64,11 +64,6 @@ FUNCTION_WORDS = frozenset({
     "here", "we", "you", "i", "my", "your", "our", "their", "his",
     "her", "s", "please", "also",
 })
-
-# Function words that are also logical operators: adding one changes
-# polarity or scope ("Do not deploy. Run tests." → "Do not deploy or
-# run tests."), so the output may not hold more of them than the source.
-OPERATOR_WORDS = frozenset({"not", "or", "if", "nor"})
 
 # Words that give a sentence polarity/condition scope; an explicit
 # sentence boundary next to such a sentence must survive (clause_scope).
@@ -756,11 +751,12 @@ def _sentence_has_scope(source: str, pos: int) -> bool:
                _word_atoms(source[start:end]))
 
 
-def _clause_scope(source, output, aligned) -> Component:
+def _clause_scope(source, output, aligned, ctx) -> Component:
     """An explicit source sentence boundary next to a negated or
     conditional sentence survives as a boundary in the output — merging
     "Do not deploy. Run tests." into one clause widens the prohibition.
-    Added boundaries must also keep 'only' attached to its restriction."""
+    Added boundaries must keep restrictions and coordinating conjunctions
+    attached to their clauses."""
     _missing, pairs, src, out = aligned
     merged = []
     for (i, oi), (k, ok) in zip(pairs, pairs[1:]):
@@ -772,10 +768,42 @@ def _clause_scope(source, output, aligned) -> Component:
         if not _OUTPUT_BOUNDARY_RE.search(output, out[oi][1], out[ok][0]):
             merged.append([src[i][1], src[k][0]])
     introduced = _restriction_breaks(source, output, aligned)
-    status = "fail" if merged or introduced else "pass"
+    dangling = _dangling_conjunction_breaks(source, output, aligned, ctx)
+    status = "fail" if merged or introduced or dangling else "pass"
     return Component("clause_scope", DETERMINISTIC, status,
                      {"merged_boundaries": merged,
-                      "introduced_restriction_breaks": [list(b[:2]) for b in introduced]})
+                      "introduced_restriction_breaks": [list(b[:2]) for b in introduced],
+                      "detached_conjunction_breaks": [list(b[:2]) for b in dangling]})
+
+
+def _dangling_conjunction_breaks(source, output, aligned, ctx):
+    """New terminal punctuation cannot strand an unquoted conjunction.
+
+    Adjacent aligned words locate the same gap on both sides, so removing
+    its new separator preserves every word and other punctuation repair.
+    Existing source boundaries, literal mentions and line wrapping remain
+    unchanged; a new boundary before a conjunction is also allowed.
+    """
+    _missing, pairs, src, out = aligned
+    quoted = [m.span() for m in _QUOTED_RE.finditer(source)]
+    breaks = []
+    for (i, oi), (k, ok) in zip(pairs, pairs[1:]):
+        start, end, word = src[i]
+        if word not in {"and", "or", "but", "nor"} or k != i + 1 or ok != oi + 1:
+            continue
+        if (re.search(r"[.!?;:,\n]", source[end:src[k][0]])
+                or _overlaps(quoted + ctx.protected_positions, start, end)
+                or (source[start - 1:start] in ("'", '"')
+                    and source[end:end + 1] == source[start - 1:start])):
+            continue
+        source_word = source[src[k][0]:src[k][1]]
+        if source_word == "i" and output[out[ok][0]:out[ok][1]] == "I":
+            source_word = "I"
+        for match in re.finditer(r"[.!?;]+", output[out[oi][1]:out[ok][0]]):
+            offset = out[oi][1]
+            breaks.append((offset + match.start(), offset + match.end(),
+                           out[ok][0], out[ok][1], source_word))
+    return breaks
 
 
 def _restriction_breaks(source, output, aligned):
@@ -792,7 +820,8 @@ def _restriction_breaks(source, output, aligned):
         if k != i + 1 or re.search(r"[.!?;,\n]", source[src[i][1]:src[k][0]]):
             continue
         before_only = src[k][2] == "only" and (
-            k + 1 >= len(src) or src[k + 1][2] != "then")
+            k + 1 >= len(src) or src[k + 1][2] != "then") \
+            and not _only_starts_clause(source, src, k)
         after_only = src[i][2] == "only" and src[k][2] in {
             "if", "when", "unless", "after", "before", "until", "because",
             "once", "while", "for", "on", "in", "at", "to", "with", "without", "then"}
@@ -805,8 +834,38 @@ def _restriction_breaks(source, output, aligned):
     return breaks
 
 
+def _only_starts_clause(source, atoms, only_index):
+    """Recognize a right-hand subject followed by a finite auxiliary.
+
+    'Only the service team may reset it' has its own subject and predicate;
+    'only do not reset it' and 'only after the team has checked it' do not.
+    This narrow grammatical exception permits a missing boundary without
+    treating every occurrence of 'only' as a new sentence. Unclear shapes
+    retain the existing attachment rule.
+    """
+    auxiliaries = {"can", "could", "may", "might", "must", "shall", "should",
+                   "will", "would", "is", "are", "was", "were", "has", "have",
+                   "had", "does", "do", "did"}
+    dependent = {"if", "when", "unless", "after", "before", "until", "because",
+                 "once", "while", "for", "on", "in", "at", "to", "with",
+                 "without", "who", "which", "whose", "where", "during",
+                 "since", "as", "by", "under", "over", "between", "through",
+                 "throughout", "within", "from"}
+    subject = []
+    for index in range(only_index + 1, min(len(atoms), only_index + 8)):
+        word = atoms[index][2]
+        if re.search(r"[.!?;,:\n]", source[atoms[index - 1][1]:atoms[index][0]]):
+            return False
+        if word in dependent:
+            return False
+        if word in auxiliaries:
+            return bool(subject) and index + 1 < len(atoms)
+        subject.append(word)
+    return False
+
+
 def restore_restriction_punctuation(source: str, output: str, **kwargs) -> str | None:
-    """Remove only a newly introduced break that detached a restriction.
+    """Remove only a new break that detached a restriction or conjunction.
 
     All other model edits remain candidates for full validation. This
     restores the source's attachment without guessing a new sentence break.
@@ -814,7 +873,9 @@ def restore_restriction_punctuation(source: str, output: str, **kwargs) -> str |
     ctx = _auth_context(source, output, kwargs.get("vocabulary_pairs"),
                         kwargs.get("continued_list_start"), kwargs.get("correction_spans"),
                         kwargs.get("protected_positions"))
-    breaks = _restriction_breaks(source, output, _align(source, output, ctx))
+    aligned = _align(source, output, ctx)
+    breaks = (_restriction_breaks(source, output, aligned)
+              + _dangling_conjunction_breaks(source, output, aligned, ctx))
     if not breaks:
         return None
     edits = {(s, e): " " for s, e, *_ in breaks}
@@ -1047,7 +1108,19 @@ def _technical_tokens(source, output, ctx) -> Component:
     src_toks = [m.group().rstrip(",;") for m in _TECH_TOKEN_RE.finditer(source)
                 if not any(s <= m.start() and m.end() <= e for s, e, *_ in skip)]
     out_toks = [t.rstrip(",;") for t in _TECH_TOKEN_RE.findall(output)]
-    missing = list((Counter(src_toks) - Counter(out_toks)).elements())
+    # Bind every source occurrence separately. A new prose-ending mark may
+    # follow its complete spelling; stripping periods on both sides would
+    # also accept deletion of a real terminal dot or a changed extension.
+    remaining = Counter(out_toks)
+    missing = []
+    for token in sorted(src_toks, key=len, reverse=True):
+        match = next((candidate for candidate in
+                      (token, token + ".", token + "?", token + "!")
+                      if remaining[candidate]), None)
+        if match is None:
+            missing.append(token)
+        else:
+            remaining[match] -= 1
     out_case = _case_words(output)
     case_missing = [t for t, n in _case_words(source, skip).items()
                     if out_case[t] < n]
@@ -1070,20 +1143,24 @@ def _technical_tokens(source, output, ctx) -> Component:
 
 
 def _novelty(source, output, ctx) -> Component:
-    """No content word appears in the output more often than in the
+    """No word appears in the output more often than in the
     source (a matched vocabulary replacement may add its canonical
-    words). Function words carry no content and are exempt, except the
-    logical operators ("not", "or", "if"). Catches answered questions,
+    words). Articles, pronouns, auxiliaries and conjunctions are subject
+    to the same occurrence budget as other words. Catches answered questions,
     invented facts, and source-word-only inventions — a repeated clause
     or copied read-only context."""
-    exempt = FUNCTION_WORDS - OPERATOR_WORDS
+    # Coverage already supports a/an spelling adjustments. Pool only these
+    # existing occurrences; an article absent from the source is still novel.
+    def key(word):
+        return "a/an" if word in _ARTICLES else word
     # A corrected-away value may not come back ("send it to mark no wait
     # to lisa" never becomes "… to Lisa and Mark"): words inside
     # correction spans do not count toward the limit.
-    limit = Counter(w for s, e, w in _word_atoms(source)
+    limit = Counter(key(w) for s, e, w in _word_atoms(source)
                     if not _overlaps(ctx.correction_spans, s, e))
-    limit.update(ctx.vocab_allowance)
-    used = Counter(w for _, _, w in _word_atoms(output) if w not in exempt)
+    for word, count in ctx.vocab_allowance.items():
+        limit[key(word)] += count
+    used = Counter(key(w) for _, _, w in _word_atoms(output))
     novel = sorted(w for w, n in used.items() if n > limit[w])
     status = "fail" if novel else "pass"
     return Component("novelty", DETERMINISTIC, status,
@@ -1242,7 +1319,7 @@ def validate(source: str, output: str, *,
     aligned = _align(source, output, ctx)
     report = ValidationReport(components=[
         _component_coverage(source, output, ctx, aligned),
-        _clause_scope(source, output, aligned),
+        _clause_scope(source, output, aligned, ctx),
         _numeric_values(source, output, ctx),
         _protected_tokens(source, output, protected),
         _literal_spans(source, output),
