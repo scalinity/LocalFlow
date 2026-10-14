@@ -1,4 +1,4 @@
-"""Exact source qualifiers survive elliptical value corrections."""
+"""Source-bound correction and copying repairs retain the original meaning."""
 import pathlib
 import json
 import sys
@@ -32,7 +32,8 @@ class CorrectionRetentionTests(unittest.TestCase):
                   "8 hours, then flag the hairspring as suspect, actually, as fine.")
         target = ("The pallet fork needs 0.2 millimeters of polish, and the test "
                   "runs for 8 hours, then flag the hairspring as fine.")
-        for proposal in (target, target.replace(" of polish", "")):
+        for proposal in (target, target.replace(" of polish", ""),
+                         target.replace("pallet fork", "palletfork")):
             with self.subTest(proposal=proposal):
                 result, inputs = clean(source, proposal,
                                        "0.4 millimeters of polish, no wait\n"
@@ -245,6 +246,187 @@ class CorrectionRetentionTests(unittest.TestCase):
             with self.subTest(source=source):
                 accepted, _ = parse_correction_output(deletion, source, [])
                 self.assertFalse(accepted)
+
+
+class SourceRepairTests(unittest.TestCase):
+    def test_compound_correction_removes_only_the_exact_repeated_predicate(self):
+        for predicate, unit in (("should be", "C"), ("must be", "psi"),
+                                ("could be", "liters")):
+            with self.subTest(predicate=predicate, unit=unit):
+                subject = "The ink temperature" if unit == "C" else "The reading"
+                deletion = f"12 {unit}, I mean actually"
+                source = (f"{subject} {predicate} {deletion} "
+                          f"it {predicate} 14 {unit}.")
+                target = f"{subject} {predicate} 14 {unit}."
+                result, inputs = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+                self.assertEqual(result.corrections["applied"], 1)
+                self.assertNotIn(f"{predicate} it {predicate}", inputs[0])
+                record = next(o for o in result.observations
+                              if o.get("kind") == "corrections_applied")
+                start = source.index(deletion)
+                end = start + len(deletion)
+                self.assertEqual(record["proposals"][0]["span"], [start, end])
+                self.assertEqual(record["repeated_restarts"][0]["span"],
+                                 [end, end + len(f" it {predicate}")])
+
+    def test_restart_must_repeat_subject_form_modality_and_unit_without_negation(self):
+        for before, after in (
+            ("The reading should be 12 psi,", "it must be 14 psi."),
+            ("The reading should be 12 psi,", "she should be 14 psi."),
+            ("The reading should be 12 psi,", "they should be 14 psi."),
+            ("The reading should not be 12 psi,", "it should be 14 psi."),
+            ("The reading should be 12 psi,", "it should not be 14 psi."),
+            ("The reading should be 12 psi,", "it should be 14 bar."),
+            ("The reading should be 12 psi.", "it should be 14 psi."),
+            ("The reading should be 12 psi;", "it should be 14 psi."),
+            ("The reading should be 12 psi,", "it should be checked at 14 psi."),
+            ("The reading should be 12 psi,", "it should be 14 psi per hour."),
+            ("The reading should be 12 MW,", "it should be 14 mW."),
+            ("We should be 12 people,", "it should be 14 people."),
+            ("The pressure and temperature should be 12 units,", "it should be 14 units."),
+            ("The readings should be 12 psi,", "it should be 14 psi."),
+            ("The children should be 12 years,", "it should be 14 years."),
+            ("Neither reading should be 12 psi,", "it should be 14 psi."),
+            ("These should be 12 psi,", "it should be 14 psi."),
+            ("Those should be 12 psi,", "it should be 14 psi."),
+            ("Both should be 12 psi,", "it should be 14 psi."),
+            ("The readings from the sensor should be 12 psi,", "it should be 14 psi."),
+            ("Both sides of the chamber should be 12 psi,", "it should be 14 psi."),
+            ("The mice in the chamber should be 12 grams,", "it should be 14 grams."),
+        ):
+            with self.subTest(before=before, after=after):
+                source = f"{before} I mean actually {after}"
+                deletion = source[source.index("12"):source.index("actually") + 8]
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertFalse(accepted)
+                self.assertTrue(rejected)
+                result, _ = clean(source, "The reading should be 14 psi.", deletion)
+                self.assertEqual(result.text, source)
+
+    def test_restart_cannot_delete_a_protected_pronoun_or_predicate(self):
+        source = "The reading should be 12 psi, I mean actually it should be 14 psi."
+        start = source.index("it should be")
+        result, _ = clean(source, "The reading should be 14 psi.",
+                           "12 psi, I mean actually",
+                           protected=[(start, start + len("it should be"), "literal")])
+        self.assertEqual(result.text, source)
+        self.assertEqual(result.corrections["applied"], 0)
+
+    def test_restart_coordinates_survive_an_independent_qualifier_move(self):
+        source = ("Use 4 liters of dye, no wait 6 liters. "
+                  "The reading should be 12 psi, I mean actually it should be 14 psi.")
+        target = "Use 6 liters of dye. The reading should be 14 psi."
+        result, _ = clean(source, target,
+                           "4 liters of dye, no wait\n12 psi, I mean actually")
+        self.assertEqual(result.text, target)
+        self.assertEqual(result.path, "llm")
+        self.assertEqual(result.corrections["applied"], 2)
+
+    def test_restart_is_reapplied_when_split_children_are_validated_together(self):
+        first = ("The reading should be 1.25 C, I mean actually it should be 2.5 C, "
+                 "and remain stable during the final measurement.")
+        second = "Keep the label attached to the container until the review finishes."
+        target = "The reading should be 2.5 C, and remain stable during the final measurement."
+        calls = 0
+
+        def generate(prompt, max_tokens):
+            nonlocal calls
+            if "Find the self-corrections" in prompt:
+                return {"text": "1.25 C, I mean actually", "output_tokens": 8,
+                        "limit_hit": False}
+            calls += 1
+            if calls == 1:
+                return {"text": "The", "output_tokens": 1, "limit_hit": True}
+            body = prompt.rsplit("<|user|>\n", 1)[1].rsplit("<|assistant|>", 1)[0]
+            text = json.loads(body)["transcript"]
+            return {"text": target if "2.5 C" in text else text,
+                    "output_tokens": 15, "limit_hit": False}
+
+        result = CleanupEngine(generate, model_id="fixture").clean(first + " " + second)
+        self.assertEqual(result.text, target + " " + second)
+        self.assertEqual(result.path, "llm")
+        self.assertEqual(result.corrections["applied"], 1)
+        assembly = [o for o in result.observations if o.get("stage") == "retry_assembly"]
+        self.assertEqual(len(assembly), 1)
+        self.assertTrue(assembly[0]["accepted"])
+
+    def test_restored_conjunction_keeps_its_original_attachment(self):
+        source = ("Bring the bottle of water and I want the blue notebook from "
+                  "the drawer before we leave for the afternoon meeting.")
+        proposal = source.replace("water and I", "water. I")
+        result, _ = clean(source, proposal, "NONE")
+        self.assertEqual(result.text, source)
+        self.assertEqual(result.path, "llm")
+        decision = next(o for o in result.observations
+                        if o.get("kind") == "cleanup_decision")
+        self.assertEqual(decision["salvaged_words"], 1)
+        self.assertTrue(decision["restriction_punctuation_restored"])
+
+    def test_combined_repairs_do_not_accept_changed_numbers(self):
+        source = ("Bring 2 bottles of water and I want the blue notebook from "
+                  "the drawer before we leave for the afternoon meeting.")
+        proposal = source.replace("water and I", "water. I").replace("2", "3")
+        result, _ = clean(source, proposal, "NONE")
+        self.assertEqual(result.text, source)
+        self.assertNotEqual(result.path, "llm")
+
+    def test_repeated_preposition_belongs_to_the_corrected_value(self):
+        for source, deletion, target in (
+            ("Send it by noon, no wait by 11 a.m.", "noon, no wait",
+             "Send it by 11 a.m."),
+            ("Send it to Mira, no wait to Lin.", "Mira, no wait",
+             "Send it to Lin."),
+            ("Move it from Monday, actually from Tuesday.", "Monday, actually",
+             "Move it from Tuesday."),
+            ("Meet at 4, sorry at 5.", "4, sorry", "Meet at 5."),
+        ):
+            with self.subTest(source=source):
+                result, inputs = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+                self.assertNotIn("by by", inputs[0])
+
+    def test_repeated_frame_does_not_expand_across_a_clause_or_protection(self):
+        source = "Send it to Mira, no wait to Lin."
+        start = source.index("to Mira")
+        accepted, rejected = parse_correction_output(
+            "Mira, no wait", source, [(start, start + 2, "literal")])
+        self.assertFalse(accepted)
+        self.assertEqual(rejected[0].reason, "protected_span")
+        source = "Send it to Mira and notify Sam, actually to Lin."
+        accepted, _ = parse_correction_output(
+            "Mira and notify Sam, actually", source, [])
+        self.assertFalse(accepted)
+
+    def test_unique_fused_pair_restores_exact_source_words(self):
+        source = "Inspect the pallet fork and record the result."
+        result, _ = clean(source, source.replace("pallet fork", "palletfork"), "NONE")
+        self.assertEqual(result.text, source)
+        self.assertEqual(result.path, "llm")
+        decision = next(o for o in result.observations
+                        if o.get("kind") == "cleanup_decision")
+        self.assertTrue(decision["source_word_boundary_restored"])
+
+    def test_word_split_never_licenses_other_novel_content(self):
+        source = "Inspect the pallet fork and record the result."
+        proposal = "Inspect the palletfork and record the successful result."
+        result, _ = clean(source, proposal, "NONE")
+        self.assertEqual(result.text, source)
+        self.assertNotEqual(result.path, "llm")
+
+    def test_ambiguous_repeated_or_punctuated_source_pair_stays_rejected(self):
+        for source, proposal in (
+            ("Inspect the pallet fork and then inspect the pallet fork again.",
+             "Inspect the palletfork and then inspect the pallet fork again."),
+            ("Inspect the pallet, fork and spring.", "Inspect the palletfork and spring."),
+            ("Inspect the palletfork and the pallet fork.", "Inspect the palletfork and the palletfork."),
+        ):
+            with self.subTest(source=source):
+                result, _ = clean(source, proposal, "NONE")
+                self.assertEqual(result.text, source)
+                self.assertNotEqual(result.path, "llm")
 
 
 if __name__ == "__main__":

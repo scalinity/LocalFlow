@@ -1,10 +1,13 @@
-"""Keep source postmodifiers when only a repeated quantity is corrected.
+"""Preserve source details around explicitly marked quantity corrections.
 
 A flat deletion cannot represent ``4 liters of dye, no wait, 6 liters``:
 the value changes, while ``of dye`` still describes it. Move that exact
 source island beside the replacement in a comparison copy. The ordinary
 validator can then enforce its order, spelling and multiplicity without
 giving obsolete words permission to return.
+
+An exact repeated modal predicate after a compound marker is authorized
+separately, with its original source coordinates retained by the engine.
 """
 from __future__ import annotations
 
@@ -85,15 +88,77 @@ def retention_moves(source: str, corrections: list) -> list:
     return moves
 
 
+def repeated_restart(source: str, span: tuple, marker_start: int):
+    """Find an exact redundant ``it <modal> be`` after a compound marker.
+
+    Only typed quantities with the same unit and the same adjacent modal
+    predicate qualify. The original subject and predicate remain in place;
+    a changed subject form, modality, negation or unit cannot be discarded.
+    Returned coordinates include the separator after the original marker.
+    """
+    start, end = span
+    if source[marker_start:end].lower() != "i mean actually":
+        return None, None
+    reason = "unresolved_repeated_restart"
+    quantity = re.fullmatch(
+        rf"{_NUMBER}[ \t]+(?P<unit>{_WORD})[ \t]*,?[ \t]*",
+        source[start:marker_start])
+    predicate = re.search(
+        r"\b(?P<frame>(?:should|must|could|would|may|might|can|will)[ \t]+be)[ \t]+$",
+        source[:start], re.IGNORECASE)
+    if quantity is None or predicate is None:
+        return None, reason
+    subject = re.split(r"[.!?;\n]", source[:predicate.start()])[-1]
+    from .validation import FUNCTION_WORDS, NEGATION_WORDS
+    subject_words = re.findall(r"[^\W_]+(?:['’][^\W_]+)*", subject.lower())
+    nominal = subject_words[1:] if subject_words[:1] in (
+        ["the"], ["a"], ["an"], ["this"], ["that"]) else []
+    subject_functions = FUNCTION_WORDS | NEGATION_WORDS | {
+        "all", "both", "each", "either", "few", "many", "much", "several", "some", "these", "those",
+    }
+    # Support only a determiner plus a short simple nominal, or an exact
+    # repeated ``it``.
+    # Postmodifiers, coordinated subjects and other pronouns can change
+    # the referent. Reject plural-looking words anywhere in the nominal;
+    # this intentionally also declines singular nouns ending in s.
+    simple_nominal = (1 <= len(nominal) <= 3 and all(
+        word.isalpha() and word not in subject_functions
+        and not word.endswith("s")
+        and word not in {"children", "feet", "men", "mice", "people", "teeth", "women"}
+        for word in nominal))
+    if (re.search(r"[^\w \t]", subject)
+            or not (subject_words == ["it"] or simple_nominal)):
+        return None, reason
+    replacement = re.match(
+        rf"(?P<restart>[ \t,]*(?i:it)[ \t]+(?i:{re.escape(predicate.group('frame'))}))"
+        rf"[ \t]+{_NUMBER}[ \t]+{re.escape(quantity.group('unit'))}(?![\w-])",
+        source[end:])
+    if replacement is None:
+        return None, reason
+    following = source[end + replacement.end():]
+    if not re.match(
+            r"[ \t]*(?:$|[,;.!?\n]|(?i:and|or|but|then|because|before|after|"
+            r"until|when|while|if|unless|only)\b)", following):
+        return None, reason
+    return (end, end + replacement.end("restart")), None
+
+
 def correction_view(source: str, corrections: list, protected=()) -> tuple:
-    """Return source, correction and protection coordinates after moves.
+    """Return the comparison source and authorized correction coordinates.
 
     Moves are exact and local, not model-proposed rewrites. Original source
     and original deletion coordinates remain the engine's stored record.
     Protected occurrences cannot straddle the insertion point.
+    Exact redundant restarts extend comparison spans while the engine
+    continues to record the original marker-terminated proposal spans.
     """
     view = source
-    rebased = list(corrections)
+    rebased = []
+    for start, end, marker in corrections:
+        restart, reason = repeated_restart(source, (start, end), marker)
+        if reason:
+            raise ValueError(reason)
+        rebased.append((start, restart[1] if restart else end, marker))
     positions = [tuple(p[:2]) for p in protected]
     for start, end, destination in sorted(
             retention_moves(source, corrections), reverse=True):

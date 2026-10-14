@@ -31,7 +31,7 @@ payload with the S13 field names — `transcript`, `mode`, `locale`,
 `read_only_context` for window overlap). Vocabulary alias→canonical
 pairs are validator data only and never enter the prompt.
 
-The owner-approved list guidance (`m07-v2-spoken-steps`)
+The list guidance
 formats explicit introductions such as “here is a list of grocery items”
 into a retained prose heading and one bullet per item. Ordinary prose,
 discussion of lists and quoted uses of “list” stay prose; closing conditions
@@ -144,9 +144,27 @@ At most 6 apply per window. Protected spans are rebased **per window**
 (window-local coordinates, this window's texts only) before validation
 and the corrections guard. Deletions apply right-to-left in Python to
 form the model's input; the surviving replacement and reason clause
-stay by construction. The window's validation runs against the
-**original** window text with the accepted deletions as authorized
-spans (below), and that decision settles each proposal as `selected`
+stay by construction. An exact source qualifier attached to an outdated
+quantity moves beside the replacement quantity when that replacement
+does not explicitly supersede it. Its wording remains required; an obsolete
+value cannot return through the word-addition allowance. Incompatible
+qualifiers cause fallback. Original proposal and moved-source coordinates
+remain in the observation record.
+
+A compound `I mean actually` restart may remove a repeated `it <modal> be`
+frame only when the original subject is `it` or a determiner followed by
+one to three plain words, the adjacent modal predicate is identical, and
+both numeric values use the same explicit unit. Subject postmodifiers,
+function words, quantifiers and visible plural forms are excluded.
+Changed subjects, modality, negation, units, protected text and sentence
+boundaries do not gain deletion permission. The additional restart range is
+recorded separately from the marker-terminated proposal. A repeated
+preposition around a short corrected value can include the extra source
+preposition in the deletion, preventing recovery from duplicating it.
+
+Validation uses the source with only these exact qualifier moves and
+accepted deletion spans rebased into that comparison view. The decision
+settles each proposal as `selected`
 (kept in the returned text) or `rolled_back`; a truncated pass's
 proposals are `superseded` by the split retry that re-proposes them.
 
@@ -182,10 +200,11 @@ quoted; quotes inside the text are never stripped.
 `validation.validate(original_window_text, candidate, protected=,
 vocabulary_pairs=, continued_list_start=, correction_spans=)` returns a
 report of components, each labeled **deterministic** or **heuristic**.
-The reference is always the ORIGINAL window text; accepted correction
-deletions ride as `(start, end, marker_start)` spans, so a false
-correction is judged against what it removed, never against the
-fragment it left.
+The reference retains the original window's words, with exact inherited
+qualifiers moved beside their replacements when required. Accepted
+correction deletions ride as rebased `(start, end, marker_start)` spans;
+retained qualifiers stay ordinary required words. Original coordinates
+remain in the correction record.
 
 | Component | Kind | Fails → |
 |---|---|---|
@@ -197,7 +216,7 @@ fragment it left.
 | `negation_coverage` | deterministic | critical — the negation multiset is preserved exactly: none lost, none added (a correction's marker is not content) |
 | `uncertainty_coverage` | deterministic | critical — the hedge multiset is preserved exactly |
 | `technical_tokens` | deterministic | critical — paths, flags, versions, emails, URLs, case-significant words (`MB`, `UserID`, `iOS`) with exact case, and operator symbols (`= + < > ≤ ≥ ≠`) by count (a spoken `equals`/`plus`/`minus` may add its symbol); a `?` may be added, never dropped |
-| `novelty` | deterministic | critical — no content word, and no operator word (`not`, `or`, `if`, `nor`), appears more often than in the source (plus the canonical words of matched vocabulary replacements): catches invented facts, repeated clauses and copied read-only context |
+| `novelty` | deterministic | critical — no word, including articles, prepositions, pronouns and auxiliaries, appears more often than in the source plus matched vocabulary replacements; `a`/`an` share an existing occurrence allowance. Removed correction words cannot fund additions. This catches invented facts, grammar completion, repeated clauses and copied read-only context |
 | `names` | heuristic | finding only |
 | `structure` | deterministic on explicit blocks; heuristic on spoken enumerations | fail / finding |
 
@@ -242,6 +261,13 @@ model output is never pasted as success (`incomplete: true`,
 Per-window fallback ladder: validated clean output → the window's
 normalized source (corrections rolled back with it — unvalidated
 correction deletions never survive a rejected candidate, M07-AC02).
+Before fallback, one fused candidate word can recover the exact space
+between two adjacent source words when the match is unique and contains
+no source punctuation. A candidate missing only a small number of source
+words may recover them; if that restoration leaves only a stranded joining
+conjunction, the new boundary can be reattached. Every recovered candidate
+passes the complete validator again. Ambiguous matches or other failures
+keep the fallback.
 A V2 engine failure — load failure or an in-flight exception — answers
 with the unchanged normalized input (path `llm_fallback_normalized`,
 reason `cleanup_engine_failed`, `termination.kind: "engine_error"`):
