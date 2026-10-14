@@ -198,6 +198,8 @@ and sentence boundaries. Do not add optional commas, replace a valid comma,
 or split an already readable sentence merely to polish its style. Missing
 boundaries may be added when they clearly separate complete clauses,
 instructions or questions; punctuation repair is still allowed.
+Set off a directly addressed person with commas; this is required punctuation,
+not optional styling. Do not set off a name that is the sentence's subject.
 Do not complete grammar by adding articles, prepositions, pronouns,
 auxiliaries or conjunctions that were not dictated. Awkward wording is not
 permission to add words. Only supplied vocabulary replacements can introduce
@@ -222,13 +224,17 @@ EXAMPLES.extend([
      "Install the surface mount resistor. Then check the supply."),
     ("do not reset the console only the service team may restart it",
      "Do not reset the console. Only the service team may restart it."),
+    ("Nadia please close the window.",
+     "Nadia, please close the window."),
+    ("Nadia will close the window.",
+     "Nadia will close the window."),
 ])
 
 EXAMPLE_CONTEXT = ("Each example uses clean mode and en-US, has no supplied vocabulary "
                    "or protected spans, and inherits the final input's destination "
                    "profile, structure hints and permitted edits.")
 
-PROMPT_VERSION = "m07-v2-shared-example-context"
+PROMPT_VERSION = "m07-v2-direct-address-examples"
 
 # The edits the clean mode may make (S13/S15); rendered into the payload
 # so the model sees the permitted-edits policy as data.
