@@ -585,11 +585,24 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
     unrelated function words and clauses remain required source content.
     """
     start, end = span
-    prefix = re.search(r"\b(as|at|by|for|from|in|of|on|to|with)[ \t]+$",
+    prefix = re.search(r"\b(as|at|by|for|from|in|of|on|to|with|every)[ \t]+$",
                        text[:start], re.IGNORECASE)
     if prefix is None or prefix.start() < cursor:
         return span
     marker = correction_marker_start(text, span)
+    if prefix.group(1).lower() == "every":
+        # A frequency keeps its quantifier when both complete quantity
+        # heads repeat it. Do not treat "every" as a general stutter or
+        # accept a changed unit, qualifier, or nonnumeric complement.
+        quantity = re.fullmatch(
+            r"(?P<count>[1-9]\d*(?:\.\d+)?)[ \t]+(?P<unit>[^\W\d_]+)",
+            text[start:marker].strip(" \t,;:"), re.UNICODE)
+        if quantity is not None and re.match(
+                r"[ \t,;:]*every[ \t]+[1-9]\d*(?:\.\d+)?[ \t]+"
+                + re.escape(quantity.group("unit")) + r"(?![\w-])",
+                text[end:], re.IGNORECASE):
+            return prefix.start(), end
+        return span
     old = [w.lower().strip(",;:") for w in text[start:marker].split()]
     if not (len(old) == 1 or (len(old) == 2 and
             (old[0] in {"a", "an", "the"} or _is_value_word(old[0])))):
