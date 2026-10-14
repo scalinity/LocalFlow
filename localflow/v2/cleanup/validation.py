@@ -1156,12 +1156,43 @@ def _technical_tokens(source, output, ctx) -> Component:
         if output.count(sym) < source.count(sym)
         or (sym != "?"
             and output.count(sym) > source.count(sym) + spoken[sym])]
-    status = "fail" if (missing or case_missing or symbol_changes) \
+    source_pipes = [m.start() for m in re.finditer(r"\|", source)]
+    output_pipes = [m.start() for m in re.finditer(r"\|", output)]
+    pipe_gap_changes = 0
+    if len(source_pipes) != len(output_pipes):
+        symbol_changes.append("|")
+    elif source_pipes:
+        # Bind isolated pipes and runs to their original word occurrences.
+        # Local numbers, punctuation and line breaks must also stay put;
+        # only horizontal spacing inside a pipe-bearing gap may change.
+        standalone = {p for m in re.finditer(r"(?<![\w|])\|+(?![\w|])", source)
+                      for p in range(m.start(), m.end())}
+        if standalone:
+            _, pairs, src, out = _align(source, output, ctx)
+            for ordinal, position in enumerate(source_pipes):
+                if position not in standalone:
+                    continue
+                left = next(((i, j) for i, j in reversed(pairs)
+                             if src[i][1] <= position), None)
+                right = next(((i, j) for i, j in pairs
+                              if src[i][0] > position), None)
+                a, x = (src[left[0]][1], out[left[1]][1]) if left else (0, 0)
+                b, y = (src[right[0]][0], out[right[1]][0]) if right else \
+                    (len(source), len(output))
+                source_gap, output_gap = source[a:b], output[x:y]
+                if (not x <= output_pipes[ordinal] < y
+                        or re.sub(r"[ \t]+", "", source_gap)
+                        != re.sub(r"[ \t]+", "", output_gap)
+                        or re.findall(r"\|+", source_gap)
+                        != re.findall(r"\|+", output_gap)):
+                    pipe_gap_changes += 1
+    status = "fail" if (missing or case_missing or symbol_changes or pipe_gap_changes) \
         else "pass"
     return Component("technical_tokens", DETERMINISTIC, status,
                      {"source_tokens": len(src_toks), "missing": len(missing),
                       "case_missing": len(case_missing),
-                      "symbol_changes": symbol_changes})
+                      "symbol_changes": symbol_changes,
+                      "pipe_gap_changes": pipe_gap_changes})
 
 
 def _novelty(source, output, ctx) -> Component:
