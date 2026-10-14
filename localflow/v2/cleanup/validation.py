@@ -1266,6 +1266,24 @@ def _auth_context(source, output, vocabulary_pairs, continued_list_start,
                     continued_list_start=continued_list_start)
 
 
+def _next_list_item_boundary(output: str, previous_end: int, following: int):
+    """Locate a marker boundary and whether parsing confirms an adjacent item."""
+    line_start = output.rfind("\n", 0, following) + 1
+    gap = output[previous_end:line_start]
+    if not re.fullmatch(r"[ \t]*[.!?;,:]*[ \t]*(?:\n[ \t]*)+", gap):
+        return None
+    line = output[line_start:].split("\n", 1)[0]
+    item = _ITEM_LINE_RE.match(line)
+    if item is None:
+        return None
+    content_start = line_start + item.start(1)
+    from . import document_nodes as dn
+    nodes = dn.parse(output[:content_start]).nodes
+    adjacent = bool(nodes and isinstance(nodes[-1], dn.ListGroup)
+                    and len(nodes[-1].items) >= 2 and not nodes[-1].items[-1])
+    return content_start, adjacent
+
+
 def restore_missing_words(source: str, output: str, *,
                           vocabulary_pairs: tuple | None = None,
                           continued_list_start: int | None = None,
@@ -1276,8 +1294,10 @@ def restore_missing_words(source: str, output: str, *,
     without authorization: ``(repaired text, words restored)``, or None
     when nothing is missing. Each run of dropped source words goes right
     after the output word that the source word before it matched (at the
-    start when none did). The result is a candidate, not a verdict — the
-    caller validates it again in full."""
+    start when none did). A comma-delimited connective attached to the
+    following source words stays with them when the output starts a new
+    list item. The result is a candidate, not a verdict — the caller
+    validates it again in full."""
     ctx = _auth_context(source, output, vocabulary_pairs,
                         continued_list_start, correction_spans,
                         protected_positions)
@@ -1286,7 +1306,12 @@ def restore_missing_words(source: str, output: str, *,
         return None
     gone = {m[0] for m in missing}
     out_end_of = {si: out_atoms[oi][1] for si, oi in pairs}
+    out_span_of = {si: out_atoms[oi][:2] for si, oi in pairs}
     inserts = {}                      # output offset -> source text runs
+    item_heads = {}
+    # This placement operation does not interpret quotation boundaries.
+    # Apostrophes are deliberately ambiguous here, including contractions.
+    has_quote_marks = bool(re.search(r'''["'`‘’“”]''', source))
     run = []
     after = 0                         # offset after the last matched word
     source_end = 0
@@ -1300,18 +1325,54 @@ def restore_missing_words(source: str, output: str, *,
             run.append((start, end))
             continue
         if run:
-            inserts.setdefault(after, []).append(
-                source[run[0][0]:run[-1][1]])
+            restored = source[run[0][0]:run[-1][1]]
+            following = next((i for i in range(si, len(src_atoms))
+                              if i in out_span_of), None)
+            boundary = (_next_list_item_boundary(
+                output, after, out_span_of[following][0])
+                if following is not None else None)
+            source_gap = source[run[-1][1]:src_atoms[following][0]] \
+                if following is not None else ""
+            if boundary is not None and not re.search(r"[.!?;:\n]", source_gap):
+                # A completed source clause keeps its omitted tail in the
+                # preceding item. Otherwise require the source comma that
+                # separates the connective from that item; an unpunctuated
+                # temporal tail such as 'until then' remains ambiguous.
+                item_start, adjacent = boundary
+                next_start, next_end = out_span_of[following]
+                if (not adjacent or source_gap.strip() or item_start != next_start
+                        or not re.fullmatch(r"[ \t]*,[ \t]*",
+                                            source[source_end:run[0][0]])
+                        or restored.lower().split() not in (
+                            ["and"], ["or"], ["but"], ["nor"], ["then"], ["and", "then"])
+                        or has_quote_marks
+                        or _overlaps(ctx.protected_positions,
+                                     run[0][0], src_atoms[following][1])
+                        or item_start in item_heads):
+                    return None
+                next_word = source[src_atoms[following][0]:src_atoms[following][1]]
+                output_word = output[next_start:next_end]
+                if next_word.lower() in ("a", "an") and output_word.lower() in ("a", "an"):
+                    next_word = output_word.lower()
+                elif next_word == "i" and output_word == "I":
+                    next_word = "I"
+                item_heads[item_start] = (
+                    next_end, restored[:1].upper() + restored[1:] + " " + next_word)
+            else:
+                inserts.setdefault(after, []).append(restored)
             run = []
         after = out_end_of.get(si, after)
         if si in out_end_of:
             source_end = end
     if run:
         inserts.setdefault(after, []).append(source[run[0][0]:run[-1][1]])
+    edits = [(offset, offset, " " + " ".join(values))
+             for offset, values in inserts.items()]
+    edits.extend((start, end, replacement)
+                 for start, (end, replacement) in item_heads.items())
     text = output
-    for offset in sorted(inserts, reverse=True):
-        text = (text[:offset] + " " + " ".join(inserts[offset])
-                + text[offset:])
+    for start, end, replacement in sorted(edits, reverse=True):
+        text = text[:start] + replacement + text[end:]
     return text, len(missing)
 
 
