@@ -137,8 +137,17 @@ a recorded reason:
 | the outdated value X (before the marker) has a content word | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
-| through a single-word marker (`actually`, `sorry`, `no` — also ordinary words), X and Y are visibly parallel: both numbers, both weekdays, both months, or sharing a content word | `not_parallel` |
+| through a single-word marker (`actually`, `sorry`, `no` — also ordinary words), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, or closed numeric metric-length values | `not_parallel` |
 | replacing a weekday/month with another cannot also delete preceding content words (for example, `check Monday no wait Tuesday` may delete `Monday no wait`, but not `check`) | `overbroad_calendar_value` |
+
+A metric-length pair may change its numeric value and metric prefix when
+both values name meters/metres and the replacement ends at punctuation or
+the window end. Extra descriptions and open replacement clauses do not
+qualify. A proposal containing one fused alphabetic word may restore the
+space between two unique adjacent source words; the recovered proposal
+must then resolve to one exact contiguous source span and pass every
+existing bound and guard. Ambiguous nominal phrases, apologies and
+preposition attachments do not gain correction permission from their shape.
 
 At most 6 apply per window. Protected spans are rebased **per window**
 (window-local coordinates, this window's texts only) before validation

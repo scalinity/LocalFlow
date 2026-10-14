@@ -477,6 +477,28 @@ def _is_value_word(w: str) -> bool:
     return any(c.isdigit() for c in w) or w in _NUMBERS or w in _SCALES
 
 
+_METRIC_LENGTH = re.compile(
+    r"[+-]?\d+(?:[.,]\d+)*[ \t]+"
+    r"(?:(?:nano|micro|milli|centi|deci|deca|hecto|kilo|mega|giga)?met(?:er|re)s?)",
+    re.IGNORECASE)
+
+
+def _parallel_metric_lengths(source: str, span: tuple, marker: int) -> bool:
+    """Recognize a closed pair of numeric values in one known unit family.
+
+    Different metric prefixes may accompany the corrected number. Neither
+    extra old descriptions nor an unbounded replacement clause qualifies.
+    """
+    start, end = span
+    old = source[start:marker].strip(" \t,;:")
+    if not _METRIC_LENGTH.fullmatch(old):
+        return False
+    tail = source[end:].lstrip(" \t,")
+    new = _METRIC_LENGTH.match(tail)
+    return new is not None and bool(re.match(
+        r"[ \t]*(?:$|[,;.!?\n])", tail[new.end():]))
+
+
 def _parallel(x_words: list, y_words: list) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
     both months, or they share a content word ("two engineers … three
@@ -548,7 +570,8 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
                 for w in before_words[:-1]):
             return "overbroad_calendar_value"
     if marker in _SINGLE_WORD_MARKERS:
-        if not _parallel(before_words, after_words):
+        if not (_parallel(before_words, after_words)
+                or _parallel_metric_lengths(window_text, span, ms)):
             return "not_parallel"
     return None
 
@@ -598,7 +621,14 @@ def _restore_source_word_boundary(source: str, output: str,
     novel = novelty.detail.get("novel_words", [])
     if len(novel) != 1 or not novel[0].isalpha():
         return None
-    word = novel[0]
+    return _split_unique_source_word(source, output, novel[0])
+
+
+def _split_unique_source_word(source: str, output: str, word: str) -> str | None:
+    """Restore one unique adjacent source pair inside one alphabetic word."""
+    if not word.isalpha():
+        return None
+    word = word.lower()
     atoms = list(re.finditer(r"\b[^\W\d_]+\b", source))
     if any(m.group().lower() == word for m in atoms):
         return None
@@ -612,6 +642,16 @@ def _restore_source_word_boundary(source: str, output: str,
     start, end = pairs[0]
     match = matches[0]
     return output[:match.start()] + source[start:end] + output[match.end():]
+
+
+def _recover_fused_proposal(source: str, delete: str) -> str | None:
+    """Suggest one split; exact contiguous source resolution still follows."""
+    source_words = {m.group().lower() for m in re.finditer(r"\b\w+\b", source)}
+    missing = [m.group() for m in re.finditer(r"\b\w+\b", delete)
+               if m.group().lower() not in source_words]
+    if len(missing) != 1 or not missing[0].isalpha():
+        return None
+    return _split_unique_source_word(source, delete, missing[0])
 
 
 def parse_correction_output(output: str, window_text: str,
@@ -660,6 +700,14 @@ def parse_correction_output(output: str, window_text: str,
             rejected.append(CorrectionProposal(None, False, "span_too_long"))
             continue
         occ = occurrences(delete)
+        recovered = None
+        if not occ:
+            recovered = _recover_fused_proposal(window_text, delete)
+            recovered_occ = occurrences(recovered) if recovered is not None else []
+            # A repaired copy must identify one complete original span;
+            # proposal counts never disambiguate a guessed word boundary.
+            if len(recovered_occ) == 1:
+                occ = recovered_occ
         if len(occ) > proposed[delete.lower()]:
             rejected.append(CorrectionProposal(None, False,
                                                "ambiguous_occurrence"))
@@ -672,6 +720,12 @@ def parse_correction_output(output: str, window_text: str,
             rejected.append(CorrectionProposal(
                 None, False, "offsets_unresolved"))
             continue
+        if recovered is not None:
+            delete = window_text[cand.start():cand.end()]
+            if len(delete) > 80 or len(delete.split()) > SPAN_MAX_WORDS:
+                rejected.append(CorrectionProposal(
+                    (cand.start(), cand.end()), False, "span_too_long"))
+                continue
         span = _include_repeated_frame(window_text, (cand.start(), cand.end()), cursor)
         if span[0] != cand.start():
             delete = window_text[span[0]:span[1]]

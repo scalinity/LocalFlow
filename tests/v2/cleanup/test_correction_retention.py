@@ -7,7 +7,8 @@ import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
 from localflow.v2.cleanup.engine import (CleanupEngine, correction_marker_start,
-                                        parse_correction_output)
+                                        parse_correction_output,
+                                        _has_correction_marker)
 from localflow.v2.cleanup.correction_retention import correction_view
 
 
@@ -249,6 +250,212 @@ class CorrectionRetentionTests(unittest.TestCase):
 
 
 class SourceRepairTests(unittest.TestCase):
+    def test_metric_length_corrections_compare_typed_quantity_heads(self):
+        for old, new in (("7 centimeters", "2 meters"),
+                         ("0.8 kilometres", "900 metres"),
+                         ("25 nanometers", "0.03 micrometers")):
+            with self.subTest(old=old, new=new):
+                source = f"Set the length to {old}, no {new}, then record it."
+                target = f"Set the length to {new}, then record it."
+                self.assertTrue(_has_correction_marker(source))
+                result, _ = clean(source, target, f"{old}, no")
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.corrections["applied"], 1)
+
+    def test_metric_length_rule_rejects_untyped_or_unbounded_values(self):
+        for old, new in (("7 centimeters", "2 grams"),
+                         ("7 widgets", "2 meters"),
+                         ("7 centimeters", "2 widgets"),
+                         ("7 centimeters of ribbon", "2 meters"),
+                         ("7 centimeters", "2 meters remain available"),
+                         ("7 centimeters", "2 meters per roll"),
+                         ("not 7 centimeters", "2 meters")):
+            with self.subTest(old=old, new=new):
+                source = f"Use {old}, no {new}."
+                accepted, _ = parse_correction_output(f"{old}, no", source, [])
+                self.assertFalse(accepted)
+        source = "Use 7 centimeters. No 2 meters remain available."
+        accepted, _ = parse_correction_output("7 centimeters. No", source, [])
+        self.assertFalse(accepted)
+
+    def test_untyped_nominal_replacements_remain_ambiguous(self):
+        for verb in ("picked", "selected", "use"):
+            source = (f"We {verb} the glass lens, sorry, the pinhole camera, "
+                      "before the survey.")
+            target = f"We {verb} the pinhole camera, before the survey."
+            with self.subTest(verb=verb):
+                result, _ = clean(source, target, "the glass lens, sorry")
+                self.assertEqual(result.text, source)
+                self.assertEqual(result.corrections["applied"], 0)
+
+    def test_nominal_rule_rejects_clauses_modifiers_and_changed_determiners(self):
+        for source, deletion in (
+            ("The singer left, sorry, the drummer stayed.", "The singer left, sorry"),
+            ("We picked the lens with spots, sorry, the camera.",
+             "the lens with spots, sorry"),
+            ("We picked the glass lens, sorry, the camera that works.",
+             "the glass lens, sorry"),
+            ("We picked the glass lens, sorry, a pinhole camera.",
+             "the glass lens, sorry"),
+            ("We picked the glass lens, sorry, the camera and tripod.",
+             "the glass lens, sorry"),
+            ("We picked the glass lens, sorry, the camera is ready.",
+             "the glass lens, sorry"),
+            ("We picked the glass lens, sorry, the camera without spots.",
+             "the glass lens, sorry"),
+            ("We picked the blue notebook, sorry, the clerk left.",
+             "the blue notebook, sorry"),
+        ):
+            with self.subTest(source=source):
+                accepted, _ = parse_correction_output(deletion, source, [])
+                self.assertFalse(accepted)
+
+    def test_a_new_finite_clause_cannot_replace_an_unrelated_object(self):
+        source = "We picked the blue notebook, sorry, the clerk left."
+        result, _ = clean(source, "We picked the clerk left.", "the blue notebook, sorry")
+        self.assertEqual(result.text, source)
+        self.assertEqual(result.corrections["applied"], 0)
+
+    def test_short_preposition_complements_remain_ambiguous(self):
+        for deletion in ("by motor uh sorry", "motor uh sorry"):
+            source = ("Power the winch by motor uh sorry by pulley handle "
+                      "since the battery is empty.")
+            target = "Power the winch by pulley handle since the battery is empty."
+            with self.subTest(deletion=deletion):
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, source)
+                self.assertEqual(result.corrections["applied"], 0)
+
+    def test_repeated_preposition_rejects_changed_frames_and_extra_meaning(self):
+        for old, new in (("by motor", "with pulley handle"),
+                         ("by motor only", "by pulley handle"),
+                         ("by motor", "by pulley handle fails"),
+                         ("by motor", "by no pulley handle"),
+                         ("by motor", "by pulley handle without rope"),
+                         ("by motor and rope", "by pulley handle"),
+                         ("by motor", "by pulley handle if ready")):
+            with self.subTest(old=old, new=new):
+                source = f"Power the winch {old}, sorry {new}."
+                accepted, _ = parse_correction_output(f"{old}, sorry", source, [])
+                self.assertFalse(accepted)
+
+    def test_omitted_as_frame_remains_ambiguous(self):
+        source = "Mark the seal as blue, no amber, and record the shade."
+        target = "Mark the seal as amber, and record the shade."
+        result, _ = clean(source, target, "blue, no")
+        self.assertEqual(result.text, source)
+        self.assertEqual(result.corrections["applied"], 0)
+        accepted, _ = parse_correction_output("as blue, no", source, [])
+        self.assertFalse(accepted)
+
+    def test_ordinary_apologies_and_no_phrases_are_not_value_corrections(self):
+        for source, deletion, wrong in (
+            ("I wrote to Morgan, sorry to interrupt.", "to Morgan, sorry",
+             "I wrote to interrupt."),
+            ("This note is for Blair, sorry for interrupting.", "for Blair, sorry",
+             "This note is for interrupting."),
+            ("The meeting went as planned, no problem.", "planned, no",
+             "The meeting went as problem."),
+            ("The tool worked as expected, no doubt.", "expected, no",
+             "The tool worked as doubt."),
+        ):
+            with self.subTest(source=source):
+                accepted, _ = parse_correction_output(deletion, source, [])
+                self.assertFalse(accepted)
+                result, _ = clean(source, wrong, deletion)
+                self.assertEqual(result.text, source)
+                self.assertEqual(result.corrections["applied"], 0)
+
+    def test_predicative_as_rejects_unbounded_or_ambiguous_replacements(self):
+        for source, deletion in (
+            ("Mark the seal blue, no amber.", "blue, no"),
+            ("Mark the seal as blue, no amber remains.", "blue, no"),
+            ("Mark the seal as blue, no dark amber.", "blue, no"),
+            ("Mark the seal as blue, no never.", "blue, no"),
+            ("Mark the seal as blue. No amber.", "blue. No"),
+            ("Mark it as blue, no amber, and mark it as blue, no red.", "blue, no"),
+        ):
+            with self.subTest(source=source):
+                accepted, _ = parse_correction_output(deletion, source, [])
+                self.assertFalse(accepted)
+
+    def test_new_correction_shapes_keep_source_protection(self):
+        for source, deletion, literal in (
+            ("Use 7 centimeters, no 2 meters.", "7 centimeters, no", "7 centimeters"),
+            ("We picked the lens, sorry, the camera.", "the lens, sorry", "the lens"),
+            ("Power it by motor uh sorry by pulley handle.", "motor uh sorry", "by motor"),
+            ("Mark it as blue, no amber.", "blue, no", "blue"),
+        ):
+            with self.subTest(source=source):
+                start = source.index(literal)
+                accepted, rejected = parse_correction_output(
+                    deletion, source, [(start, start + len(literal), "literal")])
+                self.assertFalse(accepted)
+                self.assertEqual(rejected[0].reason, "protected_span")
+
+    def test_new_shapes_do_not_waive_identifier_time_or_negation_failures(self):
+        for source, target, deletion in (
+            ("Set port_a to 0.7, no wait, port_b to 0.7.",
+             "Set port_a to 0.7.", "port_a to 0.7, no wait"),
+            ("Move it from 8:20 to 9:40, actually 10:50.",
+             "Move it from 10:50.", "9:40, actually"),
+            ("Ship on Friday, no Saturday, and wait not not longer than ten minutes.",
+             "Ship on Saturday, and wait not longer than ten minutes.", "Friday, no"),
+        ):
+            with self.subTest(source=source):
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, source)
+                self.assertEqual(result.corrections["applied"], 0)
+
+    def test_fused_proposal_resolves_only_to_the_unique_exact_source_span(self):
+        source = "Replace the air vent, no wait, the roof panel."
+        target = "Replace the roof panel."
+        raw = "the airvent, no wait"
+        result, _ = clean(source, target, raw)
+        self.assertEqual(result.text, target)
+        self.assertEqual(result.corrections["applied"], 1)
+        proposal = next(o for o in result.observations if o.get("kind") == "corrections")
+        self.assertEqual(proposal["output"], raw)
+        applied = next(o for o in result.observations
+                       if o.get("kind") == "corrections_applied")
+        self.assertEqual(applied["proposals"][0]["delete"], "the air vent, no wait")
+
+    def test_fused_proposals_reject_ambiguous_punctuated_and_other_changed_text(self):
+        for source, deletion in (
+            ("Replace the air vent, no wait, the roof panel; inspect the air vent.",
+             "the airvent, no wait"),
+            ("Replace the air vent, no wait, the roof panel; record airvent.",
+             "the airvent, no wait"),
+            ("Replace the air, vent, no wait, the roof panel.", "the airvent, no wait"),
+            ("Replace the air vent roof panel, no wait, the fan.",
+             "the airvent roofpanel, no wait"),
+            ("Replace the air vent, no wait, the roof panel.", "the aerovent, no wait"),
+            ("Replace the air vent, no wait, the roof panel.", "a airvent, no wait"),
+            ("Replace the air vent, no wait, the roof panel.", "the airvent no wait"),
+        ):
+            with self.subTest(source=source, deletion=deletion):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertFalse(accepted)
+                self.assertEqual(rejected[0].reason, "offsets_unresolved")
+
+    def test_recovered_proposal_still_checks_protection_evidence_and_word_limit(self):
+        source = "Replace the air vent, no wait, the roof panel."
+        start = source.index("air vent")
+        accepted, rejected = parse_correction_output(
+            "the airvent, no wait", source, [(start, start + 8, "literal")])
+        self.assertFalse(accepted)
+        self.assertEqual(rejected[0].reason, "protected_span")
+        for source, deletion, reason in (
+            ("The air vent, sorry, we cannot replace it.",
+             "The airvent, sorry", "not_parallel"),
+            ("Replace the large rear air vent cover, no wait, the fan.",
+             "the large rear airvent cover, no wait", "span_too_long"),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertFalse(accepted)
+                self.assertEqual(rejected[0].reason, reason)
+
     def test_compound_correction_removes_only_the_exact_repeated_predicate(self):
         for predicate, unit in (("should be", "C"), ("must be", "psi"),
                                 ("could be", "liters")):
