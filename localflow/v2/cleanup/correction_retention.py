@@ -22,6 +22,11 @@ _QUANTITY_DETAIL = re.compile(
     rf"(?:[ \t]+(?!(?:{_PREPOSITIONS})\b){_WORD}){{0,2}})"
     rf"(?P<space>[ \t]+)(?P<detail>(?P<prep>{_PREPOSITIONS})[ \t]+.+)",
     re.IGNORECASE)
+# Singular heads from the number profile, plus rotation and volume units.
+_FRACTION_UNIT = re.compile(
+    r"(?:(?:nano|micro|milli|centi|deci|deca|hecto|kilo|mega|giga)?met(?:er|re)"
+    r"|inch|foot|(?:kilo|mega|giga)?(?:byte|bit)|pixel|second|minute|hour|day|week"
+    r"|(?:kilo)?gram|turn|rotation|revolution|lit(?:er|re))", re.IGNORECASE)
 
 
 def qualifier_retention(source: str, span: tuple, marker_start: int):
@@ -34,6 +39,28 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
     """
     start, end = span
     old = source[start:marker_start].rstrip(" \t,;:")
+    fraction = re.fullmatch(
+        rf"(?P<count>[1-9][0-9]*)[ \t]+(?P<denominator>half|halves|quarter|quarters)"
+        rf"[ \t]+of[ \t]+(?:a|an)[ \t]+(?P<unit>{_WORD})", old, re.IGNORECASE)
+    # This exception needs the complete original numeric token and a
+    # closed replacement head. Bare "no" can introduce a negative clause.
+    # Any quote/backtick or triple-tilde run makes this new rule abstain,
+    # including fences nested inside Markdown containers.
+    if (fraction is not None and (start == 0 or source[start - 1].isspace())
+            and source[marker_start:end].lower() != "no"
+            and not any(c in source for c in "\"'‘’“”`") and "~~~" not in source):
+        unit = fraction.group("unit")
+        singular = fraction.group("denominator").lower() in {"half", "quarter"}
+        if singular == (fraction.group("count") == "1") and _FRACTION_UNIT.fullmatch(unit):
+            replacement = re.match(
+                rf"[ \t,;:]*1[ \t]+(?i:half|quarter)[ \t]+{re.escape(unit)}(?![\w-])",
+                source[end:])
+            if replacement is not None and re.match(
+                    r"[ \t]*(?:$|[,;]|[.!?](?=\s|$))",
+                    source[end + replacement.end():]):
+                # The repeated unit is part of both complete fraction
+                # heads. Everything after the replacement stays required.
+                return None, None
     match = _QUANTITY_DETAIL.fullmatch(old)
     if match is None:
         return None, None
