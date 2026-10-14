@@ -8,10 +8,34 @@ from pathlib import Path
 from .common import *
 
 
-def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5):
+def checked_dataset(dataset):
+    freeze = read_json(dataset / "freeze.json")
+    if not freeze:
+        raise RuntimeError("Evaluation sets must be fixed first")
+    if any(file_sha256(dataset / (name + ".jsonl" if name in ("test", "validation") else name)) != digest
+           for name, digest in freeze.get("files", {}).items()):
+        raise RuntimeError("Frozen dataset file changed")
+    if any(file_sha256(ROOT / path) != digest for path, digest in freeze.get("capture_source_hashes", {}).items()):
+        raise RuntimeError("Training prompt source changed after capture")
+    return freeze
+
+
+def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, dataset_dir=None):
     from lfx import train
     run_dir=ART/"train"/name
+    dataset=Path(dataset_dir) if dataset_dir else ART/"dataset"
+    initial=Path(initial_adapter) if initial_adapter else Path(c_identity()["adapter_path"])
+    if not control:
+        checked_dataset(dataset)
+    request = {"name":name,"count":count,"start":start,"control":control,"lr":lr,
+               "dataset_dir":str(dataset.resolve()),
+               "dataset_freeze_sha256":file_sha256(dataset/"freeze.json") if not control else None,
+               "initial_adapter":str(initial.resolve()),
+               "initial_adapter_sha256":file_sha256(initial/"adapters.safetensors"),
+               "training_config":CONFIG["training"]}
     if (run_dir/"completion.json").exists():
+        if read_json(run_dir/"request.json") != request:
+            raise RuntimeError("Completed training name belongs to another or unrecorded request")
         return read_json(run_dir/"completion.json")
     if (run_dir/"metrics.jsonl").exists():
         raise RuntimeError("Interrupted run retained; use a distinct run name with an explicit initial adapter")
@@ -25,9 +49,7 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5):
         validation=read_jsonl(OLD_ART/"dataset/validation_captures.jsonl")
         vexamples=train.load_examples(validation,rng_seed=991)[:100]
     else:
-        if not (ART/"dataset/freeze.json").exists():
-            raise RuntimeError("Evaluation sets must be fixed first")
-        caps=read_jsonl(ART/"dataset/train_captures.jsonl")
+        caps=read_jsonl(dataset/"train_captures.jsonl")
         # Monotone family ids keep nested scaling mixtures stable as later
         # generation waves are appended. The trainer shuffles within this set.
         caps=sorted(caps,key=lambda c:c["family_id"])
@@ -35,18 +57,22 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5):
         if len(fresh)!=count:
             raise RuntimeError(f"Need {count} captured families after offset {start}; have {len(fresh)}")
         # Replay old data to retain C's already-good behaviors. No held-out rows.
+        replay_path=dataset/"replay_captures.jsonl"
+        if replay_path.exists():
+            old_caps=read_jsonl(replay_path)
         chosen=fresh+old_caps[:min(len(old_caps),max(1,count//5))]
-        validation=read_jsonl(ART/"dataset/validation_captures.jsonl")
+        validation=read_jsonl(dataset/"validation_captures.jsonl")
         vexamples=train.load_examples(validation,rng_seed=991)[:160]
     examples=train.load_examples(chosen)
-    initial=Path(initial_adapter) if initial_adapter else Path(c_identity()["adapter_path"])
     cfg=CONFIG["training"]["lora"]
     warmup=min(30,max(5,len(examples)//80))
+    write_json(run_dir/"request.json",request)
     write_json(run_dir/"plan.json", {
         "name":name,"started":utc_now(),"control_old_data_only":control,"new_families":0 if control else count,
         "old_replay_families":len(chosen) if control else len(chosen)-count,"examples":len(examples),
         "source_family_ids":[c["family_id"] for c in chosen],"start_offset":start,
         "train_ids_sha256":sha256_text(json.dumps([c["family_id"] for c in chosen])),
+        "dataset_dir":str(dataset),"dataset_freeze_sha256":file_sha256(dataset/"freeze.json") if not control else None,
         "validation_pair_ids":[e["pair_id"] for e in vexamples],"lr":lr,"warmup_updates":warmup,
         "initial_adapter":str(initial),"initial_adapter_sha256":file_sha256(initial/"adapters.safetensors"),
         "lora":cfg,"seed":20261013,"grad_accum":8,"max_sequence_tokens":6144,

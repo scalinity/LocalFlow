@@ -145,18 +145,37 @@ def evaluate(key, cases_path, name, path=None, variant=False, limit=None, update
         if updated_engine and any(file_sha256(ROOT / "localflow/v2/cleanup" / n) != digest
                                   for n, digest in freeze["source_hashes"].items()):
             raise RuntimeError("Candidate source changed after the fresh evaluation freeze")
+    refinement_input = test and cases_path.resolve().is_relative_to((ART / "refinement").resolve())
+    if name.startswith("refined-") or refinement_input:
+        from .refinement import require_final
+        require_final(cases_path, candidate=updated_engine, key=key, model_path=path,
+                      engine="updated_source" if updated_engine else "separator_fix" if variant else "recorded_f" if recorded_f else "production")
     out = ART / "eval" / f"{name}.jsonl"
     meta_path = out.with_suffix(".meta.json")
     prior = read_json(meta_path)
+    if out.exists() and out.stat().st_size and not prior:
+        raise RuntimeError("Existing evaluation outputs have no identity metadata")
+    runner = Runner(key, path, variant, updated_engine, recorded_f)
+    from lfx.export import content_digest
+    if updated_engine:
+        inference_source = ROOT / "localflow/v2/cleanup/model.py"
+    else:
+        from .baseline import load_runner
+        recorded_runner = load_runner(recorded_f)
+        inference_source = Path(sys.modules[recorded_runner.__module__].__file__)
     identity = {"model":key,"path":str(path or c_identity()["snapshot_path"] if key.startswith("C") else path or key),
-                "engine":"updated_source" if updated_engine else "separator_fix" if variant else "recorded_f" if recorded_f else "production","cases_sha256":file_sha256(cases_path),"limit":limit}
+                "engine":"updated_source" if updated_engine else "separator_fix" if variant else "recorded_f" if recorded_f else "production","cases_sha256":file_sha256(cases_path),"limit":limit,
+                "model_content_digest":content_digest(runner.path),
+                "inference_source_sha256":file_sha256(inference_source),
+                "engine_source_sha256":{n:file_sha256(Path(runner.module.__file__).with_name(n))
+                    for n in ("engine.py","validation.py","prompts.py","document_nodes.py","correction_retention.py")
+                    if Path(runner.module.__file__).with_name(n).exists()}}
     if prior and prior["identity"] != identity:
         raise RuntimeError("Evaluation name already belongs to another artifact or dataset")
     done = {r["case_id"] for r in read_jsonl(out)}
     todo = [c for c in cases if c["case_id"] not in done]
     if not todo:
         return {"already_complete":len(done)}
-    runner = Runner(key, path, variant, updated_engine, recorded_f)
     info = runner.load()
     meta = prior or {"identity":identity,"runs":[]}
     meta["runs"].append({"started":utc_now(),"load":info,"pid":os.getpid(),"todo":len(todo),

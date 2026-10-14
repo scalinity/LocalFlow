@@ -55,7 +55,11 @@ def valid_verdicts(outcomes, expected):
 
 def run(cases_file,models,prefix='final',name='final-judge'):
     cases=read_jsonl(Path(cases_file));request_map={};requests={};request_ids={}
-    if prefix=='fresh':
+    refinement_input = any(c.get('split')=='test' for c in cases) and Path(cases_file).resolve().is_relative_to((ART/'refinement').resolve())
+    if prefix=='refined' or refinement_input:
+        from .refinement import require_final
+        require_final(cases_file)
+    elif prefix=='fresh':
         freeze=read_json(ART/'remediation/freeze.json')
         if not freeze or freeze['cases_sha256']!=file_sha256(Path(cases_file)):
             raise ValueError('Fresh judging requires its exact frozen comparison file')
