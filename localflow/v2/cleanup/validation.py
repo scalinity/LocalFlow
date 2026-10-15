@@ -590,7 +590,8 @@ def _align(source, output, ctx) -> tuple:
         sym: output.count(sym) - source.count(sym)
         for sym in set(SPOKEN_SYMBOLS.values())}
     pending = []             # unauthorized source words, in order
-    prev_kept_word = None    # previous word outside any correction span
+    prev_kept_word = None    # previous non-filler word outside any correction span
+    phrase_stutter = _phrase_stutter_atoms(source, src)
     prev_end = 0
     phrase_start = True      # at text start or after ; : . ! ? newline
     enum_starts = [s for s, _e in ctx.enum_spans]
@@ -607,11 +608,14 @@ def _align(source, output, ctx) -> tuple:
             if not authorized and w in ("and", "also", "then") and any(
                     start < es <= end + 12 for es in enum_starts):
                 authorized = True
-            # Immediate function-word stutter: "the the" in raw speech,
-            # and the doubled preposition a correction deletion leaves
-            # behind ("to [X no wait] to lisa" → "to to lisa").
+            # Immediate function-word stutter: "the the" in raw speech
+            # (a filler between the copies does not break it: "the uh
+            # the"), and the doubled preposition a correction deletion
+            # leaves behind ("to [X no wait] to lisa" → "to to lisa").
             if not authorized and w in STUTTER_WORDS \
                     and prev_kept_word == w:
+                authorized = True
+            if not authorized and idx in phrase_stutter:
                 authorized = True
             # Interjector at a phrase start ("Okay so for the redesign"),
             # possibly after fillers/interjectors — never mid-phrase
@@ -626,12 +630,35 @@ def _align(source, output, ctx) -> tuple:
                     authorized = True
         if not (w in FILLERS or w in INTERJECTORS) or protected:
             phrase_start = False
-        if not in_correction:
+        if not in_correction and (w not in FILLERS or protected):
             prev_kept_word = w
         if not authorized:
             pending.append((idx, start, end, w))
     missing, pairs = _match_in_order(pending, out_words)
     return missing, pairs, src, out_atoms
+
+
+_FILLER_RE = re.compile(rf"(?<!\w)(?:{alternation(FILLERS)})(?!\w)", re.IGNORECASE)
+
+
+def _phrase_stutter_atoms(source: str, atoms: list) -> set:
+    """Atoms of the second copy of a repeated function-word phrase that
+    ends in an article ("in the in the", "on the, uh, on the"). After an
+    article a noun phrase begins, never the same phrase again, so the
+    repeat is a stutter like "the the". Commas and fillers may sit between
+    the words; quoted text keeps its repeats."""
+    kept = [i for i, a in enumerate(atoms) if a[2] not in FILLERS]
+    quoted = quoted_regions(source)
+    found = set()
+    for j in range(2, len(kept) - 1):
+        a, b, c, d = (atoms[kept[k]] for k in (j - 2, j - 1, j, j + 1))
+        if ((a[2], b[2]) != (c[2], d[2]) or a[2] not in STUTTER_WORDS
+                or b[2] not in ("the", "a", "an") or _touches(quoted, a[0], d[1])):
+            continue
+        if all(re.fullmatch(r"[ \t,]*", _FILLER_RE.sub("", source[x[1]:y[0]]))
+               for x, y in ((a, b), (b, c), (c, d))):
+            found.update((kept[j], kept[j + 1]))
+    return found
 
 
 _ARTICLES = ("a", "an")
