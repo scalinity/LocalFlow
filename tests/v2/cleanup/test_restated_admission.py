@@ -91,12 +91,6 @@ class RestatedAdmissionTests(unittest.TestCase):
              "whoever is on call, sorry"),
             ("Check what is on the shelf, sorry, Jonas is on the shelf.",
              "what is on the shelf, sorry"),
-            ("Give it to the nurse, she is on call, sorry, Jonas is on call.",
-             "the nurse, she is on call, sorry"),
-            ("Give it to the nurse who is on call, sorry, Jonas is on call.",
-             "the nurse who is on call, sorry"),
-            ("Give it to the nurse that is on call, sorry, Jonas is on call.",
-             "the nurse that is on call, sorry"),
             ("Give it to Maria and whoever is on call, sorry, Jonas is on call.",
              "whoever is on call, sorry"),
             ("Send the forms to whoever will sign them, sorry, Marta will sign them.",
@@ -164,6 +158,19 @@ class RestatedAdmissionTests(unittest.TestCase):
              "export.", "Tell her Maria will own the grid export, sorry", "span_too_long"),
             ("Tell her Maria will own the grid export, sorry, Jonas will own the grid "
              "export.", "her Maria will own the grid export, sorry", "span_too_long"),
+            # Nothing repeats before a change of three words, none shared in
+            # place, so nothing shows where the old value starts.
+            ("Tell the team Maria will own the grid export, sorry, Jonas will own the grid "
+             "export.", "the team Maria will own the grid export, sorry", "span_too_long"),
+            ("Tell her Maria will own the grid export, sorry, Jonas and Lee will own the "
+             "grid export.", "Tell her Maria will own the grid export, sorry",
+             "span_too_long"),
+            ("Give it to the nurse who is on call, sorry, Jonas is on call.",
+             "the nurse who is on call, sorry", "span_too_long"),
+            ("Give it to the nurse that is on call, sorry, Jonas is on call.",
+             "the nurse that is on call, sorry", "span_too_long"),
+            ("Give it to the nurse, she is on call, sorry, Jonas is on call.",
+             "the nurse, she is on call, sorry", "span_too_long"),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], [reason]))
@@ -172,8 +179,12 @@ class RestatedAdmissionTests(unittest.TestCase):
         for source, proposal in (
             ("Also pull 3 spare bobbins of weft yarn, actually, 4 bobbins of weft yarn, "
              "because the blue runs out fast.", "3 spare bobbins of weft yarn, actually"),
-            ("Tell them the night nurse is on call, sorry, Jonas is on call.",
-             "the night nurse is on call, sorry"),
+            ("Tell them the nurse is on call for the whole night shift, sorry, Jonas is on "
+             "call for the whole night shift.",
+             "the nurse is on call for the whole night shift, sorry"),
+            # Three changed words may share one in place.
+            ("We met at the lab on Monday, sorry, in the clinic on Monday.",
+             "at the lab on Monday, sorry"),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([proposal], []))

@@ -331,10 +331,11 @@ def restatement(n: Neighbourhood) -> Restatement | None:
     repeat, a change that drops a negation (negation_coverage would reject
     the result), a change that keeps every changed word and inserts others
     (``review`` -> ``Jonas will review``), a change with nothing repeated
-    before it that has more old words than replacing ones, unless the old
-    value opens with a determiner or a value the replacement's value takes
-    over (``Tell her Maria`` -> ``Jonas``), or a repeat that a quotation,
-    code span or fence touches. Fillers and a marker chained before the
+    before it that holds more than two words not shared in place, or more
+    old words than replacing ones unless the old value opens with a
+    determiner or a value the replacement's value takes over (``Tell her
+    Maria`` -> ``Jonas``), or a repeat that a quotation, code span or fence
+    touches. Fillers and a marker chained before the
     proposal's own are not words here.
     """
     sentence_end, _words_after, new, _clause = after_marker(n.text, n.end)
@@ -362,17 +363,20 @@ def restatement(n: Neighbourhood) -> Restatement | None:
             if (any(w in NEGATION_WORDS and w not in new_part for w in old_part)
                     or all(w in remaining for w in old_part)):
                 continue
-            # With nothing repeated before the change, words the replacement
-            # has no counterpart for are proved only after a determiner or a
-            # value it takes over ("the nurse" -> "Jonas"; "3 spare
-            # bobbins" -> "4 bobbins"): "Tell her Maria will own it, sorry,
-            # Jonas will own it" never took back "Tell her".
-            if not head and changed > replacing and not (
-                    old_part[0] in _OPENING_DETERMINERS
-                    or (is_value_word(old_part[0]) and is_value_word(new_part[0]))):
-                continue
             same = ([w for w, v in zip(old_part, new_part) if w == v]
                     if changed == replacing else [])
+            # With nothing repeated before the change, nothing shows where
+            # the old value starts. The change then holds at most two words
+            # not shared in place ("at the lab" -> "in the clinic"), and old
+            # words the replacement has no counterpart for are proved only
+            # after a determiner or a value it takes over ("the nurse" ->
+            # "Jonas"; "3 spare bobbins" -> "4 bobbins"): "Tell her Maria
+            # will own it, sorry, Jonas will own it" never took back "Tell
+            # her", nor "the team Maria ..." "the team".
+            if not head and (changed - len(same) > 2 or (changed > replacing and not (
+                    old_part[0] in _OPENING_DETERMINERS
+                    or (is_value_word(old_part[0]) and is_value_word(new_part[0]))))):
+                continue
             repeated = old[:head] + old[head + changed:] + same
             if (len(repeated) >= 2 and any(w not in FUNCTION_WORDS for w in repeated)
                     and ((head and tail) or len(repeated) >= changed - len(same))):

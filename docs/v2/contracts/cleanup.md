@@ -253,8 +253,10 @@ proposal's own (`2.5 hours, actually no wait`) belongs to the marker. An
 unchanged repeat, an open replacement (`12 meters, no, send the rest to
 Marta`), a change that drops a negation, a change that keeps every old
 word and inserts others (`review` → `Jonas will review`), a change with
-nothing repeated before it and more old words than replacing ones, unless
-the old value opens with a determiner or with a value the replacement's
+nothing repeated before it that holds more than two words not shared in
+place (`at the lab` → `in the clinic` shares `the`; `the team Maria` →
+`Jonas` shares nothing) or more old words than replacing ones, unless the
+old value opens with a determiner or with a value the replacement's
 value takes over (`the nurse` → `Jonas`, `3 spare bobbins` → `4
 bobbins`, but not `Tell her Maria will own it` → `Jonas will own it`),
 and a repeat touched by a quotation, code span or fence restate nothing. A restated old value may exceed the word cap and the 80-character
