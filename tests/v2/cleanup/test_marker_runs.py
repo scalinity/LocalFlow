@@ -7,7 +7,9 @@ closes it. A deletion
 that ends at "no" in "ten, no, sorry, eleven" leaves "sorry" behind, and
 that "sorry" belongs to the same marker. A negation that is content (in
 the old value, or opening the replacement) is still required: a run never
-takes a marker that ends in "no", and "make that" only before a number.
+takes a marker that ends in "no", takes "make that" only before a number,
+and takes a marker whose words can open the replacement ("scratch",
+"sorry", "actually", "no wait") only when a comma closes it.
 
 Run: .venv/bin/python -m unittest tests/v2/cleanup/test_marker_runs.py
 """
@@ -84,9 +86,30 @@ class MarkerRunTests(unittest.TestCase):
         ):
             with self.subTest(source=source):
                 self.assertTrue(names <= failures(source, output, [span(source, delete, marker)]))
+        # "actually" without a closing comma may be the replacement's own word, so it stays.
         source = "We need three more servers, no wait, actually no more servers, just more memory."
-        self.assertEqual(failures(source, "We need no more servers, just more memory.",
-                                  [span(source, "three more servers, no wait", "no wait")]), set())
+        spans = [span(source, "three more servers, no wait", "no wait")]
+        self.assertEqual(failures(source, "We need actually no more servers, just more memory.", spans), set())
+        self.assertIn("coverage", failures(source, "We need no more servers, just more memory.", spans))
+
+    def test_a_marker_word_that_opens_the_replacement_stays_without_a_comma(self):
+        for source, delete, wrong, right in (
+            ("Order 5 legal pads, sorry, scratch pads for the lab.", "5 legal pads, sorry",
+             "Order pads for the lab.", "Order scratch pads for the lab."),
+            ("Write the 2 GB temp files to the 4 TB disk, sorry, scratch disk tonight.",
+             "4 TB disk, sorry", "Write the 2 GB temp files to the disk tonight.",
+             "Write the 2 GB temp files to the scratch disk tonight."),
+            ("Bill the client for the 40 scheduled hours, sorry, actually worked hours.",
+             "40 scheduled hours, sorry", "Bill the client for the worked hours.",
+             "Bill the client for the actually worked hours."),
+            ("The clinic quoted a 2 hour wait, sorry, no wait at all for walk-ins.",
+             "a 2 hour wait, sorry", "The clinic quoted wait at all for walk-ins.",
+             "The clinic quoted no wait at all for walk-ins."),
+        ):
+            with self.subTest(source=source):
+                spans = [span(source, delete, "sorry")]
+                self.assertIn("coverage", failures(source, wrong, spans))
+                self.assertEqual(failures(source, right, spans), set())
 
     def test_a_no_before_a_marker_is_the_old_value_unless_the_value_is_complete(self):
         source = "There are no, sorry, there are two blockers."

@@ -178,8 +178,10 @@ no, sorry, there are two` the `no` is the old value), and markers left right aft
 a deletion belong to it while a replacement follows (`ten, no, sorry,
 eleven` deleting `ten, no`; `6 am no make that 7 am`). A trailing run
 never takes a word that can open the replacement: no marker ending in
-`no` (`5, no wait, no more than 6`; `sorry, wait, no more licenses`), and
-`make that` only before a number (`make that change` is a predicate).
+`no` (`5, no wait, no more than 6`; `sorry, wait, no more licenses`),
+`make that` only before a number (`make that change` is a predicate), and
+`scratch`, `sorry`, `actually` or a marker starting with `no` only when a
+comma closes it (`sorry, scratch disk`, `sorry, no wait at all`).
 
 **Closure.** A replacement closes its clause when, after an optional
 repeated frame word and one article, its value is followed by the end of
