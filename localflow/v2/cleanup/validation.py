@@ -761,14 +761,14 @@ def _component_coverage(source, output, ctx, aligned) -> Component:
         {"missing_words": len(missing), "flagged_deletion_ranges": flagged})
 
 
-# A title's period ("Dr. Okafor") and a clock abbreviation's before a
-# lowercase word or a digit ("9 a.m. tomorrow") end no sentence. The parser
-# lane's lexicon.SENTENCE_END states the same rule; the two should become
-# one definition when the branches merge.
-_SOURCE_BOUNDARY_RE = re.compile(
-    r"(?<!\bDr)(?<!\bMr)(?<!\bMrs)(?<!\bMs)(?<!\bProf)"
-    r"\.(?:(?<!\b[aApP]\.[mM]\.)|(?![ \t]+[a-z0-9]))(?=\s|$)|[!?;](?=\s|$)|\n")
+_SOURCE_BOUNDARY_RE = re.compile(r"[.!?;](?=\s|$)|\n")
 _OUTPUT_BOUNDARY_RE = re.compile(r"[.!?;:\n—–]")
+# A title's period ("Dr. Okafor") may end a sentence too ("Do not drive past
+# Elm Dr. Turn left"), so it stays a boundary that a merge must keep; it only
+# never cuts the sentence a negation or condition is read from. The parser
+# lane's lexicon.SENTENCE_END reads titles the same way; the two should
+# become one definition when the branches merge.
+_TITLE_PERIOD_RE = re.compile(r"\b(?:Dr|Mr|Mrs|Ms|Prof)\.(?=[ \t])")
 
 
 @lru_cache(maxsize=64)
@@ -776,6 +776,13 @@ def _source_boundaries(source: str) -> tuple:
     """Every source sentence boundary, found over the whole text so the
     words around a period decide it, not where a searched range ends."""
     return tuple(m.span() for m in _SOURCE_BOUNDARY_RE.finditer(source))
+
+
+def _sentence_ends(source: str) -> list:
+    """Source boundaries that end the sentence a negation, condition or
+    restatement is read from: a title's period does not."""
+    titles = {m.end() - 1 for m in _TITLE_PERIOD_RE.finditer(source)}
+    return [(a, b) for a, b in _source_boundaries(source) if a not in titles]
 
 
 def _boundary_within(source: str, start: int, end: int, deleted=()) -> bool:
@@ -788,7 +795,7 @@ def _sentence_words(source: str, pos: int, deleted=()) -> set:
     """The words of the sentence around ``pos``. Text an admitted
     correction deletes (``deleted`` spans) is neither a word nor a
     boundary of the sentence the output can form."""
-    ends = [(a, b) for a, b in _source_boundaries(source) if not _overlaps(deleted, a, b)]
+    ends = [(a, b) for a, b in _sentence_ends(source) if not _overlaps(deleted, a, b)]
     start = max((b for _a, b in ends if b <= pos), default=0)
     end = min((b for a, b in ends if a >= pos), default=len(source))
     return {w for s, e, w in _word_atoms(source[start:end])
@@ -1239,7 +1246,7 @@ def _word_multiset_survival(source, output, words: frozenset,
         if correction in ctx.restated_value_spans:
             continue
         old = [a for a in atoms if start <= a[0] and a[1] <= marker]
-        limit = min((a for a, _b in _source_boundaries(source) if a >= end), default=len(source))
+        limit = min((a for a, _b in _sentence_ends(source) if a >= end), default=len(source))
         replacement = [a for a in atoms if end <= a[0] and a[1] <= limit
                        and not _overlaps(ctx.frame_spans, a[0], a[1])]
         for position, a in enumerate(old):
