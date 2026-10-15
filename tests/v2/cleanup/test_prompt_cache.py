@@ -3,7 +3,6 @@ import pathlib
 import sys
 import types
 import unittest
-from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 from localflow.v2.cleanup.model import ModelRunner
@@ -36,13 +35,9 @@ class PromptCacheTests(unittest.TestCase):
         self.runner._model = Model()
         self.runner._tokenizer = Tokenizer()
         self.prefix = 'Shared instruction. ' * 240
-        modules = {
-            'mlx.core': types.SimpleNamespace(array=lambda x: x, eval=lambda *x: None, clear_cache=lambda: None),
-            'mlx_lm.models.cache': types.SimpleNamespace(make_prompt_cache=lambda model: [Cache()]),
-        }
-        self.patch = patch.dict(sys.modules, modules)
-        self.patch.start()
-        self.addCleanup(self.patch.stop)
+        self.runner._mx = types.SimpleNamespace(array=lambda x: x, eval=lambda *x: None,
+                                                clear_cache=lambda: None)
+        self.runner._make_prompt_cache = lambda model: [Cache()]
 
     def prompt(self, body, prefix=None):
         return (prefix or self.prefix) + '<|im_start|>user\n' + body + '<|im_start|>assistant\n'

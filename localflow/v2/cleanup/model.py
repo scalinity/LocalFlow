@@ -49,9 +49,15 @@ class ModelRunner:
         self._tokenizer = None
         self.template_revision = None
         self._prefix_caches = OrderedDict()
+        # mlx entry points the prefix cache uses, bound by load().
+        self._mx = None
+        self._make_prompt_cache = None
 
     def load(self):
+        import mlx.core as mx
         from mlx_lm import load as llm_load
+        from mlx_lm.models.cache import make_prompt_cache
+        self._mx, self._make_prompt_cache = mx, make_prompt_cache
         self._model, self._tokenizer = llm_load(self.model_id)
         self._prefix_caches.clear()
         self.template_revision = self._probe_revision()
@@ -88,8 +94,7 @@ class ModelRunner:
         can become another call's history. Whole PREFILL_STEP blocks preserve
         the uncached generator's prefill grouping for recurrent model layers.
         """
-        import mlx.core as mx
-        from mlx_lm.models.cache import make_prompt_cache
+        mx = self._mx
         boundary = prompt.rfind("<|im_start|>user\n")
         if boundary < 0:
             return prompt, None
@@ -102,7 +107,7 @@ class ModelRunner:
             return prompt, None
         key = tuple(prefix[:count])
         if key not in self._prefix_caches:
-            cache = make_prompt_cache(self._model)
+            cache = self._make_prompt_cache(self._model)
             for offset in range(0, count, PREFILL_STEP):
                 self._model(mx.array([prefix[offset:offset + PREFILL_STEP]]), cache=cache)
                 mx.eval([c.state for c in cache])
