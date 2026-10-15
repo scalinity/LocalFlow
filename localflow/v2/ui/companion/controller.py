@@ -119,6 +119,7 @@ class CompanionController:
             sampling_service=spec.get("sampling_service"),
             splits_service=spec.get("splits_service"),
             profile_service=spec.get("profile_service"),
+            voice_insights_service=spec.get("voice_insights_service"),
             export_service=spec.get("export_service"),
             transforms_store=spec.get("transforms_store"))
         self.prefs = Prefs(spec["prefs_path"] if "prefs_path" in spec

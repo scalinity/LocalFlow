@@ -20,9 +20,11 @@ HOME_RECENT_LIMIT = 24
 
 
 class CompanionState(HubState):
-    def __init__(self, history_service, vocabulary_store=None, **services):
+    def __init__(self, history_service, vocabulary_store=None,
+                 voice_insights_service=None, **services):
         super().__init__(history_service, **services)
         self.vocabulary_store = vocabulary_store
+        self.voice_insights_service = voice_insights_service
         self.views["dictionary"] = self._blank_view("dictionary")
 
     # ---- views ------------------------------------------------------------
@@ -126,16 +128,46 @@ class CompanionState(HubState):
         self._publish_locked("home", req, error=None, loading=False,
                              data=data)
 
+    # ---- Insights → Your Voice (written layer, ADR-0001) --------------------
+
+    def _load_insights(self, req):
+        """HubState's loader, plus the written voice profile's status on
+        the voice subview (its own service; a failure there is reported
+        beside the measured profile, never instead of it)."""
+        if req.inputs["subview"] != "voice" or self.insights_service is None:
+            return super()._load_insights(req)
+        try:
+            data = {"subview": "voice"}
+            if self.profile_service is not None:
+                data["profile"] = self.profile_service.current()
+            else:
+                data["profile"] = None
+                data["profile_reason"] = "profile_service_unavailable"
+        except Exception as e:
+            self._publish_locked("insights", req, error=type(e).__name__,
+                                 loading=False)
+            return
+        if self.voice_insights_service is not None:
+            try:
+                data["voice_profile"] = self.voice_insights_service.status()
+            except Exception as e:
+                data["voice_profile_error"] = type(e).__name__
+        self._publish_locked("insights", req, error=None, loading=False,
+                             data=data)
+
     # ---- revocation --------------------------------------------------------
 
     def revoke_job(self, job_id):
         """HubState scrubs History/Models/Insights; the companion's Home
         shows recent rows and a profile, so its cached data goes too (it
-        reloads when shown)."""
+        reloads when shown), as does a cached written voice profile."""
         if job_id:
             with self._lock:
                 if self.views["home"].get("data") is not None:
                     self.views["home"]["data"] = None
+                if (self.views["insights"].get("data") or {}).get(
+                        "voice_profile") is not None:
+                    self.views["insights"]["data"] = None
         super().revoke_job(job_id)  # advances the epoch: in-flight Home
         # reads taken before the deletion are dropped and re-run
         if job_id and self.selected_view == "home":

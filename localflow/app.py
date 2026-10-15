@@ -548,6 +548,25 @@ class AppDelegate(NSObject):
             self.v2log.emit("learning.services_unavailable",
                             level="WARNING", reason_code=type(e).__name__,
                             outcome="m14_curation_off")
+        # Your Voice written layer (ADR-0001): a Claude-written profile at
+        # word milestones, read from the measured profile's eligible
+        # speech. Degrades to None on its own; never on the dictation path.
+        self._voice_insights = None
+        if self._profile is not None:
+            try:
+                from localflow.v2 import voice_insights as v2_voice
+                # The Keychain key is read only for the real store: every
+                # harness redirects V2_DB, so no test can spend API calls.
+                real_store = V2_DB == APP_SUPPORT / "v2.db"
+                self._voice_insights = v2_voice.VoiceInsightsService(
+                    self.store, self._profile, emit=self.v2log.emit,
+                    key_reader=v2_voice.read_api_key if real_store
+                    else (lambda: None))
+            except Exception as e:
+                self._voice_insights = None
+                self.v2log.emit("voice_insights.unavailable",
+                                level="WARNING",
+                                reason_code=type(e).__name__)
         try:
             self._styles = v2_profiles_store.StyleRuleStore(self.store)
             self._snip_store = v2_snippets_store.SnippetStore(self.store)
@@ -2862,6 +2881,15 @@ class AppDelegate(NSObject):
         except Exception as e:
             self.v2log.emit("profile.idle_failed", level="WARNING",
                             reason_code=type(e).__name__)
+        # ADR-0001: write the voice profile once per newly reached word
+        # milestone (a network call, never GPU work; one at a time).
+        if self._voice_insights is not None:
+            try:
+                self._voice_insights.auto_generate_if_due()
+            except Exception as e:
+                self.v2log.emit("voice_insights.idle_failed",
+                                level="WARNING",
+                                reason_code=type(e).__name__)
 
     @objc.python_method
     def _retention_pass(self):
@@ -2874,6 +2902,10 @@ class AppDelegate(NSObject):
             # job-row pruning, deferred to this milestone (hub.md).
             if self._analytics is not None:
                 self._analytics.expire_usage()
+            # ADR-0001: profile text whose evidence this pass expired is
+            # cleared now, not on the next read.
+            if self._voice_insights is not None:
+                self._voice_insights.scrub()
             # A job with an admitted recovery claim is never pruned under
             # it (m13-policy-r1 D07); the store also keeps recoverable
             # jobs inside their window and any with a retained journal.
@@ -5558,6 +5590,7 @@ class AppDelegate(NSObject):
             "sampling_service": self._sampling,
             "splits_service": self._splits,
             "profile_service": self._profile,
+            "voice_insights_service": self._voice_insights,
             "export_service": self._exporter,
             "transforms_store": self._tf_store,
             "vocabulary_store": self._vocab,

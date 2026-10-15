@@ -7,7 +7,9 @@ the deterministic, local ProfileService snapshot: absent, invalidated
 (reason only, never its stale numbers) or current (measured block, and
 cards that cite their own evidence). Generate runs off the main thread
 under a key; only the newest Generate reports. Excluding evidence names
-the snapshot the page rendered.
+the snapshot the page rendered. The written layer (ADR-0001) is the
+Claude-written profile's status beside it; ``voice.write``
+writes one, at most one at a time.
 """
 
 from __future__ import annotations
@@ -68,6 +70,34 @@ def register(ctl):
         ctl.request_flush()
         return {"started": True}
 
+    @br.command("voice.write")
+    def write(p):
+        """Write the Claude voice profile (ADR-0001) off the main thread.
+        One at a time: Background lets the newest call win, so a second
+        click is refused rather than paying twice."""
+        svc = getattr(st, "voice_insights_service", None)
+        if svc is None:
+            B.unavailable("voice_insights_unavailable")
+        if "voice_profile" in ctl.background.running:
+            B.refuse("already_running")
+        ctl.notes.pop("voice_profile", None)
+
+        def done(out, err, current):
+            if not current:
+                return
+            if err is not None:
+                ctl.notes["voice_profile"] = {
+                    "code": getattr(err, "code", "generation_failed"),
+                    "reason": type(err).__name__,
+                    **{k: v for k, v in (getattr(err, "numbers", None)
+                                         or {}).items()
+                       if isinstance(v, int)}}
+            st.reload_insights()
+            ctl.request_flush()
+        ctl.background.run("voice_profile", svc.generate, done)
+        ctl.request_flush()
+        return {"started": True}
+
     @br.command("voice.exclude", {"snapshot_id": Str(max_len=120),
                                   "example_id": Str(max_len=120)})
     def exclude(p):
@@ -97,13 +127,21 @@ def insights_model(ctl):
            "subview": v.get("subview", "usage"), "range": v.get("range"),
            "app": v.get("app"), "mode": v.get("mode"),
            "note": ctl.notes.get("voice"),
-           "voice_running": "voice" in ctl.background.running}
+           "voice_running": "voice" in ctl.background.running,
+           "profile_note": ctl.notes.get("voice_profile"),
+           "profile_running": "voice_profile" in ctl.background.running}
     if data is None or data.get("subview") != out["subview"]:
         out["data"] = None
         return out
     if data.get("subview") == "voice":
+        vp = _voice_profile(data.get("voice_profile"))
+        if vp and vp["running"]:
+            out["profile_running"] = True  # an idle-pass run counts too
         out["data"] = {"profile": _profile(data.get("profile")),
-                       "profile_reason": data.get("profile_reason")}
+                       "profile_reason": data.get("profile_reason"),
+                       "voice_profile": vp,
+                       "voice_profile_error": data.get(
+                           "voice_profile_error")}
         return out
     s = data.get("summary") or {}
     out["data"] = {
@@ -183,6 +221,36 @@ def _profile(p):
              "evidence": list(c.get("evidence_example_ids") or ())[:5],
              "coverage": c.get("coverage")}
             for c in p.get("cards") or ()],
+    }
+
+
+_VOICE_FIELDS = ("headline", "superpower_title", "superpower_description",
+                 "peak_time_label", "peak_time_description",
+                 "peak_time_top_app", "catch_phrase",
+                 "catch_phrase_description", "catch_phrase_dictations",
+                 "persona", "most_used_word", "most_removed_word")
+
+
+def _voice_profile(vp):
+    """The written profile's status, allowlisted field by field (never a
+    key, path or id)."""
+    if not vp:
+        return None
+    rec = vp.get("record")
+    fields = (rec or {}).get("fields") or {}
+    return {
+        **{k: vp.get(k) for k in (
+            "state", "word_count", "milestone", "next_milestone",
+            "target_milestone", "fraction", "words_remaining",
+            "min_local_words", "available", "unavailable_reason")},
+        "running": bool(vp.get("running")),
+        "record": None if rec is None else {
+            **{k: rec.get(k) for k in (
+                "milestone", "created_at_utc", "model_id",
+                "sample_examples", "sample_words", "coverage",
+                "invalidated_reason")},
+            "fields": {k: fields.get(k) for k in _VOICE_FIELDS
+                       if k in fields}},
     }
 
 

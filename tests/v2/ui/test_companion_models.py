@@ -186,6 +186,81 @@ def test_voice_exclusion_names_the_rendered_snapshot():
           " names the snapshot the page rendered")
 
 
+def test_voice_write_generates_and_refuses_overlap():
+    """The written layer (ADR-0001) through the bridge: Generate writes the
+    profile off the main thread and the read model carries only
+    allowlisted fields; a second Generate while one runs is refused; no
+    service means unavailable. The synthesizer is a fake — never the
+    network, and the harness's redirected store reads no Keychain key."""
+    import threading
+    from localflow.v2 import voice_insights as vi
+    with CWorld() as w:
+        assert w.d._voice_insights is not None
+        assert w.d._voice_insights.status()["unavailable_reason"] == \
+            "no_api_key", "a redirected store must never read the Keychain"
+        gate = threading.Event()
+        calls = []
+
+        def synth(payload):
+            calls.append(payload)
+            gate.wait(10)
+            return ({"headline": "Shipping Ideas Out Loud",
+                     "superpower_title": "Release Shepherd",
+                     "superpower_description": "You steer releases.",
+                     "peak_time_description": "",
+                     "catch_phrase": "synthetic voice sample",
+                     "catch_phrase_description": "You test things.",
+                     "persona": "Organize"}, "claude-opus-fake", {})
+        svc = vi.VoiceInsightsService(
+            w.d.store, w.d._profile, synthesize=synth,
+            key_reader=lambda: None)
+        w.ctl.state.voice_insights_service = svc
+        for i in range(30):
+            raw = " ".join([f"synthetic voice sample {i}"]
+                           + [f"w{i}v{j}" for j in range(76)])
+            _seed_example(w.d, raw, raw.capitalize() + ".")
+        jobs = w.d.store.submit(lambda c: [r[0] for r in c.execute(
+            "SELECT job_id FROM training_examples")])
+        for job in jobs:
+            w.d._analytics.record_dictation_fact(
+                job_id=job, activity_at_utc="2026-10-09T16:14:00.000Z",
+                timezone="America/New_York", utc_offset_minutes=-240,
+                app_name="Notes", final_words=80)
+        w.select("insights")
+        assert w.host.send("insights.subview", {"subview": "voice"})[
+            "status"] == "success"
+        w.drain()
+        vp = w.host.latest("insights")["data"]["voice_profile"]
+        assert vp["state"] == "first_time_eligible", vp
+        assert w.host.send("voice.write")["status"] == "success"
+        out = w.host.send("voice.write")
+        assert out["status"] == "refusal" and \
+            out["reason_code"] == "already_running", out
+        gate.set()
+        w.drain()
+        w.ctl.request_flush()
+        w.drain()
+        model = w.host.latest("insights")
+        vp = model["data"]["voice_profile"]
+        assert vp["state"] == "current", vp
+        fields = vp["record"]["fields"]
+        assert fields["superpower_title"] == "Release Shepherd"
+        assert fields["peak_time_label"] == "Friday at 12 p.m."
+        assert fields["peak_time_top_app"] == "Notes"
+        assert set(vp) == {"state", "word_count", "milestone",
+                           "next_milestone", "target_milestone", "fraction",
+                           "words_remaining", "min_local_words", "available",
+                           "unavailable_reason", "running", "record"}
+        assert len(calls) == 1
+        assert model["profile_note"] is None
+        w.ctl.state.voice_insights_service = None
+        out = w.host.send("voice.write")
+        assert out["status"] == "unavailable" and \
+            out["reason_code"] == "voice_insights_unavailable", out
+    print("ok  your voice: Generate writes the Claude profile off the main"
+          " thread, refuses overlap, and reads no Keychain in a harness")
+
+
 class SavePanels(Panels):
     def save_jsonl(self, name):
         return self.answer
@@ -229,5 +304,6 @@ if __name__ == "__main__":
             test_mine_approve_undo_bind_to_the_rendered_lists,
             test_export_and_validate_bind_to_the_chosen_folder,
             test_voice_exclusion_names_the_rendered_snapshot,
+            test_voice_write_generates_and_refuses_overlap,
             test_diagnostics_export_writes_the_rendered_window_redacted):
         test()

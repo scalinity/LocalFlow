@@ -431,6 +431,7 @@ def hub_spec(d, sounds=None, **overrides):
         "sampling_service": d._sampling,
         "splits_service": d._splits,
         "profile_service": d._profile,
+        "voice_insights_service": getattr(d, "_voice_insights", None),
         "export_service": d._exporter,
         "transforms_store": d._tf_store,
     }
