@@ -809,16 +809,20 @@ _SOURCE_BOUNDARY_RE = re.compile(r"[.!?;](?=\s|$)|\n")
 _OUTPUT_BOUNDARY_RE = re.compile(r"[.!?;:\n—–]")
 
 
-def _sentence_words(source: str, pos: int) -> set:
-    starts = [m.end() for m in _SOURCE_BOUNDARY_RE.finditer(source, 0, pos)]
-    start = starts[-1] if starts else 0
-    m = _SOURCE_BOUNDARY_RE.search(source, pos)
-    end = m.end() if m else len(source)
-    return {w for _, _, w in _word_atoms(source[start:end])}
+def _sentence_words(source: str, pos: int, deleted=()) -> set:
+    """The words of the sentence around ``pos``. Text an admitted
+    correction deletes (``deleted`` spans) is neither a word nor a
+    boundary of the sentence the output can form."""
+    ends = [m for m in _SOURCE_BOUNDARY_RE.finditer(source)
+            if not _overlaps(deleted, m.start(), m.end())]
+    start = max((m.end() for m in ends if m.end() <= pos), default=0)
+    end = min((m.end() for m in ends if m.start() >= pos), default=len(source))
+    return {w for s, e, w in _word_atoms(source[start:end])
+            if not _overlaps(deleted, s + start, e + start)}
 
 
-def _sentence_has_scope(source: str, pos: int) -> bool:
-    return bool(_sentence_words(source, pos) & SCOPE_WORDS)
+def _sentence_has_scope(source: str, pos: int, deleted=()) -> bool:
+    return bool(_sentence_words(source, pos, deleted) & SCOPE_WORDS)
 
 
 # Words that make a sentence conditional or restricted. A clause joined to
@@ -831,6 +835,8 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
     """An explicit source sentence boundary next to a negated or
     conditional sentence survives as a boundary in the output — merging
     "Do not deploy. Run tests." into one clause widens the prohibition.
+    Text an admitted correction deletes, its boundaries and its words
+    (a marker's "no"), no longer shapes the sentences.
     A sentence that opens with its own coordinating conjunction may join
     the previous one at a comma when neither holds a condition ("free.
     But the email said it was not open" → "free, but the email said …"):
@@ -838,16 +844,22 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
     Added boundaries must keep restrictions and coordinating conjunctions
     attached to their clauses."""
     _missing, pairs, src, out = aligned
+    # Admitted deletions only: an exact restatement the validator infers
+    # from the output keeps its sentence boundary.
+    deleted = [c for c in ctx.correction_spans if c not in ctx.restated_value_spans]
     merged = []
     for (i, oi), (k, ok) in zip(pairs, pairs[1:]):
-        if not _SOURCE_BOUNDARY_RE.search(source, src[i][1], src[k][0]):
+        # A boundary inside an admitted deletion goes with the deleted text
+        # ("for 15 minutes. Actually no, 10 minutes"), and so do its words.
+        if not any(not _overlaps(deleted, m.start(), m.end())
+                   for m in _SOURCE_BOUNDARY_RE.finditer(source, src[i][1], src[k][0])):
             continue
-        if not (_sentence_has_scope(source, src[i][0])
-                or _sentence_has_scope(source, src[k][0])):
+        if not (_sentence_has_scope(source, src[i][0], deleted)
+                or _sentence_has_scope(source, src[k][0], deleted)):
             continue
         if _OUTPUT_BOUNDARY_RE.search(output, out[oi][1], out[ok][0]):
             continue
-        if not (_opens_coordinate_clause(source, src, i, k)
+        if not (_opens_coordinate_clause(source, src, i, k, deleted)
                 and "," in output[out[oi][1]:out[ok][0]]):
             merged.append([src[i][1], src[k][0]])
     introduced = _restriction_breaks(source, output, aligned)
@@ -859,7 +871,7 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
                       "detached_conjunction_breaks": [list(b[:2]) for b in dangling]})
 
 
-def _opens_coordinate_clause(source, atoms, before, first) -> bool:
+def _opens_coordinate_clause(source, atoms, before, first, deleted=()) -> bool:
     """The sentence after a boundary opens with "but", "so" or "yet", or
     with "and"/"or" followed by its own finite verb within three words
     ("Or should I skip it", "And there is no history"). "Or the vent" may
@@ -868,8 +880,8 @@ def _opens_coordinate_clause(source, atoms, before, first) -> bool:
     neither sentence may hold a condition or restriction: only a negation
     keeps to its own clause when the next one opens with a conjunction."""
     if first != before + 1 or (
-            (_sentence_words(source, atoms[before][0]) | _sentence_words(source, atoms[first][0]))
-            & _CONDITION_WORDS):
+            (_sentence_words(source, atoms[before][0], deleted)
+             | _sentence_words(source, atoms[first][0], deleted)) & _CONDITION_WORDS):
         return False
     word = atoms[first][2]
     if word in ("but", "so", "yet"):
