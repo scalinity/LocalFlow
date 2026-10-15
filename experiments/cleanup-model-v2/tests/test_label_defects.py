@@ -29,13 +29,23 @@ class GoldDeletionKeptTests(unittest.TestCase):
 
 
 class DroppedWordTests(unittest.TestCase):
-    def test_conjunction_dropped_at_a_new_sentence_is_a_defect(self):
+    def test_conjunction_dropped_at_a_new_sentence_is_a_defect_and_restorable(self):
         source = 'the samples are in the cold room and before you move them label them'
         target = 'The samples are in the cold room. Before you move them, label them.'
         hit = defects.drops_dictated_word(source, target, [])
         self.assertEqual(hit['dropped'], [{'kind': 'conjunction_at_split', 'words': 'and'}])
-        self.assertIsNone(defects.drops_dictated_word(
-            source, 'The samples are in the cold room. And before you move them, label them.', []))
+        fixed = defects.restore_split_conjunctions(source, target, [])
+        self.assertEqual(fixed, 'The samples are in the cold room. And before you move them, label them.')
+        self.assertIsNone(defects.drops_dictated_word(source, fixed, []))
+
+    def test_restoration_is_refused_when_another_dropped_word_would_remain(self):
+        source = 'the samples are cold and before you move them really label them'
+        target = 'The samples are cold. Before you move them, label them.'
+        self.assertIsNone(defects.restore_split_conjunctions(source, target, []))
+        self.assertIsNone(defects.restore_split_conjunctions('keep it cold', 'Keep it cold.', []))
+        # In a list target the dropped 'and' is the list conversion, not a run-on split.
+        self.assertIsNone(defects.restore_split_conjunctions(
+            'check the pump and 2 log the reading', '1. Check the pump.\n2. Log the reading.', []))
 
     def test_unlisted_correction_is_a_defect(self):
         source = 'write it to the review directory sorry because the other one gets wiped'

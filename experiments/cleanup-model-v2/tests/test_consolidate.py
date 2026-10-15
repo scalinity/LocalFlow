@@ -70,5 +70,15 @@ class BuildTests(unittest.TestCase):
             capture.assert_not_called()
 
 
+
+class RestoredConjunctionTests(unittest.TestCase):
+    def test_restoration_applies_the_gold_deletions_and_skips_an_unanchored_line(self):
+        row = {'case_id': 'c', 'model_input': 'we booked 16 rooms, sorry 17 rooms and before noon we call the hotel',
+               'gold_lines': ['16 rooms, sorry']}
+        target = 'We booked 17 rooms. Before noon we call the hotel.'
+        self.assertEqual(consolidate._restored_conjunctions(row, target),
+                         'We booked 17 rooms. And before noon we call the hotel.')
+        self.assertIsNone(consolidate._restored_conjunctions({**row, 'gold_lines': ['nine rooms, sorry']}, target))
+
 if __name__ == '__main__':
     unittest.main()

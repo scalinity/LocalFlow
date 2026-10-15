@@ -183,3 +183,34 @@ def label_defect(source, target, offsets, vocabulary_pairs=()):
             return hit
     return None
 
+
+def restore_split_conjunctions(source, target, offsets, vocabulary_pairs=()):
+    """Where the target starts a new sentence exactly where the pre-cleanup text
+    had a run of conjunctions it dropped ('cold room and before' -> 'cold room.
+    Before'), put the dictated run back after the boundary, capitalised, and
+    give the next word its pre-cleanup case. Returns the restored target, or
+    None when there is no such drop or another dropped word would remain. A
+    list target is never restored: its dropped 'and' is a list conversion."""
+    if LIST_TARGET.search(target):
+        return None
+    pre = remove_spans(source, offsets)
+    a, b = _tokens(pre), _tokens(target)
+    aw, bw = [t[2] for t in a], [t[2] for t in b]
+    inserts = []
+    for tag, i1, i2, j1, _j2 in _edits(aw, bw):
+        if tag != "delete" or _benign_deletion(aw, i1, i2) or not all(w in CONJUNCTIONS for w in aw[i1:i2]):
+            continue
+        if not 0 < j1 < len(b) or not re.fullmatch(r"[.!?]\s+", target[b[j1 - 1][1]:b[j1][0]]):
+            continue
+        run = pre[a[i1][0]:a[i2 - 1][1]]
+        following = pre[a[i2][0]:a[i2][1]] if i2 < len(a) else ""
+        inserts.append((b[j1][0], run[:1].upper() + run[1:], following))
+    if not inserts:
+        return None
+    out = target
+    for position, run, following in sorted(inserts, reverse=True):
+        rest = out[position:]
+        if following[:1].islower() and rest[:1].isupper():
+            rest = rest[:1].lower() + rest[1:]
+        out = out[:position] + run + " " + rest
+    return None if drops_dictated_word(source, out, offsets, vocabulary_pairs) else out

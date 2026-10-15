@@ -39,6 +39,17 @@ def _vocabulary(row):
     return out
 
 
+def _restored_conjunctions(row, target):
+    """The target with the conjunctions it dropped at a new sentence put back, or None."""
+    from .label_defects import restore_split_conjunctions
+    from .refinement_data import correction_offsets
+    try:
+        offsets = correction_offsets(row)
+    except ValueError:
+        return None  # capture records the unanchored line
+    return restore_split_conjunctions(row["model_input"], target, offsets, row.get("vocabulary_pairs"))
+
+
 def _held_out_texts():
     texts = set()
     for path in [REFINEMENT / "dataset" / "validation.jsonl", REFINEMENT / "dataset" / "test.jsonl",
@@ -94,6 +105,11 @@ def collect():
             exclusions["duplicate_input"] += 1
             continue
         seen_inputs.add(key)
+        restored = _restored_conjunctions(row, normalized)
+        if restored:
+            # The label split a run-on and dropped the dictated "and", "so" or "because".
+            normalized, changes = restored, changes + ["restored_split_conjunction"]
+            stats["split_conjunctions_restored"] += 1
         row = dict(row, target=normalized, split="train", consolidated_origin=origin, policy_changes=changes)
         if changes:
             row["original_target"] = target
