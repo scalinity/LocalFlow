@@ -647,6 +647,16 @@ def _parallel(n: Neighbourhood) -> bool:
 _SENTENCE_END_RE = re.compile(SENTENCE_END)
 
 
+def _opens_sentence(n: Neighbourhood) -> bool:
+    """Nothing of its sentence stands before the old value."""
+    before = n.start
+    while before and n.text[before - 1].isspace():
+        before -= 1
+    # "Dr. " opens no sentence.
+    return (not before or "\n" in n.text[before:n.start]
+            or _SENTENCE_END_RE.match(n.text, before - 1) is not None)
+
+
 def _restated_across_sentences(n: Neighbourhood) -> bool:
     """The marker opens the sentence after the one the old value ends.
 
@@ -666,11 +676,7 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
     if not old.endswith(".") or len(ends) != 1 or ends[0].start() != len(old) - 1:
         return False
     shape = restatement(n)
-    before = s
-    while before and text[before - 1].isspace():
-        before -= 1
-    # "Dr. " opens no sentence.
-    if not before or "\n" in text[before:s] or _SENTENCE_END_RE.match(text, before - 1):
+    if _opens_sentence(n):
         return shape is not None
     # Merged into the old sentence, the replacement must repeat the old
     # value's end: "the blue folder on the counter. Actually, the blue
@@ -743,13 +749,16 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
                 for w in before_words[:-1]):
             return "overbroad_calendar_value"
     if marker in _ORDINARY_WORD_MARKERS:
-        # A restated old value is the evidence itself, and its repeated
-        # words may include the predicate ("Maria will own the grid
-        # conversion, no, Jonas will own the grid conversion").
+        # A restated old value is the evidence itself. Its replacement may
+        # open a predicate that restates the old one ("Maria will own the
+        # grid conversion, no, Jonas will own the grid conversion") or
+        # replace a whole sentence, but not a new one: "the nurse on call,
+        # sorry, Jonas is on call" would leave "Give it to Jonas is on call".
         proved = across or restatement(n) is not None
+        own_predicate = (across and _opens_sentence(n)) or (proved and _predicate_restated(n))
         if (not (proved or _parallel(n) or _parallel_metric_lengths(n))
                 or _yes_no_contrast(n) or _apology(n)
-                or (not proved and _replacement_opens_predicate(n))
+                or (not own_predicate and _replacement_opens_predicate(n))
                 or (marker == "make that" and not _replacement_closes_within(
                     n, len(n.old_words) + 1))):
             return "not_parallel"
@@ -766,6 +775,13 @@ def _replacement_closes_within(n: Neighbourhood, words: int) -> bool:
 
 # "am" is left out: it follows only "I", and "9 am" is a time.
 _PREDICATE_AUXILIARIES = FINITE_AUXILIARIES - {"am"}
+
+
+def _predicate_restated(n: Neighbourhood) -> bool:
+    """An auxiliary among the replacement's first four words stands in the
+    old value too, so the predicate it opens is the old value's own."""
+    return any(w in _PREDICATE_AUXILIARIES and w in n.old_words
+               for w in after_marker(n.text, n.end)[3][:4])
 
 
 def _replacement_opens_predicate(n: Neighbourhood) -> bool:

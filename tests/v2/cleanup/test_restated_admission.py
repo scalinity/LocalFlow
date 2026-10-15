@@ -78,6 +78,21 @@ class RestatedAdmissionTests(unittest.TestCase):
         target = "Jonas will own the grid export, since Maria is away."
         self.assertEqual(clean(source, target, proposal).text, target)
 
+    def test_a_restatement_opens_no_new_predicate(self):
+        for source, proposal in (
+            ("Give it to the nurse on call, sorry, Jonas is on call.", "the nurse on call, sorry"),
+            ("It is 10 minutes of rest, no, it is 15 minutes of rest.", "10 minutes of rest, no"),
+            # Merged into the sentence before, the new predicate would join it.
+            ("Leave the tray at the lab. Sorry, Jonas is at the lab.",
+             "the tray at the lab. Sorry"),
+        ):
+            with self.subTest(proposal=proposal):
+                self.assertEqual(reasons(proposal, source), ([], ["not_parallel"]))
+        # A whole sentence may give way to one with its own predicate.
+        proposal = "The nurse on call. Sorry"
+        self.assertEqual(reasons(proposal, "The nurse on call. Sorry, Jonas is on call."),
+                         ([proposal], []))
+
     def test_a_restated_detail_needs_no_move(self):
         for source, proposal in (
             ("Thread the warp at 40 ends per inch, no sorry, thirty-six ends per inch, "
