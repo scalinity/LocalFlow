@@ -250,6 +250,41 @@ class CorrectionRetentionTests(unittest.TestCase):
                 result, _ = clean(source, lossy, deletion)
                 self.assertEqual(result.text, source)
 
+    def test_a_bound_quantity_with_its_detail_may_exceed_the_word_cap(self):
+        for source, deletion, target in (
+            ("Bring 2 boxes of the adhesive electrodes, sorry, 3 boxes of the adhesive "
+             "electrodes for the sensors.", "2 boxes of the adhesive electrodes, sorry",
+             "Bring 3 boxes of the adhesive electrodes for the sensors."),
+            ("Assign 4 rooms per attendant on the north wing only, actually 6 rooms per "
+             "attendant on the north wing only, and keep the suites apart.",
+             "4 rooms per attendant on the north wing only, actually",
+             "Assign 6 rooms per attendant on the north wing only, and keep the suites apart."),
+            ("Mix 4 liters of the blue dye, sorry, 6 liters for the tank.",
+             "4 liters of the blue dye, sorry", "Mix 6 liters of the blue dye for the tank."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual([c.delete for c in accepted], [deletion])
+                self.assertEqual(rejected, [])
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+        # Past ten words, with a changed unit, or without a quantity, the
+        # ordinary cap applies.
+        for source, deletion in (
+            ("Assign 4 rooms per attendant on the far north wing only, actually 6 rooms "
+             "per attendant on the far north wing only.",
+             "4 rooms per attendant on the far north wing only, actually"),
+            ("Bring 2 boxes of the adhesive electrodes, sorry, 3 crates for the sensors.",
+             "2 boxes of the adhesive electrodes, sorry"),
+            ("We picked the glass lens with spots on it, sorry, the camera.",
+             "the glass lens with spots on it, sorry"),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["span_too_long"])
+
     def test_unbindable_quantity_detail_keeps_the_source(self):
         # A spelled number, a determiner before the number, or a frame the
         # replacement does not repeat leaves the detail without a place.

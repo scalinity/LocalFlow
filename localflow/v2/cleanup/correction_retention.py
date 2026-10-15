@@ -15,7 +15,7 @@ import re
 from dataclasses import dataclass
 
 from .lexicon import (CLAUSE_END, CLAUSE_LINKS, COUNT, DETAIL_PREPOSITIONS,
-                      FINITE_AUXILIARIES, FUNCTION_WORDS, MEASURE_UNIT, MODALS,
+                      FINITE_AUXILIARIES, FRAME_WORDS, FUNCTION_WORDS, MEASURE_UNIT, MODALS,
                       NEGATION_WORDS, NUMBER, SPELLED_NUMBER, Neighbourhood, alternation,
                       quoted_regions, touches)
 
@@ -65,6 +65,23 @@ def fraction_binds(n: Neighbourhood) -> bool:
     return (replacement is not None
             and re.match(CLAUSE_END, source[end + replacement.end():]) is not None
             and not touches(quoted_regions(source), start, end + replacement.end()))
+
+
+def quantity_shaped(old: str) -> bool:
+    """``old`` reads as one quantity with a prepositional detail, after an
+    optional frame word (a fraction head is one such quantity)."""
+    frame = re.match(rf"(?i:{alternation(FRAME_WORDS)})[ \t]+", old)
+    return _QUANTITY_DETAIL.fullmatch(old, frame.end() if frame else 0) is not None
+
+
+def quantity_binds(n: Neighbourhood) -> bool:
+    """The old value is such a quantity and retention resolves it against a
+    replacement that repeats its unit: the detail either moves beside the
+    replacement or is restated there."""
+    old = n.text[n.start:n.marker].rstrip(" \t,;:")
+    lead = re.match(r"\S+[ \t]+", old).end() if n.frame else 0
+    return (_QUANTITY_DETAIL.fullmatch(old, lead) is not None
+            and qualifier_retention(n)[1] is None)
 
 
 def qualifier_retention(n: Neighbourhood):
