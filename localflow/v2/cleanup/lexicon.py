@@ -230,7 +230,7 @@ class Neighbourhood:
 def _words(text: str) -> tuple:
     # A filler is no word of either value ("db-stage-02 uh, sorry, db-stage-03").
     return tuple(w for token in text.split()
-                 if (w := token.lower().strip(",;:")) and w not in FILLERS)
+                 if (w := token.lower().replace("’", "'").strip(",;:")) and w not in FILLERS)
 
 
 # How far past the marker the rules read. A restated copy of the longest
@@ -285,9 +285,11 @@ _OPENING_DETERMINERS = (DETERMINERS - {"her"}) | {"a", "an"}
 
 
 def plain_words(text: str) -> list:
-    """Lowercased words without edge punctuation or fillers."""
+    """Lowercased words without edge punctuation or fillers. A curly
+    apostrophe reads as a straight one, so the word lists find
+    ``shouldn’t`` as they find ``shouldn't``."""
     return [w for token in text.split()
-            if (w := token.lower().strip(".,;:!?")) and w not in FILLERS]
+            if (w := token.lower().replace("’", "'").strip(".,;:!?")) and w not in FILLERS]
 
 
 # Longest first, in a fixed order: "wait no" must be cut whole, never as a
