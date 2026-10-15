@@ -1,4 +1,4 @@
-"""Text an admitted correction deletes no longer shapes the sentences.
+"""Text an admitted correction deletes shapes no sentence.
 
 A correction may delete across a sentence boundary ("for 15 minutes.
 Actually no, 10 minutes"); the boundary goes with the deleted text, and so

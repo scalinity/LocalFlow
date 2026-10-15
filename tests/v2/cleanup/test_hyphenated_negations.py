@@ -2,8 +2,8 @@
 
 "use the flag dash dash no-cache, actually dash dash fresh-index"
 corrects the flag; its "no" is part of the name "no-cache", not a
-negation the correction removes. negation_coverage no longer counts such
-a word on either side, while coverage and novelty still keep or forbid
+negation the correction removes. negation_coverage counts no such word
+on either side, while coverage and novelty still keep or forbid
 the word itself, and a clause negation still counts.
 
 Run: .venv/bin/python -m unittest tests/v2/cleanup/test_hyphenated_negations.py
