@@ -152,7 +152,7 @@ admission. Shared word classes and the number and unit grammar live in
 | a proposal batch cut off by the output limit applies nothing | `batch_truncated` |
 | the span ends with a marker (on a word boundary) | `no_marker_ending` |
 | not a bare marker | `bare_marker` |
-| ≤ 6 words (`SPAN_MAX_WORDS`); a complete fraction head may reach 8 words when the whole fraction correction binds. A line over 80 characters (`SPAN_MAX_CHARS`) is not read as a proposal | `span_too_long` |
+| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit. A line over 80 characters (`SPAN_MAX_CHARS`) is not read as a proposal | `span_too_long` |
 | the text occurs in the window no more often than it was proposed — never resolved to a first match | `ambiguous_occurrence` |
 | resolvable at/after the cursor | `offsets_unresolved` |
 | no overlap with a protected span | `protected_span` |
@@ -162,6 +162,10 @@ admission. Shared word classes and the number and unit grammar live in
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
 | through a single-word marker (`actually`, `sorry`, `no` — also ordinary words), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, or two closed identifiers; the replacement does not open a new predicate | `not_parallel` |
 | replacing a weekday/month with another cannot also delete preceding content words (for example, `check Monday no wait Tuesday` may delete `Monday no wait`, but not `check`) | `overbroad_calendar_value` |
+
+**Markers.** The markers are `lexicon.CORRECTION_MARKERS`; a comma may
+separate the words of a compound marker (`no, sorry`, `I mean, actually`),
+and the whole compound is the marker, so its `no` is not a lost negation.
 
 **Closure.** A replacement closes its clause when, after an optional
 repeated frame word and one article, its value is followed by the end of
@@ -373,6 +377,11 @@ Per-window fallback ladder: validated clean output → the window's
 normalized source (corrections rolled back with it — unvalidated
 correction deletions never survive a rejected candidate, M07-AC02).
 Before fallback, a bounded repair loop runs at most one step per repair:
+putting back, byte for byte, a rejected correction the cleanup applied
+anyway (a proposal that resolves to one exact source place, clear of the
+admitted corrections, when the output lacks its words and the source
+words on both sides are adjacent in the output; that correction stays
+uncorrected as dictated and the window keeps the rest of its cleanup);
 splitting one fused candidate word at the exact space between two unique
 adjacent source words (when `coverage` and `novelty` are the only
 failures); removing a new break that detached a restriction or
