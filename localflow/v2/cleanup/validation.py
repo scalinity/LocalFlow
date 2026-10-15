@@ -1179,9 +1179,10 @@ def _literal_spans(source, output) -> Component:
 
 # Consecutive correction markers are one marker ("0.5 seconds no I mean
 # 0.3 seconds", "ten, no, sorry, eleven"). A deletion's recorded marker is
-# the last one it ends with; markers directly before it belong to it while
-# some old value stays before them. Runs are read one marker at a time, so
-# a long run costs linear time.
+# the last one it ends with; markers directly before it belong to it when
+# the old value before them holds its own value, a number: in "There are
+# no, sorry, there are two" the "no" is the old value. Runs are read one
+# marker at a time, so a long run costs linear time.
 _MARKER_WORDS = rf"(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS)})(?!\w)"
 _LAST_MARKER_RE = re.compile(rf"{_MARKER_WORDS}[ \t]*(?:,[ \t]*)?$", re.IGNORECASE)
 
@@ -1194,7 +1195,8 @@ def _marker_run_start(source: str, span) -> int:
     if run == marker:
         return marker
     old = source[start:run]
-    if not (re.search(r"\d", old) or any(w not in FILLERS for _s, _e, w in _word_atoms(old))):
+    if not (re.search(r"\d", old)
+            or any(w in _NUMBERS or w in _SCALES for _s, _e, w in _word_atoms(old))):
         return marker
     return run
 

@@ -1,7 +1,8 @@
 """Consecutive correction markers are one marker.
 
 A deletion such as "0.5 seconds no I mean" ends with the marker "I mean",
-and the "no" before it is a marker too, not a lost negation. A deletion
+and the "no" before it is a marker too, not a lost negation, because the
+old value before it holds its own number. A deletion
 that ends at "no" in "ten, no, sorry, eleven" leaves "sorry" behind, and
 that "sorry" belongs to the same marker. A negation that is content (in
 the old value, or opening the replacement) is still required: a run never
@@ -85,6 +86,11 @@ class MarkerRunTests(unittest.TestCase):
         source = "We need three more servers, no wait, actually no more servers, just more memory."
         self.assertEqual(failures(source, "We need no more servers, just more memory.",
                                   [span(source, "three more servers, no wait", "no wait")]), set())
+
+    def test_a_no_before_a_marker_is_the_old_value_without_a_number(self):
+        source = "There are no, sorry, there are two blockers."
+        self.assertIn("negation_coverage",
+                      failures(source, "There are two blockers.", [(0, 19, 14)]))
 
     def test_markers_alone_are_not_an_old_value(self):
         source = "Start the pump, no I mean the valve, at noon."
