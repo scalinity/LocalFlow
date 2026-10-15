@@ -799,22 +799,13 @@ def _sentence_has_scope(source: str, pos: int, deleted=()) -> bool:
     return bool(_sentence_words(source, pos, deleted) & SCOPE_WORDS)
 
 
-# Words that make a sentence conditional or restricted. A clause joined to
-# such a sentence can fall inside its condition ("If the migration fails,
-# roll back the release, and we should notify the client").
-_CONDITION_WORDS = SUBORDINATORS | frozenset({"if", "only", "unless", "except", "when", "until"})
-
 
 def _clause_scope(source, output, aligned, ctx) -> Component:
     """An explicit source sentence boundary next to a negated or
     conditional sentence survives as a boundary in the output — merging
     "Do not deploy. Run tests." into one clause widens the prohibition.
     Text an admitted correction deletes, its boundaries and its words
-    (a marker's "no"), no longer shapes the sentences.
-    A sentence that opens with its own coordinating conjunction may join
-    the previous one at a comma when neither holds a condition ("free.
-    But the email said it was not open" → "free, but the email said …"):
-    the kept conjunction starts a new clause.
+    (a marker's "no"), shapes no sentence.
     Added boundaries must keep restrictions and coordinating conjunctions
     attached to their clauses."""
     _missing, pairs, src, out = aligned
@@ -830,10 +821,7 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
         if not (_sentence_has_scope(source, src[i][0], deleted)
                 or _sentence_has_scope(source, src[k][0], deleted)):
             continue
-        if _OUTPUT_BOUNDARY_RE.search(output, out[oi][1], out[ok][0]):
-            continue
-        if not (_opens_coordinate_clause(source, src, i, k, deleted)
-                and "," in output[out[oi][1]:out[ok][0]]):
+        if not _OUTPUT_BOUNDARY_RE.search(output, out[oi][1], out[ok][0]):
             merged.append([src[i][1], src[k][0]])
     introduced = _restriction_breaks(source, output, aligned)
     dangling = _dangling_conjunction_breaks(source, output, aligned, ctx)
@@ -842,25 +830,6 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
                      {"merged_boundaries": merged,
                       "introduced_restriction_breaks": [list(b[:2]) for b in introduced],
                       "detached_conjunction_breaks": [list(b[:2]) for b in dangling]})
-
-
-def _opens_coordinate_clause(source, atoms, before, first, deleted=()) -> bool:
-    """The sentence after a boundary opens with "but", "so" or "yet", or
-    with "and"/"or" followed by its own finite verb within three words
-    ("Or should I skip it", "And there is no history"). "Or the vent" may
-    share the previous predicate and its negation, so it does not count.
-    The conjunction must be the first word after the boundary, and
-    neither sentence may hold a condition or restriction: only a negation
-    keeps to its own clause when the next one opens with a conjunction."""
-    if first != before + 1 or (
-            (_sentence_words(source, atoms[before][0], deleted)
-             | _sentence_words(source, atoms[first][0], deleted)) & _CONDITION_WORDS):
-        return False
-    word = atoms[first][2]
-    if word in ("but", "so", "yet"):
-        return True
-    return word in ("and", "or") and any(
-        a[2] in FINITE_AUXILIARIES for a in atoms[first + 1:first + 4])
 
 
 def _dangling_conjunction_breaks(source, output, aligned, ctx):

@@ -1,13 +1,12 @@
-"""A sentence that opens with its own conjunction may join the previous one at a comma.
+"""A sentence next to a negated or conditional sentence keeps its boundary.
 
-"the calendar showed it as free. But the confirmation email said the slot
-was not open" becomes "free, but the confirmation email said …": the kept
-"but" starts a new clause, so the merge cannot widen the negation.
-"and"/"or" qualify only before their own finite verb ("Or is it better").
-A merge without a conjunction or a comma, an "or" that may share the
-previous predicate, and any merge next to a condition or restriction (a
-joined clause can fall inside "If …", "When …", "… unless …", "only …")
-still fail.
+Merging two sentences can move one into the other's condition ("If the
+migration fails, roll back the release, and we should notify the
+client") or widen a negation, and conditions open in too many ways
+("whenever", "as long as", "in case", "provided", "assuming", ...) for a
+word list to tell a safe merge from an unsafe one. So every merge at a
+source boundary beside a scope sentence fails clause_scope, whatever
+conjunction opens the second sentence.
 
 Run: .venv/bin/python -m unittest tests/v2/cleanup/test_coordinate_merges.py
 """
@@ -25,37 +24,26 @@ def failures(source, output):
 
 
 class CoordinateMergeTests(unittest.TestCase):
-    def test_a_conjunction_sentence_joins_at_a_comma(self):
+    def test_a_merge_beside_a_scope_sentence_fails(self):
         for source, output in (
+            ("Do not deploy the build. Run the tests.", "Do not deploy the build, run the tests."),
+            ("Do not open the valve. Or the vent.", "Do not open the valve, or the vent."),
             ("The calendar showed the room as free. But the confirmation email said the slot "
              "was not open.",
              "The calendar showed the room as free, but the confirmation email said the slot "
              "was not open."),
-            ("Mention that gonioscopy was not performed. Or is it better to leave that out?",
-             "Mention that gonioscopy was not performed, or is it better to leave that out?"),
-            ("The pressure was 38 mmHg. And there is no history of trauma.",
-             "The pressure was 38 mmHg, and there is no history of trauma."),
-        ):
-            with self.subTest(source=source):
-                self.assertEqual(failures(source, output), set())
-
-    def test_other_merges_still_fail(self):
-        for source, output in (
-            ("Do not deploy the build. Run the tests.", "Do not deploy the build, run the tests."),
-            ("Do not open the valve. Or the vent.", "Do not open the valve, or the vent."),
-            ("Do not deploy the build. But run the tests.", "Do not deploy the build but run the tests."),
-            ("Book it only if the rotor is free. Then tell Dana.",
-             "Book it only if the rotor is free, then tell Dana."),
             ("If the migration fails, roll back the release. And we should notify the client.",
              "If the migration fails, roll back the release, and we should notify the client."),
-            ("If the migration fails, roll back the release. But we should notify the client.",
-             "If the migration fails, roll back the release, but we should notify the client."),
-            ("When the light turns green, go. But we should check the mirror.",
-             "When the light turns green, go, but we should check the mirror."),
-            ("Ship it unless the tests fail. And we should tell Dana.",
-             "Ship it unless the tests fail, and we should tell Dana."),
-            ("Book the centrifuge for Tuesday. But only if the rotor is not cracked.",
-             "Book the centrifuge for Tuesday, but only if the rotor is not cracked."),
+            ("Whenever the build fails, do not deploy. And we should alert the team.",
+             "Whenever the build fails, do not deploy, and we should alert the team."),
+            ("As long as the client is on the call, share the dashboard. But do not show the "
+             "invoices.",
+             "As long as the client is on the call, share the dashboard, but do not show the "
+             "invoices."),
+            ("In case the vendor calls, take a message. But don't promise a date.",
+             "In case the vendor calls, take a message, but don't promise a date."),
+            ("Assuming the tests pass, don't block the merge. But we should rerun the benchmarks.",
+             "Assuming the tests pass, don't block the merge, but we should rerun the benchmarks."),
         ):
             with self.subTest(source=source):
                 self.assertIn("clause_scope", failures(source, output))
