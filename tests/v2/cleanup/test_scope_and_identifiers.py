@@ -93,6 +93,24 @@ class IdentifierTests(unittest.TestCase):
                 self.assertEqual(result.text, output)
                 self.assertEqual(result.path, "llm")
 
+    def test_identifier_replacement_that_opens_a_clause_is_not_parallel(self):
+        # "no worker_b is running" negates a new clause; deleting
+        # "worker_a, no" would drop that negation with the old value.
+        for source, deletion, wrong in (
+            ("Restart worker_a, no worker_b is running.", "worker_a, no",
+             "Restart worker_b is running."),
+            ("Restart worker_1, no worker_2 is running.", "worker_1, no",
+             "Restart worker_2 is running."),
+            ("Use sample_index, actually, record_cache is slower.", "sample_index, actually",
+             "Use record_cache is slower."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
+                result = engine(wrong, deletion).clean(source)
+                self.assertEqual(result.text, source)
+
     def test_protected_and_ambiguous_identifier_deletions_stay_rejected(self):
         source = "Use sample_index, sorry, record_cache."
         start = source.index("sample_index")

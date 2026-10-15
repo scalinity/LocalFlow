@@ -499,17 +499,32 @@ def _parallel_metric_lengths(source: str, span: tuple, marker: int) -> bool:
         r"[ \t]*(?:$|[,;.!?\n])", tail[new.end():]))
 
 
-def _parallel(x_words: list, y_words: list) -> bool:
+def _closed_single_replacement(text: str, end: int, frame: str | None = None) -> bool:
+    """The replacement after the marker is one value that ends its clause.
+
+    ``as fine.`` and ``record_cache,`` close. ``as soon as the bank
+    confirms`` and ``worker_b is running`` continue into a clause the
+    deletion would rewrite, so a shape test on their first word proves
+    nothing. A repeated frame word and one article may precede the value.
+    """
+    head = r"[ \t,;:]*"
+    if frame:
+        head += re.escape(frame) + r"[ \t]+(?:(?:a|an|the)[ \t]+)?"
+    return re.match(head + r"\S+?[ \t]*(?:$|[,;\n]|[.!?](?=\s|$))",
+                    text[end:], re.IGNORECASE) is not None
+
+
+def _parallel(x_words: list, y_words: list, text: str, end: int) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
     both months, or they share a content word ("two engineers … three
-    engineers")."""
-    from .validation import FUNCTION_WORDS, FILLERS, _TECH_TOKEN_RE
+    engineers"). ``text[end:]`` is the source after the marker."""
+    from .validation import FUNCTION_WORDS, FILLERS, _IDENTIFIER_TOKEN_RE, _TECH_TOKEN_RE
     if not x_words or not y_words:
         return False
     # Repeated predicative frame: ``as suspect, actually, as fine``.
     # The old complement is one value, optionally with an article; an
     # extra clause such as ``as suspect and notify Mira`` is not a value.
-    if x_words[0] == y_words[0] == "as":
+    if x_words[0] == y_words[0] == "as" and _closed_single_replacement(text, end, "as"):
         old = x_words[1:]
         new = y_words[1:]
         if old[:1] and old[0] in {"a", "an", "the"}:
@@ -519,17 +534,24 @@ def _parallel(x_words: list, y_words: list) -> bool:
         return (len(old) == 1 and bool(new)
                 and old[0] not in FUNCTION_WORDS and old[0] not in FILLERS
                 and new[0] not in FUNCTION_WORDS and new[0] not in FILLERS)
+    frame = None
     if x_words[0] == y_words[0] and x_words[0] in _REPEATED_PREPOSITIONS:
+        frame = x_words[0]
         x_words, y_words = x_words[1:], y_words[1:]
         if not x_words or not y_words:
             return False
     x, y = x_words[-1], y_words[0]
-    if _TECH_TOKEN_RE.fullmatch(x) and _TECH_TOKEN_RE.fullmatch(y):
+    if (_TECH_TOKEN_RE.fullmatch(x) and _TECH_TOKEN_RE.fullmatch(y)
+            and _closed_single_replacement(text, end, frame)):
         return all(w in FUNCTION_WORDS or w in FILLERS for w in x_words[:-1])
     for cls in (_WEEKDAYS, _MONTHS):
         if x in cls and y in cls:
             return True
-    if _is_value_word(x) and _is_value_word(y):
+    # A digit inside an identifier (``worker_1``) is part of a name, not a
+    # quantity; identifiers qualify only through the closed branch above.
+    if (_is_value_word(x) and _is_value_word(y)
+            and not _IDENTIFIER_TOKEN_RE.fullmatch(x)
+            and not _IDENTIFIER_TOKEN_RE.fullmatch(y)):
         return True
     return bool({w for w in x_words if w not in FUNCTION_WORDS}
                 & set(y_words))
@@ -571,7 +593,7 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
                 for w in before_words[:-1]):
             return "overbroad_calendar_value"
     if marker in _SINGLE_WORD_MARKERS:
-        if not (_parallel(before_words, after_words)
+        if not (_parallel(before_words, after_words, window_text, e)
                 or _parallel_metric_lengths(window_text, span, ms)):
             return "not_parallel"
     return None
@@ -613,7 +635,7 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
     if tail is None:
         return span
     new = [w.lower().strip(",;:") for w in tail.group(1).split()][:3]
-    if (_parallel([frame, *old], [frame, *new]) or
+    if (_parallel([frame, *old], [frame, *new], text, end) or
             (text[marker:end].lower() not in _SINGLE_WORD_MARKERS
              and len(old) == 1 and _has_content(old[0])
              and new and _has_content(new[0]))):

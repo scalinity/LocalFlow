@@ -330,6 +330,26 @@ class CorrectionRetentionTests(unittest.TestCase):
                 accepted, _ = parse_correction_output(deletion, source, [])
                 self.assertFalse(accepted)
 
+    def test_as_frame_replacement_must_close_its_clause(self):
+        # Comparative and conditional frames continue past the first word,
+        # so deleting the old complement would rewrite the clause.
+        for source, deletion, wrong in (
+            ("Mark the invoice as paid, actually, as soon as the bank confirms.",
+             "as paid, actually", "Mark the invoice as soon as the bank confirms."),
+            ("Log the call as resolved, actually, as soon as Mira confirms.",
+             "as resolved, actually", "Log the call as soon as Mira confirms."),
+            ("List it as optional, actually, as well as the cables.",
+             "as optional, actually", "List it as well as the cables."),
+            ("Treat it as suspect, actually, as fine and notify Mira.",
+             "as suspect, actually", "Treat it as fine and notify Mira."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
+                result, _ = clean(source, wrong, deletion)
+                self.assertEqual(result.text, source)
+
 
 class SourceRepairTests(unittest.TestCase):
     def test_metric_length_corrections_compare_typed_quantity_heads(self):
