@@ -60,6 +60,8 @@ class GuardNearMissTests(unittest.TestCase):
             # A negation in the old complement, then in the new one.
             ("Write to no one, sorry, to Marta.", "to no one, sorry"),
             ("Send it to Marta, sorry, to no one.", "to Marta, sorry"),
+            ("Leave it with someone who isn’t busy, no, with Marta.",
+             "with someone who isn’t busy, no"),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], ["not_parallel"]))
@@ -141,6 +143,9 @@ class GuardNearMissTests(unittest.TestCase):
     def test_a_title_hides_no_predicate(self):
         self.assertEqual(reasons("Dr. Okafor, sorry",
                                  "Send it to Dr. Okafor, sorry, Dr. Bellweather is on call."),
+                         ([], ["not_parallel"]))
+        self.assertEqual(reasons("Dr. Okafor, sorry",
+                                 "Send it to Dr. Okafor, sorry, Dr. Ann Bellweather is on call."),
                          ([], ["not_parallel"]))
         self.assertEqual(reasons("Dr. Okafor, sorry",
                                  "Send it to Dr. Okafor, sorry, Dr. Bellweather, before noon."),

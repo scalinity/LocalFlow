@@ -155,6 +155,9 @@ class RestatedAdmissionTests(unittest.TestCase):
              "today.", "we should not deploy the build, sorry", "span_too_long"),
             ("Tell them we really shouldn’t deploy the build, sorry, we really should deploy "
              "the build today.", "we really shouldn’t deploy the build, sorry", "span_too_long"),
+            ("Tell them we really don’t ship the large orders on Friday, sorry, we really "
+             "always ship the large orders on Friday.",
+             "we really don’t ship the large orders on Friday, sorry", "span_too_long"),
             # A quoted repeat may be a literal.
             ('The sign says "turn left at the north gate, no wait, turn right at the '
              'north gate" in both languages.',
@@ -165,6 +168,10 @@ class RestatedAdmissionTests(unittest.TestCase):
              "export.", "Tell her Maria will own the grid export, sorry", "span_too_long"),
             ("Tell her Maria will own the grid export, sorry, Jonas will own the grid "
              "export.", "her Maria will own the grid export, sorry", "span_too_long"),
+            # A change that keeps every old word inserts rather than replaces.
+            ("Invite Marta from the lab team to the review, sorry, invite Marta and Jonas "
+             "from the lab team to the review.",
+             "Invite Marta from the lab team to the review, sorry", "span_too_long"),
             # Nothing repeats before a change of three words, none shared in
             # place, so nothing shows where the old value starts.
             ("Tell the team Maria will own the grid export, sorry, Jonas will own the grid "

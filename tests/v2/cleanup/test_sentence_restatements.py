@@ -72,6 +72,7 @@ class SentenceRestatementTests(unittest.TestCase):
             # says something new.
             ("We need 4 chairs. Actually, 6 people RSVPed.", "4 chairs. Actually"),
             ("We counted 4 bugs. Sorry, 6 testers left.", "4 bugs. Sorry"),
+            ("We need 4 chairs. Actually, 6 people.", "4 chairs. Actually"),
             ("The meeting is on Friday. Sorry, Thursday works better.", "on Friday. Sorry"),
             # A noun the next sentence names again is no typed value.
             ("Finish before the door test. I mean the cable test can wait.",
@@ -79,7 +80,10 @@ class SentenceRestatementTests(unittest.TestCase):
             ("Weights go on with the supervisor present. No supervisor, no reset.",
              "with the supervisor present. No"),
             # Merged into the old sentence, a restated noun phrase that starts
-            # a new statement replaces nothing.
+            # a new statement replaces nothing, nor does a restated copy that
+            # goes on into a new clause.
+            ("The report lists 14 duplicate rows in batch C. Sorry, 41 duplicate rows in "
+             "batch C were flagged by the auditor.", "14 duplicate rows in batch C. Sorry"),
             ("Check what was in the earlier notes. I mean, the earlier notes were fine, but "
              "the folder name changed.", "in the earlier notes. I mean"),
 
