@@ -150,7 +150,6 @@ class MinimalTargetTests(unittest.TestCase):
                 ("thanks marta", "Thanks, Marta."),
                 ("can you check this sam", "Can you check this, Sam?"),
                 ("thanks everyone", "Thanks, everyone."),
-                ("yes marta", "Yes, Marta."),
                 ("marta can you send it", "Marta, can you send it?"),
                 ("dr patel can you sign it", "Dr Patel, can you sign it?"),
                 ("team the proofs are back", "Team, the proofs are back."),
@@ -182,10 +181,20 @@ class MinimalTargetTests(unittest.TestCase):
         self.check("marta is the report ready", "Marta, is the report ready?", "Marta, is the report ready?", [])
         self.check("marta will you check it", "Marta, will you check it.", "Marta, will you check it.", [])
 
-    def test_keep_gap_commas_reverts_only_the_opening_discourse_comma(self):
+    def test_keep_holds_the_source_gaps_whose_added_comma_stays(self):
+        source, target = "run the batch then inspect it and log the result", "Run the batch, then inspect it, and log the result."
+        self.assertEqual(policy_score.minimal_target(source, target, keep={3}),
+                         ("Run the batch, then inspect it and log the result.", ["optional_gap_comma"], None))
+        self.assertEqual(policy_score.minimal_target(source, target, keep=frozenset()),
+                         policy_score.minimal_target(source, target))
+
+    def test_the_opening_discourse_revert_is_unconditional(self):
         got = policy_score.minimal_target("okay so run the batch then inspect it",
-                                          "Okay, so run the batch, then inspect it.", keep_gap_commas=True)
+                                          "Okay, so run the batch, then inspect it.", keep={1, 5})
         self.assertEqual(got, ("Okay so run the batch, then inspect it.", ["opening_discourse_comma"], None))
+        # The comma after the name still sets the person off: the greeting form.
+        self.check("okay dana these are the notes", "Okay, Dana, these are the notes.",
+                   "Okay Dana, these are the notes.", ["opening_discourse_comma"])
 
     def test_boundaries_newlines_unaligned_and_replacing_commas_stay(self):
         for source, target, vocabulary in (

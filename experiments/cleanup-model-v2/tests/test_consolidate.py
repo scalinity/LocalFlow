@@ -82,24 +82,46 @@ class RestoredConjunctionTests(unittest.TestCase):
 
 
 class CollectTests(unittest.TestCase):
+    def collect(self, root, labels, comma_kinds=None):
+        write_json(root / 'refinement' / 'dataset' / 'freeze.json', {'stats': {'train': {'label_conflicts': []}}})
+        write_jsonl(root / 'refinement' / 'dataset' / 'train.jsonl', labels)
+        if comma_kinds is not None:
+            write_json(root / 'comma-kinds.json', comma_kinds)
+        with patch.object(consolidate, 'ART', root), patch.object(consolidate, 'REFINEMENT', root / 'refinement'), \
+                patch.object(consolidate, 'OLD_ART', root / 'old'), \
+                patch.object(consolidate, 'COMMA_KINDS', root / 'comma-kinds.json'):
+            rows, summary = consolidate.collect()
+        return {r['case_id']: r['target'] for r in rows}, summary
+
     def test_rows_teaching_the_final_vocative_comma_keep_every_added_comma(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            write_json(root / 'refinement' / 'dataset' / 'freeze.json', {'stats': {'train': {'label_conflicts': []}}})
-            write_jsonl(root / 'refinement' / 'dataset' / 'train.jsonl', [
+            targets, summary = self.collect(Path(directory), [
                 {'case_id': 'vocative', 'focus': consolidate.VOCATIVE_FOCUS, 'is_noop': False,
                  'model_input': 'can you run the batch then check it sam',
                  'target': 'Can you run the batch, then check it, Sam?'},
                 {'case_id': 'plain', 'focus': 'restatement', 'is_noop': False,
                  'model_input': 'could you run the tests then check them sam',
                  'target': 'Could you run the tests, then check them, Sam?'}])
-            with patch.object(consolidate, 'ART', root), patch.object(consolidate, 'REFINEMENT', root / 'refinement'), \
-                    patch.object(consolidate, 'OLD_ART', root / 'old'):
-                rows, _ = consolidate.collect()
-        # The addressed name keeps its comma everywhere; only the reviewed rows keep the optional one too.
-        self.assertEqual({r['case_id']: r['target'] for r in rows},
-                         {'vocative': 'Can you run the batch, then check it, Sam?',
-                          'plain': 'Could you run the tests then check them, Sam?'})
+        # Without a table the addressed name keeps its comma; only the reviewed rows keep the optional one too.
+        self.assertEqual(targets, {'vocative': 'Can you run the batch, then check it, Sam?',
+                                   'plain': 'Could you run the tests then check them, Sam?'})
+        self.assertIsNone(summary['comma_kinds_sha256'])
+
+    def test_classified_commas_that_do_a_job_stay_and_the_rest_revert(self):
+        listed = {'case_id': 'listed', 'pair_id': 'listed', 'is_noop': False,
+                  'model_input': 'pack the tent the stove and the water then drive',
+                  'target': 'Pack the tent, the stove, and the water, then drive.'}
+        unclassified = {**listed, 'case_id': 'unclassified', 'pair_id': 'unclassified',
+                        'model_input': 'load the tent the stove and the water then drive',
+                        'target': 'Load the tent, the stove, and the water, then drive.'}
+        table = {'kept_kinds': ['list', 'addressed', 'meaning', 'convention'],
+                 'rows': {'listed': {'3': 'list', '5': 'list', '8': 'style'}}, 'unclassified_rows': ['unclassified']}
+        with tempfile.TemporaryDirectory() as directory:
+            targets, summary = self.collect(Path(directory), [listed, unclassified], table)
+        self.assertEqual(targets, {'listed': 'Pack the tent, the stove, and the water then drive.',
+                                   'unclassified': 'Load the tent the stove and the water then drive.'})
+        self.assertEqual(len(summary['comma_kinds_sha256']), 64)
+
 
 if __name__ == '__main__':
     unittest.main()

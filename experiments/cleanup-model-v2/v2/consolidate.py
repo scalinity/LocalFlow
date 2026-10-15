@@ -32,6 +32,9 @@ LIST_INTRO = re.compile(r"\b(list|lists|steps?|following|items)\b", re.I)
 C_ERA_SAMPLE = 1200
 # Rows reviewed to teach the comma before a sentence-final addressed name keep every added comma.
 VOCATIVE_FOCUS = "question_final_vocative_comma"
+# Per TRAIN row, the kind of each comma a label added at an unpunctuated source gap, keyed by
+# source gap index; absent, every such comma reverts unless it sets off an addressed person.
+COMMA_KINDS = ART / "hard-cases" / "labels" / "comma-kinds-train.json"
 
 
 def _vocabulary(row):
@@ -39,6 +42,16 @@ def _vocabulary(row):
     for pair in row.get("vocabulary_pairs") or []:
         out.append(pair.get("canonical", "") if isinstance(pair, dict) else str(pair))
     return out
+
+
+def _kept_commas(row, comma_kinds):
+    """Source gap indices whose added label comma stays: every gap of a row reviewed to
+    teach the final vocative comma, otherwise the gaps whose classified kind does a job."""
+    if row.get("focus") == VOCATIVE_FOCUS:
+        return set(range(len(row["model_input"]) + 1))  # every gap of the source
+    kept = set(comma_kinds.get("kept_kinds", []))
+    kinds = comma_kinds.get("rows", {}).get(row.get("pair_id", row["case_id"]), {})
+    return {int(j) for j, kind in kinds.items() if kind in kept}
 
 
 def _restored_conjunctions(row, target):
@@ -67,6 +80,7 @@ def collect():
     """Gather, normalize and filter TRAIN rows; no capture."""
     conflicts = {c["case_id"] for c in read_json(REFINEMENT / "dataset" / "freeze.json")["stats"]["train"]["label_conflicts"]}
     excluded_ids = REVIEWED_EXCLUSIONS | conflicts
+    comma_kinds = read_json(COMMA_KINDS, {})
     ordered = []
     for name in SLICES:
         ordered += [(name, r) for r in read_jsonl(REFINEMENT / name / "train.jsonl")]
@@ -99,7 +113,7 @@ def collect():
             exclusions["list_without_introduction"] += 1
             continue
         normalized, changes, exclusion = minimal_target(source, target, _vocabulary(row),
-                                                        keep_gap_commas=row.get("focus") == VOCATIVE_FOCUS)
+                                                        _kept_commas(row, comma_kinds))
         if exclusion:
             exclusions[exclusion.split(":")[0]] += 1
             continue
@@ -124,7 +138,8 @@ def collect():
         rows.append(row)
     summary = {"kept": len(rows), "noop": sum(bool(r["is_noop"]) for r in rows),
                "long_over_200": sum(len(r["model_input"].split()) > 200 for r in rows),
-               "stats": dict(stats), "exclusions": dict(exclusions)}
+               "stats": dict(stats), "exclusions": dict(exclusions),
+               "comma_kinds_sha256": file_sha256(COMMA_KINDS) if COMMA_KINDS.exists() else None}
     return rows, summary
 
 

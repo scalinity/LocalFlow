@@ -166,18 +166,21 @@ def _sets_off_addressee(words, gaps, k):
     return "," in gaps[p] and p >= 1 and not named(p - 1)  # set off on both sides: "for you, Maren, about"
 
 
-def minimal_target(source, target, vocabulary=(), keep_gap_commas=False):
+def minimal_target(source, target, vocabulary=(), keep=frozenset()):
     """Remove optional polish from a training label without touching its repairs.
 
-    Returns (target, changes, exclusion). Invented paragraph breaks, a comma added at
-    an aligned gap the source left unpunctuated on one line (score() never requires
-    it; after a sentence-opening discourse word it is recorded as
-    opening_discourse_comma) and a colon replacing a valid comma after a short
-    label-like opening are reverted to the source. A comma that sets off a person
-    being addressed is required, not optional, and stays; keep_gap_commas keeps
-    every added comma except the opening discourse case. A label that turns spoken
-    ordinals into a list without step labels or a list introduction, or that adds a
-    word the speaker did not say, is excluded rather than rewritten.
+    Returns (target, changes, exclusion). Invented paragraph breaks and a colon
+    replacing a valid comma after a short label-like opening are reverted to the
+    source. A comma the dictation lacked stays only when it separates items of a list
+    of three or more, sets off an addressed person, prevents a likely misreading, or
+    follows a date, place or number convention; every other added comma reverts. The
+    revert applies at an aligned gap the source left unpunctuated on one line, where
+    score() never requires the comma: after a sentence-opening discourse word it
+    always reverts (opening_discourse_comma), elsewhere it reverts (optional_gap_comma)
+    unless keep holds the source gap's index or the comma sets off an addressed
+    person. Commas the dictation already had are never touched. A label that turns
+    spoken ordinals into a list without step labels or a list introduction, or that
+    adds a word the speaker did not say, is excluded rather than rewritten.
     """
     if LIST_LINE.search(target) and not LIST_LINE.search(source) and ORDINALS.search(source) \
             and not re.search(r"\b(step|steps|list)\b", source, re.I):
@@ -198,11 +201,11 @@ def minimal_target(source, target, vocabulary=(), keep_gap_commas=False):
             t = re.sub(r"[ \t]*\n\s*\n\s*", " ", t)
             changes.append("invented_paragraph")
         opens_sentence = k == 1 or (k >= 2 and re.search(r"[.!?\n]", gaps[k - 1]))
-        if not _marks(s) and _marks(t) == "," and not _sets_off_addressee(words, label_gaps, k):
+        if not _marks(s) and _marks(t) == ",":
             if k >= 1 and target_words[k - 1] in DISCOURSE and opens_sentence:
                 t = t.replace(",", "", 1)
                 changes.append("opening_discourse_comma")
-            elif "\n" not in s + t and not keep_gap_commas:
+            elif "\n" not in s + t and j not in keep and not _sets_off_addressee(words, label_gaps, k):
                 # A comma between two touching words reverts to the source gap, keeping them two words.
                 t = t.replace(",", "", 1) or s
                 changes.append("optional_gap_comma")
