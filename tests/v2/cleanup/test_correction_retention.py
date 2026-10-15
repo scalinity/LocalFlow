@@ -846,6 +846,12 @@ class SourceRepairTests(unittest.TestCase):
                 self.assertEqual(result.path, "llm")
                 self.assertNotIn("by by", inputs[0])
 
+    def test_repeated_frame_does_not_reach_back_across_a_line_break(self):
+        source = "Ship the crates to \nnoon, no wait, to 11."
+        accepted, rejected = parse_correction_output("noon, no wait", source, [])
+        self.assertEqual([c.delete for c in accepted], ["noon, no wait"])
+        self.assertEqual(rejected, [])
+
     def test_repeated_frame_does_not_expand_across_a_clause_or_protection(self):
         source = "Send it to Mira, no wait to Lin."
         start = source.index("to Mira")

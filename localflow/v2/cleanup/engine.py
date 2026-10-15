@@ -604,7 +604,9 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
     unrelated function words and clauses remain required source content.
     """
     start, end = span
-    prefix = re.search(rf"\b({alternation(FRAME_WORDS)})[ \t]+$",
+    # \Z, not $: a frame word at the end of the previous line is not this
+    # value's frame.
+    prefix = re.search(rf"\b({alternation(FRAME_WORDS)})[ \t]+\Z",
                        text[:start], re.IGNORECASE)
     if prefix is None or prefix.start() < cursor:
         return span
