@@ -55,6 +55,8 @@ SALVAGE_MAX_STEPS = 3
 # marker of up to three words when the whole fraction correction binds.
 SPAN_MAX_WORDS = 6
 FRACTION_SPAN_MAX_WORDS = 8
+# A proposal line longer than this is not a correction span.
+SPAN_MAX_CHARS = 80
 # Existing direct triggers, including standalone "actually". Ambiguous
 # "no"/"sorry" admission additionally reuses the evidence guards below.
 CORRECTION_MARKER_RE = re.compile(
@@ -714,7 +716,7 @@ def parse_correction_output(output: str, window_text: str,
     rejected: list[CorrectionProposal] = []
     lines = [ln.strip().strip('"').strip() for ln in output.splitlines()]
     lines = [d for d in lines
-             if d and d.upper() != "NONE" and len(d) <= 80]
+             if d and d.upper() != "NONE" and len(d) <= SPAN_MAX_CHARS]
     if limit_hit:
         return [], [CorrectionProposal(None, False, "batch_truncated")
                     for _ in lines]
@@ -768,7 +770,7 @@ def parse_correction_output(output: str, window_text: str,
             continue
         if recovered is not None:
             delete = window_text[cand.start():cand.end()]
-            if len(delete) > 80 or len(delete.split()) > SPAN_MAX_WORDS:
+            if len(delete) > SPAN_MAX_CHARS or len(delete.split()) > SPAN_MAX_WORDS:
                 rejected.append(CorrectionProposal(
                     (cand.start(), cand.end()), False, "span_too_long"))
                 continue
