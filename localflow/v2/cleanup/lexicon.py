@@ -294,8 +294,12 @@ def restatement(n: Neighbourhood) -> tuple | None:
             if len(new) < p + b + s or new[p + b:p + b + s] != old[p + a:]:
                 continue
             changed, kept = old[p:p + a], new[p:p + b]
-            # Dropping a negation is a change of meaning, not a restatement.
-            if any(w in NEGATION_WORDS and w not in kept for w in changed):
+            # Dropping a negation is a change of meaning, not a restatement,
+            # and keeping every changed word ("review" -> "Jonas will
+            # review") inserts rather than replaces.
+            remaining = iter(kept)
+            if (any(w in NEGATION_WORDS and w not in kept for w in changed)
+                    or all(w in remaining for w in changed)):
                 continue
             same = [w for w, v in zip(changed, kept) if w == v] if a == b else []
             repeated = old[:p] + old[p + a:] + same

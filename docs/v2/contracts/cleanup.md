@@ -164,6 +164,7 @@ admission. Shared word classes and the number and unit grammar live in
 | the outdated value X (before the marker) has a content word (a filler is none) | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
+| the replacement does not add to the old value: no `also` within one word more than the old value, and no `too` or `as well` ending a replacement clause that short (`on Linux, sorry, on macOS too`; `too hot` intensifies and counts nothing) | `additive_replacement` |
 | through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers (a spelled ordinal is one, and an ordinal day may become a month with its day), both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, another repeated frame preposition before a like complement (**Closure**), two closed identifiers, two code tokens of one shape (**Closure**), or Y restates X; the replacement does not open a new predicate unless it restates X, and a bare `no` does not answer an earlier `yes` with the same next word (`yes to the first, no to the second`) | `not_parallel` |
 | replacing a weekday/month with another cannot also delete preceding content words (for example, `check Monday no wait Tuesday` may delete `Monday no wait`, but not `check`) | `overbroad_calendar_value` |
 
@@ -247,8 +248,9 @@ and, unless they enclose the change on both sides, no fewer than the
 changed old words. Fillers do not count, and a marker chained before the
 proposal's own (`2.5 hours, actually no wait`) belongs to the marker. An
 unchanged repeat, an open replacement (`12 meters, no, send the rest to
-Marta`), a change that drops a negation and a repeat touched by a
-quotation, code span or fence restate nothing. A restated old value may exceed the word cap and the 80-character
+Marta`), a change that drops a negation, a change that keeps every old
+word and inserts others (`review` → `Jonas will review`) and a repeat
+touched by a quotation, code span or fence restate nothing. A restated old value may exceed the word cap and the 80-character
 cap (up to 160 characters) and is its own parallel evidence; when the replacement opens with the word before the
 old value (`after 10 minutes of rest, no after 15 minutes of rest`), that
 word goes with the old value. The corrections-pass trigger considers such

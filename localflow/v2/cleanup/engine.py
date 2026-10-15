@@ -677,6 +677,25 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
             and not _replacement_opens_predicate(n))
 
 
+def _replacement_adds(n: Neighbourhood) -> bool:
+    """The replacement adds to the old value instead of replacing it: "on
+    Linux, sorry, on macOS too", "also 6 trays", "the grid export as well".
+
+    Its clause runs to the first comma, semicolon, line break, sentence end
+    or clause link. "also" counts within one word more than the old value
+    after its own; "too" and "as well" only where they end a clause that
+    short ("too hot" intensifies, and a longer clause, "to sign the sheet
+    as well", is about something else).
+    """
+    tail = n.text[n.end:].lstrip(" \t,;:")
+    stop = re.search(SENTENCE_END + r"|[,;\n]", tail)
+    words = plain_words(tail[:stop.start()] if stop else tail)
+    link = next((i for i, w in enumerate(words) if w in CLAUSE_LINKS), len(words))
+    words, reach = words[:link], len(n.old_words) + 2
+    return "also" in words[:reach] or (len(words) <= reach and (
+        words[-1:] == ["too"] or words[-2:] == ["as", "well"]))
+
+
 def _evidence_reason(n: Neighbourhood) -> str | None:
     """Original-source evidence that the deletion is a self-correction:
     it stays inside one sentence (or replaces the sentence or value its
@@ -700,6 +719,8 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
         return "emphasis_not_correction"
     if not _has_content(" ".join(after)):
         return "no_replacement"
+    if _replacement_adds(n):
+        return "additive_replacement"
     before_words = n.old_words
     replacement = next((w for w in after
                         if w not in FUNCTION_WORDS and w not in FILLERS), "")
