@@ -35,6 +35,25 @@ class UnadmittedLineTests(unittest.TestCase):
         self.assertEqual(result.path, "llm")
         self.assertEqual(result.text, target.replace("then 14 boxes", "then 13 boxes, no 14 boxes"))
 
+    def test_a_restated_line_may_run_past_the_character_limit(self):
+        source = ("Plan the route. The north crew should stage 6 crates of bottled water before "
+                  "the lead riders arrive. Sorry, the north crew should stage 8 crates of bottled "
+                  "water before the lead riders arrive.")
+        line = ("The north crew should stage 6 crates of bottled water before the lead riders "
+                "arrive. Sorry")
+        self.assertGreater(len(line), 80)
+        accepted, rejected = parse_correction_output(line, source, [])
+        self.assertEqual(([c.delete for c in accepted], rejected), ([line], []))
+        target = ("Plan the route. The north crew should stage 8 crates of bottled water before "
+                  "the lead riders arrive.")
+        self.assertEqual(clean(source, target, line).text, target)
+        # Past the second limit no line is read, restated or not.
+        long_source = "Note this. " + " ".join(["The crew"] * 30) + " left. Sorry, the crew stayed."
+        long_line = " ".join(["The crew"] * 30) + " left. Sorry"
+        self.assertGreater(len(long_line), 160)
+        self.assertEqual([r.reason for r in parse_correction_output(long_line, long_source, [])[1]],
+                         ["span_too_long"])
+
     def test_a_line_over_the_character_limit_is_rejected_not_dropped(self):
         source = ("Bring the long blue outdoor extension cord from the storage room on the second "
                   "floor, sorry, the short one.")

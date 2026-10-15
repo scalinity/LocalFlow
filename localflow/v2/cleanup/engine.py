@@ -59,8 +59,11 @@ SALVAGE_MAX_STEPS = 4
 # replacement restates it (``lexicon.restatement``).
 SPAN_MAX_WORDS = 6
 BOUND_SPAN_MAX_WORDS = 10
-# A proposal line longer than this is not a correction span.
+# A proposal line longer than this needs a restatement to prove it, and
+# no line may run past the second limit (restated sentences in the TRAIN
+# labels reach 149 characters).
 SPAN_MAX_CHARS = 80
+RESTATED_SPAN_MAX_CHARS = 160
 # At most this many corrections apply per window (V1's applied cap).
 CORRECTIONS_MAX = 6
 # Characters that join the pieces of one token: a path, an email, a flag
@@ -899,7 +902,7 @@ def parse_correction_output(output: str, window_text: str,
     for delete in lines:
         # Every line not admitted is recorded, so a rejected correction the
         # cleanup applies anyway can still be put back.
-        if len(delete) > SPAN_MAX_CHARS:
+        if len(delete) > RESTATED_SPAN_MAX_CHARS:
             rejected.append(CorrectionProposal(None, False, "span_too_long", delete=delete))
             continue
         if len(accepted) >= CORRECTIONS_MAX:
@@ -912,9 +915,9 @@ def parse_correction_output(output: str, window_text: str,
         if marker_key(delete) in BARE_MARKERS:
             rejected.append(CorrectionProposal(None, False, "bare_marker", delete=delete))
             continue
-        over_cap = len(delete.split()) > SPAN_MAX_WORDS
+        over_cap = len(delete.split()) > SPAN_MAX_WORDS or len(delete) > SPAN_MAX_CHARS
         bound_quantity = (len(delete.split()) <= BOUND_SPAN_MAX_WORDS
-                          and _quantity_proposal(delete))
+                          and len(delete) <= SPAN_MAX_CHARS and _quantity_proposal(delete))
         occ = occurrences(delete)
         recovered = None
         if not occ:
@@ -950,8 +953,9 @@ def parse_correction_output(output: str, window_text: str,
         span = _include_repeated_frame(window_text, (cand.start(), cand.end()), cursor)
         if span[0] != cand.start():
             delete = window_text[span[0]:span[1]]
-            over_cap = len(delete.split()) > SPAN_MAX_WORDS
+            over_cap = len(delete.split()) > SPAN_MAX_WORDS or len(delete) > SPAN_MAX_CHARS
             unproved = over_cap and not (len(delete.split()) <= BOUND_SPAN_MAX_WORDS
+                                         and len(delete) <= SPAN_MAX_CHARS
                                          and _quantity_proposal(delete))
         marker = correction_marker_start(window_text, span)
         shape = neighbourhood(window_text, span, marker)
@@ -1031,10 +1035,11 @@ def _has_correction_marker(text: str) -> bool:
         preceding = list(re.finditer(r"\S+", text[:marker.start()]))
         for word in reversed(preceding):
             span = (word.start(), marker.end())
-            if span[1] - span[0] > SPAN_MAX_CHARS:
+            if span[1] - span[0] > RESTATED_SPAN_MAX_CHARS:
                 break
             shape = neighbourhood(text, span, correction_marker_start(text, span))
-            if len(text[span[0]:span[1]].split()) > SPAN_MAX_WORDS and restatement(shape) is None:
+            if ((len(text[span[0]:span[1]].split()) > SPAN_MAX_WORDS
+                    or span[1] - span[0] > SPAN_MAX_CHARS) and restatement(shape) is None):
                 continue
             if _evidence_reason(shape) is None:
                 return True

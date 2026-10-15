@@ -156,7 +156,7 @@ admission. Shared word classes and the number and unit grammar live in
 | a proposal batch cut off by the output limit applies nothing | `batch_truncated` |
 | the span ends with a marker (on a word boundary) | `no_marker_ending` |
 | not a bare marker | `bare_marker` |
-| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit, and any old value may run longer when the replacement restates it (**Restatements**). A line over 80 characters (`SPAN_MAX_CHARS`) is rejected without being read | `span_too_long` |
+| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit, and any old value may run longer when the replacement restates it (**Restatements**). A line over 80 characters (`SPAN_MAX_CHARS`) needs the same restatement, and a line over 160 (`RESTATED_SPAN_MAX_CHARS`) is rejected without being read | `span_too_long` |
 | the text occurs in the window no more often than it was proposed — never resolved to a first match | `ambiguous_occurrence` |
 | resolvable at/after the cursor | `offsets_unresolved` |
 | no overlap with a protected span | `protected_span` |
@@ -246,8 +246,8 @@ changed old words. Fillers do not count, and a marker chained before the
 proposal's own (`2.5 hours, actually no wait`) belongs to the marker. An
 unchanged repeat, an open replacement (`12 meters, no, send the rest to
 Marta`), a change that drops a negation and a repeat touched by a
-quotation, code span or fence restate nothing. A restated old value may exceed the word cap and is its own
-parallel evidence; when the replacement opens with the word before the
+quotation, code span or fence restate nothing. A restated old value may exceed the word cap and the 80-character
+cap (up to 160 characters) and is its own parallel evidence; when the replacement opens with the word before the
 old value (`after 10 minutes of rest, no after 15 minutes of rest`), that
 word goes with the old value. The corrections-pass trigger considers such
 longer spans for `sorry`, `no` and `make that` as well.
