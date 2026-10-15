@@ -132,6 +132,14 @@ class GuardNearMissTests(unittest.TestCase):
                                  "Set it to 6 p.m. 2 hours, sorry, 3 hours after that."),
                          (["6 p.m. 2 hours, sorry"], []))
 
+    def test_a_title_hides_no_predicate(self):
+        self.assertEqual(reasons("Dr. Okafor, sorry",
+                                 "Send it to Dr. Okafor, sorry, Dr. Bellweather is on call."),
+                         ([], ["not_parallel"]))
+        self.assertEqual(reasons("Dr. Okafor, sorry",
+                                 "Send it to Dr. Okafor, sorry, Dr. Bellweather, before noon."),
+                         (["Dr. Okafor, sorry"], []))
+
     def test_apology_and_contrast_limits(self):
         # A weekday after "sorry to" is the replacement, not an apology.
         self.assertEqual(reasons("Friday, sorry", "Move the review to Friday, sorry to Monday."),

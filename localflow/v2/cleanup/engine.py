@@ -482,6 +482,8 @@ def _has_content(text: str) -> bool:
 # one needs a visibly parallel replacement.
 _ORDINARY_WORD_MARKERS = frozenset({"actually", "sorry", "no", "make that"})
 _ARTICLES = frozenset({"a", "an", "the"})
+# The titles whose period lexicon.SENTENCE_END reads as no sentence end.
+_TITLES = frozenset({"dr", "mr", "mrs", "ms", "prof"})
 _WEEKDAYS = frozenset({"monday", "tuesday", "wednesday", "thursday",
                        "friday", "saturday", "sunday"})
 _MONTHS = frozenset({"january", "february", "march", "april", "may",
@@ -795,11 +797,13 @@ def _replacement_opens_predicate(n: Neighbourhood) -> bool:
     its noun) makes that value a new subject, so deleting the old value
     would attach the clause to the old frame and drop a bare "no".
     """
-    # A decimal ("2.5 hours is") or a title ("Dr. Varga is") ends no clause.
+    # A decimal ("2.5 hours is") or a title ("Dr. Varga is") ends no clause,
+    # and a title opens the value as an article does.
     clause = re.split(r"[,;\n]|" + SENTENCE_END,
                       n.text[n.end:n.end + LOOKAHEAD_CHARS].lstrip(" \t,;:"), maxsplit=1)[0]
     words = [w.lower() for w in clause.split()]
-    words = words[1:4] if words[:1] and words[0] in _ARTICLES else words[:3]
+    words = (words[1:4] if words[:1] and (words[0] in _ARTICLES or words[0].rstrip(".") in _TITLES)
+             else words[:3])
     if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
         return True
     return (len(words) == 3 and is_value_word(words[0])
