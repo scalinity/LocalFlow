@@ -295,3 +295,156 @@ position. `stats position` insists the two exported populations match and
 really reverse their systems; it never silently intersects them. This measures
 relative order within a multi-output request, not exclusively a two-output
 presentation. Human annotation remains a separate two-output presentation.
+
+### Ordered commands for the lead
+
+Run these from the repository root after merging this branch into the lead's
+experiment branch. This is a runbook, not a record of executed research.
+The lead launches and supervises every live operation so its dashboard remains
+the source of run status. Choose the development population and system suffixes
+to match already-produced outputs. Do not infer the population from a filename
+alone. The annotation app, scientific rule, pre-registration, contrast list,
+training runs and seed-level measurements are supplied by their owning lanes.
+
+1. Set the working inputs. `$CASES` must be an absolute path to a development
+   JSONL, `$SYSTEM_A` and `$SYSTEM_B` existing suffixes of matching
+   `development-*.jsonl` outputs. `$RULE` is the absolute path to the frozen
+   verdict-to-choice rule described above. `$CONTRASTS` is the pre-declared
+   contrast JSON with every computed raw p-value filled in. No cost.
+
+   ```sh
+   export PYTHONPATH=experiments/cleanup-model-v2
+   A="$PWD/experiments/cleanup-model-v2/artifacts"
+   : "${CASES:?set the absolute development cases path}"
+   : "${SYSTEM_A:?set the first existing system suffix}"
+   : "${SYSTEM_B:?set the second existing system suffix}"
+   : "${RULE:?set the absolute frozen pair-choice rule path}"
+   ```
+
+2. Run offline checks, then the live toy smoke. Offline checks cost $0; the
+   smoke's conservative maximum is below $0.25 and its JSON prints returned
+   usage, usage-derived cost and response statuses. `engine_checks.sh` prints
+   per-suite summaries; inspect `FAILED` explicitly, because its shell exit
+   status does not propagate suite failures. The base `f77b43a` already fails
+   `test_cleanup_candidates.py::Contracts.test_production_default_unchanged`.
+
+   ```sh
+   .venv/bin/python -m unittest discover -s experiments/cleanup-model-v2/tests -p 'test_*.py'
+   bash "$A/hard-cases/tools/engine_checks.sh" "$PWD"
+   .venv/bin/python experiments/cleanup-model-v2/tools/judge_smoke.py --name toy-smoke-v1
+   ```
+
+3. Judge the development outputs and repeat with reversed output order. New
+   names isolate receipts; rerun identical commands to resume. The OpenRouter
+   commands require an entirely synthetic development population and its key
+   to have been supplied locally; if the common population contains real audio,
+   omit OpenRouter from this population rather than bypassing its refusal.
+
+   ```sh
+   .venv/bin/python -m v2.judge "$CASES" "$SYSTEM_A" "$SYSTEM_B" --prefix development --role development --backend anthropic --name research-anthropic
+   .venv/bin/python -m v2.judge "$CASES" "$SYSTEM_A" "$SYSTEM_B" --prefix development --role development --backend openai --name research-openai
+   .venv/bin/python -m v2.judge "$CASES" "$SYSTEM_A" "$SYSTEM_B" --prefix development --role development --backend openrouter --name research-openrouter
+   .venv/bin/python -m v2.judge "$CASES" "$SYSTEM_A" "$SYSTEM_B" --prefix development --role development --backend anthropic --name research-anthropic-swapped --swap-order
+   .venv/bin/python -m v2.judge "$CASES" "$SYSTEM_A" "$SYSTEM_B" --prefix development --role development --backend openai --name research-openai-swapped --swap-order
+   .venv/bin/python -m v2.judge "$CASES" "$SYSTEM_A" "$SYSTEM_B" --prefix development --role development --backend openrouter --name research-openrouter-swapped --swap-order
+   ```
+
+   Each command emits distinct/expanded judgment counts and the receipt files
+   described above. Anthropic receipts are in `judge/research-anthropic*`;
+   other vendors are in `judge/openai/research-openai*` and
+   `judge/openrouter/research-openrouter*`.
+
+   Cost depends on the number of cases in `$CASES`, not on the 150 sampled for
+   humans. Initial output-token ceilings **per 150 cases, per order**, plus
+   input cost: Anthropic Opus $4.20, OpenAI Batch $2.10, OpenRouter $0.084.
+   Input cost is the estimated input tokens times $2/$1/$0.10 per million,
+   respectively (Anthropic cache-write reservation uses $2.50). Recovery output
+   ceilings for both extra waves combined per 150 cases are $24/$12/$0.48,
+   respectively, plus their inputs. Swapped runs double these projections.
+   These are reservation ceilings rather than predicted usage; the printed
+   estimates and returned usage settle each purchase. Anthropic's existing
+   $127.2556819 stop and other reservations remain in force; OpenAI/OpenRouter
+   stop at their separate $40/$5 caps. Stop on an exhausted cap or unresolved
+   submission; the runbook does not increase it.
+
+4. Build the human packet. It produces 150 unique cases plus 15 exact duplicate
+   pairs, the private key, and a JSON summary with category counts and seed.
+   Cost $0. The annotation lane then writes
+   `$A/research/annotation/annotations.jsonl`; its launch command belongs to
+   that lane. Keep `pairs-key.json` out of the annotation UI.
+
+   ```sh
+   .venv/bin/python -m v2.research_pairs "$CASES" --systems "$SYSTEM_A" "$SYSTEM_B" --n 150 --seed 20261015 --stage delivered
+   ```
+
+5. Once the annotation file exists and the rule is frozen, compute agreement
+   and export unique-pair choices for each order. The two commands return
+   per-judge accuracy/kappa/confusion tables and human test-retest consistency.
+   All analysis commands in steps 5–7 cost $0. If OpenRouter was correctly
+   refused/omitted above, omit its judge argument, ratings file and loop entry
+   below; do not present missing runs as passed.
+
+   ```sh
+   H="$A/research/annotation"
+   .venv/bin/python -m v2.research_agreement "$H/pairs.jsonl" "$H/pairs-key.json" "$H/annotations.jsonl" --rule "$RULE" --stage delivered --judge "anthropic=$A/judge/research-anthropic/verdicts.jsonl" --judge "openai=$A/judge/openai/research-openai/verdicts.jsonl" --judge "openrouter=$A/judge/openrouter/research-openrouter/verdicts.jsonl" --output "$H/agreement.json" --choices-dir "$H/choices"
+   .venv/bin/python -m v2.research_agreement "$H/pairs.jsonl" "$H/pairs-key.json" "$H/annotations.jsonl" --rule "$RULE" --stage delivered --judge "anthropic=$A/judge/research-anthropic-swapped/verdicts.jsonl" --judge "openai=$A/judge/openai/research-openai-swapped/verdicts.jsonl" --judge "openrouter=$A/judge/openrouter/research-openrouter-swapped/verdicts.jsonl" --output "$H/agreement-swapped.json" --choices-dir "$H/choices-swapped"
+   .venv/bin/python -m v2.stats ratings "$H/choices/anthropic.jsonl" "$H/choices/openai.jsonl" "$H/choices/openrouter.jsonl" --field choice --id pair_id --output "$H/judge-reliability.json"
+   for vendor in anthropic openai openrouter; do
+     .venv/bin/python -m v2.stats position "$H/choices/$vendor-positions.jsonl" "$H/choices-swapped/$vendor-positions.jsonl" --id pair_id --output "$H/position-$vendor.json"
+   done
+   ```
+
+   Reliability output contains nominal alpha and every pairwise kappa.
+   Position output contains the paired first-minus-second contrast and N.
+   Missing/unmatched position rows are an error; resolve and report their
+   absence rather than selecting a favorable intersection.
+
+6. Export the existing per-case metrics for the same development population,
+   then run a paired contrast using fields chosen by the pre-registration.
+   `reference_complete` and binary `damage` below are an executable synthetic
+   metric example, **not a decision about the paper's primary endpoints**.
+   Real-audio metrics have different fields; use the pre-declared applicable
+   metric without filling missing values with zero.
+
+   ```sh
+   .venv/bin/python -m v2.stats export "$CASES" --system "$SYSTEM_A" --stage delivered --output "$H/scores-a.jsonl"
+   .venv/bin/python -m v2.stats export "$CASES" --system "$SYSTEM_B" --stage delivered --output "$H/scores-b.jsonl"
+   .venv/bin/python -m v2.stats paired "$H/scores-a.jsonl" "$H/scores-b.jsonl" --score reference_complete --failure damage --resamples 10000 --seed 20261015 --output "$H/paired-statistics.json"
+   ```
+
+   Output: paired mean(A minus B), seeded percentile CI, sample size, and exact
+   McNemar table/discordances/two-sided p-value. Exported metrics retain their
+   existing definitions; do not reinterpret a mechanical score as human truth.
+
+7. Supply the seed-level metric values from the training lane and fill the
+   complete pre-declared contrast family with its raw p-values. Then run:
+
+   ```sh
+   : "${CONTRASTS:?set the absolute contrast JSON path}"
+   .venv/bin/python -m v2.stats seeds 0.80 0.82 0.81 --output "$H/seed-summary.json"
+   .venv/bin/python -m v2.stats holm "$CONTRASTS" --alpha 0.05 --output "$H/holm.json"
+   ```
+
+   The three seed numbers are synthetic command examples; replace them with
+   the measured, pre-declared seed-level values. Output: sample mean/SD and
+   per-contrast Holm-adjusted p-values/rejection flags. This tooling does not
+   train or launch seed runs.
+
+8. Final OpenAI judging is a separate lead-only step after freeze, selection
+   and all applicable existing final gates. The lead creates `research/prereg/FROZEN`;
+   this runbook does not create it. Use the exact frozen `$FINAL_CASES` and
+   pre-declared system list. No OpenRouter final command exists.
+
+   ```sh
+   : "${FINAL_CASES:?set the absolute frozen final cases path after freeze}"
+   .venv/bin/python -m v2.judge "$FINAL_CASES" "$SYSTEM_A" "$SYSTEM_B" --prefix final --role final --backend openai --name research-openai-final --confirm-final-eval
+   .venv/bin/python -m v2.judge "$FINAL_CASES" "$SYSTEM_A" "$SYSTEM_B" --prefix final --role final --backend anthropic --name research-anthropic-final
+   ```
+
+   Outputs have the same receipt/verdict shapes. OpenAI final uses the same
+   remaining $40 ledger (not a second allowance); its per-150-case initial
+   output ceiling is $2.10 plus inputs. Anthropic final uses Sonnet 5.5,
+   initially $2.10 plus inputs per 150 cases, under the existing ledger.
+   For frozen `refined` or `fresh` outputs, use that exact prefix instead of
+   `final`; its original freeze/hash gates still apply. Never rename a final
+   population as development to bypass a gate.
