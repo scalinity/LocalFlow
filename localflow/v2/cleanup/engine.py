@@ -23,7 +23,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from bisect import bisect_right
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 from . import document_nodes as dn
 from . import prompts
@@ -555,14 +557,39 @@ def _repeated_frame_complement(n: Neighbourhood) -> bool:
                 or not _replacement_closes_within(n, len(n.old_words) + 1))
 
 
+_CONTRAST_BOUNDARY_RE = re.compile(VALUE_SENTENCE_END + r"|\n")
+
+
+@lru_cache(maxsize=64)
+def _contrast_boundaries(text: str) -> tuple:
+    return tuple(m.end() for m in _CONTRAST_BOUNDARY_RE.finditer(text))
+
+
+@lru_cache(maxsize=256)
+def _yes_word_ends(text: str, start: int, end: int, word: str) -> tuple:
+    pattern = re.compile(rf"\byes[ \t,]+{re.escape(word)}\b", re.IGNORECASE)
+    return tuple(m.end() for m in pattern.finditer(text, start, end))
+
+
 def _yes_no_contrast(n: Neighbourhood) -> bool:
     """A bare ``no`` answering an earlier ``yes`` with the same next word
     contrasts rather than corrects: ``yes to the first, no to the second``."""
     following = n.new_words[:1]
-    sentence = re.split(VALUE_SENTENCE_END + r"|\n",
-                        n.text[max(0, n.marker - LOOKAHEAD_CHARS):n.marker])[-1]
-    return bool(following and marker_key(n.text[n.marker:n.end]) == "no" and re.search(
-        rf"\byes[ \t,]+{re.escape(following[0])}\b", sentence, re.IGNORECASE))
+    if not following or marker_key(n.text[n.marker:n.end]) != "no":
+        return False
+    # Keep the original prefix search's end-of-input boundary when a
+    # sentence mark directly touches the marker, without slicing the prefix.
+    if n.marker and _CONTRAST_BOUNDARY_RE.match(n.text, n.marker - 1, n.marker):
+        return False
+    # Contrast evidence spans the whole sentence. Cache positions so the
+    # trigger's candidate spans share that evidence without a prefix cutoff.
+    boundaries = _contrast_boundaries(n.text)
+    boundary = bisect_right(boundaries, n.marker)
+    start = boundaries[boundary - 1] if boundary else 0
+    end = boundaries[boundary] if boundary < len(boundaries) else len(n.text)
+    ends = _yes_word_ends(n.text, start, end, following[0])
+    hit = bisect_right(ends, n.marker)
+    return bool(hit and ends[hit - 1] > start)
 
 
 # A code token joins letters or digits with separators ("peaks_final.csv",
