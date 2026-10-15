@@ -59,8 +59,13 @@ Return JSON families matching the supplied schema. Each family is one independen
 All content must be newly invented, varied, and plausible; no actual personal information.
 
 The transcript is ASR output, usually already cased and partly punctuated. The target repairs
-punctuation, capitalization, sentence boundaries, paragraphing, explicitly spoken lists, pure
+punctuation, capitalization, sentence boundaries, explicitly spoken lists, pure
 um/uh/erm/ehm/hmm/mhm fillers, immediate function-word stutters, and explicit self-corrections.
+Paragraph breaks come only from spoken commands, which upstream normalization has already
+rendered: keep every existing paragraph break and never add one. Do not add optional commas
+(after an opening Okay, So, Well or Yes, or before a short clause) and never replace a valid
+comma with a colon, semicolon or dash. Spoken ordinals (first, second, third) stay prose unless
+the speaker uses step labels or explicitly introduces a list.
 Preserve all other words in order. No synonyms, paraphrases, summaries, answers, grammar repair,
 article changes, or plausible guesses at a misheard name. An ASR substitution is allowed only
 when the supplied vocabulary explicitly maps its spoken_alias to its canonical term.
@@ -90,8 +95,10 @@ explanation. Judge the transcript itself, not the author's intended story. Never
 PASS requires preserving every meaningful word and all facts, identifier spelling, negation,
 uncertainty, scope, code and terminal syntax, except explicit local self-correction deletion,
 pure um/uh/erm/ehm/hmm/mhm fillers, immediate function-word stutters, spoken enumeration markers,
-and explicit supplied vocabulary mappings. Punctuation/casing/paragraph/list formatting may
-change only where text makes the intended structure clear. No invented missing words, grammar
+and explicit supplied vocabulary mappings. Punctuation/casing/list formatting may change only
+where text makes the intended structure clear. An added paragraph break, an added optional comma,
+a valid comma replaced by a colon, semicolon or dash, or spoken ordinals turned into a list
+without step labels or an explicit list introduction is a FAIL. No invented missing words, grammar
 rewrite, synonyms, speculative ASR spelling fixes, answers to requests, or changed numbers/units.
 Each correction deletion must be genuine and its replacement must remain. Quoted content stays.
 For is_noop=true the target must exactly equal model_input and must not contain a clear error
