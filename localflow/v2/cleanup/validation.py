@@ -25,8 +25,8 @@ from collections import Counter
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 
-from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, DETERMINERS, FILLERS,
-                      FINITE_AUXILIARIES, SUBJECT_PRONOUNS,
+from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, DETAIL_PREPOSITIONS, DETERMINERS,
+                      FILLERS, FINITE_AUXILIARIES, FRAME_WORDS, SUBJECT_PRONOUNS,
                       FUNCTION_WORDS, NEGATION_WORDS, NUMBER, SUBORDINATORS, alternation,
                       marker_pattern,
                       IDENTIFIER_TOKEN_RE as _IDENTIFIER_TOKEN_RE,
@@ -478,6 +478,8 @@ def _authorized(word: str, start: int, end: int, ctx) -> bool:
         return True
     if _overlaps(ctx.restart_spans, start, end):
         return True
+    if _overlaps(ctx.frame_spans, start, end):
+        return True
     return False
 
 
@@ -502,6 +504,8 @@ class _AuthCtx:
     # Correction triples the output resolved by keeping an exact
     # restatement (also in correction_spans).
     restated_value_spans: list = field(default_factory=list)
+    # [(s, e)] the restated copy of a frame a correction leaves doubled.
+    frame_spans: list = field(default_factory=list)
 
 
 def _vocabulary_authorizations(source: str, output: str, pairs) -> tuple:
@@ -1136,7 +1140,8 @@ def _word_multiset_survival(source, output, words: frozenset,
                 replacement[a[2]] -= 1
                 restated.add(a[0])
     src = [(s, e, w) for s, e, w in atoms
-           if w in words and not _overlaps(markers, s, e) and s not in restated]
+           if w in words and not _overlaps(markers + ctx.frame_spans, s, e)
+           and s not in restated]
     remaining = Counter(w for _, _, w in _word_atoms(output) if w in words)
     missing = []
     for s, e, w in src:
@@ -1469,6 +1474,51 @@ def _with_trailing_markers(source: str, span) -> tuple:
     return (start, run.end(), marker) if run else (start, end, marker)
 
 
+# The frame a correction leaves doubled: "flag gaps longer than [6 hours,
+# no wait,] longer than 4 hours" says "longer than" once. Words right after
+# the deletion that repeat the words right before it are the restated
+# frame. A single repeated word must be a function word or preposition, or
+# lead a number that replaces a number ("target 212, no wait, target 221");
+# "I think that this, no wait, that is right" keeps both copies.
+_FRAME_MAX_WORDS = 4
+_FRAME_SINGLE_WORDS = STUTTER_WORDS | FRAME_WORDS | DETAIL_PREPOSITIONS | frozenset({
+    "about", "after", "around", "before", "into", "over", "past", "under", "until"})
+
+
+def _starts_with_number(text: str) -> bool:
+    head = text.lstrip(" \t,").split(maxsplit=1)
+    word = head[0].strip(",;:.").lower() if head else ""
+    return bool(re.fullmatch(NUMBER, word)) or word in _NUMBERS or word in _SCALES
+
+
+def _doubled_frame_spans(source: str, ctx) -> list:
+    atoms = _word_atoms(source)
+    taken = ctx.correction_spans + ctx.protected_positions
+    spans = []
+    for correction in ctx.correction_spans:
+        start, end = correction[0], correction[1]
+        before = [a for a in atoms if a[1] <= start]
+        after = [a for a in atoms if a[0] >= end]
+        for size in range(min(_FRAME_MAX_WORDS, len(before), len(after)), 0, -1):
+            left, right = before[-size:], after[:size]
+            if ([a[2] for a in left] != [a[2] for a in right]
+                    or not re.fullmatch(r"[ \t]*", source[left[-1][1]:start])
+                    or not re.fullmatch(r"[ \t]*,?[ \t]*", source[end:right[0][0]])
+                    or any(not re.fullmatch(r"[ \t]+", source[a[1]:b[0]])
+                           for run in (left, right) for a, b in zip(run, run[1:]))
+                    or not re.match(r"[ \t]*\w", source[right[-1][1]:])
+                    or _overlaps(taken, left[0][0], left[-1][1])
+                    or _overlaps(taken, right[0][0], right[-1][1])):
+                continue
+            if size == 1 and left[0][2] not in _FRAME_SINGLE_WORDS and not (
+                    _starts_with_number(source[start:_marker_run_start(source, correction)])
+                    and _starts_with_number(source[right[0][1]:])):
+                continue
+            spans.append((right[0][0], right[-1][1]))
+            break
+    return spans
+
+
 def _auth_context(source, output, vocabulary_pairs, continued_list_start,
                   correction_spans, protected_positions) -> "_AuthCtx":
     pairs = tuple(vocabulary_pairs or ())
@@ -1489,6 +1539,7 @@ def _auth_context(source, output, vocabulary_pairs, continued_list_start,
                     enum_spans=enum_spans,
                     vocab_spans=vocab_spans, vocab_allowance=allowance,
                     continued_list_start=continued_list_start)
+    ctx.frame_spans = _doubled_frame_spans(source, ctx)
     ctx.restated_value_spans = _restated_value_spans(source, output, ctx)
     ctx.correction_spans += ctx.restated_value_spans
     ctx.restart_spans = _incomplete_restart_spans(source, output, ctx)

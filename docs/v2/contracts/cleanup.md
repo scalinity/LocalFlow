@@ -318,10 +318,15 @@ identifiers (`sample_index`, `name:value`), which never split into words.
 
 Authorized deletions (never inside a protected occurrence): accepted
 corrections (their spans — whose words may not reappear: novelty does
-not count them), pure fillers, immediate function-word stutter (plus
-the doubled preposition a correction leaves), the earlier copy of an
-exact restatement that changes only a number, and the first copy of an
-immediately repeated incomplete opening such as `that we that we should`.
+not count them), pure fillers, immediate function-word stutter, the
+restated frame a correction leaves doubled (up to four words right after
+the deletion that repeat the words right before it: `longer than 6 hours,
+no wait, longer than 4 hours`; a single word only as a function word or
+preposition, or before a number that replaces a number: `target 212, no
+wait, target 221`; the frame counts once for negation and hedges), the
+earlier copy of an exact restatement that changes only a number, and the
+first copy of an immediately repeated incomplete opening such as `that we
+that we should`.
 
 An exact restatement (`assign 4 rooms with extra linen to Marta. Sorry, 6
 rooms with extra linen to Marta.`) authorizes the earlier copy and its
