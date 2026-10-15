@@ -28,7 +28,8 @@ def dataset(root, *, validation_rule='current rule', freeze=None, replay=True, n
     write_jsonl(data / 'train_captures.jsonl', captures('train', n=n))
     write_jsonl(data / 'validation_captures.jsonl', captures('validation', rule=validation_rule))
     if replay:
-        write_jsonl(data / 'replay_captures.jsonl', captures('replay', n=2) + captures('replay', n=1))
+        # The first replay row is presented twice.
+        write_jsonl(data / 'replay_captures.jsonl', captures('replay', n=1) + captures('replay', n=2))
     write_json(data / 'freeze.json', {'files': {}, 'stats': {'replay': {'source': 'fixture replay origin'}},
                                       **(freeze or {})})
     return data
@@ -137,6 +138,47 @@ class TrainingRunReceiptTests(unittest.TestCase):
                 training.run('control', 3, control=True, initial_adapter=adapter)
             self.assertIs(read_json(root / 'train/control/checkpoint-validation.json')['prompt_matches_training'], False)
 
+
+class TrainingReplayTests(unittest.TestCase):
+    def test_dataset_without_replay_captures_is_refused_before_loading_a_model(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = dataset(root, replay=False)
+            with fake_training(root) as (adapter, _):
+                with self.assertRaisesRegex(RuntimeError, 'no replay_captures.jsonl'):
+                    training.run('fixture', 3, initial_adapter=adapter, dataset_dir=data)
+                self.assertFalse(train.load_for_training.called)
+
+    def test_replay_rows_require_an_origin_in_the_freeze(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = dataset(root, freeze={'stats': {'replay': {'captured': 3}}})
+            with fake_training(root) as (adapter, _):
+                with self.assertRaisesRegex(RuntimeError, 'replay origin'):
+                    training.run('fixture', 3, initial_adapter=adapter, dataset_dir=data)
+
+    def test_plan_reports_replay_origin_unique_pairs_and_presentations(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = dataset(root, n=15)
+            with fake_training(root) as (adapter, received):
+                training.run('fixture', 15, initial_adapter=adapter, dataset_dir=data)
+            plan = read_json(root / 'train/fixture/plan.json')
+            self.assertEqual(plan['replay'], {'origin': 'fixture replay origin', 'presentations': 3,
+                                              'unique_pair_ids': ['replay-0', 'replay-1']})
+            self.assertNotIn('old_replay_families', plan)
+            self.assertEqual(sum(e['pair_id'].startswith('replay') and e['role'] == 'main'
+                                 for e in received['examples']), 3)
+
+    def test_an_empty_replay_file_trains_without_replay(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = dataset(root, freeze={'stats': {'replay': {'captured': 0}}})
+            write_jsonl(data / 'replay_captures.jsonl', [])
+            with fake_training(root) as (adapter, _):
+                training.run('fixture', 3, initial_adapter=adapter, dataset_dir=data)
+            self.assertEqual(read_json(root / 'train/fixture/plan.json')['replay'],
+                             {'origin': None, 'presentations': 0, 'unique_pair_ids': []})
 
 if __name__ == '__main__':
     unittest.main()

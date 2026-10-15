@@ -46,8 +46,7 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
     run_dir=ART/"train"/name
     dataset=Path(dataset_dir) if dataset_dir else ART/"dataset"
     initial=Path(initial_adapter) if initial_adapter else Path(c_identity()["adapter_path"])
-    if not control:
-        checked_dataset(dataset)
+    freeze = None if control else checked_dataset(dataset)
     request = {"name":name,"count":count,"start":start,"control":control,"lr":lr,
                "dataset_dir":str(dataset.resolve()),
                "dataset_freeze_sha256":file_sha256(dataset/"freeze.json") if not control else None,
@@ -60,12 +59,12 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         return read_json(run_dir/"completion.json")
     if (run_dir/"metrics.jsonl").exists():
         raise RuntimeError("Interrupted run retained; use a distinct run name with an explicit initial adapter")
-    old_pairs=read_jsonl(OLD_ART/"dataset/train.jsonl")
-    verified={p["pair_id"] for p in old_pairs if p.get("verification")=="PASS"}
-    old_caps=[p for p in read_jsonl(OLD_ART/"dataset/train_captures.jsonl") if p["pair_id"] in verified]
-    rng=random.Random(20261013)
-    rng.shuffle(old_caps)
+    replay,replay_origin=[],None
     if control:
+        old_pairs=read_jsonl(OLD_ART/"dataset/train.jsonl")
+        verified={p["pair_id"] for p in old_pairs if p.get("verification")=="PASS"}
+        old_caps=[p for p in read_jsonl(OLD_ART/"dataset/train_captures.jsonl") if p["pair_id"] in verified]
+        random.Random(20261013).shuffle(old_caps)
         chosen=old_caps[:count]
         validation=read_jsonl(OLD_ART/"dataset/validation_captures.jsonl")
         vexamples=train.load_examples(validation,rng_seed=991)[:100]
@@ -77,11 +76,16 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         fresh=caps[start:start+count]
         if len(fresh)!=count:
             raise RuntimeError(f"Need {count} captured families after offset {start}; have {len(fresh)}")
-        # Replay old data to retain C's already-good behaviors. No held-out rows.
+        # Replay retains C's already-good behaviors. First-experiment captures
+        # were rendered with older prompts, so the dataset must supply its own.
         replay_path=dataset/"replay_captures.jsonl"
-        if replay_path.exists():
-            old_caps=read_jsonl(replay_path)
-        chosen=fresh+old_caps[:min(len(old_caps),max(1,count//5))]
+        if not replay_path.exists():
+            raise RuntimeError("Dataset has no replay_captures.jsonl; first-experiment captures use older prompts")
+        replay=read_jsonl(replay_path)[:max(1,count//5)]
+        replay_origin=freeze.get("stats",{}).get("replay",{}).get("source")
+        if replay and not replay_origin:
+            raise RuntimeError("Dataset freeze does not state the replay origin (stats.replay.source)")
+        chosen=fresh+replay
         validation=read_jsonl(dataset/"validation_captures.jsonl")
         vexamples=train.load_examples(validation,rng_seed=991)[:160]
     examples=train.load_examples(chosen)
@@ -90,14 +94,15 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
     write_json(run_dir/"request.json",request)
     write_json(run_dir/"plan.json", {
         "name":name,"started":utc_now(),"control_old_data_only":control,"new_families":0 if control else count,
-        "old_replay_families":len(chosen) if control else len(chosen)-count,"examples":len(examples),
+        "replay":{"origin":replay_origin,"presentations":len(replay),
+                  "unique_pair_ids":sorted({c["pair_id"] for c in replay})},"examples":len(examples),
         "source_family_ids":[c["family_id"] for c in chosen],"start_offset":start,
         "train_ids_sha256":sha256_text(json.dumps([c["family_id"] for c in chosen])),
         "dataset_dir":str(dataset),"dataset_freeze_sha256":file_sha256(dataset/"freeze.json") if not control else None,
         "validation_pair_ids":[e["pair_id"] for e in vexamples],"lr":lr,"warmup_updates":warmup,
         "initial_adapter":str(initial),"initial_adapter_sha256":file_sha256(initial/"adapters.safetensors"),
         "lora":cfg,"seed":20261013,"grad_accum":8,"max_sequence_tokens":6144,
-        "method":"Same verified prefix-cached Gated DeltaNet training implementation; one epoch of selected families plus old-data replay.",
+        "method":"Same verified prefix-cached Gated DeltaNet training implementation; one epoch of the selected captures.",
         "roles":dict(__import__('collections').Counter(e['role'] for e in examples))})
     model,tok=train.load_for_training(seed=20261013)
     model.load_weights(str(initial/"adapters.safetensors"),strict=False)
