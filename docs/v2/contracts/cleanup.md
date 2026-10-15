@@ -166,6 +166,13 @@ admission. Shared word classes and the number and unit grammar live in
 **Markers.** The markers are `lexicon.CORRECTION_MARKERS`; a comma may
 separate the words of a compound marker (`no, sorry`, `I mean, actually`),
 and the whole compound is the marker, so its `no` is not a lost negation.
+Validation reads consecutive markers as one marker: markers directly
+before a deletion's recorded marker (`0.5 seconds no I mean`) belong to
+it while some old value stays before them, and markers left right after
+a deletion belong to it while a replacement follows (`ten, no, sorry,
+eleven` deleting `ten, no`; `6 am no make that 7 am`). A bare `no` after a
+deletion can open the replacement (`5, no wait, no more than 6`) and never
+extends it.
 
 **Closure.** A replacement closes its clause when, after an optional
 repeated frame word and one article, its value is followed by the end of

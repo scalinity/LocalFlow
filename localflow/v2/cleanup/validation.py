@@ -1087,13 +1087,33 @@ def _literal_spans(source, output) -> Component:
                      {"literal_spans": len(literals), "missing": missing})
 
 
+# Consecutive correction markers are one marker ("0.5 seconds no I mean
+# 0.3 seconds", "ten, no, sorry, eleven"). A deletion's recorded marker is
+# the last one it ends with; markers directly before it belong to it while
+# some old value stays before them.
+_LEADING_MARKERS_RE = re.compile(
+    rf"(?:(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS)})[ \t]*,?[ \t]*)+$", re.IGNORECASE)
+
+
+def _marker_run_start(source: str, span) -> int:
+    start, _end, marker = span[:3]
+    run = _LEADING_MARKERS_RE.search(source[start:marker])
+    if run is None:
+        return marker
+    old = source[start:start + run.start()]
+    if not (re.search(r"\d", old) or any(w not in FILLERS for _s, _e, w in _word_atoms(old))):
+        return marker
+    return start + run.start()
+
+
 def _word_multiset_survival(source, output, words: frozenset,
                             name: str, ctx) -> Component:
     """A multiset of marked words (negation, uncertainty) is preserved
     exactly: none lost, none added (adding "not" flips polarity as surely
     as dropping it). Apostrophe-stripped atoms make "dont"/"don't" the
-    same word. A correction's marker ("no wait") is not content."""
-    markers = [(m, e) for _s, e, m in ctx.correction_spans]
+    same word. A correction's marker ("no wait", "no I mean") is not
+    content."""
+    markers = [(_marker_run_start(source, c), c[1]) for c in ctx.correction_spans]
     src = [(s, e, w) for s, e, w in _word_atoms(source)
            if w in words and not _overlaps(markers, s, e)]
     remaining = Counter(w for _, _, w in _word_atoms(output) if w in words)
@@ -1413,20 +1433,35 @@ def _restated_value_spans(source: str, output: str, ctx) -> list:
     return spans
 
 
+# Markers right after a deletion belong to it while a replacement follows
+# ("ten, no, sorry, eleven" deleting "ten, no"; "6 am no make that 7 am").
+# A bare "no" there can open the replacement ("5, no wait, no more than
+# 6"), so it never extends a deletion.
+_TRAILING_MARKERS_RE = re.compile(
+    rf"(?:[ \t]*,?[ \t]*(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS - {'no'})})(?!\w))+"
+    r"(?=[ \t]*,?[ \t]*\w)", re.IGNORECASE)
+
+
+def _with_trailing_markers(source: str, span) -> tuple:
+    start, end, marker = span[:3]
+    run = _TRAILING_MARKERS_RE.match(source, end)
+    return (start, run.end(), marker) if run else (start, end, marker)
+
+
 def _auth_context(source, output, vocabulary_pairs, continued_list_start,
                   correction_spans, protected_positions) -> "_AuthCtx":
     pairs = tuple(vocabulary_pairs or ())
+    corrections = [_with_trailing_markers(source, c) for c in correction_spans or ()]
     # Number-word→digit representation changes are authorized when the
     # value survives in the output ("thirty percent" → "30%").
     output_values = _numeric_values_in(output)
     numeric_spans = [
         (s, e) for s, e, v in _numeric_phrase_spans(source)
         if v in output_values]
-    enum_spans = _enum_spans_when_list_rendered(
-        source, output, correction_spans or ())
+    enum_spans = _enum_spans_when_list_rendered(source, output, corrections)
     vocab_spans, allowance = _vocabulary_authorizations(
         source, output, pairs)
-    ctx = _AuthCtx(correction_spans=list(correction_spans or []),
+    ctx = _AuthCtx(correction_spans=corrections,
                     protected_positions=[tuple(p[:2]) for p in
                                          protected_positions or []],
                     numeric_spans=numeric_spans,
