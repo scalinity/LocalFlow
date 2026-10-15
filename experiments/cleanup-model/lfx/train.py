@@ -143,6 +143,10 @@ def base_path(base: str | None = None) -> Path:
 
 def load_for_training(lora_cfg: dict | None = None, seed: int | None = None, base: str | None = None):
     import mlx.core as mx
+    if not hasattr(mx, "new_thread_local_stream"):
+        # MLX 0.31.1, the newest CUDA build, lacks this 0.31.2 API, which mlx_lm 0.31.3 calls
+        # at import (for generation only).
+        mx.new_thread_local_stream = mx.new_stream
     from mlx_lm import load
     from mlx_lm.tuner.utils import linear_to_lora_layers
     from .gdn_chunked import patch_qwen3_5
