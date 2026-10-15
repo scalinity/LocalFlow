@@ -24,6 +24,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
+from functools import lru_cache
 
 from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, DETAIL_PREPOSITIONS, DETERMINERS,
                       FILLERS, FINITE_AUXILIARIES, FRAME_WORDS, SUBJECT_PRONOUNS,
@@ -418,8 +419,8 @@ def _introduced_list_join_spans(source: str, output: str) -> list:
                 join = atoms[cursor][:2]
                 cursor += 1
             if (not item_words or words[cursor:cursor + len(item_words)] != item_words
-                    or _SOURCE_BOUNDARY_RE.search(source, atoms[cursor][0],
-                                                  atoms[cursor + len(item_words) - 1][1])):
+                    or _boundary_within(source, atoms[cursor][0],
+                                        atoms[cursor + len(item_words) - 1][1])):
                 join = None
                 break
             cursor += len(item_words)
@@ -805,18 +806,36 @@ def _component_coverage(source, output, ctx, aligned) -> Component:
         {"missing_words": len(missing), "flagged_deletion_ranges": flagged})
 
 
-_SOURCE_BOUNDARY_RE = re.compile(r"[.!?;](?=\s|$)|\n")
+# A title's period ("Dr. Okafor") and a clock abbreviation's before a
+# lowercase word or a digit ("9 a.m. tomorrow") end no sentence. The parser
+# lane's lexicon.SENTENCE_END states the same rule; the two should become
+# one definition when the branches merge.
+_SOURCE_BOUNDARY_RE = re.compile(
+    r"(?<!\bDr)(?<!\bMr)(?<!\bMrs)(?<!\bMs)(?<!\bProf)"
+    r"\.(?:(?<!\b[aApP]\.[mM]\.)|(?![ \t]+[a-z0-9]))(?=\s|$)|[!?;](?=\s|$)|\n")
 _OUTPUT_BOUNDARY_RE = re.compile(r"[.!?;:\n—–]")
+
+
+@lru_cache(maxsize=64)
+def _source_boundaries(source: str) -> tuple:
+    """Every source sentence boundary, found over the whole text so the
+    words around a period decide it, not where a searched range ends."""
+    return tuple(m.span() for m in _SOURCE_BOUNDARY_RE.finditer(source))
+
+
+def _boundary_within(source: str, start: int, end: int, deleted=()) -> bool:
+    """A source sentence boundary lies in [start, end), outside ``deleted``."""
+    return any(start <= a and b <= end and not _overlaps(deleted, a, b)
+               for a, b in _source_boundaries(source))
 
 
 def _sentence_words(source: str, pos: int, deleted=()) -> set:
     """The words of the sentence around ``pos``. Text an admitted
     correction deletes (``deleted`` spans) is neither a word nor a
     boundary of the sentence the output can form."""
-    ends = [m for m in _SOURCE_BOUNDARY_RE.finditer(source)
-            if not _overlaps(deleted, m.start(), m.end())]
-    start = max((m.end() for m in ends if m.end() <= pos), default=0)
-    end = min((m.end() for m in ends if m.start() >= pos), default=len(source))
+    ends = [(a, b) for a, b in _source_boundaries(source) if not _overlaps(deleted, a, b)]
+    start = max((b for _a, b in ends if b <= pos), default=0)
+    end = min((b for a, b in ends if a >= pos), default=len(source))
     return {w for s, e, w in _word_atoms(source[start:end])
             if not _overlaps(deleted, s + start, e + start)}
 
@@ -851,8 +870,7 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
     for (i, oi), (k, ok) in zip(pairs, pairs[1:]):
         # A boundary inside an admitted deletion goes with the deleted text
         # ("for 15 minutes. Actually no, 10 minutes"), and so do its words.
-        if not any(not _overlaps(deleted, m.start(), m.end())
-                   for m in _SOURCE_BOUNDARY_RE.finditer(source, src[i][1], src[k][0])):
+        if not _boundary_within(source, src[i][1], src[k][0], deleted):
             continue
         if not (_sentence_has_scope(source, src[i][0], deleted)
                 or _sentence_has_scope(source, src[k][0], deleted)):
