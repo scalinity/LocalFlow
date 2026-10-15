@@ -258,11 +258,11 @@ class FunnelTests(unittest.TestCase):
 
 
 class PipelineTests(unittest.TestCase):
-    def run_wave(self, root, specs, calls, rates=(0.0, 0.0)):
+    def run_wave(self, root, specs, calls, rates=(0.0, 0.0), guidance=""):
         with patch.object(data, "ART", root), patch.object(contrast_data, "ART", root), \
                 patch.object(data, "wave", fake_wave(calls)), patch.object(data, "anthropic_client", no_client), \
                 patch.object(batches, "LEDGER", root / "claude" / "ledger.json"), contextlib.redirect_stdout(io.StringIO()):
-            contrast_data._wave(NAME, specs, rates)
+            contrast_data._wave(NAME, specs, rates, guidance)
 
     def specs(self):
         wanted = {"v6-tr-steps-000", "v6-tr-steps-001", "v6-tr-items-000", "v6-tr-items-001", "v6-tr-question-000"}
@@ -273,7 +273,7 @@ class PipelineTests(unittest.TestCase):
         calls = []
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            self.run_wave(root, self.specs(), calls)
+            self.run_wave(root, self.specs(), calls, guidance=contrast_data.RETRY_GUIDANCE)
             accepted = read_jsonl(root / "accepted" / (NAME + ".jsonl"))
         self.assertEqual((data.GEN_SYSTEM, data.VERIFY_SYSTEM), (gen, verify))
         generation, verification = calls
@@ -285,10 +285,9 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(len({s["contrast_group_id"] for s in shown}), 1)
             self.assertEqual([s["twin"] for s in shown], list(contrast_data.SIDES[shown[0]["focus"]]))
             self.assertIn(contrast_data.POLICY, params["system"][0]["text"])
-            self.assertIn(contrast_data.PAIRING, params["system"][0]["text"])
+            self.assertTrue(params["system"][0]["text"].endswith(contrast_data.PAIRING + contrast_data.RETRY_GUIDANCE))
         for params in verification["requests"].values():
-            self.assertIn(contrast_data.POLICY, params["system"][0]["text"])
-            self.assertNotIn(contrast_data.PAIRING, params["system"][0]["text"])
+            self.assertTrue(params["system"][0]["text"].endswith(contrast_data.LEAD_VERIFY + contrast_data.POLICY))
         self.assertEqual(len(accepted), 10)
         self.assertTrue(all(r["contrast_group_id"] and r["focus"] for r in accepted))
 

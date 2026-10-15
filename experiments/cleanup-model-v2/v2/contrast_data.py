@@ -102,6 +102,25 @@ words and the formatting the rules prescribe.
 - A question family says "because" exactly once, and its because-clause is the speaker's own reason
   for asking, never the thing the question asks about.
 """
+# Generator-only emphasis for the retry, from the first wave's losses: number words listed as facts
+# the normalizer turned into digits, fillers before bullet items (the engine matches the introduction
+# and items word for word, fillers included), introductions left without a colon, commas around
+# ordinals, and an "and" deleted to split a sentence. Verification keeps the first wave's contract.
+RETRY_GUIDANCE = """
+The first wave lost families to these mistakes; avoid them.
+- Write quantities, times and counts as digits (3, 12, 6:30), as the recognizer does.
+- critical_facts: only names and numbers, copied exactly as the target writes them. Never list a
+  step label, an ordinal word or a list marker as a fact.
+- In an item family no filler appears anywhere before the last item, the introduction included,
+  because the app matches the introduction and the items word for word; fillers may appear only
+  after the last item. Bullet items start with a lowercase word, as dictated.
+- In a list twin, whatever text comes right before the first item ends with a colon, even where the
+  transcript has a comma or period there.
+- In a prose twin, no comma follows an ordinal word or comes before "and", a dictated comma stays a
+  comma, and "and" before an ordinal never starts a new sentence.
+- Keep every word except fillers, step labels, connectives joining two step labels and the final
+  list-joining "and"; never delete an "and" to make a sentence break.
+"""
 
 
 def _describe(gid, kind, side, f):
@@ -354,7 +373,7 @@ def _check_budget(stage, rows, usd_per_row):
 
 # ---------------------------------------------------------------- waves
 
-def _wave(name, specs, rates) -> None:
+def _wave(name, specs, rates, guidance="") -> None:
     path = ART / "claude" / name / "specs.json"
     existing = read_json(path)
     if existing is not None and existing != specs:
@@ -362,7 +381,7 @@ def _wave(name, specs, rates) -> None:
     write_json(path, specs)
     old_gen, old_verify = data.GEN_SYSTEM, data.VERIFY_SYSTEM
     try:
-        data.GEN_SYSTEM += LEAD_GEN + POLICY + PAIRING
+        data.GEN_SYSTEM += LEAD_GEN + POLICY + PAIRING + guidance
         data.VERIFY_SYSTEM += LEAD_VERIFY + POLICY
         _check_budget(name, len(specs), rates[0])
         # per_request=2 puts both twins of one family, which are adjacent, in one request.
@@ -395,7 +414,7 @@ def retry() -> None:
     if not missing:
         print("nothing to retry")
         return
-    _wave(RETRY, missing, _rates(NAME))
+    _wave(RETRY, missing, _rates(NAME), RETRY_GUIDANCE)
 
 
 # ---------------------------------------------------------------- selection
