@@ -68,29 +68,47 @@ def plan() -> list[dict]:
     return specs
 
 
-def generate() -> None:
-    specs = plan()
-    path = ART / "claude" / NAME / "specs.json"
+RETRY = NAME + "-retry"
+WAVES = (NAME, RETRY)
+
+
+def _wave(name, specs, **request) -> None:
+    path = ART / "claude" / name / "specs.json"
     existing = read_json(path)
     if existing is not None and existing != specs:
-        raise RuntimeError("A longform generation plan already exists with different contents")
+        raise RuntimeError(f"{name} already has a different generation plan")
     write_json(path, specs)
     old_gen, old_verify = data.GEN_SYSTEM, data.VERIFY_SYSTEM
     try:
         data.GEN_SYSTEM += CONTRACT
         data.VERIFY_SYSTEM += CONTRACT.replace("This wave teaches", "Independent checking applies")
-        data.generate(NAME, "train", len(specs), batch_chunk=200, model="claude-haiku-5-5", per_request=1,
-                      thinking={"type": "adaptive"}, effort="medium")
-        data.verify(NAME)
+        data.generate(name, "train", len(specs), batch_chunk=200, model="claude-haiku-5-5", per_request=1,
+                      thinking={"type": "adaptive"}, **request)
+        data.verify(name)
     finally:
         data.GEN_SYSTEM, data.VERIFY_SYSTEM = old_gen, old_verify
     meta = {s["family_id"]: s for s in specs}
     for kind in ("pairs", "accepted"):
-        dest = ART / kind / (NAME + ".jsonl")
+        dest = ART / kind / (name + ".jsonl")
         rows = read_jsonl(dest)
         for row in rows:
             row.update(contrast_group_id=meta[row["family_id"]]["contrast_group_id"], focus=meta[row["family_id"]]["focus"])
         write_jsonl(dest, rows)
+
+
+def generate() -> None:
+    _wave(NAME, plan(), effort="medium")
+
+
+def retry() -> None:
+    """Regenerate families the first wave did not return (long repairs exhausted 6,500 output
+    tokens on thinking) with a larger budget and lower effort."""
+    returned = {r["family_id"] for r in read_jsonl(ART / "pairs" / (NAME + ".jsonl"))}
+    missing = [s for s in plan() if s["family_id"] not in returned]
+    if not missing:
+        print("nothing to retry")
+        return
+    _wave(RETRY, missing, effort="low", max_tokens=16000)
 
 
 def assemble() -> dict:
@@ -109,7 +127,7 @@ def assemble() -> dict:
         *sorted((OLD_ART / "frozen").glob("*.jsonl")),
         *[ART / "dataset" / (s + ".jsonl") for s in ("train", "validation", "test")],
         *[ART / "refinement" / "dataset" / (s + ".jsonl") for s in ("train", "validation", "test")],
-        *[p for p in sorted((ART / "pairs").glob("*.jsonl")) if p.name != NAME + ".jsonl"],
+        *[p for p in sorted((ART / "pairs").glob("*.jsonl")) if p.stem not in WAVES],
     ]
     for path in sources:
         for row in read_jsonl(path):
@@ -119,8 +137,9 @@ def assemble() -> dict:
     for text in production_examples() + fixture_texts():
         idx.add(text, "prompt_or_fixture", check=False)
     groups = collections.defaultdict(list)
-    for row in read_jsonl(ART / "accepted" / (NAME + ".jsonl")):
-        groups[row["contrast_group_id"]].append(row)
+    for wave in WAVES:
+        for row in read_jsonl(ART / "accepted" / (wave + ".jsonl")):
+            groups[row["contrast_group_id"]].append(row)
     kept, rejected = [], []
     for gid, rows in sorted(groups.items()):
         accepted = []
@@ -161,11 +180,11 @@ def assemble() -> dict:
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("stage", choices=["plan", "generate", "assemble"])
+    p.add_argument("stage", choices=["plan", "generate", "retry", "assemble"])
     stage = p.parse_args().stage
     if stage == "plan":
         specs = plan()
         print(__import__("json").dumps({"families": len(specs), "focus": dict(collections.Counter(s["focus"] for s in specs))}))
     else:
-        result = generate() if stage == "generate" else assemble()
+        result = {"generate": generate, "retry": retry, "assemble": assemble}[stage]()
         print(__import__("json").dumps(result))
