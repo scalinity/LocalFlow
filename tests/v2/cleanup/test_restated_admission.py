@@ -75,6 +75,10 @@ class RestatedAdmissionTests(unittest.TestCase):
              "and keep the tension even.", "40 ends per inch, no sorry"),
             ("The adjustment is 2 quarters of a turn, sorry, 1 half of a turn.",
              "2 quarters of a turn, sorry"),
+            # A restated sentence repeats its details in place.
+            ("Please put Marta on 4 rooms at the start. Sorry, please put Marta on 6 rooms "
+             "at the start, since the cooler is there.",
+             "Please put Marta on 4 rooms at the start. Sorry"),
         ):
             with self.subTest(proposal=proposal):
                 accepted, rejected = parse_correction_output(proposal, source, [])

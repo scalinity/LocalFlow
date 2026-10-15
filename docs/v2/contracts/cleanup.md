@@ -264,8 +264,9 @@ descriptor; other opposing relations reject (`opposing_quantity_qualifier`).
 A quantity detail the rule cannot bind (a spelled number, a determiner
 before the number, an unrepeated frame, an unresolved replacement)
 rejects as `unresolved_quantity_qualifier`. A replacement that restates
-the old value with its whole detail (`40 ends per inch, no sorry,
-thirty-six ends per inch`) needs no move. The moved wording remains
+the old value around changed words that hold no preposition (`40 ends per
+inch, no sorry, thirty-six ends per inch`; a restated sentence) repeats
+every detail in place and needs no move. The moved wording remains
 required; an obsolete value cannot return through the word-addition
 allowance. Original proposal and moved-source coordinates remain in the
 observation record.

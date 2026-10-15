@@ -69,18 +69,18 @@ def fraction_binds(n: Neighbourhood) -> bool:
 
 
 def restates_detail(n: Neighbourhood) -> bool:
-    """The replacement restates the old value with its whole detail
-    (``40 ends per inch, no sorry, thirty-six ends per inch``): the changed
-    words end before the detail's preposition, so nothing is left to move
-    or to bind. A changed detail keeps the rules below."""
+    """The replacement restates the old value around its changed words
+    (``40 ends per inch, no sorry, thirty-six ends per inch``; ``Please put
+    Marta on 4 rooms at the start. Sorry, please put Marta on 6 rooms at
+    the start``): every detail is repeated in place, so nothing is left to
+    move or to bind. A change that includes a preposition, and so a
+    relation, keeps the rules below."""
     shape = restatement(n)
     if shape is None:
         return False
     p, a, _b, _s = shape
-    old = plain_words(n.text[n.start:n.marker])
-    # The first word may be a frame word leading both values.
-    return (any(w in DETAIL_PREPOSITIONS for w in old[p + a:])
-            and not any(w in DETAIL_PREPOSITIONS for w in old[1:p + a]))
+    return not any(w in DETAIL_PREPOSITIONS
+                   for w in plain_words(n.text[n.start:n.marker])[p:p + a])
 
 
 def quantity_shaped(old: str) -> bool:
