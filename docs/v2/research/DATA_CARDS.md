@@ -2,17 +2,20 @@
 
 These cards describe provenance and inventory, not model results. They accompany
 the [prospective protocol](PREREGISTRATION.md). Preparation used source code,
-non-case metadata and file-existence checks only. No training rows, development
-rows, final/test rows, audio/transcripts, fresh/locked comparison rows or model
-outputs were opened. No case text is reproduced here.
+metadata, the integration merge report and file-existence checks. No training,
+development, final/test, audio/transcript, fresh/locked comparison or model-output
+data files were opened. The merge report's text excerpts are not reproduced here.
 
 ## Reading the cards
 
 `V` = `experiments/cleanup-model-v2/v2/`; `A` = its ignored `artifacts/` directory;
 `O` = `experiments/cleanup-model/artifacts/`. Source was inspected at `f77b43a`.
 Private metadata references below are reproducibility pointers, not public data
-links. Numbers describe the specific saved metadata, not the eventual full-v2
-training pool. Proposed model versions, sample budgets and statistical constants
+links. The main dataset is `dataset-v2-merged`, confirmed against its freeze and
+`A/hard-cases/merge-report.md` at pushed integration tip
+`11aa1e410051ae388aa847a99c126d469bd03c5e`. Earlier source-slice counts remain
+labeled as such; they are not the main dataset's counts. Proposed model versions,
+sample budgets and statistical constants
 are protocol choices recorded in PREREGISTRATION.md, not observed dataset sizes.
 
 A **row/case**, a **family**, a **captured case**, a **training call** and a
@@ -40,7 +43,8 @@ metadata reviewed here. Public documents contain only aggregate metadata.
 targets; the applicable provider agreement and formal permission outcome are
 **not recorded in the repository** as a release authorization. The saved Help
 Center reply at `A/anthropic-authorization/support-reply-1.txt` exists and is
-informal guidance, not authorization. No Claude-generated rows, targets or weights
+informal guidance, not authorization. Formal written answer: **none received;
+no release until one is**. No Claude-generated rows, targets or weights
 are released pending a formal written answer. Derived labels and no-op twins
 remain subject to that hold; repository code licensing does not license the data.
 
@@ -181,7 +185,8 @@ remain subject to that hold; repository code licensing does not license the data
 
 ## Training-pool source: list/question contrast twins
 
-- **Identity:** `A/contrast/train.selection.json` and its bound TRAIN row file.
+- **Identity:** `A/contrast/train.selection.json` records the original source
+  selection; the merged build uses `A/contrast/train.normalized.jsonl`.
 - **Construction:** Sonnet 5.5 is recorded in `A/claude/contrast-train/pricing.json`
   and `A/claude/contrast-train-retry/pricing.json`. The selection metadata records
   structural validity, verifier acceptance, both-twins acceptance, held-out text
@@ -192,13 +197,22 @@ remain subject to that hold; repository code licensing does not license the data
 - **Inventory/split:** **324 accepted TRAIN rows in 162 families**: **39**
   items/list and **39** items/prose, **77** question/split and **77**
   question/statement, **46** steps/list and **46** steps/prose.
+- **Merged normalization and capture:** `A/hard-cases/merge-report.md` records
+  **18 contrast prose targets normalized to the minimal-edit policy by comma
+  removal only**. The normalized source retains **324 rows**, SHA-256
+  `832c77d27a1e9ae4f3157d11e064643e598d3c91e7039354dd88eb5c0e12bec1`.
+  The main freeze records **324 contrast source rows**; the merge report records
+  **322 captured contrast rows**. Pair **056** (list/prose) fails capture with
+  `question_keeps_period`. A1 removes the **322 captured rows** from the main
+  training set; it does not remove 324 captured rows. No examples are reproduced.
 - **Known issues:** both-twin acceptance induces selection; twins are dependent;
-  engine-oracle filtering favors engine-compatible constructions. This source is
-  absent from the inspected `consolidate.py` SLICES/collection path. Its admission
-  to full v2, and removal in A1, require new frozen manifests, not inferred totals.
+  engine-oracle filtering favors engine-compatible constructions. Source acceptance
+  does not guarantee captured supervision. The merged collector reads the
+  normalized contrast source; arm membership is frozen at seal time from
+  `A/consolidated/arms/*/freeze.json`.
 - **Personal data/terms:** common synthetic status and Claude-derived hold apply.
 
-## Earlier consolidated-c dataset and planned replacements
+## Earlier consolidated-c dataset
 
 `A/consolidated/dataset/freeze.json` is the earlier dataset bound by
 `A/train/consolidated-c/request.json`, whose dataset-freeze SHA-256 matches
@@ -213,35 +227,72 @@ Those counts reconcile to the collected total. Its validation has **431 captured
 cases** and replay has **0 captures**, because historical TRAIN labels are already
 inside the pool. None of these counts is the expanded training-call count.
 
-In the inspected `V/consolidate.py`, a non-exact oracle causes whole-row exclusion
-from supervision. The later metadata at
-`A/hard-cases/labels/dry-build/freeze.json` records **10,036 collected rows** and
-**9,416 captured cases**, with per-call acceptance/rejection fields and partial
-supervision. It is saved under **dry-build**, with mode `consistent`; it is not
-this paper's frozen full-v2 dataset. The final full-v2, minus-contrast and unfiltered-veto ablation row/call
-counts are **not recorded in the repository** as sealed study identities.
-Do not treat these snapshots as interchangeable or sum contrast rows into them.
+This control dataset excludes whole rows with non-exact engine-oracle delivery.
+A2 and A2prime use this data identity under the common study training schedule.
+Personal-data status and terms are inherited from every constituent; mixture
+construction grants no additional rights.
 
-A2 and A2prime use the earlier consolidated-c data; M1/M2/M3 use the newly bound
-full-v2 data. A1 removes contrast rows and A3 removes the veto-call filtering.
-The future manifests must state row membership, captured calls, shared validation
-membership, source hashes and exclusions, so the intended data differences are
-testable. Personal-data status and terms are inherited from every constituent;
-mixture construction grants no additional rights.
+## Main dataset: dataset-v2-merged
+
+`A/consolidated/dataset-v2-merged/freeze.json` has SHA-256
+`6a180c7bcee65dcef1abd74b72302e1cdb42d59de94e48bd3231419e8b77d032`.
+The merge report binds the build to pushed integration tip
+`11aa1e410051ae388aa847a99c126d469bd03c5e`; the fetched integration ref confirms
+that tip. This is the main full-v2 dataset for M1, M2 and M3.
+
+The freeze records **10,360 collected TRAIN rows** and **9,897 captured rows**:
+**9,817 exact plus 80 partially supervised**. The partial count is the sum of
+`stats.train.partially_supervised_by_focus`; it is not the total non-exact-oracle
+count. There are **349 capture failures** and **114 vetoed rows with no agreeing
+calls**. These counts reconcile to the collected total. Mode `consistent` retains
+only calls whose prompt and target agree from a row the engine vetoes. TRAIN
+targets are normalized by `policy_score.minimal_target` and
+`label_defects.restore_split_conjunctions`; development/final labels are unchanged.
+Captured rows are not the expanded number of training calls or optimizer updates.
+
+The main source contributions, before capture, are recorded in
+`stats.collect.stats`:
+
+| Source | Retained rows |
+|---|---:|
+| minimal-style current | 378 |
+| acknowledgment | 368 |
+| original refinement | 1,399 |
+| diverse | 5,882 |
+| longform | 821 |
+| C-era | 1,188 |
+| normalized contrast | 324 |
+
+The source total includes all **324** contrast rows, of which **322** are captured.
+A1 differs from this main set by those **322 captured contrast rows**; A3 removes
+the veto-call filtering. Each arm's manifest, row/call counts, source hashes,
+exclusions and validation membership are **frozen at seal time from
+`A/consolidated/arms/*/freeze.json`**. No ablation count is claimed merely by
+subtracting a source count. Constituent personal-data and license/terms limits
+continue to apply; no release permission is created by the merge.
 
 ## Development evaluation set
 
-- **Identity:** `A/refinement/synthetic-validation.selection.json` and
-  `A/refinement/dataset/validation.jsonl`, with captures bound by the dataset freeze.
+- **Identity:** `A/refinement/synthetic-validation.selection.json` describes the
+  cases; the study binds `A/consolidated/dataset-v2-merged/validation.jsonl` through
+  the main freeze. Its recorded SHA-256 is
+  `a9be55c5012799fa275ff74146ddd806223c83b75202dac40df709d74d9d586c`.
+  The accompanying `validation_captures.jsonl` has recorded SHA-256
+  `3259ffd8e2fbe437e4a585c715e8c3de8006234b46bbfea1848780b55b80623a`.
+  These are manifest values; no calls or case text are listed here.
 - **Construction:** Sonnet 5.5 generation and separate Opus 5.5 acceptance through
   the refinement pipeline, with split-specific scenarios and overlap/structure
   checks. Its selection metadata states no engine-output or model-success filtering.
 - **Inventory/split:** **431 accepted development cases**, **253 no-ops**,
-  **66 over 200 words**, from the selection metadata. The consolidated freeze
-  records **431 validation captures**. `V/training.py` uses up to **160 expanded
-  validation calls** with shuffle seed **991**; that is not 160 independent cases.
+  **66 over 200 words**, from the selection metadata. The main freeze records
+  **431 validation captures**, with no capture failures. The study uses **160
+  validation calls** derived from that validation set. The inspected trainer
+  expands captures with shuffle seed **991** and takes the call subset; the file
+  is not asserted to contain only 160 case rows.
 - **Use/issues:** development decisions and checkpoint loss share source cases;
-  this is not independent final evidence. The exact call membership must be frozen.
+  this is not independent final evidence. Call-selection identity is bound at seal
+  time; lowest validation loss selects the checkpoint, with ties going to the earlier
+  checkpoint. Each system sees the final set once, after the seal.
 - **Personal data/terms:** synthetic status and Claude-derived hold apply;
   synthetic development cases are eligible for the declared Meta judge as well as
   the other development judges.
@@ -356,6 +407,17 @@ answer and data permissions are settled. Aggregate cards and code can be public.
 Disclose AI assistance in generation, checking, research and writing; human review
 remains necessary.
 
+The baseline systems **base-4b-prod-prompt** and **base-9b-prod-prompt** use the
+production-pipeline definition in PREREGISTRATION.md, including its built-in
+curated examples. **sonnet-5-5-fewshot** and **opus-5-5-fewshot** add **5 fixed
+TRAIN research examples** to the production prompt. Example identities and hash
+are frozen at seal time from `A/research/baselines/fewshot-examples.json`; no
+development or final examples are added. Judge prompt hashes are captured by
+`prereg_freeze.py`, and human-pair sampling is bound from the pairs builder report.
+The research baselines branch's report supplies the exact `LFX_SEED` derivation,
+with its hash filled at seal time; labels 0, 1 and 2 follow the protocol's settled
+environment-variable rule.
+
 ## Numeric provenance index
 
 | Figures used above or in the protocol | File/field read for this draft |
@@ -363,7 +425,8 @@ remains necessary.
 | Slice case counts and derived controls | Each named `A/refinement/<slice>/freeze.json`, `stats.train` |
 | Retained source contributions, earlier pool/no-op/long/capture/veto/failure/replay counts | `A/consolidated/dataset/freeze.json`, `stats.collect` and `stats.train/validation/replay` |
 | Earlier dataset identity | `A/train/consolidated-c/request.json`, `dataset_freeze_sha256`, checked against that freeze's bytes |
-| Dry-build pool and capture counts | `A/hard-cases/labels/dry-build/freeze.json`, `stats.collect.kept`, `stats.train.captured` |
+| Main source contributions, exact/partial/captured counts and validation hashes | `A/consolidated/dataset-v2-merged/freeze.json`, `stats.collect`, `stats.train`, `stats.validation`, `files` |
+| Integration tip, captured contrast count, excluded pair and comma-only normalization | `A/hard-cases/merge-report.md`; integration ref independently fetched |
 | Longform accepted/no-op/long counts | `A/longform/train.selection.json`, `accepted`, `noops`, `long_over_200` |
 | Contrast total/family/twin-stratum counts | `A/contrast/train.selection.json`, `accepted`, `families`, `final` |
 | Development/final synthetic accepted/no-op/long counts | `A/refinement/synthetic-validation.selection.json` and `synthetic-test.selection.json`, `accepted`, `noops`, `long_over_200` |
@@ -383,29 +446,29 @@ These metadata identities do not seal the study or certify case-level properties
 
 ## Open questions for Daniel
 
-- **Q1 — Practical thresholds:** what repair-recall noninferiority margin defines
-  “without hurting” in H2, what improvement matters for H4, and what quality-gap
-  and cost/latency-ratio limits define H5?
-- **Q2 — Statistical specification:** which primary endpoints/stages and
-  list/question strata enter each contrast; what Holm-adjusted interval method,
-  endpoint family, bootstrap RNG, seed aggregation and contrast-specific seed-SD
-  rule will be fixed?
-- **Q3 — Checkpoints:** what save-spacing rounding and loss-tie rules apply, and
-  which exact validation calls/order and per-run final batches will be bound?
-- **Q4 — Seed mapping:** how will labels 1 and 2 map to every RNG while label 0
-  preserves the current fixed behavior?
-- **Q5 — Dataset identities:** which final full-v2/A1/A3 manifests and row/call
-  counts establish the intended contrasts, and which metadata establishes the
-  combined locked population and its exposure history?
-- **Q6 — Comparators and runtime:** what frozen few-shot examples, prompt files,
-  provider IDs, LoRA settings, Mac precision/hardware, timing and cost-accounting
-  recipe will be used uniformly?
-- **Q7 — Human review:** how are the blinded pairs and duplicates sampled and
-  allocated, who reviews them, what rubric is used, and how are disagreement,
-  duplicate consistency and missing annotations handled?
-- **Q8 — Provenance gaps:** which immutable receipts establish per-row
-  generator/checker versions for derived slices, C-era rows and contrast checking,
-  and which source-wide privacy checks can be documented without opening final data?
-- **Q9 — Permissions:** what formal written answer governs Claude-target training
-  and release, and what consent/vendor boundary applies to any non-synthetic or
-  author-derived text included in judging? No Meta use beyond synthetic development.
+- **PROPOSED group — pending author confirmation:** the support rule, H2
+  wrongful-edit endpoint and **2.0-point** repair-recall margin, H4 support rule,
+  and H5 **3.0-point** judged-score margin are collected in
+  [Pending author confirmation](PREREGISTRATION.md#pending-author-confirmation).
+  That group also records the adjusted-interval/reference-SD clarification; a
+  Holm-adjusted p-value is not itself an adjusted interval.
+- **Q5 — Dataset identities — to be frozen:** freeze manifests and counts at seal
+  time from **`A/consolidated/arms/*/freeze.json`**, together with the locked
+  population's named evaluation metadata and exposure history. Main dataset
+  membership is recorded above; arm manifests are not presumed to exist yet.
+- **Q6 — Comparators and runtime — to be frozen:** bind
+  **`A/research/baselines/fewshot-examples.json` and its hash**, judge prompts via
+  **`prereg_freeze.py`**, and the baselines branch report for the exact RNG
+  derivation, model/runtime identities and cost/timing recipe. Record the report's
+  exact path and hash at seal time; do not invent a receipt for a pending lane.
+- **Q7 — Human review — to be frozen:** take sampling, allocation, rubric,
+  duplicate handling and annotation analysis from the **pairs builder report**.
+  The annotation lane supplies the exact report path and hash at seal time.
+- **Q8 — Provenance — to be frozen:** bind the named generator/checker receipts
+  and source privacy records at seal time. Per-row gaps in the source cards remain
+  unverified until those receipts exist; record their exact paths and hashes.
+- **Q9 — Permissions — to be frozen:** formal Anthropic answer: **none received;
+  no release until one is**. Record any formal answer's file/hash and the applicable
+  non-synthetic vendor/consent boundary at seal time, or preserve the absence and
+  release hold. The Help Center reply remains informal guidance. Meta receives
+  only synthetic development cases.

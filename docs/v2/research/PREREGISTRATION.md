@@ -18,8 +18,11 @@ not originate all labels, and agreement with it does not establish human quality
 
 ## Source and number conventions
 
-The inspected source baseline is Git commit
-`f77b43a`. Paths below are repository-relative. `V` denotes
+Scoring definitions were inspected at Git commit `f77b43a`. The merged dataset
+is bound to the pushed integration tip
+`11aa1e410051ae388aa847a99c126d469bd03c5e`, confirmed against
+`A/hard-cases/merge-report.md` and the fetched integration branch. Paths below are
+repository-relative. `V` denotes
 `experiments/cleanup-model-v2/v2/`; `A` denotes the ignored
 `experiments/cleanup-model-v2/artifacts/`; `O` denotes
 `experiments/cleanup-model/artifacts/`.
@@ -42,10 +45,10 @@ approach few-shot frontier quality at lower inference cost and latency?
 | Hypothesis | Prospective comparison and interpretation |
 |---|---|
 | H1: v2 data improves on the earlier data | **M2 vs A2prime** tests the shipped-model form, continuing the installed C adapter; **M1 vs A2** tests the fresh-adapter form. Both should improve repair and judged quality without additional fidelity damage. |
-| H2: contrast supervision reduces wrongful list/question edits without hurting repair recall | **M1 vs A1** removes only the contrast rows: **324 rows from 162 twin families**, recorded in `A/contrast/train.selection.json`. Evaluate list and question strata separately as well as overall repair recall. A nonsignificant recall decline alone does not establish “without hurting”; the noninferiority margin remains an open question. |
+| H2: contrast supervision reduces wrongful list/question edits without hurting repair recall | **A1 vs M1** isolates the **322 contrast rows captured in the main build**. The source pool contains **324 rows from 162 twin families**; the uncaptured pair is not part of the training ablation. Primary H2 endpoint: wrongful-edit rate on list and question cases; repair-recall noninferiority margin **2.0 percentage points**, **pending author confirmation**. |
 | H3: verifier filtering improves supervision | **M1 vs A3** compares supervising vetoed rows only through agreeing calls against leaving those rows unfiltered. This is engine-call filtering, distinct from the earlier Claude label verification. |
-| H4: the larger model improves enough to matter | **M3 vs M1** tests the incremental quality of Qwen3.5-9B over Qwen3.5-4B, with resource costs reported. The practical-effect margin is not recorded in the repository. |
-| H5: a local model approaches frontier models at a fraction of inference cost and latency | **M2 vs Claude Sonnet 5.5 few-shot** and **M2 vs Claude Opus 5.5 few-shot**. Report both quality gaps and resource ratios. Equivalence/noninferiority and cost/latency thresholds are not recorded in the repository; no “approaches” claim can be supported by a nonsignificant difference alone. |
+| H4: the larger model improves enough to matter | **M3 vs M1** tests the incremental quality of Qwen3.5-9B over Qwen3.5-4B, with resource costs reported. Support uses the interval-and-seed-SD rule below, **pending author confirmation**. |
+| H5: a local model approaches frontier models at a fraction of inference cost and latency | **M2 vs sonnet-5-5-fewshot** and **M2 vs opus-5-5-fewshot**. Noninferiority margin **3.0 points** on the primary judged score, **pending author confirmation**. Report quality gaps and measured cost/latency ratios; a nonsignificant difference alone does not establish noninferiority. |
 
 ## Systems and fixed training protocol
 
@@ -54,16 +57,22 @@ approach few-shot frontier quality at lower inference cost and latency?
 | M2 | 4B, continue C | full v2 | 0, 1, 2 |
 | M1 | 4B, fresh adapter | full v2 | 0, 1, 2 |
 | M3 | 9B, fresh adapter | full v2 | 0 |
-| A1 | 4B, fresh adapter | full v2 minus the contrast rows | 0 |
+| A1 | 4B, fresh adapter | full v2 minus its 322 captured contrast rows | 0 |
 | A2 | 4B, fresh adapter | earlier consolidated-c data | 0 |
 | A2prime | 4B, continue C | earlier consolidated-c data | 0 |
 | A3 | 4B, fresh adapter | full v2 with vetoed rows unfiltered | 0 |
 
-Untrained comparators: base Qwen3.5-4B zero-shot, base Qwen3.5-9B zero-shot, the
-installed C, Claude Sonnet 5.5 few-shot, and Claude Opus 5.5 few-shot. The frontier
-systems are baselines as well as members of the judge vendor's model family;
-their outputs remain blinded. Few-shot examples must be frozen independently of
-final data. Their exact IDs, number and prompt are not recorded in the repository.
+Untrained comparators are **base-4b-prod-prompt**, **base-9b-prod-prompt**, the
+installed C, **sonnet-5-5-fewshot**, and **opus-5-5-fewshot**.
+The base-system definition is: base Qwen3.5 model, 4-bit with the same recipe as
+C's export, run through the production cleanup pipeline and its production prompt
+(which contains its built-in curated examples), no added research examples.
+The two base IDs select the corresponding model sizes. The Claude systems use
+Sonnet 5.5 and Opus 5.5 respectively, with the production prompt plus **5 fixed
+research examples from the TRAIN pool**. Their identities and hash are frozen at
+seal time from `A/research/baselines/fewshot-examples.json`; final cases cannot
+be demonstrations. The frontier systems also belong to the judge vendor's model
+family; their outputs remain blinded.
 
 All trained arms use learning rate **3e-5**, **one pass** over their own data,
 **8 evenly spaced checkpoints**, bf16 bases, **MLX 0.31.1 on an A100 SXM**, and the
@@ -72,19 +81,29 @@ off. One pass is the fixed exposure rule, not a common number of updates: record
 the actual training-call count, update count and saved checkpoint steps per arm.
 The rounding rule for evenly spaced saves must be fixed before execution.
 
-Seed label **0** means the current fixed behavior. In the inspected `V/training.py`,
-the actual fixed seed is **20261013**, used for loading, blocking and training;
-there is no selectable run-seed option there yet. The seed lane must preserve
-that behavior and record the actual RNG values for labels **1** and **2** before
-the study freeze. Do not silently substitute literal RNG seed zero. This document
-does not implement the seed lane or assert that planned runs already exist.
+Set **`LFX_SEED=0`** to preserve the current fixed behavior; labels **1** and **2**
+pass those integers directly as **`LFX_SEED`**. The baseline inspected here uses
+the fixed seed **20261013**, so label zero must not silently change that behavior.
+The training-seed implementation belongs to branch
+`codex/cleanup-research-baselines`. Its report records the exact RNG derivation;
+bind that report and implementation hash at seal time. This document does not
+implement the seed lane or assert that planned runs already exist.
 
 The earlier consolidated-c request binds the dataset freeze with SHA-256
 `253b49cc38f5599a2e36a32ca70b3af4a618cd1a9b544a35d9c60b15d4fd84ef`.
 Reuse that data identity for A2/A2prime; train them under this study's common
-schedule rather than treating an earlier run as a matched arm. Full v2 and the
-ablation freezes are still to be bound by the dataset lane. Do not add the contrast
-count to an earlier pool count and claim the sum is the new training size.
+schedule rather than treating an earlier run as a matched arm.
+
+Full v2 is `A/consolidated/dataset-v2-merged/`, whose `freeze.json` hashes to
+`6a180c7bcee65dcef1abd74b72302e1cdb42d59de94e48bd3231419e8b77d032`.
+It records **9,897 captured rows: 9,817 exact and 80 partially supervised**.
+All **324** contrast source rows are retained; **322** are captured. Pair **056**
+is excluded from capture by `question_keeps_period`. **18** contrast prose targets
+were normalized by comma removal only. These facts are recorded in the merged
+freeze and `A/hard-cases/merge-report.md`; the data cards distinguish source rows
+from captured supervision. A1 removes the **322 captured contrast rows**, not the
+entire source-pool count. Arm-specific manifests and counts are frozen at seal
+time from `A/consolidated/arms/*/freeze.json`.
 
 Record base revisions, tokenizer/template identity, adapter initialization,
 LoRA configuration, engine/validator revision, quantization/export recipe,
@@ -99,25 +118,28 @@ validation loss on the 160-call development validation set among the 8 saved
 checkpoints**. Report the final checkpoint too. All saved checkpoints receive
 programmatic metrics; judges see **only the selected checkpoint**. A different
 final checkpoint receives programmatic reporting, not an extra judged comparison.
-The checkpoint tie rule is not recorded in the repository and must be settled
-before selection. Neither judge scores nor final-set metrics select checkpoints.
+Ties go to the **earlier checkpoint**. Neither judge scores nor final-set metrics
+select checkpoints.
 
-`V/training.py` expands validation captures to calls using a fixed shuffle and
-takes `[:160]`; it does not select independent validation cases. The inspected
-metadata records **431 development cases**, so validation loss and development
-evaluation are dependent. Bind the precise validation-call membership and order
-before training and require the intended count, rather than accepting a shorter
-slice silently.
+The validation source is `A/consolidated/dataset-v2-merged/validation.jsonl`,
+recorded in that dataset's freeze with SHA-256
+`a9be55c5012799fa275ff74146ddd806223c83b75202dac40df709d74d9d586c`.
+Its associated `validation_captures.jsonl` hash is
+`3259ffd8e2fbe437e4a585c715e8c3de8006234b46bbfea1848780b55b80623a`.
+The **160 validation calls** are derived from this recorded validation set;
+`V/training.py` expands captures and takes `[:160]`. The freeze records **431
+captured validation cases**, not 160 independent cases. Validation loss and
+development evaluation therefore share data. Bind the call-selection identity at
+seal time without publishing the calls, and require the intended call count.
 
 Use the **431-case development set** for development decisions. Open the locked
-final set **once per system after the freeze**. Do not reopen it to tune, substitute
+final set **once per system after the seal**. Do not reopen it to tune, substitute
 checkpoints or expand the system roster after inspecting outcomes. All saved
 checkpoints receive programmatic development metrics; only the loss-selected one
 receives judgments. Freeze identities first, retain outputs, and report
 failed/missing execution instead of quietly changing the final population.
-The exact mapping of checkpoint/seed runs to the one-time final exposure, including
-the final-checkpoint report, is not recorded in the repository. Confirm that
-mapping and the final-set composition before sealing (see open questions).
+The system/run inventory and final population are frozen at seal time from the
+named arm manifests and evaluation metadata (see items 5–6 in the data cards).
 
 ## Outcomes and judges
 
@@ -141,8 +163,12 @@ The score aggregators require matching case-ID populations and reject duplicates
 Missing outputs remain visible; fields with undefined values have their own
 denominators. Missing judgments stay `UNVERIFIED`. Do not convert missing outputs,
 unknown metadata or unavailable verdicts into successes or silently drop them.
-The primary outcome(s), list/question membership rule, human rubric and complete
-multiplicity family are not recorded in the repository; settle them before sealing.
+The **primary endpoint is the per-case judged quality score from the development
+judge, Opus 5.5, on the selected checkpoint at the delivered stage**.
+Programmatic fidelity is secondary; H2's proposed wrongful-edit endpoint is stated
+separately. The frozen judge rubric defines the numerical score and the frozen
+arm/evaluation metadata identifies list/question membership. No scoring formula
+is invented here. Final judges provide the separately declared final evaluation.
 
 | Judge | Development | Final | Data boundary |
 |---|---|---|---|
@@ -166,36 +192,54 @@ do not have that synthetic reference. Freeze this presentation before use.
 The human subset consists of **150 blinded pairs plus 15 duplicate presentations**;
 duplicates check consistency and do not add independent observations. Sampling,
 allocation across contrasts, annotator arrangement and duplicate treatment in
-analysis remain to be fixed before any human outcome is inspected.
+analysis are frozen at seal time from the **pairs builder report**. The annotation
+lane supplies its exact report path and hash; these are not recorded here yet.
 
 ## Statistical analysis
 
-Use a **paired bootstrap with 10,000 resamples over cases**, retaining the same
-sampled case indices for each side of a contrast. Preserve paired systems and
-report the exact metric, direction, eligible-case denominator and missingness.
-Report seed mean and SD for M1 and M2; do not treat seeds or duplicate human
+Use a **percentile paired bootstrap with 10,000 resamples over cases**, with
+Python **`random.Random(20261015)`**, retaining the same sampled case indices for
+each side of a contrast. Preserve paired systems and report the exact metric,
+direction, eligible-case denominator and missingness. Report seed mean and
+**sample SD (n-1)** over seeds **0, 1, 2** for M1 and M2. If fewer than **3** seeds
+complete, evaluate the rule with the seeds available and log the deviation.
+With fewer than **2**, sample SD is undefined: report the criterion as not
+evaluable rather than assigning zero. Do not treat seeds or duplicate human
 presentations as additional independent cases. Twin/family dependence is a
 limitation of a case-level bootstrap.
 
-Apply **Holm correction** over the predeclared contrasts:
+Apply **Holm correction to the bootstrap two-sided p-values** over the family of
+predeclared contrasts:
 
 - M2 vs A2prime;
 - M1 vs A2;
 - M1 vs A1;
 - M1 vs A3;
 - M3 vs M1;
-- M2 vs Claude Sonnet 5.5 few-shot;
-- M2 vs Claude Opus 5.5 few-shot.
+- M2 vs sonnet-5-5-fewshot;
+- M2 vs opus-5-5-fewshot.
 
-A directional difference counts as supported only when its **adjusted 95%
-interval excludes 0** in that direction **and the difference exceeds the seed
-SD**, on the same outcome scale. Report unadjusted estimates too, labeled as such.
-Holm-adjusted p-values alone are not adjusted confidence intervals. The interval
-construction, endpoint multiplicity, bootstrap RNG, seed aggregation and which
-seed SD applies to each contrast are not recorded in the repository. The statistics
-lane must specify them before sealing; this draft does not invent that method or
-claim that the current scorer already implements it. H2, H4 and H5 additionally
-need the practical/noninferiority thresholds listed above.
+Report percentile intervals and Holm-adjusted p-values distinctly. Adjusting a
+p-value does not itself produce an adjusted confidence interval. The proposed
+support rule below retains the requested interval criterion; its relationship to
+the specified p-value procedure must be confirmed before it can be evaluated.
+
+### Pending author confirmation
+
+- **Support rule — pending author confirmation:** a difference is supported only
+  if the **Holm-adjusted 95% interval excludes 0** in the hypothesized direction
+  **and |difference| exceeds the seed SD**, on the same outcome scale. Confirm
+  how the adjusted interval is obtained from the declared bootstrap/Holm
+  procedure and which reference seed SD applies to each contrast; do not label
+  an unadjusted percentile interval as adjusted.
+- **H2 — pending author confirmation:** primary endpoint is wrongful-edit rate
+  on list and question cases (**A1 vs M1**); repair-recall noninferiority margin
+  is **2.0 percentage points**.
+- **H4 — pending author confirmation:** **M3 vs M1** is supported under the
+  interval-and-seed-SD rule, without an additional numerical effect threshold.
+- **H5 — pending author confirmation:** **M2 vs each few-shot system** uses a
+  **3.0-point noninferiority margin on the primary judged score**. Cost and latency
+  ratios are measured and reported separately.
 
 ## Threats and limitations
 
@@ -229,8 +273,9 @@ need the practical/noninferiority thresholds listed above.
 
 Claude outputs are training targets. An Anthropic Help Center reply is saved at
 `A/anthropic-authorization/support-reply-1.txt`. It is informal guidance, **not
-authorization**. No person, account detail or correspondence text is published
-here. **Do not release Claude-generated rows, targets or weights until a formal
+authorization**. Formal written answer: **none received; no release until one is**.
+No person, account detail or correspondence text is published here.
+**Do not release Claude-generated rows, targets or weights until a formal
 written answer is obtained.** That future answer must settle the relevant use and
 release conditions; this document supplies no independent permission.
 
@@ -255,7 +300,12 @@ truth or assigning AI authorship.
 ## Freeze procedure and deviations
 
 The lead runs `experiments/cleanup-model-v2/tools/prereg_freeze.py` from the final
-committed checkout after resolving the open questions. For each dataset or split,
+committed checkout after resolving the pending proposals. Items 5–9 in the data
+cards are **frozen at seal time from named files**: arm `freeze.json` manifests,
+`A/research/baselines/fewshot-examples.json`, the judge prompt files hashed by
+this tool, the pairs builder report, and the provenance/permission records.
+Record exact report paths and hashes rather than inventing missing filenames.
+For each dataset or split,
 pass `--dataset-freeze FREEZE_JSON ROWS_JSONL`; repeat the pair for every row file
 that must be bound, including training captures, the validation calls and the
 locked evaluation population. This explicit list prevents silent dataset discovery.
