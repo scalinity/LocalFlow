@@ -387,8 +387,9 @@ def _introduced_list_join_spans(source: str, output: str) -> list:
     every item, verbatim in source-word order, fillers aside. Only the
     connector before the last item is authorized away; conjunctions within
     an item and ordinary prose remain content, and an item never runs past
-    a source sentence boundary, so a closing sentence cannot hide in the
-    last bullet. After a copular "the … list is/are" a comma must follow
+    a source sentence boundary except a title period retained in the same
+    word gap, so a closing sentence cannot hide in the last bullet.
+    After a copular "the … list is/are" a comma must follow
     each item but the last, because "the list is not complete and we need
     more" is a predicate, not items.
     """
@@ -418,13 +419,24 @@ def _introduced_list_join_spans(source: str, output: str) -> list:
         cursor = matches[0] + len(head)
         join = None
         for index, item in enumerate(group.items):
-            item_words = [w for _s, _e, w in _word_atoms(item)]
+            item_atoms = _word_atoms(item)
+            item_words = [w for _s, _e, w in item_atoms]
             if index == len(group.items) - 1 and words[cursor:cursor + 1] == ["and"]:
                 join = atoms[cursor][:2]
                 cursor += 1
             last = cursor + len(item_words) - 1
-            if (not item_words or words[cursor:last + 1] != item_words
-                    or _boundary_within(source, atoms[cursor][0], atoms[last][1])
+            if not item_words or words[cursor:last + 1] != item_words:
+                join = None
+                break
+            retained_titles = []
+            source_item = atoms[cursor:last + 1]
+            for (a, b), (x, y) in zip(zip(source_item, source_item[1:]),
+                                      zip(item_atoms, item_atoms[1:])):
+                if (_TITLE_PERIOD_RE.match(source, a[0])
+                        and re.fullmatch(r"\.[ \t]+", source[a[1]:b[0]])
+                        and re.fullmatch(r"\.[ \t]+", item[x[1]:y[0]])):
+                    retained_titles.append((a[1], b[0]))
+            if (_boundary_within(source, atoms[cursor][0], atoms[last][1], retained_titles)
                     or (copular and index < len(group.items) - 1
                         and not re.match(r"[ \t]*,", source[atoms[last][1]:]))):
                 join = None

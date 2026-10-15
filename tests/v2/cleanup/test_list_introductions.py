@@ -4,7 +4,8 @@ The introduction is the last sentence before the colon, so a paragraph
 that opens with another sentence ("Orla is sorting presents today. Here is
 a list of gift ideas:") or a clause before "here is" still introduces the
 list, and so does "the camping gear list is:". Fillers between items are
-dropped anyway. An item never runs past a source sentence boundary, so a
+dropped anyway. An item never runs past a source sentence boundary except
+a title period retained in the same word gap, so a
 closing sentence glued onto the last bullet, and lists without an
 introduction, still fail.
 
@@ -16,6 +17,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
+from localflow.v2.cleanup.engine import CleanupEngine  # noqa: E402
 from localflow.v2.cleanup.validation import validate  # noqa: E402
 
 
@@ -24,6 +26,20 @@ def failures(source, output):
 
 
 class ListIntroductionTests(unittest.TestCase):
+    def test_title_periods_survive_in_the_same_list_item_gap(self):
+        for names in (("Dr. Adams", "Dr. Baker", "Dr. Clark"),
+                      ("Ms. Green", "Mr. Brown", "Prof. White")):
+            source = f"Here is a list of visitors {names[0]}, {names[1]}, and {names[2]}."
+            output = "Here is a list of visitors:\n- " + "\n- ".join(names)
+            with self.subTest(source=source):
+                self.assertEqual(failures(source, output), set())
+                result = CleanupEngine(
+                    lambda prompt, max_tokens: {"text": output, "output_tokens": 30,
+                                               "limit_hit": False},
+                    model_id="fixture").clean(source)
+                self.assertEqual((result.path, result.text), ("llm", output))
+                self.assertIn("coverage", failures(source, output.replace(". ", " ")))
+
     def test_the_last_sentence_before_the_colon_introduces_the_list(self):
         for source, output in (
             ("Orla is sorting presents today. Here is a list of gift ideas a scarf a candle set "
@@ -53,6 +69,10 @@ class ListIntroductionTests(unittest.TestCase):
             ("Here is a list of gift ideas a scarf a candle set and a puzzle box. Also remember "
              "the tokens expire.",
              "Here is a list of gift ideas:\n- a scarf\n- a candle set\n- a puzzle box Also "
+             "remember the tokens expire."),
+            ("Here is a list of gift ideas a scarf a candle set and a puzzle box. Also remember "
+             "the tokens expire.",
+             "Here is a list of gift ideas:\n- a scarf\n- a candle set\n- a puzzle box. Also "
              "remember the tokens expire."),
             # No introduction.
             ("we bought a scarf a candle set and a puzzle box",
