@@ -1093,7 +1093,7 @@ def _case_words(text: str, skip=()) -> Counter:
                    and not _overlaps(skip, m.start(), m.end()))
 
 
-def _technical_tokens(source, output, ctx) -> Component:
+def _technical_tokens(source, output, ctx, aligned) -> Component:
     skip = list(ctx.correction_spans) + list(ctx.vocab_spans)
     # A prose comma or semicolon after a path is not part of its spelling.
     # Full token counts still reject missing occurrences and longer prefixes.
@@ -1138,7 +1138,7 @@ def _technical_tokens(source, output, ctx) -> Component:
         standalone = {p for m in re.finditer(r"(?<![\w|])\|+(?![\w|])", source)
                       for p in range(m.start(), m.end())}
         if standalone:
-            _, pairs, src, out = _align(source, output, ctx)
+            _, pairs, src, out = aligned
             for ordinal, position in enumerate(source_pipes):
                 if position not in standalone:
                     continue
@@ -1547,7 +1547,7 @@ def validate(source: str, output: str, *,
         _word_multiset_survival(source, output,
                                 UNCERTAINTY_WORDS, "uncertainty_coverage",
                                 ctx),
-        _technical_tokens(source, output, ctx),
+        _technical_tokens(source, output, ctx, aligned),
         _novelty(source, output, ctx),
         _names(source, output),
         _structure(source, output),
