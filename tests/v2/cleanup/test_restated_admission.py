@@ -85,8 +85,7 @@ class RestatedAdmissionTests(unittest.TestCase):
             # Merged into the sentence before, the new predicate would join it.
             ("Leave the tray at the lab. Sorry, Jonas is at the lab.",
              "the tray at the lab. Sorry"),
-            # The old value's auxiliary belongs to a dependent clause, or to
-            # one after a comma.
+            # The old value's auxiliary belongs to a dependent clause.
             ("Give it to whoever is on call, sorry, Jonas is on call.",
              "whoever is on call, sorry"),
             ("Check what is on the shelf, sorry, Jonas is on the shelf.",

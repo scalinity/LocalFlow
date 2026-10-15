@@ -790,20 +790,16 @@ _DEPENDENT_CLAUSE_WORDS = SUBORDINATORS | frozenset({
 
 def _predicate_restated(n: Neighbourhood) -> bool:
     """An auxiliary among the replacement's first four words stands in the
-    old value too, after no dependent-clause word or comma there, so the
-    predicate it opens is the old value's own. "whoever is on call", "the
-    nurse who is on call" and "what is on the shelf" name a person or a
-    thing; their "is" belongs to a clause the replacement cannot take the
-    place of, as does the "is" of "the nurse, she is on call"."""
+    old value too, after no dependent-clause word there, so the predicate
+    it opens is the old value's own. "whoever is on call" and "what is on
+    the shelf" name a person or a thing; their "is" belongs to a clause the
+    replacement cannot take the place of."""
     clause = after_marker(n.text, n.end)[3][:4]
-    for token in n.text[n.start:n.marker].split():
-        w = token.lower().replace("’", "'").strip(".,;:!?")
+    for w in n.old_words:
         if w in _DEPENDENT_CLAUSE_WORDS:
             return False
         if w in _PREDICATE_AUXILIARIES and w in clause:
             return True
-        if token.endswith((",", ";")):
-            return False
     return False
 
 
