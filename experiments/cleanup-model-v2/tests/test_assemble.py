@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from v2 import assemble
+from localflow.v2.cleanup.engine import Window
 
 
 class Tokenizer:
@@ -53,6 +54,54 @@ class CreatedRepeatTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'correction_created_repeat'):
                 capture(dict(FREQUENCY))
 
+
+
+def windows(source, *starts):
+    bounds = [0, *starts, len(source)]
+    return [Window(a, b, source[a:b]) for a, b in zip(bounds, bounds[1:])]
+
+
+def split(source, target, seam):
+    """Window targets for a two-window source cut at the first occurrence of seam."""
+    parts = windows(source, source.index(seam) + len(seam))
+    return assemble.window_targets({'model_input': source, 'target': target}, parts)
+
+
+class WindowTargetTests(unittest.TestCase):
+    def test_repair_next_to_a_boundary_is_cut_inside_the_unchanged_run(self):
+        source = 'check the pump\n\nthen log it'
+        self.assertEqual(list(split(source, 'Check the pump.\n\nThen log it.', '\n\n').values()),
+                         ['Check the pump.', 'Then log it.'])
+
+    def test_deletion_at_a_boundary_is_refused(self):
+        with self.assertRaisesRegex(ValueError, 'unaligned_window_boundary'):
+            split('check the pump um\n\nthen log it', 'Check the pump.\n\nThen log it.', '\n\n')
+
+    def test_repeated_word_mapped_to_another_occurrence_is_refused(self):
+        # The matcher maps the second window's "the" to the retained "the",
+        # which would teach the first window to drop "the" after "Keep".
+        source = 'Keep the um\n\nthe box sits on the shelf by the door near the stairs.'
+        with self.assertRaisesRegex(ValueError, 'unaligned_window_boundary'):
+            split(source, 'Keep the box sits on the shelf by the door near the stairs.', '\n\n')
+
+    def test_list_block_opening_the_second_window_is_refused(self):
+        # Whether the label keeps the dash (first window would end with it) or
+        # drops it (second window would learn to delete it), the cut is unsafe.
+        for target in ('Buy these things:\n\n- Milk\n- Eggs', 'Buy these things:\n\nMilk\nEggs'):
+            with self.subTest(target=target), self.assertRaisesRegex(ValueError, 'unaligned_window_boundary'):
+                split('Buy these things\n\n- milk\n- eggs', target, '\n\n')
+
+    def test_label_marker_before_the_cut_is_refused(self):
+        for target in ('Buy these things:\n\n- Milk and eggs.', 'Buy these things:\n\n"Milk and eggs."'):
+            with self.subTest(target=target), self.assertRaisesRegex(ValueError, 'unaligned_window_boundary'):
+                split('Buy these things\n\nmilk and eggs', target, '\n\n')
+        self.assertEqual(list(split('He said "stop"\n\nthen left', 'He said "stop."\n\nThen left.', '\n\n').values()),
+                         ['He said "stop."', 'Then left.'])
+
+    def test_capture_rejects_a_window_without_a_planned_target(self):
+        with patch.object(assemble, 'window_targets', return_value={(0, 1): 'x'}):
+            with self.assertRaisesRegex(ValueError, 'window_plan_mismatch'):
+                capture(pair('Keep this.', 'Keep this.'))
 
 if __name__ == '__main__':
     unittest.main()

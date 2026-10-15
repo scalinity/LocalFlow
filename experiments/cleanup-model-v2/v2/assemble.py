@@ -67,11 +67,17 @@ def window_targets(pair, windows):
     starts = [t[0] for t in src]
     for w in windows[1:]:
         idx = bisect.bisect_left(starts, w.start)
-        # A cut must land on a retained token and not split a correction.
-        # Otherwise retain the example for evaluation but abstain from training.
-        if idx not in matches:
+        # A cut must sit inside an unchanged run, so neither window owns an
+        # edit made across the seam, and no opening marker (list dash, heading,
+        # quote) may sit before the cut token on either side, or the previous
+        # window's target would carry it. Otherwise retain the example for
+        # evaluation but abstain from training.
+        if idx not in matches or matches.get(idx - 1) != matches[idx] - 1:
             raise ValueError("unaligned_window_boundary")
-        cuts.append(dst[matches[idx]][0])
+        cut = dst[matches[idx]][0]
+        if source[w.start:starts[idx]].strip() or not re.fullmatch(r"[^\w\s]*\s+", target[dst[matches[idx] - 1][1]:cut]):
+            raise ValueError("unaligned_window_boundary")
+        cuts.append(cut)
     cuts.append(len(target))
     if cuts != sorted(set(cuts)):
         raise ValueError("nonmonotonic_window_targets")
@@ -113,7 +119,9 @@ def capture(pair):
             if corrections_pass:
                 answer = "\n".join(g for g in pair.get("gold_lines", []) if g.lower() in input_text.lower()) or "NONE"
             else:
-                answer = targets[tuple(window_range)]
+                answer = targets.get(tuple(window_range))
+                if answer is None:
+                    raise ValueError("window_plan_mismatch")
                 # Supervision must not teach deleting a meaningful word that
                 # repeats only because a correction span was removed before it.
                 if removes_created_repeat(pair["model_input"][window_range[0]:window_range[1]], input_text, answer):
