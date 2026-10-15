@@ -30,7 +30,7 @@ from . import prompts
 from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
                       FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER, NUMBER, NUMBER_WORDS,
                       POSITIVE_NUMBER, SCALE_WORDS, TECH_TOKEN_RE, Neighbourhood,
-                      alternation, neighbourhood)
+                      alternation, marker_key, marker_pattern, neighbourhood)
 from .correction_retention import (AdmittedCorrection, correction_view, qualifier_retention,
                                    quantity_binds, quantity_shaped, repeated_restart)
 from .validation import (validate, restore_missing_words, restore_source_spans,
@@ -61,10 +61,9 @@ SPAN_MAX_CHARS = 80
 # Existing direct triggers, including standalone "actually". Ambiguous
 # "no"/"sorry" admission additionally reuses the evidence guards below.
 CORRECTION_MARKER_RE = re.compile(
-    r"\b(no wait|no sorry|no actually|actually no|wait no|i mean|"
-    r"no espera|espera no|digo|scratch that|scratch|actually)\b",
+    rf"\b({marker_pattern(CORRECTION_MARKERS - {'sorry', 'no', 'i mean actually'})})\b",
     re.IGNORECASE)
-SPAN_ENDS_WITH_MARKER_RE = re.compile(rf"\b({alternation(CORRECTION_MARKERS)})$",
+SPAN_ENDS_WITH_MARKER_RE = re.compile(rf"\b({marker_pattern(CORRECTION_MARKERS)})$",
                                       re.IGNORECASE)
 # "i mean it/that/this" is emphasis, never a correction.
 _EMPHASIS_AFTER_I_MEAN = frozenset({"it", "that", "this"})
@@ -555,7 +554,7 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
     if not _has_content(window_text[s:ms]):
         return "no_outdated_value"
     after = n.new_words
-    marker = window_text[ms:e].lower()
+    marker = marker_key(window_text[ms:e])
     if marker == "i mean actually":
         restart, reason = repeated_restart(window_text, (s, e), ms)
         if reason or restart is not None:
@@ -637,7 +636,7 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
         return span
     new = n.new_words[1:]
     if (_parallel(n) or
-            (text[marker:end].lower() not in _SINGLE_WORD_MARKERS
+            (marker_key(text[marker:end]) not in _SINGLE_WORD_MARKERS
              and len(old) == 1 and _has_content(old[0])
              and new and _has_content(new[0]))):
         return prefix.start(), end
@@ -741,7 +740,7 @@ def parse_correction_output(output: str, window_text: str,
             rejected.append(CorrectionProposal(None, False,
                                                "no_marker_ending", delete=delete))
             continue
-        if delete.lower() in BARE_MARKERS:
+        if marker_key(delete) in BARE_MARKERS:
             rejected.append(CorrectionProposal(None, False, "bare_marker", delete=delete))
             continue
         over_cap = len(delete.split()) > SPAN_MAX_WORDS

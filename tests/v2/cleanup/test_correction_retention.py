@@ -476,6 +476,29 @@ class CorrectionRetentionTests(unittest.TestCase):
                 result, _ = clean(source, wrong, deletion)
                 self.assertEqual(result.text, source)
 
+    def test_a_comma_inside_a_compound_marker_keeps_it_one_marker(self):
+        for source, deletion, admitted, target in (
+            ("Hold each set for 30 seconds, no, sorry, 45 seconds before resting.",
+             "30 seconds, no, sorry", "30 seconds, no, sorry",
+             "Hold each set for 45 seconds before resting."),
+            # The repeated "to" joins the deletion as usual.
+            ("Send it to Mark, no, wait, to Lisa today.", "Mark, no, wait",
+             "to Mark, no, wait", "Send it to Lisa today."),
+            ("The reading should be 12 psi, I mean, actually it should be 14 psi.",
+             "12 psi, I mean, actually", "12 psi, I mean, actually",
+             "The reading should be 14 psi."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual([c.delete for c in accepted], [admitted])
+                self.assertEqual(rejected, [])
+                # "no" in the marker is not a lost negation.
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+        accepted, rejected = parse_correction_output("no, wait", "Ship it, no, wait.", [])
+        self.assertEqual([r.reason for r in rejected], ["bare_marker"])
+
     def test_replacement_may_repeat_the_article_before_the_old_value(self):
         for source, deletion, target in (
             ("Voice the reed stops on the 12th, no, the 14th, only if it stays dry.",

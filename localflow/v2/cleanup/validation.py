@@ -28,6 +28,7 @@ from decimal import Decimal, InvalidOperation
 from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, DETERMINERS, FILLERS,
                       FINITE_AUXILIARIES, SUBJECT_PRONOUNS,
                       FUNCTION_WORDS, NEGATION_WORDS, NUMBER, SUBORDINATORS, alternation,
+                      marker_pattern,
                       IDENTIFIER_TOKEN_RE as _IDENTIFIER_TOKEN_RE,
                       NUMBER_WORDS as _NUMBERS, QUOTED_RE as _QUOTED_RE,
                       SCALE_WORDS as _SCALES, TECH_TOKEN_RE as _TECH_TOKEN_RE,
@@ -1342,7 +1343,7 @@ def _incomplete_restart_spans(source: str, output: str, ctx) -> list:
     return spans
 
 
-_MARKER_RE = re.compile(rf"(?<!\w)(?:{alternation(CORRECTION_MARKERS)})(?!\w)", re.IGNORECASE)
+_MARKER_RE = re.compile(rf"(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS)})(?!\w)", re.IGNORECASE)
 _RESTATED_MAX_WORDS = 12
 
 

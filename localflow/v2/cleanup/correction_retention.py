@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from .lexicon import (CLAUSE_END, CLAUSE_LINKS, COUNT, DETAIL_PREPOSITIONS,
                       FINITE_AUXILIARIES, FRAME_WORDS, FUNCTION_WORDS, MEASURE_UNIT, MODALS,
                       NEGATION_WORDS, NUMBER, SPELLED_NUMBER, Neighbourhood, alternation,
+                      marker_key,
                       quoted_regions, touches)
 
 
@@ -176,7 +177,7 @@ def repeated_restart(source: str, span: tuple, marker_start: int):
     an attempted but unproved restart instead returns a rejection reason.
     """
     start, end = span
-    if source[marker_start:end].lower() != "i mean actually":
+    if marker_key(source[marker_start:end]) != "i mean actually":
         return None, None
     opening = re.split(r"[.!?](?:\s|$)|[,;\n]",
                        source[end:].lstrip(" \t,;:"), maxsplit=1)[0]
