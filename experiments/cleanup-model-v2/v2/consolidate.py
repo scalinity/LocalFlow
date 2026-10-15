@@ -30,6 +30,8 @@ REVIEWED_EXCLUSIONS = {
 }
 LIST_INTRO = re.compile(r"\b(list|lists|steps?|following|items)\b", re.I)
 C_ERA_SAMPLE = 1200
+# Rows reviewed to teach the comma before a sentence-final addressed name keep every added comma.
+VOCATIVE_FOCUS = "question_final_vocative_comma"
 
 
 def _vocabulary(row):
@@ -96,7 +98,8 @@ def collect():
         if LIST_LINE.search(target) and not LIST_LINE.search(source) and not LIST_INTRO.search(source):
             exclusions["list_without_introduction"] += 1
             continue
-        normalized, changes, exclusion = minimal_target(source, target, _vocabulary(row))
+        normalized, changes, exclusion = minimal_target(source, target, _vocabulary(row),
+                                                        keep_gap_commas=row.get("focus") == VOCATIVE_FOCUS)
         if exclusion:
             exclusions[exclusion.split(":")[0]] += 1
             continue

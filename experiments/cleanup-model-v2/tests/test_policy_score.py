@@ -145,6 +145,48 @@ class MinimalTargetTests(unittest.TestCase):
     def test_a_comma_between_touching_words_reverts_to_the_source_gap(self):
         self.check("pay 1 000 euros", "Pay 1,000 euros.", "Pay 1 000 euros.", ["optional_gap_comma"])
 
+    def test_commas_that_set_off_an_addressed_person_stay(self):
+        for source, target in (
+                ("thanks marta", "Thanks, Marta."),
+                ("can you check this sam", "Can you check this, Sam?"),
+                ("thanks everyone", "Thanks, everyone."),
+                ("yes marta", "Yes, Marta."),
+                ("marta can you send it", "Marta, can you send it?"),
+                ("dr patel can you sign it", "Dr Patel, can you sign it?"),
+                ("team the proofs are back", "Team, the proofs are back."),
+                ("hi marta can you send it", "Hi Marta, can you send it?"),
+                ("okay so priya I need you to check it", "Okay so Priya, I need you to check it."),
+                ("hey team the build is green", "Hey team, the build is green."),
+                ("I have a question for you Maren about the kiln", "I have a question for you, Maren, about the kiln.")):
+            with self.subTest(target=target):
+                self.check(source, target, target, [])
+
+    def test_conjunction_introductory_and_list_commas_still_go(self):
+        for source, target, expected in (
+                ("send it to marta and then call her", "Send it to Marta, and then call her.",
+                 "Send it to Marta and then call her."),
+                ("after lunch we test the pump", "After lunch, we test the pump.", "After lunch we test the pump."),
+                ("first open the lid", "First, open the lid.", "First open the lid."),
+                ("next tuesday we start", "Next Tuesday, we start.", "Next Tuesday we start."),
+                ("above all keep it dry", "Above all, keep it dry.", "Above all keep it dry."),
+                ("buy eggs milk and bread", "Buy eggs, milk, and bread.", "Buy eggs milk and bread."),
+                ("we use Kubernetes Docker and Helm", "We use Kubernetes, Docker, and Helm.",
+                 "We use Kubernetes Docker and Helm.")):
+            with self.subTest(target=target):
+                self.assertEqual(policy_score.minimal_target(source, target)[0], expected)
+
+    def test_a_sentence_initial_name_that_is_the_subject_loses_its_comma(self):
+        self.check("marta is in the office", "Marta, is in the office.", "Marta is in the office.",
+                   ["optional_gap_comma"])
+        # Asked or told: the name is addressed.
+        self.check("marta is the report ready", "Marta, is the report ready?", "Marta, is the report ready?", [])
+        self.check("marta will you check it", "Marta, will you check it.", "Marta, will you check it.", [])
+
+    def test_keep_gap_commas_reverts_only_the_opening_discourse_comma(self):
+        got = policy_score.minimal_target("okay so run the batch then inspect it",
+                                          "Okay, so run the batch, then inspect it.", keep_gap_commas=True)
+        self.assertEqual(got, ("Okay so run the batch, then inspect it.", ["opening_discourse_comma"], None))
+
     def test_boundaries_newlines_unaligned_and_replacing_commas_stay(self):
         for source, target, vocabulary in (
                 ("check the pump then log it", "Check the pump. Then log it.", ()),

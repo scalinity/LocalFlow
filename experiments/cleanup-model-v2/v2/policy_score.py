@@ -96,14 +96,86 @@ def _pieces(text):
     return [m.group() for m in matches], [text[bounds[i]:bounds[i + 1]] for i in range(0, len(bounds), 2)]
 
 
-def minimal_target(source, target, vocabulary=()):
+# The prompt requires commas that set off a directly addressed person, so a revert keeps them.
+GROUP_ADDRESSEES = {"everyone", "everybody", "all", "team", "guys", "folks", "sir", "madam", "ma'am"}
+NOT_PERSONS = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "january",
+               "february", "march", "april", "may", "june", "july", "august", "september", "october",
+               "november", "december"}
+# Sentence openers that may precede a name ("Hey Marta,") but are never the one addressed ("First, run it").
+OPENERS = DISCOURSE | {"hi", "hello", "dear", "thanks", "thank", "morning", "evening", "afternoon", "first",
+                       "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth",
+                       "next", "then", "last", "lastly", "finally", "however", "otherwise", "instead",
+                       "meanwhile", "overall", "afterward", "afterwards", "honestly", "actually",
+                       "importantly", "firmly", "still", "rather", "remember", "wait", "oh", "no", "please"}
+# A sentence-initial name followed by one of these, in a sentence that neither asks nor says "you", is its subject.
+FINITE = {"is", "was", "has", "had", "does", "did", "will", "would", "can", "could", "should", "must", "may",
+          "might", "shall", "says", "said", "isn't", "wasn't", "hasn't", "doesn't", "didn't", "won't", "can't"}
+
+
+def _addressee(word):
+    """A capitalised name or a group addressee; days, months and acronyms are not."""
+    key = word.casefold().replace("’", "'")
+    return key in GROUP_ADDRESSEES or (word[:1].isupper() and word[1:2].islower()
+                                       and word.replace("'", "").replace("’", "").isalpha()
+                                       and key not in NOT_PERSONS)
+
+
+def _opens(gaps, i):
+    """Whether word i opens the text or a sentence."""
+    return i == 0 or re.search(r"[.!?][\"'”’)\]]*\s|\n", gaps[i]) is not None
+
+
+def _sets_off_addressee(words, gaps, k):
+    """Whether the comma in gap k sets off a person being addressed.
+
+    Before the person: "Thanks, Marta." or "Can you check this, Sam?" (one or two
+    name words ending the sentence, or set off again mid-sentence). After the
+    person: "Marta, can you send it", "Hi Marta, ...". A sentence-initial name
+    followed by a finite verb is the subject and its comma is not kept. Unsure
+    cases count as addressed: a kept optional comma costs little, a stripped
+    required one teaches the opposite of the prompt.
+    """
+    n = len(words)
+    if not 0 < k < n:
+        return False
+    named = lambda i: _addressee(words[i]) and not _opens(gaps, i)
+    for m in (k, k + 1):
+        if m >= n or not _addressee(words[m]) or (m > k and gaps[m].strip()):
+            break
+        after = gaps[m + 1]
+        if m + 1 == n or re.search(r"[.!?]", after) or ("," in after and not named(k - 1)):
+            return True
+    p = k - 1
+    if not _addressee(words[p]):
+        return False
+    if p >= 1 and words[p][:1].isupper() and not gaps[p].strip() and _addressee(words[p - 1]) \
+            and words[p - 1].casefold() not in OPENERS:
+        p -= 1  # a two-word name: "Dr Patel," "Marta Lopez,"
+    if _opens(gaps, p):
+        if words[p].casefold() in OPENERS:
+            return False
+        end = next((i for i in range(k, n) if re.search(r"[.!?\n]", gaps[i + 1])), n - 1)
+        sentence = {w.casefold() for w in words[k:end + 1]}
+        asks = "?" in gaps[end + 1] or sentence & {"you", "your", "yours", "yourself"}
+        return asks or words[k].casefold().replace("’", "'") not in FINITE
+    q = p - 1
+    while q >= 0 and words[q].casefold() in OPENERS and not gaps[q + 1].strip():
+        if _opens(gaps, q):
+            return True  # after greetings or openers: "Hi Marta," "Okay so Priya,"
+        q -= 1
+    return "," in gaps[p] and p >= 1 and not named(p - 1)  # set off on both sides: "for you, Maren, about"
+
+
+def minimal_target(source, target, vocabulary=(), keep_gap_commas=False):
     """Remove optional polish from a training label without touching its repairs.
 
     Returns (target, changes, exclusion). Invented paragraph breaks, a comma added at
     an aligned gap the source left unpunctuated on one line (score() never requires
     it; after a sentence-opening discourse word it is recorded as
     opening_discourse_comma) and a colon replacing a valid comma after a short
-    label-like opening are reverted to the source. A label that turns spoken
+    label-like opening are reverted to the source. A comma that sets off a person
+    being addressed is required, not optional, and stays; keep_gap_commas keeps
+    every added comma except the opening discourse case. A label that turns spoken
     ordinals into a list without step labels or a list introduction, or that adds a
     word the speaker did not say, is excluded rather than rewritten.
     """
@@ -118,6 +190,7 @@ def minimal_target(source, target, vocabulary=()):
     if added:
         return target, [], "adds_undictated_words:" + ",".join(added[:5])
     words, gaps = _pieces(target)
+    label_gaps = list(gaps)
     changes = []
     for k, j in _aligned_gaps(source_words, target_words).items():
         s, t = source_gaps[j], gaps[k]
@@ -125,11 +198,11 @@ def minimal_target(source, target, vocabulary=()):
             t = re.sub(r"[ \t]*\n\s*\n\s*", " ", t)
             changes.append("invented_paragraph")
         opens_sentence = k == 1 or (k >= 2 and re.search(r"[.!?\n]", gaps[k - 1]))
-        if not _marks(s) and _marks(t) == ",":
+        if not _marks(s) and _marks(t) == "," and not _sets_off_addressee(words, label_gaps, k):
             if k >= 1 and target_words[k - 1] in DISCOURSE and opens_sentence:
                 t = t.replace(",", "", 1)
                 changes.append("opening_discourse_comma")
-            elif "\n" not in s + t:
+            elif "\n" not in s + t and not keep_gap_commas:
                 # A comma between two touching words reverts to the source gap, keeping them two words.
                 t = t.replace(",", "", 1) or s
                 changes.append("optional_gap_comma")

@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from v2 import consolidate
-from v2.common import read_json, read_jsonl, write_jsonl
+from v2.common import read_json, read_jsonl, write_json, write_jsonl
 
 
 def row(case_id, exact):
@@ -79,6 +79,27 @@ class RestoredConjunctionTests(unittest.TestCase):
         self.assertEqual(consolidate._restored_conjunctions(row, target),
                          'We booked 17 rooms. And before noon we call the hotel.')
         self.assertIsNone(consolidate._restored_conjunctions({**row, 'gold_lines': ['nine rooms, sorry']}, target))
+
+
+class CollectTests(unittest.TestCase):
+    def test_rows_teaching_the_final_vocative_comma_keep_every_added_comma(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_json(root / 'refinement' / 'dataset' / 'freeze.json', {'stats': {'train': {'label_conflicts': []}}})
+            write_jsonl(root / 'refinement' / 'dataset' / 'train.jsonl', [
+                {'case_id': 'vocative', 'focus': consolidate.VOCATIVE_FOCUS, 'is_noop': False,
+                 'model_input': 'can you run the batch then check it sam',
+                 'target': 'Can you run the batch, then check it, Sam?'},
+                {'case_id': 'plain', 'focus': 'restatement', 'is_noop': False,
+                 'model_input': 'could you run the tests then check them sam',
+                 'target': 'Could you run the tests, then check them, Sam?'}])
+            with patch.object(consolidate, 'ART', root), patch.object(consolidate, 'REFINEMENT', root / 'refinement'), \
+                    patch.object(consolidate, 'OLD_ART', root / 'old'):
+                rows, _ = consolidate.collect()
+        # The addressed name keeps its comma everywhere; only the reviewed rows keep the optional one too.
+        self.assertEqual({r['case_id']: r['target'] for r in rows},
+                         {'vocative': 'Can you run the batch, then check it, Sam?',
+                          'plain': 'Could you run the tests then check them, Sam?'})
 
 if __name__ == '__main__':
     unittest.main()
