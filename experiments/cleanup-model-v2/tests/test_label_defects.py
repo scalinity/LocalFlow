@@ -128,7 +128,6 @@ class SequenceWordTests(unittest.TestCase):
             'first heat the pan second add the oil', '1. Heat the pan\n2. Add the oil', []))
 
 
-
 class MarkerEndingTests(unittest.TestCase):
     def test_a_gold_line_that_does_not_end_at_a_correction_marker_is_a_defect(self):
         for source, line in (
@@ -140,6 +139,21 @@ class MarkerEndingTests(unittest.TestCase):
                                  [line])
         source = 'we booked 16 rooms, sorry 17 rooms'
         self.assertIsNone(defects.gold_line_not_marker_terminated(source, '', span(source, '16 rooms, sorry')))
+
+
+class StepLabelTests(unittest.TestCase):
+    def test_consecutive_spoken_step_labels_kept_as_prose_are_a_defect(self):
+        for source in ('step 1 open the valve step 2 close it', 'step one open the valve step two close it'):
+            with self.subTest(source=source):
+                hit = defects.step_labels_kept_as_prose(source, 'Step 1, open the valve. Step 2, close it.', [])
+                self.assertEqual(hit['labels'], [(1, 2)])
+        self.assertIsNone(defects.step_labels_kept_as_prose('step 1 open the valve step 2 close it',
+                                                            '1. Open the valve.\n2. Close it.', []))
+
+    def test_words_that_are_not_consecutive_step_labels_are_not(self):
+        for source in ('the next step is to wait, then take a step back', 'step 1 open the valve and step 3 close it'):
+            with self.subTest(source=source):
+                self.assertIsNone(defects.step_labels_kept_as_prose(source, source.capitalize() + '.', []))
 
 
 class UnexplainedRewriteTests(unittest.TestCase):
@@ -156,6 +170,7 @@ class UnexplainedRewriteTests(unittest.TestCase):
         self.assertEqual(defects.unexplained_rewrites('ship it on tuesday', 'Ship it on Wednesday.'),
                          [('tuesday', 'wednesday')])
         self.assertEqual(defects.unexplained_rewrites('use 4 bobbins', 'Use 6 bobbins.'), [('4', '6')])
+
 
 class TrainingLabelConflictTests(unittest.TestCase):
     def test_every_capture_path_rejects_a_label_defect(self):

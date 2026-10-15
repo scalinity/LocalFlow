@@ -12,7 +12,7 @@ from __future__ import annotations
 import difflib
 import re
 
-from .policy_score import ABBREVIATIONS, LIST_LINE
+from .policy_score import ABBREVIATIONS, LIST_LINE, NUMBERED_LINE
 from .strict_score import FILLERS
 
 WORD = re.compile(r"\w+(?:['’]\w+)*")
@@ -190,8 +190,24 @@ def gold_line_not_marker_terminated(source, target, offsets, vocabulary_pairs=()
     return {"reason": "gold_line_not_marker_terminated", "lines": bad} if bad else None
 
 
+STEP_LABEL = re.compile(r"\bstep\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b", re.I)
+NUMBER_WORDS = {w: n for n, w in enumerate("one two three four five six seven eight nine ten".split(), 1)}
+
+
+def step_labels_kept_as_prose(source, target, offsets, vocabulary_pairs=()):
+    """Two or more consecutive spoken step labels ("step 1 ... step 2", "step one ... step
+    two") that the target keeps as prose. The prompt makes such steps a numbered list; "the
+    next step is" and "a step back" carry no number and are not step labels."""
+    if NUMBERED_LINE.search(target):
+        return None
+    numbers = [int(m.group(1)) if m.group(1).isdigit() else NUMBER_WORDS[m.group(1).casefold()]
+               for m in STEP_LABEL.finditer(source)]
+    runs = [(a, b) for a, b in zip(numbers, numbers[1:]) if b == a + 1]
+    return {"reason": "step_labels_kept_as_prose", "labels": runs} if runs else None
+
+
 RULES = (gold_deletion_kept_by_target, drops_dictated_word, loses_sentence_boundary,
-         sequence_words_made_numbers, gold_line_not_marker_terminated)
+         sequence_words_made_numbers, gold_line_not_marker_terminated, step_labels_kept_as_prose)
 
 
 def label_defect(source, target, offsets, vocabulary_pairs=()):
