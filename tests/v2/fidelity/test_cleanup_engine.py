@@ -134,7 +134,7 @@ def test_duplicate_spans_delete_in_spoken_order():
     accepted, rejected = parse_correction_output(
         "two engineers no wait\ntwo engineers no wait", window, [])
     assert len(accepted) == 2 and not rejected
-    spans = sorted((s, e) for (s, e), _d in accepted)
+    spans = sorted(c.span for c in accepted)
     assert spans[0][0] < spans[1][0]
     out = apply_corrections(window, accepted)
     assert "three engineers and invite five engineers" in out, out

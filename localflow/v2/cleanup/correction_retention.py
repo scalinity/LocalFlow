@@ -12,6 +12,7 @@ separately, with its original source coordinates retained by the engine.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 
 
 _NUMBER = r"[+-]?\d+(?:[.,]\d+)*"
@@ -120,18 +121,6 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
     return (start + match.start("space"), start + len(old), destination), None
 
 
-def retention_moves(source: str, corrections: list) -> list:
-    """Exact moves for already admitted, non-overlapping corrections."""
-    moves = []
-    for start, end, marker in corrections:
-        move, reason = qualifier_retention(source, (start, end), marker)
-        if reason:
-            raise ValueError(reason)
-        if move is not None:
-            moves.append(move)
-    return moves
-
-
 def repeated_restart(source: str, span: tuple, marker_start: int):
     """Find an exact redundant ``it <modal> be`` after a compound marker.
 
@@ -214,25 +203,47 @@ def repeated_restart(source: str, span: tuple, marker_start: int):
     return (end, end + replacement.end("restart")), None
 
 
+@dataclass(frozen=True)
+class AdmittedCorrection:
+    """One admitted deletion with the exact edits proved for it.
+
+    ``span`` is the marker-terminated proposal and ``marker`` the offset
+    where its marker begins. ``restart`` is an authorized redundant restart
+    after the marker and ``move`` a retained qualifier ``(start, end,
+    destination)``. Offsets are source code points. Admission decides them
+    once; every later step reads them rather than deriving them again.
+    """
+    span: tuple
+    delete: str
+    marker: int
+    restart: tuple | None = None
+    move: tuple | None = None
+
+    def shifted(self, offset: int) -> "AdmittedCorrection":
+        """The same correction in a containing text that starts ``offset``
+        code points earlier (a split-retry half inside its parent)."""
+        def shift(points):
+            return tuple(p + offset for p in points) if points else points
+        return AdmittedCorrection(shift(self.span), self.delete, self.marker + offset,
+                                  shift(self.restart), shift(self.move))
+
+
 def correction_view(source: str, corrections: list, protected=()) -> tuple:
     """Return the comparison source and authorized correction coordinates.
 
-    Moves are exact and local, not model-proposed rewrites. Original source
-    and original deletion coordinates remain the engine's stored record.
-    Protected occurrences cannot straddle the insertion point.
-    Exact redundant restarts extend comparison spans while the engine
-    continues to record the original marker-terminated proposal spans.
+    ``corrections`` are AdmittedCorrection records for ``source``. Moves
+    are exact and local, not model-proposed rewrites. Original source and
+    original deletion coordinates remain the engine's stored record.
+    Protected occurrences cannot straddle the insertion point. Exact
+    redundant restarts extend comparison spans while the engine continues
+    to record the original marker-terminated proposal spans.
     """
     view = source
-    rebased = []
-    for start, end, marker in corrections:
-        restart, reason = repeated_restart(source, (start, end), marker)
-        if reason:
-            raise ValueError(reason)
-        rebased.append((start, restart[1] if restart else end, marker))
+    rebased = [(c.span[0], c.restart[1] if c.restart else c.span[1], c.marker)
+               for c in corrections]
     positions = [tuple(p[:2]) for p in protected]
     for start, end, destination in sorted(
-            retention_moves(source, corrections), reverse=True):
+            (c.move for c in corrections if c.move), reverse=True):
         size = end - start
         view = (view[:start] + view[end:destination]
                 + view[start:end] + view[destination:])

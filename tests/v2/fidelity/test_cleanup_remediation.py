@@ -221,7 +221,7 @@ def test_04_guard_reasons():
     # Valid correction still resolves with exact offsets.
     acc, rej = parse_correction_output(
         "tuesday no wait", "meet tuesday no wait wednesday", [])
-    assert acc and acc[0][0] == (5, 20), (acc, rej)
+    assert acc and acc[0].span == (5, 20), (acc, rej)
 
 
 def test_04_truncated_correction_batch_not_applied():

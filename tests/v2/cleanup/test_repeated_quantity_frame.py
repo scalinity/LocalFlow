@@ -25,7 +25,7 @@ class RepeatedQuantityFrameTests(unittest.TestCase):
                 proposal = f"{old} {unit}, sorry"
                 accepted, rejected = parse_correction_output(proposal, source, [])
                 self.assertFalse(rejected)
-                self.assertEqual(accepted[0][1], f"every {old} {unit}, sorry")
+                self.assertEqual(accepted[0].delete, f"every {old} {unit}, sorry")
                 result = clean(source, target, proposal)
                 self.assertEqual(result.text, target)
                 self.assertEqual(result.path, "llm")
@@ -52,14 +52,14 @@ class RepeatedQuantityFrameTests(unittest.TestCase):
                 source = f"Inspect every 18 cycles, sorry, {replacement}."
                 accepted, _ = parse_correction_output("18 cycles, sorry", source, [])
                 self.assertTrue(all(not delete.startswith("every ")
-                                    for _, delete in accepted))
+                                    for delete in (c.delete for c in accepted)))
 
     def test_old_qualifier_and_clause_are_not_swallowed(self):
         for old in ("18 cycles on the spare rig", "18 cycles and restart"):
             source = f"Inspect every {old}, sorry, every 27 cycles."
             accepted, _ = parse_correction_output(f"{old}, sorry", source, [])
             self.assertTrue(all(not delete.startswith("every ")
-                                for _, delete in accepted))
+                                for delete in (c.delete for c in accepted)))
 
     def test_protected_frame_cannot_be_added_to_deletion(self):
         source = "Inspect every 18 cycles, sorry, every 27 cycles."

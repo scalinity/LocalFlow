@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
-from localflow.v2.cleanup.engine import (CleanupEngine, correction_marker_start,
+from localflow.v2.cleanup.engine import (CleanupEngine,
                                         parse_correction_output,
                                         _has_correction_marker)
 from localflow.v2.cleanup.correction_retention import correction_view
@@ -201,6 +201,37 @@ class CorrectionRetentionTests(unittest.TestCase):
         self.assertEqual(len(assembly), 1)
         self.assertTrue(assembly[0]["accepted"])
 
+    def test_retry_assembly_rebases_half_admissions_instead_of_recomputing(self):
+        # The parent window holds an apostrophe that the half with the
+        # correction does not. The assembly must reuse that half's admission
+        # rather than re-deriving it against the parent text.
+        first = ("Advance the rotor by 7 quarters of a turn, sorry, 1 half turn, "
+                 "then lock the housing and log the reading.")
+        second = "Don't open the cover until the gauge settles."
+        source = first + " " + second
+        target = ("Advance the rotor by 1 half turn, then lock the housing and "
+                  "log the reading. " + second)
+        calls = 0
+
+        def generate(prompt, max_tokens):
+            nonlocal calls
+            if "Find the self-corrections" in prompt:
+                return {"text": "7 quarters of a turn, sorry", "output_tokens": 8,
+                        "limit_hit": False}
+            calls += 1
+            if calls == 1:
+                return {"text": "Advance", "output_tokens": 1, "limit_hit": True}
+            body = prompt.rsplit("<|user|>\n", 1)[1].rsplit("<|assistant|>", 1)[0]
+            text = json.loads(body)["transcript"].replace("by , 1", "by 1")
+            return {"text": text, "output_tokens": 15, "limit_hit": False}
+
+        result = CleanupEngine(generate, model_id="fixture").clean(source)
+        self.assertEqual(result.text, target)
+        self.assertEqual(result.path, "llm")
+        self.assertEqual(result.corrections["applied"], 1)
+        assembly = [o for o in result.observations if o.get("stage") == "retry_assembly"]
+        self.assertEqual([o["accepted"] for o in assembly], [True])
+
     def test_qualifier_cannot_move_to_another_equal_quantity(self):
         source = ("Use 4 liters of dye, no wait, 6 liters, "
                   "and reserve 6 liters for cleaning.")
@@ -263,10 +294,8 @@ class CorrectionRetentionTests(unittest.TestCase):
         accepted, rejected = parse_correction_output(
             "4 liters of dye, no wait\n3 grams of varnish, no wait", source, [])
         self.assertFalse(rejected)
-        spans = [(a, b, correction_marker_start(source, (a, b)))
-                 for (a, b), _ in accepted]
         view, moved_corrections, positions = correction_view(
-            source, spans, [(i, i + 1) for i in range(len(source))])
+            source, accepted, [(i, i + 1) for i in range(len(source))])
         self.assertEqual(view,
                          "Note α: Use 4 liters, no wait, 6 liters of dye, and reserve "
                          "3 grams, no wait, 5 grams of varnish for batch_12.")

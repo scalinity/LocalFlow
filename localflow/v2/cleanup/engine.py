@@ -27,8 +27,8 @@ from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
-from .correction_retention import (correction_view, qualifier_retention,
-                                   repeated_restart, retention_moves)
+from .correction_retention import (AdmittedCorrection, correction_view,
+                                   qualifier_retention, repeated_restart)
 from .validation import (validate, restore_missing_words,
                          restore_restriction_punctuation, ValidationReport)
 
@@ -717,16 +717,17 @@ def _recover_fused_proposal(source: str, delete: str) -> str | None:
 def parse_correction_output(output: str, window_text: str,
                             protected_spans: list,
                             limit_hit: bool = False) -> tuple[list, list]:
-    """Parse V1-format correction lines into accepted (span, text) and
-    rejected proposals with reasons. Guards: a batch cut off by the
+    """Parse V1-format correction lines into AdmittedCorrection records
+    and rejected proposals with reasons. Guards: a batch cut off by the
     output limit is never applied (``batch_truncated``); each line is
     marker-terminated, short and never bare; a deletion whose text occurs
     more often in the window than it was proposed is ambiguous and
     rejected rather than resolved to the first match; and the deletion
     must carry original-source evidence (``_evidence_reason``).
     Resolution is sequential in-order, so duplicate proposals delete in
-    spoken order."""
-    accepted: list[tuple[tuple[int, int], str]] = []
+    spoken order. Each record carries the marker, restart and qualifier
+    move proved here, so no later step re-derives admission."""
+    accepted: list[AdmittedCorrection] = []
     rejected: list[CorrectionProposal] = []
     lines = [ln.strip().strip('"').strip() for ln in output.splitlines()]
     lines = [d for d in lines
@@ -800,14 +801,13 @@ def parse_correction_output(output: str, window_text: str,
         if reason:
             rejected.append(CorrectionProposal(span, False, reason))
             continue
-        restart, _reason = repeated_restart(
-            window_text, span, correction_marker_start(window_text, span))
+        marker = correction_marker_start(window_text, span)
+        restart, _reason = repeated_restart(window_text, span, marker)
         if restart is not None and any(
                 a < restart[1] and b > restart[0] for a, b, *_ in protected_spans):
             rejected.append(CorrectionProposal(span, False, "protected_restart"))
             continue
-        move, reason = qualifier_retention(
-            window_text, span, correction_marker_start(window_text, span))
+        move, reason = qualifier_retention(window_text, span, marker)
         if move is not None and any(a < move[2] < b
                                     for a, b, *_ in protected_spans):
             reason = "protected_retention_anchor"
@@ -815,23 +815,21 @@ def parse_correction_output(output: str, window_text: str,
             rejected.append(CorrectionProposal(span, False, reason))
             continue
         taken.append((span[0], restart[1] if restart else span[1]))
-        accepted.append((span, delete))
+        accepted.append(AdmittedCorrection(span, delete, marker, restart, move))
         cursor = taken[-1][1]
         if len(accepted) >= 6:        # V1's applied cap
             break
     # A replacement that is itself corrected needs a different edit plan;
     # never move its retained qualifier inside another admitted deletion.
     retained = []
-    for span, delete in accepted:
-        move, _ = qualifier_retention(
-            window_text, span, correction_marker_start(window_text, span))
-        if move is not None and any(
-                a < move[2] and b > span[1]
-                for (a, b), _d in accepted if (a, b) != span):
+    for correction in accepted:
+        if correction.move is not None and any(
+                other.span[0] < correction.move[2] and other.span[1] > correction.span[1]
+                for other in accepted if other is not correction):
             rejected.append(CorrectionProposal(
-                span, False, "overlapping_retention_replacement"))
+                correction.span, False, "overlapping_retention_replacement"))
         else:
-            retained.append((span, delete))
+            retained.append(correction)
     return retained, rejected
 
 
@@ -849,11 +847,8 @@ def _has_correction_marker(text: str) -> bool:
     return False
 
 
-def apply_corrections(window_text: str,
-                      accepted: list[tuple[tuple[int, int], str]]) -> str:
-    spans = [(s, e, correction_marker_start(window_text, (s, e)))
-             for (s, e), _delete in accepted]
-    out, spans, _protected = correction_view(window_text, spans)
+def apply_corrections(window_text: str, accepted: list[AdmittedCorrection]) -> str:
+    out, spans, _protected = correction_view(window_text, accepted)
     for s, e, _marker in sorted(spans, reverse=True):
         out = out[:s] + out[e:]
     return re.sub(r"[ \t]{2,}", " ", out).strip()
@@ -871,7 +866,7 @@ class WindowResult:
     text: str
     validation: ValidationReport | None = None
     continues_list: bool = False
-    # Accepted correction deletions [(s, e, marker_start)], window-local.
+    # Accepted correction deletions (AdmittedCorrection), window-local.
     corrections: list = field(default_factory=list)
     children: list = field(default_factory=list)   # split-retry halves
     pass_id: str | None = None
@@ -1068,7 +1063,7 @@ class CleanupEngine:
                           payload_base: dict, observations: list,
                           depth: int, parent_pass_id: str | None):
         """Provisional correction deletions: returns (corrected text,
-        accepted spans [(s, e, marker_start)], record). Nothing here is
+        AdmittedCorrection records, record). Nothing here is
         final — the window's validation against the ORIGINAL text
         settles each proposal as selected or rolled back."""
         text = window.text
@@ -1084,8 +1079,6 @@ class CleanupEngine:
         accepted, rejected = parse_correction_output(
             res.get("text", ""), text, protected, limit_hit=truncated)
         corrected = apply_corrections(text, accepted)
-        spans = [(s, e, correction_marker_start(text, (s, e)))
-                 for (s, e), _d in accepted]
         record = {
             "kind": "corrections_applied",
             "pass_id": rec["pass_id"],
@@ -1096,26 +1089,23 @@ class CleanupEngine:
             "rejected_count": len(rejected),
             "rejected_reasons": sorted({r.reason for r in rejected}),
             "proposals": [
-                {"span": [s, e], "marker_start": m, "delete": d,
+                {"span": list(c.span), "marker_start": c.marker, "delete": c.delete,
                  "status": "provisional"}
-                for (s, e, m), (_sp, d) in zip(spans, accepted)] + [
+                for c in accepted] + [
                 {"span": list(r.span) if r.span else None,
                  "status": "rejected", "reason": r.reason}
                 for r in rejected],
         }
-        moves = retention_moves(text, spans)
-        if moves:
+        if any(c.move for c in accepted):
             record["retained_qualifiers"] = [
-                {"span": [s, e], "after": destination}
-                for s, e, destination in moves]
-        restarts = [(repeated_restart(text, (s, e), m)[0], (s, e))
-                    for s, e, m in spans]
-        if any(restart for restart, _span in restarts):
+                {"span": [c.move[0], c.move[1]], "after": c.move[2]}
+                for c in accepted if c.move]
+        if any(c.restart for c in accepted):
             record["repeated_restarts"] = [
-                {"span": list(restart), "correction_span": list(span)}
-                for restart, span in restarts if restart]
+                {"span": list(c.restart), "correction_span": list(c.span)}
+                for c in accepted if c.restart]
         observations.append(record)
-        return corrected, spans, record
+        return corrected, accepted, record
 
     # ---- one window ------------------------------------------------------
 
@@ -1201,8 +1191,11 @@ class CleanupEngine:
                         sep.join(c.text.strip() for c in kids
                                  if c.text.strip()),
                         continue_from=list_continue)
-                    corr = [(s + a, e + a, m + a) for a, c in children
-                            for s, e, m in c.corrections]
+                    # Each half admitted its corrections against its own
+                    # text; rebase those records rather than re-deriving
+                    # admission against the parent text.
+                    corr = [c.shifted(a) for a, child in children
+                            for c in child.corrections]
                     assembly_text, assembly_corr, assembly_positions = correction_view(
                         window.text, corr, protected_positions)
                     # The assembly is itself a candidate for the whole

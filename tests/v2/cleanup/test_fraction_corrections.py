@@ -38,9 +38,9 @@ class FractionCorrectionTests(unittest.TestCase):
                 ms = correction_marker_start(source, span)
                 self.assertEqual(qualifier_retention(source, span, ms), (None, None))
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertEqual(accepted, [(span, deletion)])
+                self.assertEqual([(c.span, c.delete) for c in accepted], [(span, deletion)])
                 self.assertFalse(rejected)
-                self.assertEqual(correction_view(source, [(*span, ms)])[:2],
+                self.assertEqual(correction_view(source, accepted)[:2],
                                  (source, [(*span, ms)]))
                 result = clean(source, target, deletion)
                 self.assertEqual(result.text, target)
@@ -272,9 +272,7 @@ class FractionCorrectionTests(unittest.TestCase):
                 accepted, rejected = parse_correction_output(deletion, source, [])
                 self.assertTrue(accepted)
                 self.assertFalse(rejected)
-                spans = [(s, e, correction_marker_start(source, (s, e)))
-                         for (s, e), _ in accepted]
-                view, spans, _ = correction_view(source, spans)
+                view, spans, _ = correction_view(source, accepted)
                 self.assertTrue(validate(view, target, correction_spans=spans).accepted)
                 self.assertFalse(validate(view, damaged, correction_spans=spans).accepted)
                 self.assertNotEqual(clean(source, damaged, deletion).text, damaged)
