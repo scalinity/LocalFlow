@@ -30,7 +30,7 @@ from . import prompts
 from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES,
                       FRAME_PREPOSITIONS, FRAME_WORDS, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER,
                       NEGATION_WORDS, NUMBER, ORDINAL_WORD_RE,
-                      POSITIVE_NUMBER, PREDICATE_AUXILIARIES, SENTENCE_END, TECH_TOKEN_RE,
+                      POSITIVE_NUMBER, PREDICATE_AUXILIARIES, VALUE_SENTENCE_END, TECH_TOKEN_RE,
                       Neighbourhood,
                       LOOKAHEAD_CHARS, after_marker, alternation, is_value_word, marker_key,
                       marker_pattern, neighbourhood, plain_words, quoted_regions, restatement,
@@ -483,7 +483,7 @@ def _has_content(text: str) -> bool:
 # one needs a visibly parallel replacement.
 _ORDINARY_WORD_MARKERS = frozenset({"actually", "sorry", "no", "make that"})
 _ARTICLES = frozenset({"a", "an", "the"})
-# The titles whose period lexicon.SENTENCE_END reads as no sentence end.
+# The titles whose period lexicon.VALUE_SENTENCE_END reads as no sentence end.
 _TITLES = frozenset({"dr", "mr", "mrs", "ms", "prof"})
 _WEEKDAYS = frozenset({"monday", "tuesday", "wednesday", "thursday",
                        "friday", "saturday", "sunday"})
@@ -559,7 +559,7 @@ def _yes_no_contrast(n: Neighbourhood) -> bool:
     """A bare ``no`` answering an earlier ``yes`` with the same next word
     contrasts rather than corrects: ``yes to the first, no to the second``."""
     following = n.new_words[:1]
-    sentence = re.split(SENTENCE_END + r"|\n",
+    sentence = re.split(VALUE_SENTENCE_END + r"|\n",
                         n.text[max(0, n.marker - LOOKAHEAD_CHARS):n.marker])[-1]
     return bool(following and marker_key(n.text[n.marker:n.end]) == "no" and re.search(
         rf"\byes[ \t,]+{re.escape(following[0])}\b", sentence, re.IGNORECASE))
@@ -643,7 +643,7 @@ def _parallel(n: Neighbourhood) -> bool:
                 & set(y_words))
 
 
-_SENTENCE_END_RE = re.compile(SENTENCE_END)
+_VALUE_SENTENCE_END_RE = re.compile(VALUE_SENTENCE_END)
 
 
 def _opens_sentence(n: Neighbourhood) -> bool:
@@ -653,7 +653,7 @@ def _opens_sentence(n: Neighbourhood) -> bool:
         before -= 1
     # "Dr. " opens no sentence.
     return (not before or "\n" in n.text[before:n.start]
-            or _SENTENCE_END_RE.match(n.text, before - 1) is not None)
+            or _VALUE_SENTENCE_END_RE.match(n.text, before - 1) is not None)
 
 
 def _restated_across_sentences(n: Neighbourhood) -> bool:
@@ -671,7 +671,7 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
     """
     text, s, ms, e = n.text, n.start, n.marker, n.end
     old = text[s:ms].rstrip()
-    ends = list(re.finditer(SENTENCE_END, text[s:e].rstrip(".!? ")))
+    ends = list(re.finditer(VALUE_SENTENCE_END, text[s:e].rstrip(".!? ")))
     if not old.endswith(".") or len(ends) != 1 or ends[0].start() != len(old) - 1:
         return False
     # A quoted sentence pair may be a literal ('said "starts at 7:40. I mean
@@ -729,7 +729,7 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
     replacement Y with content follows the marker in the same sentence.
     None when the evidence holds, else the reason."""
     window_text, s, ms, e = n.text, n.start, n.marker, n.end
-    across = bool(re.search(SENTENCE_END, window_text[s:e].rstrip(".!? ")))
+    across = bool(re.search(VALUE_SENTENCE_END, window_text[s:e].rstrip(".!? ")))
     if across and not _restated_across_sentences(n):
         return "crosses_sentence"
     if not _has_content(" ".join(n.old_words)):
@@ -788,7 +788,7 @@ def _replacement_opens_predicate(n: Neighbourhood) -> bool:
     """
     # A decimal ("2.5 hours is") or a title ("Dr. Varga is") ends no clause,
     # and a title opens the value as an article does.
-    clause = re.split(r"[,;\n]|" + SENTENCE_END,
+    clause = re.split(r"[,;\n]|" + VALUE_SENTENCE_END,
                       n.text[n.end:n.end + LOOKAHEAD_CHARS].lstrip(" \t,;:"), maxsplit=1)[0]
     words = [w.lower() for w in clause.split()]
     words = (words[1:4] if words[:1] and (words[0] in _ARTICLES or words[0].rstrip(".") in _TITLES)

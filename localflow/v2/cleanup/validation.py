@@ -24,9 +24,10 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
+from functools import lru_cache
 
 from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, DETERMINERS, FILLERS,
-                      FINITE_AUXILIARIES, SUBJECT_PRONOUNS,
+                      FINITE_AUXILIARIES, SUBJECT_PRONOUNS, SENTENCE_END,
                       FUNCTION_WORDS, NEGATION_WORDS, NUMBER, SUBORDINATORS, alternation,
                       marker_pattern,
                       IDENTIFIER_TOKEN_RE as _IDENTIFIER_TOKEN_RE,
@@ -708,17 +709,41 @@ def _component_coverage(source, output, ctx, aligned) -> Component:
         {"missing_words": len(missing), "flagged_deletion_ranges": flagged})
 
 
-_SOURCE_BOUNDARY_RE = re.compile(r"[.!?;](?=\s|$)|\n")
+_SOURCE_BOUNDARY_RE = re.compile(SENTENCE_END + r"|;(?=\s|$)|\n")
 _OUTPUT_BOUNDARY_RE = re.compile(r"[.!?;:\n—–]")
 
 
-def _sentence_has_scope(source: str, pos: int) -> bool:
-    starts = [m.end() for m in _SOURCE_BOUNDARY_RE.finditer(source, 0, pos)]
-    start = starts[-1] if starts else 0
-    m = _SOURCE_BOUNDARY_RE.search(source, pos)
-    end = m.end() if m else len(source)
-    return any(w in SCOPE_WORDS for _, _, w in
-               _word_atoms(source[start:end]))
+_TITLE_PERIOD_RE = re.compile(r"\b(?:Dr|Mr|Mrs|Ms|Prof)\.(?=[ \t])")
+
+
+@lru_cache(maxsize=64)
+def _source_boundaries(source: str) -> tuple:
+    """Every source sentence boundary, found over the whole text so the
+    words around a period decide it, not where a searched range ends."""
+    return tuple(m.span() for m in _SOURCE_BOUNDARY_RE.finditer(source))
+
+
+def _sentence_ends(source: str) -> list:
+    """Source boundaries that end the sentence a negation, condition or
+    restatement is read from: a title's period does not."""
+    titles = {m.end() - 1 for m in _TITLE_PERIOD_RE.finditer(source)}
+    return [(a, b) for a, b in _source_boundaries(source) if a not in titles]
+
+
+def _sentence_words(source: str, pos: int, deleted=()) -> set:
+    """The words of the sentence around ``pos``. Text an admitted
+    correction deletes (``deleted`` spans) is neither a word nor a
+    boundary of the sentence the output can form."""
+    ends = [(a, b) for a, b in _sentence_ends(source) if not _overlaps(deleted, a, b)]
+    start = max((b for _a, b in ends if b <= pos), default=0)
+    end = min((b for a, b in ends if a >= pos), default=len(source))
+    return {w for s, e, w in _word_atoms(source[start:end])
+            if not _overlaps(deleted, s + start, e + start)}
+
+
+def _sentence_has_scope(source: str, pos: int, deleted=()) -> bool:
+    return bool(_sentence_words(source, pos, deleted) & SCOPE_WORDS)
+
 
 
 def _clause_scope(source, output, aligned, ctx) -> Component:

@@ -101,10 +101,13 @@ def alternation(words) -> str:
 # semicolon or line break, or sentence punctuation before a space.
 CLAUSE_END = r"[ \t]*(?:$|[,;\n]|[.!?](?=\s|$))"
 
-# Sentence punctuation before a space or the end of the text. The period
+# A title period is still a boundary when checking a sentence merge.
+SENTENCE_END = r"[.!?](?=\s|$)"
+
+# When reading a correction value, the period
 # of a title ("Dr. Okafor") or of a time followed by a lowercase word or a
 # digit ("8 a.m. slot") abbreviates and ends nothing.
-SENTENCE_END = (r"(?:(?<!\bDr)(?<!\bMrs)(?<!\bMr)(?<!\bMs)(?<!\bProf)"
+VALUE_SENTENCE_END = (r"(?:(?<!\bDr)(?<!\bMrs)(?<!\bMr)(?<!\bMs)(?<!\bProf)"
                 r"(?!(?<=\b[aApP]\.[mM])\.[ \t]+[a-z0-9])\.|[!?])(?:\s|$)")
 
 IDENTIFIER_TOKEN_RE = re.compile(
@@ -244,10 +247,10 @@ def _words(text: str) -> tuple:
 # admissible old value (160 characters) and the clause after it fit well
 # inside; reading less keeps every candidate span's cost bounded.
 LOOKAHEAD_CHARS = 1000
-_SENTENCE_STOP_RE = re.compile(SENTENCE_END + r"|\n")
+_SENTENCE_STOP_RE = re.compile(VALUE_SENTENCE_END + r"|\n")
 
 
-_CLAUSE_STOP_RE = re.compile(SENTENCE_END + r"|[,;\n]")
+_CLAUSE_STOP_RE = re.compile(VALUE_SENTENCE_END + r"|[,;\n]")
 
 
 @lru_cache(maxsize=256)

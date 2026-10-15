@@ -163,7 +163,7 @@ admission. Shared word classes and the number and unit grammar live in
 | the text occurs in the window no more often than it was proposed — never resolved to a first match | `ambiguous_occurrence` |
 | resolvable at/after the cursor | `offsets_unresolved` |
 | no overlap with a protected span | `protected_span` |
-| stays inside one sentence, or replaces the sentence or sentence-final value the next sentence restates (**Restatements**); the period of a title (`Dr.`, `Mr.`, `Mrs.`, `Ms.`, `Prof.`) or of `a.m.`/`p.m.` before a lowercase word or digit ends no sentence (`lexicon.SENTENCE_END`) | `crosses_sentence` |
+| stays inside one sentence, or replaces the sentence or sentence-final value the next sentence restates (**Restatements**); the period of a title (`Dr.`, `Mr.`, `Mrs.`, `Ms.`, `Prof.`) or of `a.m.`/`p.m.` before a lowercase word or digit ends no correction-value sentence (`lexicon.VALUE_SENTENCE_END`); title periods remain boundaries when validating sentence merges (`lexicon.SENTENCE_END`) | `crosses_sentence` |
 | the outdated value X (before the marker) has a content word (a filler is none) | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
