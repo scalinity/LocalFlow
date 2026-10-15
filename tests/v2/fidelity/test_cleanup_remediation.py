@@ -232,7 +232,9 @@ def test_04_truncated_correction_batch_not_applied():
                               log=log))
     main_inputs = [p["transcript"] for k, p in log if k == "cleanup"]
     assert main_inputs == [src], main_inputs     # nothing deleted
-    assert res.text == src, res.text
+    # The cleanup applied the unadmitted correction itself; it is put back
+    # exactly as dictated while the rest of the cleanup stays.
+    assert res.text == "Meet tuesday no wait Wednesday because I travel.", res.text
     assert res.corrections["applied"] == 0
     rec = [o for o in res.observations
            if o.get("kind") == "corrections_applied"][0]

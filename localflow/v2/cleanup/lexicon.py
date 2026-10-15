@@ -41,6 +41,18 @@ MODALS = frozenset({"can", "could", "may", "might", "must", "shall", "should",
 FINITE_AUXILIARIES = MODALS | frozenset({
     "am", "is", "are", "was", "were", "has", "have", "had", "do", "does", "did"})
 
+def marker_pattern(markers) -> str:
+    """An alternation of ``markers`` in which a comma may separate the
+    words of a compound marker ("no, sorry", "I mean, actually")."""
+    return "|".join(re.escape(m).replace(r"\ ", r"[ \t]*,?[ \t]+")
+                    for m in sorted(markers, key=lambda w: (-len(w), w)))
+
+
+def marker_key(text: str) -> str:
+    """A marker's words, lowercased, with spacing and commas normalized."""
+    return re.sub(r"[ \t]*,?[ \t]+", " ", text.strip().lower())
+
+
 # Words that cannot be the noun a number counts: "1 the east wing" and
 # "Two, we restart" enumerate, while "2 tablets" counts.
 DETERMINERS = frozenset({"the", "this", "that", "these", "those", "my", "your", "our",
@@ -51,7 +63,7 @@ SUBJECT_PRONOUNS = frozenset({"i", "you", "he", "she", "it", "we", "they"})
 CORRECTION_MARKERS = frozenset({
     "no wait", "no sorry", "no actually", "actually no", "wait no", "i mean",
     "i mean actually", "no espera", "espera no", "digo", "scratch", "scratch that",
-    "actually", "sorry", "no"})
+    "make that", "actually", "sorry", "no"})
 
 # Words that open a dependent clause, and the wider set that ends a
 # retained detail or a restated value before the next clause.

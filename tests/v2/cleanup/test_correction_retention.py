@@ -250,6 +250,41 @@ class CorrectionRetentionTests(unittest.TestCase):
                 result, _ = clean(source, lossy, deletion)
                 self.assertEqual(result.text, source)
 
+    def test_a_bound_quantity_with_its_detail_may_exceed_the_word_cap(self):
+        for source, deletion, target in (
+            ("Bring 2 boxes of the adhesive electrodes, sorry, 3 boxes of the adhesive "
+             "electrodes for the sensors.", "2 boxes of the adhesive electrodes, sorry",
+             "Bring 3 boxes of the adhesive electrodes for the sensors."),
+            ("Assign 4 rooms per attendant on the north wing only, actually 6 rooms per "
+             "attendant on the north wing only, and keep the suites apart.",
+             "4 rooms per attendant on the north wing only, actually",
+             "Assign 6 rooms per attendant on the north wing only, and keep the suites apart."),
+            ("Mix 4 liters of the blue dye, sorry, 6 liters for the tank.",
+             "4 liters of the blue dye, sorry", "Mix 6 liters of the blue dye for the tank."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual([c.delete for c in accepted], [deletion])
+                self.assertEqual(rejected, [])
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+        # Past ten words, with a changed unit, or without a quantity, the
+        # ordinary cap applies.
+        for source, deletion in (
+            ("Assign 4 rooms per attendant on the far north wing only, actually 6 rooms "
+             "per attendant on the far north wing only.",
+             "4 rooms per attendant on the far north wing only, actually"),
+            ("Bring 2 boxes of the adhesive electrodes, sorry, 3 crates for the sensors.",
+             "2 boxes of the adhesive electrodes, sorry"),
+            ("We picked the glass lens with spots on it, sorry, the camera.",
+             "the glass lens with spots on it, sorry"),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["span_too_long"])
+
     def test_unbindable_quantity_detail_keeps_the_source(self):
         # A spelled number, a determiner before the number, or a frame the
         # replacement does not repeat leaves the detail without a place.
@@ -440,6 +475,70 @@ class CorrectionRetentionTests(unittest.TestCase):
                 self.assertEqual([r.reason for r in rejected], ["not_parallel"])
                 result, _ = clean(source, wrong, deletion)
                 self.assertEqual(result.text, source)
+
+    def test_make_that_corrects_only_a_closed_parallel_value(self):
+        for source, deletion, admitted, target in (
+            ("Add 50 microliters, um, make that 60 microliters.",
+             "50 microliters, um, make that", "50 microliters, um, make that",
+             "Add 60 microliters."),
+            ("Check the gauge every 4 minutes, make that every 5 minutes.",
+             "4 minutes, make that", "every 4 minutes, make that",
+             "Check the gauge every 5 minutes."),
+            ("Pin the library to version 2.3, make that 2.4.", "2.3, make that",
+             "2.3, make that", "Pin the library to version 2.4."),
+        ):
+            with self.subTest(source=source):
+                self.assertTrue(_has_correction_marker(source))
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual([c.delete for c in accepted], [admitted])
+                self.assertEqual(rejected, [])
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+        # Ordinary "make that" and an open replacement clause stay as spoken,
+        # and none of them asks the corrections model at all.
+        for source, deletion, wrong, reason in (
+            ("We should make that change before Friday.", "We should make that",
+             "Change before Friday.", "not_parallel"),
+            ("Can you make that bigger?", "Can you make that", "Bigger?", "not_parallel"),
+            ("Let's make that work.", "Let's make that", "Work.", "not_parallel"),
+            ("Keep the old theme and make that the default.",
+             "the old theme and make that", "Keep the default.", "not_parallel"),
+            ("Make that the default.", "Make that", "The default.", "bare_marker"),
+            ("Use 4 trays, make that 6 trays for the oven and 2 for the fridge.",
+             "4 trays, make that", "Use 6 trays for the oven and 2 for the fridge.",
+             "not_parallel"),
+        ):
+            with self.subTest(source=source):
+                self.assertFalse(_has_correction_marker(source))
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], [reason])
+                result, _ = clean(source, wrong, deletion)
+                self.assertEqual(result.text, source)
+
+    def test_a_comma_inside_a_compound_marker_keeps_it_one_marker(self):
+        for source, deletion, admitted, target in (
+            ("Hold each set for 30 seconds, no, sorry, 45 seconds before resting.",
+             "30 seconds, no, sorry", "30 seconds, no, sorry",
+             "Hold each set for 45 seconds before resting."),
+            # The repeated "to" joins the deletion as usual.
+            ("Send it to Mark, no, wait, to Lisa today.", "Mark, no, wait",
+             "to Mark, no, wait", "Send it to Lisa today."),
+            ("The reading should be 12 psi, I mean, actually it should be 14 psi.",
+             "12 psi, I mean, actually", "12 psi, I mean, actually",
+             "The reading should be 14 psi."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual([c.delete for c in accepted], [admitted])
+                self.assertEqual(rejected, [])
+                # "no" in the marker is not a lost negation.
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+        accepted, rejected = parse_correction_output("no, wait", "Ship it, no, wait.", [])
+        self.assertEqual([r.reason for r in rejected], ["bare_marker"])
 
     def test_replacement_may_repeat_the_article_before_the_old_value(self):
         for source, deletion, target in (
