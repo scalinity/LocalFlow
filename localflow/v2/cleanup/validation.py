@@ -508,7 +508,8 @@ def _sequence_connective_spans(source: str, output: str, correction_spans=()) ->
              if a[2] not in FILLERS and not _overlaps(correction_spans, a[0], a[1])]
     spans = []
     for m in _SEQUENCE_RE.finditer(source):
-        clause = re.split(r"[.!?;:\n]", source[:m.start()])[-1]
+        opens = [b for _a, b in _source_boundaries(source) if b <= m.start()]
+        clause = source[max(opens + [source.rfind(":", 0, m.start()) + 1]):m.start()]
         if (_overlaps(correction_spans, m.start(), m.end())
                 or not re.search(r"\w", clause)
                 or {w for _s, _e, w in _word_atoms(clause)} & _CONDITION_WORDS):
@@ -1309,8 +1310,7 @@ def _word_multiset_survival(source, output, words: frozenset,
         if correction in ctx.restated_value_spans:
             continue
         old = [a for a in atoms if start <= a[0] and a[1] <= marker]
-        stop = re.search(r"[.!?](?=\s|$)|\n", source[end:])
-        limit = end + stop.start() if stop else len(source)
+        limit = min((a for a, _b in _source_boundaries(source) if a >= end), default=len(source))
         replacement = [a for a in atoms if end <= a[0] and a[1] <= limit
                        and not _overlaps(ctx.frame_spans, a[0], a[1])]
         for position, a in enumerate(old):

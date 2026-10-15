@@ -60,6 +60,9 @@ class SequenceConnectiveTests(unittest.TestCase):
             # "then" after a condition is its consequent.
             ("First, if the build fails then roll back the release. Second, notify the team.",
              "1. If the build fails\n2. Roll back the release\n3. Notify the team"),
+            # A title's period does not end the condition's sentence.
+            ("First, if Dr. Lee agrees then roll back the release. Second, notify the team.",
+             "1. If Dr. Lee agrees\n2. Roll back the release\n3. Notify the team"),
             # Bullets carry no order.
             ("First close the shutter then purge the line then log the temperature.",
              "- Close the shutter.\n- Purge the line.\n- Log the temperature."),

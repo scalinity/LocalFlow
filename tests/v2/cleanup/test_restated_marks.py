@@ -48,11 +48,24 @@ class RestatedMarkTests(unittest.TestCase):
             ("The slide should say it is not approved for children, I mean, not approved "
              "for infants.", "not approved for children, I mean", "I mean",
              "The slide should say it is not approved for infants."),
+
         ):
             with self.subTest(source=source):
                 self.assertEqual(failures(source, output, [span(source, delete, marker)]), set())
                 result = clean(source, [delete], output)
                 self.assertEqual((result.path, result.text), ("llm", output))
+
+    def test_a_title_period_does_not_end_the_restatement(self):
+        # A deletion across the sentence boundary, as the engine admits a restated sentence.
+        source = ("Do not move the trays until Dr. Okafor signs, because we cannot read 2 labels. "
+                  "No wait, do not move the trays until Dr. Okafor signs, because we cannot read 3 "
+                  "labels.")
+        delete = ("Do not move the trays until Dr. Okafor signs, because we cannot read 2 labels. "
+                  "No wait")
+        output = "Do not move the trays until Dr. Okafor signs, because we cannot read 3 labels."
+        self.assertEqual(failures(source, output, [span(source, delete, "No wait")]), set())
+        dropped = "Do not move the trays until Dr. Okafor signs, because we can read 3 labels."
+        self.assertIn("negation_coverage", failures(source, dropped, [span(source, delete, "No wait")]))
 
     def test_a_correction_that_drops_a_hedge_or_negation_still_fails(self):
         for source, delete, marker, output, name in (
