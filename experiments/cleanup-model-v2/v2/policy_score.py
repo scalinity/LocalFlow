@@ -106,9 +106,11 @@ def _pieces(text):
 GROUP_ADDRESSEES = {"everyone", "everybody", "all", "team", "guys", "folks", "sir", "madam", "ma'am", "class",
                     "people", "kids", "students", "friends", "ladies", "gentlemen", "y'all", "mom", "mum",
                     "dad", "honey"}
+WEEKDAYS = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+MONTHS = {"january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
+          "november", "december"}
 # April, May, June and August are also given names, so they may be addressed ("Thanks, June.").
-NOT_PERSONS = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "january",
-               "february", "march", "july", "september", "october", "november", "december"}
+NOT_PERSONS = WEEKDAYS | MONTHS - {"april", "may", "june", "august"}
 I_FORMS = {"i", "i'm", "i'll", "i've", "i'd"}
 # Capitalised only because they open a sentence, these are never part of a name ("In June, we ship").
 FUNCTION_WORDS = {"in", "on", "at", "by", "for", "from", "to", "with", "into", "onto", "over", "under", "after",
@@ -132,7 +134,7 @@ WALK_WORDS = OPENERS | GREETING_WORDS
 FINITE = {"is", "was", "has", "had", "does", "did", "will", "would", "can", "could", "should", "must", "may",
           "might", "shall", "says", "said", "isn't", "wasn't", "hasn't", "doesn't", "didn't", "won't", "can't"}
 # After a finite verb, a subject pronoun makes a question without its mark: "Marta, could we move it."
-SUBJECT_PRONOUNS = {"i", "we", "you", "they", "he", "she", "it", "there"}
+SUBJECT_PRONOUNS = {"i", "we", "you", "they", "he", "she", "it", "there", "anyone", "someone", "everyone"}
 
 
 # Never a name, however capitalised.

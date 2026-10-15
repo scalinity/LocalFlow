@@ -12,7 +12,8 @@ from __future__ import annotations
 import difflib
 import re
 
-from .policy_score import ABBREVIATIONS, LIST_LINE, NUMBERED_LINE, _aligned_gaps, _marks, _pieces, _split
+from .policy_score import (ABBREVIATIONS, I_FORMS, LIST_LINE, MONTHS, NUMBERED_LINE, STEP_LABELS, SUBJECT_PRONOUNS,
+                           WEEKDAYS, _aligned_gaps, _marks, _pieces, _split)
 from .strict_score import FILLERS
 
 WORD = re.compile(r"\w+(?:['’]\w+)*")
@@ -201,7 +202,7 @@ LEAD = (r"(?:(?:and|also|so|okay|ok|but|or|then|now|well|oh|hey|right|alright|fi
         r"quick question|one more thing)[,:]?\s+)*")
 PHRASE = r"(?:(?:for|in|on|about|with|regarding|after|before|during)\s[^,?.]{1,70},\s*)"
 PRONOUN = r"(?:i|we|you|they|he|she|it|there|the|a|an|this|that|these|those|my|our|your|their)"
-SUBJECT_PRONOUN = r"(?:you|we|i|they|he|she|it|there|anyone|someone|everyone)"
+SUBJECT_PRONOUN = "(?:" + "|".join(sorted(SUBJECT_PRONOUNS)) + ")"
 WH = r"(?:who|what|which|why|when|where|how)"
 QUESTIONS = [
     re.compile(rf"^{LEAD}{PHRASE}?{AUX}\s+{SUBJECT}\b", re.I),
@@ -212,7 +213,6 @@ QUESTIONS = [
 ]
 IMPERATIVE = re.compile(r"^(?:\W*)(?:do not|don't|please|have the|have them|have someone|have a)\b", re.I)
 BECAUSE_CLAUSE = re.compile(r"\bbecause\b(?!\s+of\b)", re.I)
-STEP_LABEL = re.compile(r"\bstep\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b", re.I)
 NUMBER_WORDS = {w: n for n, w in enumerate("one two three four five six seven eight nine ten".split(), 1)}
 
 
@@ -271,7 +271,7 @@ def step_labels_kept_as_prose(source, target, offsets, vocabulary_pairs=()):
     if target == source or NUMBERED_LINE.search(target):
         return None
     numbers = [int(m.group(1)) if m.group(1).isdigit() else NUMBER_WORDS[m.group(1).casefold()]
-               for m in STEP_LABEL.finditer(source)]
+               for m in STEP_LABELS.finditer(source)]
     runs = [(a, b) for a, b in zip(numbers, numbers[1:]) if b == a + 1]
     return {"reason": "step_labels_kept_as_prose", "labels": runs} if runs else None
 
@@ -311,9 +311,7 @@ def unexplained_rewrites(before, after, vocabulary_pairs=()):
 
 
 # Words that keep their capital wherever they stand.
-ALWAYS_CAPITALISED = {"i", "i'm", "i'll", "i've", "i'd", "monday", "tuesday", "wednesday", "thursday", "friday",
-                      "saturday", "sunday", "january", "february", "march", "april", "may", "june", "july",
-                      "august", "september", "october", "november", "december"}
+ALWAYS_CAPITALISED = I_FORMS | WEEKDAYS | MONTHS
 
 
 def _keeps_capital(word, text):
