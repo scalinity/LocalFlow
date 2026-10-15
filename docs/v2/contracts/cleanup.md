@@ -44,8 +44,14 @@ sentence into bullets.
 
 The validator permits the final list-joining “and” to become a bullet
 separator only when an unambiguous matching introduction and every item
-match the source words in order. It does not authorize dropping “and”
-within an item, introduction words, protected text, or item content.
+match the source words in order, fillers aside. The introduction is the
+last sentence before the colon; it names a `list` and holds `here is`/`here
+are` or ends with `list`, `list is` or `list are`, and after `list is`/`list
+are` a comma follows every item but the last. An item never runs past a
+source sentence boundary except a title period retained in the same word
+gap (`Dr. Adams`); a closing sentence glued onto the last bullet fails.
+It does not authorize dropping “and” within an item, introduction words,
+protected text, or item content.
 
 Consecutive spoken step labels (`step 1`, `step one`, or `step number one`)
 introducing actions or questions become numbered items, including without
@@ -174,11 +180,26 @@ admission. Shared word classes and the number and unit grammar live in
 **Markers.** The markers are `lexicon.CORRECTION_MARKERS`; a comma may
 separate the words of a compound marker (`no, sorry`, `I mean, actually`),
 and the whole compound is the marker, so its `no` is not a lost negation.
-A marker chained before the proposal's own (`on Tuesday, I mean no, on
-Wednesday`; `Tuesday, actually sorry, Wednesday`) is no part of the old
-value that any guard reads, so `check Monday, I mean no, Tuesday` still
-rejects as `overbroad_calendar_value`, and markers alone are no outdated
-value.
+In engine admission, a marker chained before the proposal's own
+(`on Tuesday, I mean no, on Wednesday`; `Tuesday, actually sorry,
+Wednesday`) is no part of the old value that any guard reads, so
+`check Monday, I mean no, Tuesday` still rejects as
+`overbroad_calendar_value`, and markers alone are no outdated value.
+
+Validation reads consecutive markers as one marker: markers directly
+before a deletion's recorded marker (`0.5 seconds no I mean`) belong to
+it when the old value before them is complete, holding its own number or
+closed by a comma (`Dr. Okafor, no I mean Dr. Lindqvist`; in `There are
+no, sorry, there are two` the `no` is the old value), and markers left immediately after
+a deletion belong to it while a replacement follows (`ten, no, sorry,
+eleven` deleting `ten, no`; `6 am no make that 7 am`). A trailing run
+never takes a word that can open the replacement: no marker ending in
+`no` (`5, no wait, no more than 6`; `sorry, wait, no more licenses`),
+`make that` only before a number (`make that change` is a predicate), and
+`scratch`, `sorry`, `actually` or a marker starting with `no` only when a
+comma closes it (`sorry, scratch disk`, `sorry, no wait at all`).
+The engine and validator retain these separate marker rules; an engine
+admission that validation rejects delivers the unchanged source.
 
 **Closure.** A replacement closes its clause when, after an optional
 repeated frame word and one article, its value is followed by the end of
@@ -387,12 +408,12 @@ identifiers (`sample_index`, `name:value`), which never split into words.
 | Component | Kind | Fails → |
 |---|---|---|
 | `coverage` | deterministic | critical — every source word survives in order or is authorized away (flagged deletion ranges, question-flagged); no word inside a protected occurrence is ever authorized away, so the designated occurrence — not an equal text elsewhere — survives |
-| `clause_scope` | deterministic | critical — an explicit source boundary (`. ! ? ;` or a line break) next to a negated or conditional sentence survives as an output boundary (`. ! ? ; :`, newline or dash); merging "Do not deploy. Run tests." into one clause fails. A new break may not detach a trailing `only` from its clause, or separate `only` from the condition, subordinator or preposition after it (`only if`, `only then`), unless a new subject and finite auxiliary follow `only`; and new terminal punctuation may not strand a conjunction (`water and. I want`) |
-| `numeric_values` | deterministic | critical — typed numeric occurrences survive **in order** with sign, unit (`%`, `$ € £`, unit words) and identity (times, leading-zero codes, versions/ranges, letter-digit identifiers like `Qwen3-4B` — case-exact unless the source spelling is all lowercase — and commas that are not thousands grouping); grouping and number words are representation (`thirty percent` ↔ `30%`). Source list markers are structure: each ordered list's start number survives. Rendered list labels, taken from the `document_nodes` parse, never bind a value; a label must open a list (1, a spoken-enumeration value, a source start, the seam-continued start) or follow its predecessor — otherwise it is an invented value. A source quantity therefore cannot become a label (`1 apple` is not `1. Apple`); bare source numbers stand behind labels only as a spoken run 1, 2, 3 … whose members open a clause and are followed by a comma or a determiner or subject pronoun (`One, check …`, `1 the east wing …`) |
+| `clause_scope` | deterministic | critical — an explicit source boundary (`. ! ? ;` or a line break; the sentence a negation or condition is read from runs past a title's period, `Dr.`, `Mr.`, `Mrs.`, `Ms.` or `Prof.`, while that period still counts as a boundary a merge must keep) next to a negated or conditional sentence survives as an output boundary (`. ! ? ; :`, newline or dash); merging "Do not deploy. Run tests." into one clause fails, whatever conjunction opens the second sentence. Text an admitted correction deletes shapes no sentence: a boundary inside it (`for 15 minutes. Actually no, 10 minutes`) and its words (the marker's `no`) do not count. A new break may not detach a trailing `only` from its clause, or separate `only` from the condition, subordinator or preposition after it (`only if`, `only then`), unless a new subject and finite auxiliary follow `only`; and new terminal punctuation may not strand a conjunction (`water and. I want`) |
+| `numeric_values` | deterministic | critical — typed numeric occurrences survive **in order** with sign, unit (`%`, `$ € £`, unit words) and identity (times, leading-zero codes, versions/ranges, letter-digit identifiers like `Qwen3-4B` — case-exact unless the source spelling is all lowercase — and commas that are not thousands grouping); grouping and number words are representation (`thirty percent` ↔ `30%`). Source list markers are structure: each ordered list's start number survives. Rendered list labels, taken from the `document_nodes` parse, never bind a value; a label must open a list (1, a spoken-enumeration value, a source start, the seam-continued start) or follow its predecessor — otherwise it is an invented value. A source quantity therefore cannot become a label (`1 apple` is not `1. Apple`); bare source numbers stand behind labels only as a spoken run 1, 2, 3 … whose members open a clause and are followed by a comma or a determiner or subject pronoun (`One, check …`, `1 the east wing …`). Closing brackets, quotes and sentence punctuation after a number, in any order, are not part of it (`12).` holds `12`), and a number-word phrase's words are separated by spaces only (`the Tuesday one. Four, set …` holds 1 and 4) and never end in `point` (`we lost one point.` keeps the word). A plain number dictated right after a word may fuse with it into one identifier, the word's letters (in the source's case unless the source word is all lowercase), an optional `-` or `.`, then the number's digits as written (`WGS eighty four` → `WGS84`, `PROJ four` → `PROJ.4`; `BA084` or `PROJ.4.0` adds digits), unless the word is a function word or the source already holds that identifier |
 | `protected_tokens` | deterministic | critical — each protected occurrence survives with exact bytes, as often as protected, on token boundaries; a dictated literal (`literal_escape`, `quoted`) may take an initial capital, a `generated` span may not |
 | `literal_spans` | deterministic | critical — each quoted source literal keeps its own delimited output occurrence of the same kind (double or single quotes; glyph style may change), verbatim apart from an initial capital |
-| `negation_coverage` | deterministic | critical — the negation multiset is preserved exactly: none lost, none added (a correction's marker is not content) |
-| `uncertainty_coverage` | deterministic | critical — the hedge multiset is preserved exactly |
+| `negation_coverage` | deterministic | critical — the negation multiset is preserved exactly: none lost, none added (a correction's marker is not content, and a negation in an admitted correction's old value is not lost when the replacement restates it in the same place, the same word at the same position after the deletion: `no acute pneumothorax, sorry, no acute effusion`; a negation elsewhere in the sentence restates nothing; a negation word hyphenated into a name, `--no-cache`, may be removed inside an admitted correction; surviving negation atoms count on both sides regardless of hyphenation) |
+| `uncertainty_coverage` | deterministic | critical — the hedge multiset is preserved exactly; a correction's marker is not content, and a hedge in an admitted correction's old value is not lost when the replacement restates it in the same place (`about 45 minutes, no sorry, about 50 minutes` keeps one `about`) |
 | `technical_tokens` | deterministic | critical — paths, flags, versions, emails, URLs, identifiers, case-significant words (`MB`, `UserID`, `iOS`) with exact case, and operator symbols (`= + < > ≤ ≥ ≠`) by count (a spoken `equals`/`plus`/`minus` may add its symbol); a `?` may be added, never dropped. Pipes keep their count, and each standalone pipe or pipe run stays in its original gap between the same aligned words, with the same numbers, punctuation and line breaks; only horizontal spacing there may change |
 | `novelty` | deterministic | critical — no word, including articles, prepositions, pronouns and auxiliaries, appears more often than in the source plus matched vocabulary replacements; `a`/`an` share an existing occurrence allowance. Removed correction words cannot fund additions. This catches invented facts, grammar completion, repeated clauses and copied read-only context |
 | `names` | heuristic | finding only |
@@ -400,10 +421,19 @@ identifiers (`sample_index`, `name:value`), which never split into words.
 
 Authorized deletions (never inside a protected occurrence): accepted
 corrections (their spans — whose words may not reappear: novelty does
-not count them), pure fillers, immediate function-word stutter (plus
-the doubled preposition a correction leaves), the earlier copy of an
-exact restatement that changes only a number, and the first copy of an
-immediately repeated incomplete opening such as `that we that we should`.
+not count them), pure fillers, immediate function-word stutter within a
+phrase (a filler between the copies does not break it: `the uh the`; a
+sentence boundary does: `Fix it. It crashes` keeps both copies; a repeated
+function-word phrase ending in an article is one too: `in the in the`,
+`on the, uh, on the`; quoted text keeps its repeats), the restated frame
+a correction leaves doubled (up to four words right after
+the deletion that repeat the words right before it: `longer than 6 hours,
+no wait, longer than 4 hours`; a single word only as a function word or
+preposition, or before a number that replaces a number: `target 212, no
+wait, target 221`; the frame counts once for negation and hedges), the
+earlier copy of an exact restatement that changes only a number, and the
+first copy of an immediately repeated incomplete opening such as `that we
+that we should`.
 
 An exact restatement (`assign 4 rooms with extra linen to Marta. Sorry, 6
 rooms with extra linen to Marta.`) authorizes the earlier copy and its
@@ -433,8 +463,10 @@ start (text start or after `. ! ? ; :`/newline, possibly after other
 fillers — never mid-phrase), number-word→digit representation changes
 whose value survives, spoken-list markers when ≥ 2 items are rendered
 and the marker's own content (fillers and words a correction removed
-skipped) opens a rendered item — a sentence-final marker only where the output turns
-its sentence into a `…:` intro directly before an item — and **matched
+skipped) opens a rendered item (a sentence-final marker only where the
+output turns its sentence into a `…:` intro directly before an item;
+sequence words such as `then` stay content, because one can open a
+condition's consequent), and **matched
 vocabulary replacements**: an alias occurrence
 in the source is authorized only while the output holds a corresponding
 extra canonical occurrence — a word outside every matched alias is

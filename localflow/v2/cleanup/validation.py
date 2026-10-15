@@ -26,8 +26,8 @@ from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 from functools import lru_cache
 
-from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, DETERMINERS, FILLERS,
-                      FINITE_AUXILIARIES, SUBJECT_PRONOUNS, SENTENCE_END,
+from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, DETAIL_PREPOSITIONS, DETERMINERS,
+                      FILLERS, FINITE_AUXILIARIES, FRAME_WORDS, SUBJECT_PRONOUNS, SENTENCE_END,
                       FUNCTION_WORDS, NEGATION_WORDS, NUMBER, SUBORDINATORS, alternation,
                       marker_pattern,
                       IDENTIFIER_TOKEN_RE as _IDENTIFIER_TOKEN_RE,
@@ -172,17 +172,27 @@ _UNIT_SYMBOL_WORDS = frozenset(_UNIT_WORDS)
 
 def _numeric_phrase_spans(text: str) -> list:
     """[(start, end, value)] for number-word phrases, including a
-    trailing unit-symbol word when present."""
+    trailing unit-symbol word when present. A phrase's words are
+    separated by spaces only: "the Tuesday one. Four, set …" holds 1 and
+    4, not 5, and a phrase never ends in "point"."""
     words = _spans_words(text)
+
+    def joined(j):
+        return re.fullmatch(r"[ \t]+", text[words[j - 1][1]:words[j][0]]) is not None
+
     out = []
     i = 0
     while i < len(words):
         if words[i][2] in _NUMBERS or words[i][2] in _SCALES:
-            j = i
-            while j < len(words) and (words[j][2] in _NUMBERS
-                                      or words[j][2] in _SCALES
-                                      or words[j][2] == "point"):
+            j = i + 1
+            while j < len(words) and joined(j) and (words[j][2] in _NUMBERS
+                                                    or words[j][2] in _SCALES
+                                                    or words[j][2] == "point"):
                 j += 1
+            # "point" belongs to a number only before its decimal digits:
+            # "we lost one point." keeps "point" as a word.
+            while words[j - 1][2] == "point":
+                j -= 1
             phrase_words = [w[2] for w in words[i:j]]
             head, tail = phrase_words, []
             if "point" in phrase_words:
@@ -194,7 +204,7 @@ def _numeric_phrase_spans(text: str) -> list:
                 v = v + d if d is not None else None
             if v is not None:
                 end = words[j - 1][1]
-                if j < len(words) and words[j][2] in _UNIT_SYMBOL_WORDS:
+                if j < len(words) and joined(j) and words[j][2] in _UNIT_SYMBOL_WORDS:
                     end = words[j][1]
                 out.append((words[i][0], end, v))
             i = j
@@ -257,8 +267,9 @@ def _typed_numbers(text: str) -> list:
         tok = m.group(0)
         if not any(ch.isdigit() for ch in tok):
             continue
-        core = tok.lstrip("([{\"'“‘").rstrip(")]}\"'”’,;!?")
-        core = core.rstrip(".:,;")
+        # Closing brackets, quotes and prose punctuation in any order:
+        # "estimate_cost(plan, 12)." holds the same 12 as "12)".
+        core = tok.lstrip("([{\"'“‘").rstrip(")]}\"'”’,;!?.:")
         nxt = toks[idx + 1].group(0).lower().strip(".,;:!?)\"'") \
             if idx + 1 < len(toks) else ""
         key = _number_key(core, nxt)
@@ -372,12 +383,18 @@ def _spoken_step_spans(source: str, output: str, correction_spans=()) -> list:
 
 def _introduced_list_join_spans(source: str, output: str) -> list:
     """A final list-joining 'and' may become a bullet separator.
-    Bind the complete introduction and every item, verbatim in source-word
-    order. Only the connector before the last item is authorized away;
-    conjunctions within an item and ordinary prose remain content.
+    Bind the complete introduction (the last sentence before the colon) and
+    every item, verbatim in source-word order, fillers aside. Only the
+    connector before the last item is authorized away; conjunctions within
+    an item and ordinary prose remain content, and an item never runs past
+    a source sentence boundary except a title period retained in the same
+    word gap, so a closing sentence cannot hide in the last bullet.
+    After a copular "the … list is/are" a comma must follow
+    each item but the last, because "the list is not complete and we need
+    more" is a predicate, not items.
     """
     from . import document_nodes as dn
-    atoms = _word_atoms(source)
+    atoms = [a for a in _word_atoms(source) if a[2] not in FILLERS]
     words = [w for _s, _e, w in atoms]
     nodes = dn.parse(output).nodes
     spans = []
@@ -386,23 +403,42 @@ def _introduced_list_join_spans(source: str, output: str) -> list:
                 or not isinstance(group, dn.ListGroup) or group.ordered
                 or len(group.items) < 2 or not intro.render().rstrip().endswith(":")):
             continue
-        head = [w for _s, _e, w in _word_atoms(intro.render())]
+        text = intro.render().strip()
+        sentence = text[max((b for _a, b in _sentence_ends(text)), default=0):]
+        head = [w for _s, _e, w in _word_atoms(sentence)]
+        pairs = list(zip(head, head[1:]))
         if "list" not in head or not (
-                head[:2] in (["here", "is"], ["here", "are"])
-                or head[-1:] == ["list"]):
+                ("here", "is") in pairs or ("here", "are") in pairs
+                or head[-1:] == ["list"] or head[-2:] in (["list", "is"], ["list", "are"])):
             continue
         matches = [i for i in range(len(words) - len(head) + 1)
                    if words[i:i + len(head)] == head]
         if len(matches) != 1:
             continue
+        copular = head[-2:] in (["list", "is"], ["list", "are"])
         cursor = matches[0] + len(head)
         join = None
         for index, item in enumerate(group.items):
-            item_words = [w for _s, _e, w in _word_atoms(item)]
+            item_atoms = _word_atoms(item)
+            item_words = [w for _s, _e, w in item_atoms]
             if index == len(group.items) - 1 and words[cursor:cursor + 1] == ["and"]:
                 join = atoms[cursor][:2]
                 cursor += 1
-            if not item_words or words[cursor:cursor + len(item_words)] != item_words:
+            last = cursor + len(item_words) - 1
+            if not item_words or words[cursor:last + 1] != item_words:
+                join = None
+                break
+            retained_titles = []
+            source_item = atoms[cursor:last + 1]
+            for (a, b), (x, y) in zip(zip(source_item, source_item[1:]),
+                                      zip(item_atoms, item_atoms[1:])):
+                if (_TITLE_PERIOD_RE.match(source, a[0])
+                        and re.fullmatch(r"\.[ \t]+", source[a[1]:b[0]])
+                        and re.fullmatch(r"\.[ \t]+", item[x[1]:y[0]])):
+                    retained_titles.append((a[1], b[0]))
+            if (_boundary_within(source, atoms[cursor][0], atoms[last][1], retained_titles)
+                    or (copular and index < len(group.items) - 1
+                        and not re.match(r"[ \t]*,", source[atoms[last][1]:]))):
                 join = None
                 break
             cursor += len(item_words)
@@ -479,6 +515,8 @@ def _authorized(word: str, start: int, end: int, ctx) -> bool:
         return True
     if _overlaps(ctx.restart_spans, start, end):
         return True
+    if _overlaps(ctx.frame_spans, start, end):
+        return True
     return False
 
 
@@ -500,6 +538,13 @@ class _AuthCtx:
     # First copies of incomplete openings actually deleted by this output.
     # Their words also leave the novelty budget; identity grants no spans.
     restart_spans: list = field(default_factory=list)
+    # The engine's admitted corrections alone, with their marker runs.
+    # correction_spans also holds exact restatements the validator infers
+    # from the output; only admitted corrections remove sentence text or
+    # carry a restated hedge or negation.
+    admitted_spans: list = field(default_factory=list)
+    # [(s, e)] the restated copy of a frame a correction leaves doubled.
+    frame_spans: list = field(default_factory=list)
 
 
 def _vocabulary_authorizations(source: str, output: str, pairs) -> tuple:
@@ -583,13 +628,17 @@ def _align(source, output, ctx) -> tuple:
         sym: output.count(sym) - source.count(sym)
         for sym in set(SPOKEN_SYMBOLS.values())}
     pending = []             # unauthorized source words, in order
-    prev_kept_word = None    # previous word outside any correction span
+    prev_kept_word = None    # previous non-filler word outside any correction span
+    phrase_stutter = _phrase_stutter_atoms(source, src)
     prev_end = 0
     phrase_start = True      # at text start or after ; : . ! ? newline
     enum_starts = [s for s, _e in ctx.enum_spans]
     for idx, (start, end, w) in enumerate(src):
         if re.search(r"[.!?;:\n]", source[prev_end:start]):
+            # A stutter repeats a word within its phrase: "Fix it. It
+            # crashes" and "Fix it. Uh, it crashes" keep both copies.
             phrase_start = True
+            prev_kept_word = None
         prev_end = end
         protected = _overlaps(ctx.protected_positions, start, end)
         authorized = not protected and _authorized(w, start, end, ctx)
@@ -600,11 +649,14 @@ def _align(source, output, ctx) -> tuple:
             if not authorized and w in ("and", "also", "then") and any(
                     start < es <= end + 12 for es in enum_starts):
                 authorized = True
-            # Immediate function-word stutter: "the the" in raw speech,
-            # and the doubled preposition a correction deletion leaves
-            # behind ("to [X no wait] to lisa" → "to to lisa").
+            # Immediate function-word stutter: "the the" in raw speech
+            # (a filler between the copies does not break it: "the uh
+            # the"), and the doubled preposition a correction deletion
+            # leaves behind ("to [X no wait] to lisa" → "to to lisa").
             if not authorized and w in STUTTER_WORDS \
                     and prev_kept_word == w:
+                authorized = True
+            if not authorized and idx in phrase_stutter:
                 authorized = True
             # Interjector at a phrase start ("Okay so for the redesign"),
             # possibly after fillers/interjectors — never mid-phrase
@@ -619,12 +671,35 @@ def _align(source, output, ctx) -> tuple:
                     authorized = True
         if not (w in FILLERS or w in INTERJECTORS) or protected:
             phrase_start = False
-        if not in_correction:
+        if not in_correction and (w not in FILLERS or protected):
             prev_kept_word = w
         if not authorized:
             pending.append((idx, start, end, w))
     missing, pairs = _match_in_order(pending, out_words)
     return missing, pairs, src, out_atoms
+
+
+_FILLER_RE = re.compile(rf"(?<!\w)(?:{alternation(FILLERS)})(?!\w)", re.IGNORECASE)
+
+
+def _phrase_stutter_atoms(source: str, atoms: list) -> set:
+    """Atoms of the second copy of a repeated function-word phrase that
+    ends in an article ("in the in the", "on the, uh, on the"). After an
+    article a noun phrase begins, never the same phrase again, so the
+    repeat is a stutter like "the the". Commas and fillers may sit between
+    the words; quoted text keeps its repeats."""
+    kept = [i for i, a in enumerate(atoms) if a[2] not in FILLERS]
+    quoted = quoted_regions(source)
+    found = set()
+    for j in range(2, len(kept) - 1):
+        a, b, c, d = (atoms[kept[k]] for k in (j - 2, j - 1, j, j + 1))
+        if ((a[2], b[2]) != (c[2], d[2]) or a[2] not in STUTTER_WORDS
+                or b[2] not in ("the", "a", "an") or _touches(quoted, a[0], d[1])):
+            continue
+        if all(re.fullmatch(r"[ \t,]*", _FILLER_RE.sub("", source[x[1]:y[0]]))
+               for x, y in ((a, b), (b, c), (c, d))):
+            found.update((kept[j], kept[j + 1]))
+    return found
 
 
 _ARTICLES = ("a", "an")
@@ -711,8 +786,10 @@ def _component_coverage(source, output, ctx, aligned) -> Component:
 
 _SOURCE_BOUNDARY_RE = re.compile(SENTENCE_END + r"|;(?=\s|$)|\n")
 _OUTPUT_BOUNDARY_RE = re.compile(r"[.!?;:\n—–]")
-
-
+# A title's period ("Dr. Okafor") may end a sentence too ("Do not drive past
+# Elm Dr. Turn left"), so it stays a boundary that a merge must keep; it only
+# never cuts the sentence a negation or condition is read from.
+# lexicon.SENTENCE_END includes title periods for boundary preservation.
 _TITLE_PERIOD_RE = re.compile(r"\b(?:Dr|Mr|Mrs|Ms|Prof)\.(?=[ \t])")
 
 
@@ -728,6 +805,12 @@ def _sentence_ends(source: str) -> list:
     restatement is read from: a title's period does not."""
     titles = {m.end() - 1 for m in _TITLE_PERIOD_RE.finditer(source)}
     return [(a, b) for a, b in _source_boundaries(source) if a not in titles]
+
+
+def _boundary_within(source: str, start: int, end: int, deleted=()) -> bool:
+    """A source sentence boundary lies in [start, end), outside ``deleted``."""
+    return any(start <= a and b <= end and not _overlaps(deleted, a, b)
+               for a, b in _source_boundaries(source))
 
 
 def _sentence_words(source: str, pos: int, deleted=()) -> set:
@@ -750,15 +833,22 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
     """An explicit source sentence boundary next to a negated or
     conditional sentence survives as a boundary in the output — merging
     "Do not deploy. Run tests." into one clause widens the prohibition.
+    Text an admitted correction deletes, its boundaries and its words
+    (a marker's "no"), shapes no sentence.
     Added boundaries must keep restrictions and coordinating conjunctions
     attached to their clauses."""
     _missing, pairs, src, out = aligned
+    # Admitted deletions only: an exact restatement the validator infers
+    # from the output keeps its sentence boundary.
+    deleted = ctx.admitted_spans
     merged = []
     for (i, oi), (k, ok) in zip(pairs, pairs[1:]):
-        if not _SOURCE_BOUNDARY_RE.search(source, src[i][1], src[k][0]):
+        # A boundary inside an admitted deletion goes with the deleted text
+        # ("for 15 minutes. Actually no, 10 minutes"), and so do its words.
+        if not _boundary_within(source, src[i][1], src[k][0], deleted):
             continue
-        if not (_sentence_has_scope(source, src[i][0])
-                or _sentence_has_scope(source, src[k][0])):
+        if not (_sentence_has_scope(source, src[i][0], deleted)
+                or _sentence_has_scope(source, src[k][0], deleted)):
             continue
         if not _OUTPUT_BOUNDARY_RE.search(output, out[oi][1], out[ok][0]):
             merged.append([src[i][1], src[k][0]])
@@ -897,29 +987,7 @@ def _numeric_values_in(text: str) -> list:
         v = _number_value(m.group(0))
         if v is not None:
             vals.append(v)
-    words = _spans_words(text)
-    i = 0
-    phrase: list = []
-    while i <= len(words):
-        w = words[i][2] if i < len(words) else ""
-        if w in _NUMBERS or w in _SCALES or w == "point":
-            phrase.append(w)
-            i += 1
-            continue
-        if phrase:
-            head, tail = phrase, []
-            if "point" in phrase:
-                cut = phrase.index("point")
-                head, tail = phrase[:cut], phrase[cut + 1:]
-            v = _parse_number_words(head)
-            if v is not None and tail:
-                d = _parse_decimal_tail(tail)
-                v = v + d if d is not None else None
-            if v is not None:
-                vals.append(v)
-            phrase = []
-        i += 1
-    return vals
+    return vals + [v for _s, _e, v in _numeric_phrase_spans(text)]
 
 
 def _spoken_label_run(source: str, values: list) -> list:
@@ -943,7 +1011,46 @@ def _spoken_label_run(source: str, values: list) -> list:
     return run if len(run) >= 2 else []
 
 
-def _numeric_values(source, output, ctx) -> Component:
+_FUSED_RE = re.compile(r"([A-Za-z]+)[-.]?(\d+(?:\.\d+)?)")
+
+
+def _fused_identifier_keys(source: str, values: list, aligned):
+    """Map an output identifier made of a source word and the plain number
+    right after it (the word's letters, an optional "-" or ".", the number's
+    digits as written, so no leading zero or extra version part is new) to
+    that number's key; any other key maps to itself. The letters keep the
+    source's case unless the source word is all lowercase. A
+    function word fuses with nothing ("a 1 liter sample"), and an
+    identifier the source already holds ("station A1") stays itself. The
+    output prefix must align to that source word occurrence. Return the
+    key with the consumed source number span, or None when nothing fuses."""
+    _missing, alignment, src_atoms, out_atoms = aligned
+    source_word_at = {out_atoms[j][0]: src_atoms[i][:2] for i, j in alignment}
+    pairs = []
+    for start, end, key, _marker, _line in values:
+        before = re.search(r"([A-Za-z]+)[ \t]+$", source[:start])
+        if (before and before.group(1).lower() not in FUNCTION_WORDS
+                and key[0] == "num" and not key[1] and not key[3]):
+            pairs.append((before.group(1), key, before.span(1), (start, end)))
+    held = {key[1].lower() for _s, _e, key, *_ in _typed_numbers(source) if key[0] == "id"}
+
+    def keyed(item):
+        key = item[2]
+        parts = _FUSED_RE.fullmatch(key[1]) if key[0] == "id" and key[1].lower() not in held else None
+        if parts is None:
+            return key, None
+        letters, digits = parts.groups()
+        atom = next((a for a in out_atoms if item[0] <= a[0] and a[1] <= item[1]), None)
+        bound = source_word_at.get(atom[0]) if atom else None
+        for word, value, word_span, number_span in pairs:
+            same = letters.lower() == word if word.islower() else letters == word
+            if same and digits == str(value[2]) and bound == word_span:
+                return value, number_span
+        return key, None
+    return keyed
+
+
+def _numeric_values(source, output, ctx, aligned) -> Component:
     """Every typed numeric occurrence in the source survives IN ORDER
     with the same sign, unit and identity; none is invented. Order binds
     a value to its role ("3 workers and 4 retries" never becomes "4
@@ -967,6 +1074,15 @@ def _numeric_values(source, output, ctx) -> Component:
               for label in node.labels]
     label_starts = {start for start, _end, _value in labels}
     out = [it for it in _typed_numbers(output) if it[0] not in label_starts]
+    # A number dictated right after a word may be written fused to it as one
+    # identifier ("WGS eighty four" → "WGS84", "PROJ four" → "PROJ.4"): that
+    # identifier carries the source number.
+    # Vocabulary aliases authorize their words away for coverage. Restore
+    # those words only while binding a fusion to its original occurrence.
+    fusion_alignment = (_align(source, output, replace(ctx, vocab_spans=[]))
+                        if ctx.vocab_spans else aligned)
+    fused = _fused_identifier_keys(source, src, fusion_alignment)
+    out = [(it[0], it[1], fused(it)[0], it[3], it[4]) for it in out]
     # A spoken enumeration rendered as those labels stands behind them.
     spoken = _spoken_label_run(source, src)
     if [value for _s, _e, value in labels][:len(spoken)] == list(range(1, len(spoken) + 1)):
@@ -1112,16 +1228,77 @@ def _literal_spans(source, output) -> Component:
                      {"literal_spans": len(literals), "missing": missing})
 
 
+# Consecutive correction markers are one marker ("0.5 seconds no I mean
+# 0.3 seconds", "ten, no, sorry, eleven"). A deletion's recorded marker is
+# the last one it ends with; markers directly before it belong to it when
+# the old value before them is complete: it holds its own number, or a
+# comma closes it ("Dr. Okafor, no I mean Dr. Lindqvist"). In "There are
+# no, sorry, there are two" the "no" is the old value. Runs are read one
+# marker at a time with an unambiguous separator, so nothing backtracks;
+# each step searches the text before the run again, which stays cheap
+# because a deletion is short (a proposal holds at most 80 characters).
+_MARKER_WORDS = rf"(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS)})(?!\w)"
+_LAST_MARKER_RE = re.compile(rf"{_MARKER_WORDS}[ \t]*(?:,[ \t]*)?$", re.IGNORECASE)
+
+
+def _marker_run_start(source: str, span) -> int:
+    start, _end, marker = span[:3]
+    run = marker
+    while (found := _LAST_MARKER_RE.search(source[start:run])) is not None:
+        run = start + found.start()
+    if run == marker:
+        return marker
+    old = source[start:run]
+    if not (re.search(r"\d|\w[ \t]*,[ \t]*$", old)
+            or any(w in _NUMBERS or w in _SCALES for _s, _e, w in _word_atoms(old))):
+        return marker
+    return run
+
+
+def _hyphen_joined(text: str, start: int, end: int) -> bool:
+    """The word at [start, end) is joined to a letter by a hyphen."""
+    return bool(re.match(r"[-\u2010\u2011][^\W\d_]", text[end:end + 2])
+                or re.search(r"[^\W\d_][-\u2010\u2011]$", text[max(0, start - 2):start]))
+
+
 def _word_multiset_survival(source, output, words: frozenset,
                             name: str, ctx) -> Component:
     """A multiset of marked words (negation, uncertainty) is preserved
     exactly: none lost, none added (adding "not" flips polarity as surely
     as dropping it). Apostrophe-stripped atoms make "dont"/"don't" the
-    same word. A correction's marker ("no wait") is not content."""
-    markers = [(m, e) for _s, e, m in ctx.correction_spans]
-    src = [(s, e, w) for s, e, w in _word_atoms(source)
-           if w in words and not _overlaps(markers, s, e)]
-    remaining = Counter(w for _, _, w in _word_atoms(output) if w in words)
+    same word. A correction's marker ("no wait", "no I mean") is not
+    content, and a marked word in an admitted correction's old value is
+    not lost when the replacement restates it in the same place: the
+    replacement's words after the deletion (a restated frame aside) carry
+    the same word at the same position ("about 45 minutes, no sorry,
+    about 50 minutes"). A marked word elsewhere in the sentence restates
+    nothing, and a correction that drops one still fails."""
+    atoms = _word_atoms(source)
+    markers, restated = [], set()
+    for correction in ctx.correction_spans:
+        start, end = correction[0], correction[1]
+        marker = _marker_run_start(source, correction)
+        markers.append((marker, end))
+        if correction not in ctx.admitted_spans:
+            continue
+        old = [a for a in atoms if start <= a[0] and a[1] <= marker]
+        limit = min((a for a, _b in _sentence_ends(source) if a >= end), default=len(source))
+        replacement = [a for a in atoms if end <= a[0] and a[1] <= limit
+                       and not _overlaps(ctx.frame_spans, a[0], a[1])]
+        for position, a in enumerate(old):
+            if a[2] in words and position < len(replacement) \
+                    and replacement[position][2] == a[2]:
+                restated.add(a[0])
+    # An admitted correction may remove a hyphenated name ("--no-cache").
+    # Surviving atoms count on both sides regardless of hyphenation.
+    def counted(text, s, e, w):
+        return not (words is NEGATION_WORDS and _overlaps(ctx.admitted_spans, s, e)
+                    and _hyphen_joined(text, s, e))
+
+    src = [(s, e, w) for s, e, w in atoms
+           if w in words and not _overlaps(markers + ctx.frame_spans, s, e)
+           and s not in restated and counted(source, s, e, w)]
+    remaining = Counter(w for s, e, w in _word_atoms(output) if w in words)
     missing = []
     for s, e, w in src:
         if remaining[w] > 0:
@@ -1152,13 +1329,29 @@ def _technical_tokens(source, output, ctx, aligned) -> Component:
     skip = list(ctx.correction_spans) + list(ctx.vocab_spans)
     # A prose comma or semicolon after a path is not part of its spelling.
     # Full token counts still reject missing occurrences and longer prefixes.
-    src_toks = [m.group().rstrip(",;") for m in _TECH_TOKEN_RE.finditer(source)
-                if not any(s <= m.start() and m.end() <= e for s, e, *_ in skip)]
     out_toks = [t.rstrip(",;") for t in _TECH_TOKEN_RE.findall(output)]
     # Bind every source occurrence separately. A new prose-ending mark may
     # follow its complete spelling; stripping periods on both sides would
     # also accept deletion of a real terminal dot or a changed extension.
     remaining = Counter(out_toks)
+    out_case = _case_words(output)
+    # An occurrence-bound fusion retains its case word. A decimal token
+    # consumed at that exact source span also survives when spelled intact;
+    # a spoken number cannot fund a different technical-token occurrence.
+    fused = _fused_identifier_keys(source, _typed_numbers(source), aligned)
+    fused_numbers = []
+    for item in _typed_numbers(output):
+        _key, number_span = fused(item)
+        if number_span is not None:
+            letters, digits = _FUSED_RE.fullmatch(item[2][1]).groups()
+            if item[2][1] == letters + digits:
+                out_case[letters] += 1
+                fused_numbers += [m.span() for m in _TECH_TOKEN_RE.finditer(source)
+                                  if number_span[0] <= m.start() and m.end() <= number_span[1]
+                                  and m.group() == digits]
+    src_toks = [m.group().rstrip(",;") for m in _TECH_TOKEN_RE.finditer(source)
+                if not any(s <= m.start() and m.end() <= e
+                           for s, e, *_ in skip + fused_numbers)]
     missing = []
     for token in sorted(src_toks, key=len, reverse=True):
         match = next((candidate for candidate in
@@ -1168,7 +1361,6 @@ def _technical_tokens(source, output, ctx, aligned) -> Component:
             missing.append(token)
         else:
             remaining[match] -= 1
-    out_case = _case_words(output)
     case_missing = [t for t, n in _case_words(source, skip).items()
                     if out_case[t] < n]
     # Operator symbols keep their count ("5 - 3" never becomes "5 + 3",
@@ -1368,7 +1560,7 @@ def _incomplete_restart_spans(source: str, output: str, ctx) -> list:
     return spans
 
 
-_MARKER_RE = re.compile(rf"(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS)})(?!\w)", re.IGNORECASE)
+_MARKER_RE = re.compile(_MARKER_WORDS, re.IGNORECASE)
 _RESTATED_MAX_WORDS = 12
 
 
@@ -1438,26 +1630,102 @@ def _restated_value_spans(source: str, output: str, ctx) -> list:
     return spans
 
 
+# Markers right after a deletion belong to it while a replacement follows
+# on the same line ("ten, no, sorry, eleven" deleting "ten, no"; "6 am no
+# make that 7 am"). A marker run never takes a word that can open the
+# replacement: no marker ending in "no" ("5, sorry, wait, no more than 6",
+# "actually no more servers"); "make that" only before a number ("make that
+# change" is a predicate); and a marker whose words can start the
+# replacement ("scratch disk", "sorry state", "actually worked hours", "no
+# wait at all") only when a comma closes it.
+_NEXT_MARKER_RE = re.compile(
+    r"[ \t]*(?:,[ \t]*)?(?<!\w)(?:"
+    + marker_pattern({m for m in CORRECTION_MARKERS if m.split()[-1] != "no" and m != "make that"})
+    + rf"|make[ \t]+that(?=[ \t]*(?:,[ \t]*)?(?:\d|(?:{alternation(_NUMBERS.keys() | _SCALES.keys())})(?!\w))))"
+    r"(?!\w)", re.IGNORECASE)
+_OPENER_MARKERS = frozenset({"scratch", "sorry", "actually"})
+
+
+def _with_trailing_markers(source: str, span) -> tuple:
+    start, end, marker = span[:3]
+    run = end
+    while (found := _NEXT_MARKER_RE.match(source, run)) is not None:
+        words = re.findall(r"\w+", found.group(0).lower())
+        if ((" ".join(words) in _OPENER_MARKERS or words[0] == "no")
+                and not re.match(r"[ \t]*,", source[found.end():])):
+            break
+        run = found.end()
+    if run > end and re.match(r"[ \t]*(?:,[ \t]*)?\w", source[run:]):
+        return start, run, marker
+    return start, end, marker
+
+
+# The frame a correction leaves doubled: "flag gaps longer than [6 hours,
+# no wait,] longer than 4 hours" says "longer than" once. Words right after
+# the deletion that repeat the words right before it are the restated
+# frame. A single repeated word must be a function word or preposition, or
+# lead a number that replaces a number ("target 212, no wait, target 221");
+# "I think that this, no wait, that is right" keeps both copies.
+_FRAME_MAX_WORDS = 4
+_FRAME_SINGLE_WORDS = STUTTER_WORDS | FRAME_WORDS | DETAIL_PREPOSITIONS | frozenset({
+    "about", "after", "around", "before", "into", "over", "past", "under", "until"})
+
+
+def _starts_with_number(text: str) -> bool:
+    head = text.lstrip(" \t,").split(maxsplit=1)
+    word = head[0].strip(",;:.").lower() if head else ""
+    return bool(re.fullmatch(NUMBER, word)) or word in _NUMBERS or word in _SCALES
+
+
+def _doubled_frame_spans(source: str, ctx) -> list:
+    atoms = _word_atoms(source)
+    taken = ctx.correction_spans + ctx.protected_positions
+    spans = []
+    for correction in ctx.admitted_spans:
+        start, end = correction[0], correction[1]
+        before = [a for a in atoms if a[1] <= start]
+        after = [a for a in atoms if a[0] >= end]
+        for size in range(min(_FRAME_MAX_WORDS, len(before), len(after)), 0, -1):
+            left, right = before[-size:], after[:size]
+            if ([a[2] for a in left] != [a[2] for a in right]
+                    or not re.fullmatch(r"[ \t]*", source[left[-1][1]:start])
+                    or not re.fullmatch(r"[ \t]*,?[ \t]*", source[end:right[0][0]])
+                    or any(not re.fullmatch(r"[ \t]+", source[a[1]:b[0]])
+                           for run in (left, right) for a, b in zip(run, run[1:]))
+                    or not re.match(r"[ \t]*\w", source[right[-1][1]:])
+                    or _overlaps(taken, left[0][0], left[-1][1])
+                    or _overlaps(taken, right[0][0], right[-1][1])):
+                continue
+            if size == 1 and left[0][2] not in _FRAME_SINGLE_WORDS and not (
+                    _starts_with_number(source[start:_marker_run_start(source, correction)])
+                    and _starts_with_number(source[right[0][1]:])):
+                continue
+            spans.append((right[0][0], right[-1][1]))
+            break
+    return spans
+
+
 def _auth_context(source, output, vocabulary_pairs, continued_list_start,
                   correction_spans, protected_positions) -> "_AuthCtx":
     pairs = tuple(vocabulary_pairs or ())
+    corrections = [_with_trailing_markers(source, c) for c in correction_spans or ()]
     # Number-word→digit representation changes are authorized when the
     # value survives in the output ("thirty percent" → "30%").
     output_values = _numeric_values_in(output)
     numeric_spans = [
         (s, e) for s, e, v in _numeric_phrase_spans(source)
         if v in output_values]
-    enum_spans = _enum_spans_when_list_rendered(
-        source, output, correction_spans or ())
+    enum_spans = _enum_spans_when_list_rendered(source, output, corrections)
     vocab_spans, allowance = _vocabulary_authorizations(
         source, output, pairs)
-    ctx = _AuthCtx(correction_spans=list(correction_spans or []),
+    ctx = _AuthCtx(correction_spans=list(corrections), admitted_spans=corrections,
                     protected_positions=[tuple(p[:2]) for p in
                                          protected_positions or []],
                     numeric_spans=numeric_spans,
                     enum_spans=enum_spans,
                     vocab_spans=vocab_spans, vocab_allowance=allowance,
                     continued_list_start=continued_list_start)
+    ctx.frame_spans = _doubled_frame_spans(source, ctx)
     ctx.correction_spans += _restated_value_spans(source, output, ctx)
     ctx.restart_spans = _incomplete_restart_spans(source, output, ctx)
     return ctx
@@ -1661,7 +1929,7 @@ def validate(source: str, output: str, *,
     report = ValidationReport(components=[
         _component_coverage(source, output, ctx, aligned),
         _clause_scope(source, output, aligned, ctx),
-        _numeric_values(source, output, ctx),
+        _numeric_values(source, output, ctx, aligned),
         _protected_tokens(source, output, protected),
         _literal_spans(source, output),
         _word_multiset_survival(source, output,
