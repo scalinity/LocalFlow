@@ -84,7 +84,10 @@ The consolidated TRAIN labels are normalized before capture
 (`policy_score.minimal_target`): a comma the dictation lacked stays only when it
 separates items of a list of three or more, sets off an addressed person,
 prevents a likely misreading, or follows a date, place or number convention.
-Development labels keep their own punctuation, so their validation loss scores
+Each added comma's kind comes from `artifacts/hard-cases/labels/comma-kinds-train.json`
+(written by `artifacts/hard-cases/tools/comma_classify.py`). The build refuses to run
+without it or when a comma it keeps is no longer in its label, and a row it left
+unclassified keeps every comma. Development labels keep their own punctuation, so their validation loss scores
 a different comma policy and rises as a model learns this one. Select a
 consolidated checkpoint on the development scoreboard, not on its lowest
 validation loss.

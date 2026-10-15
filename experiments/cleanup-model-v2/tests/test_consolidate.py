@@ -135,6 +135,10 @@ class CollectTests(unittest.TestCase):
             rows, summary = consolidate.collect()
         return {r['case_id']: r['target'] for r in rows}, summary
 
+    def test_collect_refuses_to_run_without_the_comma_table(self):
+        with tempfile.TemporaryDirectory() as directory, self.assertRaisesRegex(RuntimeError, 'missing'):
+            self.collect(Path(directory), [])
+
     def test_rows_teaching_the_final_vocative_comma_keep_every_added_comma(self):
         with tempfile.TemporaryDirectory() as directory:
             targets, summary = self.collect(Path(directory), [
@@ -143,11 +147,10 @@ class CollectTests(unittest.TestCase):
                  'target': 'Can you run the batch, then check it, Sam?'},
                 {'case_id': 'plain', 'focus': 'restatement', 'is_noop': False,
                  'model_input': 'could you run the tests then check them sam',
-                 'target': 'Could you run the tests, then check them, Sam?'}])
-        # Without a table the addressed name keeps its comma; only the reviewed rows keep the optional one too.
+                 'target': 'Could you run the tests, then check them, Sam?'}], {'kept_kinds': ['list'], 'rows': {}})
+        # Unclassified, the addressed name keeps its comma; only the reviewed rows keep the optional one too.
         self.assertEqual(targets, {'vocative': 'Can you run the batch, then check it, Sam?',
                                    'plain': 'Could you run the tests then check them, Sam?'})
-        self.assertIsNone(summary['comma_kinds_sha256'])
 
     def test_classified_commas_that_do_a_job_stay_and_the_rest_revert(self):
         listed = {'case_id': 'listed', 'pair_id': 'listed', 'is_noop': False,
@@ -160,9 +163,14 @@ class CollectTests(unittest.TestCase):
                  'rows': {'listed': {'3': 'list', '5': 'list', '8': 'style'}}, 'unclassified_rows': ['unclassified']}
         with tempfile.TemporaryDirectory() as directory:
             targets, summary = self.collect(Path(directory), [listed, unclassified], table)
+        # A row the table could not classify keeps every comma: when unsure, keep.
         self.assertEqual(targets, {'listed': 'Pack the tent, the stove, and the water then drive.',
-                                   'unclassified': 'Load the tent the stove and the water then drive.'})
+                                   'unclassified': 'Load the tent, the stove, and the water, then drive.'})
         self.assertEqual(len(summary['comma_kinds_sha256']), 64)
+        # A kept gap that no longer holds a comma means the label changed after classification.
+        stale = {**table, 'rows': {'listed': {'2': 'list', '5': 'list'}}}
+        with tempfile.TemporaryDirectory() as directory, self.assertRaisesRegex(RuntimeError, 'stale for listed'):
+            self.collect(Path(directory), [listed], stale)
 
 
 if __name__ == '__main__':

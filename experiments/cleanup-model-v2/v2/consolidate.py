@@ -12,7 +12,7 @@ import collections
 import random
 import re
 from .common import *
-from .policy_score import LIST_LINE, WORD, minimal_target
+from .policy_score import LIST_LINE, WORD, _aligned_gaps, _split, minimal_target
 
 RUN = ART / "consolidated"
 DATASET = RUN / "dataset"
@@ -35,7 +35,7 @@ C_ERA_SAMPLE = 1200
 # every comma these rows add, so it changes none of the current labels.
 VOCATIVE_FOCUS = "question_final_vocative_comma"
 # Per TRAIN row, the kind of each comma a label added at an unpunctuated source gap, keyed by
-# source gap index; absent, every such comma reverts unless it sets off an addressed person.
+# source gap index (written by hard-cases/tools/comma_classify.py). The build needs it.
 COMMA_KINDS = ART / "hard-cases" / "labels" / "comma-kinds-train.json"
 
 
@@ -46,14 +46,26 @@ def _vocabulary(row):
     return out
 
 
+def _comma_gaps(source, target):
+    """Source gap indices whose aligned label gap holds a comma."""
+    s_words, _ = _split(source)
+    t_words, t_gaps = _split(target)
+    return {j for k, j in _aligned_gaps(s_words, t_words).items() if "," in t_gaps[k]}
+
+
 def _kept_commas(row, comma_kinds):
     """Source gap indices whose added label comma stays: every gap of a row reviewed to
-    teach the final vocative comma, otherwise the gaps whose classified kind does a job."""
-    if row.get("focus") == VOCATIVE_FOCUS:
+    teach the final vocative comma or left unclassified by the table (when unsure, keep),
+    otherwise the gaps whose classified kind does a job."""
+    rid = row.get("pair_id", row["case_id"])
+    if row.get("focus") == VOCATIVE_FOCUS or rid in comma_kinds.get("unclassified_rows", []):
         return set(range(len(WORD.findall(row["model_input"])) + 1))  # every gap of the source
     kept = set(comma_kinds.get("kept_kinds", []))
-    kinds = comma_kinds.get("rows", {}).get(row.get("pair_id", row["case_id"]), {})
-    return {int(j) for j, kind in kinds.items() if kind in kept}
+    gaps = {int(j) for j, kind in comma_kinds.get("rows", {}).get(rid, {}).items() if kind in kept}
+    if gaps - _comma_gaps(row["model_input"], row["target"]):
+        # The label changed after the table classified it, so its gap indices may name other commas.
+        raise RuntimeError(f"{COMMA_KINDS.name} is stale for {rid}; rerun comma_classify.py")
+    return gaps
 
 
 def _restored_conjunctions(row, target):
@@ -82,7 +94,10 @@ def collect():
     """Gather, normalize and filter TRAIN rows; no capture."""
     conflicts = {c["case_id"] for c in read_json(REFINEMENT / "dataset" / "freeze.json")["stats"]["train"]["label_conflicts"]}
     excluded_ids = REVIEWED_EXCLUSIONS | conflicts
-    comma_kinds = read_json(COMMA_KINDS, {})
+    if not COMMA_KINDS.exists():
+        # Without it every list, meaning and convention comma a label added would revert.
+        raise RuntimeError(f"{COMMA_KINDS} is missing; run hard-cases/tools/comma_classify.py")
+    comma_kinds = read_json(COMMA_KINDS)
     ordered = []
     for name in SLICES:
         ordered += [(name, r) for r in read_jsonl(REFINEMENT / name / "train.jsonl")]
@@ -141,7 +156,7 @@ def collect():
     summary = {"kept": len(rows), "noop": sum(bool(r["is_noop"]) for r in rows),
                "long_over_200": sum(len(r["model_input"].split()) > 200 for r in rows),
                "stats": dict(stats), "exclusions": dict(exclusions),
-               "comma_kinds_sha256": file_sha256(COMMA_KINDS) if COMMA_KINDS.exists() else None}
+               "comma_kinds_sha256": file_sha256(COMMA_KINDS)}
     return rows, summary
 
 
