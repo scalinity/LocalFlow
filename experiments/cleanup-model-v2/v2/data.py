@@ -159,7 +159,7 @@ def wave(name, requests, parse, model, purpose):
 
 
 def generate(name, split, count, start=0, *, batch_chunk=800, model="claude-sonnet-5-5", per_request=8,
-             thinking=None, effort=None):
+             thinking=None, effort=None, max_tokens=None):
     dest = ART / "claude" / name / "specs.json"
     specs = read_json(dest)
     if specs is None:
@@ -183,7 +183,7 @@ def generate(name, split, count, start=0, *, batch_chunk=800, model="claude-sonn
         chunks.append(pending)
     for i, chunk in enumerate(chunks):
         requests[f"{name}-{i:05d}"] = {
-            "model": model, "max_tokens": 10000 if len(chunk) > 1 else 6500,
+            "model": model, "max_tokens": max_tokens or (10000 if len(chunk) > 1 else 6500),
             "thinking": thinking or {"type": "between_tools"},
             "system": [{"type": "text", "text": GEN_SYSTEM, "cache_control": {"type": "ephemeral"}}],
             "messages": [{"role": "user", "content": "Create these families:\n" + json.dumps(chunk)}],
