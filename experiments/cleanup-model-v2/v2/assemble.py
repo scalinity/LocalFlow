@@ -104,7 +104,7 @@ def window_targets(pair, windows):
 
 
 # Why a call's prompt and target agree; any other reason drops the call.
-AGREEMENTS = {"corrections_target_is_gold_lines", "input_is_label_pre_cleanup"}
+AGREEMENTS = {"gold_lines_applied_by_engine", "input_is_label_pre_cleanup"}
 
 
 def cleanup_agreement(source, offsets, window_range, input_text, answer):
@@ -134,9 +134,10 @@ def capture(pair, *, consistent_only=False):
     context. Targets for long cases are cut only at aligned retained tokens.
     Rejected labels remain in evaluation; they never get rewritten to pass.
     With consistent_only, a row the engine does not deliver exactly keeps only
-    the calls whose prompt and target agree: every corrections-pass call (the
-    source window answered with its gold lines) and the cleanup calls
-    cleanup_agreement accepts. engine_oracle.supervision records each call.
+    the calls whose prompt and target agree: the cleanup calls cleanup_agreement
+    accepts, and a window's corrections-pass call (the source window answered
+    with its gold lines) where the engine applied exactly those lines.
+    engine_oracle.supervision records each call.
     """
     from localflow.v2.cleanup import engine, protected_spans_for_cleanup
     from lfx.capture import tokenizer, render_with
@@ -180,7 +181,7 @@ def capture(pair, *, consistent_only=False):
                 # repeats only because a correction span was removed before it.
                 if removes_created_repeat(pair["model_input"][window_range[0]:window_range[1]], input_text, answer):
                     raise ValueError("correction_created_repeat")
-            agreement = ("corrections_target_is_gold_lines" if corrections_pass else
+            agreement = (None if corrections_pass else
                          cleanup_agreement(pair["model_input"], offsets, window_range, input_text, answer))
             def reply(prompt, max_tokens):
                 ntok = len(tok.encode(answer, add_special_tokens=False)) + 1
@@ -202,6 +203,14 @@ def capture(pair, *, consistent_only=False):
                              "delivered":result.text,"fallback_reason":result.fallback_reason,
                              "windows":len(windows)}
     if consistent_only and not pair["engine_oracle"]["exact"]:
+        # A corrections call agrees only where the engine applied exactly that window's
+        # gold deletions, which its cleanup input then shows (cleanup_agreement checks the
+        # input first): a gold line the engine rejects would teach a line the parser refuses.
+        applied = {tuple(c["window"]) for c, why in zip(calls, agreements)
+                   if c["role"] == "main" and why != "input_is_not_label_pre_cleanup"}
+        agreements = [why if c["role"] == "main" else "gold_lines_applied_by_engine"
+                      if tuple(c["window"]) in applied else "gold_lines_not_applied_by_engine"
+                      for c, why in zip(calls, agreements)]
         pair["engine_oracle"]["supervision"] = [
             {"role":c["role"], "window":c["window"], "kept":why in AGREEMENTS, "why":why}
             for c, why in zip(calls, agreements)]

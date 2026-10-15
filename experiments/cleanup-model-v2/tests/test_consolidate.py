@@ -24,7 +24,7 @@ def fake_capture(pair, consistent_only=False):
     calls = [call('corrections'), call('main')]
     if consistent_only and not exact:
         pair['engine_oracle']['supervision'] = [
-            {'role': 'corrections', 'window': [0, 6], 'kept': True, 'why': 'corrections_target_is_gold_lines'},
+            {'role': 'corrections', 'window': [0, 6], 'kept': True, 'why': 'gold_lines_applied_by_engine'},
             {'role': 'main', 'window': [0, 6], 'kept': False, 'why': 'input_is_not_label_pre_cleanup'}]
         calls = calls[:1]
     return {'pair_id': pair['pair_id'], 'family_id': pair['family_id'], 'split': pair['split'], 'calls': calls}
@@ -58,7 +58,7 @@ class BuildTests(unittest.TestCase):
             self.assertEqual(train['captured'], 2)
             self.assertEqual(train['engine_vetoed_by_focus'], {})
             self.assertEqual(train['partially_supervised_by_focus'], {'restatement': 1})
-            self.assertEqual(train['vetoed_row_calls'], {'corrections:corrections_target_is_gold_lines': 1,
+            self.assertEqual(train['vetoed_row_calls'], {'corrections:gold_lines_applied_by_engine': 1,
                                                          'main:input_is_not_label_pre_cleanup': 1})
             vetoed = read_jsonl(root / 'consistent' / 'train.jsonl')[1]
             self.assertEqual([s['kept'] for s in vetoed['engine_oracle']['supervision']], [True, False])

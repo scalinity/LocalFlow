@@ -162,17 +162,40 @@ DYE = pair('Mix 4 liters of dye, no wait 6 liters for the warp.', 'Mix 6 liters 
 
 
 class ConsistentSupervisionTests(unittest.TestCase):
-    def test_an_inconsistent_cleanup_pair_is_never_kept(self):
+    def test_a_window_whose_gold_line_the_engine_rejects_keeps_no_call(self):
         row = dict(INVOICE)
         captured = capture(row, consistent_only=True)
         self.assertFalse(row['engine_oracle']['exact'])
-        self.assertEqual([(c['role'], c['completion']) for c in captured['calls']],
-                         [('corrections', 'to the finance team in Berlin, actually')])
+        self.assertEqual(captured['calls'], [])
         self.assertEqual([(s['role'], s['kept'], s['why']) for s in row['engine_oracle']['supervision']],
-                         [('corrections', True, 'corrections_target_is_gold_lines'),
+                         [('corrections', False, 'gold_lines_not_applied_by_engine'),
                           ('main', False, 'input_is_not_label_pre_cleanup')])
         # Without the mode, capture returns every call as before; the build vetoes the row.
         self.assertEqual([c['role'] for c in capture(dict(INVOICE))['calls']], ['corrections', 'main'])
+
+    def test_a_window_the_engine_corrected_as_labelled_keeps_its_corrections_call(self):
+        # Salvage restores the stutter "is is", so the row is vetoed although its correction applied.
+        row = pair('Um the pump is is primed, and we booked 16 rooms, sorry 17 rooms, for the team.',
+                   'The pump is primed, and we booked 17 rooms for the team.', ['16 rooms, sorry'])
+        captured = capture(row, consistent_only=True)
+        self.assertFalse(row['engine_oracle']['exact'])
+        self.assertEqual([(c['role'], c['completion']) for c in captured['calls']],
+                         [('corrections', '16 rooms, sorry'), ('main', row['target'])])
+        self.assertEqual([s['why'] for s in row['engine_oracle']['supervision']],
+                         ['gold_lines_applied_by_engine', 'input_is_label_pre_cleanup'])
+
+    def test_each_window_of_a_vetoed_row_is_judged_on_its_own(self):
+        first = 'We booked 16 rooms, sorry 17 rooms, for the visiting team. ' + FILLER
+        second = INVOICE['model_input'] + ' ' + FILLER
+        target = (first.replace('16 rooms, sorry 17 rooms,', '17 rooms') + '\n\n'
+                  + second.replace('to the finance team in Berlin, actually ', '')).strip()
+        row = pair(first + '\n\n' + second, target, ['16 rooms, sorry', INVOICE['gold_lines'][0]])
+        captured = capture(row, consistent_only=True)
+        self.assertEqual(row['engine_oracle']['windows'], 2)
+        self.assertEqual([(s['role'], s['window'][0], s['kept']) for s in row['engine_oracle']['supervision']],
+                         [('corrections', 0, True), ('main', 0, True),
+                          ('corrections', len(first) + 2, False), ('main', len(first) + 2, False)])
+        self.assertEqual({tuple(c['window']) for c in captured['calls']}, {(0, len(first))})
 
     def test_a_vetoed_row_whose_cleanup_input_is_the_label_pre_cleanup_text_keeps_it(self):
         row = pair('Um the pump is is already primed, and the valve goes in the drawer by the window.',
