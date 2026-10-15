@@ -1,15 +1,12 @@
-"""Sequence words between the numbered items of a dictated sequence.
+"""Sequence words between numbered items stay content.
 
-"first close the dome shutter then purge the cryostat line then
-recalibrate the guide camera and finally log the dome temperature"
-renders as four numbered items, and each "then" stands exactly where one
-item ends and the next begins: the numbering carries the order. Only
-sequence words ("then", "after that", "next", "last", optionally after
-"and") qualify, only inside a source sentence, only between numbered
-items, and only when a spoken enumeration marker opens an item. A bare
-"and", a "then" inside an item, a "then" after a condition in its
-sentence, a sentence that opens with "Then" and a list with no spoken
-enumeration still keep every word.
+A list rendered from a dictated sequence ("first close the shutter then
+purge the line then ...") may not drop its "then", "after that" or
+"next": the word can open a condition's consequent ("if the build fails
+then roll back"), and a list split there can move an object out of a
+prohibition ("do not delete the logs and the db then restart"). Spoken
+enumeration markers ("first", "finally") remain the only words a list may
+absorb, so every output below fails coverage.
 
 Run: .venv/bin/python -m unittest tests/v2/cleanup/test_sequence_connectives.py
 """
@@ -27,7 +24,7 @@ def failures(source, output):
 
 
 class SequenceConnectiveTests(unittest.TestCase):
-    def test_sequence_words_between_numbered_items_are_separators(self):
+    def test_a_numbered_list_keeps_its_sequence_words(self):
         for source, output in (
             ("Maintenance steps for Thursday first close the dome shutter then purge the "
              "cryostat line then recalibrate the guide camera and finally log the dome "
@@ -35,37 +32,20 @@ class SequenceConnectiveTests(unittest.TestCase):
              "Maintenance steps for Thursday:\n\n1. Close the dome shutter.\n2. Purge the "
              "cryostat line.\n3. Recalibrate the guide camera.\n4. Log the dome temperature "
              "before you lock up."),
-            ("Release steps first tag the version then build the wheels and then upload to "
-             "the staging index and last email the team.",
-             "Release steps:\n1. Tag the version.\n2. Build the wheels.\n3. Upload to the "
-             "staging index.\n4. Email the team."),
-        ):
-            with self.subTest(source=source):
-                self.assertEqual(failures(source, output), set())
-
-    def test_other_connectives_keep_their_words(self):
-        for source, output in (
-            # No spoken enumeration: the list is the model's own reading.
-            ("Close the dome shutter then purge the cryostat line then log the temperature.",
-             "1. Close the dome shutter.\n2. Purge the cryostat line.\n3. Log the temperature."),
-            # A bare "and" can join two objects of one instruction.
-            ("First, do not delete the logs and the backups, then restart the node.",
-             "1. Do not delete the logs.\n2. The backups.\n3. Restart the node."),
-            # A "then" inside one item is content.
-            ("First open the valve then wait a minute, and finally log the reading.",
-             "1. Open the valve, wait a minute.\n2. Log the reading."),
-            # A sentence that opens with a sequence word is the speaker's prose.
-            ("First, rinse the beaker. Then dry it on the rack. After that, label the shelf.",
-             "1. Rinse the beaker.\n2. Dry it on the rack.\n3. Label the shelf."),
-            # "then" after a condition is its consequent.
             ("First, if the build fails then roll back the release. Second, notify the team.",
              "1. If the build fails\n2. Roll back the release\n3. Notify the team"),
-            # A title's period does not end the condition's sentence.
             ("First, if Dr. Lee agrees then roll back the release. Second, notify the team.",
              "1. If Dr. Lee agrees\n2. Roll back the release\n3. Notify the team"),
-            # Bullets carry no order.
-            ("First close the shutter then purge the line then log the temperature.",
-             "- Close the shutter.\n- Purge the line.\n- Log the temperature."),
+            ("First do not delete the logs and the db then restart the node.",
+             "1. Do not delete the logs.\n2. The db.\n3. Restart the node."),
+            ("First run the backup, and if it is still running at 6:30 then cancel the job.",
+             "1. Run the backup, and if it is still running at 6:30\n2. Cancel the job."),
+            ("First run the migration, and in case it fails then restore the backup.",
+             "1. Run the migration, and in case it fails\n2. Restore the backup."),
+            ("First try the cache, otherwise then query the database.",
+             "1. Try the cache, otherwise\n2. Query the database."),
+            ("Kitchen steps first whisk the eggs and milk then bake the cake.",
+             "Kitchen steps:\n1. Whisk the eggs milk.\n2. Bake the cake."),
         ):
             with self.subTest(source=source):
                 self.assertIn("coverage", failures(source, output))

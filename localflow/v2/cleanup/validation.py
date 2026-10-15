@@ -451,7 +451,6 @@ def _enum_spans_when_list_rendered(source: str, output: str,
                    if ln.rstrip().endswith(":") and _ITEM_LINE_RE.match(nxt)}
     spans = (_introduced_list_join_spans(source, output)
              + _spoken_step_spans(source, output, correction_spans))
-    structural = len(spans)
     for m in _ENUM_MARKER_RE.finditer(source):
         # The marker's content is what follows it in its own sentence.
         rest_start = m.end()
@@ -474,51 +473,6 @@ def _enum_spans_when_list_rendered(source: str, output: str,
         pool = line_heads if re.match(r"new (heading|paragraph)",
                                       m.group(0), re.I) else item_heads
         if any(head in h for h in pool):
-            spans.append(m.span())
-    if len(spans) > structural:
-        spans += _sequence_connective_spans(source, output, correction_spans)
-    return spans
-
-
-_SEQUENCE_RE = re.compile(
-    r"(?<!\w)(?:(?:and[ \t]+)?(?:then|after[ \t]+that|next|last))(?!\w)", re.IGNORECASE)
-_ORDERED_ITEM_RE = re.compile(r"^[ \t]*\d+[.)][ \t]+(.+)$")
-
-
-def _sequence_connective_spans(source: str, output: str, correction_spans=()) -> list:
-    """Sequence words standing between two numbered items of a dictated
-    sequence ("first close the shutter then purge the line then …").
-
-    The source word before the sequence word ends one numbered item and
-    the words after it open the next one, so the word is the list's
-    separator, as the numbering carries the order. Only sequence words
-    qualify ("then", "after that", "next", "last", optionally after
-    "and"), and only inside a source sentence: a sentence that opens with
-    "Then" is the speaker's own prose. A sequence word after a condition
-    in its sentence ("if the build fails then roll back") is the
-    condition's consequent, never a separator. A bare "and" can join two
-    objects of one instruction and stays content. The caller applies this
-    only when a spoken enumeration marker already opens an item.
-    """
-    items = [[a[2] for a in _word_atoms(m.group(1))]
-             for m in map(_ORDERED_ITEM_RE.match, output.split("\n")) if m]
-    if len(items) < 2:
-        return []
-    atoms = [a for a in _word_atoms(source)
-             if a[2] not in FILLERS and not _overlaps(correction_spans, a[0], a[1])]
-    spans = []
-    for m in _SEQUENCE_RE.finditer(source):
-        opens = [b for _a, b in _source_boundaries(source) if b <= m.start()]
-        clause = source[max(opens + [source.rfind(":", 0, m.start()) + 1]):m.start()]
-        if (_overlaps(correction_spans, m.start(), m.end())
-                or not re.search(r"\w", clause)
-                or {w for _s, _e, w in _word_atoms(clause)} & _CONDITION_WORDS):
-            continue
-        before = [a[2] for a in atoms if a[1] <= m.start()]
-        after = [a[2] for a in atoms if a[0] >= m.end()]
-        if before and any(
-                items[k - 1] and items[k] and before[-1] == items[k - 1][-1]
-                and after[:3] == items[k][:3] for k in range(1, len(items))):
             spans.append(m.span())
     return spans
 

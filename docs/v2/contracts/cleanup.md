@@ -367,15 +367,9 @@ fillers — never mid-phrase), number-word→digit representation changes
 whose value survives, spoken-list markers when ≥ 2 items are rendered
 and the marker's own content (fillers and words a correction removed
 skipped) opens a rendered item (a sentence-final marker only where the
-output turns its sentence into a `…:` intro directly before an item),
-sequence words
-(`then`, `after that`, `next`, `last`, optionally after `and`) inside a
-source sentence that stand exactly between two numbered items (the word
-before them ends one item and the words after them open the next) when a
-spoken-list marker opens an item (a bare `and`, a sentence that opens
-with `Then`, and a sequence word after a condition in its sentence, the
-condition's consequent as in `if the build fails then roll back`, stay
-content), and **matched
+output turns its sentence into a `…:` intro directly before an item;
+sequence words such as `then` stay content, because one can open a
+condition's consequent), and **matched
 vocabulary replacements**: an alias occurrence
 in the source is authorized only while the output holds a corresponding
 extra canonical occurrence — a word outside every matched alias is
