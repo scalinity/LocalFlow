@@ -543,6 +543,29 @@ def _yes_no_contrast(n: Neighbourhood) -> bool:
         rf"\byes[ \t,]+{re.escape(following[0])}\b", sentence, re.IGNORECASE))
 
 
+# A code token joins letters or digits with separators ("peaks_final.csv",
+# "node-b", "GO:0004672", "--format=stl"), or is a flag ("--verbose").
+_CODE_TOKEN_RE = re.compile(r"(?:--?)?[a-z0-9]+(?:[-_.:=/][a-z0-9]+)+|--[a-z][\w-]*")
+
+
+def _parallel_code_tokens(n: Neighbourhood, x_words: list, y_words: list) -> bool:
+    """The old value is one code token, after function words only, and the
+    replacement is a code token of the same shape (the same separators in
+    order, or both flags) that ends its clause or meets a clause link:
+    ``peaks_final.csv, no, peaks_merged.csv,``; ``--dry-run, sorry,
+    --verbose before signing``. A token that goes on into a clause
+    (``worker_b crashed``) is no closed value."""
+    x, y = x_words[-1], y_words[0]
+    if not (_CODE_TOKEN_RE.fullmatch(x) and _CODE_TOKEN_RE.fullmatch(y)) or x == y:
+        return False
+    flags = x.startswith("--") and y.startswith("--")
+    if not flags and re.sub(r"[a-z0-9]+", "", x) != re.sub(r"[a-z0-9]+", "", y):
+        return False
+    return (all(w in FUNCTION_WORDS for w in x_words[:-1]) and re.match(
+        rf"[ \t,;:]*\S+?(?:{CLAUSE_END}|[ \t]+(?i:{alternation(CLAUSE_LINKS)})\b)",
+        n.text[n.end:]) is not None)
+
+
 def _parallel(n: Neighbourhood) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
     both months, the same frame before like complements, or they share a
@@ -574,6 +597,8 @@ def _parallel(n: Neighbourhood) -> bool:
     x, y = x_words[-1], y_words[0]
     if TECH_TOKEN_RE.fullmatch(x) and TECH_TOKEN_RE.fullmatch(y) and n.closed:
         return all(w in FUNCTION_WORDS or w in FILLERS for w in x_words[:-1])
+    if _parallel_code_tokens(n, x_words, y_words):
+        return True
     # "on the 12th, no, the 14th": the replacement may repeat the article
     # that stands before the old value, outside the deletion.
     if y in _ARTICLES and len(y_words) > 1:
