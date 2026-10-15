@@ -161,7 +161,7 @@ admission. Shared word classes and the number and unit grammar live in
 | the outdated value X (before the marker) has a content word (a filler is none) | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
-| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, two closed identifiers, or Y restates X; the replacement does not open a new predicate unless it restates X | `not_parallel` |
+| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, another repeated frame preposition before a like complement (**Closure**), two closed identifiers, or Y restates X; the replacement does not open a new predicate unless it restates X | `not_parallel` |
 | replacing a weekday/month with another cannot also delete preceding content words (for example, `check Monday no wait Tuesday` may delete `Monday no wait`, but not `check`) | `overbroad_calendar_value` |
 
 **Markers.** The markers are `lexicon.CORRECTION_MARKERS`; a comma may
@@ -187,13 +187,25 @@ within one word more than the old value (`50 microliters, um, make that
 60 microliters.`); `make that change`, `make that bigger` and `make that
 the default` stay prose and do not call the corrections model.
 
+Another frame preposition repeated after the marker (`on the NAS, no, on
+the spare disk,`; `to Marta, sorry, to Idris.`) marks a correction when
+the old complement is at most four words with a content word and no
+clause link, auxiliary, negation or `only`, the replacement holds no
+negation, both complements open with an article or neither does, and the
+replacement closes its clause within one word more than the old value.
+An open replacement (`by motor, sorry, by pulley handle since the battery
+died`) stays ambiguous. `sorry for`/`sorry to` without a pause is the
+apology's own complement, and after `yes` a bare `no` contrasts (`yes to
+the first, no to the second`).
+
 A metric-length pair may change its numeric value and metric prefix when
 both values name meters/metres and the replacement closes its clause.
 Extra descriptions and open replacement clauses do not qualify. A proposal containing one fused alphabetic word may restore the
 space between two unique adjacent source words; the recovered proposal
 must then resolve to one exact contiguous source span and pass every
 existing bound and guard. Ambiguous nominal phrases, apologies and
-preposition attachments do not gain correction permission from their shape.
+preposition attachments do not gain correction permission from their shape
+beyond the repeated-frame rule above.
 
 At most 6 apply per window. Protected spans are rebased **per window**
 (window-local coordinates, this window's texts only) before validation

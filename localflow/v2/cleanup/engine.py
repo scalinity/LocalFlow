@@ -27,8 +27,9 @@ from dataclasses import dataclass, field, replace
 
 from . import document_nodes as dn
 from . import prompts
-from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
-                      FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER, NUMBER, NUMBER_WORDS,
+from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES,
+                      FRAME_PREPOSITIONS, FRAME_WORDS, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER,
+                      NEGATION_WORDS, NUMBER, NUMBER_WORDS,
                       POSITIVE_NUMBER, SCALE_WORDS, SENTENCE_END, TECH_TOKEN_RE, Neighbourhood,
                       alternation, marker_key, marker_pattern, neighbourhood, plain_words,
                       restatement)
@@ -499,10 +500,47 @@ def _parallel_metric_lengths(n: Neighbourhood) -> bool:
     return new is not None and bool(re.match(CLAUSE_END, tail[new.end():]))
 
 
+# Through "sorry" these frames right after the marker, without a pause,
+# are the apology's own complement ("sorry for the delay", "sorry to ask").
+_APOLOGY_FRAMES = frozenset({"for", "to"})
+
+
+def _repeated_frame_complement(n: Neighbourhood) -> bool:
+    """The old value and the replacement open with the same frame
+    preposition before a like complement, and the replacement closes its
+    clause within one word more than the old value: ``on the NAS, no, on
+    the spare disk,``; ``to Marta, sorry, to Idris.``
+
+    The old complement is at most four words with a content word and no
+    clause link, auxiliary, negation or ``only``; the replacement holds no
+    negation; both complements open with an article or neither does. An
+    open replacement (``by pulley handle since the battery is empty``)
+    stays ambiguous, ``as`` keeps its own rule, and after ``yes`` a bare
+    ``no`` contrasts (``yes to the first, no to the second``).
+    """
+    if n.frame not in FRAME_PREPOSITIONS or n.frame == "as":
+        return False
+    old, new = list(n.old_words[1:]), list(n.new_words[1:])
+    if not old or not new or len(old) > 4 or (old[0] in _ARTICLES) != (new[0] in _ARTICLES):
+        return False
+    if (any(w in CLAUSE_LINKS or w in FINITE_AUXILIARIES or w in NEGATION_WORDS
+            or w == "only" for w in old)
+            or any(w in NEGATION_WORDS for w in new)
+            or not _has_content(" ".join(old)) or not _has_content(" ".join(new))
+            or not _replacement_closes_within(n, len(n.old_words) + 1)):
+        return False
+    marker = marker_key(n.text[n.marker:n.end])
+    if (marker == "sorry" and n.frame in _APOLOGY_FRAMES
+            and not re.match(r"[ \t]*,", n.text[n.end:])):
+        return False
+    sentence = re.split(SENTENCE_END + r"|\n", n.text[:n.start])[-1]
+    return not (marker == "no" and re.search(r"\byes\b", sentence, re.IGNORECASE))
+
+
 def _parallel(n: Neighbourhood) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
-    both months, or they share a content word ("two engineers … three
-    engineers")."""
+    both months, the same frame before like complements, or they share a
+    content word ("two engineers … three engineers")."""
     x_words, y_words = list(n.old_words), list(n.new_words)
     if not x_words or not y_words:
         return False
@@ -519,6 +557,8 @@ def _parallel(n: Neighbourhood) -> bool:
         return (len(old) == 1 and bool(new)
                 and old[0] not in FUNCTION_WORDS and old[0] not in FILLERS
                 and new[0] not in FUNCTION_WORDS and new[0] not in FILLERS)
+    if _repeated_frame_complement(n):
+        return True
     # A repeated "every" stays a shared word: in "every month, no every
     # quarter" it is the evidence that both values are frequencies.
     if n.frame in FRAME_PREPOSITIONS:
