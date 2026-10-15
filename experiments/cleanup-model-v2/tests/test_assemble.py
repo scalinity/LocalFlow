@@ -183,7 +183,8 @@ class ConsistentSupervisionTests(unittest.TestCase):
                          [('corrections', '16 rooms, sorry'), ('main', row['target'])])
         self.assertEqual([s['why'] for s in row['engine_oracle']['supervision']],
                          ['gold_lines_applied_by_engine', 'input_is_label_pre_cleanup'])
-        self.assertIs(captured['partial'], True)
+        # Every call agrees, so the supervision is complete although the row was vetoed.
+        self.assertNotIn('partial', captured)
 
     def test_each_window_of_a_vetoed_row_is_judged_on_its_own(self):
         first = 'We booked 16 rooms, sorry 17 rooms, for the visiting team. ' + FILLER
@@ -197,6 +198,7 @@ class ConsistentSupervisionTests(unittest.TestCase):
                          [('corrections', 0, True), ('main', 0, True),
                           ('corrections', len(first) + 2, False), ('main', len(first) + 2, False)])
         self.assertEqual({tuple(c['window']) for c in captured['calls']}, {(0, len(first))})
+        self.assertIs(captured['partial'], True)
 
     def test_a_vetoed_row_whose_cleanup_input_is_the_label_pre_cleanup_text_keeps_it(self):
         row = pair('Um the pump is is already primed, and the valve goes in the drawer by the window.',

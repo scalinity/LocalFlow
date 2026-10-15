@@ -224,9 +224,10 @@ def capture(pair, *, consistent_only=False):
         pair["engine_oracle"]["supervision"] = [
             {"role":c["role"], "window":c["window"], "kept":why in AGREEMENTS, "why":why}
             for c, why in zip(calls, agreements)]
-        calls = [c for c, why in zip(calls, agreements) if why in AGREEMENTS]
-        return {"pair_id":pair["pair_id"],"family_id":pair["family_id"],"split":pair["split"],"calls":calls,
-                "partial":True}
+        kept = [c for c, why in zip(calls, agreements) if why in AGREEMENTS]
+        # "partial" marks a vetoed row that lost at least one call, not every vetoed row.
+        return {"pair_id":pair["pair_id"],"family_id":pair["family_id"],"split":pair["split"],"calls":kept,
+                **({"partial":True} if len(kept) < len(calls) else {})}
     return {"pair_id":pair["pair_id"],"family_id":pair["family_id"],"split":pair["split"],"calls":calls}
 
 
