@@ -23,7 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
@@ -501,9 +501,18 @@ def _parallel_metric_lengths(n: Neighbourhood) -> bool:
     return new is not None and bool(re.match(CLAUSE_END, tail[new.end():]))
 
 
-# Through "sorry" these frames right after the marker, without a pause,
-# are the apology's own complement ("sorry for the delay", "sorry to ask").
-_APOLOGY_FRAMES = frozenset({"for", "to"})
+# "sorry to say", "sorry for the delay": the apology's own complement right
+# after "sorry", without a pause, makes "sorry" no marker. A value there
+# ("4 liters, sorry to 6 liters") still reads as the replacement.
+_APOLOGY_COMPLEMENT_RE = re.compile(r"[ \t]+(?:to|for|about)[ \t]+(\S+)", re.IGNORECASE)
+
+
+def _apology(n: Neighbourhood) -> bool:
+    if marker_key(n.text[n.marker:n.end]) != "sorry":
+        return False
+    m = _APOLOGY_COMPLEMENT_RE.match(n.text[n.end:])
+    word = m.group(1).lower().strip(".,;:!?") if m else ""
+    return bool(m) and not (_is_value_word(word) or word in _WEEKDAYS or word in _MONTHS)
 
 
 def _repeated_frame_complement(n: Neighbourhood) -> bool:
@@ -523,15 +532,11 @@ def _repeated_frame_complement(n: Neighbourhood) -> bool:
     old, new = list(n.old_words[1:]), list(n.new_words[1:])
     if not old or not new or len(old) > 4 or (old[0] in _ARTICLES) != (new[0] in _ARTICLES):
         return False
-    if (any(w in CLAUSE_LINKS or w in FINITE_AUXILIARIES or w in NEGATION_WORDS
-            or w == "only" for w in old)
-            or any(w in NEGATION_WORDS for w in new)
-            or not _has_content(" ".join(old)) or not _has_content(" ".join(new))
-            or not _replacement_closes_within(n, len(n.old_words) + 1)):
-        return False
-    marker = marker_key(n.text[n.marker:n.end])
-    return not (marker == "sorry" and n.frame in _APOLOGY_FRAMES
-                and not re.match(r"[ \t]*,", n.text[n.end:]))
+    return not (any(w in CLAUSE_LINKS or w in FINITE_AUXILIARIES or w in NEGATION_WORDS
+                    or w == "only" for w in old)
+                or any(w in NEGATION_WORDS for w in new)
+                or not _has_content(" ".join(old)) or not _has_content(" ".join(new))
+                or not _replacement_closes_within(n, len(n.old_words) + 1))
 
 
 def _yes_no_contrast(n: Neighbourhood) -> bool:
@@ -627,21 +632,38 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
     ``The review closes on Friday. Sorry, the review closes on Thursday``
     replaces a whole sentence its successor restates. ``The first act
     starts at 7:40. I mean 8:40, so ...`` replaces the value that ended its
-    sentence with a parallel or restated one that closes its clause within
-    one word more than the old value and opens no predicate. Only one
-    period, right after the old value, may lie inside the span.
+    sentence with a restatement that repeats the old value's end and closes
+    within one word after the restated copy, or with a typed value of the
+    same kind (numbers, ordinals, weekdays, months) when the old value is at
+    most three words, closing within one word more than the old value and
+    opening no predicate. Only one period, right after the old value, may
+    lie inside the span.
     """
     text, s, ms, e = n.text, n.start, n.marker, n.end
     old = text[s:ms].rstrip()
     ends = list(re.finditer(SENTENCE_END, text[s:e].rstrip(".!? ")))
     if not old.endswith(".") or len(ends) != 1 or ends[0].start() != len(old) - 1:
         return False
-    restated = restatement(n) is not None
+    shape = restatement(n)
     if re.search(r"(?:\A|[.!?\n])\s*\Z", text[:s]):
-        return restated
-    value = replace(n, old_words=tuple(w.rstrip(".") for w in n.old_words))
-    return ((restated or _parallel(value) or _parallel_metric_lengths(value))
-            and _replacement_closes_within(n, len(n.old_words) + 1)
+        return shape is not None
+    # Merged into the old sentence, the replacement must repeat the old
+    # value's end: "the blue folder on the counter. Actually, the blue
+    # folder is only for returns" starts a new statement about it. A shared
+    # noun is no proof either ("the door test. I mean the cable test can
+    # wait").
+    if shape is not None and shape[3] > 0:
+        # The restated copy itself closes the clause it joins.
+        repeated_head, _changed, kept, repeated_tail = shape
+        return _replacement_closes_within(n, repeated_head + kept + repeated_tail + 1)
+    old_words = without_trailing_markers([w.rstrip(".") for w in n.old_words])
+    new_words = list(n.new_words[1:] if n.new_words[:1] and n.new_words[0] in _ARTICLES
+                     else n.new_words)
+    typed = (bool(old_words) and len(old_words) <= 3 and bool(new_words) and (
+        (any(_is_value_word(w) for w in old_words) and _is_value_word(new_words[0]))
+        or any(w in cls and new_words[0] in cls for cls in (_WEEKDAYS, _MONTHS)
+               for w in old_words)))
+    return (typed and _replacement_closes_within(n, len(n.old_words) + 1)
             and not _replacement_opens_predicate(n))
 
 
@@ -682,7 +704,7 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
         # conversion, no, Jonas will own the grid conversion").
         restated = across or restatement(n) is not None
         if (not (restated or _parallel(n) or _parallel_metric_lengths(n))
-                or _yes_no_contrast(n)
+                or _yes_no_contrast(n) or _apology(n)
                 or (not restated and _replacement_opens_predicate(n))
                 or (marker == "make that" and not _replacement_closes_within(
                     n, len(n.old_words) + 1))):

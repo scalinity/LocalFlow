@@ -48,7 +48,10 @@ class SentenceRestatementTests(unittest.TestCase):
             ("Spin at 2,000 g for 15 minutes. Actually, 10 minutes, the amendment cut it.",
              "15 minutes. Actually",
              "Spin at 2,000 g for 10 minutes, the amendment cut it."),
-            ("Act as guide. Actually, as host.", "as guide. Actually", "Act as host."),
+            # A restatement that repeats the old value's end joins its sentence.
+            ("The report lists 14 duplicate rows in batch C. Sorry, 41 duplicate rows in "
+             "batch C, which we flagged.", "14 duplicate rows in batch C. Sorry",
+             "The report lists 41 duplicate rows in batch C, which we flagged."),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([proposal], []))
@@ -61,6 +64,18 @@ class SentenceRestatementTests(unittest.TestCase):
              "The meeting is at noon. Sorry"),
             # A parallel value that opens a new predicate.
             ("We counted 4 bugs. Sorry, 6 bugs were reported later.", "4 bugs. Sorry"),
+            # A noun the next sentence names again is no typed value.
+            ("Finish before the door test. I mean the cable test can wait.",
+             "before the door test. I mean"),
+            ("Weights go on with the supervisor present. No supervisor, no reset.",
+             "with the supervisor present. No"),
+            # Merged into the old sentence, a restated noun phrase that starts
+            # a new statement replaces nothing.
+            ("Put the receipts in the blue folder on the counter. Actually, the blue folder "
+             "is only for returns, so use the tray.", "the blue folder on the counter. Actually"),
+            ("Check what was in the earlier notes. I mean, the earlier notes were fine, but "
+             "the folder name changed.", "in the earlier notes. I mean"),
+
             # A question is answered, not corrected.
             ("Is it 4 chairs? No, 6 chairs.", "4 chairs? No"),
             # Two sentence ends inside the span.
@@ -72,6 +87,10 @@ class SentenceRestatementTests(unittest.TestCase):
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], ["crosses_sentence"]))
+        # An apology opens the next sentence: "sorry" is no marker there.
+        source = "Run it end to end, including the reload. Sorry to say, the reload drops a second."
+        self.assertEqual(reasons("including the reload. Sorry", source), ([], ["not_parallel"]))
+        self.assertFalse(_has_correction_marker(source))
 
 
 if __name__ == "__main__":

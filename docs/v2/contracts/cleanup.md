@@ -197,8 +197,12 @@ clause link, auxiliary, negation or `only`, the replacement holds no
 negation, both complements open with an article or neither does, and the
 replacement closes its clause within one word more than the old value.
 An open replacement (`by motor, sorry, by pulley handle since the battery
-died`) stays ambiguous, and `sorry for`/`sorry to` without a pause is the
-apology's own complement.
+died`) stays ambiguous.
+
+`sorry to`, `sorry for` and `sorry about` right after the marker, without
+a pause, are an apology (`Thanks for the help, sorry for the delay`;
+`Sorry to say, …`), so `sorry` is no marker there unless a value follows
+(`4 liters, sorry to 6 liters`).
 
 A code token (letters or digits joined by `- _ . : = /`, or a `--` flag)
 corrected to another of the same shape — the same separators in order,
@@ -247,11 +251,16 @@ sentence with a period and the marker opens the next one. An old value
 that opens its sentence is replaced whole when the next sentence restates
 it (`The review closes on Friday. Sorry, the review closes on Thursday`);
 the restatement may then open its own predicate. An old value that ends
-a longer sentence takes a parallel or restated replacement that closes its
-clause within one word more than the old value and opens no predicate
-(`The first act starts at 7:40. I mean 8:40, so …`). A question or
-exclamation, a second sentence end inside the span, and a quoted pair
-stay separate sentences.
+a longer sentence takes a restatement that repeats the old value's end
+and closes within one word after the restated copy (`lists 14 duplicate
+rows in batch C. No wait, 41 duplicate rows in batch C, which …`), or a
+typed value of the same kind (numbers, ordinals, weekdays, months) after
+an old value of at most three words, closing within one word more than
+the old value and opening no predicate (`The first act starts at 7:40. I
+mean 8:40, so …`). A noun the next sentence names again proves nothing
+(`the blue folder on the counter. Actually, the blue folder is only for
+returns`). A question or exclamation, a second sentence end inside the
+span, and a quoted pair stay separate sentences.
 
 **Retained details.** An exact source detail attached to an outdated
 quantity (`4 liters of dye, no wait, 6 liters`) moves beside the

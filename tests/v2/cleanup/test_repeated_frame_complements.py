@@ -61,6 +61,9 @@ class RepeatedFrameComplementTests(unittest.TestCase):
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], ["not_parallel"]))
+        # A value right after "sorry to" is still the replacement.
+        self.assertEqual(reasons("4 liters, sorry", "Set the flow to 4 liters, sorry to 6 liters, "
+                                 "and log it."), (["to 4 liters, sorry"], []))
         for source in ("Thanks for the help, sorry for the delay.",
                        "Say yes to the first, no to the second."):
             with self.subTest(source=source):
