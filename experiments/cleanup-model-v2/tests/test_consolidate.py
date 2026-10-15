@@ -64,10 +64,14 @@ class BuildTests(unittest.TestCase):
             self.assertEqual([s['kept'] for s in vetoed['engine_oracle']['supervision']], [True, False])
             self.assertEqual(read_json(root / 'consistent' / 'freeze.json'), freeze)
 
-            # A frozen directory is returned unchanged and never recaptured.
-            again, capture = self.build(root, root / 'default', consistent=True)
-            self.assertEqual(again['stats']['train']['captured'], 1)
-            capture.assert_not_called()
+            # A frozen directory is returned unchanged and never recaptured, but only for its own mode.
+            for directory, consistent in ((root / 'default', False), (root / 'consistent', True)):
+                again, capture = self.build(root, directory, consistent=consistent)
+                self.assertEqual(again, read_json(directory / 'freeze.json'))
+                capture.assert_not_called()
+            for directory, consistent in ((root / 'default', True), (root / 'consistent', False)):
+                with self.assertRaisesRegex(RuntimeError, 'other supervision mode'):
+                    self.build(root, directory, consistent=consistent)
 
 
 

@@ -154,7 +154,10 @@ def build(dataset=DATASET, consistent=False):
     from .training import checked_dataset
     dataset = Path(dataset)
     if (dataset / "freeze.json").exists():
-        return read_json(dataset / "freeze.json")
+        freeze = read_json(dataset / "freeze.json")
+        if consistent != ("supervision" in freeze):
+            raise RuntimeError(f"{dataset} is frozen with the other supervision mode")
+        return freeze
     rows, summary = collect()
     source_hashes = {p: file_sha256(ROOT / p) for p in SOURCE_FILES}
     dataset.mkdir(parents=True, exist_ok=True)
