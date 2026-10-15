@@ -57,6 +57,10 @@ class DroppedWordTests(unittest.TestCase):
         target = 'The samples are cold. Before you move them, label them.'
         self.assertIsNone(defects.restore_split_conjunctions(source, target, []))
         self.assertIsNone(defects.restore_split_conjunctions('keep it cold', 'Keep it cold.', []))
+        # A stuttered run has no single dictated form to put back.
+        for source in ('keep it cold and and before you move it label it',
+                       'keep it cold and then and then before you move it label it'):
+            self.assertIsNone(defects.restore_split_conjunctions(source, 'Keep it cold. Before you move it, label it.', []))
         # In a list target the dropped 'and' is the list conversion, not a run-on split.
         self.assertIsNone(defects.restore_split_conjunctions(
             'check the pump and 2 log the reading', '1. Check the pump.\n2. Log the reading.', []))

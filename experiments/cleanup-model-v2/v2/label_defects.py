@@ -243,7 +243,8 @@ def restore_split_conjunctions(source, target, offsets, vocabulary_pairs=()):
     give the next word its pre-cleanup case unless it is capitalised for itself
     ("I", a name, a day). Returns the restored target, or
     None when there is no such drop or another dropped word would remain. A
-    list target is never restored: its dropped 'and' is a list conversion."""
+    list target is never restored: its dropped 'and' is a list conversion, and
+    neither is a stuttered run."""
     if LIST_LINE.search(target):
         return None
     pre = remove_spans(source, offsets)
@@ -251,7 +252,10 @@ def restore_split_conjunctions(source, target, offsets, vocabulary_pairs=()):
     aw, bw = [t[2] for t in a], [t[2] for t in b]
     inserts = []
     for tag, i1, i2, j1, _j2 in _edits(aw, bw):
-        if tag != "delete" or _benign_deletion(aw, i1, i2) or not all(w in CONJUNCTIONS for w in aw[i1:i2]):
+        dropped = aw[i1:i2]
+        # A stuttered run ("and and", "and then and then") has no single dictated form to restore.
+        if tag != "delete" or _benign_deletion(aw, i1, i2) or not all(w in CONJUNCTIONS for w in dropped) \
+                or len(set(dropped)) < len(dropped):
             continue
         if not 0 < j1 < len(b) or not re.fullmatch(r"[.!?]\s+", target[b[j1 - 1][1]:b[j1][0]]):
             continue
