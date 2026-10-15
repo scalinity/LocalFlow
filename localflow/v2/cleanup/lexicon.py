@@ -216,3 +216,65 @@ def neighbourhood(text: str, span: tuple, marker: int) -> Neighbourhood:
         head += re.escape(frame) + r"[ \t]+(?:(?:a|an|the)[ \t]+)?"
     closed = re.match(head + r"\S+?" + CLAUSE_END, tail, re.IGNORECASE) is not None
     return Neighbourhood(text, start, marker, end, old_words, new_words, frame, closed)
+
+
+# A restatement changes at most this many words of the old value, and of
+# the replacement in their place.
+RESTATED_CHANGE_MAX_WORDS = 3
+
+
+def plain_words(text: str) -> list:
+    """Lowercased words without edge punctuation or fillers."""
+    return [w for token in text.split()
+            if (w := token.lower().strip(".,;:!?")) and w not in FILLERS]
+
+
+def _without_trailing_markers(words: list) -> list:
+    """A marker chained before the proposal's own ("2.5 hours, actually no
+    wait") belongs to the marker, not to the old value."""
+    phrases = [m.split() for m in CORRECTION_MARKERS]
+    while words and (cut := next((len(m) for m in phrases if words[-len(m):] == m), 0)):
+        words = words[:-cut]
+    return words
+
+
+def restatement(n: Neighbourhood) -> tuple | None:
+    """How the words after the marker restate the old value, if they do.
+
+    ``in the first half hour, no wait, in the last half hour`` repeats every
+    old word but ``first``. The old value is P + A + S and the replacement,
+    in the same sentence, opens with P + B + S: A and B are the changed
+    words, one to three each. Same-length A and B may still share words at
+    the same place (``at the lab``, ``in the clinic``). The repeated words
+    hold a content word and are at least two, and, unless they enclose the
+    change on both sides, no fewer than the changed old words. ``12 meters,
+    no, send the rest to Marta`` restates nothing, and neither does an
+    unchanged repeat, nor a repeat that a quotation, code span or fence
+    touches. Fillers are not words here. Returns the word counts
+    ``(p, a, b, s)``, or None.
+    """
+    tail = n.text[n.end:]
+    stop = re.search(r"[.!?](?:\s|$)|\n", tail)
+    sentence_end = n.end + (stop.start() if stop else len(tail))
+    # A quoted repeat may be a literal, not the speaker restating.
+    if touches(quoted_regions(n.text), n.start, sentence_end):
+        return None
+    old = _without_trailing_markers(plain_words(n.text[n.start:n.marker]))
+    new = plain_words(n.text[n.end:sentence_end])
+    p = 0
+    while p < min(len(old), len(new)) and old[p] == new[p]:
+        p += 1
+    for a in range(1, RESTATED_CHANGE_MAX_WORDS + 1):
+        s = len(old) - p - a
+        if s < 0:
+            break
+        for b in range(1, RESTATED_CHANGE_MAX_WORDS + 1):
+            if len(new) < p + b + s or new[p + b:p + b + s] != old[p + a:]:
+                continue
+            changed, kept = old[p:p + a], new[p:p + b]
+            same = [w for w, v in zip(changed, kept) if w == v] if a == b else []
+            repeated = old[:p] + old[p + a:] + same
+            if (len(repeated) >= 2 and any(w not in FUNCTION_WORDS for w in repeated)
+                    and ((p and s) or len(repeated) >= a - len(same))):
+                return p, a, b, s
+    return None

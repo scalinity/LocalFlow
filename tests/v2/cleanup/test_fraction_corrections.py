@@ -96,7 +96,6 @@ class FractionCorrectionTests(unittest.TestCase):
             ("2 quarters of the turn", "1 half turn", unresolved),
             ("2 quarters of each turn", "1 half turn", unresolved),
             ("2 quarters of a turn", "2 half turns", unresolved),
-            ("2 quarters of a turn", "1 half of a turn", unrelated),
             ("2 quarters of a turn", "to request 1 half turn", unrelated),
         ):
             with self.subTest(old=old, new=new):

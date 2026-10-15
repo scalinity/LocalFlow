@@ -152,7 +152,7 @@ admission. Shared word classes and the number and unit grammar live in
 | a proposal batch cut off by the output limit applies nothing | `batch_truncated` |
 | the span ends with a marker (on a word boundary) | `no_marker_ending` |
 | not a bare marker | `bare_marker` |
-| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit. A line over 80 characters (`SPAN_MAX_CHARS`) is not read as a proposal | `span_too_long` |
+| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit, and any old value may run longer when the replacement restates it (**Restatements**). A line over 80 characters (`SPAN_MAX_CHARS`) is not read as a proposal | `span_too_long` |
 | the text occurs in the window no more often than it was proposed — never resolved to a first match | `ambiguous_occurrence` |
 | resolvable at/after the cursor | `offsets_unresolved` |
 | no overlap with a protected span | `protected_span` |
@@ -160,7 +160,7 @@ admission. Shared word classes and the number and unit grammar live in
 | the outdated value X (before the marker) has a content word | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
-| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, or two closed identifiers; the replacement does not open a new predicate | `not_parallel` |
+| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, two closed identifiers, or Y restates X; the replacement does not open a new predicate unless it restates X | `not_parallel` |
 | replacing a weekday/month with another cannot also delete preceding content words (for example, `check Monday no wait Tuesday` may delete `Monday no wait`, but not `check`) | `overbroad_calendar_value` |
 
 **Markers.** The markers are `lexicon.CORRECTION_MARKERS`; a comma may
@@ -200,6 +200,25 @@ and the corrections guard. Deletions apply right-to-left in Python to
 form the model's input; the surviving replacement and reason clause
 stay by construction.
 
+**Restatements.** The words after the marker restate the old value
+(`lexicon.restatement`) when, in the same sentence, they repeat it with
+one changed region: the old value is P + A + S and the replacement opens
+with P + B + S, where A and B are one to three words each (`in the first
+half hour, no wait, in the last half hour`; `Maria will own the grid
+export, sorry, Jonas will own the grid export`). Same-length A and B may
+share a word in place (`at the lab on Monday`, `in the clinic on
+Monday`). The repeated words hold a content word and are at least two,
+and, unless they enclose the change on both sides, no fewer than the
+changed old words. Fillers do not count, and a marker chained before the
+proposal's own (`2.5 hours, actually no wait`) belongs to the marker. An
+unchanged repeat, an open replacement (`12 meters, no, send the rest to
+Marta`) and a repeat touched by a quotation, code span or fence restate
+nothing. A restated old value may exceed the word cap and is its own
+parallel evidence; when the replacement opens with the word before the
+old value (`after 10 minutes of rest, no after 15 minutes of rest`), that
+word goes with the old value. The corrections-pass trigger considers such
+longer spans for `sorry`, `no` and `make that` as well.
+
 **Retained details.** An exact source detail attached to an outdated
 quantity (`4 liters of dye, no wait, 6 liters`) moves beside the
 replacement quantity when the replacement repeats the quantity's unit and
@@ -213,7 +232,9 @@ Explicit presence→absence (`with dye … without dye`) replaces the
 descriptor; other opposing relations reject (`opposing_quantity_qualifier`).
 A quantity detail the rule cannot bind (a spelled number, a determiner
 before the number, an unrepeated frame, an unresolved replacement)
-rejects as `unresolved_quantity_qualifier`. The moved wording remains
+rejects as `unresolved_quantity_qualifier`. A replacement that restates
+the old value with its whole detail (`40 ends per inch, no sorry,
+thirty-six ends per inch`) needs no move. The moved wording remains
 required; an obsolete value cannot return through the word-addition
 allowance. Original proposal and moved-source coordinates remain in the
 observation record.
@@ -499,7 +520,7 @@ None of this is a label: correctness stays `unreviewed`.
   the panel. 2 inspect all 2 leads.` rendered as a numbered list), a
   merge of a conditional fragment into the next sentence (`If X. We
   should Y.`), and a correction whose old value plus a compound marker
-  exceeds the word cap.
+  exceeds the word cap without a restatement.
 - A split-retry half gets no read-only context from its parent window
   and both halves get the parent's list continuation; the assembly is
   revalidated and renumbered as one run.
