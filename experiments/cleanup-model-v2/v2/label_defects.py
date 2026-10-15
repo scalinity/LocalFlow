@@ -179,15 +179,17 @@ def sequence_words_made_numbers(source, target, offsets, vocabulary_pairs=()):
 
 
 def gold_line_not_marker_terminated(source, target, offsets, vocabulary_pairs=()):
-    """A gold line the corrections parser never admits: stripped as the parser strips
-    a proposed line, it does not end with a correction marker. It stops at a filler
-    ('12 score sheets, uh'), runs into the replacement ('Tuesday, no Wednesday') or
-    keeps sentence punctuation after the marker ('on Monday. Sorry.'). Every
-    corrections call of such a row would teach a line the parser rejects; a marker
-    the engine later adds stops the rule firing."""
-    from localflow.v2.cleanup.engine import SPAN_ENDS_WITH_MARKER_RE
+    """A gold line the corrections parser rejects as no_marker_ending: it does not end
+    with a correction marker. It stops at a filler ('12 score sheets, uh'), runs into
+    the replacement ('Tuesday, no Wednesday') or keeps sentence punctuation after the
+    marker ('on Monday. Sorry.'). Every corrections call of such a row would teach a
+    line the parser rejects; a marker the engine later adds stops the rule firing.
+    The parser's other refusals (an over-long or bare line, an ambiguous deletion) are
+    left to capture, which records the engine's own verdict."""
+    from localflow.v2.cleanup.engine import parse_correction_output
     lines = [source[s:e] for s, e in offsets or []]
-    bad = [line for line in lines if not SPAN_ENDS_WITH_MARKER_RE.search(line.strip().strip('"').strip())]
+    _, rejected = parse_correction_output("\n".join(lines), source, [])
+    bad = [p.delete for p in rejected if p.reason == "no_marker_ending"]
     return {"reason": "gold_line_not_marker_terminated", "lines": bad} if bad else None
 
 
