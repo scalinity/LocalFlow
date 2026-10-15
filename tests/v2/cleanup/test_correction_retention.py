@@ -232,6 +232,44 @@ class CorrectionRetentionTests(unittest.TestCase):
         assembly = [o for o in result.observations if o.get("stage") == "retry_assembly"]
         self.assertEqual([o["accepted"] for o in assembly], [True])
 
+    def test_frame_led_quantity_keeps_its_detail_beside_the_replacement(self):
+        for source, deletion, target, lossy in (
+            ("Fill the tank with 4 liters of dye, sorry, with 6 liters.",
+             "with 4 liters of dye, sorry", "Fill the tank with 6 liters of dye.",
+             "Fill the tank with 6 liters."),
+            ("Meet at 5 pm on Monday, sorry, at 6 pm.", "at 5 pm on Monday, sorry",
+             "Meet at 6 pm on Monday.", "Meet at 6 pm."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(rejected, [])
+                self.assertIsNotNone(accepted[0].move)
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+                result, _ = clean(source, lossy, deletion)
+                self.assertEqual(result.text, source)
+
+    def test_unbindable_quantity_detail_keeps_the_source(self):
+        # A spelled number, a determiner before the number, or a frame the
+        # replacement does not repeat leaves the detail without a place.
+        for source, deletion in (
+            ("Fill the tank with four liters of dye, sorry, six liters.",
+             "four liters of dye, sorry"),
+            ("Fill the tank with the 4 liters of dye, sorry, 6 liters.",
+             "the 4 liters of dye, sorry"),
+            ("Fill the tank with 4 liters of dye, sorry, 6 liters.",
+             "with 4 liters of dye, sorry"),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected],
+                                 ["unresolved_quantity_qualifier"])
+                lossy = source.replace(deletion + ", ", "").replace("with the ", "with ")
+                result, _ = clean(source, lossy, deletion)
+                self.assertEqual(result.text, source)
+
     def test_qualifier_cannot_move_to_another_equal_quantity(self):
         source = ("Use 4 liters of dye, no wait, 6 liters, "
                   "and reserve 6 liters for cleaning.")

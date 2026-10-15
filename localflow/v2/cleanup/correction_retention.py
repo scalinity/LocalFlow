@@ -23,6 +23,17 @@ _QUANTITY_DETAIL = re.compile(
     rf"(?:[ \t]+(?!(?:{_PREPOSITIONS})\b){_WORD}){{0,2}})"
     rf"(?P<space>[ \t]+)(?P<detail>(?P<prep>{_PREPOSITIONS})[ \t]+.+)",
     re.IGNORECASE)
+# Frame words a speaker repeats before the replacement quantity.
+_FRAMES = r"as|at|by|for|from|in|of|on|to|with|every"
+_SPELLED_NUMBER = (r"(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|"
+                   r"twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|"
+                   r"nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
+                   r"hundred|thousand|million)")
+# Any quantity head followed by a prepositional detail, wherever it sits.
+_ANY_QUANTITY_DETAIL = re.compile(
+    rf"(?<![\w.,])(?:{_NUMBER}|{_SPELLED_NUMBER}(?:[- ]{_SPELLED_NUMBER})*)"
+    rf"[ \t]+{_WORD}(?:[ \t]+{_WORD}){{0,2}}[ \t]+(?:{_PREPOSITIONS})[ \t]+\S",
+    re.IGNORECASE)
 # Singular heads from the number profile, plus rotation and volume units.
 _FRACTION_UNIT = re.compile(
     r"(?:(?:nano|micro|milli|centi|deci|deca|hecto|kilo|mega|giga)?met(?:er|re)"
@@ -63,12 +74,25 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
                 # The repeated unit is part of both complete fraction
                 # heads. Everything after the replacement stays required.
                 return None, None
-    match = _QUANTITY_DETAIL.fullmatch(old)
+    # A frame word repeated after the marker leads both quantities: in
+    # ``with 4 liters of dye, sorry, with 6 liters`` the detail binds
+    # after the frame, and the replacement repeats it.
+    lead, frame = 0, ""
+    leading = re.match(rf"(?i:{_FRAMES})[ \t]+", old)
+    if leading and re.match(rf"[ \t,;:]*(?i:{re.escape(leading.group().strip())})[ \t]+",
+                            source[end:]):
+        lead = leading.end()
+        frame = rf"(?i:{re.escape(leading.group().strip())})[ \t]+"
+    match = _QUANTITY_DETAIL.fullmatch(old, lead)
     if match is None:
+        # A quantity detail this rule cannot bind (a spelled number, a
+        # determiner before the number, an unrepeated frame) keeps the source.
+        if _ANY_QUANTITY_DETAIL.search(old):
+            return None, "unresolved_quantity_qualifier"
         return None, None
     unit = match.group("unit")
     replacement = re.match(
-        rf"[ \t,;:]*{_NUMBER}[ \t]+{re.escape(unit)}(?![\w-])",
+        rf"[ \t,;:]*{frame}{_NUMBER}[ \t]+{re.escape(unit)}(?![\w-])",
         source[end:])
     if replacement is None:
         return None, "unresolved_quantity_qualifier"
