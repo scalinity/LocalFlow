@@ -132,6 +132,12 @@ class GuardNearMissTests(unittest.TestCase):
                                  "Set it to 6 p.m. 2 hours, sorry, 3 hours after that."),
                          (["6 p.m. 2 hours, sorry"], []))
 
+    def test_a_two_word_value_opens_a_predicate(self):
+        self.assertEqual(reasons("Monday, no", "We meet Monday, no, Tuesday morning is fine."),
+                         ([], ["not_parallel"]))
+        self.assertEqual(reasons("Monday, no", "We meet Monday, no, Tuesday morning at 9."),
+                         (["Monday, no"], []))
+
     def test_a_title_hides_no_predicate(self):
         self.assertEqual(reasons("Dr. Okafor, sorry",
                                  "Send it to Dr. Okafor, sorry, Dr. Bellweather is on call."),

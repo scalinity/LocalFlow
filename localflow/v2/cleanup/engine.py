@@ -806,9 +806,10 @@ def _predicate_restated(n: Neighbourhood) -> bool:
 def _replacement_opens_predicate(n: Neighbourhood) -> bool:
     """``Monday, no Tuesday is a holiday`` begins a new clause.
 
-    An auxiliary right after the replacement value (or after a number and
-    its noun) makes that value a new subject, so deleting the old value
-    would attach the clause to the old frame and drop a bare "no".
+    An auxiliary right after the replacement value, or after its second
+    word (a number and its noun, a full name: "Jonas Berg is on call"),
+    makes that value a new subject, so deleting the old value would attach
+    the clause to the old frame and drop a bare "no".
     """
     # A decimal ("2.5 hours is") or a title ("Dr. Varga is") ends no clause,
     # and a title opens the value as an article does.
@@ -819,7 +820,7 @@ def _replacement_opens_predicate(n: Neighbourhood) -> bool:
              else words[:3])
     if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
         return True
-    return (len(words) == 3 and is_value_word(words[0])
+    return (len(words) == 3 and words[0] not in FUNCTION_WORDS
             and words[1] not in FUNCTION_WORDS and words[2] in _PREDICATE_AUXILIARIES)
 
 

@@ -94,12 +94,19 @@ class RestatedAdmissionTests(unittest.TestCase):
              "whoever is on call, sorry"),
             ("Send the forms to whoever will sign them, sorry, Marta will sign them.",
              "whoever will sign them, sorry"),
+            # A full name opens the new predicate as one word does.
+            ("Give it to the nurse on call, sorry, Jonas Berg is on call.",
+             "the nurse on call, sorry"),
+            ("Give it to Maria Lopez on the night shift, sorry, Jonas Berg is on the night "
+             "shift.", "Maria Lopez on the night shift, sorry"),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], ["not_parallel"]))
         for source, proposal in (
             # A whole sentence may give way to one with its own predicate.
             ("The nurse on call. Sorry, Jonas is on call.", "The nurse on call. Sorry"),
+            ("Maria Lopez will own the grid export, sorry, Jonas Berg will own the grid "
+             "export.", "Maria Lopez will own the grid export, sorry"),
             # A restated predicate may follow other words, a relative
             # pronoun among them.
             ("Tell them Maria will own the grid export, sorry, Jonas will own the grid "
