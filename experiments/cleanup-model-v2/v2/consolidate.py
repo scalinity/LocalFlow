@@ -163,27 +163,38 @@ def collect():
     return rows, summary
 
 
-def build(dataset=DATASET, consistent=False):
+def build(dataset=DATASET, consistent=False, *, exclude_sources=()):
     """Capture TRAIN and validation with the current engine and freeze the dataset.
 
     consistent also supervises a row the engine does not deliver exactly, with
     only the calls whose prompt and target agree (assemble.capture).
+    Source exclusions apply after collection, without reviving superseded rows.
     """
     from .assemble import capture
     from .refinement import SOURCE_FILES
     from .training import checked_dataset
     dataset = Path(dataset)
     mode = "consistent" if consistent else "exact"
+    exclude_sources = sorted(set(exclude_sources))
+    unknown = set(exclude_sources) - set(SLICES + ["diverse", "longform", "contrast", "c-era"])
+    if unknown:
+        raise ValueError(f"Unknown sources: {', '.join(sorted(unknown))}")
+    options = {"consistent": consistent, "exclude_sources": exclude_sources}
     if (dataset / "freeze.json").exists():
         freeze = read_json(dataset / "freeze.json")
         # A freeze written before the mode was recorded is an exact build.
         if freeze.get("mode", "exact") != mode:
             raise RuntimeError(f"{dataset} is frozen with the other supervision mode")
+        if freeze.get("build_options", {"consistent": consistent, "exclude_sources": []}) != options:
+            raise RuntimeError(f"{dataset} is frozen with other build options")
         return freeze
     if (dataset / "train.jsonl").exists():
         # Without a freeze this may be a source collect reads (longform/train.jsonl); never overwrite it.
         raise RuntimeError(f"{dataset} holds train.jsonl without a freeze")
     rows, summary = collect()
+    excluded = collections.Counter(r.get("consolidated_origin") for r in rows
+                                   if r.get("consolidated_origin") in exclude_sources)
+    rows = [r for r in rows if r.get("consolidated_origin") not in exclude_sources]
     defects = collections.defaultdict(list)
     for d in read_jsonl(LABEL_DEFECTS):
         defects[d["pair_id"]].append({"kind": d["kind"], "detail": d["detail"]})
@@ -250,6 +261,11 @@ def build(dataset=DATASET, consistent=False):
               "final_candidate_outputs_existed": False}
     if consistent:
         freeze["supervision"] = "Rows the engine vetoes keep only calls whose prompt and target agree."
+    if exclude_sources:
+        # Defaults keep their historical bytes; ablation hashes do not depend on the clock.
+        del freeze["created"]
+        freeze.update(created_omitted=True, build_options=options)
+        freeze["stats"]["excluded_sources"] = dict(excluded)
     write_json(dataset / "freeze.json", freeze)
     checked_dataset(dataset)
     return freeze
@@ -278,10 +294,13 @@ if __name__ == "__main__":
     p.add_argument("--dataset", type=Path, default=DATASET, help="dataset directory to build or train from")
     p.add_argument("--consistent", action="store_true",
                    help="build: also supervise vetoed rows with their calls whose prompt and target agree")
+    p.add_argument("--exclude-source", action="append", default=[],
+                   choices=SLICES + ["diverse", "longform", "contrast", "c-era"],
+                   help="build: omit this collected source (repeatable; no replacement rows)")
     a = p.parse_args()
     if a.stage == "collect":
         print(__import__("json").dumps(collect()[1], indent=1))
     elif a.stage == "build":
-        print(__import__("json").dumps(build(a.dataset, a.consistent)["stats"], indent=1))
+        print(__import__("json").dumps(build(a.dataset, a.consistent, exclude_sources=a.exclude_source)["stats"], indent=1))
     else:
         print(__import__("json").dumps(train(a.name, a.lr, a.checkpoints, a.log_every, a.base, a.dataset)))

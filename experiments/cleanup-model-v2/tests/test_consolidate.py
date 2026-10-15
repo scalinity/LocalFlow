@@ -3,8 +3,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import copy
 from v2 import consolidate
-from v2.common import read_json, read_jsonl, write_json, write_jsonl
+from v2.common import file_sha256, read_json, read_jsonl, write_json, write_jsonl
 
 
 def row(case_id, exact):
@@ -38,7 +39,7 @@ def fake_capture(pair, consistent_only=False):
 
 class BuildTests(unittest.TestCase):
     def build(self, root, dataset, rows=None, defects=(), **options):
-        rows = rows or [row('exact', True), row('vetoed', False)]
+        rows = copy.deepcopy(rows) if rows is not None else [row('exact', True), row('vetoed', False)]
         write_jsonl(root / 'label-defects.jsonl', list(defects))
         with patch.object(consolidate, 'collect', return_value=(rows, {'kept': len(rows)})), \
                 patch.object(consolidate, 'REFINEMENT', root / 'refinement'), \
@@ -137,6 +138,79 @@ class BuildTests(unittest.TestCase):
                 consolidate.build(root / 'longform')
             collect.assert_not_called()
             self.assertEqual((root / 'longform' / 'train.jsonl').read_bytes(), before)
+
+    def test_default_freeze_bytes_match_the_previous_builder(self):
+        # Captured from the builder before ablation switches, using only fake_capture.
+        hashes = {False: '3fb88706b583681b449b700e3964c73505032c39147e585bc3d1038a135d1d2f',
+                  True: 'af61a9399897a49cd7ff43efea0251e81178d0252ff7522e3c625708f97f0b97'}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_jsonl(root / 'refinement' / 'dataset' / 'validation.jsonl',
+                        [{**row('dev', True), 'split': 'validation'}])
+            for consistent, digest in hashes.items():
+                with self.subTest(consistent=consistent), \
+                        patch.object(consolidate, 'utc_now', return_value='2026-01-01T00:00:00+00:00'):
+                    dataset = root / str(consistent)
+                    freeze, _ = self.build(root, dataset, consistent=consistent, exclude_sources=[])
+                    self.assertEqual(file_sha256(dataset / 'freeze.json'), digest)
+                    self.assertNotIn('created_omitted', freeze)
+                    self.assertNotIn('build_options', freeze)
+
+    def test_source_exclusions_remove_only_the_collected_origins(self):
+        rows = [{**row('keep', True), 'consolidated_origin': 'diverse'},
+                {**row('contrast', True), 'consolidated_origin': 'contrast'},
+                {**row('vetoed', False), 'consolidated_origin': 'c-era'}]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_jsonl(root / 'refinement' / 'dataset' / 'validation.jsonl',
+                        [{**row('dev', True), 'split': 'validation'}])
+            self.build(root, root / 'full', rows=rows, consistent=True)
+            freeze, capture = self.build(root, root / 'minus', rows=rows, consistent=True,
+                                         exclude_sources=['contrast'])
+            for name in ('train.jsonl', 'train_captures.jsonl'):
+                expected = [r for r in read_jsonl(root / 'full' / name)
+                            if r.get('case_id', r.get('pair_id')) != 'contrast']
+                self.assertEqual(read_jsonl(root / 'minus' / name), expected)
+            for name in ('validation.jsonl', 'validation_captures.jsonl', 'replay_captures.jsonl'):
+                self.assertEqual((root / 'full' / name).read_bytes(), (root / 'minus' / name).read_bytes())
+            self.assertEqual([c.args[0]['case_id'] for c in capture.call_args_list], ['keep', 'vetoed', 'dev'])
+            self.assertEqual(freeze['stats']['excluded_sources'], {'contrast': 1})
+            # Collection describes the common pre-ablation pool; capture counts describe this arm.
+            self.assertEqual(freeze['stats']['collect']['kept'], 3)
+            self.assertEqual(freeze['stats']['train']['captured'], 2)
+            self.assertEqual(freeze['build_options'], {'consistent': True, 'exclude_sources': ['contrast']})
+            self.assertTrue(freeze['created_omitted'])
+            self.assertNotIn('created', freeze)
+
+    def test_source_exclusion_freezes_are_identical_across_clocks_and_option_order(self):
+        rows = [{**row('keep', True), 'consolidated_origin': 'diverse'},
+                {**row('remove', False), 'consolidated_origin': 'contrast'}]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for i, sources in enumerate((['contrast', 'c-era', 'contrast'], ['c-era', 'contrast'])):
+                with patch.object(consolidate, 'utc_now', return_value=f'clock-{i}'):
+                    self.build(root, root / str(i), rows=rows, consistent=True, exclude_sources=sources)
+            self.assertEqual(file_sha256(root / '0' / 'freeze.json'), file_sha256(root / '1' / 'freeze.json'))
+            again, capture = self.build(root, root / '0', consistent=True, exclude_sources=['contrast', 'c-era'])
+            capture.assert_not_called()
+            self.assertEqual(again, read_json(root / '0' / 'freeze.json'))
+            for sources in ([], ['contrast'], ['longform']):
+                with self.subTest(sources=sources), self.assertRaisesRegex(RuntimeError, 'other build options'):
+                    self.build(root, root / '0', consistent=True, exclude_sources=sources)
+
+    def test_source_exclusion_can_leave_no_rows_and_rejects_unknown_sources_before_writing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            freeze, _ = self.build(root, root / 'empty', rows=[{**row('only', True), 'consolidated_origin': 'contrast'}],
+                                   exclude_sources=['contrast'])
+            self.assertEqual(freeze['stats']['train']['captured'], 0)
+            self.assertEqual(read_jsonl(root / 'empty' / 'train.jsonl'), [])
+            with patch.object(consolidate, 'collect') as collect, self.assertRaisesRegex(ValueError, 'Unknown sources'):
+                consolidate.build(root / 'invalid', exclude_sources=['contrats'])
+            collect.assert_not_called()
+            self.assertFalse((root / 'invalid').exists())
+
+
 
 class RestoredConjunctionTests(unittest.TestCase):
     def test_restoration_applies_the_gold_deletions_and_skips_an_unanchored_line(self):
