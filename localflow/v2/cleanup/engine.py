@@ -31,8 +31,8 @@ from .lexicon import (CLAUSE_END, FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITION
                       FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER, NUMBER, NUMBER_WORDS,
                       POSITIVE_NUMBER, SCALE_WORDS, TECH_TOKEN_RE, Neighbourhood,
                       alternation, neighbourhood)
-from .correction_retention import (AdmittedCorrection, correction_view,
-                                   qualifier_retention, repeated_restart)
+from .correction_retention import (FRACTION_HEAD, AdmittedCorrection, correction_view,
+                                   fraction_binds, qualifier_retention, repeated_restart)
 from .validation import (validate, restore_missing_words,
                          restore_restriction_punctuation, ValidationReport)
 
@@ -49,7 +49,10 @@ SALVAGE_MAX_SHARE = 0.10
 
 # Correction-span guards shared with V1 semantics: a valid deletion
 # ends with the correction marker, is short, and never a bare marker.
+# A complete five-word fraction head ("3 halves of an hour") may take a
+# marker of up to three words when the whole fraction correction binds.
 SPAN_MAX_WORDS = 6
+FRACTION_SPAN_MAX_WORDS = 8
 # Existing direct triggers, including standalone "actually". Ambiguous
 # "no"/"sorry" admission additionally reuses the evidence guards below.
 CORRECTION_MARKER_RE = re.compile(
@@ -680,6 +683,12 @@ def _recover_fused_proposal(source: str, delete: str) -> str | None:
     return _split_unique_source_word(source, delete, missing[0])
 
 
+def _fraction_shaped(delete: str) -> bool:
+    """The proposal is a complete fraction head followed by its marker."""
+    marker = SPAN_ENDS_WITH_MARKER_RE.search(delete)
+    return bool(marker and FRACTION_HEAD.fullmatch(delete[:marker.start()].rstrip(" \t,;:")))
+
+
 def parse_correction_output(output: str, window_text: str,
                             protected_spans: list,
                             limit_hit: bool = False) -> tuple[list, list]:
@@ -723,7 +732,9 @@ def parse_correction_output(output: str, window_text: str,
         if delete.lower() in BARE_MARKERS:
             rejected.append(CorrectionProposal(None, False, "bare_marker"))
             continue
-        if len(delete.split()) > SPAN_MAX_WORDS:
+        over_cap = len(delete.split()) > SPAN_MAX_WORDS
+        if over_cap and not (len(delete.split()) <= FRACTION_SPAN_MAX_WORDS
+                             and _fraction_shaped(delete)):
             rejected.append(CorrectionProposal(None, False, "span_too_long"))
             continue
         occ = occurrences(delete)
@@ -765,6 +776,9 @@ def parse_correction_output(output: str, window_text: str,
             continue
         marker = correction_marker_start(window_text, span)
         shape = neighbourhood(window_text, span, marker)
+        if over_cap and not fraction_binds(shape):
+            rejected.append(CorrectionProposal(span, False, "span_too_long"))
+            continue
         reason = _evidence_reason(shape)
         if reason:
             rejected.append(CorrectionProposal(span, False, reason))

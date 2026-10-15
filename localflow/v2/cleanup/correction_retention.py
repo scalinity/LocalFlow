@@ -36,6 +36,35 @@ _ANY_QUANTITY_DETAIL = re.compile(
     re.IGNORECASE)
 # Singular heads from the number profile, plus rotation and volume units.
 _FRACTION_UNIT = re.compile(MEASURE_UNIT, re.IGNORECASE)
+FRACTION_HEAD = re.compile(
+    rf"(?P<count>{COUNT})[ \t]+(?P<denominator>half|halves|quarter|quarters)"
+    rf"[ \t]+of[ \t]+(?:a|an)[ \t]+(?P<unit>{_WORD})", re.IGNORECASE)
+
+
+def fraction_binds(n: Neighbourhood) -> bool:
+    """The old value is a complete fraction head corrected to "1 half" or
+    "1 quarter" of the same unit, closed, and clear of quotes and code.
+
+    This exception needs the complete original numeric token and a closed
+    replacement head. Bare "no" can introduce a negative clause. It
+    abstains where a quotation, code span or fence (also one nested inside
+    a Markdown container) overlaps or touches the correction.
+    """
+    source, start, marker_start, end = n.text, n.start, n.marker, n.end
+    fraction = FRACTION_HEAD.fullmatch(source[start:marker_start].rstrip(" \t,;:"))
+    if (fraction is None or not (start == 0 or source[start - 1].isspace())
+            or source[marker_start:end].lower() == "no"):
+        return False
+    unit = fraction.group("unit")
+    singular = fraction.group("denominator").lower() in {"half", "quarter"}
+    if singular != (fraction.group("count") == "1") or not _FRACTION_UNIT.fullmatch(unit):
+        return False
+    replacement = re.match(
+        rf"[ \t,;:]*1[ \t]+(?i:half|quarter)[ \t]+{re.escape(unit)}(?![\w-])",
+        source[end:])
+    return (replacement is not None
+            and re.match(CLAUSE_END, source[end + replacement.end():]) is not None
+            and not touches(quoted_regions(source), start, end + replacement.end()))
 
 
 def qualifier_retention(n: Neighbourhood):
@@ -48,27 +77,10 @@ def qualifier_retention(n: Neighbourhood):
     """
     source, start, marker_start, end = n.text, n.start, n.marker, n.end
     old = source[start:marker_start].rstrip(" \t,;:")
-    fraction = re.fullmatch(
-        rf"(?P<count>{COUNT})[ \t]+(?P<denominator>half|halves|quarter|quarters)"
-        rf"[ \t]+of[ \t]+(?:a|an)[ \t]+(?P<unit>{_WORD})", old, re.IGNORECASE)
-    # This exception needs the complete original numeric token and a
-    # closed replacement head. Bare "no" can introduce a negative clause.
-    # It abstains where a quotation, code span or fence (also one nested
-    # inside a Markdown container) overlaps or touches the correction.
-    if (fraction is not None and (start == 0 or source[start - 1].isspace())
-            and source[marker_start:end].lower() != "no"):
-        unit = fraction.group("unit")
-        singular = fraction.group("denominator").lower() in {"half", "quarter"}
-        if singular == (fraction.group("count") == "1") and _FRACTION_UNIT.fullmatch(unit):
-            replacement = re.match(
-                rf"[ \t,;:]*1[ \t]+(?i:half|quarter)[ \t]+{re.escape(unit)}(?![\w-])",
-                source[end:])
-            if replacement is not None and re.match(
-                    CLAUSE_END, source[end + replacement.end():]) and not touches(
-                    quoted_regions(source), start, end + replacement.end()):
-                # The repeated unit is part of both complete fraction
-                # heads. Everything after the replacement stays required.
-                return None, None
+    if fraction_binds(n):
+        # The repeated unit is part of both complete fraction heads.
+        # Everything after the replacement stays required.
+        return None, None
     # A frame word repeated after the marker leads both quantities: in
     # ``with 4 liters of dye, sorry, with 6 liters`` the detail binds
     # after the frame, and the replacement repeats it.

@@ -158,6 +158,34 @@ class FractionCorrectionTests(unittest.TestCase):
                     self.assertTrue(rejected)
                     self.assertEqual(clean(source, candidate, deletion).text, source)
 
+    def test_a_fully_bound_fraction_may_take_a_longer_marker(self):
+        for source, deletion, target in (
+            ("Pause for 3 halves of an hour, no wait, 1 quarter hour.",
+             "3 halves of an hour, no wait", "Pause for 1 quarter hour."),
+            ("Advance 7 quarters of a turn, I mean actually 1 half turn.",
+             "7 quarters of a turn, I mean actually", "Advance 1 half turn."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(rejected, [])
+                self.assertEqual([c.delete for c in accepted], [deletion])
+                self.assertEqual(clean(source, target, deletion).text, target)
+        # Over the ordinary cap, anything the fraction parse does not fully
+        # bind stays too long: a two-word unit, a changed replacement head,
+        # or a replacement that continues into a clause.
+        for source, deletion in (
+            ("Cover 3 quarters of a square meter, sorry, 1 half square meter.",
+             "3 quarters of a square meter, sorry"),
+            ("Advance 7 quarters of a turn, no wait, 2 half turns.",
+             "7 quarters of a turn, no wait"),
+            ("Advance 7 quarters of a turn, no wait, 1 half turn and lock it.",
+             "7 quarters of a turn, no wait"),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["span_too_long"])
+
     def test_old_details_do_not_fit_by_expanding_the_span_limit(self):
         for old in ("2 quarters of a clockwise turn", "2 quarters of a liter of resin",
                     "2 quarters of a liter to the technician"):
