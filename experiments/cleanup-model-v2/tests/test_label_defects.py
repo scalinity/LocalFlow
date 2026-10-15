@@ -22,6 +22,11 @@ class GoldDeletionKeptTests(unittest.TestCase):
         self.assertTrue(defects.gold_deletion_kept_by_target(source, 'Run it on Wednesday at nine.',
                                                              span(source, 'Tuesday, no Wednesday')))
 
+    def test_a_list_number_that_matches_a_gold_word_is_not_a_kept_gold_word(self):
+        source = 'add the flour then 2 cups, sorry, 3 cups of water then stir'
+        target = '1. Add the flour.\n2. 3 cups of water.\n3. Stir.'
+        self.assertIsNone(defects.gold_deletion_kept_by_target(source, target, span(source, '2 cups, sorry')))
+
     def test_quantity_detail_retained_after_the_repair_is_not_matched(self):
         source = 'hold 4 liters of dye, no wait, 6 liters today'
         self.assertIsNone(defects.gold_deletion_kept_by_target(source, 'Hold 6 liters of dye today.',
@@ -71,6 +76,11 @@ class DroppedWordTests(unittest.TestCase):
                 self.assertIsNone(defects.drops_dictated_word(source, '1. Clean the filter\n2. Dry it', []))
         hit = defects.drops_dictated_word('the plan is clean the filter', 'The plan: clean the filter', [])
         self.assertEqual(hit['dropped'], [{'kind': 'other_word', 'words': 'is'}])
+
+    def test_a_list_conversion_that_drops_a_dictated_word_is_a_defect(self):
+        hit = defects.drops_dictated_word('step 1 clean the filter thoroughly step 2 dry it',
+                                          '1. Clean the filter\n2. Dry it', [])
+        self.assertEqual(hit['dropped'], [{'kind': 'list_conversion_drops_words', 'words': 'thoroughly step'}])
 
     def test_unlisted_correction_is_a_defect(self):
         source = 'write it to the review directory sorry because the other one gets wiped'

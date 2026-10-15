@@ -24,7 +24,11 @@ def fake_capture(pair, consistent_only=False):
     exact = pair.get('exact', True)
     pair['engine_oracle'] = {'exact': exact}
     calls = [call('corrections'), call('main')]
-    if consistent_only and not exact:
+    if consistent_only and not exact and pair['case_id'] == 'nothing':
+        pair['engine_oracle']['supervision'] = [
+            {'role': 'main', 'window': [0, 6], 'kept': False, 'why': 'input_is_not_label_pre_cleanup'}]
+        calls = []
+    elif consistent_only and not exact:
         pair['engine_oracle']['supervision'] = [
             {'role': 'corrections', 'window': [0, 6], 'kept': True, 'why': 'gold_lines_applied_by_engine'},
             {'role': 'main', 'window': [0, 6], 'kept': False, 'why': 'input_is_not_label_pre_cleanup'}]
@@ -76,6 +80,16 @@ class BuildTests(unittest.TestCase):
                     self.build(root, directory, consistent=consistent)
 
 
+
+    def test_a_vetoed_row_with_no_consistent_call_counts_as_vetoed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_jsonl(root / 'refinement' / 'dataset' / 'validation.jsonl', [{**row('dev', True), 'split': 'validation'}])
+            freeze, _ = self.build(root, root / 'next', rows=[row('exact', True), row('nothing', False)], consistent=True)
+            captures = read_jsonl(root / 'next' / 'train_captures.jsonl')
+        self.assertEqual([c['pair_id'] for c in captures], ['exact'])
+        self.assertEqual(freeze['stats']['train']['engine_vetoed_by_focus'], {'restatement': 1})
+        self.assertEqual(freeze['stats']['train']['partially_supervised_by_focus'], {})
 
     def test_a_row_that_fails_capture_records_why_and_no_earlier_oracle(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -253,6 +253,13 @@ class ConsistentSupervisionTests(unittest.TestCase):
         self.assertEqual(agree('Ship it on Wednesday and call Marta.'), 'target_rewrites_dictated_words')
         self.assertEqual(agree('Ship it on Tuesday and call Martha.', [['Marta', 'Martha']]), 'input_is_label_pre_cleanup')
 
+    def test_cleanup_agreement_ignores_gold_deletions_outside_its_window(self):
+        source = 'Keep the pump cold. We booked 16 rooms, sorry 17 rooms.'
+        offsets = [list(correction_anchor(source, '16 rooms, sorry'))]
+        window = (0, len('Keep the pump cold.'))
+        self.assertEqual(assemble.cleanup_agreement(source, offsets, window, 'Keep the pump cold.', 'Keep the pump cold.'),
+                         'input_is_label_pre_cleanup')
+
 
 class DedupTests(unittest.TestCase):
     SOURCE = 'Please check the north pump and log the pressure reading before noon today.'
