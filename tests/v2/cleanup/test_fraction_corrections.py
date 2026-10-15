@@ -121,10 +121,13 @@ class FractionCorrectionTests(unittest.TestCase):
                                  (None, "unresolved_quantity_qualifier"))
                 accepted, rejected = parse_correction_output(deletion, source, [])
                 self.assertEqual(accepted, [])
-                # Word characters before the digit leave no word-boundary match.
+                # Word characters, token joiners ("-", "/", "$", ...), a word's
+                # period and a digit's comma before the digit leave no
+                # token-boundary match.
+                joined = (attached[-1:].isalnum() or attached.endswith("_")
+                          or attached[-1:] in "-+/$" or attached in ("2.", "2,"))
                 self.assertEqual([r.reason for r in rejected],
-                                 ["offsets_unresolved" if attached[-1:].isalnum()
-                                  or attached.endswith("_") else "unresolved_quantity_qualifier"])
+                                 ["offsets_unresolved" if joined else "unresolved_quantity_qualifier"])
                 result = clean(source, "Advance 1 half turn.", deletion)
                 self.assertEqual(result.text, source)
         for prefix in ("", "Advance ", "Advance:\n", "Advance\t"):

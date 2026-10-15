@@ -63,6 +63,11 @@ BOUND_SPAN_MAX_WORDS = 10
 SPAN_MAX_CHARS = 80
 # At most this many corrections apply per window (V1's applied cap).
 CORRECTIONS_MAX = 6
+# Characters that join the pieces of one token: a path, an email, a flag
+# value, a hyphenated word, a currency amount. A period or colon joins
+# only between word characters ("1.5", "10:30"), a comma only between
+# digits ("1,500").
+_TOKEN_JOINERS = re.escape("/\\@#$%&+=~-")
 # Existing direct triggers, including standalone "actually". Ambiguous
 # "no"/"sorry" admission additionally reuses the evidence guards below.
 CORRECTION_MARKER_RE = re.compile(
@@ -878,8 +883,12 @@ def parse_correction_output(output: str, window_text: str,
         # Case-insensitive matching on the ORIGINAL text: re.IGNORECASE
         # folds per position, so match offsets stay valid in the
         # original string (str.lower() is not length-preserving for all
-        # code points and would shift offsets).
-        return list(re.finditer(r"(?<!\w)" + re.escape(delete) + r"(?!\w)",
+        # code points and would shift offsets). A span starts and ends on a
+        # token boundary: never right after a character that joins a token
+        # ("/shop/pipes/voicing_A.md", "1.5", "--format=stl") nor right
+        # before one ("no-show").
+        return list(re.finditer(rf"(?<![\w{_TOKEN_JOINERS}])(?<!\w[.:])(?<!\d,)" + re.escape(delete)
+                                + rf"(?![\w{_TOKEN_JOINERS}]|[.:]\w)",
                                 window_text, re.IGNORECASE))
 
     proposed = {}

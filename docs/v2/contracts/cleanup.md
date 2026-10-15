@@ -131,8 +131,11 @@ an unconditional extra correction-model call.
 The proposal format is V1's production-proven line format — the model
 lists the exact words to delete (the outdated value together with its
 correction marker), one span per line. The engine resolves each span to
-exact zero-based half-open offsets (on word boundaries) by **sequential
-in-order matching**: a span resolves to its first occurrence at or
+exact zero-based half-open offsets on token boundaries — never right
+after or before a character that joins one token (`/ \ @ # $ % & + = ~ -`,
+a period or colon between word characters, a comma between digits), so a
+proposal cannot start inside `/shop/pipes/voicing_A.md` or `1.5` — by
+**sequential in-order matching**: a span resolves to its first occurrence at or
 after the previous accepted span, so duplicate correction spans delete
 in spoken order and an earlier deletion can never redirect a later one
 to the wrong occurrence.
