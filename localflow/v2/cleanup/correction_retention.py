@@ -14,13 +14,14 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from .lexicon import (FINITE_AUXILIARIES, FUNCTION_WORDS, MODALS, NEGATION_WORDS,
-                      quoted_regions, touches)
+from .lexicon import (CLAUSE_LINKS, FINITE_AUXILIARIES, FUNCTION_WORDS, MODALS,
+                      NEGATION_WORDS, alternation, quoted_regions, touches)
 
 
 _NUMBER = r"[+-]?\d+(?:[.,]\d+)*"
 _PREPOSITIONS = r"of|for|per|with|without|at|in|on|to"
 _WORD = r"[^\W\d_]+"
+_LINKS = alternation(CLAUSE_LINKS)
 _QUANTITY_DETAIL = re.compile(
     rf"{_NUMBER}[ \t]+(?P<unit>{_WORD}"
     rf"(?:[ \t]+(?!(?:{_PREPOSITIONS})\b){_WORD}){{0,2}})"
@@ -108,8 +109,7 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
             # Require a bounded determiner-led noun phrase or pronoun on
             # both sides. Capitalization alone cannot distinguish a name
             # from an infinitive such as "to Deliver before Friday".
-            boundaries = (rf"{_PREPOSITIONS}|and|or|but|then|because|before|after|"
-                          r"until|when|while|if|unless|be|have|do")
+            boundaries = rf"{_PREPOSITIONS}|{_LINKS}|be|have|do"
             noun_word = rf"(?!(?i:{boundaries})\b){_WORD}"
             recipient = (rf"(?:(?i:the|a|an|this|that|these|those)[ \t]+"
                          rf"{noun_word}(?:[ \t]+{noun_word}){{0,3}}"
@@ -132,8 +132,7 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
                             following[relation.end():], re.IGNORECASE)
             rest = following[relation.end() + same.end():] if same else None
             if rest is not None and re.match(
-                    rf"[ \t]*(?:$|[,;.!?\n]|(?i:and|or|but|then|because|before|after|"
-                    rf"until|when|while|if|unless|only|to|{_PREPOSITIONS})\b)", rest):
+                    rf"[ \t]*(?:$|[,;.!?\n]|(?i:{_LINKS}|only|to|{_PREPOSITIONS})\b)", rest):
                 # Explicit presence→absence replaces the descriptor; never
                 # concatenate ``with dye without dye``. Removing a negation
                 # or changing the substance remains outside this narrow rule.
@@ -142,8 +141,7 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
                     return None, None
                 return None, "opposing_quantity_qualifier"
     if following and not re.match(
-            rf"[ \t]*(?:[,;.!?\n]|$|(?i:and|or|but|then|because|before|after|"
-            rf"until|when|while|if|unless|only|to|{_PREPOSITIONS})\b)", following):
+            rf"[ \t]*(?:[,;.!?\n]|$|(?i:{_LINKS}|only|to|{_PREPOSITIONS})\b)", following):
         return None, "unresolved_quantity_qualifier"
     return (start + match.start("space"), start + len(old), destination), None
 
@@ -167,10 +165,7 @@ def repeated_restart(source: str, span: tuple, marker_start: int):
     first = re.split("['’]", words[0])[0] if words else ""
     pronoun = first in {"i", "you", "he", "she", "it", "we", "they",
                         "this", "that", "these", "those", "there"}
-    boundaries = set(_PREPOSITIONS.split("|")) | {
-        "and", "or", "but", "then", "because", "before", "after", "until",
-        "when", "while", "if", "unless", "only",
-    }
+    boundaries = set(_PREPOSITIONS.split("|")) | CLAUSE_LINKS | {"only"}
     named_predicate = False
     for index, word in enumerate(words):
         if word in boundaries or not re.fullmatch(rf"{_WORD}(?:['’]{_WORD})?", word):
@@ -219,9 +214,7 @@ def repeated_restart(source: str, span: tuple, marker_start: int):
     if replacement is None:
         return None, reason
     following = source[end + replacement.end():]
-    if not re.match(
-            r"[ \t]*(?:$|[,;.!?\n]|(?i:and|or|but|then|because|before|after|"
-            r"until|when|while|if|unless|only)\b)", following):
+    if not re.match(rf"[ \t]*(?:$|[,;.!?\n]|(?i:{_LINKS}|only)\b)", following):
         return None, reason
     return (end, end + replacement.end("restart")), None
 

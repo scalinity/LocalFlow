@@ -40,6 +40,18 @@ MODALS = frozenset({"can", "could", "may", "might", "must", "shall", "should",
 FINITE_AUXILIARIES = MODALS | frozenset({
     "am", "is", "are", "was", "were", "has", "have", "had", "do", "does", "did"})
 
+# Words that open a dependent clause, and the wider set that ends a
+# retained detail or a restated value before the next clause.
+SUBORDINATORS = frozenset({"after", "because", "before", "if", "once", "since",
+                           "unless", "until", "when", "while"})
+CLAUSE_LINKS = frozenset({"and", "or", "but", "then"}) | SUBORDINATORS
+
+
+def alternation(words) -> str:
+    """A regex alternation of ``words``, longest first."""
+    return "|".join(sorted(words, key=lambda w: (-len(w), w)))
+
+
 IDENTIFIER_TOKEN_RE = re.compile(
     r"(?<!\w)[A-Za-z_]\w*_\w+(?!\w)"
     r"|\b[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_]+\b")

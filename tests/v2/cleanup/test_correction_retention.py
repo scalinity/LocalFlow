@@ -270,6 +270,15 @@ class CorrectionRetentionTests(unittest.TestCase):
                 result, _ = clean(source, lossy, deletion)
                 self.assertEqual(result.text, source)
 
+    def test_detail_moves_before_a_following_subordinate_clause(self):
+        for link in ("when", "once", "since"):
+            with self.subTest(link=link):
+                source = f"Use 4 liters of dye, no wait, 6 liters {link} the tank is clean."
+                target = f"Use 6 liters of dye {link} the tank is clean."
+                result, _ = clean(source, target, "4 liters of dye, no wait")
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+
     def test_qualifier_cannot_move_to_another_equal_quantity(self):
         source = ("Use 4 liters of dye, no wait, 6 liters, "
                   "and reserve 6 liters for cleaning.")

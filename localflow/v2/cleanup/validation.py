@@ -26,6 +26,7 @@ from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 
 from .lexicon import (FILLERS, FINITE_AUXILIARIES, FUNCTION_WORDS, NEGATION_WORDS,
+                      SUBORDINATORS,
                       IDENTIFIER_TOKEN_RE as _IDENTIFIER_TOKEN_RE,
                       NUMBER_WORDS as _NUMBERS, QUOTED_RE as _QUOTED_RE,
                       SCALE_WORDS as _SCALES, TECH_TOKEN_RE as _TECH_TOKEN_RE,
@@ -786,9 +787,8 @@ def _restriction_breaks(source, output, aligned):
         before_only = src[k][2] == "only" and (
             k + 1 >= len(src) or src[k + 1][2] != "then") \
             and not _only_starts_clause(source, src, k)
-        after_only = src[i][2] == "only" and src[k][2] in {
-            "if", "when", "unless", "after", "before", "until", "because",
-            "once", "while", "for", "on", "in", "at", "to", "with", "without", "then"}
+        after_only = src[i][2] == "only" and src[k][2] in SUBORDINATORS | {
+            "for", "on", "in", "at", "to", "with", "without", "then"}
         if not (before_only or after_only):
             continue
         boundary = re.compile(r"[,;.!?\n]+") if after_only and src[k][2] == "then" else _SOURCE_BOUNDARY_RE
@@ -807,11 +807,10 @@ def _only_starts_clause(source, atoms, only_index):
     treating every occurrence of 'only' as a new sentence. Unclear shapes
     retain the existing attachment rule.
     """
-    dependent = {"if", "when", "unless", "after", "before", "until", "because",
-                 "once", "while", "for", "on", "in", "at", "to", "with",
-                 "without", "who", "which", "whose", "where", "during",
-                 "since", "as", "by", "under", "over", "between", "through",
-                 "throughout", "within", "from"}
+    dependent = SUBORDINATORS | {
+        "for", "on", "in", "at", "to", "with", "without", "who", "which", "whose",
+        "where", "during", "as", "by", "under", "over", "between", "through",
+        "throughout", "within", "from"}
     subject = []
     for index in range(only_index + 1, min(len(atoms), only_index + 8)):
         word = atoms[index][2]
