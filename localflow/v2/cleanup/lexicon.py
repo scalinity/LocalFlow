@@ -41,6 +41,12 @@ MODALS = frozenset({"can", "could", "may", "might", "must", "shall", "should",
 FINITE_AUXILIARIES = MODALS | frozenset({
     "am", "is", "are", "was", "were", "has", "have", "had", "do", "does", "did"})
 
+# Words that end a correction span: the old value comes before them.
+CORRECTION_MARKERS = frozenset({
+    "no wait", "no sorry", "no actually", "actually no", "wait no", "i mean",
+    "i mean actually", "no espera", "espera no", "digo", "scratch", "scratch that",
+    "actually", "sorry", "no"})
+
 # Words that open a dependent clause, and the wider set that ends a
 # retained detail or a restated value before the next clause.
 SUBORDINATORS = frozenset({"after", "because", "before", "if", "once", "since",

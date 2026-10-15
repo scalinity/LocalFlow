@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
-from .lexicon import (CLAUSE_END, FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
+from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
                       FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER, NUMBER, NUMBER_WORDS,
                       POSITIVE_NUMBER, SCALE_WORDS, TECH_TOKEN_RE, Neighbourhood,
                       alternation, neighbourhood)
@@ -61,17 +61,11 @@ CORRECTION_MARKER_RE = re.compile(
     r"\b(no wait|no sorry|no actually|actually no|wait no|i mean|"
     r"no espera|espera no|digo|scratch that|scratch|actually)\b",
     re.IGNORECASE)
-SPAN_ENDS_WITH_MARKER_RE = re.compile(
-    r"\b(no wait|no sorry|no actually|actually no|wait no|i mean actually|i mean|no espera|"
-    r"espera no|digo|scratch that|scratch|actually|sorry|no)$",
-    re.IGNORECASE)
+SPAN_ENDS_WITH_MARKER_RE = re.compile(rf"\b({alternation(CORRECTION_MARKERS)})$",
+                                      re.IGNORECASE)
 # "i mean it/that/this" is emphasis, never a correction.
 _EMPHASIS_AFTER_I_MEAN = frozenset({"it", "that", "this"})
-BARE_MARKERS = {
-    "no wait", "no sorry", "no actually", "actually no", "wait no",
-    "i mean", "i mean actually", "no espera", "espera no", "digo", "scratch", "scratch that",
-    "actually", "sorry", "no",
-}
+BARE_MARKERS = CORRECTION_MARKERS
 
 # The corrections proposal format is V1's production-proven line format
 # (localflow.cleanup.CORRECTIONS_PROMPT — the model lists the exact words
