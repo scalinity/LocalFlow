@@ -700,15 +700,15 @@ def _replacement_adds(n: Neighbourhood) -> bool:
 
     Its clause runs to the first comma, semicolon, line break, sentence end
     or clause link. "also" counts within one word more than the old value
-    after its own; "too" and "as well" only where they end a clause that
-    short ("too hot" intensifies, and a longer clause, "to sign the sheet
-    as well", is about something else).
+    after its own; "too", "either" and "as well" only where they end a
+    clause that short ("too hot" intensifies, and a longer clause, "to sign
+    the sheet as well", is about something else).
     """
     words = list(after_marker(n.text, n.end)[3])
     link = next((i for i, w in enumerate(words) if w in CLAUSE_LINKS), len(words))
     words, reach = words[:link], len(n.old_words) + 2
     return "also" in words[:reach] or (len(words) <= reach and (
-        words[-1:] == ["too"] or words[-2:] == ["as", "well"]))
+        words[-1:] in (["too"], ["either"]) or words[-2:] == ["as", "well"]))
 
 
 def _evidence_reason(n: Neighbourhood) -> str | None:

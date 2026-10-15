@@ -24,10 +24,29 @@ class AdditiveReplacementTests(unittest.TestCase):
              "Marta will review the grid export, sorry"),
             ("The tests passed on Linux, sorry, on macOS too.", "on Linux, sorry"),
             ("Use 4 trays, sorry, also 6 trays for the oven.", "4 trays, sorry"),
+            ("Marta will review the draft, sorry, Jonas will also review the draft.",
+             "Marta will review the draft, sorry"),
+            ("The first build failed. Sorry, the second build failed too.",
+             "The first build failed. Sorry"),
         ):
             with self.subTest(source=source):
                 self.assertEqual(reasons(proposal, source), ([], ["additive_replacement"]))
                 self.assertFalse(_has_correction_marker(source))
+
+    def test_either_adds_as_too_does(self):
+        for source, proposal in (
+            ("The kitchen is not ready. Actually, the bathroom is not ready either.",
+             "The kitchen is not ready. Actually"),
+            ("Marta won't review the draft, sorry, Jonas won't review the draft either.",
+             "Marta won't review the draft, sorry"),
+            ("The kitchen is ready. Actually, the bathroom is ready too.",
+             "The kitchen is ready. Actually"),
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(reasons(proposal, source), ([], ["additive_replacement"]))
+        # "either" opening a later clause is about that clause.
+        source = "We can't use the north gate, sorry, the south gate, either way it is closed."
+        self.assertEqual(reasons("the north gate, sorry", source), (["the north gate, sorry"], []))
 
     def test_an_intensifying_too_and_a_later_clause_still_correct(self):
         for source, proposal in (
