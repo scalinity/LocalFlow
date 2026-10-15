@@ -179,19 +179,24 @@ class ExportIntegrationTests(unittest.TestCase):
             adapter.mkdir(parents=True)
             (adapter / "adapters.safetensors").write_bytes(b"fixture adapter")
             exported = root / "export/candidates/fixture-final"
-            exported.mkdir(parents=True)
             raw = b'{ "keep": "formatting" }\n'
-            (exported / "config.json").write_bytes(raw)
-            before = content_digest(exported)
+            before = []
+
+            def make_candidate(adapter_dir, name):
+                exported.mkdir(parents=True)
+                (exported / "config.json").write_bytes(raw)
+                before.append(content_digest(exported))
+                return exported
+
             with patch.object(training, "ART", root), \
-                    patch("lfx.export.candidate", return_value=exported) as candidate, \
+                    patch("lfx.export.candidate", side_effect=make_candidate) as candidate, \
                     patch("v2.export_metadata.compact_json_metadata") as compact, \
                     patch("builtins.print"):
                 identity = training.export("fixture")
             candidate.assert_called_once_with(adapter, "fixture-final")
             compact.assert_not_called()
             self.assertEqual((exported / "config.json").read_bytes(), raw)
-            self.assertEqual(identity["content_digest"], before)
+            self.assertEqual(identity["content_digest"], before[0])
             self.assertEqual(identity["size_bytes"], len(raw))
             self.assertNotIn("metadata_compaction", identity)
             self.assertTrue((root / "export/fixture-final.identity.json").is_file())

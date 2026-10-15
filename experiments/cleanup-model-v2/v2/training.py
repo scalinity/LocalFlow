@@ -161,13 +161,20 @@ def export(name,checkpoint="final",*,compact_metadata=False):
     if not (adapter/"adapters.safetensors").exists():
         raise FileNotFoundError(adapter)
     export_name=name+"-"+checkpoint+("-compact" if compact_metadata else "")
+    adapter_sha256=file_sha256(adapter/"adapters.safetensors")
+    # candidate() reuses an existing quantized directory, so it must be this adapter's.
+    prior=read_json(ART/"export"/(export_name+".identity.json"))
+    if prior and prior.get("adapter_sha256")!=adapter_sha256:
+        raise RuntimeError("Export name already holds another adapter's quantized weights")
+    if not prior and (ART/"export"/"candidates"/export_name).exists():
+        raise RuntimeError("Quantized candidate exists without an identity record")
     path=candidate(adapter,export_name)
     metadata_receipt=None
     if compact_metadata:
         from .export_metadata import compact_json_metadata
         metadata_receipt=compact_json_metadata(path)
     identity={"name":name,"checkpoint":checkpoint,"adapter":str(adapter),"quantized":str(path),
-              "content_digest":content_digest(path),"adapter_sha256":file_sha256(adapter/"adapters.safetensors"),
+              "content_digest":content_digest(path),"adapter_sha256":adapter_sha256,
               "size_bytes":sum(p.stat().st_size for p in path.iterdir() if p.is_file()),
               "quantization":"4-bit affine, group 64; same verified recipe as C","created":utc_now(),
               "installed":False}

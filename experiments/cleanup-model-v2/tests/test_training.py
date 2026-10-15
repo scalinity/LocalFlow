@@ -1,4 +1,5 @@
 import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -212,6 +213,33 @@ class TrainingExposureTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'example of 12 tokens'):
             train.train_loop(None, None, [], [], Path('/nonexistent'), lr=1e-4, warmup=1, grad_accum=1,
                              checkpoints=1, max_seq_length=10, lora_cfg={}, blocks=[block])
+
+
+class ExportIdentityTests(unittest.TestCase):
+    def test_export_never_reuses_another_adapters_quantized_weights(self):
+        def candidate(adapter, name):
+            # Like lfx.export.candidate: an existing quantized directory is reused.
+            path = root / 'export/candidates' / name
+            if not (path / 'config.json').exists():
+                path.mkdir(parents=True)
+                (path / 'config.json').write_text('quantized ' + (adapter / 'adapters.safetensors').read_text())
+            return path
+
+        with tempfile.TemporaryDirectory() as directory, patch('lfx.export.candidate', side_effect=candidate), \
+                contextlib.redirect_stdout(io.StringIO()):
+            root = Path(directory)
+            weights = root / 'train/run/final/adapters.safetensors'
+            weights.parent.mkdir(parents=True)
+            weights.write_text('first adapter')
+            with patch.object(training, 'ART', root):
+                first = training.export('run')
+                self.assertEqual(training.export('run')['content_digest'], first['content_digest'])
+                weights.write_text('retrained adapter')
+                with self.assertRaisesRegex(RuntimeError, "another adapter's quantized weights"):
+                    training.export('run')
+                (root / 'export/run-final.identity.json').unlink()
+                with self.assertRaisesRegex(RuntimeError, 'without an identity record'):
+                    training.export('run')
 
 if __name__ == '__main__':
     unittest.main()
