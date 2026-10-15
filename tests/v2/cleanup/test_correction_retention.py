@@ -1013,5 +1013,22 @@ class SourceRepairTests(unittest.TestCase):
                 self.assertNotEqual(result.path, "llm")
 
 
+class FrameWordAloneTests(unittest.TestCase):
+    """A repeated frame word with no quantity of its own must not crash retention."""
+
+    def test_frame_word_alone_before_a_restatement_is_parsed_without_error(self):
+        cases = [
+            ("Water the seedlings every, no, every other day.", "every, no"),
+            ("Give 5 milligrams, sorry, 50 milligrams of the drug every, no, every other day.",
+             "5 milligrams, sorry\nevery, no"),
+        ]
+        for source, proposal in cases:
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(proposal, source, [])
+                self.assertIsInstance(accepted, list)
+                self.assertIsInstance(rejected, list)
+                self.assertEqual(len(accepted) + len(rejected), proposal.count("\n") + 1)
+
+
 if __name__ == "__main__":
     unittest.main()

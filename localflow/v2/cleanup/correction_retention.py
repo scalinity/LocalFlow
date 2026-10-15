@@ -104,7 +104,15 @@ def qualifier_retention(n: Neighbourhood):
     # after the frame, and the replacement repeats it.
     lead, frame = 0, ""
     if n.frame:
-        lead = re.match(r"\S+[ \t]+", old).end()
+        head = re.match(rf"(?i:{re.escape(n.frame)})[ \t]+", old)
+        if head is None:
+            # The old value is the frame word alone (``every, no, every other
+            # day``) or the frame is not followed by a quantity: this rule
+            # has nothing to bind, so the other checks decide.
+            if _ANY_QUANTITY_DETAIL.search(old):
+                return None, "unresolved_quantity_qualifier"
+            return None, None
+        lead = head.end()
         frame = rf"(?i:{re.escape(n.frame)})[ \t]+"
     match = _QUANTITY_DETAIL.fullmatch(old, lead)
     if match is None:
