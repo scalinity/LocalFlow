@@ -17,12 +17,20 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
+from localflow.v2.cleanup.engine import CleanupEngine  # noqa: E402
 from localflow.v2.cleanup.validation import validate  # noqa: E402
 
 
 def span(source, delete, marker):
     start = source.index(delete)
     return start, start + len(delete), start + delete.rindex(marker)
+
+
+def clean(source, lines, output):
+    def generate(prompt, max_tokens):
+        text = "\n".join(lines) if "Find the self-corrections" in prompt else output
+        return {"text": text, "output_tokens": 20, "limit_hit": False}
+    return CleanupEngine(generate, model_id="fixture").clean(source)
 
 
 def failures(source, output, delete, marker):
@@ -42,6 +50,17 @@ class DeletedSentenceScopeTests(unittest.TestCase):
         ):
             with self.subTest(source=source):
                 self.assertEqual(failures(source, output, delete, marker), set())
+
+    def test_an_admitted_deletion_across_a_semicolon_is_delivered(self):
+        # The engine admits a deletion that holds a ";", so this runs end to end.
+        source = "Spin the samples for 15 minutes; actually no, 10 minutes, the amendment cut it."
+        output = "Spin the samples for 10 minutes, the amendment cut it."
+        result = clean(source, ["15 minutes; actually no"], output)
+        self.assertEqual((result.path, result.text), ("llm", output))
+        source = "Spin the samples for 15 minutes; actually no, 10 minutes; do not open the lid."
+        merged = "Spin the samples for 10 minutes, do not open the lid."
+        self.assertNotEqual(clean(source, ["15 minutes; actually no"], merged).path, "llm")
+        self.assertIn("clause_scope", failures(source, merged, "15 minutes; actually no", "actually no"))
 
     def test_remaining_scope_still_counts(self):
         for source, delete, marker, output, name in (
