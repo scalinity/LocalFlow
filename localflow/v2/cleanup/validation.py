@@ -1210,7 +1210,9 @@ def _literal_spans(source, output) -> Component:
 # the old value before them is complete: it holds its own number, or a
 # comma closes it ("Dr. Okafor, no I mean Dr. Lindqvist"). In "There are
 # no, sorry, there are two" the "no" is the old value. Runs are read one
-# marker at a time, so a long run costs linear time.
+# marker at a time with an unambiguous separator, so nothing backtracks;
+# each step searches the text before the run again, which stays cheap
+# because a deletion is short (a proposal holds at most 80 characters).
 _MARKER_WORDS = rf"(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS)})(?!\w)"
 _LAST_MARKER_RE = re.compile(rf"{_MARKER_WORDS}[ \t]*(?:,[ \t]*)?$", re.IGNORECASE)
 

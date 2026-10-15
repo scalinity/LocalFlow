@@ -125,7 +125,7 @@ class MarkerRunTests(unittest.TestCase):
         self.assertIn("negation_coverage",
                       failures(source, output, [span(source, "no I mean", "I mean")]))
 
-    def test_a_long_marker_run_is_read_in_linear_time(self):
+    def test_a_long_marker_run_is_read_without_backtracking(self):
         for count in (22, 200):
             source = "Use " + "no " * count + "sugar, sorry, less sugar."
             delete = "no " * count + "sugar, sorry"
