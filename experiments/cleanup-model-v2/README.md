@@ -76,7 +76,9 @@ training examples, generation demonstrations, or checkpoint-selection material.
 Evaluation labels blocked by the engine remain in the evaluation set. A
 training target is omitted when its exact prompt supervision cannot be safely
 captured, without silently changing that target. Additional reviewed label
-conflicts exclude training captures only. Their reasons and the original
+conflicts exclude training captures only, as do the TRAIN labels listed in
+`artifacts/hard-cases/validation/label-defects.jsonl` (`validation_label_defect`,
+counted only where no label rule already excluded the row). Their reasons and the original
 training-file hash remain in the dataset freeze; development and final labels
 retain their original bytes.
 

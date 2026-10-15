@@ -37,6 +37,8 @@ VOCATIVE_FOCUS = "question_final_vocative_comma"
 # Per TRAIN row, the kind of each comma a label added at an unpunctuated source gap, keyed by
 # source gap index (written by hard-cases/tools/comma_classify.py). The build needs it.
 COMMA_KINDS = ART / "hard-cases" / "labels" / "comma-kinds-train.json"
+# TRAIN labels the validation lane found wrong, one line per defect: pair_id, kind, detail.
+LABEL_DEFECTS = ART / "hard-cases" / "validation" / "label-defects.jsonl"
 
 
 def _vocabulary(row):
@@ -181,6 +183,9 @@ def build(dataset=DATASET, consistent=False):
         # Without a freeze this may be a source collect reads (longform/train.jsonl); never overwrite it.
         raise RuntimeError(f"{dataset} holds train.jsonl without a freeze")
     rows, summary = collect()
+    defects = collections.defaultdict(list)
+    for d in read_jsonl(LABEL_DEFECTS):
+        defects[d["pair_id"]].append({"kind": d["kind"], "detail": d["detail"]})
     source_hashes = {p: file_sha256(ROOT / p) for p in SOURCE_FILES}
     dataset.mkdir(parents=True, exist_ok=True)
     captures, failures, oracle = [], collections.Counter(), collections.Counter()
@@ -191,6 +196,11 @@ def build(dataset=DATASET, consistent=False):
         row.pop("capture_error", None)
         try:
             cap = capture(row, consistent_only=consistent)
+            # Checked after capture, so a row the label rules exclude keeps their reason.
+            if defects.get(row.get("pair_id", row["case_id"])):
+                row["label_conflict"] = {"reason": "validation_label_defect",
+                                         "defects": defects[row.get("pair_id", row["case_id"])]}
+                raise ValueError("validation_label_defect")
         except (ValueError, RuntimeError) as exc:
             failures[str(exc).split(":")[0]] += 1
             row.pop("engine_oracle", None)
@@ -223,6 +233,7 @@ def build(dataset=DATASET, consistent=False):
     if any(file_sha256(ROOT / p) != digest for p, digest in source_hashes.items()):
         raise RuntimeError("Engine source changed during capture")
     train_stats = {"captured": len(captures), "capture_failures": dict(failures),
+                   "label_defects_sha256": file_sha256(LABEL_DEFECTS),
                    "oracle_exact": dict(oracle), "engine_vetoed_by_focus": dict(vetoed)}
     if consistent:
         train_stats.update(partially_supervised_by_focus=dict(partial), vetoed_row_calls=dict(vetoed_calls))

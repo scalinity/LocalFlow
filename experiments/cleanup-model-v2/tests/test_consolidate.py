@@ -37,10 +37,12 @@ def fake_capture(pair, consistent_only=False):
 
 
 class BuildTests(unittest.TestCase):
-    def build(self, root, dataset, rows=None, **options):
+    def build(self, root, dataset, rows=None, defects=(), **options):
         rows = rows or [row('exact', True), row('vetoed', False)]
+        write_jsonl(root / 'label-defects.jsonl', list(defects))
         with patch.object(consolidate, 'collect', return_value=(rows, {'kept': len(rows)})), \
                 patch.object(consolidate, 'REFINEMENT', root / 'refinement'), \
+                patch.object(consolidate, 'LABEL_DEFECTS', root / 'label-defects.jsonl'), \
                 patch('v2.refinement.SOURCE_FILES', []), \
                 patch('v2.assemble.capture', side_effect=fake_capture) as capture:
             return consolidate.build(dataset, **options), capture
@@ -106,6 +108,24 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(written['failed']['capture_error'], 'fixture_capture_failure')
         # A row that captures now keeps no error from an earlier capture of its source dataset.
         self.assertNotIn('capture_error', written['exact'])
+
+    def test_a_label_the_validation_lane_found_wrong_is_excluded_after_the_label_rules(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_jsonl(root / 'refinement' / 'dataset' / 'validation.jsonl', [{**row('dev', True), 'split': 'validation'}])
+            defects = [{'pair_id': 'vetoed', 'kind': 'dropped_word', 'detail': 'and'},
+                       {'pair_id': 'failed', 'kind': 'dropped_word', 'detail': 'so'}]
+            freeze, _ = self.build(root, root / 'next', rows=[row('exact', True), row('vetoed', False), row('failed', True)],
+                                   defects=defects, consistent=True)
+            written = {r['case_id']: r for r in read_jsonl(root / 'next' / 'train.jsonl')}
+            captures = read_jsonl(root / 'next' / 'train_captures.jsonl')
+        self.assertEqual([c['pair_id'] for c in captures], ['exact'])
+        self.assertEqual(freeze['stats']['train']['capture_failures'],
+                         {'validation_label_defect': 1, 'fixture_capture_failure': 1})
+        self.assertEqual(written['vetoed']['label_conflict'],
+                         {'reason': 'validation_label_defect', 'defects': [{'kind': 'dropped_word', 'detail': 'and'}]})
+        self.assertNotIn('engine_oracle', written['vetoed'])
+        self.assertEqual(written['failed']['capture_error'], 'fixture_capture_failure')
 
     def test_build_refuses_a_directory_holding_unfrozen_rows(self):
         with tempfile.TemporaryDirectory() as directory:
