@@ -133,7 +133,9 @@ receipts live under `artifacts/judge/<backend>/<name>/`: `requests.json`,
 `identity.json` and expanded `verdicts.jsonl`. Identity includes backend,
 model, UTC date, exact initial request parameters, recovery token limits and
 the SHA-256 of the unchanged system prompt. Each verdict row points to that
-identity. Anthropic keeps its existing output paths and ledger.
+identity and records its effective request envelope, request ID and wave name,
+including the actual token limit of a successful recovery. Anthropic keeps its
+existing output paths and ledger.
 
 `artifacts/judge/ledger-other.json` separately caps OpenAI at $40 and
 OpenRouter at $5, counting settled costs plus reserved and outstanding costs.

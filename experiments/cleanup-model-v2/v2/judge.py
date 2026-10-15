@@ -90,7 +90,7 @@ def data_gate(backend,cases_file,prefix,role,cases=None,confirm_final_eval=False
     if backend=='openrouter':
         # Contributor permits training on submitted text. Fail before opening a
         # clearly restricted path, and again on the actual origin/split metadata.
-        labels=[prefix,Path(cases_file).name,*Path(cases_file).parent.parts]
+        labels=[prefix,str(Path(cases_file)),str(Path(cases_file).resolve())]
         if role=='final' or any(re.search(r'(real|fresh|audio|final|test|locked)',s,re.I) for s in labels):
             raise ValueError('OpenRouter Contributor accepts synthetic development data only')
         if cases is not None and any(c.get('origin')!='synthetic' or c.get('split') not in ('validation','development','dev') for c in cases):
@@ -163,6 +163,15 @@ def run(cases_file,models,prefix='final',name='final-judge',role=None,model=None
                'models':models,'prefix':prefix,'role':role,'judge_model':model,'created':metadata['date'],**metadata})
     w.run(chunk=200)
     verdicts=valid_verdicts(w.outcomes,request_ids)
+    def receipts(params,ids,wave_name):
+        result={}
+        for rid,request in params.items():
+            envelope=request if backend=='anthropic' else request_params(request,backend)
+            recorded={k:v for k,v in envelope.items() if k not in ('system','messages')}
+            for oid in ids[rid]:
+                result[oid]={'request_id':rid,'wave_name':wave_name,'request_parameters':recorded}
+        return result
+    provenance=receipts(requests,request_ids,name)
     # A valid JSON response can still omit an output. Reassess only missing IDs;
     # retained verdicts must not change merely because another output was absent.
     for attempt,max_tokens in enumerate((6000,10000),1):
@@ -182,14 +191,18 @@ def run(cases_file,models,prefix='final',name='final-judge',role=None,model=None
         retry_wave=selected_wave(f'{name}-missing-{attempt}',retry_requests,
                         parse_verdicts,model,'judging')
         retry_wave.run(chunk=100)
+        retry_provenance=receipts(retry_requests,retry_ids,f'{name}-missing-{attempt}')
         for oid,verdict in valid_verdicts(retry_wave.outcomes,retry_ids).items():
-            verdicts.setdefault(oid,verdict)
+            if oid not in verdicts:
+                verdicts[oid]=verdict
+                provenance[oid]=retry_provenance[oid]
     expanded=[]
     for oid,targets in request_map.items():
         for t in targets:
             expanded.append({**t,'verdict':verdicts.get(oid),'status':'judged' if oid in verdicts else 'UNVERIFIED',
                              'backend':backend,'model_id':model,'date':metadata['date'],
-                             'prompt_sha256':metadata['prompt_sha256'],'identity_file':'identity.json'})
+                             'prompt_sha256':metadata['prompt_sha256'],'identity_file':'identity.json',
+                             **provenance[oid]})
     write_jsonl(output_dir/'verdicts.jsonl',expanded)
     print(json.dumps({'distinct_outputs':len(request_map),'judged_distinct':len(verdicts),'expanded':len(expanded)}))
 

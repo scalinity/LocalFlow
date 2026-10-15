@@ -230,6 +230,8 @@ class OtherWave:
         return self.client
 
     def _submit(self, attempt):
+        self.log(json.dumps({"backend": self.backend, "submission": attempt["key"],
+                             "estimate_max_usd": attempt["max_usd"], "cap_usd": CAPS[self.backend]}))
         client = self._client()
         rows = [{"custom_id": rid, "method": "POST", "url": "/v1/chat/completions",
                  "body": self.requests[rid]} for rid in attempt["ids"]]

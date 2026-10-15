@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from v2 import judge, judge_backends as backends
-from v2.common import read_json, write_json, write_jsonl
+from v2.common import read_json, read_jsonl, write_json, write_jsonl
 
 
 def verdict(oid):
@@ -222,6 +222,15 @@ class BackendTests(unittest.TestCase):
 
 
 class DataGateTests(unittest.TestCase):
+    def test_openrouter_refuses_a_development_symlink_to_restricted_data(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); restricted=root/"final.jsonl"; link=root/"development.jsonl"
+            restricted.write_text("must not be opened");link.symlink_to(restricted)
+            fake=Mock(side_effect=AssertionError("No wave after refusal"))
+            with patch.object(judge,"read_jsonl",side_effect=AssertionError("No restricted reads")),self.assertRaises(ValueError):
+                judge.run(link,["toy"],prefix="development",backend="openrouter",wave_factory=fake)
+            fake.assert_not_called()
+
     def test_openrouter_refuses_roles_paths_prefixes_origins_and_test_split(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -269,6 +278,30 @@ class DataGateTests(unittest.TestCase):
                 self.assertEqual(identity["model_id"], backends.MODELS[backend])
                 self.assertEqual(identity["prompt_sha256"], judge.sha256_text(judge.SYSTEM))
                 self.assertIn("request_parameters", identity)
+                row = read_jsonl(root / f"judge/{backend}/toy/verdicts.jsonl")[0]
+                self.assertEqual(row["request_parameters"]["model"], backends.MODELS[backend])
+                self.assertEqual(row["wave_name"], "toy")
+
+    def test_recovered_verdict_records_the_effective_request_parameters(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); cases=root/"development.jsonl"
+            write_jsonl(cases,[{"case_id":"toy","split":"validation","origin":"synthetic",
+                "model_input":"um go","target":"Go.","is_noop":False}])
+            write_jsonl(root/"eval/development-X.jsonl",[{"case_id":"toy","delivered":"Go.","model_only":"Go."}])
+            client=FakeClient(); answer=client.answer
+            def incomplete(body):
+                result=answer(body)
+                if body["max_completion_tokens"]==2800:
+                    result["choices"][0]["message"]["content"]='{"verdicts":[]}'
+                return result
+            client.answer=incomplete
+            def factory(n,r,p,m,purpose):
+                return backends.OtherWave(n,r,p,"openai",root=root/"judge",client=client,log=lambda _:None)
+            with patch.object(judge,"ART",root),contextlib.redirect_stdout(io.StringIO()):
+                judge.run(cases,["X"],"development","recovery",backend="openai",wave_factory=factory)
+            rows=read_jsonl(root/"judge/openai/recovery/verdicts.jsonl")
+            self.assertTrue(all(r["request_parameters"]["max_completion_tokens"]==6000 for r in rows))
+            self.assertTrue(all(r["wave_name"]=="recovery-missing-1" for r in rows))
 
 
 if __name__ == "__main__":
