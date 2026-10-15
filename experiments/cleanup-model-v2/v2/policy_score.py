@@ -127,6 +127,7 @@ OPENERS = DISCOURSE | {"hi", "hello", "dear", "thanks", "thank", "morning", "eve
                        "importantly", "firmly", "still", "rather", "remember", "wait", "oh", "no", "please"}
 # Words a greeting puts between its opener and the name: "Good morning Marta," "Thank you Marta,".
 GREETING_WORDS = {"good", "there", "you", "me", "excuse", "welcome"}
+WALK_WORDS = OPENERS | GREETING_WORDS
 # A sentence-initial name followed by one of these, in a sentence that neither asks nor says "you", is its subject.
 FINITE = {"is", "was", "has", "had", "does", "did", "will", "would", "can", "could", "should", "must", "may",
           "might", "shall", "says", "said", "isn't", "wasn't", "hasn't", "doesn't", "didn't", "won't", "can't"}
@@ -134,13 +135,17 @@ FINITE = {"is", "was", "has", "had", "does", "did", "will", "would", "can", "cou
 SUBJECT_PRONOUNS = {"i", "we", "you", "they", "he", "she", "it", "there"}
 
 
+# Never a name, however capitalised.
+NOT_NAMES = NOT_PERSONS | I_FORMS | FUNCTION_WORDS
+
+
 def _addressee(word):
-    """A capitalised name (O'Brien and McKay too) or a group addressee; days, months, "I"
-    and acronyms are not."""
+    """A capitalised name (O'Brien and McKay too) or a group addressee; days, months, "I",
+    function words and acronyms are not."""
     key = word.casefold().replace("’", "'")
     letters = word.replace("'", "").replace("’", "")
     return key in GROUP_ADDRESSEES or (word[:1].isupper() and letters.isalpha() and not letters.isupper()
-                                       and key not in NOT_PERSONS | I_FORMS | FUNCTION_WORDS)
+                                       and key not in NOT_NAMES)
 
 
 def _opens(words, gaps, i):
@@ -152,25 +157,24 @@ def _opens(words, gaps, i):
         gaps[i].startswith(".") and words[i - 1].casefold() in TITLES and words[i - 1][:1].isupper())
 
 
-def _sets_off_addressee(words, gaps, k):
-    """Whether the comma in gap k sets off a person being addressed.
+def _joined(words, gaps, i):
+    """Whether word i continues the name before it: "Jean-Luc", "Marta Lopez", "Dr. Okafor"."""
+    return gaps[i].strip() in ("", "-") or (gaps[i].strip() == "." and words[i - 1].casefold() in TITLES)
 
-    Before the person: "Thanks, Marta." or "Can you check this, Sam?" (up to three
-    name words, joined by spaces, hyphens or "and", that end the sentence or the
-    clause, or are set off again mid-sentence). After the person: "Marta, can you
-    send it", "Hi Marta, ...", "Good morning Marta, ...". A sentence-initial name
-    followed by a finite verb is the subject and its comma is not kept, unless the
-    sentence asks or says "you". Unsure cases count as addressed: a kept optional
-    comma costs little, a stripped required one teaches the opposite of the prompt.
-    """
+
+def _named(words, gaps, i):
+    """Whether word i is a name in mid-sentence."""
+    return _addressee(words[i]) and not _opens(words, gaps, i)
+
+
+def _comma_before_addressee(words, gaps, k):
+    """The comma in gap k precedes the person: "Thanks, Marta.", "Can you check this, Sam?",
+    "for you, Maren, about". Up to three name words, joined by spaces, hyphens or "and",
+    after which the address ends, or which a second comma sets off (unless a name before
+    the first comma makes them a list)."""
     n = len(words)
-    if not 0 < k < n:
-        return False
-    named = lambda i: _addressee(words[i]) and not _opens(words, gaps, i)
-    # Word i continues the name before it: "Jean-Luc", "Marta Lopez", "Dr. Okafor".
-    joined = lambda i: gaps[i].strip() in ("", "-") or (gaps[i].strip() == "." and words[i - 1].casefold() in TITLES)
     for m in range(k, min(k + 4, n)):
-        if m > k and not joined(m):
+        if m > k and not _joined(words, gaps, m):
             break
         if m > k and words[m].casefold() == "and" and m + 1 < n and _addressee(words[m + 1]):
             continue
@@ -178,13 +182,22 @@ def _sets_off_addressee(words, gaps, k):
             break
         after = gaps[m + 1]
         # A sentence end, colon, semicolon or line break after the name also closes the address.
-        if m + 1 == n or re.search(r"[.!?:;\n]", after) or ("," in after and not named(k - 1)):
+        if m + 1 == n or re.search(r"[.!?:;\n]", after) or ("," in after and not _named(words, gaps, k - 1)):
             return True
+    return False
+
+
+def _comma_after_addressee(words, gaps, k):
+    """The comma in gap k follows the person: a name that opens its sentence ("Marta, can
+    you send it"), follows greetings or openers ("Hi Marta,", "Okay, so Priya,", "Good
+    morning Marta,"), or is set off on both sides. A sentence-initial name followed by a
+    finite verb is the subject unless the sentence asks or says "you"."""
+    n = len(words)
     p = k - 1
     if not _addressee(words[p]):
         return False
-    while p >= 1 and k - p < 4 and joined(p):  # the name's earlier words: "Dr Patel," "Marta and Sam,"
-        if words[p - 1].casefold() == "and" and p >= 2 and _addressee(words[p - 2]) and joined(p - 1):
+    while p >= 1 and k - p < 4 and _joined(words, gaps, p):  # the name's earlier words: "Dr Patel," "Marta and Sam,"
+        if words[p - 1].casefold() == "and" and p >= 2 and _addressee(words[p - 2]) and _joined(words, gaps, p - 1):
             p -= 2
         elif words[p][:1].isupper() and _addressee(words[p - 1]) and words[p - 1].casefold() not in OPENERS:
             p -= 1
@@ -203,12 +216,20 @@ def _sets_off_addressee(words, gaps, k):
         return bool(asks) or verb not in FINITE
     q = p - 1
     # The label's own comma after an opener ("Okay, so Priya,") does not end the walk.
-    while q >= 0 and words[q].casefold() in OPENERS | GREETING_WORDS and _marks(gaps[q + 1]) in ("", ",") \
+    while q >= 0 and words[q].casefold() in WALK_WORDS and _marks(gaps[q + 1]) in ("", ",") \
             and "\n" not in gaps[q + 1]:
         if _opens(words, gaps, q):
-            return True  # after greetings or openers: "Hi Marta," "Okay, so Priya," "Good morning Marta,"
+            return True
         q -= 1
-    return "," in gaps[p] and p >= 1 and not named(p - 1)  # set off on both sides: "for you, Maren, about"
+    return "," in gaps[p] and p >= 1 and not _named(words, gaps, p - 1)  # set off on both sides
+
+
+def _sets_off_addressee(words, gaps, k):
+    """Whether the comma in gap k sets off a person being addressed. Unsure cases count as
+    addressed: a kept optional comma costs little, a stripped required one teaches the
+    opposite of the prompt."""
+    return 0 < k < len(words) and (_comma_before_addressee(words, gaps, k)
+                                   or _comma_after_addressee(words, gaps, k))
 
 
 def minimal_target(source, target, vocabulary=(), keep=frozenset()):
