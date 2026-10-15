@@ -17,12 +17,12 @@ def stable_tokens(text):
             for m in re.finditer(r"\w+(?:['’]\w+)*", text)]
 
 
-def removes_created_repeat(window, corrected, answer):
+def removes_created_repeat(window, corrected, answer, adjacent=str.isspace):
     """A correction deletion left a non-stutter word twice in a row and the answer drops one."""
     def repeats(text):
         tokens = stable_tokens(text)
         return collections.Counter(b[2] for a, b in zip(tokens, tokens[1:])
-                                   if a[2] == b[2] and text[a[1]:b[0]].isspace())
+                                   if a[2] == b[2] and adjacent(text[a[1]:b[0]]))
     counts = lambda text: collections.Counter(t[2] for t in stable_tokens(text))
     return any(word not in STUTTER_WORDS and counts(answer)[word] < counts(corrected)[word]
                for word in repeats(corrected) - repeats(window))
@@ -124,6 +124,10 @@ def cleanup_agreement(source, offsets, window_range, input_text, answer):
     given, removed = counts(input_text), counts(source[start:end]) - counts(input_text)
     if any(n > given[word] for word, n in counts(answer).items() if removed[word]):
         return "target_uses_deleted_words"
+    # Removing "200 megabytes, sorry" from "past 200 megabytes, sorry, past 300" leaves the
+    # comma between the two "past"; collapsing them is the created repeat capture refuses.
+    if removes_created_repeat(source[start:end], input_text, answer, adjacent=lambda gap: not re.search(r"\w", gap)):
+        return "target_drops_created_repeat"
     return "input_is_label_pre_cleanup"
 
 

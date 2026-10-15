@@ -227,6 +227,16 @@ class ConsistentSupervisionTests(unittest.TestCase):
         self.assertEqual(agree(source, DYE['target']), 'input_is_not_label_pre_cleanup')
         self.assertEqual(agree('Mix 6 liters of dye for the warp.', DYE['target']), 'input_is_not_label_pre_cleanup')
 
+    def test_cleanup_agreement_refuses_collapsing_a_repeat_the_correction_left_behind_a_comma(self):
+        source = 'Set the threshold past 200 megabytes, sorry, past 300 megabytes.'
+        offsets = [list(correction_anchor(source, '200 megabytes, sorry'))]
+        given = 'Set the threshold past , past 300 megabytes.'
+        agree = lambda answer: assemble.cleanup_agreement(source, offsets, (0, len(source)), given, answer)
+        self.assertEqual(agree('Set the threshold past 300 megabytes.'), 'target_drops_created_repeat')
+        self.assertEqual(agree('Set the threshold past, past 300 megabytes.'), 'input_is_label_pre_cleanup')
+        # Capture's own whitespace check, which every build applies, is unchanged.
+        self.assertFalse(assemble.removes_created_repeat(source, given, 'Set the threshold past 300 megabytes.'))
+
 
 class DedupTests(unittest.TestCase):
     SOURCE = 'Please check the north pump and log the pressure reading before noon today.'
