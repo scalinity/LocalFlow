@@ -75,6 +75,17 @@ class BuildTests(unittest.TestCase):
 
 
 
+    def test_build_refuses_a_directory_holding_unfrozen_rows(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_jsonl(root / 'longform' / 'train.jsonl', [row('kept', True)])
+            before = (root / 'longform' / 'train.jsonl').read_bytes()
+            with patch.object(consolidate, 'collect') as collect, \
+                    self.assertRaisesRegex(RuntimeError, 'without a freeze'):
+                consolidate.build(root / 'longform')
+            collect.assert_not_called()
+            self.assertEqual((root / 'longform' / 'train.jsonl').read_bytes(), before)
+
 class RestoredConjunctionTests(unittest.TestCase):
     def test_restoration_applies_the_gold_deletions_and_skips_an_unanchored_line(self):
         row = {'case_id': 'c', 'model_input': 'we booked 16 rooms, sorry 17 rooms and before noon we call the hotel',

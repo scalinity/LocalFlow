@@ -158,6 +158,9 @@ def build(dataset=DATASET, consistent=False):
         if consistent != ("supervision" in freeze):
             raise RuntimeError(f"{dataset} is frozen with the other supervision mode")
         return freeze
+    if (dataset / "train.jsonl").exists():
+        # Without a freeze this may be a source collect reads (longform/train.jsonl); never overwrite it.
+        raise RuntimeError(f"{dataset} holds train.jsonl without a freeze")
     rows, summary = collect()
     source_hashes = {p: file_sha256(ROOT / p) for p in SOURCE_FILES}
     dataset.mkdir(parents=True, exist_ok=True)
