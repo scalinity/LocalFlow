@@ -568,6 +568,7 @@ class VoiceInsightsService:
                 "fraction": round(fraction, 4),
                 "words_remaining": 0 if nxt is None else max(0, nxt - count),
                 "min_local_words": min_local_words(target),
+                "sample_budget": sample_budget(target),
                 "available": unavailable is None,
                 "unavailable_reason": unavailable,
                 "running": self._lock.locked(), "record": record}

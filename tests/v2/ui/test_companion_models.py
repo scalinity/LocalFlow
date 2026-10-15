@@ -249,7 +249,8 @@ def test_voice_write_generates_and_refuses_overlap():
         assert fields["peak_time_top_app"] == "Notes"
         assert set(vp) == {"state", "word_count", "milestone",
                            "next_milestone", "target_milestone", "fraction",
-                           "words_remaining", "min_local_words", "available",
+                           "words_remaining", "min_local_words", "sample_budget",
+                           "available",
                            "unavailable_reason", "running", "record"}
         assert len(calls) == 1
         assert model["profile_note"] is None

@@ -66,7 +66,7 @@
     {:else if sub === 'usage'}
       <Usage {data} rangeDays={ins.range} />
     {:else}
-      <Voice {data} note={ins.note} running={ins.voice_running} />
+      <Voice {data} note={ins.note} running={ins.voice_running} profileNote={ins.profile_note} profileRunning={ins.profile_running} />
     {/if}
   </div>
 </Page>

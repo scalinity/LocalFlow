@@ -242,7 +242,8 @@ def _voice_profile(vp):
         **{k: vp.get(k) for k in (
             "state", "word_count", "milestone", "next_milestone",
             "target_milestone", "fraction", "words_remaining",
-            "min_local_words", "available", "unavailable_reason")},
+            "min_local_words", "sample_budget", "available",
+            "unavailable_reason")},
         "running": bool(vp.get("running")),
         "record": None if rec is None else {
             **{k: rec.get(k) for k in (

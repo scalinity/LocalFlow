@@ -173,8 +173,18 @@ def seed(d, store):
         parts = [SENTENCES[(i * 3 + k) % n] for k in range(4)]
         text = f"note {i + 1}: " + " ".join(parts) + \
             " the parser keeps offsets as code points for the release notes"
-        W.seed_example(store, text.lower(),
-                       captured=iso(now - dt.timedelta(hours=5 * i + 1)))
+        at = now - dt.timedelta(hours=5 * i + 1)
+        ex = W.seed_example(store, text.lower(), captured=iso(at))
+        # Their dictation facts too: the written profile's milestone
+        # counter (ADR-0001) reads dictated words from usage.
+        if d._analytics is not None:
+            app_name, bundle = APPS[i % len(APPS)]
+            d._analytics.record_dictation_fact(
+                job_id=ex["job_id"], activity_at_utc=iso(at),
+                utc_offset_minutes=int(at.utcoffset().total_seconds() // 60),
+                final_words=len(text.split()), raw_words=len(text.split()),
+                app_name=app_name, app_bundle=bundle,
+                insertion_outcome="confirmed")
     store.sync()
     if d._profile is not None:
         try:
@@ -182,6 +192,38 @@ def seed(d, store):
         except Exception as e:
             print("seed skipped: profile", type(e).__name__, e)
     store.sync()
+
+
+def write_synthetic_voice_profile(d):
+    """Your Voice's written profile (ADR-0001) from the seeded speech,
+    through the real service with a stand-in for Claude: original
+    synthetic copy, never the network or a key."""
+    from localflow.v2 import voice_insights as vi
+    if d._profile is None:
+        return
+
+    def synth(payload):
+        return ({"headline": "Turning Notes Into Releases",
+                 "superpower_title": "Release Shepherd",
+                 "superpower_description": (
+                     "You talk work into shape, turning loose notes about the"
+                     " parser and the release into clear next steps across"
+                     " Notes, Mail and Slack."),
+                 "peak_time_description": (
+                     "Late mornings are when you plan out loud, mostly"
+                     " drafting the next release note."),
+                 "catch_phrase": "keeps offsets as code points",
+                 "catch_phrase_description": (
+                     "A small rule you repeat until it sticks, which is how"
+                     " you keep a project consistent."),
+                 "persona": "Organize"}, "claude-opus-synthetic",
+                {"input_tokens": 0, "output_tokens": 0})
+    d._voice_insights = vi.VoiceInsightsService(
+        d.store, d._profile, synthesize=synth, key_reader=lambda: None)
+    try:
+        d._voice_insights.generate()
+    except Exception as e:
+        print("seed skipped: voice profile", type(e).__name__, e)
 
 
 def window_image(win, host, path):
@@ -297,6 +339,7 @@ def main(argv):
             d.store.submit(backup)
             shutil.copytree(h.tmp / "artifacts", support / "v2-artifacts")
             print("synthetic_seed_exported", dest)
+        write_synthetic_voice_profile(d)
         spec, _sounds = W.hub_spec(d)
         spec.update(vocabulary_store=d._vocab, display_name="Alex",
                     prefs_path=h.tmp / "companion.json")
