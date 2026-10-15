@@ -223,13 +223,17 @@ def is_direct_question(sentence):
 
 
 def _sentences(text):
-    """Each sentence of text with the marks of the gap that ends it and that gap's index; a
-    sentence ends at a line break or at . ! ? followed by whitespace."""
+    """Each sentence of text with the marks of the gap that ends it and that gap's index. A
+    sentence ends at a line break or where . ! ? closes a word and whitespace follows, but
+    not at an abbreviation's period ("Dr. Okonkwo"), before a lower-case word ("8 a.m. or
+    at noon") or at a dot standing apart from the word before it ("./build.sh", "-e . in")."""
     words, gaps = _pieces(text)
     out, start = [], 0
     for k in range(1, len(words) + 1):
         gap = gaps[k]
-        if k == len(words) or "\n" in gap or (re.search(r"[.!?]", _marks(gap)) and re.search(r"\s", gap)):
+        if k == len(words) or "\n" in gap or (
+                re.match(r"[^\w\s]*[.!?][^\w\s]*\s", gap) and not words[k][:1].islower()
+                and not (gap.startswith(".") and words[k - 1].casefold() in ABBREVIATIONS)):
             if start < k:
                 out.append(("".join(words[i] + (gaps[i + 1] if i < k - 1 else "") for i in range(start, k)),
                             _marks(gap), k))

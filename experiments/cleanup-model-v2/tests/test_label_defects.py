@@ -167,6 +167,13 @@ class QuestionTests(unittest.TestCase):
             with self.subTest(target=target):
                 self.assertIsNone(defects.question_keeps_period('', target, []))
 
+    def test_a_period_inside_a_sentence_ends_no_question(self):
+        for target in ('Should the speaker be Dr. Okonkwo, in room fourteen?', 'Can we meet at 8 a.m. or at noon?',
+                       'Did you run ./build_sim.sh on the branch?', 'Can you run pip install -e . in the repo root?'):
+            with self.subTest(target=target):
+                self.assertIsNone(defects.question_keeps_period('', target, []))
+        self.assertTrue(defects.question_keeps_period('', 'Dr. Okonkwo is here. Can you check the valve.', []))
+
     def test_a_because_clause_kept_inside_a_question_is_a_defect(self):
         for target in ('Did it pass, because I think the cache is stale?', 'Did it pass because the cache is stale.'):
             with self.subTest(target=target):
