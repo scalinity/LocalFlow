@@ -48,6 +48,10 @@ class SentenceRestatementTests(unittest.TestCase):
             ("Spin at 2,000 g for 15 minutes. Actually, 10 minutes, the amendment cut it.",
              "15 minutes. Actually",
              "Spin at 2,000 g for 10 minutes, the amendment cut it."),
+            # An article before the new value, and a unit that holds a period.
+            ("It is due on the 12th. Sorry, the 14th.", "the 12th. Sorry", "It is due on the 14th."),
+            ("The act starts at 7 a.m. I mean 8 a.m., so we have time.", "7 a.m. I mean",
+             "The act starts at 8 a.m., so we have time."),
             # A restatement that repeats the old value's end joins its sentence.
             ("The report lists 14 duplicate rows in batch C. Sorry, 41 duplicate rows in "
              "batch C, which we flagged.", "14 duplicate rows in batch C. Sorry",
@@ -64,6 +68,11 @@ class SentenceRestatementTests(unittest.TestCase):
              "The meeting is at noon. Sorry"),
             # A parallel value that opens a new predicate.
             ("We counted 4 bugs. Sorry, 6 bugs were reported later.", "4 bugs. Sorry"),
+            # A new value without the old one's unit, or with more after it,
+            # says something new.
+            ("We need 4 chairs. Actually, 6 people RSVPed.", "4 chairs. Actually"),
+            ("We counted 4 bugs. Sorry, 6 testers left.", "4 bugs. Sorry"),
+            ("The meeting is on Friday. Sorry, Thursday works better.", "on Friday. Sorry"),
             # A noun the next sentence names again is no typed value.
             ("Finish before the door test. I mean the cable test can wait.",
              "before the door test. I mean"),

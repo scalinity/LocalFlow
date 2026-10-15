@@ -272,9 +272,10 @@ a longer sentence takes a restatement that repeats the old value's end
 and closes within one word after the restated copy (`lists 14 duplicate
 rows in batch C. No wait, 41 duplicate rows in batch C, which …`), or a
 typed value of the same kind (numbers, ordinals, weekdays, months) after
-an old value of at most three words, closing within one word more than
-the old value and opening no predicate (`The first act starts at 7:40. I
-mean 8:40, so …`). A noun the next sentence names again proves nothing
+an old value of at most three words, repeating the old value's unit and
+closing its clause right there (`The first act starts at 7:40. I mean
+8:40, so …`; `for 15 minutes. Actually, 10 minutes, …`; but not `We need
+4 chairs. Actually, 6 people RSVPed`). A noun the next sentence names again proves nothing
 (`the blue folder on the counter. Actually, the blue folder is only for
 returns`). A question or exclamation, a second sentence end inside the
 span, and a quoted pair stay separate sentences.

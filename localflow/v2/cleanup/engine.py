@@ -662,9 +662,9 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
     sentence with a restatement that repeats the old value's end and closes
     within one word after the restated copy, or with a typed value of the
     same kind (numbers, ordinals, weekdays, months) when the old value is at
-    most three words, closing within one word more than the old value and
-    opening no predicate. Only one period, right after the old value, may
-    lie inside the span.
+    most three words: the new value repeats the words after the old one
+    (its unit) and closes its clause right there. Only one period, right
+    after the old value, may lie inside the span.
     """
     text, s, ms, e = n.text, n.start, n.marker, n.end
     old = text[s:ms].rstrip()
@@ -683,15 +683,19 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
         # The restated copy itself closes the clause it joins.
         return _replacement_closes_within(n, shape.head + shape.replacing + shape.tail + 1)
     old_words = [w.rstrip(".") for w in n.old_words]
-    new_words = list(n.new_words[1:] if n.new_words[:1] and n.new_words[0] in _ARTICLES
-                     else n.new_words)
-    typed = (bool(old_words) and len(old_words) <= SENTENCE_FINAL_VALUE_MAX_WORDS
-             and bool(new_words) and (
-        (any(is_value_word(w) for w in old_words) and is_value_word(new_words[0]))
-        or any(w in cls and new_words[0] in cls for cls in (_WEEKDAYS, _MONTHS)
-               for w in old_words)))
-    return (typed and _replacement_closes_within(n, len(n.old_words) + 1)
-            and not _replacement_opens_predicate(n))
+    article = bool(n.new_words[:1]) and n.new_words[0] in _ARTICLES
+    new_words = [w.rstrip(".") for w in n.new_words[article:]]
+    if not old_words or len(old_words) > SENTENCE_FINAL_VALUE_MAX_WORDS or not new_words:
+        return False
+    typed = [i for i, w in enumerate(old_words)
+             if (is_value_word(w) and is_value_word(new_words[0]))
+             or any(w in cls and new_words[0] in cls for cls in (_WEEKDAYS, _MONTHS))]
+    # The new value takes the old one's unit and ends its clause there:
+    # "15 minutes. Actually, 10 minutes, the amendment cut it", where "4
+    # chairs. Actually, 6 people RSVPed" says something new.
+    unit = old_words[typed[-1] + 1:] if typed else None
+    return (unit is not None and new_words[1:1 + len(unit)] == unit
+            and _replacement_closes_within(n, article + 1 + len(unit)))
 
 
 def _replacement_adds(n: Neighbourhood) -> bool:
