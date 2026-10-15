@@ -499,6 +499,9 @@ class _AuthCtx:
     # First copies of incomplete openings actually deleted by this output.
     # Their words also leave the novelty budget; identity grants no spans.
     restart_spans: list = field(default_factory=list)
+    # Correction triples the output resolved by keeping an exact
+    # restatement (also in correction_spans).
+    restated_value_spans: list = field(default_factory=list)
 
 
 def _vocabulary_authorizations(source: str, output: str, pairs) -> tuple:
@@ -1112,10 +1115,28 @@ def _word_multiset_survival(source, output, words: frozenset,
     exactly: none lost, none added (adding "not" flips polarity as surely
     as dropping it). Apostrophe-stripped atoms make "dont"/"don't" the
     same word. A correction's marker ("no wait", "no I mean") is not
-    content."""
-    markers = [(_marker_run_start(source, c), c[1]) for c in ctx.correction_spans]
-    src = [(s, e, w) for s, e, w in _word_atoms(source)
-           if w in words and not _overlaps(markers, s, e)]
+    content, and a marked word in an admitted correction's old value is
+    not lost when the replacement restates it ("about 45 minutes, no
+    sorry, about 50 minutes"); a correction that drops one still fails."""
+    atoms = _word_atoms(source)
+    markers, restated = [], set()
+    for correction in ctx.correction_spans:
+        start, end = correction[0], correction[1]
+        marker = _marker_run_start(source, correction)
+        markers.append((marker, end))
+        if correction in ctx.restated_value_spans:
+            continue
+        old = [a for a in atoms if start <= a[0] and a[1] <= marker]
+        stop = re.search(r"[.!?](?=\s|$)|\n", source[end:])
+        limit = end + stop.start() if stop else len(source)
+        replacement = Counter([a[2] for a in atoms
+                               if end <= a[0] and a[1] <= limit][:len(old) + 2])
+        for a in old:
+            if a[2] in words and replacement[a[2]] > 0:
+                replacement[a[2]] -= 1
+                restated.add(a[0])
+    src = [(s, e, w) for s, e, w in atoms
+           if w in words and not _overlaps(markers, s, e) and s not in restated]
     remaining = Counter(w for _, _, w in _word_atoms(output) if w in words)
     missing = []
     for s, e, w in src:
@@ -1468,7 +1489,8 @@ def _auth_context(source, output, vocabulary_pairs, continued_list_start,
                     enum_spans=enum_spans,
                     vocab_spans=vocab_spans, vocab_allowance=allowance,
                     continued_list_start=continued_list_start)
-    ctx.correction_spans += _restated_value_spans(source, output, ctx)
+    ctx.restated_value_spans = _restated_value_spans(source, output, ctx)
+    ctx.correction_spans += ctx.restated_value_spans
     ctx.restart_spans = _incomplete_restart_spans(source, output, ctx)
     return ctx
 
