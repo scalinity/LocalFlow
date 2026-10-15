@@ -14,10 +14,12 @@ q and k arrive already RMS-normalized and scaled by the caller
 (``qwen3_5.GatedDeltaNet``), so no l2norm or 1/sqrt(d) is applied here.
 
 Only the training path (``use_kernel=False``) is replaced; inference keeps the
-stock Metal kernel.
+stock Metal kernel unless LFX_EVAL_GDN=chunked (see ``patch_qwen3_5``).
 """
 
 from __future__ import annotations
+
+import os
 
 import mlx.core as mx
 import mlx.nn as nn
@@ -124,14 +126,17 @@ def gated_delta_update_chunked(q, k, v, a, b, A_log, dt_bias, state=None, mask=N
 
 def patch_qwen3_5() -> None:
     """Replace the training branch of ``mlx_lm.models.qwen3_5.gated_delta_update``
-    (the module global called by GatedDeltaNet). Inference is untouched."""
+    (the module global called by GatedDeltaNet). Inference is untouched unless
+    LFX_EVAL_GDN=chunked."""
     import mlx_lm.models.qwen3_5 as q35
     if getattr(q35.gated_delta_update, "_lfx_chunked", False):
         return
     original = q35.gated_delta_update
+    # LFX_EVAL_GDN=chunked: eval-mode calls (prefix caches, validation) take the chunked path too; off the Mac they otherwise run mlx_lm's per-token loop.
+    eval_chunked = os.environ.get("LFX_EVAL_GDN") == "chunked"
 
     def patched(q, k, v, a, b, A_log, dt_bias, state=None, mask=None, use_kernel=True):
-        if use_kernel:
+        if use_kernel and not eval_chunked:
             return original(q, k, v, a, b, A_log, dt_bias, state, mask, use_kernel=True)
         return gated_delta_update_chunked(q, k, v, a, b, A_log, dt_bias, state, mask)
 
