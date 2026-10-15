@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
-from localflow.v2.cleanup.engine import parse_correction_output
+from localflow.v2.cleanup.engine import _rejected_spans, parse_correction_output
 
 
 def reasons(proposal, source):
@@ -43,6 +43,21 @@ class TokenBoundaryTests(unittest.TestCase):
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([proposal], []))
+
+    def test_a_rejected_span_is_located_on_token_boundaries_too(self):
+        # The restore of rejected corrections must not find the span inside
+        # the token that admission refused to split.
+        for source, proposal in (
+            ("The run takes 1.5 hours, sorry, 2.5 hours per batch.", "5 hours, sorry"),
+            ("Order 1,500 meters, no, 1,800 meters of cable.", "500 meters, no"),
+        ):
+            with self.subTest(proposal=proposal):
+                _accepted, rejected = parse_correction_output(proposal, source, [])
+                self.assertEqual(_rejected_spans(source, rejected, []), [])
+        source = "The run takes 1.5 hours, sorry, 2.5 hours per batch, maybe 3."
+        _accepted, rejected = parse_correction_output("2.5 hours per batch, maybe", source, [])
+        self.assertEqual(_rejected_spans(source, rejected, []),
+                         [(source.index("2.5"), source.index("2.5") + len("2.5 hours per batch, maybe"))])
 
 
 if __name__ == "__main__":

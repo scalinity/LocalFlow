@@ -882,6 +882,20 @@ def _quantity_proposal(delete: str) -> bool:
     return bool(marker and quantity_shaped(delete[:marker.start()].rstrip(" \t,;:")))
 
 
+def _occurrences(text: str, delete: str) -> list:
+    """Where ``delete`` occurs in ``text`` as a whole span.
+
+    Case-insensitive matching on the ORIGINAL text: re.IGNORECASE folds per
+    position, so match offsets stay valid in the original string
+    (str.lower() is not length-preserving for all code points and would
+    shift offsets). A span starts and ends on a token boundary: never right
+    after a character that joins a token ("/shop/pipes/voicing_A.md",
+    "1.5", "--format=stl") nor right before one ("no-show").
+    """
+    return list(re.finditer(rf"(?<![\w{_TOKEN_JOINERS}])(?<!\w[.:])(?<!\d,)" + re.escape(delete)
+                            + rf"(?![\w{_TOKEN_JOINERS}]|[.:]\w)", text, re.IGNORECASE))
+
+
 def parse_correction_output(output: str, window_text: str,
                             protected_spans: list,
                             limit_hit: bool = False) -> tuple[list, list]:
@@ -904,16 +918,7 @@ def parse_correction_output(output: str, window_text: str,
                     for d in lines]
 
     def occurrences(delete):
-        # Case-insensitive matching on the ORIGINAL text: re.IGNORECASE
-        # folds per position, so match offsets stay valid in the
-        # original string (str.lower() is not length-preserving for all
-        # code points and would shift offsets). A span starts and ends on a
-        # token boundary: never right after a character that joins a token
-        # ("/shop/pipes/voicing_A.md", "1.5", "--format=stl") nor right
-        # before one ("no-show").
-        return list(re.finditer(rf"(?<![\w{_TOKEN_JOINERS}])(?<!\w[.:])(?<!\d,)" + re.escape(delete)
-                                + rf"(?![\w{_TOKEN_JOINERS}]|[.:]\w)",
-                                window_text, re.IGNORECASE))
+        return _occurrences(window_text, delete)
 
     proposed = {}
     for d in lines:
@@ -1029,13 +1034,13 @@ def parse_correction_output(output: str, window_text: str,
 
 def _rejected_spans(text: str, rejected: list, accepted: list) -> list:
     """Source spans of rejected proposals that resolve to one exact place,
-    clear of the admitted corrections."""
+    on token boundaries as admission resolves them, clear of the admitted
+    corrections."""
     spans = []
     for proposal in rejected:
         span = proposal.span
         if span is None and proposal.delete:
-            found = [m.span() for m in re.finditer(
-                r"(?<!\w)" + re.escape(proposal.delete) + r"(?!\w)", text, re.IGNORECASE)]
+            found = [m.span() for m in _occurrences(text, proposal.delete)]
             span = found[0] if len(found) == 1 else None
         if span is not None and not any(
                 a < span[1] and b > span[0]
