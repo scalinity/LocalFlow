@@ -12,6 +12,7 @@ from __future__ import annotations
 import difflib
 import re
 
+from .policy_score import LIST_LINE
 from .strict_score import FILLERS
 
 WORD = re.compile(r"\w+(?:['’]\w+)*")
@@ -28,7 +29,6 @@ SPOKEN_PUNCTUATION = {"slash", "dot", "dash", "hyphen", "underscore", "colon", "
                       "semicolon", "backslash", "hash", "asterisk", "plus", "minus", "equals", "pipe",
                       "tilde", "quote", "unquote", "bracket", "paren", "bullet", "ampersand"}
 SEQUENCE_WORDS = {"then", "after", "that", "next", "finally", "lastly", "and"}
-LIST_TARGET = re.compile(r"(^|\n)[ \t]*(\d+[.)]|[-•*])[ \t]")
 
 
 def _filler(word):
@@ -122,7 +122,7 @@ def drops_dictated_word(source, target, offsets, vocabulary_pairs=()):
     """The target deletes a word of the pre-cleanup text that no permitted edit
     explains. With a correction marker in the run, the label applied a
     correction no gold line lists."""
-    listy = LIST_TARGET.search(target) is not None
+    listy = LIST_LINE.search(target) is not None
     dropped = []
     for tag, removed, _added in _word_edits(source, target, offsets, vocabulary_pairs):
         rest = [w for w in removed if not _filler(w)]
@@ -204,7 +204,7 @@ def restore_split_conjunctions(source, target, offsets, vocabulary_pairs=()):
     give the next word its pre-cleanup case. Returns the restored target, or
     None when there is no such drop or another dropped word would remain. A
     list target is never restored: its dropped 'and' is a list conversion."""
-    if LIST_TARGET.search(target):
+    if LIST_LINE.search(target):
         return None
     pre = remove_spans(source, offsets)
     a, b = _tokens(pre), _tokens(target)

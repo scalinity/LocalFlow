@@ -120,7 +120,8 @@ def cleanup_agreement(source, offsets, window_range, input_text, answer):
     spans = [(s - start, e - start) for s, e in offsets if start <= s and e <= end]
     if remove_spans(input_text, []) != remove_spans(source[start:end], spans):
         return "input_is_not_label_pre_cleanup"
-    counts = lambda text: collections.Counter(t[2] for t in stable_tokens(text))
+    # Fold the curly apostrophe as the label rules do, so a deleted "don’t" written back as "don't" counts.
+    counts = lambda text: collections.Counter(t[2].replace("’", "'") for t in stable_tokens(text))
     given, removed = counts(input_text), counts(source[start:end]) - counts(input_text)
     if any(n > given[word] for word, n in counts(answer).items() if removed[word]):
         return "target_uses_deleted_words"

@@ -237,6 +237,13 @@ class ConsistentSupervisionTests(unittest.TestCase):
         # Capture's own whitespace check, which every build applies, is unchanged.
         self.assertFalse(assemble.removes_created_repeat(source, given, 'Set the threshold past 300 megabytes.'))
 
+    def test_cleanup_agreement_folds_the_curly_apostrophe_of_a_deleted_word(self):
+        source = 'Please don’t ship it sorry ship it today.'
+        offsets = [list(correction_anchor(source, 'don’t ship it sorry'))]
+        agree = assemble.cleanup_agreement(source, offsets, (0, len(source)), 'Please ship it today.',
+                                           "Please don't ship it today.")
+        self.assertEqual(agree, 'target_uses_deleted_words')
+
 
 class DedupTests(unittest.TestCase):
     SOURCE = 'Please check the north pump and log the pressure reading before noon today.'
