@@ -10,6 +10,19 @@ exact LocalFlow engine prompts captured for both call roles.
 * One example per micro-batch (no packing, no truncation), gradient
   accumulation, global-norm clipping, fixed seeds, checkpoints at fractions of
   the run, validation loss on a fixed subset.
+
+Known approximations of full-sequence fine-tuning, kept as trained:
+
+* The shared prefix (system prompt and few-shot turns) is run under the
+  current weights outside autodiff. Its states are forward-exact but enter
+  the loss as constants, so adapter weights receive gradient only through
+  the per-example suffix positions, never through the prefix states.
+* The loss is a per-example mean over response tokens and accumulation
+  averages those means, so every example weighs the same: a long window's
+  tokens each count for less than a short window's.
+* Blocks share one prefix, so a prefix group's last block can hold fewer
+  than ``grad_accum`` examples. It is averaged over its own size and still
+  takes a full optimizer step and schedule position.
 """
 
 from __future__ import annotations
@@ -231,6 +244,7 @@ def cached_response_loss(model, suffix, cache, off_s: int):
     sel = hidden[:, off_s - 1: S - 1]
     logits = lm.model.embed_tokens.as_linear(sel) if lm.args.tie_word_embeddings else lm.lm_head(sel)
     ce = nn.losses.cross_entropy(logits.astype(mx.float32), suffix[:, off_s:S])
+    # Per-example mean: see the module docstring's known approximations.
     return ce.sum() / (S - off_s), mx.array(S - off_s)
 
 
@@ -326,6 +340,7 @@ def train_loop(model, tokenizer, train_examples: list[dict], val_examples: list[
             window_loss += lv
             window_n += 1
             tok_count += it["n_tokens"]
+        # A short final block of a prefix group is still one full update.
         accum = tree_map(lambda g: g / len(block), accum)
         gnorm = global_norm(accum)
         if not math.isfinite(gnorm):
