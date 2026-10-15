@@ -827,15 +827,19 @@ def _only_starts_clause(source, atoms, only_index):
     return False
 
 
-def restore_restriction_punctuation(source: str, output: str, **kwargs) -> str | None:
+def restore_restriction_punctuation(source: str, output: str, *,
+                                    vocabulary_pairs: tuple | None = None,
+                                    continued_list_start: int | None = None,
+                                    correction_spans: list | None = None,
+                                    protected_positions: list | None = None
+                                    ) -> str | None:
     """Remove only a new break that detached a restriction or conjunction.
 
     All other model edits remain candidates for full validation. This
     restores the source's attachment without guessing a new sentence break.
     """
-    ctx = _auth_context(source, output, kwargs.get("vocabulary_pairs"),
-                        kwargs.get("continued_list_start"), kwargs.get("correction_spans"),
-                        kwargs.get("protected_positions"))
+    ctx = _auth_context(source, output, vocabulary_pairs, continued_list_start,
+                        correction_spans, protected_positions)
     aligned = _align(source, output, ctx)
     breaks = (_restriction_breaks(source, output, aligned)
               + _dangling_conjunction_breaks(source, output, aligned, ctx))
