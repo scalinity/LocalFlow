@@ -12,7 +12,7 @@ from __future__ import annotations
 import difflib
 import re
 
-from .policy_score import ABBREVIATIONS, LIST_LINE, NUMBERED_LINE, _marks, _pieces
+from .policy_score import ABBREVIATIONS, LIST_LINE, NUMBERED_LINE, _aligned_gaps, _marks, _pieces, _split
 from .strict_score import FILLERS
 
 WORD = re.compile(r"\w+(?:['’]\w+)*")
@@ -223,8 +223,8 @@ def is_direct_question(sentence):
 
 
 def _sentences(text):
-    """Each sentence of text with the marks of the gap that ends it; a sentence ends at a
-    line break or at . ! ? followed by whitespace."""
+    """Each sentence of text with the marks of the gap that ends it and that gap's index; a
+    sentence ends at a line break or at . ! ? followed by whitespace."""
     words, gaps = _pieces(text)
     out, start = [], 0
     for k in range(1, len(words) + 1):
@@ -232,7 +232,7 @@ def _sentences(text):
         if k == len(words) or "\n" in gap or (re.search(r"[.!?]", _marks(gap)) and re.search(r"\s", gap)):
             if start < k:
                 out.append(("".join(words[i] + (gaps[i + 1] if i < k - 1 else "") for i in range(start, k)),
-                            _marks(gap)))
+                            _marks(gap), k))
             start = k
     return out
 
@@ -240,25 +240,35 @@ def _sentences(text):
 def question_keeps_period(source, target, offsets, vocabulary_pairs=()):
     """A direct question or a "Can/Could/Would/Will you" request the target ends with a
     period. The prompt asks for question punctuation and every development label ends such
-    a sentence with "?"; a label keeping the dictation's period teaches the opposite."""
-    hits = [s for s, end in _sentences(target) if "." in end and "?" not in end and is_direct_question(s)]
+    a sentence with "?"; a label keeping the dictation's period teaches the opposite. A no-op
+    label decided nothing and is never excluded: it teaches leaving readable text alone."""
+    if target == source:
+        return None
+    hits = [s for s, end, _k in _sentences(target) if "." in end and "?" not in end and is_direct_question(s)]
     return {"reason": "question_keeps_period", "sentences": hits} if hits else None
 
 
 def question_keeps_because_clause(source, target, offsets, vocabulary_pairs=()):
     """A direct question that keeps a because-clause after it in the same sentence ("did it
     pass, because I think the cache is stale?"). Development labels end the question and
-    start the clause anew ("Did it pass? Because I think the cache is stale.")."""
-    hits = [s for s, _end in _sentences(target)
-            if BECAUSE_CLAUSE.search(s, 1) and is_direct_question(s)]
+    start the clause anew ("Did it pass? Because I think the cache is stale."). Only what the
+    label decided counts: never a no-op label, and never a "?" the source already had."""
+    if target == source:
+        return None
+    source_words, source_gaps = _split(source)
+    aligned = _aligned_gaps(source_words, _split(target)[0])
+    copied = lambda end, k: "?" in end and k in aligned and "?" in _marks(source_gaps[aligned[k]])
+    hits = [s for s, end, k in _sentences(target)
+            if BECAUSE_CLAUSE.search(s, 1) and is_direct_question(s) and not copied(end, k)]
     return {"reason": "question_keeps_because_clause", "sentences": hits} if hits else None
 
 
 def step_labels_kept_as_prose(source, target, offsets, vocabulary_pairs=()):
     """Two or more consecutive spoken step labels ("step 1 ... step 2", "step one ... step
     two") that the target keeps as prose. The prompt makes such steps a numbered list; "the
-    next step is" and "a step back" carry no number and are not step labels."""
-    if NUMBERED_LINE.search(target):
+    next step is" and "a step back" carry no number and are not step labels. A no-op label
+    decided nothing and is never excluded."""
+    if target == source or NUMBERED_LINE.search(target):
         return None
     numbers = [int(m.group(1)) if m.group(1).isdigit() else NUMBER_WORDS[m.group(1).casefold()]
                for m in STEP_LABEL.finditer(source)]

@@ -176,6 +176,21 @@ class QuestionTests(unittest.TestCase):
             with self.subTest(target=target):
                 self.assertIsNone(defects.question_keeps_because_clause('', target, []))
 
+    def test_only_what_the_label_decided_counts(self):
+        # A no-op label decided nothing: it teaches leaving readable text alone.
+        noop = 'Step 1, check the valve. Step 2, can you log it, because it drifts.'
+        for rule in (defects.step_labels_kept_as_prose, defects.question_keeps_period,
+                     defects.question_keeps_because_clause):
+            with self.subTest(rule=rule.__name__):
+                self.assertIsNone(rule(noop, noop, []))
+        # A "?" the source already had is copied, not decided; one the label added is decided.
+        self.assertIsNone(defects.question_keeps_because_clause(
+            'ok did it pass because the cache is stale?', 'Okay did it pass because the cache is stale?', []))
+        self.assertTrue(defects.question_keeps_because_clause(
+            'ok did it pass because the cache is stale', 'Okay did it pass because the cache is stale?', []))
+        # A period the label kept on a question in a repair is still the label's decision.
+        self.assertTrue(defects.question_keeps_period('ok can you check the valve.', 'Okay can you check the valve.', []))
+
 
 class UnexplainedRewriteTests(unittest.TestCase):
     def test_vocabulary_digit_and_joined_word_conversions_are_explained(self):
