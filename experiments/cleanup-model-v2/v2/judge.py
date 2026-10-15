@@ -110,10 +110,11 @@ def run(cases_file,models,prefix='final',name='final-judge',role=None,model=None
             'system':[{'type':'text','text':SYSTEM,'cache_control':{'type':'ephemeral'}}],
             'messages':[{'role':'user','content':json.dumps(view,ensure_ascii=False)}],
             'output_config':{'effort':'low','format':{'type':'json_schema','schema':SCHEMA}}}
+    # The wave refuses a changed request set; only then may the receipts change.
+    w=wave(name,requests,lambda t:json.loads(t)['verdicts'],model,'judging')
     write_json(output_dir/'blind-map.json',request_map)
     write_json(output_dir/'identity.json',{'cases_sha256':file_sha256(Path(cases_file)),
                'models':models,'prefix':prefix,'role':role,'judge_model':model,'created':utc_now()})
-    w=wave(name,requests,lambda t:json.loads(t)['verdicts'],model,'judging')
     w.run(chunk=200)
     verdicts=valid_verdicts(w.outcomes,request_ids)
     # A valid JSON response can still omit an output. Reassess only missing IDs;
