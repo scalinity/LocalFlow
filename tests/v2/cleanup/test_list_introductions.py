@@ -38,6 +38,11 @@ class ListIntroductionTests(unittest.TestCase):
              "The camping gear list is:\n- a tent\n- 2 sleeping bags\n- a camp stove"),
             ("the supply list are gloves, tape, and two lamps",
              "The supply list are:\n- gloves\n- tape\n- two lamps"),
+            # A title's period does not end the introduction's sentence.
+            ("Orla met the dean today. Here is a list from Dr. Lee of gift ideas a scarf a candle "
+             "set and a puzzle box.",
+             "Orla met the dean today. Here is a list from Dr. Lee of gift ideas:\n- a scarf\n"
+             "- a candle set\n- a puzzle box"),
         ):
             with self.subTest(source=source):
                 self.assertEqual(failures(source, output), set())

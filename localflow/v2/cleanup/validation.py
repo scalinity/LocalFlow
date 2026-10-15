@@ -402,7 +402,8 @@ def _introduced_list_join_spans(source: str, output: str) -> list:
                 or not isinstance(group, dn.ListGroup) or group.ordered
                 or len(group.items) < 2 or not intro.render().rstrip().endswith(":")):
             continue
-        sentence = re.split(r"(?<=[.!?])\s+", intro.render().strip())[-1]
+        text = intro.render().strip()
+        sentence = text[max((b for _a, b in _sentence_ends(text)), default=0):]
         head = [w for _s, _e, w in _word_atoms(sentence)]
         pairs = list(zip(head, head[1:]))
         if "list" not in head or not (
