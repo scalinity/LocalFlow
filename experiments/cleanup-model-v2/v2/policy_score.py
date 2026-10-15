@@ -221,9 +221,9 @@ def minimal_target(source, target, vocabulary=(), keep=frozenset()):
     follows a date, place or number convention; every other added comma reverts. The
     revert applies at an aligned gap the source left unpunctuated on one line, where
     score() never requires the comma: after a sentence-opening discourse word it
-    always reverts (opening_discourse_comma), elsewhere it reverts (optional_gap_comma)
-    unless keep holds the source gap's index or the comma sets off an addressed
-    person. Commas the dictation already had are never touched. A label that turns
+    reverts (opening_discourse_comma) unless it is the only comma setting off an
+    addressee ("Yes, Marta."), elsewhere it reverts (optional_gap_comma) unless keep
+    holds the source gap's index or the comma sets off an addressed person. Commas the dictation already had are never touched. A label that turns
     spoken ordinals into a list without step labels or a list introduction, or into a
     numbered list without spoken step labels, that numbers an introduced list of items,
     or that adds a word the speaker did not say, is excluded rather than rewritten.
@@ -256,8 +256,13 @@ def minimal_target(source, target, vocabulary=(), keep=frozenset()):
         opens_sentence = k == 1 or (k >= 2 and re.search(r"[.!?\n]", gaps[k - 1]))
         if not _marks(s) and _marks(t) == ",":
             if k >= 1 and target_words[k - 1] in DISCOURSE and opens_sentence:
-                t = t.replace(",", "", 1)
-                changes.append("opening_discourse_comma")
+                end = k  # the addressee's last word: "Marta Lopez", "Jean-Luc"
+                while end + 1 < len(words) and label_gaps[end + 1].strip() in ("", "-") and _addressee(words[end + 1]):
+                    end += 1
+                # "Okay Dana, these are" keeps the comma after the name; "Yes, Marta." has only this one.
+                if not (_sets_off_addressee(words, label_gaps, k) and "," not in label_gaps[end + 1]):
+                    t = t.replace(",", "", 1)
+                    changes.append("opening_discourse_comma")
             # The label's own gap decides: a comma it gave a line break stays though the break reverted.
             elif "\n" not in s + label_gaps[k] and j not in keep and not _sets_off_addressee(words, label_gaps, k):
                 # A comma between two touching words reverts to the source gap, keeping them two words.

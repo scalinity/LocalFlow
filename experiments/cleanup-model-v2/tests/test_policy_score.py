@@ -151,6 +151,9 @@ class MinimalTargetTests(unittest.TestCase):
                 ("thanks marta", "Thanks, Marta."),
                 ("can you check this sam", "Can you check this, Sam?"),
                 ("thanks everyone", "Thanks, everyone."),
+                ("yes marta", "Yes, Marta."),
+                ("okay sam", "Okay, Sam?"),
+                ("right everyone", "Right, everyone."),
                 ("marta can you send it", "Marta, can you send it?"),
                 ("dr patel can you sign it", "Dr Patel, can you sign it?"),
                 ("team the proofs are back", "Team, the proofs are back."),
@@ -236,7 +239,7 @@ class MinimalTargetTests(unittest.TestCase):
         self.assertEqual(policy_score.minimal_target(source, target, keep=frozenset()),
                          policy_score.minimal_target(source, target))
 
-    def test_the_opening_discourse_revert_is_unconditional(self):
+    def test_the_opening_discourse_revert_ignores_keep_and_spares_only_a_sole_addressee_comma(self):
         got = policy_score.minimal_target("okay so run the batch then inspect it",
                                           "Okay, so run the batch, then inspect it.", keep={1, 5})
         self.assertEqual(got, ("Okay so run the batch, then inspect it.", ["opening_discourse_comma"], None))
