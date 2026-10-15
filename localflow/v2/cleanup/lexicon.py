@@ -9,6 +9,7 @@ that checks it.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 
 # Words the clean contract may always drop (pure fillers; V1's set —
 # "you know" and "like" are content and stay).
@@ -61,6 +62,10 @@ def alternation(words) -> str:
     """A regex alternation of ``words``, longest first."""
     return "|".join(sorted(words, key=lambda w: (-len(w), w)))
 
+
+# Where a replacement value's clause ends: the end of the text, a comma,
+# semicolon or line break, or sentence punctuation before a space.
+CLAUSE_END = r"[ \t]*(?:$|[,;\n]|[.!?](?=\s|$))"
 
 IDENTIFIER_TOKEN_RE = re.compile(
     r"(?<!\w)[A-Za-z_]\w*_\w+(?!\w)"
@@ -144,3 +149,46 @@ def quoted_regions(text: str) -> list[tuple[int, int]]:
 
 def touches(regions, start: int, end: int) -> bool:
     return any(a <= end and b >= start for a, b in regions)
+
+
+@dataclass(frozen=True)
+class Neighbourhood:
+    """The source around one marker-terminated deletion, parsed once.
+
+    ``text[start:marker]`` is the old value and ``text[marker:end]`` its
+    marker. ``old_words`` are the old value's words and ``new_words`` the
+    first four words after the marker in the same sentence, lowercased
+    with separators stripped. ``frame`` is a frame word that leads both
+    ("with 4 liters of dye, sorry, with 6 liters"). ``closed`` says the
+    replacement value, after that frame and one article, ends its clause:
+    ``as fine.`` and ``record_cache,`` close, while ``as soon as the bank
+    confirms`` and ``worker_b is running`` continue into a clause the
+    deletion would rewrite.
+    """
+    text: str
+    start: int
+    marker: int
+    end: int
+    old_words: tuple
+    new_words: tuple
+    frame: str | None
+    closed: bool
+
+
+def _words(text: str) -> tuple:
+    return tuple(w for token in text.split() if (w := token.lower().strip(",;:")))
+
+
+def neighbourhood(text: str, span: tuple, marker: int) -> Neighbourhood:
+    start, end = span
+    tail = text[end:]
+    stop = re.search(r"[.!?](?:\s|$)|\n", tail)
+    old_words = _words(text[start:marker])
+    new_words = _words(tail[:stop.start()] if stop else tail)[:4]
+    frame = (old_words[0] if old_words and new_words[:1] == old_words[:1]
+             and old_words[0] in FRAME_WORDS else None)
+    head = r"[ \t,;:]*"
+    if frame:
+        head += re.escape(frame) + r"[ \t]+(?:(?:a|an|the)[ \t]+)?"
+    closed = re.match(head + r"\S+?" + CLAUSE_END, tail, re.IGNORECASE) is not None
+    return Neighbourhood(text, start, marker, end, old_words, new_words, frame, closed)

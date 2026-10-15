@@ -27,9 +27,10 @@ from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
-from .lexicon import (FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
+from .lexicon import (CLAUSE_END, FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
                       FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER, NUMBER, NUMBER_WORDS,
-                      POSITIVE_NUMBER, SCALE_WORDS, TECH_TOKEN_RE, alternation)
+                      POSITIVE_NUMBER, SCALE_WORDS, TECH_TOKEN_RE, Neighbourhood,
+                      alternation, neighbourhood)
 from .correction_retention import (AdmittedCorrection, correction_view,
                                    qualifier_retention, repeated_restart)
 from .validation import (validate, restore_missing_words,
@@ -479,47 +480,31 @@ def _is_value_word(w: str) -> bool:
 _METRIC_LENGTH = re.compile(rf"{NUMBER}[ \t]+{METER}s?", re.IGNORECASE)
 
 
-def _parallel_metric_lengths(source: str, span: tuple, marker: int) -> bool:
+def _parallel_metric_lengths(n: Neighbourhood) -> bool:
     """Recognize a closed pair of numeric values in one known unit family.
 
     Different metric prefixes may accompany the corrected number. Neither
     extra old descriptions nor an unbounded replacement clause qualifies.
     """
-    start, end = span
-    old = source[start:marker].strip(" \t,;:")
+    old = n.text[n.start:n.marker].strip(" \t,;:")
     if not _METRIC_LENGTH.fullmatch(old):
         return False
-    tail = source[end:].lstrip(" \t,")
+    tail = n.text[n.end:].lstrip(" \t,")
     new = _METRIC_LENGTH.match(tail)
-    return new is not None and bool(re.match(
-        r"[ \t]*(?:$|[,;.!?\n])", tail[new.end():]))
+    return new is not None and bool(re.match(CLAUSE_END, tail[new.end():]))
 
 
-def _closed_single_replacement(text: str, end: int, frame: str | None = None) -> bool:
-    """The replacement after the marker is one value that ends its clause.
-
-    ``as fine.`` and ``record_cache,`` close. ``as soon as the bank
-    confirms`` and ``worker_b is running`` continue into a clause the
-    deletion would rewrite, so a shape test on their first word proves
-    nothing. A repeated frame word and one article may precede the value.
-    """
-    head = r"[ \t,;:]*"
-    if frame:
-        head += re.escape(frame) + r"[ \t]+(?:(?:a|an|the)[ \t]+)?"
-    return re.match(head + r"\S+?[ \t]*(?:$|[,;\n]|[.!?](?=\s|$))",
-                    text[end:], re.IGNORECASE) is not None
-
-
-def _parallel(x_words: list, y_words: list, text: str, end: int) -> bool:
+def _parallel(n: Neighbourhood) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
     both months, or they share a content word ("two engineers … three
-    engineers"). ``text[end:]`` is the source after the marker."""
+    engineers")."""
+    x_words, y_words = list(n.old_words), list(n.new_words)
     if not x_words or not y_words:
         return False
     # Repeated predicative frame: ``as suspect, actually, as fine``.
     # The old complement is one value, optionally with an article; an
     # extra clause such as ``as suspect and notify Mira`` is not a value.
-    if x_words[0] == y_words[0] == "as" and _closed_single_replacement(text, end, "as"):
+    if n.frame == "as" and n.closed:
         old = x_words[1:]
         new = y_words[1:]
         if old[:1] and old[0] in {"a", "an", "the"}:
@@ -529,15 +514,14 @@ def _parallel(x_words: list, y_words: list, text: str, end: int) -> bool:
         return (len(old) == 1 and bool(new)
                 and old[0] not in FUNCTION_WORDS and old[0] not in FILLERS
                 and new[0] not in FUNCTION_WORDS and new[0] not in FILLERS)
-    frame = None
-    if x_words[0] == y_words[0] and x_words[0] in FRAME_PREPOSITIONS:
-        frame = x_words[0]
+    # A repeated "every" stays a shared word: in "every month, no every
+    # quarter" it is the evidence that both values are frequencies.
+    if n.frame in FRAME_PREPOSITIONS:
         x_words, y_words = x_words[1:], y_words[1:]
         if not x_words or not y_words:
             return False
     x, y = x_words[-1], y_words[0]
-    if (TECH_TOKEN_RE.fullmatch(x) and TECH_TOKEN_RE.fullmatch(y)
-            and _closed_single_replacement(text, end, frame)):
+    if TECH_TOKEN_RE.fullmatch(x) and TECH_TOKEN_RE.fullmatch(y) and n.closed:
         return all(w in FUNCTION_WORDS or w in FILLERS for w in x_words[:-1])
     for cls in (_WEEKDAYS, _MONTHS):
         if x in cls and y in cls:
@@ -552,24 +536,20 @@ def _parallel(x_words: list, y_words: list, text: str, end: int) -> bool:
                 & set(y_words))
 
 
-def _evidence_reason(window_text: str, span: tuple) -> str | None:
+def _evidence_reason(n: Neighbourhood) -> str | None:
     """Original-source evidence that the deletion is a self-correction:
     it stays inside one sentence, removes an outdated value X with
     content, and a replacement Y with content follows the marker in the
     same sentence. None when the evidence holds, else the reason."""
-    s, e = span
+    window_text, s, ms, e = n.text, n.start, n.marker, n.end
     if re.search(r"[.!?](\s|$)", window_text[s:e].rstrip(".!? ")):
         return "crosses_sentence"
-    ms = correction_marker_start(window_text, span)
     if not _has_content(window_text[s:ms]):
         return "no_outdated_value"
-    tail = window_text[e:]
-    m = re.search(r"[.!?](?:\s|$)|\n", tail)
-    tokens = lambda t: [w for token in t.split() if (w := token.lower().strip(",;:"))]
-    after = tokens(tail[:m.start()] if m else tail)[:4]
+    after = n.new_words
     marker = window_text[ms:e].lower()
     if marker == "i mean actually":
-        restart, reason = repeated_restart(window_text, span, ms)
+        restart, reason = repeated_restart(window_text, (s, e), ms)
         if reason or restart is not None:
             return reason
     if marker in {"i mean", "i mean actually"} and after and \
@@ -577,9 +557,8 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
         return "emphasis_not_correction"
     if not _has_content(" ".join(after)):
         return "no_replacement"
-    before_words = tokens(window_text[s:ms])
-    after_words = after
-    replacement = next((w for w in after_words
+    before_words = n.old_words
+    replacement = next((w for w in after
                         if w not in FUNCTION_WORDS and w not in FILLERS), "")
     for values in (_WEEKDAYS, _MONTHS):
         if before_words[-1] in values and replacement in values and any(
@@ -587,9 +566,8 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
                 for w in before_words[:-1]):
             return "overbroad_calendar_value"
     if marker in _SINGLE_WORD_MARKERS:
-        if (not (_parallel(before_words, after_words, window_text, e)
-                 or _parallel_metric_lengths(window_text, span, ms))
-                or _replacement_opens_predicate(window_text, e)):
+        if (not (_parallel(n) or _parallel_metric_lengths(n))
+                or _replacement_opens_predicate(n)):
             return "not_parallel"
     return None
 
@@ -598,14 +576,14 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
 _PREDICATE_AUXILIARIES = FINITE_AUXILIARIES - {"am"}
 
 
-def _replacement_opens_predicate(text: str, end: int) -> bool:
+def _replacement_opens_predicate(n: Neighbourhood) -> bool:
     """``Monday, no Tuesday is a holiday`` begins a new clause.
 
     An auxiliary right after the replacement value (or after a number and
     its noun) makes that value a new subject, so deleting the old value
     would attach the clause to the old frame and drop a bare "no".
     """
-    clause = re.split(r"[,;.!?\n]", text[end:].lstrip(" \t,;:"), maxsplit=1)[0]
+    clause = re.split(r"[,;.!?\n]", n.text[n.end:].lstrip(" \t,;:"), maxsplit=1)[0]
     words = [w.lower() for w in clause.split()][:3]
     if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
         return True
@@ -643,13 +621,11 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
     if not (len(old) == 1 or (len(old) == 2 and
             (old[0] in {"a", "an", "the"} or _is_value_word(old[0])))):
         return span
-    frame = prefix.group(1).lower()
-    tail = re.match(r"[ \t,;:]*" + frame + r"[ \t]+([^.!?\n]+)",
-                    text[end:], re.IGNORECASE)
-    if tail is None:
+    n = neighbourhood(text, (prefix.start(), end), marker)
+    if n.frame != prefix.group(1).lower():
         return span
-    new = [w.lower().strip(",;:") for w in tail.group(1).split()][:3]
-    if (_parallel([frame, *old], [frame, *new], text, end) or
+    new = n.new_words[1:]
+    if (_parallel(n) or
             (text[marker:end].lower() not in _SINGLE_WORD_MARKERS
              and len(old) == 1 and _has_content(old[0])
              and new and _has_content(new[0]))):
@@ -787,17 +763,18 @@ def parse_correction_output(output: str, window_text: str,
             rejected.append(CorrectionProposal(span, False,
                                                "protected_span"))
             continue
-        reason = _evidence_reason(window_text, span)
+        marker = correction_marker_start(window_text, span)
+        shape = neighbourhood(window_text, span, marker)
+        reason = _evidence_reason(shape)
         if reason:
             rejected.append(CorrectionProposal(span, False, reason))
             continue
-        marker = correction_marker_start(window_text, span)
         restart, _reason = repeated_restart(window_text, span, marker)
         if restart is not None and any(
                 a < restart[1] and b > restart[0] for a, b, *_ in protected_spans):
             rejected.append(CorrectionProposal(span, False, "protected_restart"))
             continue
-        move, reason = qualifier_retention(window_text, span, marker)
+        move, reason = qualifier_retention(shape)
         if move is not None and any(a < move[2] < b
                                     for a, b, *_ in protected_spans):
             reason = "protected_retention_anchor"
@@ -832,7 +809,9 @@ def _has_correction_marker(text: str) -> bool:
     for marker in re.finditer(r"\b(?:sorry|no)\b", text, re.IGNORECASE):
         preceding = list(re.finditer(r"\S+", text[:marker.start()]))
         for word in reversed(preceding[-(SPAN_MAX_WORDS - 1):]):
-            if _evidence_reason(text, (word.start(), marker.end())) is None:
+            span = (word.start(), marker.end())
+            if _evidence_reason(neighbourhood(
+                    text, span, correction_marker_start(text, span))) is None:
                 return True
     return False
 

@@ -17,6 +17,17 @@ def clean(source, target, proposal, protected=()):
 
 
 class RepeatedQuantityFrameTests(unittest.TestCase):
+    def test_repeated_every_marks_a_frequency_correction(self):
+        source = ("Review the lexicon every month, no every quarter, because the "
+                  "monthly cadence was too heavy.")
+        target = "Review the lexicon every quarter, because the monthly cadence was too heavy."
+        accepted, rejected = parse_correction_output("every month, no", source, [])
+        self.assertEqual(rejected, [])
+        self.assertEqual([c.delete for c in accepted], ["every month, no"])
+        result = clean(source, target, "every month, no")
+        self.assertEqual(result.text, target)
+        self.assertEqual(result.path, "llm")
+
     def test_value_only_proposal_includes_repeated_frequency_frame(self):
         for old, new, unit in (("18", "27", "cycles"), ("2.5", "3.5", "hours")):
             with self.subTest(unit=unit):

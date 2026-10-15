@@ -14,9 +14,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from .lexicon import (CLAUSE_LINKS, COUNT, DETAIL_PREPOSITIONS, FINITE_AUXILIARIES,
-                      FRAME_WORDS, FUNCTION_WORDS, MEASURE_UNIT, MODALS, NEGATION_WORDS,
-                      NUMBER, SPELLED_NUMBER, alternation, quoted_regions, touches)
+from .lexicon import (CLAUSE_END, CLAUSE_LINKS, COUNT, DETAIL_PREPOSITIONS,
+                      FINITE_AUXILIARIES, FUNCTION_WORDS, MEASURE_UNIT, MODALS,
+                      NEGATION_WORDS, NUMBER, SPELLED_NUMBER, Neighbourhood, alternation,
+                      quoted_regions, touches)
 
 
 _NUMBER = NUMBER
@@ -37,7 +38,7 @@ _ANY_QUANTITY_DETAIL = re.compile(
 _FRACTION_UNIT = re.compile(MEASURE_UNIT, re.IGNORECASE)
 
 
-def qualifier_retention(source: str, span: tuple, marker_start: int):
+def qualifier_retention(n: Neighbourhood):
     """Return ``((start, end, destination), reason)`` for a source move.
 
     A repeated quantity head followed by an omitted postmodifier is the
@@ -45,7 +46,7 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
     the old one. An unsupported replacement for this shape is rejected
     rather than losing its detail. Coordinates refer to the original source.
     """
-    start, end = span
+    source, start, marker_start, end = n.text, n.start, n.marker, n.end
     old = source[start:marker_start].rstrip(" \t,;:")
     fraction = re.fullmatch(
         rf"(?P<count>{COUNT})[ \t]+(?P<denominator>half|halves|quarter|quarters)"
@@ -63,8 +64,7 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
                 rf"[ \t,;:]*1[ \t]+(?i:half|quarter)[ \t]+{re.escape(unit)}(?![\w-])",
                 source[end:])
             if replacement is not None and re.match(
-                    r"[ \t]*(?:$|[,;]|[.!?](?=\s|$))",
-                    source[end + replacement.end():]) and not touches(
+                    CLAUSE_END, source[end + replacement.end():]) and not touches(
                     quoted_regions(source), start, end + replacement.end()):
                 # The repeated unit is part of both complete fraction
                 # heads. Everything after the replacement stays required.
@@ -73,11 +73,9 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
     # ``with 4 liters of dye, sorry, with 6 liters`` the detail binds
     # after the frame, and the replacement repeats it.
     lead, frame = 0, ""
-    leading = re.match(rf"(?i:{alternation(FRAME_WORDS)})[ \t]+", old)
-    if leading and re.match(rf"[ \t,;:]*(?i:{re.escape(leading.group().strip())})[ \t]+",
-                            source[end:]):
-        lead = leading.end()
-        frame = rf"(?i:{re.escape(leading.group().strip())})[ \t]+"
+    if n.frame:
+        lead = re.match(r"\S+[ \t]+", old).end()
+        frame = rf"(?i:{re.escape(n.frame)})[ \t]+"
     match = _QUANTITY_DETAIL.fullmatch(old, lead)
     if match is None:
         # A quantity detail this rule cannot bind (a spelled number, a

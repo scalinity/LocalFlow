@@ -6,6 +6,7 @@ import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
 from localflow.v2.cleanup.correction_retention import correction_view, qualifier_retention
+from localflow.v2.cleanup.lexicon import neighbourhood
 from localflow.v2.cleanup.engine import (CleanupEngine, correction_marker_start,
                                         parse_correction_output)
 from localflow.v2.cleanup.validation import validate
@@ -36,7 +37,7 @@ class FractionCorrectionTests(unittest.TestCase):
                 target = f"{prefix}{new}{suffix}"
                 span = (len(prefix), len(prefix) + len(deletion))
                 ms = correction_marker_start(source, span)
-                self.assertEqual(qualifier_retention(source, span, ms), (None, None))
+                self.assertEqual(qualifier_retention(neighbourhood(source, span, ms)), (None, None))
                 accepted, rejected = parse_correction_output(deletion, source, [])
                 self.assertEqual([(c.span, c.delete) for c in accepted], [(span, deletion)])
                 self.assertFalse(rejected)
@@ -111,7 +112,7 @@ class FractionCorrectionTests(unittest.TestCase):
                 start = source.index(deletion)
                 span = (start, start + len(deletion))
                 ms = correction_marker_start(source, span)
-                self.assertIsNotNone(qualifier_retention(source, span, ms)[1])
+                self.assertIsNotNone(qualifier_retention(neighbourhood(source, span, ms))[1])
                 accepted, rejected = parse_correction_output(deletion, source, [])
                 self.assertFalse(accepted)
                 self.assertTrue(rejected)
