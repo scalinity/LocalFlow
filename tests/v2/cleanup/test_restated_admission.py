@@ -85,13 +85,32 @@ class RestatedAdmissionTests(unittest.TestCase):
             # Merged into the sentence before, the new predicate would join it.
             ("Leave the tray at the lab. Sorry, Jonas is at the lab.",
              "the tray at the lab. Sorry"),
+            # The old value's auxiliary belongs to a relative clause.
+            ("Give it to whoever is on call, sorry, Jonas is on call.",
+             "whoever is on call, sorry"),
+            ("Give it to the nurse who is on call, sorry, Jonas is on call.",
+             "the nurse who is on call, sorry"),
+            ("Give it to the nurse that is on call, sorry, Jonas is on call.",
+             "the nurse that is on call, sorry"),
+            ("Give it to Maria and whoever is on call, sorry, Jonas is on call.",
+             "whoever is on call, sorry"),
+            ("Send the forms to whoever will sign them, sorry, Marta will sign them.",
+             "whoever will sign them, sorry"),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], ["not_parallel"]))
-        # A whole sentence may give way to one with its own predicate.
-        proposal = "The nurse on call. Sorry"
-        self.assertEqual(reasons(proposal, "The nurse on call. Sorry, Jonas is on call."),
-                         ([proposal], []))
+        for source, proposal in (
+            # A whole sentence may give way to one with its own predicate.
+            ("The nurse on call. Sorry, Jonas is on call.", "The nurse on call. Sorry"),
+            # A restated predicate may follow other words, a relative
+            # pronoun among them.
+            ("Tell them Maria will own the grid export, sorry, Jonas will own the grid "
+             "export.", "Maria will own the grid export, sorry"),
+            ("Give it to the nurse who Maria will pick, sorry, Jonas will pick.",
+             "Maria will pick, sorry"),
+        ):
+            with self.subTest(proposal=proposal):
+                self.assertEqual(reasons(proposal, source), ([proposal], []))
 
     def test_a_restated_detail_needs_no_move(self):
         for source, proposal in (

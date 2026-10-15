@@ -781,13 +781,23 @@ def _replacement_closes_within(n: Neighbourhood, words: int) -> bool:
 
 # "am" is left out: it follows only "I", and "9 am" is a time.
 _PREDICATE_AUXILIARIES = FINITE_AUXILIARIES - {"am"}
+_RELATIVE_PRONOUNS = frozenset({"who", "whom", "whose", "which", "that", "whoever",
+                                "whomever", "whichever", "whatever"})
 
 
 def _predicate_restated(n: Neighbourhood) -> bool:
     """An auxiliary among the replacement's first four words stands in the
-    old value too, so the predicate it opens is the old value's own."""
-    return any(w in _PREDICATE_AUXILIARIES and w in n.old_words
-               for w in after_marker(n.text, n.end)[3][:4])
+    old value too, and no relative pronoun comes before it there, so the
+    predicate it opens is the old value's own. "whoever is on call" and
+    "the nurse who is on call" name a person; their "is" belongs to a
+    relative clause the replacement cannot take the place of."""
+    clause = after_marker(n.text, n.end)[3][:4]
+    for w in n.old_words:
+        if w in _RELATIVE_PRONOUNS:
+            return False
+        if w in _PREDICATE_AUXILIARIES and w in clause:
+            return True
+    return False
 
 
 def _replacement_opens_predicate(n: Neighbourhood) -> bool:
