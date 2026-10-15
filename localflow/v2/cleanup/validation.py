@@ -807,6 +807,9 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
     """An explicit source sentence boundary next to a negated or
     conditional sentence survives as a boundary in the output — merging
     "Do not deploy. Run tests." into one clause widens the prohibition.
+    A sentence that opens with its own coordinating conjunction may join
+    the previous one at a comma ("free. But the email said …" → "free,
+    but the email said …"): the kept conjunction starts a new clause.
     Added boundaries must keep restrictions and coordinating conjunctions
     attached to their clauses."""
     _missing, pairs, src, out = aligned
@@ -817,7 +820,10 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
         if not (_sentence_has_scope(source, src[i][0])
                 or _sentence_has_scope(source, src[k][0])):
             continue
-        if not _OUTPUT_BOUNDARY_RE.search(output, out[oi][1], out[ok][0]):
+        if _OUTPUT_BOUNDARY_RE.search(output, out[oi][1], out[ok][0]):
+            continue
+        if not (_opens_coordinate_clause(source, src, i, k)
+                and "," in output[out[oi][1]:out[ok][0]]):
             merged.append([src[i][1], src[k][0]])
     introduced = _restriction_breaks(source, output, aligned)
     dangling = _dangling_conjunction_breaks(source, output, aligned, ctx)
@@ -826,6 +832,21 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
                      {"merged_boundaries": merged,
                       "introduced_restriction_breaks": [list(b[:2]) for b in introduced],
                       "detached_conjunction_breaks": [list(b[:2]) for b in dangling]})
+
+
+def _opens_coordinate_clause(source, atoms, before, first) -> bool:
+    """The sentence after a boundary opens with "but", "so" or "yet", or
+    with "and"/"or" followed by its own finite verb within three words
+    ("Or should I skip it", "And there is no history"). "Or the vent" may
+    share the previous predicate and its negation, so it does not count.
+    The conjunction must be the first word after the boundary."""
+    if first != before + 1:
+        return False
+    word = atoms[first][2]
+    if word in ("but", "so", "yet"):
+        return True
+    return word in ("and", "or") and any(
+        a[2] in FINITE_AUXILIARIES for a in atoms[first + 1:first + 4])
 
 
 def _dangling_conjunction_breaks(source, output, aligned, ctx):
