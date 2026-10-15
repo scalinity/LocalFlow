@@ -157,6 +157,17 @@ class MinimalTargetTests(unittest.TestCase):
             with self.subTest(target=target):
                 self.check(source, target, target, [])
 
+    def test_vocative_shapes_seen_in_train_labels_keep_their_comma(self):
+        for source, target, expected in (
+                ("okay so Priya I wanted to ask you", "Okay, so Priya, I wanted to ask you.",
+                 "Okay so Priya, I wanted to ask you."),
+                ("quick question for you Dalia, if it fails call me", "Quick question for you, Dalia: if it fails call me.",
+                 "Quick question for you, Dalia, if it fails call me."),
+                ("okay class let's look at slide twelve", "Okay class, let's look at slide twelve.",
+                 "Okay class, let's look at slide twelve.")):
+            with self.subTest(target=target):
+                self.assertEqual(policy_score.minimal_target(source, target)[0], expected)
+
     def test_conjunction_introductory_and_list_commas_still_go(self):
         for source, target, expected in (
                 ("send it to marta and then call her", "Send it to Marta, and then call her.",

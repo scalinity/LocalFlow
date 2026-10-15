@@ -101,7 +101,8 @@ def _pieces(text):
 
 
 # The prompt requires commas that set off a directly addressed person, so a revert keeps them.
-GROUP_ADDRESSEES = {"everyone", "everybody", "all", "team", "guys", "folks", "sir", "madam", "ma'am"}
+GROUP_ADDRESSEES = {"everyone", "everybody", "all", "team", "guys", "folks", "sir", "madam", "ma'am", "class",
+                    "people", "kids", "students", "friends", "ladies", "gentlemen", "y'all"}
 NOT_PERSONS = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "january",
                "february", "march", "april", "may", "june", "july", "august", "september", "october",
                "november", "december"}
@@ -147,7 +148,8 @@ def _sets_off_addressee(words, gaps, k):
         if m >= n or not _addressee(words[m]) or (m > k and gaps[m].strip()):
             break
         after = gaps[m + 1]
-        if m + 1 == n or re.search(r"[.!?]", after) or ("," in after and not named(k - 1)):
+        # A sentence end, colon, semicolon or line break after the name also closes the address.
+        if m + 1 == n or re.search(r"[.!?:;\n]", after) or ("," in after and not named(k - 1)):
             return True
     p = k - 1
     if not _addressee(words[p]):
@@ -163,9 +165,11 @@ def _sets_off_addressee(words, gaps, k):
         asks = "?" in gaps[end + 1] or sentence & {"you", "your", "yours", "yourself"}
         return asks or words[k].casefold().replace("’", "'") not in FINITE
     q = p - 1
-    while q >= 0 and words[q].casefold() in OPENERS and not gaps[q + 1].strip():
+    # The label's own comma after an opener ("Okay, so Priya,") does not end the walk.
+    while q >= 0 and words[q].casefold() in OPENERS and _marks(gaps[q + 1]) in ("", ",") \
+            and "\n" not in gaps[q + 1]:
         if _opens(gaps, q):
-            return True  # after greetings or openers: "Hi Marta," "Okay so Priya,"
+            return True  # after greetings or openers: "Hi Marta," "Okay, so Priya,"
         q -= 1
     return "," in gaps[p] and p >= 1 and not named(p - 1)  # set off on both sides: "for you, Maren, about"
 
