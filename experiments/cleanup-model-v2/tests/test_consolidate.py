@@ -19,6 +19,8 @@ def call(role):
 
 def fake_capture(pair, consistent_only=False):
     """An exact row, or a vetoed row whose cleanup call disagrees with its prompt."""
+    if pair['case_id'] == 'failed':
+        raise ValueError('fixture_capture_failure')
     exact = pair.get('exact', True)
     pair['engine_oracle'] = {'exact': exact}
     calls = [call('corrections'), call('main')]
@@ -31,9 +33,9 @@ def fake_capture(pair, consistent_only=False):
 
 
 class BuildTests(unittest.TestCase):
-    def build(self, root, dataset, **options):
-        rows = [row('exact', True), row('vetoed', False)]
-        with patch.object(consolidate, 'collect', return_value=(rows, {'kept': 2})), \
+    def build(self, root, dataset, rows=None, **options):
+        rows = rows or [row('exact', True), row('vetoed', False)]
+        with patch.object(consolidate, 'collect', return_value=(rows, {'kept': len(rows)})), \
                 patch.object(consolidate, 'REFINEMENT', root / 'refinement'), \
                 patch('v2.refinement.SOURCE_FILES', []), \
                 patch('v2.assemble.capture', side_effect=fake_capture) as capture:
@@ -74,6 +76,17 @@ class BuildTests(unittest.TestCase):
                     self.build(root, directory, consistent=consistent)
 
 
+
+    def test_a_row_that_fails_capture_records_why_and_no_earlier_oracle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_jsonl(root / 'refinement' / 'dataset' / 'validation.jsonl', [{**row('dev', True), 'split': 'validation'}])
+            failed = {**row('failed', True), 'engine_oracle': {'exact': True, 'path': 'llm'}}
+            freeze, _ = self.build(root, root / 'next', rows=[row('exact', True), failed])
+            written = {r['case_id']: r for r in read_jsonl(root / 'next' / 'train.jsonl')}
+        self.assertEqual(freeze['stats']['train']['capture_failures'], {'fixture_capture_failure': 1})
+        self.assertNotIn('engine_oracle', written['failed'])
+        self.assertEqual(written['failed']['capture_error'], 'fixture_capture_failure')
 
     def test_build_refuses_a_directory_holding_unfrozen_rows(self):
         with tempfile.TemporaryDirectory() as directory:
