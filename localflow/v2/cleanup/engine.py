@@ -29,7 +29,7 @@ from . import document_nodes as dn
 from . import prompts
 from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES,
                       FRAME_PREPOSITIONS, FRAME_WORDS, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER,
-                      NEGATION_WORDS, NUMBER, NUMBER_WORDS,
+                      NEGATION_WORDS, NUMBER, NUMBER_WORDS, ORDINAL_WORD_RE,
                       POSITIVE_NUMBER, SCALE_WORDS, SENTENCE_END, TECH_TOKEN_RE, Neighbourhood,
                       alternation, marker_key, marker_pattern, neighbourhood, plain_words,
                       restatement)
@@ -480,7 +480,8 @@ _MONTHS = frozenset({"january", "february", "march", "april", "may",
 
 
 def _is_value_word(w: str) -> bool:
-    return any(c.isdigit() for c in w) or w in NUMBER_WORDS or w in SCALE_WORDS
+    return (any(c.isdigit() for c in w) or w in NUMBER_WORDS or w in SCALE_WORDS
+            or ORDINAL_WORD_RE.fullmatch(w) is not None)
 
 
 _METRIC_LENGTH = re.compile(rf"{NUMBER}[ \t]+{METER}s?", re.IGNORECASE)
@@ -515,8 +516,7 @@ def _repeated_frame_complement(n: Neighbourhood) -> bool:
     clause link, auxiliary, negation or ``only``; the replacement holds no
     negation; both complements open with an article or neither does. An
     open replacement (``by pulley handle since the battery is empty``)
-    stays ambiguous, ``as`` keeps its own rule, and after ``yes`` a bare
-    ``no`` contrasts (``yes to the first, no to the second``).
+    stays ambiguous, and ``as`` keeps its own rule.
     """
     if n.frame not in FRAME_PREPOSITIONS or n.frame == "as":
         return False
@@ -530,11 +530,17 @@ def _repeated_frame_complement(n: Neighbourhood) -> bool:
             or not _replacement_closes_within(n, len(n.old_words) + 1)):
         return False
     marker = marker_key(n.text[n.marker:n.end])
-    if (marker == "sorry" and n.frame in _APOLOGY_FRAMES
-            and not re.match(r"[ \t]*,", n.text[n.end:])):
-        return False
-    sentence = re.split(SENTENCE_END + r"|\n", n.text[:n.start])[-1]
-    return not (marker == "no" and re.search(r"\byes\b", sentence, re.IGNORECASE))
+    return not (marker == "sorry" and n.frame in _APOLOGY_FRAMES
+                and not re.match(r"[ \t]*,", n.text[n.end:]))
+
+
+def _yes_no_contrast(n: Neighbourhood) -> bool:
+    """A bare ``no`` answering an earlier ``yes`` with the same next word
+    contrasts rather than corrects: ``yes to the first, no to the second``."""
+    following = n.new_words[:1]
+    sentence = re.split(SENTENCE_END + r"|\n", n.text[:n.marker])[-1]
+    return bool(following and marker_key(n.text[n.marker:n.end]) == "no" and re.search(
+        rf"\byes[ \t,]+{re.escape(following[0])}\b", sentence, re.IGNORECASE))
 
 
 def _parallel(n: Neighbourhood) -> bool:
@@ -575,6 +581,11 @@ def _parallel(n: Neighbourhood) -> bool:
     for cls in (_WEEKDAYS, _MONTHS):
         if x in cls and y in cls:
             return True
+    # An ordinal day may be corrected to a full date ("the fourteenth, no,
+    # March 16").
+    if (ORDINAL_WORD_RE.fullmatch(x) and y in _MONTHS
+            and y_words[y_words.index(y) + 1:][:1] and _is_value_word(y_words[y_words.index(y) + 1])):
+        return True
     # A digit inside an identifier (``worker_1``) is part of a name, not a
     # quantity; identifiers qualify only through the closed branch above.
     if (_is_value_word(x) and _is_value_word(y)
@@ -646,6 +657,7 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
         # conversion, no, Jonas will own the grid conversion").
         restated = across or restatement(n) is not None
         if (not (restated or _parallel(n) or _parallel_metric_lengths(n))
+                or _yes_no_contrast(n)
                 or (not restated and _replacement_opens_predicate(n))
                 or (marker == "make that" and not _replacement_closes_within(
                     n, len(n.old_words) + 1))):

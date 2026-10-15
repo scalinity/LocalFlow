@@ -161,7 +161,7 @@ admission. Shared word classes and the number and unit grammar live in
 | the outdated value X (before the marker) has a content word (a filler is none) | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
-| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, another repeated frame preposition before a like complement (**Closure**), two closed identifiers, or Y restates X; the replacement does not open a new predicate unless it restates X | `not_parallel` |
+| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers (a spelled ordinal is one, and an ordinal day may become a month with its day), both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, another repeated frame preposition before a like complement (**Closure**), two closed identifiers, or Y restates X; the replacement does not open a new predicate unless it restates X, and a bare `no` does not answer an earlier `yes` with the same next word (`yes to the first, no to the second`) | `not_parallel` |
 | replacing a weekday/month with another cannot also delete preceding content words (for example, `check Monday no wait Tuesday` may delete `Monday no wait`, but not `check`) | `overbroad_calendar_value` |
 
 **Markers.** The markers are `lexicon.CORRECTION_MARKERS`; a comma may
@@ -194,9 +194,8 @@ clause link, auxiliary, negation or `only`, the replacement holds no
 negation, both complements open with an article or neither does, and the
 replacement closes its clause within one word more than the old value.
 An open replacement (`by motor, sorry, by pulley handle since the battery
-died`) stays ambiguous. `sorry for`/`sorry to` without a pause is the
-apology's own complement, and after `yes` a bare `no` contrasts (`yes to
-the first, no to the second`).
+died`) stays ambiguous, and `sorry for`/`sorry to` without a pause is the
+apology's own complement.
 
 A metric-length pair may change its numeric value and metric prefix when
 both values name meters/metres and the replacement closes its clause.

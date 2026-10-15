@@ -121,6 +121,12 @@ NUMBER_WORDS = {
     "ninety": 90,
 }
 SCALE_WORDS = {"hundred": 100, "thousand": 1_000, "million": 1_000_000}
+# Spelled ordinals, as in "on the fourth, no, the fifth" or "the
+# twenty-first".
+_ORDINAL_UNITS = ("first|second|third|fourth|fifth|sixth|seventh|eighth|ninth")
+ORDINAL_WORD_RE = re.compile(
+    rf"(?:(?:twenty|thirty)-)?(?:{_ORDINAL_UNITS})|tenth|eleventh|twelfth|thirteenth"
+    r"|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth|thirtieth")
 
 # Number grammar. A typed token keeps its sign and separators ("-2",
 # "1,500", "2,5"); a count is a positive whole number ("7 quarters"); a
