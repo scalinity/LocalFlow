@@ -105,6 +105,7 @@ def collect():
         ordered += [(name, r) for r in read_jsonl(REFINEMENT / name / "train.jsonl")]
     ordered += [("diverse", r) for r in read_jsonl(ART / "dataset" / "train.jsonl")]
     ordered += [("longform", r) for r in read_jsonl(ART / "longform" / "train.jsonl")]
+    ordered += [("contrast", r) for r in read_jsonl(ART / "contrast" / "train.normalized.jsonl")]
     c_era = [r for r in read_jsonl(OLD_ART / "dataset" / "train.jsonl") if r.get("verification") == "PASS"]
     random.Random(20261015).shuffle(c_era)
     for r in c_era[:C_ERA_SAMPLE]:

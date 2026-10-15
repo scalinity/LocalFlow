@@ -149,6 +149,18 @@ class RestoredConjunctionTests(unittest.TestCase):
 
 
 class CollectTests(unittest.TestCase):
+    @unittest.skipUnless((consolidate.ART / 'contrast' / 'train.normalized.jsonl').exists(),
+                         'private contrast TRAIN source is unavailable')
+    def test_all_324_normalized_contrast_rows_survive_collect(self):
+        source = read_jsonl(consolidate.ART / 'contrast' / 'train.normalized.jsonl')
+        self.assertEqual(len(source), 324)
+        rows, summary = consolidate.collect()
+        contrast = [r for r in rows if r['consolidated_origin'] == 'contrast']
+        self.assertEqual(len(contrast), 324)
+        self.assertEqual(summary['stats']['kept_contrast'], 324)
+        self.assertEqual({r['case_id']: r['target'] for r in contrast},
+                         {r['case_id']: r['target'] for r in source})
+
     def collect(self, root, labels, comma_kinds=None):
         write_json(root / 'refinement' / 'dataset' / 'freeze.json', {'stats': {'train': {'label_conflicts': []}}})
         write_jsonl(root / 'refinement' / 'dataset' / 'train.jsonl', labels)
