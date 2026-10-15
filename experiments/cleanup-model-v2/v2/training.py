@@ -2,10 +2,21 @@
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import random
 from pathlib import Path
 from .common import *
+
+
+def prompt_prefixes(captures):
+    """Per role, the hashed system and few-shot prefix keys lfx.train caches."""
+    from lfx.train import USER_TURN
+    out = collections.defaultdict(set)
+    for cap in captures:
+        for call in cap["calls"]:
+            out[call["role"]].add(sha256_text(call["prompt"][:call["prompt"].rfind(USER_TURN)]))
+    return out
 
 
 def checked_dataset(dataset, *, require_current_capture_source=True):
@@ -15,9 +26,18 @@ def checked_dataset(dataset, *, require_current_capture_source=True):
     if any(file_sha256(dataset / (name + ".jsonl" if name in ("test", "validation") else name)) != digest
            for name, digest in freeze.get("files", {}).items()):
         raise RuntimeError("Frozen dataset file changed")
+    capture_hashes = freeze.get("capture_source_hashes", {})
     if require_current_capture_source and any(
-            file_sha256(ROOT / path) != digest for path, digest in freeze.get("capture_source_hashes", {}).items()):
+            file_sha256(ROOT / path) != digest for path, digest in capture_hashes.items()):
         raise RuntimeError("Training prompt source changed after capture")
+    # Validation loss selects checkpoints, so it must score the prompts training serves.
+    if freeze.get("validation_capture_source_hashes", capture_hashes) != capture_hashes:
+        raise RuntimeError("Validation captures were made from different prompt sources than training captures")
+    paths = [dataset / (split + "_captures.jsonl") for split in ("validation", "train")]
+    if all(path.exists() for path in paths):
+        validation, train = (prompt_prefixes(read_jsonl(path)) for path in paths)
+        if any(validation[role] != train[role] for role in validation.keys() & train.keys()):
+            raise RuntimeError("Validation captures use different prompts from training captures")
     return freeze
 
 
@@ -117,7 +137,9 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         losses.append({'checkpoint':checkpoint.name,'val_loss':total/max(tokens,1),'response_tokens':tokens})
         del caches
         mx.clear_cache()
+    trained_prefixes={it['key'] for block in blocks for it in block}
     write_json(run_dir/'checkpoint-validation.json',{'created':utc_now(),'examples':len(vexamples),
+               'prompt_matches_training':{it['key'] for it in val_items}<=trained_prefixes,
                'checkpoints':losses,'lowest_loss':min(losses,key=lambda x:x['val_loss'])['checkpoint']})
     result.update(completed=utc_now(),adapter=str(run_dir/"final"))
     write_json(run_dir/"completion.json",result)
