@@ -51,6 +51,10 @@ class ChainedMarkerTests(unittest.TestCase):
              "overbroad_calendar_value"),
             ("Please check Monday, I mean sorry, Tuesday before noon.",
              "check Monday, I mean sorry", "overbroad_calendar_value"),
+            ("Move the review Monday, I mean no, Tuesday.", "review Monday, I mean no",
+             "overbroad_calendar_value"),
+            ("Please check Monday, actually sorry, Tuesday for the slot.",
+             "check Monday, actually sorry", "overbroad_calendar_value"),
             # Stripping the chained marker leaves no parallel value.
             ("Give it to the nurse, I mean no, the pharmacist.", "the nurse, I mean no",
              "not_parallel"),
