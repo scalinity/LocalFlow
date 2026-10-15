@@ -190,6 +190,40 @@ class TwinCheckTests(unittest.TestCase):
             with self.subTest(args=args):
                 self.assertEqual(self.check(*args), reason)
 
+    def test_prose_and_statement_twins_add_no_punctuation_beyond_their_repairs(self):
+        steps = row("for the gate step one open the gate and step two lock the shed",
+                    "For the gate:\n1. Open the gate.\n2. Lock the shed.")
+        items = row("here is my packing list, rain jacket headlamp and a spare water filter",
+                    "Here is my packing list:\n- rain jacket\n- headlamp\n- a spare water filter")
+        split = row("can you send me the new rota because i'm off on friday and the shop is shut",
+                    "Can you send me the new rota? Because I'm off on Friday and the shop is shut.")
+        steps_prose = "for the gate first open the gate and second lock the shed"
+        items_prose = "here is my packing list, first rain jacket second headlamp and third a spare water filter"
+        statement = "i was wondering if you could send me the new rota because i'm off on friday and the shop is shut"
+        cases = [
+            ("steps", False, steps, steps_prose, "For the gate first open the gate and second lock the shed.", None),
+            ("steps", False, steps, steps_prose, "For the gate first open the gate. And second lock the shed.",
+             "prose_adds_sentence_break"),
+            ("steps", False, steps, steps_prose, "For the gate first, open the gate and second lock the shed.",
+             "prose_adds_comma_at_ordinal"),
+            ("items", True, items, items_prose,
+             "Here is my packing list, first rain jacket, second headlamp and third a spare water filter.", None),
+            ("items", True, items, items_prose,
+             "Here is my packing list. First rain jacket, second headlamp and third a spare water filter.",
+             "prose_adds_sentence_break"),
+            ("items", True, items, items_prose,
+             "Here is my packing list, first rain jacket, second headlamp, and third a spare water filter.",
+             "prose_adds_comma_at_ordinal"),
+            ("question", False, split, statement,
+             "I was wondering if you could send me the new rota because I'm off on Friday and the shop is shut.", None),
+            ("question", False, split, statement,
+             "I was wondering if you could send me the new rota because I'm off on Friday. And the shop is shut.",
+             "statement_adds_sentence_break"),
+        ]
+        for focus, mention, first, transcript, target, reason in cases:
+            with self.subTest(target=target):
+                self.assertEqual(twin_check(focus, mention, first, row(transcript, target)), reason)
+
     def test_mentions_must_match_the_plan(self):
         self.assertEqual(twin_check("steps", False, *twins("steps", True)), "mention_does_not_match_plan")
         self.assertEqual(twin_check("items", True, *twins("items", False)), "mention_does_not_match_plan")

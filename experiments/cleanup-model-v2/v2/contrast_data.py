@@ -16,7 +16,7 @@ import random
 import re
 from .common import *
 from . import data
-from .policy_score import _marks, _pieces, minimal_target
+from .policy_score import _aligned_gaps, _marks, _pieces, _split, minimal_target
 from lfx import batches
 
 NAME = "contrast-train"
@@ -281,6 +281,23 @@ def _list_shape(target, numbered):
     return None
 
 
+def _added_marks(row):
+    """Punctuation a prose or statement twin adds beyond its required repairs, else None: a sentence
+    break before a dictated "and" or in place of a dictated comma, or a comma at an ordinal."""
+    source_words, source_gaps = _split(row["model_input"])
+    words, gaps = _split(row["target"])
+    for k, j in _aligned_gaps(source_words, words).items():
+        if not 0 < k < len(words):
+            continue
+        s, t = _marks(source_gaps[j]), _marks(gaps[k])
+        if re.search(r"[.!?]", t) and not re.search(r"[.!?]", s) and (words[k] == "and" or "," in s):
+            return "adds_sentence_break"
+        at_ordinal = words[k - 1] in ORDINALS or (words[k] == "and" and k + 1 < len(words) and words[k + 1] in ORDINALS)
+        if "," in t and "," not in s and at_ordinal:
+            return "adds_comma_at_ordinal"
+    return None
+
+
 def twin_check(kind, mention, first, second):
     """Why two twins differ in more than their trigger words and prescribed formatting, else None.
 
@@ -306,7 +323,8 @@ def twin_check(kind, mention, first, second):
         if "because" not in ta["words"] or "because" not in tb["words"] or not _frame_ok(
                 t_diffs, ta["words"].index("because"), tb["words"].index("because")):
             return "targets_differ_beyond_frame"
-        return None
+        added = _added_marks(second)
+        return "statement_" + added if added else None
     said = {w.casefold() for w in _pieces(second["model_input"])[0]}
     if bool(said & MENTIONS) != mention:
         return "mention_does_not_match_plan"
@@ -332,6 +350,9 @@ def twin_check(kind, mention, first, second):
             return "numbering_does_not_match_labels"
     if "\n" in second["target"] or tb["labels"] or tb["ordinals"] != sb["ordinals"]:
         return "ordinal_twin_not_prose"
+    added = _added_marks(second)
+    if added:
+        return "prose_" + added
     _, t_diffs = _differences(ta, tb, connectives=True)
     if framed:
         lines = first["target"].split("\n")
