@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import collections
 import random
-import re
 from .common import *
 from . import data
 
@@ -135,20 +134,13 @@ def generate(split):
 
 def correction_offsets(row):
     """Anchor checked correction labels without running any candidate engine."""
-    source = row["model_input"]
+    from .strict_score import correction_anchor
     offsets, cursor = [], 0
     for line in row.get("gold_lines", []):
-        if not isinstance(line, str) or not line:
-            raise ValueError(f"Empty correction label in {row['case_id']}")
-        pattern = (r"(?<!\w)" if line[0].isalnum() or line[0] == "_" else "")
-        pattern += re.escape(line)
-        pattern += r"(?!\w)" if line[-1].isalnum() or line[-1] == "_" else ""
-        matches = list(re.finditer(pattern, source[cursor:], re.IGNORECASE))
-        if len(matches) != 1:
-            kind = "Missing" if not matches else "Ambiguous"
-            raise ValueError(f"{kind} correction label in {row['case_id']}")
-        match = matches[0]
-        start, end = cursor + match.start(), cursor + match.end()
+        try:
+            start, end = correction_anchor(row["model_input"], line, cursor)
+        except ValueError as exc:
+            raise ValueError(f"{str(exc).capitalize()} correction label in {row['case_id']}") from None
         offsets.append([start, end])
         cursor = end
     return offsets

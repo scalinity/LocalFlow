@@ -2,7 +2,9 @@ import json
 import unittest
 from unittest.mock import patch
 
-from v2 import assemble
+from v2 import assemble, strict_score
+from v2.refinement_data import correction_offsets
+from v2.strict_score import correction_anchor
 from localflow.v2.cleanup.engine import Window
 
 
@@ -102,6 +104,54 @@ class WindowTargetTests(unittest.TestCase):
         with patch.object(assemble, 'window_targets', return_value={(0, 1): 'x'}):
             with self.assertRaisesRegex(ValueError, 'window_plan_mismatch'):
                 capture(pair('Keep this.', 'Keep this.'))
+
+
+FILLER = ' '.join(['The visiting team arrives on Friday morning and stays through Sunday evening.'] * 9)
+FIRST = 'We booked 16 rooms, sorry 17 rooms, for the visiting team. ' + FILLER
+CORRECTION = 'Then assign 6 rooms, sorry 7 rooms, to the volunteers. ' + FILLER
+LINE = '6 rooms, sorry'
+
+
+class CorrectionAnchorTests(unittest.TestCase):
+    def test_anchor_is_word_bounded_unique_and_respects_the_cursor(self):
+        source = FIRST + ' ' + CORRECTION
+        start = source.index('assign 6') + len('assign ')
+        self.assertEqual(correction_anchor(source, LINE), (start, start + len(LINE)))
+        for text, line, reason in (('Use 5, no 6 and 5, no 7.', '5, no', 'ambiguous'),
+                                   ('Use 15, no 6.', '5, no', 'missing'), ('Use 5.', '', 'empty'), ('Use 5.', None, 'empty')):
+            with self.subTest(text=text, line=line), self.assertRaisesRegex(ValueError, reason):
+                correction_anchor(text, line)
+        # Starting the search mid-text does not hide the word character before the cursor.
+        with self.assertRaisesRegex(ValueError, 'missing'):
+            correction_anchor('a6', '6', 1)
+
+    def test_labels_capture_and_strict_scoring_anchor_lines_identically(self):
+        source = 'We booked 16 rooms, sorry about the notice. Assign 6 rooms, sorry 7 rooms, to the volunteers.'
+        target = 'We booked 16 rooms, sorry about the notice. Assign 7 rooms to the volunteers.'
+        start = source.index('Assign 6') + len('Assign ')
+        expected = [[start, start + len(LINE)]]
+        self.assertEqual(correction_offsets({'case_id': 'fixture', 'model_input': source, 'gold_lines': [LINE]}), expected)
+        issues = []
+        self.assertEqual(strict_score._correction_spans({'gold_lines': [LINE]}, source, issues), [tuple(expected[0])])
+        self.assertEqual(issues, [])
+        captured = pair(source, target, [LINE])
+        capture(captured)
+        self.assertEqual(captured['gold_offsets'], expected)
+
+    def test_each_corrections_window_is_answered_with_its_own_lines(self):
+        # "6 rooms, sorry" is also a substring of the first window's line.
+        source = FIRST + '\n\n' + CORRECTION
+        target = (FIRST.replace('16 rooms, sorry 17 rooms,', '17 rooms') + '\n\n'
+                  + CORRECTION.replace('6 rooms, sorry 7 rooms,', '7 rooms'))
+        captured = capture(pair(source, target, ['16 rooms, sorry', LINE]))
+        corrections = [(c['window'][0], c['completion']) for c in captured['calls'] if c['role'] == 'corrections']
+        self.assertEqual(corrections, [(0, '16 rooms, sorry'), (source.index('Then assign'), LINE)])
+
+    def test_train_capture_applies_the_training_label_conflict_rule(self):
+        with self.assertRaisesRegex(ValueError, 'ambiguous_repeated_negation_deletion'):
+            capture(pair('The service is not not up.', 'The service is not up.'))
+        validation = {**pair('The service is not not up.', 'The service is not up.'), 'split': 'validation'}
+        self.assertEqual(capture(validation)['split'], 'validation')
 
 if __name__ == '__main__':
     unittest.main()

@@ -8,7 +8,7 @@ import json
 import random
 import re
 from .common import *
-from .strict_score import STUTTER_WORDS
+from .strict_score import STUTTER_WORDS, correction_anchor
 from lfx import synth
 
 
@@ -101,12 +101,18 @@ def capture(pair):
     pair["protected_spans"] = [list(p) for p in protected]
     offsets, cursor = [], 0
     for line in pair.get("gold_lines", []):
-        match = re.search(re.escape(line), pair["model_input"][cursor:], re.IGNORECASE)
-        if match is None:
-            raise ValueError("gold_offset_missing")
-        start, end = cursor + match.start(), cursor + match.end()
+        try:
+            start, end = correction_anchor(pair["model_input"], line, cursor)
+        except ValueError as exc:
+            raise ValueError("gold_offset_" + str(exc)) from None
         offsets.append([start, end]); cursor = end
     pair["gold_offsets"] = offsets
+    if pair["split"] == "train":
+        # Every capture path that produces TRAIN supervision applies this rule.
+        from .refinement import training_label_conflict
+        conflict = training_label_conflict(pair)
+        if conflict:
+            raise ValueError(conflict["reason"])
     windows = engine.plan_windows(pair["model_input"], protected)
     targets = window_targets(pair, windows)
     calls = []
@@ -117,7 +123,8 @@ def capture(pair):
             if depth:
                 raise ValueError("capture_retry_not_supervised")
             if corrections_pass:
-                answer = "\n".join(g for g in pair.get("gold_lines", []) if g.lower() in input_text.lower()) or "NONE"
+                answer = "\n".join(g for g, (s, e) in zip(pair.get("gold_lines", []), offsets)
+                                   if window_range[0] <= s and e <= window_range[1]) or "NONE"
             else:
                 answer = targets.get(tuple(window_range))
                 if answer is None:

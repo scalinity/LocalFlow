@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 
-SCORER_VERSION = "strict-lexical-v2-incomplete-openings"
+SCORER_VERSION = "strict-lexical-v2-word-bounded-corrections"
 FILLERS = {"um", "uh", "erm", "ehm", "hmm", "mhm"}
 STUTTER_WORDS = {"a", "an", "the", "to", "of", "in", "on", "at", "for", "and",
                  "or", "but", "is", "it", "i", "we", "you", "he", "she", "they",
@@ -90,6 +90,23 @@ def _keys(text):
     return [t.key for t in _tokens(text)]
 
 
+def correction_anchor(source, line, cursor=0):
+    """The single word-bounded, case-insensitive occurrence of a correction
+    line at or after cursor, as (start, end).
+
+    Raises ValueError("empty"), ("missing") or ("ambiguous"). A line inside a
+    longer word ("5 minutes" within "15 minutes") is not an occurrence.
+    """
+    if not isinstance(line, str) or not line:
+        raise ValueError("empty")
+    pattern = (r"(?<!\w)" if line[0].isalnum() or line[0] == "_" else "") + re.escape(line)
+    pattern += r"(?!\w)" if line[-1].isalnum() or line[-1] == "_" else ""
+    matches = list(re.compile(pattern, re.IGNORECASE).finditer(source, cursor))
+    if len(matches) != 1:
+        raise ValueError("ambiguous" if matches else "missing")
+    return matches[0].start(), matches[0].end()
+
+
 def _correction_spans(case, source, issues):
     spans = case.get("gold_offsets") or []
     lines = case.get("gold_lines") or []
@@ -113,13 +130,13 @@ def _correction_spans(case, source, issues):
     cursor, found = 0, []
     for line in lines:
         # Without offsets an ambiguous occurrence cannot authorize a deletion.
-        matches = list(re.finditer(re.escape(line), source[cursor:], re.IGNORECASE)) if line else []
-        if len(matches) != 1:
+        try:
+            span = correction_anchor(source, line, cursor)
+        except ValueError:
             issues.append("missing_or_ambiguous_correction_span")
             continue
-        m = matches[0]
-        found.append((cursor + m.start(), cursor + m.end()))
-        cursor += m.end()
+        found.append(span)
+        cursor = span[1]
     return found
 
 
