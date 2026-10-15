@@ -206,7 +206,9 @@ class Neighbourhood:
 
 
 def _words(text: str) -> tuple:
-    return tuple(w for token in text.split() if (w := token.lower().strip(",;:")))
+    # A filler is no word of either value ("db-stage-02 uh, sorry, db-stage-03").
+    return tuple(w for token in text.split()
+                 if (w := token.lower().strip(",;:")) and w not in FILLERS)
 
 
 def neighbourhood(text: str, span: tuple, marker: int) -> Neighbourhood:

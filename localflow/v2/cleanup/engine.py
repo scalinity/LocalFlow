@@ -462,7 +462,7 @@ def correction_marker_start(window_text: str, span: tuple) -> int:
 
 def _has_content(text: str) -> bool:
     return any(w.lower() not in FUNCTION_WORDS and
-               w.lower() not in BARE_MARKERS
+               w.lower() not in BARE_MARKERS and w.lower() not in FILLERS
                for w in re.findall(r"[^\W_]+(?:['’][^\W_]+)*", text))
 
 

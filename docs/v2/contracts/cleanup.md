@@ -140,7 +140,8 @@ to the wrong occurrence.
 Proposals are **provisional**. Each accepted proposal is parsed once into
 its neighbourhood (`lexicon.neighbourhood`: the old value's words, the
 first words after the marker in the same sentence, a frame word leading
-both, and whether the replacement closes its clause) and admitted as one
+both, and whether the replacement closes its clause; a filler is no word
+of either value) and admitted as one
 `AdmittedCorrection` record (span, marker offset, exact restart and
 qualifier move). Applying the deletion, the observation record, the
 comparison view and validation all read that record; nothing re-derives
@@ -157,7 +158,7 @@ admission. Shared word classes and the number and unit grammar live in
 | resolvable at/after the cursor | `offsets_unresolved` |
 | no overlap with a protected span | `protected_span` |
 | stays inside one sentence, or replaces the sentence or sentence-final value the next sentence restates (**Restatements**); the period of a title (`Dr.`, `Mr.`, `Mrs.`, `Ms.`, `Prof.`) or of `a.m.`/`p.m.` before a lowercase word or digit ends no sentence (`lexicon.SENTENCE_END`) | `crosses_sentence` |
-| the outdated value X (before the marker) has a content word | `no_outdated_value` |
+| the outdated value X (before the marker) has a content word (a filler is none) | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
 | through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, two closed identifiers, or Y restates X; the replacement does not open a new predicate unless it restates X | `not_parallel` |
