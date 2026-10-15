@@ -38,11 +38,13 @@ DETERMINISTIC = "deterministic"
 HEURISTIC = "heuristic"
 
 # Immediate function-word stutter repeats ("the the", "i i") — doubling
-# is never legit prose for these (V1's REPEAT_RE set). "had had" and
-# "that that" are meaningful and NOT here.
+# is never legit prose for these (V1's REPEAT_RE set, plus "they" and the
+# modals that are never nouns). "had had", "that that", "will will" and
+# "can can" are meaningful and NOT here.
 STUTTER_WORDS = frozenset({
     "the", "a", "an", "to", "and", "but", "or", "of", "in", "on", "at",
-    "i", "we", "you", "it", "for", "with", "my", "your", "this",
+    "i", "we", "you", "it", "they", "for", "with", "my", "your", "this",
+    "should", "would", "could",
 })
 
 UNCERTAINTY_WORDS = frozenset({
