@@ -33,8 +33,16 @@ def log_decay(A_log: mx.array, a: mx.array, dt_bias: mx.array) -> mx.array:
 
 def unit_lower_inverse(u: mx.array) -> mx.array:
     """Inverse of a batch of unit lower-triangular [..., n, n] matrices, n a
-    power of two: inv([[A, 0], [C, D]]) = [[A^-1, 0], [-D^-1 C A^-1, D^-1]],
-    with A and D inverted together in one batched recursion."""
+    power of two. The batch dims are folded into one first: each recursion level
+    stacks a new leading axis (six levels for 64x64 blocks) and MLX's CUDA
+    kernels take at most 10 dims. The arithmetic per matrix is unchanged."""
+    s = u.shape
+    return _unit_lower_inverse(u.reshape(-1, *s[-2:])).reshape(s)
+
+
+def _unit_lower_inverse(u: mx.array) -> mx.array:
+    """inv([[A, 0], [C, D]]) = [[A^-1, 0], [-D^-1 C A^-1, D^-1]], with A and D
+    inverted together in one batched recursion."""
     n = u.shape[-1]
     if n == 1:
         return mx.ones_like(u)
