@@ -108,9 +108,6 @@ class PolicyAggregateTests(unittest.TestCase):
                           'extra_format_edits': {'total': 0, 'per_case': None}})
 
 
-if __name__ == '__main__':
-    unittest.main()
-
 
 class MinimalTargetTests(unittest.TestCase):
     def check(self, source, target, expected, changes=None, exclusion=None):
@@ -251,3 +248,7 @@ class MinimalTargetTests(unittest.TestCase):
                    exclusion="adds_undictated_words:the")
         got, _, excluded = policy_score.minimal_target("open cooper netties", "Open Kubernetes.", ["Kubernetes"])
         self.assertIsNone(excluded)
+
+
+if __name__ == '__main__':
+    unittest.main()
