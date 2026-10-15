@@ -48,6 +48,10 @@ class AbbreviationPeriodTests(unittest.TestCase):
             ("I called Dr. Okafor. Sorry, Dr. Lindqvist called me.", "Dr. Okafor. Sorry"),
             # A lowercase unit abbreviation is not a title.
             ("The latency is 5 ms. sorry, 6 ms on the second run.", "5 ms. sorry"),
+            # A title's period opens no sentence either, so this old value
+            # is the tail of one and its restatement repeats no end.
+            ("Please email Dr. Okafor rescheduled the review to Friday. Sorry, Okafor "
+             "rescheduled the review to Thursday.", "Okafor rescheduled the review to Friday. Sorry"),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], ["crosses_sentence"]))

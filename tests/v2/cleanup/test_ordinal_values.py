@@ -47,6 +47,14 @@ class OrdinalValueTests(unittest.TestCase):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], ["not_parallel"]))
 
+    def test_a_decimal_value_that_opens_a_predicate_is_no_replacement(self):
+        # "2.5 hours is the limit" starts a new clause; a decimal point does
+        # not end the replacement before its auxiliary.
+        self.assertEqual(reasons("1.5 hours, no", "Ship 1.5 hours, no, 2.5 hours is the limit."),
+                         ([], ["not_parallel"]))
+        self.assertEqual(reasons("1.5 hours, no", "Ship 1.5 hours, no, 2.5 hours today."),
+                         (["1.5 hours, no"], []))
+
     def test_a_yes_no_contrast_is_not_a_correction(self):
         for source, proposal in (("Say yes to the first, no to the second.", "to the first, no"),
                                  ("Say yes to 3, no to 4.", "3, no")):

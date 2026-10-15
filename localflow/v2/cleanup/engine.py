@@ -239,7 +239,6 @@ def _block_ranges(text: str) -> list[tuple[int, int, str]]:
     return out
 
 
-_SENTENCE_END_RE = re.compile(r"[.!?](?:\s|$)")
 # A cut never falls within six words after a marker — a marker phrase
 # ("i mean", "no wait") or a single-word marker — because the
 # replacement follows it. A bare "i" or "wait" is not a marker.
@@ -637,6 +636,9 @@ def _parallel(n: Neighbourhood) -> bool:
                 & set(y_words))
 
 
+_SENTENCE_END_RE = re.compile(SENTENCE_END)
+
+
 def _restated_across_sentences(n: Neighbourhood) -> bool:
     """The marker opens the sentence after the one the old value ends.
 
@@ -659,7 +661,8 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
     before = s
     while before and text[before - 1].isspace():
         before -= 1
-    if not before or text[before - 1] in ".!?" or "\n" in text[before:s]:
+    # "Dr. " opens no sentence.
+    if not before or "\n" in text[before:s] or _SENTENCE_END_RE.match(text, before - 1):
         return shape is not None
     # Merged into the old sentence, the replacement must repeat the old
     # value's end: "the blue folder on the counter. Actually, the blue
@@ -763,8 +766,9 @@ def _replacement_opens_predicate(n: Neighbourhood) -> bool:
     its noun) makes that value a new subject, so deleting the old value
     would attach the clause to the old frame and drop a bare "no".
     """
-    clause = re.split(r"[,;.!?\n]", n.text[n.end:n.end + LOOKAHEAD_CHARS].lstrip(" \t,;:"),
-                      maxsplit=1)[0]
+    # A decimal ("2.5 hours is") or a title ("Dr. Varga is") ends no clause.
+    clause = re.split(r"[,;\n]|" + SENTENCE_END,
+                      n.text[n.end:n.end + LOOKAHEAD_CHARS].lstrip(" \t,;:"), maxsplit=1)[0]
     words = [w.lower() for w in clause.split()]
     words = words[1:4] if words[:1] and words[0] in _ARTICLES else words[:3]
     if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
