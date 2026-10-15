@@ -29,10 +29,11 @@ from . import document_nodes as dn
 from . import prompts
 from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES,
                       FRAME_PREPOSITIONS, FRAME_WORDS, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER,
-                      NEGATION_WORDS, NUMBER, NUMBER_WORDS, ORDINAL_WORD_RE,
-                      POSITIVE_NUMBER, SCALE_WORDS, SENTENCE_END, TECH_TOKEN_RE, Neighbourhood,
-                      LOOKAHEAD_CHARS, after_marker, alternation, marker_key, marker_pattern,
-                      neighbourhood, plain_words, restatement, without_trailing_markers)
+                      NEGATION_WORDS, NUMBER, ORDINAL_WORD_RE,
+                      POSITIVE_NUMBER, SENTENCE_END, TECH_TOKEN_RE, Neighbourhood,
+                      LOOKAHEAD_CHARS, after_marker, alternation, is_value_word, marker_key,
+                      marker_pattern, neighbourhood, plain_words, restatement,
+                      without_trailing_markers)
 from .correction_retention import (AdmittedCorrection, correction_view, qualifier_retention,
                                    quantity_binds, quantity_shaped, repeated_restart)
 from .validation import (validate, restore_missing_words, restore_source_spans,
@@ -488,11 +489,6 @@ _MONTHS = frozenset({"january", "february", "march", "april", "may",
                      "november", "december"})
 
 
-def _is_value_word(w: str) -> bool:
-    return (any(c.isdigit() for c in w) or w in NUMBER_WORDS or w in SCALE_WORDS
-            or ORDINAL_WORD_RE.fullmatch(w) is not None)
-
-
 _METRIC_LENGTH = re.compile(rf"{NUMBER}[ \t]+{METER}s?", re.IGNORECASE)
 
 
@@ -528,7 +524,7 @@ def _apology(n: Neighbourhood) -> bool:
         return False
     m = _APOLOGY_COMPLEMENT_RE.match(n.text, n.end)
     word = m.group(1).lower().strip(".,;:!?") if m else ""
-    return bool(m) and not (_is_value_word(word) or word in _WEEKDAYS or word in _MONTHS)
+    return bool(m) and not (is_value_word(word) or word in _WEEKDAYS or word in _MONTHS)
 
 
 def _repeated_frame_complement(n: Neighbourhood) -> bool:
@@ -632,11 +628,11 @@ def _parallel(n: Neighbourhood) -> bool:
     # An ordinal day may be corrected to a full date ("the fourteenth, no,
     # March 16").
     day = y_words[y_words.index(y) + 1:][:1]
-    if ORDINAL_WORD_RE.fullmatch(x) and y in _MONTHS and day and _is_value_word(day[0]):
+    if ORDINAL_WORD_RE.fullmatch(x) and y in _MONTHS and day and is_value_word(day[0]):
         return True
     # A digit inside an identifier (``worker_1``) is part of a name, not a
     # quantity; identifiers qualify only through the closed branch above.
-    if (_is_value_word(x) and _is_value_word(y)
+    if (is_value_word(x) and is_value_word(y)
             and not IDENTIFIER_TOKEN_RE.fullmatch(x)
             and not IDENTIFIER_TOKEN_RE.fullmatch(y)):
         return True
@@ -691,7 +687,7 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
                      else n.new_words)
     typed = (bool(old_words) and len(old_words) <= SENTENCE_FINAL_VALUE_MAX_WORDS
              and bool(new_words) and (
-        (any(_is_value_word(w) for w in old_words) and _is_value_word(new_words[0]))
+        (any(is_value_word(w) for w in old_words) and is_value_word(new_words[0]))
         or any(w in cls and new_words[0] in cls for cls in (_WEEKDAYS, _MONTHS)
                for w in old_words)))
     return (typed and _replacement_closes_within(n, len(n.old_words) + 1)
@@ -798,7 +794,7 @@ def _replacement_opens_predicate(n: Neighbourhood) -> bool:
     words = words[1:4] if words[:1] and words[0] in _ARTICLES else words[:3]
     if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
         return True
-    return (len(words) == 3 and _is_value_word(words[0])
+    return (len(words) == 3 and is_value_word(words[0])
             and words[1] not in FUNCTION_WORDS and words[2] in _PREDICATE_AUXILIARIES)
 
 
@@ -846,7 +842,7 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
         return span
     old = [w.lower().strip(",;:") for w in text[start:marker].split()]
     if not (len(old) == 1 or (len(old) == 2 and
-            (old[0] in {"a", "an", "the"} or _is_value_word(old[0])))):
+            (old[0] in {"a", "an", "the"} or is_value_word(old[0])))):
         return span
     n = neighbourhood(text, (prefix_start, end), marker)
     if n.frame != prefix.group(1).lower():

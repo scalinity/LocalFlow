@@ -132,9 +132,25 @@ class RestatedAdmissionTests(unittest.TestCase):
             ('The sign says "turn left at the north gate, no wait, turn right at the '
              'north gate" in both languages.',
              "turn left at the north gate, no wait", "span_too_long"),
+            # Nothing repeats before the change, and the replacement has no
+            # counterpart for "Tell her"; "her" there is no determiner.
+            ("Tell her Maria will own the grid export, sorry, Jonas will own the grid "
+             "export.", "Tell her Maria will own the grid export, sorry", "span_too_long"),
+            ("Tell her Maria will own the grid export, sorry, Jonas will own the grid "
+             "export.", "her Maria will own the grid export, sorry", "span_too_long"),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], [reason]))
+
+    def test_a_longer_change_opens_with_what_its_replacement_takes_over(self):
+        for source, proposal in (
+            ("Also pull 3 spare bobbins of weft yarn, actually, 4 bobbins of weft yarn, "
+             "because the blue runs out fast.", "3 spare bobbins of weft yarn, actually"),
+            ("Tell them the night nurse is on call, sorry, Jonas is on call.",
+             "the night nurse is on call, sorry"),
+        ):
+            with self.subTest(proposal=proposal):
+                self.assertEqual(reasons(proposal, source), ([proposal], []))
 
     def test_a_restated_short_value_still_needs_its_marker_evidence(self):
         # Under the cap a single-word marker still needs parallel words: the
