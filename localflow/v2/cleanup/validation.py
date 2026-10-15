@@ -171,16 +171,22 @@ _UNIT_SYMBOL_WORDS = frozenset(_UNIT_WORDS)
 
 def _numeric_phrase_spans(text: str) -> list:
     """[(start, end, value)] for number-word phrases, including a
-    trailing unit-symbol word when present."""
+    trailing unit-symbol word when present. A phrase's words are
+    separated by spaces only: "the Tuesday one. Four, set …" holds 1 and
+    4, not 5."""
     words = _spans_words(text)
+
+    def joined(j):
+        return re.fullmatch(r"[ \t]+", text[words[j - 1][1]:words[j][0]]) is not None
+
     out = []
     i = 0
     while i < len(words):
         if words[i][2] in _NUMBERS or words[i][2] in _SCALES:
-            j = i
-            while j < len(words) and (words[j][2] in _NUMBERS
-                                      or words[j][2] in _SCALES
-                                      or words[j][2] == "point"):
+            j = i + 1
+            while j < len(words) and joined(j) and (words[j][2] in _NUMBERS
+                                                    or words[j][2] in _SCALES
+                                                    or words[j][2] == "point"):
                 j += 1
             phrase_words = [w[2] for w in words[i:j]]
             head, tail = phrase_words, []
@@ -193,7 +199,7 @@ def _numeric_phrase_spans(text: str) -> list:
                 v = v + d if d is not None else None
             if v is not None:
                 end = words[j - 1][1]
-                if j < len(words) and words[j][2] in _UNIT_SYMBOL_WORDS:
+                if j < len(words) and joined(j) and words[j][2] in _UNIT_SYMBOL_WORDS:
                     end = words[j][1]
                 out.append((words[i][0], end, v))
             i = j
@@ -948,29 +954,7 @@ def _numeric_values_in(text: str) -> list:
         v = _number_value(m.group(0))
         if v is not None:
             vals.append(v)
-    words = _spans_words(text)
-    i = 0
-    phrase: list = []
-    while i <= len(words):
-        w = words[i][2] if i < len(words) else ""
-        if w in _NUMBERS or w in _SCALES or w == "point":
-            phrase.append(w)
-            i += 1
-            continue
-        if phrase:
-            head, tail = phrase, []
-            if "point" in phrase:
-                cut = phrase.index("point")
-                head, tail = phrase[:cut], phrase[cut + 1:]
-            v = _parse_number_words(head)
-            if v is not None and tail:
-                d = _parse_decimal_tail(tail)
-                v = v + d if d is not None else None
-            if v is not None:
-                vals.append(v)
-            phrase = []
-        i += 1
-    return vals
+    return vals + [v for _s, _e, v in _numeric_phrase_spans(text)]
 
 
 def _spoken_label_run(source: str, values: list) -> list:
