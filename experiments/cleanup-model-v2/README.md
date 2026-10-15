@@ -250,3 +250,46 @@ For duplicates, `duplicate_of` names the original pair. Output IDs follow
 `judge.run`'s canonical case/system/stage hash; the agreement adapter uses
 expanded case/system/stage rows as well, since the judge deduplicates equal text.
 Do not regenerate or replace a packet while annotations refer to its IDs.
+
+### Judge–human agreement
+
+`v2.research_agreement PAIRS KEY ANNOTATIONS --judge NAME=VERDICTS ...`
+reads the annotation app's JSONL records
+`{"pair_id":"...","choice":"a","note":"","seconds":2,"annotated_at":"..."}`.
+Choices are `a`, `b`, `tie`, `both_wrong` or null. The last line for a pair
+wins; null undoes it. Timestamps do not override file order. Unknown pair IDs
+and invalid choices are errors. Cost: $0.
+
+Each judge input can be normalized `{"pair_id":"...","choice":"a"}` JSONL,
+or the existing expanded `verdicts.jsonl`. Expanded verdicts require
+`--rule FILE`: a pre-declared conversion from individual output verdicts to
+pair preferences. This implementation does not choose that scientific rule.
+The rule file must have `failure_fields` (a nonempty list of verdict boolean
+fields) and `quality` (an ordered list of `{"field":"enum_field","tiers":[...]}`
+objects). Each tier is an array of equivalent enum values; all enum values
+must occur exactly once, from worst to best. Quality fields are compared
+lexicographically in the supplied order. Two outputs with any declared
+failure yield `both_wrong`; one failure loses; otherwise quality selects a
+side, with equal quality yielding `tie`. Empty quality gives ties among
+nonfailures. Freeze this rule in the pre-registration before agreement analysis.
+
+The JSON result reports accuracy, nominal kappa, a full four-by-four confusion
+table (human rows, judge columns) and missing-judge counts per vendor. The
+primary population excludes duplicate pairs to avoid counting them twice;
+`including_duplicates` reports the expanded population separately. The human
+test-retest section counts completed duplicate/original comparisons, exact
+choice consistency and its confusion table. Unanswered/undone comparisons are
+excluded with counts; an empty denominator returns null. All four choices,
+including tie and both_wrong, remain distinct categories.
+
+`--choices-dir DIR` exports `human.jsonl` and `NAME.jsonl` with all unique
+pair IDs and explicit nulls, ready for `stats ratings`. For expanded verdicts
+with the adjacent `identity.json`, it also exports `NAME-positions.jsonl`:
+preferences oriented to the actual relative order of those two systems in
+the initial blinded request. `judge --swap-order` reverses that request order
+without changing prompt text, IDs or deduplication. Position exports omit
+duplicates, missing verdicts and equal-text outputs sharing one deduplicated
+position. `stats position` insists the two exported populations match and
+really reverse their systems; it never silently intersects them. This measures
+relative order within a multi-output request, not exclusively a two-output
+presentation. Human annotation remains a separate two-output presentation.
