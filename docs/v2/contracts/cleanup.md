@@ -371,8 +371,10 @@ sequence words
 (`then`, `after that`, `next`, `last`, optionally after `and`) inside a
 source sentence that stand exactly between two numbered items (the word
 before them ends one item and the words after them open the next) when a
-spoken-list marker opens an item (a bare `and` and a sentence that opens
-with `Then` stay content), and **matched
+spoken-list marker opens an item (a bare `and`, a sentence that opens
+with `Then`, and a sequence word after a condition in its sentence, the
+condition's consequent as in `if the build fails then roll back`, stay
+content), and **matched
 vocabulary replacements**: an alias occurrence
 in the source is authorized only while the output holds a corresponding
 extra canonical occurrence — a word outside every matched alias is

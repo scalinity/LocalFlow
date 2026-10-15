@@ -7,8 +7,9 @@ item ends and the next begins: the numbering carries the order. Only
 sequence words ("then", "after that", "next", "last", optionally after
 "and") qualify, only inside a source sentence, only between numbered
 items, and only when a spoken enumeration marker opens an item. A bare
-"and", a "then" inside an item, a sentence that opens with "Then" and a
-list with no spoken enumeration still keep every word.
+"and", a "then" inside an item, a "then" after a condition in its
+sentence, a sentence that opens with "Then" and a list with no spoken
+enumeration still keep every word.
 
 Run: .venv/bin/python -m unittest tests/v2/cleanup/test_sequence_connectives.py
 """
@@ -56,6 +57,9 @@ class SequenceConnectiveTests(unittest.TestCase):
             # A sentence that opens with a sequence word is the speaker's prose.
             ("First, rinse the beaker. Then dry it on the rack. After that, label the shelf.",
              "1. Rinse the beaker.\n2. Dry it on the rack.\n3. Label the shelf."),
+            # "then" after a condition is its consequent.
+            ("First, if the build fails then roll back the release. Second, notify the team.",
+             "1. If the build fails\n2. Roll back the release\n3. Notify the team"),
             # Bullets carry no order.
             ("First close the shutter then purge the line then log the temperature.",
              "- Close the shutter.\n- Purge the line.\n- Log the temperature."),

@@ -489,9 +489,11 @@ def _sequence_connective_spans(source: str, output: str, correction_spans=()) ->
     separator, as the numbering carries the order. Only sequence words
     qualify ("then", "after that", "next", "last", optionally after
     "and"), and only inside a source sentence: a sentence that opens with
-    "Then" is the speaker's own prose. A bare "and" can join two objects of
-    one instruction and stays content. The caller applies this only when a
-    spoken enumeration marker already opens an item.
+    "Then" is the speaker's own prose. A sequence word after a condition
+    in its sentence ("if the build fails then roll back") is the
+    condition's consequent, never a separator. A bare "and" can join two
+    objects of one instruction and stays content. The caller applies this
+    only when a spoken enumeration marker already opens an item.
     """
     items = [[a[2] for a in _word_atoms(m.group(1))]
              for m in map(_ORDERED_ITEM_RE.match, output.split("\n")) if m]
@@ -501,8 +503,10 @@ def _sequence_connective_spans(source: str, output: str, correction_spans=()) ->
              if a[2] not in FILLERS and not _overlaps(correction_spans, a[0], a[1])]
     spans = []
     for m in _SEQUENCE_RE.finditer(source):
+        clause = re.split(r"[.!?;:\n]", source[:m.start()])[-1]
         if (_overlaps(correction_spans, m.start(), m.end())
-                or re.search(r"(?:^|[.!?;:\n])[\s\"'”’)]*$", source[:m.start()])):
+                or not re.search(r"\w", clause)
+                or {w for _s, _e, w in _word_atoms(clause)} & _CONDITION_WORDS):
             continue
         before = [a[2] for a in atoms if a[1] <= m.start()]
         after = [a[2] for a in atoms if a[0] >= m.end()]
