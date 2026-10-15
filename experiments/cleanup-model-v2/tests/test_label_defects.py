@@ -167,6 +167,14 @@ class QuestionTests(unittest.TestCase):
             with self.subTest(target=target):
                 self.assertIsNone(defects.question_keeps_period('', target, []))
 
+    def test_a_because_clause_kept_inside_a_question_is_a_defect(self):
+        for target in ('Did it pass, because I think the cache is stale?', 'Did it pass because the cache is stale.'):
+            with self.subTest(target=target):
+                self.assertTrue(defects.question_keeps_because_clause('', target, []))
+        for target in ('Did it pass? Because I think the cache is stale.', 'Why did it fail because of the timeout?',
+                       'Because the cache is stale, should we rerun it?', 'It failed because the cache is stale.'):
+            with self.subTest(target=target):
+                self.assertIsNone(defects.question_keeps_because_clause('', target, []))
 
 
 class UnexplainedRewriteTests(unittest.TestCase):

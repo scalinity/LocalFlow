@@ -211,6 +211,7 @@ QUESTIONS = [
     re.compile(rf",\s+(?:and\s+|or\s+)?{WH}\b(?:\s+(?!{PRONOUN}\b)[\w'-]+){{0,2}}\s+{AUX}\s+{SUBJECT_PRONOUN}\b", re.I),
 ]
 IMPERATIVE = re.compile(r"^(?:\W*)(?:do not|don't|please|have the|have them|have someone|have a)\b", re.I)
+BECAUSE_CLAUSE = re.compile(r"\bbecause\b(?!\s+of\b)", re.I)
 STEP_LABEL = re.compile(r"\bstep\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b", re.I)
 NUMBER_WORDS = {w: n for n, w in enumerate("one two three four five six seven eight nine ten".split(), 1)}
 
@@ -244,6 +245,15 @@ def question_keeps_period(source, target, offsets, vocabulary_pairs=()):
     return {"reason": "question_keeps_period", "sentences": hits} if hits else None
 
 
+def question_keeps_because_clause(source, target, offsets, vocabulary_pairs=()):
+    """A direct question that keeps a because-clause after it in the same sentence ("did it
+    pass, because I think the cache is stale?"). Development labels end the question and
+    start the clause anew ("Did it pass? Because I think the cache is stale.")."""
+    hits = [s for s, _end in _sentences(target)
+            if BECAUSE_CLAUSE.search(s, 1) and is_direct_question(s)]
+    return {"reason": "question_keeps_because_clause", "sentences": hits} if hits else None
+
+
 def step_labels_kept_as_prose(source, target, offsets, vocabulary_pairs=()):
     """Two or more consecutive spoken step labels ("step 1 ... step 2", "step one ... step
     two") that the target keeps as prose. The prompt makes such steps a numbered list; "the
@@ -258,7 +268,7 @@ def step_labels_kept_as_prose(source, target, offsets, vocabulary_pairs=()):
 
 RULES = (gold_deletion_kept_by_target, drops_dictated_word, loses_sentence_boundary,
          sequence_words_made_numbers, gold_line_not_marker_terminated, step_labels_kept_as_prose,
-         question_keeps_period)
+         question_keeps_period, question_keeps_because_clause)
 
 
 def label_defect(source, target, offsets, vocabulary_pairs=()):
