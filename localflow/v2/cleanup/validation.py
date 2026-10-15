@@ -1521,7 +1521,7 @@ def _incomplete_restart_spans(source: str, output: str, ctx) -> list:
     return spans
 
 
-_MARKER_RE = re.compile(rf"(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS)})(?!\w)", re.IGNORECASE)
+_MARKER_RE = re.compile(_MARKER_WORDS, re.IGNORECASE)
 _RESTATED_MAX_WORDS = 12
 
 
