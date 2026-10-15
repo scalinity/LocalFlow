@@ -104,9 +104,9 @@ def _pieces(text):
 GROUP_ADDRESSEES = {"everyone", "everybody", "all", "team", "guys", "folks", "sir", "madam", "ma'am", "class",
                     "people", "kids", "students", "friends", "ladies", "gentlemen", "y'all", "mom", "mum",
                     "dad", "honey"}
+# April, May, June and August are also given names, so they may be addressed ("Thanks, June.").
 NOT_PERSONS = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "january",
-               "february", "march", "april", "may", "june", "july", "august", "september", "october",
-               "november", "december"}
+               "february", "march", "july", "september", "october", "november", "december"}
 I_FORMS = {"i", "i'm", "i'll", "i've", "i'd"}
 # A period after these ends no sentence: "Dr. Patel", "St. Louis".
 ABBREVIATIONS = {"dr", "mr", "mrs", "ms", "st", "prof", "jr", "sr", "vs", "mt", "ft"}

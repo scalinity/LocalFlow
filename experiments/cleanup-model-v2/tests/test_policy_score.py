@@ -189,6 +189,12 @@ class MinimalTargetTests(unittest.TestCase):
         self.check("the call with Dr. Okonkwo-Reyes and I want them", "The call with Dr. Okonkwo-Reyes, and I want them.",
                    "The call with Dr. Okonkwo-Reyes and I want them.", ["optional_gap_comma"])
 
+    def test_months_that_are_given_names_may_be_addressed(self):
+        self.check("thanks june", "Thanks, June.", "Thanks, June.", [])
+        self.check("see you may", "See you, May.", "See you, May.", [])
+        self.check("in june we ship the kiln", "In June, we ship the kiln.", "In June we ship the kiln.",
+                   ["optional_gap_comma"])
+
     def test_conjunction_introductory_and_list_commas_still_go(self):
         for source, target, expected in (
                 ("send it to marta and then call her", "Send it to Marta, and then call her.",
