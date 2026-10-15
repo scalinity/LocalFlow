@@ -35,6 +35,16 @@ class AddedWordTests(unittest.TestCase):
                 self.assertIn("novelty", [c.name for c in report.critical_failures])
                 self.assertEqual(clean_proposal(source, output).text, source)
 
+    def test_a_filler_after_a_spoken_list_marker_does_not_hide_its_item(self):
+        source = ("We found 3 problems. First, the stress marker is missing. Second, the "
+                  "abbreviation maps twice. Third, uh numbers above ten thousand are read "
+                  "digit by digit.")
+        output = ("We found 3 problems.\n\n1. The stress marker is missing.\n2. The "
+                  "abbreviation maps twice.\n3. Numbers above ten thousand are read digit "
+                  "by digit.")
+        self.assertTrue(validate(source, output).accepted)
+        self.assertEqual(clean_proposal(source, output).text, output)
+
     def test_existing_article_substitution_has_no_extra_occurrence(self):
         self.assertTrue(validate("Write a RFC.", "Write an RFC.").accepted)
         report = validate("Write a RFC.", "Write an RFC and an RFC.")

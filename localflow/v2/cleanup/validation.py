@@ -436,9 +436,12 @@ def _enum_spans_when_list_rendered(source: str, output: str,
         rest = source[rest_start:]
         stop = re.search(r"[.!?](?=\s|$)|\n", rest)
         rest = rest[:stop.start()] if stop else rest
+        # Fillers ("Third, uh numbers …") are dropped anyway; the content
+        # head is the first word the item can start with.
         after = [w for s, e, w in _word_atoms(rest)
-                 if not _overlaps(correction_spans, s + rest_start,
-                                  e + rest_start)][:3]
+                 if w not in FILLERS
+                 and not _overlaps(correction_spans, s + rest_start,
+                                   e + rest_start)][:3]
         head = next((w for w in after if w not in FUNCTION_WORDS),
                     after[0] if after else None)
         if head is None:
