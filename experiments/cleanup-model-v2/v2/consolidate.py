@@ -109,8 +109,12 @@ def collect():
     return rows, summary
 
 
-def build(dataset=DATASET):
-    """Capture TRAIN and validation with the current engine and freeze the dataset."""
+def build(dataset=DATASET, consistent=False):
+    """Capture TRAIN and validation with the current engine and freeze the dataset.
+
+    consistent also supervises a row the engine does not deliver exactly, with
+    only the calls whose prompt and target agree (assemble.capture).
+    """
     from .assemble import capture
     from .refinement import SOURCE_FILES
     from .training import checked_dataset
@@ -121,19 +125,24 @@ def build(dataset=DATASET):
     source_hashes = {p: file_sha256(ROOT / p) for p in SOURCE_FILES}
     dataset.mkdir(parents=True, exist_ok=True)
     captures, failures, oracle = [], collections.Counter(), collections.Counter()
-    vetoed = collections.Counter()
+    vetoed, partial, vetoed_calls = collections.Counter(), collections.Counter(), collections.Counter()
     for row in rows:
         try:
-            cap = capture(row)
+            cap = capture(row, consistent_only=consistent)
         except (ValueError, RuntimeError) as exc:
             failures[str(exc).split(":")[0]] += 1
             continue
         exact = bool(row.get("engine_oracle", {}).get("exact"))
         oracle[str(exact)] += 1
+        focus = row.get("focus") or row.get("category") or "unknown"
         if not exact:
-            # The serving engine would discard this target; keep it out of supervision.
-            vetoed[row.get("focus") or row.get("category") or "unknown"] += 1
-            continue
+            for call in row["engine_oracle"].get("supervision", []):
+                vetoed_calls[call["role"] + ":" + call["why"]] += 1
+            if not consistent or not cap["calls"]:
+                # The serving engine would discard this target; keep it out of supervision.
+                vetoed[focus] += 1
+                continue
+            partial[focus] += 1
         captures.append(cap)
     write_jsonl(dataset / "train.jsonl", rows)
     write_jsonl(dataset / "train_captures.jsonl", captures)
@@ -149,16 +158,21 @@ def build(dataset=DATASET):
     write_jsonl(dataset / "replay_captures.jsonl", [])
     if any(file_sha256(ROOT / p) != digest for p, digest in source_hashes.items()):
         raise RuntimeError("Engine source changed during capture")
+    train_stats = {"captured": len(captures), "capture_failures": dict(failures),
+                   "oracle_exact": dict(oracle), "engine_vetoed_by_focus": dict(vetoed)}
+    if consistent:
+        train_stats.update(partially_supervised_by_focus=dict(partial), vetoed_row_calls=dict(vetoed_calls))
     freeze = {"created": utc_now(),
               "files": {p.name: file_sha256(p) for p in sorted(dataset.glob("*.jsonl"))},
               "capture_source_hashes": source_hashes, "validation_capture_source_hashes": source_hashes,
               "stats": {"collect": summary,
-                        "train": {"captured": len(captures), "capture_failures": dict(failures),
-                                  "oracle_exact": dict(oracle), "engine_vetoed_by_focus": dict(vetoed)},
+                        "train": train_stats,
                         "validation": {"captured": len(val_caps), "capture_failures": dict(val_failures)},
                         "replay": {"captured": 0, "source": "none: historical labels are part of the consolidated TRAIN set"}},
               "labels": "TRAIN labels normalized by policy_score.minimal_target; development and final labels unchanged.",
               "final_candidate_outputs_existed": False}
+    if consistent:
+        freeze["supervision"] = "Rows the engine vetoes keep only calls whose prompt and target agree."
     write_json(dataset / "freeze.json", freeze)
     checked_dataset(dataset)
     return freeze
@@ -185,10 +199,12 @@ if __name__ == "__main__":
     p.add_argument("--log-every", type=int, default=1, help="log training loss every N updates")
     p.add_argument("--base", help="local model directory to train a fresh adapter on instead of continuing C")
     p.add_argument("--dataset", type=Path, default=DATASET, help="dataset directory to build or train from")
+    p.add_argument("--consistent", action="store_true",
+                   help="build: also supervise vetoed rows with their calls whose prompt and target agree")
     a = p.parse_args()
     if a.stage == "collect":
         print(__import__("json").dumps(collect()[1], indent=1))
     elif a.stage == "build":
-        print(__import__("json").dumps(build(a.dataset)["stats"], indent=1))
+        print(__import__("json").dumps(build(a.dataset, a.consistent)["stats"], indent=1))
     else:
         print(__import__("json").dumps(train(a.name, a.lr, a.checkpoints, a.log_every, a.base, a.dataset)))

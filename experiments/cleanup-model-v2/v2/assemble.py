@@ -103,12 +103,40 @@ def window_targets(pair, windows):
     return {(w.start, w.end): target[cuts[i]:cuts[i+1]].strip() for i, w in enumerate(windows)}
 
 
-def capture(pair):
+# Why a call's prompt and target agree; any other reason drops the call.
+AGREEMENTS = {"corrections_target_is_gold_lines", "input_is_label_pre_cleanup"}
+
+
+def cleanup_agreement(source, offsets, window_range, input_text, answer):
+    """Whether a cleanup call's prompt and target agree, as a reason.
+
+    They agree when the engine's input is the label's pre-cleanup text for the
+    window (the source window with its gold deletions applied) and the target
+    uses no word those deletions took out, which a detail the engine did not
+    retain would otherwise put back.
+    """
+    from .label_defects import remove_spans
+    start, end = window_range
+    spans = [(s - start, e - start) for s, e in offsets if start <= s and e <= end]
+    if remove_spans(input_text, []) != remove_spans(source[start:end], spans):
+        return "input_is_not_label_pre_cleanup"
+    counts = lambda text: collections.Counter(t[2] for t in stable_tokens(text))
+    given, removed = counts(input_text), counts(source[start:end]) - counts(input_text)
+    if any(n > given[word] for word, n in counts(answer).items() if removed[word]):
+        return "target_uses_deleted_words"
+    return "input_is_label_pre_cleanup"
+
+
+def capture(pair, *, consistent_only=False):
     """Supervise correct targets even when the delivered engine vetoes them.
 
     The engine itself renders every prompt, including read-only neighboring
     context. Targets for long cases are cut only at aligned retained tokens.
     Rejected labels remain in evaluation; they never get rewritten to pass.
+    With consistent_only, a row the engine does not deliver exactly keeps only
+    the calls whose prompt and target agree: every corrections-pass call (the
+    source window answered with its gold lines) and the cleanup calls
+    cleanup_agreement accepts. engine_oracle.supervision records each call.
     """
     from localflow.v2.cleanup import engine, protected_spans_for_cleanup
     from lfx.capture import tokenizer, render_with
@@ -134,7 +162,7 @@ def capture(pair):
             raise ValueError(conflict["reason"])
     windows = engine.plan_windows(pair["model_input"], protected)
     targets = window_targets(pair, windows)
-    calls = []
+    calls, agreements = [], []
 
     class CaptureEngine(engine.CleanupEngine):
         def _generate(self, payload, *, kind, window_range, input_text, corrections_pass=False,
@@ -152,12 +180,15 @@ def capture(pair):
                 # repeats only because a correction span was removed before it.
                 if removes_created_repeat(pair["model_input"][window_range[0]:window_range[1]], input_text, answer):
                     raise ValueError("correction_created_repeat")
+            agreement = ("corrections_target_is_gold_lines" if corrections_pass else
+                         cleanup_agreement(pair["model_input"], offsets, window_range, input_text, answer))
             def reply(prompt, max_tokens):
                 ntok = len(tok.encode(answer, add_special_tokens=False)) + 1
                 if ntok + 1 > max_tokens:
                     raise ValueError("target_over_output_budget")
                 calls.append({"role":"corrections" if corrections_pass else "main", "prompt":prompt,
                               "completion":answer,"max_tokens":max_tokens,"window":list(window_range)})
+                agreements.append(agreement)
                 return {"text":answer,"output_tokens":ntok,"limit_hit":False,"prompt":prompt}
             self._generate_fn = reply
             return super()._generate(payload, kind=kind, window_range=window_range, input_text=input_text,
@@ -170,6 +201,11 @@ def capture(pair):
     pair["engine_oracle"] = {"path":result.path, "exact":result.text == pair["target"],
                              "delivered":result.text,"fallback_reason":result.fallback_reason,
                              "windows":len(windows)}
+    if consistent_only and not pair["engine_oracle"]["exact"]:
+        pair["engine_oracle"]["supervision"] = [
+            {"role":c["role"], "window":c["window"], "kept":why in AGREEMENTS, "why":why}
+            for c, why in zip(calls, agreements)]
+        calls = [c for c, why in zip(calls, agreements) if why in AGREEMENTS]
     return {"pair_id":pair["pair_id"],"family_id":pair["family_id"],"split":pair["split"],"calls":calls}
 
 

@@ -13,11 +13,11 @@ class Tokenizer:
         return text.split()
 
 
-def capture(pair):
+def capture(pair, **options):
     """Run the real engine through capture with a whitespace tokenizer."""
     with patch('lfx.capture.tokenizer', return_value=Tokenizer()), \
             patch('lfx.capture.render_with', return_value=lambda messages: json.dumps(messages)):
-        return assemble.capture(pair)
+        return assemble.capture(pair, **options)
 
 
 def pair(source, target, gold_lines=(), **fields):
@@ -152,6 +152,54 @@ class CorrectionAnchorTests(unittest.TestCase):
             capture(pair('The service is not not up.', 'The service is not up.'))
         validation = {**pair('The service is not not up.', 'The service is not up.'), 'split': 'validation'}
         self.assertEqual(capture(validation)['split'], 'validation')
+
+
+DYE = pair('Mix 4 liters of dye, no wait, 6 liters for the warp.', 'Mix 6 liters of dye for the warp.',
+           ['4 liters of dye, no wait,'])
+
+
+class ConsistentSupervisionTests(unittest.TestCase):
+    def test_an_inconsistent_cleanup_pair_is_never_kept(self):
+        row = dict(DYE)
+        captured = capture(row, consistent_only=True)
+        self.assertFalse(row['engine_oracle']['exact'])
+        self.assertEqual([(c['role'], c['completion']) for c in captured['calls']],
+                         [('corrections', '4 liters of dye, no wait,')])
+        self.assertEqual([(s['role'], s['kept'], s['why']) for s in row['engine_oracle']['supervision']],
+                         [('corrections', True, 'corrections_target_is_gold_lines'),
+                          ('main', False, 'input_is_not_label_pre_cleanup')])
+        # Without the mode, capture returns every call as before; the build vetoes the row.
+        self.assertEqual([c['role'] for c in capture(dict(DYE))['calls']], ['corrections', 'main'])
+
+    def test_a_vetoed_row_whose_cleanup_input_is_the_label_pre_cleanup_text_keeps_it(self):
+        row = pair('Um the pump is is already primed, and the valve goes in the drawer by the window.',
+                   'The pump is already primed, and the valve goes in the drawer by the window.')
+        captured = capture(row, consistent_only=True)
+        self.assertFalse(row['engine_oracle']['exact'])
+        self.assertEqual([(c['role'], c['completion']) for c in captured['calls']], [('main', row['target'])])
+        self.assertEqual(row['engine_oracle']['supervision'],
+                         [{'role': 'main', 'window': [0, len(row['model_input'])], 'kept': True,
+                           'why': 'input_is_label_pre_cleanup'}])
+
+    def test_rows_already_exact_are_captured_exactly_as_before(self):
+        source = 'We booked 16 rooms, sorry 17 rooms, for the visiting team.'
+        before, after = (pair(source, 'We booked 17 rooms for the visiting team.', ['16 rooms, sorry'])
+                         for _ in range(2))
+        self.assertEqual(capture(after, consistent_only=True), capture(before))
+        self.assertTrue(after['engine_oracle']['exact'])
+        self.assertEqual(after, before)
+
+    def test_cleanup_agreement_needs_the_label_pre_cleanup_input_and_no_deleted_word(self):
+        source = DYE['model_input']
+        offsets = [list(correction_anchor(source, DYE['gold_lines'][0]))]
+        window = (0, len(source))
+        agree = lambda text, answer: assemble.cleanup_agreement(source, offsets, window, text, answer)
+        self.assertEqual(agree('Mix 6 liters for  the warp. ', 'Mix 6 liters for the warp.'),
+                         'input_is_label_pre_cleanup')
+        # The engine did not retain the detail the label keeps: the target would invent it.
+        self.assertEqual(agree('Mix 6 liters for the warp.', DYE['target']), 'target_uses_deleted_words')
+        self.assertEqual(agree(source, DYE['target']), 'input_is_not_label_pre_cleanup')
+        self.assertEqual(agree('Mix 6 liters of dye for the warp.', DYE['target']), 'input_is_not_label_pre_cleanup')
 
 
 class DedupTests(unittest.TestCase):
