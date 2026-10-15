@@ -23,7 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from . import document_nodes as dn
 from . import prompts
@@ -545,13 +545,39 @@ def _parallel(n: Neighbourhood) -> bool:
                 & set(y_words))
 
 
+def _restated_across_sentences(n: Neighbourhood) -> bool:
+    """The marker opens the sentence after the one the old value ends.
+
+    ``The review closes on Friday. Sorry, the review closes on Thursday``
+    replaces a whole sentence its successor restates. ``The first act
+    starts at 7:40. I mean 8:40, so ...`` replaces the value that ended its
+    sentence with a parallel or restated one that closes its clause within
+    one word more than the old value and opens no predicate. Only one
+    period, right after the old value, may lie inside the span.
+    """
+    text, s, ms, e = n.text, n.start, n.marker, n.end
+    old = text[s:ms].rstrip()
+    ends = list(re.finditer(SENTENCE_END, text[s:e].rstrip(".!? ")))
+    if not old.endswith(".") or len(ends) != 1 or ends[0].start() != len(old) - 1:
+        return False
+    restated = restatement(n) is not None
+    if re.search(r"(?:\A|[.!?\n])\s*\Z", text[:s]):
+        return restated
+    value = replace(n, old_words=tuple(w.rstrip(".") for w in n.old_words))
+    return ((restated or _parallel(value) or _parallel_metric_lengths(value))
+            and _replacement_closes_within(n, len(n.old_words) + 1)
+            and not _replacement_opens_predicate(n))
+
+
 def _evidence_reason(n: Neighbourhood) -> str | None:
     """Original-source evidence that the deletion is a self-correction:
-    it stays inside one sentence, removes an outdated value X with
-    content, and a replacement Y with content follows the marker in the
-    same sentence. None when the evidence holds, else the reason."""
+    it stays inside one sentence (or replaces the sentence or value its
+    successor restates), removes an outdated value X with content, and a
+    replacement Y with content follows the marker in the same sentence.
+    None when the evidence holds, else the reason."""
     window_text, s, ms, e = n.text, n.start, n.marker, n.end
-    if re.search(SENTENCE_END, window_text[s:e].rstrip(".!? ")):
+    across = bool(re.search(SENTENCE_END, window_text[s:e].rstrip(".!? ")))
+    if across and not _restated_across_sentences(n):
         return "crosses_sentence"
     if not _has_content(window_text[s:ms]):
         return "no_outdated_value"
@@ -578,7 +604,7 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
         # A restated old value is the evidence itself, and its repeated
         # words may include the predicate ("Maria will own the grid
         # conversion, no, Jonas will own the grid conversion").
-        restated = restatement(n) is not None
+        restated = across or restatement(n) is not None
         if (not (restated or _parallel(n) or _parallel_metric_lengths(n))
                 or (not restated and _replacement_opens_predicate(n))
                 or (marker == "make that" and not _replacement_closes_within(

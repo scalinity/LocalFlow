@@ -449,7 +449,8 @@ class CorrectionRetentionTests(unittest.TestCase):
             ("We actually shipped it.", "We actually", "no_outdated_value"),
             ("Treat it as suspect and notify Mira, actually, as fine.",
              "as suspect and notify Mira, actually", "not_parallel"),
-            ("Act as guide. Actually, as host.", "as guide. Actually", "crosses_sentence"),
+            ("Act as guide. Actually, as host you need the keys.", "as guide. Actually",
+             "crosses_sentence"),
         ):
             with self.subTest(source=source):
                 accepted, rejected = parse_correction_output(deletion, source, [])

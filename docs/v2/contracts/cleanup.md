@@ -156,7 +156,7 @@ admission. Shared word classes and the number and unit grammar live in
 | the text occurs in the window no more often than it was proposed — never resolved to a first match | `ambiguous_occurrence` |
 | resolvable at/after the cursor | `offsets_unresolved` |
 | no overlap with a protected span | `protected_span` |
-| stays inside one sentence; the period of a title (`Dr.`, `Mr.`, `Mrs.`, `Ms.`, `Prof.`) or of `a.m.`/`p.m.` before a lowercase word or digit ends no sentence (`lexicon.SENTENCE_END`) | `crosses_sentence` |
+| stays inside one sentence, or replaces the sentence or sentence-final value the next sentence restates (**Restatements**); the period of a title (`Dr.`, `Mr.`, `Mrs.`, `Ms.`, `Prof.`) or of `a.m.`/`p.m.` before a lowercase word or digit ends no sentence (`lexicon.SENTENCE_END`) | `crosses_sentence` |
 | the outdated value X (before the marker) has a content word | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
@@ -218,6 +218,17 @@ parallel evidence; when the replacement opens with the word before the
 old value (`after 10 minutes of rest, no after 15 minutes of rest`), that
 word goes with the old value. The corrections-pass trigger considers such
 longer spans for `sorry`, `no` and `make that` as well.
+
+A correction may cross one sentence boundary when the old value ends its
+sentence with a period and the marker opens the next one. An old value
+that opens its sentence is replaced whole when the next sentence restates
+it (`The review closes on Friday. Sorry, the review closes on Thursday`);
+the restatement may then open its own predicate. An old value that ends
+a longer sentence takes a parallel or restated replacement that closes its
+clause within one word more than the old value and opens no predicate
+(`The first act starts at 7:40. I mean 8:40, so …`). A question or
+exclamation, a second sentence end inside the span, and a quoted pair
+stay separate sentences.
 
 **Retained details.** An exact source detail attached to an outdated
 quantity (`4 liters of dye, no wait, 6 liters`) moves beside the

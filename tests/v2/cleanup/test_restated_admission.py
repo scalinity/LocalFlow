@@ -101,9 +101,6 @@ class RestatedAdmissionTests(unittest.TestCase):
             ('The sign says "turn left at the north gate, no wait, turn right at the '
              'north gate" in both languages.',
              "turn left at the north gate, no wait", "span_too_long"),
-            # The restatement stays inside one sentence.
-            ("The review closes on Friday. Sorry, the review closes on Thursday.",
-             "The review closes on Friday. Sorry", "crosses_sentence"),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], [reason]))
