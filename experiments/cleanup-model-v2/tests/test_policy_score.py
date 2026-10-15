@@ -189,6 +189,12 @@ class MinimalTargetTests(unittest.TestCase):
                 ("dr. okafor is the term acceptable", "Dr. Okafor, is the term acceptable?")):
             with self.subTest(target=target):
                 self.check(source, target, target, [])
+        for source, target in (("and marta can you send it", "And Marta, can you send it?"),
+                               ("it took 40 ms. marta can you check it", "It took 40 ms. Marta, can you check it?"),
+                               ("park on main st. sam can you drive", "Park on Main St. Sam, can you drive?")):
+            with self.subTest(target=target):
+                self.check(source, target, target, [])
+        self.check("and marta will lead it", "And Marta, will lead it.", "And Marta will lead it.", ["optional_gap_comma"])
         # A title's period ends no sentence, so a name after it is not sentence-initial.
         self.check("the call with Dr. Okonkwo-Reyes and I want them", "The call with Dr. Okonkwo-Reyes, and I want them.",
                    "The call with Dr. Okonkwo-Reyes and I want them.", ["optional_gap_comma"])

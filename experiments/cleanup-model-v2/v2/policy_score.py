@@ -144,11 +144,12 @@ def _addressee(word):
 
 
 def _opens(words, gaps, i):
-    """Whether word i opens the text or a sentence."""
+    """Whether word i opens the text or a sentence. Only a title's period ("Dr. Okafor")
+    ends no sentence: "40 ms. Marta" and "Main St. Sam" start a new one."""
     if i == 0 or "\n" in gaps[i]:
         return True
     return re.search(r"[.!?][\"'”’)\]]*\s", gaps[i]) is not None and not (
-        gaps[i].startswith(".") and words[i - 1].casefold() in ABBREVIATIONS)
+        gaps[i].startswith(".") and words[i - 1].casefold() in TITLES and words[i - 1][:1].isupper())
 
 
 def _sets_off_addressee(words, gaps, k):
@@ -189,7 +190,9 @@ def _sets_off_addressee(words, gaps, k):
             p -= 1
         else:
             break
-    if _opens(words, gaps, p):
+    # A sentence-opening "And Marta," leaves the name sentence-initial, subject check and all.
+    if _opens(words, gaps, p) or (p >= 1 and words[p - 1].casefold() in ("and", "but", "or")
+                                  and _opens(words, gaps, p - 1)):
         if words[p].casefold() in OPENERS:
             return False
         end = next((i for i in range(k, n) if re.search(r"[.!?\n]", gaps[i + 1])), n - 1)
