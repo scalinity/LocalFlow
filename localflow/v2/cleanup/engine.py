@@ -956,15 +956,15 @@ def parse_correction_output(output: str, window_text: str,
         if len(delete) > RESTATED_SPAN_MAX_CHARS:
             rejected.append(CorrectionProposal(None, False, "span_too_long", delete=delete))
             continue
-        if len(accepted) >= CORRECTIONS_MAX:
-            rejected.append(CorrectionProposal(None, False, "too_many_corrections", delete=delete))
-            continue
         if not SPAN_ENDS_WITH_MARKER_RE.search(delete):
             rejected.append(CorrectionProposal(None, False,
                                                "no_marker_ending", delete=delete))
             continue
         if marker_key(delete) in BARE_MARKERS:
             rejected.append(CorrectionProposal(None, False, "bare_marker", delete=delete))
+            continue
+        if len(accepted) >= CORRECTIONS_MAX:
+            rejected.append(CorrectionProposal(None, False, "too_many_corrections", delete=delete))
             continue
         proof = _span_proof(delete)
         occ = occurrences(delete)

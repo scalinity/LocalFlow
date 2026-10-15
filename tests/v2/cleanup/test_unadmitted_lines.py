@@ -35,6 +35,12 @@ class UnadmittedLineTests(unittest.TestCase):
         self.assertEqual(result.path, "llm")
         self.assertEqual(result.text, target.replace("then 14 boxes", "then 13 boxes, no 14 boxes"))
 
+    def test_a_malformed_line_past_the_cap_keeps_its_own_reason(self):
+        lines = PROPOSALS[:CORRECTIONS_MAX] + ["13 boxes", "no wait", "13 boxes, no"]
+        _accepted, rejected = parse_correction_output("\n".join(lines), SOURCE, [])
+        self.assertEqual([r.reason for r in rejected],
+                         ["no_marker_ending", "bare_marker", "too_many_corrections"])
+
     def test_a_restated_line_may_run_past_the_character_limit(self):
         source = ("Plan the route. The north crew should stage 6 crates of bottled water before "
                   "the lead riders arrive. Sorry, the north crew should stage 8 crates of bottled "
