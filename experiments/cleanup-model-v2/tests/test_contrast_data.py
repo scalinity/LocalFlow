@@ -335,15 +335,61 @@ class PipelineTests(unittest.TestCase):
                 contrast_data._wave(NAME, self.specs(), (0.0, 0.0))
         self.assertIs(data.Wave, original)
 
-    def run_wave(self, root, specs, calls, rates=(0.0, 0.0), guidance=""):
+    def run_wave(self, root, specs, calls, rates=(0.0, 0.0), guidance="", name=NAME):
         with patch.object(data, "ART", root), patch.object(contrast_data, "ART", root), \
                 patch.object(data, "wave", fake_wave(calls)), patch.object(data, "anthropic_client", no_client), \
                 patch.object(batches, "LEDGER", root / "claude" / "ledger.json"), contextlib.redirect_stdout(io.StringIO()):
-            contrast_data._wave(NAME, specs, rates, guidance)
+            contrast_data._wave(name, specs, rates, guidance)
 
-    def specs(self):
+    def specs(self, wave=NAME):
         wanted = {"v6-tr-steps-000", "v6-tr-steps-001", "v6-tr-items-000", "v6-tr-items-001", "v6-tr-question-000"}
-        return [s for s in plan() if s["contrast_group_id"] in wanted]
+        return [s for s in plan(wave) if s["contrast_group_id"] in wanted]
+
+    def test_retry_submits_only_complete_missing_families_or_nothing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.run_wave(root, self.specs(), [])
+            for inexact in ((), ("v6-tr-items-001-prose-base",)):
+                with self.subTest(inexact=inexact), patch.object(contrast_data, "ART", root), \
+                        patch.object(contrast_data, "KINDS", {"steps": 2, "items": 2, "question": 1}), \
+                        patch("v2.consolidate._held_out_texts", return_value=set()), \
+                        patch("v2.assemble.capture", exact_capture(inexact=inexact)), \
+                        patch.object(contrast_data, "_rates", return_value=(0.1, 0.2)) as rates, \
+                        patch.object(contrast_data, "_wave") as submit, contextlib.redirect_stdout(io.StringIO()):
+                    contrast_data.retry()
+                    if inexact:
+                        expected = [s for s in plan(RETRY) if s["contrast_group_id"] == "v6-tr-items-001"]
+                        self.assertEqual([s["twin"] for s in expected], ["list", "prose"])
+                        submit.assert_called_once_with(RETRY, expected, (0.1, 0.2), contrast_data.RETRY_GUIDANCE)
+                        rates.assert_called_once_with(NAME)
+                    else:
+                        submit.assert_not_called()
+                        rates.assert_not_called()
+
+    def test_assembly_prefers_the_first_successful_wave_for_each_family(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.run_wave(root, self.specs(), [])
+            self.run_wave(root, self.specs(RETRY), [], name=RETRY)
+            retry_path = root / "accepted" / (RETRY + ".jsonl")
+            retry_rows = read_jsonl(retry_path)
+            for row in retry_rows:
+                row["notes"] = "retry fixture"
+            contrast_data.write_jsonl(retry_path, retry_rows)
+            first_path = root / "accepted" / (NAME + ".jsonl")
+            first_rows = read_jsonl(first_path)
+            first_rows = [r for r in first_rows if r["family_id"] != "v6-tr-items-001-prose"]
+            contrast_data.write_jsonl(first_path, first_rows)
+            with patch.object(contrast_data, "ART", root), \
+                    patch.object(batches, "LEDGER", root / "claude" / "ledger.json"):
+                summary = contrast_data.assemble(held_out=set(), capture=exact_capture())
+            self.assertEqual((summary["accepted"], summary["families"]), (10, 5))
+            rows = read_jsonl(root / "contrast" / "train.jsonl")
+            self.assertEqual({r["family_id"] for r in rows if r["notes"] == "retry fixture"},
+                             {"v6-tr-items-001-list", "v6-tr-items-001-prose"})
+            receipt = read_json(root / "contrast" / "train.selection.json")
+            selected = collections.Counter(r["wave"] for r in receipt["records"] if r["selected"])
+            self.assertEqual(selected, {NAME: 8, RETRY: 2})
 
     def test_one_request_per_family_and_the_contract_is_restored(self):
         gen, verify = data.GEN_SYSTEM, data.VERIFY_SYSTEM
