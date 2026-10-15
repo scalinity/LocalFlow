@@ -173,7 +173,7 @@ def _numeric_phrase_spans(text: str) -> list:
     """[(start, end, value)] for number-word phrases, including a
     trailing unit-symbol word when present. A phrase's words are
     separated by spaces only: "the Tuesday one. Four, set …" holds 1 and
-    4, not 5."""
+    4, not 5, and a phrase never ends in "point"."""
     words = _spans_words(text)
 
     def joined(j):
@@ -188,6 +188,10 @@ def _numeric_phrase_spans(text: str) -> list:
                                                     or words[j][2] in _SCALES
                                                     or words[j][2] == "point"):
                 j += 1
+            # "point" belongs to a number only before its decimal digits:
+            # "we lost one point." keeps "point" as a word.
+            while words[j - 1][2] == "point":
+                j -= 1
             phrase_words = [w[2] for w in words[i:j]]
             head, tail = phrase_words, []
             if "point" in phrase_words:

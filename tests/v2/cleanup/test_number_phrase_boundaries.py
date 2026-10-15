@@ -3,7 +3,9 @@
 "load the Thursday list, not the Tuesday one. Four, set the exposure"
 read "one. Four" as the single value 5, so the spoken list "One, … Four,
 …" rendered as numbered items failed numeric_values. A phrase's words are
-separated by spaces only. A changed or dropped number word still fails.
+separated by spaces only, and a phrase never ends in "point" (in "we lost
+one point." the word stays). A changed or dropped number word still
+fails.
 
 Run: .venv/bin/python -m unittest tests/v2/cleanup/test_number_phrase_boundaries.py
 """
@@ -38,6 +40,11 @@ class NumberPhraseBoundaryTests(unittest.TestCase):
             "the Tuesday one. Four, set it", "The Tuesday one. Five, set it."))
         self.assertIn("numeric_values", failures(
             "we need twenty five. Two more arrive later.", "We need 27. 2 more arrive later."))
+
+    def test_a_point_without_decimal_digits_is_a_word(self):
+        self.assertIn("coverage", failures(
+            "We lost one point. Five players were injured.", "We lost 1. 5 players were injured."))
+        self.assertEqual(failures("set it to one point five volts", "Set it to 1.5 volts."), set())
 
 
 if __name__ == "__main__":
