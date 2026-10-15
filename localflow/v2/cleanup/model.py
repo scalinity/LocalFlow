@@ -16,6 +16,11 @@ import re
 import copy
 from collections import OrderedDict
 
+# Prompt tokens per prefill forward pass, shared by the prefix cache and
+# generation. A cached prefix is whole blocks of this size, so the cached
+# and uncached paths process the prompt in the same groups.
+PREFILL_STEP = 2048
+
 
 def render_messages(messages: list[dict],
                     tokenizer=None,
@@ -80,7 +85,7 @@ class ModelRunner:
 
         Prefix tokens must match the actual whole-prompt tokenization. Each
         call branches from a private copy: no dictation or generated suffix
-        can become another call's history. Whole 2048-token blocks preserve
+        can become another call's history. Whole PREFILL_STEP blocks preserve
         the uncached generator's prefill grouping for recurrent model layers.
         """
         import mlx.core as mx
@@ -92,20 +97,22 @@ class ModelRunner:
         special = tok.bos_token is None or not prompt.startswith(tok.bos_token)
         tokens = tok.encode(prompt, add_special_tokens=special)
         prefix = tok.encode(prompt[:boundary], add_special_tokens=special)
-        count = (len(prefix) // 2048) * 2048
+        count = (len(prefix) // PREFILL_STEP) * PREFILL_STEP
         if not count or tokens[:len(prefix)] != prefix or count >= len(tokens):
             return prompt, None
         key = tuple(prefix[:count])
         if key not in self._prefix_caches:
             cache = make_prompt_cache(self._model)
-            for offset in range(0, count, 2048):
-                self._model(mx.array([prefix[offset:offset + 2048]]), cache=cache)
+            for offset in range(0, count, PREFILL_STEP):
+                self._model(mx.array([prefix[offset:offset + PREFILL_STEP]]), cache=cache)
                 mx.eval([c.state for c in cache])
                 mx.clear_cache()
             self._prefix_caches[key] = cache
             while len(self._prefix_caches) > 2:
                 self._prefix_caches.popitem(last=False)
         self._prefix_caches.move_to_end(key)
+        # Generation writes into the copy's arrays; an mx.array update makes
+        # a new array, so the stored prefix state is never changed.
         return tokens[count:], copy.deepcopy(self._prefix_caches[key])
 
     def stream(self, prompt: str, max_tokens: int):
@@ -116,7 +123,7 @@ class ModelRunner:
         yield from stream_generate(
             self._model, self._tokenizer, prompt=suffix,
             max_tokens=max_tokens, sampler=make_sampler(temp=0.0),
-            prompt_cache=cache, prefill_step_size=2048)
+            prompt_cache=cache, prefill_step_size=PREFILL_STEP)
 
     def generate_fn(self):
         def generate(prompt: str, max_tokens: int) -> dict:
