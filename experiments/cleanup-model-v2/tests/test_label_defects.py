@@ -65,6 +65,13 @@ class DroppedWordTests(unittest.TestCase):
         self.assertIsNone(defects.restore_split_conjunctions(
             'check the pump and 2 log the reading', '1. Check the pump.\n2. Log the reading.', []))
 
+    def test_a_step_label_takes_its_verb_into_the_list(self):
+        for source in ('step 1 is clean the filter step 2 is to dry it', 'step one is clean the filter step two is dry it'):
+            with self.subTest(source=source):
+                self.assertIsNone(defects.drops_dictated_word(source, '1. Clean the filter\n2. Dry it', []))
+        hit = defects.drops_dictated_word('the plan is clean the filter', 'The plan: clean the filter', [])
+        self.assertEqual(hit['dropped'], [{'kind': 'other_word', 'words': 'is'}])
+
     def test_unlisted_correction_is_a_defect(self):
         source = 'write it to the review directory sorry because the other one gets wiped'
         hit = defects.drops_dictated_word(source, 'Write it to the review directory because the other one gets wiped.', [])

@@ -75,6 +75,8 @@ def _vocabulary_words(vocabulary_pairs, target_words):
 
 
 def _word_edits(source, target, offsets, vocabulary_pairs):
+    """The word edits from the pre-cleanup text to the target that no deletion rule
+    permits, as (tag, removed, added, the two pre-cleanup words before the edit)."""
     a = [t[2] for t in _tokens(remove_spans(source, offsets))]
     b = [t[2] for t in _tokens(target)]
     vocabulary = _vocabulary_words(vocabulary_pairs, b)
@@ -84,7 +86,7 @@ def _word_edits(source, target, offsets, vocabulary_pairs):
             continue
         if tag in ("delete", "replace") and all(w in vocabulary or _filler(w) for w in a[i1:i2]):
             continue
-        out.append((tag, a[i1:i2], b[j1:j2]))
+        out.append((tag, a[i1:i2], b[j1:j2], a[max(0, i1 - 2):i1]))
     return out
 
 
@@ -124,10 +126,12 @@ def drops_dictated_word(source, target, offsets, vocabulary_pairs=()):
     correction no gold line lists."""
     listy = LIST_LINE.search(target) is not None
     dropped = []
-    for tag, removed, _added in _word_edits(source, target, offsets, vocabulary_pairs):
+    for tag, removed, _added, before in _word_edits(source, target, offsets, vocabulary_pairs):
         rest = [w for w in removed if not _filler(w)]
+        # "step 1 is clean the filter" -> "1. Clean the filter": the verb goes with the spoken label.
+        label_verb = listy and rest in (["is"], ["is", "to"]) and len(before) == 2 and before[0] == "step"
         if tag != "delete" or (listy and all(w in LIST_WORDS or w.isdigit() for w in rest)) \
-                or all(w in SPOKEN_PUNCTUATION for w in rest):
+                or all(w in SPOKEN_PUNCTUATION for w in rest) or label_verb:
             continue
         text = " ".join(removed)
         kind = ("unlisted_correction" if MARKERS.search(text) else
@@ -167,7 +171,7 @@ def sequence_words_made_numbers(source, target, offsets, vocabulary_pairs=()):
     """A list target replaces spoken sequence words ('then', 'after that',
     'next') with list numbers. Ordinals and 'step' are the conversions exact
     rows use; no exact row numbers a 'then', and the engine vetoes every one."""
-    runs = [" ".join(removed) for tag, removed, added in _word_edits(source, target, offsets, vocabulary_pairs)
+    runs = [" ".join(removed) for tag, removed, added, _before in _word_edits(source, target, offsets, vocabulary_pairs)
             if tag == "replace" and added and all(w.isdigit() for w in added)
             and set(removed) <= SEQUENCE_WORDS and set(removed) & {"then", "after", "next"}]
     return {"reason": "sequence_words_made_numbers", "runs": runs} if runs else None
