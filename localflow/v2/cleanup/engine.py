@@ -30,7 +30,7 @@ from . import prompts
 from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES,
                       FRAME_PREPOSITIONS, FRAME_WORDS, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER,
                       NEGATION_WORDS, NUMBER, ORDINAL_WORD_RE,
-                      POSITIVE_NUMBER, SENTENCE_END, TECH_TOKEN_RE, Neighbourhood,
+                      POSITIVE_NUMBER, SENTENCE_END, SUBORDINATORS, TECH_TOKEN_RE, Neighbourhood,
                       LOOKAHEAD_CHARS, after_marker, alternation, is_value_word, marker_key,
                       marker_pattern, neighbourhood, plain_words, quoted_regions, restatement,
                       touches, without_trailing_markers)
@@ -781,22 +781,29 @@ def _replacement_closes_within(n: Neighbourhood, words: int) -> bool:
 
 # "am" is left out: it follows only "I", and "9 am" is a time.
 _PREDICATE_AUXILIARIES = FINITE_AUXILIARIES - {"am"}
-_RELATIVE_PRONOUNS = frozenset({"who", "whom", "whose", "which", "that", "whoever",
-                                "whomever", "whichever", "whatever"})
+# Words that open a dependent clause: an auxiliary after one belongs to
+# that clause, not to the old value's own predicate.
+_DEPENDENT_CLAUSE_WORDS = SUBORDINATORS | frozenset({
+    "who", "whom", "whose", "which", "that", "what", "whoever", "whomever", "whichever",
+    "whatever", "where", "why", "how", "whether"})
 
 
 def _predicate_restated(n: Neighbourhood) -> bool:
     """An auxiliary among the replacement's first four words stands in the
-    old value too, and no relative pronoun comes before it there, so the
-    predicate it opens is the old value's own. "whoever is on call" and
-    "the nurse who is on call" name a person; their "is" belongs to a
-    relative clause the replacement cannot take the place of."""
+    old value too, after no dependent-clause word or comma there, so the
+    predicate it opens is the old value's own. "whoever is on call", "the
+    nurse who is on call" and "what is on the shelf" name a person or a
+    thing; their "is" belongs to a clause the replacement cannot take the
+    place of, as does the "is" of "the nurse, she is on call"."""
     clause = after_marker(n.text, n.end)[3][:4]
-    for w in n.old_words:
-        if w in _RELATIVE_PRONOUNS:
+    for token in n.text[n.start:n.marker].split():
+        w = token.lower().replace("’", "'").strip(".,;:!?")
+        if w in _DEPENDENT_CLAUSE_WORDS:
             return False
         if w in _PREDICATE_AUXILIARIES and w in clause:
             return True
+        if token.endswith((",", ";")):
+            return False
     return False
 
 
