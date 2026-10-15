@@ -44,8 +44,12 @@ sentence into bullets.
 
 The validator permits the final list-joining “and” to become a bullet
 separator only when an unambiguous matching introduction and every item
-match the source words in order. It does not authorize dropping “and”
-within an item, introduction words, protected text, or item content.
+match the source words in order, fillers aside. The introduction is the
+last sentence before the colon; it names a `list` and holds `here is`/`here
+are` or ends with `list` or `list is`. An item never runs past a source
+sentence boundary, so a closing sentence glued onto the last bullet fails.
+It does not authorize dropping “and” within an item, introduction words,
+protected text, or item content.
 
 Consecutive spoken step labels (`step 1`, `step one`, or `step number one`)
 introducing actions or questions become numbered items, including without

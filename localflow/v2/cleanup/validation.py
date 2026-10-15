@@ -378,12 +378,15 @@ def _spoken_step_spans(source: str, output: str, correction_spans=()) -> list:
 
 def _introduced_list_join_spans(source: str, output: str) -> list:
     """A final list-joining 'and' may become a bullet separator.
-    Bind the complete introduction and every item, verbatim in source-word
-    order. Only the connector before the last item is authorized away;
-    conjunctions within an item and ordinary prose remain content.
+    Bind the complete introduction (the last sentence before the colon) and
+    every item, verbatim in source-word order, fillers aside. Only the
+    connector before the last item is authorized away; conjunctions within
+    an item and ordinary prose remain content, and an item never runs past
+    a source sentence boundary, so a closing sentence cannot hide in the
+    last bullet.
     """
     from . import document_nodes as dn
-    atoms = _word_atoms(source)
+    atoms = [a for a in _word_atoms(source) if a[2] not in FILLERS]
     words = [w for _s, _e, w in atoms]
     nodes = dn.parse(output).nodes
     spans = []
@@ -392,10 +395,12 @@ def _introduced_list_join_spans(source: str, output: str) -> list:
                 or not isinstance(group, dn.ListGroup) or group.ordered
                 or len(group.items) < 2 or not intro.render().rstrip().endswith(":")):
             continue
-        head = [w for _s, _e, w in _word_atoms(intro.render())]
+        sentence = re.split(r"(?<=[.!?])\s+", intro.render().strip())[-1]
+        head = [w for _s, _e, w in _word_atoms(sentence)]
+        pairs = list(zip(head, head[1:]))
         if "list" not in head or not (
-                head[:2] in (["here", "is"], ["here", "are"])
-                or head[-1:] == ["list"]):
+                ("here", "is") in pairs or ("here", "are") in pairs
+                or head[-1:] == ["list"] or head[-2:] in (["list", "is"], ["list", "are"])):
             continue
         matches = [i for i in range(len(words) - len(head) + 1)
                    if words[i:i + len(head)] == head]
@@ -408,7 +413,9 @@ def _introduced_list_join_spans(source: str, output: str) -> list:
             if index == len(group.items) - 1 and words[cursor:cursor + 1] == ["and"]:
                 join = atoms[cursor][:2]
                 cursor += 1
-            if not item_words or words[cursor:cursor + len(item_words)] != item_words:
+            if (not item_words or words[cursor:cursor + len(item_words)] != item_words
+                    or _SOURCE_BOUNDARY_RE.search(source, atoms[cursor][0],
+                                                  atoms[cursor + len(item_words) - 1][1])):
                 join = None
                 break
             cursor += len(item_words)
