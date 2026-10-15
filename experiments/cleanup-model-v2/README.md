@@ -80,6 +80,15 @@ conflicts exclude training captures only. Their reasons and the original
 training-file hash remain in the dataset freeze; development and final labels
 retain their original bytes.
 
+The consolidated TRAIN labels are normalized before capture
+(`policy_score.minimal_target`): a comma the dictation lacked stays only when it
+separates items of a list of three or more, sets off an addressed person,
+prevents a likely misreading, or follows a date, place or number convention.
+Development labels keep their own punctuation, so their validation loss scores
+a different comma policy and rises as a model learns this one. Select a
+consolidated checkpoint on the development scoreboard, not on its lowest
+validation loss.
+
 `D` uses the recorded production engine. `E` uses the exact same D weights with
 `engine_variant.py`. `C-engine` is the engine-only control. The variant removes
 punctuation-only separator tokens before the existing parallel-value check;
