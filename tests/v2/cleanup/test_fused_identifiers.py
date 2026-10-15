@@ -39,6 +39,12 @@ class FusedIdentifierTests(unittest.TestCase):
             ("the datum is WGS eighty four", "The datum is WGS85."),
             ("the datum is WGS eighty four", "The datum is WGT84."),
             ("the WGS datum, version 84, is old", "The WGS84 datum, version, is old."),
+            # The digits are the dictated number as written: no new zero or version part.
+            ("board flight ba eighty four at noon", "Board flight BA084 at noon."),
+            ("the helper still calls PROJ four for the transform", "The helper still calls PROJ.4.0 for the transform."),
+            ("pin the parser to version 2 for now", "Pin the parser to version02 for now."),
+            # A function word fuses with nothing.
+            ("take a 1 liter sample", "Take A1 liter sample."),
             # "a 1 liter sample" fuses nothing, and "A1" is the source's own station.
             ("start at station A1 and take a 1 liter sample, then go to A6",
              "Start at station A1 and take a liter sample, then go to A1."),

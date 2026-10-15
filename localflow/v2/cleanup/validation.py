@@ -995,8 +995,9 @@ _FUSED_RE = re.compile(r"([A-Za-z]+)[-.]?(\d+(?:\.\d+)?)")
 def _fused_identifier_keys(source: str, values: list):
     """Map an output identifier made of a source word and the plain number
     right after it (the word's letters, an optional "-" or ".", the number's
-    digits) to that number's key; any other key maps to itself. The letters
-    keep the source's case unless the source word is all lowercase. A
+    digits as written, so no leading zero or extra version part is new) to
+    that number's key; any other key maps to itself. The letters keep the
+    source's case unless the source word is all lowercase. A
     function word fuses with nothing ("a 1 liter sample"), and an
     identifier the source already holds ("station A1") stays itself."""
     pairs = []
@@ -1014,7 +1015,7 @@ def _fused_identifier_keys(source: str, values: list):
         letters, digits = parts.groups()
         for word, value in pairs:
             same = letters.lower() == word if word.islower() else letters == word
-            if same and Decimal(digits) == value[2]:
+            if same and digits == str(value[2]):
                 return value
         return key
     return keyed
