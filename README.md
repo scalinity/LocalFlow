@@ -228,7 +228,7 @@ The contract text lives in `localflow/v2/cleanup/prompts.py`, versioned by conte
 
 ### Privacy
 
-- **Network:** audio, transcripts, cleanup, transforms, history and training evidence stay on the Mac. The worker's environment forces `HF_HUB_OFFLINE=1`, so a launching shell cannot turn the network back on, and hub telemetry is disabled.
+- **Network:** audio, transcripts, cleanup, transforms, history and training evidence stay on the Mac. The one exception is opt-in: with an Anthropic key in the Keychain, Your Voice's written profile sends a sample of recent raw dictations (text, time, app) to the Claude API at each word milestone or on Write ([ADR-0001](docs/v2/decisions/ADR-0001-your-voice-written-profile.md)). The worker's environment forces `HF_HUB_OFFLINE=1`, so a launching shell cannot turn the network back on, and hub telemetry is disabled.
 - **Logs:** the event log never contains transcript text or exception messages; the transcript log is local and optional.
 - **Context:** context collection never reads secure fields and skips denied apps.
 
@@ -357,11 +357,18 @@ MLX runs in a fresh worker subprocess. It is started with `Popen` and never fork
 /opt/homebrew/bin/python3 -m venv .venv
 .venv/bin/pip install parakeet-mlx mlx-lm "transformers<5.11" sounddevice \
     pyobjc-framework-Cocoa pyobjc-framework-Quartz \
-    pyobjc-framework-ApplicationServices pyobjc-framework-WebKit
+    pyobjc-framework-ApplicationServices pyobjc-framework-WebKit \
+    "anthropic>=1.14"   # only for the optional Your Voice written profile
 # transformers stays below 5.11: newer versions changed AutoTokenizer.register
 # and crash mlx-lm at import, which silently disables LLM cleanup
 .venv/bin/python scripts/warmup.py   # downloads the model and checks transcription
 ./run.sh                              # run from source
+```
+
+Your Voice's written profile is optional. To enable it, store an Anthropic API key in the login Keychain; `security` prompts for the key, so it never appears in your shell history:
+
+```sh
+security add-generic-password -U -s LocalFlow -a INSIGHTS_ANTHROPIC_API_KEY -w
 ```
 
 ### The app bundle

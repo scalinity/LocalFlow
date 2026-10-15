@@ -221,6 +221,13 @@ orphan payload files.
   (entry id, action, alias, entry revision) and what its undo left, so
   undo reverses only that delta (contracts/learning.md). Both are
   content-free. The torn-write repair path covers them.
+- Migration v14 (ADR-0001; additive) adds `voice_insights` — the one
+  Claude-written voice profile (milestone, word count, model id, prompt
+  version, sample size, coverage, `fields_json`, state and reason) — and
+  `voice_insight_evidence` (the sampled example ids, their jobs and
+  whether a usage fact backed them). `delete_everywhere` clears a linked
+  row's text in the same op; `voice_insights.scrub` clears it for every
+  other way its evidence dies.
 - `open_managed_file(directory, name)` streams a large payload (export
   audio) under the same admission as `read_managed_file`: one plain
   managed name, opened no-follow and non-blocking, regular files only.

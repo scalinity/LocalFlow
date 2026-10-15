@@ -351,6 +351,8 @@ live as of M13, the refusal check uses any unregistered name).
   absent, invalidated (reason only, never its stale numbers) or
   current (measured block, cards with their evidence ids and coverage)
   — with Generate and Exclude-evidence actions (contracts/profile.md).
+  The AppKit Hub shows only this measured profile; the written profile
+  (ADR-0001) is the companion's.
 
 ## Revocation (delete-everywhere and retention)
 

@@ -1,7 +1,8 @@
 # Contract: Your Voice profile
 
 **Spec:** S22 (Your Voice and personalization), S25/S29.14 (deletion),
-S23 (no extra resident model), E13 · **Owner:** M14 · **Suites:** EV-15
+S23 (no extra resident model), E13, ADR-0001 (written layer) ·
+**Owner:** M14 · **Suites:** EV-15
 profile portion (tests/v2/personalization/test_profile.py), the Hub half
 (tests/v2/ui/test_training_review_hub.py)
 
@@ -81,6 +82,51 @@ actually support it:
 - `technical-vocabulary` — the speech-derived `technical_terms`;
   evidence = exactly the eligible dictations those terms cite.
 
+## Written layer (ADR-0001)
+
+Beside the measured profile, `localflow.v2.voice_insights`
+(`VoiceInsightsService`) keeps one Claude-written voice profile: a
+headline, an archetype title and description, a catchphrase with a
+description, a persona (one of 22 categories) and a peak-time
+description, plus the locally computed peak time label and app, most
+used word, most removed word and the number of sampled dictations that
+contain the catchphrase.
+
+- **Milestones** (cumulative dictated words, `SUM(final_words)` over
+  dictation usage facts): 2,000, 12,000, 37,000, 87,000, 162,000,
+  262,000, 362,000, 462,000, 562,000, 662,000. States: `locked`,
+  `first_time_eligible`, `current`, `refresh_eligible`, `complete`,
+  `invalidated`, with Flow's progress fraction and words remaining.
+- **Gate and sample:** eligible speech is `profile.eligible_speech()` —
+  the same raw transcripts `compute()` counts, minus user exclusions.
+  Generating needs 2,000 / 5,000 / 10,000 / 20,000 stored words by
+  milestone (`insufficient_local_words` otherwise, with the numbers);
+  the sample is the newest speech within 2,000 / 12,000 / 20,000 /
+  30,000 / 40,000 / 50,000 / 60,000 words and 350,000 characters.
+- **Request:** one structured-output Messages API call (`SCHEMA`), the
+  newest active Opus supporting effort `xhigh` (Models API; fallback
+  `claude-opus-5-5`), effort `xhigh`, server-side refusal fallback. Sent:
+  sampled text, local time and app per dictation, and the stats — no
+  ids. Key from the Keychain (`LocalFlow` / `INSIGHTS_ANTHROPIC_API_KEY`),
+  read only for the real store.
+- **When:** the idle pass writes once per newly reached milestone;
+  `voice.write` writes on demand. One generation at a time
+  (`already_running`); an invalidated profile waits for a press or the
+  next milestone.
+- **Storage and clearing:** `voice_insights` / `voice_insight_evidence`
+  (schema v14), one row. Its text is cleared (`fields_json='{}'`,
+  `state='invalidated'`) when a sampled example is deleted everywhere
+  (`source_deleted`, same op), leaves the trainable states
+  (`evidence_expired`, `evidence_excluded_from_training`,
+  `evidence_quarantined`), loses its raw transcript (`source_purged`),
+  is excluded from a measured snapshot (`evidence_excluded`), or its
+  usage fact is removed (`usage_removed`); a row with no evidence links
+  clears too (`evidence_missing`). Scrubbed on every status read and
+  after each retention pass. Publication re-checks every sampled example
+  in one write op and refuses (`evidence_changed`) if any changed.
+- Nothing in the written layer reaches dictation (M14-AC04); only the app
+  and the companion import it (pinned by test).
+
 ## Snapshots are records, never caches
 
 `profile_snapshots` (schema v10) rows are append-only records with
@@ -154,7 +200,10 @@ conversation history (pinned by the engine-identity test).
 ## Events
 
 `profile.snapshot_computed`, `profile.evidence_excluded`,
-`profile.idle_failed` — reason codes and counts only.
+`profile.idle_failed`; written layer: `voice_insights.generated` (model
+id, milestone, sample size, token counts), `voice_insights.failed`,
+`voice_insights.unavailable`, `voice_insights.idle_failed` — reason codes
+and counts only.
 
 ## Config
 
@@ -163,8 +212,9 @@ idle pass — Generate still works).
 
 ## Limitations (documented, not hidden)
 
-- Three card rules exist; playful archetypes (S22's optional cards)
-  are not synthesized — no rule without evidence to cite.
+- Three measured card rules exist; the playful archetype is the
+  written layer's (ADR-0001), which the AppKit fallback Hub does not
+  show.
 - Background speech is excluded only where a review label flags it; no
   automatic detector exists.
 

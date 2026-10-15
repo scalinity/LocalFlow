@@ -66,7 +66,9 @@ Escape cancellation, timeout and POLICY-D03 authority remain unchanged.
 - Navigation away from the bundle and new windows are refused. A CSP
   violation is reported over the bridge and counted.
 - Nothing is fetched and no server runs. Node, npm and Vite are
-  build-time only.
+  build-time only. The one networked feature — writing the Your Voice
+  profile (ADR-0001) — runs in Python behind `voice.write` and the idle
+  pass; the page only shows its result.
 
 ## Bridge
 
@@ -102,7 +104,7 @@ one JSON string.
 | Dictionary | `dictionary.search`, `reload`, `add`, `edit`, `approve`, `set_enabled`, `set_pinned`, `delete`, `sandbox`, `import`, `export` |
 | Styles, Snippets, Transforms | `styles.add`, `update`, `set_enabled`, `delete`, `preview`; `snippets.add`, `update`, `set_enabled`, `delete`, `collisions`; `transforms.add`, `update`, `set_enabled` |
 | Scratchpad | `scratchpad.new`, `open`, `close_tab`, `sync`, `edit`, `cursor`, `snapshot`, `search`, `pin`, `delete`, `restore`, `attach`, `transform`, `export` |
-| Insights | `insights.subview`, `filters`, `reload`; `voice.generate`, `voice.exclude` |
+| Insights | `insights.subview`, `filters`, `reload`; `voice.generate`, `voice.exclude`, `voice.write` (written profile, ADR-0001) |
 | Models | `models.subview`; `training.tab`, `search`, `select`, `replay`, `verbatim`, `span`, `mark`, `pin`, `exclude`, `delete`; `review.sample`, `mine`, `approve`, `reject`, `label`, `pair`, `undo`; `splits.assign`, `expose`; `export.choose_folder`, `run`, `validate` |
 | Settings, Diagnostics | `settings.collection`, `retention`, `usage_retention`, `delete_all_usage`; `diagnostics.filters`, `reload`, `export` |
 
@@ -145,7 +147,7 @@ one JSON string.
 | Dictionary (vocabulary panel) | Dictionary | `test_companion_bridge` (double revision check, import/export panels), `test_companion_page` (modal) |
 | Styles, Snippets, Transforms | Styles, Snippets, Transforms | `test_companion_library` (Add id reuse after an unknown outcome, rendered revisions, schemas), `test_companion_page` |
 | Scratchpad | Scratchpad | `test_companion_scratchpad`, `test_companion_dictation` (note-bound PTT) |
-| Insights and Your Voice | Insights | `test_companion_models` (Your Voice), `test_companion_page` |
+| Insights and Your Voice | Insights | `test_companion_models` (Your Voice, written profile), `test_companion_page`, `test_voice_insights` |
 | Models: Engines, Training Data (Evidence, Review, Splits, Export) | Models | `test_companion_models` |
 | Diagnostics | Diagnostics | `test_companion_models` (Export Redacted), `test_companion_page` |
 | Settings | Settings modal | `test_companion_bridge` (outcomes, confirmation, theme) |

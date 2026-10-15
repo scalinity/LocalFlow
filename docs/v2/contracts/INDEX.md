@@ -60,7 +60,8 @@ milestones add fields; they must not repurpose or weaken these identifiers.
 
 ## Decisions
 
-- ADRs live in `../decisions/` when a milestone accepts a deviation; M01
+- ADRs live in `../decisions/` when a deviation is accepted
+  (ADR-0001: the Your Voice written profile, Claude-written); M01
   and M02 recorded none. M03 ships `worker.md`/`capture.md` as new
   contracts and extends `asr_hints.md`/`store.md` in place without
   repurposing any frozen identifier. M04 ships `normalization.md`

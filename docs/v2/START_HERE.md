@@ -24,7 +24,7 @@ three canonical Markdown documents are. Package entry point: `README.md`.
 | `benchmarks/<run-id>/` | Measured runs (probe output, environment) |
 | `acceptance/<Mxx>/results.json` | Per-milestone structured acceptance results |
 | `handoffs/<Mxx>.md` | Per-milestone completion reports |
-| `decisions/` | ADRs for accepted deviations (none yet) |
+| `decisions/` | ADRs for accepted deviations (ADR-0001: the Your Voice written profile) |
 | `tests/v2/`, `scripts/v2/` | V2 evaluation scaffolding (runnable with `.venv/bin/python`; pytest is not installed — files are standalone scripts) |
 | `~/Library/Application Support/LocalFlow/v2-evidence/` | **Private** evidence root — snapshots, historical prefix, log copies. Never commit. |
 

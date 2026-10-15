@@ -105,11 +105,20 @@ clearly synthetic.
   threshold are measured) with a meta line, a large serif profile
   hero with a caps "Voice profile" label and an illustration slot, then
   two columns of serif phrase and time cards with caps labels.
-- **Adapted:** every card is the local ProfileService's deterministic
-  measure with its evidence. "Measure again" runs it off the main
-  thread. There is no model-written personality text.
-- **Not copied:** the character illustration, the share badge and the
-  blurred catchphrase cards.
+- **Adopted (written layer, ADR-0001):** the milestone track ("Written
+  <date>" / "Next update in N more words" / "Update ready"), the
+  archetype hero with a persona label, and the Catchphrase, Most used
+  word, Most removed word and Peak time & place cards, from a profile
+  Claude writes at word milestones.
+- **Adapted:** the written profile is drawn from raw speech, cites the
+  dictations it read and clears itself when any of them is deleted; it is
+  written automatically per milestone or on Write / Rewrite, with a
+  disclosure of what is sent. The local ProfileService's deterministic
+  measures, with their evidence and "Measure again", sit below under
+  "Measured on this Mac". All copy is LocalFlow's own.
+- **Not copied:** the character illustrations (the original VoiceMark
+  takes their place), app icons, the share badge, Flow's wording, and
+  the blurred first-milestone catchphrase cards.
 - **Result:** `insights-voice`. **Mismatch:** none structural.
 
 ## snippets.png → Snippets
