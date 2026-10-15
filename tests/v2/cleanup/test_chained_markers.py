@@ -64,14 +64,20 @@ class ChainedMarkerTests(unittest.TestCase):
 
     def test_the_longest_chained_marker_is_cut_whole_under_every_hash_seed(self):
         self.assertEqual(without_trailing_markers(["4", "liters", "wait", "no"]), ["4", "liters"])
+        # The same dictation is corrected the same way on every app launch.
         probe = ("from localflow.v2.cleanup.lexicon import without_trailing_markers;"
-                 "print(without_trailing_markers(['4', 'liters', 'wait', 'no']))")
+                 "from localflow.v2.cleanup.engine import parse_correction_output;"
+                 "print(without_trailing_markers(['4', 'liters', 'wait', 'no']));"
+                 "a, r = parse_correction_output('Tuesday wait no make that',"
+                 " 'Meet on Tuesday wait no make that Wednesday.', []);"
+                 "print([c.delete for c in a], [x.reason for x in r])")
         for seed in range(8):
             with self.subTest(seed=seed):
                 env = dict(os.environ, PYTHONHASHSEED=str(seed), PYTHONDONTWRITEBYTECODE="1")
                 out = subprocess.run([sys.executable, "-c", probe], cwd=ROOT, env=env,
                                      capture_output=True, text=True, check=True).stdout
-                self.assertEqual(out.strip(), "['4', 'liters']")
+                self.assertEqual(out.splitlines(),
+                                 ["['4', 'liters']", "['Tuesday wait no make that'] []"])
 
 
 if __name__ == "__main__":
