@@ -5,8 +5,9 @@ repeat function words the way "the the" does; the cleanup says them once.
 A filler between the copies does not break a stutter, and a repeated
 function-word phrase that ends in an article is a stutter because a noun
 phrase must follow an article. Repeats that can be grammatical ("you and
-I and I think", "those who could, could leave"), other repeated phrases
-and quoted text still keep every word.
+I and I think", "those who could, could leave"), repeats across a
+sentence boundary ("Fix it. It crashes"), other repeated phrases and
+quoted text still keep every word.
 
 Run: .venv/bin/python -m unittest tests/v2/cleanup/test_phrase_stutter.py
 """
@@ -46,6 +47,10 @@ class PhraseStutterTests(unittest.TestCase):
             ("We know we know the risk already.", "We know the risk already."),
             ('Fix the phrase "in the in the" in chapter two.', 'Fix the phrase "in the" in chapter two.'),
             ("Put it in the box and the lid on the shelf.", "Put it in the box on the shelf."),
+            # A repeat across a sentence boundary is no stutter, with or without a filler.
+            ("Fix it. Uh, it crashes on start.", "Fix it. Crashes on start."),
+            ("Fix it. It crashes on start.", "Fix it. Crashes on start."),
+            ("I will call you. Um, you should bring the forms.", "I will call you. Should bring the forms."),
             # A doubled modal can be grammatical: "those who could, could leave".
             ("Those who could, could leave early.", "Those who could leave early."),
             ("Those who should, should leave early.", "Those who should leave early."),

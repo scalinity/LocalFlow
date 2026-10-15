@@ -329,8 +329,9 @@ identifiers (`sample_index`, `name:value`), which never split into words.
 
 Authorized deletions (never inside a protected occurrence): accepted
 corrections (their spans — whose words may not reappear: novelty does
-not count them), pure fillers, immediate function-word stutter (a filler
-between the copies does not break it: `the uh the`; a repeated
+not count them), pure fillers, immediate function-word stutter within a
+phrase (a filler between the copies does not break it: `the uh the`; a
+sentence boundary does: `Fix it. It crashes` keeps both copies; a repeated
 function-word phrase ending in an article is one too: `in the in the`,
 `on the, uh, on the`; quoted text keeps its repeats), the restated frame
 a correction leaves doubled (up to four words right after

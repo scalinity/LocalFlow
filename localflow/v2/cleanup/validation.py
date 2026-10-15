@@ -620,7 +620,10 @@ def _align(source, output, ctx) -> tuple:
     enum_starts = [s for s, _e in ctx.enum_spans]
     for idx, (start, end, w) in enumerate(src):
         if re.search(r"[.!?;:\n]", source[prev_end:start]):
+            # A stutter repeats a word within its phrase: "Fix it. It
+            # crashes" and "Fix it. Uh, it crashes" keep both copies.
             phrase_start = True
+            prev_kept_word = None
         prev_end = end
         protected = _overlaps(ctx.protected_positions, start, end)
         authorized = not protected and _authorized(w, start, end, ctx)
