@@ -1099,15 +1099,22 @@ def _has_correction_marker(text: str) -> bool:
     for marker in re.finditer(r"\b(?:sorry|no|make[ \t]+that)\b", text, re.IGNORECASE):
         base = max(0, marker.start() - RESTATED_SPAN_MAX_CHARS)
         preceding = list(_WORD_RE.finditer(text, base, marker.start()))
-        # A restatement repeats the old value's first or last word; a long
-        # candidate whose replacement repeats neither is skipped unparsed.
-        new = after_marker(text, marker.end())[2]
-        last = without_trailing_markers(plain_words(text[base:marker.start()]))[-1:]
-        last_repeated = bool(last) and last[0] in new
+        new = None
         for word in reversed(preceding):
             span = (word.start(), marker.end())
             if span[1] - span[0] > RESTATED_SPAN_MAX_CHARS:
                 break
+            if new is None:
+                # Until a content word joins the candidate it has no
+                # outdated value ("no no no"), and evidence would say so.
+                if not _has_content(word.group()):
+                    continue
+                # A restatement repeats the old value's first or last word; a
+                # long candidate whose replacement repeats neither is skipped
+                # unparsed.
+                new = after_marker(text, marker.end())[2]
+                last = without_trailing_markers(plain_words(text[base:marker.start()]))[-1:]
+                last_repeated = bool(last) and last[0] in new
             proof = _span_proof(text[span[0]:span[1]])
             first = word.group().lower().strip(".,;:!?")
             if (proof == "restatement" and not last_repeated and first not in FILLERS

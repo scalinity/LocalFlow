@@ -29,6 +29,13 @@ class DegenerateInputCostTest(unittest.TestCase):
             self.assertQuick(engine.CORRECTION_MARKER_RE.search, text, 0.5)
             self.assertQuick(engine.SPAN_ENDS_WITH_MARKER_RE.search, text, 0.5)
 
+    def test_a_run_of_bare_markers_is_linear(self):
+        # 2,000 "no"s took 6.5 s while each "no" parsed every candidate span
+        # before it, though none holds an outdated value.
+        text = "no " * 2000
+        self.assertQuick(engine._has_correction_marker, text, 1.0)
+        self.assertFalse(engine._has_correction_marker(text))
+
 
 if __name__ == "__main__":
     unittest.main()
