@@ -340,6 +340,9 @@ def restatement(n: Neighbourhood) -> Restatement | None:
             if len(new) < after + tail or new[after:after + tail] != old[head + changed:]:
                 continue
             old_part, new_part = old[head:head + changed], new[head:after]
+            # A dropped negation changes the meaning (negation_coverage would
+            # reject the result), and a change that keeps every old word
+            # inserts rather than replaces.
             remaining = iter(new_part)
             if (any(w in NEGATION_WORDS and w not in new_part for w in old_part)
                     or all(w in remaining for w in old_part)):

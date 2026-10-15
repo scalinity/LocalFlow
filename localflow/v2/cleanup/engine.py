@@ -510,6 +510,13 @@ def _parallel_metric_lengths(n: Neighbourhood) -> bool:
     return new is not None and bool(re.match(CLAUSE_END, tail[new.end():]))
 
 
+# A repeated frame's old complement is at most this many words ("on the
+# spare disk"); a longer one reads as a clause, not a value.
+FRAME_COMPLEMENT_MAX_WORDS = 4
+# A value that ends its sentence and takes a typed value from the next one
+# ("starts at 7:40. I mean 8:40") is at most this many words.
+SENTENCE_FINAL_VALUE_MAX_WORDS = 3
+
 # "sorry to say", "sorry for the delay": the apology's own complement right
 # after "sorry", without a pause, makes "sorry" no marker. A value there
 # ("4 liters, sorry to 6 liters") still reads as the replacement.
@@ -539,7 +546,8 @@ def _repeated_frame_complement(n: Neighbourhood) -> bool:
     if n.frame not in FRAME_PREPOSITIONS or n.frame == "as":
         return False
     old, new = list(n.old_words[1:]), list(n.new_words[1:])
-    if not old or not new or len(old) > 4 or (old[0] in _ARTICLES) != (new[0] in _ARTICLES):
+    if (not old or not new or len(old) > FRAME_COMPLEMENT_MAX_WORDS
+            or (old[0] in _ARTICLES) != (new[0] in _ARTICLES)):
         return False
     return not (any(w in CLAUSE_LINKS or w in FINITE_AUXILIARIES or w in NEGATION_WORDS
                     or w == "only" for w in old)
@@ -623,8 +631,8 @@ def _parallel(n: Neighbourhood) -> bool:
             return True
     # An ordinal day may be corrected to a full date ("the fourteenth, no,
     # March 16").
-    if (ORDINAL_WORD_RE.fullmatch(x) and y in _MONTHS
-            and y_words[y_words.index(y) + 1:][:1] and _is_value_word(y_words[y_words.index(y) + 1])):
+    day = y_words[y_words.index(y) + 1:][:1]
+    if ORDINAL_WORD_RE.fullmatch(x) and y in _MONTHS and day and _is_value_word(day[0]):
         return True
     # A digit inside an identifier (``worker_1``) is part of a name, not a
     # quantity; identifiers qualify only through the closed branch above.
@@ -675,7 +683,8 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
     old_words = [w.rstrip(".") for w in n.old_words]
     new_words = list(n.new_words[1:] if n.new_words[:1] and n.new_words[0] in _ARTICLES
                      else n.new_words)
-    typed = (bool(old_words) and len(old_words) <= 3 and bool(new_words) and (
+    typed = (bool(old_words) and len(old_words) <= SENTENCE_FINAL_VALUE_MAX_WORDS
+             and bool(new_words) and (
         (any(_is_value_word(w) for w in old_words) and _is_value_word(new_words[0]))
         or any(w in cls and new_words[0] in cls for cls in (_WEEKDAYS, _MONTHS)
                for w in old_words)))
