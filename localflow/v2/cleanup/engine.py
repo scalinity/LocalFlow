@@ -46,6 +46,8 @@ WINDOW_MAX_WORDS = 200
 # this many words and at most this share of the window.
 SALVAGE_MAX_WORDS = 8
 SALVAGE_MAX_SHARE = 0.10
+# A repair chain is at most one step per repair kind.
+SALVAGE_MAX_STEPS = 3
 
 # Correction-span guards shared with V1 semantics: a valid deletion
 # ends with the correction marker, is short, and never a bare marker.
@@ -634,6 +636,10 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
              and new and _has_content(new[0]))):
         return prefix.start(), end
     return span
+
+
+def _failures(report: ValidationReport) -> set:
+    return {c.name for c in report.critical_failures}
 
 
 def _restore_source_word_boundary(source: str, output: str,
@@ -1243,76 +1249,73 @@ class CleanupEngine:
         # validated as it will render: numbering is applied first, so no
         # digit the validator bound to a source value changes afterwards.
         out = dn.renumber_text(out, continue_from=list_continue)
-        report = validate(
-            validation_text, out,
-            protected=protected_texts,
-            vocabulary_pairs=vocabulary_pairs,
-            continued_list_start=list_continue,
-            correction_spans=validation_corr,
-            protected_positions=validation_positions)
-        salvaged = 0
-        scope_repaired = False
-        boundary_repaired = False
-        fixed = _restore_source_word_boundary(validation_text, out, report)
-        if fixed is not None:
-            again = validate(
-                validation_text, fixed, protected=protected_texts,
-                vocabulary_pairs=vocabulary_pairs,
-                continued_list_start=list_continue, correction_spans=validation_corr,
-                protected_positions=validation_positions)
-            if again.accepted:
-                out, report, boundary_repaired = fixed, again, True
-        if [c.name for c in report.critical_failures] == ["clause_scope"]:
-            fixed = restore_restriction_punctuation(
-                validation_text, out, vocabulary_pairs=vocabulary_pairs,
-                continued_list_start=list_continue, correction_spans=validation_corr,
-                protected_positions=validation_positions)
-            if fixed is not None:
-                again = validate(
-                    validation_text, fixed, protected=protected_texts,
-                    vocabulary_pairs=vocabulary_pairs,
-                    continued_list_start=list_continue, correction_spans=validation_corr,
-                    protected_positions=validation_positions)
-                if again.accepted:
-                    out, report, scope_repaired = fixed, again, True
-        if [c.name for c in report.critical_failures] == ["coverage"]:
-            # Deletions are the only problem: put exactly those source
-            # words back and validate the repaired text in full. Added
-            # words, changed numbers or lost negations never reach here.
-            fixed = restore_missing_words(
-                validation_text, out, vocabulary_pairs=vocabulary_pairs,
-                continued_list_start=list_continue,
-                correction_spans=validation_corr,
-                protected_positions=validation_positions)
-            if fixed is not None and fixed[1] <= min(
-                    SALVAGE_MAX_WORDS,
-                    SALVAGE_MAX_SHARE * len(window.text.split())):
-                again = validate(
-                    validation_text, fixed[0],
-                    protected=protected_texts,
+        reports = {}
+
+        def check(candidate):
+            if candidate not in reports:
+                reports[candidate] = validate(
+                    validation_text, candidate, protected=protected_texts,
                     vocabulary_pairs=vocabulary_pairs,
                     continued_list_start=list_continue,
                     correction_spans=validation_corr,
                     protected_positions=validation_positions)
-                repaired = fixed[0]
-                restored_scope = False
-                if [c.name for c in again.critical_failures] == ["clause_scope"]:
-                    attached = restore_restriction_punctuation(
-                        validation_text, repaired, vocabulary_pairs=vocabulary_pairs,
-                        continued_list_start=list_continue,
-                        correction_spans=validation_corr,
-                        protected_positions=validation_positions)
-                    if attached is not None:
-                        again = validate(
-                            validation_text, attached, protected=protected_texts,
-                            vocabulary_pairs=vocabulary_pairs,
-                            continued_list_start=list_continue,
-                            correction_spans=validation_corr,
-                            protected_positions=validation_positions)
-                        repaired, restored_scope = attached, again.accepted
-                if again.accepted:
-                    out, report, salvaged = repaired, again, fixed[1]
-                    scope_repaired = restored_scope
+            return reports[candidate]
+
+        context = dict(vocabulary_pairs=vocabulary_pairs,
+                       continued_list_start=list_continue,
+                       correction_spans=validation_corr,
+                       protected_positions=validation_positions)
+
+        def word_boundary(candidate, found):
+            fixed = _restore_source_word_boundary(validation_text, candidate, found)
+            return None if fixed is None else (fixed, {"source_word_boundary_restored": True})
+
+        def restriction_scope(candidate, found):
+            if _failures(found) != {"clause_scope"}:
+                return None
+            fixed = restore_restriction_punctuation(validation_text, candidate, **context)
+            return None if fixed is None else (fixed, {"restriction_punctuation_restored": True})
+
+        def missing_words(candidate, found):
+            # Deletions are the only problem: put exactly those source
+            # words back. Added words, changed numbers or lost negations
+            # never reach here.
+            if _failures(found) != {"coverage"}:
+                return None
+            fixed = restore_missing_words(validation_text, candidate, **context)
+            if fixed is None or fixed[1] > min(
+                    SALVAGE_MAX_WORDS, SALVAGE_MAX_SHARE * len(window.text.split())):
+                return None
+            repaired, note = fixed[0], {"salvaged_words": fixed[1]}
+            # A restored word can sit beside a new break that now detaches
+            # a restriction; reattaching it belongs to the same repair.
+            if _failures(check(repaired)) == {"clause_scope"}:
+                attached = restore_restriction_punctuation(validation_text, repaired, **context)
+                if attached is not None:
+                    repaired = attached
+                    note["restriction_punctuation_restored"] = True
+            return repaired, note
+
+        # Each step must remove failures without adding any, and every
+        # step's result is validated in full. A candidate the repairs
+        # cannot make valid is judged as the model wrote it.
+        report = check(out)
+        candidate, found, notes = out, report, {}
+        for _step in range(SALVAGE_MAX_STEPS):
+            if found.accepted:
+                break
+            for repair in (word_boundary, restriction_scope, missing_words):
+                step = repair(candidate, found)
+                if step is not None and _failures(check(step[0])) < _failures(found):
+                    candidate, found = step[0], check(step[0])
+                    notes.update(step[1])
+                    break
+            else:
+                break
+        if found.accepted:
+            out, report = candidate, found
+        else:
+            notes = {}
         status = "selected" if report.accepted else "rejected"
         rec["accepted"], rec["status"] = report.accepted, status
         _settle(corr_record, "selected" if report.accepted
@@ -1331,12 +1334,7 @@ class CleanupEngine:
         }
         if validation_text != window.text:
             decision["validation_source"] = validation_text
-        if salvaged:
-            decision["salvaged_words"] = salvaged
-        if scope_repaired:
-            decision["restriction_punctuation_restored"] = True
-        if boundary_repaired:
-            decision["source_word_boundary_restored"] = True
+        decision.update(notes)
         observations.append(decision)
         records = [rec, decision] + ([corr_record] if corr_record else [])
         if report.accepted:

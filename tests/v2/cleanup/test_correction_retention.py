@@ -835,6 +835,26 @@ class SourceRepairTests(unittest.TestCase):
                         if o.get("kind") == "cleanup_decision")
         self.assertTrue(decision["source_word_boundary_restored"])
 
+    def test_word_split_then_restores_a_dropped_word(self):
+        # Each repair must leave fewer failures than it found; the split
+        # leaves only coverage, which the word restoration then fixes.
+        source = "inspect the pallet fork and record the result in the shared log today"
+        proposal = "Inspect the palletfork and record the result in the log today."
+        expected = "Inspect the pallet fork and record the result in the shared log today."
+        result, _ = clean(source, proposal, "NONE")
+        self.assertEqual(result.text, expected)
+        self.assertEqual(result.path, "llm")
+        decision = next(o for o in result.observations
+                        if o.get("kind") == "cleanup_decision")
+        self.assertTrue(decision["source_word_boundary_restored"])
+        self.assertEqual(decision["salvaged_words"], 1)
+        added = proposal.replace("the log", "the new log")
+        result, _ = clean(source, added, "NONE")
+        self.assertEqual(result.text, source)
+        decision = next(o for o in result.observations
+                        if o.get("kind") == "cleanup_decision")
+        self.assertNotIn("source_word_boundary_restored", decision)
+
     def test_word_split_never_licenses_other_novel_content(self):
         source = "Inspect the pallet fork and record the result."
         proposal = "Inspect the palletfork and record the successful result."
