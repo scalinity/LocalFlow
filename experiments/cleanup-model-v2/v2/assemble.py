@@ -17,12 +17,12 @@ def stable_tokens(text):
             for m in re.finditer(r"\w+(?:['’]\w+)*", text)]
 
 
-def removes_created_repeat(window, corrected, answer):
+def removes_created_repeat(window, corrected, answer, adjacent=str.isspace):
     """A correction deletion left a non-stutter word twice in a row and the answer drops one."""
     def repeats(text):
         tokens = stable_tokens(text)
         return collections.Counter(b[2] for a, b in zip(tokens, tokens[1:])
-                                   if a[2] == b[2] and text[a[1]:b[0]].isspace())
+                                   if a[2] == b[2] and adjacent(text[a[1]:b[0]]))
     counts = lambda text: collections.Counter(t[2] for t in stable_tokens(text))
     return any(word not in STUTTER_WORDS and counts(answer)[word] < counts(corrected)[word]
                for word in repeats(corrected) - repeats(window))
@@ -103,12 +103,51 @@ def window_targets(pair, windows):
     return {(w.start, w.end): target[cuts[i]:cuts[i+1]].strip() for i, w in enumerate(windows)}
 
 
-def capture(pair):
+# Why a call's prompt and target agree; any other reason drops the call.
+AGREEMENTS = {"gold_lines_applied_by_engine", "input_is_label_pre_cleanup"}
+
+
+def cleanup_agreement(source, offsets, window_range, input_text, answer, vocabulary_pairs=()):
+    """Whether a cleanup call's prompt and target agree, as a reason.
+
+    They agree when the engine's input is the label's pre-cleanup text for the
+    window (the source window with its gold deletions applied) and the target
+    uses no word those deletions took out, which a detail the engine did not
+    retain would otherwise put back, and rewrites no dictated word in a way a
+    permitted conversion does not explain (label_defects.unexplained_rewrites):
+    the engine's validation no longer vetoes such a target once the row is vetoed.
+    """
+    from .label_defects import remove_spans, unexplained_rewrites
+    start, end = window_range
+    spans = [(s - start, e - start) for s, e in offsets if start <= s and e <= end]
+    if remove_spans(input_text, []) != remove_spans(source[start:end], spans):
+        return "input_is_not_label_pre_cleanup"
+    # Fold the curly apostrophe as the label rules do, so a deleted "don’t" written back as "don't" counts.
+    counts = lambda text: collections.Counter(t[2].replace("’", "'") for t in stable_tokens(text))
+    given, removed = counts(input_text), counts(source[start:end]) - counts(input_text)
+    if any(n > given[word] for word, n in counts(answer).items() if removed[word]):
+        return "target_uses_deleted_words"
+    # Removing "200 megabytes, sorry" from "past 200 megabytes, sorry, past 300" leaves the
+    # comma between the two "past"; collapsing them is the created repeat capture refuses.
+    # Any gap between two tokens counts: a word character would have joined a token.
+    if removes_created_repeat(source[start:end], input_text, answer, adjacent=lambda gap: True):
+        return "target_drops_created_repeat"
+    if unexplained_rewrites(input_text, answer, vocabulary_pairs):
+        return "target_rewrites_dictated_words"
+    return "input_is_label_pre_cleanup"
+
+
+def capture(pair, *, consistent_only=False):
     """Supervise correct targets even when the delivered engine vetoes them.
 
     The engine itself renders every prompt, including read-only neighboring
     context. Targets for long cases are cut only at aligned retained tokens.
     Rejected labels remain in evaluation; they never get rewritten to pass.
+    With consistent_only, a row the engine does not deliver exactly keeps only
+    the calls whose prompt and target agree: the cleanup calls cleanup_agreement
+    accepts, and a window's corrections-pass call (the source window answered
+    with its gold lines) where the engine applied exactly those lines.
+    engine_oracle.supervision records each call.
     """
     from localflow.v2.cleanup import engine, protected_spans_for_cleanup
     from lfx.capture import tokenizer, render_with
@@ -129,12 +168,14 @@ def capture(pair):
     if pair["split"] == "train":
         # Every capture path that produces TRAIN supervision applies this rule.
         from .refinement import training_label_conflict
+        pair.pop("label_conflict", None)
         conflict = training_label_conflict(pair)
         if conflict:
+            pair["label_conflict"] = conflict  # what the rule matched, beside the reason the error names
             raise ValueError(conflict["reason"])
     windows = engine.plan_windows(pair["model_input"], protected)
     targets = window_targets(pair, windows)
-    calls = []
+    calls, agreements = [], []
 
     class CaptureEngine(engine.CleanupEngine):
         def _generate(self, payload, *, kind, window_range, input_text, corrections_pass=False,
@@ -152,12 +193,16 @@ def capture(pair):
                 # repeats only because a correction span was removed before it.
                 if removes_created_repeat(pair["model_input"][window_range[0]:window_range[1]], input_text, answer):
                     raise ValueError("correction_created_repeat")
+            agreement = (None if corrections_pass else
+                         cleanup_agreement(pair["model_input"], offsets, window_range, input_text, answer,
+                                           pair.get("vocabulary_pairs")))
             def reply(prompt, max_tokens):
                 ntok = len(tok.encode(answer, add_special_tokens=False)) + 1
                 if ntok + 1 > max_tokens:
                     raise ValueError("target_over_output_budget")
                 calls.append({"role":"corrections" if corrections_pass else "main", "prompt":prompt,
                               "completion":answer,"max_tokens":max_tokens,"window":list(window_range)})
+                agreements.append(agreement)
                 return {"text":answer,"output_tokens":ntok,"limit_hit":False,"prompt":prompt}
             self._generate_fn = reply
             return super()._generate(payload, kind=kind, window_range=window_range, input_text=input_text,
@@ -170,6 +215,22 @@ def capture(pair):
     pair["engine_oracle"] = {"path":result.path, "exact":result.text == pair["target"],
                              "delivered":result.text,"fallback_reason":result.fallback_reason,
                              "windows":len(windows)}
+    if consistent_only and not pair["engine_oracle"]["exact"]:
+        # A corrections call agrees only where the engine applied exactly that window's
+        # gold deletions, which its cleanup input then shows (cleanup_agreement checks the
+        # input first): a gold line the engine rejects would teach a line the parser refuses.
+        applied = {tuple(c["window"]) for c, why in zip(calls, agreements)
+                   if c["role"] == "main" and why != "input_is_not_label_pre_cleanup"}
+        agreements = [why if c["role"] == "main" else "gold_lines_applied_by_engine"
+                      if tuple(c["window"]) in applied else "gold_lines_not_applied_by_engine"
+                      for c, why in zip(calls, agreements)]
+        pair["engine_oracle"]["supervision"] = [
+            {"role":c["role"], "window":c["window"], "kept":why in AGREEMENTS, "why":why}
+            for c, why in zip(calls, agreements)]
+        kept = [c for c, why in zip(calls, agreements) if why in AGREEMENTS]
+        # "partial" marks a vetoed row that lost at least one call, not every vetoed row.
+        return {"pair_id":pair["pair_id"],"family_id":pair["family_id"],"split":pair["split"],"calls":kept,
+                **({"partial":True} if len(kept) < len(calls) else {})}
     return {"pair_id":pair["pair_id"],"family_id":pair["family_id"],"split":pair["split"],"calls":calls}
 
 

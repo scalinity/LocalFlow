@@ -13,11 +13,11 @@ class Tokenizer:
         return text.split()
 
 
-def capture(pair):
+def capture(pair, **options):
     """Run the real engine through capture with a whitespace tokenizer."""
     with patch('lfx.capture.tokenizer', return_value=Tokenizer()), \
             patch('lfx.capture.render_with', return_value=lambda messages: json.dumps(messages)):
-        return assemble.capture(pair)
+        return assemble.capture(pair, **options)
 
 
 def pair(source, target, gold_lines=(), **fields):
@@ -47,6 +47,14 @@ class CreatedRepeatTests(unittest.TestCase):
         self.assertFalse(assemble.removes_created_repeat('very very hot, sorry warm', 'very very warm', 'Very warm.'))
         self.assertFalse(assemble.removes_created_repeat('every, every 20 minutes', 'every, every 20 minutes',
                                                          'Every 20 minutes.'))
+
+    def test_a_train_label_defect_refuses_capture_and_keeps_the_rule_hit(self):
+        row = pair('keep it cold and before you move it label it', 'Keep it cold. Before you move it, label it.',
+                   label_conflict={'reason': 'earlier'})
+        with self.assertRaisesRegex(ValueError, 'drops_dictated_word'):
+            capture(row)
+        self.assertEqual(row['label_conflict']['reason'], 'drops_dictated_word')
+        self.assertEqual(row['label_conflict']['dropped'], [{'kind': 'conjunction_at_split', 'words': 'and'}])
 
     def test_capture_omits_rows_that_teach_dropping_a_created_repeat(self):
         captured = capture(dict(FREQUENCY))
@@ -152,6 +160,115 @@ class CorrectionAnchorTests(unittest.TestCase):
             capture(pair('The service is not not up.', 'The service is not up.'))
         validation = {**pair('The service is not not up.', 'The service is not up.'), 'split': 'validation'}
         self.assertEqual(capture(validation)['split'], 'validation')
+
+
+# A correct label whose gold line the engine does not admit, so the cleanup input keeps the corrected words.
+INVOICE = pair('Send the invoice to the finance team in Berlin, actually to the legal team.',
+               'Send the invoice to the legal team.', ['to the finance team in Berlin, actually'])
+DYE = pair('Mix 4 liters of dye, no wait 6 liters for the warp.', 'Mix 6 liters of dye for the warp.',
+           ['4 liters of dye, no wait'])
+
+
+class ConsistentSupervisionTests(unittest.TestCase):
+    def test_a_window_whose_gold_line_the_engine_rejects_keeps_no_call(self):
+        row = dict(INVOICE)
+        captured = capture(row, consistent_only=True)
+        self.assertFalse(row['engine_oracle']['exact'])
+        self.assertEqual(captured['calls'], [])
+        self.assertEqual([(s['role'], s['kept'], s['why']) for s in row['engine_oracle']['supervision']],
+                         [('corrections', False, 'gold_lines_not_applied_by_engine'),
+                          ('main', False, 'input_is_not_label_pre_cleanup')])
+        # Without the mode, capture returns every call as before; the build vetoes the row.
+        self.assertEqual([c['role'] for c in capture(dict(INVOICE))['calls']], ['corrections', 'main'])
+
+    def test_a_window_the_engine_corrected_as_labelled_keeps_its_corrections_call(self):
+        # Salvage restores the stutter "is is", so the row is vetoed although its correction applied.
+        row = pair('Um the pump is is primed, and we booked 16 rooms, sorry 17 rooms, for the team.',
+                   'The pump is primed, and we booked 17 rooms for the team.', ['16 rooms, sorry'])
+        captured = capture(row, consistent_only=True)
+        self.assertFalse(row['engine_oracle']['exact'])
+        self.assertEqual([(c['role'], c['completion']) for c in captured['calls']],
+                         [('corrections', '16 rooms, sorry'), ('main', row['target'])])
+        self.assertEqual([s['why'] for s in row['engine_oracle']['supervision']],
+                         ['gold_lines_applied_by_engine', 'input_is_label_pre_cleanup'])
+        # Every call agrees, so the supervision is complete although the row was vetoed.
+        self.assertNotIn('partial', captured)
+
+    def test_each_window_of_a_vetoed_row_is_judged_on_its_own(self):
+        first = 'We booked 16 rooms, sorry 17 rooms, for the visiting team. ' + FILLER
+        second = INVOICE['model_input'] + ' ' + FILLER
+        target = (first.replace('16 rooms, sorry 17 rooms,', '17 rooms') + '\n\n'
+                  + second.replace('to the finance team in Berlin, actually ', '')).strip()
+        row = pair(first + '\n\n' + second, target, ['16 rooms, sorry', INVOICE['gold_lines'][0]])
+        captured = capture(row, consistent_only=True)
+        self.assertEqual(row['engine_oracle']['windows'], 2)
+        self.assertEqual([(s['role'], s['window'][0], s['kept']) for s in row['engine_oracle']['supervision']],
+                         [('corrections', 0, True), ('main', 0, True),
+                          ('corrections', len(first) + 2, False), ('main', len(first) + 2, False)])
+        self.assertEqual({tuple(c['window']) for c in captured['calls']}, {(0, len(first))})
+        self.assertIs(captured['partial'], True)
+
+    def test_a_vetoed_row_whose_cleanup_input_is_the_label_pre_cleanup_text_keeps_it(self):
+        row = pair('Um the pump is is already primed, and the valve goes in the drawer by the window.',
+                   'The pump is already primed, and the valve goes in the drawer by the window.')
+        captured = capture(row, consistent_only=True)
+        self.assertFalse(row['engine_oracle']['exact'])
+        self.assertEqual([(c['role'], c['completion']) for c in captured['calls']], [('main', row['target'])])
+        self.assertEqual(row['engine_oracle']['supervision'],
+                         [{'role': 'main', 'window': [0, len(row['model_input'])], 'kept': True,
+                           'why': 'input_is_label_pre_cleanup'}])
+
+    def test_rows_already_exact_are_captured_exactly_as_before(self):
+        source = 'We booked 16 rooms, sorry 17 rooms, for the visiting team.'
+        before, after = (pair(source, 'We booked 17 rooms for the visiting team.', ['16 rooms, sorry'])
+                         for _ in range(2))
+        self.assertEqual(capture(after, consistent_only=True), capture(before))
+        self.assertNotIn('partial', capture(dict(after), consistent_only=True))
+        self.assertTrue(after['engine_oracle']['exact'])
+        self.assertEqual(after, before)
+
+    def test_cleanup_agreement_needs_the_label_pre_cleanup_input_and_no_deleted_word(self):
+        source = DYE['model_input']
+        offsets = [list(correction_anchor(source, DYE['gold_lines'][0]))]
+        window = (0, len(source))
+        agree = lambda text, answer: assemble.cleanup_agreement(source, offsets, window, text, answer)
+        self.assertEqual(agree('Mix 6 liters for  the warp. ', 'Mix 6 liters for the warp.'),
+                         'input_is_label_pre_cleanup')
+        # The engine did not retain the detail the label keeps: the target would invent it.
+        self.assertEqual(agree('Mix 6 liters for the warp.', DYE['target']), 'target_uses_deleted_words')
+        self.assertEqual(agree(source, DYE['target']), 'input_is_not_label_pre_cleanup')
+        self.assertEqual(agree('Mix 6 liters of dye for the warp.', DYE['target']), 'input_is_not_label_pre_cleanup')
+
+    def test_cleanup_agreement_refuses_collapsing_a_repeat_the_correction_left_behind_a_comma(self):
+        source = 'Set the threshold past 200 megabytes, sorry, past 300 megabytes.'
+        offsets = [list(correction_anchor(source, '200 megabytes, sorry'))]
+        given = 'Set the threshold past , past 300 megabytes.'
+        agree = lambda answer: assemble.cleanup_agreement(source, offsets, (0, len(source)), given, answer)
+        self.assertEqual(agree('Set the threshold past 300 megabytes.'), 'target_drops_created_repeat')
+        self.assertEqual(agree('Set the threshold past, past 300 megabytes.'), 'input_is_label_pre_cleanup')
+        # Capture's own whitespace check, which every build applies, is unchanged.
+        self.assertFalse(assemble.removes_created_repeat(source, given, 'Set the threshold past 300 megabytes.'))
+
+    def test_cleanup_agreement_folds_the_curly_apostrophe_of_a_deleted_word(self):
+        source = 'Please don’t ship it sorry ship it today.'
+        offsets = [list(correction_anchor(source, 'don’t ship it sorry'))]
+        agree = assemble.cleanup_agreement(source, offsets, (0, len(source)), 'Please ship it today.',
+                                           "Please don't ship it today.")
+        self.assertEqual(agree, 'target_uses_deleted_words')
+
+    def test_cleanup_agreement_refuses_a_target_that_rewrites_a_dictated_word(self):
+        source = 'Ship it on Tuesday and call Marta.'
+        agree = lambda answer, vocabulary=(): assemble.cleanup_agreement(
+            source, [], (0, len(source)), source, answer, vocabulary)
+        self.assertEqual(agree('Ship it on Wednesday and call Marta.'), 'target_rewrites_dictated_words')
+        self.assertEqual(agree('Ship it on Tuesday and call Martha.', [['Marta', 'Martha']]), 'input_is_label_pre_cleanup')
+
+    def test_cleanup_agreement_ignores_gold_deletions_outside_its_window(self):
+        source = 'Keep the pump cold. We booked 16 rooms, sorry 17 rooms.'
+        offsets = [list(correction_anchor(source, '16 rooms, sorry'))]
+        window = (0, len('Keep the pump cold.'))
+        self.assertEqual(assemble.cleanup_agreement(source, offsets, window, 'Keep the pump cold.', 'Keep the pump cold.'),
+                         'input_is_label_pre_cleanup')
 
 
 class DedupTests(unittest.TestCase):

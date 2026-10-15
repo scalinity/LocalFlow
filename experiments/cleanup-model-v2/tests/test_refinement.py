@@ -251,18 +251,20 @@ class TrainingLabelConflictTests(unittest.TestCase):
                 self.assertIsNone(refinement.training_label_conflict({'model_input': source, 'target': target}))
 
     def test_authorized_correction_spans_are_excluded_before_counting(self):
-        row = {'model_input': 'Not not ready.', 'target': 'Not ready.', 'gold_offsets': [[0, 4]]}
-        self.assertIsNone(refinement.training_label_conflict(row))
-        source = 'Not not ready, not sorry, now ready.'
-        start = source.index('not sorry')
-        row = {'model_input': source, 'target': 'Not not ready, now ready.',
-               'gold_offsets': [[start, start + len('not sorry, ')]]}
-        self.assertIsNone(refinement.training_label_conflict(row))
-        # An authorized deletion must not turn separate words into a new repeat.
-        source = 'Not old sorry not ready.'
-        row = {'model_input': source, 'target': 'Not ready.',
-               'gold_offsets': [[source.index('old'), source.index('not ready')]]}
-        self.assertIsNone(refinement.training_label_conflict(row))
+        # The spans are not real correction lines, so only the negation rule is under test.
+        with patch('v2.label_defects.label_defect', return_value=None):
+            row = {'model_input': 'Not not ready.', 'target': 'Not ready.', 'gold_offsets': [[0, 4]]}
+            self.assertIsNone(refinement.training_label_conflict(row))
+            source = 'Not not ready, not sorry, now ready.'
+            start = source.index('not sorry')
+            row = {'model_input': source, 'target': 'Not not ready, now ready.',
+                   'gold_offsets': [[start, start + len('not sorry, ')]]}
+            self.assertIsNone(refinement.training_label_conflict(row))
+            # An authorized deletion must not turn separate words into a new repeat.
+            source = 'Not old sorry not ready.'
+            row = {'model_input': source, 'target': 'Not ready.',
+                   'gold_offsets': [[source.index('old'), source.index('not ready')]]}
+            self.assertIsNone(refinement.training_label_conflict(row))
 
     def test_prepare_excludes_only_train_capture_and_keeps_label_bytes(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -76,9 +76,23 @@ training examples, generation demonstrations, or checkpoint-selection material.
 Evaluation labels blocked by the engine remain in the evaluation set. A
 training target is omitted when its exact prompt supervision cannot be safely
 captured, without silently changing that target. Additional reviewed label
-conflicts exclude training captures only. Their reasons and the original
+conflicts exclude training captures only, as do the TRAIN labels listed in
+`artifacts/hard-cases/validation/label-defects.jsonl` (`validation_label_defect`,
+counted only where no label rule already excluded the row). Their reasons and the original
 training-file hash remain in the dataset freeze; development and final labels
 retain their original bytes.
+
+The consolidated TRAIN labels are normalized before capture
+(`policy_score.minimal_target`): a comma the dictation lacked stays only when it
+separates items of a list of three or more, sets off an addressed person,
+prevents a likely misreading, or follows a date, place or number convention.
+Each added comma's kind comes from `artifacts/hard-cases/labels/comma-kinds-train.json`
+(written by `artifacts/hard-cases/tools/comma_classify.py`). The build refuses to run
+without it or when a comma it keeps is no longer in its label, and a row it left
+unclassified keeps every comma. Development labels keep their own punctuation, so their validation loss scores
+a different comma policy and rises as a model learns this one. Select a
+consolidated checkpoint on the development scoreboard, not on its lowest
+validation loss.
 
 `D` uses the recorded production engine. `E` uses the exact same D weights with
 `engine_variant.py`. `C-engine` is the engine-only control. The variant removes

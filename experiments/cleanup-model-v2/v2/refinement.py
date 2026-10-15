@@ -17,10 +17,18 @@ SOURCE_FILES = ["localflow/v2/cleanup/" + name for name in
 
 
 def training_label_conflict(row):
-    """Reject ambiguous repeated-negation deletion from supervision only."""
+    """Reject ambiguous repeated-negation deletion and label defects from supervision only."""
     from localflow.v2.cleanup.validation import NEGATION_WORDS
+    from .label_defects import label_defect
+    from .refinement_data import correction_offsets
     source = row["model_input"]
-    for start, end in row.get("gold_offsets", []):
+    offsets = row.get("gold_offsets")
+    if offsets is None:
+        try:
+            offsets = correction_offsets(row)
+        except ValueError:
+            offsets = None  # capture records the unanchored line
+    for start, end in offsets or []:
         if not 0 <= start < end <= len(source):
             raise ValueError("Invalid gold correction offset")
         # Keep a non-whitespace gap so removal cannot invent an adjacent repeat.
@@ -35,7 +43,11 @@ def training_label_conflict(row):
         re.finditer(r"\b\w+(?:['’]\w+)*\b", row["target"]))
     reduced = [{"word": word, "source_count": source_counts[word], "target_count": target_counts[word]}
                for word in sorted(repeated) if target_counts[word] < source_counts[word]]
-    return {"reason": "ambiguous_repeated_negation_deletion", "negations": reduced} if reduced else None
+    if reduced:
+        return {"reason": "ambiguous_repeated_negation_deletion", "negations": reduced}
+    if offsets is None:
+        return None
+    return label_defect(row["model_input"], row["target"], offsets, row.get("vocabulary_pairs"))
 
 
 def prepare():
