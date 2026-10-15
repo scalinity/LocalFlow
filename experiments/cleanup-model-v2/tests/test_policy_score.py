@@ -132,8 +132,30 @@ class MinimalTargetTests(unittest.TestCase):
         self.check("okay so the build passed", "Okay, so the build passed.", "Okay so the build passed.",
                    ["opening_discourse_comma"])
 
-    def test_comma_after_a_discourse_word_inside_a_sentence_stays(self):
-        self.check("I said so they left", "I said so, they left.", "I said so, they left.", [])
+    def test_comma_after_a_discourse_word_inside_a_sentence_is_an_optional_gap_comma(self):
+        self.check("I said so they left", "I said so, they left.", "I said so they left.", ["optional_gap_comma"])
+
+    def test_optional_gap_comma_is_reverted_and_the_opening_discourse_case_keeps_its_name(self):
+        self.check("run the batch then inspect it and log the result",
+                   "Run the batch, then inspect it, and log the result.",
+                   "Run the batch then inspect it and log the result.", ["optional_gap_comma"] * 2)
+        self.check("okay so run the batch then inspect it", "Okay, so run the batch, then inspect it.",
+                   "Okay so run the batch then inspect it.", ["opening_discourse_comma", "optional_gap_comma"])
+
+    def test_a_comma_between_touching_words_reverts_to_the_source_gap(self):
+        self.check("pay 1 000 euros", "Pay 1,000 euros.", "Pay 1 000 euros.", ["optional_gap_comma"])
+
+    def test_boundaries_newlines_unaligned_and_replacing_commas_stay(self):
+        for source, target, vocabulary in (
+                ("check the pump then log it", "Check the pump. Then log it.", ()),
+                ("check the pump then log it", "Check the pump,\nthen log it.", ()),
+                ("check the pump\nthen log it", "Check the pump, then log it.", ()),
+                ("open cooper netties now", "Open Kubernetes, now.", ["Kubernetes"]),
+                ("check the pump. then log it", "Check the pump, then log it.", ()),
+                ("he said stop the pump", 'He said, "Stop the pump."', ()),
+                ("Run the batch, then inspect it.", "Run the batch, then inspect it.", ())):
+            with self.subTest(target=target):
+                self.assertEqual(policy_score.minimal_target(source, target, vocabulary), (target, [], None))
 
     def test_label_colon_is_reverted_but_a_long_clause_keeps_its_colon(self):
         self.check("Handover note for housekeeping, the dryer is down",

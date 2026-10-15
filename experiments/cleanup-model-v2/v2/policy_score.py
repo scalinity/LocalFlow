@@ -99,9 +99,11 @@ def _pieces(text):
 def minimal_target(source, target, vocabulary=()):
     """Remove optional polish from a training label without touching its repairs.
 
-    Returns (target, changes, exclusion). Invented paragraph breaks, an added comma
-    after a sentence-opening discourse word and a colon replacing a valid comma after
-    a short label-like opening are reverted to the source. A label that turns spoken
+    Returns (target, changes, exclusion). Invented paragraph breaks, a comma added at
+    an aligned gap the source left unpunctuated on one line (score() never requires
+    it; after a sentence-opening discourse word it is recorded as
+    opening_discourse_comma) and a colon replacing a valid comma after a short
+    label-like opening are reverted to the source. A label that turns spoken
     ordinals into a list without step labels or a list introduction, or that adds a
     word the speaker did not say, is excluded rather than rewritten.
     """
@@ -123,9 +125,14 @@ def minimal_target(source, target, vocabulary=()):
             t = re.sub(r"[ \t]*\n\s*\n\s*", " ", t)
             changes.append("invented_paragraph")
         opens_sentence = k == 1 or (k >= 2 and re.search(r"[.!?\n]", gaps[k - 1]))
-        if not _marks(s) and _marks(t) == "," and k >= 1 and target_words[k - 1] in DISCOURSE and opens_sentence:
-            t = t.replace(",", "", 1)
-            changes.append("opening_discourse_comma")
+        if not _marks(s) and _marks(t) == ",":
+            if k >= 1 and target_words[k - 1] in DISCOURSE and opens_sentence:
+                t = t.replace(",", "", 1)
+                changes.append("opening_discourse_comma")
+            elif "\n" not in s + t:
+                # A comma between two touching words reverts to the source gap, keeping them two words.
+                t = t.replace(",", "", 1) or s
+                changes.append("optional_gap_comma")
         if _marks(s) == "," and _marks(t) == ":" and "\n" not in t:
             opening = 0
             for back in range(k - 1, -1, -1):
