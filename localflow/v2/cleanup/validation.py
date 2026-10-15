@@ -841,13 +841,21 @@ def restore_restriction_punctuation(source: str, output: str, **kwargs) -> str |
               + _dangling_conjunction_breaks(source, output, aligned, ctx))
     if not breaks:
         return None
-    edits = {(s, e): " " for s, e, *_ in breaks}
+    edits = {}
+    for start, end, *_ in breaks:
+        # The removed break and the spacing beside it become one space;
+        # spacing elsewhere (indentation, code) is the model's to keep.
+        while start and output[start - 1] in " \t":
+            start -= 1
+        while end < len(output) and output[end] in " \t":
+            end += 1
+        edits[(start, end)] = " "
     for _s, _e, start, end, source_word in breaks:
         edits[(start, end)] = source_word
     text = output
     for (start, end), replacement in sorted(edits.items(), reverse=True):
         text = text[:start] + replacement + text[end:]
-    return re.sub(r"[ \t]{2,}", " ", text)
+    return text
 
 
 def _numeric_values_in(text: str) -> list:

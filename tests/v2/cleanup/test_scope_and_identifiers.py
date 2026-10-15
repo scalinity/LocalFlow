@@ -5,7 +5,8 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 from localflow.v2.cleanup.engine import CleanupEngine, parse_correction_output
-from localflow.v2.cleanup.validation import validate, restore_missing_words
+from localflow.v2.cleanup.validation import (validate, restore_missing_words,
+                                            restore_restriction_punctuation)
 
 
 def failures(report):
@@ -25,6 +26,17 @@ class ScopeTests(unittest.TestCase):
         wrong = "Review the archived photographs. Only do not touch the negatives."
         self.assertEqual(failures(validate(source, wrong)), {"clause_scope"})
         self.assertTrue(validate(source, "Review the archived photographs only. Do not touch the negatives.").accepted)
+
+    def test_restriction_repair_keeps_spacing_away_from_the_break(self):
+        source = ("Notes:\n  - keep a  =  b in the config\n"
+                  "  - review the archived photographs only do not touch the negatives")
+        output = ("Notes:\n  - Keep a  =  b in the config.\n"
+                  "  - Review the archived photographs. Only do not touch the negatives.")
+        fixed = restore_restriction_punctuation(source, output)
+        self.assertEqual(fixed, "Notes:\n  - Keep a  =  b in the config.\n"
+                                "  - Review the archived photographs only do not touch "
+                                "the negatives.")
+        self.assertEqual(failures(validate(source, fixed)), set())
 
     def test_condition_cannot_be_split_inside_only_if(self):
         source = "Release the package only if every check succeeds"
