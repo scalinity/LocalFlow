@@ -27,8 +27,8 @@ from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
-from .lexicon import (FILLERS, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, NUMBER_WORDS,
-                      SCALE_WORDS, TECH_TOKEN_RE)
+from .lexicon import (FILLERS, FINITE_AUXILIARIES, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE,
+                      NUMBER_WORDS, SCALE_WORDS, TECH_TOKEN_RE)
 from .correction_retention import (AdmittedCorrection, correction_view,
                                    qualifier_retention, repeated_restart)
 from .validation import (validate, restore_missing_words,
@@ -599,10 +599,7 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
 
 
 # "am" is left out: it follows only "I", and "9 am" is a time.
-_PREDICATE_AUXILIARIES = frozenset({
-    "is", "are", "was", "were", "be", "has", "have", "had", "do", "does",
-    "did", "can", "could", "will", "would", "shall", "should", "may", "might",
-    "must"})
+_PREDICATE_AUXILIARIES = FINITE_AUXILIARIES - {"am"}
 
 
 def _replacement_opens_predicate(text: str, end: int) -> bool:

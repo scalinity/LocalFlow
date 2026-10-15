@@ -654,7 +654,7 @@ class SourceRepairTests(unittest.TestCase):
 
     def test_compound_correction_removes_only_the_exact_repeated_predicate(self):
         for predicate, unit in (("should be", "C"), ("must be", "psi"),
-                                ("could be", "liters")):
+                                ("could be", "liters"), ("shall be", "psi")):
             with self.subTest(predicate=predicate, unit=unit):
                 subject = "The ink temperature" if unit == "C" else "The reading"
                 deletion = f"12 {unit}, I mean actually"

@@ -33,6 +33,13 @@ FUNCTION_WORDS = frozenset({
     "her", "s", "please", "also",
 })
 
+# A subject followed by a finite auxiliary or modal names its own
+# predicate. "be" is not finite: it never directly follows a subject.
+MODALS = frozenset({"can", "could", "may", "might", "must", "shall", "should",
+                    "will", "would"})
+FINITE_AUXILIARIES = MODALS | frozenset({
+    "am", "is", "are", "was", "were", "has", "have", "had", "do", "does", "did"})
+
 IDENTIFIER_TOKEN_RE = re.compile(
     r"(?<!\w)[A-Za-z_]\w*_\w+(?!\w)"
     r"|\b[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_]+\b")

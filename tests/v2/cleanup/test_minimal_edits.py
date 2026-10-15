@@ -132,6 +132,8 @@ class RestrictionAndPreservationTests(unittest.TestCase):
              "Finish the test. Only Mira can approve it."),
             ("Save the draft only she can publish it",
              "Save the draft. Only she can publish it."),
+            ("Review the photos only I am allowed to edit them",
+             "Review the photos. Only I am allowed to edit them."),
         ):
             with self.subTest(output=output):
                 self.assertTrue(validate(source, output).accepted)

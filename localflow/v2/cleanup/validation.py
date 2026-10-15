@@ -25,7 +25,7 @@ from collections import Counter
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 
-from .lexicon import (FILLERS, FUNCTION_WORDS, NEGATION_WORDS,
+from .lexicon import (FILLERS, FINITE_AUXILIARIES, FUNCTION_WORDS, NEGATION_WORDS,
                       IDENTIFIER_TOKEN_RE as _IDENTIFIER_TOKEN_RE,
                       NUMBER_WORDS as _NUMBERS, QUOTED_RE as _QUOTED_RE,
                       SCALE_WORDS as _SCALES, TECH_TOKEN_RE as _TECH_TOKEN_RE,
@@ -807,9 +807,6 @@ def _only_starts_clause(source, atoms, only_index):
     treating every occurrence of 'only' as a new sentence. Unclear shapes
     retain the existing attachment rule.
     """
-    auxiliaries = {"can", "could", "may", "might", "must", "shall", "should",
-                   "will", "would", "is", "are", "was", "were", "has", "have",
-                   "had", "does", "do", "did"}
     dependent = {"if", "when", "unless", "after", "before", "until", "because",
                  "once", "while", "for", "on", "in", "at", "to", "with",
                  "without", "who", "which", "whose", "where", "during",
@@ -822,7 +819,7 @@ def _only_starts_clause(source, atoms, only_index):
             return False
         if word in dependent:
             return False
-        if word in auxiliaries:
+        if word in FINITE_AUXILIARIES:
             return bool(subject) and index + 1 < len(atoms)
         subject.append(word)
     return False
@@ -1251,16 +1248,13 @@ def _incomplete_restart_spans(source: str, output: str, ctx) -> list:
     atoms = _word_atoms(source)
     markers = {"that", "which", "who", "whom"}
     subjects = {"i", "you", "he", "she", "it", "we", "they"}
-    finite = {"am", "is", "are", "was", "were", "has", "have", "had",
-              "do", "does", "did", "can", "could", "will", "would",
-              "shall", "should", "must", "may", "might"}
     excluded = (ctx.protected_positions + ctx.correction_spans + ctx.vocab_spans
                 + ctx.enum_spans + ctx.numeric_spans)
     candidates = []
     for i in range(1, len(atoms) - 4):
         opening = [a[2] for a in atoms[i:i + 5]]
         if (opening[0] not in markers or opening[1] not in subjects
-                or opening[:2] != opening[2:4] or opening[4] not in finite):
+                or opening[:2] != opening[2:4] or opening[4] not in FINITE_AUXILIARIES):
             continue
         prior_start, prior_end, prior_word = atoms[i - 1]
         if (any(not re.fullmatch(r"[ \t]+", source[atoms[j][1]:atoms[j + 1][0]])

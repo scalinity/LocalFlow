@@ -14,7 +14,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from .lexicon import FUNCTION_WORDS, NEGATION_WORDS, quoted_regions, touches
+from .lexicon import (FINITE_AUXILIARIES, FUNCTION_WORDS, MODALS, NEGATION_WORDS,
+                      quoted_regions, touches)
 
 
 _NUMBER = r"[+-]?\d+(?:[.,]\d+)*"
@@ -166,9 +167,6 @@ def repeated_restart(source: str, span: tuple, marker_start: int):
     first = re.split("['’]", words[0])[0] if words else ""
     pronoun = first in {"i", "you", "he", "she", "it", "we", "they",
                         "this", "that", "these", "those", "there"}
-    auxiliaries = {"should", "must", "could", "would", "may", "might", "can",
-                   "will", "shall", "am", "is", "are", "was", "were", "be",
-                   "has", "have", "had", "do", "does", "did"}
     boundaries = set(_PREPOSITIONS.split("|")) | {
         "and", "or", "but", "then", "because", "before", "after", "until",
         "when", "while", "if", "unless", "only",
@@ -177,7 +175,7 @@ def repeated_restart(source: str, span: tuple, marker_start: int):
     for index, word in enumerate(words):
         if word in boundaries or not re.fullmatch(rf"{_WORD}(?:['’]{_WORD})?", word):
             break
-        if index and word in auxiliaries:
+        if index and word in FINITE_AUXILIARIES:
             named_predicate = True
             break
     # Openings outside these bounded restart shapes grant no extra
@@ -190,7 +188,7 @@ def repeated_restart(source: str, span: tuple, marker_start: int):
         rf"{_NUMBER}[ \t]+(?P<unit>{_WORD})[ \t]*,?[ \t]*",
         source[start:marker_start])
     predicate = re.search(
-        r"\b(?P<frame>(?:should|must|could|would|may|might|can|will)[ \t]+be)[ \t]+$",
+        rf"\b(?P<frame>(?:{'|'.join(sorted(MODALS))})[ \t]+be)[ \t]+$",
         source[:start], re.IGNORECASE)
     if quantity is None or predicate is None:
         return None, reason
