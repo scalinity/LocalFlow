@@ -45,7 +45,9 @@ FINITE_AUXILIARIES = MODALS | frozenset({
 def marker_pattern(markers) -> str:
     """An alternation of ``markers`` in which a comma may separate the
     words of a compound marker ("no, sorry", "I mean, actually")."""
-    return "|".join(re.escape(m).replace(r"\ ", r"[ \t]*,?[ \t]+")
+    # One reading per separator: "[ \t]*,?[ \t]+" could split a long run
+    # of spaces in quadratically many ways before failing.
+    return "|".join(re.escape(m).replace(r"\ ", r"(?:[ \t]*,[ \t]+|[ \t]+)")
                     for m in sorted(markers, key=lambda w: (-len(w), w)))
 
 
