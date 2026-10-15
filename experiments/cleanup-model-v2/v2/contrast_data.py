@@ -394,14 +394,35 @@ def _check_budget(stage, rows, usd_per_row):
 
 # ---------------------------------------------------------------- waves
 
+class _BudgetedWave(data.Wave):
+    def submit_pending(self, limit=None):
+        bases = self.pending()[:limit or None]
+        if bases:
+            names = {w for name in WAVES for w in (name, "ver-" + name)}
+            entries = [entry for key, entry in batches.ledger()["entries"].items()
+                       if key.split("#")[0] in names]
+            committed = sum(entry.get("actual_usd", 0.0)
+                            + (entry["max_usd"] if entry["state"] == "outstanding" else 0.0)
+                            for entry in entries)
+            maximum = sum(batches.max_charge(self.est_input_tokens(self.requests[base]),
+                                            self.requests[base]["max_tokens"]) for base in bases)
+            if committed + maximum > CEILING_USD:
+                raise batches.BudgetExceeded(
+                    f"{self.name}: ${committed:.2f} committed plus ${maximum:.2f} maximum "
+                    f"crosses the lane's ${CEILING_USD:.2f} ceiling")
+        # The shared controller still enforces the global cap and handles retries.
+        return super().submit_pending(limit)
+
+
 def _wave(name, specs, rates, guidance="") -> None:
     path = ART / "claude" / name / "specs.json"
     existing = read_json(path)
     if existing is not None and existing != specs:
         raise RuntimeError(f"{name} already has a different generation plan")
     write_json(path, specs)
-    old_gen, old_verify = data.GEN_SYSTEM, data.VERIFY_SYSTEM
+    old_gen, old_verify, old_wave = data.GEN_SYSTEM, data.VERIFY_SYSTEM, data.Wave
     try:
+        data.Wave = _BudgetedWave
         data.GEN_SYSTEM += LEAD_GEN + POLICY + PAIRING + guidance
         data.VERIFY_SYSTEM += LEAD_VERIFY + POLICY
         _check_budget(name, len(specs), rates[0])
@@ -413,6 +434,7 @@ def _wave(name, specs, rates, guidance="") -> None:
         data.verify(name)
     finally:
         data.GEN_SYSTEM, data.VERIFY_SYSTEM = old_gen, old_verify
+        data.Wave = old_wave
     meta = {s["family_id"]: s for s in specs}
     for kind in ("pairs", "accepted"):
         dest = ART / kind / (name + ".jsonl")

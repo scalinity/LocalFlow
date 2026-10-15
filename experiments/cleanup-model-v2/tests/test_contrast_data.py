@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from v2 import contrast_data, data
 from v2.common import read_json, read_jsonl, write_json
@@ -292,6 +292,49 @@ class FunnelTests(unittest.TestCase):
 
 
 class PipelineTests(unittest.TestCase):
+    def test_submission_budget_counts_paid_retries_and_outstanding_attempts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            client = SimpleNamespace(messages=SimpleNamespace(batches=SimpleNamespace(
+                create=Mock(return_value=SimpleNamespace(id="fixture-batch")))))
+            with patch.object(batches, "CLAUDE_DIR", root), patch.object(batches, "LEDGER", root / "ledger.json"), \
+                    patch.object(batches, "max_charge", return_value=2.0), \
+                    patch.dict(batches.CONFIG["claude"], {"stop_at_usd": 100.0}):
+                write_json(root / "ledger.json", {"entries": {
+                    "ver-" + NAME + "#a1": {"state": "settled", "actual_usd": 12.0, "max_usd": 12.0},
+                    "other-lane#a1": {"state": "settled", "actual_usd": 50.0, "max_usd": 50.0}},
+                    "reservations": {}})
+                args = ({"request": {"max_tokens": 100}}, lambda text: text, lambda params: 10)
+                wave = contrast_data._BudgetedWave(NAME, *args, client_noretry=client, log=lambda text: None)
+                wave.submit_pending()
+                self.assertEqual(client.messages.batches.create.call_count, 1)
+                retry = contrast_data._BudgetedWave(RETRY, *args, client_noretry=client, log=lambda text: None)
+                with self.assertRaisesRegex(batches.BudgetExceeded, "lane's"):
+                    retry.submit_pending()
+                batches._settle(NAME + "#a1", 2.0, {})
+                wave.manifest["attempts"][0]["state"] = "collected"
+                wave.outcomes = {"request": {"status": "malformed", "attempts": 1}}
+                with self.assertRaisesRegex(batches.BudgetExceeded, "lane's"):
+                    wave.submit_pending()
+                self.assertEqual(client.messages.batches.create.call_count, 1)
+                self.assertNotIn(NAME + "#a2", batches.ledger()["entries"])
+                with patch.dict(batches.CONFIG["claude"], {"stop_at_usd": 63.0}), \
+                        patch.object(batches, "max_charge", return_value=0.5):
+                    with self.assertRaisesRegex(batches.BudgetExceeded, "exceeds stop"):
+                        wave.submit_pending()
+
+    def test_wave_restores_submission_class_when_generation_fails(self):
+        original = data.Wave
+        def fail(*args, **kwargs):
+            self.assertIs(data.Wave, contrast_data._BudgetedWave)
+            raise RuntimeError("fixture generation failure")
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(contrast_data, "ART", Path(directory)), \
+                patch.object(contrast_data, "_check_budget"), patch.object(data, "generate", side_effect=fail):
+            with self.assertRaisesRegex(RuntimeError, "fixture generation failure"):
+                contrast_data._wave(NAME, self.specs(), (0.0, 0.0))
+        self.assertIs(data.Wave, original)
+
     def run_wave(self, root, specs, calls, rates=(0.0, 0.0), guidance=""):
         with patch.object(data, "ART", root), patch.object(contrast_data, "ART", root), \
                 patch.object(data, "wave", fake_wave(calls)), patch.object(data, "anthropic_client", no_client), \
