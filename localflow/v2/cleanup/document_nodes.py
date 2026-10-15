@@ -31,6 +31,8 @@ class ListGroup:
     ordered: bool
     start: int = 1
     items: list[str] = field(default_factory=list)
+    # (start, end, number) of each ordered item's label in the parsed text.
+    labels: list = field(default_factory=list)
 
     def render(self, start: int | None = None) -> str:
         n = self.start if start is None else start
@@ -79,6 +81,9 @@ def parse(text: str) -> Document:
     proposal may emit numbered/bulleted lists) into a Document."""
     doc = Document()
     lines = text.split("\n")
+    offsets = [0]
+    for line in lines[:-1]:
+        offsets.append(offsets[-1] + len(line) + 1)
     i = 0
     while i < len(lines):
         line = lines[i]
@@ -103,6 +108,8 @@ def parse(text: str) -> Document:
                     group.items.append(mb.group(1).strip())
                 elif mo and group.ordered:
                     group.items.append(mo.group(2).strip())
+                    group.labels.append((offsets[i] + mo.start(1),
+                                         offsets[i] + mo.end(1) + 1, int(mo.group(1))))
                 elif not lines[i].strip() and i + 1 < len(lines) and (
                         _BULLET_RE.match(lines[i + 1])
                         or _ORDERED_RE.match(lines[i + 1])):

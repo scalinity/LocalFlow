@@ -41,6 +41,12 @@ MODALS = frozenset({"can", "could", "may", "might", "must", "shall", "should",
 FINITE_AUXILIARIES = MODALS | frozenset({
     "am", "is", "are", "was", "were", "has", "have", "had", "do", "does", "did"})
 
+# Words that cannot be the noun a number counts: "1 the east wing" and
+# "Two, we restart" enumerate, while "2 tablets" counts.
+DETERMINERS = frozenset({"the", "this", "that", "these", "those", "my", "your", "our",
+                         "their", "his", "her", "its"})
+SUBJECT_PRONOUNS = frozenset({"i", "you", "he", "she", "it", "we", "they"})
+
 # Words that end a correction span: the old value comes before them.
 CORRECTION_MARKERS = frozenset({
     "no wait", "no sorry", "no actually", "actually no", "wait no", "i mean",

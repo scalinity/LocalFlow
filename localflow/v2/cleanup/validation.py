@@ -25,7 +25,8 @@ from collections import Counter
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 
-from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES,
+from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, DETERMINERS, FILLERS,
+                      FINITE_AUXILIARIES, SUBJECT_PRONOUNS,
                       FUNCTION_WORDS, NEGATION_WORDS, NUMBER, SUBORDINATORS, alternation,
                       IDENTIFIER_TOKEN_RE as _IDENTIFIER_TOKEN_RE,
                       NUMBER_WORDS as _NUMBERS, QUOTED_RE as _QUOTED_RE,
@@ -895,6 +896,27 @@ def _numeric_values_in(text: str) -> list:
     return vals
 
 
+def _spoken_label_run(source: str, values: list) -> list:
+    """Source numbers that read as a spoken list: 1, 2, 3 … in order.
+
+    Each opens a clause and is followed by a comma or by a word it cannot
+    count, a determiner or subject pronoun ("One, check the stops",
+    "1 the east wing needs …"). "1 tablet" or "1 open the panel" may be a
+    count, so a run with any such member is not a list.
+    """
+    run = []
+    for item in values:
+        start, end, key = item[0], item[1], item[2]
+        before = source[:start].rstrip()
+        following = re.match(r"(,)|[ \t]+([^\W\d_]+)", source[end:])
+        if (key[0] == "num" and not key[1] and not key[3] and key[2] == len(run) + 1
+                and (not before or before[-1] in ".!?:;,")
+                and following and (following.group(1)
+                                   or following.group(2).lower() in DETERMINERS | SUBJECT_PRONOUNS)):
+            run.append(item)
+    return run if len(run) >= 2 else []
+
+
 def _numeric_values(source, output, ctx) -> Component:
     """Every typed numeric occurrence in the source survives IN ORDER
     with the same sign, unit and identity; none is invented. Order binds
@@ -902,7 +924,8 @@ def _numeric_values(source, output, ctx) -> Component:
     workers and 3 retries"). A valid number-word→digit change passes;
     30→300, -5→5, 12%→12, $→€ and 0073→73 fail. Enumeration-marker and
     correction-deleted values are excluded when their deletions are
-    authorized; a rendered list marker may be consumed or skipped."""
+    authorized; a rendered list label is checked as list structure and
+    never binds a value."""
     from . import document_nodes as dn
     covered = list(ctx.enum_spans) + list(ctx.correction_spans)
     # A source line-start list marker is structure, not a value: its
@@ -911,7 +934,17 @@ def _numeric_values(source, output, ctx) -> Component:
     src = [it for it in _typed_numbers(source)
            if not _overlaps(covered, it[0], it[1])
            and not (it[3] is not None and it[4])]
-    out = _typed_numbers(output)
+    # Rendered list labels are structure, never values: no source quantity
+    # binds to one, so "1 apple\n2 pears" cannot become "1. Apple\n2. Pears".
+    labels = [label for node in dn.parse(output).nodes
+              if isinstance(node, dn.ListGroup) and node.ordered
+              for label in node.labels]
+    label_starts = {start for start, _end, _value in labels}
+    out = [it for it in _typed_numbers(output) if it[0] not in label_starts]
+    # A spoken enumeration rendered as those labels stands behind them.
+    spoken = _spoken_label_run(source, src)
+    if [value for _s, _e, value in labels][:len(spoken)] == list(range(1, len(spoken) + 1)):
+        src = [it for it in src if it not in spoken]
     src_starts = Counter(dn.list_run_starts(source))
     lost_starts = sorted((src_starts
                           - Counter(dn.list_run_starts(output))).elements())
@@ -924,25 +957,21 @@ def _numeric_values(source, output, ctx) -> Component:
         word = int(label) if label.isdigit() else _ENUM_VALUE.get(label, _NUMBERS.get(label))
         if word is not None:
             marker_values.add(word)
-    # A rendered list marker is skippable only as list structure: a
-    # line-start "N." that opens a list (1, a spoken-enumeration value,
-    # or the seam-continued start) or follows its predecessor (N-1); a
-    # mid-line "N)" only with a spoken-enumeration value. "Keep it 5."
-    # or a lone "7." is an invented value, not a marker.
-    allowed = set()
-    prev_marker = None
-    for k, o in enumerate(out):
-        if o[3] is None:
-            continue
-        if o[4]:
-            if o[3] == 1 or o[3] in marker_values \
-                    or o[3] == ctx.continued_list_start \
-                    or o[3] in src_starts \
-                    or prev_marker == o[3] - 1:
-                allowed.add(k)
-            prev_marker = o[3]
-        elif o[3] in marker_values:
-            allowed.add(k)
+    # A label opens a list (1, a spoken-enumeration value, the
+    # seam-continued start or a source list start) or follows its
+    # predecessor; any other label is an invented value. A mid-line "N)"
+    # is skippable only with a spoken-enumeration value. "Keep it 5." or a
+    # lone "7." is an invented value, not a marker.
+    invented = []
+    previous = None
+    for _start, _end, value in labels:
+        if not (value == 1 or value in marker_values
+                or value == ctx.continued_list_start or value in src_starts
+                or previous == value - 1):
+            invented.append(repr(("label", value)))
+        previous = value
+    allowed = {k for k, o in enumerate(out)
+               if o[3] is not None and not o[4] and o[3] in marker_values}
 
     def skippable(j):
         return j in allowed
@@ -980,8 +1009,8 @@ def _numeric_values(source, output, ctx) -> Component:
             missing.append(repr(sv[2]))
             continue
         cursor = found + 1
-    invented = [repr(out[k][2]) for k in range(cursor, len(out))
-                if not skippable(k)]
+    invented += [repr(out[k][2]) for k in range(cursor, len(out))
+                 if not skippable(k)]
     status = "fail" if (missing or invented or lost_starts) else "pass"
     return Component("numeric_values", DETERMINISTIC, status,
                      {"missing": missing, "invented": invented,
