@@ -357,10 +357,9 @@ A quotation, code span or fence touching the opening, an existing
 list-item line, and overlap with protected, correction, vocabulary,
 list-marker or numeric representation spans exclude this rule. It does
 not authorize repeated finite phrases (`who had who had`), temporal words
-(`then then`) or other repeats beyond the stutter list (function words,
-`they`, and the modals `should`, `would`, `could`, which are never nouns):
-`had had`, `that that`, `will will`, `can can`, `then then` and `we know we
-know` can be grammatical or emphatic, so such repeats are kept. Other
+(`then then`) or other repeats beyond the stutter list: `had had`, `that
+that`, `then then` and `we know we know` can be grammatical or emphatic,
+so such repeats are kept. Other
 authorized deletions are interjectors at a phrase
 start (text start or after `. ! ? ; :`/newline, possibly after other
 fillers — never mid-phrase), number-word→digit representation changes
