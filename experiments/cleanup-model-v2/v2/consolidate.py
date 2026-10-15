@@ -109,16 +109,17 @@ def collect():
     return rows, summary
 
 
-def build():
+def build(dataset=DATASET):
     """Capture TRAIN and validation with the current engine and freeze the dataset."""
     from .assemble import capture
     from .refinement import SOURCE_FILES
     from .training import checked_dataset
-    if (DATASET / "freeze.json").exists():
-        return read_json(DATASET / "freeze.json")
+    dataset = Path(dataset)
+    if (dataset / "freeze.json").exists():
+        return read_json(dataset / "freeze.json")
     rows, summary = collect()
     source_hashes = {p: file_sha256(ROOT / p) for p in SOURCE_FILES}
-    DATASET.mkdir(parents=True, exist_ok=True)
+    dataset.mkdir(parents=True, exist_ok=True)
     captures, failures, oracle = [], collections.Counter(), collections.Counter()
     vetoed = collections.Counter()
     for row in rows:
@@ -134,22 +135,22 @@ def build():
             vetoed[row.get("focus") or row.get("category") or "unknown"] += 1
             continue
         captures.append(cap)
-    write_jsonl(DATASET / "train.jsonl", rows)
-    write_jsonl(DATASET / "train_captures.jsonl", captures)
+    write_jsonl(dataset / "train.jsonl", rows)
+    write_jsonl(dataset / "train_captures.jsonl", captures)
     validation = read_jsonl(REFINEMENT / "dataset" / "validation.jsonl")
-    write_jsonl(DATASET / "validation.jsonl", validation)
+    write_jsonl(dataset / "validation.jsonl", validation)
     val_caps, val_failures = [], collections.Counter()
     for row in validation:
         try:
             val_caps.append(capture(dict(row)))
         except (ValueError, RuntimeError) as exc:
             val_failures[str(exc).split(":")[0]] += 1
-    write_jsonl(DATASET / "validation_captures.jsonl", val_caps)
-    write_jsonl(DATASET / "replay_captures.jsonl", [])
+    write_jsonl(dataset / "validation_captures.jsonl", val_caps)
+    write_jsonl(dataset / "replay_captures.jsonl", [])
     if any(file_sha256(ROOT / p) != digest for p, digest in source_hashes.items()):
         raise RuntimeError("Engine source changed during capture")
     freeze = {"created": utc_now(),
-              "files": {p.name: file_sha256(p) for p in sorted(DATASET.glob("*.jsonl"))},
+              "files": {p.name: file_sha256(p) for p in sorted(dataset.glob("*.jsonl"))},
               "capture_source_hashes": source_hashes, "validation_capture_source_hashes": source_hashes,
               "stats": {"collect": summary,
                         "train": {"captured": len(captures), "capture_failures": dict(failures),
@@ -158,21 +159,21 @@ def build():
                         "replay": {"captured": 0, "source": "none: historical labels are part of the consolidated TRAIN set"}},
               "labels": "TRAIN labels normalized by policy_score.minimal_target; development and final labels unchanged.",
               "final_candidate_outputs_existed": False}
-    write_json(DATASET / "freeze.json", freeze)
-    checked_dataset(DATASET)
+    write_json(dataset / "freeze.json", freeze)
+    checked_dataset(dataset)
     return freeze
 
 
-def train(name, lr=3e-5, checkpoints=4, log_every=1, base=None):
+def train(name, lr=3e-5, checkpoints=4, log_every=1, base=None, dataset=DATASET):
     # 3e-5 with cosine decay is the rate that trained D/F on the diverse corpus;
     # validation loss was still falling at the end of that epoch. Another base
     # (the 4-bit 9B) trains a fresh adapter instead of continuing C's.
     from .training import run
-    freeze = read_json(DATASET / "freeze.json")
+    freeze = read_json(Path(dataset) / "freeze.json")
     if not freeze:
         raise RuntimeError("Build the consolidated dataset first")
     return run(name, freeze["stats"]["train"]["captured"], initial_adapter=None if base else c_identity()["adapter_path"],
-               lr=lr, dataset_dir=DATASET, checkpoints=checkpoints, log_every=log_every, base=base)
+               lr=lr, dataset_dir=dataset, checkpoints=checkpoints, log_every=log_every, base=base)
 
 
 if __name__ == "__main__":
@@ -183,10 +184,11 @@ if __name__ == "__main__":
     p.add_argument("--checkpoints", type=int, default=4)
     p.add_argument("--log-every", type=int, default=1, help="log training loss every N updates")
     p.add_argument("--base", help="local model directory to train a fresh adapter on instead of continuing C")
+    p.add_argument("--dataset", type=Path, default=DATASET, help="dataset directory to build or train from")
     a = p.parse_args()
     if a.stage == "collect":
         print(__import__("json").dumps(collect()[1], indent=1))
     elif a.stage == "build":
-        print(__import__("json").dumps(build()["stats"], indent=1))
+        print(__import__("json").dumps(build(a.dataset)["stats"], indent=1))
     else:
-        print(__import__("json").dumps(train(a.name, a.lr, a.checkpoints, a.log_every, a.base)))
+        print(__import__("json").dumps(train(a.name, a.lr, a.checkpoints, a.log_every, a.base, a.dataset)))
