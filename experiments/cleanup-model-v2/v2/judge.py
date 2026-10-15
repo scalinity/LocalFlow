@@ -4,6 +4,7 @@ import collections
 import copy
 import json
 import random
+import re
 from pathlib import Path
 from .common import *
 from .data import wave
@@ -52,6 +53,21 @@ and exact identifiers are facts, not decorative punctuation. Keep reasons under 
 """
 
 
+def parse_verdicts(text):
+    value=json.loads(text)
+    if not isinstance(value,dict) or set(value)!={'verdicts'} or not isinstance(value['verdicts'],list):
+        raise ValueError('Expected the verdicts schema')
+    fields=SCHEMA['properties']['verdicts']['items']['properties']
+    for verdict in value['verdicts']:
+        if not isinstance(verdict,dict) or set(verdict)!=set(fields):
+            raise ValueError('Verdict fields do not match the schema')
+        for key,spec in fields.items():
+            expected_type=bool if spec['type']=='boolean' else str
+            if type(verdict[key]) is not expected_type or ('enum' in spec and verdict[key] not in spec['enum']):
+                raise ValueError('Invalid verdict field: '+key)
+    return value['verdicts']
+
+
 def valid_verdicts(outcomes, expected):
     accepted={}
     for rid,outcome in outcomes.items():
@@ -70,11 +86,35 @@ def valid_verdicts(outcomes, expected):
 JUDGES={'development':'claude-opus-5-5','final':'claude-sonnet-5-5'}
 
 
-def run(cases_file,models,prefix='final',name='final-judge',role=None,model=None):
+def data_gate(backend,cases_file,prefix,role,cases=None,confirm_final_eval=False):
+    if backend=='openrouter':
+        # Contributor permits training on submitted text. Fail before opening a
+        # clearly restricted path, and again on the actual origin/split metadata.
+        labels=[prefix,str(Path(cases_file)),str(Path(cases_file).resolve())]
+        if role=='final' or any(re.search(r'(real|fresh|audio|final|test|locked)',s,re.I) for s in labels):
+            raise ValueError('OpenRouter Contributor accepts synthetic development data only')
+        if cases is not None and any(c.get('origin')!='synthetic' or c.get('split') not in ('validation','development','dev') for c in cases):
+            raise ValueError('OpenRouter Contributor refuses real, audio, final or unclassified cases')
+    if backend=='openai' and (role=='final' or prefix in ('final','refined','fresh') or
+            (cases is not None and any(c.get('split')=='test' for c in cases))):
+        if not confirm_final_eval or not (ART/'research/prereg/FROZEN').is_file():
+            raise ValueError('OpenAI final judging requires --confirm-final-eval and research/prereg/FROZEN')
+
+
+def run(cases_file,models,prefix='final',name='final-judge',role=None,model=None,
+        backend='anthropic',confirm_final_eval=False,wave_factory=None,swap_order=False):
+    from .judge_backends import MODELS, OtherWave, request_params
+    if backend not in ('anthropic',*MODELS):raise ValueError('Unknown backend')
+    data_gate(backend,cases_file,prefix,role,confirm_final_eval=confirm_final_eval)
     cases=read_jsonl(Path(cases_file));request_map={};requests={};request_ids={}
+    if not cases:raise ValueError('No cases to judge')
     refinement_input = any(c.get('split')=='test' for c in cases) and Path(cases_file).resolve().is_relative_to((ART/'refinement').resolve())
     role=role or ('final' if prefix in ('final','refined','fresh') or refinement_input else 'development')
-    model=model or JUDGES[role]
+    data_gate(backend,cases_file,prefix,role,cases,confirm_final_eval)
+    model=model or (JUDGES[role] if backend=='anthropic' else MODELS[backend])
+    if backend!='anthropic' and model!=MODELS[backend]:raise ValueError('No approved price for this judge model')
+    selected_wave=wave_factory or (wave if backend=='anthropic' else
+        lambda n,r,p,m,purpose:OtherWave(n,r,p,backend,root=ART/'judge'))
     if prefix=='refined' or refinement_input:
         from .refinement import require_final
         require_final(cases_file)
@@ -85,6 +125,7 @@ def run(cases_file,models,prefix='final',name='final-judge',role=None,model=None
     elif prefix!='final' and any(c.get('split')=='test' for c in cases):
         raise ValueError('Development judging cannot include final-test cases')
     output_dir=ART/'judge' if name=='final-judge' else ART/'judge'/name
+    if backend!='anthropic':output_dir=ART/'judge'/backend/name
     outs={k:{r['case_id']:r for r in read_jsonl(ART/'eval'/f'{prefix}-{k}.jsonl')} for k in models}
     for i,c in enumerate(cases):
         records=[]
@@ -101,6 +142,7 @@ def run(cases_file,models,prefix='final',name='final-judge',role=None,model=None
                     records.append({'output_id':oid,'text':row.get(stage) or ''})
                     request_map[oid]=[{'case_id':c['case_id'],'model':k,'stage':stage}]
         random.Random('blind:'+c['case_id']).shuffle(records)
+        if swap_order:records.reverse()
         view={'source':c['model_input'],'outputs':records,'vocabulary':c.get('vocabulary_pairs',[])}
         if c['origin']=='synthetic':view.update(reference=c['target'],is_noop=c['is_noop'])
         rid=f'{name}-{i:04d}'
@@ -111,12 +153,25 @@ def run(cases_file,models,prefix='final',name='final-judge',role=None,model=None
             'messages':[{'role':'user','content':json.dumps(view,ensure_ascii=False)}],
             'output_config':{'effort':'low','format':{'type':'json_schema','schema':SCHEMA}}}
     # The wave refuses a changed request set; only then may the receipts change.
-    w=wave(name,requests,lambda t:json.loads(t)['verdicts'],model,'judging')
+    w=selected_wave(name,requests,parse_verdicts,model,'judging')
+    metadata={'backend':backend,'model_id':model,'date':utc_now(),
+              'prompt_sha256':sha256_text(SYSTEM),'swap_order':swap_order,
+              'request_parameters':{'initial':requests if backend=='anthropic' else
+                  {rid:request_params(p,backend) for rid,p in requests.items()},'recovery_max_tokens':[6000,10000]}}
     write_json(output_dir/'blind-map.json',request_map)
     write_json(output_dir/'identity.json',{'cases_sha256':file_sha256(Path(cases_file)),
-               'models':models,'prefix':prefix,'role':role,'judge_model':model,'created':utc_now()})
+               'models':models,'prefix':prefix,'role':role,'judge_model':model,'created':metadata['date'],**metadata})
     w.run(chunk=200)
     verdicts=valid_verdicts(w.outcomes,request_ids)
+    def receipts(params,ids,wave_name):
+        result={}
+        for rid,request in params.items():
+            envelope=request if backend=='anthropic' else request_params(request,backend)
+            recorded={k:v for k,v in envelope.items() if k not in ('system','messages')}
+            for oid in ids[rid]:
+                result[oid]={'request_id':rid,'wave_name':wave_name,'request_parameters':recorded}
+        return result
+    provenance=receipts(requests,request_ids,name)
     # A valid JSON response can still omit an output. Reassess only missing IDs;
     # retained verdicts must not change merely because another output was absent.
     for attempt,max_tokens in enumerate((6000,10000),1):
@@ -133,15 +188,21 @@ def run(cases_file,models,prefix='final',name='final-judge',role=None,model=None
             retry['max_tokens']=max_tokens
             retry_requests[rid]=retry;retry_ids[rid]=wanted
         print(json.dumps({'retry_missing_distinct':len(missing),'attempt':attempt}),flush=True)
-        retry_wave=wave(f'{name}-missing-{attempt}',retry_requests,
-                        lambda t:json.loads(t)['verdicts'],model,'judging')
+        retry_wave=selected_wave(f'{name}-missing-{attempt}',retry_requests,
+                        parse_verdicts,model,'judging')
         retry_wave.run(chunk=100)
+        retry_provenance=receipts(retry_requests,retry_ids,f'{name}-missing-{attempt}')
         for oid,verdict in valid_verdicts(retry_wave.outcomes,retry_ids).items():
-            verdicts.setdefault(oid,verdict)
+            if oid not in verdicts:
+                verdicts[oid]=verdict
+                provenance[oid]=retry_provenance[oid]
     expanded=[]
     for oid,targets in request_map.items():
         for t in targets:
-            expanded.append({**t,'verdict':verdicts.get(oid),'status':'judged' if oid in verdicts else 'UNVERIFIED'})
+            expanded.append({**t,'verdict':verdicts.get(oid),'status':'judged' if oid in verdicts else 'UNVERIFIED',
+                             'backend':backend,'model_id':model,'date':metadata['date'],
+                             'prompt_sha256':metadata['prompt_sha256'],'identity_file':'identity.json',
+                             **provenance[oid]})
     write_jsonl(output_dir/'verdicts.jsonl',expanded)
     print(json.dumps({'distinct_outputs':len(request_map),'judged_distinct':len(verdicts),'expanded':len(expanded)}))
 
@@ -151,4 +212,8 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('cases');p.add_argument('models',nargs='+')
     p.add_argument('--prefix',default='final');p.add_argument('--name',default='final-judge')
     p.add_argument('--role',choices=sorted(JUDGES));p.add_argument('--judge-model')
-    a=p.parse_args();run(a.cases,a.models,a.prefix,a.name,a.role,a.judge_model)
+    p.add_argument('--backend',choices=('anthropic','openai','openrouter'),default='anthropic')
+    p.add_argument('--confirm-final-eval',action='store_true')
+    p.add_argument('--swap-order',action='store_true')
+    a=p.parse_args();run(a.cases,a.models,a.prefix,a.name,a.role,a.judge_model,
+                         a.backend,a.confirm_final_eval,swap_order=a.swap_order)
