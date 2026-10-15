@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import random
 import time
 from pathlib import Path
@@ -38,6 +39,15 @@ from .common import ART, CONFIG, read_jsonl, utc_now, write_json
 TRAIN_DIR = ART / "train"
 BUCKET = 256
 
+# Read once per process. Zero preserves each caller's historical seed.
+LFX_SEED = int(os.environ.get("LFX_SEED", "0"))
+if not 0 <= LFX_SEED < 2 ** 32:
+    raise ValueError("LFX_SEED must be an integer between 0 and 2**32 - 1")
+
+
+def training_seed(default: int) -> int:
+    return LFX_SEED or default
+
 
 # ---------------------------------------------------------------- data
 
@@ -46,7 +56,7 @@ def load_examples(captures: list[dict], cfg: dict | None = None, rng_seed: int |
     """Flatten captures into (role, prompt, completion) examples with the
     corrections-role share and NONE share capped as configured."""
     cfg = cfg or CONFIG["training"]
-    rng = random.Random(rng_seed if rng_seed is not None else cfg["seed"])
+    rng = random.Random(rng_seed if rng_seed is not None else training_seed(cfg["seed"]))
     main, corr_pos, corr_none = [], [], []
     for cap in captures:
         for call in cap["calls"]:
@@ -152,7 +162,7 @@ def load_for_training(lora_cfg: dict | None = None, seed: int | None = None, bas
     from .gdn_chunked import patch_qwen3_5
     cfg = CONFIG["training"]
     lora_cfg = lora_cfg or cfg["lora"]
-    mx.random.seed(seed if seed is not None else cfg["seed"])
+    mx.random.seed(training_seed(seed if seed is not None else cfg["seed"]))
     patch_qwen3_5()
     model, tokenizer = load(str(base_path(base)))
     model.freeze()
@@ -257,7 +267,7 @@ def cached_response_loss(model, suffix, cache, off_s: int):
 
 def make_blocks(items: list[dict], size: int, seed: int) -> list[list[dict]]:
     """Accumulation blocks that share one prefix, in shuffled order."""
-    rng = random.Random(seed)
+    rng = random.Random(training_seed(seed))
     groups: dict = {}
     for it in items:
         groups.setdefault(it["key"], []).append(it)
@@ -285,7 +295,7 @@ def train_loop(model, tokenizer, train_examples: list[dict], val_examples: list[
     from mlx_lm.tuner.utils import build_schedule
     from .gdn_chunked import CALLS
 
-    seed = CONFIG["training"]["seed"] if seed is None else seed
+    seed = training_seed(CONFIG["training"]["seed"] if seed is None else seed)
     if blocks is None:
         blocks = make_blocks([split_example(tokenizer, ex) for ex in train_examples], grad_accum, seed)
     items = [it for block in blocks for it in block]
