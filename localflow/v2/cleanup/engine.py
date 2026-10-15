@@ -32,7 +32,7 @@ from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FIN
                       NEGATION_WORDS, NUMBER, NUMBER_WORDS, ORDINAL_WORD_RE,
                       POSITIVE_NUMBER, SCALE_WORDS, SENTENCE_END, TECH_TOKEN_RE, Neighbourhood,
                       alternation, marker_key, marker_pattern, neighbourhood, plain_words,
-                      restatement, without_trailing_markers)
+                      restatement)
 from .correction_retention import (AdmittedCorrection, correction_view, qualifier_retention,
                                    quantity_binds, quantity_shaped, repeated_restart)
 from .validation import (validate, restore_missing_words, restore_source_spans,
@@ -585,7 +585,7 @@ def _parallel(n: Neighbourhood) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
     both months, the same frame before like complements, or they share a
     content word ("two engineers … three engineers")."""
-    x_words, y_words = without_trailing_markers(list(n.old_words)), list(n.new_words)
+    x_words, y_words = list(n.old_words), list(n.new_words)
     if not x_words or not y_words:
         return False
     # Repeated predicative frame: ``as suspect, actually, as fine``.
@@ -666,7 +666,7 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
         # The restated copy itself closes the clause it joins.
         repeated_head, _changed, kept, repeated_tail = shape
         return _replacement_closes_within(n, repeated_head + kept + repeated_tail + 1)
-    old_words = without_trailing_markers([w.rstrip(".") for w in n.old_words])
+    old_words = [w.rstrip(".") for w in n.old_words]
     new_words = list(n.new_words[1:] if n.new_words[:1] and n.new_words[0] in _ARTICLES
                      else n.new_words)
     typed = (bool(old_words) and len(old_words) <= 3 and bool(new_words) and (
@@ -687,7 +687,7 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
     across = bool(re.search(SENTENCE_END, window_text[s:e].rstrip(".!? ")))
     if across and not _restated_across_sentences(n):
         return "crosses_sentence"
-    if not _has_content(window_text[s:ms]):
+    if not _has_content(" ".join(n.old_words)):
         return "no_outdated_value"
     after = n.new_words
     marker = marker_key(window_text[ms:e])

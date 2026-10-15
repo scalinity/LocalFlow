@@ -44,6 +44,13 @@ class ChainedMarkerTests(unittest.TestCase):
     def test_chained_markers_alone_are_no_old_value(self):
         for source, proposal, reason in (
             ("We actually, no, we did not ship it.", "We actually, no", "no_outdated_value"),
+            ("Ship it, I mean no, hold it for now.", "I mean no", "no_outdated_value"),
+            # Every rule reads the value before the chained marker, so the
+            # calendar guard still keeps "check".
+            ("Please check Monday, I mean no, Tuesday before noon.", "check Monday, I mean no",
+             "overbroad_calendar_value"),
+            ("Please check Monday, I mean sorry, Tuesday before noon.",
+             "check Monday, I mean sorry", "overbroad_calendar_value"),
             # Stripping the chained marker leaves no parallel value.
             ("Give it to the nurse, I mean no, the pharmacist.", "the nurse, I mean no",
              "not_parallel"),

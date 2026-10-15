@@ -192,9 +192,10 @@ class Neighbourhood:
     """The source around one marker-terminated deletion, parsed once.
 
     ``text[start:marker]`` is the old value and ``text[marker:end]`` its
-    marker. ``old_words`` are the old value's words and ``new_words`` the
-    first four words after the marker in the same sentence, lowercased
-    with separators stripped. ``frame`` is a frame word that leads both
+    marker. ``old_words`` are the old value's words, without fillers or a
+    marker chained before the proposal's own, and ``new_words`` the first
+    four words after the marker in the same sentence, lowercased with
+    separators stripped. ``frame`` is a frame word that leads both
     ("with 4 liters of dye, sorry, with 6 liters"). ``closed`` says the
     replacement value, after that frame and one article, ends its clause:
     ``as fine.`` and ``record_cache,`` close, while ``as soon as the bank
@@ -221,7 +222,9 @@ def neighbourhood(text: str, span: tuple, marker: int) -> Neighbourhood:
     start, end = span
     tail = text[end:]
     stop = re.search(SENTENCE_END + r"|\n", tail)
-    old_words = _words(text[start:marker])
+    # Every rule reads one old value: a marker chained before the
+    # proposal's own ("Monday, I mean no") is no part of it.
+    old_words = tuple(without_trailing_markers(list(_words(text[start:marker]))))
     new_words = _words(tail[:stop.start()] if stop else tail)[:4]
     frame = (old_words[0] if old_words and new_words[:1] == old_words[:1]
              and old_words[0] in FRAME_WORDS else None)

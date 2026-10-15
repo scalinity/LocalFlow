@@ -172,7 +172,9 @@ separate the words of a compound marker (`no, sorry`, `I mean, actually`),
 and the whole compound is the marker, so its `no` is not a lost negation.
 A marker chained before the proposal's own (`on Tuesday, I mean no, on
 Wednesday`; `Tuesday, actually sorry, Wednesday`) is no part of the old
-value the parallel checks compare.
+value that any guard reads, so `check Monday, I mean no, Tuesday` still
+rejects as `overbroad_calendar_value`, and markers alone are no outdated
+value.
 
 **Closure.** A replacement closes its clause when, after an optional
 repeated frame word and one article, its value is followed by the end of
