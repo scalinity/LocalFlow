@@ -45,10 +45,10 @@ approach few-shot frontier quality at lower inference cost and latency?
 | Hypothesis | Prospective comparison and interpretation |
 |---|---|
 | H1: v2 data improves on the earlier data | **M2 vs A2prime** tests the shipped-model form, continuing the installed C adapter; **M1 vs A2** tests the fresh-adapter form. Both should improve repair and judged quality without additional fidelity damage. |
-| H2: contrast supervision reduces wrongful list/question edits without hurting repair recall | **A1 vs M1** isolates the **322 contrast rows captured in the main build**. The source pool contains **324 rows from 162 twin families**; the uncaptured pair is not part of the training ablation. Primary H2 endpoint: wrongful-edit rate on list and question cases; repair-recall noninferiority margin **2.0 percentage points**, **pending author confirmation**. |
-| H3: verifier filtering improves supervision | **M1 vs A3** compares supervising vetoed rows only through agreeing calls against leaving those rows unfiltered. This is engine-call filtering, distinct from the earlier Claude label verification. |
-| H4: the larger model improves enough to matter | **M3 vs M1** tests the incremental quality of Qwen3.5-9B over Qwen3.5-4B, with resource costs reported. Support uses the interval-and-seed-SD rule below, **pending author confirmation**. |
-| H5: a local model approaches frontier models at a fraction of inference cost and latency | **M2 vs sonnet-5-5-fewshot** and **M2 vs opus-5-5-fewshot**. Noninferiority margin **3.0 points** on the primary judged score, **pending author confirmation**. Report quality gaps and measured cost/latency ratios; a nonsignificant difference alone does not establish noninferiority. |
+| H2: contrast supervision reduces wrongful list/question edits without hurting repair recall | **A1 vs M1** isolates the **322 contrast rows captured in the main build**. The source pool contains **324 rows from 162 twin families**; the uncaptured pair is not part of the training ablation. Primary H2 endpoint: wrongful-edit rate on list and question cases; fixed repair-recall noninferiority margin **2.0 percentage points**. |
+| H3: replication of the verifier-filtering benefit in this setting | **M1 vs A3** replicates the test of verifier-filtering benefits in LocalFlow's cleanup setting: supervising vetoed rows only through agreeing calls is hypothesized to improve on leaving those rows unfiltered. Engine-call filtering is distinct from the earlier Claude label verification. |
+| H4: the larger model improves enough to matter | **M3 vs M1** tests the incremental quality of Qwen3.5-9B over Qwen3.5-4B, with resource costs reported. The fixed support criterion is the interval-and-seed-SD rule below. |
+| H5: a local model approaches frontier models at a fraction of inference cost and latency | **M2 vs sonnet-5-5-fewshot** and **M2 vs opus-5-5-fewshot**. Fixed noninferiority margin **3.0 points** on the primary judged score. Report quality gaps and measured cost/latency ratios; a nonsignificant difference alone does not establish noninferiority. |
 
 ## Systems and fixed training protocol
 
@@ -165,7 +165,7 @@ denominators. Missing judgments stay `UNVERIFIED`. Do not convert missing output
 unknown metadata or unavailable verdicts into successes or silently drop them.
 The **primary endpoint is the per-case judged quality score from the development
 judge, Opus 5.5, on the selected checkpoint at the delivered stage**.
-Programmatic fidelity is secondary; H2's proposed wrongful-edit endpoint is stated
+Programmatic fidelity is secondary; H2's wrongful-edit endpoint is stated
 separately. The frozen judge rubric defines the numerical score and the frozen
 arm/evaluation metadata identifies list/question membership. No scoring formula
 is invented here. Final judges provide the separately declared final evaluation.
@@ -220,24 +220,21 @@ predeclared contrasts:
 - M2 vs opus-5-5-fewshot.
 
 Report percentile intervals and Holm-adjusted p-values distinctly. Adjusting a
-p-value does not itself produce an adjusted confidence interval. The proposed
-support rule below retains the requested interval criterion; its relationship to
-the specified p-value procedure must be confirmed before it can be evaluated.
+p-value does not itself produce an adjusted confidence interval. The thresholds
+below are fixed. Before sealing, the statistical implementation must specify how
+the adjusted interval is obtained from the declared bootstrap/Holm procedure and
+which reference seed SD applies to each contrast. These implementation details
+remain unresolved; an unadjusted percentile interval must not be labeled adjusted.
 
-### Pending author confirmation
-
-- **Support rule — pending author confirmation:** a difference is supported only
+- **Fixed support rule:** a difference is supported only
   if the **Holm-adjusted 95% interval excludes 0** in the hypothesized direction
-  **and |difference| exceeds the seed SD**, on the same outcome scale. Confirm
-  how the adjusted interval is obtained from the declared bootstrap/Holm
-  procedure and which reference seed SD applies to each contrast; do not label
-  an unadjusted percentile interval as adjusted.
-- **H2 — pending author confirmation:** primary endpoint is wrongful-edit rate
+  **and |difference| exceeds the seed SD**, on the same outcome scale.
+- **H2 — fixed:** primary endpoint is wrongful-edit rate
   on list and question cases (**A1 vs M1**); repair-recall noninferiority margin
   is **2.0 percentage points**.
-- **H4 — pending author confirmation:** **M3 vs M1** is supported under the
+- **H4 — fixed:** **M3 vs M1** is supported under the
   interval-and-seed-SD rule, without an additional numerical effect threshold.
-- **H5 — pending author confirmation:** **M2 vs each few-shot system** uses a
+- **H5 — fixed:** **M2 vs each few-shot system** uses a
   **3.0-point noninferiority margin on the primary judged score**. Cost and latency
   ratios are measured and reported separately.
 
@@ -300,7 +297,8 @@ truth or assigning AI authorship.
 ## Freeze procedure and deviations
 
 The lead runs `experiments/cleanup-model-v2/tools/prereg_freeze.py` from the final
-committed checkout after resolving the pending proposals. Items 5–9 in the data
+committed checkout after resolving the statistical implementation details and
+binding the remaining seal-time records. Items 5–9 in the data
 cards are **frozen at seal time from named files**: arm `freeze.json` manifests,
 `A/research/baselines/fewshot-examples.json`, the judge prompt files hashed by
 this tool, the pairs builder report, and the provenance/permission records.

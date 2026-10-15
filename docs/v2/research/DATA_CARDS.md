@@ -444,14 +444,16 @@ the synthetic-final selection manifest to
 `f0a79298a6bdcbb2dac472c146c15bca9587f8d7ef9a037640a745f5fdba45ed`.
 These metadata identities do not seal the study or certify case-level properties.
 
+The study thresholds are fixed: H2 uses the wrongful-edit endpoint with a
+**2.0-percentage-point** repair-recall noninferiority margin; H4 uses the
+interval-and-seed-SD support rule; H5 uses a **3.0-point** noninferiority margin on
+the primary judged score. H3 is a replication hypothesis for verifier filtering
+in LocalFlow's cleanup setting. See the
+[statistical analysis](PREREGISTRATION.md#statistical-analysis) for the fixed rules
+and the unresolved adjusted-interval/reference-SD implementation details.
+
 ## Open questions for Daniel
 
-- **PROPOSED group — pending author confirmation:** the support rule, H2
-  wrongful-edit endpoint and **2.0-point** repair-recall margin, H4 support rule,
-  and H5 **3.0-point** judged-score margin are collected in
-  [Pending author confirmation](PREREGISTRATION.md#pending-author-confirmation).
-  That group also records the adjusted-interval/reference-SD clarification; a
-  Holm-adjusted p-value is not itself an adjusted interval.
 - **Q5 — Dataset identities — to be frozen:** freeze manifests and counts at seal
   time from **`A/consolidated/arms/*/freeze.json`**, together with the locked
   population's named evaluation metadata and exposure history. Main dataset
