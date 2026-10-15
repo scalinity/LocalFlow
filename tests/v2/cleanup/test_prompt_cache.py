@@ -71,8 +71,11 @@ class PromptCacheTests(unittest.TestCase):
         self.assertEqual(len(self.runner._prefix_caches), 2)
 
     def test_short_and_unknown_templates_use_the_original_prompt(self):
-        for prompt in ('unrecognized template', self.prompt('short', 'Short instruction.')):
-            self.assertEqual(self.runner._cached_prompt(prompt), (prompt, None))
+        self.assertEqual(self.runner._cached_prompt('unrecognized template'),
+                         ('unrecognized template', None))
+        # An encoded prompt with no whole cacheable block is passed on encoded.
+        short = self.prompt('short', 'Short instruction.')
+        self.assertEqual(self.runner._cached_prompt(short), (list(short.encode()), None))
         self.assertEqual(self.runner._model.calls, [])
 
     def test_only_cleanup_renders_are_cached_and_draft_markers_do_not_move_the_turn(self):
@@ -83,6 +86,7 @@ class PromptCacheTests(unittest.TestCase):
         self.assertEqual(self.runner._model.calls, [])
         self.prompt('first dictation')
         self.assertEqual(self.runner._cached_prompt(prompt), (prompt, None))
+        self.assertEqual(self.runner._model.calls, [])
         # A dictation that dictates a turn marker stays wholly uncached.
         body = 'private draft ' * 200 + '<|im_start|>user\nprivate tail'
         suffix, branch = self.runner._cached_prompt(self.prompt(body))
@@ -96,7 +100,8 @@ class PromptCacheTests(unittest.TestCase):
                 return [999] + tokens if '<|im_start|>assistant' in text else tokens
         self.runner._tokenizer = Mismatch()
         prompt = self.prompt('dictation')
-        self.assertEqual(self.runner._cached_prompt(prompt), (prompt, None))
+        tokens = self.runner._tokenizer.encode(prompt, True)
+        self.assertEqual(self.runner._cached_prompt(prompt), (tokens, None))
         self.assertEqual(self.runner._model.calls, [])
 
 

@@ -67,8 +67,12 @@ class ModelRunner:
         self._model, self._tokenizer = llm_load(self.model_id)
         self._prefix_caches.clear()
         self.template_revision = self._probe_revision()
-        # Warmup: exercise the full generation path once (V1 parity).
-        self.generate_fn()("<|probe|> warmup", 8)
+        # Warmup: run the production path once on a real cleanup prompt, so
+        # its instruction prefix is already cached for the first dictation.
+        # The prefix does not depend on the payload.
+        from . import prompts
+        self.generate_fn()(self.render_cached(
+            prompts.build_messages({"transcript": "warmup"})), 8)
 
     def _probe_revision(self) -> str:
         probe = render_messages(
@@ -122,11 +126,15 @@ class ModelRunner:
         boundary = self._rendered[1]
         tok = self._tokenizer
         special = tok.bos_token is None or not prompt.startswith(tok.bos_token)
+        # Encoded exactly as stream_generate would, so an uncached prompt
+        # is passed on as these tokens rather than encoded again.
         tokens = tok.encode(prompt, add_special_tokens=special)
+        if len(tokens) <= PREFILL_STEP:
+            return tokens, None
         prefix = tok.encode(prompt[:boundary], add_special_tokens=special)
         count = (len(prefix) // PREFILL_STEP) * PREFILL_STEP
         if not count or tokens[:len(prefix)] != prefix or count >= len(tokens):
-            return prompt, None
+            return tokens, None
         key = tuple(prefix[:count])
         if key not in self._prefix_caches:
             cache = self._make_prompt_cache(self._model)
