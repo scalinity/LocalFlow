@@ -88,7 +88,7 @@ DISCOURSE = {"okay", "ok", "so", "alright", "well", "yeah", "yes", "right", "now
 ORDINALS = re.compile(r"\b(first|firstly|one)\b[ ,].{3,200}?\b(second|secondly|two)\b[ ,]", re.I | re.S)
 LIST_LINE = re.compile(r"(^|\n)[ \t]*(\d+\.|[-•*])[ \t]")
 # A numbered list comes only from spoken step labels ("step 1 ... step 2"), never from ordinal words.
-NUMBERED_LINE = re.compile(r"(^|\n)[ \t]*\d+\.[ \t]")
+NUMBERED_LINE = re.compile(r"(^|\n)[ \t]*(\d+)\.[ \t]")
 STEP_LABELS = re.compile(r"\bsteps?\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b", re.I)
 SEQUENCE = re.compile(r"\b(first|firstly)\b.{3,400}?\b(then|next|third|finally|lastly)\b", re.I | re.S)
 # An introduced list of distinct items takes bullets, never numbers.

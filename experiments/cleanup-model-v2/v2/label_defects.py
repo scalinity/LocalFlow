@@ -106,7 +106,7 @@ def gold_deletion_kept_by_target(source, target, offsets, vocabulary_pairs=()):
     kept = [k for k in range(len(src)) if not in_gold[k]]
     a = [src[k][2] for k in kept]
     b = [t[2] for t in _tokens(target)]
-    numbering = {m.group(2) for m in re.finditer(r"(^|\n)[ \t]*(\d+)[.)][ \t]", target)}
+    numbering = {m.group(2) for m in NUMBERED_LINE.finditer(target)}
     runs = []
     for tag, i1, i2, j1, j2 in _edits(a, b):
         if tag not in ("insert", "replace"):
