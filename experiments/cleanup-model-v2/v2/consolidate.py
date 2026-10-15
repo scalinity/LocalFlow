@@ -163,15 +163,16 @@ def build():
     return freeze
 
 
-def train(name, lr=3e-5, checkpoints=4, log_every=1):
+def train(name, lr=3e-5, checkpoints=4, log_every=1, base=None):
     # 3e-5 with cosine decay is the rate that trained D/F on the diverse corpus;
-    # validation loss was still falling at the end of that epoch.
+    # validation loss was still falling at the end of that epoch. Another base
+    # (the 4-bit 9B) trains a fresh adapter instead of continuing C's.
     from .training import run
     freeze = read_json(DATASET / "freeze.json")
     if not freeze:
         raise RuntimeError("Build the consolidated dataset first")
-    return run(name, freeze["stats"]["train"]["captured"], initial_adapter=c_identity()["adapter_path"],
-               lr=lr, dataset_dir=DATASET, checkpoints=checkpoints, log_every=log_every)
+    return run(name, freeze["stats"]["train"]["captured"], initial_adapter=None if base else c_identity()["adapter_path"],
+               lr=lr, dataset_dir=DATASET, checkpoints=checkpoints, log_every=log_every, base=base)
 
 
 if __name__ == "__main__":
@@ -181,10 +182,11 @@ if __name__ == "__main__":
     p.add_argument("--lr", type=float, default=3e-5)
     p.add_argument("--checkpoints", type=int, default=4)
     p.add_argument("--log-every", type=int, default=1, help="log training loss every N updates")
+    p.add_argument("--base", help="local model directory to train a fresh adapter on instead of continuing C")
     a = p.parse_args()
     if a.stage == "collect":
         print(__import__("json").dumps(collect()[1], indent=1))
     elif a.stage == "build":
         print(__import__("json").dumps(build()["stats"], indent=1))
     else:
-        print(__import__("json").dumps(train(a.name, a.lr, a.checkpoints, a.log_every)))
+        print(__import__("json").dumps(train(a.name, a.lr, a.checkpoints, a.log_every, a.base)))

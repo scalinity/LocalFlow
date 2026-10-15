@@ -42,18 +42,21 @@ def checked_dataset(dataset, *, require_current_capture_source=True):
 
 
 def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, dataset_dir=None, checkpoints=3,
-        log_every=10):
+        log_every=10, base=None):
     from lfx import train
     run_dir=ART/"train"/name
     dataset=Path(dataset_dir) if dataset_dir else ART/"dataset"
-    initial=Path(initial_adapter) if initial_adapter else Path(c_identity()["adapter_path"])
+    # Another base model starts from a fresh adapter: C's adapter only fits Qwen3.5-4B.
+    initial=Path(initial_adapter) if initial_adapter else None if base else Path(c_identity()["adapter_path"])
     freeze = None if control else checked_dataset(dataset)
     request = {"name":name,"count":count,"start":start,"control":control,"lr":lr,
                "dataset_dir":str(dataset.resolve()),
                "dataset_freeze_sha256":file_sha256(dataset/"freeze.json") if not control else None,
-               "initial_adapter":str(initial.resolve()),
-               "initial_adapter_sha256":file_sha256(initial/"adapters.safetensors"),
+               "initial_adapter":str(initial.resolve()) if initial else None,
+               "initial_adapter_sha256":file_sha256(initial/"adapters.safetensors") if initial else None,
                "training_config":CONFIG["training"]}
+    if base:
+        request["base"] = str(Path(base).resolve())
     if checkpoints != 3:
         # Recorded only when it differs, so earlier completed runs keep their identity.
         request["checkpoints"] = checkpoints
@@ -107,29 +110,32 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         "train_ids_sha256":sha256_text(json.dumps([c["family_id"] for c in chosen])),
         "dataset_dir":str(dataset),"dataset_freeze_sha256":file_sha256(dataset/"freeze.json") if not control else None,
         "validation_pair_ids":[e["pair_id"] for e in vexamples],"lr":lr,"warmup_updates":warmup,
-        "initial_adapter":str(initial),"initial_adapter_sha256":file_sha256(initial/"adapters.safetensors"),
+        "initial_adapter":str(initial) if initial else None,
+        "initial_adapter_sha256":file_sha256(initial/"adapters.safetensors") if initial else None,
+        **({"base":request["base"]} if base else {}),
         "lora":cfg,"seed":20261013,"grad_accum":8,"max_sequence_tokens":6144,
         "method":"Same verified prefix-cached Gated DeltaNet training implementation; one epoch of the selected captures.",
         "roles":dict(__import__('collections').Counter(e['role'] for e in examples))})
-    model,tok=train.load_for_training(seed=20261013)
-    model.load_weights(str(initial/"adapters.safetensors"),strict=False)
-    # Verify that the source adapter actually loaded, avoiding accidental
-    # training from a randomly initialized adapter under a continuation label.
+    model,tok=train.load_for_training(seed=20261013,base=request.get("base"))
     import mlx.core as mx
-    from mlx.utils import tree_flatten
-    expected=mx.load(str(initial/"adapters.safetensors"))
-    actual=dict(tree_flatten(model.trainable_parameters()))
-    if set(expected)!=set(actual):
-        raise RuntimeError("Adapter parameter names do not match")
-    if any(not mx.array_equal(v,actual[k]).item() for k,v in expected.items()):
-        raise RuntimeError("Adapter restoration mismatch")
-    del expected,actual
+    if initial:
+        model.load_weights(str(initial/"adapters.safetensors"),strict=False)
+        # Verify that the source adapter actually loaded, avoiding accidental
+        # training from a randomly initialized adapter under a continuation label.
+        from mlx.utils import tree_flatten
+        expected=mx.load(str(initial/"adapters.safetensors"))
+        actual=dict(tree_flatten(model.trainable_parameters()))
+        if set(expected)!=set(actual):
+            raise RuntimeError("Adapter parameter names do not match")
+        if any(not mx.array_equal(v,actual[k]).item() for k,v in expected.items()):
+            raise RuntimeError("Adapter restoration mismatch")
+        del expected,actual
     # The loop trains these exact blocks, so the recorded order is the trained one.
     blocks=train.make_blocks([{**train.split_example(tok,e),"pair_id":e["pair_id"],"family_id":e["family_id"]}
                               for e in examples],8,20261013)
     result=train.train_loop(model,tok,examples,vexamples,run_dir,lr=lr,warmup=warmup,
                   grad_accum=8,checkpoints=checkpoints,max_seq_length=6144,lora_cfg=cfg,log_every=log_every,
-                  eval_every=max(40,len(examples)//80),seed=20261013,blocks=blocks)
+                  eval_every=max(40,len(examples)//80),seed=20261013,blocks=blocks,base=request.get("base"))
     exposure=[[{"pair_id":it["pair_id"],"family_id":it["family_id"]} for it in block]
               for block in blocks[:result["updates"]]]
     write_json(run_dir/"exposure-order.json",exposure)
@@ -174,7 +180,8 @@ def export(name,checkpoint="final",*,compact_metadata=False):
         raise RuntimeError("Export name already holds another adapter's quantized weights")
     if not prior and (ART/"export"/"candidates"/export_name).exists():
         raise RuntimeError("Quantized candidate exists without an identity record")
-    path=candidate(adapter,export_name)
+    base=(read_json(ART/"train"/name/"request.json") or {}).get("base")
+    path=candidate(adapter,export_name,base=base)
     metadata_receipt=None
     if compact_metadata:
         from .export_metadata import compact_json_metadata
@@ -184,6 +191,8 @@ def export(name,checkpoint="final",*,compact_metadata=False):
               "size_bytes":sum(p.stat().st_size for p in path.iterdir() if p.is_file()),
               "quantization":"4-bit affine, group 64; same verified recipe as C","created":utc_now(),
               "installed":False}
+    if base:
+        identity.update(base=base,quantization="4-bit affine, group 64; LoRA fused into the 4-bit base and requantized")
     if metadata_receipt is not None:
         identity["metadata_compaction"]=metadata_receipt
     write_json(ART/"export"/(export_name+".identity.json"),identity)

@@ -60,9 +60,12 @@ def drop_torn_tail(path):
 
 
 class Runner(BaseRunner):
-    def __init__(self, key, path=None, variant=False, updated_engine=False, recorded_f=False):
+    def __init__(self, key, path=None, variant=False, updated_engine=False, recorded_f=False, adapter=None):
         if sum((variant, updated_engine, recorded_f)) > 1:
             raise ValueError("Choose one recorded engine or updated source")
+        if adapter and not updated_engine:
+            raise ValueError("An adapter is applied only with the updated engine")
+        self.adapter = Path(adapter) if adapter else None
         if key.startswith("C") and path is None:
             path = c_identity()["snapshot_path"]
         super().__init__(key, Path(path) if path else None)
@@ -96,6 +99,18 @@ class Runner(BaseRunner):
         start = time.perf_counter()
         self.mr = ModelRunner(str(self.path))
         self.mr.load()
+        if self.adapter:
+            # An unfused LoRA adapter (QLoRA on a 4-bit base loses much of its
+            # delta when fused and requantized). Applied after load, so the
+            # warmup's prefix cache came from the bare base and is dropped.
+            from mlx.utils import tree_flatten
+            from mlx_lm.utils import load_adapters
+            load_adapters(self.mr._model, str(self.adapter))
+            self.mr._model.eval()
+            params = dict(tree_flatten(self.mr._model.parameters()))
+            if any(k not in params for k in mx.load(str(self.adapter / "adapters.safetensors"))):
+                raise RuntimeError("Adapter weights do not match the model")
+            self.mr._prefix_caches.clear()
         self.load_ms = (time.perf_counter() - start) * 1000
         self.tokenizer = self.mr._tokenizer
         return {"load_ms": self.load_ms, "template_revision": self.mr.template_revision,
@@ -173,7 +188,8 @@ class Runner(BaseRunner):
                 "calls":[{k:c.get(k) for k in ("role","depth","window","first_token_ms","generation_ms","yields","max_tokens","finish_reason")} for c in self.calls]}
 
 
-def evaluate(key, cases_path, name, path=None, variant=False, limit=None, updated_engine=False, recorded_f=False):
+def evaluate(key, cases_path, name, path=None, variant=False, limit=None, updated_engine=False, recorded_f=False,
+             adapter=None):
     if sum((variant, updated_engine, recorded_f)) > 1:
         raise ValueError("Choose one recorded engine or updated source")
     cases_path = Path(cases_path)
@@ -202,7 +218,7 @@ def evaluate(key, cases_path, name, path=None, variant=False, limit=None, update
     prior = read_json(meta_path)
     if out.exists() and out.stat().st_size and not prior:
         raise RuntimeError("Existing evaluation outputs have no identity metadata")
-    runner = Runner(key, path, variant, updated_engine, recorded_f)
+    runner = Runner(key, path, variant, updated_engine, recorded_f, adapter)
     from lfx.export import content_digest
     if updated_engine:
         inference_source = ROOT / "localflow/v2/cleanup/model.py"
@@ -219,6 +235,9 @@ def evaluate(key, cases_path, name, path=None, variant=False, limit=None, update
                 "engine_source_sha256":{n:file_sha256(Path(runner.module.__file__).with_name(n))
                     for n in ("engine.py","validation.py","prompts.py","document_nodes.py","correction_retention.py")
                     if Path(runner.module.__file__).with_name(n).exists()}}
+    if adapter:
+        identity.update(adapter=str(Path(adapter).resolve()),
+                        adapter_sha256=file_sha256(Path(adapter) / "adapters.safetensors"))
     if prior and prior["identity"] != identity:
         raise RuntimeError("Evaluation name already belongs to another artifact or dataset")
     torn = drop_torn_tail(out)
@@ -254,5 +273,6 @@ if __name__ == "__main__":
     p.add_argument("--path");p.add_argument("--variant",action="store_true");p.add_argument("--limit",type=int)
     p.add_argument("--updated-engine",action="store_true")
     p.add_argument("--recorded-f",action="store_true")
+    p.add_argument("--adapter",help="LoRA checkpoint applied unfused on top of --path (updated engine only)")
     a=p.parse_args()
-    print(json.dumps(evaluate(a.model,a.cases,a.name,a.path,a.variant,a.limit,a.updated_engine,a.recorded_f)))
+    print(json.dumps(evaluate(a.model,a.cases,a.name,a.path,a.variant,a.limit,a.updated_engine,a.recorded_f,a.adapter)))

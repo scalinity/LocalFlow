@@ -38,11 +38,11 @@ def b_snapshot() -> Path:
     return snapshot(b["repository_id"], b["revision"])
 
 
-def fuse(adapter_dir: Path, out: Path) -> Path:
+def fuse(adapter_dir: Path, out: Path, base: str | None = None) -> Path:
     from .train import base_path
     if out.exists():
         shutil.rmtree(out)
-    subprocess.run([_py(), "-m", "mlx_lm", "fuse", "--model", str(base_path()), "--adapter-path", str(adapter_dir),
+    subprocess.run([_py(), "-m", "mlx_lm", "fuse", "--model", str(base_path(base)), "--adapter-path", str(adapter_dir),
                     "--save-path", str(out)], check=True, env=_env(), stdout=subprocess.DEVNULL)
     return out
 
@@ -62,11 +62,23 @@ def quantize(fused: Path, out: Path) -> Path:
     return out
 
 
-def candidate(adapter_dir: Path, name: str, keep_fused: bool = False) -> Path:
-    """Fuse + quantize one checkpoint into artifacts/export/candidates/NAME."""
+def candidate(adapter_dir: Path, name: str, keep_fused: bool = False, base: str | None = None) -> Path:
+    """Fuse + quantize one checkpoint into artifacts/export/candidates/NAME.
+
+    A ``base`` that is already 4-bit (QLoRA) is fused in place: mlx_lm
+    dequantizes each adapted layer, adds the LoRA delta and requantizes it
+    with the base's own bits and group size."""
     fused = EXPORT / f"fused-{name}"
     q = EXPORT / "candidates" / name
     if (q / "config.json").exists():
+        return q
+    if base:
+        fuse(adapter_dir, q, base)
+        for f in TOKENIZER_FILES:
+            if (Path(base) / f).exists():
+                shutil.copyfile(Path(base) / f, q / f)
+        quant = json.loads((q / "config.json").read_text()).get("quantization", {})
+        assert quant.get("bits") == 4 and quant.get("group_size") == 64, quant
         return q
     fuse(adapter_dir, fused)
     quantize(fused, q)

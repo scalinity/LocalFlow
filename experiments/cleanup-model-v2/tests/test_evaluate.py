@@ -36,7 +36,7 @@ class TornTailTests(unittest.TestCase):
 
 
 class FakeRunner:
-    def __init__(self, key, path, variant, updated_engine, recorded_f):
+    def __init__(self, key, path, variant, updated_engine, recorded_f, adapter=None):
         self.path, self.module = Path(path), production
         self.mx = SimpleNamespace(get_peak_memory=lambda: 0)
 
@@ -48,6 +48,12 @@ class FakeRunner:
 
     def unload(self):
         pass
+
+
+class AdapterTests(unittest.TestCase):
+    def test_an_adapter_needs_the_updated_engine(self):
+        with self.assertRaisesRegex(ValueError, 'only with the updated engine'):
+            evaluate.Runner('Q9', '/models/9b', adapter='/adapters/ckpt')
 
 
 class ResumeTests(unittest.TestCase):

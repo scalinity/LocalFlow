@@ -144,7 +144,7 @@ class ExportIntegrationTests(unittest.TestCase):
             old_digest = content_digest(original)
             exported = original.with_name(original.name + "-compact")
 
-            def make_candidate(adapter_path, name):
+            def make_candidate(adapter_path, name, base=None):
                 self.assertEqual(adapter_path, adapter)
                 self.assertEqual(name, "fixture-ckpt-00001-compact")
                 exported.mkdir()
@@ -156,7 +156,7 @@ class ExportIntegrationTests(unittest.TestCase):
                     patch("lfx.export.candidate", side_effect=make_candidate) as candidate, \
                     patch("builtins.print"):
                 identity = training.export("fixture", "ckpt-00001", compact_metadata=True)
-            candidate.assert_called_once_with(adapter, "fixture-ckpt-00001-compact")
+            candidate.assert_called_once_with(adapter, "fixture-ckpt-00001-compact", base=None)
             self.assertEqual(content_digest(original), old_digest)
             self.assertEqual((original / "config.json").read_bytes(), raw)
             self.assertEqual(old_identity.read_bytes(), b'{ "preserved": true }\n')
@@ -182,7 +182,7 @@ class ExportIntegrationTests(unittest.TestCase):
             raw = b'{ "keep": "formatting" }\n'
             before = []
 
-            def make_candidate(adapter_dir, name):
+            def make_candidate(adapter_dir, name, base=None):
                 exported.mkdir(parents=True)
                 (exported / "config.json").write_bytes(raw)
                 before.append(content_digest(exported))
@@ -193,7 +193,7 @@ class ExportIntegrationTests(unittest.TestCase):
                     patch("v2.export_metadata.compact_json_metadata") as compact, \
                     patch("builtins.print"):
                 identity = training.export("fixture")
-            candidate.assert_called_once_with(adapter, "fixture-final")
+            candidate.assert_called_once_with(adapter, "fixture-final", base=None)
             compact.assert_not_called()
             self.assertEqual((exported / "config.json").read_bytes(), raw)
             self.assertEqual(identity["content_digest"], before[0])

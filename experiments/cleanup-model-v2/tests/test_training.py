@@ -181,6 +181,29 @@ class TrainingReplayTests(unittest.TestCase):
             self.assertEqual(read_json(root / 'train/fixture/plan.json')['replay'],
                              {'origin': None, 'presentations': 0, 'unique_pair_ids': []})
 
+class BaseModelTests(unittest.TestCase):
+    def test_another_base_trains_a_fresh_adapter_and_records_the_base(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = dataset(root)
+            base = root / 'base-9b'
+            base.mkdir()
+            loads = []
+            with fake_training(root) as (_, received), \
+                    patch.object(Model, 'load_weights', side_effect=lambda path, strict=False: loads.append(path)):
+                training.run('fixture', 3, dataset_dir=data, base=base)
+                loaded = train.load_for_training.call_args
+            request = read_json(root / 'train/fixture/request.json')
+            self.assertEqual(request['base'], str(base.resolve()))
+            self.assertIsNone(request['initial_adapter'])
+            self.assertEqual(read_json(root / 'train/fixture/plan.json')['base'], str(base.resolve()))
+            self.assertEqual(loaded.kwargs['base'], str(base.resolve()))
+            self.assertEqual(received['base'], str(base.resolve()))
+            # Only the saved checkpoints are loaded (for validation), never a starting adapter.
+            self.assertTrue(loads)
+            self.assertTrue(all('/ckpt-' in path for path in loads))
+
+
 class TrainingExposureTests(unittest.TestCase):
     def test_receipts_record_the_blocks_the_loop_trained(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -217,7 +240,7 @@ class TrainingExposureTests(unittest.TestCase):
 
 class ExportIdentityTests(unittest.TestCase):
     def test_export_never_reuses_another_adapters_quantized_weights(self):
-        def candidate(adapter, name):
+        def candidate(adapter, name, base=None):
             # Like lfx.export.candidate: an existing quantized directory is reused.
             path = root / 'export/candidates' / name
             if not (path / 'config.json').exists():
@@ -240,6 +263,29 @@ class ExportIdentityTests(unittest.TestCase):
                 (root / 'export/run-final.identity.json').unlink()
                 with self.assertRaisesRegex(RuntimeError, 'without an identity record'):
                     training.export('run')
+
+    def test_export_fuses_into_the_base_the_run_trained_on(self):
+        seen = {}
+
+        def candidate(adapter, name, base=None):
+            seen['base'] = base
+            path = root / 'export/candidates' / name
+            path.mkdir(parents=True)
+            (path / 'config.json').write_text('fused')
+            return path
+
+        with tempfile.TemporaryDirectory() as directory, patch('lfx.export.candidate', side_effect=candidate), \
+                contextlib.redirect_stdout(io.StringIO()):
+            root = Path(directory)
+            weights = root / 'train/run/final/adapters.safetensors'
+            weights.parent.mkdir(parents=True)
+            weights.write_text('qlora adapter')
+            write_json(root / 'train/run/request.json', {'base': '/models/9b-4bit'})
+            with patch.object(training, 'ART', root):
+                identity = training.export('run')
+        self.assertEqual(seen['base'], '/models/9b-4bit')
+        self.assertEqual(identity['base'], '/models/9b-4bit')
+        self.assertIn('requantized', identity['quantization'])
 
 if __name__ == '__main__':
     unittest.main()
