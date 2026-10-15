@@ -41,7 +41,7 @@ def checked_dataset(dataset, *, require_current_capture_source=True):
     return freeze
 
 
-def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, dataset_dir=None):
+def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, dataset_dir=None, checkpoints=3):
     from lfx import train
     run_dir=ART/"train"/name
     dataset=Path(dataset_dir) if dataset_dir else ART/"dataset"
@@ -53,6 +53,9 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
                "initial_adapter":str(initial.resolve()),
                "initial_adapter_sha256":file_sha256(initial/"adapters.safetensors"),
                "training_config":CONFIG["training"]}
+    if checkpoints != 3:
+        # Recorded only when it differs, so earlier completed runs keep their identity.
+        request["checkpoints"] = checkpoints
     if (run_dir/"completion.json").exists():
         if read_json(run_dir/"request.json") != request:
             raise RuntimeError("Completed training name belongs to another or unrecorded request")
@@ -122,7 +125,7 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
     blocks=train.make_blocks([{**train.split_example(tok,e),"pair_id":e["pair_id"],"family_id":e["family_id"]}
                               for e in examples],8,20261013)
     result=train.train_loop(model,tok,examples,vexamples,run_dir,lr=lr,warmup=warmup,
-                  grad_accum=8,checkpoints=3,max_seq_length=6144,lora_cfg=cfg,log_every=10,
+                  grad_accum=8,checkpoints=checkpoints,max_seq_length=6144,lora_cfg=cfg,log_every=10,
                   eval_every=max(40,len(examples)//80),seed=20261013,blocks=blocks)
     exposure=[[{"pair_id":it["pair_id"],"family_id":it["family_id"]} for it in block]
               for block in blocks[:result["updates"]]]
