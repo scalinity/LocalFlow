@@ -1180,20 +1180,23 @@ def _literal_spans(source, output) -> Component:
 # Consecutive correction markers are one marker ("0.5 seconds no I mean
 # 0.3 seconds", "ten, no, sorry, eleven"). A deletion's recorded marker is
 # the last one it ends with; markers directly before it belong to it while
-# some old value stays before them.
-_LEADING_MARKERS_RE = re.compile(
-    rf"(?:(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS)})[ \t]*,?[ \t]*)+$", re.IGNORECASE)
+# some old value stays before them. Runs are read one marker at a time, so
+# a long run costs linear time.
+_MARKER_WORDS = rf"(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS)})(?!\w)"
+_LAST_MARKER_RE = re.compile(rf"{_MARKER_WORDS}[ \t]*(?:,[ \t]*)?$", re.IGNORECASE)
 
 
 def _marker_run_start(source: str, span) -> int:
     start, _end, marker = span[:3]
-    run = _LEADING_MARKERS_RE.search(source[start:marker])
-    if run is None:
+    run = marker
+    while (found := _LAST_MARKER_RE.search(source[start:run])) is not None:
+        run = start + found.start()
+    if run == marker:
         return marker
-    old = source[start:start + run.start()]
+    old = source[start:run]
     if not (re.search(r"\d", old) or any(w not in FILLERS for _s, _e, w in _word_atoms(old))):
         return marker
-    return start + run.start()
+    return run
 
 
 def _word_multiset_survival(source, output, words: frozenset,
@@ -1546,18 +1549,22 @@ def _restated_value_spans(source: str, output: str, ctx) -> list:
 
 
 # Markers right after a deletion belong to it while a replacement follows
-# ("ten, no, sorry, eleven" deleting "ten, no"; "6 am no make that 7 am").
-# A bare "no" there can open the replacement ("5, no wait, no more than
-# 6"), so it never extends a deletion.
-_TRAILING_MARKERS_RE = re.compile(
-    rf"(?:[ \t]*,?[ \t]*(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS - {'no'})})(?!\w))+"
-    r"(?=[ \t]*,?[ \t]*\w)", re.IGNORECASE)
+# on the same line ("ten, no, sorry, eleven" deleting "ten, no"; "6 am no
+# make that 7 am"). A bare "no" there can open the replacement ("5, no
+# wait, no more than 6"), so it never extends a deletion.
+_NEXT_MARKER_RE = re.compile(
+    rf"[ \t]*(?:,[ \t]*)?(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS - {'no'})})(?!\w)",
+    re.IGNORECASE)
 
 
 def _with_trailing_markers(source: str, span) -> tuple:
     start, end, marker = span[:3]
-    run = _TRAILING_MARKERS_RE.match(source, end)
-    return (start, run.end(), marker) if run else (start, end, marker)
+    run = end
+    while (found := _NEXT_MARKER_RE.match(source, run)) is not None:
+        run = found.end()
+    if run > end and re.match(r"[ \t]*(?:,[ \t]*)?\w", source[run:]):
+        return start, run, marker
+    return start, end, marker
 
 
 # The frame a correction leaves doubled: "flag gaps longer than [6 hours,

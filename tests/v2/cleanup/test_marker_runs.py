@@ -10,6 +10,7 @@ Run: .venv/bin/python -m unittest tests/v2/cleanup/test_marker_runs.py
 """
 import pathlib
 import sys
+import time
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
@@ -72,6 +73,15 @@ class MarkerRunTests(unittest.TestCase):
         output = "Start the pump, the valve, at noon."
         self.assertIn("negation_coverage",
                       failures(source, output, [span(source, "no I mean", "I mean")]))
+
+    def test_a_long_marker_run_is_read_in_linear_time(self):
+        for count in (22, 200):
+            source = "Use " + "no " * count + "sugar, sorry, less sugar."
+            delete = "no " * count + "sugar, sorry"
+            started = time.perf_counter()
+            found = failures(source, "Use less sugar.", [span(source, delete, "sorry")])
+            self.assertLess(time.perf_counter() - started, 1.0)
+            self.assertIn("negation_coverage", found)
 
     def test_a_dropped_negation_elsewhere_still_fails(self):
         source = "Wait below 0.5 seconds no I mean 0.3 seconds and do not start the build."
