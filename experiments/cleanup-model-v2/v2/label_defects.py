@@ -218,6 +218,8 @@ IMPERATIVE = re.compile(rf"^\W*{LEAD}{PHRASE}?(?:do not|don't|please|have the|ha
 # A singular subject takes "does" and "has", so these never ask: "do this first", ", and have it log the rows".
 NEVER_QUESTION = re.compile(r"\b(?:do\s+(?:it|this|that)|have\s+it)\b", re.I)
 BECAUSE_CLAUSE = re.compile(r"\bbecause\b(?!\s+of\b)", re.I)
+# An alternative after the clause makes the cause what the question asks: "…because A or because B?"
+CAUSE_ALTERNATIVE = re.compile(r"\bor\s+(?:because|is|was|did|does)\b", re.I)
 NUMBER_WORDS = {w: n for n, w in enumerate("one two three four five six seven eight nine ten".split(), 1)}
 
 
@@ -261,7 +263,9 @@ def question_keeps_period(source, target, offsets, vocabulary_pairs=()):
 def question_keeps_because_clause(source, target, offsets, vocabulary_pairs=()):
     """A direct question that keeps a because-clause after it in the same sentence ("did it
     pass, because I think the cache is stale?"). Development labels end the question and
-    start the clause anew ("Did it pass? Because I think the cache is stale."). Only what the
+    start the clause anew ("Did it pass? Because I think the cache is stale."). A clause
+    before the question ("I ask because the log is empty, and could you") and a cause the
+    question asks about ("did it fail because A or because B") are not matched. Only what the
     label decided counts: never a no-op label, and never a "?" the source already had."""
     if target == source:
         return None
@@ -269,7 +273,8 @@ def question_keeps_because_clause(source, target, offsets, vocabulary_pairs=()):
     aligned = _aligned_gaps(source_words, _split(target)[0])
     copied = lambda end, k: "?" in end and k in aligned and "?" in _marks(source_gaps[aligned[k]])
     hits = [s for s, end, k in _sentences(target)
-            if BECAUSE_CLAUSE.search(s, 1) and is_direct_question(s) and not copied(end, k)]
+            if (m := BECAUSE_CLAUSE.search(s, 1)) and is_direct_question(s[:m.start()])
+            and not CAUSE_ALTERNATIVE.search(s, m.end()) and not copied(end, k)]
     return {"reason": "question_keeps_because_clause", "sentences": hits} if hits else None
 
 

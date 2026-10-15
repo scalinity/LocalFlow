@@ -181,7 +181,10 @@ class QuestionTests(unittest.TestCase):
             with self.subTest(target=target):
                 self.assertTrue(defects.question_keeps_because_clause('', target, []))
         for target in ('Did it pass? Because I think the cache is stale.', 'Why did it fail because of the timeout?',
-                       'Because the cache is stale, should we rerun it?', 'It failed because the cache is stale.'):
+                       'Because the cache is stale, should we rerun it?', 'It failed because the cache is stale.',
+                       'I ask because the log is empty, and could you check it before Friday?',
+                       'Did the solver diverge because the step was too large or because the filter failed?',
+                       'Did we miss it because the filter hid it, or is it simply not there?'):
             with self.subTest(target=target):
                 self.assertIsNone(defects.question_keeps_because_clause('', target, []))
 
