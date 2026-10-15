@@ -12,7 +12,7 @@ from __future__ import annotations
 import difflib
 import re
 
-from .policy_score import ABBREVIATIONS, LIST_LINE, NUMBERED_LINE
+from .policy_score import ABBREVIATIONS, LIST_LINE, NUMBERED_LINE, _marks, _pieces
 from .strict_score import FILLERS
 
 WORD = re.compile(r"\w+(?:['’]\w+)*")
@@ -190,8 +190,58 @@ def gold_line_not_marker_terminated(source, target, offsets, vocabulary_pairs=()
     return {"reason": "gold_line_not_marker_terminated", "lines": bad} if bad else None
 
 
+# Direct questions, after the model-gap lane's detector: a sentence-initial auxiliary and
+# subject, a wh-word and auxiliary, or a tail such as ", should we". It is heuristic, so a
+# question rule excludes a row and never relabels it.
+AUX = (r"(?:can|could|would|will|should|shall|do|does|did|is|are|was|were|has|have|had|may|might|am|isn't|"
+       r"aren't|wasn't|weren't|doesn't|didn't|can't|couldn't|wouldn't|won't|shouldn't|haven't|hasn't)")
+SUBJECT = (r"(?:you|we|i|they|he|she|it|there|the|this|that|these|those|a|an|anyone|someone|everyone|anybody|"
+           r"somebody|our|your|my|their|his|her|its|any|all|each|every)")
+LEAD = (r"(?:(?:and|also|so|okay|ok|but|or|then|now|well|oh|hey|right|alright|first|second|third|finally|"
+        r"quick question|one more thing)[,:]?\s+)*")
+PHRASE = r"(?:(?:for|in|on|about|with|regarding|after|before|during)\s[^,?.]{1,70},\s*)"
+PRONOUN = r"(?:i|we|you|they|he|she|it|there|the|a|an|this|that|these|those|my|our|your|their)"
+SUBJECT_PRONOUN = r"(?:you|we|i|they|he|she|it|there|anyone|someone|everyone)"
+WH = r"(?:who|what|which|why|when|where|how)"
+QUESTIONS = [
+    re.compile(rf"^{LEAD}{PHRASE}?{AUX}\s+{SUBJECT}\b", re.I),
+    re.compile(rf"^{LEAD}(?:{WH}|whose)\b(?:\s+(?:of\s+(?:the|these|those)\s+)?(?!{PRONOUN}\b)[\w'-]+){{0,2}}\s+{AUX}\b", re.I),
+    re.compile(rf"^{LEAD}{PHRASE}{WH}\b(?:\s+(?!{PRONOUN}\b)[\w'-]+){{0,2}}\s+{AUX}\s+{SUBJECT_PRONOUN}\b", re.I),
+    re.compile(rf",\s+(?:and\s+|or\s+)?{AUX}\s+(?:you|we|i|they|it|there|anyone)\b", re.I),
+    re.compile(rf",\s+(?:and\s+|or\s+)?{WH}\b(?:\s+(?!{PRONOUN}\b)[\w'-]+){{0,2}}\s+{AUX}\s+{SUBJECT_PRONOUN}\b", re.I),
+]
+IMPERATIVE = re.compile(r"^(?:\W*)(?:do not|don't|please|have the|have them|have someone|have a)\b", re.I)
 STEP_LABEL = re.compile(r"\bstep\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b", re.I)
 NUMBER_WORDS = {w: n for n, w in enumerate("one two three four five six seven eight nine ten".split(), 1)}
+
+
+def is_direct_question(sentence):
+    """Whether a sentence reads as a direct question or a "Can/Could/Would/Will you" request."""
+    sentence = sentence.strip().strip('"“”')
+    return not IMPERATIVE.search(sentence) and any(q.search(sentence) for q in QUESTIONS)
+
+
+def _sentences(text):
+    """Each sentence of text with the marks of the gap that ends it; a sentence ends at a
+    line break or at . ! ? followed by whitespace."""
+    words, gaps = _pieces(text)
+    out, start = [], 0
+    for k in range(1, len(words) + 1):
+        gap = gaps[k]
+        if k == len(words) or "\n" in gap or (re.search(r"[.!?]", _marks(gap)) and re.search(r"\s", gap)):
+            if start < k:
+                out.append(("".join(words[i] + (gaps[i + 1] if i < k - 1 else "") for i in range(start, k)),
+                            _marks(gap)))
+            start = k
+    return out
+
+
+def question_keeps_period(source, target, offsets, vocabulary_pairs=()):
+    """A direct question or a "Can/Could/Would/Will you" request the target ends with a
+    period. The prompt asks for question punctuation and every development label ends such
+    a sentence with "?"; a label keeping the dictation's period teaches the opposite."""
+    hits = [s for s, end in _sentences(target) if "." in end and "?" not in end and is_direct_question(s)]
+    return {"reason": "question_keeps_period", "sentences": hits} if hits else None
 
 
 def step_labels_kept_as_prose(source, target, offsets, vocabulary_pairs=()):
@@ -207,7 +257,8 @@ def step_labels_kept_as_prose(source, target, offsets, vocabulary_pairs=()):
 
 
 RULES = (gold_deletion_kept_by_target, drops_dictated_word, loses_sentence_boundary,
-         sequence_words_made_numbers, gold_line_not_marker_terminated, step_labels_kept_as_prose)
+         sequence_words_made_numbers, gold_line_not_marker_terminated, step_labels_kept_as_prose,
+         question_keeps_period)
 
 
 def label_defect(source, target, offsets, vocabulary_pairs=()):

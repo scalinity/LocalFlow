@@ -156,6 +156,19 @@ class StepLabelTests(unittest.TestCase):
                 self.assertIsNone(defects.step_labels_kept_as_prose(source, source.capitalize() + '.', []))
 
 
+class QuestionTests(unittest.TestCase):
+    def test_a_question_or_request_kept_with_a_period_is_a_defect(self):
+        for target in ('Can you check the valve.', 'Did the batch finish.', 'Where is the spare valve.',
+                       'For the second run, should we use the old filter.'):
+            with self.subTest(target=target):
+                self.assertTrue(defects.question_keeps_period('', target, []))
+        for target in ('Can you check the valve?', 'Do not touch the valve.', 'The valve is closed.',
+                       'Please check the valve.'):
+            with self.subTest(target=target):
+                self.assertIsNone(defects.question_keeps_period('', target, []))
+
+
+
 class UnexplainedRewriteTests(unittest.TestCase):
     def test_vocabulary_digit_and_joined_word_conversions_are_explained(self):
         for before, after, vocabulary in (
