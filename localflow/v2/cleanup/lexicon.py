@@ -243,11 +243,15 @@ def plain_words(text: str) -> list:
             if (w := token.lower().strip(".,;:!?")) and w not in FILLERS]
 
 
+# Longest first, in a fixed order: "wait no" must be cut whole, never as a
+# bare "no" that a set's iteration order happened to reach first.
+_MARKER_PHRASES = sorted((m.split() for m in CORRECTION_MARKERS), key=lambda m: (-len(m), m))
+
+
 def without_trailing_markers(words: list) -> list:
     """A marker chained before the proposal's own ("2.5 hours, actually no
     wait") belongs to the marker, not to the old value."""
-    phrases = [m.split() for m in CORRECTION_MARKERS]
-    while words and (cut := next((len(m) for m in phrases if words[-len(m):] == m), 0)):
+    while words and (cut := next((len(m) for m in _MARKER_PHRASES if words[-len(m):] == m), 0)):
         words = words[:-cut]
     return words
 
