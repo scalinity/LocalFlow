@@ -44,6 +44,7 @@ def checked_dataset(dataset, *, require_current_capture_source=True):
 def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, dataset_dir=None, checkpoints=3,
         log_every=10, base=None):
     from lfx import train
+    seed = train.training_seed(20261013)
     run_dir=ART/"train"/name
     dataset=Path(dataset_dir) if dataset_dir else ART/"dataset"
     # Another base model starts from a fresh adapter: C's adapter only fits Qwen3.5-4B.
@@ -57,6 +58,8 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
                "training_config":CONFIG["training"]}
     if base:
         request["base"] = str(Path(base).resolve())
+    if train.LFX_SEED:
+        request["lfx_seed"] = train.LFX_SEED
     if checkpoints != 3:
         # Recorded only when it differs, so earlier completed runs keep their identity.
         request["checkpoints"] = checkpoints
@@ -73,7 +76,7 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         old_pairs=read_jsonl(OLD_ART/"dataset/train.jsonl")
         verified={p["pair_id"] for p in old_pairs if p.get("verification")=="PASS"}
         old_caps=[p for p in read_jsonl(OLD_ART/"dataset/train_captures.jsonl") if p["pair_id"] in verified]
-        random.Random(20261013).shuffle(old_caps)
+        random.Random(seed).shuffle(old_caps)
         chosen=old_caps[:count]
         validation=read_jsonl(OLD_ART/"dataset/validation_captures.jsonl")
         vexamples=train.load_examples(validation,rng_seed=991)[:100]
@@ -113,10 +116,10 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         "initial_adapter":str(initial) if initial else None,
         "initial_adapter_sha256":file_sha256(initial/"adapters.safetensors") if initial else None,
         **({"base":request["base"]} if base else {}),
-        "lora":cfg,"seed":20261013,"grad_accum":8,"max_sequence_tokens":6144,
+        "lora":cfg,"seed":seed,"grad_accum":8,"max_sequence_tokens":6144,
         "method":"Same verified prefix-cached Gated DeltaNet training implementation; one epoch of the selected captures.",
         "roles":dict(__import__('collections').Counter(e['role'] for e in examples))})
-    model,tok=train.load_for_training(seed=20261013,base=request.get("base"))
+    model,tok=train.load_for_training(seed=seed,base=request.get("base"))
     import mlx.core as mx
     if initial:
         model.load_weights(str(initial/"adapters.safetensors"),strict=False)
@@ -132,10 +135,10 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         del expected,actual
     # The loop trains these exact blocks, so the recorded order is the trained one.
     blocks=train.make_blocks([{**train.split_example(tok,e),"pair_id":e["pair_id"],"family_id":e["family_id"]}
-                              for e in examples],8,20261013)
+                              for e in examples],8,seed)
     result=train.train_loop(model,tok,examples,vexamples,run_dir,lr=lr,warmup=warmup,
                   grad_accum=8,checkpoints=checkpoints,max_seq_length=6144,lora_cfg=cfg,log_every=log_every,
-                  eval_every=max(40,len(examples)//80),seed=20261013,blocks=blocks,base=request.get("base"))
+                  eval_every=max(40,len(examples)//80),seed=seed,blocks=blocks,base=request.get("base"))
     exposure=[[{"pair_id":it["pair_id"],"family_id":it["family_id"]} for it in block]
               for block in blocks[:result["updates"]]]
     write_json(run_dir/"exposure-order.json",exposure)

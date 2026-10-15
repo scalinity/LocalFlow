@@ -114,3 +114,27 @@ reject a pair without proving that its target changes meaning. Checker
 agreement is not human ground truth or evidence of downstream equivalence.
 The recorded spending allowance and reservations apply to every batch,
 including the generator comparison and final checks.
+
+## Training seed
+
+Set `LFX_SEED=1` (or another integer from 1 through 4294967295) before
+starting a training process. `lfx.train` reads it once at import. It controls
+training example selection/order, accumulation-block order, fresh LoRA
+initialization, and the MLX random stream used by dropout. Existing adapters
+still load their saved weights. Validation subset seeds remain fixed. Unset
+and `LFX_SEED=0` preserve the previous seeds and random-number sequence;
+nonzero seeds are part of the v2 run request, so use a distinct run name.
+`v2.consolidate` is unchanged: its fixed corpus assembly is independent of
+training exposure order. Determinism is scoped to the same device, software,
+base weights, and inputs, not bit identity across Mac and CUDA.
+
+CPU synthetic regression (no optimizer or downloaded model):
+
+```sh
+PYTHONPATH=experiments/cleanup-model .venv/bin/python -m unittest discover \
+  -s experiments/cleanup-model/tests -p test_seed.py
+```
+
+The test compares unset against `f77b43a` (the upstream branch tip used to
+create this worktree), checks zero equals unset, and checks seed 1 changes
+and repeats the example order, tiny LoRA initialization, and dropout output.
