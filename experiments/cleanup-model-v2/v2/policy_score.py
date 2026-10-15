@@ -197,10 +197,6 @@ def _sets_off_addressee(words, gaps, k):
         verb = words[k].casefold().replace("’", "'")
         asks = ("?" in gaps[end + 1] or sentence & {"you", "your", "yours", "yourself"}
                 or (verb in FINITE and k + 1 < n and words[k + 1].casefold() in SUBJECT_PRONOUNS))
-        listed = (k + 2 < n and _addressee(words[k]) and words[k + 1].casefold() == "and"
-                  and (_addressee(words[k + 2]) or words[k + 2].casefold() in I_FORMS))
-        if listed and not asks:
-            return False  # "Marta, Sam and I will go": names of one list, the sentence's subject
         return bool(asks) or verb not in FINITE
     q = p - 1
     # The label's own comma after an opener ("Okay, so Priya,") does not end the walk.
