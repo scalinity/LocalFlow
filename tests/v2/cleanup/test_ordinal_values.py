@@ -59,7 +59,7 @@ class OrdinalValueTests(unittest.TestCase):
         for source, proposal in (("Say yes to the first, no to the second.", "to the first, no"),
                                  ("Say yes to 3, no to 4.", "3, no")):
             with self.subTest(source=source):
-                self.assertEqual(reasons(proposal, source)[0], [])
+                self.assertEqual(reasons(proposal, source), ([], ["not_parallel"]))
         # An answer before a real correction is no contrast.
         self.assertEqual(reasons("4 chairs, no", "Yes, we need 4 chairs, no, 6 chairs."),
                          (["4 chairs, no"], []))
