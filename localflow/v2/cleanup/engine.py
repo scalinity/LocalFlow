@@ -465,6 +465,7 @@ def _has_content(text: str) -> bool:
 # "no matter what", "sorry to ask"); a correction through one needs a
 # visibly parallel replacement.
 _SINGLE_WORD_MARKERS = frozenset({"actually", "sorry", "no"})
+_ARTICLES = frozenset({"a", "an", "the"})
 _WEEKDAYS = frozenset({"monday", "tuesday", "wednesday", "thursday",
                        "friday", "saturday", "sunday"})
 _MONTHS = frozenset({"january", "february", "march", "april", "may",
@@ -522,6 +523,10 @@ def _parallel(n: Neighbourhood) -> bool:
     x, y = x_words[-1], y_words[0]
     if TECH_TOKEN_RE.fullmatch(x) and TECH_TOKEN_RE.fullmatch(y) and n.closed:
         return all(w in FUNCTION_WORDS or w in FILLERS for w in x_words[:-1])
+    # "on the 12th, no, the 14th": the replacement may repeat the article
+    # that stands before the old value, outside the deletion.
+    if y in _ARTICLES and len(y_words) > 1:
+        y = y_words[1]
     for cls in (_WEEKDAYS, _MONTHS):
         if x in cls and y in cls:
             return True
@@ -583,7 +588,8 @@ def _replacement_opens_predicate(n: Neighbourhood) -> bool:
     would attach the clause to the old frame and drop a bare "no".
     """
     clause = re.split(r"[,;.!?\n]", n.text[n.end:].lstrip(" \t,;:"), maxsplit=1)[0]
-    words = [w.lower() for w in clause.split()][:3]
+    words = [w.lower() for w in clause.split()]
+    words = words[1:4] if words[:1] and words[0] in _ARTICLES else words[:3]
     if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
         return True
     return (len(words) == 3 and _is_value_word(words[0])

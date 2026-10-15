@@ -441,6 +441,27 @@ class CorrectionRetentionTests(unittest.TestCase):
                 result, _ = clean(source, wrong, deletion)
                 self.assertEqual(result.text, source)
 
+    def test_replacement_may_repeat_the_article_before_the_old_value(self):
+        for source, deletion, target in (
+            ("Voice the reed stops on the 12th, no, the 14th, only if it stays dry.",
+             "12th, no", "Voice the reed stops on the 14th, only if it stays dry."),
+            ("Meet on Monday, no, the Tuesday after the review.", "Monday, no",
+             "Meet on the Tuesday after the review."),
+        ):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual([c.delete for c in accepted], [deletion])
+                self.assertEqual(rejected, [])
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+        # The article does not hide a replacement that starts a new clause.
+        for source, deletion in (("Fix the 5, no the 6 is broken.", "5, no"),
+                                 ("Use the 5, sorry, the 6 are fine.", "5, sorry")):
+            with self.subTest(source=source):
+                accepted, rejected = parse_correction_output(deletion, source, [])
+                self.assertEqual(accepted, [])
+                self.assertEqual([r.reason for r in rejected], ["not_parallel"])
+
     def test_single_word_replacement_that_opens_a_predicate_is_not_parallel(self):
         # The replacement is the subject of a new clause; a bare "no" there
         # is a negation, not a correction marker.
