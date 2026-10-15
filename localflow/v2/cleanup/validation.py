@@ -1023,30 +1023,31 @@ def _fused_identifier_keys(source: str, values: list, aligned):
     source's case unless the source word is all lowercase. A
     function word fuses with nothing ("a 1 liter sample"), and an
     identifier the source already holds ("station A1") stays itself. The
-    output prefix must align to that source word occurrence."""
+    output prefix must align to that source word occurrence. Return the
+    key with the consumed source number span, or None when nothing fuses."""
     _missing, alignment, src_atoms, out_atoms = aligned
     source_word_at = {out_atoms[j][0]: src_atoms[i][:2] for i, j in alignment}
     pairs = []
-    for start, _end, key, _marker, _line in values:
+    for start, end, key, _marker, _line in values:
         before = re.search(r"([A-Za-z]+)[ \t]+$", source[:start])
         if (before and before.group(1).lower() not in FUNCTION_WORDS
                 and key[0] == "num" and not key[1] and not key[3]):
-            pairs.append((before.group(1), key, before.span(1)))
+            pairs.append((before.group(1), key, before.span(1), (start, end)))
     held = {key[1].lower() for _s, _e, key, *_ in _typed_numbers(source) if key[0] == "id"}
 
     def keyed(item):
         key = item[2]
         parts = _FUSED_RE.fullmatch(key[1]) if key[0] == "id" and key[1].lower() not in held else None
         if parts is None:
-            return key
+            return key, None
         letters, digits = parts.groups()
         atom = next((a for a in out_atoms if item[0] <= a[0] and a[1] <= item[1]), None)
         bound = source_word_at.get(atom[0]) if atom else None
-        for word, value, word_span in pairs:
+        for word, value, word_span, number_span in pairs:
             same = letters.lower() == word if word.islower() else letters == word
             if same and digits == str(value[2]) and bound == word_span:
-                return value
-        return key
+                return value, number_span
+        return key, None
     return keyed
 
 
@@ -1082,7 +1083,7 @@ def _numeric_values(source, output, ctx, aligned) -> Component:
     fusion_alignment = (_align(source, output, replace(ctx, vocab_spans=[]))
                         if ctx.vocab_spans else aligned)
     fused = _fused_identifier_keys(source, src, fusion_alignment)
-    out = [(it[0], it[1], fused(it), it[3], it[4]) for it in out]
+    out = [(it[0], it[1], fused(it)[0], it[3], it[4]) for it in out]
     # A spoken enumeration rendered as those labels stands behind them.
     spoken = _spoken_label_run(source, src)
     if [value for _s, _e, value in labels][:len(spoken)] == list(range(1, len(spoken) + 1)):
@@ -1329,13 +1330,29 @@ def _technical_tokens(source, output, ctx, aligned) -> Component:
     skip = list(ctx.correction_spans) + list(ctx.vocab_spans)
     # A prose comma or semicolon after a path is not part of its spelling.
     # Full token counts still reject missing occurrences and longer prefixes.
-    src_toks = [m.group().rstrip(",;") for m in _TECH_TOKEN_RE.finditer(source)
-                if not any(s <= m.start() and m.end() <= e for s, e, *_ in skip)]
     out_toks = [t.rstrip(",;") for t in _TECH_TOKEN_RE.findall(output)]
     # Bind every source occurrence separately. A new prose-ending mark may
     # follow its complete spelling; stripping periods on both sides would
     # also accept deletion of a real terminal dot or a changed extension.
     remaining = Counter(out_toks)
+    out_case = _case_words(output)
+    # An occurrence-bound fusion retains its case word. A decimal token
+    # consumed at that exact source span also survives when spelled intact;
+    # a spoken number cannot fund a different technical-token occurrence.
+    fused = _fused_identifier_keys(source, _typed_numbers(source), aligned)
+    fused_numbers = []
+    for item in _typed_numbers(output):
+        _key, number_span = fused(item)
+        if number_span is not None:
+            letters, digits = _FUSED_RE.fullmatch(item[2][1]).groups()
+            if item[2][1] == letters + digits:
+                out_case[letters] += 1
+                fused_numbers += [m.span() for m in _TECH_TOKEN_RE.finditer(source)
+                                  if number_span[0] <= m.start() and m.end() <= number_span[1]
+                                  and m.group() == digits]
+    src_toks = [m.group().rstrip(",;") for m in _TECH_TOKEN_RE.finditer(source)
+                if not any(s <= m.start() and m.end() <= e
+                           for s, e, *_ in skip + fused_numbers)]
     missing = []
     for token in sorted(src_toks, key=len, reverse=True):
         match = next((candidate for candidate in
@@ -1345,15 +1362,6 @@ def _technical_tokens(source, output, ctx, aligned) -> Component:
             missing.append(token)
         else:
             remaining[match] -= 1
-    out_case = _case_words(output)
-    # A validated fusion retains its source word's case ("WGS 84" ->
-    # "WGS84"). With a hyphen or period the case word already stands alone.
-    fused = _fused_identifier_keys(source, _typed_numbers(source), aligned)
-    for item in _typed_numbers(output):
-        if fused(item) != item[2]:
-            letters, digits = _FUSED_RE.fullmatch(item[2][1]).groups()
-            if item[2][1] == letters + digits:
-                out_case[letters] += 1
     case_missing = [t for t, n in _case_words(source, skip).items()
                     if out_case[t] < n]
     # Operator symbols keep their count ("5 - 3" never becomes "5 + 3",

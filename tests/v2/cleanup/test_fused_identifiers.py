@@ -24,6 +24,33 @@ def failures(source, output, **kwargs):
 
 
 class FusedIdentifierTests(unittest.TestCase):
+    def test_decimal_fusions_keep_each_technical_number_spelling(self):
+        for source, output in (
+            ("Use PROJ 4.1.", "Use PROJ4.1."),
+            ("Use ISO 2.5.", "Use ISO2.5."),
+            ("Use PROJ 4.1 and PROJ 4.1.", "Use PROJ4.1 and PROJ4.1."),
+            ("Use PROJ 4.1.", "Use PROJ.4.1."),
+            ("Use PROJ 4.1.", "Use PROJ-4.1."),
+            ("Use PROJ one point zero and 1.0.", "Use PROJ1.0 and 1.0."),
+        ):
+            with self.subTest(source=source, output=output):
+                self.assertEqual(failures(source, output), set())
+                result = CleanupEngine(
+                    lambda prompt, max_tokens: {"text": output, "output_tokens": 20,
+                                               "limit_hit": False},
+                    model_id="fixture").clean(source)
+                self.assertEqual((result.path, result.text), ("llm", output))
+        for source, output, component in (
+            ("Use PROJ 4.10.", "Use PROJ4.1.", "numeric_values"),
+            ("Copy from PROJ to PROJ 4.1.", "Copy from PROJ4.1 to PROJ.", "numeric_values"),
+            ("Use PROJ 4.1 and 4.1.", "Use PROJ4.1 and.", "technical_tokens"),
+            ("Use PROJ 4.1 and 4.1.", "Use PROJ-4.1 and.", "technical_tokens"),
+            ("Use PROJ 4.1 and 4.1.", "Use PROJ.4.1 and.", "technical_tokens"),
+            ("Use PROJ one point zero and 1.0.", "Use PROJ1.0 and 1.", "technical_tokens"),
+        ):
+            with self.subTest(source=source, output=output):
+                self.assertIn(component, failures(source, output))
+
     def test_vocabulary_fusions_bind_to_their_original_occurrences(self):
         for source, output, vocabulary in (
             ("Use WGS eighty four.", "Use WGS84.", (("WGS eighty four", "WGS84"),)),
