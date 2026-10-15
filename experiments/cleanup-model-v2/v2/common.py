@@ -23,9 +23,10 @@ CONFIG = copy.deepcopy(shared.CONFIG)
 CONFIG["experiment_id"] = "localflow-cleanup-v2-20261013"
 CONFIG["paths"]["artifacts"] = str(ART)
 CONFIG["paths"]["report_dir"] = "reports/localflow-cleanup-comparison-v2"
-# The refinement allowance is bounded to $40 beyond the $48.2556819
-# already recorded when further API work was authorized. Keep $1 headroom.
-CONFIG["claude"].update(spend_cap_usd=88.2556819, stop_at_usd=87.2556819)
+# The refinement allowance was $40 beyond the $48.2556819 recorded when further
+# API work was authorized; a further $40 was authorized for the consolidated
+# training set and final comparison. Keep $1 headroom.
+CONFIG["claude"].update(spend_cap_usd=128.2556819, stop_at_usd=127.2556819)
 CONFIG["targets"]["max_words"] = 650
 CONFIG["training"].update(seed=20261013, learning_rate=5e-5)
 shared.CONFIG = CONFIG
