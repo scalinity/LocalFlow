@@ -124,7 +124,7 @@ def collect():
         seen_inputs.add(key)
         restored = _restored_conjunctions(row, normalized)
         if restored:
-            # The label split a run-on and dropped the dictated "and", "so" or "because".
+            # The label split a run-on and dropped a dictated conjunction (label_defects.CONJUNCTIONS).
             normalized, changes = restored, changes + ["restored_split_conjunction"]
             stats["split_conjunctions_restored"] += 1
         row = dict(row, target=normalized, split="train", consolidated_origin=origin, policy_changes=changes)
@@ -212,7 +212,8 @@ def build(dataset=DATASET, consistent=False):
                         "train": train_stats,
                         "validation": {"captured": len(val_caps), "capture_failures": dict(val_failures)},
                         "replay": {"captured": 0, "source": "none: historical labels are part of the consolidated TRAIN set"}},
-              "labels": "TRAIN labels normalized by policy_score.minimal_target; development and final labels unchanged.",
+              "labels": ("TRAIN labels normalized by policy_score.minimal_target and "
+                         "label_defects.restore_split_conjunctions; development and final labels unchanged."),
               "final_candidate_outputs_existed": False}
     if consistent:
         freeze["supervision"] = "Rows the engine vetoes keep only calls whose prompt and target agree."

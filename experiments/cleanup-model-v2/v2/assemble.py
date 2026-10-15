@@ -225,6 +225,8 @@ def capture(pair, *, consistent_only=False):
             {"role":c["role"], "window":c["window"], "kept":why in AGREEMENTS, "why":why}
             for c, why in zip(calls, agreements)]
         calls = [c for c, why in zip(calls, agreements) if why in AGREEMENTS]
+        return {"pair_id":pair["pair_id"],"family_id":pair["family_id"],"split":pair["split"],"calls":calls,
+                "partial":True}
     return {"pair_id":pair["pair_id"],"family_id":pair["family_id"],"split":pair["split"],"calls":calls}
 
 

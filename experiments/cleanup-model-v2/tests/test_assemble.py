@@ -183,6 +183,7 @@ class ConsistentSupervisionTests(unittest.TestCase):
                          [('corrections', '16 rooms, sorry'), ('main', row['target'])])
         self.assertEqual([s['why'] for s in row['engine_oracle']['supervision']],
                          ['gold_lines_applied_by_engine', 'input_is_label_pre_cleanup'])
+        self.assertIs(captured['partial'], True)
 
     def test_each_window_of_a_vetoed_row_is_judged_on_its_own(self):
         first = 'We booked 16 rooms, sorry 17 rooms, for the visiting team. ' + FILLER
@@ -212,6 +213,7 @@ class ConsistentSupervisionTests(unittest.TestCase):
         before, after = (pair(source, 'We booked 17 rooms for the visiting team.', ['16 rooms, sorry'])
                          for _ in range(2))
         self.assertEqual(capture(after, consistent_only=True), capture(before))
+        self.assertNotIn('partial', capture(dict(after), consistent_only=True))
         self.assertTrue(after['engine_oracle']['exact'])
         self.assertEqual(after, before)
 
