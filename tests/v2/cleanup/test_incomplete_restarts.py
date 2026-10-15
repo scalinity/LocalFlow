@@ -123,9 +123,17 @@ class IncompleteRestartTests(unittest.TestCase):
             with self.subTest(opening=opening, closing=closing):
                 self.assertEqual(context(source, proposal).restart_spans, [])
                 self.assertFalse(validate(source, proposal).accepted)
-        source = "Don't change the title. " + SOURCE
-        proposal = "Don't change the title. " + PROPOSAL
-        self.assertEqual(context(source, proposal).restart_spans, [])
+
+    def test_contractions_elsewhere_in_a_long_window_leave_the_rule_active(self):
+        # Contractions are ordinary in dictation; only a quotation or code
+        # span at the restart itself makes the rule abstain.
+        filler = ("It's fine, so don't rush. We can't skip the log and it "
+                  "isn't optional for the 'night' shift. ") * 10
+        source = filler + SOURCE + " " + filler
+        proposal = filler + PROPOSAL + " " + filler
+        self.assertGreater(len(source.split()), 200)
+        self.assertEqual(len(context(source, proposal).restart_spans), 1)
+        self.assertTrue(validate(source, proposal).accepted)
 
     def test_protected_occurrences_and_other_authorizations_do_not_overlap(self):
         first = SOURCE.index("that we")

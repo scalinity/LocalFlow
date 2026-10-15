@@ -45,20 +45,21 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
         rf"[ \t]+of[ \t]+(?:a|an)[ \t]+(?P<unit>{_WORD})", old, re.IGNORECASE)
     # This exception needs the complete original numeric token and a
     # closed replacement head. Bare "no" can introduce a negative clause.
-    # Any quote/backtick or triple-tilde run makes this new rule abstain,
-    # including fences nested inside Markdown containers.
+    # It abstains where a quotation, code span or fence (also one nested
+    # inside a Markdown container) overlaps or touches the correction.
     if (fraction is not None and (start == 0 or source[start - 1].isspace())
-            and source[marker_start:end].lower() != "no"
-            and not any(c in source for c in "\"'‘’“”`") and "~~~" not in source):
+            and source[marker_start:end].lower() != "no"):
         unit = fraction.group("unit")
         singular = fraction.group("denominator").lower() in {"half", "quarter"}
         if singular == (fraction.group("count") == "1") and _FRACTION_UNIT.fullmatch(unit):
             replacement = re.match(
                 rf"[ \t,;:]*1[ \t]+(?i:half|quarter)[ \t]+{re.escape(unit)}(?![\w-])",
                 source[end:])
+            from .validation import _touches, quoted_regions
             if replacement is not None and re.match(
                     r"[ \t]*(?:$|[,;]|[.!?](?=\s|$))",
-                    source[end + replacement.end():]):
+                    source[end + replacement.end():]) and not _touches(
+                    quoted_regions(source), start, end + replacement.end()):
                 # The repeated unit is part of both complete fraction
                 # heads. Everything after the replacement stays required.
                 return None, None

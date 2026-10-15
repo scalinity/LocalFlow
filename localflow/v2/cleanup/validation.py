@@ -88,6 +88,45 @@ _ATOM_RE = re.compile(
     r"|(?P<word>" + _WORD_RE.pattern + r")", re.UNICODE)
 _NUM_TOKEN_RE = re.compile(r"\d[\d,.:%/××$€£]*\d|\d", re.UNICODE)
 _QUOTED_RE = re.compile(r"“([^“”]+)”|\"([^\"]+)\"|‘([^‘’]+)’")
+# Single-quoted text may contain in-word apostrophes ('it's fine').
+_SINGLE_QUOTED_RE = re.compile(
+    r"(?<!\w)['‘](?:[^'‘’\n]|(?<=\w)['’](?=\w))+['’](?!\w)")
+_CODE_RUN_RE = re.compile(r"`+|~{3,}")
+
+
+def quoted_regions(text: str) -> list[tuple[int, int]]:
+    """Quotations, inline code and fences as [start, end) regions.
+
+    A source-bound repair abstains where its own span overlaps or touches
+    one. An apostrophe after a letter ("don't", "patients'") is not a
+    quote. A quote or code mark without a partner has no known extent,
+    so it makes the whole text one region.
+    """
+    regions = []
+    opening = None
+    for m in _CODE_RUN_RE.finditer(text):
+        run = m.group()
+        if opening is None:
+            opening = m
+        elif run[0] == opening.group()[0] and (
+                len(run) == len(opening.group()) if run[0] == "`"
+                else len(run) >= len(opening.group())):
+            regions.append((opening.start(), m.end()))
+            opening = None
+    if opening is not None:
+        return [(0, len(text))]
+    paired = [m.span() for pattern in (_QUOTED_RE, _SINGLE_QUOTED_RE)
+              for m in pattern.finditer(text)]
+    for m in re.finditer(r"[\"“”‘’']", text):
+        inside = any(a <= m.start() < b for a, b in paired + regions)
+        apostrophe = m.group() in "'’" and m.start() and (text[m.start() - 1].isalnum())
+        if not inside and not apostrophe:
+            return [(0, len(text))]
+    return sorted(set(regions + paired))
+
+
+def _touches(regions, start: int, end: int) -> bool:
+    return any(a <= end and b >= start for a, b in regions)
 _TECH_TOKEN_RE = re.compile(
     _IDENTIFIER_TOKEN_RE.pattern
     + r"|--[A-Za-z][\w-]*"              # flags
@@ -1288,8 +1327,7 @@ def _incomplete_restart_spans(source: str, output: str, ctx) -> list:
     position between the surrounding required words. This is deliberately
     narrower than repeated-phrase cleanup or a general grammar judgement.
     """
-    if re.search(r'''["'`‘’“”]''', source):
-        return []
+    quoted = quoted_regions(source)
     atoms = _word_atoms(source)
     markers = {"that", "which", "who", "whom"}
     subjects = {"i", "you", "he", "she", "it", "we", "they"}
@@ -1307,6 +1345,7 @@ def _incomplete_restart_spans(source: str, output: str, ctx) -> list:
         prior_start, prior_end, prior_word = atoms[i - 1]
         if (any(not re.fullmatch(r"[ \t]+", source[atoms[j][1]:atoms[j + 1][0]])
                 for j in range(i - 1, i + 4))
+                or _touches(quoted, prior_start, atoms[i + 4][1])
                 or _overlaps(excluded, prior_start, atoms[i + 4][1])
                 or _authorized(prior_word, prior_start, prior_end, ctx)):
             continue
@@ -1413,9 +1452,8 @@ def restore_missing_words(source: str, output: str, *,
     out_span_of = {si: out_atoms[oi][:2] for si, oi in pairs}
     inserts = {}                      # output offset -> source text runs
     item_heads = {}
-    # This placement operation does not interpret quotation boundaries.
-    # Apostrophes are deliberately ambiguous here, including contractions.
-    has_quote_marks = bool(re.search(r'''["'`‘’“”]''', source))
+    # A connective moved to an item head must not touch quoted or code text.
+    quoted = quoted_regions(source)
     run = []
     after = 0                         # offset after the last matched word
     source_end = 0
@@ -1449,7 +1487,7 @@ def restore_missing_words(source: str, output: str, *,
                                             source[source_end:run[0][0]])
                         or restored.lower().split() not in (
                             ["and"], ["or"], ["but"], ["nor"], ["then"], ["and", "then"])
-                        or has_quote_marks
+                        or _touches(quoted, source_end, src_atoms[following][1])
                         or _overlaps(ctx.protected_positions,
                                      run[0][0], src_atoms[following][1])
                         or item_start in item_heads):

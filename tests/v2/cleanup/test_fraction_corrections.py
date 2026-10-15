@@ -167,21 +167,34 @@ class FractionCorrectionTests(unittest.TestCase):
                 self.assertFalse(accepted)
                 self.assertEqual(rejected[0].reason, "span_too_long")
 
-    def test_quotes_apostrophes_and_backticks_disable_the_exception(self):
-        for left, right in (("\"", "\""), ("‘", "’"), ("“", "”"), ("'", "'"), ("`", "`")):
-            with self.subTest(left=left):
-                deletion = "2 quarters of a turn, sorry"
-                source = f"Copy {left}advance {deletion} 1 half turn before Monday{right} exactly."
-                accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertTrue(rejected)
+    def test_quotes_and_code_touching_the_correction_disable_the_exception(self):
         deletion = "2 quarters of a turn, sorry"
-        for contraction in ("Don't", "Don’t"):
-            with self.subTest(contraction=contraction):
-                source = f"{contraction} forget the cover. Advance {deletion} 1 half turn."
+        for left, right in (("\"", "\""), ("‘", "’"), ("“", "”"), ("'", "'"), ("`", "`")):
+            for source in (f"Copy {left}advance {deletion} 1 half turn before Monday{right} exactly.",
+                           f"Note {left}first{right} and {left}advance {deletion} 1 half turn."):
+                with self.subTest(source=source):
+                    accepted, rejected = parse_correction_output(deletion, source, [])
+                    self.assertFalse(accepted)
+                    self.assertEqual([r.reason for r in rejected],
+                                     ["unresolved_quantity_qualifier"])
+
+    def test_contractions_and_distant_quotes_leave_the_exception_active(self):
+        # Contractions are ordinary in dictation; only a quotation or code
+        # span at the correction itself makes the rule abstain.
+        deletion = "2 quarters of a turn, sorry"
+        filler = ("It's a short run, so don't rush the housing. We can't skip "
+                  "the log and it isn't optional for the 'night' shift. ") * 4
+        for source in (f"{filler}Advance {deletion} 1 half turn. {filler}".strip(),
+                       f"Don’t forget the cover. Advance {deletion} 1 half turn.",
+                       f"Say \"ready\" first. Advance {deletion} 1 half turn. Use `fast` mode."):
+            with self.subTest(source=source[-60:]):
+                self.assertLessEqual(len(source.split()), 200)
                 accepted, rejected = parse_correction_output(deletion, source, [])
-                self.assertFalse(accepted)
-                self.assertTrue(rejected)
+                self.assertTrue(accepted, rejected)
+                target = source.replace(f"{deletion} ", "")
+                result = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
 
     def test_fraction_shape_does_not_propose_its_own_correction(self):
         source = "Advance 2 quarters of a turn and 1 half turn."
