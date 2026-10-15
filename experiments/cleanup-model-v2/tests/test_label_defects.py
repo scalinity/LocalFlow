@@ -146,7 +146,7 @@ class StepLabelTests(unittest.TestCase):
         for source in ('step 1 open the valve step 2 close it', 'step one open the valve step two close it'):
             with self.subTest(source=source):
                 hit = defects.step_labels_kept_as_prose(source, 'Step 1, open the valve. Step 2, close it.', [])
-                self.assertEqual(hit['labels'], [(1, 2)])
+                self.assertEqual(hit['labels'], [1, 2])
         self.assertIsNone(defects.step_labels_kept_as_prose('step 1 open the valve step 2 close it',
                                                             '1. Open the valve.\n2. Close it.', []))
 
@@ -154,6 +154,13 @@ class StepLabelTests(unittest.TestCase):
         for source in ('the next step is to wait, then take a step back', 'step 1 open the valve and step 3 close it'):
             with self.subTest(source=source):
                 self.assertIsNone(defects.step_labels_kept_as_prose(source, source.capitalize() + '.', []))
+        # The prompt's own prose examples: a reference to steps, and a repeated label.
+        for source, target in (('repeat step 1 before step 2 because step 2 depends on step 1',
+                                'Repeat step 1 before step 2 because step 2 depends on step 1.'),
+                               ('step 1 open the folder step 1 inspect the file',
+                                'Step 1: Open the folder. Step 1: Inspect the file.')):
+            with self.subTest(source=source):
+                self.assertIsNone(defects.step_labels_kept_as_prose(source, target, []))
 
 
 class QuestionTests(unittest.TestCase):

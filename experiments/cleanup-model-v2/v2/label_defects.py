@@ -279,16 +279,19 @@ def question_keeps_because_clause(source, target, offsets, vocabulary_pairs=()):
 
 
 def step_labels_kept_as_prose(source, target, offsets, vocabulary_pairs=()):
-    """Two or more consecutive spoken step labels ("step 1 ... step 2", "step one ... step
-    two") that the target keeps as prose. The prompt makes such steps a numbered list; "the
-    next step is" and "a step back" carry no number and are not step labels. A no-op label
-    decided nothing and is never excluded."""
+    """Two or more spoken step labels counting up by one from the first ("step 1 ... step 2",
+    "step seven ... step eight") that the target keeps as prose. The prompt makes such steps
+    a numbered list and keeps skipped, repeated or reversed numbers in prose, as it does
+    references ("repeat step 1 before step 2 because step 2 depends on step 1"); "the next
+    step is" and "a step back" carry no number. A no-op label decided nothing and is never
+    excluded."""
     if target == source or NUMBERED_LINE.search(target):
         return None
     numbers = [int(m.group(1)) if m.group(1).isdigit() else NUMBER_WORDS[m.group(1).casefold()]
                for m in STEP_LABELS.finditer(source)]
-    runs = [(a, b) for a, b in zip(numbers, numbers[1:]) if b == a + 1]
-    return {"reason": "step_labels_kept_as_prose", "labels": runs} if runs else None
+    if len(numbers) < 2 or numbers != list(range(numbers[0], numbers[0] + len(numbers))):
+        return None
+    return {"reason": "step_labels_kept_as_prose", "labels": numbers}
 
 
 RULES = (gold_deletion_kept_by_target, drops_dictated_word, loses_sentence_boundary,
