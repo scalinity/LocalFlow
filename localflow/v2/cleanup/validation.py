@@ -1003,36 +1003,42 @@ def _spoken_label_run(source: str, values: list) -> list:
 _FUSED_RE = re.compile(r"([A-Za-z]+)[-.]?(\d+(?:\.\d+)?)")
 
 
-def _fused_identifier_keys(source: str, values: list):
+def _fused_identifier_keys(source: str, values: list, aligned):
     """Map an output identifier made of a source word and the plain number
     right after it (the word's letters, an optional "-" or ".", the number's
     digits as written, so no leading zero or extra version part is new) to
     that number's key; any other key maps to itself. The letters keep the
     source's case unless the source word is all lowercase. A
     function word fuses with nothing ("a 1 liter sample"), and an
-    identifier the source already holds ("station A1") stays itself."""
+    identifier the source already holds ("station A1") stays itself. The
+    output prefix must align to that source word occurrence."""
+    _missing, alignment, src_atoms, out_atoms = aligned
+    source_word_at = {out_atoms[j][0]: src_atoms[i][:2] for i, j in alignment}
     pairs = []
     for start, _end, key, _marker, _line in values:
         before = re.search(r"([A-Za-z]+)[ \t]+$", source[:start])
         if (before and before.group(1).lower() not in FUNCTION_WORDS
                 and key[0] == "num" and not key[1] and not key[3]):
-            pairs.append((before.group(1), key))
+            pairs.append((before.group(1), key, before.span(1)))
     held = {key[1].lower() for _s, _e, key, *_ in _typed_numbers(source) if key[0] == "id"}
 
-    def keyed(key):
+    def keyed(item):
+        key = item[2]
         parts = _FUSED_RE.fullmatch(key[1]) if key[0] == "id" and key[1].lower() not in held else None
         if parts is None:
             return key
         letters, digits = parts.groups()
-        for word, value in pairs:
+        atom = next((a for a in out_atoms if item[0] <= a[0] and a[1] <= item[1]), None)
+        bound = source_word_at.get(atom[0]) if atom else None
+        for word, value, word_span in pairs:
             same = letters.lower() == word if word.islower() else letters == word
-            if same and digits == str(value[2]):
+            if same and digits == str(value[2]) and bound == word_span:
                 return value
         return key
     return keyed
 
 
-def _numeric_values(source, output, ctx) -> Component:
+def _numeric_values(source, output, ctx, aligned) -> Component:
     """Every typed numeric occurrence in the source survives IN ORDER
     with the same sign, unit and identity; none is invented. Order binds
     a value to its role ("3 workers and 4 retries" never becomes "4
@@ -1059,8 +1065,8 @@ def _numeric_values(source, output, ctx) -> Component:
     # A number dictated right after a word may be written fused to it as one
     # identifier ("WGS eighty four" → "WGS84", "PROJ four" → "PROJ.4"): that
     # identifier carries the source number.
-    fused = _fused_identifier_keys(source, src)
-    out = [(it[0], it[1], fused(it[2]), it[3], it[4]) for it in out]
+    fused = _fused_identifier_keys(source, src, aligned)
+    out = [(it[0], it[1], fused(it), it[3], it[4]) for it in out]
     # A spoken enumeration rendered as those labels stands behind them.
     spoken = _spoken_label_run(source, src)
     if [value for _s, _e, value in labels][:len(spoken)] == list(range(1, len(spoken) + 1)):
@@ -1892,7 +1898,7 @@ def validate(source: str, output: str, *,
     report = ValidationReport(components=[
         _component_coverage(source, output, ctx, aligned),
         _clause_scope(source, output, aligned, ctx),
-        _numeric_values(source, output, ctx),
+        _numeric_values(source, output, ctx, aligned),
         _protected_tokens(source, output, protected),
         _literal_spans(source, output),
         _word_multiset_survival(source, output,

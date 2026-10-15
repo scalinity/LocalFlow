@@ -15,6 +15,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3]))
 
+from localflow.v2.cleanup.engine import CleanupEngine  # noqa: E402
 from localflow.v2.cleanup.validation import validate  # noqa: E402
 
 
@@ -23,6 +24,29 @@ def failures(source, output):
 
 
 class FusedIdentifierTests(unittest.TestCase):
+    def test_a_number_fuses_only_with_its_own_word_occurrence(self):
+        for source, wrong, right in (
+            ("Copy from channel to channel 3.", "Copy from channel3 to channel.",
+             "Copy from channel to channel3."),
+            ("Compare version with version 2.", "Compare version2 with version.",
+             "Compare version with version2."),
+            ("Read code and code 5.", "Read code5 and code.", "Read code and code5."),
+            ("Copy from channel to (channel 3).", "Copy from channel3 to (channel).",
+             "Copy from channel to (channel3)."),
+        ):
+            with self.subTest(source=source):
+                self.assertIn("numeric_values", failures(source, wrong))
+                self.assertEqual(failures(source, right), set())
+                for candidate in (wrong, right):
+                    result = CleanupEngine(
+                        lambda prompt, max_tokens: {"text": candidate, "output_tokens": 20,
+                                                   "limit_hit": False},
+                        model_id="fixture").clean(source)
+                    if candidate == wrong:
+                        self.assertNotEqual(result.text, wrong)
+                    else:
+                        self.assertEqual((result.path, result.text), ("llm", right))
+
     def test_a_word_and_its_number_may_fuse(self):
         for source, output in (
             ("this transform assumes the datum is wgs eighty four, but the input uses etrs eighty "
