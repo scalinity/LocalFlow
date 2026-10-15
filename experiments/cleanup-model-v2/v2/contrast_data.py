@@ -568,14 +568,25 @@ def counts(records) -> dict:
 def assemble(held_out=None, capture=None) -> dict:
     """Keep families whose twins pass every filter, the first wave to deliver a family winning."""
     from .refinement import SOURCE_FILES
+    dest = ART / "contrast" / "train.jsonl"
+    receipt_path = ART / "contrast" / "train.selection.json"
+    if dest.exists():
+        saved = read_jsonl(dest)
+        try:
+            receipt = read_json(receipt_path)
+        except ValueError as exc:
+            raise RuntimeError("Existing contrast rows have an invalid selection receipt") from exc
+        if not isinstance(receipt, dict) or receipt.get("sha256") != file_sha256(dest) \
+                or receipt.get("accepted") != len(saved):
+            raise RuntimeError("Existing contrast rows lack a matching selection receipt; files preserved")
+        return {"already_assembled": len(saved)}
+    if receipt_path.exists():
+        raise RuntimeError("Contrast selection receipt exists without its TRAIN rows; file preserved")
     if held_out is None:
         from .consolidate import _held_out_texts
         held_out = _held_out_texts()
     if capture is None:
         from .assemble import capture
-    dest = ART / "contrast" / "train.jsonl"
-    if dest.exists():
-        return {"already_assembled": len(read_jsonl(dest))}
     hashes = {p: file_sha256(ROOT / p) for p in SOURCE_FILES}
     rows, records, by_wave, chosen = [], [], {}, {}
     for name in WAVES:
@@ -602,7 +613,7 @@ def assemble(held_out=None, capture=None) -> dict:
                "spend_usd": spend(), "capture_source_hashes": hashes,
                "held_out_check": "exact text overlap with consolidate._held_out_texts (development and final)",
                "records": records}
-    write_json(ART / "contrast" / "train.selection.json", receipt)
+    write_json(receipt_path, receipt)
     return {k: v for k, v in receipt.items() if k != "records"}
 
 

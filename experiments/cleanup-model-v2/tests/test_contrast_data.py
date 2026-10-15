@@ -407,6 +407,51 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(receipt["final"]["all"], 8)
         self.assertEqual(receipt["by_wave"][NAME]["items/prose"]["oracle_exact"], 1)
 
+    def test_interrupted_receipt_write_cannot_report_assembly_complete(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.run_wave(root, self.specs(), [])
+            with patch.object(contrast_data, "ART", root), \
+                    patch.object(batches, "LEDGER", root / "claude" / "ledger.json"), \
+                    patch.object(contrast_data, "write_json", side_effect=OSError("fixture receipt failure")):
+                with self.assertRaisesRegex(OSError, "fixture receipt failure"):
+                    contrast_data.assemble(held_out=set(), capture=exact_capture())
+            dest = root / "contrast" / "train.jsonl"
+            saved = dest.read_bytes()
+            self.assertFalse((root / "contrast" / "train.selection.json").exists())
+            with patch.object(contrast_data, "ART", root), \
+                    patch("v2.consolidate._held_out_texts", side_effect=AssertionError("unexpected data read")):
+                with self.assertRaisesRegex(RuntimeError, "lack a matching selection receipt"):
+                    contrast_data.assemble()
+            self.assertEqual(dest.read_bytes(), saved)
+
+    def test_assembly_rejects_mismatched_or_orphaned_receipts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.run_wave(root, self.specs(), [])
+            with patch.object(contrast_data, "ART", root), \
+                    patch.object(batches, "LEDGER", root / "claude" / "ledger.json"):
+                contrast_data.assemble(held_out=set(), capture=exact_capture())
+            dest = root / "contrast" / "train.jsonl"
+            receipt_path = root / "contrast" / "train.selection.json"
+            receipt, saved = read_json(receipt_path), dest.read_bytes()
+            with patch.object(contrast_data, "ART", root), \
+                    patch("v2.consolidate._held_out_texts", side_effect=AssertionError("unexpected data read")):
+                self.assertEqual(contrast_data.assemble(), {"already_assembled": 10})
+                for field, value in (("sha256", "mismatch"), ("accepted", 9)):
+                    with self.subTest(field=field):
+                        write_json(receipt_path, dict(receipt, **{field: value}))
+                        with self.assertRaisesRegex(RuntimeError, "lack a matching selection receipt"):
+                            contrast_data.assemble()
+                        self.assertEqual(dest.read_bytes(), saved)
+                receipt_path.write_text("{")
+                with self.assertRaisesRegex(RuntimeError, "invalid selection receipt"):
+                    contrast_data.assemble()
+                dest.unlink()
+                with self.assertRaisesRegex(RuntimeError, "without its TRAIN rows"):
+                    contrast_data.assemble()
+                self.assertEqual(receipt_path.read_text(), "{")
+
 
 if __name__ == "__main__":
     unittest.main()
