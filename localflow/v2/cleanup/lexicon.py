@@ -378,29 +378,3 @@ def restatement(n: Neighbourhood) -> Restatement | None:
                     and ((head and tail) or len(repeated) >= changed - len(same))):
                 return Restatement(head, changed, replacing, tail)
     return None
-    old = without_trailing_markers(plain_words(n.text[n.start:n.marker]))
-    new = list(new)
-    p = 0
-    while p < min(len(old), len(new)) and old[p] == new[p]:
-        p += 1
-    for a in range(1, RESTATED_CHANGE_MAX_WORDS + 1):
-        s = len(old) - p - a
-        if s < 0:
-            break
-        for b in range(1, RESTATED_CHANGE_MAX_WORDS + 1):
-            if len(new) < p + b + s or new[p + b:p + b + s] != old[p + a:]:
-                continue
-            changed, kept = old[p:p + a], new[p:p + b]
-            # Dropping a negation is a change of meaning, not a restatement,
-            # and keeping every changed word ("review" -> "Jonas will
-            # review") inserts rather than replaces.
-            remaining = iter(kept)
-            if (any(w in NEGATION_WORDS and w not in kept for w in changed)
-                    or all(w in remaining for w in changed)):
-                continue
-            same = [w for w, v in zip(changed, kept) if w == v] if a == b else []
-            repeated = old[:p] + old[p + a:] + same
-            if (len(repeated) >= 2 and any(w not in FUNCTION_WORDS for w in repeated)
-                    and ((p and s) or len(repeated) >= a - len(same))):
-                return p, a, b, s
-    return None
