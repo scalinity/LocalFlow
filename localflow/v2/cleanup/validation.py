@@ -1203,8 +1203,11 @@ def _word_multiset_survival(source, output, words: frozenset,
     as dropping it). Apostrophe-stripped atoms make "dont"/"don't" the
     same word. A correction's marker ("no wait", "no I mean") is not
     content, and a marked word in an admitted correction's old value is
-    not lost when the replacement restates it ("about 45 minutes, no
-    sorry, about 50 minutes"); a correction that drops one still fails."""
+    not lost when the replacement restates it in the same place: the
+    replacement's words after the deletion (a restated frame aside) carry
+    the same word at the same position ("about 45 minutes, no sorry,
+    about 50 minutes"). A marked word elsewhere in the sentence restates
+    nothing, and a correction that drops one still fails."""
     atoms = _word_atoms(source)
     markers, restated = [], set()
     for correction in ctx.correction_spans:
@@ -1216,11 +1219,11 @@ def _word_multiset_survival(source, output, words: frozenset,
         old = [a for a in atoms if start <= a[0] and a[1] <= marker]
         stop = re.search(r"[.!?](?=\s|$)|\n", source[end:])
         limit = end + stop.start() if stop else len(source)
-        replacement = Counter([a[2] for a in atoms
-                               if end <= a[0] and a[1] <= limit][:len(old) + 2])
-        for a in old:
-            if a[2] in words and replacement[a[2]] > 0:
-                replacement[a[2]] -= 1
+        replacement = [a for a in atoms if end <= a[0] and a[1] <= limit
+                       and not _overlaps(ctx.frame_spans, a[0], a[1])]
+        for position, a in enumerate(old):
+            if a[2] in words and position < len(replacement) \
+                    and replacement[position][2] == a[2]:
                 restated.add(a[0])
     src = [(s, e, w) for s, e, w in atoms
            if w in words and not _overlaps(markers + ctx.frame_spans, s, e)

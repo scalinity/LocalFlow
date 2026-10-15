@@ -2,9 +2,11 @@
 
 "sessions take about 45 minutes, no sorry about 50 minutes" deletes "about
 45 minutes, no sorry"; the output keeps one "about", the replacement's. The
-deleted copy is not a lost hedge. A correction that removes a hedge or
-negation without restating it, or an output that drops the restated one,
-still fails.
+deleted copy is not a lost hedge. The replacement restates a word only in
+the same place: the same word at the same position after the deletion. A
+correction that removes a hedge or negation without restating it, a hedge
+or negation elsewhere in the sentence, and an output that drops the
+restated one still fail.
 
 Run: .venv/bin/python -m unittest tests/v2/cleanup/test_restated_marks.py
 """
@@ -63,6 +65,18 @@ class RestatedMarkTests(unittest.TestCase):
         ):
             with self.subTest(source=source):
                 self.assertIn(name, failures(source, output, [span(source, delete, marker)]))
+
+    def test_a_mark_elsewhere_in_the_sentence_restates_nothing(self):
+        for source, triple, output, name in (
+            ("Please do not send the report, sorry, send the report today, but do not cc Sam.",
+             (7, 36, 31), "Please send the report today, but do not cc Sam.", "negation_coverage"),
+            ("We spent about 2 hours, sorry, 3 hours, talking about the launch.",
+             (9, 29, 24), "We spent 3 hours, talking about the launch.", "uncertainty_coverage"),
+        ):
+            with self.subTest(source=source):
+                self.assertIn(name, failures(source, output, [triple]))
+                result = clean(source, [source[triple[0]:triple[1]]], output)
+                self.assertNotEqual(result.path, "llm")
 
     def test_the_restated_hedge_itself_is_still_required(self):
         source = "Sessions take about 45 minutes, no sorry about 50 minutes, on average."
