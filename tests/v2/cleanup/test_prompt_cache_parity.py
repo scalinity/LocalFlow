@@ -38,20 +38,20 @@ class PrefixCacheParityTests(unittest.TestCase):
         cls.runner = ModelRunner(MODEL)
         cls.runner.load()
 
-    def cleanup_prompt(self, transcript):
+    def cleanup_messages(self, transcript):
         payload = {"mode": "clean", "locale": "en-US", "destination_profile": None,
                    "relevant_vocabulary": [],
                    "structure_hints": prompts.structure_hints(None),
                    "transcript": transcript}
-        return self.runner.render(prompts.build_messages(payload))
+        return prompts.build_messages(payload)
 
-    def corrections_prompt(self, transcript):
+    def corrections_messages(self, transcript):
         messages = [{"role": "system", "content": CORRECTIONS_INSTRUCTION}]
         for raw, out in CORRECTIONS_EXAMPLES:
             messages += [{"role": "user", "content": raw},
                          {"role": "assistant", "content": out}]
         messages.append({"role": "user", "content": transcript})
-        return self.runner.render(messages)
+        return messages
 
     def uncached(self, prompt):
         from mlx_lm.generate import stream_generate
@@ -63,22 +63,26 @@ class PrefixCacheParityTests(unittest.TestCase):
 
     def test_cached_generation_matches_uncached_tokens(self):
         cases = {
-            "short cleanup": self.cleanup_prompt(
+            "short cleanup": self.cleanup_messages(
                 "um so send the report to mira by friday no wait by thursday"),
-            "long cleanup": self.cleanup_prompt(PARAGRAPH * 40),
-            "corrections": self.corrections_prompt(
+            "long cleanup": self.cleanup_messages(PARAGRAPH * 40),
+            "corrections": self.corrections_messages(
                 "set the timer for 20 minutes no wait 25 minutes"),
         }
-        tokens = {name: len(self.runner._tokenizer.encode(p)) for name, p in cases.items()}
+        tokens = {name: len(self.runner._tokenizer.encode(self.runner.render(m)))
+                  for name, m in cases.items()}
         self.assertGreater(tokens["long cleanup"], 2 * PREFILL_STEP)
         print(f"\nmlx_lm {self.version}; prompt tokens {tokens}")
-        for name, prompt in cases.items():
+        for name, messages in cases.items():
             with self.subTest(prompt=name):
+                prompt = self.runner.render_cached(messages)
                 expected = self.uncached(prompt)
                 self.runner._prefix_caches.clear()
                 for attempt in ("cold", "warm"):
                     got = [r.token for r in self.runner.stream(prompt, TOKENS)]
                     self.assertEqual(got, expected, f"{name} {attempt}, mlx_lm {self.version}")
+                # The cleanup prefix spans a whole block; the corrections one does not.
+                self.assertEqual(len(self.runner._prefix_caches), 0 if name == "corrections" else 1)
 
 
 if __name__ == "__main__":

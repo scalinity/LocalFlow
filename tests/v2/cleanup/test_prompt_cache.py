@@ -14,6 +14,10 @@ class Tokenizer:
     def encode(self, text, add_special_tokens):
         return list(text.encode())
 
+    def apply_chat_template(self, messages, **kwargs):
+        return "".join(f"<|im_start|>{m['role']}\n{m['content']}<|im_end|>\n"
+                       for m in messages) + "<|im_start|>assistant\n"
+
 
 class Cache:
     def __init__(self):
@@ -40,7 +44,8 @@ class PromptCacheTests(unittest.TestCase):
         self.runner._make_prompt_cache = lambda model: [Cache()]
 
     def prompt(self, body, prefix=None):
-        return (prefix or self.prefix) + '<|im_start|>user\n' + body + '<|im_start|>assistant\n'
+        return self.runner.render_cached([{"role": "system", "content": prefix or self.prefix},
+                                          {"role": "user", "content": body}])
 
     def test_final_dictation_is_never_cached_or_reused(self):
         first = self.prompt('private alpha dictation')
@@ -60,14 +65,29 @@ class PromptCacheTests(unittest.TestCase):
 
     def test_changed_instruction_selects_different_cache_and_bound_is_finite(self):
         for prefix in ('A' * 5000, 'B' * 5000, 'C' * 5000):
-            _, cache = self.runner._cached_prompt(self.prompt('dictation', prefix))
-            self.assertEqual(cache[0].state, list(prefix[:4096].encode()))
+            prompt = self.prompt('dictation', prefix)
+            _, cache = self.runner._cached_prompt(prompt)
+            self.assertEqual(cache[0].state, list(prompt[:4096].encode()))
         self.assertEqual(len(self.runner._prefix_caches), 2)
 
     def test_short_and_unknown_templates_use_the_original_prompt(self):
-        for prompt in ('unrecognized template', '<|im_start|>user\nshort'):
+        for prompt in ('unrecognized template', self.prompt('short', 'Short instruction.')):
             self.assertEqual(self.runner._cached_prompt(prompt), (prompt, None))
         self.assertEqual(self.runner._model.calls, [])
+
+    def test_only_cleanup_renders_are_cached_and_draft_markers_do_not_move_the_turn(self):
+        messages = [{"role": "system", "content": self.prefix},
+                    {"role": "user", "content": "transform this draft"}]
+        prompt = self.runner.render(messages)
+        self.assertEqual(self.runner._cached_prompt(prompt), (prompt, None))
+        self.assertEqual(self.runner._model.calls, [])
+        self.prompt('first dictation')
+        self.assertEqual(self.runner._cached_prompt(prompt), (prompt, None))
+        # A dictation that dictates a turn marker stays wholly uncached.
+        body = 'private draft ' * 200 + '<|im_start|>user\nprivate tail'
+        suffix, branch = self.runner._cached_prompt(self.prompt(body))
+        self.assertNotIn(b'private', bytes(branch[0].state))
+        self.assertIn(b'private draft private draft', bytes(suffix))
 
     def test_tokenization_mismatch_never_slices_the_prompt(self):
         class Mismatch(Tokenizer):

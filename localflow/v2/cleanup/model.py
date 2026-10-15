@@ -20,6 +20,10 @@ from collections import OrderedDict
 # generation. A cached prefix is whole blocks of this size, so the cached
 # and uncached paths process the prompt in the same groups.
 PREFILL_STEP = 2048
+# Cached instruction prefixes, least recently used dropped first: one slot
+# each for the cleanup and the corrections prompt families.
+PREFIX_CACHE_SLOTS = 2
+_USER_TURN = "<|im_start|>user\n"
 
 
 def render_messages(messages: list[dict],
@@ -49,6 +53,8 @@ class ModelRunner:
         self._tokenizer = None
         self.template_revision = None
         self._prefix_caches = OrderedDict()
+        # (prompt, offset of its final user turn) from the last render_cached.
+        self._rendered = None
         # mlx entry points the prefix cache uses, bound by load().
         self._mx = None
         self._make_prompt_cache = None
@@ -78,16 +84,32 @@ class ModelRunner:
         """Tokenizer-bound chat rendering (enable_thinking stays off)."""
         return render_messages(messages, tokenizer=self._tokenizer)
 
+    def render_cached(self, messages: list[dict]) -> str:
+        """Render a cleanup-engine prompt whose instruction prefix may be cached.
+
+        The final user turn is located from ``messages``, not searched for in
+        the text, so a dictation that contains a turn marker cannot move it.
+        Only prompts rendered here are cached; ``render`` (transforms) never
+        is, so it cannot evict the cleanup prefix.
+        """
+        prompt = self.render(messages)
+        final = prompt.rfind(messages[-1]["content"])
+        turn = final - len(_USER_TURN)
+        self._rendered = (prompt, turn) if (
+            final >= 0 and turn >= 0 and prompt[turn:final] == _USER_TURN) else None
+        return prompt
+
     def engine(self, notifier=None):
         """A CleanupEngine wired to this runner's generate/render (the
         worker and the model-backed suites use the same construction)."""
         from .engine import CleanupEngine
         return CleanupEngine(self.generate_fn(), model_id=self.model_id,
-                             notifier=notifier, render_fn=self.render,
+                             notifier=notifier, render_fn=self.render_cached,
                              template_revision=self.template_revision)
 
     def _cached_prompt(self, prompt):
-        """Reuse only complete prefill blocks before the final user turn.
+        """Reuse only complete prefill blocks before the final user turn of a
+        prompt from render_cached; any other prompt is generated uncached.
 
         Prefix tokens must match the actual whole-prompt tokenization. Each
         call branches from a private copy: no dictation or generated suffix
@@ -95,9 +117,9 @@ class ModelRunner:
         the uncached generator's prefill grouping for recurrent model layers.
         """
         mx = self._mx
-        boundary = prompt.rfind("<|im_start|>user\n")
-        if boundary < 0:
+        if self._rendered is None or self._rendered[0] != prompt:
             return prompt, None
+        boundary = self._rendered[1]
         tok = self._tokenizer
         special = tok.bos_token is None or not prompt.startswith(tok.bos_token)
         tokens = tok.encode(prompt, add_special_tokens=special)
@@ -113,7 +135,7 @@ class ModelRunner:
                 mx.eval([c.state for c in cache])
                 mx.clear_cache()
             self._prefix_caches[key] = cache
-            while len(self._prefix_caches) > 2:
+            while len(self._prefix_caches) > PREFIX_CACHE_SLOTS:
                 self._prefix_caches.popitem(last=False)
         self._prefix_caches.move_to_end(key)
         # Generation writes into the copy's arrays; an mx.array update makes
