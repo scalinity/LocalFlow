@@ -8,12 +8,24 @@ import json
 import random
 import re
 from .common import *
+from .strict_score import STUTTER_WORDS
 from lfx import synth
 
 
 def stable_tokens(text):
     return [(m.start(), m.end(), m.group().casefold())
             for m in re.finditer(r"\w+(?:['’]\w+)*", text)]
+
+
+def removes_created_repeat(window, corrected, answer):
+    """A correction deletion left a non-stutter word twice in a row and the answer drops one."""
+    def repeats(text):
+        tokens = stable_tokens(text)
+        return collections.Counter(b[2] for a, b in zip(tokens, tokens[1:])
+                                   if a[2] == b[2] and text[a[1]:b[0]].isspace())
+    counts = lambda text: collections.Counter(t[2] for t in stable_tokens(text))
+    return any(word not in STUTTER_WORDS and counts(answer)[word] < counts(corrected)[word]
+               for word in repeats(corrected) - repeats(window))
 
 
 class Dedup:
@@ -102,6 +114,10 @@ def capture(pair):
                 answer = "\n".join(g for g in pair.get("gold_lines", []) if g.lower() in input_text.lower()) or "NONE"
             else:
                 answer = targets[tuple(window_range)]
+                # Supervision must not teach deleting a meaningful word that
+                # repeats only because a correction span was removed before it.
+                if removes_created_repeat(pair["model_input"][window_range[0]:window_range[1]], input_text, answer):
+                    raise ValueError("correction_created_repeat")
             def reply(prompt, max_tokens):
                 ntok = len(tok.encode(answer, add_special_tokens=False)) + 1
                 if ntok + 1 > max_tokens:
