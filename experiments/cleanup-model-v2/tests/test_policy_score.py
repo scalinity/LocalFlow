@@ -255,6 +255,15 @@ class MinimalTargetTests(unittest.TestCase):
                 self.check(source, target, None, exclusion="ordinals_made_a_numbered_list")
         self.assertIsNone(policy_score.minimal_target(*prose)[2])
 
+    def test_an_introduced_item_list_is_never_numbered(self):
+        for source, target in (
+                ("here is the packing list the tent the stove and the water",
+                 "Here is the packing list:\n1. The tent\n2. The stove\n3. The water"),
+                ("run the following checks 1 confirm the door sensor 2 verify the brake",
+                 "Run the following checks:\n1. Confirm the door sensor.\n2. Verify the brake.")):
+            with self.subTest(target=target):
+                self.check(source, target, None, exclusion="introduced_items_made_a_numbered_list")
+
     def test_introduced_bullets_and_spoken_step_labels_may_become_lists(self):
         for source, target in (
                 ("here is the packing list the tent the stove and the water", "Here is the packing list:\n- The tent\n- The stove\n- The water"),

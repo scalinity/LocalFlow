@@ -91,6 +91,8 @@ LIST_LINE = re.compile(r"(^|\n)[ \t]*(\d+\.|[-•*])[ \t]")
 NUMBERED_LINE = re.compile(r"(^|\n)[ \t]*\d+\.[ \t]")
 STEP_LABELS = re.compile(r"\bsteps?\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b", re.I)
 SEQUENCE = re.compile(r"\b(first|firstly)\b.{3,400}?\b(then|next|third|finally|lastly)\b", re.I | re.S)
+# An introduced list of distinct items takes bullets, never numbers.
+ITEM_LIST_WORDS = re.compile(r"\b(list|lists|following|items)\b", re.I)
 
 
 def _pieces(text):
@@ -224,8 +226,8 @@ def minimal_target(source, target, vocabulary=(), keep=frozenset()):
     unless keep holds the source gap's index or the comma sets off an addressed
     person. Commas the dictation already had are never touched. A label that turns
     spoken ordinals into a list without step labels or a list introduction, or into a
-    numbered list without spoken step labels, or that adds a word the speaker did not
-    say, is excluded rather than rewritten.
+    numbered list without spoken step labels, that numbers an introduced list of items,
+    or that adds a word the speaker did not say, is excluded rather than rewritten.
     """
     if LIST_LINE.search(target) and not LIST_LINE.search(source) and ORDINALS.search(source) \
             and not re.search(r"\b(step|steps|list)\b", source, re.I):
@@ -233,6 +235,10 @@ def minimal_target(source, target, vocabulary=(), keep=frozenset()):
     if NUMBERED_LINE.search(target) and not NUMBERED_LINE.search(source) and not STEP_LABELS.search(source) \
             and (ORDINALS.search(source) or SEQUENCE.search(source)):
         return target, [], "ordinals_made_a_numbered_list"
+    # Excluded rather than converted to bullets: a spoken "number one" may make the number dictated.
+    if NUMBERED_LINE.search(target) and not NUMBERED_LINE.search(source) and not STEP_LABELS.search(source) \
+            and ITEM_LIST_WORDS.search(source):
+        return target, [], "introduced_items_made_a_numbered_list"
     source_words, source_gaps = _split(source)
     target_words, _ = _split(target)
     allowed = {w.casefold() for v in vocabulary for w in WORD.findall(str(v))}
