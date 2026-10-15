@@ -93,6 +93,8 @@ class SentenceRestatementTests(unittest.TestCase):
             # A quoted sentence pair may be a literal.
             ('He logged "The review closes on Friday. Sorry, the review closes on '
              'Thursday." without comment.', "The review closes on Friday. Sorry"),
+            ('The sign-up form said "starts at 7:40. I mean 8:40," and nobody fixed it.',
+             "7:40. I mean"),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], ["crosses_sentence"]))

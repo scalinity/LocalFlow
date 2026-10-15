@@ -32,8 +32,8 @@ from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FIN
                       NEGATION_WORDS, NUMBER, ORDINAL_WORD_RE,
                       POSITIVE_NUMBER, SENTENCE_END, TECH_TOKEN_RE, Neighbourhood,
                       LOOKAHEAD_CHARS, after_marker, alternation, is_value_word, marker_key,
-                      marker_pattern, neighbourhood, plain_words, restatement,
-                      without_trailing_markers)
+                      marker_pattern, neighbourhood, plain_words, quoted_regions, restatement,
+                      touches, without_trailing_markers)
 from .correction_retention import (AdmittedCorrection, correction_view, qualifier_retention,
                                    quantity_binds, quantity_shaped, repeated_restart)
 from .validation import (validate, restore_missing_words, restore_source_spans,
@@ -670,6 +670,10 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
     old = text[s:ms].rstrip()
     ends = list(re.finditer(SENTENCE_END, text[s:e].rstrip(".!? ")))
     if not old.endswith(".") or len(ends) != 1 or ends[0].start() != len(old) - 1:
+        return False
+    # A quoted sentence pair may be a literal ('said "starts at 7:40. I mean
+    # 8:40," and').
+    if touches(quoted_regions(text), s, after_marker(text, e)[0]):
         return False
     shape = restatement(n)
     if _opens_sentence(n):
