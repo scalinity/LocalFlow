@@ -526,9 +526,11 @@ class _AuthCtx:
     # First copies of incomplete openings actually deleted by this output.
     # Their words also leave the novelty budget; identity grants no spans.
     restart_spans: list = field(default_factory=list)
-    # Correction triples the output resolved by keeping an exact
-    # restatement (also in correction_spans).
-    restated_value_spans: list = field(default_factory=list)
+    # The engine's admitted corrections alone, with their marker runs.
+    # correction_spans also holds exact restatements the validator infers
+    # from the output; only admitted corrections remove sentence text or
+    # carry a restated hedge or negation.
+    admitted_spans: list = field(default_factory=list)
     # [(s, e)] the restated copy of a frame a correction leaves doubled.
     frame_spans: list = field(default_factory=list)
 
@@ -827,7 +829,7 @@ def _clause_scope(source, output, aligned, ctx) -> Component:
     _missing, pairs, src, out = aligned
     # Admitted deletions only: an exact restatement the validator infers
     # from the output keeps its sentence boundary.
-    deleted = [c for c in ctx.correction_spans if c not in ctx.restated_value_spans]
+    deleted = ctx.admitted_spans
     merged = []
     for (i, oi), (k, ok) in zip(pairs, pairs[1:]):
         # A boundary inside an admitted deletion goes with the deleted text
@@ -1255,7 +1257,7 @@ def _word_multiset_survival(source, output, words: frozenset,
         start, end = correction[0], correction[1]
         marker = _marker_run_start(source, correction)
         markers.append((marker, end))
-        if correction in ctx.restated_value_spans:
+        if correction not in ctx.admitted_spans:
             continue
         old = [a for a in atoms if start <= a[0] and a[1] <= marker]
         limit = min((a for a, _b in _sentence_ends(source) if a >= end), default=len(source))
@@ -1642,7 +1644,7 @@ def _doubled_frame_spans(source: str, ctx) -> list:
     atoms = _word_atoms(source)
     taken = ctx.correction_spans + ctx.protected_positions
     spans = []
-    for correction in ctx.correction_spans:
+    for correction in ctx.admitted_spans:
         start, end = correction[0], correction[1]
         before = [a for a in atoms if a[1] <= start]
         after = [a for a in atoms if a[0] >= end]
@@ -1679,7 +1681,7 @@ def _auth_context(source, output, vocabulary_pairs, continued_list_start,
     enum_spans = _enum_spans_when_list_rendered(source, output, corrections)
     vocab_spans, allowance = _vocabulary_authorizations(
         source, output, pairs)
-    ctx = _AuthCtx(correction_spans=corrections,
+    ctx = _AuthCtx(correction_spans=list(corrections), admitted_spans=corrections,
                     protected_positions=[tuple(p[:2]) for p in
                                          protected_positions or []],
                     numeric_spans=numeric_spans,
@@ -1687,8 +1689,7 @@ def _auth_context(source, output, vocabulary_pairs, continued_list_start,
                     vocab_spans=vocab_spans, vocab_allowance=allowance,
                     continued_list_start=continued_list_start)
     ctx.frame_spans = _doubled_frame_spans(source, ctx)
-    ctx.restated_value_spans = _restated_value_spans(source, output, ctx)
-    ctx.correction_spans += ctx.restated_value_spans
+    ctx.correction_spans += _restated_value_spans(source, output, ctx)
     ctx.restart_spans = _incomplete_restart_spans(source, output, ctx)
     return ctx
 
