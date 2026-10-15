@@ -163,29 +163,33 @@ def collect():
     return rows, summary
 
 
-def build(dataset=DATASET, consistent=False, *, exclude_sources=()):
+def build(dataset=DATASET, consistent=False, *, exclude_sources=(), unfiltered_vetoed=False):
     """Capture TRAIN and validation with the current engine and freeze the dataset.
 
     consistent also supervises a row the engine does not deliver exactly, with
     only the calls whose prompt and target agree (assemble.capture).
     Source exclusions apply after collection, without reviving superseded rows.
+    unfiltered_vetoed instead keeps every captured call for vetoed TRAIN rows.
     """
     from .assemble import capture
     from .refinement import SOURCE_FILES
     from .training import checked_dataset
     dataset = Path(dataset)
-    mode = "consistent" if consistent else "exact"
+    mode = "unfiltered-vetoed" if unfiltered_vetoed else "consistent" if consistent else "exact"
     exclude_sources = sorted(set(exclude_sources))
     unknown = set(exclude_sources) - set(SLICES + ["diverse", "longform", "contrast", "c-era"])
     if unknown:
         raise ValueError(f"Unknown sources: {', '.join(sorted(unknown))}")
-    options = {"consistent": consistent, "exclude_sources": exclude_sources}
+    options = {"consistent": consistent, "exclude_sources": exclude_sources,
+               "unfiltered_vetoed": unfiltered_vetoed}
     if (dataset / "freeze.json").exists():
         freeze = read_json(dataset / "freeze.json")
         # A freeze written before the mode was recorded is an exact build.
         if freeze.get("mode", "exact") != mode:
             raise RuntimeError(f"{dataset} is frozen with the other supervision mode")
-        if freeze.get("build_options", {"consistent": consistent, "exclude_sources": []}) != options:
+        frozen_options = {"consistent": consistent, "exclude_sources": [], "unfiltered_vetoed": False,
+                          **freeze.get("build_options", {})}
+        if frozen_options != options:
             raise RuntimeError(f"{dataset} is frozen with other build options")
         return freeze
     if (dataset / "train.jsonl").exists():
@@ -202,12 +206,13 @@ def build(dataset=DATASET, consistent=False, *, exclude_sources=()):
     dataset.mkdir(parents=True, exist_ok=True)
     captures, failures, oracle = [], collections.Counter(), collections.Counter()
     vetoed, partial, vetoed_calls = collections.Counter(), collections.Counter(), collections.Counter()
+    unfiltered = collections.Counter()
     for row in rows:
         # An engine_oracle or capture_error already on the row came from an earlier capture of its
         # source dataset.
         row.pop("capture_error", None)
         try:
-            cap = capture(row, consistent_only=consistent)
+            cap = capture(row, consistent_only=consistent and not unfiltered_vetoed)
             # Checked after capture, so a row the label rules exclude keeps their reason.
             if defects.get(row.get("pair_id", row["case_id"])):
                 row["label_conflict"] = {"reason": "validation_label_defect",
@@ -224,11 +229,14 @@ def build(dataset=DATASET, consistent=False, *, exclude_sources=()):
         if not exact:
             for call in row["engine_oracle"].get("supervision", []):
                 vetoed_calls[call["role"] + ":" + call["why"]] += 1
-            if not consistent or not cap["calls"]:
+            if not (consistent or unfiltered_vetoed) or not cap["calls"]:
                 # The serving engine would discard this target; keep it out of supervision.
                 vetoed[focus] += 1
                 continue
-            partial[focus] += 1
+            if unfiltered_vetoed:
+                unfiltered[focus] += 1
+            else:
+                partial[focus] += 1
         captures.append(cap)
     write_jsonl(dataset / "train.jsonl", rows)
     write_jsonl(dataset / "train_captures.jsonl", captures)
@@ -247,7 +255,9 @@ def build(dataset=DATASET, consistent=False, *, exclude_sources=()):
     train_stats = {"captured": len(captures), "capture_failures": dict(failures),
                    "label_defects_sha256": file_sha256(LABEL_DEFECTS),
                    "oracle_exact": dict(oracle), "engine_vetoed_by_focus": dict(vetoed)}
-    if consistent:
+    if unfiltered_vetoed:
+        train_stats["unfiltered_vetoed_by_focus"] = dict(unfiltered)
+    elif consistent:
         train_stats.update(partially_supervised_by_focus=dict(partial), vetoed_row_calls=dict(vetoed_calls))
     freeze = {"created": utc_now(), "mode": mode,
               "files": {p.name: file_sha256(p) for p in sorted(dataset.glob("*.jsonl"))},
@@ -259,12 +269,15 @@ def build(dataset=DATASET, consistent=False, *, exclude_sources=()):
               "labels": ("TRAIN labels normalized by policy_score.minimal_target and "
                          "label_defects.restore_split_conjunctions; development and final labels unchanged."),
               "final_candidate_outputs_existed": False}
-    if consistent:
+    if unfiltered_vetoed:
+        freeze["supervision"] = "Rows the engine vetoes keep every captured call, without agreement filtering."
+    elif consistent:
         freeze["supervision"] = "Rows the engine vetoes keep only calls whose prompt and target agree."
-    if exclude_sources:
+    if exclude_sources or unfiltered_vetoed:
         # Defaults keep their historical bytes; ablation hashes do not depend on the clock.
         del freeze["created"]
         freeze.update(created_omitted=True, build_options=options)
+    if exclude_sources:
         freeze["stats"]["excluded_sources"] = dict(excluded)
     write_json(dataset / "freeze.json", freeze)
     checked_dataset(dataset)
@@ -297,10 +310,13 @@ if __name__ == "__main__":
     p.add_argument("--exclude-source", action="append", default=[],
                    choices=SLICES + ["diverse", "longform", "contrast", "c-era"],
                    help="build: omit this collected source (repeatable; no replacement rows)")
+    p.add_argument("--unfiltered-vetoed", action="store_true",
+                   help="build: keep every captured call for vetoed TRAIN rows (overrides --consistent)")
     a = p.parse_args()
     if a.stage == "collect":
         print(__import__("json").dumps(collect()[1], indent=1))
     elif a.stage == "build":
-        print(__import__("json").dumps(build(a.dataset, a.consistent, exclude_sources=a.exclude_source)["stats"], indent=1))
+        print(__import__("json").dumps(build(a.dataset, a.consistent, exclude_sources=a.exclude_source,
+                                            unfiltered_vetoed=a.unfiltered_vetoed)["stats"], indent=1))
     else:
         print(__import__("json").dumps(train(a.name, a.lr, a.checkpoints, a.log_every, a.base, a.dataset)))

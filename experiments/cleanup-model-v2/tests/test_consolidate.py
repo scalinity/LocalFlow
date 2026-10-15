@@ -178,7 +178,8 @@ class BuildTests(unittest.TestCase):
             # Collection describes the common pre-ablation pool; capture counts describe this arm.
             self.assertEqual(freeze['stats']['collect']['kept'], 3)
             self.assertEqual(freeze['stats']['train']['captured'], 2)
-            self.assertEqual(freeze['build_options'], {'consistent': True, 'exclude_sources': ['contrast']})
+            self.assertEqual(freeze['build_options'], {'consistent': True, 'exclude_sources': ['contrast'],
+                                                       'unfiltered_vetoed': False})
             self.assertTrue(freeze['created_omitted'])
             self.assertNotIn('created', freeze)
 
@@ -209,6 +210,69 @@ class BuildTests(unittest.TestCase):
                 consolidate.build(root / 'invalid', exclude_sources=['contrats'])
             collect.assert_not_called()
             self.assertFalse((root / 'invalid').exists())
+
+    def test_unfiltered_vetoed_keeps_all_calls_without_changing_other_supervision(self):
+        rows = [row('exact', True), row('vetoed', False), row('nothing', False),
+                row('failed', False), row('bad-label', False)]
+        defects = [{'pair_id': 'bad-label', 'kind': 'dropped_word', 'detail': 'and'}]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_jsonl(root / 'refinement' / 'dataset' / 'validation.jsonl',
+                        [{**row('dev-vetoed', False), 'split': 'validation'}])
+            self.build(root, root / 'consistent', rows=rows, defects=defects, consistent=True)
+            freeze, _ = self.build(root, root / 'unfiltered', rows=rows, defects=defects,
+                                   consistent=True, unfiltered_vetoed=True)
+            before = {c['pair_id']: c for c in read_jsonl(root / 'consistent' / 'train_captures.jsonl')}
+            after = {c['pair_id']: c for c in read_jsonl(root / 'unfiltered' / 'train_captures.jsonl')}
+            self.assertEqual(before['exact'], after['exact'])
+            self.assertEqual(before['vetoed']['calls'], after['vetoed']['calls'][:1])
+            self.assertEqual(after['vetoed']['calls'], [call('corrections'), call('main')])
+            self.assertNotIn('nothing', before)
+            self.assertEqual(after['nothing']['calls'], [call('corrections'), call('main')])
+            self.assertEqual(set(after), {'exact', 'vetoed', 'nothing'})
+            for name in ('validation.jsonl', 'validation_captures.jsonl', 'replay_captures.jsonl'):
+                self.assertEqual((root / 'consistent' / name).read_bytes(), (root / 'unfiltered' / name).read_bytes())
+            before_rows = read_jsonl(root / 'consistent' / 'train.jsonl')
+            after_rows = read_jsonl(root / 'unfiltered' / 'train.jsonl')
+            for old, new in zip(before_rows, after_rows, strict=True):
+                self.assertEqual(old['case_id'], new['case_id'])
+                if old['case_id'] in ('vetoed', 'nothing'):
+                    old['engine_oracle'].pop('supervision')
+                self.assertEqual(old, new)
+            self.assertEqual(freeze['mode'], 'unfiltered-vetoed')
+            self.assertEqual(freeze['stats']['train']['unfiltered_vetoed_by_focus'], {'restatement': 2})
+            self.assertEqual(freeze['stats']['train']['capture_failures'],
+                             {'fixture_capture_failure': 1, 'validation_label_defect': 1})
+            self.assertNotIn('partially_supervised_by_focus', freeze['stats']['train'])
+            self.assertEqual(freeze['build_options'], {'consistent': True, 'exclude_sources': [],
+                                                       'unfiltered_vetoed': True})
+            again, capture = self.build(root, root / 'unfiltered', consistent=True, unfiltered_vetoed=True)
+            capture.assert_not_called()
+            self.assertEqual(again, freeze)
+            with self.assertRaisesRegex(RuntimeError, 'other supervision mode'):
+                self.build(root, root / 'unfiltered', consistent=True)
+            with self.assertRaisesRegex(RuntimeError, 'other supervision mode'):
+                self.build(root, root / 'consistent', consistent=True, unfiltered_vetoed=True)
+            with self.assertRaisesRegex(RuntimeError, 'other build options'):
+                self.build(root, root / 'unfiltered', unfiltered_vetoed=True)
+
+    def test_unfiltered_freezes_are_deterministic_alone_and_with_source_exclusions(self):
+        rows = [{**row('exact', True), 'consolidated_origin': 'contrast'},
+                {**row('vetoed', False), 'consolidated_origin': 'diverse'}]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for sources in ([], ['contrast']):
+                for i in range(2):
+                    with patch.object(consolidate, 'utc_now', return_value=f'clock-{i}'):
+                        freeze, _ = self.build(root, root / f'{sources}-{i}', rows=rows,
+                                               exclude_sources=sources, unfiltered_vetoed=True)
+                    self.assertTrue(freeze['created_omitted'])
+                    self.assertNotIn('created', freeze)
+                    self.assertEqual(freeze['mode'], 'unfiltered-vetoed')
+                    self.assertEqual(freeze['build_options']['exclude_sources'], sources)
+                    self.assertFalse(freeze['build_options']['consistent'])
+                self.assertEqual(file_sha256(root / f'{sources}-0' / 'freeze.json'),
+                                 file_sha256(root / f'{sources}-1' / 'freeze.json'))
 
 
 
