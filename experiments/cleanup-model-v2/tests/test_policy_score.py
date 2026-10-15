@@ -168,6 +168,27 @@ class MinimalTargetTests(unittest.TestCase):
             with self.subTest(target=target):
                 self.assertEqual(policy_score.minimal_target(source, target)[0], expected)
 
+    def test_further_addressee_shapes_keep_their_comma(self):
+        for source, target in (
+                ("good morning marta here is the update", "Good morning Marta, here is the update."),
+                ("thank you marta for the notes", "Thank you Marta, for the notes."),
+                ("hi there sam can you check it", "Hi there Sam, can you check it?"),
+                ("excuse me sam where is it", "Excuse me Sam, where is it?"),
+                ("welcome everyone let's start", "Welcome everyone, let's start."),
+                ("thanks dr jane smith", "Thanks, Dr Jane Smith."),
+                ("thanks sam and marta", "Thanks, Sam and Marta."),
+                ("marta and sam can you check this", "Marta and Sam, can you check this?"),
+                ("thanks o'brien", "Thanks, O'Brien."),
+                ("thanks jean-luc", "Thanks, Jean-Luc."),
+                ("thanks mom", "Thanks, mom."),
+                ("marta could we move it to friday", "Marta, could we move it to Friday."),
+                ("dr. okafor is the term acceptable", "Dr. Okafor, is the term acceptable?")):
+            with self.subTest(target=target):
+                self.check(source, target, target, [])
+        # A title's period ends no sentence, so a name after it is not sentence-initial.
+        self.check("the call with Dr. Okonkwo-Reyes and I want them", "The call with Dr. Okonkwo-Reyes, and I want them.",
+                   "The call with Dr. Okonkwo-Reyes and I want them.", ["optional_gap_comma"])
+
     def test_conjunction_introductory_and_list_commas_still_go(self):
         for source, target, expected in (
                 ("send it to marta and then call her", "Send it to Marta, and then call her.",
