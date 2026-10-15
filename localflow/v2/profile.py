@@ -796,3 +796,14 @@ class ProfileService:
         self.emit("profile.evidence_excluded", level="INFO",
                   reason_code="user_action")
         return out
+
+
+def eligible_speech(service: ProfileService):
+    """The eligible speech a profile would read, for the written layer
+    (ADR-0001): ``_eligible``'s rows minus durable user exclusions, plus
+    the exact inputs read. Module-level so ProfileService's pinned public
+    surface stays unchanged (M14-AC04)."""
+    labels = service.store.submit(_latest_labels)
+    user_excluded = service.store.submit(service._excluded_evidence)
+    rows, _counts, inputs = service._eligible(labels)
+    return [r for r in rows if r[0] not in user_excluded], inputs

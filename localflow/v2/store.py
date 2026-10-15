@@ -705,6 +705,34 @@ _MIGRATIONS[13] = [
          updated_at_utc TEXT NOT NULL)""",
 ]
 
+# Your Voice written layer (ADR-0001): the one Claude-written voice
+# profile and the examples it sampled. ``fields_json`` is text derived
+# from the user's speech, cleared ('{}') whenever any sampled example is
+# deleted, expires, leaves training, is excluded or loses its raw
+# transcript (voice_insights.scrub, delete_everywhere). Additive.
+_MIGRATIONS[14] = [
+    """CREATE TABLE IF NOT EXISTS voice_insights(
+         insight_id TEXT PRIMARY KEY,
+         milestone INTEGER NOT NULL,
+         word_count INTEGER NOT NULL,
+         created_at_utc TEXT NOT NULL,
+         model_id TEXT NOT NULL,
+         prompt_version INTEGER NOT NULL,
+         sample_examples INTEGER NOT NULL,
+         sample_words INTEGER NOT NULL,
+         coverage_from_utc TEXT,
+         coverage_to_utc TEXT,
+         fields_json TEXT NOT NULL,
+         state TEXT NOT NULL DEFAULT 'current',
+         invalidated_reason TEXT)""",
+    """CREATE TABLE IF NOT EXISTS voice_insight_evidence(
+         insight_id TEXT NOT NULL,
+         example_id TEXT NOT NULL,
+         job_id TEXT,
+         had_usage INTEGER NOT NULL DEFAULT 0,
+         PRIMARY KEY(insight_id, example_id))""",
+]
+
 # Tables whose loss at the current schema version is corruption, not a
 # torn additive migration, whenever rows that depend on them survive
 # (M02-AUDIT-18). Each maps to queries that detect such surviving
@@ -1455,7 +1483,8 @@ class Store:
                     "profile_snapshots", "profile_evidence",
                     "export_manifests", "job_deletions", "purge_intents",
                     "usage_meta", "m14_operation_receipts",
-                    "learning_vocabulary_deltas"}
+                    "learning_vocabulary_deltas", "voice_insights",
+                    "voice_insight_evidence"}
         have = {r[0] for r in self._db.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         expected_idx = {m.group(1) for stmts in _MIGRATIONS.values()
@@ -2616,6 +2645,17 @@ class Store:
                     self._db.execute(
                         "DELETE FROM profile_evidence WHERE example_id=?",
                         (ex_id,))
+                    # The written voice profile (ADR-0001) loses its
+                    # text the same way when it sampled the example.
+                    self._db.execute(
+                        "UPDATE voice_insights SET state='invalidated',"
+                        " invalidated_reason='source_deleted',"
+                        " fields_json='{}' WHERE insight_id IN (SELECT"
+                        " insight_id FROM voice_insight_evidence WHERE"
+                        " example_id=?)", (ex_id,))
+                    self._db.execute(
+                        "DELETE FROM voice_insight_evidence WHERE"
+                        " example_id=?", (ex_id,))
                 # Candidates are keyed by JOB: a teach with collection
                 # off has no example row, and its payload artifact was
                 # purged with the job's artifacts above.

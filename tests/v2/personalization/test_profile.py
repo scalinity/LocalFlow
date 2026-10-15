@@ -430,7 +430,34 @@ def test_self_corrections_and_requested_transforms():
             s.close()
 
 
+def test_eligible_speech_matches_compute():
+    """The written layer (ADR-0001) reads exactly the speech compute()
+    counts — same eligibility, same durable user exclusions."""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = pathlib.Path(td)
+        s = make_store(tmp)
+        try:
+            exs = [add_example(s, i, f"ship the parser now {i}")[0]
+                   for i in range(12)]
+            add_example(s, 90, "excluded text entirely", state="excluded")
+            add_example(s, 92, "generated snippet text", snippets=True)
+            add_example(s, 1, "ship the parser now 1")  # verbatim repeat
+            ps = profile.ProfileService(s, emit=lambda *a, **k: None,
+                                        min_words=10)
+            out = ps.compute()
+            ps.exclude_evidence(out["snapshot_id"], exs[0])
+            rows, inputs = profile.eligible_speech(ps)
+            got = {ex for ex, _env, _text in rows}
+            assert got == set(exs[1:]), got
+            assert all(text for _ex, _env, text in rows)
+            assert set(inputs) >= got
+            assert ps.compute()["measured"]["eligible_examples"] == len(got)
+        finally:
+            s.close()
+
+
 if __name__ == "__main__":
+    test_eligible_speech_matches_compute()
     test_self_corrections_and_requested_transforms()
     test_idle_skip_reads_no_text()
     test_quarantine_excluded_and_invalidation_reasons()

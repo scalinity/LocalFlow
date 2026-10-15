@@ -3236,22 +3236,31 @@ def r04_silence_warnings_are_reported():
         h.close()
 
 
-@case("LF-R25 (no LocalFlow module imports a network client; whole-app"
-      " offline operation at runtime is M16's native acceptance)")
+@case("LF-R25 (no LocalFlow module imports a network client — the one"
+      " allowlisted exception is the opt-in Your Voice written layer,"
+      " ADR-0001; whole-app offline operation at runtime is M16's native"
+      " acceptance)")
 def r25_no_network_client_imports():
     import ast
     banned = ("socket", "ssl", "http", "urllib.request", "urllib3",
-              "requests", "httpx", "aiohttp", "ftplib", "smtplib",
-              "websocket", "websockets")
+              "requests", "httpx", "httpx2", "httpcore", "httpcore2",
+              "aiohttp", "ftplib", "smtplib", "websocket", "websockets",
+              "anthropic")
+    # (module file, imported name) pairs ADR-0001 allows: the Anthropic
+    # SDK in exactly one module, nothing else anywhere.
+    allowed = {("localflow/v2/voice_insights.py", "anthropic")}
     hits = []
     for path in sorted((ROOT / "localflow").rglob("*.py")):
         tree = ast.parse(path.read_text(), filename=str(path))
+        rel = path.relative_to(ROOT).as_posix()
         for node in ast.walk(tree):
             names = [a.name for a in node.names] \
                 if isinstance(node, ast.Import) else \
                 [node.module or ""] if isinstance(node, ast.ImportFrom) \
                 else []
             for n in names:
+                if (rel, n) in allowed:
+                    continue
                 if any(n == b or n.startswith(b + ".") for b in banned):
                     hits.append(f"{path.relative_to(ROOT)}:{node.lineno}"
                                 f" {n}")
