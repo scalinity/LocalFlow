@@ -244,6 +244,13 @@ class ConsistentSupervisionTests(unittest.TestCase):
                                            "Please don't ship it today.")
         self.assertEqual(agree, 'target_uses_deleted_words')
 
+    def test_cleanup_agreement_refuses_a_target_that_rewrites_a_dictated_word(self):
+        source = 'Ship it on Tuesday and call Marta.'
+        agree = lambda answer, vocabulary=(): assemble.cleanup_agreement(
+            source, [], (0, len(source)), source, answer, vocabulary)
+        self.assertEqual(agree('Ship it on Wednesday and call Marta.'), 'target_rewrites_dictated_words')
+        self.assertEqual(agree('Ship it on Tuesday and call Martha.', [['Marta', 'Martha']]), 'input_is_label_pre_cleanup')
+
 
 class DedupTests(unittest.TestCase):
     SOURCE = 'Please check the north pump and log the pressure reading before noon today.'

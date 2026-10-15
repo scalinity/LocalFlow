@@ -197,6 +197,26 @@ def label_defect(source, target, offsets, vocabulary_pairs=()):
     return None
 
 
+def unexplained_rewrites(before, after, vocabulary_pairs=()):
+    """Word replacements and insertions from before to after that no permitted conversion
+    explains. A written word is explained when it carries a digit (a spoken number or list
+    number written out), is part of a vocabulary pair's canonical form, or joins or splits
+    the words it replaces ("data frame" -> "dataframe"); a number changed into another
+    number never is."""
+    a, b = [t[2] for t in _tokens(before)], [t[2] for t in _tokens(after)]
+    canonical = {t[2] for pair in vocabulary_pairs or [] if len(pair) > 1 for t in _tokens(pair[1])}
+    digit = lambda word: any(ch.isdigit() for ch in word)
+    out = []
+    for tag, i1, i2, j1, j2 in _edits(a, b):
+        removed, added = a[i1:i2], b[j1:j2]
+        if tag == "delete" or "".join(removed) == "".join(added):
+            continue
+        changed_number = bool(removed) and all(digit(w) for w in removed + added)
+        if changed_number or not all(digit(w) or w in canonical for w in added):
+            out.append((" ".join(removed), " ".join(added)))
+    return out
+
+
 def restore_split_conjunctions(source, target, offsets, vocabulary_pairs=()):
     """Where the target starts a new sentence exactly where the pre-cleanup text
     had a run of conjunctions it dropped ('cold room and before' -> 'cold room.

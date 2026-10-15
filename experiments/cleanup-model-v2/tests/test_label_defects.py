@@ -100,6 +100,22 @@ class MarkerEndingTests(unittest.TestCase):
         source = 'we booked 16 rooms, sorry 17 rooms'
         self.assertIsNone(defects.gold_line_not_marker_terminated(source, '', span(source, '16 rooms, sorry')))
 
+
+class UnexplainedRewriteTests(unittest.TestCase):
+    def test_vocabulary_digit_and_joined_word_conversions_are_explained(self):
+        for before, after, vocabulary in (
+                ('it uses pie proj here', 'It uses PROJ here.', [['pie proj', 'PROJ']]),
+                ('we sampled wgs eighty four', 'We sampled WGS84.', ()),
+                ('load the data frame', 'Load the dataframe.', ()),
+                ('do these things and check and log', 'Do these things:\n1. Check\n2. Log', ())):
+            with self.subTest(after=after):
+                self.assertEqual(defects.unexplained_rewrites(before, after, vocabulary), [])
+
+    def test_a_substituted_word_or_a_changed_number_is_not(self):
+        self.assertEqual(defects.unexplained_rewrites('ship it on tuesday', 'Ship it on Wednesday.'),
+                         [('tuesday', 'wednesday')])
+        self.assertEqual(defects.unexplained_rewrites('use 4 bobbins', 'Use 6 bobbins.'), [('4', '6')])
+
 class TrainingLabelConflictTests(unittest.TestCase):
     def test_every_capture_path_rejects_a_label_defect(self):
         row = {'model_input': 'keep it cold and before you move it label it',

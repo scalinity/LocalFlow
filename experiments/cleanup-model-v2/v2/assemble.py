@@ -107,15 +107,17 @@ def window_targets(pair, windows):
 AGREEMENTS = {"gold_lines_applied_by_engine", "input_is_label_pre_cleanup"}
 
 
-def cleanup_agreement(source, offsets, window_range, input_text, answer):
+def cleanup_agreement(source, offsets, window_range, input_text, answer, vocabulary_pairs=()):
     """Whether a cleanup call's prompt and target agree, as a reason.
 
     They agree when the engine's input is the label's pre-cleanup text for the
     window (the source window with its gold deletions applied) and the target
     uses no word those deletions took out, which a detail the engine did not
-    retain would otherwise put back.
+    retain would otherwise put back, and rewrites no dictated word in a way a
+    permitted conversion does not explain (label_defects.unexplained_rewrites):
+    the engine's validation no longer vetoes such a target once the row is vetoed.
     """
-    from .label_defects import remove_spans
+    from .label_defects import remove_spans, unexplained_rewrites
     start, end = window_range
     spans = [(s - start, e - start) for s, e in offsets if start <= s and e <= end]
     if remove_spans(input_text, []) != remove_spans(source[start:end], spans):
@@ -129,6 +131,8 @@ def cleanup_agreement(source, offsets, window_range, input_text, answer):
     # comma between the two "past"; collapsing them is the created repeat capture refuses.
     if removes_created_repeat(source[start:end], input_text, answer, adjacent=lambda gap: not re.search(r"\w", gap)):
         return "target_drops_created_repeat"
+    if unexplained_rewrites(input_text, answer, vocabulary_pairs):
+        return "target_rewrites_dictated_words"
     return "input_is_label_pre_cleanup"
 
 
@@ -187,7 +191,8 @@ def capture(pair, *, consistent_only=False):
                 if removes_created_repeat(pair["model_input"][window_range[0]:window_range[1]], input_text, answer):
                     raise ValueError("correction_created_repeat")
             agreement = (None if corrections_pass else
-                         cleanup_agreement(pair["model_input"], offsets, window_range, input_text, answer))
+                         cleanup_agreement(pair["model_input"], offsets, window_range, input_text, answer,
+                                           pair.get("vocabulary_pairs")))
             def reply(prompt, max_tokens):
                 ntok = len(tok.encode(answer, add_special_tokens=False)) + 1
                 if ntok + 1 > max_tokens:
