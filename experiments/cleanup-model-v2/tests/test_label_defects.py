@@ -87,11 +87,29 @@ class SequenceWordTests(unittest.TestCase):
             'first heat the pan second add the oil', '1. Heat the pan\n2. Add the oil', []))
 
 
+
+class MarkerEndingTests(unittest.TestCase):
+    def test_a_gold_line_that_does_not_end_at_a_correction_marker_is_a_defect(self):
+        for source, line in (
+                ('bring 12 score sheets, uh 14 score sheets', '12 score sheets, uh'),
+                ('run it on Tuesday, no Wednesday at nine', 'Tuesday, no Wednesday'),
+                ('the cabinet opens on Monday. Sorry. On Tuesday.', 'on Monday. Sorry.')):
+            with self.subTest(line=line):
+                self.assertEqual(defects.gold_line_not_marker_terminated(source, '', span(source, line))['lines'],
+                                 [line])
+        source = 'we booked 16 rooms, sorry 17 rooms'
+        self.assertIsNone(defects.gold_line_not_marker_terminated(source, '', span(source, '16 rooms, sorry')))
+
 class TrainingLabelConflictTests(unittest.TestCase):
     def test_every_capture_path_rejects_a_label_defect(self):
         row = {'model_input': 'keep it cold and before you move it label it',
                'target': 'Keep it cold. Before you move it, label it.'}
         self.assertEqual(refinement.training_label_conflict(row)['reason'], 'drops_dictated_word')
+
+    def test_a_gold_line_the_parser_never_admits_excludes_the_row(self):
+        source = 'bring 12 score sheets, uh 14 score sheets'
+        row = {'model_input': source, 'target': 'Bring 14 score sheets.', 'gold_offsets': span(source, '12 score sheets, uh')}
+        self.assertEqual(refinement.training_label_conflict(row)['reason'], 'gold_line_not_marker_terminated')
 
     def test_gold_lines_are_anchored_when_offsets_are_not_yet_computed(self):
         source = 'we booked 16 rooms, sorry 17 rooms for the team'

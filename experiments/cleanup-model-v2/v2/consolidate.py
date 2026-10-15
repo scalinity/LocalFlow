@@ -26,7 +26,7 @@ REVIEWED_EXCLUSIONS = {
     "v2-tr-001561-base", "v2-tr-002574-base", "v2-tr-002976-base", "v2-tr-004501-base",
     "v4-tr-00025-repair-base", "v4-tr-00080-repair-base", "v4-tr-00272-repair-base", "v4-tr-00275-repair-base",
     "v4-tr-00475-preserve-base", "v4-tr-00745-repair-base", "v4-tr-00867-repair-base", "v4-tr-01065-repair-base",
-    "v4-tr-01145-repair-base",
+    "v4-tr-01145-repair-base", "v4-tr-00480-repair-base",
 }
 LIST_INTRO = re.compile(r"\b(list|lists|steps?|following|items)\b", re.I)
 C_ERA_SAMPLE = 1200

@@ -154,22 +154,25 @@ class CorrectionAnchorTests(unittest.TestCase):
         self.assertEqual(capture(validation)['split'], 'validation')
 
 
-DYE = pair('Mix 4 liters of dye, no wait, 6 liters for the warp.', 'Mix 6 liters of dye for the warp.',
-           ['4 liters of dye, no wait,'])
+# A correct label whose gold line the engine does not admit, so the cleanup input keeps the corrected words.
+INVOICE = pair('Send the invoice to the finance team in Berlin, actually to the legal team.',
+               'Send the invoice to the legal team.', ['to the finance team in Berlin, actually'])
+DYE = pair('Mix 4 liters of dye, no wait 6 liters for the warp.', 'Mix 6 liters of dye for the warp.',
+           ['4 liters of dye, no wait'])
 
 
 class ConsistentSupervisionTests(unittest.TestCase):
     def test_an_inconsistent_cleanup_pair_is_never_kept(self):
-        row = dict(DYE)
+        row = dict(INVOICE)
         captured = capture(row, consistent_only=True)
         self.assertFalse(row['engine_oracle']['exact'])
         self.assertEqual([(c['role'], c['completion']) for c in captured['calls']],
-                         [('corrections', '4 liters of dye, no wait,')])
+                         [('corrections', 'to the finance team in Berlin, actually')])
         self.assertEqual([(s['role'], s['kept'], s['why']) for s in row['engine_oracle']['supervision']],
                          [('corrections', True, 'corrections_target_is_gold_lines'),
                           ('main', False, 'input_is_not_label_pre_cleanup')])
         # Without the mode, capture returns every call as before; the build vetoes the row.
-        self.assertEqual([c['role'] for c in capture(dict(DYE))['calls']], ['corrections', 'main'])
+        self.assertEqual([c['role'] for c in capture(dict(INVOICE))['calls']], ['corrections', 'main'])
 
     def test_a_vetoed_row_whose_cleanup_input_is_the_label_pre_cleanup_text_keeps_it(self):
         row = pair('Um the pump is is already primed, and the valve goes in the drawer by the window.',
