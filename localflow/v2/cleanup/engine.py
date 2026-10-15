@@ -32,7 +32,7 @@ from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FIN
                       NEGATION_WORDS, NUMBER, NUMBER_WORDS, ORDINAL_WORD_RE,
                       POSITIVE_NUMBER, SCALE_WORDS, SENTENCE_END, TECH_TOKEN_RE, Neighbourhood,
                       alternation, marker_key, marker_pattern, neighbourhood, plain_words,
-                      restatement)
+                      restatement, without_trailing_markers)
 from .correction_retention import (AdmittedCorrection, correction_view, qualifier_retention,
                                    quantity_binds, quantity_shaped, repeated_restart)
 from .validation import (validate, restore_missing_words, restore_source_spans,
@@ -570,7 +570,7 @@ def _parallel(n: Neighbourhood) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
     both months, the same frame before like complements, or they share a
     content word ("two engineers … three engineers")."""
-    x_words, y_words = list(n.old_words), list(n.new_words)
+    x_words, y_words = without_trailing_markers(list(n.old_words)), list(n.new_words)
     if not x_words or not y_words:
         return False
     # Repeated predicative frame: ``as suspect, actually, as fine``.

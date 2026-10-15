@@ -243,7 +243,7 @@ def plain_words(text: str) -> list:
             if (w := token.lower().strip(".,;:!?")) and w not in FILLERS]
 
 
-def _without_trailing_markers(words: list) -> list:
+def without_trailing_markers(words: list) -> list:
     """A marker chained before the proposal's own ("2.5 hours, actually no
     wait") belongs to the marker, not to the old value."""
     phrases = [m.split() for m in CORRECTION_MARKERS]
@@ -273,7 +273,7 @@ def restatement(n: Neighbourhood) -> tuple | None:
     # A quoted repeat may be a literal, not the speaker restating.
     if touches(quoted_regions(n.text), n.start, sentence_end):
         return None
-    old = _without_trailing_markers(plain_words(n.text[n.start:n.marker]))
+    old = without_trailing_markers(plain_words(n.text[n.start:n.marker]))
     new = plain_words(n.text[n.end:sentence_end])
     p = 0
     while p < min(len(old), len(new)) and old[p] == new[p]:
