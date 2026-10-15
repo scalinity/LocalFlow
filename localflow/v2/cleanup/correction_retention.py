@@ -14,12 +14,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from .lexicon import (CLAUSE_LINKS, DETAIL_PREPOSITIONS, FINITE_AUXILIARIES,
-                      FRAME_WORDS, FUNCTION_WORDS, MODALS, NEGATION_WORDS, alternation,
-                      quoted_regions, touches)
+from .lexicon import (CLAUSE_LINKS, COUNT, DETAIL_PREPOSITIONS, FINITE_AUXILIARIES,
+                      FRAME_WORDS, FUNCTION_WORDS, MEASURE_UNIT, MODALS, NEGATION_WORDS,
+                      NUMBER, SPELLED_NUMBER, alternation, quoted_regions, touches)
 
 
-_NUMBER = r"[+-]?\d+(?:[.,]\d+)*"
+_NUMBER = NUMBER
 _PREPOSITIONS = alternation(DETAIL_PREPOSITIONS)
 _WORD = r"[^\W\d_]+"
 _LINKS = alternation(CLAUSE_LINKS)
@@ -28,20 +28,13 @@ _QUANTITY_DETAIL = re.compile(
     rf"(?:[ \t]+(?!(?:{_PREPOSITIONS})\b){_WORD}){{0,2}})"
     rf"(?P<space>[ \t]+)(?P<detail>(?P<prep>{_PREPOSITIONS})[ \t]+.+)",
     re.IGNORECASE)
-_SPELLED_NUMBER = (r"(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|"
-                   r"twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|"
-                   r"nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
-                   r"hundred|thousand|million)")
 # Any quantity head followed by a prepositional detail, wherever it sits.
 _ANY_QUANTITY_DETAIL = re.compile(
-    rf"(?<![\w.,])(?:{_NUMBER}|{_SPELLED_NUMBER}(?:[- ]{_SPELLED_NUMBER})*)"
+    rf"(?<![\w.,])(?:{_NUMBER}|{SPELLED_NUMBER})"
     rf"[ \t]+{_WORD}(?:[ \t]+{_WORD}){{0,2}}[ \t]+(?:{_PREPOSITIONS})[ \t]+\S",
     re.IGNORECASE)
 # Singular heads from the number profile, plus rotation and volume units.
-_FRACTION_UNIT = re.compile(
-    r"(?:(?:nano|micro|milli|centi|deci|deca|hecto|kilo|mega|giga)?met(?:er|re)"
-    r"|inch|foot|(?:kilo|mega|giga)?(?:byte|bit)|pixel|second|minute|hour|day|week"
-    r"|(?:kilo)?gram|turn|rotation|revolution|lit(?:er|re))", re.IGNORECASE)
+_FRACTION_UNIT = re.compile(MEASURE_UNIT, re.IGNORECASE)
 
 
 def qualifier_retention(source: str, span: tuple, marker_start: int):
@@ -55,7 +48,7 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
     start, end = span
     old = source[start:marker_start].rstrip(" \t,;:")
     fraction = re.fullmatch(
-        rf"(?P<count>[1-9][0-9]*)[ \t]+(?P<denominator>half|halves|quarter|quarters)"
+        rf"(?P<count>{COUNT})[ \t]+(?P<denominator>half|halves|quarter|quarters)"
         rf"[ \t]+of[ \t]+(?:a|an)[ \t]+(?P<unit>{_WORD})", old, re.IGNORECASE)
     # This exception needs the complete original numeric token and a
     # closed replacement head. Bare "no" can introduce a negative clause.

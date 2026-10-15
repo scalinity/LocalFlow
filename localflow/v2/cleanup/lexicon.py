@@ -87,6 +87,23 @@ NUMBER_WORDS = {
 }
 SCALE_WORDS = {"hundred": 100, "thousand": 1_000, "million": 1_000_000}
 
+# Number grammar. A typed token keeps its sign and separators ("-2",
+# "1,500", "2,5"); a count is a positive whole number ("7 quarters"); a
+# positive number may carry decimals ("every 1.5 hours").
+NUMBER = r"[+-]?\d+(?:[.,]\d+)*"
+COUNT = r"[1-9]\d*"
+POSITIVE_NUMBER = COUNT + r"(?:\.\d+)?"
+_SPELLED_WORD = "(?:" + "|".join(sorted(NUMBER_WORDS.keys() | SCALE_WORDS.keys(),
+                                        key=lambda w: (-len(w), w))) + ")"
+SPELLED_NUMBER = rf"{_SPELLED_WORD}(?:[- ]{_SPELLED_WORD})*"
+
+# Unit grammar. Metric lengths share one base across prefixes; a measure
+# unit is a singular head ("turn", "liter", "kilobyte").
+METRIC_PREFIX = r"(?:nano|micro|milli|centi|deci|deca|hecto|kilo|mega|giga)"
+METER = rf"{METRIC_PREFIX}?met(?:er|re)"
+MEASURE_UNIT = (rf"(?:{METER}|inch|foot|(?:kilo|mega|giga)?(?:byte|bit)|pixel|second"
+                r"|minute|hour|day|week|(?:kilo)?gram|turn|rotation|revolution|lit(?:er|re))")
+
 QUOTED_RE = re.compile(r"“([^“”]+)”|\"([^\"]+)\"|‘([^‘’]+)’")
 # Single-quoted text may contain in-word apostrophes ('it's fine').
 _SINGLE_QUOTED_RE = re.compile(

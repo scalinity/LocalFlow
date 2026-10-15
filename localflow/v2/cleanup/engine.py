@@ -28,8 +28,8 @@ from dataclasses import dataclass, field
 from . import document_nodes as dn
 from . import prompts
 from .lexicon import (FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
-                      FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, NUMBER_WORDS, SCALE_WORDS,
-                      TECH_TOKEN_RE, alternation)
+                      FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER, NUMBER, NUMBER_WORDS,
+                      POSITIVE_NUMBER, SCALE_WORDS, TECH_TOKEN_RE, alternation)
 from .correction_retention import (AdmittedCorrection, correction_view,
                                    qualifier_retention, repeated_restart)
 from .validation import (validate, restore_missing_words,
@@ -476,10 +476,7 @@ def _is_value_word(w: str) -> bool:
     return any(c.isdigit() for c in w) or w in NUMBER_WORDS or w in SCALE_WORDS
 
 
-_METRIC_LENGTH = re.compile(
-    r"[+-]?\d+(?:[.,]\d+)*[ \t]+"
-    r"(?:(?:nano|micro|milli|centi|deci|deca|hecto|kilo|mega|giga)?met(?:er|re)s?)",
-    re.IGNORECASE)
+_METRIC_LENGTH = re.compile(rf"{NUMBER}[ \t]+{METER}s?", re.IGNORECASE)
 
 
 def _parallel_metric_lengths(source: str, span: tuple, marker: int) -> bool:
@@ -634,10 +631,10 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
         # heads repeat it. Do not treat "every" as a general stutter or
         # accept a changed unit, qualifier, or nonnumeric complement.
         quantity = re.fullmatch(
-            r"(?P<count>[1-9]\d*(?:\.\d+)?)[ \t]+(?P<unit>[^\W\d_]+)",
+            rf"(?P<count>{POSITIVE_NUMBER})[ \t]+(?P<unit>[^\W\d_]+)",
             text[start:marker].strip(" \t,;:"), re.UNICODE)
         if quantity is not None and re.match(
-                r"[ \t,;:]*every[ \t]+[1-9]\d*(?:\.\d+)?[ \t]+"
+                rf"[ \t,;:]*every[ \t]+{POSITIVE_NUMBER}[ \t]+"
                 + re.escape(quantity.group("unit")) + r"(?![\w-])",
                 text[end:], re.IGNORECASE):
             return prefix.start(), end
