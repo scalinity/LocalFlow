@@ -48,6 +48,14 @@ class CreatedRepeatTests(unittest.TestCase):
         self.assertFalse(assemble.removes_created_repeat('every, every 20 minutes', 'every, every 20 minutes',
                                                          'Every 20 minutes.'))
 
+    def test_a_train_label_defect_refuses_capture_and_keeps_the_rule_hit(self):
+        row = pair('keep it cold and before you move it label it', 'Keep it cold. Before you move it, label it.',
+                   label_conflict={'reason': 'earlier'})
+        with self.assertRaisesRegex(ValueError, 'drops_dictated_word'):
+            capture(row)
+        self.assertEqual(row['label_conflict']['reason'], 'drops_dictated_word')
+        self.assertEqual(row['label_conflict']['dropped'], [{'kind': 'conjunction_at_split', 'words': 'and'}])
+
     def test_capture_omits_rows_that_teach_dropping_a_created_repeat(self):
         captured = capture(dict(FREQUENCY))
         main = [c for c in captured['calls'] if c['role'] == 'main']

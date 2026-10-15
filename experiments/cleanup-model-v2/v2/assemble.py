@@ -168,8 +168,10 @@ def capture(pair, *, consistent_only=False):
     if pair["split"] == "train":
         # Every capture path that produces TRAIN supervision applies this rule.
         from .refinement import training_label_conflict
+        pair.pop("label_conflict", None)
         conflict = training_label_conflict(pair)
         if conflict:
+            pair["label_conflict"] = conflict  # what the rule matched, beside the reason the error names
             raise ValueError(conflict["reason"])
     windows = engine.plan_windows(pair["model_input"], protected)
     targets = window_targets(pair, windows)
