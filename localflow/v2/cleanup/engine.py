@@ -31,8 +31,8 @@ from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FIN
                       FRAME_PREPOSITIONS, FRAME_WORDS, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER,
                       NEGATION_WORDS, NUMBER, NUMBER_WORDS, ORDINAL_WORD_RE,
                       POSITIVE_NUMBER, SCALE_WORDS, SENTENCE_END, TECH_TOKEN_RE, Neighbourhood,
-                      alternation, marker_key, marker_pattern, neighbourhood, plain_words,
-                      restatement)
+                      LOOKAHEAD_CHARS, after_marker, alternation, marker_key, marker_pattern,
+                      neighbourhood, plain_words, restatement, without_trailing_markers)
 from .correction_retention import (AdmittedCorrection, correction_view, qualifier_retention,
                                    quantity_binds, quantity_shaped, repeated_restart)
 from .validation import (validate, restore_missing_words, restore_source_spans,
@@ -506,7 +506,7 @@ def _parallel_metric_lengths(n: Neighbourhood) -> bool:
     old = n.text[n.start:n.marker].strip(" \t,;:")
     if not _METRIC_LENGTH.fullmatch(old):
         return False
-    tail = n.text[n.end:].lstrip(" \t,")
+    tail = n.text[n.end:n.end + LOOKAHEAD_CHARS].lstrip(" \t,")
     new = _METRIC_LENGTH.match(tail)
     return new is not None and bool(re.match(CLAUSE_END, tail[new.end():]))
 
@@ -520,7 +520,7 @@ _APOLOGY_COMPLEMENT_RE = re.compile(r"[ \t]+(?:to|for|about)[ \t]+(\S+)", re.IGN
 def _apology(n: Neighbourhood) -> bool:
     if marker_key(n.text[n.marker:n.end]) != "sorry":
         return False
-    m = _APOLOGY_COMPLEMENT_RE.match(n.text[n.end:])
+    m = _APOLOGY_COMPLEMENT_RE.match(n.text, n.end)
     word = m.group(1).lower().strip(".,;:!?") if m else ""
     return bool(m) and not (_is_value_word(word) or word in _WEEKDAYS or word in _MONTHS)
 
@@ -553,7 +553,8 @@ def _yes_no_contrast(n: Neighbourhood) -> bool:
     """A bare ``no`` answering an earlier ``yes`` with the same next word
     contrasts rather than corrects: ``yes to the first, no to the second``."""
     following = n.new_words[:1]
-    sentence = re.split(SENTENCE_END + r"|\n", n.text[:n.marker])[-1]
+    sentence = re.split(SENTENCE_END + r"|\n",
+                        n.text[max(0, n.marker - LOOKAHEAD_CHARS):n.marker])[-1]
     return bool(following and marker_key(n.text[n.marker:n.end]) == "no" and re.search(
         rf"\byes[ \t,]+{re.escape(following[0])}\b", sentence, re.IGNORECASE))
 
@@ -576,9 +577,9 @@ def _parallel_code_tokens(n: Neighbourhood, x_words: list, y_words: list) -> boo
     flags = x.startswith("--") and y.startswith("--")
     if not flags and re.sub(r"[a-z0-9]+", "", x) != re.sub(r"[a-z0-9]+", "", y):
         return False
-    return (all(w in FUNCTION_WORDS for w in x_words[:-1]) and re.match(
-        rf"[ \t,;:]*\S+?(?:{CLAUSE_END}|[ \t]+(?i:{alternation(CLAUSE_LINKS)})\b)",
-        n.text[n.end:]) is not None)
+    return (all(w in FUNCTION_WORDS for w in x_words[:-1]) and re.compile(
+        rf"[ \t,;:]*\S+?(?:{CLAUSE_END}|[ \t]+(?i:{alternation(CLAUSE_LINKS)})\b)").match(
+            n.text, n.end) is not None)
 
 
 def _parallel(n: Neighbourhood) -> bool:
@@ -655,7 +656,10 @@ def _restated_across_sentences(n: Neighbourhood) -> bool:
     if not old.endswith(".") or len(ends) != 1 or ends[0].start() != len(old) - 1:
         return False
     shape = restatement(n)
-    if re.search(r"(?:\A|[.!?\n])\s*\Z", text[:s]):
+    before = s
+    while before and text[before - 1].isspace():
+        before -= 1
+    if not before or text[before - 1] in ".!?" or "\n" in text[before:s]:
         return shape is not None
     # Merged into the old sentence, the replacement must repeat the old
     # value's end: "the blue folder on the counter. Actually, the blue
@@ -687,9 +691,7 @@ def _replacement_adds(n: Neighbourhood) -> bool:
     short ("too hot" intensifies, and a longer clause, "to sign the sheet
     as well", is about something else).
     """
-    tail = n.text[n.end:].lstrip(" \t,;:")
-    stop = re.search(SENTENCE_END + r"|[,;\n]", tail)
-    words = plain_words(tail[:stop.start()] if stop else tail)
+    words = list(after_marker(n.text, n.end)[3])
     link = next((i for i, w in enumerate(words) if w in CLAUSE_LINKS), len(words))
     words, reach = words[:link], len(n.old_words) + 2
     return "also" in words[:reach] or (len(words) <= reach and (
@@ -747,8 +749,8 @@ def _replacement_closes_within(n: Neighbourhood, words: int) -> bool:
     """The replacement ends its clause within ``words`` words: "make that
     60 microliters." replaces a value, "make that 6 trays for the oven
     and 2 for the fridge" goes on into new content."""
-    return re.match(rf"[ \t,;:]*(?:\S+[ \t]+){{0,{words - 1}}}\S+?{CLAUSE_END}",
-                    n.text[n.end:]) is not None
+    return re.compile(rf"[ \t,;:]*(?:\S+[ \t]+){{0,{words - 1}}}\S+?{CLAUSE_END}").match(
+        n.text, n.end) is not None
 
 
 # "am" is left out: it follows only "I", and "9 am" is a time.
@@ -762,7 +764,8 @@ def _replacement_opens_predicate(n: Neighbourhood) -> bool:
     its noun) makes that value a new subject, so deleting the old value
     would attach the clause to the old frame and drop a bare "no".
     """
-    clause = re.split(r"[,;.!?\n]", n.text[n.end:].lstrip(" \t,;:"), maxsplit=1)[0]
+    clause = re.split(r"[,;.!?\n]", n.text[n.end:n.end + LOOKAHEAD_CHARS].lstrip(" \t,;:"),
+                      maxsplit=1)[0]
     words = [w.lower() for w in clause.split()]
     words = words[1:4] if words[:1] and words[0] in _ARTICLES else words[:3]
     if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
@@ -780,22 +783,26 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
     """
     start, end = span
     marker = correction_marker_start(text, span)
+    # Only the words right beside the span matter; reading a bounded
+    # stretch keeps the search from rescanning the whole window.
+    base = max(0, start - LOOKAHEAD_CHARS)
     # A replacement that restates the old value and opens with the word
     # before it ("after [10 minutes of rest, no] after 15 minutes of rest")
     # repeats that word as well, so it goes with the old value.
-    before = re.search(r"(?<!\S)([^\W_][\w'’-]*)[ \t]+\Z", text[:start])
-    if before is not None and before.start() >= cursor:
+    before = re.search(r"(?<!\S)([^\W_][\w'’-]*)[ \t]+\Z", text[base:start])
+    if before is not None and base + before.start() >= cursor:
         shape = restatement(neighbourhood(text, span, marker))
-        following = plain_words(text[end:])
+        following = after_marker(text, end)[2][:1]
         if (shape is not None and shape[0] == 0 and shape[2] >= 2
-                and following[:1] == [before.group(1).lower()]):
-            return before.start(), end
+                and list(following) == [before.group(1).lower()]):
+            return base + before.start(), end
     # \Z, not $: a frame word at the end of the previous line is not this
     # value's frame.
     prefix = re.search(rf"\b({alternation(FRAME_WORDS)})[ \t]+\Z",
-                       text[:start], re.IGNORECASE)
-    if prefix is None or prefix.start() < cursor:
+                       text[base:start], re.IGNORECASE)
+    if prefix is None or base + prefix.start() < cursor:
         return span
+    prefix_start = base + prefix.start()
     if prefix.group(1).lower() == "every":
         # A frequency keeps its quantifier when both complete quantity
         # heads repeat it. Do not treat "every" as a general stutter or
@@ -806,14 +813,14 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
         if quantity is not None and re.match(
                 rf"[ \t,;:]*every[ \t]+{POSITIVE_NUMBER}[ \t]+"
                 + re.escape(quantity.group("unit")) + r"(?![\w-])",
-                text[end:], re.IGNORECASE):
-            return prefix.start(), end
+                text[end:end + LOOKAHEAD_CHARS], re.IGNORECASE):
+            return prefix_start, end
         return span
     old = [w.lower().strip(",;:") for w in text[start:marker].split()]
     if not (len(old) == 1 or (len(old) == 2 and
             (old[0] in {"a", "an", "the"} or _is_value_word(old[0])))):
         return span
-    n = neighbourhood(text, (prefix.start(), end), marker)
+    n = neighbourhood(text, (prefix_start, end), marker)
     if n.frame != prefix.group(1).lower():
         return span
     new = n.new_words[1:]
@@ -821,7 +828,7 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
             (marker_key(text[marker:end]) not in _ORDINARY_WORD_MARKERS
              and len(old) == 1 and _has_content(old[0])
              and new and _has_content(new[0]))):
-        return prefix.start(), end
+        return prefix_start, end
     return span
 
 
@@ -1049,6 +1056,9 @@ def _rejected_spans(text: str, rejected: list, accepted: list) -> list:
     return spans
 
 
+_WORD_RE = re.compile(r"\S+")
+
+
 def _has_correction_marker(text: str) -> bool:
     if CORRECTION_MARKER_RE.search(text):
         return True
@@ -1058,14 +1068,24 @@ def _has_correction_marker(text: str) -> bool:
     # A longer span counts only where the replacement restates it, as in
     # parse_correction_output.
     for marker in re.finditer(r"\b(?:sorry|no|make[ \t]+that)\b", text, re.IGNORECASE):
-        preceding = list(re.finditer(r"\S+", text[:marker.start()]))
+        base = max(0, marker.start() - RESTATED_SPAN_MAX_CHARS)
+        preceding = list(_WORD_RE.finditer(text, base, marker.start()))
+        # A restatement repeats the old value's first or last word; a long
+        # candidate whose replacement repeats neither is skipped unparsed.
+        new = after_marker(text, marker.end())[2]
+        last = without_trailing_markers(plain_words(text[base:marker.start()]))[-1:]
+        last_repeated = bool(last) and last[0] in new
         for word in reversed(preceding):
             span = (word.start(), marker.end())
             if span[1] - span[0] > RESTATED_SPAN_MAX_CHARS:
                 break
+            long = (len(text[span[0]:span[1]].split()) > SPAN_MAX_WORDS
+                    or span[1] - span[0] > SPAN_MAX_CHARS)
+            first = word.group().lower().strip(".,;:!?")
+            if long and not last_repeated and first not in FILLERS and new[:1] != (first,):
+                continue
             shape = neighbourhood(text, span, correction_marker_start(text, span))
-            if ((len(text[span[0]:span[1]].split()) > SPAN_MAX_WORDS
-                    or span[1] - span[0] > SPAN_MAX_CHARS) and restatement(shape) is None):
+            if long and restatement(shape) is None:
                 continue
             if _evidence_reason(shape) is None:
                 return True

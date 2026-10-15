@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 
 # Words the clean contract may always drop (pure fillers; V1's set —
 # "you know" and "like" are content and stay).
@@ -160,6 +161,12 @@ def quoted_regions(text: str) -> list[tuple[int, int]]:
     quote. A quote or code mark without a partner has no known extent,
     so it makes the whole text one region.
     """
+    return list(_quoted_regions(text))
+
+
+# Admission asks once per candidate span, so a text's regions are found once.
+@lru_cache(maxsize=64)
+def _quoted_regions(text: str) -> tuple[tuple[int, int], ...]:
     regions = []
     opening = None
     for m in _CODE_RUN_RE.finditer(text):
@@ -172,15 +179,15 @@ def quoted_regions(text: str) -> list[tuple[int, int]]:
             regions.append((opening.start(), m.end()))
             opening = None
     if opening is not None:
-        return [(0, len(text))]
+        return ((0, len(text)),)
     paired = [m.span() for pattern in (QUOTED_RE, _SINGLE_QUOTED_RE)
               for m in pattern.finditer(text)]
     for m in re.finditer(r"[\"“”‘’']", text):
         inside = any(a <= m.start() < b for a, b in paired + regions)
         apostrophe = m.group() in "'’" and m.start() and (text[m.start() - 1].isalnum())
         if not inside and not apostrophe:
-            return [(0, len(text))]
-    return sorted(set(regions + paired))
+            return ((0, len(text)),)
+    return tuple(sorted(set(regions + paired)))
 
 
 def touches(regions, start: int, end: int) -> bool:
@@ -218,20 +225,47 @@ def _words(text: str) -> tuple:
                  if (w := token.lower().strip(",;:")) and w not in FILLERS)
 
 
+# How far past the marker the rules read. A restated copy of the longest
+# admissible old value (160 characters) and the clause after it fit well
+# inside; reading less keeps every candidate span's cost bounded.
+LOOKAHEAD_CHARS = 1000
+_SENTENCE_STOP_RE = re.compile(SENTENCE_END + r"|\n")
+
+
+_CLAUSE_STOP_RE = re.compile(SENTENCE_END + r"|[,;\n]")
+
+
+@lru_cache(maxsize=256)
+def after_marker(text: str, end: int) -> tuple:
+    """``(sentence_end, words, plain, clause)`` for the replacement after a
+    marker ending at ``end``: where its sentence ends (within
+    LOOKAHEAD_CHARS), that stretch's words as the neighbourhood and the
+    restatement read them, and the plain words of its first clause (to a
+    comma, semicolon, line break or sentence end). Every candidate span
+    ending at one marker shares them."""
+    limit = min(len(text), end + LOOKAHEAD_CHARS)
+    stop = _SENTENCE_STOP_RE.search(text, end, limit)
+    sentence_end = stop.start() if stop else limit
+    start = end
+    while start < limit and text[start] in " \t,;:":
+        start += 1
+    clause = _CLAUSE_STOP_RE.search(text, start, limit)
+    return (sentence_end, _words(text[end:sentence_end]), tuple(plain_words(text[end:sentence_end])),
+            tuple(plain_words(text[start:clause.start() if clause else limit])))
+
+
 def neighbourhood(text: str, span: tuple, marker: int) -> Neighbourhood:
     start, end = span
-    tail = text[end:]
-    stop = re.search(SENTENCE_END + r"|\n", tail)
     # Every rule reads one old value: a marker chained before the
     # proposal's own ("Monday, I mean no") is no part of it.
     old_words = tuple(without_trailing_markers(list(_words(text[start:marker]))))
-    new_words = _words(tail[:stop.start()] if stop else tail)[:4]
+    new_words = after_marker(text, end)[1][:4]
     frame = (old_words[0] if old_words and new_words[:1] == old_words[:1]
              and old_words[0] in FRAME_WORDS else None)
     head = r"[ \t,;:]*"
     if frame:
         head += re.escape(frame) + r"[ \t]+(?:(?:a|an|the)[ \t]+)?"
-    closed = re.match(head + r"\S+?" + CLAUSE_END, tail, re.IGNORECASE) is not None
+    closed = re.compile(head + r"\S+?" + CLAUSE_END, re.IGNORECASE).match(text, end) is not None
     return Neighbourhood(text, start, marker, end, old_words, new_words, frame, closed)
 
 
@@ -275,14 +309,12 @@ def restatement(n: Neighbourhood) -> tuple | None:
     Returns the word counts
     ``(p, a, b, s)``, or None.
     """
-    tail = n.text[n.end:]
-    stop = re.search(SENTENCE_END + r"|\n", tail)
-    sentence_end = n.end + (stop.start() if stop else len(tail))
+    sentence_end, _words_after, new, _clause = after_marker(n.text, n.end)
     # A quoted repeat may be a literal, not the speaker restating.
-    if touches(quoted_regions(n.text), n.start, sentence_end):
+    if touches(_quoted_regions(n.text), n.start, sentence_end):
         return None
     old = without_trailing_markers(plain_words(n.text[n.start:n.marker]))
-    new = plain_words(n.text[n.end:sentence_end])
+    new = list(new)
     p = 0
     while p < min(len(old), len(new)) and old[p] == new[p]:
         p += 1
