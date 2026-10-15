@@ -153,7 +153,7 @@ admission. Shared word classes and the number and unit grammar live in
 | a proposal batch cut off by the output limit applies nothing | `batch_truncated` |
 | the span ends with a marker (on a word boundary) | `no_marker_ending` |
 | not a bare marker | `bare_marker` |
-| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit, and any old value may run longer when the replacement restates it (**Restatements**). A line over 80 characters (`SPAN_MAX_CHARS`) is not read as a proposal | `span_too_long` |
+| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit, and any old value may run longer when the replacement restates it (**Restatements**). A line over 80 characters (`SPAN_MAX_CHARS`) is rejected without being read | `span_too_long` |
 | the text occurs in the window no more often than it was proposed — never resolved to a first match | `ambiguous_occurrence` |
 | resolvable at/after the cursor | `offsets_unresolved` |
 | no overlap with a protected span | `protected_span` |
@@ -221,7 +221,10 @@ existing bound and guard. Ambiguous nominal phrases, apologies and
 preposition attachments do not gain correction permission from their shape
 beyond the repeated-frame rule above.
 
-At most 6 apply per window. Protected spans are rebased **per window**
+At most 6 apply per window (`CORRECTIONS_MAX`); each later line is
+rejected as `too_many_corrections`. Every line the parser does not admit
+is recorded with its reason, so a rejected correction the cleanup applies
+anyway can be put back. Protected spans are rebased **per window**
 (window-local coordinates, this window's texts only) before validation
 and the corrections guard. Deletions apply right-to-left in Python to
 form the model's input; the surviving replacement and reason clause

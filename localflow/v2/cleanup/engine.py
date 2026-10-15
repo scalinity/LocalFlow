@@ -61,6 +61,8 @@ SPAN_MAX_WORDS = 6
 BOUND_SPAN_MAX_WORDS = 10
 # A proposal line longer than this is not a correction span.
 SPAN_MAX_CHARS = 80
+# At most this many corrections apply per window (V1's applied cap).
+CORRECTIONS_MAX = 6
 # Existing direct triggers, including standalone "actually". Ambiguous
 # "no"/"sorry" admission additionally reuses the evidence guards below.
 CORRECTION_MARKER_RE = re.compile(
@@ -867,8 +869,7 @@ def parse_correction_output(output: str, window_text: str,
     accepted: list[AdmittedCorrection] = []
     rejected: list[CorrectionProposal] = []
     lines = [ln.strip().strip('"').strip() for ln in output.splitlines()]
-    lines = [d for d in lines
-             if d and d.upper() != "NONE" and len(d) <= SPAN_MAX_CHARS]
+    lines = [d for d in lines if d and d.upper() != "NONE"]
     if limit_hit:
         return [], [CorrectionProposal(None, False, "batch_truncated", d)
                     for d in lines]
@@ -887,6 +888,14 @@ def parse_correction_output(output: str, window_text: str,
     taken: list[tuple[int, int]] = []
     cursor = 0
     for delete in lines:
+        # Every line not admitted is recorded, so a rejected correction the
+        # cleanup applies anyway can still be put back.
+        if len(delete) > SPAN_MAX_CHARS:
+            rejected.append(CorrectionProposal(None, False, "span_too_long", delete=delete))
+            continue
+        if len(accepted) >= CORRECTIONS_MAX:
+            rejected.append(CorrectionProposal(None, False, "too_many_corrections", delete=delete))
+            continue
         if not SPAN_ENDS_WITH_MARKER_RE.search(delete):
             rejected.append(CorrectionProposal(None, False,
                                                "no_marker_ending", delete=delete))
@@ -969,8 +978,6 @@ def parse_correction_output(output: str, window_text: str,
         taken.append((span[0], restart[1] if restart else span[1]))
         accepted.append(AdmittedCorrection(span, delete, marker, restart, move))
         cursor = taken[-1][1]
-        if len(accepted) >= 6:        # V1's applied cap
-            break
     # A replacement that is itself corrected needs a different edit plan;
     # never move its retained qualifier inside another admitted deletion.
     retained = []
