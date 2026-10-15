@@ -4,7 +4,8 @@ A deletion such as "0.5 seconds no I mean" ends with the marker "I mean",
 and the "no" before it is a marker too, not a lost negation. A deletion
 that ends at "no" in "ten, no, sorry, eleven" leaves "sorry" behind, and
 that "sorry" belongs to the same marker. A negation that is content (in
-the old value, or opening the replacement) is still required.
+the old value, or opening the replacement) is still required: a run never
+takes a marker that ends in "no", and "make that" only before a number.
 
 Run: .venv/bin/python -m unittest tests/v2/cleanup/test_marker_runs.py
 """
@@ -67,6 +68,23 @@ class MarkerRunTests(unittest.TestCase):
         output = "Set the limit to more than 6 jobs."
         self.assertIn("negation_coverage",
                       failures(source, output, [span(source, "5, no wait", "no wait")]))
+
+    def test_a_marker_run_never_takes_a_word_that_opens_the_replacement(self):
+        for source, delete, marker, output, names in (
+            ("Order two more licenses, sorry, wait, no more licenses this quarter.",
+             "two more licenses, sorry", "sorry", "Order more licenses this quarter.",
+             {"coverage", "negation_coverage"}),
+            ("We need three more servers, no wait, actually no more servers, just more memory.",
+             "three more servers, no wait", "no wait", "We need more servers, just more memory.",
+             {"negation_coverage"}),
+            ("Fix the header, sorry, make that change in the footer as well.",
+             "the header, sorry", "sorry", "Fix change in the footer as well.", {"coverage"}),
+        ):
+            with self.subTest(source=source):
+                self.assertTrue(names <= failures(source, output, [span(source, delete, marker)]))
+        source = "We need three more servers, no wait, actually no more servers, just more memory."
+        self.assertEqual(failures(source, "We need no more servers, just more memory.",
+                                  [span(source, "three more servers, no wait", "no wait")]), set())
 
     def test_markers_alone_are_not_an_old_value(self):
         source = "Start the pump, no I mean the valve, at noon."

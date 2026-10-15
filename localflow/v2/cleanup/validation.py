@@ -1550,11 +1550,15 @@ def _restated_value_spans(source: str, output: str, ctx) -> list:
 
 # Markers right after a deletion belong to it while a replacement follows
 # on the same line ("ten, no, sorry, eleven" deleting "ten, no"; "6 am no
-# make that 7 am"). A bare "no" there can open the replacement ("5, no
-# wait, no more than 6"), so it never extends a deletion.
+# make that 7 am"). A marker run never takes a word that can open the
+# replacement: no marker ending in "no" ("5, sorry, wait, no more than 6",
+# "actually no more servers"), and "make that" only before a number ("make
+# that change" is a predicate).
 _NEXT_MARKER_RE = re.compile(
-    rf"[ \t]*(?:,[ \t]*)?(?<!\w)(?:{marker_pattern(CORRECTION_MARKERS - {'no'})})(?!\w)",
-    re.IGNORECASE)
+    r"[ \t]*(?:,[ \t]*)?(?<!\w)(?:"
+    + marker_pattern({m for m in CORRECTION_MARKERS if m.split()[-1] != "no" and m != "make that"})
+    + rf"|make[ \t]+that(?=[ \t]*(?:,[ \t]*)?(?:\d|(?:{alternation(_NUMBERS.keys() | _SCALES.keys())})(?!\w))))"
+    r"(?!\w)", re.IGNORECASE)
 
 
 def _with_trailing_markers(source: str, span) -> tuple:
