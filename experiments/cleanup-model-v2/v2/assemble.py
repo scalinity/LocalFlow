@@ -129,7 +129,8 @@ def cleanup_agreement(source, offsets, window_range, input_text, answer, vocabul
         return "target_uses_deleted_words"
     # Removing "200 megabytes, sorry" from "past 200 megabytes, sorry, past 300" leaves the
     # comma between the two "past"; collapsing them is the created repeat capture refuses.
-    if removes_created_repeat(source[start:end], input_text, answer, adjacent=lambda gap: not re.search(r"\w", gap)):
+    # Any gap between two tokens counts: a word character would have joined a token.
+    if removes_created_repeat(source[start:end], input_text, answer, adjacent=lambda gap: True):
         return "target_drops_created_repeat"
     if unexplained_rewrites(input_text, answer, vocabulary_pairs):
         return "target_rewrites_dictated_words"
