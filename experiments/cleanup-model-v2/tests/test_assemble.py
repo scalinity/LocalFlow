@@ -153,5 +153,31 @@ class CorrectionAnchorTests(unittest.TestCase):
         validation = {**pair('The service is not not up.', 'The service is not up.'), 'split': 'validation'}
         self.assertEqual(capture(validation)['split'], 'validation')
 
+
+class DedupTests(unittest.TestCase):
+    SOURCE = 'Please check the north pump and log the pressure reading before noon today.'
+
+    def test_a_shared_input_or_target_is_a_duplicate_across_splits(self):
+        validation = {'model_input': self.SOURCE, 'target': self.SOURCE}
+        train = {'model_input': self.SOURCE,
+                 'target': 'Inspect the south compressor, replace its worn gasket, and photograph every gauge.'}
+        concat_only = assemble.Dedup()
+        concat_only.add(validation['model_input'] + ' ' + validation['target'], 'validation')
+        # The concatenation alone does not reveal the shared input.
+        self.assertIsNone(concat_only.check(train['model_input'] + ' ' + train['target']))
+        idx = assemble.Dedup()
+        self.assertIsNone(assemble.admit(idx, validation, 'validation'))
+        self.assertEqual(assemble.admit(idx, train, 'train'), 'validation')
+        shared_target = {'model_input': 'Lunch moved to the third floor kitchen because the cafe is closed for repairs.',
+                         'target': self.SOURCE}
+        self.assertEqual(assemble.admit(idx, shared_target, 'train'), 'validation')
+
+    def test_a_pair_never_matches_its_own_input_or_target(self):
+        idx = assemble.Dedup()
+        self.assertIsNone(assemble.admit(idx, {'model_input': 'okay so the build passed',
+                                               'target': 'Okay, so the build passed.'}, 'train'))
+        self.assertIsNone(assemble.admit(idx, {'model_input': self.SOURCE, 'target': self.SOURCE}, 'train'))
+        self.assertEqual(idx.check(self.SOURCE), 'train')
+
 if __name__ == '__main__':
     unittest.main()

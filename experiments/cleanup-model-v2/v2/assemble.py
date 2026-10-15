@@ -33,25 +33,44 @@ class Dedup:
     def __init__(self):
         self.shingles, self.index, self.exact = [], collections.defaultdict(set), {}
 
+    def check(self, text):
+        """The label of an indexed exact or near duplicate, without indexing text."""
+        key = " ".join(text.casefold().split())
+        if key in self.exact:
+            return self.exact[key]
+        sh = synth.shingles(text)
+        for idx in sorted({i for s in sh for i in self.index.get(s, ())}):
+            other, old_label = self.shingles[idx]
+            if synth.jaccard(sh, other) >= 0.6:
+                return old_label
+        return None
+
     def add(self, text, label, check=True):
+        if check:
+            hit = self.check(text)
+            if hit:
+                return hit
         key = " ".join(text.casefold().split())
         sh = synth.shingles(text)
-        if check and key in self.exact:
-            return self.exact[key]
-        candidates = set()
-        if check:
-            for s in sh:
-                candidates.update(self.index.get(s, ()))
-            for idx in candidates:
-                other, old_label = self.shingles[idx]
-                if synth.jaccard(sh, other) >= 0.6:
-                    return old_label
         idx = len(self.shingles)
         self.shingles.append((sh, label))
         self.exact[key] = label
         for s in sh:
             self.index[s].add(idx)
         return None
+
+
+def admit(idx, pair, label):
+    """Check a pair's input, target and their concatenation, then index all three.
+
+    Checking before indexing keeps a pair from matching its own similar target.
+    """
+    texts = (pair["model_input"], pair["target"], pair["model_input"] + " " + pair["target"])
+    hit = next((h for h in map(idx.check, texts) if h), None)
+    if hit is None:
+        for text in texts:
+            idx.add(text, label, check=False)
+    return hit
 
 
 def window_targets(pair, windows):
@@ -176,7 +195,7 @@ def assemble():
     for split in ("test", "validation", "train"):
         kept, caps = [], []
         for p in sorted(grouped[split], key=lambda p:p["family_id"]):
-            hit = idx.add(p["model_input"] + " " + p["target"], split)
+            hit = admit(idx, p, split)
             if hit:
                 stats["rejected"][split+":duplicate:"+hit] += 1; continue
             try:
