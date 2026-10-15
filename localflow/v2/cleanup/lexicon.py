@@ -47,6 +47,16 @@ SUBORDINATORS = frozenset({"after", "because", "before", "if", "once", "since",
 CLAUSE_LINKS = frozenset({"and", "or", "but", "then"}) | SUBORDINATORS
 
 
+# A frame word the speaker repeats before a corrected value ("to twelve,
+# no wait, to fifteen"; "every 18 cycles, sorry, every 27 cycles"), and
+# the prepositions that start a detail after a quantity ("4 liters of
+# dye", "per well", "from the tank").
+FRAME_PREPOSITIONS = frozenset({"as", "at", "by", "for", "from", "in", "of", "on",
+                                "to", "with"})
+FRAME_WORDS = FRAME_PREPOSITIONS | {"every"}
+DETAIL_PREPOSITIONS = FRAME_PREPOSITIONS | {"per", "without"}
+
+
 def alternation(words) -> str:
     """A regex alternation of ``words``, longest first."""
     return "|".join(sorted(words, key=lambda w: (-len(w), w)))

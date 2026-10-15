@@ -270,6 +270,20 @@ class CorrectionRetentionTests(unittest.TestCase):
                 result, _ = clean(source, lossy, deletion)
                 self.assertEqual(result.text, source)
 
+    def test_from_and_by_details_stay_beside_the_replacement(self):
+        for source, deletion, target, lossy in (
+            ("Pour 4 liters from the tank, sorry, 6 liters.", "4 liters from the tank, sorry",
+             "Pour 6 liters from the tank.", "Pour 6 liters."),
+            ("Cut 5 meters by 3 meters, sorry, 6 meters.", "5 meters by 3 meters, sorry",
+             "Cut 6 meters by 3 meters.", "Cut 6 meters."),
+        ):
+            with self.subTest(source=source):
+                result, _ = clean(source, target, deletion)
+                self.assertEqual(result.text, target)
+                self.assertEqual(result.path, "llm")
+                result, _ = clean(source, lossy, deletion)
+                self.assertEqual(result.text, source)
+
     def test_detail_moves_before_a_following_subordinate_clause(self):
         for link in ("when", "once", "since"):
             with self.subTest(link=link):

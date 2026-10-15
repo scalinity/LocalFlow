@@ -14,12 +14,13 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from .lexicon import (CLAUSE_LINKS, FINITE_AUXILIARIES, FUNCTION_WORDS, MODALS,
-                      NEGATION_WORDS, alternation, quoted_regions, touches)
+from .lexicon import (CLAUSE_LINKS, DETAIL_PREPOSITIONS, FINITE_AUXILIARIES,
+                      FRAME_WORDS, FUNCTION_WORDS, MODALS, NEGATION_WORDS, alternation,
+                      quoted_regions, touches)
 
 
 _NUMBER = r"[+-]?\d+(?:[.,]\d+)*"
-_PREPOSITIONS = r"of|for|per|with|without|at|in|on|to"
+_PREPOSITIONS = alternation(DETAIL_PREPOSITIONS)
 _WORD = r"[^\W\d_]+"
 _LINKS = alternation(CLAUSE_LINKS)
 _QUANTITY_DETAIL = re.compile(
@@ -27,8 +28,6 @@ _QUANTITY_DETAIL = re.compile(
     rf"(?:[ \t]+(?!(?:{_PREPOSITIONS})\b){_WORD}){{0,2}})"
     rf"(?P<space>[ \t]+)(?P<detail>(?P<prep>{_PREPOSITIONS})[ \t]+.+)",
     re.IGNORECASE)
-# Frame words a speaker repeats before the replacement quantity.
-_FRAMES = r"as|at|by|for|from|in|of|on|to|with|every"
 _SPELLED_NUMBER = (r"(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|"
                    r"twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|"
                    r"nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
@@ -81,7 +80,7 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
     # ``with 4 liters of dye, sorry, with 6 liters`` the detail binds
     # after the frame, and the replacement repeats it.
     lead, frame = 0, ""
-    leading = re.match(rf"(?i:{_FRAMES})[ \t]+", old)
+    leading = re.match(rf"(?i:{alternation(FRAME_WORDS)})[ \t]+", old)
     if leading and re.match(rf"[ \t,;:]*(?i:{re.escape(leading.group().strip())})[ \t]+",
                             source[end:]):
         lead = leading.end()
@@ -165,7 +164,7 @@ def repeated_restart(source: str, span: tuple, marker_start: int):
     first = re.split("['’]", words[0])[0] if words else ""
     pronoun = first in {"i", "you", "he", "she", "it", "we", "they",
                         "this", "that", "these", "those", "there"}
-    boundaries = set(_PREPOSITIONS.split("|")) | CLAUSE_LINKS | {"only"}
+    boundaries = DETAIL_PREPOSITIONS | CLAUSE_LINKS | {"only"}
     named_predicate = False
     for index, word in enumerate(words):
         if word in boundaries or not re.fullmatch(rf"{_WORD}(?:['’]{_WORD})?", word):

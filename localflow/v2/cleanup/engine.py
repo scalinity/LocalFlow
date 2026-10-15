@@ -27,8 +27,9 @@ from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
-from .lexicon import (FILLERS, FINITE_AUXILIARIES, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE,
-                      NUMBER_WORDS, SCALE_WORDS, TECH_TOKEN_RE)
+from .lexicon import (FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
+                      FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, NUMBER_WORDS, SCALE_WORDS,
+                      TECH_TOKEN_RE, alternation)
 from .correction_retention import (AdmittedCorrection, correction_view,
                                    qualifier_retention, repeated_restart)
 from .validation import (validate, restore_missing_words,
@@ -469,8 +470,6 @@ _WEEKDAYS = frozenset({"monday", "tuesday", "wednesday", "thursday",
 _MONTHS = frozenset({"january", "february", "march", "april", "may",
                      "june", "july", "august", "september", "october",
                      "november", "december"})
-_REPEATED_PREPOSITIONS = frozenset({"as", "at", "by", "for", "from", "in",
-                                   "of", "on", "to", "with"})
 
 
 def _is_value_word(w: str) -> bool:
@@ -534,7 +533,7 @@ def _parallel(x_words: list, y_words: list, text: str, end: int) -> bool:
                 and old[0] not in FUNCTION_WORDS and old[0] not in FILLERS
                 and new[0] not in FUNCTION_WORDS and new[0] not in FILLERS)
     frame = None
-    if x_words[0] == y_words[0] and x_words[0] in _REPEATED_PREPOSITIONS:
+    if x_words[0] == y_words[0] and x_words[0] in FRAME_PREPOSITIONS:
         frame = x_words[0]
         x_words, y_words = x_words[1:], y_words[1:]
         if not x_words or not y_words:
@@ -625,7 +624,7 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
     unrelated function words and clauses remain required source content.
     """
     start, end = span
-    prefix = re.search(r"\b(as|at|by|for|from|in|of|on|to|with|every)[ \t]+$",
+    prefix = re.search(rf"\b({alternation(FRAME_WORDS)})[ \t]+$",
                        text[:start], re.IGNORECASE)
     if prefix is None or prefix.start() < cursor:
         return span
