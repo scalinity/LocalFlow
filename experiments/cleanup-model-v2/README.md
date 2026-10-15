@@ -174,8 +174,9 @@ PYTHONPATH=experiments/cleanup-model-v2 .venv/bin/python experiments/cleanup-mod
 
 It submits one Batch of three built-in fictional cases with 2,800 output tokens
 per request, refuses an estimated maximum of $0.25 or more, and prints JSON
-containing `usage`, usage-derived `actual_usd`, `estimate_max_usd` and three
-statuses. Expected cost is below $0.25. The same name resumes without buying
+containing `usage`, usage-derived `actual_usd`, `estimate_max_usd`, `judged_toys`
+and three statuses. Success requires all three requested toy output IDs.
+Expected cost is below $0.25. The same name resumes without buying
 the toys again. A successful synthetic test is not a live connectivity check.
 
 ### Offline statistics

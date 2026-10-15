@@ -219,6 +219,13 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(first["usage"], {"input_tokens": 300, "output_tokens": 150})
         self.assertAlmostEqual(first["actual_usd"], .00105)
         self.assertEqual(first, second); self.assertEqual(client.creates, 1)
+        incomplete=FakeClient(); answer=incomplete.answer
+        def missing(body):
+            result=answer(body);result["choices"][0]["message"]["content"]='{"verdicts":[]}'
+            return result
+        incomplete.answer=missing
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaisesRegex(RuntimeError,"three valid"):
+            module.smoke(name="missing-toys",root=self.root,client=incomplete)
 
 
 class DataGateTests(unittest.TestCase):

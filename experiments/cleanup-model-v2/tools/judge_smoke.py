@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from v2.judge import SCHEMA, SYSTEM, parse_verdicts
+from v2.judge import SCHEMA, SYSTEM, parse_verdicts, valid_verdicts
 from v2.judge_backends import MODELS, OtherWave, estimate, request_params
 
 
@@ -31,14 +31,15 @@ def smoke(name="toy-smoke-v1", *, root=None, client=None):
         raise RuntimeError("Toy smoke estimate must remain below $0.25")
     wave = OtherWave(name, requests, parse_verdicts, "openai", root=root, client=client)
     wave.run(chunk=3)
+    accepted = valid_verdicts(wave.outcomes, {f"toy-{i}": {f"toy-{i}"} for i in range(3)})
     usage = {k: sum(a.get("usage", {}).get(k, 0) for a in wave.manifest["attempts"])
              for k in ("input_tokens", "output_tokens")}
     result = {"backend": "openai", "model": MODELS["openai"], "usage": usage,
               "actual_usd": sum(a.get("actual_usd", 0) for a in wave.manifest["attempts"]),
-              "estimate_max_usd": maximum,
+              "estimate_max_usd": maximum, "judged_toys": len(accepted),
               "statuses": {rid: out["status"] for rid, out in wave.outcomes.items()}}
     print(json.dumps(result))
-    if len(wave.outcomes) != 3 or any(o["status"] != "succeeded" for o in wave.outcomes.values()):
+    if len(accepted) != 3 or len(wave.outcomes) != 3 or any(o["status"] != "succeeded" for o in wave.outcomes.values()):
         raise RuntimeError("Toy smoke did not return three valid responses; see recorded usage and outcomes")
     return result
 
