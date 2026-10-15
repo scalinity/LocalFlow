@@ -1342,6 +1342,14 @@ def _technical_tokens(source, output, ctx, aligned) -> Component:
         else:
             remaining[match] -= 1
     out_case = _case_words(output)
+    # A validated fusion retains its source word's case ("WGS 84" ->
+    # "WGS84"). With a hyphen or period the case word already stands alone.
+    fused = _fused_identifier_keys(source, _typed_numbers(source), aligned)
+    for item in _typed_numbers(output):
+        if fused(item) != item[2]:
+            letters, digits = _FUSED_RE.fullmatch(item[2][1]).groups()
+            if item[2][1] == letters + digits:
+                out_case[letters] += 1
     case_missing = [t for t, n in _case_words(source, skip).items()
                     if out_case[t] < n]
     # Operator symbols keep their count ("5 - 3" never becomes "5 + 3",

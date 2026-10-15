@@ -24,6 +24,35 @@ def failures(source, output):
 
 
 class FusedIdentifierTests(unittest.TestCase):
+    def test_case_exact_fusions_keep_their_source_case_word(self):
+        for source, output in (
+            ("Use WGS eighty four.", "Use WGS84."),
+            ("Use WGS 84.", "Use WGS84."),
+            ("Use ISO nine thousand.", "Use ISO9000."),
+            ("Copy PROJ four.", "Copy PROJ4."),
+            ("Copy PROJ four.", "Copy PROJ.4."),
+            ("Copy PROJ four.", "Copy PROJ-4."),
+            ("Use iOS 4.", "Use iOS4."),
+            ("Compare WGS with WGS 84.", "Compare WGS with WGS84."),
+        ):
+            with self.subTest(source=source, output=output):
+                self.assertEqual(failures(source, output), set())
+                result = CleanupEngine(
+                    lambda prompt, max_tokens: {"text": output, "output_tokens": 20,
+                                               "limit_hit": False},
+                    model_id="fixture").clean(source)
+                self.assertEqual((result.path, result.text), ("llm", output))
+
+    def test_fusion_preserves_case_and_each_source_occurrence(self):
+        for source, output, component in (
+            ("Use iOS 4.", "Use IOS4.", "numeric_values"),
+            ("Use WGS 84.", "Use wgs84.", "numeric_values"),
+            ("Compare WGS with WGS 84.", "Compare WGS84 with WGS.", "numeric_values"),
+            ("Compare WGS with WGS 84.", "Compare with WGS84.", "coverage"),
+        ):
+            with self.subTest(source=source, output=output):
+                self.assertIn(component, failures(source, output))
+
     def test_a_number_fuses_only_with_its_own_word_occurrence(self):
         for source, wrong, right in (
             ("Copy from channel to channel 3.", "Copy from channel3 to channel.",
