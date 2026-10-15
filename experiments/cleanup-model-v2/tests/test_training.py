@@ -60,7 +60,7 @@ class Model:
 
 
 @contextlib.contextmanager
-def fake_training(root):
+def fake_training(root, updates=None):
     """Run training.run() without a base model: the loop records what it receives."""
     import mlx.core as mx
     adapter = root / 'adapter'
@@ -72,7 +72,7 @@ def fake_training(root):
     def train_loop(model, tok, examples, vexamples, run_dir, **kwargs):
         received.update(examples=examples, **kwargs)
         (run_dir / 'ckpt-00001').mkdir(parents=True)
-        return {'updates': len(kwargs.get('blocks') or [])}
+        return {'updates': len(kwargs['blocks']) if updates is None else updates}
 
     with patch.object(training, 'ART', root), patch.object(training, 'ROOT', root), \
             patch.object(train, 'load_for_training', return_value=(Model(params), Tokenizer())), \
@@ -179,6 +179,39 @@ class TrainingReplayTests(unittest.TestCase):
                 training.run('fixture', 3, initial_adapter=adapter, dataset_dir=data)
             self.assertEqual(read_json(root / 'train/fixture/plan.json')['replay'],
                              {'origin': None, 'presentations': 0, 'unique_pair_ids': []})
+
+class TrainingExposureTests(unittest.TestCase):
+    def test_receipts_record_the_blocks_the_loop_trained(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = dataset(root, n=15)
+            with fake_training(root) as (adapter, received):
+                result = training.run('fixture', 15, initial_adapter=adapter, dataset_dir=data)
+            trained = [[{'pair_id': it['pair_id'], 'family_id': it['family_id']} for it in block]
+                       for block in received['blocks']]
+            self.assertTrue(trained)
+            run_dir = root / 'train/fixture'
+            self.assertEqual(read_json(run_dir / 'exposure-order.json'), trained)
+            self.assertEqual(result['exposure_order'], trained)
+            chosen = [f'train-{i}' for i in range(15)] + ['replay-0', 'replay-0', 'replay-1']
+            self.assertEqual(result['chosen_pair_ids'], chosen)
+            self.assertEqual(read_json(run_dir / 'plan.json')['chosen_pair_ids'], chosen)
+            self.assertEqual(read_json(run_dir / 'completion.json'), result)
+
+    def test_exposure_order_stops_at_the_consumed_blocks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = dataset(root, n=15)
+            with fake_training(root, updates=1) as (adapter, received):
+                result = training.run('fixture', 15, initial_adapter=adapter, dataset_dir=data)
+            self.assertGreater(len(received['blocks']), 1)
+            self.assertEqual(len(result['exposure_order']), 1)
+
+    def test_train_loop_trains_supplied_blocks(self):
+        block = [{'key': 'k', 'prefix': [1], 'suffix': [2] * 11, 'off_s': 1, 'n_tokens': 12, 'n_response': 10}]
+        with self.assertRaisesRegex(ValueError, 'example of 12 tokens'):
+            train.train_loop(None, None, [], [], Path('/nonexistent'), lr=1e-4, warmup=1, grad_accum=1,
+                             checkpoints=1, max_seq_length=10, lora_cfg={}, blocks=[block])
 
 if __name__ == '__main__':
     unittest.main()

@@ -252,7 +252,11 @@ def make_blocks(items: list[dict], size: int, seed: int) -> list[list[dict]]:
 def train_loop(model, tokenizer, train_examples: list[dict], val_examples: list[dict], run_dir: Path, *,
                lr: float, warmup: int, grad_accum: int, checkpoints: int, max_seq_length: int,
                lora_cfg: dict, log_every: int = 10, eval_every: int | None = None,
-               max_updates: int | None = None, time_budget_s: float | None = None, seed: int | None = None) -> dict:
+               max_updates: int | None = None, time_budget_s: float | None = None, seed: int | None = None,
+               blocks: list[list[dict]] | None = None) -> dict:
+    """``blocks`` (from ``make_blocks``) lets a caller record exactly the
+    order trained; when given, it replaces blocks built from ``train_examples``.
+    ``updates`` in the result is the number of leading blocks consumed."""
     import mlx.core as mx
     import mlx.nn as nn
     import mlx.optimizers as optim
@@ -260,14 +264,15 @@ def train_loop(model, tokenizer, train_examples: list[dict], val_examples: list[
     from mlx_lm.tuner.utils import build_schedule
     from .gdn_chunked import CALLS
 
-    items = [split_example(tokenizer, ex) for ex in train_examples]
+    seed = CONFIG["training"]["seed"] if seed is None else seed
+    if blocks is None:
+        blocks = make_blocks([split_example(tokenizer, ex) for ex in train_examples], grad_accum, seed)
+    items = [it for block in blocks for it in block]
     longest = max(it["n_tokens"] for it in items)
     if longest > max_seq_length:
         raise ValueError(f"example of {longest} tokens exceeds max_seq_length {max_seq_length}; refusing to truncate")
     run_dir.mkdir(parents=True, exist_ok=True)
     val_items = [split_example(tokenizer, ex) for ex in val_examples]
-    seed = CONFIG["training"]["seed"] if seed is None else seed
-    blocks = make_blocks(items, grad_accum, seed)
     n_updates = len(blocks) if max_updates is None else min(max_updates, len(blocks))
     schedule = build_schedule({"name": "cosine_decay", "arguments": [lr, max(1, n_updates - warmup), lr * 0.05],
                                "warmup": warmup})

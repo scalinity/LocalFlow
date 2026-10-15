@@ -96,7 +96,8 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         "name":name,"started":utc_now(),"control_old_data_only":control,"new_families":0 if control else count,
         "replay":{"origin":replay_origin,"presentations":len(replay),
                   "unique_pair_ids":sorted({c["pair_id"] for c in replay})},"examples":len(examples),
-        "source_family_ids":[c["family_id"] for c in chosen],"start_offset":start,
+        "source_family_ids":[c["family_id"] for c in chosen],"chosen_pair_ids":[c["pair_id"] for c in chosen],
+        "start_offset":start,
         "train_ids_sha256":sha256_text(json.dumps([c["family_id"] for c in chosen])),
         "dataset_dir":str(dataset),"dataset_freeze_sha256":file_sha256(dataset/"freeze.json") if not control else None,
         "validation_pair_ids":[e["pair_id"] for e in vexamples],"lr":lr,"warmup_updates":warmup,
@@ -117,13 +118,15 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
     if any(not mx.array_equal(v,actual[k]).item() for k,v in expected.items()):
         raise RuntimeError("Adapter restoration mismatch")
     del expected,actual
+    # The loop trains these exact blocks, so the recorded order is the trained one.
     blocks=train.make_blocks([{**train.split_example(tok,e),"pair_id":e["pair_id"],"family_id":e["family_id"]}
                               for e in examples],8,20261013)
-    write_json(run_dir/"exposure-order.json",[[{"pair_id":it["pair_id"],"family_id":it["family_id"]}
-                                              for it in block] for block in blocks])
     result=train.train_loop(model,tok,examples,vexamples,run_dir,lr=lr,warmup=warmup,
                   grad_accum=8,checkpoints=3,max_seq_length=6144,lora_cfg=cfg,log_every=10,
-                  eval_every=max(40,len(examples)//80),seed=20261013)
+                  eval_every=max(40,len(examples)//80),seed=20261013,blocks=blocks)
+    exposure=[[{"pair_id":it["pair_id"],"family_id":it["family_id"]} for it in block]
+              for block in blocks[:result["updates"]]]
+    write_json(run_dir/"exposure-order.json",exposure)
     # Compare the actual saved checkpoints on the same response-token loss.
     # Logging intervals need not coincide with checkpoint boundaries.
     val_items=[train.split_example(tok,e) for e in vexamples]
@@ -146,7 +149,8 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
     write_json(run_dir/'checkpoint-validation.json',{'created':utc_now(),'examples':len(vexamples),
                'prompt_matches_training':{it['key'] for it in val_items}<=trained_prefixes,
                'checkpoints':losses,'lowest_loss':min(losses,key=lambda x:x['val_loss'])['checkpoint']})
-    result.update(completed=utc_now(),adapter=str(run_dir/"final"))
+    result.update(completed=utc_now(),adapter=str(run_dir/"final"),
+                  chosen_pair_ids=[c["pair_id"] for c in chosen],exposure_order=exposure)
     write_json(run_dir/"completion.json",result)
     return result
 
