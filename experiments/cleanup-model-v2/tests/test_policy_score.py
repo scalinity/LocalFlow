@@ -130,8 +130,17 @@ class MinimalTargetTests(unittest.TestCase):
                    ["opening_discourse_comma"])
 
     def test_a_discourse_word_opening_an_invented_paragraph_still_opens_its_sentence(self):
-        self.check("first part okay so we start", "First part\n\nOkay, so we start.", "First part Okay so we start.",
+        self.check("first part okay so we start", "First part\n\nOkay, so we start.", "First part okay so we start.",
                    ["invented_paragraph", "opening_discourse_comma"])
+
+    def test_a_reverted_paragraph_leaves_no_capital_mid_sentence(self):
+        self.check("hi marta please walk the students to the lab", "Hi Marta,\n\nPlease walk the students to the lab.",
+                   "Hi Marta, please walk the students to the lab.", ["invented_paragraph"])
+        # A sentence end before the break keeps the capital, and a name keeps its own.
+        self.check("Check the seals. then log it", "Check the seals.\n\nThen log it.", "Check the seals. Then log it.",
+                   ["invented_paragraph"])
+        self.check("hi team Marta will lead it", "Hi team,\n\nMarta will lead it.", "Hi team, Marta will lead it.",
+                   ["invented_paragraph"])
 
     def test_comma_after_a_discourse_word_inside_a_sentence_is_an_optional_gap_comma(self):
         self.check("I said so they left", "I said so, they left.", "I said so they left.", ["optional_gap_comma"])

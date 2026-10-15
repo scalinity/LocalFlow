@@ -245,7 +245,9 @@ def minimal_target(source, target, vocabulary=(), keep=frozenset()):
     added = sorted(w for w in extra if w not in allowed and not w.isdigit())
     if added:
         return target, [], "adds_undictated_words:" + ",".join(added[:5])
+    from .label_defects import _keeps_capital
     words, gaps = _pieces(target)
+    source_pieces = _pieces(source)[0]
     label_gaps = list(gaps)
     changes = []
     for k, j in _aligned_gaps(source_words, target_words).items():
@@ -253,6 +255,11 @@ def minimal_target(source, target, vocabulary=(), keep=frozenset()):
         if _blank_line(t) and not _blank_line(s):
             t = re.sub(r"[ \t]*\n\s*\n\s*", " ", t)
             changes.append("invented_paragraph")
+            # Without the paragraph the next word no longer opens a sentence ("Hi Marta,
+            # please"): it takes the dictated case unless it is capitalised for itself.
+            if k < len(words) and not re.search(r"[.!?:]", t) and source_pieces[j][:1].islower() \
+                    and words[k][:1].isupper() and not _keeps_capital(words[k], target):
+                words[k] = words[k][:1].lower() + words[k][1:]
         opens_sentence = k == 1 or (k >= 2 and re.search(r"[.!?\n]", label_gaps[k - 1]))
         if not _marks(s) and _marks(t) == ",":
             if k >= 1 and target_words[k - 1] in DISCOURSE and opens_sentence:
