@@ -263,8 +263,9 @@ def restatement(n: Neighbourhood) -> tuple | None:
     hold a content word and are at least two, and, unless they enclose the
     change on both sides, no fewer than the changed old words. ``12 meters,
     no, send the rest to Marta`` restates nothing, and neither does an
-    unchanged repeat, nor a repeat that a quotation, code span or fence
-    touches. Fillers are not words here. Returns the word counts
+    unchanged repeat, a change that drops a negation, nor a repeat that a
+    quotation, code span or fence touches. Fillers are not words here.
+    Returns the word counts
     ``(p, a, b, s)``, or None.
     """
     tail = n.text[n.end:]
@@ -286,6 +287,9 @@ def restatement(n: Neighbourhood) -> tuple | None:
             if len(new) < p + b + s or new[p + b:p + b + s] != old[p + a:]:
                 continue
             changed, kept = old[p:p + a], new[p:p + b]
+            # Dropping a negation is a change of meaning, not a restatement.
+            if any(w in NEGATION_WORDS and w not in kept for w in changed):
+                continue
             same = [w for w, v in zip(changed, kept) if w == v] if a == b else []
             repeated = old[:p] + old[p + a:] + same
             if (len(repeated) >= 2 and any(w not in FUNCTION_WORDS for w in repeated)

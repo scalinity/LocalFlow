@@ -101,6 +101,9 @@ class RestatedAdmissionTests(unittest.TestCase):
              "broad phonemic transcription style for the first drill.",
              "Use the narrow phonetic transcription for the first drill, no wait",
              "span_too_long"),
+            # Dropping a negation changes the meaning.
+            ("Tell them we should not deploy the build, sorry, we should deploy the build "
+             "today.", "we should not deploy the build, sorry", "span_too_long"),
             # A quoted repeat may be a literal.
             ('The sign says "turn left at the north gate, no wait, turn right at the '
              'north gate" in both languages.',

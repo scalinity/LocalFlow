@@ -235,8 +235,8 @@ and, unless they enclose the change on both sides, no fewer than the
 changed old words. Fillers do not count, and a marker chained before the
 proposal's own (`2.5 hours, actually no wait`) belongs to the marker. An
 unchanged repeat, an open replacement (`12 meters, no, send the rest to
-Marta`) and a repeat touched by a quotation, code span or fence restate
-nothing. A restated old value may exceed the word cap and is its own
+Marta`), a change that drops a negation and a repeat touched by a
+quotation, code span or fence restate nothing. A restated old value may exceed the word cap and is its own
 parallel evidence; when the replacement opens with the word before the
 old value (`after 10 minutes of rest, no after 15 minutes of rest`), that
 word goes with the old value. The corrections-pass trigger considers such
