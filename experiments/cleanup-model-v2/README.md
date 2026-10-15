@@ -55,6 +55,9 @@ The modules have these responsibilities:
   from legacy reference metrics and automated meaning judgments.
 - `judge`: assess anonymous outputs for meaning and fact preservation; retain
   known verdicts and retry only missing output IDs in at most two recovery waves.
+  Development selection uses Opus 5.5 and final comparisons use Sonnet 5.5, so
+  a candidate is not scored by the judge it was selected on; each judge
+  identity records its role and model.
 - `report`: render saved measurements into a self-contained offline report.
 - `refinement_report`: render the completed refinement with separate output
   stages, explicit review results, and links to both preserved earlier reports.
