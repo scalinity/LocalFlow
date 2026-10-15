@@ -184,11 +184,13 @@ def build(dataset=DATASET, consistent=False):
     captures, failures, oracle = [], collections.Counter(), collections.Counter()
     vetoed, partial, vetoed_calls = collections.Counter(), collections.Counter(), collections.Counter()
     for row in rows:
+        # An engine_oracle or capture_error already on the row came from an earlier capture of its
+        # source dataset.
+        row.pop("capture_error", None)
         try:
             cap = capture(row, consistent_only=consistent)
         except (ValueError, RuntimeError) as exc:
             failures[str(exc).split(":")[0]] += 1
-            # An engine_oracle already on the row came from an earlier capture of its source dataset.
             row.pop("engine_oracle", None)
             row["capture_error"] = str(exc)
             continue

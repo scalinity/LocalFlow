@@ -96,11 +96,14 @@ class BuildTests(unittest.TestCase):
             root = Path(directory)
             write_jsonl(root / 'refinement' / 'dataset' / 'validation.jsonl', [{**row('dev', True), 'split': 'validation'}])
             failed = {**row('failed', True), 'engine_oracle': {'exact': True, 'path': 'llm'}}
-            freeze, _ = self.build(root, root / 'next', rows=[row('exact', True), failed])
+            recovered = {**row('exact', True), 'capture_error': 'earlier_failure'}
+            freeze, _ = self.build(root, root / 'next', rows=[recovered, failed])
             written = {r['case_id']: r for r in read_jsonl(root / 'next' / 'train.jsonl')}
         self.assertEqual(freeze['stats']['train']['capture_failures'], {'fixture_capture_failure': 1})
         self.assertNotIn('engine_oracle', written['failed'])
         self.assertEqual(written['failed']['capture_error'], 'fixture_capture_failure')
+        # A row that captures now keeps no error from an earlier capture of its source dataset.
+        self.assertNotIn('capture_error', written['exact'])
 
     def test_build_refuses_a_directory_holding_unfrozen_rows(self):
         with tempfile.TemporaryDirectory() as directory:
