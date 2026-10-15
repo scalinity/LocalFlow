@@ -8,6 +8,7 @@ scored identically against the same source and label.
 """
 from __future__ import annotations
 
+import collections
 import difflib
 import re
 
@@ -81,6 +82,61 @@ def score(case, text):
                   for k, j in output_to_source.items())
     return {"words_ok": words_ok, "policy_repair": None if is_noop else policy_ok,
             "invented_breaks": invented, "extra_format_edits": invented + changed}
+
+
+DISCOURSE = {"okay", "ok", "so", "alright", "well", "yeah", "yes", "right", "now", "also", "hi", "hey", "anyway"}
+ORDINALS = re.compile(r"\b(first|firstly|one)\b[ ,].{3,200}?\b(second|secondly|two)\b[ ,]", re.I | re.S)
+LIST_LINE = re.compile(r"(^|\n)[ \t]*(\d+\.|[-•*])[ \t]")
+
+
+def _pieces(text):
+    """Original word strings and the n + 1 gaps around them."""
+    matches = list(WORD.finditer(text))
+    bounds = [0] + [x for m in matches for x in (m.start(), m.end())] + [len(text)]
+    return [m.group() for m in matches], [text[bounds[i]:bounds[i + 1]] for i in range(0, len(bounds), 2)]
+
+
+def minimal_target(source, target, vocabulary=()):
+    """Remove optional polish from a training label without touching its repairs.
+
+    Returns (target, changes, exclusion). Invented paragraph breaks, an added comma
+    after a sentence-opening discourse word and a colon replacing a valid comma after
+    a short label-like opening are reverted to the source. A label that turns spoken
+    ordinals into a list without step labels or a list introduction, or that adds a
+    word the speaker did not say, is excluded rather than rewritten.
+    """
+    if LIST_LINE.search(target) and not LIST_LINE.search(source) and ORDINALS.search(source) \
+            and not re.search(r"\b(step|steps|list)\b", source, re.I):
+        return target, [], "ordinals_made_a_list"
+    source_words, source_gaps = _split(source)
+    target_words, _ = _split(target)
+    allowed = {w.casefold() for v in vocabulary for w in WORD.findall(str(v))}
+    extra = collections.Counter(target_words) - collections.Counter(source_words)
+    added = sorted(w for w in extra if w not in allowed and not w.isdigit())
+    if added:
+        return target, [], "adds_undictated_words:" + ",".join(added[:5])
+    words, gaps = _pieces(target)
+    changes = []
+    for k, j in _aligned_gaps(source_words, target_words).items():
+        s, t = source_gaps[j], gaps[k]
+        if _blank_line(t) and not _blank_line(s):
+            t = re.sub(r"[ \t]*\n\s*\n\s*", " ", t)
+            changes.append("invented_paragraph")
+        opens_sentence = k == 1 or (k >= 2 and re.search(r"[.!?\n]", gaps[k - 1]))
+        if not _marks(s) and _marks(t) == "," and k >= 1 and target_words[k - 1] in DISCOURSE and opens_sentence:
+            t = t.replace(",", "", 1)
+            changes.append("opening_discourse_comma")
+        if _marks(s) == "," and _marks(t) == ":" and "\n" not in t:
+            opening = 0
+            for back in range(k - 1, -1, -1):
+                opening += 1
+                if back == 0 or re.search(r"[.!?\n]", gaps[back]):
+                    break
+            if opening <= 8:
+                t = t.replace(":", ",", 1)
+                changes.append("label_colon")
+        gaps[k] = t
+    return gaps[0] + "".join(w + g for w, g in zip(words, gaps[1:])), changes, None
 
 
 def aggregate(cases, scores):

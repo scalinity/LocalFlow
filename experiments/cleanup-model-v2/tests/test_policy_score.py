@@ -110,3 +110,49 @@ class PolicyAggregateTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class MinimalTargetTests(unittest.TestCase):
+    def check(self, source, target, expected, changes=None, exclusion=None):
+        got, done, excluded = policy_score.minimal_target(source, target)
+        self.assertEqual(excluded, exclusion)
+        if exclusion is None:
+            self.assertEqual(got, expected)
+        if changes is not None:
+            self.assertEqual(done, changes)
+
+    def test_invented_paragraph_is_reverted_and_repairs_stay(self):
+        self.check("Check the seals. then log it", "Check the seals.\n\nThen log it.",
+                   "Check the seals. Then log it.", ["invented_paragraph"])
+
+    def test_existing_paragraph_break_is_kept(self):
+        self.check("First part.\n\nsecond part", "First part.\n\nSecond part.", "First part.\n\nSecond part.", [])
+
+    def test_opening_discourse_comma_is_reverted(self):
+        self.check("okay so the build passed", "Okay, so the build passed.", "Okay so the build passed.",
+                   ["opening_discourse_comma"])
+
+    def test_comma_after_a_discourse_word_inside_a_sentence_stays(self):
+        self.check("I said so they left", "I said so, they left.", "I said so, they left.", [])
+
+    def test_label_colon_is_reverted_but_a_long_clause_keeps_its_colon(self):
+        self.check("Handover note for housekeeping, the dryer is down",
+                   "Handover note for housekeeping: the dryer is down.",
+                   "Handover note for housekeeping, the dryer is down.", ["label_colon"])
+        long = "We checked every cabinet in the east wing twice over, nothing was missing"
+        self.check(long, "We checked every cabinet in the east wing twice over: nothing was missing.",
+                   "We checked every cabinet in the east wing twice over: nothing was missing.", [])
+
+    def test_ordinals_made_a_list_are_excluded(self):
+        self.check("first clear the cache, second rebuild it", "1. Clear the cache.\n2. Rebuild it.", None,
+                   exclusion="ordinals_made_a_list")
+
+    def test_step_labels_may_become_a_list(self):
+        self.check("step one clear the cache step two rebuild it", "1. Clear the cache.\n2. Rebuild it.",
+                   "1. Clear the cache.\n2. Rebuild it.", [])
+
+    def test_added_words_are_excluded_unless_supplied_vocabulary(self):
+        self.check("send report to the team", "Send the report to the team.", None,
+                   exclusion="adds_undictated_words:the")
+        got, _, excluded = policy_score.minimal_target("open cooper netties", "Open Kubernetes.", ["Kubernetes"])
+        self.assertIsNone(excluded)
