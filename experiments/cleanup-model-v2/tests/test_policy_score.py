@@ -196,6 +196,28 @@ class MinimalTargetTests(unittest.TestCase):
         self.check("okay dana these are the notes", "Okay, Dana, these are the notes.",
                    "Okay Dana, these are the notes.", ["opening_discourse_comma"])
 
+    def test_ordinal_words_never_make_a_numbered_list(self):
+        listed = ("to reproduce the scheduling error do these steps. first run the job. second check the log.",
+                  "To reproduce the scheduling error, do these steps.\n1. Run the job.\n2. Check the log.")
+        prose = ("here are the steps for the codec test please follow them in order. first calibrate the headphones. "
+                 "second play the reference clip.",
+                 "Here are the steps for the codec test, please follow them in order. First, calibrate the "
+                 "headphones. Second, play the reference clip.")
+        sequence = ("do the following first load the file then reproject it then write it",
+                    "Do the following:\n1. Load the file.\n2. Reproject it.\n3. Write it.")
+        for source, target in (listed, sequence):
+            with self.subTest(target=target):
+                self.check(source, target, None, exclusion="ordinals_made_a_numbered_list")
+        self.assertIsNone(policy_score.minimal_target(*prose)[2])
+
+    def test_introduced_bullets_and_spoken_step_labels_may_become_lists(self):
+        for source, target in (
+                ("here is the packing list the tent the stove and the water", "Here is the packing list:\n- The tent\n- The stove\n- The water"),
+                ("here is the list first the tent second the stove", "Here is the list:\n- The tent\n- The stove"),
+                ("do these steps step one clear the cache step two rebuild it", "Do these steps:\n1. Clear the cache.\n2. Rebuild it.")):
+            with self.subTest(target=target):
+                self.assertIsNone(policy_score.minimal_target(source, target)[2])
+
     def test_boundaries_newlines_unaligned_and_replacing_commas_stay(self):
         for source, target, vocabulary in (
                 ("check the pump then log it", "Check the pump. Then log it.", ()),

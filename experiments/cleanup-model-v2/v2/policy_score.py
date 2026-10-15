@@ -87,6 +87,10 @@ def score(case, text):
 DISCOURSE = {"okay", "ok", "so", "alright", "well", "yeah", "yes", "right", "now", "also", "hi", "hey", "anyway"}
 ORDINALS = re.compile(r"\b(first|firstly|one)\b[ ,].{3,200}?\b(second|secondly|two)\b[ ,]", re.I | re.S)
 LIST_LINE = re.compile(r"(^|\n)[ \t]*(\d+\.|[-•*])[ \t]")
+# A numbered list comes only from spoken step labels ("step 1 ... step 2"), never from ordinal words.
+NUMBERED_LINE = re.compile(r"(^|\n)[ \t]*\d+\.[ \t]")
+STEP_LABELS = re.compile(r"\bsteps?\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b", re.I)
+SEQUENCE = re.compile(r"\b(first|firstly)\b.{3,400}?\b(then|next|third|finally|lastly)\b", re.I | re.S)
 
 
 def _pieces(text):
@@ -179,12 +183,16 @@ def minimal_target(source, target, vocabulary=(), keep=frozenset()):
     always reverts (opening_discourse_comma), elsewhere it reverts (optional_gap_comma)
     unless keep holds the source gap's index or the comma sets off an addressed
     person. Commas the dictation already had are never touched. A label that turns
-    spoken ordinals into a list without step labels or a list introduction, or that
-    adds a word the speaker did not say, is excluded rather than rewritten.
+    spoken ordinals into a list without step labels or a list introduction, or into a
+    numbered list without spoken step labels, or that adds a word the speaker did not
+    say, is excluded rather than rewritten.
     """
     if LIST_LINE.search(target) and not LIST_LINE.search(source) and ORDINALS.search(source) \
             and not re.search(r"\b(step|steps|list)\b", source, re.I):
         return target, [], "ordinals_made_a_list"
+    if NUMBERED_LINE.search(target) and not NUMBERED_LINE.search(source) and not STEP_LABELS.search(source) \
+            and (ORDINALS.search(source) or SEQUENCE.search(source)):
+        return target, [], "ordinals_made_a_numbered_list"
     source_words, source_gaps = _split(source)
     target_words, _ = _split(target)
     allowed = {w.casefold() for v in vocabulary for w in WORD.findall(str(v))}
