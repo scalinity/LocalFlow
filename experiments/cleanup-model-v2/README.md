@@ -217,3 +217,36 @@ Input shapes for the CLI:
 
 All analysis subcommands accept `--output FILE` (otherwise JSON on stdout).
 They make no API calls and cost $0.
+
+### Human annotation packets
+
+`v2.research_pairs CASES --systems X Y Z --n 150 --seed 20261015` reads
+`eval/development-{X,Y,Z}.jsonl` and writes, by default,
+`artifacts/research/annotation/pairs.jsonl` and `pairs-key.json`. Cost: $0.
+Use `--stage model_only` to select that stage instead of delivered, and
+`--output-dir` for a separate packet. Non-development paths/prefixes/splits,
+duplicate cases, mismatched populations and missing/empty outputs are refused.
+Every system must cover the entire supplied development population. An
+existing packet is accepted only if both files reproduce exactly.
+
+Sampling is proportional by category, using largest remainder with category
+name tie-breaking. Within-category sampling, the two-system choice, A/B order,
+opaque pair IDs, duplicate selection and final packet shuffle share the fixed
+seed. System and case input order do not affect the packet. Small strata can
+receive zero cases when N is small. N is the number of distinct cases; an
+additional `ceil(0.10*N)` exact duplicates are added (150 + 15 = 165 lines).
+Duplicates keep the same A/B orientation and text, with a new opaque pair ID.
+
+Each public-to-the-annotator line has exactly:
+
+```json
+{"pair_id":"opaque","case_id":"case","source":"dictation","a":{"text":"output"},"b":{"text":"output"},"vocabulary":[]}
+```
+
+No system metadata or output IDs appear in the pairs file. Keep the key out of
+the annotation UI: it is a map from pair ID to
+`{"a_system":"X","b_system":"Y","a_output_id":"o...","b_output_id":"o...","duplicate_of":null}`.
+For duplicates, `duplicate_of` names the original pair. Output IDs follow
+`judge.run`'s canonical case/system/stage hash; the agreement adapter uses
+expanded case/system/stage rows as well, since the judge deduplicates equal text.
+Do not regenerate or replace a packet while annotations refer to its IDs.
