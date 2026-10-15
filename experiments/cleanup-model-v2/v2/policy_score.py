@@ -253,7 +253,8 @@ def minimal_target(source, target, vocabulary=(), keep=frozenset()):
             if k >= 1 and target_words[k - 1] in DISCOURSE and opens_sentence:
                 t = t.replace(",", "", 1)
                 changes.append("opening_discourse_comma")
-            elif "\n" not in s + t and j not in keep and not _sets_off_addressee(words, label_gaps, k):
+            # The label's own gap decides: a comma it gave a line break stays though the break reverted.
+            elif "\n" not in s + label_gaps[k] and j not in keep and not _sets_off_addressee(words, label_gaps, k):
                 # A comma between two touching words reverts to the source gap, keeping them two words.
                 t = t.replace(",", "", 1) or s
                 changes.append("optional_gap_comma")

@@ -139,6 +139,10 @@ class MinimalTargetTests(unittest.TestCase):
         self.check("okay so run the batch then inspect it", "Okay, so run the batch, then inspect it.",
                    "Okay so run the batch then inspect it.", ["opening_discourse_comma", "optional_gap_comma"])
 
+    def test_a_comma_the_label_gave_a_line_break_stays_when_the_break_reverts(self):
+        self.check("the pump is primed the valve is closed", "The pump is primed,\n\nthe valve is closed.",
+                   "The pump is primed, the valve is closed.", ["invented_paragraph"])
+
     def test_a_comma_between_touching_words_reverts_to_the_source_gap(self):
         self.check("pay 1 000 euros", "Pay 1,000 euros.", "Pay 1 000 euros.", ["optional_gap_comma"])
 
