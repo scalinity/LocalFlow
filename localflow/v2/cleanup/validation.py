@@ -1289,6 +1289,12 @@ def _marker_run_start(source: str, span) -> int:
     return run
 
 
+def _hyphen_joined(text: str, start: int, end: int) -> bool:
+    """The word at [start, end) is joined to a letter by a hyphen."""
+    return bool(re.match(r"[-\u2010\u2011][^\W\d_]", text[end:end + 2])
+                or re.search(r"[^\W\d_][-\u2010\u2011]$", text[max(0, start - 2):start]))
+
+
 def _word_multiset_survival(source, output, words: frozenset,
                             name: str, ctx) -> Component:
     """A multiset of marked words (negation, uncertainty) is preserved
@@ -1317,10 +1323,16 @@ def _word_multiset_survival(source, output, words: frozenset,
             if a[2] in words and position < len(replacement) \
                     and replacement[position][2] == a[2]:
                 restated.add(a[0])
+    # A negation word hyphenated into a name ("--no-cache", "a no-go")
+    # negates no clause; coverage and novelty still keep the word itself.
+    def counted(text, s, e, w):
+        return not (words is NEGATION_WORDS and _hyphen_joined(text, s, e))
+
     src = [(s, e, w) for s, e, w in atoms
            if w in words and not _overlaps(markers + ctx.frame_spans, s, e)
-           and s not in restated]
-    remaining = Counter(w for _, _, w in _word_atoms(output) if w in words)
+           and s not in restated and counted(source, s, e, w)]
+    remaining = Counter(w for s, e, w in _word_atoms(output)
+                        if w in words and counted(output, s, e, w))
     missing = []
     for s, e, w in src:
         if remaining[w] > 0:
