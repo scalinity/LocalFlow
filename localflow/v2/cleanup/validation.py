@@ -1551,6 +1551,68 @@ def restore_missing_words(source: str, output: str, *,
     return text, len(missing)
 
 
+def restore_source_spans(source: str, output: str, spans: list, *,
+                         vocabulary_pairs: tuple | None = None,
+                         continued_list_start: int | None = None,
+                         correction_spans: list | None = None,
+                         protected_positions: list | None = None) -> tuple | None:
+    """Put back, byte for byte, source spans the output dropped whole.
+
+    ``spans`` are source ranges, such as rejected corrections, that the
+    candidate must not have removed. A span is restored only when the
+    output lacks the span's words (restoring them keeps every word within
+    its source count) and the source words on both sides of the span are
+    aligned and adjacent in the output: the output text between those two
+    words, which has no line break, becomes the source text between them.
+    Aligning with the spans set aside binds a restated value to the
+    replacement, not to the dropped copy. Returns
+    ``(repaired text, spans restored)``, or None when nothing qualifies;
+    the caller validates the result in full.
+    """
+    ctx = _auth_context(source, output, vocabulary_pairs, continued_list_start,
+                        correction_spans, protected_positions)
+    aside = replace(ctx, correction_spans=ctx.correction_spans
+                    + [(start, end, end) for start, end in spans])
+    _missing, pairs, src_atoms, out_atoms = _align(source, output, aside)
+    placed = dict(pairs)
+    room = Counter(w for _s, _e, w in src_atoms) - Counter(w for _s, _e, w in out_atoms)
+    edits = []
+    for start, end in spans:
+        inside = [i for i, atom in enumerate(src_atoms) if start <= atom[0] < end]
+        words = Counter(src_atoms[i][2] for i in inside)
+        if not inside or words - room:
+            continue
+        before, after = inside[0] - 1, inside[-1] + 1
+        left = placed.get(before) if before >= 0 else -1
+        right = placed.get(after) if after < len(src_atoms) else len(out_atoms)
+        if left is None or right is None or right != left + 1:
+            continue
+        out_from = out_atoms[left][1] if left >= 0 else 0
+        out_to = out_atoms[right][0] if right < len(out_atoms) else len(output)
+        src_from = src_atoms[before][1] if before >= 0 else 0
+        src_to = src_atoms[after][0] if after < len(src_atoms) else len(source)
+        if "\n" in output[out_from:out_to] or "\n" in source[src_from:src_to]:
+            continue
+        if right < len(out_atoms):
+            # A word capitalized only because it began the output's sentence
+            # takes back its source spelling once restored text precedes it.
+            word = output[out_atoms[right][0]:out_atoms[right][1]]
+            spoken = source[src_atoms[after][0]:src_atoms[after][1]]
+            if (word != spoken and word == spoken[:1].upper() + spoken[1:]
+                    and spoken.lower() != "i" and not spoken.lower().startswith(("i'", "i’"))
+                    and (left < 0 or re.search(r"[.!?][\"'”’)]*\s*$", output[out_from:out_to]))
+                    and not re.search(r"[.!?][\"'”’)]*\s*$", source[src_from:src_to])):
+                out_to, src_to = out_atoms[right][1], src_atoms[after][1]
+        edits.append((out_from, out_to, source[src_from:src_to]))
+        room -= words
+    if not edits:
+        return None
+    text = output
+    for out_from, out_to, restored in sorted(edits, reverse=True):
+        text = text[:out_from] + restored + text[out_to:]
+    return text, len(edits)
+
+
 def validate(source: str, output: str, *,
              protected: list | None = None,
              vocabulary_pairs: tuple | None = None,

@@ -33,7 +33,7 @@ from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIE
                       alternation, neighbourhood)
 from .correction_retention import (AdmittedCorrection, correction_view, qualifier_retention,
                                    quantity_binds, quantity_shaped, repeated_restart)
-from .validation import (validate, restore_missing_words,
+from .validation import (validate, restore_missing_words, restore_source_spans,
                          restore_restriction_punctuation, ValidationReport)
 
 # Tested input/output budget (S13 "tested context/output budget"); the
@@ -47,7 +47,7 @@ WINDOW_MAX_WORDS = 200
 SALVAGE_MAX_WORDS = 8
 SALVAGE_MAX_SHARE = 0.10
 # A repair chain is at most one step per repair kind.
-SALVAGE_MAX_STEPS = 3
+SALVAGE_MAX_STEPS = 4
 
 # Correction-span guards shared with V1 semantics: a valid deletion
 # ends with the correction marker, is short, and never a bare marker.
@@ -449,6 +449,7 @@ class CorrectionProposal:
     span: tuple[int, int] | None   # resolved [start, end) when resolved
     resolved: bool
     reason: str | None = None      # rejection reason when unresolved
+    delete: str | None = None      # the proposed text
 
 
 def correction_marker_start(window_text: str, span: tuple) -> int:
@@ -719,8 +720,8 @@ def parse_correction_output(output: str, window_text: str,
     lines = [d for d in lines
              if d and d.upper() != "NONE" and len(d) <= SPAN_MAX_CHARS]
     if limit_hit:
-        return [], [CorrectionProposal(None, False, "batch_truncated")
-                    for _ in lines]
+        return [], [CorrectionProposal(None, False, "batch_truncated", d)
+                    for d in lines]
 
     def occurrences(delete):
         # Case-insensitive matching on the ORIGINAL text: re.IGNORECASE
@@ -738,15 +739,15 @@ def parse_correction_output(output: str, window_text: str,
     for delete in lines:
         if not SPAN_ENDS_WITH_MARKER_RE.search(delete):
             rejected.append(CorrectionProposal(None, False,
-                                               "no_marker_ending"))
+                                               "no_marker_ending", delete=delete))
             continue
         if delete.lower() in BARE_MARKERS:
-            rejected.append(CorrectionProposal(None, False, "bare_marker"))
+            rejected.append(CorrectionProposal(None, False, "bare_marker", delete=delete))
             continue
         over_cap = len(delete.split()) > SPAN_MAX_WORDS
         if over_cap and not (len(delete.split()) <= BOUND_SPAN_MAX_WORDS
                              and _quantity_proposal(delete)):
-            rejected.append(CorrectionProposal(None, False, "span_too_long"))
+            rejected.append(CorrectionProposal(None, False, "span_too_long", delete=delete))
             continue
         occ = occurrences(delete)
         recovered = None
@@ -759,7 +760,7 @@ def parse_correction_output(output: str, window_text: str,
                 occ = recovered_occ
         if len(occ) > proposed[delete.lower()]:
             rejected.append(CorrectionProposal(None, False,
-                                               "ambiguous_occurrence"))
+                                               "ambiguous_occurrence", delete=delete))
             continue
         cand = next((m for m in occ
                      if m.start() >= cursor
@@ -767,44 +768,44 @@ def parse_correction_output(output: str, window_text: str,
                                  for a, b in taken)), None)
         if cand is None:
             rejected.append(CorrectionProposal(
-                None, False, "offsets_unresolved"))
+                None, False, "offsets_unresolved", delete=delete))
             continue
         if recovered is not None:
             delete = window_text[cand.start():cand.end()]
             if len(delete) > SPAN_MAX_CHARS or len(delete.split()) > SPAN_MAX_WORDS:
                 rejected.append(CorrectionProposal(
-                    (cand.start(), cand.end()), False, "span_too_long"))
+                    (cand.start(), cand.end()), False, "span_too_long", delete=delete))
                 continue
         span = _include_repeated_frame(window_text, (cand.start(), cand.end()), cursor)
         if span[0] != cand.start():
             delete = window_text[span[0]:span[1]]
             if len(delete.split()) > SPAN_MAX_WORDS:
-                rejected.append(CorrectionProposal(span, False, "span_too_long"))
+                rejected.append(CorrectionProposal(span, False, "span_too_long", delete=delete))
                 continue
         if any(a < span[1] and b > span[0] for a, b, *_ in protected_spans):
             rejected.append(CorrectionProposal(span, False,
-                                               "protected_span"))
+                                               "protected_span", delete=delete))
             continue
         marker = correction_marker_start(window_text, span)
         shape = neighbourhood(window_text, span, marker)
         if over_cap and not quantity_binds(shape):
-            rejected.append(CorrectionProposal(span, False, "span_too_long"))
+            rejected.append(CorrectionProposal(span, False, "span_too_long", delete=delete))
             continue
         reason = _evidence_reason(shape)
         if reason:
-            rejected.append(CorrectionProposal(span, False, reason))
+            rejected.append(CorrectionProposal(span, False, reason, delete=delete))
             continue
         restart, _reason = repeated_restart(window_text, span, marker)
         if restart is not None and any(
                 a < restart[1] and b > restart[0] for a, b, *_ in protected_spans):
-            rejected.append(CorrectionProposal(span, False, "protected_restart"))
+            rejected.append(CorrectionProposal(span, False, "protected_restart", delete=delete))
             continue
         move, reason = qualifier_retention(shape)
         if move is not None and any(a < move[2] < b
                                     for a, b, *_ in protected_spans):
             reason = "protected_retention_anchor"
         if reason:
-            rejected.append(CorrectionProposal(span, False, reason))
+            rejected.append(CorrectionProposal(span, False, reason, delete=delete))
             continue
         taken.append((span[0], restart[1] if restart else span[1]))
         accepted.append(AdmittedCorrection(span, delete, marker, restart, move))
@@ -819,10 +820,28 @@ def parse_correction_output(output: str, window_text: str,
                 other.span[0] < correction.move[2] and other.span[1] > correction.span[1]
                 for other in accepted if other is not correction):
             rejected.append(CorrectionProposal(
-                correction.span, False, "overlapping_retention_replacement"))
+                correction.span, False, "overlapping_retention_replacement",
+                delete=correction.delete))
         else:
             retained.append(correction)
     return retained, rejected
+
+
+def _rejected_spans(text: str, rejected: list, accepted: list) -> list:
+    """Source spans of rejected proposals that resolve to one exact place,
+    clear of the admitted corrections."""
+    spans = []
+    for proposal in rejected:
+        span = proposal.span
+        if span is None and proposal.delete:
+            found = [m.span() for m in re.finditer(
+                r"(?<!\w)" + re.escape(proposal.delete) + r"(?!\w)", text, re.IGNORECASE)]
+            span = found[0] if len(found) == 1 else None
+        if span is not None and not any(
+                a < span[1] and b > span[0]
+                for a, b in [c.span for c in accepted] + spans):
+            spans.append(span)
+    return spans
 
 
 def _has_correction_marker(text: str) -> bool:
@@ -1057,12 +1076,12 @@ class CleanupEngine:
                           payload_base: dict, observations: list,
                           depth: int, parent_pass_id: str | None):
         """Provisional correction deletions: returns (corrected text,
-        AdmittedCorrection records, record). Nothing here is
+        AdmittedCorrection records, rejected proposals, record). Nothing here is
         final — the window's validation against the ORIGINAL text
         settles each proposal as selected or rolled back."""
         text = window.text
         if not _has_correction_marker(text):
-            return text, [], None
+            return text, [], [], None
         res, rec = self._generate(
             payload_base, kind="corrections",
             window_range=(window.start, window.end),
@@ -1099,7 +1118,7 @@ class CleanupEngine:
                 {"span": list(c.restart), "correction_span": list(c.span)}
                 for c in accepted if c.restart]
         observations.append(record)
-        return corrected, accepted, record
+        return corrected, accepted, rejected, record
 
     # ---- one window ------------------------------------------------------
 
@@ -1114,7 +1133,7 @@ class CleanupEngine:
         # reject every window that lacks another window's tokens).
         rng = (window.start, window.end)
         protected_texts = [(window.text[s:e], kind) for s, e, kind in spans]
-        corrected, corr_spans, corr_record = self._corrections_pass(
+        corrected, corr_spans, corr_rejected, corr_record = self._corrections_pass(
             window, spans, payload_base, observations, depth,
             parent_pass_id)
         payload = dict(payload_base)
@@ -1146,6 +1165,10 @@ class CleanupEngine:
         protected_positions = [(s, e) for s, e, _k in spans]
         validation_text, validation_corr, validation_positions = correction_view(
             window.text, corr_spans, protected_positions)
+        # Rejected corrections, in the comparison view, that the cleanup
+        # output may have applied anyway.
+        unresolved = correction_view(
+            window.text, corr_spans, _rejected_spans(window.text, corr_rejected, corr_spans))[2]
         if res.get("limit_hit"):
             # Output-limit termination: the truncated output is never
             # pasted and this pass's corrections roll back. Retry the
@@ -1271,6 +1294,12 @@ class CleanupEngine:
                        correction_spans=validation_corr,
                        protected_positions=validation_positions)
 
+        def rejected_corrections(candidate, found):
+            # Each rejected correction the output applied is put back exactly
+            # as dictated; the window keeps the rest of its cleanup.
+            fixed = restore_source_spans(validation_text, candidate, unresolved, **context)
+            return None if fixed is None else (fixed[0], {"rejected_corrections_restored": fixed[1]})
+
         def word_boundary(candidate, found):
             fixed = _restore_source_word_boundary(validation_text, candidate, found)
             return None if fixed is None else (fixed, {"source_word_boundary_restored": True})
@@ -1309,7 +1338,8 @@ class CleanupEngine:
         for _step in range(SALVAGE_MAX_STEPS):
             if found.accepted:
                 break
-            for repair in (word_boundary, restriction_scope, missing_words):
+            for repair in (rejected_corrections, word_boundary, restriction_scope,
+                           missing_words):
                 step = repair(candidate, found)
                 if step is not None and _failures(check(step[0])) < _failures(found):
                     candidate, found = step[0], check(step[0])
