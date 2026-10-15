@@ -159,11 +159,13 @@ class StepLabelTests(unittest.TestCase):
 class QuestionTests(unittest.TestCase):
     def test_a_question_or_request_kept_with_a_period_is_a_defect(self):
         for target in ('Can you check the valve.', 'Did the batch finish.', 'Where is the spare valve.',
-                       'For the second run, should we use the old filter.'):
+                       'For the second run, should we use the old filter.', 'Do these valves leak.'):
             with self.subTest(target=target):
                 self.assertTrue(defects.question_keeps_period('', target, []))
         for target in ('Can you check the valve?', 'Do not touch the valve.', 'The valve is closed.',
-                       'Please check the valve.'):
+                       'Please check the valve.', 'First, have the patient roll the liner inside out.',
+                       'For the handover, have the students transcribe it.', 'Then do this before the meeting.',
+                       'Log the rows, and have it report the counts.', 'Finally, when everything is done, post it.'):
             with self.subTest(target=target):
                 self.assertIsNone(defects.question_keeps_period('', target, []))
 

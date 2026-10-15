@@ -201,7 +201,9 @@ SUBJECT = (r"(?:you|we|i|they|he|she|it|there|the|this|that|these|those|a|an|any
 LEAD = (r"(?:(?:and|also|so|okay|ok|but|or|then|now|well|oh|hey|right|alright|first|second|third|finally|"
         r"quick question|one more thing)[,:]?\s+)*")
 PHRASE = r"(?:(?:for|in|on|about|with|regarding|after|before|during)\s[^,?.]{1,70},\s*)"
-PRONOUN = r"(?:i|we|you|they|he|she|it|there|the|a|an|this|that|these|those|my|our|your|their)"
+# A subject between a wh-word and its verb makes a clause, not a question: "when everything is done, post it".
+PRONOUN = (r"(?:i|we|you|they|he|she|it|there|the|a|an|this|that|these|those|my|our|your|their|everything|everyone|"
+           r"everybody|anything|anyone|anybody|something|someone|somebody|nothing|nobody)")
 SUBJECT_PRONOUN = "(?:" + "|".join(sorted(SUBJECT_PRONOUNS)) + ")"
 WH = r"(?:who|what|which|why|when|where|how)"
 QUESTIONS = [
@@ -211,7 +213,10 @@ QUESTIONS = [
     re.compile(rf",\s+(?:and\s+|or\s+)?{AUX}\s+(?:you|we|i|they|it|there|anyone)\b", re.I),
     re.compile(rf",\s+(?:and\s+|or\s+)?{WH}\b(?:\s+(?!{PRONOUN}\b)[\w'-]+){{0,2}}\s+{AUX}\s+{SUBJECT_PRONOUN}\b", re.I),
 ]
-IMPERATIVE = re.compile(r"^(?:\W*)(?:do not|don't|please|have the|have them|have someone|have a)\b", re.I)
+IMPERATIVE = re.compile(rf"^\W*{LEAD}{PHRASE}?(?:do not|don't|please|have the|have them|have someone|have a|have each|"
+                        r"have every)\b", re.I)
+# A singular subject takes "does" and "has", so these never ask: "do this first", ", and have it log the rows".
+NEVER_QUESTION = re.compile(r"\b(?:do\s+(?:it|this|that)|have\s+it)\b", re.I)
 BECAUSE_CLAUSE = re.compile(r"\bbecause\b(?!\s+of\b)", re.I)
 NUMBER_WORDS = {w: n for n, w in enumerate("one two three four five six seven eight nine ten".split(), 1)}
 
@@ -219,7 +224,8 @@ NUMBER_WORDS = {w: n for n, w in enumerate("one two three four five six seven ei
 def is_direct_question(sentence):
     """Whether a sentence reads as a direct question or a "Can/Could/Would/Will you" request."""
     sentence = sentence.strip().strip('"“”')
-    return not IMPERATIVE.search(sentence) and any(q.search(sentence) for q in QUESTIONS)
+    probe = NEVER_QUESTION.sub("x", sentence)
+    return not IMPERATIVE.search(sentence) and any(q.search(probe) for q in QUESTIONS)
 
 
 def _sentences(text):
