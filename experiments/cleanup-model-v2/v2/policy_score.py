@@ -253,7 +253,7 @@ def minimal_target(source, target, vocabulary=(), keep=frozenset()):
         if _blank_line(t) and not _blank_line(s):
             t = re.sub(r"[ \t]*\n\s*\n\s*", " ", t)
             changes.append("invented_paragraph")
-        opens_sentence = k == 1 or (k >= 2 and re.search(r"[.!?\n]", gaps[k - 1]))
+        opens_sentence = k == 1 or (k >= 2 and re.search(r"[.!?\n]", label_gaps[k - 1]))
         if not _marks(s) and _marks(t) == ",":
             if k >= 1 and target_words[k - 1] in DISCOURSE and opens_sentence:
                 end = k  # the addressee's last word: "Marta Lopez", "Jean-Luc"
