@@ -114,3 +114,64 @@ reject a pair without proving that its target changes meaning. Checker
 agreement is not human ground truth or evidence of downstream equivalence.
 The recorded spending allowance and reservations apply to every batch,
 including the generator comparison and final checks.
+
+## Research judge backends (lead-run only)
+
+Implementation and tests make no live calls. `v2.judge --backend anthropic` is
+the default, retaining Opus 5.5 for development and Sonnet 5.5 for final. Other
+defaults are `gpt-6.1-sol` on OpenAI Batch and
+`meta/muse-spark-1.3-contributor` on OpenRouter chat completions. Every vendor
+gets the exact same system prompt, blinded view, schema and response parser.
+Both new default models support JSON-schema output; an unsupported model or
+schema is refused, without changing the prompt or silently switching vendors.
+
+Keys are read in-process from `JUDGES_OPENAI_API_KEY` / `OPENROUTER_API_KEY`,
+first in the environment, then in the same ignored repo-relative `.env` used
+by the existing experiment. Never put keys on a command line. New-vendor
+receipts live under `artifacts/judge/<backend>/<name>/`: `requests.json`,
+`manifest.json`, `results-*.json`, `outcomes.json`, `blind-map.json`,
+`identity.json` and expanded `verdicts.jsonl`. Identity includes backend,
+model, UTC date, exact initial request parameters, recovery token limits and
+the SHA-256 of the unchanged system prompt. Each verdict row points to that
+identity. Anthropic keeps its existing output paths and ledger.
+
+`artifacts/judge/ledger-other.json` separately caps OpenAI at $40 and
+OpenRouter at $5, counting settled costs plus reserved and outstanding costs.
+The estimate uses one token per UTF-8 request byte plus 1,500 tokens of
+headroom, and the full allowed output tokens. Prices per million are $1/$5
+input/output for OpenAI Batch and $0.10/$0.20 for OpenRouter. Returned usage,
+including reasoning/output tokens and failed or malformed completions, settles
+the reservation. Cache discounts are not assumed. Only the two priced default
+models are accepted. Every new submission prints its estimate before sending.
+
+Rerun the identical command/name to resume. Requests changing under an existing
+name are refused. OpenAI can adopt a lost Batch-create response only by its
+exact recorded metadata; matching batch size is insufficient. Unknown
+submissions, missing result rows or missing usage retain the reservation and
+stop. OpenRouter has no Batch/retrieval equivalent here, so an ambiguous
+completion stops for manual reconciliation. Do not delete a manifest or change
+the name to bypass uncertainty. Explicit per-request errors and rejected
+creation requests settle at zero; incomplete terminal batches stay reserved.
+
+OpenRouter Contributor accepts only explicitly synthetic development cases;
+real/fresh/audio/final/test/locked paths or prefixes, final roles, other origins
+and non-development splits are refused before submission. This restriction
+follows the [Contributor data-use disclosure](https://openrouter.ai/meta/muse-spark-1.3-contributor).
+OpenAI final judging requires both `--confirm-final-eval` and the lead-created
+`artifacts/research/prereg/FROZEN`, in addition to all existing experiment gates.
+The tooling never creates that file. API envelope references:
+[OpenAI Batch](https://developers.openai.com/api/docs/guides/batch),
+[GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), and
+[OpenRouter structured outputs](https://openrouter.ai/docs/guides/features/structured-outputs).
+
+From the repository root, the lead can run the toy-only live check once:
+
+```sh
+PYTHONPATH=experiments/cleanup-model-v2 .venv/bin/python experiments/cleanup-model-v2/tools/judge_smoke.py --name toy-smoke-v1
+```
+
+It submits one Batch of three built-in fictional cases with 2,800 output tokens
+per request, refuses an estimated maximum of $0.25 or more, and prints JSON
+containing `usage`, usage-derived `actual_usd`, `estimate_max_usd` and three
+statuses. Expected cost is below $0.25. The same name resumes without buying
+the toys again. A successful synthetic test is not a live connectivity check.
