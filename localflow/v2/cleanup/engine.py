@@ -27,6 +27,8 @@ from dataclasses import dataclass, field
 
 from . import document_nodes as dn
 from . import prompts
+from .lexicon import (FILLERS, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, NUMBER_WORDS,
+                      SCALE_WORDS, TECH_TOKEN_RE)
 from .correction_retention import (AdmittedCorrection, correction_view,
                                    qualifier_retention, repeated_restart)
 from .validation import (validate, restore_missing_words,
@@ -453,7 +455,6 @@ def correction_marker_start(window_text: str, span: tuple) -> int:
 
 
 def _has_content(text: str) -> bool:
-    from .validation import FUNCTION_WORDS
     return any(w.lower() not in FUNCTION_WORDS and
                w.lower() not in BARE_MARKERS
                for w in re.findall(r"[^\W_]+(?:['’][^\W_]+)*", text))
@@ -473,8 +474,7 @@ _REPEATED_PREPOSITIONS = frozenset({"as", "at", "by", "for", "from", "in",
 
 
 def _is_value_word(w: str) -> bool:
-    from .validation import _NUMBERS, _SCALES
-    return any(c.isdigit() for c in w) or w in _NUMBERS or w in _SCALES
+    return any(c.isdigit() for c in w) or w in NUMBER_WORDS or w in SCALE_WORDS
 
 
 _METRIC_LENGTH = re.compile(
@@ -518,7 +518,6 @@ def _parallel(x_words: list, y_words: list, text: str, end: int) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
     both months, or they share a content word ("two engineers … three
     engineers"). ``text[end:]`` is the source after the marker."""
-    from .validation import FUNCTION_WORDS, FILLERS, _IDENTIFIER_TOKEN_RE, _TECH_TOKEN_RE
     if not x_words or not y_words:
         return False
     # Repeated predicative frame: ``as suspect, actually, as fine``.
@@ -541,7 +540,7 @@ def _parallel(x_words: list, y_words: list, text: str, end: int) -> bool:
         if not x_words or not y_words:
             return False
     x, y = x_words[-1], y_words[0]
-    if (_TECH_TOKEN_RE.fullmatch(x) and _TECH_TOKEN_RE.fullmatch(y)
+    if (TECH_TOKEN_RE.fullmatch(x) and TECH_TOKEN_RE.fullmatch(y)
             and _closed_single_replacement(text, end, frame)):
         return all(w in FUNCTION_WORDS or w in FILLERS for w in x_words[:-1])
     for cls in (_WEEKDAYS, _MONTHS):
@@ -550,8 +549,8 @@ def _parallel(x_words: list, y_words: list, text: str, end: int) -> bool:
     # A digit inside an identifier (``worker_1``) is part of a name, not a
     # quantity; identifiers qualify only through the closed branch above.
     if (_is_value_word(x) and _is_value_word(y)
-            and not _IDENTIFIER_TOKEN_RE.fullmatch(x)
-            and not _IDENTIFIER_TOKEN_RE.fullmatch(y)):
+            and not IDENTIFIER_TOKEN_RE.fullmatch(x)
+            and not IDENTIFIER_TOKEN_RE.fullmatch(y)):
         return True
     return bool({w for w in x_words if w not in FUNCTION_WORDS}
                 & set(y_words))
@@ -582,7 +581,6 @@ def _evidence_reason(window_text: str, span: tuple) -> str | None:
         return "emphasis_not_correction"
     if not _has_content(" ".join(after)):
         return "no_replacement"
-    from .validation import FUNCTION_WORDS, FILLERS
     before_words = tokens(window_text[s:ms])
     after_words = after
     replacement = next((w for w in after_words
@@ -614,7 +612,6 @@ def _replacement_opens_predicate(text: str, end: int) -> bool:
     its noun) makes that value a new subject, so deleting the old value
     would attach the clause to the old frame and drop a bare "no".
     """
-    from .validation import FUNCTION_WORDS
     clause = re.split(r"[,;.!?\n]", text[end:].lstrip(" \t,;:"), maxsplit=1)[0]
     words = [w.lower() for w in clause.split()][:3]
     if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:

@@ -25,12 +25,14 @@ from collections import Counter
 from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 
+from .lexicon import (FILLERS, FUNCTION_WORDS, NEGATION_WORDS,
+                      IDENTIFIER_TOKEN_RE as _IDENTIFIER_TOKEN_RE,
+                      NUMBER_WORDS as _NUMBERS, QUOTED_RE as _QUOTED_RE,
+                      SCALE_WORDS as _SCALES, TECH_TOKEN_RE as _TECH_TOKEN_RE,
+                      quoted_regions, touches as _touches)
+
 DETERMINISTIC = "deterministic"
 HEURISTIC = "heuristic"
-
-# Words the clean contract may always drop (pure fillers; V1's set —
-# "you know" and "like" are content and stay).
-FILLERS = frozenset({"um", "uh", "erm", "ehm", "hmm", "mhm"})
 
 # Immediate function-word stutter repeats ("the the", "i i") — doubling
 # is never legit prose for these (V1's REPEAT_RE set). "had had" and
@@ -40,29 +42,10 @@ STUTTER_WORDS = frozenset({
     "i", "we", "you", "it", "for", "with", "my", "your", "this",
 })
 
-NEGATION_WORDS = frozenset({
-    "not", "no", "never", "none", "neither", "nor", "cannot", "can't",
-    "dont", "don't", "doesn't", "doesnt", "didn't", "didnt", "won't",
-    "wont", "wouldn't", "wouldnt", "shouldn't", "shouldnt", "couldn't",
-    "couldnt", "isn't", "isnt", "aren't", "arent", "wasn't", "wasnt",
-    "without", "unless", "except", "lack", "lacks", "lacked",
-})
-
 UNCERTAINTY_WORDS = frozenset({
     "maybe", "possibly", "probably", "perhaps", "likely", "unlikely",
     "unsure", "uncertain", "apparently", "seemingly", "roughly",
     "approximately", "around", "about", "kind", "sort", "honestly",
-})
-
-# Function words help recognize correction/list shapes. They still carry
-# meaning and receive no blanket permission to appear in cleanup output.
-FUNCTION_WORDS = frozenset({
-    "the", "a", "an", "and", "or", "but", "of", "to", "in", "on",
-    "at", "is", "are", "was", "were", "it", "its", "this", "that",
-    "with", "for", "as", "by", "be", "been", "has", "have", "had",
-    "do", "does", "did", "not", "so", "if", "then", "than", "there",
-    "here", "we", "you", "i", "my", "your", "our", "their", "his",
-    "her", "s", "please", "also",
 })
 
 # Words that give a sentence polarity/condition scope; an explicit
@@ -80,73 +63,10 @@ QUESTION_OPENERS = (
 )
 
 _WORD_RE = re.compile(r"[^\W\d_]+(?:['’-][^\W\d_]+)*", re.UNICODE)
-_IDENTIFIER_TOKEN_RE = re.compile(
-    r"(?<!\w)[A-Za-z_]\w*_\w+(?!\w)"
-    r"|\b[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_]+\b")
 _ATOM_RE = re.compile(
     r"(?P<identifier>" + _IDENTIFIER_TOKEN_RE.pattern + r")"
     r"|(?P<word>" + _WORD_RE.pattern + r")", re.UNICODE)
 _NUM_TOKEN_RE = re.compile(r"\d[\d,.:%/××$€£]*\d|\d", re.UNICODE)
-_QUOTED_RE = re.compile(r"“([^“”]+)”|\"([^\"]+)\"|‘([^‘’]+)’")
-# Single-quoted text may contain in-word apostrophes ('it's fine').
-_SINGLE_QUOTED_RE = re.compile(
-    r"(?<!\w)['‘](?:[^'‘’\n]|(?<=\w)['’](?=\w))+['’](?!\w)")
-_CODE_RUN_RE = re.compile(r"`+|~{3,}")
-
-
-def quoted_regions(text: str) -> list[tuple[int, int]]:
-    """Quotations, inline code and fences as [start, end) regions.
-
-    A source-bound repair abstains where its own span overlaps or touches
-    one. An apostrophe after a letter ("don't", "patients'") is not a
-    quote. A quote or code mark without a partner has no known extent,
-    so it makes the whole text one region.
-    """
-    regions = []
-    opening = None
-    for m in _CODE_RUN_RE.finditer(text):
-        run = m.group()
-        if opening is None:
-            opening = m
-        elif run[0] == opening.group()[0] and (
-                len(run) == len(opening.group()) if run[0] == "`"
-                else len(run) >= len(opening.group())):
-            regions.append((opening.start(), m.end()))
-            opening = None
-    if opening is not None:
-        return [(0, len(text))]
-    paired = [m.span() for pattern in (_QUOTED_RE, _SINGLE_QUOTED_RE)
-              for m in pattern.finditer(text)]
-    for m in re.finditer(r"[\"“”‘’']", text):
-        inside = any(a <= m.start() < b for a, b in paired + regions)
-        apostrophe = m.group() in "'’" and m.start() and (text[m.start() - 1].isalnum())
-        if not inside and not apostrophe:
-            return [(0, len(text))]
-    return sorted(set(regions + paired))
-
-
-def _touches(regions, start: int, end: int) -> bool:
-    return any(a <= end and b >= start for a, b in regions)
-_TECH_TOKEN_RE = re.compile(
-    _IDENTIFIER_TOKEN_RE.pattern
-    + r"|--[A-Za-z][\w-]*"              # flags
-    r"|\S*/\S+"                          # paths / slash tokens
-    r"|\S+@\S+\.\S+"                     # emails
-    r"|\b(?:\d+\.)+\d+\b"                # versions
-    r"|\b\w+\.(?:ts|js|py|json|md|txt|yaml|yml|env|sh|rb|go|rs|swift|m)\b"
-    r"|\bhttps?://\S+",                  # URLs
-)
-
-_NUMBERS = {
-    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
-    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
-    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
-    "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18,
-    "nineteen": 19, "twenty": 20, "thirty": 30, "forty": 40,
-    "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80,
-    "ninety": 90,
-}
-_SCALES = {"hundred": 100, "thousand": 1_000, "million": 1_000_000}
 
 
 def _parse_number_words(words: list[str]) -> Decimal | None:

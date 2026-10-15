@@ -14,6 +14,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from .lexicon import FUNCTION_WORDS, NEGATION_WORDS, quoted_regions, touches
+
 
 _NUMBER = r"[+-]?\d+(?:[.,]\d+)*"
 _PREPOSITIONS = r"of|for|per|with|without|at|in|on|to"
@@ -66,10 +68,9 @@ def qualifier_retention(source: str, span: tuple, marker_start: int):
             replacement = re.match(
                 rf"[ \t,;:]*1[ \t]+(?i:half|quarter)[ \t]+{re.escape(unit)}(?![\w-])",
                 source[end:])
-            from .validation import _touches, quoted_regions
             if replacement is not None and re.match(
                     r"[ \t]*(?:$|[,;]|[.!?](?=\s|$))",
-                    source[end + replacement.end():]) and not _touches(
+                    source[end + replacement.end():]) and not touches(
                     quoted_regions(source), start, end + replacement.end()):
                 # The repeated unit is part of both complete fraction
                 # heads. Everything after the replacement stays required.
@@ -194,7 +195,6 @@ def repeated_restart(source: str, span: tuple, marker_start: int):
     if quantity is None or predicate is None:
         return None, reason
     subject = re.split(r"[.!?;\n]", source[:predicate.start()])[-1]
-    from .validation import FUNCTION_WORDS, NEGATION_WORDS
     subject_words = re.findall(r"[^\W_]+(?:['’][^\W_]+)*", subject.lower())
     nominal = subject_words[1:] if subject_words[:1] in (
         ["the"], ["a"], ["an"], ["this"], ["that"]) else []
