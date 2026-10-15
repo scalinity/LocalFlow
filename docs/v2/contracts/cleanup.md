@@ -120,19 +120,25 @@ The fixed 35/50-word chunking is gone. `plan_windows`:
 
 Corrections run as a separate proposal pass **only when a marker is
 present** (never a second call on plain input). Existing direct triggers,
-including standalone `actually`, are retained. Standalone `sorry` and `no`
-are admitted only when a possible deletion ending at that marker passes
-the existing `_evidence_reason` guard: a nearby outdated value and a
-parallel replacement, within the same sentence and six-word span budget.
-This admission proposes or deletes nothing. The model's exact proposal
+including standalone `actually`, are retained. Standalone `sorry`, `no`
+and `make that` run the pass only when a possible deletion ending at that
+marker passes the same guards a proposal must pass: the span budget below
+(six words, or longer when a restatement or a bound quantity proves it),
+the sentence rule and the evidence checks. Candidate spans reach back at
+most 160 characters from the marker, and a long one whose replacement
+repeats neither its first nor its last word is not tried, since no
+restatement could prove it. This admission proposes or deletes nothing. The model's exact proposal
 still passes offset resolution, all protection/evidence guards, and full
 candidate validation; ordinary negative/interjection prose does not gain
 an unconditional extra correction-model call.
 The proposal format is V1's production-proven line format — the model
 lists the exact words to delete (the outdated value together with its
 correction marker), one span per line. The engine resolves each span to
-exact zero-based half-open offsets (on word boundaries) by **sequential
-in-order matching**: a span resolves to its first occurrence at or
+exact zero-based half-open offsets on token boundaries — never right
+after or before a character that joins one token (`/ \ @ # $ % & + = ~ -`,
+a period or colon between word characters, a comma between digits), so a
+proposal cannot start inside `/shop/pipes/voicing_A.md` or `1.5` — by
+**sequential in-order matching**: a span resolves to its first occurrence at or
 after the previous accepted span, so duplicate correction spans delete
 in spoken order and an earlier deletion can never redirect a later one
 to the wrong occurrence.
@@ -140,7 +146,8 @@ to the wrong occurrence.
 Proposals are **provisional**. Each accepted proposal is parsed once into
 its neighbourhood (`lexicon.neighbourhood`: the old value's words, the
 first words after the marker in the same sentence, a frame word leading
-both, and whether the replacement closes its clause) and admitted as one
+both, and whether the replacement closes its clause; a filler is no word
+of either value) and admitted as one
 `AdmittedCorrection` record (span, marker offset, exact restart and
 qualifier move). Applying the deletion, the observation record, the
 comparison view and validation all read that record; nothing re-derives
@@ -152,20 +159,26 @@ admission. Shared word classes and the number and unit grammar live in
 | a proposal batch cut off by the output limit applies nothing | `batch_truncated` |
 | the span ends with a marker (on a word boundary) | `no_marker_ending` |
 | not a bare marker | `bare_marker` |
-| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit. A line over 80 characters (`SPAN_MAX_CHARS`) is not read as a proposal | `span_too_long` |
+| ≤ 6 words (`SPAN_MAX_WORDS`); one quantity with its detail (a fraction head is one) may reach 10 words (`BOUND_SPAN_MAX_WORDS`) when retention binds it against a replacement that repeats its unit, and any old value may run longer when the replacement restates it (**Restatements**). A line over 80 characters (`SPAN_MAX_CHARS`) needs the same restatement, a line over 160 (`RESTATED_SPAN_MAX_CHARS`) is rejected without being read, and no deletion, a repeated word taken in with it included, exceeds 160 | `span_too_long` |
 | the text occurs in the window no more often than it was proposed — never resolved to a first match | `ambiguous_occurrence` |
 | resolvable at/after the cursor | `offsets_unresolved` |
 | no overlap with a protected span | `protected_span` |
-| stays inside one sentence | `crosses_sentence` |
-| the outdated value X (before the marker) has a content word | `no_outdated_value` |
+| stays inside one sentence, or replaces the sentence or sentence-final value the next sentence restates (**Restatements**); the period of a title (`Dr.`, `Mr.`, `Mrs.`, `Ms.`, `Prof.`) or of `a.m.`/`p.m.` before a lowercase word or digit ends no correction-value sentence (`lexicon.VALUE_SENTENCE_END`); title periods remain boundaries when validating sentence merges (`lexicon.SENTENCE_END`) | `crosses_sentence` |
+| the outdated value X (before the marker) has a content word (a filler is none) | `no_outdated_value` |
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
-| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers, both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, or two closed identifiers; the replacement does not open a new predicate | `not_parallel` |
+| the replacement does not add to the old value: no `also` within one word more than the old value, and no `too`, `either` or `as well` ending a replacement clause that short (`on Linux, sorry, on macOS too`; `too hot` intensifies and counts nothing) | `additive_replacement` |
+| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers (a spelled ordinal is one, and an ordinal day may become a month with its day), both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, another repeated frame preposition before a like complement (**Closure**), two closed identifiers, two code tokens of one shape (**Closure**), or Y restates X; the replacement does not open a new predicate unless it restates X, whose changed words then bring no auxiliary of their own (`Maria will own …, sorry, Jonas will own …`, but not `the nurse on call, sorry, Jonas is on call`), and a bare `no` does not answer an earlier `yes` with the same next word (`yes to the first, no to the second`) | `not_parallel` |
 | replacing a weekday/month with another cannot also delete preceding content words (for example, `check Monday no wait Tuesday` may delete `Monday no wait`, but not `check`) | `overbroad_calendar_value` |
 
 **Markers.** The markers are `lexicon.CORRECTION_MARKERS`; a comma may
 separate the words of a compound marker (`no, sorry`, `I mean, actually`),
 and the whole compound is the marker, so its `no` is not a lost negation.
+A marker chained before the proposal's own (`on Tuesday, I mean no, on
+Wednesday`; `Tuesday, actually sorry, Wednesday`) is no part of the old
+value that any guard reads, so `check Monday, I mean no, Tuesday` still
+rejects as `overbroad_calendar_value`, and markers alone are no outdated
+value.
 
 **Closure.** A replacement closes its clause when, after an optional
 repeated frame word and one article, its value is followed by the end of
@@ -186,19 +199,92 @@ within one word more than the old value (`50 microliters, um, make that
 60 microliters.`); `make that change`, `make that bigger` and `make that
 the default` stay prose and do not call the corrections model.
 
+Another frame preposition repeated after the marker (`on the NAS, no, on
+the spare disk,`; `to Marta, sorry, to Idris.`) marks a correction when
+the old complement is at most four words with a content word and no
+clause link, auxiliary, negation or `only`, the replacement holds no
+negation, both complements open with an article or neither does, and the
+replacement closes its clause within one word more than the old value.
+An open replacement (`by motor, sorry, by pulley handle since the battery
+died`) stays ambiguous.
+
+`sorry to`, `sorry for` and `sorry about` right after the marker, without
+a pause, are an apology (`Thanks for the help, sorry for the delay`;
+`Sorry to say, …`), so `sorry` is no marker there unless a value follows
+(`4 liters, sorry to 6 liters`).
+
+A code token (letters or digits joined by `- _ . : = /`, or a `--` flag)
+corrected to another of the same shape — the same separators in order,
+or both flags — is a value correction when the old value is that token
+after function words only and the replacement ends its clause or meets a
+clause link (`peaks_final.csv, no, peaks_merged.csv,`; `--dry-run, sorry,
+--verbose before signing`). A token that goes on into a clause (`worker_b
+crashed`) is no closed value.
+
 A metric-length pair may change its numeric value and metric prefix when
 both values name meters/metres and the replacement closes its clause.
 Extra descriptions and open replacement clauses do not qualify. A proposal containing one fused alphabetic word may restore the
 space between two unique adjacent source words; the recovered proposal
 must then resolve to one exact contiguous source span and pass every
 existing bound and guard. Ambiguous nominal phrases, apologies and
-preposition attachments do not gain correction permission from their shape.
+preposition attachments do not gain correction permission from their shape
+beyond the repeated-frame rule above.
 
-At most 6 apply per window. Protected spans are rebased **per window**
+At most 6 apply per window (`CORRECTIONS_MAX`); each later line is
+rejected as `too_many_corrections`. Every line the parser does not admit
+is recorded with its reason, so a rejected correction the cleanup applies
+anyway can be put back. Protected spans are rebased **per window**
 (window-local coordinates, this window's texts only) before validation
 and the corrections guard. Deletions apply right-to-left in Python to
 form the model's input; the surviving replacement and reason clause
 stay by construction.
+
+**Restatements.** The words after the marker restate the old value
+(`lexicon.restatement`) when, in the same sentence, they repeat it with
+one changed region: the old value is P + A + S and the replacement opens
+with P + B + S, where A and B are one to three words each (`in the first
+half hour, no wait, in the last half hour`; `Maria will own the grid
+export, sorry, Jonas will own the grid export`). Same-length A and B may
+share a word in place (`at the lab on Monday`, `in the clinic on
+Monday`). The repeated words hold a content word and are at least two,
+and, unless they enclose the change on both sides, no fewer than the
+changed old words. Fillers do not count, and a marker chained before the
+proposal's own (`2.5 hours, actually no wait`) belongs to the marker. An
+unchanged repeat, an open replacement (`12 meters, no, send the rest to
+Marta`), a change that drops a negation, a change that keeps every old
+word and inserts others (`review` → `Jonas will review`), a change
+whose replacing words bring an auxiliary the changed words lack or drop
+a word that opens a dependent clause (`the nurse on call` → `Jonas is on
+call`; `whoever is on call` → `Jonas is on call`: a phrase becomes a
+clause), a change with
+nothing repeated before it that holds more than two words not shared in
+place (`at the lab` → `in the clinic` shares `the`; `the team Maria` →
+`Jonas` shares nothing) or more old words than replacing ones, unless the
+old value opens with a determiner or with a value the replacement's
+value takes over (`the nurse` → `Jonas`, `3 spare bobbins` → `4
+bobbins`, but not `Tell her Maria will own it` → `Jonas will own it`),
+and a repeat touched by a quotation, code span or fence restate nothing. A restated old value may exceed the word cap and the 80-character
+cap (up to 160 characters) and is its own parallel evidence; when the replacement opens with the word before the
+old value (`after 10 minutes of rest, no after 15 minutes of rest`), that
+word goes with the old value. The corrections-pass trigger considers such
+longer spans for `sorry`, `no` and `make that` as well.
+
+A correction may cross one sentence boundary when the old value ends its
+sentence with a period and the marker opens the next one. An old value
+that opens its sentence is replaced whole when the next sentence restates
+it (`The review closes on Friday. Sorry, the review closes on Thursday`);
+the restatement may then open with the predicate it repeats. An old value that ends
+a longer sentence takes a restatement that repeats the old value's end
+and closes within one word after the restated copy (`lists 14 duplicate
+rows in batch C. No wait, 41 duplicate rows in batch C, which …`), or a
+typed value of the same kind (numbers, ordinals, weekdays, months) after
+an old value of at most three words, repeating the old value's unit and
+closing its clause right there (`The first act starts at 7:40. I mean
+8:40, so …`; `for 15 minutes. Actually, 10 minutes, …`; but not `We need
+4 chairs. Actually, 6 people RSVPed`). A noun the next sentence names again proves nothing
+(`the blue folder on the counter. Actually, the blue folder is only for
+returns`). A question or exclamation, a second sentence end inside the
+span, and a quoted pair stay separate sentences.
 
 **Retained details.** An exact source detail attached to an outdated
 quantity (`4 liters of dye, no wait, 6 liters`) moves beside the
@@ -213,7 +299,10 @@ Explicit presence→absence (`with dye … without dye`) replaces the
 descriptor; other opposing relations reject (`opposing_quantity_qualifier`).
 A quantity detail the rule cannot bind (a spelled number, a determiner
 before the number, an unrepeated frame, an unresolved replacement)
-rejects as `unresolved_quantity_qualifier`. The moved wording remains
+rejects as `unresolved_quantity_qualifier`. A replacement that restates
+the old value around changed words that hold no preposition (`40 ends per
+inch, no sorry, thirty-six ends per inch`; a restated sentence) repeats
+every detail in place and needs no move. The moved wording remains
 required; an obsolete value cannot return through the word-addition
 allowance. Original proposal and moved-source coordinates remain in the
 observation record.
@@ -499,7 +588,7 @@ None of this is a label: correctness stays `unreviewed`.
   the panel. 2 inspect all 2 leads.` rendered as a numbered list), a
   merge of a conditional fragment into the next sentence (`If X. We
   should Y.`), and a correction whose old value plus a compound marker
-  exceeds the word cap.
+  exceeds the word cap without a restatement.
 - A split-retry half gets no read-only context from its parent window
   and both halves get the parent's list continuation; the assembly is
   revalidated and renumbered as one run.

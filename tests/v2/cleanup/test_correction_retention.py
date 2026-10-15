@@ -269,11 +269,11 @@ class CorrectionRetentionTests(unittest.TestCase):
                 result, _ = clean(source, target, deletion)
                 self.assertEqual(result.text, target)
                 self.assertEqual(result.path, "llm")
-        # Past ten words, with a changed unit, or without a quantity, the
-        # ordinary cap applies.
+        # Past ten words without a restatement, with a changed unit, or
+        # without a quantity, the ordinary cap applies.
         for source, deletion in (
             ("Assign 4 rooms per attendant on the far north wing only, actually 6 rooms "
-             "per attendant on the far north wing only.",
+             "on the south wing.",
              "4 rooms per attendant on the far north wing only, actually"),
             ("Bring 2 boxes of the adhesive electrodes, sorry, 3 crates for the sensors.",
              "2 boxes of the adhesive electrodes, sorry"),

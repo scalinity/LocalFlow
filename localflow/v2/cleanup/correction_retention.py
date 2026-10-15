@@ -17,8 +17,8 @@ from dataclasses import dataclass
 from .lexicon import (CLAUSE_END, CLAUSE_LINKS, COUNT, DETAIL_PREPOSITIONS,
                       FINITE_AUXILIARIES, FRAME_WORDS, FUNCTION_WORDS, MEASURE_UNIT, MODALS,
                       NEGATION_WORDS, NUMBER, SPELLED_NUMBER, Neighbourhood, alternation,
-                      marker_key,
-                      quoted_regions, touches)
+                      marker_key, plain_words,
+                      quoted_regions, restatement, touches)
 
 
 _NUMBER = NUMBER
@@ -68,6 +68,21 @@ def fraction_binds(n: Neighbourhood) -> bool:
             and not touches(quoted_regions(source), start, end + replacement.end()))
 
 
+def restates_detail(n: Neighbourhood) -> bool:
+    """The replacement restates the old value around its changed words
+    (``40 ends per inch, no sorry, thirty-six ends per inch``; ``Please put
+    Marta on 4 rooms at the start. Sorry, please put Marta on 6 rooms at
+    the start``): every detail is repeated in place, so nothing is left to
+    move or to bind. A change that includes a preposition, and so a
+    relation, keeps the rules below."""
+    shape = restatement(n)
+    if shape is None:
+        return False
+    old = plain_words(n.text[n.start:n.marker])
+    return not any(w in DETAIL_PREPOSITIONS
+                   for w in old[shape.head:shape.head + shape.changed])
+
+
 def quantity_shaped(old: str) -> bool:
     """``old`` reads as one quantity with a prepositional detail, after an
     optional frame word (a fraction head is one such quantity)."""
@@ -95,9 +110,10 @@ def qualifier_retention(n: Neighbourhood):
     """
     source, start, marker_start, end = n.text, n.start, n.marker, n.end
     old = source[start:marker_start].rstrip(" \t,;:")
-    if fraction_binds(n):
-        # The repeated unit is part of both complete fraction heads.
-        # Everything after the replacement stays required.
+    if fraction_binds(n) or restates_detail(n):
+        # The repeated unit is part of both complete fraction heads, or the
+        # replacement repeats the whole detail. Everything after the
+        # replacement stays required.
         return None, None
     # A frame word repeated after the marker leads both quantities: in
     # ``with 4 liters of dye, sorry, with 6 liters`` the detail binds

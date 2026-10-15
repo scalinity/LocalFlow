@@ -23,14 +23,20 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from bisect import bisect_right
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 from . import document_nodes as dn
 from . import prompts
-from .lexicon import (CLAUSE_END, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES, FRAME_PREPOSITIONS, FRAME_WORDS,
-                      FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER, NUMBER, NUMBER_WORDS,
-                      POSITIVE_NUMBER, SCALE_WORDS, TECH_TOKEN_RE, Neighbourhood,
-                      alternation, marker_key, marker_pattern, neighbourhood)
+from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES,
+                      FRAME_PREPOSITIONS, FRAME_WORDS, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER,
+                      NEGATION_WORDS, NUMBER, ORDINAL_WORD_RE,
+                      POSITIVE_NUMBER, PREDICATE_AUXILIARIES, VALUE_SENTENCE_END, TECH_TOKEN_RE,
+                      Neighbourhood,
+                      LOOKAHEAD_CHARS, after_marker, alternation, is_value_word, marker_key,
+                      marker_pattern, neighbourhood, plain_words, quoted_regions, restatement,
+                      touches, without_trailing_markers)
 from .correction_retention import (AdmittedCorrection, correction_view, qualifier_retention,
                                    quantity_binds, quantity_shaped, repeated_restart)
 from .validation import (validate, restore_missing_words, restore_source_spans,
@@ -53,11 +59,22 @@ SALVAGE_MAX_STEPS = 4
 # ends with the correction marker, is short, and never a bare marker.
 # A quantity with its detail ("2 boxes of the adhesive electrodes", or a
 # fraction head such as "3 halves of an hour") may run longer when the
-# whole quantity correction binds.
+# whole quantity correction binds, and any old value may when the
+# replacement restates it (``lexicon.restatement``).
 SPAN_MAX_WORDS = 6
 BOUND_SPAN_MAX_WORDS = 10
-# A proposal line longer than this is not a correction span.
+# A proposal line longer than this needs a restatement to prove it, and
+# no deletion may run past the second limit (restated sentences in the
+# TRAIN labels reach 149 characters).
 SPAN_MAX_CHARS = 80
+RESTATED_SPAN_MAX_CHARS = 160
+# At most this many corrections apply per window (V1's applied cap).
+CORRECTIONS_MAX = 6
+# Characters that join the pieces of one token: a path, an email, a flag
+# value, a hyphenated word, a currency amount. A period or colon joins
+# only between word characters ("1.5", "10:30"), a comma only between
+# digits ("1,500").
+_TOKEN_JOINERS = re.escape("/\\@#$%&+=~-")
 # Existing direct triggers, including standalone "actually". Ambiguous
 # "no"/"sorry" admission additionally reuses the evidence guards below.
 CORRECTION_MARKER_RE = re.compile(
@@ -226,7 +243,6 @@ def _block_ranges(text: str) -> list[tuple[int, int, str]]:
     return out
 
 
-_SENTENCE_END_RE = re.compile(r"[.!?](?:\s|$)")
 # A cut never falls within six words after a marker — a marker phrase
 # ("i mean", "no wait") or a single-word marker — because the
 # replacement follows it. A bare "i" or "wait" is not a marker.
@@ -460,7 +476,7 @@ def correction_marker_start(window_text: str, span: tuple) -> int:
 
 def _has_content(text: str) -> bool:
     return any(w.lower() not in FUNCTION_WORDS and
-               w.lower() not in BARE_MARKERS
+               w.lower() not in BARE_MARKERS and w.lower() not in FILLERS
                for w in re.findall(r"[^\W_]+(?:['’][^\W_]+)*", text))
 
 
@@ -469,15 +485,13 @@ def _has_content(text: str) -> bool:
 # one needs a visibly parallel replacement.
 _ORDINARY_WORD_MARKERS = frozenset({"actually", "sorry", "no", "make that"})
 _ARTICLES = frozenset({"a", "an", "the"})
+# The titles whose period lexicon.VALUE_SENTENCE_END reads as no sentence end.
+_TITLES = frozenset({"dr", "mr", "mrs", "ms", "prof"})
 _WEEKDAYS = frozenset({"monday", "tuesday", "wednesday", "thursday",
                        "friday", "saturday", "sunday"})
 _MONTHS = frozenset({"january", "february", "march", "april", "may",
                      "june", "july", "august", "september", "october",
                      "november", "december"})
-
-
-def _is_value_word(w: str) -> bool:
-    return any(c.isdigit() for c in w) or w in NUMBER_WORDS or w in SCALE_WORDS
 
 
 _METRIC_LENGTH = re.compile(rf"{NUMBER}[ \t]+{METER}s?", re.IGNORECASE)
@@ -492,15 +506,119 @@ def _parallel_metric_lengths(n: Neighbourhood) -> bool:
     old = n.text[n.start:n.marker].strip(" \t,;:")
     if not _METRIC_LENGTH.fullmatch(old):
         return False
-    tail = n.text[n.end:].lstrip(" \t,")
+    tail = n.text[n.end:n.end + LOOKAHEAD_CHARS].lstrip(" \t,")
     new = _METRIC_LENGTH.match(tail)
     return new is not None and bool(re.match(CLAUSE_END, tail[new.end():]))
 
 
+# A repeated frame's old complement is at most this many words ("on the
+# spare disk"); a longer one reads as a clause, not a value.
+FRAME_COMPLEMENT_MAX_WORDS = 4
+# A value that ends its sentence and takes a typed value from the next one
+# ("starts at 7:40. I mean 8:40") is at most this many words.
+SENTENCE_FINAL_VALUE_MAX_WORDS = 3
+
+# "sorry to say", "sorry for the delay": the apology's own complement right
+# after "sorry", without a pause, makes "sorry" no marker. A value there
+# ("4 liters, sorry to 6 liters") still reads as the replacement.
+_APOLOGY_COMPLEMENT_RE = re.compile(r"[ \t]+(?:to|for|about)[ \t]+(\S+)", re.IGNORECASE)
+
+
+def _apology(n: Neighbourhood) -> bool:
+    if marker_key(n.text[n.marker:n.end]) != "sorry":
+        return False
+    m = _APOLOGY_COMPLEMENT_RE.match(n.text, n.end)
+    word = m.group(1).lower().strip(".,;:!?") if m else ""
+    return bool(m) and not (is_value_word(word) or word in _WEEKDAYS or word in _MONTHS)
+
+
+def _repeated_frame_complement(n: Neighbourhood) -> bool:
+    """The old value and the replacement open with the same frame
+    preposition before a like complement, and the replacement closes its
+    clause within one word more than the old value: ``on the NAS, no, on
+    the spare disk,``; ``to Marta, sorry, to Idris.``
+
+    The old complement is at most four words with a content word and no
+    clause link, auxiliary, negation or ``only``; the replacement holds no
+    negation; both complements open with an article or neither does. An
+    open replacement (``by pulley handle since the battery is empty``)
+    stays ambiguous, and ``as`` keeps its own rule.
+    """
+    if n.frame not in FRAME_PREPOSITIONS or n.frame == "as":
+        return False
+    old, new = list(n.old_words[1:]), list(n.new_words[1:])
+    if (not old or not new or len(old) > FRAME_COMPLEMENT_MAX_WORDS
+            or (old[0] in _ARTICLES) != (new[0] in _ARTICLES)):
+        return False
+    return not (any(w in CLAUSE_LINKS or w in FINITE_AUXILIARIES or w in NEGATION_WORDS
+                    or w == "only" for w in old)
+                or any(w in NEGATION_WORDS for w in new)
+                or not _has_content(" ".join(old)) or not _has_content(" ".join(new))
+                or not _replacement_closes_within(n, len(n.old_words) + 1))
+
+
+_CONTRAST_BOUNDARY_RE = re.compile(VALUE_SENTENCE_END + r"|\n")
+
+
+@lru_cache(maxsize=64)
+def _contrast_boundaries(text: str) -> tuple:
+    return tuple(m.end() for m in _CONTRAST_BOUNDARY_RE.finditer(text))
+
+
+@lru_cache(maxsize=256)
+def _yes_word_ends(text: str, start: int, end: int, word: str) -> tuple:
+    pattern = re.compile(rf"\byes[ \t,]+{re.escape(word)}\b", re.IGNORECASE)
+    return tuple(m.end() for m in pattern.finditer(text, start, end))
+
+
+def _yes_no_contrast(n: Neighbourhood) -> bool:
+    """A bare ``no`` answering an earlier ``yes`` with the same next word
+    contrasts rather than corrects: ``yes to the first, no to the second``."""
+    following = n.new_words[:1]
+    if not following or marker_key(n.text[n.marker:n.end]) != "no":
+        return False
+    # Keep the original prefix search's end-of-input boundary when a
+    # sentence mark directly touches the marker, without slicing the prefix.
+    if n.marker and _CONTRAST_BOUNDARY_RE.match(n.text, n.marker - 1, n.marker):
+        return False
+    # Contrast evidence spans the whole sentence. Cache positions so the
+    # trigger's candidate spans share that evidence without a prefix cutoff.
+    boundaries = _contrast_boundaries(n.text)
+    boundary = bisect_right(boundaries, n.marker)
+    start = boundaries[boundary - 1] if boundary else 0
+    end = boundaries[boundary] if boundary < len(boundaries) else len(n.text)
+    ends = _yes_word_ends(n.text, start, end, following[0])
+    hit = bisect_right(ends, n.marker)
+    return bool(hit and ends[hit - 1] > start)
+
+
+# A code token joins letters or digits with separators ("peaks_final.csv",
+# "node-b", "GO:0004672", "--format=stl"), or is a flag ("--verbose").
+_CODE_TOKEN_RE = re.compile(r"(?:--?)?[a-z0-9]+(?:[-_.:=/][a-z0-9]+)+|--[a-z][\w-]*")
+
+
+def _parallel_code_tokens(n: Neighbourhood, x_words: list, y_words: list) -> bool:
+    """The old value is one code token, after function words only, and the
+    replacement is a code token of the same shape (the same separators in
+    order, or both flags) that ends its clause or meets a clause link:
+    ``peaks_final.csv, no, peaks_merged.csv,``; ``--dry-run, sorry,
+    --verbose before signing``. A token that goes on into a clause
+    (``worker_b crashed``) is no closed value."""
+    x, y = x_words[-1], y_words[0]
+    if not (_CODE_TOKEN_RE.fullmatch(x) and _CODE_TOKEN_RE.fullmatch(y)) or x == y:
+        return False
+    flags = x.startswith("--") and y.startswith("--")
+    if not flags and re.sub(r"[a-z0-9]+", "", x) != re.sub(r"[a-z0-9]+", "", y):
+        return False
+    return (all(w in FUNCTION_WORDS for w in x_words[:-1]) and re.compile(
+        rf"[ \t,;:]*\S+?(?:{CLAUSE_END}|[ \t]+(?i:{alternation(CLAUSE_LINKS)})\b)").match(
+            n.text, n.end) is not None)
+
+
 def _parallel(n: Neighbourhood) -> bool:
     """X and Y are the same kind of value: both numbers, both weekdays,
-    both months, or they share a content word ("two engineers … three
-    engineers")."""
+    both months, the same frame before like complements, or they share a
+    content word ("two engineers … three engineers")."""
     x_words, y_words = list(n.old_words), list(n.new_words)
     if not x_words or not y_words:
         return False
@@ -517,6 +635,8 @@ def _parallel(n: Neighbourhood) -> bool:
         return (len(old) == 1 and bool(new)
                 and old[0] not in FUNCTION_WORDS and old[0] not in FILLERS
                 and new[0] not in FUNCTION_WORDS and new[0] not in FILLERS)
+    if _repeated_frame_complement(n):
+        return True
     # A repeated "every" stays a shared word: in "every month, no every
     # quarter" it is the evidence that both values are frequencies.
     if n.frame in FRAME_PREPOSITIONS:
@@ -526,6 +646,8 @@ def _parallel(n: Neighbourhood) -> bool:
     x, y = x_words[-1], y_words[0]
     if TECH_TOKEN_RE.fullmatch(x) and TECH_TOKEN_RE.fullmatch(y) and n.closed:
         return all(w in FUNCTION_WORDS or w in FILLERS for w in x_words[:-1])
+    if _parallel_code_tokens(n, x_words, y_words):
+        return True
     # "on the 12th, no, the 14th": the replacement may repeat the article
     # that stands before the old value, outside the deletion.
     if y in _ARTICLES and len(y_words) > 1:
@@ -533,9 +655,14 @@ def _parallel(n: Neighbourhood) -> bool:
     for cls in (_WEEKDAYS, _MONTHS):
         if x in cls and y in cls:
             return True
+    # An ordinal day may be corrected to a full date ("the fourteenth, no,
+    # March 16").
+    day = y_words[y_words.index(y) + 1:][:1]
+    if ORDINAL_WORD_RE.fullmatch(x) and y in _MONTHS and day and is_value_word(day[0]):
+        return True
     # A digit inside an identifier (``worker_1``) is part of a name, not a
     # quantity; identifiers qualify only through the closed branch above.
-    if (_is_value_word(x) and _is_value_word(y)
+    if (is_value_word(x) and is_value_word(y)
             and not IDENTIFIER_TOKEN_RE.fullmatch(x)
             and not IDENTIFIER_TOKEN_RE.fullmatch(y)):
         return True
@@ -543,15 +670,96 @@ def _parallel(n: Neighbourhood) -> bool:
                 & set(y_words))
 
 
+_VALUE_SENTENCE_END_RE = re.compile(VALUE_SENTENCE_END)
+
+
+def _opens_sentence(n: Neighbourhood) -> bool:
+    """Nothing of its sentence stands before the old value."""
+    before = n.start
+    while before and n.text[before - 1].isspace():
+        before -= 1
+    # "Dr. " opens no sentence.
+    return (not before or "\n" in n.text[before:n.start]
+            or _VALUE_SENTENCE_END_RE.match(n.text, before - 1) is not None)
+
+
+def _restated_across_sentences(n: Neighbourhood) -> bool:
+    """The marker opens the sentence after the one the old value ends.
+
+    ``The review closes on Friday. Sorry, the review closes on Thursday``
+    replaces a whole sentence its successor restates. ``The first act
+    starts at 7:40. I mean 8:40, so ...`` replaces the value that ended its
+    sentence with a restatement that repeats the old value's end and closes
+    within one word after the restated copy, or with a typed value of the
+    same kind (numbers, ordinals, weekdays, months) when the old value is at
+    most three words: the new value repeats the words after the old one
+    (its unit) and closes its clause right there. Only one period, right
+    after the old value, may lie inside the span.
+    """
+    text, s, ms, e = n.text, n.start, n.marker, n.end
+    old = text[s:ms].rstrip()
+    ends = list(re.finditer(VALUE_SENTENCE_END, text[s:e].rstrip(".!? ")))
+    if not old.endswith(".") or len(ends) != 1 or ends[0].start() != len(old) - 1:
+        return False
+    # A quoted sentence pair may be a literal ('said "starts at 7:40. I mean
+    # 8:40," and').
+    if touches(quoted_regions(text), s, after_marker(text, e)[0]):
+        return False
+    shape = restatement(n)
+    if _opens_sentence(n):
+        return shape is not None
+    # Merged into the old sentence, the replacement must repeat the old
+    # value's end: "the blue folder on the counter. Actually, the blue
+    # folder is only for returns" starts a new statement about it. A shared
+    # noun is no proof either ("the door test. I mean the cable test can
+    # wait").
+    if shape is not None and shape.tail > 0:
+        # The restated copy itself closes the clause it joins.
+        return _replacement_closes_within(n, shape.head + shape.replacing + shape.tail + 1)
+    old_words = [w.rstrip(".") for w in n.old_words]
+    article = bool(n.new_words[:1]) and n.new_words[0] in _ARTICLES
+    new_words = [w.rstrip(".") for w in n.new_words[article:]]
+    if not old_words or len(old_words) > SENTENCE_FINAL_VALUE_MAX_WORDS or not new_words:
+        return False
+    typed = [i for i, w in enumerate(old_words)
+             if (is_value_word(w) and is_value_word(new_words[0]))
+             or any(w in cls and new_words[0] in cls for cls in (_WEEKDAYS, _MONTHS))]
+    # The new value takes the old one's unit and ends its clause there:
+    # "15 minutes. Actually, 10 minutes, the amendment cut it", where "4
+    # chairs. Actually, 6 people RSVPed" says something new.
+    unit = old_words[typed[-1] + 1:] if typed else None
+    return (unit is not None and new_words[1:1 + len(unit)] == unit
+            and _replacement_closes_within(n, article + 1 + len(unit)))
+
+
+def _replacement_adds(n: Neighbourhood) -> bool:
+    """The replacement adds to the old value instead of replacing it: "on
+    Linux, sorry, on macOS too", "also 6 trays", "the grid export as well".
+
+    Its clause runs to the first comma, semicolon, line break, sentence end
+    or clause link. "also" counts within one word more than the old value
+    after its own; "too", "either" and "as well" only where they end a
+    clause that short ("too hot" intensifies, and a longer clause, "to sign
+    the sheet as well", is about something else).
+    """
+    words = list(after_marker(n.text, n.end)[3])
+    link = next((i for i, w in enumerate(words) if w in CLAUSE_LINKS), len(words))
+    words, reach = words[:link], len(n.old_words) + 2
+    return "also" in words[:reach] or (len(words) <= reach and (
+        words[-1:] in (["too"], ["either"]) or words[-2:] == ["as", "well"]))
+
+
 def _evidence_reason(n: Neighbourhood) -> str | None:
     """Original-source evidence that the deletion is a self-correction:
-    it stays inside one sentence, removes an outdated value X with
-    content, and a replacement Y with content follows the marker in the
-    same sentence. None when the evidence holds, else the reason."""
+    it stays inside one sentence (or replaces the sentence or value its
+    successor restates), removes an outdated value X with content, and a
+    replacement Y with content follows the marker in the same sentence.
+    None when the evidence holds, else the reason."""
     window_text, s, ms, e = n.text, n.start, n.marker, n.end
-    if re.search(r"[.!?](\s|$)", window_text[s:e].rstrip(".!? ")):
+    across = bool(re.search(VALUE_SENTENCE_END, window_text[s:e].rstrip(".!? ")))
+    if across and not _restated_across_sentences(n):
         return "crosses_sentence"
-    if not _has_content(window_text[s:ms]):
+    if not _has_content(" ".join(n.old_words)):
         return "no_outdated_value"
     after = n.new_words
     marker = marker_key(window_text[ms:e])
@@ -564,6 +772,8 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
         return "emphasis_not_correction"
     if not _has_content(" ".join(after)):
         return "no_replacement"
+    if _replacement_adds(n):
+        return "additive_replacement"
     before_words = n.old_words
     replacement = next((w for w in after
                         if w not in FUNCTION_WORDS and w not in FILLERS), "")
@@ -573,8 +783,14 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
                 for w in before_words[:-1]):
             return "overbroad_calendar_value"
     if marker in _ORDINARY_WORD_MARKERS:
-        if (not (_parallel(n) or _parallel_metric_lengths(n))
-                or _replacement_opens_predicate(n)
+        # A restated old value is the evidence itself, and its repeated
+        # words may include the predicate ("Maria will own the grid
+        # conversion, no, Jonas will own the grid conversion"): the changed
+        # words bring no auxiliary of their own (lexicon.restatement).
+        proved = across or restatement(n) is not None
+        if (not (proved or _parallel(n) or _parallel_metric_lengths(n))
+                or _yes_no_contrast(n) or _apology(n)
+                or (not proved and _replacement_opens_predicate(n))
                 or (marker == "make that" and not _replacement_closes_within(
                     n, len(n.old_words) + 1))):
             return "not_parallel"
@@ -585,28 +801,29 @@ def _replacement_closes_within(n: Neighbourhood, words: int) -> bool:
     """The replacement ends its clause within ``words`` words: "make that
     60 microliters." replaces a value, "make that 6 trays for the oven
     and 2 for the fridge" goes on into new content."""
-    return re.match(rf"[ \t,;:]*(?:\S+[ \t]+){{0,{words - 1}}}\S+?{CLAUSE_END}",
-                    n.text[n.end:]) is not None
-
-
-# "am" is left out: it follows only "I", and "9 am" is a time.
-_PREDICATE_AUXILIARIES = FINITE_AUXILIARIES - {"am"}
+    return re.compile(rf"[ \t,;:]*(?:\S+[ \t]+){{0,{words - 1}}}\S+?{CLAUSE_END}").match(
+        n.text, n.end) is not None
 
 
 def _replacement_opens_predicate(n: Neighbourhood) -> bool:
     """``Monday, no Tuesday is a holiday`` begins a new clause.
 
-    An auxiliary right after the replacement value (or after a number and
-    its noun) makes that value a new subject, so deleting the old value
-    would attach the clause to the old frame and drop a bare "no".
+    An auxiliary right after the replacement value, or after its second
+    word (a number and its noun, a full name: "Jonas Berg is on call"),
+    makes that value a new subject, so deleting the old value would attach
+    the clause to the old frame and drop a bare "no".
     """
-    clause = re.split(r"[,;.!?\n]", n.text[n.end:].lstrip(" \t,;:"), maxsplit=1)[0]
+    # A decimal ("2.5 hours is") or a title ("Dr. Varga is") ends no clause,
+    # and a title opens the value as an article does.
+    clause = re.split(r"[,;\n]|" + VALUE_SENTENCE_END,
+                      n.text[n.end:n.end + LOOKAHEAD_CHARS].lstrip(" \t,;:"), maxsplit=1)[0]
     words = [w.lower() for w in clause.split()]
-    words = words[1:4] if words[:1] and words[0] in _ARTICLES else words[:3]
-    if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
+    words = (words[1:4] if words[:1] and (words[0] in _ARTICLES or words[0].rstrip(".") in _TITLES)
+             else words[:3])
+    if words[1:2] and words[1] in PREDICATE_AUXILIARIES:
         return True
-    return (len(words) == 3 and _is_value_word(words[0])
-            and words[1] not in FUNCTION_WORDS and words[2] in _PREDICATE_AUXILIARIES)
+    return (len(words) == 3 and words[0] not in FUNCTION_WORDS
+            and words[1] not in FUNCTION_WORDS and words[2] in PREDICATE_AUXILIARIES)
 
 
 def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
@@ -617,13 +834,27 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
     unrelated function words and clauses remain required source content.
     """
     start, end = span
+    marker = correction_marker_start(text, span)
+    # Only the words right beside the span matter; reading a bounded
+    # stretch keeps the search from rescanning the whole window.
+    base = max(0, start - LOOKAHEAD_CHARS)
+    # A replacement that restates the old value and opens with the word
+    # before it ("after [10 minutes of rest, no] after 15 minutes of rest")
+    # repeats that word as well, so it goes with the old value.
+    before = re.search(r"(?<!\S)([^\W_][\w'’-]*)[ \t]+\Z", text[base:start])
+    if before is not None and base + before.start() >= cursor:
+        shape = restatement(neighbourhood(text, span, marker))
+        following = after_marker(text, end)[2][:1]
+        if (shape is not None and shape.head == 0 and shape.replacing >= 2
+                and list(following) == [before.group(1).lower()]):
+            return base + before.start(), end
     # \Z, not $: a frame word at the end of the previous line is not this
     # value's frame.
     prefix = re.search(rf"\b({alternation(FRAME_WORDS)})[ \t]+\Z",
-                       text[:start], re.IGNORECASE)
-    if prefix is None or prefix.start() < cursor:
+                       text[base:start], re.IGNORECASE)
+    if prefix is None or base + prefix.start() < cursor:
         return span
-    marker = correction_marker_start(text, span)
+    prefix_start = base + prefix.start()
     if prefix.group(1).lower() == "every":
         # A frequency keeps its quantifier when both complete quantity
         # heads repeat it. Do not treat "every" as a general stutter or
@@ -634,14 +865,14 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
         if quantity is not None and re.match(
                 rf"[ \t,;:]*every[ \t]+{POSITIVE_NUMBER}[ \t]+"
                 + re.escape(quantity.group("unit")) + r"(?![\w-])",
-                text[end:], re.IGNORECASE):
-            return prefix.start(), end
+                text[end:end + LOOKAHEAD_CHARS], re.IGNORECASE):
+            return prefix_start, end
         return span
     old = [w.lower().strip(",;:") for w in text[start:marker].split()]
     if not (len(old) == 1 or (len(old) == 2 and
-            (old[0] in {"a", "an", "the"} or _is_value_word(old[0])))):
+            (old[0] in {"a", "an", "the"} or is_value_word(old[0])))):
         return span
-    n = neighbourhood(text, (prefix.start(), end), marker)
+    n = neighbourhood(text, (prefix_start, end), marker)
     if n.frame != prefix.group(1).lower():
         return span
     new = n.new_words[1:]
@@ -649,7 +880,7 @@ def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:
             (marker_key(text[marker:end]) not in _ORDINARY_WORD_MARKERS
              and len(old) == 1 and _has_content(old[0])
              and new and _has_content(new[0]))):
-        return prefix.start(), end
+        return prefix_start, end
     return span
 
 
@@ -704,10 +935,42 @@ def _recover_fused_proposal(source: str, delete: str) -> str | None:
     return _split_unique_source_word(source, delete, missing[0])
 
 
+def _span_proof(delete: str) -> str | None:
+    """What must prove a proposal's extent: None within the plain caps
+    (SPAN_MAX_WORDS, SPAN_MAX_CHARS); "quantity" for one quantity with its
+    detail of up to BOUND_SPAN_MAX_WORDS words, which may bind instead of
+    being restated; otherwise "restatement"."""
+    words = len(delete.split())
+    if words <= SPAN_MAX_WORDS and len(delete) <= SPAN_MAX_CHARS:
+        return None
+    if words <= BOUND_SPAN_MAX_WORDS and len(delete) <= SPAN_MAX_CHARS and _quantity_proposal(delete):
+        return "quantity"
+    return "restatement"
+
+
+def _span_proved(proof: str | None, shape: Neighbourhood) -> bool:
+    return (proof is None or restatement(shape) is not None
+            or (proof == "quantity" and quantity_binds(shape)))
+
+
 def _quantity_proposal(delete: str) -> bool:
     """The proposal is one quantity with its detail, then its marker."""
     marker = SPAN_ENDS_WITH_MARKER_RE.search(delete)
     return bool(marker and quantity_shaped(delete[:marker.start()].rstrip(" \t,;:")))
+
+
+def _occurrences(text: str, delete: str) -> list:
+    """Where ``delete`` occurs in ``text`` as a whole span.
+
+    Case-insensitive matching on the ORIGINAL text: re.IGNORECASE folds per
+    position, so match offsets stay valid in the original string
+    (str.lower() is not length-preserving for all code points and would
+    shift offsets). A span starts and ends on a token boundary: never right
+    after a character that joins a token ("/shop/pipes/voicing_A.md",
+    "1.5", "--format=stl") nor right before one ("no-show").
+    """
+    return list(re.finditer(rf"(?<![\w{_TOKEN_JOINERS}])(?<!\w[.:])(?<!\d,)" + re.escape(delete)
+                            + rf"(?![\w{_TOKEN_JOINERS}]|[.:]\w)", text, re.IGNORECASE))
 
 
 def parse_correction_output(output: str, window_text: str,
@@ -726,19 +989,13 @@ def parse_correction_output(output: str, window_text: str,
     accepted: list[AdmittedCorrection] = []
     rejected: list[CorrectionProposal] = []
     lines = [ln.strip().strip('"').strip() for ln in output.splitlines()]
-    lines = [d for d in lines
-             if d and d.upper() != "NONE" and len(d) <= SPAN_MAX_CHARS]
+    lines = [d for d in lines if d and d.upper() != "NONE"]
     if limit_hit:
         return [], [CorrectionProposal(None, False, "batch_truncated", d)
                     for d in lines]
 
     def occurrences(delete):
-        # Case-insensitive matching on the ORIGINAL text: re.IGNORECASE
-        # folds per position, so match offsets stay valid in the
-        # original string (str.lower() is not length-preserving for all
-        # code points and would shift offsets).
-        return list(re.finditer(r"(?<!\w)" + re.escape(delete) + r"(?!\w)",
-                                window_text, re.IGNORECASE))
+        return _occurrences(window_text, delete)
 
     proposed = {}
     for d in lines:
@@ -746,6 +1003,11 @@ def parse_correction_output(output: str, window_text: str,
     taken: list[tuple[int, int]] = []
     cursor = 0
     for delete in lines:
+        # Every line not admitted is recorded, so a rejected correction the
+        # cleanup applies anyway can still be put back.
+        if len(delete) > RESTATED_SPAN_MAX_CHARS:
+            rejected.append(CorrectionProposal(None, False, "span_too_long", delete=delete))
+            continue
         if not SPAN_ENDS_WITH_MARKER_RE.search(delete):
             rejected.append(CorrectionProposal(None, False,
                                                "no_marker_ending", delete=delete))
@@ -753,11 +1015,10 @@ def parse_correction_output(output: str, window_text: str,
         if marker_key(delete) in BARE_MARKERS:
             rejected.append(CorrectionProposal(None, False, "bare_marker", delete=delete))
             continue
-        over_cap = len(delete.split()) > SPAN_MAX_WORDS
-        if over_cap and not (len(delete.split()) <= BOUND_SPAN_MAX_WORDS
-                             and _quantity_proposal(delete)):
-            rejected.append(CorrectionProposal(None, False, "span_too_long", delete=delete))
+        if len(accepted) >= CORRECTIONS_MAX:
+            rejected.append(CorrectionProposal(None, False, "too_many_corrections", delete=delete))
             continue
+        proof = _span_proof(delete)
         occ = occurrences(delete)
         recovered = None
         if not occ:
@@ -767,9 +1028,13 @@ def parse_correction_output(output: str, window_text: str,
             # proposal counts never disambiguate a guessed word boundary.
             if len(recovered_occ) == 1:
                 occ = recovered_occ
+        # A long line that is not one quantity can only be proved by a
+        # restatement, which needs its resolved span.
+        unproved = proof == "restatement"
         if len(occ) > proposed[delete.lower()]:
-            rejected.append(CorrectionProposal(None, False,
-                                               "ambiguous_occurrence", delete=delete))
+            rejected.append(CorrectionProposal(
+                None, False, "span_too_long" if unproved else "ambiguous_occurrence",
+                delete=delete))
             continue
         cand = next((m for m in occ
                      if m.start() >= cursor
@@ -777,7 +1042,8 @@ def parse_correction_output(output: str, window_text: str,
                                  for a, b in taken)), None)
         if cand is None:
             rejected.append(CorrectionProposal(
-                None, False, "offsets_unresolved", delete=delete))
+                None, False, "span_too_long" if unproved else "offsets_unresolved",
+                delete=delete))
             continue
         if recovered is not None:
             delete = window_text[cand.start():cand.end()]
@@ -788,16 +1054,24 @@ def parse_correction_output(output: str, window_text: str,
         span = _include_repeated_frame(window_text, (cand.start(), cand.end()), cursor)
         if span[0] != cand.start():
             delete = window_text[span[0]:span[1]]
-            if len(delete.split()) > SPAN_MAX_WORDS:
+            proof = _span_proof(delete)
+            # The bound holds for what is deleted, not only for the line.
+            if len(delete) > RESTATED_SPAN_MAX_CHARS:
                 rejected.append(CorrectionProposal(span, False, "span_too_long", delete=delete))
                 continue
+        marker = correction_marker_start(window_text, span)
+        shape = neighbourhood(window_text, span, marker)
+        # A longer span needs proof of its extent: the replacement restates
+        # the old value, or one quantity's detail binds against it. A
+        # protected span outranks an unbound quantity's length.
+        if proof == "restatement" and not _span_proved(proof, shape):
+            rejected.append(CorrectionProposal(span, False, "span_too_long", delete=delete))
+            continue
         if any(a < span[1] and b > span[0] for a, b, *_ in protected_spans):
             rejected.append(CorrectionProposal(span, False,
                                                "protected_span", delete=delete))
             continue
-        marker = correction_marker_start(window_text, span)
-        shape = neighbourhood(window_text, span, marker)
-        if over_cap and not quantity_binds(shape):
+        if proof == "quantity" and not _span_proved(proof, shape):
             rejected.append(CorrectionProposal(span, False, "span_too_long", delete=delete))
             continue
         reason = _evidence_reason(shape)
@@ -819,8 +1093,6 @@ def parse_correction_output(output: str, window_text: str,
         taken.append((span[0], restart[1] if restart else span[1]))
         accepted.append(AdmittedCorrection(span, delete, marker, restart, move))
         cursor = taken[-1][1]
-        if len(accepted) >= 6:        # V1's applied cap
-            break
     # A replacement that is itself corrected needs a different edit plan;
     # never move its retained qualifier inside another admitted deletion.
     retained = []
@@ -838,13 +1110,13 @@ def parse_correction_output(output: str, window_text: str,
 
 def _rejected_spans(text: str, rejected: list, accepted: list) -> list:
     """Source spans of rejected proposals that resolve to one exact place,
-    clear of the admitted corrections."""
+    on token boundaries as admission resolves them, clear of the admitted
+    corrections."""
     spans = []
     for proposal in rejected:
         span = proposal.span
         if span is None and proposal.delete:
-            found = [m.span() for m in re.finditer(
-                r"(?<!\w)" + re.escape(proposal.delete) + r"(?!\w)", text, re.IGNORECASE)]
+            found = [m.span() for m in _occurrences(text, proposal.delete)]
             span = found[0] if len(found) == 1 else None
         if span is not None and not any(
                 a < span[1] and b > span[0]
@@ -853,18 +1125,45 @@ def _rejected_spans(text: str, rejected: list, accepted: list) -> list:
     return spans
 
 
+_WORD_RE = re.compile(r"\S+")
+
+
 def _has_correction_marker(text: str) -> bool:
     if CORRECTION_MARKER_RE.search(text):
         return True
     # Admit only shapes an existing single-word evidence guard could
     # accept. This proposes no deletion; model spans still pass every
     # parser/protection guard and the complete candidate validator.
+    # A longer span counts only where the replacement restates it, as in
+    # parse_correction_output.
     for marker in re.finditer(r"\b(?:sorry|no|make[ \t]+that)\b", text, re.IGNORECASE):
-        preceding = list(re.finditer(r"\S+", text[:marker.start()]))
-        for word in reversed(preceding[-(SPAN_MAX_WORDS - 1):]):
+        base = max(0, marker.start() - RESTATED_SPAN_MAX_CHARS)
+        preceding = list(_WORD_RE.finditer(text, base, marker.start()))
+        new = None
+        for word in reversed(preceding):
             span = (word.start(), marker.end())
-            if _evidence_reason(neighbourhood(
-                    text, span, correction_marker_start(text, span))) is None:
+            if span[1] - span[0] > RESTATED_SPAN_MAX_CHARS:
+                break
+            if new is None:
+                # Until a content word joins the candidate it has no
+                # outdated value ("no no no"), and evidence would say so.
+                if not _has_content(word.group()):
+                    continue
+                # A restatement repeats the old value's first or last word; a
+                # long candidate whose replacement repeats neither is skipped
+                # unparsed.
+                new = after_marker(text, marker.end())[2]
+                last = without_trailing_markers(plain_words(text[base:marker.start()]))[-1:]
+                last_repeated = bool(last) and last[0] in new
+            proof = _span_proof(text[span[0]:span[1]])
+            first = word.group().lower().strip(".,;:!?")
+            if (proof == "restatement" and not last_repeated and first not in FILLERS
+                    and new[:1] != (first,)):
+                continue
+            shape = neighbourhood(text, span, correction_marker_start(text, span))
+            if not _span_proved(proof, shape):
+                continue
+            if _evidence_reason(shape) is None:
                 return True
     return False
 

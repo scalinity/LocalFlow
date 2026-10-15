@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 
 # Words the clean contract may always drop (pure fillers; V1's set —
 # "you know" and "like" are content and stay).
@@ -40,11 +41,16 @@ MODALS = frozenset({"can", "could", "may", "might", "must", "shall", "should",
                     "will", "would"})
 FINITE_AUXILIARIES = MODALS | frozenset({
     "am", "is", "are", "was", "were", "has", "have", "had", "do", "does", "did"})
+# The auxiliaries that open a predicate after a subject. "am" is left out:
+# it follows only "I", and "9 am" is a time.
+PREDICATE_AUXILIARIES = FINITE_AUXILIARIES - {"am"}
 
 def marker_pattern(markers) -> str:
     """An alternation of ``markers`` in which a comma may separate the
     words of a compound marker ("no, sorry", "I mean, actually")."""
-    return "|".join(re.escape(m).replace(r"\ ", r"[ \t]*,?[ \t]+")
+    # One reading per separator: "[ \t]*,?[ \t]+" could split a long run
+    # of spaces in quadratically many ways before failing.
+    return "|".join(re.escape(m).replace(r"\ ", r"(?:[ \t]*,[ \t]+|[ \t]+)")
                     for m in sorted(markers, key=lambda w: (-len(w), w)))
 
 
@@ -70,6 +76,10 @@ CORRECTION_MARKERS = frozenset({
 SUBORDINATORS = frozenset({"after", "because", "before", "if", "once", "since",
                            "unless", "until", "when", "while"})
 CLAUSE_LINKS = frozenset({"and", "or", "but", "then"}) | SUBORDINATORS
+# Words that open a dependent clause; "whoever is on call" names a person.
+DEPENDENT_CLAUSE_WORDS = SUBORDINATORS | frozenset({
+    "who", "whom", "whose", "which", "that", "what", "whoever", "whomever", "whichever",
+    "whatever", "where", "why", "how", "whether"})
 
 
 # A frame word the speaker repeats before a corrected value ("to twelve,
@@ -90,6 +100,15 @@ def alternation(words) -> str:
 # Where a replacement value's clause ends: the end of the text, a comma,
 # semicolon or line break, or sentence punctuation before a space.
 CLAUSE_END = r"[ \t]*(?:$|[,;\n]|[.!?](?=\s|$))"
+
+# A title period is still a boundary when checking a sentence merge.
+SENTENCE_END = r"[.!?](?=\s|$)"
+
+# When reading a correction value, the period
+# of a title ("Dr. Okafor") or of a time followed by a lowercase word or a
+# digit ("8 a.m. slot") abbreviates and ends nothing.
+VALUE_SENTENCE_END = (r"(?:(?<!\bDr)(?<!\bMrs)(?<!\bMr)(?<!\bMs)(?<!\bProf)"
+                r"(?!(?<=\b[aApP]\.[mM])\.[ \t]+[a-z0-9])\.|[!?])(?:\s|$)")
 
 IDENTIFIER_TOKEN_RE = re.compile(
     r"(?<!\w)[A-Za-z_]\w*_\w+(?!\w)"
@@ -115,6 +134,18 @@ NUMBER_WORDS = {
     "ninety": 90,
 }
 SCALE_WORDS = {"hundred": 100, "thousand": 1_000, "million": 1_000_000}
+# Spelled ordinals, as in "on the fourth, no, the fifth" or "the
+# twenty-first".
+_ORDINAL_UNITS = ("first|second|third|fourth|fifth|sixth|seventh|eighth|ninth")
+ORDINAL_WORD_RE = re.compile(
+    rf"(?:(?:twenty|thirty)-)?(?:{_ORDINAL_UNITS})|tenth|eleventh|twelfth|thirteenth"
+    r"|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth|thirtieth")
+
+
+def is_value_word(w: str) -> bool:
+    """A number, a spelled number or an ordinal (``4``, ``four``, ``fourth``)."""
+    return (any(c.isdigit() for c in w) or w in NUMBER_WORDS or w in SCALE_WORDS
+            or ORDINAL_WORD_RE.fullmatch(w) is not None)
 
 # Number grammar. A typed token keeps its sign and separators ("-2",
 # "1,500", "2,5"); a count is a positive whole number ("7 quarters"); a
@@ -148,6 +179,12 @@ def quoted_regions(text: str) -> list[tuple[int, int]]:
     quote. A quote or code mark without a partner has no known extent,
     so it makes the whole text one region.
     """
+    return list(_quoted_regions(text))
+
+
+# Admission asks once per candidate span, so a text's regions are found once.
+@lru_cache(maxsize=64)
+def _quoted_regions(text: str) -> tuple[tuple[int, int], ...]:
     regions = []
     opening = None
     for m in _CODE_RUN_RE.finditer(text):
@@ -160,15 +197,15 @@ def quoted_regions(text: str) -> list[tuple[int, int]]:
             regions.append((opening.start(), m.end()))
             opening = None
     if opening is not None:
-        return [(0, len(text))]
+        return ((0, len(text)),)
     paired = [m.span() for pattern in (QUOTED_RE, _SINGLE_QUOTED_RE)
               for m in pattern.finditer(text)]
     for m in re.finditer(r"[\"“”‘’']", text):
         inside = any(a <= m.start() < b for a, b in paired + regions)
         apostrophe = m.group() in "'’" and m.start() and (text[m.start() - 1].isalnum())
         if not inside and not apostrophe:
-            return [(0, len(text))]
-    return sorted(set(regions + paired))
+            return ((0, len(text)),)
+    return tuple(sorted(set(regions + paired)))
 
 
 def touches(regions, start: int, end: int) -> bool:
@@ -180,9 +217,10 @@ class Neighbourhood:
     """The source around one marker-terminated deletion, parsed once.
 
     ``text[start:marker]`` is the old value and ``text[marker:end]`` its
-    marker. ``old_words`` are the old value's words and ``new_words`` the
-    first four words after the marker in the same sentence, lowercased
-    with separators stripped. ``frame`` is a frame word that leads both
+    marker. ``old_words`` are the old value's words, without fillers or a
+    marker chained before the proposal's own, and ``new_words`` the first
+    four words after the marker in the same sentence, lowercased with
+    separators stripped. ``frame`` is a frame word that leads both
     ("with 4 liters of dye, sorry, with 6 liters"). ``closed`` says the
     replacement value, after that frame and one article, ends its clause:
     ``as fine.`` and ``record_cache,`` close, while ``as soon as the bank
@@ -200,19 +238,170 @@ class Neighbourhood:
 
 
 def _words(text: str) -> tuple:
-    return tuple(w for token in text.split() if (w := token.lower().strip(",;:")))
+    # A filler is no word of either value ("db-stage-02 uh, sorry, db-stage-03").
+    return tuple(w for token in text.split()
+                 if (w := token.lower().replace("’", "'").strip(",;:")) and w not in FILLERS)
+
+
+# How far past the marker the rules read. A restated copy of the longest
+# admissible old value (160 characters) and the clause after it fit well
+# inside; reading less keeps every candidate span's cost bounded.
+LOOKAHEAD_CHARS = 1000
+_SENTENCE_STOP_RE = re.compile(VALUE_SENTENCE_END + r"|\n")
+
+
+_CLAUSE_STOP_RE = re.compile(VALUE_SENTENCE_END + r"|[,;\n]")
+
+
+@lru_cache(maxsize=256)
+def after_marker(text: str, end: int) -> tuple:
+    """``(sentence_end, words, plain, clause)`` for the replacement after a
+    marker ending at ``end``: where its sentence ends (within
+    LOOKAHEAD_CHARS), that stretch's words as the neighbourhood and the
+    restatement read them, and the plain words of its first clause (to a
+    comma, semicolon, line break or sentence end). Every candidate span
+    ending at one marker shares them."""
+    limit = min(len(text), end + LOOKAHEAD_CHARS)
+    stop = _SENTENCE_STOP_RE.search(text, end, limit)
+    sentence_end = stop.start() if stop else limit
+    start = end
+    while start < limit and text[start] in " \t,;:":
+        start += 1
+    clause = _CLAUSE_STOP_RE.search(text, start, limit)
+    return (sentence_end, _words(text[end:sentence_end]), tuple(plain_words(text[end:sentence_end])),
+            tuple(plain_words(text[start:clause.start() if clause else limit])))
 
 
 def neighbourhood(text: str, span: tuple, marker: int) -> Neighbourhood:
     start, end = span
-    tail = text[end:]
-    stop = re.search(r"[.!?](?:\s|$)|\n", tail)
-    old_words = _words(text[start:marker])
-    new_words = _words(tail[:stop.start()] if stop else tail)[:4]
+    # Every rule reads one old value: a marker chained before the
+    # proposal's own ("Monday, I mean no") is no part of it.
+    old_words = tuple(without_trailing_markers(list(_words(text[start:marker]))))
+    new_words = after_marker(text, end)[1][:4]
     frame = (old_words[0] if old_words and new_words[:1] == old_words[:1]
              and old_words[0] in FRAME_WORDS else None)
     head = r"[ \t,;:]*"
     if frame:
         head += re.escape(frame) + r"[ \t]+(?:(?:a|an|the)[ \t]+)?"
-    closed = re.match(head + r"\S+?" + CLAUSE_END, tail, re.IGNORECASE) is not None
+    closed = re.compile(head + r"\S+?" + CLAUSE_END, re.IGNORECASE).match(text, end) is not None
     return Neighbourhood(text, start, marker, end, old_words, new_words, frame, closed)
+
+
+# A restatement changes at most this many words of the old value, and of
+# the replacement in their place.
+RESTATED_CHANGE_MAX_WORDS = 3
+# "her" may be an object ("Tell her Maria ...") rather than a determiner.
+_OPENING_DETERMINERS = (DETERMINERS - {"her"}) | {"a", "an"}
+
+
+def plain_words(text: str) -> list:
+    """Lowercased words without edge punctuation or fillers. A curly
+    apostrophe reads as a straight one, so the word lists find
+    ``shouldn’t`` as they find ``shouldn't``."""
+    return [w for token in text.split()
+            if (w := token.lower().replace("’", "'").strip(".,;:!?")) and w not in FILLERS]
+
+
+# Longest first, in a fixed order: "wait no" must be cut whole, never as a
+# bare "no" that a set's iteration order happened to reach first.
+_MARKER_PHRASES = sorted((m.split() for m in CORRECTION_MARKERS), key=lambda m: (-len(m), m))
+
+
+def without_trailing_markers(words: list) -> list:
+    """A marker chained before the proposal's own ("2.5 hours, actually no
+    wait") belongs to the marker, not to the old value."""
+    while words and (cut := next((len(m) for m in _MARKER_PHRASES if words[-len(m):] == m), 0)):
+        words = words[:-cut]
+    return words
+
+
+def _holds(words, word_class) -> bool:
+    return any(w in word_class for w in words)
+
+
+@dataclass(frozen=True)
+class Restatement:
+    """How a replacement restates its old value, in words: the old value is
+    ``head`` repeated words, ``changed`` old words and ``tail`` repeated
+    words, and the replacement opens with the same ``head``, ``replacing``
+    words in place of the changed ones, and the same ``tail``."""
+    head: int
+    changed: int
+    replacing: int
+    tail: int
+
+
+def restatement(n: Neighbourhood) -> Restatement | None:
+    """How the words after the marker restate the old value, if they do.
+
+    ``in the first half hour, no wait, in the last half hour`` repeats every
+    old word but ``first``: head ``in the``, changed ``first``, replacing
+    ``last``, tail ``half hour``. The changed and replacing words are one to
+    three each, in the same sentence; same-length ones may still share a
+    word in place (``at the lab``, ``in the clinic``). The repeated words
+    hold a content word and are at least two, and, unless they enclose the
+    change on both sides, no fewer than the changed words. ``12 meters, no,
+    send the rest to Marta`` restates nothing; neither does an unchanged
+    repeat, a change that drops a negation (negation_coverage would reject
+    the result), a change that keeps every changed word and inserts others
+    (``review`` -> ``Jonas will review``), a change whose replacing words
+    bring an auxiliary or drop a dependent-clause word (``the nurse`` ->
+    ``Jonas is``), a change with nothing repeated before it that holds more
+    than two words not shared in place, or more old words than replacing
+    ones unless the old value opens with a determiner or a value the
+    replacement's value takes over (``Tell her Maria`` -> ``Jonas``), or a
+    repeat that a quotation, code span or fence touches. Fillers and a
+    marker chained before the proposal's own are not words here.
+    """
+    sentence_end, _words_after, new, _clause = after_marker(n.text, n.end)
+    # A quoted repeat may be a literal, not the speaker restating.
+    if touches(_quoted_regions(n.text), n.start, sentence_end):
+        return None
+    old = without_trailing_markers(plain_words(n.text[n.start:n.marker]))
+    new = list(new)
+    head = 0
+    while head < min(len(old), len(new)) and old[head] == new[head]:
+        head += 1
+    for changed in range(1, RESTATED_CHANGE_MAX_WORDS + 1):
+        tail = len(old) - head - changed
+        if tail < 0:
+            break
+        for replacing in range(1, RESTATED_CHANGE_MAX_WORDS + 1):
+            after = head + replacing
+            if len(new) < after + tail or new[after:after + tail] != old[head + changed:]:
+                continue
+            old_part, new_part = old[head:head + changed], new[head:after]
+            # A dropped negation changes the meaning (negation_coverage would
+            # reject the result), and a change that keeps every old word
+            # inserts rather than replaces.
+            remaining = iter(new_part)
+            if (any(w in NEGATION_WORDS and w not in new_part for w in old_part)
+                    or all(w in remaining for w in old_part)):
+                continue
+            # The replacing words stay the kind of words they replace: one
+            # that brings an auxiliary ("the nurse on call" -> "Jonas is on
+            # call") or drops a dependent-clause word ("whoever is on call"
+            # -> "Jonas is on call") turns a phrase into a clause.
+            if (_holds(new_part, PREDICATE_AUXILIARIES) > _holds(old_part, PREDICATE_AUXILIARIES)
+                    or _holds(old_part, DEPENDENT_CLAUSE_WORDS) > _holds(new_part,
+                                                                       DEPENDENT_CLAUSE_WORDS)):
+                continue
+            same = ([w for w, v in zip(old_part, new_part) if w == v]
+                    if changed == replacing else [])
+            # With nothing repeated before the change, nothing shows where
+            # the old value starts. The change then holds at most two words
+            # not shared in place ("at the lab" -> "in the clinic"), and old
+            # words the replacement has no counterpart for are proved only
+            # after a determiner or a value it takes over ("the nurse" ->
+            # "Jonas"; "3 spare bobbins" -> "4 bobbins"): "Tell her Maria
+            # will own it, sorry, Jonas will own it" never took back "Tell
+            # her", nor "the team Maria ..." "the team".
+            if not head and (changed - len(same) > 2 or (changed > replacing and not (
+                    old_part[0] in _OPENING_DETERMINERS
+                    or (is_value_word(old_part[0]) and is_value_word(new_part[0]))))):
+                continue
+            repeated = old[:head] + old[head + changed:] + same
+            if (len(repeated) >= 2 and any(w not in FUNCTION_WORDS for w in repeated)
+                    and ((head and tail) or len(repeated) >= changed - len(same))):
+                return Restatement(head, changed, replacing, tail)
+    return None
