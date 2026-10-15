@@ -388,7 +388,9 @@ def _introduced_list_join_spans(source: str, output: str) -> list:
     connector before the last item is authorized away; conjunctions within
     an item and ordinary prose remain content, and an item never runs past
     a source sentence boundary, so a closing sentence cannot hide in the
-    last bullet.
+    last bullet. After a copular "the … list is/are" a comma must follow
+    each item but the last, because "the list is not complete and we need
+    more" is a predicate, not items.
     """
     from . import document_nodes as dn
     atoms = [a for a in _word_atoms(source) if a[2] not in FILLERS]
@@ -411,6 +413,7 @@ def _introduced_list_join_spans(source: str, output: str) -> list:
                    if words[i:i + len(head)] == head]
         if len(matches) != 1:
             continue
+        copular = head[-2:] in (["list", "is"], ["list", "are"])
         cursor = matches[0] + len(head)
         join = None
         for index, item in enumerate(group.items):
@@ -418,9 +421,11 @@ def _introduced_list_join_spans(source: str, output: str) -> list:
             if index == len(group.items) - 1 and words[cursor:cursor + 1] == ["and"]:
                 join = atoms[cursor][:2]
                 cursor += 1
-            if (not item_words or words[cursor:cursor + len(item_words)] != item_words
-                    or _boundary_within(source, atoms[cursor][0],
-                                        atoms[cursor + len(item_words) - 1][1])):
+            last = cursor + len(item_words) - 1
+            if (not item_words or words[cursor:last + 1] != item_words
+                    or _boundary_within(source, atoms[cursor][0], atoms[last][1])
+                    or (copular and index < len(group.items) - 1
+                        and not re.match(r"[ \t]*,", source[atoms[last][1]:]))):
                 join = None
                 break
             cursor += len(item_words)

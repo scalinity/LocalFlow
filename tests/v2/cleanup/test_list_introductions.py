@@ -36,6 +36,8 @@ class ListIntroductionTests(unittest.TestCase):
              "is stable\n- check the TTL is 300 seconds\n- log the hit rate"),
             ("the camping gear list is a tent, 2 sleeping bags, and a camp stove",
              "The camping gear list is:\n- a tent\n- 2 sleeping bags\n- a camp stove"),
+            ("the supply list are gloves, tape, and two lamps",
+             "The supply list are:\n- gloves\n- tape\n- two lamps"),
         ):
             with self.subTest(source=source):
                 self.assertEqual(failures(source, output), set())
@@ -50,6 +52,9 @@ class ListIntroductionTests(unittest.TestCase):
             # No introduction.
             ("we bought a scarf a candle set and a puzzle box",
              "We bought:\n- a scarf\n- a candle set\n- a puzzle box"),
+            # A copular "list is" before a predicate introduces no items.
+            ("the list is not complete and we need more",
+             "The list is:\n- not complete\n- we need more"),
         ):
             with self.subTest(source=source):
                 self.assertIn("coverage", failures(source, output))

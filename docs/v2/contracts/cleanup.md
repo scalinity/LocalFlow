@@ -46,8 +46,10 @@ The validator permits the final list-joining “and” to become a bullet
 separator only when an unambiguous matching introduction and every item
 match the source words in order, fillers aside. The introduction is the
 last sentence before the colon; it names a `list` and holds `here is`/`here
-are` or ends with `list` or `list is`. An item never runs past a source
-sentence boundary, so a closing sentence glued onto the last bullet fails.
+are` or ends with `list`, `list is` or `list are`, and after `list is`/`list
+are` a comma follows every item but the last. An item never runs past a
+source sentence boundary, so a closing sentence glued onto the last bullet
+fails.
 It does not authorize dropping “and” within an item, introduction words,
 protected text, or item content.
 
