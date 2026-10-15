@@ -120,11 +120,14 @@ The fixed 35/50-word chunking is gone. `plan_windows`:
 
 Corrections run as a separate proposal pass **only when a marker is
 present** (never a second call on plain input). Existing direct triggers,
-including standalone `actually`, are retained. Standalone `sorry` and `no`
-are admitted only when a possible deletion ending at that marker passes
-the existing `_evidence_reason` guard: a nearby outdated value and a
-parallel replacement, within the same sentence and six-word span budget.
-This admission proposes or deletes nothing. The model's exact proposal
+including standalone `actually`, are retained. Standalone `sorry`, `no`
+and `make that` run the pass only when a possible deletion ending at that
+marker passes the same guards a proposal must pass: the span budget below
+(six words, or longer when a restatement or a bound quantity proves it),
+the sentence rule and the evidence checks. Candidate spans reach back at
+most 160 characters from the marker, and a long one whose replacement
+repeats neither its first nor its last word is not tried, since no
+restatement could prove it. This admission proposes or deletes nothing. The model's exact proposal
 still passes offset resolution, all protection/evidence guards, and full
 candidate validation; ordinary negative/interjection prose does not gain
 an unconditional extra correction-model call.
