@@ -31,6 +31,8 @@ REVIEWED_EXCLUSIONS = {
 LIST_INTRO = re.compile(r"\b(list|lists|steps?|following|items)\b", re.I)
 C_ERA_SAMPLE = 1200
 # Rows reviewed to teach the comma before a sentence-final addressed name keep every added comma.
+# A guarantee for such rows: today the comma classification and the addressee check already keep
+# every comma these rows add, so it changes none of the current labels.
 VOCATIVE_FOCUS = "question_final_vocative_comma"
 # Per TRAIN row, the kind of each comma a label added at an unpunctuated source gap, keyed by
 # source gap index; absent, every such comma reverts unless it sets off an addressed person.
