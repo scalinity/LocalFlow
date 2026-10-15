@@ -168,7 +168,7 @@ admission. Shared word classes and the number and unit grammar live in
 | a replacement Y with a content word follows the marker in the same sentence | `no_replacement` |
 | `i mean it/that/this` is emphasis | `emphasis_not_correction` |
 | the replacement does not add to the old value: no `also` within one word more than the old value, and no `too`, `either` or `as well` ending a replacement clause that short (`on Linux, sorry, on macOS too`; `too hot` intensifies and counts nothing) | `additive_replacement` |
-| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers (a spelled ordinal is one, and an ordinal day may become a month with its day), both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, another repeated frame preposition before a like complement (**Closure**), two closed identifiers, two code tokens of one shape (**Closure**), or Y restates X; the replacement does not open a new predicate unless it restates X with X's own auxiliary, one that follows no word opening a dependent clause (`who`, `that`, `what`, `if`, …) in X, or replaces X's whole sentence (`Maria will own …, sorry, Jonas will own …`, but not `the nurse on call, sorry, Jonas is on call` or `whoever is on call, sorry, Jonas is on call`), and a bare `no` does not answer an earlier `yes` with the same next word (`yes to the first, no to the second`) | `not_parallel` |
+| through a marker that is also ordinary speech (`actually`, `sorry`, `no`, `make that`), X and Y are visibly parallel: both numbers (a spelled ordinal is one, and an ordinal day may become a month with its day), both weekdays, both months, sharing a content word, closed numeric metric-length values, a repeated `as` frame with one closed complement, another repeated frame preposition before a like complement (**Closure**), two closed identifiers, two code tokens of one shape (**Closure**), or Y restates X; the replacement does not open a new predicate unless it restates X, whose changed words then bring no auxiliary of their own (`Maria will own …, sorry, Jonas will own …`, but not `the nurse on call, sorry, Jonas is on call`), and a bare `no` does not answer an earlier `yes` with the same next word (`yes to the first, no to the second`) | `not_parallel` |
 | replacing a weekday/month with another cannot also delete preceding content words (for example, `check Monday no wait Tuesday` may delete `Monday no wait`, but not `check`) | `overbroad_calendar_value` |
 
 **Markers.** The markers are `lexicon.CORRECTION_MARKERS`; a comma may
@@ -252,7 +252,11 @@ changed old words. Fillers do not count, and a marker chained before the
 proposal's own (`2.5 hours, actually no wait`) belongs to the marker. An
 unchanged repeat, an open replacement (`12 meters, no, send the rest to
 Marta`), a change that drops a negation, a change that keeps every old
-word and inserts others (`review` → `Jonas will review`), a change with
+word and inserts others (`review` → `Jonas will review`), a change
+whose replacing words bring an auxiliary the changed words lack or drop
+a word that opens a dependent clause (`the nurse on call` → `Jonas is on
+call`; `whoever is on call` → `Jonas is on call`: a phrase becomes a
+clause), a change with
 nothing repeated before it that holds more than two words not shared in
 place (`at the lab` → `in the clinic` shares `the`; `the team Maria` →
 `Jonas` shares nothing) or more old words than replacing ones, unless the
@@ -269,7 +273,7 @@ A correction may cross one sentence boundary when the old value ends its
 sentence with a period and the marker opens the next one. An old value
 that opens its sentence is replaced whole when the next sentence restates
 it (`The review closes on Friday. Sorry, the review closes on Thursday`);
-the restatement may then open its own predicate. An old value that ends
+the restatement may then open with the predicate it repeats. An old value that ends
 a longer sentence takes a restatement that repeats the old value's end
 and closes within one word after the restated copy (`lists 14 duplicate
 rows in batch C. No wait, 41 duplicate rows in batch C, which …`), or a

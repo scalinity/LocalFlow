@@ -30,7 +30,8 @@ from . import prompts
 from .lexicon import (CLAUSE_END, CLAUSE_LINKS, CORRECTION_MARKERS, FILLERS, FINITE_AUXILIARIES,
                       FRAME_PREPOSITIONS, FRAME_WORDS, FUNCTION_WORDS, IDENTIFIER_TOKEN_RE, METER,
                       NEGATION_WORDS, NUMBER, ORDINAL_WORD_RE,
-                      POSITIVE_NUMBER, SENTENCE_END, SUBORDINATORS, TECH_TOKEN_RE, Neighbourhood,
+                      POSITIVE_NUMBER, PREDICATE_AUXILIARIES, SENTENCE_END, TECH_TOKEN_RE,
+                      Neighbourhood,
                       LOOKAHEAD_CHARS, after_marker, alternation, is_value_word, marker_key,
                       marker_pattern, neighbourhood, plain_words, quoted_regions, restatement,
                       touches, without_trailing_markers)
@@ -755,16 +756,14 @@ def _evidence_reason(n: Neighbourhood) -> str | None:
                 for w in before_words[:-1]):
             return "overbroad_calendar_value"
     if marker in _ORDINARY_WORD_MARKERS:
-        # A restated old value is the evidence itself. Its replacement may
-        # open a predicate that restates the old one ("Maria will own the
-        # grid conversion, no, Jonas will own the grid conversion") or
-        # replace a whole sentence, but not a new one: "the nurse on call,
-        # sorry, Jonas is on call" would leave "Give it to Jonas is on call".
+        # A restated old value is the evidence itself, and its repeated
+        # words may include the predicate ("Maria will own the grid
+        # conversion, no, Jonas will own the grid conversion"): the changed
+        # words bring no auxiliary of their own (lexicon.restatement).
         proved = across or restatement(n) is not None
-        own_predicate = (across and _opens_sentence(n)) or (proved and _predicate_restated(n))
         if (not (proved or _parallel(n) or _parallel_metric_lengths(n))
                 or _yes_no_contrast(n) or _apology(n)
-                or (not own_predicate and _replacement_opens_predicate(n))
+                or (not proved and _replacement_opens_predicate(n))
                 or (marker == "make that" and not _replacement_closes_within(
                     n, len(n.old_words) + 1))):
             return "not_parallel"
@@ -777,30 +776,6 @@ def _replacement_closes_within(n: Neighbourhood, words: int) -> bool:
     and 2 for the fridge" goes on into new content."""
     return re.compile(rf"[ \t,;:]*(?:\S+[ \t]+){{0,{words - 1}}}\S+?{CLAUSE_END}").match(
         n.text, n.end) is not None
-
-
-# "am" is left out: it follows only "I", and "9 am" is a time.
-_PREDICATE_AUXILIARIES = FINITE_AUXILIARIES - {"am"}
-# Words that open a dependent clause: an auxiliary after one belongs to
-# that clause, not to the old value's own predicate.
-_DEPENDENT_CLAUSE_WORDS = SUBORDINATORS | frozenset({
-    "who", "whom", "whose", "which", "that", "what", "whoever", "whomever", "whichever",
-    "whatever", "where", "why", "how", "whether"})
-
-
-def _predicate_restated(n: Neighbourhood) -> bool:
-    """An auxiliary among the replacement's first four words stands in the
-    old value too, after no dependent-clause word there, so the predicate
-    it opens is the old value's own. "whoever is on call" and "what is on
-    the shelf" name a person or a thing; their "is" belongs to a clause the
-    replacement cannot take the place of."""
-    clause = after_marker(n.text, n.end)[3][:4]
-    for w in n.old_words:
-        if w in _DEPENDENT_CLAUSE_WORDS:
-            return False
-        if w in _PREDICATE_AUXILIARIES and w in clause:
-            return True
-    return False
 
 
 def _replacement_opens_predicate(n: Neighbourhood) -> bool:
@@ -818,10 +793,10 @@ def _replacement_opens_predicate(n: Neighbourhood) -> bool:
     words = [w.lower() for w in clause.split()]
     words = (words[1:4] if words[:1] and (words[0] in _ARTICLES or words[0].rstrip(".") in _TITLES)
              else words[:3])
-    if words[1:2] and words[1] in _PREDICATE_AUXILIARIES:
+    if words[1:2] and words[1] in PREDICATE_AUXILIARIES:
         return True
     return (len(words) == 3 and words[0] not in FUNCTION_WORDS
-            and words[1] not in FUNCTION_WORDS and words[2] in _PREDICATE_AUXILIARIES)
+            and words[1] not in FUNCTION_WORDS and words[2] in PREDICATE_AUXILIARIES)
 
 
 def _include_repeated_frame(text: str, span: tuple, cursor: int) -> tuple:

@@ -41,6 +41,9 @@ MODALS = frozenset({"can", "could", "may", "might", "must", "shall", "should",
                     "will", "would"})
 FINITE_AUXILIARIES = MODALS | frozenset({
     "am", "is", "are", "was", "were", "has", "have", "had", "do", "does", "did"})
+# The auxiliaries that open a predicate after a subject. "am" is left out:
+# it follows only "I", and "9 am" is a time.
+PREDICATE_AUXILIARIES = FINITE_AUXILIARIES - {"am"}
 
 def marker_pattern(markers) -> str:
     """An alternation of ``markers`` in which a comma may separate the
@@ -73,6 +76,10 @@ CORRECTION_MARKERS = frozenset({
 SUBORDINATORS = frozenset({"after", "because", "before", "if", "once", "since",
                            "unless", "until", "when", "while"})
 CLAUSE_LINKS = frozenset({"and", "or", "but", "then"}) | SUBORDINATORS
+# Words that open a dependent clause; "whoever is on call" names a person.
+DEPENDENT_CLAUSE_WORDS = SUBORDINATORS | frozenset({
+    "who", "whom", "whose", "which", "that", "what", "whoever", "whomever", "whichever",
+    "whatever", "where", "why", "how", "whether"})
 
 
 # A frame word the speaker repeats before a corrected value ("to twelve,
@@ -305,6 +312,10 @@ def without_trailing_markers(words: list) -> list:
     return words
 
 
+def _holds(words, word_class) -> bool:
+    return any(w in word_class for w in words)
+
+
 @dataclass(frozen=True)
 class Restatement:
     """How a replacement restates its old value, in words: the old value is
@@ -330,13 +341,14 @@ def restatement(n: Neighbourhood) -> Restatement | None:
     send the rest to Marta`` restates nothing; neither does an unchanged
     repeat, a change that drops a negation (negation_coverage would reject
     the result), a change that keeps every changed word and inserts others
-    (``review`` -> ``Jonas will review``), a change with nothing repeated
-    before it that holds more than two words not shared in place, or more
-    old words than replacing ones unless the old value opens with a
-    determiner or a value the replacement's value takes over (``Tell her
-    Maria`` -> ``Jonas``), or a repeat that a quotation, code span or fence
-    touches. Fillers and a marker chained before the
-    proposal's own are not words here.
+    (``review`` -> ``Jonas will review``), a change whose replacing words
+    bring an auxiliary or drop a dependent-clause word (``the nurse`` ->
+    ``Jonas is``), a change with nothing repeated before it that holds more
+    than two words not shared in place, or more old words than replacing
+    ones unless the old value opens with a determiner or a value the
+    replacement's value takes over (``Tell her Maria`` -> ``Jonas``), or a
+    repeat that a quotation, code span or fence touches. Fillers and a
+    marker chained before the proposal's own are not words here.
     """
     sentence_end, _words_after, new, _clause = after_marker(n.text, n.end)
     # A quoted repeat may be a literal, not the speaker restating.
@@ -362,6 +374,14 @@ def restatement(n: Neighbourhood) -> Restatement | None:
             remaining = iter(new_part)
             if (any(w in NEGATION_WORDS and w not in new_part for w in old_part)
                     or all(w in remaining for w in old_part)):
+                continue
+            # The replacing words stay the kind of words they replace: one
+            # that brings an auxiliary ("the nurse on call" -> "Jonas is on
+            # call") or drops a dependent-clause word ("whoever is on call"
+            # -> "Jonas is on call") turns a phrase into a clause.
+            if (_holds(new_part, PREDICATE_AUXILIARIES) > _holds(old_part, PREDICATE_AUXILIARIES)
+                    or _holds(old_part, DEPENDENT_CLAUSE_WORDS) > _holds(new_part,
+                                                                       DEPENDENT_CLAUSE_WORDS)):
                 continue
             same = ([w for w, v in zip(old_part, new_part) if w == v]
                     if changed == replacing else [])

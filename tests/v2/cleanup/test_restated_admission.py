@@ -78,41 +78,42 @@ class RestatedAdmissionTests(unittest.TestCase):
         target = "Jonas will own the grid export, since Maria is away."
         self.assertEqual(clean(source, target, proposal).text, target)
 
-    def test_a_restatement_opens_no_new_predicate(self):
-        for source, proposal in (
-            ("Give it to the nurse on call, sorry, Jonas is on call.", "the nurse on call, sorry"),
-            ("It is 10 minutes of rest, no, it is 15 minutes of rest.", "10 minutes of rest, no"),
-            # Merged into the sentence before, the new predicate would join it.
-            ("Leave the tray at the lab. Sorry, Jonas is at the lab.",
-             "the tray at the lab. Sorry"),
-            # The old value's auxiliary belongs to a dependent clause.
-            ("Give it to whoever is on call, sorry, Jonas is on call.",
-             "whoever is on call, sorry"),
-            ("Check what is on the shelf, sorry, Jonas is on the shelf.",
-             "what is on the shelf, sorry"),
-            ("Give it to Maria and whoever is on call, sorry, Jonas is on call.",
-             "whoever is on call, sorry"),
-            ("Send the forms to whoever will sign them, sorry, Marta will sign them.",
-             "whoever will sign them, sorry"),
-            # A full name opens the new predicate as one word does.
+    def test_changed_words_that_make_a_clause_restate_nothing(self):
+        for source, proposal, reason in (
+            # The replacing words bring an auxiliary the changed ones lack.
+            ("Give it to the nurse on call, sorry, Jonas is on call.",
+             "the nurse on call, sorry", "not_parallel"),
+            ("It is 10 minutes of rest, no, it is 15 minutes of rest.",
+             "10 minutes of rest, no", "not_parallel"),
             ("Give it to the nurse on call, sorry, Jonas Berg is on call.",
-             "the nurse on call, sorry"),
+             "the nurse on call, sorry", "not_parallel"),
             ("Give it to Maria Lopez on the night shift, sorry, Jonas Berg is on the night "
-             "shift.", "Maria Lopez on the night shift, sorry"),
+             "shift.", "Maria Lopez on the night shift, sorry", "span_too_long"),
+            ("Leave the tray at the lab. Sorry, Jonas is at the lab.",
+             "the tray at the lab. Sorry", "crosses_sentence"),
+            # The changed words open a dependent clause the replacing ones drop.
+            ("Give it to whoever is on call, sorry, Jonas is on call.",
+             "whoever is on call, sorry", "not_parallel"),
+            ("Check what is on the shelf, sorry, Jonas is on the shelf.",
+             "what is on the shelf, sorry", "not_parallel"),
+            ("Give it to Maria and whoever is on call, sorry, Jonas is on call.",
+             "whoever is on call, sorry", "not_parallel"),
+            ("Send the forms to whoever will sign them, sorry, Marta will sign them.",
+             "whoever will sign them, sorry", "not_parallel"),
         ):
             with self.subTest(proposal=proposal):
-                self.assertEqual(reasons(proposal, source), ([], ["not_parallel"]))
+                self.assertEqual(reasons(proposal, source), ([], [reason]))
         for source, proposal in (
-            # A whole sentence may give way to one with its own predicate.
-            ("The nurse on call. Sorry, Jonas is on call.", "The nurse on call. Sorry"),
+            # The repeated words may hold the predicate, after other words
+            # or a relative pronoun, and one auxiliary may replace another.
             ("Maria Lopez will own the grid export, sorry, Jonas Berg will own the grid "
              "export.", "Maria Lopez will own the grid export, sorry"),
-            # A restated predicate may follow other words, a relative
-            # pronoun among them.
             ("Tell them Maria will own the grid export, sorry, Jonas will own the grid "
              "export.", "Maria will own the grid export, sorry"),
             ("Give it to the nurse who Maria will pick, sorry, Jonas will pick.",
              "Maria will pick, sorry"),
+            ("We ship if the build is green, sorry, if the tests are green.",
+             "if the build is green, sorry"),
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([proposal], []))

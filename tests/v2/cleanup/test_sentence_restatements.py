@@ -80,8 +80,6 @@ class SentenceRestatementTests(unittest.TestCase):
              "with the supervisor present. No"),
             # Merged into the old sentence, a restated noun phrase that starts
             # a new statement replaces nothing.
-            ("Put the receipts in the blue folder on the counter. Actually, the blue folder "
-             "is only for returns, so use the tray.", "the blue folder on the counter. Actually"),
             ("Check what was in the earlier notes. I mean, the earlier notes were fine, but "
              "the folder name changed.", "in the earlier notes. I mean"),
 
@@ -98,6 +96,12 @@ class SentenceRestatementTests(unittest.TestCase):
         ):
             with self.subTest(proposal=proposal):
                 self.assertEqual(reasons(proposal, source), ([], ["crosses_sentence"]))
+        # Nor does one whose "is" turns the restated words into a clause; the
+        # long line then has no restatement to prove it.
+        self.assertEqual(reasons("the blue folder on the counter. Actually",
+                                 "Put the receipts in the blue folder on the counter. Actually, "
+                                 "the blue folder is only for returns, so use the tray."),
+                         ([], ["span_too_long"]))
         # An apology opens the next sentence: "sorry" is no marker there.
         source = "Run it end to end, including the reload. Sorry to say, the reload drops a second."
         self.assertEqual(reasons("including the reload. Sorry", source), ([], ["not_parallel"]))
