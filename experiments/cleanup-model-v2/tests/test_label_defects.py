@@ -90,6 +90,12 @@ class SentenceBoundaryTests(unittest.TestCase):
         self.assertIsNone(defects.loses_sentence_boundary(
             source, 'Here is the list:\n- the map\n- the water\n- the kit\n\nWe leave at six.', []))
 
+    def test_an_abbreviation_period_is_no_sentence_boundary(self):
+        for source, target in (('we met Dr. Patel there', 'We met Dr Patel there.'),
+                               ('they flew to St. Louis today', 'They flew to St Louis today.')):
+            with self.subTest(target=target):
+                self.assertIsNone(defects.loses_sentence_boundary(source, target, []))
+
     def test_a_comma_merge_is_not_matched(self):
         source = 'the calendar showed it as free. But the email said it was taken.'
         self.assertIsNone(defects.loses_sentence_boundary(

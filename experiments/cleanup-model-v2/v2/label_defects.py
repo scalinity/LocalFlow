@@ -12,7 +12,7 @@ from __future__ import annotations
 import difflib
 import re
 
-from .policy_score import LIST_LINE
+from .policy_score import ABBREVIATIONS, LIST_LINE
 from .strict_score import FILLERS
 
 WORD = re.compile(r"\w+(?:['’]\w+)*")
@@ -151,7 +151,9 @@ def loses_sentence_boundary(source, target, offsets, vocabulary_pairs=()):
             matched[block.a + k] = block.b + k
     hits = []
     for i in range(len(a) - 1):
-        if (not re.fullmatch(r"\s*[.!?]\s+", pre[a[i][1]:a[i + 1][0]])
+        gap = pre[a[i][1]:a[i + 1][0]]
+        # The period of "Dr. Patel" or "St. Louis" ends no sentence.
+        if (not re.fullmatch(r"\s*[.!?]\s+", gap) or (gap.lstrip().startswith(".") and a[i][2] in ABBREVIATIONS)
                 or i not in matched or matched.get(i + 1) != matched[i] + 1):
             continue
         j = matched[i]
