@@ -60,6 +60,15 @@ class RestatedAdmissionTests(unittest.TestCase):
         target = "Measure it after 15 minutes of quiet rest, then log it."
         self.assertEqual(clean(source, target, "10 minutes of quiet rest, no").text, target)
 
+    def test_the_trigger_reads_a_long_span_as_the_parser_does(self):
+        # Only the nine-word bound quantity proves this correction, so the
+        # corrections pass must run for it.
+        source = ("Bring 2 kits of the long adhesive chest electrodes, sorry, 3 kits for the "
+                  "sensors.")
+        proposal = "2 kits of the long adhesive chest electrodes, sorry"
+        self.assertEqual(reasons(proposal, source), ([proposal], []))
+        self.assertTrue(_has_correction_marker(source))
+
     def test_a_restated_predicate_is_parallel_through_an_ordinary_marker(self):
         source = ("Maria will own the grid export, sorry, Jonas will own the grid export, "
                   "since Maria is away.")

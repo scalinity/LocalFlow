@@ -883,6 +883,24 @@ def _recover_fused_proposal(source: str, delete: str) -> str | None:
     return _split_unique_source_word(source, delete, missing[0])
 
 
+def _span_proof(delete: str) -> str | None:
+    """What must prove a proposal's extent: None within the plain caps
+    (SPAN_MAX_WORDS, SPAN_MAX_CHARS); "quantity" for one quantity with its
+    detail of up to BOUND_SPAN_MAX_WORDS words, which may bind instead of
+    being restated; otherwise "restatement"."""
+    words = len(delete.split())
+    if words <= SPAN_MAX_WORDS and len(delete) <= SPAN_MAX_CHARS:
+        return None
+    if words <= BOUND_SPAN_MAX_WORDS and len(delete) <= SPAN_MAX_CHARS and _quantity_proposal(delete):
+        return "quantity"
+    return "restatement"
+
+
+def _span_proved(proof: str | None, shape: Neighbourhood) -> bool:
+    return (proof is None or restatement(shape) is not None
+            or (proof == "quantity" and quantity_binds(shape)))
+
+
 def _quantity_proposal(delete: str) -> bool:
     """The proposal is one quantity with its detail, then its marker."""
     marker = SPAN_ENDS_WITH_MARKER_RE.search(delete)
@@ -948,9 +966,7 @@ def parse_correction_output(output: str, window_text: str,
         if marker_key(delete) in BARE_MARKERS:
             rejected.append(CorrectionProposal(None, False, "bare_marker", delete=delete))
             continue
-        over_cap = len(delete.split()) > SPAN_MAX_WORDS or len(delete) > SPAN_MAX_CHARS
-        bound_quantity = (len(delete.split()) <= BOUND_SPAN_MAX_WORDS
-                          and len(delete) <= SPAN_MAX_CHARS and _quantity_proposal(delete))
+        proof = _span_proof(delete)
         occ = occurrences(delete)
         recovered = None
         if not occ:
@@ -962,7 +978,7 @@ def parse_correction_output(output: str, window_text: str,
                 occ = recovered_occ
         # A long line that is not one quantity can only be proved by a
         # restatement, which needs its resolved span.
-        unproved = over_cap and not bound_quantity
+        unproved = proof == "restatement"
         if len(occ) > proposed[delete.lower()]:
             rejected.append(CorrectionProposal(
                 None, False, "span_too_long" if unproved else "ambiguous_occurrence",
@@ -986,23 +1002,20 @@ def parse_correction_output(output: str, window_text: str,
         span = _include_repeated_frame(window_text, (cand.start(), cand.end()), cursor)
         if span[0] != cand.start():
             delete = window_text[span[0]:span[1]]
-            over_cap = len(delete.split()) > SPAN_MAX_WORDS or len(delete) > SPAN_MAX_CHARS
-            unproved = over_cap and not (len(delete.split()) <= BOUND_SPAN_MAX_WORDS
-                                         and len(delete) <= SPAN_MAX_CHARS
-                                         and _quantity_proposal(delete))
+            proof = _span_proof(delete)
         marker = correction_marker_start(window_text, span)
         shape = neighbourhood(window_text, span, marker)
         # A longer span needs proof of its extent: the replacement restates
-        # the old value, or one quantity's detail binds against it.
-        restated = over_cap and restatement(shape) is not None
-        if unproved and not restated:
+        # the old value, or one quantity's detail binds against it. A
+        # protected span outranks an unbound quantity's length.
+        if proof == "restatement" and not _span_proved(proof, shape):
             rejected.append(CorrectionProposal(span, False, "span_too_long", delete=delete))
             continue
         if any(a < span[1] and b > span[0] for a, b, *_ in protected_spans):
             rejected.append(CorrectionProposal(span, False,
                                                "protected_span", delete=delete))
             continue
-        if over_cap and not restated and not quantity_binds(shape):
+        if proof == "quantity" and not _span_proved(proof, shape):
             rejected.append(CorrectionProposal(span, False, "span_too_long", delete=delete))
             continue
         reason = _evidence_reason(shape)
@@ -1079,13 +1092,13 @@ def _has_correction_marker(text: str) -> bool:
             span = (word.start(), marker.end())
             if span[1] - span[0] > RESTATED_SPAN_MAX_CHARS:
                 break
-            long = (len(text[span[0]:span[1]].split()) > SPAN_MAX_WORDS
-                    or span[1] - span[0] > SPAN_MAX_CHARS)
+            proof = _span_proof(text[span[0]:span[1]])
             first = word.group().lower().strip(".,;:!?")
-            if long and not last_repeated and first not in FILLERS and new[:1] != (first,):
+            if (proof == "restatement" and not last_repeated and first not in FILLERS
+                    and new[:1] != (first,)):
                 continue
             shape = neighbourhood(text, span, correction_marker_start(text, span))
-            if long and restatement(shape) is None:
+            if not _span_proved(proof, shape):
                 continue
             if _evidence_reason(shape) is None:
                 return True
