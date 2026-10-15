@@ -7,6 +7,7 @@ import json
 import re
 import statistics
 from .common import *
+from . import policy_score
 from lfx.score import score_synthetic, score_real, edit_distance
 from lfx.audio import lexical
 
@@ -50,7 +51,10 @@ def synthetic(case,text,delivered):
     punctuation_only_needed=(punctuation_slots(case['model_input'])[0]==punctuation_slots(target)[0]
                              and not initial['exact'])
     if text is None:
-        return {**base,"reference_complete":False,"reference_repair":False if not case['is_noop'] else None,
+        # A missing output is a failure, never a case outside the denominator.
+        return {**base,**policy_score.score(case,None),"reference_complete":False,"reference_repair":False if not case['is_noop'] else None,
+                "noop_preserved":False if case['is_noop'] else None,"unnecessary_edit":True if case['is_noop'] else None,
+                "correction_success":False if case.get('gold_lines') else None,
                 "punctuation_f1":0,"punctuation_exact":False,
                 "punctuation_repaired":False if not initial['exact'] else None,
                 "punctuation_only_repaired":False if punctuation_only_needed else None}
@@ -64,13 +68,15 @@ def synthetic(case,text,delivered):
                 punctuation_only_needed=punctuation_only_needed,
                 punctuation_only_repaired=punct['exact'] if punctuation_only_needed else None,
                 punctuation_gain=punct["f1"]-initial["f1"],
-                unchanged=text==case["model_input"])
+                unchanged=text==case["model_input"],**policy_score.score(case,text))
     return base
 
 
 def real(case,text):
     metrics=score_real(case,{"normalized":case["model_input"]},text)
-    if text is not None:
+    if text is None:
+        metrics.update(unauthorized_edit=True)
+    else:
         refs=[case["lexical_reference"]] if case["source"]=="fleurs" else list(case["contract_refs"].values())
         hyp=" ".join(lexical(text))
         best=min([(edit_distance(list(hyp),list(" ".join(lexical(ref)))),len(" ".join(lexical(ref)))) for ref in refs],key=lambda p:p[0]/max(1,p[1]))
@@ -79,24 +85,33 @@ def real(case,text):
 
 
 def aggregate(cases,rows):
+    """Require the complete paired population; missing outputs count as failures."""
+    case_ids=[c["case_id"] for c in cases];row_ids=[r["case_id"] for r in rows]
+    if len(set(case_ids))!=len(case_ids) or len(set(row_ids))!=len(row_ids):
+        raise ValueError("Duplicate case IDs are not a valid score population")
+    if set(case_ids)!=set(row_ids):
+        raise ValueError("Score rows must match the complete case population")
     case_map={c["case_id"]:c for c in cases}
     out={}
     for origin in ("synthetic","real_audio"):
-        selected=[(case_map[r["case_id"]],r) for r in rows if r["case_id"] in case_map and case_map[r["case_id"]]["origin"]==origin]
+        selected=[(case_map[r["case_id"]],r) for r in rows if case_map[r["case_id"]]["origin"]==origin]
         if not selected:continue
         bymode={}
         for mode in ("model_only","delivered"):
             measured=[synthetic(c,r.get(mode),mode=="delivered") if origin=="synthetic" else real(c,r.get(mode)) for c,r in selected]
-            a={"n":len(measured)}
+            a={"n":len(measured),"unavailable":sum(not m["available"] for m in measured)}
             for field in ("damage","facts_changed","hallucination","omission","negation_changed","noop_preserved",
                           "reference_complete","reference_repair","repair_success","correction_success","punctuation_repaired","punctuation_only_repaired",
-                          "punctuation_exact","punctuation_f1","punctuation_gain","unnecessary_edit","unauthorized_edit","list_ok"):
+                          "punctuation_exact","punctuation_f1","punctuation_gain","unnecessary_edit","unauthorized_edit","list_ok",
+                          "words_ok","policy_repair"):
                 vals=[m[field] for m in measured if m.get(field) is not None]
                 if vals:a[field]={"value":sum(vals)/len(vals),"n":len(vals),"sum":sum(vals)}
             for prefix,den in (("wer","words"),("cer","chars")):
                 errs=sum(m.get(prefix+"_errors",0) for m in measured)
                 size=sum(m.get(prefix+"_"+den,0) for m in measured)
                 if size:a[prefix]={"value":errs/size,"errors":errs,"denominator":size}
+            if origin=="synthetic":
+                a["policy_format"]=policy_score.aggregate([c for c,_ in selected],measured)
             bymode[mode]=a
         latency=sorted(r["total_cleanup_ms"] for _,r in selected)
         bymode["runtime"]={"median_ms":statistics.median(latency),"p95_ms":latency[min(len(latency)-1,int((len(latency)-1)*.95))],

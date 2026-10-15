@@ -48,13 +48,18 @@ The modules have these responsibilities:
   reference limitations in the comparison.
 - `refinement`: capture current prompts for independently accepted training
   labels, continue the preserved adapter, and bind the final comparison to
-  a candidate selected on development data.
+  a candidate selected on development data. The selection names the
+  candidate's training run (`candidate.training_run`), whose own dataset
+  freeze the final freeze also binds.
 - `score`: compute exact repairs, punctuation, preservation, real-audio WER/CER,
   latency, memory, and fallback rates.
 - `strict_score`: count source-anchored word and identifier changes separately
   from legacy reference metrics and automated meaning judgments.
 - `judge`: assess anonymous outputs for meaning and fact preservation; retain
   known verdicts and retry only missing output IDs in at most two recovery waves.
+  Development selection uses Opus 5.5 and final comparisons use Sonnet 5.5, so
+  a candidate is not scored by the judge it was selected on; each judge
+  identity records its role and model.
 - `report`: render saved measurements into a self-contained offline report.
 - `refinement_report`: render the completed refinement with separate output
   stages, explicit review results, and links to both preserved earlier reports.

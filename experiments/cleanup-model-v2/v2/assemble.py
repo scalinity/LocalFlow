@@ -8,6 +8,7 @@ import json
 import random
 import re
 from .common import *
+from .strict_score import STUTTER_WORDS, correction_anchor
 from lfx import synth
 
 
@@ -16,30 +17,60 @@ def stable_tokens(text):
             for m in re.finditer(r"\w+(?:['’]\w+)*", text)]
 
 
+def removes_created_repeat(window, corrected, answer):
+    """A correction deletion left a non-stutter word twice in a row and the answer drops one."""
+    def repeats(text):
+        tokens = stable_tokens(text)
+        return collections.Counter(b[2] for a, b in zip(tokens, tokens[1:])
+                                   if a[2] == b[2] and text[a[1]:b[0]].isspace())
+    counts = lambda text: collections.Counter(t[2] for t in stable_tokens(text))
+    return any(word not in STUTTER_WORDS and counts(answer)[word] < counts(corrected)[word]
+               for word in repeats(corrected) - repeats(window))
+
+
 class Dedup:
     """Inverted shingle index avoids a quadratic full-corpus comparison."""
     def __init__(self):
         self.shingles, self.index, self.exact = [], collections.defaultdict(set), {}
 
+    def check(self, text):
+        """The label of an indexed exact or near duplicate, without indexing text."""
+        key = " ".join(text.casefold().split())
+        if key in self.exact:
+            return self.exact[key]
+        sh = synth.shingles(text)
+        for idx in sorted({i for s in sh for i in self.index.get(s, ())}):
+            other, old_label = self.shingles[idx]
+            if synth.jaccard(sh, other) >= 0.6:
+                return old_label
+        return None
+
     def add(self, text, label, check=True):
+        if check:
+            hit = self.check(text)
+            if hit:
+                return hit
         key = " ".join(text.casefold().split())
         sh = synth.shingles(text)
-        if check and key in self.exact:
-            return self.exact[key]
-        candidates = set()
-        if check:
-            for s in sh:
-                candidates.update(self.index.get(s, ()))
-            for idx in candidates:
-                other, old_label = self.shingles[idx]
-                if synth.jaccard(sh, other) >= 0.6:
-                    return old_label
         idx = len(self.shingles)
         self.shingles.append((sh, label))
         self.exact[key] = label
         for s in sh:
             self.index[s].add(idx)
         return None
+
+
+def admit(idx, pair, label):
+    """Check a pair's input, target and their concatenation, then index all three.
+
+    Checking before indexing keeps a pair from matching its own similar target.
+    """
+    texts = (pair["model_input"], pair["target"], pair["model_input"] + " " + pair["target"])
+    hit = next((h for h in map(idx.check, texts) if h), None)
+    if hit is None:
+        for text in texts:
+            idx.add(text, label, check=False)
+    return hit
 
 
 def window_targets(pair, windows):
@@ -55,11 +86,17 @@ def window_targets(pair, windows):
     starts = [t[0] for t in src]
     for w in windows[1:]:
         idx = bisect.bisect_left(starts, w.start)
-        # A cut must land on a retained token and not split a correction.
-        # Otherwise retain the example for evaluation but abstain from training.
-        if idx not in matches:
+        # A cut must sit inside an unchanged run, so neither window owns an
+        # edit made across the seam, and no opening marker (list dash, heading,
+        # quote) may sit before the cut token on either side, or the previous
+        # window's target would carry it. Otherwise retain the example for
+        # evaluation but abstain from training.
+        if idx not in matches or matches.get(idx - 1) != matches[idx] - 1:
             raise ValueError("unaligned_window_boundary")
-        cuts.append(dst[matches[idx]][0])
+        cut = dst[matches[idx]][0]
+        if source[w.start:starts[idx]].strip() or not re.fullmatch(r"[^\w\s]*\s+", target[dst[matches[idx] - 1][1]:cut]):
+            raise ValueError("unaligned_window_boundary")
+        cuts.append(cut)
     cuts.append(len(target))
     if cuts != sorted(set(cuts)):
         raise ValueError("nonmonotonic_window_targets")
@@ -83,12 +120,18 @@ def capture(pair):
     pair["protected_spans"] = [list(p) for p in protected]
     offsets, cursor = [], 0
     for line in pair.get("gold_lines", []):
-        match = re.search(re.escape(line), pair["model_input"][cursor:], re.IGNORECASE)
-        if match is None:
-            raise ValueError("gold_offset_missing")
-        start, end = cursor + match.start(), cursor + match.end()
+        try:
+            start, end = correction_anchor(pair["model_input"], line, cursor)
+        except ValueError as exc:
+            raise ValueError("gold_offset_" + str(exc)) from None
         offsets.append([start, end]); cursor = end
     pair["gold_offsets"] = offsets
+    if pair["split"] == "train":
+        # Every capture path that produces TRAIN supervision applies this rule.
+        from .refinement import training_label_conflict
+        conflict = training_label_conflict(pair)
+        if conflict:
+            raise ValueError(conflict["reason"])
     windows = engine.plan_windows(pair["model_input"], protected)
     targets = window_targets(pair, windows)
     calls = []
@@ -99,9 +142,16 @@ def capture(pair):
             if depth:
                 raise ValueError("capture_retry_not_supervised")
             if corrections_pass:
-                answer = "\n".join(g for g in pair.get("gold_lines", []) if g.lower() in input_text.lower()) or "NONE"
+                answer = "\n".join(g for g, (s, e) in zip(pair.get("gold_lines", []), offsets)
+                                   if window_range[0] <= s and e <= window_range[1]) or "NONE"
             else:
-                answer = targets[tuple(window_range)]
+                answer = targets.get(tuple(window_range))
+                if answer is None:
+                    raise ValueError("window_plan_mismatch")
+                # Supervision must not teach deleting a meaningful word that
+                # repeats only because a correction span was removed before it.
+                if removes_created_repeat(pair["model_input"][window_range[0]:window_range[1]], input_text, answer):
+                    raise ValueError("correction_created_repeat")
             def reply(prompt, max_tokens):
                 ntok = len(tok.encode(answer, add_special_tokens=False)) + 1
                 if ntok + 1 > max_tokens:
@@ -145,7 +195,7 @@ def assemble():
     for split in ("test", "validation", "train"):
         kept, caps = [], []
         for p in sorted(grouped[split], key=lambda p:p["family_id"]):
-            hit = idx.add(p["model_input"] + " " + p["target"], split)
+            hit = admit(idx, p, split)
             if hit:
                 stats["rejected"][split+":duplicate:"+hit] += 1; continue
             try:

@@ -2,10 +2,21 @@
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import random
 from pathlib import Path
 from .common import *
+
+
+def prompt_prefixes(captures):
+    """Per role, the hashed system and few-shot prefix keys lfx.train caches."""
+    from lfx.train import USER_TURN
+    out = collections.defaultdict(set)
+    for cap in captures:
+        for call in cap["calls"]:
+            out[call["role"]].add(sha256_text(call["prompt"][:call["prompt"].rfind(USER_TURN)]))
+    return out
 
 
 def checked_dataset(dataset, *, require_current_capture_source=True):
@@ -15,9 +26,18 @@ def checked_dataset(dataset, *, require_current_capture_source=True):
     if any(file_sha256(dataset / (name + ".jsonl" if name in ("test", "validation") else name)) != digest
            for name, digest in freeze.get("files", {}).items()):
         raise RuntimeError("Frozen dataset file changed")
+    capture_hashes = freeze.get("capture_source_hashes", {})
     if require_current_capture_source and any(
-            file_sha256(ROOT / path) != digest for path, digest in freeze.get("capture_source_hashes", {}).items()):
+            file_sha256(ROOT / path) != digest for path, digest in capture_hashes.items()):
         raise RuntimeError("Training prompt source changed after capture")
+    # Validation loss selects checkpoints, so it must score the prompts training serves.
+    if freeze.get("validation_capture_source_hashes", capture_hashes) != capture_hashes:
+        raise RuntimeError("Validation captures were made from different prompt sources than training captures")
+    paths = [dataset / (split + "_captures.jsonl") for split in ("validation", "train")]
+    if all(path.exists() for path in paths):
+        validation, train = (prompt_prefixes(read_jsonl(path)) for path in paths)
+        if any(validation[role] != train[role] for role in validation.keys() & train.keys()):
+            raise RuntimeError("Validation captures use different prompts from training captures")
     return freeze
 
 
@@ -26,8 +46,7 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
     run_dir=ART/"train"/name
     dataset=Path(dataset_dir) if dataset_dir else ART/"dataset"
     initial=Path(initial_adapter) if initial_adapter else Path(c_identity()["adapter_path"])
-    if not control:
-        checked_dataset(dataset)
+    freeze = None if control else checked_dataset(dataset)
     request = {"name":name,"count":count,"start":start,"control":control,"lr":lr,
                "dataset_dir":str(dataset.resolve()),
                "dataset_freeze_sha256":file_sha256(dataset/"freeze.json") if not control else None,
@@ -40,12 +59,12 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         return read_json(run_dir/"completion.json")
     if (run_dir/"metrics.jsonl").exists():
         raise RuntimeError("Interrupted run retained; use a distinct run name with an explicit initial adapter")
-    old_pairs=read_jsonl(OLD_ART/"dataset/train.jsonl")
-    verified={p["pair_id"] for p in old_pairs if p.get("verification")=="PASS"}
-    old_caps=[p for p in read_jsonl(OLD_ART/"dataset/train_captures.jsonl") if p["pair_id"] in verified]
-    rng=random.Random(20261013)
-    rng.shuffle(old_caps)
+    replay,replay_origin=[],None
     if control:
+        old_pairs=read_jsonl(OLD_ART/"dataset/train.jsonl")
+        verified={p["pair_id"] for p in old_pairs if p.get("verification")=="PASS"}
+        old_caps=[p for p in read_jsonl(OLD_ART/"dataset/train_captures.jsonl") if p["pair_id"] in verified]
+        random.Random(20261013).shuffle(old_caps)
         chosen=old_caps[:count]
         validation=read_jsonl(OLD_ART/"dataset/validation_captures.jsonl")
         vexamples=train.load_examples(validation,rng_seed=991)[:100]
@@ -57,11 +76,16 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         fresh=caps[start:start+count]
         if len(fresh)!=count:
             raise RuntimeError(f"Need {count} captured families after offset {start}; have {len(fresh)}")
-        # Replay old data to retain C's already-good behaviors. No held-out rows.
+        # Replay retains C's already-good behaviors. First-experiment captures
+        # were rendered with older prompts, so the dataset must supply its own.
         replay_path=dataset/"replay_captures.jsonl"
-        if replay_path.exists():
-            old_caps=read_jsonl(replay_path)
-        chosen=fresh+old_caps[:min(len(old_caps),max(1,count//5))]
+        if not replay_path.exists():
+            raise RuntimeError("Dataset has no replay_captures.jsonl; first-experiment captures use older prompts")
+        replay=read_jsonl(replay_path)[:max(1,count//5)]
+        replay_origin=freeze.get("stats",{}).get("replay",{}).get("source")
+        if replay and not replay_origin:
+            raise RuntimeError("Dataset freeze does not state the replay origin (stats.replay.source)")
+        chosen=fresh+replay
         validation=read_jsonl(dataset/"validation_captures.jsonl")
         vexamples=train.load_examples(validation,rng_seed=991)[:160]
     examples=train.load_examples(chosen)
@@ -70,14 +94,16 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
     write_json(run_dir/"request.json",request)
     write_json(run_dir/"plan.json", {
         "name":name,"started":utc_now(),"control_old_data_only":control,"new_families":0 if control else count,
-        "old_replay_families":len(chosen) if control else len(chosen)-count,"examples":len(examples),
-        "source_family_ids":[c["family_id"] for c in chosen],"start_offset":start,
+        "replay":{"origin":replay_origin,"presentations":len(replay),
+                  "unique_pair_ids":sorted({c["pair_id"] for c in replay})},"examples":len(examples),
+        "source_family_ids":[c["family_id"] for c in chosen],"chosen_pair_ids":[c["pair_id"] for c in chosen],
+        "start_offset":start,
         "train_ids_sha256":sha256_text(json.dumps([c["family_id"] for c in chosen])),
         "dataset_dir":str(dataset),"dataset_freeze_sha256":file_sha256(dataset/"freeze.json") if not control else None,
         "validation_pair_ids":[e["pair_id"] for e in vexamples],"lr":lr,"warmup_updates":warmup,
         "initial_adapter":str(initial),"initial_adapter_sha256":file_sha256(initial/"adapters.safetensors"),
         "lora":cfg,"seed":20261013,"grad_accum":8,"max_sequence_tokens":6144,
-        "method":"Same verified prefix-cached Gated DeltaNet training implementation; one epoch of selected families plus old-data replay.",
+        "method":"Same verified prefix-cached Gated DeltaNet training implementation; one epoch of the selected captures.",
         "roles":dict(__import__('collections').Counter(e['role'] for e in examples))})
     model,tok=train.load_for_training(seed=20261013)
     model.load_weights(str(initial/"adapters.safetensors"),strict=False)
@@ -92,13 +118,15 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
     if any(not mx.array_equal(v,actual[k]).item() for k,v in expected.items()):
         raise RuntimeError("Adapter restoration mismatch")
     del expected,actual
+    # The loop trains these exact blocks, so the recorded order is the trained one.
     blocks=train.make_blocks([{**train.split_example(tok,e),"pair_id":e["pair_id"],"family_id":e["family_id"]}
                               for e in examples],8,20261013)
-    write_json(run_dir/"exposure-order.json",[[{"pair_id":it["pair_id"],"family_id":it["family_id"]}
-                                              for it in block] for block in blocks])
     result=train.train_loop(model,tok,examples,vexamples,run_dir,lr=lr,warmup=warmup,
                   grad_accum=8,checkpoints=3,max_seq_length=6144,lora_cfg=cfg,log_every=10,
-                  eval_every=max(40,len(examples)//80),seed=20261013)
+                  eval_every=max(40,len(examples)//80),seed=20261013,blocks=blocks)
+    exposure=[[{"pair_id":it["pair_id"],"family_id":it["family_id"]} for it in block]
+              for block in blocks[:result["updates"]]]
+    write_json(run_dir/"exposure-order.json",exposure)
     # Compare the actual saved checkpoints on the same response-token loss.
     # Logging intervals need not coincide with checkpoint boundaries.
     val_items=[train.split_example(tok,e) for e in vexamples]
@@ -117,9 +145,12 @@ def run(name, count, start=0, control=False, initial_adapter=None, lr=3e-5, data
         losses.append({'checkpoint':checkpoint.name,'val_loss':total/max(tokens,1),'response_tokens':tokens})
         del caches
         mx.clear_cache()
+    trained_prefixes={it['key'] for block in blocks for it in block}
     write_json(run_dir/'checkpoint-validation.json',{'created':utc_now(),'examples':len(vexamples),
+               'prompt_matches_training':{it['key'] for it in val_items}<=trained_prefixes,
                'checkpoints':losses,'lowest_loss':min(losses,key=lambda x:x['val_loss'])['checkpoint']})
-    result.update(completed=utc_now(),adapter=str(run_dir/"final"))
+    result.update(completed=utc_now(),adapter=str(run_dir/"final"),
+                  chosen_pair_ids=[c["pair_id"] for c in chosen],exposure_order=exposure)
     write_json(run_dir/"completion.json",result)
     return result
 
@@ -130,13 +161,20 @@ def export(name,checkpoint="final",*,compact_metadata=False):
     if not (adapter/"adapters.safetensors").exists():
         raise FileNotFoundError(adapter)
     export_name=name+"-"+checkpoint+("-compact" if compact_metadata else "")
+    adapter_sha256=file_sha256(adapter/"adapters.safetensors")
+    # candidate() reuses an existing quantized directory, so it must be this adapter's.
+    prior=read_json(ART/"export"/(export_name+".identity.json"))
+    if prior and prior.get("adapter_sha256")!=adapter_sha256:
+        raise RuntimeError("Export name already holds another adapter's quantized weights")
+    if not prior and (ART/"export"/"candidates"/export_name).exists():
+        raise RuntimeError("Quantized candidate exists without an identity record")
     path=candidate(adapter,export_name)
     metadata_receipt=None
     if compact_metadata:
         from .export_metadata import compact_json_metadata
         metadata_receipt=compact_json_metadata(path)
     identity={"name":name,"checkpoint":checkpoint,"adapter":str(adapter),"quantized":str(path),
-              "content_digest":content_digest(path),"adapter_sha256":file_sha256(adapter/"adapters.safetensors"),
+              "content_digest":content_digest(path),"adapter_sha256":adapter_sha256,
               "size_bytes":sum(p.stat().st_size for p in path.iterdir() if p.is_file()),
               "quantization":"4-bit affine, group 64; same verified recipe as C","created":utc_now(),
               "installed":False}

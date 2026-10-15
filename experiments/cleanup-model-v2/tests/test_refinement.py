@@ -44,8 +44,13 @@ class FinalIsolationTests(unittest.TestCase):
             write_json(artifacts / 'export/diverse-6000-ckpt-00761.identity.json', {
                 'quantized': models['F']['path'], 'content_digest': models['F']['content_digest'],
             })
+            # G was trained on another dataset than the one holding the final labels.
+            other = root / 'other-dataset'
+            write_json(other / 'freeze.json', {'capture_source_hashes': {'prompts.py': 'other capture'}})
+            request = artifacts / 'train/G-run/request.json'
+            write_json(request, {'dataset_dir': str(other), 'dataset_freeze_sha256': file_sha256(other / 'freeze.json')})
             write_json(run / 'candidate-selection.json', {
-                'ready_for_final': True, 'candidate': {'key': 'G', **models['G']},
+                'ready_for_final': True, 'candidate': {'key': 'G', 'training_run': 'G-run', **models['G']},
             })
             source.write_text('updated serving prompt')
             serving_hash = file_sha256(source)
@@ -61,11 +66,23 @@ class FinalIsolationTests(unittest.TestCase):
                 self.assertEqual(freeze['data_freeze_sha256'], dataset_freeze_hash)
                 self.assertEqual(file_sha256(dataset / 'freeze.json'), dataset_freeze_hash)
                 self.assertEqual(freeze['n'], 301)
+                self.assertEqual(freeze['candidate_training'], {
+                    'run': 'G-run', 'request_sha256': file_sha256(request), 'dataset_dir': str(other),
+                    'dataset_freeze_sha256': file_sha256(other / 'freeze.json'),
+                    'capture_source_hashes': {'prompts.py': 'other capture'}})
+                self.assertNotEqual(freeze['candidate_training']['dataset_freeze_sha256'], freeze['data_freeze_sha256'])
                 refinement.require_final(run / 'final-cases.jsonl', candidate=True,
                                          key='G', model_path=models['G']['path'], engine='updated_source')
                 source.write_text('later serving prompt')
                 with self.assertRaisesRegex(ValueError, 'source changed'):
                     refinement.require_final(run / 'final-cases.jsonl', candidate=True)
+                (run / 'final-freeze.json').unlink()
+                write_json(other / 'freeze.json', {'capture_source_hashes': {'prompts.py': 'recaptured'}})
+                with self.assertRaisesRegex(RuntimeError, 'training dataset changed'):
+                    refinement.freeze_final()
+                write_json(run / 'candidate-selection.json', {'ready_for_final': True, 'candidate': models['G'] | {'key': 'G'}})
+                with self.assertRaisesRegex(RuntimeError, 'training run'):
+                    refinement.freeze_final()
 
     def test_missing_and_mismatched_final_inputs_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

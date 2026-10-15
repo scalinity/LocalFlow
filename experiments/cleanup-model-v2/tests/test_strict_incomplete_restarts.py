@@ -60,7 +60,7 @@ DESIGN_CONTROLS = (
 
 class StrictIncompleteRestartTests(unittest.TestCase):
     def test_version_distinguishes_new_authorization(self):
-        self.assertEqual(SCORER_VERSION, "strict-lexical-v2-incomplete-openings")
+        self.assertEqual(SCORER_VERSION, "strict-lexical-v2-word-bounded-corrections")
 
     def test_all_27_design_controls_with_and_without_targets(self):
         self.assertEqual(len(DESIGN_CONTROLS), 27)
